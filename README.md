@@ -1,6 +1,6 @@
 ## Frappe Analytics
 
-Powerful Reporting Tool
+Powerful Reporting Tool for Frappe Apps
 
 #### License
 

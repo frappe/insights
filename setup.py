@@ -9,7 +9,7 @@ from frappe_analytics import __version__ as version
 setup(
 	name="frappe_analytics",
 	version=version,
-	description="Powerful Reporting Tool",
+	description="Powerful Reporting Tool for Frappe Apps",
 	author="Frappe Technologies Pvt. Ltd.",
 	author_email="hello@frappe.io",
 	packages=find_packages(),

@@ -3,7 +3,7 @@ from . import __version__ as app_version
 app_name = "frappe_analytics"
 app_title = "Frappe Analytics"
 app_publisher = "Frappe Technologies Pvt. Ltd."
-app_description = "Powerful Reporting Tool"
+app_description = "Powerful Reporting Tool for Frappe Apps"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
 app_email = "hello@frappe.io"
