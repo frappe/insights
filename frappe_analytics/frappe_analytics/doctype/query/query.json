@@ -16,7 +16,9 @@
   "section_break_7",
   "sort_by",
   "column_break_9",
-  "limit"
+  "limit",
+  "section_break_11",
+  "result"
  ],
  "fields": [
   {
@@ -71,11 +73,22 @@
    "fieldname": "limit",
    "fieldtype": "Int",
    "label": "Limit"
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Code",
+   "label": "Result",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-24 02:46:12.652611",
+ "modified": "2022-01-24 04:58:20.560653",
  "modified_by": "Administrator",
  "module": "Frappe Analytics",
  "name": "Query",
