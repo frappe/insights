@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-01-23 23:21:06.179655",
+ "creation": "2022-01-24 00:54:35.773298",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -17,10 +17,9 @@
  "fields": [
   {
    "fieldname": "first_operand",
-   "fieldtype": "Link",
+   "fieldtype": "Autocomplete",
    "in_list_view": 1,
    "label": "Field",
-   "options": "Query Field",
    "reqd": 1
   },
   {
@@ -57,10 +56,9 @@
   {
    "depends_on": "value_is_a_query_field",
    "fieldname": "link_value",
-   "fieldtype": "Link",
+   "fieldtype": "Autocomplete",
    "label": "Value",
-   "mandatory_depends_on": "value_is_a_query_field",
-   "options": "Query Field"
+   "mandatory_depends_on": "value_is_a_query_field"
   },
   {
    "default": "0",
@@ -72,7 +70,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-01-23 23:25:23.876366",
+ "modified": "2022-01-24 02:47:05.688469",
  "modified_by": "Administrator",
  "module": "Frappe Analytics",
  "name": "Query Filter",

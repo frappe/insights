@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:title",
- "creation": "2022-01-23 21:20:54.019229",
+ "creation": "2022-01-24 00:54:35.718860",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -12,7 +12,11 @@
   "section_break_2",
   "columns",
   "section_break_4",
-  "filters"
+  "filters",
+  "section_break_7",
+  "sort_by",
+  "column_break_9",
+  "limit"
  ],
  "fields": [
   {
@@ -48,11 +52,30 @@
    "label": "Title",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sort_by",
+   "fieldtype": "Autocomplete",
+   "label": "Sort By"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "10",
+   "fieldname": "limit",
+   "fieldtype": "Int",
+   "label": "Limit"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-23 22:24:33.984470",
+ "modified": "2022-01-24 02:46:12.652611",
  "modified_by": "Administrator",
  "module": "Frappe Analytics",
  "name": "Query",
