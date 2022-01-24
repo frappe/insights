@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-01-23 21:10:52.988148",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "first_operand",
+  "column_break_2",
+  "operator",
+  "column_break_4",
+  "second_operand"
+ ],
+ "fields": [
+  {
+   "fieldname": "first_operand",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "First Operand",
+   "options": "Query Field",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "operator",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Operator",
+   "options": "+\n=\n-\n!=\n<\n>\n<=\n>=\nin\nnot in\nlike\nnot like\nregex\nbetween",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "second_operand",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Second Operand",
+   "options": "Query Field",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-01-23 21:10:52.988148",
+ "modified_by": "Administrator",
+ "module": "Frappe Analytics",
+ "name": "Query Filter",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
