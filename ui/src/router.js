@@ -24,7 +24,7 @@ const routes = [
 ]
 
 let router = createRouter({
-	history: createWebHistory('/ui'),
+	history: createWebHistory('/analytics'),
 	routes,
 })
 
