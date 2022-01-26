@@ -5,11 +5,13 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "aggregation_1",
   "first_operand",
   "column_break_2",
   "operator",
   "column_break_4",
   "data_value",
+  "aggregation_2",
   "link_value",
   "value_is_a_query_field",
   "second_operand"
@@ -66,12 +68,26 @@
    "fieldname": "value_is_a_query_field",
    "fieldtype": "Check",
    "label": "Value is a Query Field"
+  },
+  {
+   "fieldname": "aggregation_1",
+   "fieldtype": "Autocomplete",
+   "label": "Aggregation",
+   "options": "Sum"
+  },
+  {
+   "depends_on": "value_is_a_query_field",
+   "fieldname": "aggregation_2",
+   "fieldtype": "Autocomplete",
+   "label": "Aggregation",
+   "mandatory_depends_on": "value_is_a_query_field",
+   "options": "Sum"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-01-26 09:59:16.412371",
+ "modified": "2022-01-26 15:38:20.527605",
  "modified_by": "Administrator",
  "module": "Frappe Analytics",
  "name": "Query Filter",

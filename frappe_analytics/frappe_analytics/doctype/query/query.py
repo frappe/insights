@@ -78,7 +78,9 @@ class Query(Document):
 		)
 
 		if self._group_by_columns:
-			query = query.groupby(*self._group_by_columns)
+			query = query.groupby(*self._group_by_columns).having(
+				Criterion.all(self._having_conditions)
+			)
 
 		if self._sort_by:
 			query = query.orderby(self._sort_by)
@@ -109,18 +111,32 @@ class Query(Document):
 
 	def process_filters(self):
 		self._filters = []
+		self._having_conditions = []
 		Query.set_second_operand(self.filters)
 		for filter in self.filters:
 			expression = self.convert_to_expression(filter)
-			self._filters.append(expression)
+			if filter.aggregation_1 or filter.aggregation_2:
+				self._having_conditions.append(expression)
+			else:
+				self._filters.append(expression)
 
 	def convert_to_expression(self, condition):
 		operand_1 = self.convert_to_field(condition.first_operand)
+
+		if condition.aggregation_1:
+			aggregation = OPERATOR_MAP[condition.aggregation_1]
+			operand_1 = aggregation(operand_1)
+
 		operand_2 = (
 			self.convert_to_field(condition.second_operand)
 			if condition.value_is_a_query_field
 			else condition.second_operand
 		)
+
+		if condition.value_is_a_query_field and condition.aggregation_2:
+			aggregation = OPERATOR_MAP[condition.aggregation_2]
+			operand_2 = aggregation(operand_2)
+
 		operation = OPERATOR_MAP[condition.operator]
 		return operation(operand_1, operand_2)
 
