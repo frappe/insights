@@ -3,30 +3,29 @@
 
 frappe.ui.form.on("Query", {
 	setup(frm) {
-		frm.set_query("field_1", "columns", () => {
-			return {
-				query: "frappe_analytics.api.queries.get_doctype_and_field_options",
-			};
-		});
-		frm.set_query("field_2", "columns", () => {
-			return {
-				query: "frappe_analytics.api.queries.get_doctype_and_field_options",
-			};
-		});
-		frm.set_query("first_operand", "filters", () => {
-			return {
-				query: "frappe_analytics.api.queries.get_doctype_and_field_options",
-			};
-		});
-		frm.set_query("link_value", "filters", () => {
-			return {
-				query: "frappe_analytics.api.queries.get_doctype_and_field_options",
-			};
-		});
-		frm.set_query("sort_by", () => {
-			return {
-				query: "frappe_analytics.api.queries.get_doctype_and_field_options",
-			};
-		});
+		const show_doctype_and_field_options_on = [
+			["field_1", "columns"],
+			["field_2", "columns"],
+			["first_operand", "filters"],
+			["link_value", "filters"],
+			["first_operand", "join_conditions"],
+			["link_value", "join_conditions"],
+			["sort_by"]
+		]
+		show_doctype_and_field_options_on.map(field => {
+			const args = [...field, () => {
+				return {
+					query: "frappe_analytics.api.queries.get_doctype_and_field_options",
+				};
+			}];
+			frm.set_query(...args);
+		})
 	},
+	refresh(frm) {
+		frm.add_custom_button('Execute', async () => {
+			const response = await frm.call('execute');
+			console.log(response.message);
+			console.table(response.message);
+		});
+	}
 });
