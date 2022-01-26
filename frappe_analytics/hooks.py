@@ -14,7 +14,7 @@ app_license = "AGPLv3"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/frappe_analytics/css/frappe_analytics.css"
-# app_include_js = "/assets/frappe_analytics/js/frappe_analytics.js"
+app_include_js = "frappe_analytics.bundle.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/frappe_analytics/css/frappe_analytics.css"
