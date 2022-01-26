@@ -20,12 +20,5 @@ frappe.ui.form.on("Query", {
 			}];
 			frm.set_query(...args);
 		})
-	},
-	refresh(frm) {
-		frm.add_custom_button('Execute', async () => {
-			const response = await frm.call('execute');
-			console.log(response.message);
-			console.table(response.message);
-		});
 	}
 });

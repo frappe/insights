@@ -66,7 +66,6 @@ class Query(Document):
 		self.process_limits()
 		self.process_tables()
 
-	@frappe.whitelist()
 	def execute(self):
 		self.process()
 		query = (
