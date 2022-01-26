@@ -15,7 +15,7 @@ from frappe.database.query import (
 	func_between,
 )
 from frappe.model.document import Document
-from frappe.query_builder import Field, Criterion, DocType
+from frappe.query_builder import Field, Criterion, DocType, functions
 
 
 OPERATOR_MAP = {
@@ -35,12 +35,12 @@ OPERATOR_MAP = {
 	"not like": not_like,
 	"regex": func_regex,
 	"between": func_between,
+	"Sum": functions.Sum,
 }
 
 
 class Query(Document):
 	def before_save(self):
-		self.process()
 		self.execute()
 		self.result = dumps(self._result)
 
@@ -71,7 +71,15 @@ class Query(Document):
 		self._columns = []
 
 		for column in self.columns:
-			field = self.convert_to_field(column.primary_field)
+			field = self.convert_to_field(column.field_1)
+
+			if column.aggregation_1:
+				aggregation = OPERATOR_MAP[column.aggregation_1]
+				field = aggregation(field)
+
+			if column.alias_1:
+				field = field.as_(column.alias_1)
+
 			self._columns.append(field)
 
 	def process_filters(self):
