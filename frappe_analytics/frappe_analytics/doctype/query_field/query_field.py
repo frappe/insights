@@ -22,6 +22,7 @@ class QueryField(Document):
 		[self._doctype, self._fieldname] = self.field.split(".")
 		self._table = DocType(self._doctype)
 		self._field = self._table.field(self._fieldname)
+		self.apply_coalesce()
 		self.perform_aggregation()
 		self.make_alias()
 		return self
@@ -34,3 +35,8 @@ class QueryField(Document):
 		if self.aggregation:
 			aggregation = AGGREGATIONS[self.aggregation]
 			self._field = aggregation(self._field)
+
+	def apply_coalesce(self):
+		if self.coalesce:
+			# TODO: parse default_value according to fieldtype
+			self._field = functions.Coalesce(self._field, self.default_value)
