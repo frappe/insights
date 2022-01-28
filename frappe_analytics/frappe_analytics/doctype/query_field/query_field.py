@@ -15,9 +15,7 @@ class QueryField(Document):
 		self.make_field()
 
 	def autoname(self):
-		self.name = self._field.get_sql(
-			quote_char="`", with_namespace=True, with_alias=True
-		)
+		self.name = self._field.get_sql(with_namespace=True, with_alias=True)
 
 	def make_field(self):
 		[doctype, fieldname] = self.field.split(".")
