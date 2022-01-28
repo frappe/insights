@@ -5,6 +5,7 @@
 from frappe.model.document import Document
 from frappe.query_builder import DocType, functions
 
+# TODO: Convert to an Enum
 AGGREGATIONS = {
 	"Sum": functions.Sum,
 }
@@ -18,10 +19,12 @@ class QueryField(Document):
 		self.name = self._field.get_sql(with_namespace=True, with_alias=True)
 
 	def make_field(self):
-		[doctype, fieldname] = self.field.split(".")
-		self._field = DocType(doctype).field(fieldname)
+		[self._doctype, self._fieldname] = self.field.split(".")
+		self._table = DocType(self._doctype)
+		self._field = self._table.field(self._fieldname)
 		self.perform_aggregation()
 		self.make_alias()
+		return self
 
 	def make_alias(self):
 		if self.alias:

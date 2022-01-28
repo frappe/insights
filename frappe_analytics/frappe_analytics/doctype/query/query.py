@@ -42,9 +42,6 @@ OPERATOR_MAP = {
 }
 
 
-# TODO: Make Enum of Aggregations
-
-
 class Query(Document):
 	def validate(self):
 		# TODO: validate if a column is an expression and aggregation is "group by"
@@ -94,51 +91,38 @@ class Query(Document):
 		self._columns = []
 		self._group_by_columns = []
 
-		for column in self.columns:
-			field = self.convert_to_field(column.field_1)
+		for row in self.columns:
+			_column = self.convert_to_field(row.field_1)
 
-			if column.aggregation_1:
-				if column.aggregation_1 != "Group By":
-					aggregation = OPERATOR_MAP[column.aggregation_1]
-					field = aggregation(field)
-				else:
-					self._group_by_columns.append(field)
+			if row.group_by:
+				self._group_by_columns.append(_column)
 
-			if column.alias_1:
-				field = field.as_(column.alias_1)
-
-			self._columns.append(field)
+			self._columns.append(_column)
 
 	def process_filters(self):
 		self._filters = []
 		self._having_conditions = []
 		Query.set_second_operand(self.filters)
 		for filter in self.filters:
-			expression = self.convert_to_expression(filter)
-			if filter.aggregation_1 or filter.aggregation_2:
+			expression, has_aggregations = self.convert_to_expression(filter)
+			if has_aggregations:
 				self._having_conditions.append(expression)
 			else:
 				self._filters.append(expression)
 
 	def convert_to_expression(self, condition):
 		operand_1 = self.convert_to_field(condition.first_operand)
+		aggregation_1 = self._last_converted_field.aggregation
 
-		if condition.aggregation_1:
-			aggregation = OPERATOR_MAP[condition.aggregation_1]
-			operand_1 = aggregation(operand_1)
-
-		operand_2 = (
-			self.convert_to_field(condition.second_operand)
-			if condition.value_is_a_query_field
-			else condition.second_operand
-		)
-
-		if condition.value_is_a_query_field and condition.aggregation_2:
-			aggregation = OPERATOR_MAP[condition.aggregation_2]
-			operand_2 = aggregation(operand_2)
+		if condition.value_is_a_query_field:
+			operand_2 = self.convert_to_field(condition.second_operand)
+			aggregation_2 = self._last_converted_field.aggregation
+		else:
+			operand_2 = condition.second_operand
+			aggregation_2 = None
 
 		operation = OPERATOR_MAP[condition.operator]
-		return operation(operand_1, operand_2)
+		return operation(operand_1, operand_2), (aggregation_1 or aggregation_2)
 
 	@staticmethod
 	def set_second_operand(filters):
@@ -164,7 +148,7 @@ class Query(Document):
 		Query.set_second_operand(self.join_conditions)
 		self._join_conditions = []
 		for condition in self.join_conditions:
-			expression = self.convert_to_expression(condition)
+			expression, has_aggregations = self.convert_to_expression(condition)
 			self._join_conditions.append(expression)
 
 	def process_sorting(self):
@@ -181,11 +165,10 @@ class Query(Document):
 		)
 
 	def convert_to_field(self, field: str) -> Field:
-		[doctype, fieldname] = field.split(".")
-		table = DocType(doctype)
-		column = table.field(fieldname)
-		self.add_to_tables_list(doctype, table)
-		return column
+		doc = frappe.get_cached_doc("Query Field", field).make_field()
+		self._last_converted_field = doc
+		self.add_to_tables_list(doc._doctype, doc._table)
+		return doc._field
 
 	def add_to_tables_list(self, doctype, table):
 		if (

@@ -10,7 +10,6 @@
   "aggregation",
   "alias",
   "column_break_5",
-  "group_by",
   "coalesce",
   "default_value"
  ],
@@ -48,13 +47,6 @@
   {
    "allow_in_quick_entry": 1,
    "default": "0",
-   "fieldname": "group_by",
-   "fieldtype": "Check",
-   "label": "Group By"
-  },
-  {
-   "allow_in_quick_entry": 1,
-   "default": "0",
    "fieldname": "coalesce",
    "fieldtype": "Check",
    "label": "Coalesce"
@@ -70,7 +62,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-28 06:57:36.512978",
+ "modified": "2022-01-28 07:13:26.337226",
  "modified_by": "Administrator",
  "module": "Frappe Analytics",
  "name": "Query Field",
