@@ -18,7 +18,7 @@ from frappe.database.query import (
 	func_between,
 )
 from frappe.model.document import Document
-from frappe.query_builder import Field, Criterion, DocType, functions, JoinType
+from frappe.query_builder import Field, Criterion, DocType, JoinType
 
 
 OPERATOR_MAP = {
