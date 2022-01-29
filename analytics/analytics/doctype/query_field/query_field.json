@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2022-01-26 17:16:24.022129",
+ "creation": "2022-01-29 14:40:23.570887",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -62,9 +62,9 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-28 11:49:12.107939",
+ "modified": "2022-01-29 17:58:17.941562",
  "modified_by": "Administrator",
- "module": "Frappe Analytics",
+ "module": "Analytics",
  "name": "Query Field",
  "owner": "Administrator",
  "permissions": [

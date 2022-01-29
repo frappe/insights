@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import operator
 from json import dumps
 from sqlparse import format as format_sql
 
@@ -9,36 +8,11 @@ import frappe
 from frappe import _, throw
 from frappe.utils import cstr
 from functools import reduce
-from frappe.database.query import (
-	func_in,
-	func_not_in,
-	like,
-	not_like,
-	func_regex,
-	func_between,
-)
 from frappe.model.document import Document
 from frappe.query_builder import Field, Criterion, DocType, JoinType
 
 
-OPERATOR_MAP = {
-	"+": operator.add,
-	"*": operator.mul,
-	"/": operator.truediv,
-	"=": operator.eq,
-	"-": operator.sub,
-	"!=": operator.ne,
-	"<": operator.lt,
-	">": operator.gt,
-	"<=": operator.le,
-	">=": operator.ge,
-	"in": func_in,
-	"not in": func_not_in,
-	"like": like,
-	"not like": not_like,
-	"regex": func_regex,
-	"between": func_between,
-}
+from analytics.analytics.doctype.query.utils import Operations
 
 
 class Query(Document):
@@ -47,6 +21,8 @@ class Query(Document):
 		pass
 
 	def before_save(self):
+		self.process()
+		self.build()
 		self.execute()
 		self.sql = format_sql(
 			str(self._query), keyword_case="upper", reindent_aligned=True
@@ -62,27 +38,31 @@ class Query(Document):
 		self.process_limits()
 		self.process_tables()
 
-	def execute(self):
-		self.process()
+	def build(self):
 		query = (
 			self.from_tables.from_(self.table)
-			.join(self._join_table, self._join_type)
-			.on(Criterion.all(self._join_conditions))
 			.select(*self._columns)
 			.where(Criterion.all(self._filters))
 			.limit(self._limit)
 		)
 
-		if self._group_by_columns:
-			query = query.groupby(*self._group_by_columns).having(
-				Criterion.all(self._having_conditions)
+		if self.join_table:
+			query = query.join(self._join_table, self._join_type).on(
+				Criterion.all(self._join_conditions)
 			)
+
+		if self._group_by_columns:
+			query = query.groupby(*self._group_by_columns)
+			if self._having_conditions:
+				query = query.having(Criterion.all(self._having_conditions))
 
 		if self._sort_by:
 			query = query.orderby(self._sort_by)
 
 		self._query = query
-		self._result = query.run()
+
+	def execute(self):
+		self._result = self._query.run()
 		self._result = list(self._result)
 		self.format_result()
 
@@ -120,7 +100,7 @@ class Query(Document):
 			operand_2 = condition.second_operand
 			aggregation_2 = None
 
-		operation = OPERATOR_MAP[condition.operator]
+		operation = Operations.get_operation(condition.operator)
 		return operation(operand_1, operand_2), (aggregation_1 or aggregation_2)
 
 	@staticmethod

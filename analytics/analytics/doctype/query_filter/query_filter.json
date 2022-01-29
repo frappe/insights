@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-01-26 08:56:47.831056",
+ "creation": "2022-01-29 14:40:51.236480",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -32,7 +32,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Operator",
-   "options": "=\n!=\n<\n>\n<=\n>=\nin\nnot in\nlike\nnot like\nregex\nbetween",
+   "options": "=\n!=\n<\n>\n<=\n>=\nin\nnot in\nlike\nnot like\nis set\nis not set\nbetween",
    "reqd": 1
   },
   {
@@ -73,9 +73,9 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-01-28 07:08:31.082947",
+ "modified": "2022-01-29 17:58:10.883549",
  "modified_by": "Administrator",
- "module": "Frappe Analytics",
+ "module": "Analytics",
  "name": "Query Filter",
  "owner": "Administrator",
  "permissions": [],
