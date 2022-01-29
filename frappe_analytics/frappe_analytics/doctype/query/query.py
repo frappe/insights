@@ -38,7 +38,6 @@ OPERATOR_MAP = {
 	"not like": not_like,
 	"regex": func_regex,
 	"between": func_between,
-	"Sum": functions.Sum,
 }
 
 

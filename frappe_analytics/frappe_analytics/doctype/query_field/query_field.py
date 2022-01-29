@@ -8,6 +8,7 @@ from frappe.query_builder import DocType, functions
 # TODO: Convert to an Enum
 AGGREGATIONS = {
 	"Sum": functions.Sum,
+	"Count": functions.Count,
 }
 
 
