@@ -1,6 +1,18 @@
-.DS_Store
 *.pyc
-*.egg-info
+*.py~
+*.comp.js
+*.DS_Store
+locale
+.wnf-lang-status
 *.swp
-tags
+*.egg-info
+dist/
+# build/
 frappe_analytics/docs/current
+frappe_analytics/public/dist
+.vscode
+.vs
+node_modules
+.kdev4/
+*.kdev4
+*debug.log
