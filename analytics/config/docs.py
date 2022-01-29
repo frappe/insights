@@ -2,7 +2,7 @@
 Configuration for docs
 """
 
-# source_link = "https://github.com/[org_name]/frappe_analytics"
+# source_link = "https://github.com/[org_name]/analytics"
 # headline = "App that does everything"
 # sub_heading = "Yes, you got that right the first time, everything"
 

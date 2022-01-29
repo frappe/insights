@@ -5,7 +5,7 @@ frappe.ui.form.on('Query Field', {
 	setup(frm) {
 		frm.set_query("field", () => {
 			return {
-				query: "frappe_analytics.api.queries.get_doctype_and_field_options",
+				query: "analytics.api.queries.get_doctype_and_field_options",
 			};
 		});
 	}

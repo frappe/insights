@@ -8,7 +8,7 @@ frappe.ui.form.QueryFieldQuickEntryForm = class QueryFieldQuickEntryForm extends
 		if (this.dialog.fields_dict["field"]) {
 			this.dialog.fields_dict["field"].get_query = () => {
 				return {
-					query: "frappe_analytics.api.queries.get_doctype_and_field_options",
+					query: "analytics.api.queries.get_doctype_and_field_options",
 				};
 			};
 		}
