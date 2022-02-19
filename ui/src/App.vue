@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full flex-col">
+	<div class="flex h-screen flex-col">
 		<nav class="bg-white shadow-sm">
 			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div class="flex h-16 justify-between">
@@ -43,7 +43,7 @@
 			</div>
 		</nav>
 
-		<router-view class="flex-1" />
+		<router-view class="flex flex-1 flex-col" />
 	</div>
 </template>
 
