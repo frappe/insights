@@ -8,11 +8,11 @@ locale
 *.egg-info
 dist/
 # build/
-analytics/docs/current
-analytics/public/dist
 .vscode
 .vs
 node_modules
 .kdev4/
 *.kdev4
 *debug.log
+analytics/docs/current
+analytics/public/frontend
