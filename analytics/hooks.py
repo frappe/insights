@@ -7,7 +7,7 @@ app_description = "Powerful Reporting Tool for Frappe Apps"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
 app_email = "hello@frappe.io"
-app_license = "AGPLv3"
+app_license = "GNU GPLv3"
 
 # Includes in <head>
 # ------------------
@@ -44,7 +44,7 @@ app_include_js = "analytics.bundle.js"
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# 	"Role": "home_page"
 # }
 
 # Generators
@@ -109,7 +109,7 @@ app_include_js = "analytics.bundle.js"
 # 		"on_update": "method",
 # 		"on_cancel": "method",
 # 		"on_trash": "method"
-#	}
+# 	}
 # }
 
 # Scheduled Tasks
@@ -187,4 +187,3 @@ app_include_js = "analytics.bundle.js"
 # auth_hooks = [
 # 	"analytics.auth.validate"
 # ]
-

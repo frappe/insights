@@ -4,4 +4,4 @@ Powerful Reporting Tool for Frappe Apps
 
 #### License
 
-AGPLv3
+GNU GPLv3
