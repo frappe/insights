@@ -117,7 +117,7 @@ export default {
 				},
 				auto: true,
 				onSuccess() {
-					this.column_list.forEach((column) => (column.left = true))
+					this.column_list.forEach((c) => (c.is_left = true))
 				},
 			}
 		},
@@ -125,7 +125,7 @@ export default {
 			return {
 				method: 'analytics.api.get_operator_list',
 				onSuccess() {
-					this.operator_list.forEach((op) => (op.operator = true))
+					this.operator_list.forEach((o) => (o.is_operator = true))
 				},
 			}
 		},
@@ -176,7 +176,7 @@ export default {
 			} else if (!this.operator_selected) {
 				return operator
 					? this.operator_list.filter((o) =>
-							o.value.toLowerCase().includes(operator.toLowerCase())
+							o.label.toLowerCase().includes(operator.toLowerCase())
 					  )
 					: this.operator_list
 			} else {
@@ -186,11 +186,12 @@ export default {
 	},
 	methods: {
 		on_suggestion_select(suggestion) {
-			if (suggestion.left) {
+			if (suggestion.is_left) {
 				this.$resources.operator_list.submit({ fieldtype: suggestion.type })
 				this.input_value = `${suggestion.label}${this.delimiter}`
-			} else if (suggestion.operator) {
-				this.input_value = `${this.filter_left}${this.delimiter}${suggestion.value}${this.delimiter}`
+			} else if (suggestion.is_operator) {
+				const operator = suggestion.label.toLowerCase()
+				this.input_value = `${this.filter_left}${this.delimiter}${operator}${this.delimiter}`
 			}
 		},
 		on_backspace(e) {
@@ -209,9 +210,18 @@ export default {
 		},
 		on_enter() {
 			if (this.filter_left && this.filter_operator && this.filter_right) {
+				const left_suggestion = this.column_list.find(
+					(c) => c.label.toLowerCase() === this.filter_left.toLowerCase()
+				)
+				const operator_suggestion = this.operator_list.find(
+					(o) => o.label.toLowerCase() === this.filter_operator.toLowerCase()
+				)
 				this.$emit('filter_selected', {
+					left_table: left_suggestion.table,
 					left: this.filter_left,
+					left_value: left_suggestion.name,
 					operator: this.filter_operator,
+					operator_value: operator_suggestion.value,
 					right: this.filter_right,
 				})
 				this.input_value = ''

@@ -75,11 +75,13 @@ export default {
 
 			const filters = this.get_filter_group_at(level)
 			filters.group_operator = filters.group_operator == 'All' ? 'Any' : 'All'
+			this.$emit('update:filters', this.filters)
 		},
 		add_filter(filter) {
 			if (!this.add_filter_meta) {
 				// no meta to add at given position, so just add the filter to root level
 				this.filters.conditions.push(filter)
+				this.$emit('update:filters', this.filters)
 				return
 			}
 
@@ -94,6 +96,7 @@ export default {
 				group_operator: branch_operator == 'or' ? 'Any' : 'All',
 				conditions: [condition_to_replace, filter],
 			}
+			this.$emit('update:filters', this.filters)
 			this.add_filter_meta = null
 		},
 		trigger_add_filter({ level, idx, branch_operator }) {

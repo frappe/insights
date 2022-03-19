@@ -1,24 +1,39 @@
 <template>
 	<div class="flex flex-1 flex-col py-10">
 		<header>
-			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div
+				class="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+			>
 				<h1 class="text-3xl font-bold leading-tight text-gray-900">
 					Query Builder
 				</h1>
+				<div class="">
+					<div
+						class="cursor-pointer rounded bg-white px-2.5 py-1 text-base shadow"
+						@click="$resources.query_result.fetch()"
+						:disabled="!$resources.query_result.loading"
+					>
+						Run Query
+					</div>
+				</div>
 			</div>
 		</header>
 		<main class="flex flex-1">
 			<div class="mx-auto flex max-w-7xl flex-1 sm:px-6 lg:px-8">
 				<div class="my-8 grid flex-1 grid-flow-row auto-rows-fr gap-4">
 					<div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
-						<TablePicker
-							@update:table_list="(updated_list) => (tables = updated_list)"
+						<TablePicker @update:tables="(updated) => (tables = updated)" />
+						<ColumnPicker
+							:tables="table_names"
+							@update:columns="(updated) => (columns = updated)"
 						/>
-						<ColumnPicker :tables="table_names" />
-						<FilterPicker :tables="table_names" />
+						<FilterPicker
+							:tables="table_names"
+							@update:filters="(updated) => (filters = updated)"
+						/>
 					</div>
 					<div class="flex">
-						<QueryResult />
+						<QueryResult :data="query_result?.data" />
 					</div>
 				</div>
 			</div>
@@ -43,12 +58,30 @@ export default {
 	data() {
 		return {
 			tables: [],
+			columns: [],
+			filters: {},
 		}
 	},
 	computed: {
 		table_names() {
 			return this.tables.map((table) => table.label)
 		},
+		query_result() {
+			return this.$resources.query_result.data
+		},
 	},
+	resources: {
+		query_result() {
+			const { tables, columns, filters } = this
+			return {
+				method: 'analytics.api.fetch_query_result',
+				params: { tables, columns, filters },
+				onSuccess() {
+					console.log(this.$resources.query_result.data)
+				},
+			}
+		},
+	},
+	methods: {},
 }
 </script>

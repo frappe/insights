@@ -90,15 +90,15 @@ export default {
 			)
 			if (!table_exists) {
 				this.selected_tables.push(table)
-				this.$emit('update:table_list', this.selected_tables)
+				this.$emit('update:tables', this.selected_tables)
 			}
 		},
 		on_menu_item_select(item, table_index) {
 			if (item.is_danger_action) {
 				this.selected_tables.splice(table_index, 1)
-				this.$emit('update:table_list', this.selected_tables)
-				this.menu_open_for = undefined
 			}
+			this.$emit('update:tables', this.selected_tables)
+			this.menu_open_for = undefined
 		},
 	},
 }

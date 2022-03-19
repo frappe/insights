@@ -5,7 +5,7 @@
 				&#8226;
 			</span>
 			<span
-				class="mr-1 flex cursor-pointer items-center rounded border px-2 py-1"
+				class="mr-1 flex cursor-pointer items-center rounded border border-slate-200 px-2 py-1"
 				@click="$emit('toggle_group_operator', { level })"
 			>
 				{{ group_operator }}
@@ -28,11 +28,11 @@
 				<div v-else class="flex cursor-pointer items-center pb-1">
 					<div class="pr-2 font-medium text-slate-300">&#8226;</div>
 					<div
-						class="group relative flex h-10 items-center rounded border px-3"
+						class="group relative flex h-10 items-center rounded border border-slate-200 px-3"
 					>
 						<div class="pr-1 font-medium">{{ condition.left }}</div>
 						<div class="pr-1 text-xs font-light">{{ condition.operator }}</div>
-						<div class="text-green-600">{{ condition.right }}</div>
+						<div class="font-medium text-green-600">{{ condition.right }}</div>
 						<div
 							class="invisible absolute flex items-center hover:visible group-hover:visible"
 							:class="{
@@ -44,13 +44,15 @@
 							"
 						>
 							<div
-								class="border border-dashed font-medium text-slate-300"
+								class="border border-dashed border-slate-200 font-medium text-slate-300"
 								:class="{
 									'w-4': branch_operator == 'or',
 									'w-5': branch_operator == 'and',
 								}"
 							></div>
-							<div class="rounded border px-2 py-1 text-slate-400">
+							<div
+								class="rounded border border-slate-200 px-2 py-1 text-slate-400"
+							>
 								{{ branch_operator }}
 							</div>
 						</div>

@@ -111,6 +111,7 @@ export default {
 			)
 			if (!column_exists) {
 				this.selected_columns.push(column)
+				this.$emit('update:columns', this.selected_columns)
 			}
 		},
 		on_menu_item_select(agg, column_index) {
@@ -121,6 +122,7 @@ export default {
 			} else if (agg.is_danger_action) {
 				this.selected_columns.splice(column_index, 1)
 			}
+			this.$emit('update:columns', this.selected_columns)
 			this.menu_open_for = undefined
 		},
 	},

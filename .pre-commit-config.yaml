@@ -18,6 +18,7 @@ repos:
           - flake8-bugbear
           - flake8-comprehensions
           - flake8-simplify
+        args: [--config, flake8]
 
   - repo: https://github.com/timothycrosley/isort
     rev: 5.9.1
