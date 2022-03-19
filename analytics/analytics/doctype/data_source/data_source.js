@@ -1,0 +1,10 @@
+// Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+// For license information, please see license.txt
+
+frappe.ui.form.on('Data Source', {
+	refresh: function (frm) {
+		frm.add_custom_button('Test Connection', () => {
+			frm.call('test_connection')
+		})
+	},
+})
