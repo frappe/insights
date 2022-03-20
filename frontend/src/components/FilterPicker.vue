@@ -14,6 +14,7 @@
 				:filters="filters"
 				@toggle_group_operator="toggle_group_operator"
 				@add_filter="trigger_add_filter"
+				@remove_filter="remove_filter"
 			/>
 		</div>
 		<div
@@ -86,25 +87,49 @@ export default {
 			}
 
 			// replace existing condition at given level & index with a filter group
-			const { idx, level, branch_operator } = this.add_filter_meta
+			const { idx, level, chain_operator } = this.add_filter_meta
 			const filter_group = this.get_filter_group_at(level)
 			const conditions = filter_group.conditions
 			const condition_to_replace = conditions[idx]
-			// replace the element at idx with the new group filter
-			conditions[idx] = {
-				level: level + 1,
-				group_operator: branch_operator == 'or' ? 'Any' : 'All',
-				conditions: [condition_to_replace, filter],
+			if (
+				(chain_operator == 'and' && filter_group.group_operator == 'Any') ||
+				(chain_operator == 'or' && filter_group.group_operator == 'All')
+			) {
+				// replace the element at idx with the new group filter
+				conditions[idx] = {
+					level: level + 1,
+					group_operator: chain_operator == 'or' ? 'Any' : 'All',
+					conditions: [condition_to_replace, filter],
+				}
+			} else {
+				// add a filter
+				conditions[idx + 1] = filter
 			}
 			this.$emit('update:filters', this.filters)
 			this.add_filter_meta = null
 		},
-		trigger_add_filter({ level, idx, branch_operator }) {
-			this.add_filter_meta = { level, idx, branch_operator }
+		trigger_add_filter({ level, idx, chain_operator }) {
+			this.add_filter_meta = { level, idx, chain_operator }
 			this.focus_filter_search()
 		},
 		focus_filter_search() {
 			this.$refs.filter_search.focused = true
+		},
+		remove_filter({ level, idx }) {
+			if (level == 1) {
+				// remove the filter from root level
+				this.filters.conditions.splice(idx, 1)
+			} else {
+				// remove the filter at `idx` from the filter group at `level`
+				const filter_group = this.get_filter_group_at(level)
+				filter_group.conditions.splice(idx, 1)
+				if (filter_group.conditions.length == 0) {
+					// remove the filter group
+					this.filters.conditions.splice(level - 1, 1)
+				}
+			}
+
+			this.$emit('update:filters', this.filters)
 		},
 	},
 }
