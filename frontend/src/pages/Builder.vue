@@ -8,13 +8,13 @@
 					Query Builder
 				</h1>
 				<div class="">
-					<div
+					<button
 						class="cursor-pointer rounded bg-white px-2.5 py-1 text-base shadow"
-						@click="$resources.query_result.fetch()"
-						:disabled="!$resources.query_result.loading"
+						@click="run_query"
+						:disabled="$resources.query_result.loading"
 					>
 						Run Query
-					</div>
+					</button>
 				</div>
 			</div>
 		</header>
@@ -82,6 +82,19 @@ export default {
 			}
 		},
 	},
-	methods: {},
+	methods: {
+		run_query() {
+			if (this.tables?.length === 0 || this.columns?.length === 0) {
+				this.$notify({
+					icon: 'alert-circle',
+					color: 'yellow',
+					message: 'Please select at least one table and column',
+					position: 'bottom',
+				})
+				return
+			}
+			this.$resources.query_result.fetch()
+		},
+	},
 }
 </script>

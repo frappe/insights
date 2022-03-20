@@ -6,7 +6,10 @@
 			ref="filter_search"
 			spellcheck="false"
 			class="block w-full select-none rounded-md border-gray-300 text-sm text-transparent caret-black focus:border-gray-300 focus:shadow focus:outline-0 focus:ring-0"
-			:class="{ 'font-semibold': filter_right }"
+			:class="{
+				'font-semibold': filter_right,
+				'placeholder:italic placeholder:text-gray-500': focused,
+			}"
 			:placeholder="focused ? placeholder : 'Add a filter...'"
 			v-model="input_value"
 			@focus="focused = true"
@@ -22,7 +25,7 @@
 
 			<span
 				v-if="left_selected && !filter_operator"
-				class="mr-1 text-xs font-light text-slate-400"
+				class="mr-1 font-light italic text-gray-500"
 			>
 				{{ placeholder }}
 			</span>
@@ -30,7 +33,7 @@
 
 			<span
 				v-if="left_selected && operator_selected && !filter_right"
-				class="mr-1 text-xs font-light text-slate-400"
+				class="mr-1 font-light italic text-gray-500"
 			>
 				{{ placeholder }}
 			</span>
