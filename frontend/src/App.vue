@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-screen flex-col">
+	<div class="flex h-screen flex-col font-sans antialiased">
 		<nav class="bg-white shadow-sm">
 			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div class="flex h-16 justify-between">
@@ -44,16 +44,19 @@
 		</nav>
 
 		<router-view class="flex flex-1 flex-col" />
+		<NotificationToasts />
 	</div>
 </template>
 
 <script>
+import { NotificationToasts } from 'frappe-ui'
 import FrappeAnalyticsLogo from '@/components/FrappeAnalyticsLogo.vue'
 
 export default {
 	name: 'App',
 	components: {
 		FrappeAnalyticsLogo,
+		NotificationToasts,
 	},
 }
 </script>
