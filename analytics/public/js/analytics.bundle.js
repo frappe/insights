@@ -1,1 +1,1 @@
-import "./query_field_quick_entry";
+import './query_field_quick_entry'

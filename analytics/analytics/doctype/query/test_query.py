@@ -4,5 +4,6 @@
 # import frappe
 import unittest
 
+
 class TestQuery(unittest.TestCase):
-	pass
+    pass
