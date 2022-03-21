@@ -22,7 +22,7 @@ class QueryField(Document):
     def make_field(self):
         [self._doctype, self._fieldname] = self.field.split(".")
         self._table = DocType(self._doctype)
-        self._field = self._table.field(self._fieldname)
+        self._field = self._table[self._fieldname]
         self.apply_coalesce()
         self.perform_aggregation()
         self.make_alias()

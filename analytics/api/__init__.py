@@ -73,7 +73,12 @@ def fetch_query_result(tables, columns, filters):
     except Exception as e:
         error = str(e)
 
-    return {"query": query.get_sql(), "data": result, "error": error}
+    return {
+        "error": error,
+        "data": result,
+        "query": query.get_sql(),
+        "columns": [c.get("label") for c in columns],
+    }
 
 
 def sanitize_data(tables, columns, filters):

@@ -50,12 +50,7 @@
 </template>
 
 <script>
-import FeatherIcon from 'frappe-ui/src/components/FeatherIcon.vue'
-
 export default {
-	components: {
-		FeatherIcon,
-	},
 	data() {
 		return {
 			search_term: '',

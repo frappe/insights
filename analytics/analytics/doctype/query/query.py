@@ -20,6 +20,9 @@ class Query(Document):
         pass
 
     def before_save(self):
+        if not self.table or not self.columns:
+            return
+
         self.process()
         self.build()
         self.execute()

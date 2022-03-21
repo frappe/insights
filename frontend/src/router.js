@@ -7,9 +7,15 @@ const routes = [
 		component: () => import('@/pages/Dashboards.vue'),
 	},
 	{
-		path: '/query-builder',
+		path: '/query',
+		name: 'QueryList',
+		component: () => import('@/pages/QueryList.vue'),
+	},
+	{
 		name: 'Builder',
+		path: '/query/:query_id',
 		component: () => import('@/pages/Builder.vue'),
+		props: true,
 	},
 	{
 		path: '/reports',
