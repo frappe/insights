@@ -5,7 +5,7 @@
 			type="text"
 			ref="filter_search"
 			spellcheck="false"
-			class="block w-full select-none rounded-md border-gray-300 text-sm text-transparent caret-black focus:border-gray-300 focus:shadow focus:outline-0 focus:ring-0"
+			class="form-input block h-9 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-white focus:shadow"
 			:class="{
 				'font-semibold': filter_right,
 				'placeholder:italic placeholder:text-gray-500': focused,
@@ -19,7 +19,7 @@
 		/>
 		<div
 			v-if="input_value"
-			class="absolute top-0 block w-full cursor-text border border-transparent py-2 px-3 text-sm leading-6"
+			class="absolute top-0 flex h-9 w-full cursor-text items-center border border-transparent px-3 text-sm leading-6"
 		>
 			<span class="mr-1 font-medium">{{ filter_left }}</span>
 
@@ -45,6 +45,7 @@
 			class="absolute inset-y-0 right-0 flex items-center pr-3 transition-all hover:scale-110"
 		>
 			<FeatherIcon
+				v-if="focused && input_value"
 				name="check-circle"
 				class="h-4 w-4 cursor-pointer text-gray-400"
 				:class="{
@@ -64,7 +65,7 @@
 		>
 			<div
 				v-if="focused && suggestions.length != 0"
-				class="absolute top-10 mt-2 max-h-52 w-full origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
+				class="absolute top-8 mt-2 max-h-52 w-full origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
 			>
 				<div
 					v-for="item in suggestions"

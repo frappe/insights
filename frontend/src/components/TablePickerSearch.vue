@@ -2,10 +2,10 @@
 <template>
 	<div class="">
 		<div class="relative z-10 w-full rounded-md shadow-sm">
-			<input
+			<Input
 				type="text"
 				name="table-search"
-				class="block w-full rounded-md border-gray-300 text-sm focus:border-gray-300 focus:shadow focus:outline-0 focus:ring-0"
+				class="block h-9 w-full rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
 				placeholder="Select a table..."
 				v-model="search_term"
 				@focus="focused = true"
@@ -15,6 +15,7 @@
 				class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
 			>
 				<FeatherIcon
+					v-if="focused"
 					name="search"
 					class="h-4 w-4 text-gray-400"
 					aria-hidden="true"
@@ -31,7 +32,7 @@
 			>
 				<div
 					v-if="focused && suggestions.length != 0"
-					class="absolute top-10 mt-2 max-h-52 w-full origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
+					class="absolute top-8 mt-2 max-h-52 w-full origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
 				>
 					<div
 						v-for="item in suggestions"

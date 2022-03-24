@@ -37,7 +37,9 @@
 				>
 					<div class="flex h-8 items-center rounded border-slate-200 px-1">
 						<div class="pr-1 font-medium">{{ condition.left }}</div>
-						<div class="pr-1 text-xs font-light">{{ condition.operator }}</div>
+						<div class="pr-1 pt-0.5 text-xs font-light">
+							{{ condition.operator }}
+						</div>
 						<div class="font-medium text-green-600">{{ condition.right }}</div>
 						<div
 							class="relative flex cursor-pointer items-center rounded py-1 pl-4 text-sm"
