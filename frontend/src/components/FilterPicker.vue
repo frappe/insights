@@ -32,18 +32,14 @@ import FilterNode from './FilterNode.vue'
 
 export default {
 	name: 'FilterPicker',
-	props: ['tables'],
+	props: ['tables', 'filters'],
 	components: {
 		FilterPickerSearch,
 		FilterNode,
 	},
 	data() {
 		return {
-			filters: {
-				group_operator: 'All',
-				level: 1,
-				conditions: [],
-			},
+			filters: this.filters,
 		}
 	},
 	methods: {
@@ -71,6 +67,7 @@ export default {
 			if (level == 1) {
 				this.filters.group_operator =
 					this.filters.group_operator == 'All' ? 'Any' : 'All'
+				this.$emit('update:filters', this.filters)
 				return
 			}
 

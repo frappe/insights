@@ -8,6 +8,7 @@
 				class="block h-9 w-full rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
 				placeholder="Select a table..."
 				v-model="search_term"
+				@input="(value) => (search_term = value)"
 				@focus="focused = true"
 				@blur=";[focused, search_term] = [false, '']"
 			/>

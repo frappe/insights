@@ -41,7 +41,7 @@
 						@click="select_column(item)"
 					>
 						<div class="flex items-center">
-							<div class="font-semibold">{{ item.label }}</div>
+							<div class="whitespace-pre font-semibold">{{ item.label }}</div>
 						</div>
 						<div class="flex font-light text-gray-500">
 							{{ item.table }}&nbsp;&#8226;&nbsp;{{ item.type }}

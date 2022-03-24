@@ -31,7 +31,7 @@ def get_column_list(tables):
             column_list.append(
                 {
                     "label": d.label,
-                    "name": d.fieldname,
+                    "column_name": d.fieldname,
                     "type": d.fieldtype,
                     "table": d.parent,
                 }

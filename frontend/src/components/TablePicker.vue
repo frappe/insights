@@ -9,12 +9,12 @@
 		</div>
 		<div v-else class="flex flex-1 select-none flex-col">
 			<div
-				v-for="(item, list_idx) in selected_tables"
+				v-for="(table, list_idx) in selected_tables"
 				:key="list_idx"
-				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
+				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
-				<div class="text-base font-medium">{{ item.label }}</div>
+				<div class="text-base font-medium">{{ table.label }}</div>
 				<div class="flex items-center">
 					<div class="relative cursor-pointer rounded px-2 py-1">
 						<MenuIcon />
@@ -63,13 +63,14 @@ import MenuIcon from './MenuIcon.vue'
 
 export default {
 	name: 'TablePicker',
+	props: ['tables'],
 	components: {
 		TablePickerSearch,
 		MenuIcon,
 	},
 	data() {
 		return {
-			selected_tables: [],
+			selected_tables: this.tables,
 			menu_open_for: undefined,
 			menu_items: [{ label: 'Remove', is_danger_action: true }],
 		}
@@ -80,7 +81,6 @@ export default {
 			if (e.target.closest('.menu-item')) return
 			this.menu_open_for = undefined
 		})
-		this.on_table_select({ label: 'ToDo' })
 	},
 	methods: {
 		on_table_select(table) {

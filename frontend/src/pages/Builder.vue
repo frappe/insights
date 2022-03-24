@@ -36,14 +36,16 @@
 			<div class="mx-auto flex max-w-7xl flex-1 py-8 sm:px-6 lg:px-8">
 				<div class="grid flex-1 grid-flow-row auto-rows-fr gap-4">
 					<div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
-						<TablePicker @update:tables="(updated) => (tables = updated)" />
+						<TablePicker :tables="tables" @update:tables="on_table_update" />
 						<ColumnPicker
 							:tables="table_names"
-							@update:columns="(updated) => (columns = updated)"
+							:columns="columns"
+							@update:columns="on_column_update"
 						/>
 						<FilterPicker
+							:filters="filters"
 							:tables="table_names"
-							@update:filters="(updated) => (filters = updated)"
+							@update:filters="on_filter_update"
 						/>
 					</div>
 					<div class="flex">
@@ -75,7 +77,11 @@ export default {
 			title: 'Untitled Query',
 			tables: [],
 			columns: [],
-			filters: {},
+			filters: {
+				group_operator: 'All',
+				level: 1,
+				conditions: [],
+			},
 		}
 	},
 	resources: {
@@ -94,8 +100,23 @@ export default {
 				type: 'document',
 				doctype: 'Query',
 				name: this.query_id,
+				whitelistedMethods: {
+					update_tables: 'update_tables',
+					update_columns: 'update_columns',
+					update_filters: 'update_filters',
+				},
 				postprocess: (query) => {
 					this.title = query.title
+					this.tables = query.tables.map((row) => {
+						return { label: row.table }
+					})
+					this.columns = query.columns.map(
+						({ table, column_name, label, type, aggregation }) => {
+							return { table, column_name, label, type, aggregation }
+						}
+					)
+					// TODO: Fix if query.filters is undefined
+					this.filters = JSON.parse(query.filters || '{}')
 				},
 				onError: () => {
 					this.$notify({
@@ -145,6 +166,15 @@ export default {
 				)
 			}
 			this.$refs.title_input.blur()
+		},
+		on_table_update(updated_tables) {
+			this.$resources.query.update_tables.submit({ updated_tables })
+		},
+		on_column_update(updated_columns) {
+			this.$resources.query.update_columns.submit({ updated_columns })
+		},
+		on_filter_update(updated_filters) {
+			this.$resources.query.update_filters.submit({ updated_filters })
 		},
 		run_query() {
 			if (this.tables?.length === 0 || this.columns?.length === 0) {

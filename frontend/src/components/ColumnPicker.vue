@@ -13,20 +13,25 @@
 		</div>
 		<div v-else class="flex flex-1 select-none flex-col">
 			<div
-				v-for="(item, list_idx) in selected_columns"
+				v-for="(column, list_idx) in selected_columns"
 				:key="list_idx"
-				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
+				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
 				<div class="flex items-center">
-					<span v-if="item.aggregation" class="my-0 font-medium text-blue-700">
-						{{ item.aggregation }}&nbsp;&#8226;&nbsp;
+					<span
+						v-if="column.aggregation"
+						class="my-0 flex-1 whitespace-nowrap font-medium text-blue-700"
+					>
+						{{ column.aggregation }}&nbsp;&#8226;&nbsp;
 					</span>
-					<div class="text-base font-medium">{{ item.label }}</div>
+					<div class="text-base font-medium">
+						{{ column.label }}
+					</div>
 				</div>
 				<div class="flex items-center">
 					<div class="mr-1 font-light text-gray-500">
-						{{ item.table }}&nbsp;&#8226;&nbsp;{{ item.type }}
+						{{ column.table }}&nbsp;&#8226;&nbsp;{{ column.type }}
 					</div>
 
 					<div class="relative cursor-pointer rounded px-2 py-1">
@@ -76,14 +81,14 @@ import MenuIcon from './MenuIcon.vue'
 
 export default {
 	name: 'ColumnPicker',
-	props: ['tables'],
+	props: ['tables', 'columns'],
 	components: {
 		ColumnPickerSearch,
 		MenuIcon,
 	},
 	data() {
 		return {
-			selected_columns: [],
+			selected_columns: this.columns,
 			menu_open_for: undefined,
 			menu_items: [
 				{ label: 'Aggregations', is_header: true },
