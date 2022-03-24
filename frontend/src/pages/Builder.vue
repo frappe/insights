@@ -15,17 +15,17 @@
 						@keydown.enter="on_title_update"
 						class="peer border-none bg-transparent p-0 text-3xl font-bold leading-tight text-transparent caret-black focus:border-none focus:outline-none focus:ring-transparent"
 					/>
-					<h1
-						class="absolute text-3xl font-bold leading-tight text-gray-900"
+					<div
+						class="absolute flex items-center whitespace-nowrap text-3xl font-bold leading-tight text-gray-900 hover:cursor-text"
 						@click="$refs.title_input.focus()"
 					>
 						{{ title }}
-					</h1>
-					<FeatherIcon
-						name="edit-2"
-						class="h-3.5 w-3.5 cursor-pointer text-gray-800 peer-focus:invisible"
-						@click="$refs.title_input.focus()"
-					/>
+						<FeatherIcon
+							name="edit-2"
+							class="ml-3 h-3.5 w-3.5 cursor-pointer text-gray-800 peer-focus:invisible"
+							@click="$refs.title_input.focus()"
+						/>
+					</div>
 				</div>
 				<div class="">
 					<Button appearance="white" @click="run_query"> Run Query </Button>

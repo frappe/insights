@@ -14,7 +14,7 @@
 				<thead class="bg-gray-50">
 					<tr class="divide-x divide-gray-200">
 						<th
-							class="whitespace-nowrap px-2 py-1 text-left font-normal text-slate-500"
+							class="whitespace-nowrap px-2 py-1 text-left font-normal text-gray-500"
 							scope="col"
 						>
 							#
@@ -22,7 +22,7 @@
 						<th
 							v-for="(column, idx) in columns"
 							:key="idx"
-							class="whitespace-nowrap px-2 py-1 text-left font-normal text-slate-500"
+							class="whitespace-nowrap px-2 py-1 text-left font-normal text-gray-500"
 							scope="col"
 						>
 							{{ column }}

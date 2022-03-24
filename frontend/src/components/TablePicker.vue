@@ -11,7 +11,7 @@
 			<div
 				v-for="(item, list_idx) in selected_tables"
 				:key="list_idx"
-				class="menu-item flex h-10 cursor-default items-center justify-between rounded border-b border-slate-200 pl-2 text-sm text-gray-700 hover:bg-slate-50 hover:ring-1 hover:ring-slate-100"
+				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
 				@click="menu_open_for = list_idx"
 			>
 				<div class="text-base font-medium">{{ item.label }}</div>
@@ -29,7 +29,7 @@
 						>
 							<div
 								v-if="menu_open_for == list_idx"
-								class="absolute right-2 top-6 z-10 origin-top-right rounded bg-white shadow-md ring-1 ring-slate-200"
+								class="absolute right-2 top-6 z-10 origin-top-right rounded bg-white shadow-md ring-1 ring-gray-200"
 							>
 								<div
 									v-for="(item, menu_item_idx) in menu_items"
@@ -37,11 +37,11 @@
 									class="cursor-pointer px-3 py-1"
 									:class="
 										item.is_header
-											? 'cursor-default border-b border-slate-200 text-xs font-light text-slate-400'
+											? 'cursor-default border-b border-gray-200 text-xs font-light text-gray-400'
 											: item.is_danger_action
-											? 'border-t border-slate-200 text-red-400 hover:bg-slate-50'
+											? 'border-t border-gray-200 text-red-400 hover:bg-gray-50'
 											: item.is_aggregation
-											? 'hover:bg-slate-50'
+											? 'hover:bg-gray-50'
 											: ''
 									"
 									@click="on_menu_item_select(item, list_idx)"

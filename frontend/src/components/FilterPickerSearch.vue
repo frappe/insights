@@ -76,7 +76,7 @@
 					<div class="flex items-center">
 						<div class="font-semibold">{{ item.label }}</div>
 					</div>
-					<div v-if="item.table" class="flex font-light text-slate-400">
+					<div v-if="item.table" class="flex font-light text-gray-500">
 						{{ item.table }}&nbsp;&#8226;&nbsp;{{ item.type }}
 					</div>
 				</div>

@@ -1,16 +1,16 @@
 <template>
-	<div class="text-base text-slate-800">
+	<div class="text-base text-gray-800">
 		<div
 			class="group flex items-baseline py-1 text-sm font-medium"
 			:class="{ 'pl-1': level != 1 }"
 		>
 			<span
-				class="mr-1 flex cursor-pointer items-center border-slate-200 group-hover:underline"
+				class="mr-1 flex cursor-pointer items-center border-gray-200 group-hover:underline"
 				@click="$emit('toggle_group_operator', { level })"
 			>
 				{{ group_operator }}
 			</span>
-			<span class="text-xs font-light text-slate-400">
+			<span class="text-xs font-light text-gray-500">
 				of the following are true
 			</span>
 		</div>
@@ -35,7 +35,7 @@
 					class="group menu-item flex w-fit cursor-pointer items-center"
 					@click="menu_open_for = idx"
 				>
-					<div class="flex h-8 items-center rounded border-slate-200 px-1">
+					<div class="flex h-8 items-center rounded px-1">
 						<div class="pr-1 font-medium">{{ condition.left }}</div>
 						<div class="pr-1 pt-0.5 text-xs font-light">
 							{{ condition.operator }}
@@ -62,7 +62,7 @@
 							>
 								<div
 									v-if="menu_open_for == idx"
-									class="absolute left-4 top-6 z-10 origin-top-left rounded bg-white shadow-md ring-1 ring-slate-200"
+									class="absolute left-4 top-6 z-10 origin-top-left rounded bg-white shadow-md ring-1 ring-gray-200"
 								>
 									<div
 										v-for="(item, menu_item_idx) in menu_items"
@@ -70,11 +70,11 @@
 										class="cursor-pointer whitespace-nowrap px-3 py-1"
 										:class="
 											item.is_header
-												? 'cursor-default border-b border-slate-200 text-xs font-light text-slate-400'
+												? 'cursor-default border-b border-gray-200 text-xs font-light text-gray-500'
 												: item.is_danger_action
-												? 'border-t border-slate-200 text-red-400 hover:bg-slate-50'
+												? 'border-t border-gray-200 text-red-400 hover:bg-gray-50'
 												: item.is_chain_condition
-												? 'font-light hover:bg-slate-50'
+												? 'font-light hover:bg-gray-50'
 												: ''
 										"
 										@click.prevent.stop="on_menu_item_select(item, level, idx)"
