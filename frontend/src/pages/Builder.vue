@@ -21,7 +21,9 @@
 					>
 						{{ title }}
 						<FeatherIcon
-							name="edit-2"
+							:name="
+								$resources.query.setValueDebounced.loading ? 'loader' : 'edit-2'
+							"
 							class="ml-3 h-3.5 w-3.5 cursor-pointer text-gray-500 peer-focus:invisible"
 							@click="$refs.title_input.focus()"
 						/>
