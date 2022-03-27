@@ -4,6 +4,7 @@
 			class="mb-4"
 			@column_selected="on_column_select"
 			:tables="tables"
+			:query="query"
 		/>
 		<div
 			v-if="selected_columns.length == 0"
@@ -18,20 +19,20 @@
 				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
-				<div class="flex items-center">
+				<div class="flex items-baseline">
 					<span
 						v-if="column.aggregation"
 						class="my-0 flex-1 whitespace-nowrap font-medium text-blue-700"
 					>
 						{{ column.aggregation }}&nbsp;&#8226;&nbsp;
 					</span>
-					<div class="text-base font-medium">
+					<div class="text-base font-semibold">
 						{{ column.label }}
 					</div>
 				</div>
 				<div class="flex items-center">
 					<div class="mr-1 font-light text-gray-500">
-						{{ column.table }}&nbsp;&#8226;&nbsp;{{ column.type }}
+						{{ column.table_label }}&nbsp;&#8226;&nbsp;{{ column.type }}
 					</div>
 
 					<div class="relative cursor-pointer rounded-md px-2 py-1">
@@ -81,7 +82,7 @@ import MenuIcon from './MenuIcon.vue'
 
 export default {
 	name: 'ColumnPicker',
-	props: ['tables', 'columns'],
+	props: ['tables', 'columns', 'query'],
 	components: {
 		ColumnPickerSearch,
 		MenuIcon,
@@ -117,11 +118,12 @@ export default {
 			const agg_header = { label: 'Aggregations', is_header: true }
 
 			if (this.aggregations?.length) {
+				const group_by = { label: 'Group By', is_aggregation: true }
 				const aggregations = this.aggregations.map((label) => ({
 					label,
 					is_aggregation: true,
 				}))
-				return [agg_header, ...aggregations, remove]
+				return [agg_header, group_by, ...aggregations, remove]
 			} else {
 				return [remove]
 			}

@@ -6,7 +6,7 @@ from json import dumps, loads
 import frappe
 from frappe import _dict
 from frappe.model.document import Document
-from frappe.query_builder import Criterion, DocType, Field
+from frappe.query_builder import Criterion, Field, Table
 from frappe.utils import cstr
 from sqlparse import format as format_sql
 
@@ -28,7 +28,13 @@ class Query(Document):
         # add the tables to self.tables if not already present
         table_names = [row.table for row in self.tables]
         for row in [d for d in updated_tables if d.get("label") not in table_names]:
-            self.append("tables", {"table": row.get("label")})
+            self.append(
+                "tables",
+                {
+                    "table": row.get("table"),
+                    "label": row.get("label"),
+                },
+            )
 
         self.save()
 
@@ -49,6 +55,7 @@ class Query(Document):
                     "label": row.get("label"),
                     "table": row.get("table"),
                     "column": row.get("column"),
+                    "table_label": row.get("table_label"),
                     "aggregation": row.get("aggregation"),
                 },
             )
@@ -68,6 +75,20 @@ class Query(Document):
     def update_filters(self, updated_filters):
         self.filters = dumps(updated_filters, indent=2, default=str)
         self.save()
+
+    @frappe.whitelist()
+    def get_selectable_tables(self):
+        data_source = frappe.get_cached_doc("Data Source", self.data_source)
+        return data_source.get_tables()
+
+    @frappe.whitelist()
+    def get_selectable_columns(self, tables):
+        tables = frappe.parse_json(tables)
+        data_source = frappe.get_cached_doc("Data Source", self.data_source)
+        columns = []
+        for table in tables:
+            columns += data_source.get_columns(table)
+        return columns
 
     def before_save(self):
         if not self.tables or not self.columns or not self.filters:
@@ -107,15 +128,16 @@ class Query(Document):
         self._query = query
 
     def execute(self):
-        self._result = self._query.run()
+        data_source = frappe.get_cached_doc("Data Source", self.data_source)
+        self._result = data_source.execute(self._query, debug=True)
         self._result = list(self._result)
         self.format_result()
 
     def process_tables(self):
         self._tables = []
         for row in self.tables:
-            Table = DocType(row.get("table"))
-            self._tables.append(Table)
+            table = Table(row.get("table"))
+            self._tables.append(table)
 
     def process_columns(self):
         self._columns = []
@@ -171,8 +193,8 @@ class Query(Document):
         self._limit: int = self.limit or 10
 
     def convert_to_select_field(self, table, column, label, aggregation="") -> Field:
-        Table = DocType(table)
-        Field = Table[column]
+        table = Table(table)
+        Field = table[column]
         Field = Field.as_(label)
 
         if aggregation and aggregation != "Group By":

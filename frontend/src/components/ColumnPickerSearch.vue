@@ -8,6 +8,7 @@
 				class="block h-9 w-full rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
 				placeholder="Add a column..."
 				v-model="search_term"
+				@input="(value) => (search_term = value)"
 				@focus="focused = true"
 				@blur=";[focused, search_term] = [false, '']"
 			/>
@@ -44,7 +45,7 @@
 							<div class="whitespace-pre font-semibold">{{ item.label }}</div>
 						</div>
 						<div class="flex font-light text-gray-500">
-							{{ item.table }}&nbsp;&#8226;&nbsp;{{ item.type }}
+							{{ item.table_label }}&nbsp;&#8226;&nbsp;{{ item.type }}
 						</div>
 					</div>
 				</div>
@@ -55,55 +56,39 @@
 
 <script>
 export default {
-	props: ['tables'],
+	props: ['tables', 'query'],
 	data() {
 		return {
 			search_term: '',
 			focused: false,
-			suggestions: [],
 		}
 	},
-	resources: {
-		column_list() {
-			return {
-				method: 'analytics.api.get_column_list',
-				params: {
-					tables: this.tables,
-				},
-				auto: true,
-				onSuccess() {
-					this.suggestions = this.column_list
-				},
-			}
+	watch: {
+		focused(is_focused) {
+			is_focused &&
+				this.query.get_selectable_columns.fetch({ tables: this.tables })
 		},
 	},
 	computed: {
 		column_list() {
-			return this.$resources.column_list.data || []
+			return this.query.get_selectable_columns?.data?.message || []
+		},
+		suggestions() {
+			const suggestions = this.column_list.filter(
+				(row) =>
+					row.label.toLowerCase().indexOf(this.search_term.toLowerCase()) !== -1
+			)
+			if (suggestions?.length > 20) {
+				return suggestions.slice(0, 20)
+			} else {
+				return suggestions
+			}
 		},
 	},
 	methods: {
 		select_column(column) {
 			this.search_term = ''
-			this.reset_suggestions()
 			this.$emit('column_selected', column)
-		},
-		reset_suggestions() {
-			this.suggestions = this.column_list
-		},
-	},
-	watch: {
-		search_term(newValue) {
-			if (!newValue) {
-				this.reset_suggestions()
-				return
-			}
-			this.suggestions = this.column_list.filter((column) => {
-				return (
-					column.label.toLowerCase().includes(newValue.toLowerCase()) ||
-					column.table.toLowerCase().includes(newValue.toLowerCase())
-				)
-			})
 		},
 	},
 }

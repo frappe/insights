@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "field:title",
  "creation": "2022-02-23 06:14:40.960055",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -21,7 +22,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Title",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "database_type",
@@ -72,10 +74,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-23 06:36:07.748010",
+ "modified": "2022-03-27 09:02:29.908423",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Data Source",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -91,10 +94,8 @@
    "write": 1
   }
  ],
- "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title",
  "track_changes": 1
 }

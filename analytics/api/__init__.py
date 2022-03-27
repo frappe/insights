@@ -35,17 +35,6 @@ def get_column_list(tables):
 
 
 @frappe.whitelist()
-def get_table_list(search_term=""):
-    filters = {"issingle": 0}
-    if search_term:
-        filters = {"name": ["like", f"%{search_term}%"]}
-
-    return frappe.get_all(
-        "DocType", filters=filters, fields=["name as label"], limit=20
-    )
-
-
-@frappe.whitelist()
 def get_operator_list(fieldtype):
     return [
         {"label": "Equals", "value": "="},

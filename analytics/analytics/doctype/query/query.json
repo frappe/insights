@@ -7,13 +7,15 @@
  "field_order": [
   "tab_break_1",
   "title",
-  "tables",
   "column_break_3",
-  "section_break_2",
-  "columns",
+  "data_source",
+  "section_break_3",
+  "tables",
   "column_break_4",
-  "filters",
+  "columns",
   "section_break_4",
+  "filters",
+  "section_break_2",
   "limit",
   "query_and_result_tab",
   "section_break_11",
@@ -96,11 +98,22 @@
   {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "label": "Data Source",
+   "options": "Data Source",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-27 08:56:19.156744",
+ "modified": "2022-03-27 11:34:33.579926",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",

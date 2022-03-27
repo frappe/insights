@@ -4,7 +4,7 @@
 			<div
 				class="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
 			>
-				<div class="relative flex items-center">
+				<div class="relative flex flex-col items-start">
 					<input
 						type="text"
 						v-model="title"
@@ -13,7 +13,7 @@
 						@blur="on_title_update"
 						:size="Math.max(title.length, 2)"
 						@keydown.enter="on_title_update"
-						class="peer border-none bg-transparent p-0 text-3xl font-bold leading-tight text-transparent caret-black focus:border-none focus:outline-none focus:ring-transparent"
+						class="peer mb-1 border-none bg-transparent p-0 text-3xl font-bold leading-tight text-transparent caret-black focus:border-none focus:outline-none focus:ring-transparent"
 					/>
 					<div
 						class="absolute flex items-center whitespace-nowrap text-3xl font-bold leading-tight text-gray-900 hover:cursor-text"
@@ -22,20 +22,28 @@
 						{{ title }}
 						<FeatherIcon
 							name="edit-2"
-							class="ml-3 h-3.5 w-3.5 cursor-pointer text-gray-800 peer-focus:invisible"
+							class="ml-3 h-3.5 w-3.5 cursor-pointer text-gray-500 peer-focus:invisible"
 							@click="$refs.title_input.focus()"
 						/>
+					</div>
+					<div class="text-sm text-gray-600/80">
+						Data Source: {{ data_source }}
 					</div>
 				</div>
 			</div>
 		</header>
 		<main class="flex flex-1">
 			<div class="mx-auto flex max-w-7xl flex-1 py-8 sm:px-6 lg:px-8">
-				<div class="grid flex-1 grid-flow-row auto-rows-fr gap-4">
-					<div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
-						<TablePicker :tables="tables" @update:tables="on_table_update" />
+				<div class="grid flex-1 grid-flow-row gap-4">
+					<div class="grid h-80 gap-4 sm:grid-cols-1 lg:grid-cols-3">
+						<TablePicker
+							:query="$resources.query"
+							:tables="tables"
+							@update:tables="on_table_update"
+						/>
 						<ColumnPicker
-							:tables="table_names"
+							:query="$resources.query"
+							:tables="tables"
 							:columns="columns"
 							@update:columns="on_column_update"
 						/>
@@ -72,8 +80,10 @@ export default {
 	data() {
 		return {
 			title: 'Untitled Query',
+			data_source: '',
 			tables: [],
 			columns: [],
+			result: [],
 			filters: {
 				group_operator: 'All',
 				level: 1,
@@ -91,18 +101,30 @@ export default {
 					update_tables: 'update_tables',
 					update_columns: 'update_columns',
 					update_filters: 'update_filters',
+					get_selectable_tables: 'get_selectable_tables',
+					get_selectable_columns: 'get_selectable_columns',
 				},
 				postprocess: (query) => {
 					this.title = query.title
+					this.data_source = query.data_source
+
 					this.tables = query.tables.map((row) => {
-						return { label: row.table }
+						return {
+							label: row.label,
+							table: row.table,
+						}
 					})
 
-					this.columns = query.columns.map(
-						({ table, column, label, type, aggregation }) => {
-							return { table, column, label, type, aggregation }
+					this.columns = query.columns.map((row) => {
+						return {
+							label: row.label,
+							column: row.column,
+							type: row.type,
+							table: row.table,
+							table_label: row.table_label,
+							aggregation: row.aggregation,
 						}
-					)
+					})
 					// TODO: Fix if query.filters is undefined
 					this.filters = JSON.parse(query.filters || '{}')
 

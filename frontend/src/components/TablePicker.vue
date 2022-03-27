@@ -1,6 +1,10 @@
 <template>
 	<div class="flex flex-col rounded-md bg-white p-4 shadow">
-		<TablePickerSearch class="mb-4" @table_selected="on_table_select" />
+		<TablePickerSearch
+			class="mb-4"
+			:query="query"
+			@table_selected="on_table_select"
+		/>
 		<div
 			v-if="selected_tables.length == 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
@@ -14,7 +18,9 @@
 				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
-				<div class="text-base font-medium">{{ table.label }}</div>
+				<div class="flex items-baseline">
+					<div class="mr-1 text-base font-medium">{{ table.label }}</div>
+				</div>
 				<div class="flex items-center">
 					<div class="relative cursor-pointer rounded-md px-2 py-1">
 						<MenuIcon />
@@ -63,7 +69,7 @@ import MenuIcon from './MenuIcon.vue'
 
 export default {
 	name: 'TablePicker',
-	props: ['tables'],
+	props: ['tables', 'query'],
 	components: {
 		TablePickerSearch,
 		MenuIcon,
