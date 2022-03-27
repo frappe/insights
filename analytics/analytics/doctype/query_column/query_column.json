@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "label",
-  "column_name",
+  "column",
   "column_break_5",
   "table",
   "type",
@@ -28,7 +28,7 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_name",
+   "fieldname": "column",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Name",

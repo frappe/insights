@@ -17,7 +17,7 @@ def get_column_list(tables):
 
         valid_columns = meta.get_valid_columns()
         column_list.append(
-            {"label": "Name", "column_name": "name", "type": "Data", "table": table}
+            {"label": "Name", "column": "name", "type": "Data", "table": table}
         )
         for d in meta.get("fields"):
             if d.fieldname not in valid_columns:
@@ -25,7 +25,7 @@ def get_column_list(tables):
             column_list.append(
                 {
                     "label": d.label,
-                    "column_name": d.fieldname,
+                    "column": d.fieldname,
                     "type": d.fieldtype,
                     "table": d.parent,
                 }

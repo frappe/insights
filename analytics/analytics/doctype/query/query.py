@@ -35,36 +35,32 @@ class Query(Document):
     @frappe.whitelist()
     def update_columns(self, updated_columns):
         # remove the columns from self.columns if not present in updated_columns
-        column_names = [row.get("column_name") for row in updated_columns]
-        for row in [
-            d for d in self.columns if d.get("column_name") not in column_names
-        ]:
+        column_names = [row.get("column") for row in updated_columns]
+        for row in [d for d in self.columns if d.get("column") not in column_names]:
             self.remove(row)
 
         # add the columns to self.columns if not already present
-        column_names = [row.column_name for row in self.columns]
-        for row in [
-            d for d in updated_columns if d.get("column_name") not in column_names
-        ]:
+        column_names = [row.column for row in self.columns]
+        for row in [d for d in updated_columns if d.get("column") not in column_names]:
             self.append(
                 "columns",
                 {
                     "type": row.get("type"),
                     "label": row.get("label"),
                     "table": row.get("table"),
-                    "column_name": row.get("column_name"),
+                    "column": row.get("column"),
                     "aggregation": row.get("aggregation"),
                 },
             )
 
         # update all aggregations
         aggregations = {
-            row.get("column_name"): row.get("aggregation") for row in updated_columns
+            row.get("column"): row.get("aggregation") for row in updated_columns
         }
 
         for row in self.columns:
-            if row.get("column_name") in aggregations:
-                row.aggregation = aggregations[row.get("column_name")]
+            if row.get("column") in aggregations:
+                row.aggregation = aggregations[row.get("column")]
 
         self.save()
 
@@ -127,7 +123,7 @@ class Query(Document):
 
         for row in self.columns:
             _column = self.convert_to_select_field(
-                row.table, row.column_name, row.label, row.aggregation
+                row.table, row.column, row.label, row.aggregation
             )
 
             if row.aggregation and row.aggregation == "Group By":

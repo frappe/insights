@@ -97,9 +97,10 @@ export default {
 					this.tables = query.tables.map((row) => {
 						return { label: row.table }
 					})
+
 					this.columns = query.columns.map(
-						({ table, column_name, label, type, aggregation }) => {
-							return { table, column_name, label, type, aggregation }
+						({ table, column, label, type, aggregation }) => {
+							return { table, column, label, type, aggregation }
 						}
 					)
 					// TODO: Fix if query.filters is undefined

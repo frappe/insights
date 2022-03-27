@@ -131,7 +131,7 @@ export default {
 	},
 	computed: {
 		column_list() {
-			// Column: { label, table, column_name, type }
+			// Column: { label, table, column, type }
 			return this.$resources.column_list.data || []
 		},
 		operator_list() {
@@ -220,7 +220,7 @@ export default {
 				this.$emit('filter_selected', {
 					left_table: left_suggestion.table,
 					left_label: this.filter_left,
-					left_value: left_suggestion.column_name,
+					left_value: left_suggestion.column,
 					operator: this.filter_operator,
 					operator_value: operator_suggestion.value,
 					right_label: this.filter_right,
