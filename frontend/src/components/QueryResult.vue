@@ -1,10 +1,10 @@
 <template>
 	<div class="flex flex-1 bg-white p-4 text-base shadow">
 		<div
-			v-if="!data || data.length === 0"
+			v-if="!result || result.length === 0"
 			class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 		>
-			<p>Run query to display the result</p>
+			<p>Select atleast one table & column to display the result</p>
 		</div>
 		<div
 			v-else
@@ -31,7 +31,7 @@
 				</thead>
 				<tbody class="divide-y divide-gray-200 bg-white">
 					<tr
-						v-for="(row, i) in rows"
+						v-for="(row, i) in data"
 						:key="i"
 						class="divide-x divide-gray-200"
 					>
@@ -55,13 +55,13 @@
 <script>
 export default {
 	name: 'QueryResult',
-	props: ['data'],
+	props: ['result'],
 	computed: {
 		columns() {
-			return this.data && this.data[0] ? Object.keys(this.data[0]) : []
+			return this.result[0]
 		},
-		rows() {
-			return this.data?.map((r) => Object.values(r))
+		data() {
+			return this.result.slice(1)
 		},
 	},
 }

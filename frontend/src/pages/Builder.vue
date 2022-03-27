@@ -27,9 +27,6 @@
 						/>
 					</div>
 				</div>
-				<div class="">
-					<Button appearance="white" @click="run_query"> Run Query </Button>
-				</div>
 			</div>
 		</header>
 		<main class="flex flex-1">
@@ -49,7 +46,7 @@
 						/>
 					</div>
 					<div class="flex">
-						<QueryResult :data="result?.data" :columns="result?.columns" />
+						<QueryResult :result="result" />
 					</div>
 				</div>
 			</div>
@@ -85,16 +82,6 @@ export default {
 		}
 	},
 	resources: {
-		query_result() {
-			const { tables, columns, filters } = this
-			return {
-				method: 'analytics.api.fetch_query_result',
-				params: { tables, columns, filters },
-				onSuccess() {
-					console.log(this.$resources.query_result.data)
-				},
-			}
-		},
 		query() {
 			return {
 				type: 'document',
@@ -117,6 +104,8 @@ export default {
 					)
 					// TODO: Fix if query.filters is undefined
 					this.filters = JSON.parse(query.filters || '{}')
+
+					this.result = JSON.parse(query.result || '[]')
 				},
 				onError: () => {
 					this.$notify({
@@ -131,9 +120,6 @@ export default {
 	computed: {
 		table_names() {
 			return this.tables.map((table) => table.label)
-		},
-		result() {
-			return this.$resources.query_result.data
 		},
 		query() {
 			return this.$resources.query.doc
@@ -175,18 +161,6 @@ export default {
 		},
 		on_filter_update(updated_filters) {
 			this.$resources.query.update_filters.submit({ updated_filters })
-		},
-		run_query() {
-			if (this.tables?.length === 0 || this.columns?.length === 0) {
-				this.$notify({
-					icon: 'alert-circle',
-					color: 'yellow',
-					message: 'Please select at least one table and column',
-					position: 'bottom',
-				})
-				return
-			}
-			this.$resources.query_result.fetch()
 		},
 	},
 }

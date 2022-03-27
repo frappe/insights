@@ -131,9 +131,11 @@ export default {
 	},
 	computed: {
 		column_list() {
+			// Column: { label, table, column_name, type }
 			return this.$resources.column_list.data || []
 		},
 		operator_list() {
+			// Operator: { label, value }
 			return this.$resources.operator_list.data || []
 		},
 		placeholder() {
@@ -217,11 +219,12 @@ export default {
 				)
 				this.$emit('filter_selected', {
 					left_table: left_suggestion.table,
-					left: this.filter_left,
-					left_value: left_suggestion.name,
+					left_label: this.filter_left,
+					left_value: left_suggestion.column_name,
 					operator: this.filter_operator,
 					operator_value: operator_suggestion.value,
-					right: this.filter_right,
+					right_label: this.filter_right,
+					right_value: this.filter_right,
 				})
 				this.input_value = ''
 				this.focused = false

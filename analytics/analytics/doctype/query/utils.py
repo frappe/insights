@@ -3,6 +3,14 @@
 
 import operator
 
+from frappe.query_builder import functions
+
+# TODO: Convert to an Enum
+AGGREGATIONS = {
+    "Sum": functions.Sum,
+    "Count": functions.Count,
+}
+
 
 class Operations:
 

@@ -90,13 +90,6 @@ export default {
 		return {
 			selected_columns: this.columns,
 			menu_open_for: undefined,
-			menu_items: [
-				{ label: 'Aggregations', is_header: true },
-				{ label: 'Group By', is_aggregation: true },
-				{ label: 'Count', is_aggregation: true },
-				{ label: 'Distinct', is_aggregation: true },
-				{ label: 'Remove', is_danger_action: true },
-			],
 		}
 	},
 	mounted() {
@@ -105,6 +98,34 @@ export default {
 			if (e.target.closest('.menu-item')) return
 			this.menu_open_for = undefined
 		})
+	},
+	resources: {
+		aggregations() {
+			return {
+				method: 'analytics.api.get_aggregation_list',
+				auto: true,
+				debounce: 300,
+			}
+		},
+	},
+	computed: {
+		aggregations() {
+			return this.$resources.aggregations.data
+		},
+		menu_items() {
+			const remove = { label: 'Remove', is_danger_action: true }
+			const agg_header = { label: 'Aggregations', is_header: true }
+
+			if (this.aggregations?.length) {
+				const aggregations = this.aggregations.map((label) => ({
+					label,
+					is_aggregation: true,
+				}))
+				return [agg_header, ...aggregations, remove]
+			} else {
+				return [remove]
+			}
+		},
 	},
 	methods: {
 		on_column_select(column) {

@@ -1,17 +1,16 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import reduce
 from json import dumps, loads
 
 import frappe
-from frappe import _, throw
+from frappe import _dict
 from frappe.model.document import Document
-from frappe.query_builder import Criterion, DocType, Field, JoinType
+from frappe.query_builder import Criterion, DocType, Field
 from frappe.utils import cstr
 from sqlparse import format as format_sql
 
-from analytics.analytics.doctype.query.utils import Operations
+from analytics.analytics.doctype.query.utils import AGGREGATIONS, Operations
 
 
 class Query(Document):
@@ -75,8 +74,9 @@ class Query(Document):
         self.save()
 
     def before_save(self):
-        # if not self.tables or not self.columns or not self.filters or not loads(self.filters):
-        return
+        if not self.tables or not self.columns or not self.filters:
+            self.result = "[]"
+            return
 
         self.process()
         self.build()
@@ -87,34 +87,26 @@ class Query(Document):
         self.result = dumps(self._result, default=cstr)
 
     def process(self):
-        self._tables = []
+        self.process_tables()
         self.process_columns()
         self.process_filters()
-        self.process_joins()
-        self.process_sorting()
-        self.process_limits()
-        self.process_tables()
+        self.process_limit()
 
     def build(self):
-        query = (
-            self.from_tables.from_(self.table)
-            .select(*self._columns)
-            .where(Criterion.all(self._filters))
-            .limit(self._limit)
-        )
+        query = frappe.qb
 
-        if self.join_table:
-            query = query.join(self._join_table, self._join_type).on(
-                Criterion.all(self._join_conditions)
-            )
+        for table in self._tables:
+            query = query.from_(table)
+
+        for column in self._columns:
+            query = query.select(column)
 
         if self._group_by_columns:
             query = query.groupby(*self._group_by_columns)
-            if self._having_conditions:
-                query = query.having(Criterion.all(self._having_conditions))
 
-        if self._sort_by:
-            query = query.orderby(self._sort_by)
+        query = query.where(*self._filters)
+
+        query = query.limit(self._limit)
 
         self._query = query
 
@@ -123,96 +115,75 @@ class Query(Document):
         self._result = list(self._result)
         self.format_result()
 
+    def process_tables(self):
+        self._tables = []
+        for row in self.tables:
+            Table = DocType(row.get("table"))
+            self._tables.append(Table)
+
     def process_columns(self):
         self._columns = []
         self._group_by_columns = []
 
         for row in self.columns:
-            _column = self.convert_to_field(row.field_1)
+            _column = self.convert_to_select_field(
+                row.table, row.column_name, row.label, row.aggregation
+            )
 
-            if row.group_by:
+            if row.aggregation and row.aggregation == "Group By":
                 self._group_by_columns.append(_column)
 
             self._columns.append(_column)
 
     def process_filters(self):
-        self._filters = []
-        self._having_conditions = []
-        Query.set_second_operand(self.filters)
-        for filter in self.filters:
-            expression, has_aggregations = self.convert_to_expression(filter)
-            if has_aggregations:
-                self._having_conditions.append(expression)
-            else:
-                self._filters.append(expression)
+        filters = _dict(loads(self.filters))
+
+        def process_filter_group(filter_group):
+            _filters = []
+            for filter in filter_group.get("conditions"):
+                filter = _dict(filter)
+                if filter.group_operator:
+                    group_condition = process_filter_group(filter)
+                    GroupCriteria = (
+                        Criterion.all
+                        if filter.group_operator == "All"
+                        else Criterion.any
+                    )
+                    _filters.append(GroupCriteria(group_condition))
+                else:
+                    expression = self.convert_to_expression(filter)
+                    _filters.append(expression)
+
+            return _filters
+
+        RootCriteria = (
+            Criterion.all if filters.group_operator == "All" else Criterion.any
+        )
+        _filters = process_filter_group(filters)
+        self._filters = [RootCriteria(_filters)]
 
     def convert_to_expression(self, condition):
-        operand_1 = self.convert_to_field(condition.first_operand)
-        aggregation_1 = self._last_converted_field.aggregation
+        operand_1 = self.convert_to_select_field(
+            condition.left_table, condition.left_value, condition.left_label
+        )
+        operand_2 = condition.right_value
 
-        if condition.value_is_a_query_field:
-            operand_2 = self.convert_to_field(condition.second_operand)
-            aggregation_2 = self._last_converted_field.aggregation
-        else:
-            operand_2 = condition.second_operand
-            aggregation_2 = None
+        operation = Operations.get_operation(condition.operator_value)
+        return operation(operand_1, operand_2)
 
-        operation = Operations.get_operation(condition.operator)
-        return operation(operand_1, operand_2), (aggregation_1 or aggregation_2)
-
-    @staticmethod
-    def set_second_operand(filters):
-        for filter in filters:
-            filter.second_operand = (
-                filter.link_value
-                if filter.value_is_a_query_field
-                else filter.data_value
-            )
-
-    def process_joins(self):
-        if not self.join_table:
-            return
-
-        if not self.join_type:
-            throw(_("Please select a join type"))
-
-        self._join_table = DocType(self.join_table)
-
-        join_type = self.join_type.split(" ")[0].lower()
-        self._join_type = JoinType[join_type]
-
-        Query.set_second_operand(self.join_conditions)
-        self._join_conditions = []
-        for condition in self.join_conditions:
-            expression, has_aggregations = self.convert_to_expression(condition)
-            self._join_conditions.append(expression)
-
-    def process_sorting(self):
-        self._sort_by = self.convert_to_field(self.sort_by) if self.sort_by else None
-
-    def process_limits(self):
+    def process_limit(self):
         self._limit: int = self.limit or 10
 
-    def process_tables(self):
-        self.from_tables = reduce(
-            lambda qb, table: qb.from_(table),
-            self._tables,
-            frappe.qb,
-        )
+    def convert_to_select_field(self, table, column, label, aggregation="") -> Field:
+        Table = DocType(table)
+        Field = Table[column]
+        Field = Field.as_(label)
 
-    def convert_to_field(self, field: str) -> Field:
-        doc = frappe.get_cached_doc("Query Field", field).make_field()
-        self._last_converted_field = doc
-        self.add_to_tables_list(doc._doctype, doc._table)
-        return doc._field
+        if aggregation and aggregation != "Group By":
+            aggregation = AGGREGATIONS[aggregation]
+            Field = aggregation(Field)
 
-    def add_to_tables_list(self, doctype, table):
-        if (
-            doctype
-            and doctype not in [self.table, self.join_table]
-            and table not in self._tables
-        ):
-            self._tables.append(table)
+        return Field
 
     def format_result(self):
         column_names = [d.alias or d.name for d in self._columns]
