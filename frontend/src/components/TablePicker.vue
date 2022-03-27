@@ -1,9 +1,9 @@
 <template>
-	<div class="flex flex-col rounded bg-white p-4 shadow">
+	<div class="flex flex-col rounded-md bg-white p-4 shadow">
 		<TablePickerSearch class="mb-4" @table_selected="on_table_select" />
 		<div
 			v-if="selected_tables.length == 0"
-			class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 		>
 			<p>Add tables to build report upon...</p>
 		</div>
@@ -11,12 +11,12 @@
 			<div
 				v-for="(table, list_idx) in selected_tables"
 				:key="list_idx"
-				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded hover:bg-gray-50"
+				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
 				<div class="text-base font-medium">{{ table.label }}</div>
 				<div class="flex items-center">
-					<div class="relative cursor-pointer rounded px-2 py-1">
+					<div class="relative cursor-pointer rounded-md px-2 py-1">
 						<MenuIcon />
 						<!-- Hidden Menu -->
 						<transition
@@ -29,7 +29,7 @@
 						>
 							<div
 								v-if="menu_open_for == list_idx"
-								class="absolute right-2 top-6 z-10 origin-top-right rounded bg-white shadow-md ring-1 ring-gray-200"
+								class="absolute right-2 top-6 z-10 origin-top-right rounded-md bg-white shadow-md ring-1 ring-gray-200"
 							>
 								<div
 									v-for="(item, menu_item_idx) in menu_items"

@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col rounded bg-white p-4 shadow">
+	<div class="flex flex-col rounded-md bg-white p-4 shadow">
 		<FilterPickerSearch
 			class="mb-4"
 			ref="filter_search"
@@ -19,7 +19,7 @@
 		</div>
 		<div
 			v-else
-			class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 		>
 			No filters added
 		</div>

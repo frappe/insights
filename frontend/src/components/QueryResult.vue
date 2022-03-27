@@ -1,14 +1,14 @@
 <template>
-	<div class="flex flex-1 bg-white p-4 text-base shadow">
+	<div class="flex flex-1 rounded-md bg-white p-4 text-base shadow">
 		<div
 			v-if="!result || result.length === 0"
-			class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 		>
 			<p>Select atleast one table & column to display the result</p>
 		</div>
 		<div
 			v-else
-			class="h-fit overflow-hidden rounded shadow ring-1 ring-black ring-opacity-5"
+			class="h-fit overflow-hidden rounded-md shadow ring-1 ring-black ring-opacity-5"
 		>
 			<table class="min-w-full divide-y divide-gray-300">
 				<thead class="bg-gray-50">

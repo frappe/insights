@@ -35,7 +35,7 @@
 					class="group menu-item flex w-fit cursor-pointer items-center"
 					@click="menu_open_for = idx"
 				>
-					<div class="flex h-8 items-center rounded px-1">
+					<div class="flex h-8 items-center rounded-md px-1">
 						<div class="pr-1 font-medium">{{ condition.left_label }}</div>
 						<div class="pr-1 pt-0.5 text-xs font-light">
 							{{ condition.operator }}
@@ -44,7 +44,7 @@
 							{{ condition.right_label }}
 						</div>
 						<div
-							class="relative flex cursor-pointer items-center rounded py-1 pl-4 text-sm"
+							class="relative flex cursor-pointer items-center rounded-md py-1 pl-4 text-sm"
 						>
 							<MenuIcon
 								class="group-hover:visible"
@@ -64,7 +64,7 @@
 							>
 								<div
 									v-if="menu_open_for == idx"
-									class="absolute left-4 top-6 z-10 origin-top-left rounded bg-white shadow-md ring-1 ring-gray-200"
+									class="absolute left-4 top-6 z-10 origin-top-left rounded-md bg-white shadow-md ring-1 ring-gray-200"
 								>
 									<div
 										v-for="(item, menu_item_idx) in menu_items"

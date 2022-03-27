@@ -16,12 +16,12 @@
 		</header>
 		<main class="flex flex-1">
 			<div class="mx-auto flex max-w-7xl flex-1 py-8 sm:px-6 lg:px-8">
-				<div class="flex-1 rounded bg-white p-4 shadow">
+				<div class="flex-1 rounded-md bg-white p-4 shadow">
 					<ul role="list" class="divide-y divide-gray-200">
 						<li
 							v-for="query in queries"
 							:key="query.id"
-							class="flex cursor-pointer items-center justify-between rounded px-2 py-2 hover:bg-gray-50"
+							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 hover:bg-gray-50"
 							@click="$router.push(`/query/${query.id}`)"
 						>
 							<div class="ml-3">
