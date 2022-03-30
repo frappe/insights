@@ -20,16 +20,16 @@
 					<ul role="list" class="divide-y divide-gray-200">
 						<li
 							v-for="query in queries"
-							:key="query.id"
+							:key="query.name"
 							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 hover:bg-gray-50"
-							@click="$router.push(`/query/${query.id}`)"
+							@click="$router.push(`/query/${query.name}`)"
 						>
 							<div class="ml-3">
 								<p class="text-sm font-medium text-gray-900">
 									{{ query.title }}
 								</p>
 								<p class="text-sm text-gray-500">
-									{{ query.tables.join(', ') }}
+									{{ query.tables }}
 								</p>
 							</div>
 							<FeatherIcon
@@ -79,16 +79,13 @@ export default {
 		return {
 			create_new_query_dialog: false,
 			new_query_title: '',
-			queries: [
-				{
-					title: 'First Query',
-					id: 'First Query',
-					tables: ['ToDo', 'Comment'],
-				},
-			],
 		}
 	},
 	resources: {
+		get_queries: {
+			method: 'analytics.api.get_queries',
+			auto: true,
+		},
 		create_query: {
 			method: 'frappe.client.insert',
 			onSuccess(query) {
@@ -96,6 +93,11 @@ export default {
 				this.create_new_query_dialog = false
 				this.$router.push(`/query/${query.name}`)
 			},
+		},
+	},
+	computed: {
+		queries() {
+			return this.$resources.get_queries.data || []
 		},
 	},
 	methods: {
