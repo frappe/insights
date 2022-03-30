@@ -4,6 +4,7 @@
 			class="mb-4"
 			ref="filter_search"
 			@filter_selected="add_filter"
+			:query="query"
 			:tables="tables"
 		/>
 		<div
@@ -32,7 +33,7 @@ import FilterNode from './FilterNode.vue'
 
 export default {
 	name: 'FilterPicker',
-	props: ['tables', 'filters'],
+	props: ['tables', 'filters', 'query'],
 	components: {
 		FilterPickerSearch,
 		FilterNode,

@@ -50,12 +50,13 @@
 							@update:columns="on_column_update"
 						/>
 						<FilterPicker
+							:query="$resources.query"
+							:tables="tables"
 							:filters="filters"
-							:tables="table_names"
 							@update:filters="on_filter_update"
 						/>
 					</div>
-					<div class="flex">
+					<div class="flex h-96">
 						<QueryResult :result="result" />
 					</div>
 				</div>

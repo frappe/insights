@@ -181,12 +181,22 @@ class Query(Document):
         self._filters = [RootCriteria(_filters)]
 
     def convert_to_expression(self, condition):
-        operand_1 = self.convert_to_select_field(
-            condition.left_table, condition.left_value, condition.left_label
-        )
-        operand_2 = condition.right_value
+        condition = _dict(condition)
+        condition.left = _dict(condition.left)
+        condition.right = _dict(condition.right)
+        condition.operator = _dict(condition.operator)
 
-        operation = Operations.get_operation(condition.operator_value)
+        operand_1 = self.convert_to_select_field(
+            condition.left.table, condition.left.column, condition.left.label
+        )
+        if condition.right.value_type == "Column":
+            operand_2 = self.convert_to_select_field(
+                condition.right.table, condition.right.column, condition.right.label
+            )
+        else:
+            operand_2 = condition.right.value
+
+        operation = Operations.get_operation(condition.operator.value)
         return operation(operand_1, operand_2)
 
     def process_limit(self):

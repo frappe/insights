@@ -7,7 +7,7 @@
 			spellcheck="false"
 			class="form-input block h-9 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-white focus:shadow"
 			:class="{
-				'font-semibold': filter_right,
+				'font-semibold': right_input,
 				'placeholder:italic placeholder:text-gray-500': focused,
 			}"
 			:placeholder="focused ? placeholder : 'Add a filter...'"
@@ -21,24 +21,28 @@
 			v-if="input_value"
 			class="absolute top-0 flex h-9 w-full cursor-text items-center border border-transparent px-3 text-sm leading-6"
 		>
-			<span class="mr-1 font-medium">{{ filter_left }}</span>
+			<span class="mr-1 font-medium">
+				{{ left_input }}
+			</span>
 
 			<span
-				v-if="left_selected && !filter_operator"
+				v-if="is_left_selected && !operator_input"
 				class="mr-1 font-light italic text-gray-500"
 			>
 				{{ placeholder }}
 			</span>
-			<span v-else class="mr-1 font-light"> {{ filter_operator }} </span>
+			<span v-else class="mr-1 font-light">
+				{{ operator_input }}
+			</span>
 
 			<span
-				v-if="left_selected && operator_selected && !filter_right"
+				v-if="is_left_selected && is_operator_selected && !right_input"
 				class="mr-1 font-light italic text-gray-500"
 			>
 				{{ placeholder }}
 			</span>
-			<span v-else class="font-semibold text-green-600">
-				{{ filter_right }}
+			<span v-else class="font-semibold">
+				{{ right_input }}
 			</span>
 		</div>
 		<div
@@ -49,7 +53,7 @@
 				name="check-circle"
 				class="h-4 w-4 cursor-pointer text-gray-400"
 				:class="{
-					'text-green-500': filter_left && filter_operator && filter_right,
+					'text-green-500': left_input && operator_input && right_input,
 				}"
 				aria-hidden="true"
 			/>
@@ -76,8 +80,8 @@
 					<div class="flex items-center">
 						<div class="font-semibold">{{ item.label }}</div>
 					</div>
-					<div v-if="item.table" class="flex font-light text-gray-500">
-						{{ item.table }}&nbsp;&#8226;&nbsp;{{ item.type }}
+					<div v-if="item.table_label" class="flex font-light text-gray-500">
+						{{ item.table_label }}&nbsp;&#8226;&nbsp;{{ item.type }}
 					</div>
 				</div>
 			</div>
@@ -87,12 +91,17 @@
 
 <script>
 export default {
-	props: ['tables', 'should_focus'],
+	props: ['tables', 'should_focus', 'query'],
 	data() {
 		return {
 			focused: false,
 			input_value: '',
 			delimiter: ';',
+			filter: {
+				left: {},
+				operator: {},
+				right: {},
+			},
 		}
 	},
 	mounted() {
@@ -108,80 +117,125 @@ export default {
 		})
 	},
 	resources: {
-		column_list() {
-			return {
-				method: 'analytics.api.get_column_list',
-				params: {
-					tables: this.tables,
-				},
-				auto: true,
-				onSuccess() {
-					this.column_list.forEach((c) => (c.is_left = true))
-				},
-			}
-		},
 		operator_list() {
 			return {
 				method: 'analytics.api.get_operator_list',
-				onSuccess() {
-					this.operator_list.forEach((o) => (o.is_operator = true))
-				},
 			}
 		},
 	},
 	computed: {
 		column_list() {
-			// Column: { label, table, column, type }
-			return this.$resources.column_list.data || []
+			// Column: { label, table, table_label, column, type }
+			return this.query.get_selectable_columns?.data?.message || []
+		},
+		placeholder() {
+			const [left, operator, right] = this.input_value.split(this.delimiter)
+			if (!this.is_left_selected) {
+				return 'Select a column...'
+			} else if (this.is_left_selected && !operator) {
+				return 'select an operator...'
+			} else if (this.is_left_selected && this.is_operator_selected && !right) {
+				return !this.filter.right.value_type
+					? 'select value type...'
+					: this.filter.right.value_type == 'Column'
+					? 'select a column...'
+					: 'type a value...'
+			}
 		},
 		operator_list() {
 			// Operator: { label, value }
 			return this.$resources.operator_list.data || []
 		},
-		placeholder() {
-			const [left, operator, right] = this.input_value.split(this.delimiter)
-			if (!this.left_selected) {
-				return 'Select a column...'
-			} else if (this.left_selected && !operator) {
-				return 'select an operator...'
-			} else if (this.left_selected && this.operator_selected && !right) {
-				return 'type a string value...'
-			}
-		},
-		left_selected() {
+		is_left_selected() {
 			const regex = RegExp(`${this.delimiter}`, 'g')
 			return (this.input_value.match(regex) || []).length > 0
 		},
-		operator_selected() {
+		is_operator_selected() {
 			const regex = RegExp(`${this.delimiter}`, 'g')
 			return (this.input_value.match(regex) || []).length > 1
 		},
-		filter_left() {
+		is_right_selected() {
+			const regex = RegExp(`${this.delimiter}`, 'g')
+			return (this.input_value.match(regex) || []).length > 2
+		},
+		left_input() {
 			return this.input_value.split(this.delimiter)[0]
 		},
-		filter_operator() {
-			return (this.input_value.split(this.delimiter)[1] || '').toLowerCase()
+		operator_input() {
+			return this.input_value.split(this.delimiter)[1] || ''
 		},
-		filter_right() {
+		right_input() {
 			return this.input_value.split(this.delimiter)[2]
 		},
 		suggestions() {
 			const [left, operator, right] = this.input_value.split(this.delimiter)
+			let suggestions = []
 
-			if (!this.left_selected) {
-				return left
+			if (!this.is_left_selected) {
+				suggestions = left
 					? this.column_list.filter((c) =>
 							c.label.toLowerCase().includes(left.toLowerCase())
 					  )
 					: this.column_list
-			} else if (!this.operator_selected) {
-				return operator
-					? this.operator_list.filter((o) =>
-							o.label.toLowerCase().includes(operator.toLowerCase())
-					  )
+				suggestions = suggestions.map((s) => ({
+					...s,
+					is_left: true,
+				}))
+			} else if (!this.is_operator_selected) {
+				suggestions = operator
+					? this.operator_list.filter((o) => o.label.includes(operator))
 					: this.operator_list
-			} else {
-				return []
+				suggestions = suggestions.map((s) => ({
+					...s,
+					is_operator: true,
+				}))
+			} else if (!this.is_right_selected) {
+				if (this.filter.right.value_type == 'Column') {
+					suggestions = right
+						? this.column_list.filter((c) =>
+								c.label.toLowerCase().includes(right.toLowerCase())
+						  )
+						: this.column_list
+				} else if (this.filter.right.value_type == 'String') {
+					suggestions = []
+				} else {
+					suggestions = [{ label: 'String' }, { label: 'Column' }]
+				}
+				suggestions = suggestions.map((s) => ({
+					...s,
+					is_right: true,
+				}))
+			}
+
+			if (suggestions?.length > 20) {
+				suggestions = suggestions.slice(0, 20)
+			}
+
+			return suggestions
+		},
+	},
+	watch: {
+		focused(is_focused) {
+			if (is_focused && !this.is_left_selected) {
+				this.query.get_selectable_columns.fetch({ tables: this.tables })
+			}
+		},
+		is_left_selected(newVal, oldVal) {
+			if (!newVal && newVal !== oldVal) {
+				this.filter.left = {}
+				this.filter.operator = {}
+				this.filter.right = {}
+			}
+		},
+		is_operator_selected(newVal, oldVal) {
+			if (!newVal && newVal !== oldVal) {
+				this.filter.operator = {}
+				this.filter.right = {}
+			}
+		},
+		is_right_selected(newVal, oldVal) {
+			if (!newVal && newVal !== oldVal) {
+				this.filter.right = {}
 			}
 		},
 	},
@@ -190,9 +244,19 @@ export default {
 			if (suggestion.is_left) {
 				this.$resources.operator_list.submit({ fieldtype: suggestion.type })
 				this.input_value = `${suggestion.label}${this.delimiter}`
+				this.filter.left = suggestion
 			} else if (suggestion.is_operator) {
-				const operator = suggestion.label.toLowerCase()
-				this.input_value = `${this.filter_left}${this.delimiter}${operator}${this.delimiter}`
+				this.input_value = `${this.left_input}${this.delimiter}${suggestion.label}${this.delimiter}`
+				this.filter.operator = suggestion
+			} else if (suggestion.is_right && !this.filter.right.value_type) {
+				this.filter.right.value_type = suggestion.label
+				this.input_value = `${this.left_input}${this.delimiter}${this.operator_input}${this.delimiter}`
+			} else if (
+				suggestion.is_right &&
+				this.filter.right.value_type == 'Column'
+			) {
+				this.input_value = `${this.left_input}${this.delimiter}${this.operator_input}${this.delimiter}${suggestion.label}${this.delimiter}`
+				this.filter.right = { ...suggestion, value_type: 'Column' }
 			}
 		},
 		on_backspace(e) {
@@ -210,25 +274,23 @@ export default {
 			}
 		},
 		on_enter() {
-			if (this.filter_left && this.filter_operator && this.filter_right) {
-				const left_suggestion = this.column_list.find(
-					(c) => c.label.toLowerCase() === this.filter_left.toLowerCase()
-				)
-				const operator_suggestion = this.operator_list.find(
-					(o) => o.label.toLowerCase() === this.filter_operator.toLowerCase()
-				)
-				this.$emit('filter_selected', {
-					left_table: left_suggestion.table,
-					left_label: this.filter_left,
-					left_value: left_suggestion.column,
-					operator: this.filter_operator,
-					operator_value: operator_suggestion.value,
-					right_label: this.filter_right,
-					right_value: this.filter_right,
-				})
+			if (this.filter.right.value_type == 'String')
+				this.filter.right.value = this.right_input
+
+			if (
+				this.filter.left.column &&
+				this.filter.operator.value &&
+				(this.filter.right.column || this.filter.right.value)
+			) {
+				this.$emit('filter_selected', this.filter)
 				this.input_value = ''
 				this.focused = false
 				this.$refs.filter_search?.blur()
+				this.filter = {
+					left: {},
+					operator: {},
+					right: {},
+				}
 			}
 		},
 	},

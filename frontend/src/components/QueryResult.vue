@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 rounded-md bg-white p-4 text-base shadow">
+	<div class="flex h-full flex-1 rounded-md bg-white p-4 text-base shadow">
 		<div
 			v-if="!result || result.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
@@ -8,10 +8,10 @@
 		</div>
 		<div
 			v-else
-			class="h-fit overflow-hidden rounded-md shadow ring-1 ring-black ring-opacity-5"
+			class="h-full overflow-y-scroll rounded-md shadow ring-1 ring-black ring-opacity-5"
 		>
 			<table class="min-w-full divide-y divide-gray-300">
-				<thead class="bg-gray-50">
+				<thead class="sticky top-0 bg-gray-50">
 					<tr class="divide-x divide-gray-200">
 						<th
 							class="whitespace-nowrap px-2 py-1 text-left font-normal text-gray-500"
