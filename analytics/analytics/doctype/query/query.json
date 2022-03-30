@@ -38,7 +38,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "{\n\tgroup_operator: 'All',\n\tlevel: 1,\n\tconditions: [],\n}",
+   "default": "{\n\t\"group_operator\": \"All\",\n\t\"level\": 1,\n\t\"conditions\": []\n}",
    "fieldname": "filters",
    "fieldtype": "Code",
    "label": "Filters",
@@ -113,7 +113,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-27 11:34:33.579926",
+ "modified": "2022-03-30 03:44:24.449644",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",
