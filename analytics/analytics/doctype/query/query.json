@@ -49,8 +49,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Title",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "default": "10",
@@ -113,7 +112,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-30 03:44:24.449644",
+ "modified": "2022-04-06 02:25:54.377188",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",
