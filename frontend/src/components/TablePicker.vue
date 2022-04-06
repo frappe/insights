@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col rounded-md bg-white p-4 shadow">
+	<div class="flex flex-1 flex-col p-4">
 		<TablePickerSearch
 			class="mb-4"
 			:query="query"
@@ -15,7 +15,7 @@
 			<div
 				v-for="(table, list_idx) in selected_tables"
 				:key="list_idx"
-				class="menu-item flex h-10 cursor-default items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
+				class="menu-item flex h-10 cursor-pointer items-center justify-between border-b border-gray-300 pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
 				<div class="flex items-baseline">

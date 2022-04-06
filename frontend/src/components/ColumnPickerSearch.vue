@@ -5,6 +5,7 @@
 			<Input
 				type="text"
 				name="column-search"
+				autocomplete="off"
 				class="block h-9 w-full rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
 				placeholder="Add a column..."
 				v-model="search_term"

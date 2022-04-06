@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col rounded-md bg-white p-4 shadow">
+	<div class="flex flex-1 flex-col p-4">
 		<FilterPickerSearch
 			class="mb-4"
 			ref="filter_search"

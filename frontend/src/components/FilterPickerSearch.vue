@@ -5,6 +5,7 @@
 			type="text"
 			ref="filter_search"
 			spellcheck="false"
+			autocomplete="off"
 			class="form-input block h-9 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-white focus:shadow"
 			:class="{
 				'font-semibold': right_input,

@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-1 flex-col py-10" v-if="query">
+	<div class="flex flex-col pt-10" v-if="query">
 		<header>
 			<div
-				class="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+				class="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
 			>
 				<div class="relative flex flex-col items-start">
 					<input
@@ -34,31 +34,32 @@
 				</div>
 			</div>
 		</header>
-		<main class="flex flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 py-8 sm:px-6 lg:px-8">
-				<div class="grid flex-1 grid-flow-row gap-4">
-					<div class="grid h-80 gap-4 sm:grid-cols-1 lg:grid-cols-3">
-						<TablePicker
-							:query="$resources.query"
-							:tables="tables"
-							@update:tables="on_table_update"
-						/>
-						<ColumnPicker
-							:query="$resources.query"
-							:tables="tables"
-							:columns="columns"
-							@update:columns="on_column_update"
-						/>
-						<FilterPicker
-							:query="$resources.query"
-							:tables="tables"
-							:filters="filters"
-							@update:filters="on_filter_update"
-						/>
-					</div>
-					<div class="flex h-96">
-						<QueryResult :result="result" />
-					</div>
+		<!-- height = 100% - (padding-top + header height)  -->
+		<main class="flex h-[calc(100%-5.5rem)] flex-1">
+			<div
+				class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 py-8 sm:px-6 lg:px-8"
+			>
+				<div class="flex h-1/2 divide-x rounded-md bg-white shadow">
+					<TablePicker
+						:query="$resources.query"
+						:tables="tables"
+						@update:tables="on_table_update"
+					/>
+					<ColumnPicker
+						:query="$resources.query"
+						:tables="tables"
+						:columns="columns"
+						@update:columns="on_column_update"
+					/>
+					<FilterPicker
+						:query="$resources.query"
+						:tables="tables"
+						:filters="filters"
+						@update:filters="on_filter_update"
+					/>
+				</div>
+				<div class="h-1/2 flex-1 rounded-md bg-white shadow">
+					<QueryResult :result="result" />
 				</div>
 			</div>
 		</main>

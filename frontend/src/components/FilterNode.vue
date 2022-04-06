@@ -32,7 +32,7 @@
 				</div>
 				<div
 					v-else
-					class="group menu-item flex w-fit cursor-pointer items-center"
+					class="group menu-item -ml-1 flex w-fit cursor-pointer items-center rounded-md px-2 hover:bg-gray-50"
 					@click="menu_open_for = idx"
 				>
 					<div class="flex h-8 items-center whitespace-nowrap rounded-md">

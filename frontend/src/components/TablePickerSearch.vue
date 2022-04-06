@@ -5,6 +5,7 @@
 			<Input
 				type="text"
 				name="table-search"
+				autocomplete="off"
 				class="block h-9 w-full rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
 				placeholder="Select a table..."
 				v-model="search_term"
@@ -73,11 +74,11 @@ export default {
 				(row) =>
 					row.label.toLowerCase().indexOf(this.search_term.toLowerCase()) !== -1
 			)
-			if (suggestions?.length > 20) {
-				return suggestions.slice(0, 20)
-			} else {
-				return suggestions
-			}
+			// if (suggestions?.length > 20) {
+			// 	return suggestions.slice(0, 30)
+			// } else {
+			return suggestions
+			// }
 		},
 	},
 	methods: {

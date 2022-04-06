@@ -1,5 +1,7 @@
 <template>
-	<div class="flex h-full flex-1 rounded-md bg-white p-4 text-base shadow">
+	<div
+		class="flex h-full flex-1 select-text rounded-md bg-white p-4 text-base shadow"
+	>
 		<div
 			v-if="!result || result.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"

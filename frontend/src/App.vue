@@ -2,10 +2,9 @@
 	<div class="flex h-screen select-none font-sans text-gray-800">
 		<Sidebar />
 
-		<div class="flex flex-1 flex-col pl-64">
+		<div class="flex h-full flex-1 flex-col pl-64">
 			<Topbar />
-
-			<router-view class="flex flex-1 flex-col" />
+			<router-view class="flex h-[calc(100vh-4rem)] flex-col" />
 		</div>
 
 		<NotificationToasts />
