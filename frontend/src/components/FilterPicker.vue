@@ -38,11 +38,6 @@ export default {
 		FilterPickerSearch,
 		FilterNode,
 	},
-	data() {
-		return {
-			filters: this.filters,
-		}
-	},
 	methods: {
 		get_filter_group_at(level) {
 			// find the filter group at the given level
