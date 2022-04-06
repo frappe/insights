@@ -35,17 +35,19 @@
 					class="group menu-item -ml-1 flex w-fit cursor-pointer items-center rounded-md px-2 hover:bg-gray-50"
 					@click="menu_open_for = idx"
 				>
-					<div class="flex h-8 items-center whitespace-nowrap rounded-md">
-						<div class="pr-1 font-medium">
-							{{ condition.left.label }}
+					<div
+						class="flex h-8 items-center whitespace-nowrap rounded-md font-normal"
+					>
+						<div>
+							{{ condition.left.table_label }} - {{ condition.left.label }}
 						</div>
-						<div class="pr-1 text-xs font-light">
+						<div class="mx-2 pt-0.5 text-sm text-green-600">
 							{{ condition.operator.label }}
 						</div>
-						<div class="font-medium text-green-600">
+						<div>
 							{{
 								condition.right.value_type == 'Column'
-									? condition.right.label
+									? `${condition.right.table_label} - ${condition.right.label}`
 									: condition.right.value
 							}}
 						</div>

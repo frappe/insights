@@ -18,16 +18,22 @@ class Query(Document):
         # TODO: validate if a column is an expression and aggregation is "group by"
         pass
 
-    @frappe.whitelist()
-    def update_tables(self, updated_tables):
+    def update_tables(self, updated_columns):
+        updated_tables = [
+            {
+                "table": column.get("table"),
+                "label": column.get("table_label"),
+            }
+            for column in updated_columns
+        ]
         # remove the tables from self.tables if not present in updated_tables
-        table_names = [row.get("label") for row in updated_tables]
+        table_names = [row.get("table") for row in updated_tables]
         for table in [d for d in self.tables if d.get("table") not in table_names]:
             self.remove(table)
 
         # add the tables to self.tables if not already present
         table_names = [row.table for row in self.tables]
-        for row in [d for d in updated_tables if d.get("label") not in table_names]:
+        for row in [d for d in updated_tables if d.get("table") not in table_names]:
             self.append(
                 "tables",
                 {
@@ -36,10 +42,10 @@ class Query(Document):
                 },
             )
 
-        self.save()
-
     @frappe.whitelist()
     def update_columns(self, updated_columns):
+        self.update_tables(updated_columns)
+
         # remove the columns from self.columns if not present in updated_columns
         column_names = [row.get("column") for row in updated_columns]
         for row in [d for d in self.columns if d.get("column") not in column_names]:

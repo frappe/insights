@@ -40,14 +40,8 @@
 				class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 py-8 sm:px-6 lg:px-8"
 			>
 				<div class="flex h-1/2 divide-x rounded-md bg-white shadow">
-					<TablePicker
-						:query="$resources.query"
-						:tables="tables"
-						@update:tables="on_table_update"
-					/>
 					<ColumnPicker
 						:query="$resources.query"
-						:tables="tables"
 						:columns="columns"
 						@update:columns="on_column_update"
 					/>
@@ -67,7 +61,6 @@
 </template>
 
 <script>
-import TablePicker from '@/components/TablePicker.vue'
 import ColumnPicker from '@/components/ColumnPicker.vue'
 import FilterPicker from '@/components/FilterPicker.vue'
 import QueryResult from '@/components/QueryResult.vue'
@@ -77,7 +70,6 @@ export default {
 	props: ['query_id'],
 	components: {
 		ColumnPicker,
-		TablePicker,
 		FilterPicker,
 		QueryResult,
 	},
@@ -102,7 +94,6 @@ export default {
 				doctype: 'Query',
 				name: this.query_id,
 				whitelistedMethods: {
-					update_tables: 'update_tables',
 					update_columns: 'update_columns',
 					update_filters: 'update_filters',
 					get_selectable_tables: 'get_selectable_tables',
@@ -145,9 +136,6 @@ export default {
 		},
 	},
 	computed: {
-		table_names() {
-			return this.tables.map((table) => table.label)
-		},
 		query() {
 			return this.$resources.query.doc
 		},
@@ -179,9 +167,6 @@ export default {
 				)
 			}
 			this.$refs.title_input.blur()
-		},
-		on_table_update(updated_tables) {
-			this.$resources.query.update_tables.submit({ updated_tables })
 		},
 		on_column_update(updated_columns) {
 			this.$resources.query.update_columns.submit({ updated_columns })

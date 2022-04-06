@@ -65,7 +65,11 @@ class DataSource(Document):
         self.create_db_instance()
         self.db_instance.connect()
         columns = self.db_instance.sql(
-            """select column_name, data_type from information_schema.columns where table_name = %s """,
+            """
+                select column_name, data_type
+                from information_schema.columns
+                where table_name = %s order by column_name
+            """,
             table.get("table"),
             as_dict=1,
         )

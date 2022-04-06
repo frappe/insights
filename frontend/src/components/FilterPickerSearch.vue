@@ -58,6 +58,12 @@
 				}"
 				aria-hidden="true"
 			/>
+			<FeatherIcon
+				v-else
+				name="search"
+				class="h-4 w-4 text-gray-400"
+				aria-hidden="true"
+			/>
 		</div>
 
 		<transition
@@ -75,7 +81,7 @@
 				<div
 					v-for="item in suggestions"
 					:key="item.label"
-					class="suggestion flex cursor-default items-center justify-between rounded-md px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+					class="filter-picker-suggestion flex cursor-default items-center justify-between rounded-md px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
 					@click.prevent="on_suggestion_select(item)"
 				>
 					<div class="flex items-center">
@@ -110,7 +116,7 @@ export default {
 		document.addEventListener('click', (e) => {
 			if (
 				e.target.closest('.filter-search') ||
-				e.target.classList.contains('suggestion')
+				e.target.classList.contains('filter-picker-suggestion')
 			) {
 				return this.$refs.filter_search?.focus()
 			}
@@ -208,8 +214,8 @@ export default {
 				}))
 			}
 
-			if (suggestions?.length > 20) {
-				suggestions = suggestions.slice(0, 20)
+			if (suggestions?.length > 50) {
+				suggestions = suggestions.slice(0, 50)
 			}
 
 			return suggestions
