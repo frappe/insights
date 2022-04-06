@@ -58,7 +58,7 @@ export default {
 					path: '/query',
 					label: 'Queries',
 					icon: 'columns',
-					name: 'Builder',
+					name: 'QueryBuilder',
 				},
 				{
 					path: '/settings',

@@ -73,7 +73,7 @@ import FilterPicker from '@/components/FilterPicker.vue'
 import QueryResult from '@/components/QueryResult.vue'
 
 export default {
-	name: 'Builder',
+	name: 'QueryBuilder',
 	props: ['query_id'],
 	components: {
 		ColumnPicker,
