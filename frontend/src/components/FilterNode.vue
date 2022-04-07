@@ -41,7 +41,7 @@
 						<div>
 							{{ condition.left.table_label }} - {{ condition.left.label }}
 						</div>
-						<div class="mx-2 pt-0.5 text-sm text-green-600">
+						<div class="mx-2 text-sm text-green-600">
 							{{ condition.operator.label }}
 						</div>
 						<div>

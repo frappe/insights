@@ -21,9 +21,52 @@ def get_queries():
 
 @frappe.whitelist()
 def get_operator_list(fieldtype):
-    return [
-        {"label": "equals", "value": "="},
-    ]
+    operator_list = []
+    text_data_types = ("char", "varchar", "enum", "text", "longtext")
+    number_data_types = ("int", "decimal", "bigint", "float", "double")
+    date_data_types = ("date", "datetime", "time", "timestamp")
+
+    fieldtype = fieldtype.lower()
+    if fieldtype in text_data_types:
+        operator_list += [
+            {"label": "equals", "value": "="},
+            {"label": "not equals", "value": "!="},
+            {"label": "like", "value": "like"},
+            {"label": "not like", "value": "not like"},
+            {"label": "in", "value": "in"},
+            {"label": "not in", "value": "not in"},
+            {"label": "is set", "value": "is set"},
+            {"label": "is not set", "value": "is not set"},
+        ]
+    if fieldtype in number_data_types:
+        operator_list = [
+            {"label": "equals", "value": "="},
+            {"label": "not equals", "value": "!="},
+            {"label": "in", "value": "in"},
+            {"label": "not in", "value": "not in"},
+            {"label": "is set", "value": "is set"},
+            {"label": "is not set", "value": "is not set"},
+            {"label": "greater than", "value": ">"},
+            {"label": "smaller than", "value": "<"},
+            {"label": "greater than equal to", "value": ">="},
+            {"label": "smaller than equal to", "value": "<="},
+            {"label": "between", "value": "between"},
+        ]
+
+    if fieldtype in date_data_types:
+        operator_list = [
+            {"label": "equals", "value": "="},
+            {"label": "not equals", "value": "!="},
+            {"label": "is set", "value": "is set"},
+            {"label": "is not set", "value": "is not set"},
+            {"label": "greater than", "value": ">"},
+            {"label": "smaller than", "value": "<"},
+            {"label": "greater than equal to", "value": ">="},
+            {"label": "smaller than equal to", "value": "<="},
+            {"label": "between", "value": "between"},
+        ]
+
+    return operator_list
 
 
 @frappe.whitelist()
