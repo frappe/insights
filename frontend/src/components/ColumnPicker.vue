@@ -1,11 +1,6 @@
 <template>
 	<div class="flex flex-1 flex-col p-4">
-		<ColumnPickerSearch
-			class="mb-4"
-			@column_selected="on_column_select"
-			:tables="tables"
-			:query="query"
-		/>
+		<ColumnPickerSearch class="mb-4" @column_selected="on_column_select" :tables="tables" :query="query" />
 		<div
 			v-if="selected_columns.length == 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
@@ -20,10 +15,7 @@
 				@click="menu_open_for = list_idx"
 			>
 				<div class="flex items-baseline">
-					<span
-						v-if="column.aggregation"
-						class="my-0 flex-1 whitespace-nowrap font-medium text-blue-700"
-					>
+					<span v-if="column.aggregation" class="my-0 flex-1 whitespace-nowrap font-medium text-blue-700">
 						{{ column.aggregation }}&nbsp;&#8226;&nbsp;
 					</span>
 					<div class="text-base font-semibold">
@@ -31,9 +23,7 @@
 					</div>
 				</div>
 				<div class="flex items-center">
-					<div class="mr-1 font-light text-gray-500">
-						{{ column.table_label }}&nbsp;&#8226;&nbsp;{{ column.type }}
-					</div>
+					<div class="mr-1 font-light text-gray-500">{{ column.table_label }}&nbsp;&#8226;&nbsp;{{ column.type }}</div>
 
 					<div class="relative cursor-pointer rounded-md px-2 py-1">
 						<MenuIcon />
@@ -133,9 +123,7 @@ export default {
 		on_column_select(column) {
 			// check if column exists in selected_columns, if not then push
 			const column_exists = this.selected_columns.find(
-				(selected_column) =>
-					selected_column.label === column.label &&
-					selected_column.table === column.table
+				(selected_column) => selected_column.label === column.label && selected_column.table === column.table
 			)
 			if (!column_exists) {
 				this.selected_columns.push(column)

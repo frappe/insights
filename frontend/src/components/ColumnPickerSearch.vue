@@ -22,19 +22,14 @@
 		>
 			<span class="mr-1">{{ table_input }}</span>
 
-			<span
-				v-if="is_left_selected && !column_input"
-				class="mr-1 font-light italic text-gray-500"
-			>
+			<span v-if="is_left_selected && !column_input" class="mr-1 font-light italic text-gray-500">
 				Select a column...
 			</span>
 			<span v-if="column_input" class="mr-1">
 				{{ column_input }}
 			</span>
 		</div>
-		<div
-			class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
-		>
+		<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 			<FeatherIcon
 				v-if="focused && input_value"
 				name="check-circle"
@@ -44,12 +39,7 @@
 				}"
 				aria-hidden="true"
 			/>
-			<FeatherIcon
-				v-else
-				name="search"
-				class="h-4 w-4 text-gray-400"
-				aria-hidden="true"
-			/>
+			<FeatherIcon v-else name="search" class="h-4 w-4 text-gray-400" aria-hidden="true" />
 		</div>
 
 		<transition
@@ -75,10 +65,7 @@
 							{{ suggestion.label }}
 						</div>
 					</div>
-					<div
-						v-if="suggestion.is_column"
-						class="flex font-light text-gray-500"
-					>
+					<div v-if="suggestion.is_column" class="flex font-light text-gray-500">
 						{{ suggestion.table_label }}&nbsp;&#8226;&nbsp;{{ suggestion.type }}
 					</div>
 				</div>
@@ -102,10 +89,7 @@ export default {
 	mounted() {
 		// detect click outside of input
 		document.addEventListener('click', (e) => {
-			if (
-				e.target.closest('.column-search') ||
-				e.target.classList.contains('column-picker-suggestion')
-			) {
+			if (e.target.closest('.column-search') || e.target.classList.contains('column-picker-suggestion')) {
 				return this.$refs.column_search?.focus()
 			}
 			this.focused = false
@@ -156,9 +140,7 @@ export default {
 
 			if (!this.is_table_selected) {
 				suggestions = table
-					? this.table_list.filter((c) =>
-							c.label.toLowerCase().includes(table.toLowerCase())
-					  )
+					? this.table_list.filter((c) => c.label.toLowerCase().includes(table.toLowerCase()))
 					: this.table_list
 				suggestions = suggestions.map((s) => ({
 					...s,
@@ -166,9 +148,7 @@ export default {
 				}))
 			} else if (!this.is_column_selected) {
 				suggestions = column
-					? this.column_list.filter((o) =>
-							o.label.toLowerCase().includes(column.toLowerCase())
-					  )
+					? this.column_list.filter((o) => o.label.toLowerCase().includes(column.toLowerCase()))
 					: this.column_list
 				suggestions = suggestions.map((s) => ({
 					...s,

@@ -26,10 +26,7 @@
 				{{ left_input }}
 			</span>
 
-			<span
-				v-if="is_left_selected && !operator_input"
-				class="mr-1 font-light italic text-gray-500"
-			>
+			<span v-if="is_left_selected && !operator_input" class="mr-1 font-light italic text-gray-500">
 				{{ placeholder }}
 			</span>
 			<span v-else class="mr-1 font-light">
@@ -46,9 +43,7 @@
 				{{ right_input }}
 			</span>
 		</div>
-		<div
-			class="absolute inset-y-0 right-0 flex items-center pr-3 transition-all hover:scale-110"
-		>
+		<div class="absolute inset-y-0 right-0 flex items-center pr-3 transition-all hover:scale-110">
 			<FeatherIcon
 				v-if="focused && input_value"
 				name="check-circle"
@@ -58,12 +53,7 @@
 				}"
 				aria-hidden="true"
 			/>
-			<FeatherIcon
-				v-else
-				name="search"
-				class="h-4 w-4 text-gray-400"
-				aria-hidden="true"
-			/>
+			<FeatherIcon v-else name="search" class="h-4 w-4 text-gray-400" aria-hidden="true" />
 		</div>
 
 		<transition
@@ -114,10 +104,7 @@ export default {
 	mounted() {
 		// detect click outside of input
 		document.addEventListener('click', (e) => {
-			if (
-				e.target.closest('.filter-search') ||
-				e.target.classList.contains('filter-picker-suggestion')
-			) {
+			if (e.target.closest('.filter-search') || e.target.classList.contains('filter-picker-suggestion')) {
 				return this.$refs.filter_search?.focus()
 			}
 			this.focused = false
@@ -180,18 +167,14 @@ export default {
 
 			if (!this.is_left_selected) {
 				suggestions = left
-					? this.column_list.filter((c) =>
-							c.label.toLowerCase().includes(left.toLowerCase())
-					  )
+					? this.column_list.filter((c) => c.label.toLowerCase().includes(left.toLowerCase()))
 					: this.column_list
 				suggestions = suggestions.map((s) => ({
 					...s,
 					is_left: true,
 				}))
 			} else if (!this.is_operator_selected) {
-				suggestions = operator
-					? this.operator_list.filter((o) => o.label.includes(operator))
-					: this.operator_list
+				suggestions = operator ? this.operator_list.filter((o) => o.label.includes(operator)) : this.operator_list
 				suggestions = suggestions.map((s) => ({
 					...s,
 					is_operator: true,
@@ -199,9 +182,7 @@ export default {
 			} else if (!this.is_right_selected) {
 				if (this.filter.right.value_type == 'Column') {
 					suggestions = right
-						? this.column_list.filter((c) =>
-								c.label.toLowerCase().includes(right.toLowerCase())
-						  )
+						? this.column_list.filter((c) => c.label.toLowerCase().includes(right.toLowerCase()))
 						: this.column_list
 				} else if (this.filter.right.value_type == 'String') {
 					suggestions = []
@@ -258,10 +239,7 @@ export default {
 			} else if (suggestion.is_right && !this.filter.right.value_type) {
 				this.filter.right.value_type = suggestion.label
 				this.input_value = `${this.left_input}${this.delimiter}${this.operator_input}${this.delimiter}`
-			} else if (
-				suggestion.is_right &&
-				this.filter.right.value_type == 'Column'
-			) {
+			} else if (suggestion.is_right && this.filter.right.value_type == 'Column') {
 				this.input_value = `${this.left_input}${this.delimiter}${this.operator_input}${this.delimiter}${suggestion.label}${this.delimiter}`
 				this.filter.right = { ...suggestion, value_type: 'Column' }
 			}
@@ -281,8 +259,7 @@ export default {
 			}
 		},
 		on_enter() {
-			if (this.filter.right.value_type == 'String')
-				this.filter.right.value = this.right_input
+			if (this.filter.right.value_type == 'String') this.filter.right.value = this.right_input
 
 			if (
 				this.filter.left.column &&

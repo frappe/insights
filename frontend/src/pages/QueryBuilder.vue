@@ -1,9 +1,7 @@
 <template>
 	<div class="flex flex-col pt-10" v-if="query">
 		<header>
-			<div
-				class="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
-			>
+			<div class="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 				<div class="relative flex flex-col items-start">
 					<input
 						type="text"
@@ -21,30 +19,20 @@
 					>
 						{{ title }}
 						<FeatherIcon
-							:name="
-								$resources.query.setValueDebounced.loading ? 'loader' : 'edit-2'
-							"
+							:name="$resources.query.setValueDebounced.loading ? 'loader' : 'edit-2'"
 							class="ml-3 h-3.5 w-3.5 cursor-pointer text-gray-500 peer-focus:invisible"
 							@click="$refs.title_input.focus()"
 						/>
 					</div>
-					<div class="text-sm text-gray-600/80">
-						Data Source: {{ data_source }}
-					</div>
+					<div class="text-sm text-gray-600/80">Data Source: {{ data_source }}</div>
 				</div>
 			</div>
 		</header>
 		<!-- height = 100% - (padding-top + header height)  -->
 		<main class="flex h-[calc(100%-5.5rem)] flex-1">
-			<div
-				class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 py-8 sm:px-6 lg:px-8"
-			>
+			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 py-8 sm:px-6 lg:px-8">
 				<div class="flex h-1/2 divide-x rounded-md bg-white shadow">
-					<ColumnPicker
-						:query="$resources.query"
-						:columns="columns"
-						@update:columns="on_column_update"
-					/>
+					<ColumnPicker :query="$resources.query" :columns="columns" @update:columns="on_column_update" />
 					<FilterPicker
 						:query="$resources.query"
 						:tables="tables"

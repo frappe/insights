@@ -1,8 +1,6 @@
 <template>
 	<div class="fixed inset-y-0 flex w-64 flex-col" v-if="current_route">
-		<div
-			class="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5"
-		>
+		<div class="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
 			<div class="flex flex-shrink-0 items-center px-5">
 				<FrappeAnalyticsLogo />
 			</div>
@@ -13,9 +11,7 @@
 						:key="route.path"
 						:to="route.path"
 						:class="[
-							route.current
-								? 'bg-gray-100 text-gray-900'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+							route.current ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
 							'group flex items-center rounded-md px-2 py-2 text-sm font-medium',
 						]"
 						aria-current="page"
@@ -23,9 +19,7 @@
 						<FeatherIcon
 							:name="route.icon"
 							:class="[
-								route.current
-									? 'text-gray-500'
-									: 'text-gray-400 group-hover:text-gray-500',
+								route.current ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500',
 								'mr-3 h-4 w-4 flex-shrink-0',
 							]"
 						/>

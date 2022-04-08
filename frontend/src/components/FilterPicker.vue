@@ -7,10 +7,7 @@
 			:query="query"
 			:tables="tables"
 		/>
-		<div
-			v-if="filters.conditions && filters.conditions.length"
-			class="mx-2 flex flex-1 select-none flex-col"
-		>
+		<div v-if="filters.conditions && filters.conditions.length" class="mx-2 flex flex-1 select-none flex-col">
 			<FilterNode
 				:filters="filters"
 				@toggle_group_operator="toggle_group_operator"
@@ -45,9 +42,7 @@ export default {
 			let _level = 1
 
 			while (_level < level) {
-				const _filter_group = filter_group.conditions.find(
-					(f) => f.level == _level + 1
-				)
+				const _filter_group = filter_group.conditions.find((f) => f.level == _level + 1)
 				if (_filter_group) {
 					filter_group = _filter_group
 					_level += 1
@@ -61,8 +56,7 @@ export default {
 		},
 		toggle_group_operator({ level }) {
 			if (level == 1) {
-				this.filters.group_operator =
-					this.filters.group_operator == 'All' ? 'Any' : 'All'
+				this.filters.group_operator = this.filters.group_operator == 'All' ? 'Any' : 'All'
 				this.$emit('update:filters', this.filters)
 				return
 			}

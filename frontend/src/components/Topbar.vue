@@ -9,22 +9,12 @@
 					class="block h-full w-96 rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
 					placeholder="Search"
 				/>
-				<div
-					class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
-				>
-					<FeatherIcon
-						name="search"
-						class="h-4 w-4 text-gray-400"
-						aria-hidden="true"
-					/>
+				<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+					<FeatherIcon name="search" class="h-4 w-4 text-gray-400" aria-hidden="true" />
 				</div>
 			</div>
 			<div class="ml-6 flex h-full cursor-pointer items-center">
-				<FeatherIcon
-					name="bell"
-					class="h-5 w-5 text-gray-600"
-					aria-hidden="true"
-				/>
+				<FeatherIcon name="bell" class="h-5 w-5 text-gray-600" aria-hidden="true" />
 			</div>
 			<div class="ml-6 flex h-full cursor-pointer items-center">
 				<img

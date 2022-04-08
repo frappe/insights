@@ -1,31 +1,20 @@
 <template>
 	<div class="text-base text-gray-800">
-		<div
-			class="group flex items-baseline py-1 text-sm font-medium"
-			:class="{ 'pl-1': level != 1 }"
-		>
+		<div class="group flex items-baseline py-1 text-sm font-medium" :class="{ 'pl-1': level != 1 }">
 			<span
 				class="mr-1 flex cursor-pointer items-center border-gray-200 group-hover:underline"
 				@click="$emit('toggle_group_operator', { level })"
 			>
 				{{ group_operator }}
 			</span>
-			<span class="text-xs font-light text-gray-500">
-				of the following are true
-			</span>
+			<span class="text-xs font-light text-gray-500"> of the following are true </span>
 		</div>
 		<ul v-if="conditions && conditions.length" class="flex flex-col pl-4">
-			<li
-				v-for="(condition, idx) in conditions"
-				:key="idx"
-				class="list-disc marker:text-gray-400"
-			>
+			<li v-for="(condition, idx) in conditions" :key="idx" class="list-disc marker:text-gray-400">
 				<div v-if="condition.group_operator" class="flex items-center">
 					<FilterNode
 						:filters="condition"
-						@toggle_group_operator="
-							(params) => $emit('toggle_group_operator', params)
-						"
+						@toggle_group_operator="(params) => $emit('toggle_group_operator', params)"
 						@add_filter="(params) => $emit('add_filter', params)"
 						@remove_filter="(params) => $emit('remove_filter', params)"
 					/>
@@ -35,12 +24,8 @@
 					class="group menu-item -ml-1 flex w-fit cursor-pointer items-center rounded-md px-2 hover:bg-gray-50"
 					@click="menu_open_for = idx"
 				>
-					<div
-						class="flex h-8 items-center whitespace-nowrap rounded-md font-normal"
-					>
-						<div>
-							{{ condition.left.table_label }} - {{ condition.left.label }}
-						</div>
+					<div class="flex h-8 items-center whitespace-nowrap rounded-md font-normal">
+						<div>{{ condition.left.table_label }} - {{ condition.left.label }}</div>
 						<div class="mx-2 text-sm text-green-600">
 							{{ condition.operator.label }}
 						</div>
@@ -51,9 +36,7 @@
 									: condition.right.value
 							}}
 						</div>
-						<div
-							class="relative flex cursor-pointer items-center rounded-md py-1 pl-4 text-sm"
-						>
+						<div class="relative flex cursor-pointer items-center rounded-md py-1 pl-4 text-sm">
 							<MenuIcon
 								class="group-hover:visible"
 								:class="{
