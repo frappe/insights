@@ -11,7 +11,7 @@
 			<div
 				v-for="(column, list_idx) in selected_columns"
 				:key="list_idx"
-				class="menu-item flex h-10 min-h-[2.5rem] flex-1 cursor-pointer items-center justify-between pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
+				class="menu-item flex max-h-10 min-h-[2.5rem] flex-1 cursor-pointer items-center justify-between pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
 				<div class="flex items-baseline">
