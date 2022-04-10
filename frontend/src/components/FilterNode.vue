@@ -17,7 +17,7 @@
 				/>
 			</div>
 		</div>
-		<div v-if="conditions && conditions.length" class="flex flex-col" :class="{ 'pl-4': level != 1 }">
+		<div v-if="conditions" class="flex flex-col" :class="{ 'pl-4': level != 1 }">
 			<div v-for="(condition, idx) in conditions" :key="idx" class="flex items-center">
 				<div v-if="condition.group_operator" class="flex items-center">
 					<FilterNode

@@ -6,6 +6,7 @@
 			v-model="input_value"
 			spellcheck="false"
 			autocomplete="off"
+			:size="input_value.length"
 			class="form-input block h-8 flex-1 select-none whitespace-nowrap rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
 			placeholder="Select a column..."
 			@focus="input_focused = true"

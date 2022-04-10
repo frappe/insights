@@ -1,9 +1,6 @@
 <template>
 	<div class="flex flex-1 flex-col p-4">
-		<div
-			v-if="filters.conditions && filters.conditions.length"
-			class="mx-2 flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
-		>
+		<div v-if="filters.conditions" class="mx-2 flex flex-1 select-none flex-col overflow-scroll scrollbar-hide">
 			<FilterNode
 				:filters="filters"
 				:query="query"
