@@ -31,7 +31,7 @@
 		<!-- height = 100% - (padding-top + header height)  -->
 		<main class="flex h-[calc(100%-5.5rem)] flex-1">
 			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 py-8 sm:px-6 lg:px-8">
-				<div class="flex h-1/2 divide-x rounded-md bg-white shadow">
+				<div class="flex h-1/2 min-h-[20rem] divide-x rounded-md bg-white shadow">
 					<ColumnPicker :query="$resources.query" :columns="columns" @update:columns="on_column_update" />
 					<FilterPicker
 						:query="$resources.query"
@@ -40,7 +40,7 @@
 						@update:filters="on_filter_update"
 					/>
 				</div>
-				<div class="h-1/2 flex-1 rounded-md bg-white shadow">
+				<div class="h-1/2 min-h-[20rem] flex-1 rounded-md bg-white shadow">
 					<QueryResult :result="result" />
 				</div>
 			</div>

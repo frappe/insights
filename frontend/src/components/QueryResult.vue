@@ -8,7 +8,7 @@
 		</div>
 		<div v-else class="h-full overflow-y-scroll rounded-md shadow ring-1 ring-black ring-opacity-5">
 			<table class="min-w-full divide-y divide-gray-300">
-				<thead class="sticky top-0 bg-gray-50">
+				<thead class="top-0 bg-gray-50">
 					<tr class="divide-x divide-gray-200">
 						<th class="whitespace-nowrap px-2 py-1 text-left font-normal text-gray-500" scope="col">#</th>
 						<th

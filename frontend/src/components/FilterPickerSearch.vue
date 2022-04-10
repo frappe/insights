@@ -1,113 +1,66 @@
-<!-- This example requires Tailwind CSS v2.0+ -->
 <template>
-	<div class="filter-search relative z-10 w-full rounded-md shadow-sm">
+	<div class="filter-picker relative z-10 flex w-fit flex-1">
 		<input
 			type="text"
-			ref="filter_search"
+			ref="filter_picker"
+			v-model="input_value"
 			spellcheck="false"
 			autocomplete="off"
-			class="form-input block h-9 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-white focus:shadow"
-			:class="{
-				'font-semibold': right_input,
-				'placeholder:italic placeholder:text-gray-500': focused,
-			}"
-			:placeholder="focused ? placeholder : 'Add a filter...'"
-			v-model="input_value"
-			@focus="focused = true"
-			@keydown.backspace="on_backspace"
+			class="form-input block h-8 flex-1 select-none whitespace-nowrap rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
+			placeholder="Select a column..."
+			@focus="input_focused = true"
+			@keydown.escape="input_focused = false"
+			@keydown.tab="input_focused = false"
 			@keydown.meta.enter="on_enter"
 			@keydown.ctrl.enter="on_enter"
 		/>
 		<div
 			v-if="input_value"
-			class="absolute top-0 flex h-9 w-full cursor-text items-center border border-transparent px-3 text-sm leading-6"
+			class="absolute top-0 flex h-9 w-full cursor-text items-center whitespace-nowrap border border-transparent px-3 text-sm leading-6"
+			@click="$refs.filter_picker.focus()"
 		>
-			<span class="mr-1 font-medium">
-				{{ left_input }}
-			</span>
-
-			<span v-if="is_left_selected && !operator_input" class="mr-1 font-light italic text-gray-500">
-				{{ placeholder }}
-			</span>
-			<span v-else class="mr-1 font-light">
-				{{ operator_input }}
-			</span>
-
-			<span
-				v-if="is_left_selected && is_operator_selected && !right_input"
-				class="mr-1 font-light italic text-gray-500"
-			>
-				{{ placeholder }}
-			</span>
-			<span v-else class="font-semibold">
-				{{ right_input }}
-			</span>
+			{{ input_value.replace(/;/g, ' ') }}
 		</div>
-		<div class="absolute inset-y-0 right-0 flex items-center pr-3 transition-all hover:scale-110">
-			<FeatherIcon
-				v-if="focused && input_value"
-				name="check-circle"
-				class="h-4 w-4 cursor-pointer text-gray-400"
-				:class="{
-					'text-green-500': left_input && operator_input && right_input,
-				}"
-				aria-hidden="true"
+		<div v-if="input_focused" class="absolute top-6 z-10">
+			<SuggestionBox
+				v-if="suggestions"
+				:suggestions="suggestions"
+				@select="(suggestion) => on_suggestion_select(suggestion)"
 			/>
-			<FeatherIcon v-else name="search" class="h-4 w-4 text-gray-400" aria-hidden="true" />
 		</div>
-
-		<transition
-			enter-active-class="transition ease-out duration-100"
-			enter-from-class="transform opacity-0 scale-95"
-			enter-to-class="transform opacity-100 scale-100"
-			leave-active-class="transition ease-in duration-75"
-			leave-from-class="transform opacity-100 scale-100"
-			leave-to-class="transform opacity-0 scale-95"
-		>
-			<div
-				v-if="focused && suggestions.length != 0"
-				class="absolute top-8 mt-2 max-h-52 w-full origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
-			>
-				<div
-					v-for="item in suggestions"
-					:key="item.label"
-					class="filter-picker-suggestion flex cursor-default items-center justify-between rounded-md px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-					@click.prevent="on_suggestion_select(item)"
-				>
-					<div class="flex items-center">
-						<div class="font-semibold">{{ item.label }}</div>
-					</div>
-					<div v-if="item.table_label" class="flex font-light text-gray-500">
-						{{ item.table_label }}&nbsp;&#8226;&nbsp;{{ item.type }}
-					</div>
-				</div>
-			</div>
-		</transition>
 	</div>
 </template>
 
 <script>
+import { nextTick } from '@vue/runtime-core'
+import SuggestionBox from './SuggestionBox.vue'
 export default {
-	props: ['tables', 'should_focus', 'query'],
+	name: 'FilerPickerSearch',
+	props: ['tables', 'query'],
+	components: {
+		SuggestionBox,
+	},
 	data() {
 		return {
-			focused: false,
 			input_value: '',
-			delimiter: ';',
+			input_focused: false,
+			now_selecting: 'left',
 			filter: {
 				left: {},
 				operator: {},
+				right_type: '',
 				right: {},
 			},
 		}
 	},
 	mounted() {
+		this.$refs.filter_picker?.focus()
 		// detect click outside of input
 		document.addEventListener('click', (e) => {
-			if (e.target.closest('.filter-search') || e.target.classList.contains('filter-picker-suggestion')) {
-				return this.$refs.filter_search?.focus()
+			if (e.target.closest('.filter-picker') || e.target.classList.contains('filter-picker-suggestion')) {
+				return this.$refs.filter_picker?.focus()
 			}
-			this.focused = false
+			this.input_focused = false
 		})
 	},
 	resources: {
@@ -122,159 +75,186 @@ export default {
 			// Column: { label, table, table_label, column, type }
 			return this.query.get_selectable_columns?.data?.message || []
 		},
-		placeholder() {
-			const [left, operator, right] = this.input_value.split(this.delimiter)
-			if (!this.is_left_selected) {
-				return 'Select a column...'
-			} else if (this.is_left_selected && !operator) {
-				return 'select an operator...'
-			} else if (this.is_left_selected && this.is_operator_selected && !right) {
-				return !this.filter.right.value_type
-					? 'select value type...'
-					: this.filter.right.value_type == 'Column'
-					? 'select a column...'
-					: 'type a value...'
-			}
-		},
 		operator_list() {
 			// Operator: { label, value }
 			return this.$resources.operator_list.data || []
 		},
-		is_left_selected() {
-			const regex = RegExp(`${this.delimiter}`, 'g')
-			return (this.input_value.match(regex) || []).length > 0
-		},
-		is_operator_selected() {
-			const regex = RegExp(`${this.delimiter}`, 'g')
-			return (this.input_value.match(regex) || []).length > 1
-		},
-		is_right_selected() {
-			const regex = RegExp(`${this.delimiter}`, 'g')
-			return (this.input_value.match(regex) || []).length > 2
-		},
-		left_input() {
-			return this.input_value.split(this.delimiter)[0]
-		},
-		operator_input() {
-			return this.input_value.split(this.delimiter)[1] || ''
-		},
-		right_input() {
-			return this.input_value.split(this.delimiter)[2]
-		},
 		suggestions() {
-			const [left, operator, right] = this.input_value.split(this.delimiter)
-			let suggestions = []
+			let _suggestions = []
+			const [left, operator, right] = this.input_value.split(';')
 
-			if (!this.is_left_selected) {
-				suggestions = left
-					? this.column_list.filter((c) => c.label.toLowerCase().includes(left.toLowerCase()))
-					: this.column_list
-				suggestions = suggestions.map((s) => ({
-					...s,
-					is_left: true,
-				}))
-			} else if (!this.is_operator_selected) {
-				suggestions = operator ? this.operator_list.filter((o) => o.label.includes(operator)) : this.operator_list
-				suggestions = suggestions.map((s) => ({
-					...s,
-					is_operator: true,
-				}))
-			} else if (!this.is_right_selected) {
-				if (this.filter.right.value_type == 'Column') {
-					suggestions = right
-						? this.column_list.filter((c) => c.label.toLowerCase().includes(right.toLowerCase()))
-						: this.column_list
-				} else if (this.filter.right.value_type == 'String') {
-					suggestions = []
-				} else {
-					suggestions = [{ label: 'String' }, { label: 'Column' }]
+			if (this.now_selecting === 'left') {
+				return this.get_column_suggestions(left)
+			}
+
+			if (this.now_selecting === 'operator') {
+				return this.get_operator_suggestions(operator)
+			}
+
+			if (this.now_selecting === 'right_type') {
+				const static_value_type = this.get_static_value_type(this.filter.left.type)
+				return [{ label: 'Select value type...', is_header: true }, { label: static_value_type }, { label: 'Column' }]
+			}
+
+			if (this.now_selecting === 'right') {
+				if (this.filter.right_type == 'Column') {
+					_suggestions = [{ label: 'Select a column...', is_header: true }]
+					_suggestions = _suggestions.concat(this.get_column_suggestions(right))
+					return _suggestions
 				}
-				suggestions = suggestions.map((s) => ({
-					...s,
-					is_right: true,
-				}))
-			}
 
-			if (suggestions?.length > 50) {
-				suggestions = suggestions.slice(0, 50)
+				if (this.filter.right_type != 'Column') {
+					let _suggestion = [{ label: 'Type a value...', is_header: true }]
+					const right_input = this.input_value.split(';')[2]
+					if (right_input?.length > 0) {
+						_suggestion = [
+							{ label: 'Press ⌘ + enter to confirm', is_header: true },
+							{ label: right_input, value: right_input },
+						]
+					}
+					return _suggestion
+				}
 			}
-
-			return suggestions
 		},
 	},
 	watch: {
-		focused(is_focused) {
-			if (is_focused && !this.is_left_selected) {
-				this.query.get_selectable_columns.fetch({ tables: this.tables })
+		input_focused(is_focused) {
+			if (is_focused && this.now_selecting === 'left') {
+				this.query.get_selectable_columns.fetch({ tables: this.tables }).then(() => {
+					const filter_picker = this.$refs.filter_picker
+					const scrollable_parent = filter_picker.closest('.overflow-scroll')
+					nextTick(() => {
+						scrollable_parent.scrollTo({ behaviour: 'smooth', top: scrollable_parent.offsetHeight })
+					})
+				})
 			}
 		},
-		is_left_selected(newVal, oldVal) {
-			if (!newVal && newVal !== oldVal) {
+		input_value(new_value) {
+			const delimiter_count = (new_value.match(/;/g) || []).length
+			if (delimiter_count === 0) {
 				this.filter.left = {}
 				this.filter.operator = {}
+				this.filter.right_type = ''
 				this.filter.right = {}
+				this.now_selecting = 'left'
+				return
 			}
-		},
-		is_operator_selected(newVal, oldVal) {
-			if (!newVal && newVal !== oldVal) {
+
+			if (delimiter_count === 1) {
 				this.filter.operator = {}
+				this.filter.right_type = ''
 				this.filter.right = {}
+				this.now_selecting = 'operator'
+				return
 			}
-		},
-		is_right_selected(newVal, oldVal) {
-			if (!newVal && newVal !== oldVal) {
+
+			const right_input = this.input_value.split(';')[2]
+			if (delimiter_count === 2 && !right_input) {
+				this.filter.right_type = ''
 				this.filter.right = {}
+				this.now_selecting = 'right_type'
+				return
 			}
 		},
 	},
 	methods: {
 		on_suggestion_select(suggestion) {
-			if (suggestion.is_left) {
-				this.$resources.operator_list.submit({ fieldtype: suggestion.type })
-				this.input_value = `${suggestion.label}${this.delimiter}`
+			if (this.now_selecting === 'left') {
 				this.filter.left = suggestion
-			} else if (suggestion.is_operator) {
-				this.input_value = `${this.left_input}${this.delimiter}${suggestion.label}${this.delimiter}`
-				this.filter.operator = suggestion
-			} else if (suggestion.is_right && !this.filter.right.value_type) {
-				this.filter.right.value_type = suggestion.label
-				this.input_value = `${this.left_input}${this.delimiter}${this.operator_input}${this.delimiter}`
-			} else if (suggestion.is_right && this.filter.right.value_type == 'Column') {
-				this.input_value = `${this.left_input}${this.delimiter}${this.operator_input}${this.delimiter}${suggestion.label}${this.delimiter}`
-				this.filter.right = { ...suggestion, value_type: 'Column' }
+				this.input_value = `${suggestion.label};`
+				this.$refs.filter_picker?.focus()
+				this.now_selecting = 'operator'
+				this.$resources.operator_list.submit({ fieldtype: suggestion.type })
+				return
 			}
-		},
-		on_backspace(e) {
-			// delete the previous selection if a delimiter is deleted
-			const last_letter = e.target.value.slice(-1)
-			if (last_letter && last_letter == this.delimiter) {
-				e.stopPropagation()
-				e.preventDefault()
-				this.input_value = e.target.value
-					.split(this.delimiter) // split by delimiter = [left, operator, '']
-					.filter((v) => v) // remove empty values = [left, operator]
-					.slice(0, -1) // remove last value = [left]
-					.map((v) => `${v}${this.delimiter}`) // add delimiter = ['left;']
-					.join('') // join by empty string = left;
+
+			if (this.now_selecting === 'operator') {
+				this.filter.operator = suggestion
+				this.input_value = `${this.filter.left.label};${suggestion.label};`
+				this.$refs.filter_picker?.focus()
+				this.now_selecting = 'right_type'
+				return
+			}
+
+			if (this.now_selecting === 'right_type') {
+				this.filter.right_type = suggestion.label
+				this.$refs.filter_picker?.focus()
+				this.now_selecting = 'right'
+				return
+			}
+
+			if (this.now_selecting === 'right') {
+				this.filter.right = suggestion
+				this.input_value = `${this.filter.left.label};${this.filter.operator.label};${suggestion.label};`
+				this.$refs.filter_picker?.focus()
+				this.now_selecting = null
+				return
 			}
 		},
 		on_enter() {
-			if (this.filter.right.value_type == 'String') this.filter.right.value = this.right_input
+			if (this.filter.right_type !== 'Column') {
+				// select the first suggestion
+				this.on_suggestion_select(this.suggestions.find((s) => !s.is_header))
+			}
 
-			if (
-				this.filter.left.column &&
-				this.filter.operator.value &&
-				(this.filter.right.column || this.filter.right.value)
-			) {
+			if (this.filter.left.label && this.filter.operator.label && this.filter.right.label) {
 				this.$emit('filter_selected', this.filter)
 				this.input_value = ''
-				this.focused = false
-				this.$refs.filter_search?.blur()
+				this.input_focused = false
 				this.filter = {
 					left: {},
 					operator: {},
+					right_type: '',
 					right: {},
 				}
+				this.$refs.filter_picker?.blur()
+			}
+		},
+		get_icon_for(column_type) {
+			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
+				return 'type'
+			}
+			if (['int', 'decimal', 'bigint', 'float', 'double'].includes(column_type.toLowerCase())) {
+				return 'hash'
+			}
+			if (['date', 'datetime', 'time', 'timestamp'].includes(column_type.toLowerCase())) {
+				return 'clock'
+			}
+		},
+		get_column_suggestions(input) {
+			let _suggestions = []
+			if (input) {
+				_suggestions = this.column_list.filter((c) => c.label.toLowerCase().includes(input.toLowerCase()))
+			} else {
+				_suggestions = this.column_list
+			}
+			_suggestions = _suggestions.splice(0, 50)
+			_suggestions.forEach((c) => {
+				c.icon = this.get_icon_for(c.type)
+				c.secondary_label = c.table_label
+			})
+			return _suggestions
+		},
+		get_operator_suggestions(input) {
+			let _suggestions = [{ label: 'Select an operator...', is_header: true }]
+			if (input) {
+				_suggestions = _suggestions.concat(
+					this.operator_list.filter((o) => o.label.toLowerCase().includes(input.toLowerCase()))
+				)
+			} else {
+				_suggestions = _suggestions.concat(this.operator_list)
+			}
+			return _suggestions.splice(0, 50)
+		},
+		get_static_value_type(column_type) {
+			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
+				return 'Text'
+			}
+			if (['int', 'decimal', 'bigint', 'float', 'double'].includes(column_type.toLowerCase())) {
+				return 'Number'
+			}
+			if (['date', 'datetime', 'time', 'timestamp'].includes(column_type.toLowerCase())) {
+				return column_type
 			}
 		},
 	},

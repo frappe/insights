@@ -1,17 +1,16 @@
 <template>
 	<div class="flex flex-1 flex-col p-4">
-		<FilterPickerSearch
-			class="mb-4"
-			ref="filter_search"
-			@filter_selected="add_filter"
-			:query="query"
-			:tables="tables"
-		/>
-		<div v-if="filters.conditions && filters.conditions.length" class="mx-2 flex flex-1 select-none flex-col">
+		<div
+			v-if="filters.conditions && filters.conditions.length"
+			class="mx-2 flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
+		>
 			<FilterNode
 				:filters="filters"
+				:query="query"
+				:tables="tables"
 				@toggle_group_operator="toggle_group_operator"
-				@add_filter="trigger_add_filter"
+				@filter_selected="add_filter"
+				@branch_condition_at="branch_condition_at"
 				@remove_filter="remove_filter"
 			/>
 		</div>
@@ -25,14 +24,12 @@
 </template>
 
 <script>
-import FilterPickerSearch from './FilterPickerSearch.vue'
 import FilterNode from './FilterNode.vue'
 
 export default {
 	name: 'FilterPicker',
 	props: ['tables', 'filters', 'query'],
 	components: {
-		FilterPickerSearch,
 		FilterNode,
 	},
 	methods: {
@@ -55,64 +52,50 @@ export default {
 			return filter_group
 		},
 		toggle_group_operator({ level }) {
-			if (level == 1) {
-				this.filters.group_operator = this.filters.group_operator == 'All' ? 'Any' : 'All'
-				this.$emit('update:filters', this.filters)
-				return
-			}
-
 			const filters = this.get_filter_group_at(level)
 			filters.group_operator = filters.group_operator == 'All' ? 'Any' : 'All'
 			this.$emit('update:filters', this.filters)
 		},
-		add_filter(filter) {
-			if (!this.add_filter_meta) {
-				// no meta to add at given position, so just add the filter to root level
-				this.filters.conditions.push(filter)
-				this.$emit('update:filters', this.filters)
-				return
-			}
-
-			// replace existing condition at given level & index with a filter group
-			const { idx, level, chain_operator } = this.add_filter_meta
+		add_filter({ filter, level }) {
 			const filter_group = this.get_filter_group_at(level)
 			const conditions = filter_group.conditions
+			conditions.push(filter)
+			this.$emit('update:filters', this.filters)
+		},
+		branch_condition_at({ level, idx }) {
+			const filter_group = this.get_filter_group_at(level)
+			const conditions = filter_group.conditions
+
 			const condition_to_replace = conditions[idx]
-			if (
-				(chain_operator == 'and' && filter_group.group_operator == 'Any') ||
-				(chain_operator == 'or' && filter_group.group_operator == 'All')
-			) {
-				// replace the element at idx with the new group filter
-				conditions[idx] = {
-					level: level + 1,
-					group_operator: chain_operator == 'or' ? 'Any' : 'All',
-					conditions: [condition_to_replace, filter],
-				}
-			} else {
-				// add a filter
-				conditions[idx + 1] = filter
+			filter_group.conditions[idx] = {
+				level: level + 1,
+				group_operator: filter_group.group_operator == 'All' ? 'Any' : 'All',
+				conditions: [condition_to_replace],
 			}
 			this.$emit('update:filters', this.filters)
-			this.add_filter_meta = null
-		},
-		trigger_add_filter({ level, idx, chain_operator }) {
-			this.add_filter_meta = { level, idx, chain_operator }
-			this.focus_filter_search()
-		},
-		focus_filter_search() {
-			this.$refs.filter_search.focused = true
 		},
 		remove_filter({ level, idx }) {
 			if (level == 1) {
-				// remove the filter from root level
-				this.filters.conditions.splice(idx, 1)
+				if (idx) {
+					// remove the filter from root level
+					this.filters.conditions.splice(idx, 1)
+				} else {
+					this.filters.conditions = []
+				}
 			} else {
-				// remove the filter at `idx` from the filter group at `level`
-				const filter_group = this.get_filter_group_at(level)
-				filter_group.conditions.splice(idx, 1)
-				if (filter_group.conditions.length == 0) {
-					// remove the filter group
-					this.filters.conditions.splice(level - 1, 1)
+				if (idx) {
+					// remove the filter at `idx` from the filter group at `level`
+					const filter_group = this.get_filter_group_at(level)
+					filter_group.conditions.splice(idx, 1)
+					if (filter_group.conditions.length == 0) {
+						// remove the filter group if no conditions remain
+						const parent_filter_group = this.get_filter_group_at(level - 1)
+						parent_filter_group.conditions = parent_filter_group.conditions.filter((f) => f.level != level)
+					}
+				} else {
+					// remove the whole filter group at `level`
+					const parent_filter_group = this.get_filter_group_at(level - 1)
+					parent_filter_group.conditions = parent_filter_group.conditions.filter((f) => f.level != level)
 				}
 			}
 

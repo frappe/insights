@@ -195,7 +195,7 @@ class Query(Document):
         operand_1 = self.convert_to_select_field(
             condition.left.table, condition.left.column, condition.left.label
         )
-        if condition.right.value_type == "Column":
+        if condition.right_type == "Column":
             operand_2 = self.convert_to_select_field(
                 condition.right.table, condition.right.column, condition.right.label
             )

@@ -7,11 +7,11 @@
 		>
 			<p>No columns selected</p>
 		</div>
-		<div v-else class="flex flex-1 select-none flex-col">
+		<div v-else class="flex flex-1 select-none flex-col divide-y divide-gray-200 overflow-scroll scrollbar-hide">
 			<div
 				v-for="(column, list_idx) in selected_columns"
 				:key="list_idx"
-				class="menu-item flex h-10 cursor-pointer items-center justify-between border-b border-gray-200 pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
+				class="menu-item flex h-10 min-h-[2.5rem] flex-1 cursor-pointer items-center justify-between pl-2 text-sm text-gray-700 hover:rounded-md hover:bg-gray-50"
 				@click="menu_open_for = list_idx"
 			>
 				<div class="flex items-baseline">
