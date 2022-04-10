@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col pt-10" v-if="query">
+	<div class="flex flex-col pt-10 pb-5" v-if="query">
 		<header>
 			<div class="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 				<div class="relative flex flex-col items-start">
@@ -28,19 +28,24 @@
 				</div>
 			</div>
 		</header>
-		<!-- height = 100% - (padding-top + header height)  -->
-		<main class="flex h-[calc(100%-5.5rem)] flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 py-8 sm:px-6 lg:px-8">
-				<div class="flex h-1/2 min-h-[20rem] divide-x rounded-md bg-white shadow">
-					<ColumnPicker :query="$resources.query" :columns="columns" @update:columns="on_column_update" />
-					<FilterPicker
-						:query="$resources.query"
-						:tables="tables"
-						:filters="filters"
-						@update:filters="on_filter_update"
-					/>
+		<!-- height = 100% - (padding-top (2.5) + padding-bottom (1.5) + header height (3))  -->
+		<main class="flex h-[calc(100%-7rem)] flex-1">
+			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 pt-8 sm:px-6 lg:px-8">
+				<div class="flex h-1/2 min-h-[18rem] flex-col divide-y rounded-md bg-white shadow">
+					<div class="flex flex-1 divide-x">
+						<ColumnPicker :query="$resources.query" :columns="columns" @update:columns="on_column_update" />
+						<FilterPicker
+							:query="$resources.query"
+							:tables="tables"
+							:filters="filters"
+							@update:filters="on_filter_update"
+						/>
+					</div>
+					<div class="flex">
+						<LimitsAndOrder :query="$resources.query" :limit="limit" />
+					</div>
 				</div>
-				<div class="h-1/2 min-h-[20rem] flex-1 rounded-md bg-white shadow">
+				<div class="h-1/2 min-h-[18rem] flex-1 rounded-md bg-white shadow">
 					<QueryResult :result="result" />
 				</div>
 			</div>
@@ -52,6 +57,7 @@
 import ColumnPicker from '@/components/ColumnPicker.vue'
 import FilterPicker from '@/components/FilterPicker.vue'
 import QueryResult from '@/components/QueryResult.vue'
+import LimitsAndOrder from '@/components/LimitsAndOrder.vue'
 
 export default {
 	name: 'QueryBuilder',
@@ -60,6 +66,7 @@ export default {
 		ColumnPicker,
 		FilterPicker,
 		QueryResult,
+		LimitsAndOrder,
 	},
 	data() {
 		return {
@@ -73,6 +80,7 @@ export default {
 				level: 1,
 				conditions: [],
 			},
+			limit: 100,
 		}
 	},
 	resources: {
@@ -112,6 +120,8 @@ export default {
 					this.filters = JSON.parse(query.filters || '{}')
 
 					this.result = JSON.parse(query.result || '[]')
+
+					this.limit = query.limit
 				},
 				onError: () => {
 					this.$notify({
