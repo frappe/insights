@@ -1,33 +1,39 @@
 <template>
-	<div class="flex flex-1 flex-col p-4">
-		<div v-if="filters.conditions" class="mx-2 flex flex-1 select-none flex-col overflow-scroll scrollbar-hide">
-			<FilterNode
-				:filters="filters"
-				:query="query"
-				:tables="tables"
-				@toggle_group_operator="toggle_group_operator"
-				@filter_selected="add_filter"
-				@branch_condition_at="branch_condition_at"
-				@remove_filter="remove_filter"
-			/>
-		</div>
-		<div
-			v-else
-			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
-		>
-			No filters added
-		</div>
+	<div class="filter-picker mx-2 flex flex-1 select-none flex-col overflow-scroll p-4 scrollbar-hide">
+		<FilterTree
+			:filters="filters"
+			:query="query"
+			:tables="tables"
+			@toggle_group_operator="toggle_group_operator"
+			@filter_selected="add_filter"
+			@filter_edited="edit_filter"
+			@branch_filter_at="branch_filter_at"
+			@remove_filter="remove_filter"
+		/>
 	</div>
 </template>
 
 <script>
-import FilterNode from './FilterNode.vue'
+import FilterTree from './FilterTree.vue'
 
 export default {
 	name: 'FilterPicker',
-	props: ['tables', 'filters', 'query'],
+	props: ['query'],
 	components: {
-		FilterNode,
+		FilterTree,
+	},
+	computed: {
+		tables() {
+			return this.query.doc.tables.map((row) => {
+				return {
+					label: row.label,
+					table: row.table,
+				}
+			})
+		},
+		filters() {
+			return JSON.parse(this.query.doc.filters || '{}')
+		},
 	},
 	methods: {
 		get_filter_group_at(level) {
@@ -59,7 +65,13 @@ export default {
 			conditions.push(filter)
 			this.$emit('update:filters', this.filters)
 		},
-		branch_condition_at({ level, idx }) {
+		edit_filter({ filter, level, idx }) {
+			const filter_group = this.get_filter_group_at(level)
+			const conditions = filter_group.conditions
+			conditions[idx] = filter
+			this.$emit('update:filters', this.filters)
+		},
+		branch_filter_at({ level, idx }) {
 			const filter_group = this.get_filter_group_at(level)
 			const conditions = filter_group.conditions
 

@@ -1,68 +1,84 @@
 <template>
 	<div class="filter-picker relative z-10 flex w-fit flex-1">
-		<input
-			type="text"
-			ref="filter_picker"
-			v-model="input_value"
-			spellcheck="false"
-			autocomplete="off"
-			:size="input_value.length"
-			class="form-input block h-8 flex-1 select-none whitespace-nowrap rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
-			placeholder="Select a column..."
-			@focus="input_focused = true"
-			@keydown.escape="input_focused = false"
-			@keydown.tab="input_focused = false"
-			@keydown.meta.enter="on_enter"
-			@keydown.ctrl.enter="on_enter"
-		/>
-		<div
-			v-if="input_value"
-			class="absolute top-0 flex h-9 w-full cursor-text items-center whitespace-nowrap border border-transparent px-3 text-sm leading-6"
-			@click="$refs.filter_picker.focus()"
-		>
-			{{ input_value.replace(/;/g, ' ') }}
-		</div>
-		<div v-if="input_focused" class="absolute top-6 z-10">
-			<SuggestionBox
-				v-if="suggestions"
-				:suggestions="suggestions"
-				@select="(suggestion) => on_suggestion_select(suggestion)"
-			/>
-		</div>
+		<Popover :show="input_focused">
+			<template #target>
+				<input
+					type="text"
+					ref="filter_picker"
+					v-model="input_value"
+					spellcheck="false"
+					autocomplete="off"
+					:size="Math.max(input_value.length, 20) || 20"
+					class="form-input block h-8 flex-1 select-none whitespace-nowrap rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
+					placeholder="Select a column..."
+					@focus="input_focused = true"
+					@keydown.tab="input_focused = false"
+				/>
+				<div
+					v-if="input_value"
+					class="absolute top-0 flex h-9 w-full cursor-text items-center whitespace-nowrap border border-transparent px-3 text-sm leading-6"
+					@click="$refs.filter_picker.focus()"
+				>
+					{{ input_value.replace(/;/g, ' ') }}
+				</div>
+			</template>
+			<template #content>
+				<SuggestionBox
+					v-if="suggestions?.length"
+					:suggestions="suggestions"
+					@select="(suggestion) => on_suggestion_select(suggestion)"
+				/>
+			</template>
+		</Popover>
 	</div>
 </template>
 
 <script>
-import { nextTick } from '@vue/runtime-core'
+import { ref } from 'vue'
 import SuggestionBox from './SuggestionBox.vue'
+
 export default {
-	name: 'FilerPickerSearch',
-	props: ['tables', 'query'],
+	name: 'FilterSearch',
+	props: ['tables', 'query', 'filter'],
 	components: {
 		SuggestionBox,
 	},
-	data() {
-		return {
-			input_value: '',
-			input_focused: false,
-			now_selecting: 'left',
-			filter: {
+	setup(props) {
+		const { filter } = props
+		let [_filter, input_value, input_focused, now_selecting] = [null, null, null, null]
+
+		if (filter && filter.left.label && filter.operator.label && filter.right.label) {
+			input_value = ref(`${filter.left.label};${filter.operator.label};${filter.right.label};`)
+			input_focused = ref(false)
+			now_selecting = ref('right')
+			_filter = ref(filter)
+		} else {
+			input_value = ref('')
+			input_focused = ref(false)
+			now_selecting = ref('left')
+			_filter = ref({
 				left: {},
 				operator: {},
 				right_type: '',
 				right: {},
-			},
+			})
 		}
+		return { input_value, input_focused, now_selecting, filter: _filter }
 	},
 	mounted() {
 		this.$refs.filter_picker?.focus()
-		// detect click outside of input
-		document.addEventListener('click', (e) => {
-			if (e.target.closest('.filter-picker') || e.target.classList.contains('filter-picker-suggestion')) {
-				return this.$refs.filter_picker?.focus()
-			}
-			this.input_focused = false
-		})
+		this.query.get_selectable_columns.fetch({ tables: this.tables })
+		if (this.filter?.left?.type) {
+			this.$resources.operator_list.submit({ fieldtype: this.filter.left.type })
+		}
+
+		// // detect click outside of input
+		// document.addEventListener('click', (e) => {
+		// 	if (e.target.closest('.filter-picker') || e.target.classList.contains('filter-picker-suggestion')) {
+		// 		return this.$refs.filter_picker?.focus()
+		// 	}
+		// 	this.input_focused = false
+		// })
 	},
 	resources: {
 		operator_list() {
@@ -109,7 +125,7 @@ export default {
 					const right_input = this.input_value.split(';')[2]
 					if (right_input?.length > 0) {
 						_suggestion = [
-							{ label: 'Press ⌘ + enter to confirm', is_header: true },
+							{ label: 'Press enter to confirm', is_header: true },
 							{ label: right_input, value: right_input },
 						]
 					}
@@ -119,17 +135,17 @@ export default {
 		},
 	},
 	watch: {
-		input_focused(is_focused) {
-			if (is_focused && this.now_selecting === 'left') {
-				this.query.get_selectable_columns.fetch({ tables: this.tables }).then(() => {
-					const filter_picker = this.$refs.filter_picker
-					const scrollable_parent = filter_picker.closest('.overflow-scroll')
-					nextTick(() => {
-						scrollable_parent.scrollTo({ behaviour: 'smooth', top: scrollable_parent.offsetHeight })
-					})
-				})
-			}
-		},
+		// now_selecting(value) {
+		// 	if (value === 'left') {
+		// 		.then(() => {
+		// 			const filter_picker = this.$refs.filter_picker
+		// 			const scrollable_parent = filter_picker.closest('.overflow-scroll')
+		// 			nextTick(() => {
+		// 				scrollable_parent.scrollTo({ behaviour: 'smooth', top: scrollable_parent.offsetHeight })
+		// 			})
+		// 		})
+		// 	}
+		// },
 		input_value(new_value) {
 			const delimiter_count = (new_value.match(/;/g) || []).length
 			if (delimiter_count === 0) {
@@ -186,30 +202,22 @@ export default {
 
 			if (this.now_selecting === 'right') {
 				this.filter.right = suggestion
-				this.input_value = `${this.filter.left.label};${this.filter.operator.label};${suggestion.label};`
-				this.$refs.filter_picker?.focus()
-				this.now_selecting = null
+				this.$emit('filter_selected', this.filter)
+				this.reset()
 				return
 			}
 		},
-		on_enter() {
-			if (this.filter.right_type !== 'Column') {
-				// select the first suggestion
-				this.on_suggestion_select(this.suggestions.find((s) => !s.is_header))
+		reset() {
+			this.filter = {
+				left: {},
+				operator: {},
+				right_type: '',
+				right: {},
 			}
-
-			if (this.filter.left.label && this.filter.operator.label && this.filter.right.label) {
-				this.$emit('filter_selected', this.filter)
-				this.input_value = ''
-				this.input_focused = false
-				this.filter = {
-					left: {},
-					operator: {},
-					right_type: '',
-					right: {},
-				}
-				this.$refs.filter_picker?.blur()
-			}
+			this.input_value = ''
+			this.input_focused = false
+			this.now_selecting = null
+			this.$refs.column_search?.blur()
 		},
 		get_icon_for(column_type) {
 			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
@@ -229,7 +237,6 @@ export default {
 			} else {
 				_suggestions = this.column_list
 			}
-			_suggestions = _suggestions.splice(0, 50)
 			_suggestions.forEach((c) => {
 				c.icon = this.get_icon_for(c.type)
 				c.secondary_label = c.table_label
@@ -245,7 +252,7 @@ export default {
 			} else {
 				_suggestions = _suggestions.concat(this.operator_list)
 			}
-			return _suggestions.splice(0, 50)
+			return _suggestions
 		},
 		get_static_value_type(column_type) {
 			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {

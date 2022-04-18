@@ -18,68 +18,48 @@ class Query(Document):
         # TODO: validate if a column is an expression and aggregation is "group by"
         pass
 
-    def update_tables(self, updated_columns):
-        updated_tables = [
-            {
-                "table": column.get("table"),
-                "label": column.get("table_label"),
-            }
-            for column in updated_columns
-        ]
-        # remove the tables from self.tables if not present in updated_tables
-        table_names = [row.get("table") for row in updated_tables]
-        for table in [d for d in self.tables if d.get("table") not in table_names]:
-            self.remove(table)
-
-        # add the tables to self.tables if not already present
-        table_names = [row.table for row in self.tables]
-        for row in [d for d in updated_tables if d.get("table") not in table_names]:
-            self.append(
-                "tables",
-                {
-                    "table": row.get("table"),
-                    "label": row.get("label"),
-                },
-            )
-
     @frappe.whitelist()
-    def update_columns(self, updated_columns):
-        self.update_tables(updated_columns)
+    def add_column(self, column):
+        column_id = (column.get("column"), column.get("table"))
+        column_ids = [(row.column, row.table) for row in self.columns]
 
-        # remove the columns from self.columns if not present in updated_columns
-        column_names = [row.get("column") for row in updated_columns]
-        for row in [d for d in self.columns if d.get("column") not in column_names]:
-            self.remove(row)
-
-        # add the columns to self.columns if not already present
-        column_names = [row.column for row in self.columns]
-        for row in [d for d in updated_columns if d.get("column") not in column_names]:
+        if column_id not in column_ids:
             self.append(
                 "columns",
                 {
-                    "type": row.get("type"),
-                    "label": row.get("label"),
-                    "table": row.get("table"),
-                    "column": row.get("column"),
-                    "table_label": row.get("table_label"),
-                    "aggregation": row.get("aggregation"),
+                    "type": column.get("type"),
+                    "label": column.get("label"),
+                    "table": column.get("table"),
+                    "column": column.get("column"),
+                    "table_label": column.get("table_label"),
+                    "aggregation": column.get("aggregation"),
                 },
             )
-
-        # update all aggregations
-        aggregations = {
-            row.get("column"): row.get("aggregation") for row in updated_columns
-        }
-
-        for row in self.columns:
-            if row.get("column") in aggregations:
-                row.aggregation = aggregations[row.get("column")]
 
         self.save()
 
     @frappe.whitelist()
-    def update_filters(self, updated_filters):
-        self.filters = dumps(updated_filters, indent=2, default=str)
+    def update_column(self, column):
+        for row in self.columns:
+            if row.get("name") == column.get("name"):
+                row.label = column.get("label")
+                row.aggregation = column.get("aggregation")
+                break
+
+        self.save()
+
+    @frappe.whitelist()
+    def remove_column(self, column):
+        for row in self.columns:
+            if row.get("name") == column.get("name"):
+                self.remove(row)
+                break
+
+        self.save()
+
+    @frappe.whitelist()
+    def update_filters(self, filters):
+        self.filters = dumps(filters, indent=2, default=str)
         self.save()
 
     @frappe.whitelist()
@@ -88,19 +68,48 @@ class Query(Document):
         return data_source.get_tables()
 
     @frappe.whitelist()
-    def get_selectable_columns(self, tables):
-        tables = frappe.parse_json(tables)
+    def get_selectable_columns(self, tables=None, table=None):
+        if tables:
+            tables = frappe.parse_json(tables)
+        if table:
+            tables = [table]
+
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         columns = []
         for table in tables:
             columns += data_source.get_columns(table)
         return columns
 
+    def update_tables(self):
+        column_tables = [
+            {
+                "table": column.get("table"),
+                "label": column.get("table_label"),
+            }
+            for column in self.columns
+        ]
+        # remove the tables from self.tables if not present in column_tables
+        tables = [row.get("table") for row in column_tables]
+        for table in [d for d in self.tables if d.get("table") not in tables]:
+            self.remove(table)
+
+        # add the tables to self.tables if not already present
+        tables = [row.table for row in self.tables]
+        for row in [d for d in column_tables if d.get("table") not in tables]:
+            self.append(
+                "tables",
+                {
+                    "table": row.get("table"),
+                    "label": row.get("label"),
+                },
+            )
+
     def before_save(self):
         if not self.tables or not self.columns or not self.filters:
             self.result = "[]"
             return
 
+        self.update_tables()
         self.process()
         self.build()
         self.execute()

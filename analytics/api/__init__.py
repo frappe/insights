@@ -31,8 +31,8 @@ def get_operator_list(fieldtype):
         operator_list += [
             {"label": "equals", "value": "="},
             {"label": "not equals", "value": "!="},
-            {"label": "like", "value": "like"},
-            {"label": "not like", "value": "not like"},
+            {"label": "contains", "value": "like"},
+            {"label": "not contains", "value": "not like"},
             {"label": "in", "value": "in"},
             {"label": "not in", "value": "not in"},
             {"label": "is set", "value": "is set"},

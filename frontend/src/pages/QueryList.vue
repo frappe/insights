@@ -63,7 +63,7 @@ export default {
 			create_new_query_dialog: false,
 			new_query: {
 				title: '',
-				data_source: 'localhost',
+				data_source: '',
 			},
 		}
 	},
@@ -87,7 +87,7 @@ export default {
 			return this.$resources.get_queries.data || []
 		},
 		data_sources() {
-			return ['localhost', 'dev-erpnext', 'testsite.one']
+			return ['', 'dev-erpnext', 'testsite.one']
 		},
 	},
 	methods: {

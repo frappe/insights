@@ -11,42 +11,25 @@
 						@blur="on_title_update"
 						:size="Math.max(title.length, 2)"
 						@keydown.enter="on_title_update"
-						class="peer mb-1 border-none bg-transparent p-0 text-3xl font-bold leading-tight text-transparent caret-black focus:border-none focus:outline-none focus:ring-transparent"
+						class="peer border-none bg-transparent p-0 text-3xl font-bold caret-black focus:border-none focus:outline-none focus:ring-transparent"
 					/>
-					<div
-						class="absolute flex items-center whitespace-nowrap text-3xl font-bold leading-tight text-gray-900 hover:cursor-text"
-						@click="$refs.title_input.focus()"
-					>
-						{{ title }}
-						<FeatherIcon
-							:name="$resources.query.setValueDebounced.loading ? 'loader' : 'edit-2'"
-							class="ml-3 h-3.5 w-3.5 cursor-pointer text-gray-500 peer-focus:invisible"
-							@click="$refs.title_input.focus()"
-						/>
-					</div>
-					<div class="text-sm text-gray-600/80">Data Source: {{ data_source }}</div>
+					<div class="mt-1 text-sm text-gray-500">Data Source: {{ data_source }}</div>
 				</div>
 			</div>
 		</header>
 		<!-- height = 100% - (padding-top (2.5) + padding-bottom (1.5) + header height (3))  -->
 		<main class="flex h-[calc(100%-7rem)] flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-2 pt-8 sm:px-6 lg:px-8">
-				<div class="flex h-1/2 min-h-[18rem] flex-col divide-y rounded-md bg-white shadow">
-					<div class="flex flex-1 divide-x">
-						<ColumnPicker :query="$resources.query" :columns="columns" @update:columns="on_column_update" />
-						<FilterPicker
-							:query="$resources.query"
-							:tables="tables"
-							:filters="filters"
-							@update:filters="on_filter_update"
-						/>
+			<div class="mx-auto flex max-w-7xl flex-1 flex-col pt-8 sm:px-6 lg:px-8">
+				<div class="h-full min-h-[12rem] flex-1 rounded-md bg-white shadow">
+					<div class="flex h-16 flex-shrink-0">
+						<QueryToolbar :query="$resources.query" />
 					</div>
-					<div class="flex">
+					<div class="flex h-[calc(100%-6.5rem)]">
+						<QueryResult :result="result" :query="$resources.query" />
+					</div>
+					<div class="flex h-10 flex-shrink-0">
 						<LimitsAndOrder :query="$resources.query" :limit="limit" />
 					</div>
-				</div>
-				<div class="h-1/2 min-h-[18rem] flex-1 rounded-md bg-white shadow">
-					<QueryResult :result="result" />
 				</div>
 			</div>
 		</main>
@@ -54,8 +37,7 @@
 </template>
 
 <script>
-import ColumnPicker from '@/components/ColumnPicker.vue'
-import FilterPicker from '@/components/FilterPicker.vue'
+import QueryToolbar from '@/components/QueryToolbar.vue'
 import QueryResult from '@/components/QueryResult.vue'
 import LimitsAndOrder from '@/components/LimitsAndOrder.vue'
 
@@ -63,8 +45,7 @@ export default {
 	name: 'QueryBuilder',
 	props: ['query_id'],
 	components: {
-		ColumnPicker,
-		FilterPicker,
+		QueryToolbar,
 		QueryResult,
 		LimitsAndOrder,
 	},
@@ -90,6 +71,9 @@ export default {
 				doctype: 'Query',
 				name: this.query_id,
 				whitelistedMethods: {
+					add_column: 'add_column',
+					update_column: 'update_column',
+					remove_column: 'remove_column',
 					update_columns: 'update_columns',
 					update_filters: 'update_filters',
 					get_selectable_tables: 'get_selectable_tables',
@@ -106,16 +90,8 @@ export default {
 						}
 					})
 
-					this.columns = query.columns.map((row) => {
-						return {
-							label: row.label,
-							column: row.column,
-							type: row.type,
-							table: row.table,
-							table_label: row.table_label,
-							aggregation: row.aggregation,
-						}
-					})
+					this.columns = query.columns
+
 					// TODO: Fix if query.filters is undefined
 					this.filters = JSON.parse(query.filters || '{}')
 

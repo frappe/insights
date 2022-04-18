@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-1 flex-col p-4">
-		<ColumnPickerSearch class="mb-4" @column_selected="on_column_select" :tables="tables" :query="query" />
+		<ColumnSearch class="mb-4" @column_selected="on_column_select" :tables="tables" :query="query" />
 		<div
 			v-if="selected_columns.length == 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
@@ -67,14 +67,14 @@
 </template>
 
 <script>
-import ColumnPickerSearch from './ColumnPickerSearch.vue'
+import ColumnSearch from './ColumnSearch.vue'
 import MenuIcon from './MenuIcon.vue'
 
 export default {
 	name: 'ColumnPicker',
 	props: ['tables', 'columns', 'query'],
 	components: {
-		ColumnPickerSearch,
+		ColumnSearch,
 		MenuIcon,
 	},
 	data() {

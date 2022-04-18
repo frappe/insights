@@ -1,43 +1,83 @@
 <template>
-	<transition
-		enter-active-class="transition ease-out duration-100"
-		enter-from-class="transform opacity-0 scale-95"
-		enter-to-class="transform opacity-100 scale-100"
-		leave-active-class="transition ease-in duration-75"
-		leave-from-class="transform opacity-100 scale-100"
-		leave-to-class="transform opacity-0 scale-95"
+	<div
+		class="mt-2 max-h-48 w-fit min-w-[16rem] origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
 	>
 		<div
-			v-if="suggestions.length != 0"
-			class="z-50 mt-2 max-h-48 w-fit min-w-[12rem] origin-top overflow-scroll overflow-x-hidden rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none"
+			v-for="(suggestion, idx) in suggestions"
+			ref="suggestions"
+			:key="idx"
+			class="flex cursor-default items-center justify-between text-base text-gray-700"
+			:class="{
+				'sticky top-0 h-7 rounded-none border-b border-gray-200 bg-white px-2': suggestion.is_header,
+				'h-9 px-4 hover:bg-gray-50': !suggestion.is_header,
+				'bg-blue-50 text-blue-400': active_suggestion_idx === idx && !suggestion.is_header,
+			}"
+			@click.prevent.stop="!suggestion.is_header && $emit('select', suggestion)"
 		>
-			<div
-				v-for="(suggestion, idx) in suggestions"
-				:key="idx"
-				class="filter-picker-suggestion flex h-8 cursor-default items-center justify-between text-sm text-gray-700"
-				:class="{
-					'sticky top-0 h-6 rounded-none border-b border-gray-200 bg-white px-2': suggestion.is_header,
-					'h-8 px-4 hover:bg-gray-100 hover:text-gray-900': !suggestion.is_header,
-				}"
-				@click.prevent.stop="!suggestion.is_header && $emit('select', suggestion)"
-			>
-				<div v-if="suggestion.is_header" class="flex items-center text-xs font-light text-gray-500">
-					{{ suggestion.label }}
-				</div>
-				<div v-if="!suggestion.is_header" class="flex items-center whitespace-nowrap font-medium">
-					<FeatherIcon v-if="suggestion.icon" :name="suggestion.icon" class="mr-2 h-3 w-3 text-gray-500" />
-					{{ suggestion.label }}
-				</div>
-				<div v-if="suggestion.secondary_label" class="ml-4 flex whitespace-nowrap font-light text-gray-500">
-					{{ suggestion.secondary_label }}
-				</div>
+			<div v-if="suggestion.is_header" class="flex items-center text-sm font-light text-gray-500">
+				{{ suggestion.label }}
+			</div>
+			<div v-if="!suggestion.is_header" class="flex items-center whitespace-nowrap font-medium">
+				<FeatherIcon v-if="suggestion.icon" :name="suggestion.icon" class="mr-2 h-3 w-3 text-gray-500" />
+				{{ suggestion.label }}
+			</div>
+			<div v-if="suggestion.secondary_label" class="ml-4 flex whitespace-nowrap font-light text-gray-500">
+				{{ suggestion.secondary_label }}
 			</div>
 		</div>
-	</transition>
+	</div>
 </template>
 
 <script>
 export default {
 	props: ['suggestions'],
+	data() {
+		return {
+			active_suggestion_idx: 0,
+		}
+	},
+	mounted() {
+		document.addEventListener('keydown', this.on_keydown_event)
+	},
+	beforeDestroy() {
+		document.removeEventListener('keydown', this.on_keydown_event)
+	},
+	methods: {
+		on_keydown_event(e) {
+			// TODO: return if suggestion box is not visible
+
+			if (!['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
+				return
+			}
+
+			e.preventDefault()
+			e.stopPropagation()
+
+			if (e.key === 'ArrowDown') {
+				this.active_suggestion_idx++
+				if (this.active_suggestion_idx >= this.suggestions.length) {
+					this.active_suggestion_idx = this.suggestions.length - 1
+				}
+				this.$refs.suggestions[this.active_suggestion_idx].scrollIntoView({
+					behavior: 'smooth',
+					block: 'nearest',
+				})
+			}
+			if (e.key === 'ArrowUp') {
+				this.active_suggestion_idx--
+				if (this.active_suggestion_idx < 0) {
+					this.active_suggestion_idx = 0
+				}
+				this.$refs.suggestions[this.active_suggestion_idx].scrollIntoView({
+					behavior: 'smooth',
+					block: 'nearest',
+				})
+			}
+			if (e.key === 'Enter') {
+				const suggestion = this.suggestions[this.active_suggestion_idx]
+				!suggestion.is_header && this.$emit('select', suggestion)
+			}
+		},
+	},
 }
 </script>
