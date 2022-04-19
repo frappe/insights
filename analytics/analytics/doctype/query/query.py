@@ -7,7 +7,7 @@ import frappe
 from frappe import _dict
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, Field, Table
-from frappe.utils import cstr
+from frappe.utils import cint, cstr
 from pypika import Order
 from sqlparse import format as format_sql
 
@@ -81,6 +81,14 @@ class Query(Document):
         for table in tables:
             columns += data_source.get_columns(table)
         return columns
+
+    @frappe.whitelist()
+    def set_limit(self, limit):
+        sanitized_limit = cint(limit)
+        if not sanitized_limit or sanitized_limit < 0:
+            frappe.throw("Limit must be a positive integer")
+        self.limit = sanitized_limit
+        self.save()
 
     def update_tables(self):
         column_tables = [
