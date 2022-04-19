@@ -14,32 +14,31 @@
 					role="list"
 					class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll rounded-md bg-white p-4 shadow"
 				>
-					<li
-						v-for="query in queries"
-						:key="query.name"
-						class="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 hover:bg-gray-50"
-						@click="$router.push(`/query/${query.name}`)"
-					>
-						<div class="ml-3">
-							<p class="text-sm font-medium text-gray-900">
-								{{ query.title }}
-							</p>
-							<p class="text-sm text-gray-500">
-								{{ query.tables }}
-							</p>
-						</div>
-						<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" aria-hidden="true" />
+					<li v-for="query in queries" :key="query.name">
+						<router-link
+							:to="{ name: 'QueryBuilder', params: { query_id: query.name } }"
+							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 hover:bg-gray-50"
+						>
+							<div class="ml-3">
+								<p class="text-sm font-medium text-gray-900">
+									{{ query.title }}
+								</p>
+								<p class="text-sm text-gray-500">
+									{{ query.tables }}
+								</p>
+							</div>
+							<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" aria-hidden="true" />
+						</router-link>
 					</li>
 				</ul>
 			</div>
 		</main>
-		<Dialog :options="{ title: 'New Query', data_source: 'dev-erpnext' }" v-model="create_new_query_dialog">
+		<Dialog :options="{ title: 'New Query' }" v-model="create_new_query_dialog">
 			<template #body-content>
 				<div class="space-y-4">
 					<Input type="select" label="Data Source" v-model="new_query.data_source" :options="data_sources" />
 					<Input type="text" label="Title" v-model="new_query.title" @keydown.enter="submit_query" />
 				</div>
-				<ErrorMessage class="mt-2" :message="$resources.create_query.error" />
 			</template>
 			<template #actions>
 				<Button appearance="primary" @click="submit_query" :loading="$resources.create_query.loading"> Create </Button>

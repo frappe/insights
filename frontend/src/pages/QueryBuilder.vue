@@ -49,21 +49,6 @@ export default {
 		QueryResult,
 		LimitsAndOrder,
 	},
-	data() {
-		return {
-			title: 'Untitled Query',
-			data_source: '',
-			tables: [],
-			columns: [],
-			result: [],
-			filters: {
-				group_operator: 'All',
-				level: 1,
-				conditions: [],
-			},
-			limit: 100,
-		}
-	},
 	resources: {
 		query() {
 			return {
@@ -79,26 +64,6 @@ export default {
 					get_selectable_tables: 'get_selectable_tables',
 					get_selectable_columns: 'get_selectable_columns',
 				},
-				postprocess: (query) => {
-					this.title = query.title
-					this.data_source = query.data_source
-
-					this.tables = query.tables.map((row) => {
-						return {
-							label: row.label,
-							table: row.table,
-						}
-					})
-
-					this.columns = query.columns
-
-					// TODO: Fix if query.filters is undefined
-					this.filters = JSON.parse(query.filters || '{}')
-
-					this.result = JSON.parse(query.result || '[]')
-
-					this.limit = query.limit
-				},
 				onError: () => {
 					this.$notify({
 						title: 'Something went wrong',
@@ -113,11 +78,37 @@ export default {
 		query() {
 			return this.$resources.query.doc
 		},
+		title() {
+			return this.query.title
+		},
+		data_source() {
+			return this.query.data_source
+		},
+		tables() {
+			return this.query.tables.map((row) => {
+				return {
+					label: row.label,
+					table: row.table,
+				}
+			})
+		},
+		columns() {
+			return this.query.columns
+		},
+		filters() {
+			return JSON.parse(this.query.filters || '{}')
+		},
+		result() {
+			return JSON.parse(this.query.result || '[]')
+		},
+		limit() {
+			return this.query.limit
+		},
 	},
 	methods: {
 		on_title_update() {
 			if (!this.title || this.title.length == 0) {
-				this.title = this.query.title || 'Untitled Query'
+				this.title = this.query.title
 			} else if (this.title != this.query.title) {
 				this.$resources.query.setValueDebounced.submit(
 					{ title: this.title },
@@ -141,12 +132,6 @@ export default {
 				)
 			}
 			this.$refs.title_input.blur()
-		},
-		on_column_update(updated_columns) {
-			this.$resources.query.update_columns.submit({ updated_columns })
-		},
-		on_filter_update(updated_filters) {
-			this.$resources.query.update_filters.submit({ updated_filters })
 		},
 	},
 }
