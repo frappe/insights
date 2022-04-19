@@ -16,10 +16,12 @@
 						:key="idx"
 						class="cursor-pointer px-3 py-1"
 						:class="{
-							'cursor-default border-b border-gray-200 text-xs font-light text-gray-500': item.is_header,
-							'border-t border-gray-200 text-red-400 hover:bg-gray-50': item.is_danger_action,
-							'text-gray-600 hover:bg-gray-50': item.is_aggregation,
-							'bg-blue-50 text-blue-400 hover:bg-blue-50': column.aggregation == item.label,
+							'cursor-default bg-gray-50 text-xs font-light text-gray-500': item.is_header,
+							'border-t border-gray-200 text-red-400 hover:underline': item.is_danger_action,
+							'text-gray-600 hover:underline': !item.is_header && !item.is_danger_action,
+							'text-blue-400':
+								(column.aggregation && column.aggregation === item.label) ||
+								(column.order_by && column.order_by === item.value),
 						}"
 						@click="on_menu_item_select(item)"
 					>
@@ -54,31 +56,44 @@ export default {
 			return this.$resources.aggregations.data
 		},
 		menu_items() {
-			const remove = { label: 'Remove', is_danger_action: true }
-			const agg_header = { label: 'Aggregations', is_header: true }
-			if (this.aggregations?.length) {
-				const group_by = { label: 'Group By', is_aggregation: true }
-				const aggregations = this.aggregations.map((label) => ({
-					label,
-					is_aggregation: true,
-				}))
-				return [agg_header, group_by, ...aggregations, remove]
-			} else {
-				return [remove]
-			}
+			const remove = { label: 'Remove', for_removing: true, is_danger_action: true }
+			const aggregation_items = this.get_aggregation_items()
+			const ordering_items = this.get_ordering_items()
+			return [...aggregation_items, ...ordering_items, remove]
 		},
 	},
 	methods: {
-		on_menu_item_select(agg) {
-			if (agg.is_header) {
+		on_menu_item_select(item) {
+			if (item.is_header) {
 				return
-			} else if (agg.is_aggregation) {
-				this.column.aggregation = this.column.aggregation == agg.label ? null : agg.label
+			} else if (item.for_aggregating) {
+				this.column.aggregation = this.column.aggregation == item.label ? null : item.label
 				this.query.update_column.submit({ column: this.column })
-			} else if (agg.is_danger_action) {
+			} else if (item.for_ordering) {
+				this.column.order_by = this.column.order_by == item.value ? null : item.value
+				this.query.update_column.submit({ column: this.column })
+			} else if (item.for_removing) {
 				this.query.remove_column.submit({ column: this.column })
 			}
 			this.is_open = false
+		},
+		get_aggregation_items() {
+			if (!this.aggregations?.length) {
+				return []
+			}
+			const agg_header = { label: 'Aggregations', is_header: true }
+			const group_by = { label: 'Group By', for_aggregating: true }
+			const aggregations = this.aggregations.map((label) => ({
+				label,
+				for_aggregating: true,
+			}))
+			return [agg_header, group_by, ...aggregations]
+		},
+		get_ordering_items() {
+			const ordering_header = { label: 'Ordering', is_header: true }
+			const asc = { label: 'Ascending', value: 'asc', for_ordering: true }
+			const desc = { label: 'Descending', value: 'desc', for_ordering: true }
+			return [ordering_header, asc, desc]
 		},
 	},
 }

@@ -13,7 +13,8 @@
   "table",
   "table_label",
   "aggregations_section",
-  "aggregation"
+  "aggregation",
+  "order_by"
  ],
  "fields": [
   {
@@ -63,12 +64,18 @@
    "fieldtype": "Data",
    "label": "Table Label",
    "reqd": 1
+  },
+  {
+   "fieldname": "order_by",
+   "fieldtype": "Select",
+   "label": "Order By",
+   "options": "\nasc\ndesc"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-03-27 11:36:41.963435",
+ "modified": "2022-04-19 04:19:22.466005",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query Column",

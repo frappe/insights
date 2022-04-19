@@ -8,6 +8,7 @@ from frappe import _dict
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, Field, Table
 from frappe.utils import cstr
+from pypika import Order
 from sqlparse import format as format_sql
 
 from analytics.analytics.doctype.query.utils import AGGREGATIONS, Operations
@@ -44,6 +45,7 @@ class Query(Document):
             if row.get("name") == column.get("name"):
                 row.label = column.get("label")
                 row.aggregation = column.get("aggregation")
+                row.order_by = column.get("order_by")
                 break
 
         self.save()
@@ -136,6 +138,10 @@ class Query(Document):
         if self._group_by_columns:
             query = query.groupby(*self._group_by_columns)
 
+        if self._order_by_columns:
+            for column, order in self._order_by_columns:
+                query = query.orderby(column, Order[order])
+
         query = query.where(*self._filters)
 
         query = query.limit(self._limit)
@@ -157,6 +163,7 @@ class Query(Document):
     def process_columns(self):
         self._columns = []
         self._group_by_columns = []
+        self._order_by_columns = []
 
         for row in self.columns:
             _column = self.convert_to_select_field(
@@ -165,6 +172,9 @@ class Query(Document):
 
             if row.aggregation and row.aggregation == "Group By":
                 self._group_by_columns.append(_column)
+
+            if row.order_by:
+                self._order_by_columns.append((_column, row.order_by))
 
             self._columns.append(_column)
 
