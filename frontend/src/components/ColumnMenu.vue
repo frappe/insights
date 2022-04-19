@@ -3,7 +3,7 @@
 		<Popover :show="is_open">
 			<template #target>
 				<div
-					class="mx-1 cursor-pointer rounded border border-transparent px-0.5 py-0.5 text-gray-500 hover:border-gray-200 hover:bg-gray-100 hover:text-gray-600"
+					class="cursor-pointer rounded border border-transparent px-0.5 py-0.5 text-gray-500 hover:border-gray-200 hover:bg-gray-100 hover:text-gray-600"
 					@click="is_open = !is_open"
 				>
 					<FeatherIcon name="more-vertical" class="h-4 w-4" />
