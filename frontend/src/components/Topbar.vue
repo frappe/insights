@@ -1,25 +1,31 @@
 <template>
 	<div class="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white px-8 shadow">
 		<div class="mx-auto flex max-w-7xl flex-1 px-8">
+			<!-- Breadcrumbs -->
 			<nav class="flex" aria-label="Breadcrumb">
-				<ol role="list" class="flex items-center space-x-3">
+				<ol role="list" class="flex items-center space-x-2">
 					<li>
 						<div>
-							<a href="#" class="text-gray-600 hover:text-gray-700">
-								<FeatherIcon name="home" class="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+							<a href="#">
+								<img class="app-logo" style="width: 24px" src="/assets/frappe/images/frappe-framework-logo.svg" />
 							</a>
 						</div>
 					</li>
-					<li v-for="page in routes" :key="page.name">
-						<div class="flex items-center">
+					<li v-for="(page, idx) in routes" :key="page.name">
+						<div class="flex items-center text-base">
 							<FeatherIcon name="chevron-right" class="h-5 w-5 flex-shrink-0 text-gray-600" aria-hidden="true" />
-							<a :href="page.path" class="ml-4 text-sm font-medium text-gray-700 hover:text-gray-800">{{
-								page.name
-							}}</a>
+							<a
+								:href="idx === routes.length - 1 ? '#' : page.path"
+								class="ml-2 text-gray-600 hover:underline"
+								:class="{ 'cursor-default text-gray-500 hover:no-underline': idx === routes.length - 1 }"
+							>
+								{{ page.name }}
+							</a>
 						</div>
 					</li>
 				</ol>
 			</nav>
+			<!-- Searchbar -->
 			<div class="flex flex-1 justify-end">
 				<div class="relative flex py-3">
 					<Input
@@ -56,7 +62,10 @@ export default {
 				.split('/')
 				.filter(Boolean)
 				.map((route) => {
-					return { name: route.replace(/^\w/, (c) => c.toUpperCase()), path: `/${route}` }
+					return {
+						name: route.charAt(0).toUpperCase() + route.slice(1),
+						path: `/${route}`,
+					}
 				})
 		},
 	},
