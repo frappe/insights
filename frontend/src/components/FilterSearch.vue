@@ -24,7 +24,7 @@
 			</template>
 			<template #content>
 				<SuggestionBox
-					v-if="suggestions?.length"
+					v-if="input_focused && suggestions?.length"
 					:suggestions="suggestions"
 					@select="(suggestion) => on_suggestion_select(suggestion)"
 				/>
@@ -35,6 +35,7 @@
 
 <script>
 import { ref } from 'vue'
+import { debounce } from 'frappe-ui'
 import SuggestionBox from './SuggestionBox.vue'
 
 export default {
@@ -44,41 +45,29 @@ export default {
 		SuggestionBox,
 	},
 	setup(props) {
-		const { filter } = props
-		let [_filter, input_value, input_focused, now_selecting] = [null, null, null, null]
-
-		if (filter && filter.left.label && filter.operator.label && filter.right.label) {
-			input_value = ref(`${filter.left.label};${filter.operator.label};${filter.right.label};`)
-			input_focused = ref(false)
-			now_selecting = ref('right')
-			_filter = ref(filter)
-		} else {
-			input_value = ref('')
-			input_focused = ref(false)
-			now_selecting = ref('left')
-			_filter = ref({
+		const data = {
+			input_value: ref(''),
+			input_focused: ref(false),
+			now_selecting: ref('left'),
+			filter: ref({
 				left: {},
 				operator: {},
 				right_type: '',
 				right: {},
-			})
+			}),
 		}
-		return { input_value, input_focused, now_selecting, filter: _filter }
+
+		if (props.filter && props.filter.left.label && props.filter.operator.label && props.filter.right.label) {
+			data.filter = ref(props.filter)
+			data.now_selecting = ref('right')
+			data.input_value = ref(`${props.filter.left.label};${props.filter.operator.label};;${props.filter.right.label}`)
+		}
+
+		return data
 	},
 	mounted() {
 		this.$refs.filter_picker?.focus()
 		this.query.get_selectable_columns.fetch({ tables: this.tables })
-		if (this.filter?.left?.type) {
-			this.$resources.operator_list.submit({ fieldtype: this.filter.left.type })
-		}
-
-		// // detect click outside of input
-		// document.addEventListener('click', (e) => {
-		// 	if (e.target.closest('.filter-picker') || e.target.classList.contains('filter-picker-suggestion')) {
-		// 		return this.$refs.filter_picker?.focus()
-		// 	}
-		// 	this.input_focused = false
-		// })
 	},
 	resources: {
 		operator_list() {
@@ -95,6 +84,9 @@ export default {
 		operator_list() {
 			// Operator: { label, value }
 			return this.$resources.operator_list.data || []
+		},
+		column_value_list() {
+			return this.query.get_column_values?.data?.message || []
 		},
 		suggestions() {
 			let _suggestions = []
@@ -120,32 +112,13 @@ export default {
 					return _suggestions
 				}
 
-				if (this.filter.right_type != 'Column') {
-					let _suggestion = [{ label: 'Type a value...', is_header: true }]
-					const right_input = this.input_value.split(';')[2]
-					if (right_input?.length > 0) {
-						_suggestion = [
-							{ label: 'Press enter to confirm', is_header: true },
-							{ label: right_input, value: right_input },
-						]
-					}
-					return _suggestion
+				if (this.filter.right_type !== 'Column') {
+					return this.get_value_suggestions()
 				}
 			}
 		},
 	},
 	watch: {
-		// now_selecting(value) {
-		// 	if (value === 'left') {
-		// 		.then(() => {
-		// 			const filter_picker = this.$refs.filter_picker
-		// 			const scrollable_parent = filter_picker.closest('.overflow-scroll')
-		// 			nextTick(() => {
-		// 				scrollable_parent.scrollTo({ behaviour: 'smooth', top: scrollable_parent.offsetHeight })
-		// 			})
-		// 		})
-		// 	}
-		// },
 		input_value(new_value) {
 			const delimiter_count = (new_value.match(/;/g) || []).length
 			if (delimiter_count === 0) {
@@ -162,14 +135,22 @@ export default {
 				this.filter.right_type = ''
 				this.filter.right = {}
 				this.now_selecting = 'operator'
+				this.$resources.operator_list.submit({
+					fieldtype: this.filter.left.type,
+				})
 				return
 			}
 
-			const right_input = this.input_value.split(';')[2]
-			if (delimiter_count === 2 && !right_input) {
+			if (delimiter_count === 2) {
 				this.filter.right_type = ''
 				this.filter.right = {}
 				this.now_selecting = 'right_type'
+				return
+			}
+
+			const right_input = this.input_value.split(';').at(-1)
+			if (delimiter_count === 3 && right_input) {
+				this.check_and_fetch_column_values(right_input)
 				return
 			}
 		},
@@ -181,7 +162,6 @@ export default {
 				this.input_value = `${suggestion.label};`
 				this.$refs.filter_picker?.focus()
 				this.now_selecting = 'operator'
-				this.$resources.operator_list.submit({ fieldtype: suggestion.type })
 				return
 			}
 
@@ -195,6 +175,7 @@ export default {
 
 			if (this.now_selecting === 'right_type') {
 				this.filter.right_type = suggestion.label
+				this.input_value = `${this.filter.left.label};${this.filter.operator.label};;`
 				this.$refs.filter_picker?.focus()
 				this.now_selecting = 'right'
 				return
@@ -230,6 +211,17 @@ export default {
 				return 'clock'
 			}
 		},
+		get_static_value_type(column_type) {
+			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
+				return 'Text'
+			}
+			if (['int', 'decimal', 'bigint', 'float', 'double'].includes(column_type.toLowerCase())) {
+				return 'Number'
+			}
+			if (['date', 'datetime', 'time', 'timestamp'].includes(column_type.toLowerCase())) {
+				return column_type
+			}
+		},
 		get_column_suggestions(input) {
 			let _suggestions = []
 			if (input) {
@@ -254,17 +246,41 @@ export default {
 			}
 			return _suggestions
 		},
-		get_static_value_type(column_type) {
-			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
-				return 'Text'
+		get_value_suggestions() {
+			const right_input = this.input_value.split(';').at(-1)
+
+			if (!right_input) {
+				return [{ label: 'Type a value...', is_header: true }]
 			}
-			if (['int', 'decimal', 'bigint', 'float', 'double'].includes(column_type.toLowerCase())) {
-				return 'Number'
+
+			if (this.filter.right_type === 'Text' && this.column_value_list.length) {
+				return [{ label: 'Press enter to confirm', is_header: true }, ...this.column_value_list]
 			}
-			if (['date', 'datetime', 'time', 'timestamp'].includes(column_type.toLowerCase())) {
-				return column_type
+
+			if (right_input.length > 0) {
+				return [
+					{ label: 'Press enter to confirm', is_header: true },
+					{ label: right_input, value: right_input },
+				]
 			}
 		},
+		check_and_fetch_column_values: debounce(function (right_input) {
+			// do not show column values for long text columns
+			const left_is_smalltext = ['varchar', 'char', 'enum'].includes(this.filter.left.type.toLowerCase())
+			// do not show column values for 'like', 'starts with', 'ends with' etc. operators
+			const valid_operators = ['equals', 'not equals', 'in', 'not in']
+
+			if (
+				left_is_smalltext &&
+				this.filter.right_type === 'Text' &&
+				valid_operators.includes(this.filter.operator.label)
+			) {
+				this.query.get_column_values.submit({
+					column: this.filter.left,
+					search_text: right_input,
+				})
+			}
+		}, 200),
 	},
 }
 </script>

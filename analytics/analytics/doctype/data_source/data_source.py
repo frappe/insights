@@ -88,3 +88,26 @@ class DataSource(Document):
         ]
 
         return _columns
+
+    def get_distinct_column_values(self, column, search_text, limit=50):
+        self.create_db_instance()
+        self.db_instance.connect()
+
+        Table = frappe.qb.Table(column.get("table"))
+        Field = frappe.qb.Field(column.get("column"))
+        query = (
+            frappe.qb.from_(Table)
+            .select(Field.as_("label"))
+            .distinct()
+            .select(Field.as_("value"))
+            .where(Field.like(f"%{search_text}%"))
+            .limit(limit)
+            .get_sql()
+        )
+
+        values = self.db_instance.sql(query, as_dict=1, debug=1)
+
+        self.db_instance.close()
+
+        # TODO: caching
+        return values

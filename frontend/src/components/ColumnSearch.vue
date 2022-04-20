@@ -21,7 +21,11 @@
 				</div>
 			</template>
 			<template #content>
-				<SuggestionBox v-if="suggestions?.length" :suggestions="suggestions" @select="on_suggestion_select" />
+				<SuggestionBox
+					v-if="input_focused && suggestions?.length"
+					:suggestions="suggestions"
+					@select="on_suggestion_select"
+				/>
 			</template>
 		</Popover>
 	</div>

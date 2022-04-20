@@ -63,6 +63,7 @@ export default {
 					set_limit: 'set_limit',
 					get_selectable_tables: 'get_selectable_tables',
 					get_selectable_columns: 'get_selectable_columns',
+					get_column_values: 'get_column_values',
 				},
 				onError: () => {
 					this.$notify({

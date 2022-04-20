@@ -90,6 +90,11 @@ class Query(Document):
         self.limit = sanitized_limit
         self.save()
 
+    @frappe.whitelist()
+    def get_column_values(self, column, search_text):
+        data_source = frappe.get_cached_doc("Data Source", self.data_source)
+        return data_source.get_distinct_column_values(column, search_text)
+
     def update_tables(self):
         column_tables = [
             {

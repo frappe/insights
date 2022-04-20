@@ -39,13 +39,14 @@ export default {
 	mounted() {
 		document.addEventListener('keydown', this.on_keydown_event)
 	},
+	unmounted() {
+		document.removeEventListener('keydown', this.on_keydown_event)
+	},
 	beforeDestroy() {
 		document.removeEventListener('keydown', this.on_keydown_event)
 	},
 	methods: {
 		on_keydown_event(e) {
-			// TODO: return if suggestion box is not visible
-
 			if (!['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
 				return
 			}
