@@ -14,7 +14,7 @@
 					<thead class="sticky top-0 bg-white">
 						<tr>
 							<th
-								class="sticky top-0 w-[3rem] whitespace-nowrap border-b border-r bg-white p-2 text-center font-normal text-gray-500"
+								class="sticky top-0 flex h-10 w-[3rem] items-center justify-center whitespace-nowrap border-b border-r bg-white px-2 text-center font-normal text-gray-500"
 								scope="col"
 							>
 								<FeatherIcon name="settings" class="h-4 w-4 cursor-pointer" />
@@ -22,7 +22,7 @@
 							<th
 								v-for="column in columns"
 								:key="column.name"
-								class="whitespace-nowrap border-b p-2 text-left font-normal text-gray-500"
+								class="h-10 whitespace-nowrap border-b px-2 text-left font-normal text-gray-500"
 								scope="col"
 							>
 								<ColumnHeader :column="column" :query="query" />

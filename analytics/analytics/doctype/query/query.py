@@ -11,7 +11,11 @@ from frappe.utils import cint, cstr
 from pypika import Order
 from sqlparse import format as format_sql
 
-from analytics.analytics.doctype.query.utils import AGGREGATIONS, Operations
+from analytics.analytics.doctype.query.utils import (
+    Aggregations,
+    ColumnFormat,
+    Operations,
+)
 
 
 class Query(Document):
@@ -44,8 +48,9 @@ class Query(Document):
         for row in self.columns:
             if row.get("name") == column.get("name"):
                 row.label = column.get("label")
-                row.aggregation = column.get("aggregation")
+                row.format = column.get("format")
                 row.order_by = column.get("order_by")
+                row.aggregation = column.get("aggregation")
                 break
 
         self.save()
@@ -96,31 +101,20 @@ class Query(Document):
         return data_source.get_distinct_column_values(column, search_text)
 
     def update_tables(self):
-        column_tables = [
-            {
-                "table": column.get("table"),
-                "label": column.get("table_label"),
-            }
-            for column in self.columns
-        ]
-        # remove the tables from self.tables if not present in column_tables
-        tables = [row.get("table") for row in column_tables]
-        for table in [d for d in self.tables if d.get("table") not in tables]:
-            self.remove(table)
+        self.tables = []
+        column_tables = {row.table: row.table_label for row in self.columns}
 
-        # add the tables to self.tables if not already present
-        tables = [row.table for row in self.tables]
-        for row in [d for d in column_tables if d.get("table") not in tables]:
+        for table, label in column_tables.items():
             self.append(
                 "tables",
                 {
-                    "table": row.get("table"),
-                    "label": row.get("label"),
+                    "table": table,
+                    "label": label,
                 },
             )
 
     def before_save(self):
-        if not self.tables or not self.columns or not self.filters:
+        if not self.columns or not self.filters:
             self.result = "[]"
             return
 
@@ -179,17 +173,34 @@ class Query(Document):
         self._order_by_columns = []
 
         for row in self.columns:
-            _column = self.convert_to_select_field(
-                row.table, row.column, row.label, row.aggregation
-            )
+            _column = self.convert_to_select_field(row.table, row.column, row.label)
 
-            if row.aggregation and row.aggregation == "Group By":
-                self._group_by_columns.append(_column)
+            if row.format:
+                _column = self.process_column_format(row, _column)
+
+            if row.aggregation:
+                _column = self.process_aggregation(row, _column)
 
             if row.order_by:
                 self._order_by_columns.append((_column, row.order_by))
 
             self._columns.append(_column)
+
+    def process_column_format(self, row, column):
+        return ColumnFormat.apply(row.format, column)
+
+    def process_aggregation(self, row, column):
+        if row.aggregation != "Group By":
+            column = Aggregations.apply(row.aggregation, column)
+
+        if row.aggregation == "Count Distinct":
+            column = Aggregations.apply("Distinct", column)
+            column = Aggregations.apply("Count", column)
+
+        if row.aggregation == "Group By":
+            self._group_by_columns.append(column)
+
+        return column
 
     def process_filters(self):
         filters = _dict(loads(self.filters))
@@ -240,14 +251,10 @@ class Query(Document):
     def process_limit(self):
         self._limit: int = self.limit or 10
 
-    def convert_to_select_field(self, table, column, label, aggregation="") -> Field:
+    def convert_to_select_field(self, table, column, label) -> Field:
         table = Table(table)
         Field = table[column]
         Field = Field.as_(label)
-
-        if aggregation and aggregation != "Group By":
-            aggregation = AGGREGATIONS[aggregation]
-            Field = aggregation(Field)
 
         return Field
 

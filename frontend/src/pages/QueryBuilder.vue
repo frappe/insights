@@ -5,11 +5,11 @@
 				<div class="relative flex flex-col items-start">
 					<input
 						type="text"
-						v-model="title"
+						v-model="query.title"
 						ref="title_input"
 						spellcheck="false"
 						@blur="on_title_update"
-						:size="Math.max(title.length, 2)"
+						:size="Math.max(query.title.length, 4)"
 						@keydown.enter="on_title_update"
 						class="peer border-none bg-transparent p-0 text-3xl font-bold caret-black focus:border-none focus:outline-none focus:ring-transparent"
 					/>
@@ -79,9 +79,6 @@ export default {
 		query() {
 			return this.$resources.query.doc
 		},
-		title() {
-			return this.query.title
-		},
 		data_source() {
 			return this.query.data_source
 		},
@@ -108,30 +105,30 @@ export default {
 	},
 	methods: {
 		on_title_update() {
-			if (!this.title || this.title.length == 0) {
-				this.title = this.query.title
-			} else if (this.title != this.query.title) {
-				this.$resources.query.setValueDebounced.submit(
-					{ title: this.title },
-					{
-						onSuccess: () => {
-							this.$notify({
-								title: 'Query title updated',
-								color: 'green',
-								icon: 'check',
-							})
-						},
-						onError: () => {
-							this.$notify({
-								title: 'Something went wrong',
-								color: 'red',
-								icon: 'alert-circle',
-							})
-							this.title = this.query.title
-						},
-					}
-				)
+			if (!this.query.title || this.query.title.length == 0) {
+				this.query.title = 'Untitled Query'
 			}
+
+			this.$resources.query.setValueDebounced.submit(
+				{ title: this.query.title },
+				{
+					onSuccess: () => {
+						this.$notify({
+							title: 'Query title updated',
+							color: 'green',
+							icon: 'check',
+						})
+					},
+					onError: () => {
+						this.$notify({
+							title: 'Something went wrong',
+							color: 'red',
+							icon: 'alert-circle',
+						})
+					},
+				}
+			)
+
 			this.$refs.title_input.blur()
 		},
 	},

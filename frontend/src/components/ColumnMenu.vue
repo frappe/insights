@@ -20,8 +20,8 @@
 							'border-t border-gray-200 text-red-400 hover:underline': item.is_danger_action,
 							'text-gray-600 hover:underline': !item.is_header && !item.is_danger_action,
 							'text-blue-400':
-								(column.aggregation && column.aggregation === item.label) ||
-								(column.order_by && column.order_by === item.value),
+								(column.aggregation && column.aggregation === item.value) ||
+								(column.format && column.format === item.value),
 						}"
 						@click="on_menu_item_select(item)"
 					>
@@ -43,34 +43,38 @@ export default {
 		}
 	},
 	resources: {
-		aggregations() {
+		column_menu_options() {
 			return {
-				method: 'analytics.api.get_aggregation_list',
+				method: 'analytics.api.get_column_menu_options',
+				params: { fieldtype: this.column.type },
 				auto: true,
 				debounce: 300,
 			}
 		},
 	},
 	computed: {
-		aggregations() {
-			return this.$resources.aggregations.data
+		format_options() {
+			return this.$resources.column_menu_options.data?.format_options
+		},
+		aggregation_options() {
+			return this.$resources.column_menu_options.data?.aggregation_options
 		},
 		menu_items() {
 			const remove = { label: 'Remove', for_removing: true, is_danger_action: true }
+			const format_items = this.get_format_items()
 			const aggregation_items = this.get_aggregation_items()
-			const ordering_items = this.get_ordering_items()
-			return [...aggregation_items, ...ordering_items, remove]
+			return [...aggregation_items, ...format_items, remove]
 		},
 	},
 	methods: {
 		on_menu_item_select(item) {
 			if (item.is_header) {
 				return
-			} else if (item.for_aggregating) {
-				this.column.aggregation = this.column.aggregation == item.label ? null : item.label
+			} else if (item.for_aggregation) {
+				this.column.aggregation = this.column.aggregation == item.value ? null : item.value
 				this.query.update_column.submit({ column: this.column })
-			} else if (item.for_ordering) {
-				this.column.order_by = this.column.order_by == item.value ? null : item.value
+			} else if (item.for_formatting) {
+				this.column.format = this.column.format == item.value ? null : item.value
 				this.query.update_column.submit({ column: this.column })
 			} else if (item.for_removing) {
 				this.query.remove_column.submit({ column: this.column })
@@ -78,22 +82,26 @@ export default {
 			this.is_open = false
 		},
 		get_aggregation_items() {
-			if (!this.aggregations?.length) {
+			if (!this.aggregation_options?.length) {
 				return []
 			}
 			const agg_header = { label: 'Aggregations', is_header: true }
-			const group_by = { label: 'Group By', for_aggregating: true }
-			const aggregations = this.aggregations.map((label) => ({
-				label,
-				for_aggregating: true,
+			const aggregations = this.aggregation_options.map((label) => ({
+				...label,
+				for_aggregation: true,
 			}))
-			return [agg_header, group_by, ...aggregations]
+			return [agg_header, ...aggregations]
 		},
-		get_ordering_items() {
-			const ordering_header = { label: 'Ordering', is_header: true }
-			const asc = { label: 'Ascending', value: 'asc', for_ordering: true }
-			const desc = { label: 'Descending', value: 'desc', for_ordering: true }
-			return [ordering_header, asc, desc]
+		get_format_items() {
+			if (!this.format_options?.length) {
+				return []
+			}
+			const format_header = { label: 'Column Formatting', is_header: true }
+			const formatting_items = this.format_options.map((label) => ({
+				...label,
+				for_formatting: true,
+			}))
+			return [format_header, ...formatting_items]
 		},
 	},
 }

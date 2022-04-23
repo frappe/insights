@@ -3,13 +3,51 @@
 
 import operator
 
-from frappe.query_builder import functions
+from frappe.query_builder import CustomFunction, functions
 
-# TODO: Convert to an Enum
-AGGREGATIONS = {
-    "Sum": functions.Sum,
-    "Count": functions.Count,
-}
+
+class Aggregations:
+
+    functions = {
+        "Sum": functions.Sum,
+        "Count": functions.Count,
+        "Min": functions.Min,
+        "Max": functions.Max,
+        "Avg": functions.Avg,
+        "Distinct": CustomFunction("DISTINCT", ["column"]),
+    }
+
+    @classmethod
+    def apply(cls, aggregation, column):
+        if aggregation in cls.functions:
+            return cls.functions[aggregation](column)
+
+
+class ColumnFormat:
+
+    date_formats = {
+        "Minute": "%D %M, %Y, %l:%i %p",
+        "Hour": "%D %M, %Y, %l:00 %p",
+        "Day": "%D %M, %Y",
+        "Month": "%M, %Y",
+        "Year": "%Y",
+        "Minute of Hour": "%i",
+        "Hour of Day": "%l:00 %p",
+        "Day of Week": "%W",
+        "Day of Month": "%D",
+        "Day of Year": "%j",
+        "Month of Year": "%M",
+    }
+
+    DateFormat = CustomFunction("DATE_FORMAT", ["date", "format"])
+    Quarter = CustomFunction("QUARTER", ["date"])
+
+    @classmethod
+    def apply(cls, format, column):
+        if format in cls.date_formats:
+            return cls.DateFormat(column, cls.date_formats[format])
+        elif format == "Quarter of Year":
+            return cls.Quarter(column)
 
 
 class Operations:

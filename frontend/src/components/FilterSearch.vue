@@ -25,7 +25,7 @@
 			<template #content>
 				<SuggestionBox
 					v-if="input_focused && suggestions?.length"
-					:suggestions="suggestions"
+					:header_and_suggestions="suggestions"
 					@select="(suggestion) => on_suggestion_select(suggestion)"
 				/>
 			</template>

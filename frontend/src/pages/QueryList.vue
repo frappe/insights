@@ -37,7 +37,7 @@
 			<template #body-content>
 				<div class="space-y-4">
 					<Input type="select" label="Data Source" v-model="new_query.data_source" :options="data_sources" />
-					<Input type="text" label="Title" v-model="new_query.title" @keydown.enter="submit_query" />
+					<Input type="text" label="Title" v-model="new_query.title" />
 				</div>
 			</template>
 			<template #actions>
@@ -72,12 +72,12 @@ export default {
 			auto: true,
 		},
 		create_query: {
-			method: 'frappe.client.insert',
-			onSuccess(query) {
+			method: 'analytics.api.create_query',
+			onSuccess(query_name) {
 				this.new_query.title = ''
 				this.new_query.data_source = ''
 				this.create_new_query_dialog = false
-				this.$router.push(`/query/${query.name}`)
+				this.$router.push(`/query/${query_name}`)
 			},
 		},
 	},
@@ -93,11 +93,8 @@ export default {
 		submit_query() {
 			if (this.new_query.title && this.new_query.data_source) {
 				this.$resources.create_query.submit({
-					doc: {
-						doctype: 'Query',
-						title: this.new_query.title,
-						data_source: this.new_query.data_source,
-					},
+					title: this.new_query.title,
+					data_source: this.new_query.data_source,
 				})
 			}
 		},
