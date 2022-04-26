@@ -147,7 +147,7 @@ class Query(Document):
 
         if self._order_by_columns:
             for column, order in self._order_by_columns:
-                query = query.orderby(column, Order[order])
+                query = query.orderby(column, order=Order[order])
 
         query = query.where(*self._filters)
 
