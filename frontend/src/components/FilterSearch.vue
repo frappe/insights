@@ -9,14 +9,14 @@
 					spellcheck="false"
 					autocomplete="off"
 					:size="Math.max(input_value.length, 20) || 20"
-					class="form-input block h-8 flex-1 select-none whitespace-nowrap rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
+					class="form-input block h-8 max-w-sm flex-1 select-none whitespace-nowrap rounded-md text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
 					placeholder="Select a column..."
 					@focus="input_focused = true"
 					@keydown.tab="input_focused = false"
 				/>
 				<div
 					v-if="input_value"
-					class="absolute top-0 flex h-9 w-full cursor-text items-center whitespace-nowrap border border-transparent px-3 text-sm leading-6"
+					class="absolute top-0 flex h-8 w-full max-w-sm origin-right cursor-text items-center whitespace-nowrap px-3 text-sm"
 					@click="$refs.filter_picker.focus()"
 				>
 					{{ input_value.replace(/;/g, ' ') }}
@@ -57,10 +57,20 @@ export default {
 			}),
 		}
 
-		if (props.filter && props.filter.left.label && props.filter.operator.label && props.filter.right.label) {
+		if (props.filter && props.filter.left.label && props.filter.operator.label) {
 			data.filter = ref(props.filter)
-			data.now_selecting = ref('right')
-			data.input_value = ref(`${props.filter.left.label};${props.filter.operator.label};;${props.filter.right.label}`)
+
+			const filter = props.filter
+			if (filter.operator.value.includes('set')) {
+				data.now_selecting = ref('operator')
+				data.input_value = ref(`${filter.left.label};${filter.operator.label}`)
+			} else if (filter.right_type == 'Column') {
+				data.now_selecting = ref('right')
+				data.input_value = ref(`${filter.left.label};${filter.operator.label};[${filter.right.label}]`)
+			} else {
+				data.now_selecting = ref('right')
+				data.input_value = ref(`${filter.left.label};${filter.operator.label};${filter.right.label}`)
+			}
 		}
 
 		return data
@@ -68,6 +78,10 @@ export default {
 	mounted() {
 		this.$refs.filter_picker?.focus()
 		this.query.get_selectable_columns.fetch({ tables: this.tables })
+		this.fetch_operators()
+		if (this.filter.right_type == 'Column') {
+			this.$refs.filter_picker?.setSelectionRange(this.input_value.length - 1, this.input_value.length - 1)
+		}
 	},
 	resources: {
 		operator_list() {
@@ -100,21 +114,14 @@ export default {
 				return this.get_operator_suggestions(operator)
 			}
 
-			if (this.now_selecting === 'right_type') {
-				const static_value_type = this.get_static_value_type(this.filter.left.type)
-				return [{ label: 'Select value type...', is_header: true }, { label: static_value_type }, { label: 'Column' }]
-			}
-
 			if (this.now_selecting === 'right') {
-				if (this.filter.right_type == 'Column') {
+				if (this.filter.right_type === 'Column') {
 					_suggestions = [{ label: 'Select a column...', is_header: true }]
-					_suggestions = _suggestions.concat(this.get_column_suggestions(right))
+					_suggestions = _suggestions.concat(this.get_column_suggestions(right.slice(1, -1)))
 					return _suggestions
 				}
 
-				if (this.filter.right_type !== 'Column') {
-					return this.get_value_suggestions()
-				}
+				return this.get_value_suggestions()
 			}
 		},
 	},
@@ -122,35 +129,64 @@ export default {
 		input_value(new_value) {
 			const delimiter_count = (new_value.match(/;/g) || []).length
 			if (delimiter_count === 0) {
-				this.filter.left = {}
-				this.filter.operator = {}
-				this.filter.right_type = ''
-				this.filter.right = {}
-				this.now_selecting = 'left'
+				this.reset_left()
 				return
 			}
 
 			if (delimiter_count === 1) {
-				this.filter.operator = {}
-				this.filter.right_type = ''
-				this.filter.right = {}
-				this.now_selecting = 'operator'
-				this.$resources.operator_list.submit({
-					fieldtype: this.filter.left.type,
-				})
-				return
-			}
-
-			if (delimiter_count === 2) {
-				this.filter.right_type = ''
-				this.filter.right = {}
-				this.now_selecting = 'right_type'
+				this.reset_operator()
+				this.fetch_operators()
 				return
 			}
 
 			const right_input = this.input_value.split(';').at(-1)
-			if (delimiter_count === 3 && right_input) {
+			const operator_is_equals = this.filter.operator.value.includes('=')
+
+			if (delimiter_count === 2 && right_input && !operator_is_equals) {
 				this.check_and_fetch_column_values(right_input)
+				return
+			}
+
+			if (delimiter_count === 2 && right_input && operator_is_equals) {
+				if (right_input.endsWith('[')) {
+					this.input_value += ']'
+					this.$nextTick(() => {
+						// set caret postion before closing bracket
+						this.$refs.filter_picker?.setSelectionRange(this.input_value.length - 1, this.input_value.length - 1)
+					})
+					return
+				}
+
+				if (right_input == ']') {
+					// remove last character
+					this.input_value = this.input_value.slice(0, -1)
+					this.filter.right_type = null
+					this.$nextTick(() => {
+						this.$refs.filter_picker?.setSelectionRange(this.input_value.length, this.input_value.length)
+					})
+					return
+				}
+
+				if (right_input.startsWith('[') && right_input.endsWith(']')) {
+					this.filter.right_type = 'Column'
+				} else {
+					this.filter.right_type = null
+				}
+			}
+		},
+		now_selecting(newVal) {
+			if (newVal) {
+				!this.input_focused && this.$refs.filter_picker?.focus()
+			} else {
+				this.input_focused && this.$refs.filter_picker?.blur()
+			}
+		},
+		'filter.operator.value': function (operator) {
+			if (!operator) return
+
+			if (operator.includes('set')) {
+				this.filter.right = {}
+				this.trigger_filter_select()
 				return
 			}
 		},
@@ -160,7 +196,6 @@ export default {
 			if (this.now_selecting === 'left') {
 				this.filter.left = suggestion
 				this.input_value = `${suggestion.label};`
-				this.$refs.filter_picker?.focus()
 				this.now_selecting = 'operator'
 				return
 			}
@@ -168,37 +203,30 @@ export default {
 			if (this.now_selecting === 'operator') {
 				this.filter.operator = suggestion
 				this.input_value = `${this.filter.left.label};${suggestion.label};`
-				this.$refs.filter_picker?.focus()
-				this.now_selecting = 'right_type'
-				return
-			}
-
-			if (this.now_selecting === 'right_type') {
-				this.filter.right_type = suggestion.label
-				this.input_value = `${this.filter.left.label};${this.filter.operator.label};;`
-				this.$refs.filter_picker?.focus()
 				this.now_selecting = 'right'
 				return
 			}
 
 			if (this.now_selecting === 'right') {
 				this.filter.right = suggestion
-				this.$emit('filter_selected', this.filter)
-				this.reset()
+				this.trigger_filter_select()
 				return
 			}
+		},
+		trigger_filter_select() {
+			this.$emit('filter_selected', this.filter)
+			this.reset()
 		},
 		reset() {
 			this.filter = {
 				left: {},
 				operator: {},
-				right_type: '',
+				right_type: null,
 				right: {},
 			}
 			this.input_value = ''
 			this.input_focused = false
 			this.now_selecting = null
-			this.$refs.column_search?.blur()
 		},
 		get_icon_for(column_type) {
 			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
@@ -253,7 +281,15 @@ export default {
 				return [{ label: 'Type a value...', is_header: true }]
 			}
 
-			if (this.filter.right_type === 'Text' && this.column_value_list.length) {
+			const right_is_a_list = this.filter.operator.value.includes('in')
+			if (right_is_a_list) {
+				return [
+					{ label: 'Enter comma separated values...', is_header: true },
+					{ label: right_input, value: right_input },
+				]
+			}
+
+			if (this.column_value_list.length) {
 				return [{ label: 'Press enter to confirm', is_header: true }, ...this.column_value_list]
 			}
 
@@ -272,7 +308,7 @@ export default {
 
 			if (
 				left_is_smalltext &&
-				this.filter.right_type === 'Text' &&
+				this.filter.right_type !== 'Column' &&
 				valid_operators.includes(this.filter.operator.label)
 			) {
 				this.query.get_column_values.submit({
@@ -281,6 +317,31 @@ export default {
 				})
 			}
 		}, 200),
+		fetch_operators: debounce(function () {
+			if (this.filter.left.type) {
+				this.$resources.operator_list.submit({
+					fieldtype: this.filter.left.type,
+				})
+			}
+		}, 200),
+		reset_left() {
+			this.filter.left = {}
+			this.filter.operator = {}
+			this.filter.right_type = null
+			this.filter.right = {}
+			this.now_selecting = 'left'
+		},
+		reset_operator() {
+			this.filter.operator = {}
+			this.filter.right_type = null
+			this.filter.right = {}
+			this.now_selecting = 'operator'
+		},
+		reset_right() {
+			this.filter.right_type = null
+			this.filter.right = {}
+			this.now_selecting = 'right'
+		},
 	},
 }
 </script>

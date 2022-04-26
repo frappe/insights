@@ -1,34 +1,27 @@
 <template>
-	<div @dblclick="edit_filter_at = idx">
+	<div>
 		<div
 			v-if="edit_filter_at != idx"
+			@dblclick="edit_filter_at = idx"
 			class="group menu-item relative -ml-1 flex w-fit cursor-pointer items-center rounded-md px-2 hover:bg-gray-50"
 		>
 			<FeatherIcon name="corner-down-right" class="mr-2 h-3 w-3 text-gray-500" />
-			<div class="flex h-8 items-center whitespace-nowrap rounded-md font-normal">
-				<div class="flex flex-col">
-					<span class="flex items-center">
-						<FeatherIcon name="columns" class="mr-1 h-3 w-3 text-gray-500/90" />
-						{{ filter.left.label }}
-					</span>
-					<!-- <span class="text-xs font-light text-gray-500">{{ filter.left.table_label }}</span> -->
+			<div class="flex h-8 max-w-sm items-center whitespace-nowrap rounded-md font-normal">
+				<!-- Left -->
+				<div class="flex items-center">
+					<FeatherIcon name="columns" class="mr-1 h-3 w-3 text-gray-500/90" />
+					{{ filter.left.label }}
 				</div>
-				<!-- operator with border -->
-				<!-- <div class="mx-3 rounded border-[0.5px] border-gray-500 bg-gray-50 px-1.5 py-0.5 text-xs text-gray-600">
-							{{ filter.operator.label }}
-						</div> -->
-				<div class="mx-2 text-sm text-green-600">
+				<!-- Operator -->
+				<div class="ml-2 text-sm text-green-600">
 					{{ filter.operator.label }}
 				</div>
-				<div v-if="filter.right_type == 'Column'" class="flex flex-col">
-					<span class="flex items-center">
-						<FeatherIcon name="columns" class="mr-1 h-3 w-3 text-gray-500/90" />
-						{{ filter.right.label }}
-					</span>
-					<!-- <span class="text-xs font-light text-gray-500">{{ filter.right.table_label }}</span> -->
-				</div>
-				<div v-else class="flex items-center">
-					<FeatherIcon name="type" class="mr-1 h-3 w-3 text-gray-500/90" />
+				<!-- Right -->
+				<div v-if="filter.right.label" class="ml-2 flex items-center">
+					<FeatherIcon
+						:name="filter.right_type == 'Column' ? 'columns' : 'type'"
+						class="mr-1 h-3 w-3 text-gray-500/90"
+					/>
 					{{ filter.right.label }}
 				</div>
 			</div>

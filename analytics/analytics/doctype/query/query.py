@@ -243,7 +243,16 @@ class Query(Document):
                 condition.right.table, condition.right.column, condition.right.label
             )
         else:
-            operand_2 = condition.right.value
+            if "like" in condition.operator.value:
+                operand_2 = f"%{condition.right.value}%"
+            elif "in" in condition.operator.value:
+                operand_2 = [
+                    d.lstrip().rstrip() for d in condition.right.value.split(",")
+                ]
+            elif "set" in condition.operator.value:
+                operand_2 = None
+            else:
+                operand_2 = condition.right.value
 
         operation = Operations.get_operation(condition.operator.value)
         return operation(operand_1, operand_2)
