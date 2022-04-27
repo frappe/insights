@@ -1,3 +1,6 @@
 [submodule "frappe-ui"]
 	path = frappe-ui
 	url = https://github.com/frappe/frappe-ui.git
+[submodule "frappe-charts"]
+	path = frappe-charts
+	url = https://github.com/frappe/charts.git
