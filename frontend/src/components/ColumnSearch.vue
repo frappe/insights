@@ -7,7 +7,7 @@
 					ref="column_search"
 					autocomplete="off"
 					spellcheck="false"
-					class="form-input block h-8 w-full select-none rounded-md border-gray-300 text-sm font-medium text-transparent placeholder-gray-500 caret-black"
+					class="form-input block h-8 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
 					:placeholder="input_focused ? 'Select a table...' : 'Add a column...'"
 					v-model="input_value"
 					@focus="input_focused = true"

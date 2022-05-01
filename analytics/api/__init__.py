@@ -154,3 +154,38 @@ def get_column_menu_options(fieldtype):
         "aggregation_options": aggregation_options,
         "format_options": format_options,
     }
+
+
+@frappe.whitelist()
+def create_query_chart(query, title, type, label_column, value_column):
+    chart = frappe.new_doc("Query Chart")
+    chart.chart_title = title
+    chart.query = query
+    chart.type = type
+    chart.label_column = label_column
+    chart.value_column = value_column
+    chart.save()
+
+
+@frappe.whitelist()
+def update_query_chart(chart_name, title, type, label_column, value_column):
+    chart = frappe.get_doc("Query Chart", chart_name)
+    chart.chart_title = title
+    chart.type = type
+    chart.label_column = label_column
+    chart.value_column = value_column
+    chart.save()
+
+
+@frappe.whitelist()
+def get_query_chart(query):
+    if chart_name := frappe.db.exists("Query Chart", {"query": query}):
+        chart = frappe.get_doc("Query Chart", chart_name)
+        return {
+            "name": chart.name,
+            "query": chart.query,
+            "title": chart.title,
+            "type": chart.type,
+            "label_column": chart.label_column,
+            "value_column": chart.value_column,
+        }

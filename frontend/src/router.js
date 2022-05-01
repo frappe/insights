@@ -12,9 +12,9 @@ const routes = [
 		component: () => import('@/pages/QueryList.vue'),
 	},
 	{
-		name: 'QueryBuilder',
+		name: 'Query',
 		path: '/query/:query_id',
-		component: () => import('@/pages/QueryBuilder.vue'),
+		component: () => import('@/pages/Query.vue'),
 		props: true,
 	},
 	{

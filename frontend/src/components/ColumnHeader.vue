@@ -14,7 +14,7 @@
 				v-model="column.label"
 				:size="Math.max(parseInt(column.label?.length * 1.2), 6)"
 				class="mr-2 cursor-text border-none bg-transparent p-0 pr-2 text-base focus:border-none focus:text-gray-600 focus:outline-none focus:ring-transparent"
-				@blur="query.get.fetch()"
+				@blur="update_column_label(column)"
 				@keydown.enter="update_column_label(column)"
 			/>
 		</div>

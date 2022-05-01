@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-screen select-none font-sans text-gray-800">
+	<div class="flex h-screen select-none bg-white font-sans text-gray-800">
 		<div class="flex h-full flex-1 flex-col">
 			<Topbar />
 			<router-view class="flex h-[calc(100vh-4rem)] flex-col" :key="$route.fullPath" />

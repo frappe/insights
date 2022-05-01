@@ -1,7 +1,7 @@
 <template>
-	<div class="flex flex-col pt-10 pb-5" v-if="query">
-		<header>
-			<div class="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+	<div class="flex flex-col" v-if="query">
+		<header class="mx-auto flex w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
+			<div class="my-4 flex h-12 items-center justify-between">
 				<div class="relative flex flex-col items-start">
 					<input
 						type="text"
@@ -13,41 +13,48 @@
 						@keydown.enter="on_title_update"
 						class="peer border-none bg-transparent p-0 text-3xl font-bold caret-black focus:border-none focus:outline-none focus:ring-transparent"
 					/>
-					<div class="mt-1 text-sm text-gray-500">Data Source: {{ data_source }}</div>
+					<div class="mt-2 flex space-x-2 text-sm font-light text-gray-500">
+						<div class="flex items-center"><FeatherIcon name="database" class="mr-1 h-3 w-3" /> {{ data_source }}</div>
+						<div class="flex items-center"><FeatherIcon name="layout" class="mr-1 h-3 w-3" /> {{ tables }}</div>
+					</div>
+				</div>
+				<div class="flex items-center space-x-2">
+					<QueryMenu :query="query" />
 				</div>
 			</div>
+			<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
 		</header>
-		<!-- height = 100% - (padding-top (2.5) + padding-bottom (1.5) + header height (3))  -->
-		<main class="flex h-[calc(100%-7rem)] flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 flex-col pt-8 sm:px-6 lg:px-8">
-				<div class="h-full min-h-[12rem] flex-1 rounded-md bg-white shadow">
-					<div class="flex h-16 flex-shrink-0">
-						<QueryToolbar :query="$resources.query" />
-					</div>
-					<div class="flex h-[calc(100%-6.5rem)]">
-						<QueryResult :result="result" :query="$resources.query" />
-					</div>
-					<div class="flex h-10 flex-shrink-0">
-						<LimitsAndOrder :query="$resources.query" :limit="limit" />
-					</div>
-				</div>
+		<!-- height = 100% - (padding-top (2) + padding-bottom (1.5) + header height (3))  -->
+		<main class="flex h-[calc(100%-6.5rem)] flex-1">
+			<div class="mx-auto flex max-w-7xl flex-1 flex-col sm:px-6 lg:px-8">
+				<QueryBuilder v-show="active_tab == 'Build'" :query="$resources.query" />
+				<QueryVisualizer v-if="active_tab == 'Visualize'" :query="$resources.query" />
 			</div>
 		</main>
 	</div>
 </template>
 
 <script>
-import QueryToolbar from '@/components/QueryToolbar.vue'
-import QueryResult from '@/components/QueryResult.vue'
-import LimitsAndOrder from '@/components/LimitsAndOrder.vue'
+import TabSwitcher from '@/components/TabSwitcher.vue'
+import QueryBuilder from '@/components/QueryBuilder.vue'
+import QueryVisualizer from '@/components/QueryVisualizer.vue'
+import QueryMenu from '@/components/QueryMenu.vue'
 
 export default {
-	name: 'QueryBuilder',
+	name: 'Query',
 	props: ['query_id'],
 	components: {
-		QueryToolbar,
-		QueryResult,
-		LimitsAndOrder,
+		TabSwitcher,
+		QueryBuilder,
+		QueryVisualizer,
+		QueryMenu,
+	},
+	data() {
+		return {
+			menu_open: false,
+			active_tab: 'Build',
+			tabs: ['Build', 'Visualize'],
+		}
 	},
 	resources: {
 		query() {
@@ -83,24 +90,7 @@ export default {
 			return this.query.data_source
 		},
 		tables() {
-			return this.query.tables.map((row) => {
-				return {
-					label: row.label,
-					table: row.table,
-				}
-			})
-		},
-		columns() {
-			return this.query.columns
-		},
-		filters() {
-			return JSON.parse(this.query.filters || '{}')
-		},
-		result() {
-			return JSON.parse(this.query.result || '[]')
-		},
-		limit() {
-			return this.query.limit
+			return this.query.tables.map((t) => t.label).join(', ')
 		},
 	},
 	methods: {

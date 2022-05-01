@@ -16,7 +16,7 @@
 				>
 					<li v-for="query in queries" :key="query.name">
 						<router-link
-							:to="{ name: 'QueryBuilder', params: { query_id: query.name } }"
+							:to="{ name: 'Query', params: { query_id: query.name } }"
 							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 hover:bg-gray-50"
 						>
 							<div class="ml-3">

@@ -2,22 +2,22 @@
 	<div class="flex h-full w-full flex-1 select-text rounded-md bg-white text-base">
 		<div
 			v-if="!result || result.length === 0"
-			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 		>
 			<p>Select at least one column to display the result</p>
 		</div>
 
 		<div v-else class="flex h-full w-full flex-1 flex-col">
 			<!-- Table -->
-			<div class="flex-1 overflow-scroll ring-1 ring-black ring-opacity-5 scrollbar-hide">
-				<table class="border-separate border-r">
+			<div class="relative flex-1 overflow-scroll rounded-md ring-1 ring-black ring-opacity-5 scrollbar-hide">
+				<table class="border-separate">
 					<thead class="sticky top-0 bg-white">
 						<tr>
 							<th
 								class="sticky top-0 flex h-10 w-[3rem] items-center justify-center whitespace-nowrap border-b border-r bg-white px-2 text-center font-normal text-gray-500"
 								scope="col"
 							>
-								<FeatherIcon name="settings" class="h-4 w-4 cursor-pointer" />
+								<!-- <FeatherIcon name="settings" class="h-4 w-4 cursor-pointer" /> -->
 							</th>
 							<th
 								v-for="column in columns"
@@ -58,8 +58,11 @@ export default {
 	components: {
 		ColumnHeader,
 	},
-	props: ['result', 'query'],
+	props: ['query'],
 	computed: {
+		result() {
+			return JSON.parse(this.query.doc.result || '[]')
+		},
 		columns() {
 			return this.query.doc.columns || []
 		},

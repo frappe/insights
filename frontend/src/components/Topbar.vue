@@ -1,5 +1,5 @@
 <template>
-	<div class="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white px-8 shadow">
+	<div class="sticky top-0 z-10 flex h-14 flex-shrink-0 bg-white px-8">
 		<div class="mx-auto flex max-w-7xl flex-1 px-8">
 			<!-- Breadcrumbs -->
 			<nav class="flex" aria-label="Breadcrumb">
@@ -7,13 +7,13 @@
 					<li>
 						<div>
 							<a href="#">
-								<img class="app-logo" style="width: 24px" src="/assets/frappe/images/frappe-framework-logo.svg" />
+								<img class="app-logo" style="width: 20px" src="/assets/frappe/images/frappe-framework-logo.svg" />
 							</a>
 						</div>
 					</li>
 					<li v-for="(page, idx) in routes" :key="page.name">
-						<div class="flex items-center text-base">
-							<FeatherIcon name="chevron-right" class="h-5 w-5 flex-shrink-0 text-gray-600" aria-hidden="true" />
+						<div class="flex items-center text-sm">
+							<FeatherIcon name="chevron-right" class="h-5 w-5 flex-shrink-0 text-gray-500" aria-hidden="true" />
 							<a
 								:href="idx === routes.length - 1 ? '#' : page.path"
 								class="ml-2 text-gray-600 hover:underline"
@@ -30,17 +30,14 @@
 				<div class="relative flex py-3">
 					<Input
 						type="text"
-						name="table-search"
+						name="search-bar"
 						autocomplete="off"
 						class="block h-full w-96 rounded-md border-gray-300 text-sm focus:border-gray-300 focus:bg-white focus:shadow focus:outline-0 focus:ring-0"
-						placeholder="Search"
+						placeholder="Search for anything..."
 					/>
 					<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 						<FeatherIcon name="search" class="h-4 w-4 text-gray-400" aria-hidden="true" />
 					</div>
-				</div>
-				<div class="ml-6 flex h-full cursor-pointer items-center">
-					<FeatherIcon name="bell" class="h-5 w-5 text-gray-600" aria-hidden="true" />
 				</div>
 				<div class="ml-6 flex h-full cursor-pointer items-center">
 					<img

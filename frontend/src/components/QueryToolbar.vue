@@ -1,16 +1,26 @@
 <template>
-	<div class="flex flex-1 items-center justify-between border-b border-gray-300 px-4 text-base text-gray-500">
-		<div class="flex w-80 items-center">
-			<ColumnSearch :query="query" />
-		</div>
-		<div class="flex items-center">
+	<div class="flex flex-1 items-center justify-between border-gray-300 text-base text-gray-500">
+		<!-- Left Area -->
+		<div class="flex items-center space-x-3">
+			<Popover :show="column_popup_open">
+				<template #target>
+					<button
+						class="add-column-button select-none rounded-md border border-gray-100 bg-gray-100 px-3 py-1 text-gray-600 hover:bg-gray-200"
+						@click="column_popup_open = !column_popup_open"
+					>
+						+ Add Column
+					</button>
+				</template>
+				<template #content>
+					<div class="column-picker-wrapper mt-2 flex origin-top-right rounded-md border bg-white shadow-md">
+						<ColumnPicker :query="query" />
+					</div>
+				</template>
+			</Popover>
 			<Popover :show="filter_popup_open">
 				<template #target>
 					<button
-						class="add-filter-button ml-2 select-none rounded-md border border-gray-100 px-3 py-1 text-gray-600 shadow hover:bg-gray-50"
-						:class="{
-							'bg-blue-50 text-blue-400 ring-1 ring-blue-200 hover:bg-blue-50': filter_popup_open,
-						}"
+						class="add-filter-button select-none rounded-md border border-gray-100 bg-gray-100 px-3 py-1 text-gray-600 hover:bg-gray-200"
 						@click="filter_popup_open = !filter_popup_open"
 					>
 						+ Add Filter
@@ -18,29 +28,32 @@
 				</template>
 				<template #content>
 					<div
-						class="filter-picker-wrapper mt-2 flex min-h-[24rem] w-fit min-w-[32rem] origin-top-right rounded-md border bg-white shadow-md"
+						class="filter-picker-wrapper mt-2 flex min-h-[20rem] w-fit min-w-[26rem] origin-top-right rounded-md border bg-white shadow-md"
 					>
 						<FilterPicker :query="query" @update:filters="(filters) => query.update_filters.submit({ filters })" />
 					</div>
 				</template>
 			</Popover>
 		</div>
+		<!-- Right Area -->
+		<div class="flex items-center"></div>
 	</div>
 </template>
 
 <script>
-import ColumnSearch from './ColumnSearch.vue'
+import ColumnPicker from './ColumnPicker.vue'
 import FilterPicker from './FilterPicker.vue'
 
 export default {
 	name: 'QueryToolbar',
 	props: ['query'],
 	components: {
-		ColumnSearch,
+		ColumnPicker,
 		FilterPicker,
 	},
 	data() {
 		return {
+			column_popup_open: false,
 			filter_popup_open: false,
 		}
 	},
@@ -51,6 +64,13 @@ export default {
 				return
 			}
 			this.filter_popup_open = false
+		})
+
+		document.addEventListener('click', (e) => {
+			if (e.target.closest('.column-picker-wrapper') || e.target.closest('.add-column-button')) {
+				return
+			}
+			this.column_popup_open = false
 		})
 	},
 }

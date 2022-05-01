@@ -25,22 +25,15 @@ class Query(Document):
 
     @frappe.whitelist()
     def add_column(self, column):
-        column_id = (column.get("column"), column.get("table"))
-        column_ids = [(row.column, row.table) for row in self.columns]
-
-        if column_id not in column_ids:
-            self.append(
-                "columns",
-                {
-                    "type": column.get("type"),
-                    "label": column.get("label"),
-                    "table": column.get("table"),
-                    "column": column.get("column"),
-                    "table_label": column.get("table_label"),
-                    "aggregation": column.get("aggregation"),
-                },
-            )
-
+        new_column = {
+            "type": column.get("type"),
+            "label": column.get("label"),
+            "table": column.get("table"),
+            "column": column.get("column"),
+            "table_label": column.get("table_label"),
+            "aggregation": column.get("aggregation"),
+        }
+        self.append("columns", new_column)
         self.save()
 
     @frappe.whitelist()

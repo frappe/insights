@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "autoname": "format:QRY-CHRT-{####}",
+ "creation": "2022-04-28 05:57:25.271132",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "query",
+  "title",
+  "type",
+  "label_column",
+  "value_column"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "label": "Query",
+   "options": "Query",
+   "reqd": 1
+  },
+  {
+   "fieldname": "label_column",
+   "fieldtype": "Data",
+   "label": "Label Column",
+   "reqd": 1
+  },
+  {
+   "fieldname": "value_column",
+   "fieldtype": "Data",
+   "label": "Value Column",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Chart Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Chart Type",
+   "options": "Bar\nLine\nPie",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-05-01 05:23:22.873368",
+ "modified_by": "Administrator",
+ "module": "Analytics",
+ "name": "Query Chart",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}
