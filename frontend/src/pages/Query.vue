@@ -23,6 +23,7 @@
 				</div>
 			</div>
 			<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
+			<div class="w-full border-b"></div>
 		</header>
 		<!-- height = 100% - (padding-top (2) + padding-bottom (1.5) + header height (3))  -->
 		<main class="flex h-[calc(100%-6.5rem)] flex-1">

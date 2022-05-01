@@ -1,5 +1,5 @@
 <template>
-	<div class="flex space-x-4 border-b text-gray-500">
+	<div class="flex space-x-4 text-gray-500">
 		<div
 			v-for="(tab, i) in tabs"
 			:key="i"

@@ -1,36 +1,48 @@
 <template>
-	<div class="flex flex-col pt-10">
-		<header>
-			<div class="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-				<h1 class="text-3xl font-bold leading-tight text-gray-900">All Queries</h1>
-				<div class="">
+	<div class="flex flex-col">
+		<header class="mx-auto flex w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
+			<div class="my-4 flex h-12 items-center justify-between">
+				<h1 class="text-3xl font-bold text-gray-900">Queries</h1>
+				<div>
 					<Button appearance="primary" @click="create_new_query_dialog = true"> + Add Query </Button>
 				</div>
 			</div>
+			<div class="w-full border-b"></div>
 		</header>
 		<main class="flex h-[calc(100%-5.5rem)] flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 py-8 sm:px-6 lg:px-8">
-				<ul
-					role="list"
-					class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll rounded-md bg-white p-4 shadow"
-				>
-					<li v-for="query in queries" :key="query.name">
-						<router-link
-							:to="{ name: 'Query', params: { query_id: query.name } }"
-							class="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 hover:bg-gray-50"
+			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-4 py-4 sm:px-6 lg:px-8">
+				<div class="flex space-x-4">
+					<Input type="text" placeholder="Title" />
+					<Input type="text" placeholder="Data Source" />
+				</div>
+				<div class="flex flex-1 flex-col rounded-md border">
+					<ul role="list" class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll">
+						<li
+							class="relative flex cursor-pointer items-center justify-between rounded-md py-3 px-4 text-sm text-gray-500 hover:bg-gray-50"
 						>
-							<div class="ml-3">
-								<p class="text-sm font-medium text-gray-900">
-									{{ query.title }}
-								</p>
-								<p class="text-sm text-gray-500">
-									{{ query.tables }}
-								</p>
-							</div>
-							<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" aria-hidden="true" />
-						</router-link>
-					</li>
-				</ul>
+							<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
+							<p class="flex-1">Title</p>
+							<p class="flex-1">Tables</p>
+							<p class="flex-1">Data Source</p>
+							<p class="flex-1 text-right">Last Modified</p>
+						</li>
+						<li v-for="query in queries" :key="query.name">
+							<router-link
+								:to="{ name: 'Query', params: { query_id: query.name } }"
+								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
+							>
+								<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
+								<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">{{ query.title }}</p>
+								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.tables }}</p>
+								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.data_source }}</p>
+								<p class="flex-1 text-right text-sm text-gray-500">{{ query.modified }}</p>
+							</router-link>
+						</li>
+					</ul>
+					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
+						<p class="ml-auto">Showing {{ queries.length }} of {{ queries.length }}</p>
+					</div>
+				</div>
 			</div>
 		</main>
 		<Dialog :options="{ title: 'New Query' }" v-model="create_new_query_dialog">
@@ -48,6 +60,7 @@
 </template>
 
 <script>
+import moment from 'moment'
 import { Dialog, Button, Input } from 'frappe-ui'
 
 export default {
@@ -71,6 +84,10 @@ export default {
 			method: 'analytics.api.get_queries',
 			auto: true,
 		},
+		get_data_sources: {
+			method: 'analytics.api.get_data_sources',
+			auto: true,
+		},
 		create_query: {
 			method: 'analytics.api.create_query',
 			onSuccess(query_name) {
@@ -83,10 +100,14 @@ export default {
 	},
 	computed: {
 		queries() {
-			return this.$resources.get_queries.data || []
+			const queries = this.$resources.get_queries.data || []
+			queries.forEach((query) => {
+				query.modified = moment(query.modified).fromNow()
+			})
+			return queries
 		},
 		data_sources() {
-			return ['', 'dev-erpnext', 'testsite.one']
+			return this.$resources.get_data_sources.data || []
 		},
 	},
 	methods: {

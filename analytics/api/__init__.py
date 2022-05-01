@@ -6,6 +6,11 @@ from pypika import CustomFunction
 
 
 @frappe.whitelist()
+def get_data_sources():
+    return frappe.get_all("Data Source", pluck="name")
+
+
+@frappe.whitelist()
 def get_queries():
     Query = frappe.qb.DocType("Query")
     QueryTable = frappe.qb.DocType("Query Table")
@@ -14,8 +19,15 @@ def get_queries():
         frappe.qb.from_(Query)
         .join(QueryTable)
         .on(Query.name == QueryTable.parent)
-        .select(Query.name, Query.title, GroupConcat(QueryTable.label).as_("tables"))
+        .select(
+            Query.name,
+            Query.title,
+            GroupConcat(QueryTable.label).as_("tables"),
+            Query.data_source,
+            Query.modified,
+        )
         .groupby(Query.name)
+        .orderby(Query.modified, order=frappe.qb.desc)
     ).run(as_dict=True, debug=1)
 
 

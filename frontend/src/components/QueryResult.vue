@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full w-full flex-1 select-text rounded-md bg-white text-base">
+	<div class="flex h-full w-full flex-1 select-text rounded-md text-base">
 		<div
 			v-if="!result || result.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
@@ -9,7 +9,7 @@
 
 		<div v-else class="flex h-full w-full flex-1 flex-col">
 			<!-- Table -->
-			<div class="relative flex-1 overflow-scroll rounded-md ring-1 ring-black ring-opacity-5 scrollbar-hide">
+			<div class="relative flex-1 overflow-scroll rounded-md border scrollbar-hide">
 				<table class="border-separate">
 					<thead class="sticky top-0 bg-white">
 						<tr>
