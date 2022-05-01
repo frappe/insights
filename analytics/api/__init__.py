@@ -171,7 +171,7 @@ def get_column_menu_options(fieldtype):
 @frappe.whitelist()
 def create_query_chart(query, title, type, label_column, value_column):
     chart = frappe.new_doc("Query Chart")
-    chart.chart_title = title
+    chart.title = title
     chart.query = query
     chart.type = type
     chart.label_column = label_column
@@ -182,7 +182,7 @@ def create_query_chart(query, title, type, label_column, value_column):
 @frappe.whitelist()
 def update_query_chart(chart_name, title, type, label_column, value_column):
     chart = frappe.get_doc("Query Chart", chart_name)
-    chart.chart_title = title
+    chart.title = title
     chart.type = type
     chart.label_column = label_column
     chart.value_column = value_column

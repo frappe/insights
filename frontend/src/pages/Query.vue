@@ -1,8 +1,9 @@
 <template>
 	<div class="flex flex-col" v-if="query">
 		<header class="mx-auto flex w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
+			<!-- Height 3 rem + Margin 2 rem -->
 			<div class="my-4 flex h-12 items-center justify-between">
-				<div class="relative flex flex-col items-start">
+				<div class="relative flex flex-col items-start space-y-1">
 					<input
 						type="text"
 						v-model="query.title"
@@ -13,7 +14,7 @@
 						@keydown.enter="on_title_update"
 						class="peer border-none bg-transparent p-0 text-3xl font-bold caret-black focus:border-none focus:outline-none focus:ring-transparent"
 					/>
-					<div class="mt-2 flex space-x-2 text-sm font-light text-gray-500">
+					<div class="flex space-x-2 text-sm font-light text-gray-500">
 						<div class="flex items-center"><FeatherIcon name="database" class="mr-1 h-3 w-3" /> {{ data_source }}</div>
 						<div class="flex items-center"><FeatherIcon name="layout" class="mr-1 h-3 w-3" /> {{ tables }}</div>
 					</div>
@@ -22,12 +23,13 @@
 					<QueryMenu :query="query" />
 				</div>
 			</div>
+			<!-- Height 2.5rem -->
 			<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
 			<div class="w-full border-b"></div>
 		</header>
-		<!-- height = 100% - (padding-top (2) + padding-bottom (1.5) + header height (3))  -->
-		<main class="flex h-[calc(100%-6.5rem)] flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 flex-col sm:px-6 lg:px-8">
+		<!-- height = 100% - Header Height  -->
+		<main class="flex h-[calc(100%-7.5rem)] flex-1">
+			<div class="mx-auto flex max-w-7xl flex-1 flex-col pb-2 sm:px-6 lg:px-8">
 				<QueryBuilder v-show="active_tab == 'Build'" :query="$resources.query" />
 				<QueryVisualizer v-if="active_tab == 'Visualize'" :query="$resources.query" />
 			</div>

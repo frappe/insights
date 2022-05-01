@@ -3,7 +3,7 @@
 		<div
 			v-for="(tab, i) in tabs"
 			:key="i"
-			class="flex w-fit items-center justify-center border-b-2 border-transparent px-1 py-2 text-lg"
+			class="flex h-10 w-fit items-center justify-center border-b-2 border-transparent px-1 text-lg"
 			:class="{ 'border-blue-500 text-gray-600': active_tab === tab }"
 			@click="
 				() => {

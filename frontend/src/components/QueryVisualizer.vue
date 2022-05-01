@@ -224,6 +224,10 @@ export default {
 			})
 		},
 		save_chart() {
+			if (this.save_disabled) {
+				return
+			}
+
 			const query = this.query.doc.name
 			const chart_name = this.chart_name
 			const { title, type, label_column, value_column } = this.unsaved_chart

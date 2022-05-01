@@ -33,9 +33,11 @@
 							>
 								<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
 								<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">{{ query.title }}</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.tables }}</p>
+								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.tables.replace(/,/g, ', ') }}</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.data_source }}</p>
-								<p class="flex-1 text-right text-sm text-gray-500">{{ query.modified }}</p>
+								<p class="flex-1 text-right text-sm text-gray-500" :title="query.modified">
+									{{ query.modified_from_now }}
+								</p>
 							</router-link>
 						</li>
 					</ul>
@@ -102,7 +104,7 @@ export default {
 		queries() {
 			const queries = this.$resources.get_queries.data || []
 			queries.forEach((query) => {
-				query.modified = moment(query.modified).fromNow()
+				query.modified_from_now = moment(query.modified).fromNow()
 			})
 			return queries
 		},
