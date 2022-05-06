@@ -23,6 +23,13 @@ class Query(Document):
         # TODO: validate if a column is an expression and aggregation is "group by"
         pass
 
+    def on_trash(self):
+        charts = frappe.get_all(
+            "Query Chart", filters={"query": self.name}, pluck="name"
+        )
+        for chart in charts:
+            frappe.delete_doc("Query Chart", chart)
+
     @frappe.whitelist()
     def add_column(self, column):
         new_column = {

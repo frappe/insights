@@ -81,24 +81,24 @@ export default {
 	},
 	methods: {
 		delete_query() {
-			// this.$resources.delete.submit(
-			// 	{
-			// 		doctype: 'Query',
-			// 		name: this.query.name,
-			// 	},
-			// 	{
-			// 		onSuccess: () => {
-			// 			this.$router.push('/query')
-			// 		},
-			// 		onError: () => {
-			// 			this.$notify({
-			// 				title: 'Something went wrong',
-			// 				color: 'red',
-			// 				icon: 'alert-circle',
-			// 			})
-			// 		},
-			// 	}
-			// )
+			this.$resources.delete.submit(
+				{
+					doctype: 'Query',
+					name: this.query.name,
+				},
+				{
+					onSuccess: () => {
+						this.$router.push('/query')
+					},
+					onError: () => {
+						this.$notify({
+							title: 'Something went wrong',
+							color: 'red',
+							icon: 'alert-circle',
+						})
+					},
+				}
+			)
 		},
 	},
 }

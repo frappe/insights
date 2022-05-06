@@ -89,6 +89,9 @@ export default {
 		get_data_sources: {
 			method: 'analytics.api.get_data_sources',
 			auto: true,
+			onSuccess(data_sources) {
+				this.new_query.data_source = data_sources[0]
+			},
 		},
 		create_query: {
 			method: 'analytics.api.create_query',
