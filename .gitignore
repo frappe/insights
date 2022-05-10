@@ -16,3 +16,4 @@ node_modules
 *debug.log
 analytics/docs/current
 analytics/public/frontend
+analytics/www/analytics.html

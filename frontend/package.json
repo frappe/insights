@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "serve": "vite preview",
+    "build": "vite build --base=/assets/analytics/frontend/ && yarn copy-html-entry",
+    "copy-html-entry": "cp ../analytics/public/frontend/index.html ../analytics/www/analytics.html"
   },
   "dependencies": {
     "feather-icons": "^4.28.0",

@@ -187,3 +187,7 @@ app_include_js = "analytics.bundle.js"
 # auth_hooks = [
 # 	"analytics.auth.validate"
 # ]
+
+website_route_rules = [
+    {"from_route": "/analytics/<path:app_path>", "to_route": "analytics"},
+]
