@@ -140,9 +140,9 @@ export default {
 			}
 
 			const right_input = this.input_value.split(';').at(-1)
-			const operator_is_equals = this.filter.operator.value.includes('=')
+			const allow_compare_with_column = ['=', '>', '<', '>=', '<='].includes(this.filter.operator.value)
 
-			if (delimiter_count === 2 && right_input && operator_is_equals) {
+			if (delimiter_count === 2 && right_input && allow_compare_with_column) {
 				if (right_input.endsWith('[')) {
 					this.input_value += ']'
 					this.$nextTick(() => {
@@ -167,8 +167,12 @@ export default {
 				} else {
 					this.filter.right_type = null
 				}
+			}
 
+			const operator_is_equal = this.filter.operator.value === '='
+			if (delimiter_count === 2 && right_input && operator_is_equal) {
 				this.check_and_fetch_column_values(right_input)
+				return
 			}
 		},
 		now_selecting(newVal) {
