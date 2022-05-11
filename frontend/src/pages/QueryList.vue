@@ -15,17 +15,16 @@
 					<Input type="text" placeholder="Title" />
 					<Input type="text" placeholder="Data Source" />
 				</div>
-				<div class="flex flex-1 flex-col rounded-md border">
+				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
+					<!-- List Header -->
+					<div class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500">
+						<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
+						<p class="flex-1">Title</p>
+						<p class="flex-1">Tables</p>
+						<p class="flex-1">Data Source</p>
+						<p class="flex-1 text-right">Last Modified</p>
+					</div>
 					<ul role="list" class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll">
-						<li
-							class="relative flex cursor-pointer items-center justify-between rounded-md py-3 px-4 text-sm text-gray-500 hover:bg-gray-50"
-						>
-							<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
-							<p class="flex-1">Title</p>
-							<p class="flex-1">Tables</p>
-							<p class="flex-1">Data Source</p>
-							<p class="flex-1 text-right">Last Modified</p>
-						</li>
 						<li v-for="query in queries" :key="query.name">
 							<router-link
 								:to="{ name: 'Query', params: { query_id: query.name } }"
