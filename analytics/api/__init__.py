@@ -17,7 +17,7 @@ def get_queries():
     GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
-        .join(QueryTable)
+        .left_join(QueryTable)
         .on(Query.name == QueryTable.parent)
         .select(
             Query.name,
