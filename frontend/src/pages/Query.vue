@@ -16,7 +16,9 @@
 					/>
 					<div class="flex space-x-2 text-sm font-light text-gray-500">
 						<div class="flex items-center"><FeatherIcon name="database" class="mr-1 h-3 w-3" /> {{ data_source }}</div>
-						<div class="flex items-center"><FeatherIcon name="layout" class="mr-1 h-3 w-3" /> {{ tables }}</div>
+						<div v-if="tables" class="flex items-center">
+							<FeatherIcon name="layout" class="mr-1 h-3 w-3" /> {{ tables }}
+						</div>
 					</div>
 				</div>
 				<div class="flex items-center space-x-2">
