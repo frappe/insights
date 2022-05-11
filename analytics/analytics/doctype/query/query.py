@@ -31,6 +31,24 @@ class Query(Document):
             frappe.delete_doc("Query Chart", chart)
 
     @frappe.whitelist()
+    def add_table(self, table):
+        new_table = {
+            "label": table.get("label"),
+            "table": table.get("table"),
+        }
+        self.append("tables", new_table)
+        self.save()
+
+    @frappe.whitelist()
+    def remove_table(self, table):
+        for row in self.tables:
+            if row.get("name") == table.get("name"):
+                self.remove(row)
+                break
+
+        self.save()
+
+    @frappe.whitelist()
     def add_column(self, column):
         new_column = {
             "type": column.get("type"),
@@ -100,25 +118,11 @@ class Query(Document):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         return data_source.get_distinct_column_values(column, search_text)
 
-    def update_tables(self):
-        self.tables = []
-        column_tables = {row.table: row.table_label for row in self.columns}
-
-        for table, label in column_tables.items():
-            self.append(
-                "tables",
-                {
-                    "table": table,
-                    "label": label,
-                },
-            )
-
     def before_save(self):
         if not self.columns or not self.filters:
             self.result = "[]"
             return
 
-        self.update_tables()
         self.process()
         self.build()
         self.execute()
@@ -128,7 +132,7 @@ class Query(Document):
         self.result = dumps(self._result, default=cstr)
 
     def process(self):
-        self.process_tables()
+        self._tables = []
         self.process_columns()
         self.process_filters()
         self.process_limit()
@@ -160,12 +164,6 @@ class Query(Document):
         self._result = data_source.execute(self._query, debug=True)
         self._result = list(self._result)
         self.format_result()
-
-    def process_tables(self):
-        self._tables = []
-        for row in self.tables:
-            table = Table(row.get("table"))
-            self._tables.append(table)
 
     def process_columns(self):
         self._columns = []
@@ -264,6 +262,10 @@ class Query(Document):
         table = Table(table)
         Field = table[column]
         Field = Field.as_(label)
+
+        # only add table to query if a column or filter from the table present
+        if table not in self._tables:
+            self._tables.append(table)
 
         return Field
 

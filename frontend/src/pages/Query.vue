@@ -66,6 +66,8 @@ export default {
 				doctype: 'Query',
 				name: this.query_id,
 				whitelistedMethods: {
+					add_table: 'add_table',
+					remove_table: 'remove_table',
 					add_column: 'add_column',
 					update_column: 'update_column',
 					remove_column: 'remove_column',
