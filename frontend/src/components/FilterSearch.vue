@@ -142,11 +142,6 @@ export default {
 			const right_input = this.input_value.split(';').at(-1)
 			const operator_is_equals = this.filter.operator.value.includes('=')
 
-			if (delimiter_count === 2 && right_input && !operator_is_equals) {
-				this.check_and_fetch_column_values(right_input)
-				return
-			}
-
 			if (delimiter_count === 2 && right_input && operator_is_equals) {
 				if (right_input.endsWith('[')) {
 					this.input_value += ']'
@@ -172,6 +167,8 @@ export default {
 				} else {
 					this.filter.right_type = null
 				}
+
+				this.check_and_fetch_column_values(right_input)
 			}
 		},
 		now_selecting(newVal) {
