@@ -52,7 +52,7 @@
   },
   {
    "fieldname": "password",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "Password",
    "reqd": 1
   },
@@ -74,7 +74,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-27 09:02:29.908423",
+ "modified": "2022-05-11 01:58:55.343269",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Data Source",
@@ -94,8 +94,10 @@
    "write": 1
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "title",
  "track_changes": 1
 }
