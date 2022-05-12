@@ -3,6 +3,7 @@
 		<div
 			v-if="header"
 			class="sticky top-0 flex h-6 cursor-default items-center justify-between border-b border-gray-200 bg-white px-2 py-1 text-sm font-light text-gray-500"
+			@click.prevent.stop=""
 		>
 			{{ header.label }}
 		</div>
@@ -13,10 +14,10 @@
 				:key="idx"
 				class="flex cursor-default items-center justify-between rounded text-base text-gray-600"
 				:class="{
-					'h-9 px-4 hover:bg-gray-50': active_suggestion_idx !== idx && !suggestion.is_header,
-					'h-9 bg-blue-50 px-4 text-blue-400': active_suggestion_idx === idx && !suggestion.is_header,
+					'h-9 px-4 hover:bg-gray-50': active_suggestion_idx !== idx,
+					'h-9 bg-blue-50 px-4 text-blue-400': active_suggestion_idx === idx,
 				}"
-				@click.prevent.stop="!suggestion.is_header && $emit('select', suggestion)"
+				@click.prevent.stop="$emit('select', suggestion)"
 			>
 				<div class="flex items-center whitespace-nowrap font-medium">
 					<FeatherIcon v-if="suggestion.icon" :name="suggestion.icon" class="mr-2 h-3 w-3 text-gray-500" />
