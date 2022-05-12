@@ -28,7 +28,7 @@ def get_queries():
         )
         .groupby(Query.name)
         .orderby(Query.modified, order=frappe.qb.desc)
-    ).run(as_dict=True, debug=1)
+    ).run(as_dict=True)
 
 
 @frappe.whitelist()
