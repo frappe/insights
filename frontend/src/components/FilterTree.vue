@@ -60,7 +60,6 @@
 					:query="query"
 					:tables="tables"
 					@keydown.esc="add_new_filter = false"
-					v-on-outside-click="() => (add_new_filter = false)"
 					@filter_selected="
 						(filter) => {
 							add_new_filter = false

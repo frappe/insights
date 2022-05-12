@@ -49,7 +49,7 @@ export default {
 	mounted() {
 		// detect click outside of input
 		this.outside_click_listener = (e) => {
-			if (e.target.closest('.table-search') || e.target.classList.contains('table-picker-suggestion')) {
+			if (e.target.closest('.table-search')) {
 				return this.$refs.table_search?.focus()
 			}
 			this.input_focused = false

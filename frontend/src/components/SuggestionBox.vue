@@ -1,8 +1,8 @@
 <template>
-	<div class="mt-2 rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none">
+	<div class="mt-0 rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none">
 		<div
 			v-if="header"
-			class="sticky top-0 flex h-6 cursor-default items-center justify-between border-b border-gray-200 bg-white px-2 py-1 text-sm font-light text-gray-500"
+			class="sticky top-0 flex h-6 cursor-default items-center justify-between border-b border-gray-200 px-2 py-1 text-sm font-light text-gray-500"
 			@click.prevent.stop=""
 		>
 			{{ header.label }}
