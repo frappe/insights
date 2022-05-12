@@ -3,6 +3,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
 	{
 		path: '/',
+		name: 'Home',
+		component: () => import('@/pages/Home.vue'),
+	},
+	{
+		path: '/dashboards',
 		name: 'Dashboards',
 		component: () => import('@/pages/Dashboards.vue'),
 	},
@@ -32,6 +37,23 @@ const routes = [
 let router = createRouter({
 	history: createWebHistory('/analytics'),
 	routes,
+})
+
+router.beforeEach((to, from, next) => {
+	const is_logged_in = !document.cookie.includes('user_id=Guest')
+
+	if (is_logged_in) {
+		if (to.path === '/login') {
+			next('/')
+		} else {
+			next()
+		}
+	} else if (to.path === '/login') {
+		next()
+	} else {
+		// redirect to frappe login page
+		window.location.href = '/login'
+	}
 })
 
 export default router
