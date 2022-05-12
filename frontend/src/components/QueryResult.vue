@@ -14,7 +14,7 @@
 					<thead class="sticky top-0 text-gray-500">
 						<tr>
 							<th
-								class="sticky top-0 flex h-10 w-[3rem] items-center justify-center whitespace-nowrap border-b border-r px-2 text-center font-normal"
+								class="sticky top-0 flex h-10 w-[3rem] items-center justify-center whitespace-nowrap border-b border-r bg-white px-2 text-center font-normal"
 								scope="col"
 							>
 								<!-- <FeatherIcon name="settings" class="h-4 w-4 cursor-pointer" /> -->
@@ -22,7 +22,7 @@
 							<th
 								v-for="column in columns"
 								:key="column.name"
-								class="h-10 whitespace-nowrap border-b px-2 text-left font-normal"
+								class="h-10 whitespace-nowrap border-b bg-white px-2 text-left font-normal"
 								scope="col"
 							>
 								<ColumnHeader :column="column" :query="query" />
@@ -31,13 +31,13 @@
 					</thead>
 					<tbody class="pointer-events-none">
 						<tr v-for="(row, i) in data" :key="i">
-							<td class="sticky left-0 w-[3rem] whitespace-nowrap border-r p-2 text-center text-gray-500">
+							<td class="sticky left-0 w-[3rem] whitespace-nowrap border-r bg-white p-2 text-center text-gray-500">
 								{{ i + 1 }}
 							</td>
 							<td
 								v-for="(cell, j) in row"
 								:key="j"
-								class="whitespace-nowrap p-2 pr-4 text-gray-600"
+								class="whitespace-nowrap bg-white p-2 pr-4 text-gray-600"
 								:class="{ 'text-right': number_columns[j] }"
 							>
 								{{ cell }}

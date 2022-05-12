@@ -71,6 +71,7 @@ export default {
 					add_table: 'add_table',
 					remove_table: 'remove_table',
 					add_column: 'add_column',
+					move_column: 'move_column',
 					update_column: 'update_column',
 					remove_column: 'remove_column',
 					update_filters: 'update_filters',

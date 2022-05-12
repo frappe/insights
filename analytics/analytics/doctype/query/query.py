@@ -62,6 +62,13 @@ class Query(Document):
         self.save()
 
     @frappe.whitelist()
+    def move_column(self, from_index, to_index):
+        self.columns.insert(to_index, self.columns.pop(from_index))
+        for row in self.columns:
+            row.idx = self.columns.index(row) + 1
+        self.save()
+
+    @frappe.whitelist()
     def update_column(self, column):
         for row in self.columns:
             if row.get("name") == column.get("name"):
@@ -171,7 +178,7 @@ class Query(Document):
         self._order_by_columns = []
 
         for row in self.columns:
-            _column = self.convert_to_select_field(row.table, row.column, row.label)
+            _column = self.convert_to_select_field(row.table, row.column)
 
             if row.format:
                 _column = self.process_column_format(row, _column)
@@ -181,6 +188,8 @@ class Query(Document):
 
             if row.order_by:
                 self._order_by_columns.append((_column, row.order_by))
+
+            _column = _column.as_(row.label)
 
             self._columns.append(_column)
 
@@ -234,11 +243,11 @@ class Query(Document):
         condition.operator = _dict(condition.operator)
 
         operand_1 = self.convert_to_select_field(
-            condition.left.table, condition.left.column, condition.left.label
+            condition.left.table, condition.left.column
         )
         if condition.right_type == "Column":
             operand_2 = self.convert_to_select_field(
-                condition.right.table, condition.right.column, condition.right.label
+                condition.right.table, condition.right.column
             )
         else:
             if "like" in condition.operator.value:
@@ -258,10 +267,9 @@ class Query(Document):
     def process_limit(self):
         self._limit: int = self.limit or 10
 
-    def convert_to_select_field(self, table, column, label) -> Field:
+    def convert_to_select_field(self, table, column) -> Field:
         table = Table(table)
         Field = table[column]
-        Field = Field.as_(label)
 
         # only add table to query if a column or filter from the table present
         if table not in self._tables:
