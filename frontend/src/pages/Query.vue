@@ -12,9 +12,9 @@
 						@blur="on_title_update"
 						:size="Math.max(query.title.length, 4)"
 						@keydown.enter="on_title_update"
-						class="peer border-none bg-transparent p-0 text-3xl font-bold caret-black focus:border-none focus:outline-none focus:ring-transparent"
+						class="peer -mx-2 -my-1 rounded border-none bg-transparent p-0 px-2 py-1 text-3xl font-bold caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
 					/>
-					<div class="flex space-x-2 text-sm font-light text-gray-500">
+					<div class="flex space-x-2 text-sm font-light text-gray-600">
 						<div class="flex items-center"><FeatherIcon name="database" class="mr-1 h-3 w-3" /> {{ data_source }}</div>
 						<div v-if="tables" class="flex items-center">
 							<FeatherIcon name="layout" class="mr-1 h-3 w-3" /> {{ tables }}

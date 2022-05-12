@@ -1,9 +1,9 @@
 <template>
 	<div class="h-full min-h-[12rem] flex-1 rounded-md bg-white">
-		<div class="flex h-16 flex-shrink-0">
+		<div class="flex h-14 flex-shrink-0">
 			<QueryToolbar :query="query" />
 		</div>
-		<div class="flex h-[calc(100%-6.5rem)]">
+		<div class="flex h-[calc(100%-6rem)]">
 			<QueryResult :query="query" />
 		</div>
 		<div class="flex h-10 flex-shrink-0">
