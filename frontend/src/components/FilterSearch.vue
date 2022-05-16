@@ -82,6 +82,17 @@ export default {
 		if (this.filter.right_type == 'Column') {
 			this.$refs.filter_picker?.setSelectionRange(this.input_value.length - 1, this.input_value.length - 1)
 		}
+		// detect click outside of input
+		this.outside_click_listener = (e) => {
+			if (e.target.closest('.filter-picker')) {
+				return this.$refs.filter_picker?.focus()
+			}
+			this.input_focused = false
+		}
+		document.addEventListener('click', this.outside_click_listener)
+	},
+	beforeDestroy() {
+		document.removeEventListener('click', this.outside_click_listener)
 	},
 	resources: {
 		operator_list() {
