@@ -1,48 +1,43 @@
 <template>
-	<div class="flex flex-col">
-		<header class="mx-auto flex w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
-			<div class="my-4 flex h-12 items-center justify-between">
-				<h1 class="text-3xl font-bold text-gray-900">Queries</h1>
-				<div>
-					<Button appearance="primary" @click="create_new_query_dialog = true"> + Add Query </Button>
-				</div>
+	<div>
+		<header class="flex h-[5rem] items-center justify-between border-b py-4">
+			<h1 class="text-3xl font-bold text-gray-900">Queries</h1>
+			<div>
+				<Button appearance="primary" @click="create_new_query_dialog = true"> + Add Query </Button>
 			</div>
-			<div class="w-full border-b"></div>
 		</header>
-		<main class="flex h-[calc(100%-5.5rem)] flex-1">
-			<div class="mx-auto flex max-w-7xl flex-1 flex-col space-y-4 py-4 sm:px-6 lg:px-8">
-				<div class="flex space-x-4">
-					<Input type="text" placeholder="Title" />
-					<Input type="text" placeholder="Data Source" />
+		<main class="flex h-[calc(100%-5rem)] flex-col space-y-4 py-4">
+			<div class="flex space-x-4">
+				<Input type="text" placeholder="Title" />
+				<Input type="text" placeholder="Data Source" />
+			</div>
+			<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
+				<!-- List Header -->
+				<div class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500">
+					<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
+					<p class="flex-1">Title</p>
+					<p class="flex-1">Tables</p>
+					<p class="flex-1">Data Source</p>
+					<p class="flex-1 text-right">Last Modified</p>
 				</div>
-				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
-					<!-- List Header -->
-					<div class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500">
-						<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
-						<p class="flex-1">Title</p>
-						<p class="flex-1">Tables</p>
-						<p class="flex-1">Data Source</p>
-						<p class="flex-1 text-right">Last Modified</p>
-					</div>
-					<ul role="list" class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll">
-						<li v-for="query in queries" :key="query.name">
-							<router-link
-								:to="{ name: 'Query', params: { query_id: query.name } }"
-								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
-							>
-								<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
-								<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">{{ query.title }}</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.tables?.replace(/,/g, ', ') }}</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.data_source }}</p>
-								<p class="flex-1 text-right text-sm text-gray-500" :title="query.modified">
-									{{ query.modified_from_now }}
-								</p>
-							</router-link>
-						</li>
-					</ul>
-					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
-						<p class="ml-auto">Showing {{ queries.length }} of {{ queries.length }}</p>
-					</div>
+				<ul role="list" class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll">
+					<li v-for="query in queries" :key="query.name">
+						<router-link
+							:to="{ name: 'Query', params: { query_id: query.name } }"
+							class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
+						>
+							<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
+							<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">{{ query.title }}</p>
+							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.tables?.replace(/,/g, ', ') }}</p>
+							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.data_source }}</p>
+							<p class="flex-1 text-right text-sm text-gray-500" :title="query.modified">
+								{{ query.modified_from_now }}
+							</p>
+						</router-link>
+					</li>
+				</ul>
+				<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
+					<p class="ml-auto">Showing {{ queries.length }} of {{ queries.length }}</p>
 				</div>
 			</div>
 		</main>

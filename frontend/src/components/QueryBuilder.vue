@@ -1,5 +1,5 @@
 <template>
-	<div class="h-full min-h-[12rem] flex-1 rounded-md bg-white">
+	<div class="h-full min-h-[12rem] w-full rounded-md bg-white">
 		<div class="flex h-14 flex-shrink-0">
 			<QueryToolbar :query="query" />
 		</div>
