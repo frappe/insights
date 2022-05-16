@@ -7,9 +7,14 @@ const routes = [
 		component: () => import('@/pages/Home.vue'),
 	},
 	{
-		path: '/dashboards',
+		path: '/dashboard',
 		name: 'Dashboards',
 		component: () => import('@/pages/Dashboards.vue'),
+	},
+	{
+		path: '/data-source',
+		name: 'DataSourceList',
+		component: () => import('@/pages/DataSourceList.vue'),
 	},
 	{
 		path: '/query',

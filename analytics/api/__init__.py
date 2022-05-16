@@ -7,7 +7,10 @@ from pypika import CustomFunction
 
 @frappe.whitelist()
 def get_data_sources():
-    return frappe.get_all("Data Source", pluck="name")
+    return frappe.get_all(
+        "Data Source",
+        fields=["name", "title", "status", "database_type", "modified", "username"],
+    )
 
 
 @frappe.whitelist()

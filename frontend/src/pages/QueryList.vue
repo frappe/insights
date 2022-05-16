@@ -84,7 +84,7 @@ export default {
 			method: 'analytics.api.get_data_sources',
 			auto: true,
 			onSuccess(data_sources) {
-				this.new_query.data_source = data_sources[0]
+				this.new_query.data_source = data_sources[0]['name']
 			},
 		},
 		create_query: {
@@ -106,7 +106,7 @@ export default {
 			return queries
 		},
 		data_sources() {
-			return this.$resources.get_data_sources.data || []
+			return this.$resources.get_data_sources.data.map((d) => d['name']) || []
 		},
 	},
 	methods: {
