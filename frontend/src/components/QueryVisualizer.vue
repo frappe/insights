@@ -216,6 +216,17 @@ export default {
 				label_value_map = label_value_map.sort((a, b) => b.value - a.value)
 			}
 
+			// summarize value if there are multiple values for same label
+			label_value_map = label_value_map.reduce((acc, curr) => {
+				const existing = acc.find((item) => item.label == curr.label)
+				if (existing) {
+					existing.value += curr.value
+				} else {
+					acc.push(curr)
+				}
+				return acc
+			}, [])
+
 			this.chart = new Chart(this.$refs.chart_container, {
 				type: type.toLowerCase(),
 				height: this.$refs.chart_container.clientHeight,
