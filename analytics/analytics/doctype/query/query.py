@@ -96,8 +96,26 @@ class Query(Document):
 
     @frappe.whitelist()
     def get_selectable_tables(self):
-        data_source = frappe.get_cached_doc("Data Source", self.data_source)
-        return data_source.get_tables()
+        if not self.tables:
+            return frappe.get_all(
+                "Table",
+                filters={"data_source": self.data_source},
+                fields=["table", "label"],
+            )
+        else:
+            tables = [d.table for d in self.tables]
+            Table = frappe.qb.DocType("Table")
+            TableLink = frappe.qb.DocType("Table Link")
+            query = (
+                frappe.qb.from_(Table)
+                .from_(TableLink)
+                .select(
+                    TableLink.foreign_table.as_("table"),
+                    TableLink.foreign_table_label.as_("label"),
+                )
+                .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
+            )
+            return query.run(as_dict=True)
 
     @frappe.whitelist()
     def get_selectable_columns(self, tables=None, table=None):

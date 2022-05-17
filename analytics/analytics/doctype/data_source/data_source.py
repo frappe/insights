@@ -92,15 +92,17 @@ class DataSource(Document):
             if link.get("fieldtype") == "Link":
                 foreign_links.setdefault(link.get("options"), []).append(
                     {
-                        "foreign_table": link.get("parent"),
                         "foreign_key": link.get("fieldname"),
+                        "foreign_table": "tab" + link.get("parent"),
+                        "foreign_table_label": link.get("parent"),
                     }
                 )
             if link.get("fieldtype") == "Table":
                 foreign_links.setdefault(link.get("parent"), []).append(
                     {
-                        "foreign_table": link.get("options"),
                         "foreign_key": "parent",
+                        "foreign_table": "tab" + link.get("options"),
+                        "foreign_table_label": link.get("options"),
                     }
                 )
 
@@ -117,7 +119,10 @@ class DataSource(Document):
 
         return result
 
-    def get_tables(self):
+    def get_tables(self, tables=None):
+        if not tables:
+            tables = []
+
         self.create_db_instance()
         self.db_instance.connect()
         tables = self.db_instance.get_tables(cached=False)
