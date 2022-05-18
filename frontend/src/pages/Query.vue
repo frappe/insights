@@ -33,6 +33,7 @@
 		<main class="flex h-[calc(100%-7.5rem)] w-full">
 			<!-- height = 100% - Header Height  -->
 			<QueryBuilder v-show="active_tab == 'Build'" :query="$resources.query" />
+			<QueryTransform v-show="active_tab == 'Transform'" :query="$resources.query" />
 			<QueryVisualizer v-if="active_tab == 'Visualize'" :query="$resources.query" />
 		</main>
 	</div>
@@ -41,6 +42,7 @@
 <script>
 import TabSwitcher from '@/components/TabSwitcher.vue'
 import QueryBuilder from '@/components/QueryBuilder.vue'
+import QueryTransform from '@/components/QueryTransform.vue'
 import QueryVisualizer from '@/components/QueryVisualizer.vue'
 import QueryMenu from '@/components/QueryMenu.vue'
 
@@ -50,6 +52,7 @@ export default {
 	components: {
 		TabSwitcher,
 		QueryBuilder,
+		QueryTransform,
 		QueryVisualizer,
 		QueryMenu,
 	},
@@ -57,7 +60,7 @@ export default {
 		return {
 			menu_open: false,
 			active_tab: 'Build',
-			tabs: ['Build', 'Visualize'],
+			tabs: ['Build', 'Transform', 'Visualize'],
 		}
 	},
 	resources: {
