@@ -71,7 +71,7 @@
 import { Chart } from 'frappe-charts'
 
 export default {
-	name: 'QueryVisualizer',
+	name: 'QueryChart',
 	props: ['query'],
 	data() {
 		return {
