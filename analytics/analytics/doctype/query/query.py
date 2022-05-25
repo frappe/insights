@@ -95,6 +95,12 @@ class Query(Document):
         self.save()
 
     @frappe.whitelist()
+    def update_result(self):
+        self.execute()
+        self.save_result()
+        self.db_set("result", self.result)
+
+    @frappe.whitelist()
     def get_selectable_tables(self):
         if not self.tables:
             return frappe.get_all(
@@ -150,11 +156,9 @@ class Query(Document):
 
         self.process()
         self.build()
+        self.save_query()
         self.execute()
-        self.sql = format_sql(
-            str(self._query), keyword_case="upper", reindent_aligned=True
-        )
-        self.result = dumps(self._result, default=cstr)
+        self.save_result()
 
     def process(self):
         self._tables = []
@@ -186,9 +190,16 @@ class Query(Document):
 
     def execute(self):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
-        self._result = data_source.execute(self._query, debug=True)
+        self._result = data_source.execute(self.sql, debug=True)
         self._result = list(self._result)
-        self.format_result()
+
+    def save_query(self):
+        self.sql = format_sql(
+            str(self._query), keyword_case="upper", reindent_aligned=True
+        )
+
+    def save_result(self):
+        self.result = dumps(self._result, default=cstr)
 
     def process_columns(self):
         self._columns = []
@@ -294,7 +305,3 @@ class Query(Document):
             self._tables.append(table)
 
         return Field
-
-    def format_result(self):
-        column_names = [d.alias or d.name for d in self._columns]
-        self._result.insert(0, column_names)

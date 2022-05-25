@@ -203,7 +203,7 @@ export default {
 				return
 			}
 
-			const data = this.result.slice(1)
+			const data = this.result
 			const label_column_idx = this.query.doc.columns.findIndex((c) => c.label == this.unsaved_chart.label_column)
 			const value_column_idx = this.query.doc.columns.findIndex((c) => c.label == this.unsaved_chart.value_column)
 

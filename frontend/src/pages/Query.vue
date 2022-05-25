@@ -16,14 +16,27 @@
 					/>
 					<div class="flex space-x-2 text-sm font-light text-gray-600">
 						<div v-if="data_source" class="flex items-center">
-							<FeatherIcon name="database" class="mr-1 h-3 w-3" /> {{ data_source }}
+							<FeatherIcon name="database" class="mr-1 h-3 w-3" />
+							<span> {{ data_source }} </span>
 						</div>
 						<div v-if="tables" class="flex items-center">
-							<FeatherIcon name="layout" class="mr-1 h-3 w-3" /> {{ tables }}
+							<FeatherIcon name="layout" class="mr-1 h-3 w-3" />
+							<span> {{ tables }} </span>
+						</div>
+						<div class="flex items-center">
+							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
+							<span> Updated {{ last_updated }} </span>
 						</div>
 					</div>
 				</div>
 				<div class="flex items-center space-x-2">
+					<button
+						class="refresh-btn cursor-pointer rounded-md bg-gray-100 p-1.5 text-gray-700"
+						@click="$resources.query.update_result.submit()"
+						title="Refresh"
+					>
+						<FeatherIcon name="rotate-cw" class="h-4 w-4 -rotate-45" />
+					</button>
 					<QueryMenu :query="query" />
 				</div>
 			</div>
@@ -40,6 +53,7 @@
 </template>
 
 <script>
+import moment from 'moment'
 import TabSwitcher from '@/components/TabSwitcher.vue'
 import QueryBuilder from '@/components/QueryBuilder.vue'
 import QueryTransform from '@/components/QueryTransform.vue'
@@ -81,6 +95,7 @@ export default {
 					get_selectable_tables: 'get_selectable_tables',
 					get_selectable_columns: 'get_selectable_columns',
 					get_column_values: 'get_column_values',
+					update_result: 'update_result',
 				},
 				onError: () => {
 					this.$notify({
@@ -101,6 +116,9 @@ export default {
 		},
 		tables() {
 			return this.query.tables.map((t) => t.label).join(', ')
+		},
+		last_updated() {
+			return moment(this.query.modified).fromNow()
 		},
 	},
 	methods: {

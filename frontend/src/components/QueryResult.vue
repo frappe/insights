@@ -30,7 +30,7 @@
 						</tr>
 					</thead>
 					<tbody class="pointer-events-none">
-						<tr v-for="(row, i) in data" :key="i">
+						<tr v-for="(row, i) in result" :key="i">
 							<td
 								class="sticky left-0 w-[3rem] whitespace-nowrap border-r border-b bg-white p-2 text-center text-gray-500"
 							>
@@ -62,14 +62,11 @@ export default {
 	},
 	props: ['query'],
 	computed: {
-		result() {
-			return JSON.parse(this.query.doc.result || '[]')
-		},
 		columns() {
 			return this.query.doc.columns || []
 		},
-		data() {
-			return this.result.slice(1)
+		result() {
+			return JSON.parse(this.query.doc.result || '[]')
 		},
 		number_columns() {
 			const number_datatypes = ['int', 'decimal', 'bigint', 'float', 'double']
