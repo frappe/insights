@@ -91,7 +91,7 @@ class Query(Document):
 
     @frappe.whitelist()
     def update_filters(self, filters):
-        self.filters = dumps(filters, indent=2, default=str)
+        self.filters = dumps(filters, indent=2, default=cstr)
         self.save()
 
     @frappe.whitelist()
@@ -99,6 +99,32 @@ class Query(Document):
         self.execute()
         self.save_result()
         self.db_set("result", self.result)
+
+    @frappe.whitelist()
+    def apply_transform(self, type, data):
+        self.transform_type = type
+        self.transform_data = dumps(data, indent=2, default=cstr)
+        if type == "Pivot":
+            self.pivot(data)
+
+        self.save()
+
+    def pivot(self, transform_data):
+        from pandas import DataFrame
+
+        # TODO: validate if two columns doesn't have same label
+
+        result = loads(self.result)
+        columns = [d.get("label") for d in self.get("columns")]
+
+        dataframe = DataFrame(columns=columns, data=result)
+        pivoted = dataframe.pivot(
+            index=transform_data.get("index_columns"),
+            columns=transform_data.get("pivot_columns"),
+        )
+
+        self.transform_result = pivoted.to_html()
+        self.transform_result = self.transform_result.replace("NaN", "-")
 
     @frappe.whitelist()
     def get_selectable_tables(self):

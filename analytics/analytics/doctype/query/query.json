@@ -21,7 +21,12 @@
   "query_and_result_tab",
   "section_break_11",
   "sql",
-  "result"
+  "result",
+  "transform_tab",
+  "section_break_18",
+  "transform_type",
+  "transform_data",
+  "transform_result"
  ],
  "fields": [
   {
@@ -109,11 +114,38 @@
    "label": "Data Source",
    "options": "Data Source",
    "reqd": 1
+  },
+  {
+   "fieldname": "transform_tab",
+   "fieldtype": "Tab Break",
+   "label": "Transform"
+  },
+  {
+   "fieldname": "section_break_18",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "transform_type",
+   "fieldtype": "Select",
+   "label": "Transform Type",
+   "options": "Pivot"
+  },
+  {
+   "fieldname": "transform_data",
+   "fieldtype": "Code",
+   "label": "Transform Data",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "transform_result",
+   "fieldtype": "Code",
+   "label": "Transform Result",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-05-01 05:56:04.153578",
+ "modified": "2022-05-21 03:44:02.798482",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",

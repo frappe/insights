@@ -96,6 +96,7 @@ export default {
 					get_selectable_columns: 'get_selectable_columns',
 					get_column_values: 'get_column_values',
 					update_result: 'update_result',
+					apply_transform: 'apply_transform',
 				},
 				onError: () => {
 					this.$notify({
