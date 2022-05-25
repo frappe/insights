@@ -252,14 +252,14 @@ class Query(Document):
         return ColumnFormat.apply(row.format, column)
 
     def process_aggregation(self, row, column):
-        if row.aggregation != "Group By":
-            column = Aggregations.apply(row.aggregation, column)
-
         if row.aggregation == "Count Distinct":
             column = Aggregations.apply("Distinct", column)
             column = Aggregations.apply("Count", column)
 
-        if row.aggregation == "Group By":
+        elif row.aggregation != "Group By":
+            column = Aggregations.apply(row.aggregation, column)
+
+        elif row.aggregation == "Group By":
             self._group_by_columns.append(column)
 
         return column
