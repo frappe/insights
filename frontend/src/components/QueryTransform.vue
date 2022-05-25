@@ -7,7 +7,7 @@
 			</div>
 
 			<div v-if="transform_type == 'Pivot'" class="space-y-2">
-				<div class="space-y-2">
+				<div class="space-y-2 text-gray-600">
 					<div class="text-sm font-light text-gray-500">Select Pivot Column</div>
 					<Input type="select" v-model="pivot_column" :options="pivot_column_options" />
 				</div>
@@ -133,14 +133,14 @@ export default {
 
 <style lang="postcss">
 .dataframe th {
-	@apply whitespace-nowrap border-r border-b bg-white p-2 pr-4 text-left text-gray-600;
-}
-
-.dataframe tbody th {
-	@apply font-normal;
+	@apply whitespace-nowrap border-r border-b bg-slate-50 py-2 px-4 text-left text-sm font-medium text-gray-600;
 }
 
 .dataframe td {
-	@apply whitespace-nowrap border-r border-b bg-white p-2 pr-4 text-gray-600;
+	@apply whitespace-nowrap border-r border-b bg-white py-2 px-4 text-right text-sm text-gray-600;
+}
+
+.dataframe tr > th:first-child {
+	@apply sticky left-0;
 }
 </style>
