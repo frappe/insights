@@ -42,15 +42,27 @@ class ColumnFormat:
         "Month of Year": "%M",
     }
 
-    DateFormat = CustomFunction("DATE_FORMAT", ["date", "format"])
+    FormatDate = CustomFunction("DATE_FORMAT", ["date", "format"])
+    ParseDate = CustomFunction("STR_TO_DATE", ["str", "format"])
     Quarter = CustomFunction("QUARTER", ["date"])
 
     @classmethod
-    def apply(cls, format, column):
+    def format_date(cls, format, column):
         if format in cls.date_formats:
-            return cls.DateFormat(column, cls.date_formats[format])
+            _format = cls.date_formats[format]
+            return cls.FormatDate(column, _format)
         elif format == "Quarter of Year":
             return cls.Quarter(column)
+
+        return column
+
+    @classmethod
+    def parse_date(cls, format, column):
+        if format in cls.date_formats:
+            _format = cls.date_formats[format]
+            return cls.ParseDate(column, _format)
+
+        return column
 
 
 class Operations:

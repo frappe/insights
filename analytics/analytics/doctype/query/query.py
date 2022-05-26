@@ -246,14 +246,19 @@ class Query(Document):
                 _column = self.process_aggregation(row, _column)
 
             if row.order_by:
-                self._order_by_columns.append((_column, row.order_by))
+                if row.type in ("Date", "Datetime") and row.format:
+                    date = ColumnFormat.parse_date(row.format, _column)
+                    self._order_by_columns.append((date, row.order_by))
+                else:
+                    self._order_by_columns.append((_column, row.order_by))
 
             _column = _column.as_(row.label)
 
             self._columns.append(_column)
 
     def process_column_format(self, row, column):
-        return ColumnFormat.apply(row.format, column)
+        if row.type in ("Date", "Datetime"):
+            return ColumnFormat.format_date(row.format, column)
 
     def process_aggregation(self, row, column):
         if row.aggregation == "Count Distinct":
