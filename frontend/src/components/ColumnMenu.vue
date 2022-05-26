@@ -1,5 +1,5 @@
 <template>
-	<div class="relative" v-on-outside-click="() => (is_open = false)">
+	<div class="column-menu relative">
 		<Popover :show="is_open">
 			<template #target>
 				<div
@@ -10,13 +10,15 @@
 				</div>
 			</template>
 			<template #content>
-				<div class="mt-1 origin-top-right rounded-md bg-white text-base shadow-md ring-1 ring-gray-200">
+				<div
+					class="column-menu-popover mt-1 origin-top-right rounded-md bg-white text-base shadow-md ring-1 ring-gray-200"
+				>
 					<div
 						v-for="(item, idx) in menu_items"
 						:key="idx"
-						class="cursor-pointer px-3 py-1"
+						class="cursor-pointer select-none px-3 py-1"
 						:class="{
-							'cursor-default bg-gray-50 text-xs font-light text-gray-500': item.is_header,
+							'cursor-default bg-gray-50 text-xs font-light text-gray-500 first:rounded-t-md': item.is_header,
 							'border-t border-gray-200 text-red-400 hover:underline': item.is_danger_action,
 							'text-gray-600 hover:underline': !item.is_header && !item.is_danger_action,
 							'text-blue-400':
@@ -25,7 +27,16 @@
 						}"
 						@click="on_menu_item_select(item)"
 					>
-						{{ item.label }}
+						<div v-if="item.has_popover">
+							<ColumnMenuCountIf
+								v-if="item.label == 'Count if'"
+								:query="query"
+								:menu_item="item"
+								:column="column"
+								@apply="is_open = false"
+							/>
+						</div>
+						<div v-else>{{ item.label }}</div>
 					</div>
 				</div>
 			</template>
@@ -34,13 +45,33 @@
 </template>
 
 <script>
+import ColumnMenuCountIf from './ColumnMenuCountIf.vue'
+
 export default {
 	name: 'ColumnMenu',
+	components: { ColumnMenuCountIf },
 	props: ['query', 'column'],
 	data() {
 		return {
 			is_open: false,
 		}
+	},
+	mounted() {
+		this.outside_click_listener = (e) => {
+			if (
+				e.target.closest('.column-menu') ||
+				e.target.closest('.column-menu-popover') ||
+				e.target.closest('.column-menu-item-popover') ||
+				e.target.closest('.column-menu-item-popover-content')
+			) {
+				return
+			}
+			this.is_open = false
+		}
+		document.addEventListener('click', this.outside_click_listener)
+	},
+	beforeDestroy() {
+		document.removeEventListener('click', this.outside_click_listener)
 	},
 	resources: {
 		column_menu_options() {
@@ -68,7 +99,7 @@ export default {
 	},
 	methods: {
 		on_menu_item_select(item) {
-			if (item.is_header) {
+			if (item.is_header || item.has_popover) {
 				return
 			} else if (item.for_aggregation) {
 				this.column.aggregation = this.column.aggregation == item.value ? null : item.value
@@ -86,9 +117,10 @@ export default {
 				return []
 			}
 			const agg_header = { label: 'Aggregations', is_header: true }
-			const aggregations = this.aggregation_options.map((label) => ({
-				...label,
+			const aggregations = this.aggregation_options.map((option) => ({
+				...option,
 				for_aggregation: true,
+				has_popover: option.label === 'Count if',
 			}))
 			return [agg_header, ...aggregations]
 		},
@@ -97,8 +129,8 @@ export default {
 				return []
 			}
 			const format_header = { label: 'Column Formatting', is_header: true }
-			const formatting_items = this.format_options.map((label) => ({
-				...label,
+			const formatting_items = this.format_options.map((option) => ({
+				...option,
 				for_formatting: true,
 			}))
 			return [format_header, ...formatting_items]

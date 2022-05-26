@@ -44,8 +44,17 @@ def create_query(title, data_source):
 
 
 @frappe.whitelist()
-def get_operator_list(fieldtype):
-    operator_list = []
+def get_operator_list(fieldtype=None):
+    operator_list = [
+        {"label": "equals", "value": "="},
+        {"label": "not equals", "value": "!="},
+        {"label": "is set", "value": "is set"},
+        {"label": "is not set", "value": "is not set"},
+    ]
+
+    if not fieldtype:
+        return operator_list
+
     text_data_types = ("char", "varchar", "enum", "text", "longtext")
     number_data_types = ("int", "decimal", "bigint", "float", "double")
     date_data_types = ("date", "datetime", "time", "timestamp")
@@ -53,23 +62,15 @@ def get_operator_list(fieldtype):
     fieldtype = fieldtype.lower()
     if fieldtype in text_data_types:
         operator_list += [
-            {"label": "equals", "value": "="},
-            {"label": "not equals", "value": "!="},
             {"label": "contains", "value": "like"},
             {"label": "not contains", "value": "not like"},
             {"label": "in", "value": "in"},
             {"label": "not in", "value": "not in"},
-            {"label": "is set", "value": "is set"},
-            {"label": "is not set", "value": "is not set"},
         ]
     if fieldtype in number_data_types:
-        operator_list = [
-            {"label": "equals", "value": "="},
-            {"label": "not equals", "value": "!="},
+        operator_list += [
             {"label": "in", "value": "in"},
             {"label": "not in", "value": "not in"},
-            {"label": "is set", "value": "is set"},
-            {"label": "is not set", "value": "is not set"},
             {"label": "greater than", "value": ">"},
             {"label": "smaller than", "value": "<"},
             {"label": "greater than equal to", "value": ">="},
@@ -78,11 +79,7 @@ def get_operator_list(fieldtype):
         ]
 
     if fieldtype in date_data_types:
-        operator_list = [
-            {"label": "equals", "value": "="},
-            {"label": "not equals", "value": "!="},
-            {"label": "is set", "value": "is set"},
-            {"label": "is not set", "value": "is not set"},
+        operator_list += [
             {"label": "greater than", "value": ">"},
             {"label": "smaller than", "value": "<"},
             {"label": "greater than equal to", "value": ">="},
@@ -109,6 +106,7 @@ def get_column_menu_options(fieldtype):
             {"label": "Group By", "value": "Group By"},
             {"label": "Count of all", "value": "Count"},
             {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count if", "value": "Count if"},
             {"label": "Minimum", "value": "Min"},
             {"label": "Maximum", "value": "Max"},
         ]
@@ -117,6 +115,7 @@ def get_column_menu_options(fieldtype):
             {"label": "Group By", "value": "Group By"},
             {"label": "Count of all", "value": "Count"},
             {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count if", "value": "Count if"},
             {"label": "Sum", "value": "Sum"},
             {"label": "Minimum", "value": "Min"},
             {"label": "Maximum", "value": "Max"},
@@ -128,6 +127,7 @@ def get_column_menu_options(fieldtype):
             {"label": "Group By", "value": "Group By"},
             {"label": "Count of all", "value": "Count"},
             {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count if", "value": "Count if"},
             {"label": "Minimum", "value": "Min"},
             {"label": "Maximum", "value": "Max"},
         ]
@@ -151,6 +151,7 @@ def get_column_menu_options(fieldtype):
             {"label": "Group By", "value": "Group By"},
             {"label": "Count of all", "value": "Count"},
             {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count if", "value": "Count if"},
             {"label": "Minimum", "value": "Min"},
             {"label": "Maximum", "value": "Max"},
         ]

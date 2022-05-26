@@ -76,6 +76,9 @@ class Query(Document):
                 row.format = column.get("format")
                 row.order_by = column.get("order_by")
                 row.aggregation = column.get("aggregation")
+                row.aggregation_condition = dumps(
+                    column.get("aggregation_condition"), indent=2, default=cstr
+                )
                 break
 
         self.save()
@@ -151,10 +154,13 @@ class Query(Document):
 
     @frappe.whitelist()
     def get_selectable_columns(self, tables=None, table=None):
+        # TODO: remove unecessary kwargs
         if tables:
             tables = frappe.parse_json(tables)
         if table:
             tables = [table]
+        if not tables:
+            tables = self.tables
 
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         columns = []
@@ -255,6 +261,15 @@ class Query(Document):
         if row.aggregation == "Count Distinct":
             column = Aggregations.apply("Distinct", column)
             column = Aggregations.apply("Count", column)
+
+        elif row.aggregation == "Count if":
+            conditions = [
+                self.convert_to_expression(condition)
+                for condition in loads(row.aggregation_condition)
+            ]
+            column = Aggregations.apply(
+                "Count if", conditions=Criterion.all(conditions)
+            )
 
         elif row.aggregation != "Group By":
             column = Aggregations.apply(row.aggregation, column)

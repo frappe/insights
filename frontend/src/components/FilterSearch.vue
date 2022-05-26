@@ -77,7 +77,7 @@ export default {
 	},
 	mounted() {
 		this.$refs.filter_picker?.focus()
-		this.query.get_selectable_columns.fetch({ tables: this.tables })
+		this.query.get_selectable_columns.submit()
 		this.fetch_operators()
 		if (this.filter.right_type == 'Column') {
 			this.$refs.filter_picker?.setSelectionRange(this.input_value.length - 1, this.input_value.length - 1)

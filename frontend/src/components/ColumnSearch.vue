@@ -62,7 +62,7 @@ export default {
 	watch: {
 		input_focused(is_focused, old_is_focused) {
 			if (is_focused && is_focused != old_is_focused) {
-				this.query.get_selectable_columns.fetch({ tables: this.query.doc.tables })
+				this.query.get_selectable_columns.submit()
 			}
 		},
 	},

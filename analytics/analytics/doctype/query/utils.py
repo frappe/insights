@@ -3,7 +3,7 @@
 
 import operator
 
-from frappe.query_builder import CustomFunction, functions
+from frappe.query_builder import CustomFunction, functions, Case
 
 
 class Aggregations:
@@ -18,7 +18,10 @@ class Aggregations:
     }
 
     @classmethod
-    def apply(cls, aggregation, column):
+    def apply(cls, aggregation, column=None, **kwargs):
+        if aggregation == "Count if":
+            conditions = kwargs.get("conditions")
+            return functions.Sum(Case().when(conditions, 1).else_(0))
         if aggregation in cls.functions:
             return cls.functions[aggregation](column)
 
