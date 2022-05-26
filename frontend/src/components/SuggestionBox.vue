@@ -86,8 +86,10 @@ export default {
 				})
 			}
 			if (e.key === 'Enter') {
-				const suggestion = this.suggestions[this.active_suggestion_idx]
-				!suggestion.is_header && this.$emit('select', suggestion)
+				const suggestion = this.suggestions[this.active_suggestion_idx || 0]
+				if (suggestion && !suggestion.is_header) {
+					this.$emit('select', suggestion)
+				}
 			}
 		},
 	},
