@@ -13,9 +13,7 @@
 				</div>
 			</div>
 
-			<Button appearance="white" @click="apply_transform" :loading="query.apply_transform.loading">
-				Apply Transform
-			</Button>
+			<Button appearance="white" @click="apply_transform" :loading="query.apply_transform.loading"> Apply </Button>
 		</div>
 		<div class="flex w-3/4 pl-4">
 			<div
