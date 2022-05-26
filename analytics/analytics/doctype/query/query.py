@@ -325,7 +325,10 @@ class Query(Document):
         else:
             if "like" in condition.operator.value:
                 operand_2 = f"%{condition.right.value}%"
-            elif condition.operator.value in ("in", "between"):
+            elif (
+                "in" in condition.operator.value
+                or "between" in condition.operator.value
+            ):
                 operand_2 = [
                     d.lstrip().rstrip() for d in condition.right.value.split(",")
                 ]
