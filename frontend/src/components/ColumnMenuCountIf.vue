@@ -69,7 +69,7 @@ export default {
 			this.is_open = false
 			if (conditions && conditions.length) {
 				this.column.aggregation = this.menu_item.value
-				this.column.aggregation_condition = conditions
+				this.column.aggregation_condition = JSON.stringify(conditions, null, 2)
 				this.query.update_column.submit({ column: this.column })
 				this.$emit('apply')
 			}

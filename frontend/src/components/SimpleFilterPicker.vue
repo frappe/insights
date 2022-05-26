@@ -31,19 +31,22 @@ export default {
 	props: ['query', 'conditions'],
 	data() {
 		return {
-			_conditions: this.conditions || [
-				{
-					left: {
-						value: '',
-					},
-					operator: {
-						value: '=',
-					},
-					right: {
-						value: '',
-					},
-				},
-			],
+			_conditions:
+				this.conditions.length > 0
+					? this.conditions
+					: [
+							{
+								left: {
+									value: '',
+								},
+								operator: {
+									value: '=',
+								},
+								right: {
+									value: '',
+								},
+							},
+					  ],
 		}
 	},
 	mounted() {

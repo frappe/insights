@@ -72,14 +72,11 @@ class Query(Document):
     def update_column(self, column):
         for row in self.columns:
             if row.get("name") == column.get("name"):
-                row.label = column.get("label", row.label)
-                row.format = column.get("format", row.format)
-                row.order_by = column.get("order_by", row.order_by)
-                row.aggregation = column.get("aggregation", row.aggregation)
-                if column.get("aggregation_condition"):
-                    row.aggregation_condition = dumps(
-                        column.get("aggregation_condition"), indent=2, default=cstr
-                    )
+                row.label = column.get("label")
+                row.format = column.get("format")
+                row.order_by = column.get("order_by")
+                row.aggregation = column.get("aggregation")
+                row.aggregation_condition = column.get("aggregation_condition")
                 break
 
         self.save()
@@ -263,7 +260,7 @@ class Query(Document):
             column = Aggregations.apply("Distinct", column)
             column = Aggregations.apply("Count", column)
 
-        elif row.aggregation == "Count if":
+        elif row.aggregation == "Count if" and row.aggregation_condition:
             conditions = [
                 self.convert_to_expression(condition)
                 for condition in loads(row.aggregation_condition)
