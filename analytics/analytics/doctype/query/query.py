@@ -72,13 +72,14 @@ class Query(Document):
     def update_column(self, column):
         for row in self.columns:
             if row.get("name") == column.get("name"):
-                row.label = column.get("label")
-                row.format = column.get("format")
-                row.order_by = column.get("order_by")
-                row.aggregation = column.get("aggregation")
-                row.aggregation_condition = dumps(
-                    column.get("aggregation_condition"), indent=2, default=cstr
-                )
+                row.label = column.get("label", row.label)
+                row.format = column.get("format", row.format)
+                row.order_by = column.get("order_by", row.order_by)
+                row.aggregation = column.get("aggregation", row.aggregation)
+                if column.get("aggregation_condition"):
+                    row.aggregation_condition = dumps(
+                        column.get("aggregation_condition"), indent=2, default=cstr
+                    )
                 break
 
         self.save()
