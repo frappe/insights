@@ -47,7 +47,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.get_selectable_columns.submit()
+		this.query.get_selectable_columns.submit({})
 	},
 	resources: {
 		operator_list() {
