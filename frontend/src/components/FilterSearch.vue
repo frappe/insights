@@ -301,6 +301,14 @@ export default {
 				]
 			}
 
+			const is_between = this.filter.operator.value.includes('between')
+			if (is_between) {
+				return [
+					{ label: 'Enter two dates separated by comma...', is_header: true },
+					{ label: right_input, value: right_input },
+				]
+			}
+
 			if (this.column_value_list.length) {
 				return [{ label: 'Press enter to confirm', is_header: true }, ...this.column_value_list]
 			}
