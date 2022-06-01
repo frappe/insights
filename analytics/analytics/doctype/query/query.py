@@ -287,9 +287,7 @@ class Query(Document):
                 if filter.group_operator:
                     group_condition = process_filter_group(filter)
                     GroupCriteria = (
-                        Criterion.all
-                        if filter.group_operator == "All"
-                        else Criterion.any
+                        Criterion.all if filter.group_operator == "&" else Criterion.any
                     )
                     _filters.append(GroupCriteria(group_condition))
                 else:
@@ -298,9 +296,7 @@ class Query(Document):
 
             return _filters
 
-        RootCriteria = (
-            Criterion.all if filters.group_operator == "All" else Criterion.any
-        )
+        RootCriteria = Criterion.all if filters.group_operator == "&" else Criterion.any
         _filters = process_filter_group(filters)
         self._filters = [RootCriteria(_filters)]
 
