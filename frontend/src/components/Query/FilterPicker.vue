@@ -25,7 +25,10 @@
 		>
 			<p>No filters added</p>
 		</div>
-		<div v-else-if="filters.conditions.length > 0 && !adding_filter" class="-mt-2 flex">
+		<div
+			v-else-if="filters.conditions.length > 0 && !adding_filter"
+			class="-mt-2 flex h-full items-start overflow-scroll"
+		>
 			<FilterTree
 				:filters="filters"
 				@remove_filter="remove_filter"

@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 flex-col px-4">
+	<div class="flex flex-1 flex-col px-4 pb-4">
 		<div v-if="adding_column" class="mb-4 flex flex-shrink-0">
 			<ColumnSearch :query="query" @column_search_blur="adding_column = false" />
 		</div>

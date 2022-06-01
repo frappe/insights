@@ -1,5 +1,5 @@
 <template>
-	<div class="relative flex w-full overflow-scroll">
+	<div class="relative flex w-full">
 		<div class="z-10 flex w-full items-center">
 			<div
 				ref="group_operator"

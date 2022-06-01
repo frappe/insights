@@ -58,7 +58,7 @@ export default {
 			return false
 		},
 		transform_data() {
-			return JSON.parse(this.query.doc.transform_data)
+			return JSON.parse(this.query.doc.transform_data || {})
 		},
 	},
 	methods: {

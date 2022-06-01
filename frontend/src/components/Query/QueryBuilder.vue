@@ -1,6 +1,8 @@
 <template>
-	<div class="h-full w-full rounded-md bg-white">
-		<div class="my-4 flex h-[calc(100%-1rem)] w-full flex-shrink-0 flex-col rounded-md border text-base text-gray-700">
+	<div class="h-full w-full rounded-md">
+		<div
+			class="my-4 flex h-[calc(100%-1rem)] min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md border bg-white text-base text-gray-700"
+		>
 			<div class="flex h-[calc(100%-2.5rem)] divide-x pt-4">
 				<TablePicker :query="query" />
 				<ColumnPicker :query="query" />
@@ -10,9 +12,6 @@
 				<LimitsAndOrder :query="query" />
 			</div>
 		</div>
-		<!-- <div class="flex h-[calc(100%-26rem)]">
-			<QueryResult :query="query" />
-		</div> -->
 	</div>
 </template>
 
