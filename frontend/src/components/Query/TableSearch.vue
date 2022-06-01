@@ -7,18 +7,11 @@
 					ref="table_search"
 					autocomplete="off"
 					spellcheck="false"
-					class="form-input block h-8 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
+					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
 					:placeholder="input_focused ? 'Select a table...' : 'Add a table...'"
 					v-model="input_value"
 					@focus="input_focused = true"
 				/>
-				<div
-					v-if="input_value"
-					class="absolute top-0 flex h-9 w-full cursor-text items-center whitespace-nowrap border border-transparent px-3 text-sm"
-					@click="$refs.table_search.focus()"
-				>
-					{{ input_value.replace(/;/g, ' ') }}
-				</div>
 			</template>
 			<template #content>
 				<SuggestionBox
@@ -32,7 +25,7 @@
 </template>
 
 <script>
-import SuggestionBox from './SuggestionBox.vue'
+import SuggestionBox from '@/components/SuggestionBox.vue'
 
 export default {
 	props: ['query'],
@@ -41,7 +34,6 @@ export default {
 	},
 	data() {
 		return {
-			table: {},
 			input_value: '',
 			input_focused: false,
 		}
@@ -50,11 +42,20 @@ export default {
 		// detect click outside of input
 		this.outside_click_listener = (e) => {
 			if (e.target.closest('.table-search')) {
-				return this.$refs.table_search?.focus()
+				return this.$refs.table_search.focus()
 			}
 			this.input_focused = false
 		}
 		document.addEventListener('click', this.outside_click_listener)
+
+		this.query.get_selectable_tables.fetch(
+			{},
+			{
+				onSuccess: () => {
+					this.$refs.table_search.focus()
+				},
+			}
+		)
 	},
 	beforeDestroy() {
 		document.removeEventListener('click', this.outside_click_listener)
@@ -64,14 +65,19 @@ export default {
 			if (is_focused && is_focused != old_is_focused) {
 				this.query.get_selectable_tables.fetch()
 			}
+			if (!is_focused && is_focused != old_is_focused) {
+				this.$emit('table_search_blur')
+			}
 		},
 	},
 	computed: {
-		table_list() {
+		selectable_tables() {
 			return this.query.get_selectable_tables?.data?.message || []
 		},
 		suggestions() {
-			return this.get_table_suggestions(this.input_value)
+			return this.input_value
+				? this.selectable_tables.filter((t) => t.label.toLowerCase().includes(this.input_value.toLowerCase()))
+				: this.selectable_tables
 		},
 	},
 	methods: {
@@ -81,18 +87,8 @@ export default {
 		},
 		reset() {
 			this.$refs.table_search?.blur()
-			this.table = {}
 			this.input_value = ''
 			this.input_focused = false
-		},
-		get_table_suggestions(input) {
-			let _suggestions = []
-			if (input) {
-				_suggestions = this.table_list.filter((t) => t.label.toLowerCase().includes(input.toLowerCase()))
-			} else {
-				_suggestions = this.table_list
-			}
-			return _suggestions
 		},
 	},
 }

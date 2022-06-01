@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-0 rounded-md bg-white shadow-md ring-1 ring-black ring-opacity-5 focus:outline-none">
+	<div class="mt-0 rounded-md rounded-t-none border border-t-0 bg-white shadow focus:outline-none">
 		<div
 			v-if="header"
 			class="sticky top-0 flex h-6 cursor-default items-center justify-between border-b border-gray-200 px-2 py-1 text-sm font-light text-gray-500"
@@ -7,23 +7,30 @@
 		>
 			{{ header.label }}
 		</div>
-		<div class="max-h-48 min-w-[16rem] origin-top overflow-scroll overflow-x-hidden">
+		<div class="max-h-48 origin-top overflow-scroll overflow-x-hidden p-1">
 			<div
 				v-for="(suggestion, idx) in suggestions"
 				ref="suggestions"
 				:key="idx"
-				class="flex cursor-default items-center justify-between rounded text-base text-gray-600"
+				class="flex h-9 cursor-default items-center rounded px-3 text-base text-gray-600"
 				:class="{
-					'h-9 px-4 hover:bg-gray-50': active_suggestion_idx !== idx,
-					'h-9 bg-blue-50 px-4 text-blue-400': active_suggestion_idx === idx,
+					'h-9 bg-gray-100 px-4 text-gray-800': active_suggestion_idx === idx,
 				}"
 				@click.prevent.stop="$emit('select', suggestion)"
+				@mouseenter="active_suggestion_idx = idx"
 			>
-				<div class="flex items-center whitespace-nowrap font-medium">
-					<FeatherIcon v-if="suggestion.icon" :name="suggestion.icon" class="mr-2 h-3 w-3 text-gray-500" />
+				<div class="mr-4 flex items-center overflow-hidden whitespace-nowrap font-medium">
+					<FeatherIcon
+						v-if="suggestion.icon"
+						:name="suggestion.icon"
+						class="mr-2 h-3 w-3 flex-shrink-0 text-gray-500"
+					/>
 					{{ suggestion.label }}
 				</div>
-				<div v-if="suggestion.secondary_label" class="ml-4 flex whitespace-nowrap font-light text-gray-500">
+				<div
+					v-if="suggestion.secondary_label"
+					class="ml-auto flex flex-shrink-0 whitespace-nowrap font-light text-gray-500"
+				>
 					{{ suggestion.secondary_label }}
 				</div>
 			</div>
@@ -33,7 +40,7 @@
 
 <script>
 export default {
-	props: ['header_and_suggestions'],
+	props: ['header_and_suggestions', 'width'],
 	data() {
 		return {
 			active_suggestion_idx: 0,

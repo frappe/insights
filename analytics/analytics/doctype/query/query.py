@@ -151,18 +151,13 @@ class Query(Document):
             return query.run(as_dict=True)
 
     @frappe.whitelist()
-    def get_selectable_columns(self, tables=None, table=None):
-        # TODO: remove unecessary kwargs
-        if tables:
-            tables = frappe.parse_json(tables)
-        if table:
-            tables = [table]
-        if not tables:
-            tables = self.tables
+    def get_selectable_columns(self):
+        if not self.tables:
+            return []
 
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         columns = []
-        for table in tables:
+        for table in self.tables:
             columns += data_source.get_columns(table)
         return columns
 

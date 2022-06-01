@@ -1,24 +1,17 @@
 <template>
 	<div class="column-search relative z-10 w-full rounded-md shadow-sm">
-		<Popover :show="input_focused">
+		<Popover :show="input_focused" :sameWidth="true">
 			<template #target>
 				<input
 					type="text"
 					ref="column_search"
 					autocomplete="off"
 					spellcheck="false"
-					class="form-input block h-8 w-full select-none rounded-md border-gray-300 text-sm text-transparent placeholder-gray-500 caret-black focus:bg-gray-100"
-					:placeholder="input_focused ? 'Select a table...' : 'Add a column...'"
+					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
+					:placeholder="input_focused ? 'Select a column...' : 'Add a column...'"
 					v-model="input_value"
 					@focus="input_focused = true"
 				/>
-				<div
-					v-if="input_value"
-					class="absolute top-0 flex h-9 w-full cursor-text items-center whitespace-nowrap border border-transparent px-3 text-sm"
-					@click="$refs.column_search.focus()"
-				>
-					{{ input_value.replace(/;/g, ' ') }}
-				</div>
 			</template>
 			<template #content>
 				<SuggestionBox
@@ -32,7 +25,7 @@
 </template>
 
 <script>
-import SuggestionBox from './SuggestionBox.vue'
+import SuggestionBox from '@/components/SuggestionBox.vue'
 
 export default {
 	props: ['query'],
@@ -43,7 +36,6 @@ export default {
 		return {
 			input_value: '',
 			input_focused: false,
-			column: {},
 		}
 	},
 	mounted() {
@@ -55,6 +47,15 @@ export default {
 			this.input_focused = false
 		}
 		document.addEventListener('click', this.outside_click_listener)
+
+		this.query.get_selectable_columns.fetch(
+			{},
+			{
+				onSuccess: () => {
+					this.$refs.column_search.focus()
+				},
+			}
+		)
 	},
 	beforeDestroy() {
 		document.removeEventListener('click', this.outside_click_listener)
@@ -62,7 +63,10 @@ export default {
 	watch: {
 		input_focused(is_focused, old_is_focused) {
 			if (is_focused && is_focused != old_is_focused) {
-				this.query.get_selectable_columns.submit({})
+				this.query.get_selectable_columns.fetch()
+			}
+			if (!is_focused && is_focused != old_is_focused) {
+				this.$emit('column_search_blur')
 			}
 		},
 	},
@@ -78,14 +82,11 @@ export default {
 		on_suggestion_select(suggestion) {
 			this.query.add_column.submit({ column: suggestion })
 			this.reset()
-			return
 		},
 		reset() {
 			this.$refs.column_search?.blur()
-			this.column = {}
 			this.input_value = ''
 			this.input_focused = false
-			this.now_selecting = null
 		},
 		get_column_suggestions(input) {
 			let _suggestions = []
@@ -98,7 +99,6 @@ export default {
 				c.icon = this.get_icon_for(c.type)
 				c.secondary_label = c.table_label
 			})
-			_suggestions = [{ label: 'Select a column...', is_header: true }, ..._suggestions]
 			return _suggestions
 		},
 		get_icon_for(column_type) {

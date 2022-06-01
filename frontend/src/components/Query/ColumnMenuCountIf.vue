@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import SimpleFilterPicker from './SimpleFilterPicker.vue'
+import SimpleFilterPicker from '@/components/SimpleFilterPicker.vue'
 export default {
 	name: 'ColumnMenuCountIf',
 	components: { SimpleFilterPicker },

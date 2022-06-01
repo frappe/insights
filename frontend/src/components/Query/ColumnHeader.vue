@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import ColumnMenu from './ColumnMenu.vue'
+import ColumnMenu from '@/components/Query/ColumnMenu.vue'
 
 export default {
 	name: 'ColumnHeader',

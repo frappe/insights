@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full flex-1 items-center justify-between text-base text-gray-500">
+	<div class="flex h-full flex-1 items-center justify-between bg-white px-4 text-base text-gray-500">
 		<div v-if="order_bys.length">
 			<span> Sorted by </span>
 			<span v-for="(order_by, idx) in order_bys" :key="idx">

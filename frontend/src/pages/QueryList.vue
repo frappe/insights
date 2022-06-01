@@ -1,12 +1,12 @@
 <template>
 	<div>
-		<header class="flex h-[5rem] items-center justify-between border-b py-4">
+		<header class="flex h-[3rem] justify-between border-b pt-1">
 			<h1 class="text-3xl font-bold text-gray-900">Queries</h1>
 			<div>
 				<Button appearance="primary" @click="create_new_query_dialog = true"> + Add Query </Button>
 			</div>
 		</header>
-		<main class="flex h-[calc(100%-5rem)] flex-col space-y-4 py-4">
+		<main class="flex h-[calc(100%-4rem)] flex-col space-y-4 py-4">
 			<div class="flex space-x-4">
 				<Input type="text" placeholder="Title" />
 				<Input type="text" placeholder="Data Source" />

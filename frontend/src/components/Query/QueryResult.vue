@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full w-full flex-1 select-text rounded-md text-base">
+	<div class="flex h-full w-full flex-1 select-text rounded-md pt-4 text-base">
 		<div
 			v-if="!columns || columns.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import ColumnHeader from './ColumnHeader.vue'
+import ColumnHeader from '@/components/Query/ColumnHeader.vue'
 
 export default {
 	name: 'QueryResult',

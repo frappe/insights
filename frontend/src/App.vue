@@ -2,7 +2,7 @@
 	<div class="flex h-screen select-none flex-col bg-white font-sans">
 		<Topbar />
 		<router-view
-			class="mx-auto flex h-[calc(100%-4rem)] w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8"
+			class="mx-auto flex h-[calc(100%-4rem)] w-full max-w-[85rem] flex-col px-4 sm:px-6 lg:px-8"
 			:key="$route.fullPath"
 		/>
 		<NotificationToasts />

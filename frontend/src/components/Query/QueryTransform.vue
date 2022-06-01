@@ -42,19 +42,7 @@ export default {
 		}
 	},
 	mounted() {
-		// detect click outside of input
-		this.outside_click_listener = (e) => {
-			if (e.target.closest('.pivot-button') || e.target.closest('.pivot-popup')) {
-				return
-			}
-			this.pivot_popup_open = false
-		}
-		document.addEventListener('click', this.outside_click_listener)
-
 		this.load_transform_data()
-	},
-	beforeDestroy() {
-		document.removeEventListener('click', this.outside_click_listener)
 	},
 	computed: {
 		transform_type_options() {

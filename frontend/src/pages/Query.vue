@@ -1,8 +1,8 @@
 <template>
 	<div v-if="query">
 		<header class="flex flex-col border-b">
-			<!-- Height 3 rem + Margin 2 rem -->
-			<div class="flex h-[5rem] items-center justify-between py-4">
+			<!-- Height 5 rem -->
+			<div class="flex h-[5rem] justify-between pt-2">
 				<div class="relative flex flex-col items-start space-y-1">
 					<input
 						type="text"
@@ -29,14 +29,8 @@
 						</div>
 					</div>
 				</div>
-				<div class="flex items-center space-x-2">
-					<button
-						class="refresh-btn cursor-pointer rounded-md bg-gray-100 p-1.5 text-gray-700"
-						@click="$resources.query.update_result.submit()"
-						title="Refresh"
-					>
-						<FeatherIcon name="rotate-cw" class="h-4 w-4 -rotate-45" />
-					</button>
+				<div class="flex space-x-2">
+					<Button class="h-fit" appearance="white" @click="$resources.query.update_result.submit()"> Refresh </Button>
 					<QueryMenu :query="query" />
 				</div>
 			</div>
@@ -46,6 +40,7 @@
 		<main class="flex h-[calc(100%-7.5rem)] w-full">
 			<!-- height = 100% - Header Height  -->
 			<QueryBuilder v-show="active_tab == 'Build'" :query="$resources.query" />
+			<QueryResult v-show="active_tab == 'Result'" :query="$resources.query" />
 			<QueryTransform v-show="active_tab == 'Transform'" :query="$resources.query" />
 			<QueryChart v-if="active_tab == 'Visualize'" :query="$resources.query" />
 		</main>
@@ -55,10 +50,11 @@
 <script>
 import moment from 'moment'
 import TabSwitcher from '@/components/TabSwitcher.vue'
-import QueryBuilder from '@/components/QueryBuilder.vue'
-import QueryTransform from '@/components/QueryTransform.vue'
-import QueryChart from '@/components/QueryChart.vue'
-import QueryMenu from '@/components/QueryMenu.vue'
+import QueryBuilder from '@/components/Query/QueryBuilder.vue'
+import QueryResult from '@/components/Query/QueryResult.vue'
+import QueryTransform from '@/components/Query/QueryTransform.vue'
+import QueryChart from '@/components/Query/QueryChart.vue'
+import QueryMenu from '@/components/Query/QueryMenu.vue'
 
 export default {
 	name: 'Query',
@@ -66,15 +62,15 @@ export default {
 	components: {
 		TabSwitcher,
 		QueryBuilder,
+		QueryResult,
 		QueryTransform,
 		QueryChart,
 		QueryMenu,
 	},
 	data() {
 		return {
-			menu_open: false,
 			active_tab: 'Build',
-			tabs: ['Build', 'Transform', 'Visualize'],
+			tabs: ['Build', 'Result', 'Transform', 'Visualize'],
 		}
 	},
 	resources: {

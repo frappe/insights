@@ -11,7 +11,7 @@
 			</template>
 			<template #content>
 				<div
-					class="column-menu-popover mt-1 origin-top-right rounded-md bg-white text-base shadow-md ring-1 ring-gray-200"
+					class="column-menu-popover mt-1 origin-top-right rounded-md bg-white p-1 text-base shadow-md ring-1 ring-gray-200"
 				>
 					<div
 						v-for="(item, idx) in menu_items"
@@ -19,8 +19,8 @@
 						class="cursor-pointer select-none px-3 py-1"
 						:class="{
 							'cursor-default bg-gray-50 text-xs font-light text-gray-500 first:rounded-t-md': item.is_header,
-							'border-t border-gray-200 text-red-400 hover:underline': item.is_danger_action,
-							'text-gray-600 hover:underline': !item.is_header && !item.is_danger_action,
+							'border-t border-gray-200 text-red-400 hover:rounded-md hover:bg-gray-100': item.is_danger_action,
+							'text-gray-600 hover:rounded-md hover:bg-gray-100': !item.is_header && !item.is_danger_action,
 							'text-blue-400':
 								(column.aggregation && column.aggregation === item.value) ||
 								(column.format && column.format === item.value),
@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import ColumnMenuCountIf from './ColumnMenuCountIf.vue'
+import ColumnMenuCountIf from '@/components/Query/ColumnMenuCountIf.vue'
 
 export default {
 	name: 'ColumnMenu',
