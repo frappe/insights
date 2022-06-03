@@ -66,7 +66,7 @@ export default {
 			if (this.query.doc.transform_type) {
 				this.transform_type = this.query.doc.transform_type
 				if (this.transform_type == 'Pivot') {
-					this.pivot_column = this.transform_data.pivot_columns[0]
+					this.pivot_column = this.transform_data?.pivot_columns[0]
 				}
 			}
 		},

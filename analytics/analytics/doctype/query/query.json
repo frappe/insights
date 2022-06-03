@@ -44,7 +44,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "{\n\t\"group_operator\": \"All\",\n\t\"level\": 1,\n\t\"conditions\": []\n}",
+   "default": "{\n\t\"group_operator\": \"&\",\n\t\"level\": 1,\n\t\"conditions\": []\n}",
    "fieldname": "filters",
    "fieldtype": "Code",
    "label": "Filters",
@@ -137,6 +137,7 @@
    "options": "JSON"
   },
   {
+   "default": "{}",
    "fieldname": "transform_result",
    "fieldtype": "Code",
    "label": "Transform Result",
@@ -145,7 +146,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-05-21 03:44:02.798482",
+ "modified": "2022-06-02 05:41:07.556034",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",
