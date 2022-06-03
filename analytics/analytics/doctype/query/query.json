@@ -22,6 +22,7 @@
   "section_break_11",
   "sql",
   "result",
+  "execution_time",
   "transform_tab",
   "section_break_18",
   "transform_type",
@@ -142,11 +143,16 @@
    "fieldtype": "Code",
    "label": "Transform Result",
    "read_only": 1
+  },
+  {
+   "fieldname": "execution_time",
+   "fieldtype": "Duration",
+   "label": "Execution Time"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-02 05:41:07.556034",
+ "modified": "2022-06-03 02:42:39.456796",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",

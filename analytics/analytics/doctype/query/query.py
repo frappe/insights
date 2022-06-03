@@ -1,13 +1,14 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import time
 from json import dumps, loads
 
 import frappe
 from frappe import _dict
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, Field, Table
-from frappe.utils import cint, cstr
+from frappe.utils import cint, cstr, flt
 from pypika import Order
 from sqlparse import format as format_sql
 
@@ -96,12 +97,6 @@ class Query(Document):
         self.save()
 
     @frappe.whitelist()
-    def update_result(self):
-        self.execute()
-        self.save_result()
-        self.db_set("result", self.result)
-
-    @frappe.whitelist()
     def apply_transform(self, type, data):
         self.transform_type = type
         self.transform_data = dumps(data, indent=2, default=cstr)
@@ -174,16 +169,18 @@ class Query(Document):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         return data_source.get_distinct_column_values(column, search_text)
 
-    def before_save(self):
+    @frappe.whitelist()
+    def run(self):
         if not self.columns or not self.filters:
             self.result = "[]"
             return
 
         self.process()
         self.build()
-        self.save_query()
+        self.update_query()
         self.execute()
-        self.save_result()
+        self.update_result()
+        self.save()
 
     def process(self):
         self._tables = []
@@ -215,15 +212,18 @@ class Query(Document):
 
     def execute(self):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
-        self._result = data_source.execute(self.sql, debug=True)
-        self._result = list(self._result)
+        start = time.time()
+        result = data_source.execute(self.sql, debug=True)
+        end = time.time()
+        self._result = list(result)
+        self.execution_time = flt(end - start, 3)
 
-    def save_query(self):
+    def update_query(self):
         self.sql = format_sql(
             str(self._query), keyword_case="upper", reindent_aligned=True
         )
 
-    def save_result(self):
+    def update_result(self):
         self.result = dumps(self._result, default=cstr)
 
     def process_columns(self):

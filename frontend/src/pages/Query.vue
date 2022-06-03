@@ -27,10 +27,21 @@
 							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
 							<span> Updated {{ last_updated }} </span>
 						</div>
+						<div class="flex items-center">
+							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
+							<span> Executed In {{ execution_time }} </span>
+						</div>
 					</div>
 				</div>
 				<div class="flex space-x-2">
-					<Button class="h-fit" appearance="white" @click="$resources.query.update_result.submit()"> Refresh </Button>
+					<Button
+						class="h-fit"
+						appearance="white"
+						@click="$resources.query.run.submit()"
+						:loading="$resources.query.run.loading"
+					>
+						Execute
+					</Button>
 					<QueryMenu :query="query" />
 				</div>
 			</div>
@@ -80,19 +91,19 @@ export default {
 				doctype: 'Query',
 				name: this.query_id,
 				whitelistedMethods: {
+					run: 'run',
+					set_limit: 'set_limit',
 					add_table: 'add_table',
-					remove_table: 'remove_table',
 					add_column: 'add_column',
 					move_column: 'move_column',
+					remove_table: 'remove_table',
 					update_column: 'update_column',
 					remove_column: 'remove_column',
 					update_filters: 'update_filters',
-					set_limit: 'set_limit',
+					apply_transform: 'apply_transform',
+					get_column_values: 'get_column_values',
 					get_selectable_tables: 'get_selectable_tables',
 					get_selectable_columns: 'get_selectable_columns',
-					get_column_values: 'get_column_values',
-					update_result: 'update_result',
-					apply_transform: 'apply_transform',
 				},
 				onError: () => {
 					this.$notify({
@@ -116,6 +127,9 @@ export default {
 		},
 		last_updated() {
 			return moment(this.query.modified).fromNow()
+		},
+		execution_time() {
+			return this.query.execution_time
 		},
 	},
 	methods: {
