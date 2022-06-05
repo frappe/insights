@@ -22,6 +22,12 @@
 							$emit('update:modelValue', e.target.value)
 						}
 					"
+					@keydown.esc.exact="
+						() => {
+							input_focused = false
+							$refs.autocomplete_input.blur()
+						}
+					"
 					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
 				/>
 			</template>

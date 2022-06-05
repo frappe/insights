@@ -45,7 +45,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "{\n\t\"group_operator\": \"&\",\n\t\"level\": 1,\n\t\"conditions\": []\n}",
+   "default": "{\n\t\"group_operator\": \"&\",\n\t\"level\": \"1\",\n\t\"position\": \"1\",\n\t\"conditions\": []\n}",
    "fieldname": "filters",
    "fieldtype": "Code",
    "label": "Filters",
@@ -152,7 +152,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-03 02:42:39.456796",
+ "modified": "2022-06-05 06:26:05.611621",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",

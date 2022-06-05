@@ -4,7 +4,7 @@
 			<div
 				ref="group_operator"
 				class="z-10 mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white font-light hover:border-blue-300 hover:font-medium hover:text-blue-500"
-				@click.prevent.stop="$emit('toggle_group_operator', { level })"
+				@click.prevent.stop="$emit('toggle_group_operator', { level, position })"
 			>
 				{{ group_operator }}
 			</div>
@@ -23,7 +23,7 @@
 					<div
 						v-else
 						class="group relative flex h-9 w-fit cursor-pointer items-center rounded-md border px-2 hover:bg-gray-50"
-						@click.prevent.stop="$emit('edit_filter', { idx, level })"
+						@click.prevent.stop="$emit('edit_filter', { level, position, idx })"
 					>
 						<div class="flex items-baseline space-x-2">
 							<span class="flex items-baseline">{{ condition.left.label }} </span>
@@ -33,7 +33,7 @@
 						<FeatherIcon
 							name="x"
 							class="ml-2 h-3 w-3 self-center text-gray-500 hover:text-gray-700"
-							@click="$emit('remove_filter', { idx, level })"
+							@click.prevent.stop="$emit('remove_filter', { level, position, idx })"
 						/>
 						<div
 							class="invisible absolute flex h-full w-fit cursor-pointer items-center font-light text-gray-400 hover:visible hover:text-gray-500 group-hover:visible"
@@ -41,7 +41,7 @@
 								'right-[-2.5rem] px-2': group_operator == '&',
 								'right-[-3rem] px-1.5': group_operator == 'or',
 							}"
-							@click.prevent.stop="$emit('branch_filter_at', { idx, level })"
+							@click.prevent.stop="$emit('branch_filter_at', { level, position, idx })"
 						>
 							+ {{ group_operator == '&' ? 'or' : 'and' }}
 						</div>
@@ -50,7 +50,7 @@
 				<div
 					ref="add_condition"
 					class="!-mt-0.5 !-mb-2 flex h-9 cursor-pointer items-center text-sm font-light text-gray-400 hover:text-gray-500"
-					@click.prevent.stop="$emit('add_filter', { level })"
+					@click.prevent.stop="$emit('add_filter', { level, position })"
 				>
 					+ {{ group_operator == '&' ? 'and' : 'or' }} condition
 				</div>
@@ -78,6 +78,9 @@ export default {
 	computed: {
 		level() {
 			return this.filters.level
+		},
+		position() {
+			return this.filters.position
 		},
 		conditions() {
 			return this.filters.conditions

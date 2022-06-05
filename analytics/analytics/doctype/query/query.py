@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import time
+from copy import deepcopy
 from json import dumps, loads
 
 import frappe
@@ -93,8 +94,30 @@ class Query(Document):
 
     @frappe.whitelist()
     def update_filters(self, filters):
+        sanitized_conditions = self.sanitize_conditions(filters.get("conditions"))
+        filters["conditions"] = sanitized_conditions or []
         self.filters = dumps(filters, indent=2, default=cstr)
         self.save()
+
+    def sanitize_conditions(self, conditions):
+        if not conditions:
+            return
+
+        _conditions = deepcopy(conditions)
+
+        for idx, condition in enumerate(_conditions):
+            if "conditions" not in condition:
+                # TODO: validate if condition is valid
+                continue
+
+            sanitized_conditions = self.sanitize_conditions(condition.get("conditions"))
+            if sanitized_conditions:
+                conditions[idx]["conditions"] = sanitized_conditions
+            else:
+                # remove the condition if it has zero conditions
+                conditions.remove(condition)
+
+        return conditions
 
     @frappe.whitelist()
     def apply_transform(self, type, data):

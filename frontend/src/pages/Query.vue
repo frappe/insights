@@ -23,11 +23,11 @@
 							<FeatherIcon name="layout" class="mr-1 h-3 w-3" />
 							<span> {{ tables }} </span>
 						</div>
-						<div class="flex items-center">
+						<div v-if="last_updated" class="flex items-center">
 							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
 							<span> Updated {{ last_updated }} </span>
 						</div>
-						<div class="flex items-center">
+						<div v-if="execution_time" class="flex items-center">
 							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
 							<span> Executed In {{ execution_time }} </span>
 						</div>
