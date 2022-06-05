@@ -13,7 +13,9 @@ def execute():
         _filters = json.loads(query.get("filters"))
         set_default_position(_filters)
         _filters = json.dumps(_filters, indent=2, default=cstr)
-        frappe.db.set_value("Query", query.get("name"), "filters", _filters)
+        frappe.db.set_value(
+            "Query", query.get("name"), "filters", _filters, update_modified=False
+        )
 
 
 def set_default_position(filters):
