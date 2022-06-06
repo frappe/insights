@@ -16,12 +16,35 @@
 				</Button>
 				<div class="text-lg font-medium">{{ editing_filter ? 'Edit' : 'Add' }} a Filter</div>
 			</div>
-			<div class="-mt-2 flex flex-col space-y-2">
+			<div class="-mt-2 flex flex-col space-y-3">
 				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
-					<div class="flex h-full flex-1 items-center justify-center rounded-md border bg-white shadow-sm">Simple</div>
-					<div class="flex h-full flex-1 items-center justify-center rounded-md font-light">Expression</div>
+					<div
+						class="flex h-full flex-1 items-center justify-center rounded-md font-light"
+						:class="{ 'border bg-white font-normal shadow-sm': filter_type == 'simple' }"
+						@click.prevent.stop="filter_type = 'simple'"
+					>
+						Simple
+					</div>
+					<div
+						class="flex h-full flex-1 items-center justify-center rounded-md"
+						:class="{ 'border bg-white font-normal shadow-sm': filter_type == 'expression' }"
+						@click.prevent.stop="filter_type = 'expression'"
+					>
+						Expression
+					</div>
 				</div>
-				<SimpleFilterPicker :query="query" :filter="get_filter_at(edit_filter_at)" @select="filter_selected" />
+				<SimpleFilterPicker
+					v-if="filter_type == 'simple'"
+					:query="query"
+					@filter-select="filter_selected"
+					:filter="get_filter_at(edit_filter_at)"
+				/>
+				<ExpressionFilterPicker
+					v-if="filter_type == 'expression'"
+					:query="query"
+					@filter-select="filter_selected"
+					:filter="get_filter_at(edit_filter_at)"
+				/>
 			</div>
 		</div>
 		<div
@@ -40,10 +63,11 @@
 				@branch_filter_at="branch_filter_at"
 				@toggle_group_operator="toggle_group_operator"
 				@edit_filter="
-					({ level, position, idx }) => {
+					({ level, position, idx, is_expression }) => {
 						adding_filter = true
 						editing_filter = true
-						edit_filter_at = { level, position, idx }
+						edit_filter_at = { level, position, idx, is_expression }
+						filter_type = is_expression ? 'expression' : 'simple'
 					}
 				"
 				@add_filter="
@@ -60,6 +84,7 @@
 <script>
 import FilterTree from '@/components/Query/FilterTree.vue'
 import SimpleFilterPicker from '@/components/Query/SimpleFilterPicker.vue'
+import ExpressionFilterPicker from '@/components/Query/ExpressionFilterPicker.vue'
 
 export default {
 	name: 'FilterPicker',
@@ -67,9 +92,11 @@ export default {
 	components: {
 		FilterTree,
 		SimpleFilterPicker,
+		ExpressionFilterPicker,
 	},
 	data() {
 		return {
+			filter_type: 'simple',
 			adding_filter: false,
 			editing_filter: false,
 			edit_filter_at: {},
@@ -149,13 +176,14 @@ export default {
 			this.query.update_filters.submit({ filters: this.filters })
 		},
 		filter_selected({ filter }) {
-			if (this.edit_filter_at.level && this.edit_filter_at.idx) {
+			if (this.edit_filter_at.level && this.edit_filter_at.position && typeof this.edit_filter_at.idx == 'number') {
 				const { level, position, idx } = this.edit_filter_at
 				this.edit_filter({ filter, level, position, idx })
 			} else if (this.add_next_filter_at.level && this.add_next_filter_at.position) {
 				const { level, position } = this.add_next_filter_at
 				this.add_filter({ filter, level, position })
 			}
+			this.filter_type = 'simple'
 		},
 		add_filter({ filter, level, position }) {
 			const filter_group = this.get_filter_group_at({ level, position })

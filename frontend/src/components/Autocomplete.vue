@@ -9,7 +9,12 @@
 					:value="modelValue"
 					ref="autocomplete_input"
 					:placeholder="placeholder"
-					@blur="$emit('blur', $event)"
+					@blur="
+						() => {
+							input_focused = false
+							$emit('blur', $event)
+						}
+					"
 					@focus="
 						() => {
 							input_focused = true
@@ -22,13 +27,12 @@
 							$emit('update:modelValue', e.target.value)
 						}
 					"
-					@keydown.esc.exact="
-						() => {
-							input_focused = false
-							$refs.autocomplete_input.blur()
-						}
-					"
-					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
+					@keydown.esc.exact="$refs.autocomplete_input.blur()"
+					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500"
+					:class="{
+						'focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow':
+							input_focused && options?.length && filtered_options?.length,
+					}"
 				/>
 			</template>
 			<template #content>

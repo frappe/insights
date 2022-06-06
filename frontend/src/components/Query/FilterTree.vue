@@ -23,13 +23,9 @@
 					<div
 						v-else
 						class="group relative flex h-9 w-fit cursor-pointer items-center rounded-md border px-2 hover:bg-gray-50"
-						@click.prevent.stop="$emit('edit_filter', { level, position, idx })"
+						@click.prevent.stop="$emit('edit_filter', { level, position, idx, is_expression: condition.is_expression })"
 					>
-						<div class="flex items-baseline space-x-2">
-							<span class="flex items-baseline">{{ condition.left.label }} </span>
-							<span class="flex items-baseline text-sm text-green-600"> {{ condition.operator.label }} </span>
-							<span class="flex items-baseline">{{ condition.right.label }}</span>
-						</div>
+						<Expression :condition="condition" />
 						<FeatherIcon
 							name="x"
 							class="ml-2 h-3 w-3 self-center text-gray-500 hover:text-gray-700"
@@ -66,10 +62,14 @@
 
 <script>
 import { nextTick } from '@vue/runtime-core'
+import Expression from '@/components/Query/Expression.vue'
 
 export default {
 	name: 'FilterTree',
 	props: ['filters'],
+	components: {
+		Expression,
+	},
 	data() {
 		return {
 			edit_filter_at: null,

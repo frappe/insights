@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
 import time
 from copy import deepcopy
 from json import dumps, loads
@@ -195,7 +196,6 @@ class Query(Document):
     @frappe.whitelist()
     def run(self):
         if not self.columns or not self.filters:
-            self.result = "[]"
             return
 
         self.process()
@@ -255,7 +255,7 @@ class Query(Document):
         self._order_by_columns = []
 
         for row in self.columns:
-            _column = self.convert_to_select_field(row.table, row.column)
+            _column = self.process_query_field(row.table, row.column)
 
             if row.format:
                 _column = self.process_column_format(row, _column)
@@ -264,11 +264,7 @@ class Query(Document):
                 _column = self.process_aggregation(row, _column)
 
             if row.order_by:
-                if row.type in ("Date", "Datetime") and row.format:
-                    date = ColumnFormat.parse_date(row.format, _column)
-                    self._order_by_columns.append((date, row.order_by))
-                else:
-                    self._order_by_columns.append((_column, row.order_by))
+                self.process_sorting(row, _column)
 
             _column = _column.as_(row.label)
 
@@ -285,7 +281,7 @@ class Query(Document):
 
         elif row.aggregation == "Count if" and row.aggregation_condition:
             conditions = [
-                self.convert_to_expression(condition)
+                self.process_simple_filter(condition)
                 for condition in loads(row.aggregation_condition)
             ]
             column = Aggregations.apply(
@@ -300,21 +296,30 @@ class Query(Document):
 
         return column
 
+    def process_sorting(self, row, column):
+        if row.type in ("Date", "Datetime") and row.format:
+            date = ColumnFormat.parse_date(row.format, column)
+            self._order_by_columns.append((date, row.order_by))
+        else:
+            self._order_by_columns.append((column, row.order_by))
+
     def process_filters(self):
         filters = _dict(loads(self.filters))
 
         def process_filter_group(filter_group):
             _filters = []
-            for filter in filter_group.get("conditions"):
-                filter = _dict(filter)
-                if filter.group_operator:
-                    group_condition = process_filter_group(filter)
+            for _filter in filter_group.get("conditions"):
+                _filter = _dict(_filter)
+                if _filter.group_operator:
+                    group_condition = process_filter_group(_filter)
                     GroupCriteria = (
-                        Criterion.all if filter.group_operator == "&" else Criterion.any
+                        Criterion.all
+                        if _filter.group_operator == "&"
+                        else Criterion.any
                     )
                     _filters.append(GroupCriteria(group_condition))
                 else:
-                    expression = self.convert_to_expression(filter)
+                    expression = self.process_expression(_filter)
                     _filters.append(expression)
 
             return _filters
@@ -323,41 +328,53 @@ class Query(Document):
         _filters = process_filter_group(filters)
         self._filters = [RootCriteria(_filters)]
 
-    def convert_to_expression(self, condition):
+    def process_expression(self, condition):
         condition = _dict(condition)
         condition.left = _dict(condition.left)
         condition.right = _dict(condition.right)
         condition.operator = _dict(condition.operator)
 
-        operand_1 = self.convert_to_select_field(
-            condition.left.table, condition.left.column
-        )
-        if condition.right_type == "Column":
-            operand_2 = self.convert_to_select_field(
-                condition.right.table, condition.right.column
-            )
-        else:
-            if "like" in condition.operator.value:
-                operand_2 = f"%{condition.right.value}%"
-            elif (
-                "in" in condition.operator.value
-                or "between" in condition.operator.value
-            ):
-                operand_2 = [
-                    d.lstrip().rstrip() for d in condition.right.value.split(",")
-                ]
-            elif "set" in condition.operator.value:
-                operand_2 = None
-            else:
-                operand_2 = condition.right.value
+        def is_literal_value(term):
+            return "value" in term
+
+        def is_query_field(term):
+            return "table" in term and "column" in term
+
+        def is_expression(term):
+            return "left" in term and "right" in term and "operator" in term
+
+        def process_term(term):
+            if is_expression(term):
+                return self.process_expression(term)
+
+            if is_query_field(term):
+                return self.process_query_field(term.table, term.column)
+
+            if is_literal_value(term):
+                return self.process_literal_value(term, condition.operator)
 
         operation = Operations.get_operation(condition.operator.value)
-        return operation(operand_1, operand_2)
+        condition_left = process_term(condition.left)
+        condition_right = process_term(condition.right)
+
+        return operation(condition_left, condition_right)
+
+    def process_literal_value(self, literal, operator):
+        if "like" in operator.value:
+            return f"%{literal.value}%"
+
+        if "in" in operator.value or "between" in operator.value:
+            return [d.lstrip().rstrip() for d in literal.value.split(",")]
+
+        if "set" in operator.value:
+            return None
+
+        return literal.value
 
     def process_limit(self):
         self._limit: int = self.limit or 10
 
-    def convert_to_select_field(self, table, column) -> Field:
+    def process_query_field(self, table, column) -> Field:
         table = Table(table)
         Field = table[column]
 
