@@ -238,8 +238,7 @@ export default {
 			if (!compare_operator) {
 				this.$notify({
 					title: 'Please enter a valid compare operator',
-					icon: 'alert-circle',
-					color: 'red',
+					appearance: 'error',
 				})
 				return
 			}
@@ -247,8 +246,7 @@ export default {
 			if (compare_operator.length > 1) {
 				this.$notify({
 					title: 'Only one compare operator is allowed',
-					icon: 'alert-circle',
-					color: 'red',
+					appearance: 'error',
 				})
 				return
 			}

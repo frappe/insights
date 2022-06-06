@@ -74,16 +74,14 @@ export default {
 			if (!this.transform_type) {
 				this.$notify({
 					title: 'Select a Transform Type',
-					color: 'yellow',
-					icon: 'alert-circle',
+					appearance: 'warning',
 				})
 			}
 
 			if (this.transform_type == 'Pivot' && !this.pivot_column) {
 				this.$notify({
 					title: 'Select a Pivot Column',
-					color: 'yellow',
-					icon: 'alert-circle',
+					appearance: 'warning',
 				})
 			}
 

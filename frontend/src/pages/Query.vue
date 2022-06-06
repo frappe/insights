@@ -108,8 +108,7 @@ export default {
 				onError: () => {
 					this.$notify({
 						title: 'Something went wrong',
-						color: 'red',
-						icon: 'alert-circle',
+						appearance: 'error',
 					})
 				},
 			}
@@ -151,15 +150,13 @@ export default {
 					onSuccess: () => {
 						this.$notify({
 							title: 'Query title updated',
-							color: 'green',
-							icon: 'check',
+							appearance: 'success',
 						})
 					},
 					onError: () => {
 						this.$notify({
 							title: 'Something went wrong',
-							color: 'red',
-							icon: 'alert-circle',
+							appearance: 'error',
 						})
 					},
 				}

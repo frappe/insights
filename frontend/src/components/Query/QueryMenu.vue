@@ -71,8 +71,7 @@ export default {
 					onError: () => {
 						this.$notify({
 							title: 'Something went wrong',
-							color: 'red',
-							icon: 'alert-circle',
+							appearance: 'error',
 						})
 					},
 				}

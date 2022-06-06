@@ -5,19 +5,19 @@
 			class="mx-auto flex h-[calc(100%-4rem)] w-full max-w-[85rem] flex-col px-4 sm:px-6 lg:px-8"
 			:key="$route.fullPath"
 		/>
-		<NotificationToasts />
+		<Toasts />
 	</div>
 </template>
 
 <script>
-import { NotificationToasts } from 'frappe-ui'
+import { Toasts } from '@/utils/toasts'
 import Topbar from '@/components/Topbar.vue'
 
 export default {
 	name: 'App',
 	components: {
 		Topbar,
-		NotificationToasts,
+		Toasts,
 	},
 }
 </script>

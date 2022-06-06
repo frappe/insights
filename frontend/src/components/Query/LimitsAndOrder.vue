@@ -50,8 +50,7 @@ export default {
 			} else {
 				this.limit = this.query.doc.limit
 				this.$notify({
-					color: 'red',
-					icon: 'alert-circle',
+					appearance: 'error',
 					title: 'Invalid Limit',
 					message: 'Limit must be a positive integer',
 				})

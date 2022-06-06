@@ -258,15 +258,13 @@ export default {
 							this.$resources.query_chart.fetch()
 							this.$notify({
 								title: 'Chart Updated',
-								color: 'green',
-								icon: 'check',
+								appearance: 'success',
 							})
 						},
 						onError: () => {
 							this.$notify({
 								title: 'Something went wrong',
-								color: 'red',
-								icon: 'alert-circle',
+								appearance: 'error',
 							})
 						},
 					}
@@ -285,15 +283,13 @@ export default {
 							this.$resources.query_chart.fetch()
 							this.$notify({
 								title: 'Chart Created',
-								color: 'green',
-								icon: 'check',
+								appearance: 'success',
 							})
 						},
 						onError: () => {
 							this.$notify({
 								title: 'Something went wrong',
-								color: 'red',
-								icon: 'alert-circle',
+								appearance: 'error',
 							})
 						},
 					}
