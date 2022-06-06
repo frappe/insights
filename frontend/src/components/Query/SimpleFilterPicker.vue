@@ -79,12 +79,17 @@ export default {
 		},
 		value_list() {
 			if (
-				!this.value ||
 				!this._filter.left?.column ||
 				!this._filter.operator?.value ||
-				!['=', '!='].includes(this._filter.operator.value)
+				!['=', '!=', 'is'].includes(this._filter.operator.value)
 			) {
 				return []
+			}
+			if (this._filter.operator.value == 'is') {
+				return [
+					{ label: 'Set', value: 'set' },
+					{ label: 'Not Set', value: 'not set' },
+				]
 			}
 			return this.query.get_column_values?.data?.message || []
 		},
@@ -103,7 +108,7 @@ export default {
 	},
 	watch: {
 		value() {
-			this.check_and_fetch_value_options()
+			this.check_and_fetch_column_values()
 		},
 	},
 	methods: {
@@ -137,7 +142,7 @@ export default {
 			}
 			this.$emit('filter-select', { filter: this._filter })
 		},
-		check_and_fetch_value_options: debounce(function () {
+		check_and_fetch_column_values: debounce(function () {
 			if (
 				!this.value ||
 				!this._filter.left?.column ||

@@ -48,8 +48,7 @@ def get_operator_list(fieldtype=None):
     operator_list = [
         {"label": "equals", "value": "="},
         {"label": "not equals", "value": "!="},
-        {"label": "is set", "value": "is set"},
-        {"label": "is not set", "value": "is not set"},
+        {"label": "is", "value": "is"},
     ]
 
     if not fieldtype:

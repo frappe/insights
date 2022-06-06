@@ -367,9 +367,6 @@ class Query(Document):
         if "in" in operator.value or "between" in operator.value:
             return [d.lstrip().rstrip() for d in literal.value.split(",")]
 
-        if "set" in operator.value:
-            return None
-
         return literal.value
 
     def process_limit(self):

@@ -93,14 +93,10 @@ class Operations:
     @classmethod
     def get_operation(cls, operator):
         """
-        Returns a callable method which takes two arguments
-
-        For eg.
-
         if `operator` = 'like'
-        return `field.like(value)`
-        where `field` and `value` are the two arguments
-
+        returns a callable method which takes two arguments,
+        def anonymous_func(field, value):
+            return field.like(value)
         """
         if operator in cls.ARITHMETIC_OPERATIONS:
             return cls.ARITHMETIC_OPERATIONS[operator]
@@ -112,12 +108,13 @@ class Operations:
             function_name = cls.COMPARE_FUNCTIONS[operator]
             return lambda field, value: getattr(field, function_name)(value)
 
-        if operator in cls.NULL_COMPARE_OPERATIONS:
-            function_name = cls.NULL_COMPARE_OPERATIONS[operator]
-            return lambda field, value: getattr(field, function_name)()
-
         if operator in cls.RANGE_OPERATORS:
             function_name = cls.RANGE_OPERATORS[operator]
             return lambda field, value: getattr(field, function_name)(
                 value[0], value[1]
             )
+
+        if operator == "is":
+            return lambda field, value: getattr(
+                field, cls.NULL_COMPARE_OPERATIONS[f"{operator} {value}"]
+            )()
