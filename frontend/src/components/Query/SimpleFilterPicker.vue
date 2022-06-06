@@ -107,8 +107,14 @@ export default {
 		},
 	},
 	watch: {
-		value() {
+		value(new_value) {
 			this.check_and_fetch_column_values()
+			if (!this.value_list.length) {
+				this._filter.right = {
+					value: new_value,
+					label: new_value,
+				}
+			}
 		},
 	},
 	methods: {
@@ -133,12 +139,6 @@ export default {
 		apply() {
 			if (!this.column || !this.operator || !this.value) {
 				return
-			}
-			if (this.value && !this._filter.right.value) {
-				this._filter.right = {
-					value: this.value,
-					label: this.value,
-				}
 			}
 			this.$emit('filter-select', { filter: this._filter })
 		},
