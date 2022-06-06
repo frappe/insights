@@ -22,7 +22,10 @@
   "section_break_11",
   "sql",
   "result",
+  "section_break_17",
   "execution_time",
+  "column_break_19",
+  "last_execution",
   "transform_tab",
   "section_break_18",
   "transform_type",
@@ -146,13 +149,28 @@
   },
   {
    "fieldname": "execution_time",
-   "fieldtype": "Duration",
-   "label": "Execution Time"
+   "fieldtype": "Float",
+   "label": "Execution Time (seconds)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_execution",
+   "fieldtype": "Datetime",
+   "label": "Last Executed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-05 06:26:05.611621",
+ "modified": "2022-06-06 08:50:14.967451",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",

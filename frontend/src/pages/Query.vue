@@ -25,18 +25,18 @@
 						</div>
 						<div v-if="last_updated" class="flex items-center">
 							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
-							<span> Updated {{ last_updated }} </span>
+							<span> Modified {{ last_updated }} </span>
 						</div>
 						<div v-if="execution_time" class="flex items-center">
 							<FeatherIcon name="clock" class="mr-1 h-3 w-3" />
-							<span> Executed In {{ execution_time }} </span>
+							<span> {{ last_execution }} executed in {{ execution_time }} sec </span>
 						</div>
 					</div>
 				</div>
 				<div class="flex space-x-2">
 					<Button
 						class="h-fit"
-						appearance="white"
+						:appearance="can_execute ? 'primary' : 'white'"
 						@click="$resources.query.run.submit()"
 						:loading="$resources.query.run.loading"
 					>
@@ -130,6 +130,13 @@ export default {
 		},
 		execution_time() {
 			return this.query.execution_time
+		},
+		last_execution() {
+			return moment(this.query.last_execution).fromNow()
+		},
+		can_execute() {
+			// difference between last_execution and last_updated is less than 0.5 sec
+			return Math.abs(moment(this.query.last_execution).diff(moment(this.query.modified), 'seconds')) > 0.5
 		},
 	},
 	methods: {

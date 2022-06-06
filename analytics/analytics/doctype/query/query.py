@@ -240,6 +240,7 @@ class Query(Document):
         end = time.time()
         self._result = list(result)
         self.execution_time = flt(end - start, 3)
+        self.last_execution = frappe.utils.now()
 
     def update_query(self):
         self.sql = format_sql(

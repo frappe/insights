@@ -2,3 +2,4 @@
 
 [post_model_sync]
 analytics.patches.add_position_key_to_filter
+analytics.patches.add_last_execution_field
