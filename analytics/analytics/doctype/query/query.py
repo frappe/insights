@@ -195,15 +195,17 @@ class Query(Document):
 
     @frappe.whitelist()
     def run(self):
+        self.execute()
+        self.update_result()
+        self.save()
+
+    def before_save(self):
         if not self.columns or not self.filters:
             return
 
         self.process()
         self.build()
         self.update_query()
-        self.execute()
-        self.update_result()
-        self.save()
 
     def process(self):
         self._tables = []
@@ -233,6 +235,11 @@ class Query(Document):
 
         self._query = query
 
+    def update_query(self):
+        self.sql = format_sql(
+            str(self._query), keyword_case="upper", reindent_aligned=True
+        )
+
     def execute(self):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         start = time.time()
@@ -241,11 +248,6 @@ class Query(Document):
         self._result = list(result)
         self.execution_time = flt(end - start, 3)
         self.last_execution = frappe.utils.now()
-
-    def update_query(self):
-        self.sql = format_sql(
-            str(self._query), keyword_case="upper", reindent_aligned=True
-        )
 
     def update_result(self):
         self.result = dumps(self._result, default=cstr)
