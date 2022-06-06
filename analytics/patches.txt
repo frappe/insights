@@ -1,4 +1,5 @@
 [pre_model_sync]
+analytics.patches.convert_duration_to_float
 
 [post_model_sync]
 analytics.patches.add_position_key_to_filter
