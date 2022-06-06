@@ -282,7 +282,7 @@ class Query(Document):
 
         elif row.aggregation == "Count if" and row.aggregation_condition:
             conditions = [
-                self.process_simple_filter(condition)
+                self.process_expression(condition)
                 for condition in loads(row.aggregation_condition)
             ]
             column = Aggregations.apply(
