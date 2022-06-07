@@ -12,8 +12,7 @@
 							v-model="input"
 							ref="filter_input"
 							@focus="show = true"
-							@blur="show = false"
-							@keydown.esc.exact="$refs.filter_input.blur()"
+							@keydown.esc.exact="show = false"
 							class="form-input block h-8 w-full select-none rounded-md pl-5 text-sm tracking-widest placeholder-gray-500"
 							:class="{
 								'focus:rounded-b-none focus:bg-white focus:shadow': show && options?.length && filtered_options?.length,
@@ -45,6 +44,7 @@
 <script>
 import SuggestionBox from '@/components/SuggestionBox.vue'
 import { nextTick } from '@vue/runtime-core'
+import { debounce } from 'frappe-ui'
 
 export default {
 	name: 'ExpressionFilterPicker',
@@ -80,28 +80,27 @@ export default {
 		this.input_keyup_listener = (e) => {
 			this.caret_position = e.target.selectionStart
 
-			if (e.keyCode === 219) {
-				// check if any modifiers are pressed
-				const modifiers = [e.ctrlKey, e.altKey, e.shiftKey, e.metaKey]
-				if (modifiers.some(Boolean)) {
-					return
-				}
-				// if open square bracket button is clicked,
-				// append close square bracket after caret position
-				this.input = this.input.slice(0, this.caret_position) + '] ' + this.input.slice(this.caret_position)
-				nextTick(() => {
-					// set caret position before close square bracket
-					e.target.setSelectionRange(this.caret_position, this.caret_position)
-				})
-			}
+			this.auto_add_close_square_brackets(e)
+			this.auto_add_quotes(e)
 		}
+		this.input_keydown_listener = (e) => {
+			this.caret_position = e.target.selectionStart
+
+			this.auto_remove_close_square_bracket(e)
+			this.auto_remove_quotes(e)
+		}
+		this.$refs.filter_input?.addEventListener('keydown', this.input_keydown_listener)
 		this.$refs.filter_input?.addEventListener('keyup', this.input_keyup_listener)
 	},
 	beforeDestroy() {
 		document.removeEventListener('click', this.outside_click_listener)
+		this.$refs.filter_input?.addEventListener('keydown', this.input_keydown_listener)
 		this.$refs.filter_input?.removeEventListener('keyup', this.input_keyup_listener)
 	},
 	watch: {
+		show(val) {
+			val ? this.$refs.filter_input?.focus() : this.$refs.filter_input?.blur()
+		},
 		input(new_input) {
 			// if new_input doesn't contains selected_columns keys, remove them
 			for (let key of Object.keys(this.selected_columns)) {
@@ -110,7 +109,7 @@ export default {
 				}
 			}
 		},
-		caret_position(new_caret_position) {
+		caret_position: debounce(function (new_caret_position) {
 			// get string around caret between sqaure brackets
 			const input = this.input
 			const start_index = input.lastIndexOf('[', new_caret_position)
@@ -124,11 +123,10 @@ export default {
 				this.show_column_list = false
 				this.string_around_caret = ''
 			}
-		},
+		}, 200),
 	},
 	computed: {
 		column_list() {
-			// Column: { label, table, table_label, column, type }
 			return this.query.get_selectable_columns?.data?.message || []
 		},
 		options() {
@@ -152,16 +150,17 @@ export default {
 			this.input = new_input.replaceAll('[[', '[').replaceAll(']]', ']')
 
 			this.selected_columns[suggestion.label] = suggestion
-		},
-		reset() {
-			this.$refs.filter_input?.blur()
-			this.show = false
+
+			this.show_column_list = false
+			this.string_around_caret = ''
+
+			this.$refs.filter_input?.focus()
 		},
 		apply() {
 			const filter = this.build_filter()
 			if (filter) {
 				this.$emit('filter-select', { filter })
-				this.reset()
+				this.show = false
 			}
 		},
 		build_filter() {
@@ -253,42 +252,94 @@ export default {
 			return this.get_operator(compare_operator[0])
 		},
 		get_operator(operator_value) {
-			switch (operator_value) {
-				case '=':
-					return {
-						value: '=',
-						label: 'equals',
-					}
-				case '!=':
-					return {
-						value: '!=',
-						label: 'not equals',
-					}
-				case '>':
-					return {
-						value: '>',
-						label: 'greater than',
-					}
-				case '<':
-					return {
-						value: '<',
-						label: 'less than',
-					}
-				case '>=':
-					return {
-						value: '>=',
-						label: 'greater than equal to',
-					}
-				case '<=':
-					return {
-						value: '<=',
-						label: 'less than equal to',
-					}
-				default:
-					return {
-						value: operator_value,
-						label: operator_value,
-					}
+			const operator_label_map = {
+				'=': 'equals',
+				'!=': 'not equals',
+				'>': 'greater than',
+				'<': 'less than',
+				'>=': 'greater than equal to',
+				'<=': 'less than equal to',
+			}
+			const operator_label = operator_label_map[operator_value] || operator_value
+			return {
+				label: operator_label,
+				value: operator_value,
+			}
+		},
+
+		// key events on input
+		auto_add_close_square_brackets(e) {
+			// check if any modifiers are pressed
+			const modifiers = [e.ctrlKey, e.altKey, e.shiftKey, e.metaKey]
+			if (modifiers.some(Boolean)) {
+				return
+			}
+
+			if (e.keyCode === 219) {
+				// if open square bracket button is clicked,
+				// append close square bracket after caret position
+				this.input = this.input.slice(0, this.caret_position) + '] ' + this.input.slice(this.caret_position)
+				nextTick(() => {
+					// set caret position before close square bracket
+					e.target.setSelectionRange(this.caret_position, this.caret_position)
+				})
+			}
+		},
+		auto_remove_close_square_bracket(e) {
+			// check if any modifiers are pressed
+			const modifiers = [e.ctrlKey, e.altKey, e.shiftKey, e.metaKey]
+			if (modifiers.some(Boolean)) {
+				return
+			}
+
+			// if backspace is pressed,
+			if (e.keyCode === 8) {
+				// if backspace is pressed,
+				// check if deleted character is an open square bracket
+				// if yes, remove close square bracket after caret position
+				const deleted_character = this.input.slice(this.caret_position - 1, this.caret_position)
+				if (deleted_character === '[' && this.input.charAt(this.caret_position) === ']') {
+					nextTick(() => {
+						this.input = this.input.slice(0, this.caret_position - 1) + this.input.slice(this.caret_position + 1)
+					})
+				}
+			}
+		},
+		auto_add_quotes(e) {
+			// check if any modifiers are pressed except shift
+			const modifiers = [e.ctrlKey, e.altKey, e.metaKey]
+			if (modifiers.some(Boolean)) {
+				return
+			}
+
+			if (e.keyCode === 222 && e.shiftKey) {
+				// if open quote button is clicked,
+				// append close quote after caret position
+				this.input = this.input.slice(0, this.caret_position) + '"' + this.input.slice(this.caret_position)
+				nextTick(() => {
+					// set caret position before close quote
+					e.target.setSelectionRange(this.caret_position, this.caret_position)
+				})
+			}
+		},
+		auto_remove_quotes(e) {
+			// check if any modifiers are pressed except shift
+			const modifiers = [e.ctrlKey, e.altKey, e.metaKey]
+			if (modifiers.some(Boolean)) {
+				return
+			}
+
+			// if backspace is pressed,
+			if (e.keyCode === 8) {
+				// if backspace is pressed,
+				// check if deleted character is an open square bracket
+				// if yes, remove close square bracket after caret position
+				const deleted_character = this.input.slice(this.caret_position - 1, this.caret_position)
+				if (deleted_character === '"' && this.input.charAt(this.caret_position) === '"') {
+					nextTick(() => {
+						this.input = this.input.slice(0, this.caret_position - 1) + this.input.slice(this.caret_position + 1)
+					})
+				}
 			}
 		},
 	},
