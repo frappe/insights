@@ -13,12 +13,12 @@
 							ref="filter_input"
 							@focus="show = true"
 							@keydown.esc.exact="show = false"
-							class="form-input block h-8 w-full select-none rounded-md pl-5 text-sm tracking-widest placeholder-gray-500"
+							class="form-input block h-8 w-full select-none rounded-md p-0 pl-5 tracking-widest placeholder-gray-500 caret-black"
 							:class="{
 								'focus:rounded-b-none focus:bg-white focus:shadow': show && options?.length && filtered_options?.length,
 							}"
 						/>
-						<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-lg text-gray-700">=</div>
+						<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-gray-700">=</div>
 					</div>
 				</template>
 				<template #content>
@@ -31,9 +31,25 @@
 			</Popover>
 		</div>
 		<div class="mt-2 rounded-md border border-orange-50 bg-orange-50/80 p-2 text-sm font-light text-gray-500">
-			You can use following operators:
-			<span class="font-medium tracking-widest"> +, -, *, /, =, !=, &lt;, &gt;, &lt;=, &gt;= </span> <br />
-			You can select a column by typing <span class="font-medium tracking-widest"> [column_name] </span>
+			<ul class="list-disc pl-4">
+				<li>
+					You can select a column by typing
+					<span class="font-medium tracking-widest"> [column] </span>
+				</li>
+				<li>
+					You can use following operators:
+					<ul class="pl-4" style="list-style-type: square">
+						<li>Arithmetic: <span class="font-medium tracking-widest"> +, -, *, /</span></li>
+						<li>
+							Comparison:
+							<span class="font-medium tracking-widest"
+								>, =, !=, &lt;, &gt;, &lt;=, &gt;=, is, in, not in, between, contains, starts with, ends with, not
+								contains
+							</span>
+						</li>
+					</ul>
+				</li>
+			</ul>
 		</div>
 		<div class="mt-3 flex justify-end">
 			<Button appearance="primary" @click="apply"> Apply </Button>
@@ -42,6 +58,24 @@
 </template>
 
 <script>
+const arithmetic_operators = [' + ', ' - ', ' * ', ' / ']
+const compare_operators = [
+	' = ',
+	' != ',
+	' > ',
+	' < ',
+	' >= ',
+	' <= ',
+	' is ',
+	' in ',
+	' not in ',
+	' between ',
+	' contains ',
+	' starts with ',
+	' ends with ',
+	' not contains ',
+]
+
 import SuggestionBox from '@/components/SuggestionBox.vue'
 import { nextTick } from '@vue/runtime-core'
 import { debounce } from 'frappe-ui'
@@ -166,6 +200,7 @@ export default {
 		build_filter() {
 			const filter = { is_expression: true, expression: this.input }
 			filter.operator = this.get_compare_operator()
+
 			if (!filter.operator) {
 				return
 			}
@@ -178,7 +213,6 @@ export default {
 		},
 		build_filter_part(expression) {
 			let filter_part = {}
-			const arithmetic_operators = ['+', '-', '*', '/']
 
 			if (expression.includes('/')) {
 				const [left, right] = expression.split('/')
@@ -231,12 +265,14 @@ export default {
 			return column
 		},
 		get_compare_operator() {
-			const compare_operator = this.input.match(/(=|!=|>|<|>=|<=)/g)
+			const regex = new RegExp(compare_operators.join('|'), 'g')
+			const compare_operator = this.input.match(regex)
 
 			if (!compare_operator) {
 				this.$notify({
 					title: 'Please enter a valid compare operator',
-					appearance: 'error',
+					message: 'Make sure operator has a space before and after it',
+					appearance: 'warning',
 				})
 				return
 			}
@@ -244,7 +280,8 @@ export default {
 			if (compare_operator.length > 1) {
 				this.$notify({
 					title: 'Only one compare operator is allowed',
-					appearance: 'error',
+					message: `You have entered ${compare_operator.length} operators: ${compare_operator.join(',')}`,
+					appearance: 'warning',
 				})
 				return
 			}
@@ -253,17 +290,17 @@ export default {
 		},
 		get_operator(operator_value) {
 			const operator_label_map = {
-				'=': 'equals',
-				'!=': 'not equals',
-				'>': 'greater than',
-				'<': 'less than',
-				'>=': 'greater than equal to',
-				'<=': 'less than equal to',
+				' = ': 'equals',
+				' != ': 'not equals',
+				' > ': 'greater than',
+				' < ': 'less than',
+				' >= ': 'greater than equal to',
+				' <= ': 'less than equal to',
 			}
-			const operator_label = operator_label_map[operator_value] || operator_value
+			const operator_label = operator_label_map[operator_value] || operator_value.trim()
 			return {
 				label: operator_label,
-				value: operator_value,
+				value: operator_value.trim(),
 			}
 		},
 

@@ -363,8 +363,16 @@ class Query(Document):
         return operation(condition_left, condition_right)
 
     def process_literal_value(self, literal, operator):
-        if "like" in operator.value:
+        literal.value = literal.value.replace('"', "")
+
+        if "contains" in operator.value:
             return f"%{literal.value}%"
+
+        if "starts with" in operator.value:
+            return f"{literal.value}%"
+
+        if "ends with" in operator.value:
+            return f"%{literal.value}"
 
         if "in" in operator.value or "between" in operator.value:
             return [d.lstrip().rstrip() for d in literal.value.split(",")]

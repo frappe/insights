@@ -82,13 +82,20 @@ class Operations:
         ">=": operator.ge,
     }
     COMPARE_FUNCTIONS = {
-        "like": "like",
-        "not like": "not_like",
         "in": "isin",
         "not in": "notin",
+        "contains": "like",
+        "ends with": "like",
+        "starts with": "like",
+        "not contains": "not_like",
     }
-    NULL_COMPARE_OPERATIONS = {"is set": "isnotnull", "is not set": "isnull"}
-    RANGE_OPERATORS = {"between": "between"}
+    NULL_COMPARE_OPERATIONS = {
+        "is set": "isnotnull",
+        "is not set": "isnull",
+    }
+    RANGE_OPERATORS = {
+        "between": "between",
+    }
 
     @classmethod
     def get_operation(cls, operator):

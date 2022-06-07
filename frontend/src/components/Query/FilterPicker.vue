@@ -10,7 +10,7 @@
 			<div class="mb-4 flex h-7 items-center">
 				<Button
 					class="mr-2 !flex !h-7 !w-7 !items-center !justify-center !p-0 !text-gray-700"
-					@click="adding_filter = false"
+					@click="reset_new_filter"
 				>
 					<FeatherIcon name="chevron-left" class="h-4 w-4" />
 				</Button>
@@ -183,22 +183,18 @@ export default {
 				const { level, position } = this.add_next_filter_at
 				this.add_filter({ filter, level, position })
 			}
-			this.filter_type = 'simple'
 		},
 		add_filter({ filter, level, position }) {
 			const filter_group = this.get_filter_group_at({ level, position })
 			filter_group.conditions.push(filter)
-			this.adding_filter = false
-			this.add_next_filter_at = { level: 1, position: 1 }
+			this.reset_new_filter()
 			this.query.update_filters.submit({ filters: this.filters })
 		},
 		edit_filter({ filter, level, position, idx }) {
 			const filter_group = this.get_filter_group_at({ level, position })
 			const conditions = filter_group.conditions
 			conditions[idx] = filter
-			this.edit_filter_at = {}
-			this.adding_filter = false
-			this.editing_filter = false
+			this.reset_new_filter()
 			this.query.update_filters.submit({ filters: this.filters })
 		},
 		branch_filter_at({ level, position, idx }) {
@@ -227,6 +223,13 @@ export default {
 			}
 
 			this.query.update_filters.submit({ filters: this.filters })
+		},
+		reset_new_filter() {
+			this.filter_type = 'simple'
+			this.adding_filter = false
+			this.editing_filter = false
+			this.edit_filter_at = {}
+			this.add_next_filter_at = { level: 1, position: 1 }
 		},
 	},
 }

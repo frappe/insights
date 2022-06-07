@@ -61,8 +61,10 @@ def get_operator_list(fieldtype=None):
     fieldtype = fieldtype.lower()
     if fieldtype in text_data_types:
         operator_list += [
-            {"label": "contains", "value": "like"},
-            {"label": "not contains", "value": "not like"},
+            {"label": "contains", "value": "contains"},
+            {"label": "not contains", "value": "not contains"},
+            {"label": "starts with", "value": "starts with"},
+            {"label": "ends with", "value": "ends with"},
             {"label": "in", "value": "in"},
             {"label": "not in", "value": "not in"},
         ]

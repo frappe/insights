@@ -4,3 +4,4 @@ analytics.patches.convert_duration_to_float
 [post_model_sync]
 analytics.patches.add_position_key_to_filter
 analytics.patches.add_last_execution_field
+analytics.patches.rename_like_to_contains
