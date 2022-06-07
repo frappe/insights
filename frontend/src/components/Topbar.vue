@@ -1,5 +1,5 @@
 <template>
-	<div class="sticky top-0 z-10 flex h-14 flex-shrink-0 bg-white px-8">
+	<div class="sticky top-0 z-10 flex flex-shrink-0 bg-white px-8 shadow-sm">
 		<div class="mx-auto flex max-w-[85rem] flex-1 px-8">
 			<!-- Breadcrumbs -->
 			<nav class="flex" aria-label="Breadcrumb">

@@ -1,8 +1,8 @@
 <template>
-	<div class="flex h-screen select-none flex-col bg-white font-sans">
-		<Topbar />
+	<div class="flex h-screen select-none flex-col bg-gray-50 font-sans">
+		<Topbar class="h-[3.5rem]" />
 		<router-view
-			class="mx-auto flex h-[calc(100%-4rem)] w-full max-w-[85rem] flex-col px-4 sm:px-6 lg:px-8"
+			class="mx-auto flex h-[calc(100%-3.5rem)] w-full max-w-[85rem] flex-col px-4 py-3 sm:px-6 lg:px-8"
 			:key="$route.fullPath"
 		/>
 		<Toasts />

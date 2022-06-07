@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="h-fit rounded-md shadow">
 		<Dropdown
 			placement="right"
 			:button="{ icon: 'more-horizontal', appearance: 'white' }"

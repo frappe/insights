@@ -1,8 +1,8 @@
 <template>
 	<div v-if="query">
-		<header class="flex flex-col border-b">
+		<header class="flex flex-col">
 			<!-- Height 5 rem -->
-			<div class="flex h-[5rem] justify-between pt-2">
+			<div class="flex h-[5rem] justify-between pt-3">
 				<div class="relative flex flex-col items-start space-y-1">
 					<input
 						type="text"
@@ -35,7 +35,7 @@
 				</div>
 				<div class="flex space-x-2">
 					<Button
-						class="h-fit"
+						class="h-fit !shadow"
 						:appearance="can_execute ? 'primary' : 'white'"
 						@click="$resources.query.run.submit()"
 						:loading="$resources.query.run.loading"
@@ -48,8 +48,8 @@
 			<!-- Height 2.5rem -->
 			<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
 		</header>
-		<main class="flex h-[calc(100%-7.5rem)] w-full">
-			<!-- height = 100% - Header Height  -->
+		<!-- 100% - 7.5rem (header) + 1rem (margin-top) -->
+		<main class="mt-4 flex h-[calc(100%-8.5rem)] w-full rounded-md border bg-white shadow">
 			<QueryBuilder v-show="active_tab == 'Build'" :query="$resources.query" />
 			<QueryResult v-show="active_tab == 'Result'" :query="$resources.query" />
 			<QueryTransform v-show="active_tab == 'Transform'" :query="$resources.query" />

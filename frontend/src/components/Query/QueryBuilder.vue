@@ -1,16 +1,12 @@
 <template>
-	<div class="h-full w-full rounded-md">
-		<div
-			class="my-4 flex h-[calc(100%-1rem)] min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md border bg-white text-base text-gray-700"
-		>
-			<div class="flex h-[calc(100%-2.5rem)] divide-x pt-4">
-				<TablePicker :query="query" />
-				<ColumnPicker :query="query" />
-				<FilterPicker :query="query" />
-			</div>
-			<div class="flex-shrink- flex h-10 border-t">
-				<LimitsAndOrder :query="query" />
-			</div>
+	<div class="flex h-full min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700">
+		<div class="flex h-[calc(100%-2.5rem)] divide-x pt-4">
+			<TablePicker :query="query" />
+			<ColumnPicker :query="query" />
+			<FilterPicker :query="query" />
+		</div>
+		<div class="flex h-10 flex-shrink-0 border-t">
+			<LimitsAndOrder :query="query" />
 		</div>
 	</div>
 </template>

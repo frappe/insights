@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<header class="flex h-[3rem] justify-between border-b pt-1">
+		<header class="flex h-[3.5rem] justify-between pt-3">
 			<h1 class="text-3xl font-bold text-gray-900">Queries</h1>
 			<div>
 				<Button appearance="primary" @click="create_new_query_dialog = true"> + Add Query </Button>
@@ -8,10 +8,10 @@
 		</header>
 		<main class="flex h-[calc(100%-4rem)] flex-col space-y-4 py-4">
 			<div class="flex space-x-4">
-				<Input type="text" placeholder="Title" />
-				<Input type="text" placeholder="Data Source" />
+				<Input type="text" placeholder="Title" inputClass="!bg-gray-200" />
+				<Input type="text" placeholder="Data Source" inputClass="!bg-gray-200" />
 			</div>
-			<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
+			<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border bg-white shadow">
 				<!-- List Header -->
 				<div class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500">
 					<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>

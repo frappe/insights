@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full min-h-[12rem] w-full flex-1 py-4">
+	<div class="flex h-full min-h-[12rem] w-full flex-1 p-4">
 		<div class="flex h-full w-1/4 flex-shrink-0 flex-col space-y-3 border-r pr-4">
 			<div class="space-y-2 text-gray-600">
 				<div class="text-sm font-light text-gray-500">Select Transform Type</div>
@@ -22,8 +22,8 @@
 			>
 				<p>Apply transform to view result</p>
 			</div>
-			<div v-else class="flex h-full w-full flex-1 select-text flex-col rounded-md text-base">
-				<div class="relative flex-1 overflow-scroll rounded-md border scrollbar-hide">
+			<div v-else class="flex w-full flex-1 select-text flex-col rounded-md text-base">
+				<div class="relative overflow-scroll rounded-md border scrollbar-hide">
 					<div v-html="query.doc.transform_result" class="w-full"></div>
 				</div>
 			</div>
