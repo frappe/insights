@@ -9,12 +9,6 @@
 					:value="modelValue"
 					ref="autocomplete_input"
 					:placeholder="placeholder"
-					@blur="
-						() => {
-							input_focused = false
-							$emit('blur', $event)
-						}
-					"
 					@focus="
 						() => {
 							input_focused = true
@@ -27,7 +21,7 @@
 							$emit('update:modelValue', e.target.value)
 						}
 					"
-					@keydown.esc.exact="$refs.autocomplete_input.blur()"
+					@keydown.esc.exact="input_focused = false"
 					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500"
 					:class="{
 						'focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow':
@@ -39,7 +33,7 @@
 				<SuggestionBox
 					v-if="input_focused && options?.length && filtered_options?.length"
 					:header_and_suggestions="filtered_options"
-					@select="on_option_select"
+					@option-select="on_option_select"
 				/>
 			</template>
 		</Popover>
@@ -51,7 +45,7 @@ import SuggestionBox from '@/components/SuggestionBox.vue'
 
 export default {
 	props: ['id', 'modelValue', 'placeholder', 'options'],
-	emits: ['focus', 'blur', 'select', 'update:modelValue'],
+	emits: ['focus', 'option-select', 'update:modelValue'],
 	components: {
 		SuggestionBox,
 	},
@@ -84,7 +78,7 @@ export default {
 	methods: {
 		on_option_select(suggestion) {
 			this.$emit('update:modelValue', suggestion.label)
-			this.$emit('select', suggestion)
+			this.$emit('option-select', suggestion)
 			this.reset()
 		},
 		reset() {

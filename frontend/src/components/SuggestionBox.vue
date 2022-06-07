@@ -12,12 +12,12 @@
 				v-for="(suggestion, idx) in suggestions"
 				ref="suggestions"
 				:key="idx"
-				class="flex h-9 cursor-default items-center rounded px-3 text-base text-gray-600"
+				class="flex h-9 cursor-pointer items-center rounded px-3 text-base text-gray-600"
 				:class="{
 					'h-9 bg-gray-100 px-4 text-gray-800': active_suggestion_idx === idx,
 				}"
-				@click.prevent.stop="$emit('select', suggestion)"
 				@mouseenter="active_suggestion_idx = idx"
+				@click.prevent.stop="$emit('option-select', suggestion)"
 			>
 				<div class="mr-4 flex items-center overflow-hidden whitespace-nowrap font-medium">
 					<FeatherIcon
@@ -95,7 +95,7 @@ export default {
 			if (e.key === 'Enter') {
 				const suggestion = this.suggestions[this.active_suggestion_idx || 0]
 				if (suggestion && !suggestion.is_header) {
-					this.$emit('select', suggestion)
+					this.$emit('option-select', suggestion)
 				}
 			}
 		},

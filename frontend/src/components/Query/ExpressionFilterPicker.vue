@@ -27,7 +27,7 @@
 					<SuggestionBox
 						v-if="input_focused && options?.length && filtered_options?.length"
 						:header_and_suggestions="filtered_options"
-						@select="on_option_select"
+						@option-select="on_option_select"
 					/>
 				</template>
 			</Popover>

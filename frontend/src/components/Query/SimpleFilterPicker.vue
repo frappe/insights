@@ -7,7 +7,7 @@
 				:options="column_list"
 				v-model="column"
 				placeholder="Select a column..."
-				@select="on_column_select"
+				@option-select="on_column_select"
 			/>
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
@@ -17,7 +17,7 @@
 				:options="operator_list"
 				v-model="operator"
 				placeholder="Select operator..."
-				@select="on_operator_select"
+				@option-select="on_operator_select"
 			/>
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
@@ -27,7 +27,7 @@
 				v-model="value"
 				:options="value_list"
 				:placeholder="value_placeholder"
-				@select="on_value_select"
+				@option-select="on_value_select"
 			/>
 		</div>
 		<div class="flex justify-end">
