@@ -2,7 +2,7 @@
 	<div class="flex flex-col">
 		<div class="text-sm font-light text-gray-600">Expression</div>
 		<div id="expression_filter_picker" class="relative z-10 mt-1 w-full rounded-md shadow-sm">
-			<Popover :show="input_focused">
+			<Popover :show="show">
 				<template #target>
 					<div class="relative">
 						<input
@@ -11,13 +11,12 @@
 							spellcheck="false"
 							v-model="input"
 							ref="filter_input"
-							@focus="input_focused = true"
-							@blur="input_focused = false"
+							@focus="show = true"
+							@blur="show = false"
 							@keydown.esc.exact="$refs.filter_input.blur()"
 							class="form-input block h-8 w-full select-none rounded-md pl-5 text-sm tracking-widest placeholder-gray-500"
 							:class="{
-								'focus:rounded-b-none focus:bg-white focus:shadow':
-									input_focused && options?.length && filtered_options?.length,
+								'focus:rounded-b-none focus:bg-white focus:shadow': show && options?.length && filtered_options?.length,
 							}"
 						/>
 						<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-lg text-gray-700">=</div>
@@ -25,7 +24,7 @@
 				</template>
 				<template #content>
 					<SuggestionBox
-						v-if="input_focused && options?.length && filtered_options?.length"
+						v-if="show && options?.length && filtered_options?.length"
 						:header_and_suggestions="filtered_options"
 						@option-select="on_option_select"
 					/>
@@ -60,7 +59,7 @@ export default {
 		return {
 			input,
 			selected_columns,
-			input_focused: false,
+			show: false,
 			caret_position: null,
 			string_around_caret: '',
 			show_column_list: false,
@@ -73,7 +72,7 @@ export default {
 			if (e.target.closest(`#expression_filter_picker`)) {
 				return this.$refs.filter_input?.focus()
 			}
-			this.input_focused = false
+			this.show = false
 		}
 		document.addEventListener('click', this.outside_click_listener)
 
@@ -156,7 +155,7 @@ export default {
 		},
 		reset() {
 			this.$refs.filter_input?.blur()
-			this.input_focused = false
+			this.show = false
 		},
 		apply() {
 			const filter = this.build_filter()

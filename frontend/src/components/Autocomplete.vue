@@ -1,6 +1,6 @@
 <template>
 	<div :id="id" class="relative z-10 w-full rounded-md shadow-sm">
-		<Popover :show="input_focused">
+		<Popover :show="show">
 			<template #target>
 				<input
 					type="text"
@@ -11,7 +11,7 @@
 					:placeholder="placeholder"
 					@focus="
 						() => {
-							input_focused = true
+							show = true
 							$emit('focus', $event)
 						}
 					"
@@ -21,17 +21,17 @@
 							$emit('update:modelValue', e.target.value)
 						}
 					"
-					@keydown.esc.exact="input_focused = false"
+					@keydown.esc.exact="show = false"
 					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500"
 					:class="{
 						'focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow':
-							input_focused && options?.length && filtered_options?.length,
+							show && options?.length && filtered_options?.length,
 					}"
 				/>
 			</template>
 			<template #content>
 				<SuggestionBox
-					v-if="input_focused && options?.length && filtered_options?.length"
+					v-if="show && options?.length && filtered_options?.length"
 					:header_and_suggestions="filtered_options"
 					@option-select="on_option_select"
 				/>
@@ -53,7 +53,7 @@ export default {
 	data() {
 		return {
 			input_value: '',
-			input_focused: false,
+			show: false,
 		}
 	},
 	mounted() {
@@ -62,7 +62,7 @@ export default {
 			if (e.target.closest(`#${this.id}`)) {
 				return this.$refs.autocomplete_input?.focus()
 			}
-			this.input_focused = false
+			this.show = false
 		}
 		document.addEventListener('click', this.outside_click_listener)
 	},
@@ -84,7 +84,7 @@ export default {
 		},
 		reset() {
 			this.$refs.autocomplete_input?.blur()
-			this.input_focused = false
+			this.show = false
 		},
 	},
 }

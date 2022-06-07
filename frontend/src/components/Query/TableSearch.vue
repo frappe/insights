@@ -1,6 +1,6 @@
 <template>
 	<div class="table-search relative z-10 w-full rounded-md shadow-sm">
-		<Popover :show="input_focused">
+		<Popover :show="show">
 			<template #target>
 				<input
 					type="text"
@@ -8,14 +8,14 @@
 					autocomplete="off"
 					spellcheck="false"
 					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
-					:placeholder="input_focused ? 'Select a table...' : 'Add a table...'"
+					:placeholder="show ? 'Select a table...' : 'Add a table...'"
 					v-model="input_value"
-					@focus="input_focused = true"
+					@focus="show = true"
 				/>
 			</template>
 			<template #content>
 				<SuggestionBox
-					v-if="input_focused && suggestions?.length"
+					v-if="show && suggestions?.length"
 					:header_and_suggestions="suggestions"
 					@option-select="on_suggestion_select"
 				/>
@@ -35,7 +35,7 @@ export default {
 	data() {
 		return {
 			input_value: '',
-			input_focused: false,
+			show: false,
 		}
 	},
 	mounted() {
@@ -44,7 +44,7 @@ export default {
 			if (e.target.closest('.table-search')) {
 				return this.$refs.table_search.focus()
 			}
-			this.input_focused = false
+			this.show = false
 		}
 		document.addEventListener('click', this.outside_click_listener)
 
@@ -61,11 +61,11 @@ export default {
 		document.removeEventListener('click', this.outside_click_listener)
 	},
 	watch: {
-		input_focused(is_focused, old_is_focused) {
-			if (is_focused && is_focused != old_is_focused) {
+		show(val, old_val) {
+			if (val && val != old_val) {
 				this.query.get_selectable_tables.fetch()
 			}
-			if (!is_focused && is_focused != old_is_focused) {
+			if (!val && val != old_val) {
 				this.$emit('table_search_blur')
 			}
 		},
@@ -88,7 +88,7 @@ export default {
 		reset() {
 			this.$refs.table_search?.blur()
 			this.input_value = ''
-			this.input_focused = false
+			this.show = false
 		},
 	},
 }
