@@ -73,7 +73,9 @@ export default {
 			return this.query.doc.columns || []
 		},
 		result() {
-			return JSON.parse(this.query.doc.result || '[]')
+			// show only 10000 rows at most
+			const result = JSON.parse(this.query.doc.result || '[]')
+			return result.slice(0, 1000)
 		},
 		number_columns() {
 			const number_datatypes = ['int', 'decimal', 'bigint', 'float', 'double']

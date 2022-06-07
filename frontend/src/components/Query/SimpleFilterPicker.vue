@@ -23,11 +23,35 @@
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Value</div>
 			<Autocomplete
+				v-if="value_list.length > 0"
 				id="value"
 				v-model="value"
 				:options="value_list"
 				:placeholder="value_placeholder"
 				@option-select="on_value_select"
+			/>
+			<DatePicker
+				v-else-if="show_datepicker"
+				id="value"
+				:value="value"
+				:placeholder="value_placeholder"
+				:formatValue="format_date"
+				@change="
+					(date) => {
+						value = date
+						on_value_select({
+							value: date,
+							label: format_date(date),
+						})
+					}
+				"
+			/>
+			<input
+				v-else
+				type="text"
+				v-model="value"
+				:placeholder="value_placeholder"
+				class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500"
 			/>
 		</div>
 		<div class="flex justify-end">
@@ -38,6 +62,7 @@
 
 <script>
 import Autocomplete from '@/components/Autocomplete.vue'
+import DatePicker from '@/components/DatePicker.vue'
 import { debounce } from 'frappe-ui'
 
 export default {
@@ -45,6 +70,7 @@ export default {
 	props: ['query', 'filter'],
 	components: {
 		Autocomplete,
+		DatePicker,
 	},
 	data() {
 		return {
@@ -94,6 +120,9 @@ export default {
 			return this.query.get_column_values?.data?.message || []
 		},
 		value_placeholder() {
+			if (this.show_datepicker) {
+				return 'Select a date...'
+			}
 			if (!this._filter.operator?.value) {
 				return 'Type a value...'
 			}
@@ -105,11 +134,17 @@ export default {
 			}
 			return 'Type a value...'
 		},
+		show_datepicker() {
+			return (
+				['Date', 'Datetime'].includes(this._filter.left?.type) &&
+				['=', '!=', '>', '>=', '<', '<=', 'between'].includes(this._filter.operator?.value)
+			)
+		},
 	},
 	watch: {
 		value(new_value) {
 			this.check_and_fetch_column_values()
-			if (!this.value_list.length) {
+			if (!this.value_list.length && !this.show_datepicker) {
 				this._filter.right = {
 					value: new_value,
 					label: new_value,
@@ -128,20 +163,24 @@ export default {
 				fieldtype: this._filter.left.type,
 			})
 		},
+
 		on_operator_select(option) {
 			this._filter.operator = option
 			this._filter.right = {}
 			this.value = ''
 		},
+
 		on_value_select(option) {
 			this._filter.right = option
 		},
+
 		apply() {
 			if (!this.column || !this.operator || !this.value) {
 				return
 			}
 			this.$emit('filter-select', { filter: this._filter })
 		},
+
 		check_and_fetch_column_values: debounce(function () {
 			if (
 				!this.value ||
@@ -160,6 +199,17 @@ export default {
 				})
 			}
 		}, 300),
+
+		format_date(value) {
+			if (!value) {
+				return ''
+			}
+			return new Date(value).toLocaleString('en-US', {
+				month: 'short',
+				year: 'numeric',
+				day: 'numeric',
+			})
+		},
 	},
 }
 </script>

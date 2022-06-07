@@ -44,6 +44,7 @@
 import SuggestionBox from '@/components/SuggestionBox.vue'
 
 export default {
+	name: 'Autocomplete',
 	props: ['id', 'modelValue', 'placeholder', 'options'],
 	emits: ['focus', 'option-select', 'update:modelValue'],
 	components: {
