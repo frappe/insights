@@ -1,11 +1,8 @@
 <template>
 	<div class="column-menu relative">
-		<Popover :show="is_open">
+		<Popover :show="show">
 			<template #target>
-				<div
-					class="cursor-pointer rounded border border-transparent px-0.5 py-0.5 text-gray-500 hover:border-gray-200 hover:bg-gray-100 hover:text-gray-600"
-					@click="is_open = !is_open"
-				>
+				<div class="cursor-pointer rounded px-1 py-0.5 text-gray-500 hover:text-gray-600" @click="show = !show">
 					<FeatherIcon name="more-vertical" class="h-4 w-4" />
 				</div>
 			</template>
@@ -33,7 +30,7 @@
 								:query="query"
 								:menu_item="item"
 								:column="column"
-								@apply="is_open = false"
+								@apply="show = false"
 							/>
 						</div>
 						<div v-else>{{ item.label }}</div>
@@ -53,7 +50,7 @@ export default {
 	props: ['query', 'column'],
 	data() {
 		return {
-			is_open: false,
+			show: false,
 		}
 	},
 	mounted() {
@@ -66,7 +63,7 @@ export default {
 			) {
 				return
 			}
-			this.is_open = false
+			this.show = false
 		}
 		document.addEventListener('click', this.outside_click_listener)
 	},
@@ -110,7 +107,7 @@ export default {
 			} else if (item.for_removing) {
 				this.query.remove_column.submit({ column: this.column })
 			}
-			this.is_open = false
+			this.show = false
 		},
 		get_aggregation_items() {
 			if (!this.aggregation_options?.length) {

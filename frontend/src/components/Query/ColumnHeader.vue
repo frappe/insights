@@ -10,7 +10,6 @@
 			<input
 				type="text"
 				spellcheck="false"
-				ref="column_label_input"
 				v-model="column.label"
 				:size="Math.max(parseInt(column.label?.length * 1.2), 6)"
 				class="mr-2 -ml-1.5 cursor-text rounded border-none bg-transparent p-0 px-1.5 pr-2 text-base focus:bg-gray-100/75 focus:text-gray-600 focus:outline-none focus:ring-transparent"

@@ -21,24 +21,28 @@
 					<div
 						class="flex h-10 cursor-pointer items-center justify-between space-x-8 border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
 					>
-						<div class="flex items-baseline">
+						<div class="flex items-center">
 							<DragHandleIcon class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400" />
-							<div
+							<span
 								v-if="column.aggregation"
 								class="my-0 mr-2 flex-1 select-none whitespace-nowrap rounded border border-orange-200 px-1 py-0.5 text-xs text-orange-400/80"
 							>
 								{{ column.aggregation }}
-							</div>
-							<div class="text-base font-medium">{{ column.label }}</div>
+							</span>
+							<input
+								type="text"
+								spellcheck="false"
+								ref="column_label_input"
+								v-model="column.label"
+								:size="Math.max(parseInt(column.label?.length * 1.2), 6)"
+								class="mr-2 -ml-1.5 cursor-text rounded border-none bg-transparent p-0 px-1.5 pr-2 text-base focus:bg-gray-100/75 focus:text-gray-600 focus:outline-none focus:ring-transparent"
+								@blur="update_column_label(column)"
+								@keydown.enter="update_column_label(column)"
+							/>
 						</div>
 						<div class="flex items-center">
-							<div class="font-light text-gray-500">{{ column.table_label }}</div>
-							<div
-								class="ml-1 flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
-								@click="remove_column(column)"
-							>
-								<FeatherIcon name="x" class="h-3 w-3" />
-							</div>
+							<div class="mr-1 font-light text-gray-500">{{ column.table_label }}</div>
+							<ColumnMenu :query="query" :column="column" />
 						</div>
 					</div>
 				</template>
@@ -51,6 +55,7 @@
 import Draggable from 'vuedraggable'
 import ColumnSearch from '@/components/Query/ColumnSearch.vue'
 import DragHandleIcon from '@/components/DragHandleIcon.vue'
+import ColumnMenu from '@/components/Query/ColumnMenu.vue'
 
 export default {
 	name: 'ColumnPicker',
@@ -59,6 +64,7 @@ export default {
 		Draggable,
 		ColumnSearch,
 		DragHandleIcon,
+		ColumnMenu,
 	},
 	data() {
 		return {
@@ -82,8 +88,12 @@ export default {
 				})
 			}
 		},
-		remove_column(column) {
-			this.query.remove_column.submit({ column })
+		update_column_label(column) {
+			if (!column.label?.length) {
+				this.query.get.fetch()
+				return
+			}
+			this.query.update_column.submit({ column: column })
 		},
 	},
 }
