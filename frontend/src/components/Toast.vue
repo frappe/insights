@@ -2,9 +2,7 @@
 	<teleport to="#frappeui-toast-root">
 		<transition :name="position.includes('top') ? 'toast-top' : 'toast-bottom'">
 			<div v-if="shown" :class="['pointer-events-auto m-2 transition duration-200 ease-out']">
-				<div
-					:class="['min-w-[24rem] max-w-xl rounded-lg border border-gray-100 bg-white p-3 shadow', appearanceClasses]"
-				>
+				<div :class="['w-[24rem] max-w-xl rounded-lg border border-gray-100 bg-white p-3 shadow', appearanceClasses]">
 					<div class="flex items-start">
 						<div v-if="icon || appearanceIcon" class="mr-2">
 							<FeatherIcon

@@ -157,14 +157,15 @@ export default {
 			const { title, type, label_column, value_column } = this.unsaved_chart
 			const query_chart = this.$resources.query_chart.data
 
-			return (
-				!query_chart ||
-				(query_chart &&
-					query_chart.title == title &&
-					query_chart.type == type &&
-					query_chart.label_column == label_column &&
-					query_chart.value_column == value_column)
-			)
+			const valid_local_chart = title && type && label_column && value_column
+			const local_and_remote_chart_match =
+				query_chart &&
+				query_chart.title == title &&
+				query_chart.type == type &&
+				query_chart.label_column == label_column &&
+				query_chart.value_column == value_column
+
+			return (!query_chart && !valid_local_chart) || local_and_remote_chart_match
 		},
 	},
 	watch: {
