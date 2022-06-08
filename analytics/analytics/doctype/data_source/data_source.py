@@ -44,23 +44,24 @@ class DataSource(Document):
         table_links = self.get_foreign_key_constraints()
 
         for table in tables:
-            if frappe.db.exists(
+            if table_docname := frappe.db.get_value(
                 "Table",
                 {
                     "data_source": self.name,
                     "table": table.get("table"),
                 },
+                "name",
             ):
-                continue
-
-            doc = frappe.get_doc(
-                {
-                    "doctype": "Table",
-                    "data_source": self.name,
-                    "table": table.get("table"),
-                    "label": table.get("label"),
-                }
-            )
+                doc = frappe.get_doc("Table", table_docname)
+            else:
+                doc = frappe.get_doc(
+                    {
+                        "doctype": "Table",
+                        "data_source": self.name,
+                        "table": table.get("table"),
+                        "label": table.get("label"),
+                    }
+                )
 
             for table_link in table_links.get(table.get("label"), []):
                 if not doc.get("table_links", table_link):
@@ -97,12 +98,26 @@ class DataSource(Document):
                         "foreign_table_label": link.get("parent"),
                     }
                 )
+                foreign_links.setdefault(link.get("parent"), []).append(
+                    {
+                        "foreign_key": link.get("fieldname"),
+                        "foreign_table": "tab" + link.get("options"),
+                        "foreign_table_label": link.get("options"),
+                    }
+                )
             if link.get("fieldtype") == "Table":
                 foreign_links.setdefault(link.get("parent"), []).append(
                     {
                         "foreign_key": "parent",
                         "foreign_table": "tab" + link.get("options"),
                         "foreign_table_label": link.get("options"),
+                    }
+                )
+                foreign_links.setdefault(link.get("options"), []).append(
+                    {
+                        "foreign_key": "parent",
+                        "foreign_table": "tab" + link.get("parent"),
+                        "foreign_table_label": link.get("parent"),
                     }
                 )
 
