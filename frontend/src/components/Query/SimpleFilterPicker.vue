@@ -4,7 +4,7 @@
 			<div class="font-light">Column</div>
 			<Autocomplete
 				id="column"
-				:options="column_list"
+				:options="column_options"
 				v-model="column"
 				placeholder="Select a column..."
 				@option-select="on_column_select"
@@ -98,6 +98,9 @@ export default {
 		column_list() {
 			// Column: { label, table, table_label, column, type }
 			return this.query.get_selectable_columns?.data?.message || []
+		},
+		column_options() {
+			return this.column_list.map((c) => ({ ...c, secondary_label: c.table_label }))
 		},
 		operator_list() {
 			// Operator: { label, value }

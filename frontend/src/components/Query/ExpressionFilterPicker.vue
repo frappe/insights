@@ -96,7 +96,7 @@ export default {
 			show: false,
 			caret_position: null,
 			string_around_caret: '',
-			show_column_list: false,
+			show_columns: false,
 		}
 	},
 	mounted() {
@@ -151,10 +151,10 @@ export default {
 			const string_around_caret = input.slice(start_index + 1, end_index > 0 ? end_index : input.length)
 
 			if (string_around_caret.length && (!string_around_caret.includes('[') || !string_around_caret.includes(']'))) {
-				this.show_column_list = true
+				this.show_columns = true
 				this.string_around_caret = string_around_caret
 			} else {
-				this.show_column_list = false
+				this.show_columns = false
 				this.string_around_caret = ''
 			}
 		}, 200),
@@ -163,8 +163,11 @@ export default {
 		column_list() {
 			return this.query.get_selectable_columns?.data?.message || []
 		},
+		column_options() {
+			return this.column_list.map((c) => ({ ...c, secondary_label: c.table_label }))
+		},
 		options() {
-			return this.show_column_list ? this.column_list : []
+			return this.show_columns ? this.column_options : []
 		},
 		filtered_options() {
 			return this.string_around_caret
@@ -185,7 +188,7 @@ export default {
 
 			this.selected_columns[suggestion.label] = suggestion
 
-			this.show_column_list = false
+			this.show_columns = false
 			this.string_around_caret = ''
 
 			this.$refs.filter_input?.focus()
