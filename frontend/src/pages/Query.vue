@@ -30,7 +30,7 @@
 					</div>
 				</div>
 				<div class="flex space-x-2">
-					<QueryMenu :query="query" />
+					<QueryMenu :query="$resources.query" />
 				</div>
 			</div>
 			<!-- Height 2.5rem -->
@@ -80,6 +80,7 @@ export default {
 				name: this.query_id,
 				whitelistedMethods: {
 					run: 'run',
+					reset: 'reset',
 					set_limit: 'set_limit',
 					add_table: 'add_table',
 					add_column: 'add_column',

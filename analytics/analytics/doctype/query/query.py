@@ -251,6 +251,32 @@ class Query(Document):
         self.skip_before_save = True
         self.save()
 
+    @frappe.whitelist()
+    def reset(self):
+        self.tables = []
+        self.columns = []
+        self.filters = dumps(
+            {
+                "group_operator": "&",
+                "level": "1",
+                "position": "1",
+                "conditions": [],
+            },
+            indent=2,
+        )
+        self.sql = None
+        self.result = None
+        self.status = "Pending Execution"
+        self.limit = 10
+        self.execution_time = 0
+        self.last_execution = None
+        self.transform_type = None
+        self.transform_data = None
+        self.transform_result = None
+        self.skip_before_save = True
+
+        self.save()
+
     def before_save(self):
         if self.get("skip_before_save"):
             self.skip_before_save = False
