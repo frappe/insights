@@ -39,12 +39,8 @@
 						<FeatherIcon name="search" class="h-4 w-4 text-gray-400" aria-hidden="true" />
 					</div>
 				</div>
-				<div class="ml-6 flex h-full cursor-pointer items-center">
-					<img
-						class="h-8 w-8 rounded-full"
-						src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-						alt=""
-					/>
+				<div class="ml-4 flex h-full cursor-pointer items-center">
+					<Avatar v-if="$user().full_name" :label="$user().full_name" :imageURL="$user().user_image" />
 				</div>
 			</div>
 		</div>
@@ -52,7 +48,12 @@
 </template>
 
 <script>
+import { Avatar } from 'frappe-ui'
+
 export default {
+	components: {
+		Avatar,
+	},
 	computed: {
 		routes() {
 			return this.$route.path
