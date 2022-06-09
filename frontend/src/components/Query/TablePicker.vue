@@ -1,15 +1,13 @@
 <template>
 	<div class="mx-4 mb-4 flex flex-1 flex-col">
 		<!-- Picker -->
-		<div v-if="!editing_table">
+		<div v-if="!editing_table" class="flex flex-1 flex-col">
 			<div v-if="adding_table" class="mb-4 flex flex-shrink-0">
 				<TableSearch :query="query" @table_search_blur="adding_table = false" />
 			</div>
 			<div v-else-if="!adding_table" class="mb-4 flex items-center justify-between">
 				<div class="text-lg font-medium">Tables</div>
-				<Button class="!flex !h-7 !w-7 !items-center !justify-center !p-0 !text-gray-700" @click="adding_table = true">
-					+
-				</Button>
+				<Button icon="plus" @click="adding_table = true"></Button>
 			</div>
 			<div
 				v-if="tables.length == 0"
@@ -47,12 +45,7 @@
 		<!-- Joiner -->
 		<div v-else>
 			<div class="mb-4 flex h-7 items-center">
-				<Button
-					icon="chevron-left"
-					class="mr-2 !flex !h-7 !w-7 !items-center !justify-center !p-0 !text-gray-700"
-					@click="editing_table = null"
-				>
-				</Button>
+				<Button icon="chevron-left" class="mr-2" @click="editing_table = null"> </Button>
 				<div class="text-lg font-medium">Join - {{ editing_table.label }}</div>
 			</div>
 			<div class="flex flex-col space-y-3">

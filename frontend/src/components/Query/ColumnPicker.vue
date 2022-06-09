@@ -5,9 +5,7 @@
 		</div>
 		<div v-else-if="!adding_column" class="mb-4 flex items-center justify-between">
 			<div class="text-lg font-medium">Columns</div>
-			<Button class="!flex !h-7 !w-7 !items-center !justify-center !p-0 !text-gray-700" @click="adding_column = true">
-				+
-			</Button>
+			<Button icon="plus" @click="adding_column = true"></Button>
 		</div>
 		<div
 			v-if="columns.length == 0"

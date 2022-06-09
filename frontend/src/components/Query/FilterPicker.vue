@@ -1,19 +1,12 @@
 <template>
 	<div class="flex flex-1 flex-col px-4 pb-4">
 		<div v-if="!adding_filter" class="mb-4 flex items-center justify-between">
-			<div class="text-lg font-medium">Conditions</div>
-			<Button class="!flex !h-7 !w-7 !items-center !justify-center !p-0 !text-gray-700" @click="adding_filter = true">
-				+
-			</Button>
+			<div class="text-lg font-medium">Filters</div>
+			<Button icon="plus" @click="adding_filter = true"></Button>
 		</div>
 		<div v-if="adding_filter">
 			<div class="mb-4 flex h-7 items-center">
-				<Button
-					class="mr-2 !flex !h-7 !w-7 !items-center !justify-center !p-0 !text-gray-700"
-					@click="reset_new_filter"
-				>
-					<FeatherIcon name="chevron-left" class="h-4 w-4" />
-				</Button>
+				<Button icon="chevron-left" class="mr-2" @click="reset_new_filter"> </Button>
 				<div class="text-lg font-medium">{{ editing_filter ? 'Edit' : 'Add' }} a Filter</div>
 			</div>
 			<div class="flex flex-col space-y-3">
@@ -53,10 +46,7 @@
 		>
 			<p>No filters added</p>
 		</div>
-		<div
-			v-else-if="filters.conditions.length > 0 && !adding_filter"
-			class="-mt-2 flex h-full items-start overflow-scroll"
-		>
+		<div v-else-if="filters.conditions.length > 0 && !adding_filter" class="flex h-full items-start overflow-scroll">
 			<FilterTree
 				:filters="filters"
 				@remove_filter="remove_filter"
