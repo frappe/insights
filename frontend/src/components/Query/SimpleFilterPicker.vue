@@ -33,12 +33,12 @@
 			<DatePicker
 				v-else-if="show_datepicker"
 				id="value"
-				:value="value"
+				:value="value.value"
 				:placeholder="value_placeholder"
 				:formatValue="format_date"
 				@change="
 					(date) => {
-						value = date
+						value.value = date
 						on_value_select({
 							value: date,
 							label: format_date(date),
@@ -150,6 +150,7 @@ export default {
 			if (
 				isEmptyObj(this._filter.left) ||
 				isEmptyObj(this._filter.operator) ||
+				['Date', 'Datetime'].includes(this._filter.left?.type) ||
 				!['=', '!=', 'is'].includes(this._filter.operator.value)
 			) {
 				return false
