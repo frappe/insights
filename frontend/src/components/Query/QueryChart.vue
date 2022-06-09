@@ -1,6 +1,6 @@
 <template>
 	<div class="flex h-full min-h-[12rem] w-full flex-1 p-4">
-		<div class="flex h-full w-1/4 flex-shrink-0 flex-col space-y-3 border-r pr-4">
+		<div class="flex h-full w-1/4 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4">
 			<div class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Chart Title</div>
 				<Input type="text" placeholder="Enter chart title..." v-model="unsaved_chart.title" />
