@@ -49,7 +49,7 @@
 			<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
 		</header>
 		<!-- 100% - 7.5rem (header) + 1rem (margin-top) -->
-		<main class="mt-4 flex h-[calc(100%-8.5rem)] w-full rounded-md border bg-white shadow">
+		<main class="mt-4 flex h-[calc(100%-8.5rem)] min-h-[26rem] w-full rounded-md border bg-white shadow">
 			<QueryBuilder v-show="active_tab == 'Build'" :query="$resources.query" />
 			<QueryResult v-show="active_tab == 'Result'" :query="$resources.query" />
 			<QueryTransform v-show="active_tab == 'Transform'" :query="$resources.query" />
@@ -96,11 +96,13 @@ export default {
 					add_table: 'add_table',
 					add_column: 'add_column',
 					move_column: 'move_column',
+					update_table: 'update_table',
 					remove_table: 'remove_table',
 					update_column: 'update_column',
 					remove_column: 'remove_column',
 					update_filters: 'update_filters',
 					apply_transform: 'apply_transform',
+					get_join_options: 'get_join_options',
 					get_column_values: 'get_column_values',
 					get_selectable_tables: 'get_selectable_tables',
 					get_selectable_columns: 'get_selectable_columns',

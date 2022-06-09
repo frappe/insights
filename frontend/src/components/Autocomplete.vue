@@ -6,7 +6,7 @@
 					type="text"
 					autocomplete="off"
 					spellcheck="false"
-					:value="modelValue"
+					:value="modelValue?.label"
 					ref="autocomplete_input"
 					:placeholder="placeholder"
 					@focus="
@@ -18,11 +18,14 @@
 					@input="
 						(e) => {
 							input_value = e.target.value
-							$emit('update:modelValue', e.target.value)
+							$emit('update:modelValue', {
+								label: input_value,
+								value: input_value,
+							})
 						}
 					"
 					@keydown.esc.exact="show = false"
-					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500"
+					class="form-input block h-8 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
 					:class="{
 						'focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow':
 							show && options?.length && filtered_options?.length,
@@ -45,6 +48,7 @@ import SuggestionBox from '@/components/SuggestionBox.vue'
 
 export default {
 	name: 'Autocomplete',
+	// modelValue = { label, value } and options = [{ label, value }, ...]
 	props: ['id', 'modelValue', 'placeholder', 'options'],
 	emits: ['focus', 'option-select', 'update:modelValue'],
 	components: {
@@ -71,14 +75,18 @@ export default {
 	},
 	computed: {
 		filtered_options() {
+			// filter out duplicates
+			const _options = this.options?.filter((option, index, self) => {
+				return self.findIndex((t) => t.value === option.value) === index
+			})
 			return this.input_value
-				? this.options.filter((o) => o.label.toLowerCase().includes(this.input_value.toLowerCase()))
-				: this.options
+				? _options.filter((o) => o.label.toLowerCase().includes(this.input_value.toLowerCase()))
+				: _options
 		},
 	},
 	methods: {
 		on_option_select(suggestion) {
-			this.$emit('update:modelValue', suggestion.label)
+			this.$emit('update:modelValue', suggestion)
 			this.$emit('option-select', suggestion)
 			this.reset()
 		},

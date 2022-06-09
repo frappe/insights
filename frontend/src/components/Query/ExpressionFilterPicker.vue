@@ -52,7 +52,7 @@
 			</ul>
 		</div>
 		<div class="mt-3 flex justify-end">
-			<Button appearance="primary" @click="apply"> Apply </Button>
+			<Button appearance="primary" @click="apply" :disabled="input.length == 0"> Apply </Button>
 		</div>
 	</div>
 </template>

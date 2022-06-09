@@ -16,7 +16,7 @@
 				</Button>
 				<div class="text-lg font-medium">{{ editing_filter ? 'Edit' : 'Add' }} a Filter</div>
 			</div>
-			<div class="-mt-2 flex flex-col space-y-3">
+			<div class="flex flex-col space-y-3">
 				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md font-light"

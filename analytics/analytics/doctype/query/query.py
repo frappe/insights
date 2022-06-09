@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import re
 import time
 from copy import deepcopy
 from json import dumps, loads
@@ -11,8 +10,10 @@ from frappe import _dict
 from frappe.model.document import Document
 from frappe.query_builder import Criterion, Field, Table
 from frappe.utils import cint, cstr, flt
-from pypika import Order
 from sqlparse import format as format_sql
+
+from pypika import Order
+from pypika.enums import JoinType
 
 from analytics.analytics.doctype.query.utils import (
     Aggregations,
@@ -41,6 +42,24 @@ class Query(Document):
         }
         self.append("tables", new_table)
         self.save()
+
+    @frappe.whitelist()
+    def update_table(self, table):
+        for row in self.tables:
+            if row.get("name") != table.get("name"):
+                continue
+
+            if table.get("join"):
+                row.join = dumps(
+                    table.get("join"),
+                    default=cstr,
+                    indent=2,
+                )
+            else:
+                row.join = ""
+
+            self.save()
+            return
 
     @frappe.whitelist()
     def remove_table(self, table):
@@ -176,7 +195,18 @@ class Query(Document):
 
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         columns = []
+        join_tables = []
         for table in self.tables:
+            if table.join:
+                join = loads(table.join)
+                join_tables.append(
+                    {
+                        "table": join.get("with").get("value"),
+                        "label": join.get("with").get("label"),
+                    }
+                )
+
+        for table in self.tables + join_tables:
             columns += data_source.get_columns(table)
         return columns
 
@@ -194,6 +224,25 @@ class Query(Document):
         return data_source.get_distinct_column_values(column, search_text)
 
     @frappe.whitelist()
+    def get_join_options(self, table):
+        doc = frappe.get_cached_doc(
+            "Table",
+            {
+                "table": table.get("table"),
+                "data_source": self.data_source,
+            },
+        )
+
+        return [
+            {
+                "key": d.foreign_key,
+                "table": d.foreign_table,
+                "label": d.foreign_table_label,
+            }
+            for d in doc.get("table_links")
+        ]
+
+    @frappe.whitelist()
     def run(self):
         self.execute()
         self.update_result()
@@ -208,7 +257,8 @@ class Query(Document):
         self.update_query()
 
     def process(self):
-        self._tables = []
+        self.process_tables()
+        self.process_joins()
         self.process_columns()
         self.process_filters()
         self.process_limit()
@@ -218,6 +268,10 @@ class Query(Document):
 
         for table in self._tables:
             query = query.from_(table)
+            if self._joins:
+                joins = [d for d in self._joins if d.left == table]
+                for join in joins:
+                    query = query.join(join.right, join.type).on(join.condition)
 
         for column in self._columns:
             query = query.select(column)
@@ -251,6 +305,37 @@ class Query(Document):
 
     def update_result(self):
         self.result = dumps(self._result, default=cstr)
+
+    def process_tables(self):
+        self._tables = []
+        for row in self.tables:
+            table = Table(row.table)
+            if table not in self._tables:
+                self._tables.append(table)
+
+    def process_joins(self):
+        self._joins = []
+        for table in self.tables:
+            if not table.join:
+                continue
+
+            # TODO: validate table.join
+            _join = loads(table.join)
+            LeftTable = Table(table.table)
+            RightTable = Table(_join.get("with").get("value"))
+            join_type = _join.get("type").get("value")
+            key = _join.get("key").get("value")
+
+            self._joins.append(
+                _dict(
+                    {
+                        "left": LeftTable,
+                        "right": RightTable,
+                        "type": JoinType[join_type],
+                        "condition": LeftTable["name"] == RightTable[key],
+                    }
+                )
+            )
 
     def process_columns(self):
         self._columns = []
@@ -383,11 +468,4 @@ class Query(Document):
         self._limit: int = self.limit or 10
 
     def process_query_field(self, table, column) -> Field:
-        table = Table(table)
-        Field = table[column]
-
-        # only add table to query if a column or filter from the table present
-        if table not in self._tables:
-            self._tables.append(table)
-
-        return Field
+        return Table(table)[column]

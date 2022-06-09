@@ -4,8 +4,8 @@
 			<div class="font-light">Column</div>
 			<Autocomplete
 				id="column"
-				:options="column_options"
 				v-model="column"
+				:options="column_options"
 				placeholder="Select a column..."
 				@option-select="on_column_select"
 			/>
@@ -14,8 +14,8 @@
 			<div class="font-light">Operator</div>
 			<Autocomplete
 				id="operator"
-				:options="operator_list"
 				v-model="operator"
+				:options="operator_list"
 				placeholder="Select operator..."
 				@option-select="on_operator_select"
 			/>
@@ -23,7 +23,7 @@
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Value</div>
 			<Autocomplete
-				v-if="value_list.length > 0"
+				v-if="show_value_options"
 				id="value"
 				v-model="value"
 				:options="value_list"
@@ -49,13 +49,13 @@
 			<input
 				v-else
 				type="text"
-				v-model="value"
+				v-model="value.value"
 				:placeholder="value_placeholder"
-				class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500"
+				class="form-input block h-8 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
 			/>
 		</div>
 		<div class="flex justify-end">
-			<Button appearance="primary" :disabled="!column || !operator || !value" @click="apply"> Apply </Button>
+			<Button @click="apply" appearance="primary" :disabled="apply_disabled"> Apply </Button>
 		</div>
 	</div>
 </template>
@@ -63,6 +63,7 @@
 <script>
 import Autocomplete from '@/components/Autocomplete.vue'
 import DatePicker from '@/components/DatePicker.vue'
+import { isEmptyObj } from '@/utils/utils.js'
 import { debounce } from 'frappe-ui'
 
 export default {
@@ -74,9 +75,9 @@ export default {
 	},
 	data() {
 		return {
-			column: this.filter?.left?.label || '',
-			operator: this.filter?.operator?.label || '',
-			value: this.filter?.right?.label || '',
+			column: this.filter?.left || {},
+			operator: this.filter?.operator || {},
+			value: this.filter?.right || {},
 			_filter: this.filter || {
 				left: '',
 				operator: '',
@@ -100,25 +101,27 @@ export default {
 			return this.query.get_selectable_columns?.data?.message || []
 		},
 		column_options() {
-			return this.column_list.map((c) => ({ ...c, secondary_label: c.table_label }))
+			return this.column_list.map((c) => {
+				return {
+					...c,
+					value: c.column,
+					secondary_label: c.table_label,
+				}
+			})
 		},
 		operator_list() {
 			// Operator: { label, value }
 			return this.$resources.operator_list.data || []
 		},
 		value_list() {
-			if (
-				!this._filter.left?.column ||
-				!this._filter.operator?.value ||
-				!['=', '!=', 'is'].includes(this._filter.operator.value)
-			) {
-				return []
-			}
 			if (this._filter.operator.value == 'is') {
 				return [
 					{ label: 'Set', value: 'set' },
 					{ label: 'Not Set', value: 'not set' },
 				]
+			}
+			if (isEmptyObj(this.value) || !this.value.value) {
+				return []
 			}
 			return this.query.get_column_values?.data?.message || []
 		},
@@ -126,14 +129,14 @@ export default {
 			if (this.show_datepicker) {
 				return 'Select a date...'
 			}
-			if (!this._filter.operator?.value) {
+			if (isEmptyObj(this._filter.operator)) {
 				return 'Type a value...'
 			}
-			if (this._filter.operator.value.includes('in')) {
-				return 'Type comma separated values...'
-			}
-			if (this._filter.operator.value.includes('between')) {
+			if (this._filter.operator.value == 'between') {
 				return 'Type two comma separated values...'
+			}
+			if (this._filter.operator.value == 'in' || this._filter.operator.value == 'not in') {
+				return 'Type comma separated values...'
 			}
 			return 'Type a value...'
 		},
@@ -143,16 +146,32 @@ export default {
 				['=', '!=', '>', '>=', '<', '<=', 'between'].includes(this._filter.operator?.value)
 			)
 		},
+		show_value_options() {
+			if (
+				isEmptyObj(this._filter.left) ||
+				isEmptyObj(this._filter.operator) ||
+				!['=', '!=', 'is'].includes(this._filter.operator.value)
+			) {
+				return false
+			}
+			return true
+		},
+		apply_disabled() {
+			return isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)
+		},
 	},
 	watch: {
-		value(new_value) {
-			this.check_and_fetch_column_values()
-			if (!this.value_list.length && !this.show_datepicker) {
-				this._filter.right = {
-					value: new_value,
-					label: new_value,
+		value: {
+			handler(new_value) {
+				this.check_and_fetch_column_values()
+				if (!this.show_value_options && !this.show_datepicker) {
+					this._filter.right = {
+						label: new_value.value,
+						value: new_value.value,
+					}
 				}
-			}
+			},
+			deep: true,
 		},
 	},
 	methods: {
@@ -160,8 +179,8 @@ export default {
 			this._filter.left = option
 			this._filter.operator = {}
 			this._filter.right = {}
-			this.operator = ''
-			this.value = ''
+			this.operator = {}
+			this.value = {}
 			this.$resources.operator_list.submit({
 				fieldtype: this._filter.left.type,
 			})
@@ -170,7 +189,7 @@ export default {
 		on_operator_select(option) {
 			this._filter.operator = option
 			this._filter.right = {}
-			this.value = ''
+			this.value = {}
 		},
 
 		on_value_select(option) {
@@ -178,7 +197,7 @@ export default {
 		},
 
 		apply() {
-			if (!this.column || !this.operator || !this.value) {
+			if (isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)) {
 				return
 			}
 			this.$emit('filter-select', { filter: this._filter })
@@ -186,9 +205,10 @@ export default {
 
 		check_and_fetch_column_values: debounce(function () {
 			if (
-				!this.value ||
-				!this._filter.left?.column ||
-				!this._filter.operator?.value ||
+				isEmptyObj(this.value) ||
+				!this.value.value ||
+				isEmptyObj(this._filter.left) ||
+				isEmptyObj(this._filter.operator) ||
 				!['=', '!='].includes(this._filter.operator.value)
 			) {
 				return
@@ -198,7 +218,7 @@ export default {
 			if (left_is_smalltext) {
 				this.query.get_column_values.submit({
 					column: this._filter.left,
-					search_text: this.value,
+					search_text: this.value.value || this.value.label,
 				})
 			}
 		}, 300),
