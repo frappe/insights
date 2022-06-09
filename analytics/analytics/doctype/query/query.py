@@ -246,9 +246,16 @@ class Query(Document):
     def run(self):
         self.execute()
         self.update_result()
+
+        # skip processing and updating query since it's already done
+        self.skip_before_save = True
         self.save()
 
     def before_save(self):
+        if self.get("skip_before_save"):
+            self.skip_before_save = False
+            return
+
         if not self.columns or not self.filters:
             return
 
@@ -290,9 +297,14 @@ class Query(Document):
         self._query = query
 
     def update_query(self):
-        self.sql = format_sql(
+        updated_query = format_sql(
             str(self._query), keyword_case="upper", reindent_aligned=True
         )
+        if self.sql == updated_query:
+            return
+
+        self.sql = updated_query
+        self.status = "Pending Execution"
 
     def execute(self):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
@@ -305,6 +317,7 @@ class Query(Document):
 
     def update_result(self):
         self.result = dumps(self._result, default=cstr)
+        self.status = "Execution Successful"
 
     def process_tables(self):
         self._tables = []

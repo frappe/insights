@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "tab_break_1",
+  "status",
   "title",
   "column_break_3",
   "data_source",
@@ -166,11 +167,20 @@
   {
    "fieldname": "column_break_19",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending Execution",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Status",
+   "options": "Pending Execution\nExecution Successful",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-06 08:50:14.967451",
+ "modified": "2022-06-09 11:48:54.932445",
  "modified_by": "Administrator",
  "module": "Analytics",
  "name": "Query",

@@ -2,21 +2,24 @@
 	<div class="flex h-full w-full flex-1 select-text text-base">
 		<div
 			v-if="!columns || columns.length === 0"
-			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>Select at least one column to display the result</p>
 		</div>
 
 		<div
 			v-else-if="!result || result.length === 0"
-			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
 		</div>
 
-		<div v-else class="flex h-full w-full flex-1 flex-col">
+		<div v-else class="relative flex h-full w-full flex-1 flex-col">
 			<!-- Table -->
-			<div class="relative flex-1 overflow-scroll rounded-md">
+			<div
+				class="relative h-[100%-2.5rem] w-full overflow-scroll rounded-md"
+				:class="{ 'blur-[2px]': needs_execution }"
+			>
 				<table class="border-separate">
 					<thead class="sticky top-0 text-gray-600">
 						<tr>
@@ -55,17 +58,27 @@
 					</tbody>
 				</table>
 			</div>
+			<div class="flex h-10 w-full flex-shrink-0 border-t">
+				<LimitsAndOrder :query="query" />
+			</div>
+			<div v-if="needs_execution" class="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+				<Button appearance="primary" class="!shadow-md" @click="query.run.submit()" :loading="query.run.loading">
+					Execute
+				</Button>
+			</div>
 		</div>
 	</div>
 </template>
 
 <script>
 import ColumnHeader from '@/components/Query/ColumnHeader.vue'
+import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
 
 export default {
 	name: 'QueryResult',
 	components: {
 		ColumnHeader,
+		LimitsAndOrder,
 	},
 	props: ['query'],
 	computed: {
@@ -80,6 +93,9 @@ export default {
 		number_columns() {
 			const number_datatypes = ['int', 'decimal', 'bigint', 'float', 'double']
 			return this.columns.map((c) => number_datatypes.includes(c.type.toLowerCase()))
+		},
+		needs_execution() {
+			return this.query.doc.status === 'Pending Execution'
 		},
 	},
 }
