@@ -30,6 +30,13 @@
 				:placeholder="value_placeholder"
 				@option-select="on_value_select"
 			/>
+			<TimespanPicker
+				v-else-if="show_timespan_picker"
+				id="value"
+				v-model="value"
+				@change="on_value_select"
+				:placeholder="value_placeholder"
+			/>
 			<DatePicker
 				v-else-if="show_datepicker"
 				id="value"
@@ -62,6 +69,7 @@
 
 <script>
 import Autocomplete from '@/components/Autocomplete.vue'
+import TimespanPicker from '@/components/TimespanPicker.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import { isEmptyObj } from '@/utils/utils.js'
 import { debounce } from 'frappe-ui'
@@ -70,6 +78,7 @@ export default {
 	name: 'SimpleFilterPicker',
 	props: ['query', 'filter'],
 	components: {
+		TimespanPicker,
 		Autocomplete,
 		DatePicker,
 	},
@@ -145,6 +154,9 @@ export default {
 			}
 			return 'Type a value...'
 		},
+		show_timespan_picker() {
+			return ['Date', 'Datetime'].includes(this._filter.left?.type) && this._filter.operator?.value === 'timespan'
+		},
 		show_datepicker() {
 			return (
 				['Date', 'Datetime'].includes(this._filter.left?.type) &&
@@ -170,7 +182,7 @@ export default {
 		value: {
 			handler(new_value) {
 				this.check_and_fetch_column_values()
-				if (!this.show_value_options && !this.show_datepicker) {
+				if (!this.show_value_options && !this.show_datepicker && !this.show_timespan_picker) {
 					this._filter.right = {
 						label: new_value.value,
 						value: new_value.value,

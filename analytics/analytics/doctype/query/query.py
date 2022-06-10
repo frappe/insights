@@ -16,6 +16,7 @@ from pypika import Order
 from pypika.enums import JoinType
 
 from analytics.analytics.doctype.query.utils import (
+    get_date_range,
     Aggregations,
     ColumnFormat,
     Operations,
@@ -489,17 +490,27 @@ class Query(Document):
     def process_literal_value(self, literal, operator):
         literal.value = literal.value.replace('"', "")
 
-        if "contains" in operator.value:
+        if operator.value == "contains":
             return f"%{literal.value}%"
 
-        if "starts with" in operator.value:
+        if operator.value == "starts with":
             return f"{literal.value}%"
 
-        if "ends with" in operator.value:
+        if operator.value == "ends with":
             return f"%{literal.value}"
 
-        if "in" in operator.value or "between" in operator.value:
+        if operator.value == "in" or operator.value == "between":
             return [d.lstrip().rstrip() for d in literal.value.split(",")]
+
+        if operator.value == "timespan":
+            timespan_value = literal.value.lower().strip()
+            if "current" in timespan_value:
+                return get_date_range(timespan=timespan_value)
+
+            elif "last" in timespan_value:
+                [span, interval, interval_type] = timespan_value.split(" ")
+                timespan = span + " n " + interval_type
+                return get_date_range(timespan=timespan, n=int(interval))
 
         return literal.value
 

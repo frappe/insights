@@ -86,6 +86,7 @@ def get_operator_list(fieldtype=None):
             {"label": "greater than equal to", "value": ">="},
             {"label": "smaller than equal to", "value": "<="},
             {"label": "between", "value": "between"},
+            {"label": "in", "value": "timespan"},
         ]
 
     return operator_list

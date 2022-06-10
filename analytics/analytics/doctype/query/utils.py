@@ -1,9 +1,24 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import datetime
 import operator
 
+from typing import Tuple
+
 from frappe.query_builder import CustomFunction, functions, Case
+from frappe.utils.data import (
+    nowdate,
+    add_to_date,
+    get_first_day_of_week,
+    get_last_day_of_week,
+    get_first_day,
+    get_last_day,
+    get_quarter_start,
+    get_quarter_ending,
+    get_year_start,
+    get_year_ending,
+)
 
 
 class Aggregations:
@@ -95,6 +110,7 @@ class Operations:
     }
     RANGE_OPERATORS = {
         "between": "between",
+        "timespan": "between",
     }
 
     @classmethod
@@ -125,3 +141,60 @@ class Operations:
             return lambda field, value: getattr(
                 field, cls.NULL_COMPARE_OPERATIONS[f"{operator} {value}"]
             )()
+
+
+def get_date_range(
+    timespan: str, n: int = 1
+) -> Tuple[datetime.datetime, datetime.datetime]:
+
+    today = nowdate()
+
+    date_range_map = {
+        "current day": lambda: (
+            today,
+            today,
+        ),
+        "current week": lambda: (
+            get_first_day_of_week(today),
+            get_last_day_of_week(today),
+        ),
+        "current month": lambda: (
+            get_first_day(today),
+            get_last_day(today),
+        ),
+        "current quarter": lambda: (
+            get_quarter_start(today),
+            get_quarter_ending(today),
+        ),
+        "current year": lambda: (
+            get_year_start(today),
+            get_year_ending(today),
+        ),
+        "last n days": lambda n: (
+            add_to_date(today, days=-1 * n),
+            add_to_date(today, days=-1 * n),
+        ),
+        "last n weeks": lambda n: (
+            get_first_day_of_week(add_to_date(today, days=-7 * n)),
+            get_last_day_of_week(add_to_date(today, days=-7 * n)),
+        ),
+        "last n months": lambda n: (
+            get_first_day(add_to_date(today, months=-1 * n)),
+            get_last_day(add_to_date(today, months=-1 * n)),
+        ),
+        "last n quarters": lambda n: (
+            get_quarter_start(add_to_date(today, months=-3 * n)),
+            get_quarter_ending(add_to_date(today, months=-3 * n)),
+        ),
+        "last n years": lambda n: (
+            get_year_start(add_to_date(today, years=-1 * n)),
+            get_year_ending(add_to_date(today, years=-1 * n)),
+        ),
+    }
+
+    if timespan in date_range_map:
+        return (
+            date_range_map[timespan]()
+            if "current" in timespan
+            else date_range_map[timespan](n)
+        )
