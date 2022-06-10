@@ -8,8 +8,8 @@
 		</div>
 
 		<div
-			v-else-if="(!needs_execution && !result) || result.length === 0"
-			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
+			v-else-if="!needs_execution && (!result || result.length === 0)"
+			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
 		</div>

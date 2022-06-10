@@ -15,9 +15,9 @@
 			</template>
 			<template #content>
 				<SuggestionBox
-					v-if="show && suggestions?.length"
-					:header_and_suggestions="suggestions"
-					@option-select="on_suggestion_select"
+					v-if="show && filtered_options?.length"
+					:header_and_suggestions="filtered_options"
+					@option-select="on_option_select"
 				/>
 			</template>
 		</Popover>
@@ -71,22 +71,22 @@ export default {
 		},
 	},
 	computed: {
-		selectable_tables() {
-			return this.query.get_selectable_tables?.data?.message || []
-		},
-		suggestions() {
-			// filter out duplicates
-			const _options = this.selectable_tables?.filter((option, index, self) => {
+		table_options() {
+			const tables = this.query.get_selectable_tables?.data?.message || []
+			return tables.filter((option, index, self) => {
 				return self.findIndex((t) => t.table === option.table) === index
 			})
+		},
+		filtered_options() {
+			// filter out duplicates
 			return this.input_value
-				? _options.filter((t) => t.label.toLowerCase().includes(this.input_value.toLowerCase()))
-				: _options
+				? this.table_options.filter((t) => t.label.toLowerCase().includes(this.input_value.toLowerCase()))
+				: this.table_options
 		},
 	},
 	methods: {
-		on_suggestion_select(suggestion) {
-			this.query.add_table.submit({ table: suggestion })
+		on_option_select(option) {
+			this.query.add_table.submit({ table: option })
 			this.reset()
 		},
 		reset() {
