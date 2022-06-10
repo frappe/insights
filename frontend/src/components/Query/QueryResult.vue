@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full w-full flex-1 select-text text-base">
+	<div class="relative flex h-full w-full select-text text-base">
 		<div
 			v-if="!columns || columns.length === 0"
 			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
@@ -8,18 +8,15 @@
 		</div>
 
 		<div
-			v-else-if="!result || result.length === 0"
+			v-else-if="(!needs_execution && !result) || result.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
 		</div>
 
-		<div v-else class="relative flex h-full w-full flex-1 flex-col">
+		<div v-else class="relative flex h-full w-full flex-col" :class="{ 'blur-[2px]': needs_execution }">
 			<!-- Table -->
-			<div
-				class="relative h-[100%-2.5rem] w-full overflow-scroll rounded-md"
-				:class="{ 'blur-[2px]': needs_execution }"
-			>
+			<div class="relative h-[calc(100%-2.5rem)] w-full overflow-scroll rounded-md">
 				<table class="border-separate">
 					<thead class="sticky top-0 text-gray-600">
 						<tr>
@@ -61,11 +58,11 @@
 			<div class="flex h-10 w-full flex-shrink-0 border-t">
 				<LimitsAndOrder :query="query" />
 			</div>
-			<div v-if="needs_execution" class="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-				<Button appearance="primary" class="!shadow-md" @click="query.run.submit()" :loading="query.run.loading">
-					Execute
-				</Button>
-			</div>
+		</div>
+		<div v-if="needs_execution" class="absolute top-0 left-0 flex h-full w-full items-center justify-center">
+			<Button appearance="primary" class="!shadow-md" @click="query.run.submit()" :loading="query.run.loading">
+				Execute
+			</Button>
 		</div>
 	</div>
 </template>
