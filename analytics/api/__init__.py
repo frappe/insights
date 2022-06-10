@@ -109,8 +109,6 @@ def get_column_menu_options(fieldtype):
             {"label": "Count of all", "value": "Count"},
             {"label": "Count of distinct", "value": "Count Distinct"},
             {"label": "Count if", "value": "Count if"},
-            {"label": "Minimum", "value": "Min"},
-            {"label": "Maximum", "value": "Max"},
         ]
     if fieldtype in number_data_types:
         aggregation_options = [
