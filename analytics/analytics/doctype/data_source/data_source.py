@@ -73,6 +73,7 @@ class DataSource(Document):
         # save Link Fields & Table Fields as ForeignKeyConstraints
         self.create_db_instance()
         self.db_instance.connect()
+
         DocField = frappe.qb.DocType("DocField")
         query = (
             frappe.qb.from_(DocField)
@@ -85,8 +86,29 @@ class DataSource(Document):
             .where((DocField.fieldtype == "Link") | (DocField.fieldtype == "Table"))
             .get_sql()
         )
-        links = self.db_instance.sql(query, as_dict=1)
+        standard_links = self.db_instance.sql(query, as_dict=1)
+
+        CustomField = frappe.qb.DocType("Custom Field")
+        query = (
+            frappe.qb.from_(CustomField)
+            .select(
+                CustomField.fieldname,
+                CustomField.fieldtype,
+                CustomField.options,
+                CustomField.dt.as_("parent"),
+            )
+            .where(
+                (CustomField.fieldtype == "Link") | (CustomField.fieldtype == "Table")
+            )
+            .get_sql()
+        )
+        custom_links = self.db_instance.sql(query, as_dict=1)
+
+        dynamic_links = get_dynamic_link_map(self.db_instance)
+
         self.db_instance.close()
+
+        links = standard_links + custom_links
 
         foreign_links = {}
         for link in links:
@@ -118,6 +140,26 @@ class DataSource(Document):
                         "foreign_key": "parent",
                         "foreign_table": "tab" + link.get("parent"),
                         "foreign_table_label": link.get("parent"),
+                    }
+                )
+
+        for doctype in dynamic_links:
+            if not doctype:
+                continue
+
+            for link in dynamic_links.get(doctype):
+                foreign_links.setdefault(doctype, []).append(
+                    {
+                        "foreign_key": link.get("fieldname"),
+                        "foreign_table": "tab" + link.get("parent"),
+                        "foreign_table_label": link.get("parent"),
+                    }
+                )
+                foreign_links.setdefault(link.get("parent"), []).append(
+                    {
+                        "foreign_key": link.get("fieldname"),
+                        "foreign_table": "tab" + doctype,
+                        "foreign_table_label": doctype,
                     }
                 )
 
@@ -206,3 +248,47 @@ class DataSource(Document):
 
         # TODO: caching
         return values
+
+
+def get_dynamic_link_map(db_instance):
+    # copied from frappe.model.dynamic_links
+
+    # Build from scratch
+    dynamic_link_queries = [
+        """select `tabDocField`.parent,
+        `tabDocType`.read_only, `tabDocType`.in_create,
+        `tabDocField`.fieldname, `tabDocField`.options
+    from `tabDocField`, `tabDocType`
+    where `tabDocField`.fieldtype='Dynamic Link' and
+    `tabDocType`.`name`=`tabDocField`.parent
+    order by `tabDocType`.read_only, `tabDocType`.in_create""",
+        """select `tabCustom Field`.dt as parent,
+        `tabDocType`.read_only, `tabDocType`.in_create,
+        `tabCustom Field`.fieldname, `tabCustom Field`.options
+    from `tabCustom Field`, `tabDocType`
+    where `tabCustom Field`.fieldtype='Dynamic Link' and
+    `tabDocType`.`name`=`tabCustom Field`.dt
+    order by `tabDocType`.read_only, `tabDocType`.in_create""",
+    ]
+
+    dynamic_link_map = {}
+    dynamic_links = []
+    for query in dynamic_link_queries:
+        dynamic_links += db_instance.sql(query, as_dict=True)
+
+    for df in dynamic_links:
+        meta = frappe.get_meta(df.parent)
+        if meta.issingle:
+            # always check in Single DocTypes
+            dynamic_link_map.setdefault(meta.name, []).append(df)
+        else:
+            try:
+                links = db_instance.sql_list(
+                    """select distinct {options} from `tab{parent}`""".format(**df)
+                )
+                for doctype in links:
+                    dynamic_link_map.setdefault(doctype, []).append(df)
+            except frappe.db.TableMissingError:  # noqa: E722
+                pass
+
+    return dynamic_link_map

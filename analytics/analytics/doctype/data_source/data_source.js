@@ -7,16 +7,18 @@ frappe.ui.form.on('Data Source', {
 			frm.call('test_connection')
 		})
 		frm.add_custom_button('Import Tables', () => {
-			frappe.run_serially([
-				() => frappe.dom.freeze('Importing Tables...'),
-				() => frm.call('import_tables'),
-				() => frappe.dom.unfreeze(),
-				() =>
-					frappe.show_alert({
-						message: 'Tables imported successfully',
-						indicator: 'green',
-					}),
-			])
+			frappe
+				.run_serially([
+					() => frappe.dom.freeze('Importing Tables...'),
+					() => frm.call('import_tables'),
+					() => frappe.dom.unfreeze(),
+					() =>
+						frappe.show_alert({
+							message: 'Tables imported successfully',
+							indicator: 'green',
+						}),
+				])
+				.catch(() => frappe.dom.unfreeze())
 		})
 	},
 })
