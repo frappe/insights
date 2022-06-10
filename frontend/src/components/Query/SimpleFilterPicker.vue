@@ -94,6 +94,11 @@ export default {
 	},
 	mounted() {
 		this.query.get_selectable_columns.fetch()
+		if (!isEmptyObj(this._filter.left)) {
+			this.$resources.operator_list.submit({
+				fieldtype: this._filter.left.type,
+			})
+		}
 	},
 	computed: {
 		column_list() {

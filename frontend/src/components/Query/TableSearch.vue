@@ -75,9 +75,13 @@ export default {
 			return this.query.get_selectable_tables?.data?.message || []
 		},
 		suggestions() {
+			// filter out duplicates
+			const _options = this.selectable_tables?.filter((option, index, self) => {
+				return self.findIndex((t) => t.table === option.table) === index
+			})
 			return this.input_value
-				? this.selectable_tables.filter((t) => t.label.toLowerCase().includes(this.input_value.toLowerCase()))
-				: this.selectable_tables
+				? _options.filter((t) => t.label.toLowerCase().includes(this.input_value.toLowerCase()))
+				: _options
 		},
 	},
 	methods: {

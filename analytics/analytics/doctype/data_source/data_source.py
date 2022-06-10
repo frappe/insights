@@ -33,7 +33,7 @@ class DataSource(Document):
             )
 
     def get_db_instance(self):
-        if not self.db_instance:
+        if not self.get("db_instance"):
             self.db_instance = self.create_db()
 
         # TODO: cache into site cache with key as self.name
@@ -147,7 +147,7 @@ class DataSource(Document):
                 from information_schema.columns
                 where table_name = %s order by column_name
             """,
-            table.get("table"),
+            values=table.get("table"),
             as_dict=1,
         )
 

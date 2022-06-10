@@ -335,7 +335,7 @@ class Query(Document):
     def execute(self):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         start = time.time()
-        result = data_source.execute_querẏ(self.sql, debug=True)
+        result = data_source.execute_query(self.sql, debug=True)
         end = time.time()
         self._result = list(result)
         self.execution_time = flt(end - start, 3)
