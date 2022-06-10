@@ -5,6 +5,13 @@ import frappe
 from frappe.database.mariadb.database import MariaDBDatabase
 from frappe.model.document import Document
 
+from contextlib import contextmanager
+
+
+# exception class for when query is not a select query
+class NotSelectQuery(frappe.ValidationError):
+    pass
+
 
 class DataSource(Document):
     def before_save(self):
@@ -13,30 +20,91 @@ class DataSource(Document):
         else:
             self.status = "Inactive"
 
-    def create_db_instance(self):
-        if hasattr(self, "db_instance") and self.db_instance:
-            return
-
+    def create_db(self):
         if self.database_type != "MariaDB":
             raise NotImplementedError
 
         if self.database_type == "MariaDB":
-            self.db_instance = MariaDBDatabase(
+            return MariaDBDatabase(
                 host=self.host,
                 port=self.port,
                 user=self.username,
                 password=self.get_password(),
             )
 
+    def get_db_instance(self):
+        if not self.db_instance:
+            self.db_instance = self.create_db()
+
+        # TODO: cache into site cache with key as self.name
+
+        return self.db_instance
+
+    def validate_query(self, query):
+        """Check if SQL query is safe for running in restricted context.
+
+        Safe queries:
+                1. Read only 'select' or 'explain' queries
+                2. CTE on mariadb where writes are not allowed.
+        """
+
+        query = query.strip().lower()
+        whitelisted_statements = ("select", "explain")
+
+        if query.startswith(whitelisted_statements) or (
+            query.startswith("with") and frappe.db.db_type == "mariadb"
+        ):
+            return True
+
+        frappe.throw(
+            "Query must be of SELECT or read-only WITH type.",
+            title="Unsafe SQL query",
+            exc=NotSelectQuery,
+        )
+
+    def execute_query(self, query, **kwargs):
+        if not query:
+            return
+
+        self.validate_query(query)
+
+        result = []
+        db_instance = self.get_db_instance()
+        with connect_to_db(db_instance) as db:
+            result = db.sql(query, **kwargs)
+
+        return result
+
     @frappe.whitelist()
     def test_connection(self):
-        self.create_db_instance()
-        self.db_instance.connect()
-        user_exists = self.db_instance.a_row_exists("User")
-        self.db_instance.close()
-        if user_exists:
+        result = self.execute_query(
+            "Update `tabUser` set first_name = 'Test' where name = 'Administrator'"
+        )
+        if result:
             frappe.msgprint("Connection Successful", alert=True)
             return True
+
+    def get_tables(self, tables=None):
+        if not tables:
+            tables = []
+
+        query = """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+        """
+        tables = self.execute_query(query)
+        tables = {d[0] for d in tables}
+
+        # TODO: caching
+        _tables = [
+            {
+                "table": table,
+                "label": table.replace("tab", ""),
+            }
+            for table in list(tables)
+        ]
+        return _tables
 
     @frappe.whitelist()
     def import_tables(self):
@@ -69,10 +137,59 @@ class DataSource(Document):
 
             doc.save()
 
-    def get_foreign_key_constraints(self):
-        # save Link Fields & Table Fields as ForeignKeyConstraints
+    def get_columns(self, table):
+        if not table:
+            return []
+
+        columns = self.execute_query(
+            """
+                select column_name, data_type
+                from information_schema.columns
+                where table_name = %s order by column_name
+            """,
+            table.get("table"),
+            as_dict=1,
+        )
+
+        # TODO: caching
+        _columns = [
+            {
+                "table": table.get("table"),
+                "column": d.get("column_name"),
+                "table_label": table.get("label"),
+                "type": d.get("data_type").title(),
+                "label": frappe.unscrub(d.get("column_name")).rstrip().lstrip(),
+            }
+            for d in columns
+        ]
+
+        return _columns
+
+    def get_distinct_column_values(self, column, search_text, limit=50):
         self.create_db_instance()
         self.db_instance.connect()
+
+        Table = frappe.qb.Table(column.get("table"))
+        Field = frappe.qb.Field(column.get("column"))
+        query = (
+            frappe.qb.from_(Table)
+            .select(Field.as_("label"))
+            .distinct()
+            .select(Field.as_("value"))
+            .where(Field.like(f"%{search_text}%"))
+            .limit(limit)
+            .get_sql()
+        )
+
+        values = self.execute_query(query, as_dict=1)
+
+        self.db_instance.close()
+
+        # TODO: caching
+        return values
+
+    def get_foreign_key_constraints(self):
+        # save Link Fields & Table Fields as ForeignKeyConstraints
 
         DocField = frappe.qb.DocType("DocField")
         query = (
@@ -86,7 +203,7 @@ class DataSource(Document):
             .where((DocField.fieldtype == "Link") | (DocField.fieldtype == "Table"))
             .get_sql()
         )
-        standard_links = self.db_instance.sql(query, as_dict=1)
+        standard_links = self.execute_query(query, as_dict=1)
 
         CustomField = frappe.qb.DocType("Custom Field")
         query = (
@@ -102,11 +219,9 @@ class DataSource(Document):
             )
             .get_sql()
         )
-        custom_links = self.db_instance.sql(query, as_dict=1)
+        custom_links = self.execute_query(query, as_dict=1)
 
-        dynamic_links = get_dynamic_link_map(self.db_instance)
-
-        self.db_instance.close()
+        dynamic_links = self.get_dynamic_link_map()
 
         links = standard_links + custom_links
 
@@ -165,130 +280,82 @@ class DataSource(Document):
 
         return foreign_links
 
-    def execute(self, query, debug=False):
-        if not query:
-            return
+    def get_dynamic_link_map(self):
+        # copied from frappe.model.dynamic_links
 
-        self.create_db_instance()
-        self.db_instance.connect()
-        result = self.db_instance.sql(query, debug=debug)
-        self.db_instance.close()
+        DocField = frappe.qb.DocType("DocField")
+        DocType = frappe.qb.DocType("DocType")
+        CustomField = frappe.qb.DocType("Custom Field")
 
-        return result
-
-    def get_tables(self, tables=None):
-        if not tables:
-            tables = []
-
-        self.create_db_instance()
-        self.db_instance.connect()
-        tables = self.db_instance.get_tables(cached=False)
-        self.db_instance.close()
-
-        # TODO: caching
-        _tables = [
-            {
-                "table": table,
-                "label": table.replace("tab", ""),
-            }
-            for table in list(tables)
-        ]
-        return _tables
-
-    def get_columns(self, table):
-        if not table:
-            return []
-
-        self.create_db_instance()
-        self.db_instance.connect()
-        columns = self.db_instance.sql(
-            """
-                select column_name, data_type
-                from information_schema.columns
-                where table_name = %s order by column_name
-            """,
-            table.get("table"),
-            as_dict=1,
-        )
-        self.db_instance.close()
-
-        # TODO: caching
-        _columns = [
-            {
-                "table": table.get("table"),
-                "column": d.get("column_name"),
-                "table_label": table.get("label"),
-                "type": d.get("data_type").title(),
-                "label": frappe.unscrub(d.get("column_name")).rstrip().lstrip(),
-            }
-            for d in columns
-        ]
-
-        return _columns
-
-    def get_distinct_column_values(self, column, search_text, limit=50):
-        self.create_db_instance()
-        self.db_instance.connect()
-
-        Table = frappe.qb.Table(column.get("table"))
-        Field = frappe.qb.Field(column.get("column"))
-        query = (
-            frappe.qb.from_(Table)
-            .select(Field.as_("label"))
-            .distinct()
-            .select(Field.as_("value"))
-            .where(Field.like(f"%{search_text}%"))
-            .limit(limit)
+        standard_dynamic_links_query = (
+            frappe.qb.from_(DocField)
+            .from_(DocType)
+            .select(
+                DocField.parent,
+                DocField.fieldname,
+                DocField.options,
+                DocType.issingle,
+            )
+            .where(
+                (DocField.fieldtype == "Dynamic Link")
+                & (DocType.name == DocField.parent)
+            )
             .get_sql()
         )
 
-        values = self.db_instance.sql(query, as_dict=1)
+        custom_dynamic_links_query = (
+            frappe.qb.from_(CustomField)
+            .from_(DocType)
+            .select(
+                CustomField.dt.as_("parent"),
+                CustomField.fieldname,
+                CustomField.options,
+                DocType.issingle,
+            )
+            .where(
+                (CustomField.fieldtype == "Dynamic Link")
+                & (DocType.name == CustomField.dt)
+            )
+            .get_sql()
+        )
 
-        self.db_instance.close()
+        dynamic_link_queries = [
+            standard_dynamic_links_query,
+            custom_dynamic_links_query,
+        ]
 
-        # TODO: caching
-        return values
+        dynamic_link_map = {}
+        dynamic_links = []
+        for query in dynamic_link_queries:
+            dynamic_links += self.execute_query(query, as_dict=True)
+
+        for df in dynamic_links:
+            if df.issingle:
+                dynamic_link_map.setdefault(df.parent, []).append(df)
+            else:
+                try:
+                    links = self.execute_query(
+                        """select distinct {options} from `tab{parent}`""".format(**df)
+                    )
+                    links = [l[0] for l in links]
+                    for doctype in links:
+                        dynamic_link_map.setdefault(doctype, []).append(df)
+                except frappe.db.TableMissingError:  # noqa: E722
+                    pass
+
+        return dynamic_link_map
 
 
-def get_dynamic_link_map(db_instance):
-    # copied from frappe.model.dynamic_links
-
-    # Build from scratch
-    dynamic_link_queries = [
-        """select `tabDocField`.parent,
-        `tabDocType`.read_only, `tabDocType`.in_create,
-        `tabDocField`.fieldname, `tabDocField`.options
-    from `tabDocField`, `tabDocType`
-    where `tabDocField`.fieldtype='Dynamic Link' and
-    `tabDocType`.`name`=`tabDocField`.parent
-    order by `tabDocType`.read_only, `tabDocType`.in_create""",
-        """select `tabCustom Field`.dt as parent,
-        `tabDocType`.read_only, `tabDocType`.in_create,
-        `tabCustom Field`.fieldname, `tabCustom Field`.options
-    from `tabCustom Field`, `tabDocType`
-    where `tabCustom Field`.fieldtype='Dynamic Link' and
-    `tabDocType`.`name`=`tabCustom Field`.dt
-    order by `tabDocType`.read_only, `tabDocType`.in_create""",
-    ]
-
-    dynamic_link_map = {}
-    dynamic_links = []
-    for query in dynamic_link_queries:
-        dynamic_links += db_instance.sql(query, as_dict=True)
-
-    for df in dynamic_links:
-        meta = frappe.get_meta(df.parent)
-        if meta.issingle:
-            # always check in Single DocTypes
-            dynamic_link_map.setdefault(meta.name, []).append(df)
-        else:
-            try:
-                links = db_instance.sql_list(
-                    """select distinct {options} from `tab{parent}`""".format(**df)
-                )
-                for doctype in links:
-                    dynamic_link_map.setdefault(doctype, []).append(df)
-            except frappe.db.TableMissingError:  # noqa: E722
-                pass
-
-    return dynamic_link_map
+@contextmanager
+def connect_to_db(db):
+    try:
+        db.connect()
+        yield db
+    except Exception as e:
+        frappe.log_error(
+            title="Error connecting to database",
+            message=frappe.get_traceback(),
+        )
+        raise e
+    finally:
+        db.close()
