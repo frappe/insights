@@ -1,5 +1,5 @@
 <template>
-	<Popover>
+	<Popover class="flex w-full [&>div:first-child]:w-full">
 		<template #target="{ togglePopover }">
 			<input
 				readonly
@@ -10,7 +10,7 @@
 				class="form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500"
 			/>
 		</template>
-		<template #content="{ togglePopover }">
+		<template #body="{ togglePopover }">
 			<div
 				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
 			>

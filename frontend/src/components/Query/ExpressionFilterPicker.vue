@@ -2,8 +2,8 @@
 	<div class="flex flex-col">
 		<div class="text-sm font-light text-gray-600">Expression</div>
 		<div id="expression_filter_picker" class="relative z-10 mt-1 w-full rounded-md shadow-sm">
-			<Popover :show="show">
-				<template #target>
+			<Popover class="flex w-full [&>div:first-child]:w-full">
+				<template #target="{ isOpen, togglePopover }">
 					<div class="relative">
 						<input
 							type="text"
@@ -11,21 +11,27 @@
 							spellcheck="false"
 							v-model="input"
 							ref="filter_input"
-							@focus="show = true"
-							@keydown.esc.exact="show = false"
+							@focus="togglePopover()"
+							@keydown.esc.exact="togglePopover()"
 							class="form-input block h-8 w-full select-none rounded-md p-0 pl-5 tracking-widest placeholder-gray-500 caret-black"
 							:class="{
-								'focus:rounded-b-none focus:bg-white focus:shadow': show && options?.length && filtered_options?.length,
+								'focus:rounded-b-none focus:bg-white focus:shadow':
+									isOpen && options?.length && filtered_options?.length,
 							}"
 						/>
 						<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-gray-700">=</div>
 					</div>
 				</template>
-				<template #content>
+				<template #body="{ isOpen, togglePopover }">
 					<SuggestionBox
-						v-if="show && options?.length && filtered_options?.length"
+						v-if="isOpen && options?.length && filtered_options?.length"
 						:header_and_suggestions="filtered_options"
-						@option-select="on_option_select"
+						@option-select="
+							(option) => {
+								on_option_select(option)
+								togglePopover()
+							}
+						"
 					/>
 				</template>
 			</Popover>

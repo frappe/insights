@@ -1,27 +1,30 @@
 <template>
-	<div class="table-search relative z-10 w-full rounded-md shadow-sm">
-		<Popover :show="show">
-			<template #target>
-				<input
-					type="text"
-					ref="table_search"
-					autocomplete="off"
-					spellcheck="false"
-					class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
-					:placeholder="show ? 'Select a table...' : 'Add a table...'"
-					v-model="input_value"
-					@focus="show = true"
-				/>
-			</template>
-			<template #content>
-				<SuggestionBox
-					v-if="show && filtered_options?.length"
-					:header_and_suggestions="filtered_options"
-					@option-select="on_option_select"
-				/>
-			</template>
-		</Popover>
-	</div>
+	<Popover class="flex w-full [&>div:first-child]:w-full">
+		<template #target="{ isOpen, togglePopover }">
+			<input
+				type="text"
+				ref="table_search"
+				autocomplete="off"
+				spellcheck="false"
+				class="form-input block h-8 w-full select-none rounded-md text-sm placeholder-gray-500 focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow"
+				:placeholder="isOpen ? 'Select a table...' : 'Add a table...'"
+				v-model="input_value"
+				@focus="togglePopover()"
+			/>
+		</template>
+		<template #body="{ isOpen, togglePopover }">
+			<SuggestionBox
+				v-if="isOpen && filtered_options?.length"
+				:header_and_suggestions="filtered_options"
+				@option-select="
+					(option) => {
+						on_option_select(option)
+						togglePopover()
+					}
+				"
+			/>
+		</template>
+	</Popover>
 </template>
 
 <script>
@@ -39,15 +42,6 @@ export default {
 		}
 	},
 	mounted() {
-		// detect click outside of input
-		this.outside_click_listener = (e) => {
-			if (e.target.closest('.table-search')) {
-				return this.$refs.table_search.focus()
-			}
-			this.show = false
-		}
-		document.addEventListener('click', this.outside_click_listener)
-
 		this.query.get_selectable_tables.fetch(
 			{},
 			{
@@ -56,19 +50,6 @@ export default {
 				},
 			}
 		)
-	},
-	beforeDestroy() {
-		document.removeEventListener('click', this.outside_click_listener)
-	},
-	watch: {
-		show(val, old_val) {
-			if (val && val != old_val) {
-				this.query.get_selectable_tables.fetch()
-			}
-			if (!val && val != old_val) {
-				this.$emit('table_search_blur')
-			}
-		},
 	},
 	computed: {
 		table_options() {
@@ -87,12 +68,8 @@ export default {
 	methods: {
 		on_option_select(option) {
 			this.query.add_table.submit({ table: option })
-			this.reset()
-		},
-		reset() {
-			this.$refs.table_search?.blur()
 			this.input_value = ''
-			this.show = false
+			this.$emit('on-blur')
 		},
 	},
 }

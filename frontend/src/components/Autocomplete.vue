@@ -1,7 +1,7 @@
 <template>
 	<div :id="id" class="relative z-10 w-full rounded-md shadow-sm">
-		<Popover :show="show">
-			<template #target>
+		<Popover class="flex w-full [&>div:first-child]:w-full">
+			<template #target="{ isOpen, togglePopover }">
 				<input
 					type="text"
 					autocomplete="off"
@@ -9,12 +9,7 @@
 					:value="modelValue?.label"
 					ref="autocomplete_input"
 					:placeholder="placeholder"
-					@focus="
-						() => {
-							show = true
-							$emit('focus', $event)
-						}
-					"
+					@focus="togglePopover()"
 					@input="
 						(e) => {
 							input_value = e.target.value
@@ -24,19 +19,24 @@
 							})
 						}
 					"
-					@keydown.esc.exact="show = false"
+					@keydown.esc.exact="togglePopover()"
 					class="form-input block h-8 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
 					:class="{
 						'focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow':
-							show && options?.length && filtered_options?.length,
+							isOpen && options?.length && filtered_options?.length,
 					}"
 				/>
 			</template>
-			<template #content>
+			<template #body="{ isOpen, togglePopover }">
 				<SuggestionBox
-					v-if="show && options?.length && filtered_options?.length"
+					v-if="isOpen && options?.length && filtered_options?.length"
 					:header_and_suggestions="filtered_options"
-					@option-select="on_option_select"
+					@option-select="
+						(option) => {
+							on_option_select(option)
+							togglePopover()
+						}
+					"
 				/>
 			</template>
 		</Popover>
@@ -55,7 +55,10 @@ export default {
 		},
 		modelValue: {
 			type: Object,
-			required: true,
+			default: () => ({
+				label: '',
+				value: '',
+			}),
 		},
 		placeholder: {
 			type: String,
@@ -73,7 +76,6 @@ export default {
 	data() {
 		return {
 			input_value: '',
-			show: false,
 		}
 	},
 	mounted() {
@@ -104,11 +106,6 @@ export default {
 		on_option_select(suggestion) {
 			this.$emit('update:modelValue', suggestion)
 			this.$emit('option-select', suggestion)
-			this.reset()
-		},
-		reset() {
-			this.$refs.autocomplete_input?.blur()
-			this.show = false
 		},
 	},
 }

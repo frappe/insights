@@ -3,7 +3,7 @@
 		<!-- Picker -->
 		<div v-if="!editing_table" class="flex flex-1 flex-col">
 			<div v-if="adding_table" class="mb-4 flex flex-shrink-0">
-				<TableSearch :query="query" @table_search_blur="adding_table = false" />
+				<TableSearch :query="query" @on-blur="adding_table = false" />
 			</div>
 			<div v-else-if="!adding_table" class="mb-4 flex items-center justify-between">
 				<div class="text-lg font-medium">Tables</div>

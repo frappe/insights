@@ -25,7 +25,12 @@
 			<Input type="text" v-model="label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
 		</div>
 		<div class="flex justify-end space-x-2">
-			<Button v-if="column" class="text-red-500" appearance="white" @click="query.remove_column.submit({ column })">
+			<Button
+				v-if="column?.name"
+				class="text-red-500"
+				appearance="white"
+				@click="query.remove_column.submit({ column })"
+			>
 				Remove
 			</Button>
 			<Button @click="add_dimension" appearance="primary" :disabled="add_disabled">

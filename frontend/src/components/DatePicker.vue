@@ -1,12 +1,11 @@
 <template>
-	<Popover @open="selectCurrentMonthYear">
-		<template #target="{ togglePopover, handleBlur }">
+	<Popover @open="selectCurrentMonthYear" class="flex w-full [&>div:first-child]:w-full">
+		<template #target="{ togglePopover }">
 			<input
 				readonly
 				type="text"
 				:placeholder="placeholder"
 				:value="value && formatValue ? formatValue(value) : value"
-				@blur="handleBlur"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
 					'form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500',
@@ -14,7 +13,7 @@
 				]"
 			/>
 		</template>
-		<template #content="{ togglePopover }">
+		<template #body="{ togglePopover }">
 			<div class="my-2 w-fit select-none rounded-md border border-gray-50 bg-white p-3 text-left shadow">
 				<div class="flex items-center justify-between">
 					<span class="text-lg font-medium text-blue-500">

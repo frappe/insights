@@ -1,12 +1,20 @@
 <template>
 	<div class="column-menu relative">
-		<Popover :show="show">
-			<template #target>
-				<div class="cursor-pointer rounded px-1 py-0.5 text-gray-500 hover:text-gray-600" @click="show = !show">
+		<Popover :show="show" class="flex w-full [&>div:first-child]:w-full">
+			<template #target="{ togglePopover }">
+				<div
+					class="cursor-pointer rounded px-1 py-0.5 text-gray-500 hover:text-gray-600"
+					@click="
+						() => {
+							show = true
+							togglePopover()
+						}
+					"
+				>
 					<FeatherIcon name="more-vertical" class="h-4 w-4" />
 				</div>
 			</template>
-			<template #content>
+			<template #body>
 				<div
 					class="column-menu-popover mt-1 origin-top-right rounded-md bg-white p-1 text-base shadow-md ring-1 ring-gray-200"
 				>
@@ -75,8 +83,8 @@ export default {
 			return {
 				method: 'analytics.api.get_column_menu_options',
 				params: { fieldtype: this.column.type },
-				auto: true,
 				debounce: 300,
+				auto: true,
 			}
 		},
 	},
