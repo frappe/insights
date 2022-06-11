@@ -65,13 +65,13 @@ def get_operator_list(fieldtype=None):
             {"label": "not contains", "value": "not contains"},
             {"label": "starts with", "value": "starts with"},
             {"label": "ends with", "value": "ends with"},
-            {"label": "in", "value": "in"},
-            {"label": "not in", "value": "not in"},
+            {"label": "is one of", "value": "in"},
+            {"label": "is not one of", "value": "not in"},
         ]
     if fieldtype in number_data_types:
         operator_list += [
-            {"label": "in", "value": "in"},
-            {"label": "not in", "value": "not in"},
+            {"label": "is one of", "value": "in"},
+            {"label": "is not one of", "value": "not in"},
             {"label": "greater than", "value": ">"},
             {"label": "smaller than", "value": "<"},
             {"label": "greater than equal to", "value": ">="},
@@ -86,7 +86,7 @@ def get_operator_list(fieldtype=None):
             {"label": "greater than equal to", "value": ">="},
             {"label": "smaller than equal to", "value": "<="},
             {"label": "between", "value": "between"},
-            {"label": "in", "value": "timespan"},
+            {"label": "within", "value": "timespan"},
         ]
 
     return operator_list
@@ -106,15 +106,15 @@ def get_column_menu_options(fieldtype):
     if fieldtype in text_data_types:
         aggregation_options = [
             {"label": "Group By", "value": "Group By"},
-            {"label": "Count of all", "value": "Count"},
-            {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count", "value": "Count"},
+            # {"label": "Count of distinct", "value": "Count Distinct"},
             {"label": "Count if", "value": "Count if"},
         ]
     if fieldtype in number_data_types:
         aggregation_options = [
             {"label": "Group By", "value": "Group By"},
-            {"label": "Count of all", "value": "Count"},
-            {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count", "value": "Count"},
+            # {"label": "Count of distinct", "value": "Count Distinct"},
             {"label": "Count if", "value": "Count if"},
             {"label": "Sum", "value": "Sum"},
             {"label": "Minimum", "value": "Min"},
@@ -125,8 +125,8 @@ def get_column_menu_options(fieldtype):
     if fieldtype in datetime_data_types:
         aggregation_options = [
             {"label": "Group By", "value": "Group By"},
-            {"label": "Count of all", "value": "Count"},
-            {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count", "value": "Count"},
+            # {"label": "Count of distinct", "value": "Count Distinct"},
             {"label": "Count if", "value": "Count if"},
             {"label": "Minimum", "value": "Min"},
             {"label": "Maximum", "value": "Max"},
@@ -149,8 +149,8 @@ def get_column_menu_options(fieldtype):
     if fieldtype in date_data_types:
         aggregation_options = [
             {"label": "Group By", "value": "Group By"},
-            {"label": "Count of all", "value": "Count"},
-            {"label": "Count of distinct", "value": "Count Distinct"},
+            {"label": "Count", "value": "Count"},
+            # {"label": "Count of distinct", "value": "Count Distinct"},
             {"label": "Count if", "value": "Count if"},
             {"label": "Minimum", "value": "Min"},
             {"label": "Maximum", "value": "Max"},

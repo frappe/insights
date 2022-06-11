@@ -488,7 +488,8 @@ class Query(Document):
         return operation(condition_left, condition_right)
 
     def process_literal_value(self, literal, operator):
-        literal.value = literal.value.replace('"', "")
+        if type(literal.value) == str:
+            literal.value = literal.value.replace('"', "")
 
         if operator.value == "contains":
             return f"%{literal.value}%"
@@ -499,7 +500,10 @@ class Query(Document):
         if operator.value == "ends with":
             return f"%{literal.value}"
 
-        if operator.value == "in" or operator.value == "between":
+        if operator.value == "in":
+            return [d.lstrip().rstrip() for d in literal.value]
+
+        if operator.value == "between":
             return [d.lstrip().rstrip() for d in literal.value.split(",")]
 
         if operator.value == "timespan":

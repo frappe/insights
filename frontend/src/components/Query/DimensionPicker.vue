@@ -3,21 +3,19 @@
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
 			<Autocomplete
-				id="column"
-				v-model="column"
+				v-model="_column"
 				:options="filtered_columns"
 				placeholder="Select a column..."
-				@option-select="on_column_select"
+				@selectOption="on_column_select"
 			/>
 		</div>
 		<div v-if="show_format_options" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Format</div>
 			<Autocomplete
-				id="format"
 				v-model="format"
 				:options="format_options"
 				placeholder="Select a format..."
-				@option-select="on_format_select"
+				@selectOption="on_format_select"
 			/>
 		</div>
 		<div v-if="label" class="space-y-1 text-sm text-gray-600">
@@ -52,14 +50,14 @@ export default {
 	props: ['query', 'column'],
 	data() {
 		return {
-			_column: this.column || null,
+			_column: this.column || {},
 			label: this.column?.label || '',
 			format: this.column?.format
 				? {
 						label: this.column.format,
 						value: this.column.format,
 				  }
-				: null,
+				: {},
 		}
 	},
 	mounted() {
@@ -131,11 +129,11 @@ export default {
 	},
 	methods: {
 		on_column_select(option) {
-			this._column = option
-			this.label = !this.label ? option.label : this.label
+			this._column = option ? option : {}
+			this.label = !this.label && this._column.label ? this._column.label : this.label
 		},
 		on_format_select(option) {
-			this.format = option
+			this.format = option ? option : {}
 		},
 		add_dimension() {
 			if (isEmptyObj(this._column)) {
@@ -144,7 +142,7 @@ export default {
 
 			this._column.label = this.label
 			this._column.aggregation = 'Group By'
-			this._column.format = this.format?.value
+			this._column.format = this.format.value
 			this.$emit('column-select', this._column)
 		},
 	},

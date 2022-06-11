@@ -1,24 +1,53 @@
 <template>
-	<Combobox v-model="selectedOption" v-slot="{ open }" nullable>
-		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover class="flex w-full [&>div:first-child]:w-full">
-			<template #target="{ togglePopover }">
+	<Popover class="flex w-full [&>div:first-child]:w-full">
+		<template #target="{ togglePopover }">
+			<div class="relative">
+				<input
+					readonly
+					:placeholder="placeholder"
+					@focus="
+						() => {
+							togglePopover(true)
+							$nextTick(() => {
+								$refs.input.el.focus()
+							})
+						}
+					"
+					class="form-input block h-8 w-full cursor-text select-none rounded-md px-3 placeholder-gray-500 focus:outline-none"
+					:value="selectedOptions.length ? formatValue(selectedOptions) : ''"
+				/>
+				<div class="absolute top-0 right-3 flex h-full cursor-pointer items-center text-gray-500">
+					<FeatherIcon
+						name="x"
+						@click="selectedOptions = []"
+						v-show="selectedOptions.length > 0"
+						class="h-4 w-4 hover:text-gray-700"
+					/>
+				</div>
+			</div>
+		</template>
+		<template #body>
+			<Combobox
+				as="div"
+				multiple
+				nullable
+				v-slot="{ open }"
+				v-model="selectedOptions"
+				class="my-1 rounded-md bg-white p-2 shadow"
+			>
+				<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
 				<ComboboxInput
 					ref="input"
-					:placeholder="placeholder"
-					@focus="togglePopover"
+					placeholder="Search..."
 					@change="
 						(e) => {
 							filter_query = e.target.value
-							togglePopover(true)
+							emit('inputChange', filter_query)
 						}
 					"
-					:displayValue="(option) => option?.label"
 					class="form-input block h-8 w-full placeholder-gray-500"
 				>
 				</ComboboxInput>
-			</template>
-			<template #body>
 				<transition
 					enter-active-class="transition duration-100 ease-out"
 					enter-from-class="transform scale-95 opacity-0"
@@ -27,13 +56,8 @@
 					leave-from-class="transform scale-100 opacity-100"
 					leave-to-class="transform scale-95 opacity-0"
 				>
-					<!-- `open` is `true` only when first input even is fired on ComboboxInput -->
-					<!-- So, before input event is fired on the input, filter_query is empty, so we can display the options  -->
-					<div v-show="(!filter_query || open) && options.length > 0">
-						<ComboboxOptions
-							static
-							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
-						>
+					<div v-show="open && options.length > 0">
+						<ComboboxOptions static class="mt-2 max-h-48 w-full origin-top overflow-y-scroll">
 							<div
 								v-if="filteredOptions.length === 0 && filter_query !== ''"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
@@ -44,6 +68,7 @@
 								v-for="(option, idx) in filteredOptions"
 								:key="idx"
 								:value="option"
+								@click="$refs.input.el.focus()"
 								v-slot="{ active, selected }"
 							>
 								<div
@@ -60,19 +85,16 @@
 						</ComboboxOptions>
 					</div>
 				</transition>
-			</template>
-		</Popover>
-	</Combobox>
+			</Combobox>
+		</template>
+	</Popover>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Combobox, ComboboxLabel, ComboboxInput, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
 
-const input = ref(null)
-defineExpose({ input })
-
-const emit = defineEmits(['update:modelValue', 'inputChange', 'selectOption', 'blur'])
+const emit = defineEmits(['inputChange', 'selectOption'])
 const props = defineProps({
 	label: {
 		type: String,
@@ -81,11 +103,6 @@ const props = defineProps({
 	placeholder: {
 		type: String,
 		default: '',
-	},
-	modelValue: {
-		type: Object,
-		default: {},
-		required: true,
 	},
 	options: {
 		type: Array,
@@ -99,15 +116,7 @@ const props = defineProps({
 })
 
 const filter_query = ref('')
-const selectedOption = computed({
-	get() {
-		return props.modelValue || {}
-	},
-	set(value) {
-		emit('update:modelValue', value || {})
-		emit('selectOption', value || {})
-	},
-})
+const selectedOptions = ref([])
 
 const filteredOptions = computed(() => {
 	// filter out duplicates
@@ -121,12 +130,13 @@ const filteredOptions = computed(() => {
 		  )
 })
 
-watch(filter_query, (newValue, oldValue) => {
-	if (newValue === oldValue) return
-
-	if (newValue === '') {
-		selectedOption.value = {}
+const formatValue = (options) => {
+	const labels = options.map((option) => option.label)
+	if (labels.length <= 2) {
+		return labels.join(', ')
 	}
-	emit('inputChange', newValue)
-})
+	return `${labels[0]} & ${labels.length - 1} more`
+}
+
+watch(selectedOptions, (newValue) => emit('selectOption', newValue), { deep: true })
 </script>

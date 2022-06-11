@@ -15,18 +15,25 @@
 				v-model="value"
 				:options="value_list"
 				:placeholder="value_placeholder"
-				@inputChange="
-					(val) => {
+				@inputChange="check_and_fetch_column_values"
+			/>
+			<ListPicker
+				v-else-if="show_multiselect"
+				:options="value_list"
+				:placeholder="value_placeholder"
+				@inputChange="check_and_fetch_column_values"
+				@selectOption="
+					(options) => {
 						value = {
-							label: val,
-							value: val,
+							value: options.map((option) => option.label),
+							label: options.length > 1 ? `${options.length} values` : options[0].label,
 						}
 					}
 				"
 			/>
 			<TimespanPicker v-else-if="show_timespan_picker" id="value" v-model="value" :placeholder="value_placeholder" />
 			<DatePicker
-				v-else-if="show_datepicker"
+				v-else-if="show_date_picker"
 				id="value"
 				:value="value.value"
 				:placeholder="value_placeholder"
@@ -57,7 +64,7 @@
 <script>
 import Autocomplete from '@/components/Autocomplete.vue'
 import TimespanPicker from '@/components/TimespanPicker.vue'
-import MultiSelect from '@/components/MultiSelect.vue'
+import ListPicker from '@/components/ListPicker.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import { isEmptyObj } from '@/utils/utils.js'
 import { debounce } from 'frappe-ui'
@@ -68,7 +75,7 @@ export default {
 	components: {
 		TimespanPicker,
 		Autocomplete,
-		MultiSelect,
+		ListPicker,
 		DatePicker,
 	},
 	data() {
@@ -123,13 +130,11 @@ export default {
 					{ label: 'Not Set', value: 'not set' },
 				]
 			}
-			if (isEmptyObj(this.value) || !this.value.value) {
-				return []
-			}
+
 			return this.query.get_column_values?.data?.message || []
 		},
 		value_placeholder() {
-			if (this.show_datepicker) {
+			if (this.show_date_picker) {
 				return 'Select a date...'
 			}
 			if (isEmptyObj(this._filter.operator)) {
@@ -146,7 +151,7 @@ export default {
 		show_timespan_picker() {
 			return ['Date', 'Datetime'].includes(this._filter.left?.type) && this._filter.operator?.value === 'timespan'
 		},
-		show_datepicker() {
+		show_date_picker() {
 			return (
 				['Date', 'Datetime'].includes(this._filter.left?.type) &&
 				['=', '!=', '>', '>=', '<', '<=', 'between'].includes(this._filter.operator?.value)
@@ -156,8 +161,19 @@ export default {
 			if (isEmptyObj(this._filter.left) || isEmptyObj(this._filter.operator)) {
 				return false
 			}
+
 			return (
 				['=', '!='].includes(this._filter.operator.value) &&
+				['Varchar', 'Char', 'Enum'].includes(this._filter.left.type)
+			)
+		},
+		show_multiselect() {
+			if (isEmptyObj(this._filter.left) || isEmptyObj(this._filter.operator)) {
+				return false
+			}
+
+			return (
+				['in', 'not in'].includes(this._filter.operator.value) &&
 				['Varchar', 'Char', 'Enum'].includes(this._filter.left.type)
 			)
 		},
@@ -173,7 +189,7 @@ export default {
 			this.operator = {}
 			this.value = {}
 			this.$resources.operator_list.submit({
-				fieldtype: this._filter.left.type,
+				fieldtype: this._filter.left?.type,
 			})
 		},
 		operator(new_operator) {
@@ -183,10 +199,13 @@ export default {
 		},
 		value: {
 			handler(new_value) {
-				this.check_and_fetch_column_values()
-
-				if (!this.show_value_options && !this.show_datepicker && !this.show_timespan_picker) {
-					// static input
+				if (
+					new_value &&
+					!this.show_multiselect &&
+					!this.show_date_picker &&
+					!this.show_value_options &&
+					!this.show_timespan_picker
+				) {
 					this._filter.right = {
 						label: new_value.value,
 						value: new_value.value,
@@ -206,13 +225,14 @@ export default {
 			this.$emit('filter-select', { filter: this._filter })
 		},
 
-		check_and_fetch_column_values: debounce(function () {
+		check_and_fetch_column_values: debounce(function (search_text) {
 			if (
-				!this.value?.value ||
+				!search_text ||
 				isEmptyObj(this._filter.left) ||
 				isEmptyObj(this._filter.operator) ||
-				!['=', '!='].includes(this._filter.operator.value)
+				!['=', '!=', 'in', 'not in'].includes(this._filter.operator.value)
 			) {
+				this.query.get_column_values.data.message = []
 				return
 			}
 
@@ -220,7 +240,7 @@ export default {
 			if (left_is_smalltext) {
 				this.query.get_column_values.submit({
 					column: this._filter.left,
-					search_text: this.value.value || this.value.label,
+					search_text,
 				})
 			}
 		}, 300),

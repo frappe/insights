@@ -3,7 +3,13 @@
 		<!-- Picker -->
 		<div v-if="!editing_table" class="flex flex-1 flex-col">
 			<div v-if="adding_table" class="mb-4 flex flex-shrink-0">
-				<TableSearch :query="query" @on-blur="adding_table = false" />
+				<Autocomplete
+					ref="table_search"
+					v-model="new_table"
+					:options="new_table_options"
+					placeholder="Select a table..."
+					@selectOption="add_table"
+				/>
 			</div>
 			<div v-else-if="!adding_table" class="mb-4 flex items-center justify-between">
 				<div class="text-lg font-medium">Tables</div>
@@ -42,7 +48,7 @@
 				</div>
 			</div>
 		</div>
-		<!-- Joiner -->
+		<!-- Editor -->
 		<div v-else>
 			<div class="mb-4 flex h-7 items-center">
 				<Button icon="chevron-left" class="mr-2" @click="editing_table = null"> </Button>
@@ -52,21 +58,20 @@
 				<div class="flex flex-col space-y-3">
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">Type</div>
-						<Autocomplete :options="type_options" v-model="join.type" placeholder="Select a type..." />
+						<Autocomplete v-model="join.type" :options="join_type_options" placeholder="Select a type..." />
 					</div>
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">With</div>
 						<Autocomplete
-							id="join_with"
 							v-model="join.with"
-							:options="table_options"
+							:options="join_table_options"
 							placeholder="Select a table..."
-							@option-select="on_table_select"
+							@selectOption="on_join_table_select"
 						/>
 					</div>
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">On</div>
-						<Autocomplete :options="key_options" v-model="join.key" placeholder="Select a key..." />
+						<Autocomplete v-model="join.key" :options="join_key_options" placeholder="Select a key..." />
 					</div>
 				</div>
 				<div class="flex justify-end space-x-2">
@@ -102,6 +107,7 @@ export default {
 	},
 	data() {
 		return {
+			new_table: {},
 			adding_table: false,
 			joining_table: true,
 			editing_table: null,
@@ -113,6 +119,20 @@ export default {
 		}
 	},
 	watch: {
+		adding_table(newValue) {
+			if (newValue) {
+				this.query.get_selectable_tables.fetch(
+					{},
+					{
+						onSuccess: () => {
+							this.$refs.table_search.input.el.focus()
+						},
+					}
+				)
+			} else {
+				this.new_table = {}
+			}
+		},
 		editing_table(table) {
 			this.join = {
 				with: {},
@@ -138,13 +158,20 @@ export default {
 				}
 			})
 		},
+		new_table_options() {
+			const tables = this.query.get_selectable_tables?.data?.message || []
+			return tables.map((table) => ({
+				...table,
+				value: table.table,
+			}))
+		},
 		join_options() {
 			return this.query.get_join_options.data?.message || []
 		},
-		table_options() {
+		join_table_options() {
 			return this.join_options.map(({ label, table }) => ({ label, value: table }))
 		},
-		key_options() {
+		join_key_options() {
 			return !isEmptyObj(this.join.with)
 				? this.join_options
 						.filter(({ table }) => {
@@ -156,7 +183,7 @@ export default {
 						}))
 				: []
 		},
-		type_options() {
+		join_type_options() {
 			return [
 				{ label: 'Inner', value: 'inner' },
 				{ label: 'Left', value: 'left' },
@@ -166,11 +193,11 @@ export default {
 		},
 	},
 	methods: {
-		on_table_select(option) {
+		on_join_table_select(option) {
 			this.join.with = option
-			this.join.key = null
-			if (this.key_options.length == 1) {
-				this.join.key = this.key_options[0]
+			this.join.key = {}
+			if (this.join_key_options.length == 1) {
+				this.join.key = this.join_key_options[0]
 			}
 		},
 		apply_join() {
@@ -186,6 +213,10 @@ export default {
 				table: this.editing_table,
 			})
 			this.editing_table = null
+		},
+		add_table(table) {
+			this.query.add_table.submit({ table })
+			this.adding_table = false
 		},
 		remove_table(table) {
 			this.query.remove_table.submit({ table })

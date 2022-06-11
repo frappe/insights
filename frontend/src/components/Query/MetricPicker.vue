@@ -3,21 +3,19 @@
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Type</div>
 			<Autocomplete
-				id="type"
 				v-model="type"
 				:options="type_options"
 				placeholder="Select metric type..."
-				@option-select="on_type_select"
+				@selectOption="on_type_select"
 			/>
 		</div>
 		<div v-if="column_needed" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
 			<Autocomplete
-				id="column"
 				v-model="_column"
 				:options="filtered_columns"
 				placeholder="Select a column..."
-				@option-select="on_column_select"
+				@selectOption="on_column_select"
 			/>
 		</div>
 		<div v-if="label" class="space-y-1 text-sm text-gray-600">
@@ -65,9 +63,9 @@ export default {
 				value: 'Avg',
 			},
 		]
-		const type = type_options.find((t) => t.value === this.column?.aggregation)
+		const type = type_options.find((t) => t.value === this.column?.aggregation) || {}
 		return {
-			_column: this.column || null,
+			_column: this.column || {},
 			label: this.column?.label || '',
 			type_options,
 			type,
@@ -78,7 +76,7 @@ export default {
 	},
 	computed: {
 		add_disabled() {
-			return !this.type || (this.column_needed && isEmptyObj(this._column)) || !this.label
+			return isEmptyObj(this.type) || (this.column_needed && isEmptyObj(this._column)) || !this.label
 		},
 		column_options() {
 			const column_list = this.query.get_selectable_columns?.data?.message || []
@@ -106,12 +104,13 @@ export default {
 	},
 	methods: {
 		on_type_select(option) {
-			this.type = option
-			this.label += option.label + ' '
+			this.type = option ? option : {}
+			if (this.type.label) {
+				this.label = this.type.label + ' '
+			}
 		},
 		on_column_select(option) {
-			this._column = option
-			this.label += option.label
+			this._column = option ? option : {}
 		},
 		add_metric() {
 			if (isEmptyObj(this.type)) {
