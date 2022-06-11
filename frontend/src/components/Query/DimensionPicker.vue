@@ -10,6 +10,16 @@
 				@option-select="on_column_select"
 			/>
 		</div>
+		<div v-if="show_format_options" class="space-y-1 text-sm text-gray-600">
+			<div class="font-light">Format</div>
+			<Autocomplete
+				id="format"
+				v-model="format"
+				:options="format_options"
+				placeholder="Select a format..."
+				@option-select="on_format_select"
+			/>
+		</div>
 		<div v-if="label" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Label</div>
 			<Input type="text" v-model="label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
@@ -39,6 +49,12 @@ export default {
 		return {
 			_column: this.column || null,
 			label: this.column?.label || '',
+			format: this.column?.format
+				? {
+						label: this.column.format,
+						value: this.column.format,
+				  }
+				: null,
 		}
 	},
 	mounted() {
@@ -60,15 +76,61 @@ export default {
 		},
 		filtered_columns() {
 			// return all columns except numeric columns
-			return this.column_options.filter(
-				(c) => !['int', 'decimal', 'bigint', 'float', 'double'].includes(c.type.toLowerCase())
-			)
+			return this.column_options.filter((c) => !['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type))
+		},
+		show_format_options() {
+			return !isEmptyObj(this._column) && ['Datetime', 'Timestamp', 'Date'].includes(this._column.type)
+		},
+		format_options() {
+			if (!this.show_format_options) return []
+
+			let format_options = []
+
+			if (['Datetime', 'Timestamp'].includes(this._column.type)) {
+				format_options = [
+					'Minute',
+					'Hour',
+					'Day',
+					'Month',
+					'Year',
+					'Minute of Hour',
+					'Hour of Day',
+					'Day of Week',
+					'Day of Month',
+					'Day of Year',
+					'Month of Year',
+					'Quarter of Year',
+				]
+			}
+
+			if (this._column.type == 'Date') {
+				format_options = [
+					'Day',
+					'Month',
+					'Year',
+					'Day of Week',
+					'Day of Month',
+					'Day of Year',
+					'Month of Year',
+					'Quarter of Year',
+				]
+			}
+
+			return format_options.map((f) => {
+				return {
+					label: f,
+					value: f,
+				}
+			})
 		},
 	},
 	methods: {
 		on_column_select(option) {
 			this._column = option
 			this.label = !this.label ? option.label : this.label
+		},
+		on_format_select(option) {
+			this.format = option
 		},
 		add_dimension() {
 			if (isEmptyObj(this._column)) {
@@ -77,6 +139,7 @@ export default {
 
 			this._column.label = this.label
 			this._column.aggregation = 'Group By'
+			this._column.format = this.format.value
 			this.$emit('column-select', this._column)
 		},
 	},
