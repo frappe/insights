@@ -2,41 +2,29 @@
 	<div class="flex flex-col space-y-3">
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
-			<Autocomplete
-				id="column"
-				v-model="column"
-				:options="column_options"
-				placeholder="Select a column..."
-				@option-select="on_column_select"
-			/>
+			<Autocomplete v-model="column" :options="column_options" placeholder="Select a column..." />
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Operator</div>
-			<Autocomplete
-				id="operator"
-				v-model="operator"
-				:options="operator_list"
-				placeholder="Select operator..."
-				@option-select="on_operator_select"
-			/>
+			<Autocomplete v-model="operator" :options="operator_list" placeholder="Select operator..." />
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Value</div>
 			<Autocomplete
 				v-if="show_value_options"
-				id="value"
 				v-model="value"
 				:options="value_list"
 				:placeholder="value_placeholder"
-				@option-select="on_value_select"
+				@inputChange="
+					(val) => {
+						value = {
+							label: val,
+							value: val,
+						}
+					}
+				"
 			/>
-			<TimespanPicker
-				v-else-if="show_timespan_picker"
-				id="value"
-				v-model="value"
-				@change="on_value_select"
-				:placeholder="value_placeholder"
-			/>
+			<TimespanPicker v-else-if="show_timespan_picker" id="value" v-model="value" :placeholder="value_placeholder" />
 			<DatePicker
 				v-else-if="show_datepicker"
 				id="value"
@@ -45,11 +33,10 @@
 				:formatValue="format_date"
 				@change="
 					(date) => {
-						value.value = date
-						on_value_select({
+						value = {
 							value: date,
 							label: format_date(date),
-						})
+						}
 					}
 				"
 			/>
@@ -70,6 +57,7 @@
 <script>
 import Autocomplete from '@/components/Autocomplete.vue'
 import TimespanPicker from '@/components/TimespanPicker.vue'
+import MultiSelect from '@/components/MultiSelect.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import { isEmptyObj } from '@/utils/utils.js'
 import { debounce } from 'frappe-ui'
@@ -80,6 +68,7 @@ export default {
 	components: {
 		TimespanPicker,
 		Autocomplete,
+		MultiSelect,
 		DatePicker,
 	},
 	data() {
@@ -167,30 +156,18 @@ export default {
 			if (isEmptyObj(this._filter.left) || isEmptyObj(this._filter.operator)) {
 				return false
 			}
-			return this.value_list.length > 0
+			return (
+				['=', '!='].includes(this._filter.operator.value) &&
+				['Varchar', 'Char', 'Enum'].includes(this._filter.left.type)
+			)
 		},
 		apply_disabled() {
 			return isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)
 		},
 	},
 	watch: {
-		value: {
-			handler(new_value) {
-				this.check_and_fetch_column_values()
-				console.log(this.show_value_options, this.show_datepicker, this.show_timespan_picker)
-				if (!this.show_value_options && !this.show_datepicker && !this.show_timespan_picker) {
-					this._filter.right = {
-						label: new_value.value,
-						value: new_value.value,
-					}
-				}
-			},
-			deep: true,
-		},
-	},
-	methods: {
-		on_column_select(option) {
-			this._filter.left = option
+		column(new_column) {
+			this._filter.left = new_column
 			this._filter.operator = {}
 			this._filter.right = {}
 			this.operator = {}
@@ -199,17 +176,29 @@ export default {
 				fieldtype: this._filter.left.type,
 			})
 		},
-
-		on_operator_select(option) {
-			this._filter.operator = option
+		operator(new_operator) {
+			this._filter.operator = new_operator
 			this._filter.right = {}
 			this.value = {}
 		},
+		value: {
+			handler(new_value) {
+				this.check_and_fetch_column_values()
 
-		on_value_select(option) {
-			this._filter.right = option
+				if (!this.show_value_options && !this.show_datepicker && !this.show_timespan_picker) {
+					// static input
+					this._filter.right = {
+						label: new_value.value,
+						value: new_value.value,
+					}
+				} else {
+					this._filter.right = new_value
+				}
+			},
+			deep: true,
 		},
-
+	},
+	methods: {
 		apply() {
 			if (isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)) {
 				return
@@ -219,8 +208,7 @@ export default {
 
 		check_and_fetch_column_values: debounce(function () {
 			if (
-				isEmptyObj(this.value) ||
-				!this.value.value ||
+				!this.value?.value ||
 				isEmptyObj(this._filter.left) ||
 				isEmptyObj(this._filter.operator) ||
 				!['=', '!='].includes(this._filter.operator.value)

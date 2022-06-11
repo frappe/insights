@@ -100,10 +100,6 @@ export default {
 				label: this.value,
 				value: this.value,
 			})
-			this.$emit('change', {
-				label: this.value,
-				value: this.value,
-			})
 		},
 	},
 }

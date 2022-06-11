@@ -52,7 +52,7 @@
 				<div class="flex flex-col space-y-3">
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">Type</div>
-						<Autocomplete id="join_type" :options="type_options" v-model="join.type" placeholder="Select a type..." />
+						<Autocomplete :options="type_options" v-model="join.type" placeholder="Select a type..." />
 					</div>
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">With</div>
@@ -66,7 +66,7 @@
 					</div>
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">On</div>
-						<Autocomplete id="join_key" :options="key_options" v-model="join.key" placeholder="Select a key..." />
+						<Autocomplete :options="key_options" v-model="join.key" placeholder="Select a key..." />
 					</div>
 				</div>
 				<div class="flex justify-end space-x-2">

@@ -1,112 +1,109 @@
 <template>
-	<div :id="id" class="relative z-10 w-full rounded-md shadow-sm">
+	<Combobox v-model="selectedOption" v-slot="{ open }" nullable>
+		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
 		<Popover class="flex w-full [&>div:first-child]:w-full">
-			<template #target="{ isOpen, togglePopover }">
-				<input
-					type="text"
-					autocomplete="off"
-					spellcheck="false"
-					:value="modelValue?.label"
-					ref="autocomplete_input"
+			<template #target="{ togglePopover }">
+				<ComboboxInput
+					ref="input"
 					:placeholder="placeholder"
-					@focus="togglePopover()"
-					@input="
-						(e) => {
-							input_value = e.target.value
-							$emit('update:modelValue', {
-								label: input_value,
-								value: input_value,
-							})
-						}
-					"
-					@keydown.esc.exact="togglePopover()"
-					class="form-input block h-8 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
-					:class="{
-						'focus:rounded-b-none focus:border focus:border-gray-200 focus:bg-white focus:shadow':
-							isOpen && options?.length && filtered_options?.length,
-					}"
-				/>
+					@focus="togglePopover(true)"
+					@change="query = $event.target.value"
+					:displayValue="(option) => option?.label"
+					class="form-input block h-8 w-full placeholder-gray-500"
+				>
+				</ComboboxInput>
 			</template>
-			<template #body="{ isOpen, togglePopover }">
-				<SuggestionBox
-					v-if="isOpen && options?.length && filtered_options?.length"
-					:header_and_suggestions="filtered_options"
-					@option-select="
-						(option) => {
-							on_option_select(option)
-							togglePopover()
-						}
-					"
-				/>
+			<template #body>
+				<transition
+					enter-active-class="transition duration-100 ease-out"
+					enter-from-class="transform scale-95 opacity-0"
+					enter-to-class="transform scale-100 opacity-100"
+					leave-active-class="transition duration-75 ease-out"
+					leave-from-class="transform scale-100 opacity-100"
+					leave-to-class="transform scale-95 opacity-0"
+				>
+					<div v-show="open && options.length > 0">
+						<ComboboxOptions
+							static
+							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
+						>
+							<div
+								v-if="filteredOptions.length === 0 && query !== ''"
+								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
+							>
+								No results found
+							</div>
+							<ComboboxOption
+								v-for="(option, idx) in filteredOptions"
+								:key="idx"
+								:value="option"
+								v-slot="{ active, selected }"
+							>
+								<div
+									class="flex h-9 w-full cursor-pointer items-center justify-between rounded px-3 text-base"
+									:class="{
+										'bg-gray-100 text-gray-800': active,
+										'bg-white': !active,
+									}"
+								>
+									<span>{{ option.label }}</span>
+									<FeatherIcon name="check" class="h-4 w-4" v-show="selected" />
+								</div>
+							</ComboboxOption>
+						</ComboboxOptions>
+					</div>
+				</transition>
 			</template>
 		</Popover>
-	</div>
+	</Combobox>
 </template>
 
-<script>
-import SuggestionBox from '@/components/SuggestionBox.vue'
+<script setup>
+import { ref, computed, watch } from 'vue'
+import { Combobox, ComboboxLabel, ComboboxInput, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
 
-export default {
-	name: 'Autocomplete',
-	props: {
-		id: {
-			type: String,
-			required: true,
-		},
-		modelValue: {
-			type: Object,
-			default: () => ({
-				label: '',
-				value: '',
-			}),
-		},
-		placeholder: {
-			type: String,
-			default: '',
-		},
-		options: {
-			type: Array,
-			required: true,
-		},
+const emit = defineEmits(['update:modelValue', 'inputChange'])
+const props = defineProps({
+	label: {
+		type: String,
+		default: '',
 	},
-	emits: ['focus', 'option-select', 'update:modelValue'],
-	components: {
-		SuggestionBox,
+	placeholder: {
+		type: String,
+		default: '',
 	},
-	data() {
-		return {
-			input_value: '',
-		}
+	modelValue: {
+		type: Object,
+		default: {},
 	},
-	mounted() {
-		// detect click outside of input
-		this.outside_click_listener = (e) => {
-			if (e.target.closest(`#${this.id}`)) {
-				return this.$refs.autocomplete_input?.focus()
-			}
-			this.show = false
-		}
-		document.addEventListener('click', this.outside_click_listener)
-	},
-	beforeDestroy() {
-		document.removeEventListener('click', this.outside_click_listener)
-	},
-	computed: {
-		filtered_options() {
-			// filter out duplicates
-			const _options = this.options?.filter((option, index, self) => {
-				return self.findIndex((t) => t.value === option.value) === index
+	options: {
+		type: Array,
+		default: () => [],
+		validate: (value) => {
+			return value.every((option) => {
+				return typeof option.label === 'string' && typeof option.value === 'string'
 			})
-			return this.input_value
-				? _options.filter((o) => o.label.toLowerCase().includes(this.input_value.toLowerCase()))
-				: _options
 		},
 	},
-	methods: {
-		on_option_select(suggestion) {
-			this.$emit('update:modelValue', suggestion)
-			this.$emit('option-select', suggestion)
-		},
-	},
-}
+})
+
+const query = ref('')
+const selectedOption = ref(props.modelValue.value || {})
+const filteredOptions = computed(() =>
+	query.value === ''
+		? props.options
+		: props.options.filter((option) =>
+				option.label.toLowerCase().replace(/\s+/g, '').includes(query.value.toLowerCase().replace(/\s+/g, ''))
+		  )
+)
+
+watch(query, (newValue) => {
+	if (newValue === '') {
+		selectedOption.value = {}
+	}
+	emit('inputChange', newValue)
+})
+watch(selectedOption, (newValue) => {
+	emit('update:modelValue', newValue)
+})
 </script>
