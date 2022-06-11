@@ -166,9 +166,6 @@ class DataSource(Document):
         return _columns
 
     def get_distinct_column_values(self, column, search_text, limit=50):
-        self.create_db_instance()
-        self.db_instance.connect()
-
         Table = frappe.qb.Table(column.get("table"))
         Field = frappe.qb.Field(column.get("column"))
         query = (
@@ -182,8 +179,6 @@ class DataSource(Document):
         )
 
         values = self.execute_query(query, as_dict=1)
-
-        self.db_instance.close()
 
         # TODO: caching
         return values

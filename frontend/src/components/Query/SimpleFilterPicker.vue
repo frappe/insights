@@ -164,15 +164,10 @@ export default {
 			)
 		},
 		show_value_options() {
-			if (
-				isEmptyObj(this._filter.left) ||
-				isEmptyObj(this._filter.operator) ||
-				['Date', 'Datetime'].includes(this._filter.left?.type) ||
-				!['=', '!=', 'is'].includes(this._filter.operator.value)
-			) {
+			if (isEmptyObj(this._filter.left) || isEmptyObj(this._filter.operator)) {
 				return false
 			}
-			return true
+			return this.value_list.length > 0
 		},
 		apply_disabled() {
 			return isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)
@@ -182,6 +177,7 @@ export default {
 		value: {
 			handler(new_value) {
 				this.check_and_fetch_column_values()
+				console.log(this.show_value_options, this.show_datepicker, this.show_timespan_picker)
 				if (!this.show_value_options && !this.show_datepicker && !this.show_timespan_picker) {
 					this._filter.right = {
 						label: new_value.value,

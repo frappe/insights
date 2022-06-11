@@ -144,7 +144,7 @@ export default {
 
 			this._column.label = this.label
 			this._column.aggregation = 'Group By'
-			this._column.format = this.format.value
+			this._column.format = this.format?.value
 			this.$emit('column-select', this._column)
 		},
 	},
