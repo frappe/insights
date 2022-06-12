@@ -46,6 +46,9 @@ export default class Query {
 	get doc() {
 		return this.docRef.value
 	}
+	get status() {
+		return this.doc.status
+	}
 	get dataSource() {
 		return this.doc.data_source
 	}
@@ -71,6 +74,9 @@ export default class Query {
 	}
 	get filters() {
 		return JSON.parse(this.doc.filters)
+	}
+	get result() {
+		return JSON.parse(this.doc.result || '[]')
 	}
 
 	setValue(key, value) {

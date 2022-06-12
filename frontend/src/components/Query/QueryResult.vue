@@ -1,14 +1,14 @@
 <template>
 	<div class="relative flex h-full w-full select-text text-base">
 		<div
-			v-if="!columns || columns.length === 0"
+			v-if="!query.columns || query.columns.length === 0"
 			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>Select at least one column to display the result</p>
 		</div>
 
 		<div
-			v-else-if="!needs_execution && (!result || result.length === 0)"
+			v-else-if="!needsExecution && (!result || result.length === 0)"
 			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
@@ -17,7 +17,7 @@
 		<div
 			v-else
 			class="relative flex h-full w-full flex-col"
-			:class="{ 'blur-[2px]': needs_execution }"
+			:class="{ 'blur-[2px]': needsExecution }"
 		>
 			<!-- Table -->
 			<div class="relative h-[calc(100%-2.5rem)] w-full overflow-scroll rounded-md">
@@ -27,11 +27,9 @@
 							<th
 								class="sticky top-0 flex h-10 w-[2.5rem] items-center justify-center whitespace-nowrap border-b border-r bg-white px-2 text-center font-medium"
 								scope="col"
-							>
-								<!-- <FeatherIcon name="settings" class="h-4 w-4 cursor-pointer" /> -->
-							</th>
+							></th>
 							<th
-								v-for="column in columns"
+								v-for="column in query.columns"
 								:key="column.name"
 								class="h-10 whitespace-nowrap border-b bg-white px-2 text-left font-medium"
 								scope="col"
@@ -51,7 +49,7 @@
 								v-for="(cell, j) in row"
 								:key="j"
 								class="whitespace-nowrap bg-white p-2.5 pr-4 font-light text-gray-600"
-								:class="{ 'text-right': number_columns[j] }"
+								:class="{ 'text-right': isNumberColumn[j] }"
 							>
 								{{ cell }}
 							</td>
@@ -60,18 +58,18 @@
 				</table>
 			</div>
 			<div class="flex h-10 w-full flex-shrink-0 border-t">
-				<LimitsAndOrder :query="query" />
+				<LimitsAndOrder />
 			</div>
 		</div>
 		<div
-			v-if="needs_execution"
+			v-if="needsExecution"
 			class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
 		>
 			<Button
 				appearance="primary"
 				class="!shadow-md"
-				@click="query.run.submit()"
-				:loading="query.run.loading"
+				@click="query.run()"
+				:loading="query.resource.run.loading"
 			>
 				Execute
 			</Button>
@@ -79,33 +77,19 @@
 	</div>
 </template>
 
-<script>
+<script setup>
 import ColumnHeader from '@/components/Query/ColumnHeader.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
 
-export default {
-	name: 'QueryResult',
-	components: {
-		ColumnHeader,
-		LimitsAndOrder,
-	},
-	props: ['query'],
-	computed: {
-		columns() {
-			return this.query.doc.columns || []
-		},
-		result() {
-			// show only 10000 rows at most
-			const result = JSON.parse(this.query.doc.result || '[]')
-			return result.slice(0, 1000)
-		},
-		number_columns() {
-			const number_datatypes = ['int', 'decimal', 'bigint', 'float', 'double']
-			return this.columns.map((c) => number_datatypes.includes(c.type.toLowerCase()))
-		},
-		needs_execution() {
-			return this.query.doc.status === 'Pending Execution'
-		},
-	},
-}
+import { computed, inject } from 'vue'
+
+const query = inject('query')
+
+const result = computed(() => query.result?.slice(0, 1000))
+const needsExecution = computed(() => query.status === 'Pending Execution')
+const isNumberColumn = computed(() => {
+	return query.doc.columns.map((c) =>
+		['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type)
+	)
+})
 </script>

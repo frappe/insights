@@ -16,6 +16,7 @@
 			</template>
 			<template #body>
 				<div
+					v-if="show"
 					class="column-menu-popover mt-1 origin-top-right rounded-md bg-white p-1 text-base shadow-md ring-1 ring-gray-200"
 				>
 					<div

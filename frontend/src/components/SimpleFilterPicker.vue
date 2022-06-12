@@ -60,7 +60,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.fetchColumns.submit({})
+		this.query.fetchColumns()
 	},
 	resources: {
 		operator_list() {
