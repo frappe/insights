@@ -20,7 +20,12 @@
 		</div>
 		<div v-if="metric.label" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Label</div>
-			<Input type="text" v-model="metric.label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
+			<Input
+				type="text"
+				v-model="metric.label"
+				class="h-8 placeholder:text-sm"
+				placeholder="Enter a label..."
+			/>
 		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
@@ -87,7 +92,9 @@ const columnNeeded = computed(() => {
 	return !isEmptyObj(metric.type) && metric.type.value !== 'Count'
 })
 const addDisabled = computed(() => {
-	return isEmptyObj(metric.type) || (columnNeeded.value && isEmptyObj(metric.column)) || !metric.label
+	return (
+		isEmptyObj(metric.type) || (columnNeeded.value && isEmptyObj(metric.column)) || !metric.label
+	)
 })
 
 const columnOptions = computed(() => {
@@ -104,7 +111,9 @@ const filteredColumns = computed(() => {
 		return []
 	}
 	if (metric.type.value === 'Sum' || metric.type.value === 'Avg') {
-		return columnOptions.value.filter((c) => ['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type))
+		return columnOptions.value.filter((c) =>
+			['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type)
+		)
 	}
 })
 

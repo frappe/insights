@@ -41,7 +41,10 @@ export default {
 	mounted() {
 		// detect click outside of input
 		this.outside_click_listener = (e) => {
-			if (e.target.closest('.column-search') || e.target.classList.contains('column-picker-suggestion')) {
+			if (
+				e.target.closest('.column-search') ||
+				e.target.classList.contains('column-picker-suggestion')
+			) {
 				return this.$refs.column_search?.focus()
 			}
 			this.show = false
@@ -91,7 +94,9 @@ export default {
 		get_column_suggestions(input) {
 			let _suggestions = []
 			if (input) {
-				_suggestions = this.column_list.filter((c) => c.label.toLowerCase().includes(input.toLowerCase()))
+				_suggestions = this.column_list.filter((c) =>
+					c.label.toLowerCase().includes(input.toLowerCase())
+				)
 			} else {
 				_suggestions = this.column_list
 			}

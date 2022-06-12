@@ -63,7 +63,9 @@ export default class Query {
 			return {
 				...column,
 				value: column.column,
-				aggregation_condition: column.aggregation_condition ? JSON.parse(column.aggregation_condition) : null,
+				aggregation_condition: column.aggregation_condition
+					? JSON.parse(column.aggregation_condition)
+					: null,
 			}
 		})
 	}

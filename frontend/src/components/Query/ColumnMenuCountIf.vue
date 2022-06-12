@@ -12,7 +12,9 @@
 			</span>
 		</template>
 		<template #body="{ togglePopover }">
-			<div class="column-menu-item-popover-content mx-5 w-[28rem] rounded-md bg-white shadow-md ring-1 ring-gray-200">
+			<div
+				class="column-menu-item-popover-content mx-5 w-[28rem] rounded-md bg-white shadow-md ring-1 ring-gray-200"
+			>
 				<SimpleFilterPicker
 					:query="query"
 					:conditions="conditions"

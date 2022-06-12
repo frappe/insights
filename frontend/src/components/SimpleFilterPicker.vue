@@ -2,10 +2,20 @@
 	<div class="flex flex-col space-y-3 p-4 text-base text-gray-700">
 		<div v-for="(condition, idx) in _conditions" :key="idx" class="flex items-center space-x-2">
 			<div class="flex-1">
-				<Input type="select" v-model="condition.left.value" :options="column_options" @input="fetch_operators" />
+				<Input
+					type="select"
+					v-model="condition.left.value"
+					:options="column_options"
+					@input="fetch_operators"
+				/>
 			</div>
 			<div class="flex-1">
-				<Input class="flex-1" type="select" v-model="condition.operator.value" :options="operator_options" />
+				<Input
+					class="flex-1"
+					type="select"
+					v-model="condition.operator.value"
+					:options="operator_options"
+				/>
 			</div>
 			<div class="flex-1">
 				<Input class="flex-1" type="text" v-model="condition.right.value" />

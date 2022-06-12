@@ -21,8 +21,10 @@
 						<div
 							class="flex h-12 w-12 items-center justify-center rounded-md border border-gray-200 bg-white hover:shadow"
 							:class="{
-								' border-blue-300 text-blue-500 shadow-sm hover:shadow-sm': chart.name == unsaved_chart.type,
-								' border-dashed border-gray-300 opacity-60 hover:shadow-none': invalid_chart_types.includes(chart.name),
+								' border-blue-300 text-blue-500 shadow-sm hover:shadow-sm':
+									chart.name == unsaved_chart.type,
+								' border-dashed border-gray-300 opacity-60 hover:shadow-none':
+									invalid_chart_types.includes(chart.name),
 							}"
 						>
 							<FeatherIcon :name="chart.icon" class="h-6 w-6" />
@@ -145,10 +147,14 @@ export default {
 			return JSON.parse(this.query.doc.result || '[]')
 		},
 		label_columns() {
-			return [''].concat(this.query.doc.columns.filter((c) => c.aggregation == 'Group By').map((c) => c.label))
+			return [''].concat(
+				this.query.doc.columns.filter((c) => c.aggregation == 'Group By').map((c) => c.label)
+			)
 		},
 		value_columns() {
-			return [''].concat(this.query.doc.columns.filter((c) => c.aggregation != 'Group By').map((c) => c.label))
+			return [''].concat(
+				this.query.doc.columns.filter((c) => c.aggregation != 'Group By').map((c) => c.label)
+			)
 		},
 		invalid_chart_types() {
 			return ['Funnel', 'Row']
@@ -205,8 +211,12 @@ export default {
 			}
 
 			const data = this.result
-			const label_column_idx = this.query.doc.columns.findIndex((c) => c.label == this.unsaved_chart.label_column)
-			const value_column_idx = this.query.doc.columns.findIndex((c) => c.label == this.unsaved_chart.value_column)
+			const label_column_idx = this.query.doc.columns.findIndex(
+				(c) => c.label == this.unsaved_chart.label_column
+			)
+			const value_column_idx = this.query.doc.columns.findIndex(
+				(c) => c.label == this.unsaved_chart.value_column
+			)
 
 			let label_value_map = data.map((row) => ({
 				label: row[label_column_idx],

@@ -11,8 +11,16 @@
 			>
 				<p>No columns selected</p>
 			</div>
-			<div v-else-if="query.columns.length > 0" class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide">
-				<Draggable v-model="query.columns" group="columns" item-key="name" @sort="updateColumnOrder">
+			<div
+				v-else-if="query.columns.length > 0"
+				class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
+			>
+				<Draggable
+					v-model="query.columns"
+					group="columns"
+					item-key="name"
+					@sort="updateColumnOrder"
+				>
 					<template #item="{ element: column }">
 						<div
 							class="flex h-10 cursor-pointer items-center justify-between space-x-8 border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
@@ -25,7 +33,9 @@
 							"
 						>
 							<div class="flex items-center">
-								<DragHandleIcon class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400" />
+								<DragHandleIcon
+									class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400"
+								/>
 								<span
 									v-if="column.aggregation"
 									class="my-0 mr-2 flex-1 select-none whitespace-nowrap rounded border border-orange-200 px-1 py-0.5 text-xs text-orange-400/80"
@@ -51,7 +61,9 @@
 		<div v-if="addingColumn || editingColumn">
 			<div class="mb-4 flex h-7 items-center">
 				<Button icon="chevron-left" class="mr-2" @click="resetNewColumn"> </Button>
-				<div class="text-lg font-medium">{{ editingColumn ? 'Edit' : 'Add' }} {{ newColumnType }}</div>
+				<div class="text-lg font-medium">
+					{{ editingColumn ? 'Edit' : 'Add' }} {{ newColumnType }}
+				</div>
 			</div>
 			<div class="flex flex-col space-y-3">
 				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
@@ -89,7 +101,9 @@
 					@column-select="addUpdateColumn"
 					@close="resetNewColumn"
 				/>
-				<div v-if="newColumnType == 'Expression'" class="text-center text-gray-500">Coming Soon...</div>
+				<div v-if="newColumnType == 'Expression'" class="text-center text-gray-500">
+					Coming Soon...
+				</div>
 			</div>
 		</div>
 	</div>

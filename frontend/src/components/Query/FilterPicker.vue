@@ -45,7 +45,10 @@
 			>
 				<p>No filters added</p>
 			</div>
-			<div v-else-if="query_filters.conditions.length > 0" class="flex h-full items-start overflow-scroll">
+			<div
+				v-else-if="query_filters.conditions.length > 0"
+				class="flex h-full items-start overflow-scroll"
+			>
 				<FilterTree
 					:filters="query_filters"
 					@remove-filter="removeFilter"

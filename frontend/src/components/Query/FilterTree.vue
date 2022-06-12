@@ -23,7 +23,9 @@
 					<div
 						v-else
 						class="group relative flex h-9 w-fit cursor-pointer items-center rounded-md border px-2 hover:bg-gray-50"
-						@click.prevent.stop="$emit('edit-filter', { level, position, idx, is_expression: condition.is_expression })"
+						@click.prevent.stop="
+							$emit('edit-filter', { level, position, idx, is_expression: condition.is_expression })
+						"
 					>
 						<Expression :condition="condition" />
 						<FeatherIcon
@@ -64,7 +66,13 @@
 import { computed, nextTick, watch, ref, onMounted, reactive } from 'vue'
 import Expression from '@/components/Query/Expression.vue'
 
-defineEmits(['add-filter', 'edit-filter', 'remove-filter', 'branch-filter-at', 'toggle-group-operator'])
+defineEmits([
+	'add-filter',
+	'edit-filter',
+	'remove-filter',
+	'branch-filter-at',
+	'toggle-group-operator',
+])
 const props = defineProps({
 	filters: {
 		type: Object,
@@ -89,7 +97,12 @@ const connectorsRef = ref(null)
 const conditionRefs = ref([])
 
 function draw_connectors() {
-	if (!connectorsRef.value || !addConditionRef.value || !groupOperatorRef.value || !conditionRefs.value?.length) {
+	if (
+		!connectorsRef.value ||
+		!addConditionRef.value ||
+		!groupOperatorRef.value ||
+		!conditionRefs.value?.length
+	) {
 		return
 	}
 	connectorsRef.value.innerHTML = ''

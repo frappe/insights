@@ -31,7 +31,12 @@
 					</div>
 				</div>
 				<div class="flex space-x-2">
-					<Input v-if="span !== 'Current'" type="number" v-model="interval" class="h-8 w-full text-sm" />
+					<Input
+						v-if="span !== 'Current'"
+						type="number"
+						v-model="interval"
+						class="h-8 w-full text-sm"
+					/>
 					<Input
 						type="select"
 						v-model="interval_type"
@@ -67,7 +72,11 @@ export default {
 	name: 'TimespanPicker',
 	props: ['modelValue', 'placeholder'],
 	data() {
-		const [span, interval, interval_type] = this.modelValue?.value?.split(' ') || ['Last', '1', 'Days']
+		const [span, interval, interval_type] = this.modelValue?.value?.split(' ') || [
+			'Last',
+			'1',
+			'Days',
+		]
 		return {
 			span,
 			interval,

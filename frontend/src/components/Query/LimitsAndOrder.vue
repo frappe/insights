@@ -1,5 +1,7 @@
 <template>
-	<div class="flex h-full flex-1 items-center justify-between rounded-b-md bg-white px-4 text-base text-gray-500">
+	<div
+		class="flex h-full flex-1 items-center justify-between rounded-b-md bg-white px-4 text-base text-gray-500"
+	>
 		<div v-if="sortedByColumns.length">
 			<span> Sorted by </span>
 			<span v-for="(sortedBy, idx) in sortedByColumns" :key="idx">

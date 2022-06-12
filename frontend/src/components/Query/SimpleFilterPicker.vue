@@ -2,11 +2,19 @@
 	<div class="flex flex-col space-y-3">
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
-			<Autocomplete v-model="filter.column" :options="columnOptions" placeholder="Select a column..." />
+			<Autocomplete
+				v-model="filter.column"
+				:options="columnOptions"
+				placeholder="Select a column..."
+			/>
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Operator</div>
-			<Autocomplete v-model="filter.operator" :options="operatorList" placeholder="Select operator..." />
+			<Autocomplete
+				v-model="filter.operator"
+				:options="operatorList"
+				placeholder="Select operator..."
+			/>
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Value</div>
@@ -127,11 +135,15 @@ const showTimespanPicker = computed(
 )
 
 const showListPicker = computed(
-	() => ['in', 'not in'].includes(filter.operator?.value) && ['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
+	() =>
+		['in', 'not in'].includes(filter.operator?.value) &&
+		['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
 )
 
 const showValueOptions = computed(
-	() => ['=', '!=', 'is'].includes(filter.operator?.value) && ['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
+	() =>
+		['=', '!=', 'is'].includes(filter.operator?.value) &&
+		['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
 )
 
 const valueList = computed(() => {
@@ -222,7 +234,11 @@ function apply() {
 }
 
 const checkAndFetchColumnValues = debounce(function (search_text) {
-	if (!search_text || isEmptyObj(filter.column) || !['=', '!=', 'in', 'not in'].includes(filter.operator?.value)) {
+	if (
+		!search_text ||
+		isEmptyObj(filter.column) ||
+		!['=', '!=', 'in', 'not in'].includes(filter.operator?.value)
+	) {
 		return
 	}
 

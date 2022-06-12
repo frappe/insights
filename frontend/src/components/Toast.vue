@@ -2,7 +2,12 @@
 	<teleport to="#frappeui-toast-root">
 		<transition :name="position.includes('top') ? 'toast-top' : 'toast-bottom'">
 			<div v-if="shown" :class="['pointer-events-auto m-2 transition duration-200 ease-out']">
-				<div :class="['w-[24rem] max-w-xl rounded-lg border border-gray-100 bg-white p-3 shadow', appearanceClasses]">
+				<div
+					:class="[
+						'w-[24rem] max-w-xl rounded-lg border border-gray-100 bg-white p-3 shadow',
+						appearanceClasses,
+					]"
+				>
 					<div class="flex items-start">
 						<div v-if="icon || appearanceIcon" class="mr-2">
 							<FeatherIcon
@@ -22,7 +27,10 @@
 						</div>
 						<div class="ml-auto pl-2">
 							<slot name="actions">
-								<button class="grid h-5 w-5 place-items-center rounded hover:bg-gray-100" @click="shown = false">
+								<button
+									class="grid h-5 w-5 place-items-center rounded hover:bg-gray-100"
+									@click="shown = false"
+								>
 									<FeatherIcon name="x" class="h-4 w-4 text-gray-700" />
 								</button>
 							</slot>

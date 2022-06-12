@@ -37,7 +37,9 @@
 			<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
 		</header>
 		<!-- 100% - 7.5rem (header) + 1rem (margin-top) -->
-		<main class="mt-4 flex h-[calc(100%-8.5rem)] min-h-[26rem] w-full rounded-md border bg-white shadow">
+		<main
+			class="mt-4 flex h-[calc(100%-8.5rem)] min-h-[26rem] w-full rounded-md border bg-white shadow"
+		>
 			<QueryBuilder v-show="active_tab == 'Build'" />
 			<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
 			<QueryTransform v-show="active_tab == 'Transform'" :query="query.resource" />

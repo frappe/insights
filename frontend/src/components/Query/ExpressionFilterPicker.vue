@@ -36,7 +36,9 @@
 				</template>
 			</Popover>
 		</div>
-		<div class="mt-2 rounded-md border border-orange-50 bg-orange-50/80 p-2 text-sm font-light text-gray-500">
+		<div
+			class="mt-2 rounded-md border border-orange-50 bg-orange-50/80 p-2 text-sm font-light text-gray-500"
+		>
 			<ul class="list-disc pl-4">
 				<li>
 					You can select a column by typing
@@ -49,8 +51,8 @@
 						<li>
 							Comparison:
 							<span class="font-medium tracking-widest"
-								>, =, !=, &lt;, &gt;, &lt;=, &gt;=, is, in, not in, between, contains, starts with, ends with, not
-								contains
+								>, =, !=, &lt;, &gt;, &lt;=, &gt;=, is, in, not in, between, contains, starts with,
+								ends with, not contains
 							</span>
 						</li>
 					</ul>
@@ -166,9 +168,15 @@ watch(
 		// get string around caret between sqaure brackets
 		const start_index = input.value.lastIndexOf('[', newCaretPosition)
 		const end_index = input.value.indexOf(']', newCaretPosition)
-		const _stringAroundCaret = input.value.slice(start_index + 1, end_index > 0 ? end_index : input.value.length)
+		const _stringAroundCaret = input.value.slice(
+			start_index + 1,
+			end_index > 0 ? end_index : input.value.length
+		)
 
-		if (_stringAroundCaret.length && (!_stringAroundCaret.includes('[') || !_stringAroundCaret.includes(']'))) {
+		if (
+			_stringAroundCaret.length &&
+			(!_stringAroundCaret.includes('[') || !_stringAroundCaret.includes(']'))
+		) {
 			showColumns.value = true
 			stringAroundCaret.value = _stringAroundCaret
 		} else {
@@ -304,7 +312,9 @@ function get_compare_operator() {
 	if (compare_operator.length > 1) {
 		$notify({
 			title: 'Only one compare operator is allowed',
-			message: `You have entered ${compare_operator.length} operators: ${compare_operator.join(',')}`,
+			message: `You have entered ${compare_operator.length} operators: ${compare_operator.join(
+				','
+			)}`,
 			appearance: 'warning',
 		})
 		return
@@ -338,7 +348,8 @@ function auto_add_close_square_brackets(e) {
 	if (e.keyCode === 219) {
 		// if open square bracket button is clicked,
 		// append close square bracket after caret position
-		input.value = input.value.slice(0, caretPosition.value) + '] ' + input.value.slice(caretPosition.value)
+		input.value =
+			input.value.slice(0, caretPosition.value) + '] ' + input.value.slice(caretPosition.value)
 		nextTick(() => {
 			// set caret position before close square bracket
 			e.target.setSelectionRange(caretPosition.value, caretPosition.value)
@@ -360,7 +371,8 @@ function auto_remove_close_square_bracket(e) {
 		const deleted_character = input.value.slice(caretPosition.value - 1, caretPosition.value)
 		if (deleted_character === '[' && input.value.charAt(caretPosition.value) === ']') {
 			nextTick(() => {
-				input.value = input.value.slice(0, caretPosition.value - 1) + input.value.slice(caretPosition.value + 1)
+				input.value =
+					input.value.slice(0, caretPosition.value - 1) + input.value.slice(caretPosition.value + 1)
 			})
 		}
 	}
@@ -375,7 +387,8 @@ function auto_add_quotes(e) {
 	if (e.keyCode === 222 && e.shiftKey) {
 		// if open quote button is clicked,
 		// append close quote after caret position
-		input.value = input.value.slice(0, caretPosition.value) + '"' + input.value.slice(caretPosition.value)
+		input.value =
+			input.value.slice(0, caretPosition.value) + '"' + input.value.slice(caretPosition.value)
 		nextTick(() => {
 			// set caret position before close quote
 			e.target.setSelectionRange(caretPosition.value, caretPosition.value)
@@ -397,7 +410,8 @@ function auto_remove_quotes(e) {
 		const deleted_character = input.value.slice(caretPosition.value - 1, caretPosition.value)
 		if (deleted_character === '"' && input.value.charAt(caretPosition.value) === '"') {
 			nextTick(() => {
-				input.value = input.value.slice(0, caretPosition.value - 1) + input.value.slice(caretPosition.value + 1)
+				input.value =
+					input.value.slice(0, caretPosition.value - 1) + input.value.slice(caretPosition.value + 1)
 			})
 		}
 	}

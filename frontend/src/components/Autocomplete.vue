@@ -67,7 +67,13 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Combobox, ComboboxLabel, ComboboxInput, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
+import {
+	Combobox,
+	ComboboxLabel,
+	ComboboxInput,
+	ComboboxOptions,
+	ComboboxOption,
+} from '@headlessui/vue'
 
 const input = ref(null)
 defineExpose({ input })
@@ -118,7 +124,10 @@ const filteredOptions = computed(() => {
 	return !filter_query.value
 		? options
 		: options.filter((option) =>
-				option.label.toLowerCase().replace(/\s+/g, '').includes(filter_query.value.toLowerCase().replace(/\s+/g, ''))
+				option.label
+					.toLowerCase()
+					.replace(/\s+/g, '')
+					.includes(filter_query.value.toLowerCase().replace(/\s+/g, ''))
 		  )
 })
 

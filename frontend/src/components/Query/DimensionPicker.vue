@@ -20,7 +20,12 @@
 		</div>
 		<div v-if="dimension.label" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Label</div>
-			<Input type="text" v-model="dimension.label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
+			<Input
+				type="text"
+				v-model="dimension.label"
+				class="h-8 placeholder:text-sm"
+				placeholder="Enter a label..."
+			/>
 		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
@@ -87,7 +92,10 @@ const columnOptions = computed(() => {
 })
 
 const showFormatOptions = computed(() => {
-	return !isEmptyObj(dimension.column) && ['Datetime', 'Timestamp', 'Date'].includes(dimension.column.type)
+	return (
+		!isEmptyObj(dimension.column) &&
+		['Datetime', 'Timestamp', 'Date'].includes(dimension.column.type)
+	)
 })
 
 const formatOptions = computed(() => {
@@ -135,7 +143,8 @@ const formatOptions = computed(() => {
 
 function onColumnSelect(option) {
 	dimension.column = option ? option : {}
-	dimension.label = !dimension.label && dimension.column.label ? dimension.column.label : dimension.label
+	dimension.label =
+		!dimension.label && dimension.column.label ? dimension.column.label : dimension.label
 }
 function onFormatSelect(option) {
 	dimension.format = option ? option : {}

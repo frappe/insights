@@ -61,7 +61,9 @@ export default {
 		filtered_options() {
 			// filter out duplicates
 			return this.input_value
-				? this.table_options.filter((t) => t.label.toLowerCase().includes(this.input_value.toLowerCase()))
+				? this.table_options.filter((t) =>
+						t.label.toLowerCase().includes(this.input_value.toLowerCase())
+				  )
 				: this.table_options
 		},
 	},

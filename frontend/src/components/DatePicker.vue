@@ -14,16 +14,22 @@
 			/>
 		</template>
 		<template #body="{ togglePopover }">
-			<div class="my-2 w-fit select-none rounded-md border border-gray-50 bg-white p-3 text-left shadow">
+			<div
+				class="my-2 w-fit select-none rounded-md border border-gray-50 bg-white p-3 text-left shadow"
+			>
 				<div class="flex items-center justify-between">
 					<span class="text-lg font-medium text-blue-500">
 						{{ formatMonth }}
 					</span>
 					<span class="flex text-gray-700">
-						<div class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100">
+						<div
+							class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+						>
 							<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
 						</div>
-						<div class="ml-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100">
+						<div
+							class="ml-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+						>
 							<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
 						</div>
 					</span>

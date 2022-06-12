@@ -13,7 +13,9 @@
 				</div>
 			</div>
 
-			<Button appearance="white" @click="applyTransform" :loading="query.applyTransform.loading"> Apply </Button>
+			<Button appearance="white" @click="applyTransform" :loading="query.applyTransform.loading">
+				Apply
+			</Button>
 		</div>
 		<div class="flex w-3/4 pl-4">
 			<div
@@ -66,7 +68,9 @@ export default {
 			if (this.query.doc.transform_type) {
 				this.transform_type = this.query.doc.transform_type
 				if (this.transform_type == 'Pivot') {
-					this.pivot_column = this.transform_data?.pivot_columns?.length ? this.transform_data.pivot_columns[0] : null
+					this.pivot_column = this.transform_data?.pivot_columns?.length
+						? this.transform_data.pivot_columns[0]
+						: null
 				}
 			}
 		},
@@ -107,7 +111,9 @@ export default {
 		},
 		get_pivot_data() {
 			return {
-				index_columns: this.group_by_columns.filter((c) => c.label !== this.pivot_column).map((c) => c.label),
+				index_columns: this.group_by_columns
+					.filter((c) => c.label !== this.pivot_column)
+					.map((c) => c.label),
 				pivot_columns: [this.pivot_column],
 			}
 		},

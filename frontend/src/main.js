@@ -4,7 +4,15 @@ import router from './router'
 import { createApp } from 'vue'
 import { userInfo } from './utils/users'
 import { createToast } from './utils/toasts'
-import { FrappeUI, Button, FeatherIcon, Input, onOutsideClickDirective, Popover, Dialog } from 'frappe-ui'
+import {
+	FrappeUI,
+	Button,
+	FeatherIcon,
+	Input,
+	onOutsideClickDirective,
+	Popover,
+	Dialog,
+} from 'frappe-ui'
 
 let app = createApp(App)
 app.use(router)

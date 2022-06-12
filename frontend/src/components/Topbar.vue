@@ -7,17 +7,27 @@
 					<li>
 						<div>
 							<a href="#">
-								<img class="app-logo" style="width: 20px" src="../assets/frappe-framework-logo.svg" />
+								<img
+									class="app-logo"
+									style="width: 20px"
+									src="../assets/frappe-framework-logo.svg"
+								/>
 							</a>
 						</div>
 					</li>
 					<li v-for="(page, idx) in routes" :key="page.name">
 						<div class="flex items-center text-sm">
-							<FeatherIcon name="chevron-right" class="h-5 w-5 flex-shrink-0 text-gray-500" aria-hidden="true" />
+							<FeatherIcon
+								name="chevron-right"
+								class="h-5 w-5 flex-shrink-0 text-gray-500"
+								aria-hidden="true"
+							/>
 							<router-link
 								:to="idx === routes.length - 1 ? '#' : page.path"
 								class="ml-2 text-gray-600 hover:underline"
-								:class="{ 'cursor-default text-gray-500 hover:no-underline': idx === routes.length - 1 }"
+								:class="{
+									'cursor-default text-gray-500 hover:no-underline': idx === routes.length - 1,
+								}"
 							>
 								{{ page.name }}
 							</router-link>
@@ -40,7 +50,11 @@
 					</div>
 				</div>
 				<div class="ml-4 flex h-full cursor-pointer items-center">
-					<Avatar v-if="$user().full_name" :label="$user().full_name" :imageURL="$user().user_image" />
+					<Avatar
+						v-if="$user().full_name"
+						:label="$user().full_name"
+						:imageURL="$user().user_image"
+					/>
 				</div>
 			</div>
 		</div>

@@ -3,7 +3,9 @@
 		<header class="flex h-[5rem] items-center justify-between border-b py-4">
 			<h1 class="text-3xl font-bold text-gray-900">Data Sources</h1>
 			<div>
-				<Button appearance="primary" @click="create_new_source_dialog = true"> + Add Data Source </Button>
+				<Button appearance="primary" @click="create_new_source_dialog = true">
+					+ Add Data Source
+				</Button>
 			</div>
 		</header>
 		<main class="flex h-[calc(100%-5rem)] flex-col space-y-4 py-4">
@@ -24,12 +26,18 @@
 					<li v-for="source in sources" :key="source.name">
 						<a class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50">
 							<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
-							<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">{{ source.title }}</p>
+							<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">
+								{{ source.title }}
+							</p>
 							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
-								<Badge :color="source.status == 'Inactive' ? 'yellow' : 'green'"> {{ source.status }} </Badge>
+								<Badge :color="source.status == 'Inactive' ? 'yellow' : 'green'">
+									{{ source.status }}
+								</Badge>
 							</p>
 							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ source.username }}</p>
-							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ source.database_type }}</p>
+							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								{{ source.database_type }}
+							</p>
 							<p class="flex-1 text-right text-sm text-gray-500" :title="source.modified">
 								{{ source.modified_from_now }}
 							</p>

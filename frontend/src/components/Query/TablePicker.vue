@@ -63,7 +63,11 @@
 				<div class="flex flex-col space-y-3">
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">Type</div>
-						<Autocomplete v-model="join.type" :options="joinTypeOptions" placeholder="Select a type..." />
+						<Autocomplete
+							v-model="join.type"
+							:options="joinTypeOptions"
+							placeholder="Select a type..."
+						/>
 					</div>
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">With</div>
@@ -76,12 +80,20 @@
 					</div>
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">On</div>
-						<Autocomplete v-model="join.key" :options="joinKeyOptions" placeholder="Select a key..." />
+						<Autocomplete
+							v-model="join.key"
+							:options="joinKeyOptions"
+							placeholder="Select a key..."
+						/>
 					</div>
 				</div>
 				<div class="flex justify-end space-x-2">
 					<Button :disabled="!editTable.join" @click="clear_join"> Clear </Button>
-					<Button appearance="primary" :disabled="!join.with || !join.key || !join.type" @click="applyJoin">
+					<Button
+						appearance="primary"
+						:disabled="!join.with || !join.key || !join.type"
+						@click="applyJoin"
+					>
 						Apply
 					</Button>
 				</div>

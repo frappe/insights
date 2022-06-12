@@ -27,8 +27,12 @@
 							class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 						>
 							<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>
-							<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">{{ query.title }}</p>
-							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.tables?.replace(/,/g, ', ') }}</p>
+							<p class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900">
+								{{ query.title }}
+							</p>
+							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								{{ query.tables?.replace(/,/g, ', ') }}
+							</p>
 							<p class="flex-1 whitespace-nowrap text-sm text-gray-500">{{ query.data_source }}</p>
 							<p class="flex-1 text-right text-sm text-gray-500" :title="query.modified">
 								{{ query.modified_from_now }}
@@ -44,12 +48,19 @@
 		<Dialog :options="{ title: 'New Query' }" v-model="openDialog">
 			<template #body-content>
 				<div class="space-y-4">
-					<Input type="select" label="Data Source" v-model="newQuery.dataSource" :options="dataSources" />
+					<Input
+						type="select"
+						label="Data Source"
+						v-model="newQuery.dataSource"
+						:options="dataSources"
+					/>
 					<Input type="text" label="Title" v-model="newQuery.title" />
 				</div>
 			</template>
 			<template #actions>
-				<Button appearance="primary" @click="submitQuery" :loading="createQuery.loading"> Create </Button>
+				<Button appearance="primary" @click="submitQuery" :loading="createQuery.loading">
+					Create
+				</Button>
 			</template>
 		</Dialog>
 	</div>

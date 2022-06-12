@@ -14,7 +14,11 @@
 			<p>No results found</p>
 		</div>
 
-		<div v-else class="relative flex h-full w-full flex-col" :class="{ 'blur-[2px]': needs_execution }">
+		<div
+			v-else
+			class="relative flex h-full w-full flex-col"
+			:class="{ 'blur-[2px]': needs_execution }"
+		>
 			<!-- Table -->
 			<div class="relative h-[calc(100%-2.5rem)] w-full overflow-scroll rounded-md">
 				<table class="border-separate">
@@ -59,8 +63,16 @@
 				<LimitsAndOrder :query="query" />
 			</div>
 		</div>
-		<div v-if="needs_execution" class="absolute top-0 left-0 flex h-full w-full items-center justify-center">
-			<Button appearance="primary" class="!shadow-md" @click="query.run.submit()" :loading="query.run.loading">
+		<div
+			v-if="needs_execution"
+			class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
+		>
+			<Button
+				appearance="primary"
+				class="!shadow-md"
+				@click="query.run.submit()"
+				:loading="query.run.loading"
+			>
 				Execute
 			</Button>
 		</div>

@@ -1,5 +1,7 @@
 <template>
-	<div class="flex h-full min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700">
+	<div
+		class="flex h-full min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700"
+	>
 		<div class="flex h-[calc(100%-2.5rem)] divide-x pt-4">
 			<TablePicker />
 			<ColumnPicker />

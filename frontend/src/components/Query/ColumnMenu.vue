@@ -23,9 +23,12 @@
 						:key="idx"
 						class="cursor-pointer select-none px-3 py-1"
 						:class="{
-							'cursor-default bg-gray-50 text-xs font-light text-gray-500 first:rounded-t-md': item.is_header,
-							'border-t border-gray-200 text-red-400 hover:rounded-md hover:bg-gray-100': item.is_danger_action,
-							'text-gray-600 hover:rounded-md hover:bg-gray-100': !item.is_header && !item.is_danger_action,
+							'cursor-default bg-gray-50 text-xs font-light text-gray-500 first:rounded-t-md':
+								item.is_header,
+							'border-t border-gray-200 text-red-400 hover:rounded-md hover:bg-gray-100':
+								item.is_danger_action,
+							'text-gray-600 hover:rounded-md hover:bg-gray-100':
+								!item.is_header && !item.is_danger_action,
 							'text-blue-400':
 								(column.aggregation && column.aggregation === item.value) ||
 								(column.format && column.format === item.value),
