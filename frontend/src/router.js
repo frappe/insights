@@ -23,9 +23,9 @@ const routes = [
 	},
 	{
 		name: 'Query',
-		path: '/query/:query_id',
-		component: () => import('@/pages/Query.vue'),
 		props: true,
+		path: '/query/:name',
+		component: () => import('@/pages/Query.vue'),
 	},
 	{
 		path: '/reports',

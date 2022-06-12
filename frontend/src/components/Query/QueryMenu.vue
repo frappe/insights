@@ -31,7 +31,20 @@
 				<p class="text-base text-gray-600">Are you sure you want to delete this query?</p>
 			</template>
 			<template #actions>
-				<Button appearance="danger" :loading="$resources.delete.loading" @click="delete_query"> Yes </Button>
+				<Button
+					appearance="danger"
+					:loading="query.resource.delete.loading"
+					@click="
+						() => {
+							query.delete().then(() => {
+								$router.push('/query')
+								show_delete_dialog = false
+							})
+						}
+					"
+				>
+					Yes
+				</Button>
 			</template>
 		</Dialog>
 		<Dialog
@@ -45,11 +58,12 @@
 			<template #actions>
 				<Button
 					appearance="danger"
-					:loading="query.reset.loading"
+					:loading="query.resource.reset.loading"
 					@click="
 						() => {
-							query.reset.submit()
-							show_reset_dialog = false
+							query.reset().then(() => {
+								show_reset_dialog = false
+							})
 						}
 					"
 				>
@@ -60,52 +74,19 @@
 	</div>
 </template>
 
-<script>
+<script setup>
+import { ref, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import { Dialog, Dropdown } from 'frappe-ui'
 
-export default {
-	name: 'QueryMenu',
-	components: {
-		Dialog,
-		Dropdown,
-	},
-	props: ['query'],
-	data() {
-		return {
-			show_reset_dialog: false,
-			show_delete_dialog: false,
-			hostname: window.location.hostname,
-			port: window.location.port ? ':8000' : '',
-		}
-	},
-	resources: {
-		delete() {
-			return { method: 'frappe.client.delete' }
-		},
-	},
-	methods: {
-		open_form() {
-			window.open(`http://${this.hostname}${this.port}/app/query/${this.query.doc.name}`, '_blank').focus()
-		},
-		delete_query() {
-			this.$resources.delete.submit(
-				{
-					doctype: 'Query',
-					name: this.query.doc.name,
-				},
-				{
-					onSuccess: () => {
-						this.$router.push('/query')
-					},
-					onError: () => {
-						this.$notify({
-							title: 'Something went wrong',
-							appearance: 'error',
-						})
-					},
-				}
-			)
-		},
-	},
+const query = inject('query')
+
+const show_reset_dialog = ref(false)
+const show_delete_dialog = ref(false)
+
+const hostname = window.location.hostname
+const port = window.location.port ? ':8000' : ''
+const open_form = () => {
+	window.open(`http://${hostname}${port}/app/query/${query.doc.name}`, '_blank').focus()
 }
 </script>

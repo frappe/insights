@@ -42,7 +42,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.get_selectable_tables.fetch(
+		this.query.get_all_tables.fetch(
 			{},
 			{
 				onSuccess: () => {
@@ -53,7 +53,7 @@ export default {
 	},
 	computed: {
 		table_options() {
-			const tables = this.query.get_selectable_tables?.data?.message || []
+			const tables = this.query.get_all_tables?.data?.message || []
 			return tables.filter((option, index, self) => {
 				return self.findIndex((t) => t.table === option.table) === index
 			})

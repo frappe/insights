@@ -106,7 +106,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.get_selectable_columns.fetch()
+		this.query.get_all_columns.fetch()
 		// detect click outside of input
 		this.outside_click_listener = (e) => {
 			if (e.target.closest(`#expression_filter_picker`)) {
@@ -167,7 +167,7 @@ export default {
 	},
 	computed: {
 		column_list() {
-			return this.query.get_selectable_columns?.data?.message || []
+			return this.query.get_all_columns?.data?.message || []
 		},
 		column_options() {
 			return this.column_list.map((c) => ({ ...c, secondary_label: c.table_label }))

@@ -76,9 +76,16 @@ import FilterTree from '@/components/Query/FilterTree.vue'
 import SimpleFilterPicker from '@/components/Query/SimpleFilterPicker.vue'
 import ExpressionFilterPicker from '@/components/Query/ExpressionFilterPicker.vue'
 
+import { inject } from 'vue'
+
 export default {
 	name: 'FilterPicker',
-	props: ['query'],
+	setup() {
+		const query = inject('query')
+		return {
+			query: query.resource,
+		}
+	},
 	components: {
 		FilterTree,
 		SimpleFilterPicker,

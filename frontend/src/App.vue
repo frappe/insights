@@ -9,15 +9,12 @@
 	</div>
 </template>
 
-<script>
-import { Toasts } from '@/utils/toasts'
+<script setup>
+import Toasts from '@/utils/toasts'
 import Topbar from '@/components/Topbar.vue'
 
-export default {
-	name: 'App',
-	components: {
-		Topbar,
-		Toasts,
-	},
-}
+import { provide } from 'vue'
+import { createToast } from './utils/toasts'
+
+provide('$notify', createToast)
 </script>

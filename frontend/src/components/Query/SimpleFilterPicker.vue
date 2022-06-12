@@ -98,7 +98,7 @@ export default {
 		},
 	},
 	mounted() {
-		this.query.get_selectable_columns.fetch()
+		this.query.get_all_columns.fetch()
 		if (!isEmptyObj(this._filter.left)) {
 			this.$resources.operator_list.submit({
 				fieldtype: this._filter.left.type,
@@ -108,7 +108,7 @@ export default {
 	computed: {
 		column_list() {
 			// Column: { label, table, table_label, column, type }
-			return this.query.get_selectable_columns?.data?.message || []
+			return this.query.get_all_columns?.data?.message || []
 		},
 		column_options() {
 			return this.column_list.map((c) => {

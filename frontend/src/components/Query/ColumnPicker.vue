@@ -104,9 +104,16 @@ import ColumnMenu from '@/components/Query/ColumnMenu.vue'
 import MetricPicker from '@/components/Query/MetricPicker.vue'
 import DimensionPicker from '@/components/Query/DimensionPicker.vue'
 
+import { inject } from 'vue'
+
 export default {
 	name: 'ColumnPicker',
-	props: ['query'],
+	setup() {
+		const query = inject('query')
+		return {
+			query: query.resource,
+		}
+	},
 	components: {
 		Draggable,
 		ColumnSearch,

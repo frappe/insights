@@ -92,11 +92,18 @@ import JoinInnerIcon from '@/components/Icons/JoinInnerIcon.vue'
 import JoinFullIcon from '@/components/Icons/JoinFullIcon.vue'
 import Autocomplete from '@/components/Autocomplete.vue'
 import TableSearch from '@/components/Query/TableSearch.vue'
+
+import { inject } from 'vue'
 import { isEmptyObj } from '@/utils/utils'
 
 export default {
 	name: 'TablePicker',
-	props: ['query'],
+	setup() {
+		const query = inject('query')
+		return {
+			query: query.resource,
+		}
+	},
 	components: {
 		JoinLeftIcon,
 		JoinRightIcon,
@@ -121,7 +128,7 @@ export default {
 	watch: {
 		adding_table(newValue) {
 			if (newValue) {
-				this.query.get_selectable_tables.fetch(
+				this.query.get_all_tables.fetch(
 					{},
 					{
 						onSuccess: () => {
@@ -159,7 +166,7 @@ export default {
 			})
 		},
 		new_table_options() {
-			const tables = this.query.get_selectable_tables?.data?.message || []
+			const tables = this.query.get_all_tables?.data?.message || []
 			return tables.map((table) => ({
 				...table,
 				value: table.table,

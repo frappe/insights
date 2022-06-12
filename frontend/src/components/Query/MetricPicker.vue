@@ -72,14 +72,14 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.get_selectable_columns.fetch()
+		this.query.get_all_columns.fetch()
 	},
 	computed: {
 		add_disabled() {
 			return isEmptyObj(this.type) || (this.column_needed && isEmptyObj(this._column)) || !this.label
 		},
 		column_options() {
-			const column_list = this.query.get_selectable_columns?.data?.message || []
+			const column_list = this.query.get_all_columns?.data?.message || []
 			return column_list.map((c) => {
 				return {
 					...c,

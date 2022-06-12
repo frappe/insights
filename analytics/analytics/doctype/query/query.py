@@ -167,7 +167,7 @@ class Query(Document):
         self.transform_result = self.transform_result.replace("NaN", "-")
 
     @frappe.whitelist()
-    def get_selectable_tables(self):
+    def get_all_tables(self):
         if not self.tables:
             return frappe.get_all(
                 "Table",
@@ -190,7 +190,7 @@ class Query(Document):
             return query.run(as_dict=True)
 
     @frappe.whitelist()
-    def get_selectable_columns(self):
+    def get_all_columns(self):
         if not self.tables:
             return []
 

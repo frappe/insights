@@ -3,7 +3,7 @@ import Toast from '@/components/Toast.vue'
 
 let toasts = ref([])
 
-export let Toasts = {
+export default {
 	name: 'Toasts',
 	render() {
 		return toasts.value.map((toast) => h(Toast, toast))
