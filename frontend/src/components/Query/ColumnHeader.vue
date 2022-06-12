@@ -46,11 +46,11 @@ export default {
 				this.query.get.fetch()
 				return
 			}
-			this.query.update_column.submit({ column: column })
+			this.query.updateColumn.submit({ column: column })
 		},
 		order_by_column() {
 			this.column.order_by = !this.column.order_by ? 'asc' : this.column.order_by == 'asc' ? 'desc' : null
-			this.query.update_column.submit({ column: this.column })
+			this.query.updateColumn.submit({ column: this.column })
 		},
 	},
 }

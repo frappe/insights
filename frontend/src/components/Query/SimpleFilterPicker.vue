@@ -2,47 +2,52 @@
 	<div class="flex flex-col space-y-3">
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
-			<Autocomplete v-model="column" :options="column_options" placeholder="Select a column..." />
+			<Autocomplete v-model="filter.column" :options="columnOptions" placeholder="Select a column..." />
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Operator</div>
-			<Autocomplete v-model="operator" :options="operator_list" placeholder="Select operator..." />
+			<Autocomplete v-model="filter.operator" :options="operatorList" placeholder="Select operator..." />
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Value</div>
 			<Autocomplete
-				v-if="show_value_options"
-				v-model="value"
-				:options="value_list"
-				:placeholder="value_placeholder"
-				@inputChange="check_and_fetch_column_values"
+				v-if="showValueOptions"
+				v-model="filter.value"
+				:options="valueList"
+				:placeholder="valuePlaceholder"
+				@inputChange="checkAndFetchColumnValues"
+			/>
+			<TimespanPicker
+				v-else-if="showTimespanPicker"
+				id="value"
+				v-model="filter.value"
+				:placeholder="valuePlaceholder"
 			/>
 			<ListPicker
-				v-else-if="show_multiselect"
-				:options="value_list"
-				:placeholder="value_placeholder"
-				@inputChange="check_and_fetch_column_values"
+				v-else-if="showListPicker"
+				:options="valueList"
+				:placeholder="valuePlaceholder"
+				@inputChange="checkAndFetchColumnValues"
 				@selectOption="
 					(options) => {
-						value = {
+						filter.value = {
 							value: options.map((option) => option.label),
 							label: options.length > 1 ? `${options.length} values` : options[0].label,
 						}
 					}
 				"
 			/>
-			<TimespanPicker v-else-if="show_timespan_picker" id="value" v-model="value" :placeholder="value_placeholder" />
 			<DatePicker
-				v-else-if="show_date_picker"
+				v-else-if="showDatePicker"
 				id="value"
-				:value="value.value"
-				:placeholder="value_placeholder"
-				:formatValue="format_date"
+				:value="filter.value.value"
+				:placeholder="valuePlaceholder"
+				:formatValue="formatDate"
 				@change="
 					(date) => {
-						value = {
+						filter.value = {
 							value: date,
-							label: format_date(date),
+							label: formatDate(date),
 						}
 					}
 				"
@@ -50,211 +55,193 @@
 			<input
 				v-else
 				type="text"
-				v-model="value.value"
-				:placeholder="value_placeholder"
+				v-model="filter.value.value"
+				:placeholder="valuePlaceholder"
 				class="form-input block h-8 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
 			/>
 		</div>
 		<div class="flex justify-end">
-			<Button @click="apply" appearance="primary" :disabled="apply_disabled"> Apply </Button>
+			<Button @click="apply" appearance="primary" :disabled="applyDisabled"> Apply </Button>
 		</div>
 	</div>
 </template>
 
-<script>
+<script setup>
 import Autocomplete from '@/components/Autocomplete.vue'
 import TimespanPicker from '@/components/TimespanPicker.vue'
 import ListPicker from '@/components/ListPicker.vue'
 import DatePicker from '@/components/DatePicker.vue'
-import { isEmptyObj } from '@/utils/utils.js'
+
 import { debounce } from 'frappe-ui'
+import { isEmptyObj } from '@/utils/utils.js'
+import { computed, inject, nextTick, onMounted, reactive, watch } from 'vue'
 
-export default {
-	name: 'SimpleFilterPicker',
-	props: ['query', 'filter'],
-	components: {
-		TimespanPicker,
-		Autocomplete,
-		ListPicker,
-		DatePicker,
+const query = inject('query')
+
+const props = defineProps({
+	filter: {
+		type: Object,
+		default: {
+			left: {},
+			operator: {},
+			right: {},
+		},
 	},
-	data() {
+})
+const emit = defineEmits(['filter-select'])
+
+const filter = reactive({
+	column: props.filter.left,
+	operator: props.filter.operator,
+	value: props.filter.right,
+})
+
+onMounted(() => {
+	query.fetchColumns()
+	if (!isEmptyObj(filter.column)) {
+		query.fetchOperatorList({
+			fieldtype: filter.column?.type,
+		})
+	}
+})
+
+const columnOptions = computed(() => {
+	return query.fetchColumnsData.value?.map((c) => {
 		return {
-			column: this.filter?.left || {},
-			operator: this.filter?.operator || {},
-			value: this.filter?.right || {},
-			_filter: this.filter || {
-				left: '',
-				operator: '',
-				right: '',
-			},
+			...c,
+			value: c.column,
+			secondary_label: c.table_label,
 		}
-	},
-	resources: {
-		operator_list() {
-			return {
-				method: 'analytics.api.get_operator_list',
-			}
-		},
-	},
-	mounted() {
-		this.query.get_all_columns.fetch()
-		if (!isEmptyObj(this._filter.left)) {
-			this.$resources.operator_list.submit({
-				fieldtype: this._filter.left.type,
-			})
+	})
+})
+const operatorList = query.fetchOperatorListData
+
+const showDatePicker = computed(() => {
+	return (
+		['Date', 'Datetime'].includes(filter.column?.type) &&
+		['=', '!=', '>', '>=', '<', '<=', 'between'].includes(filter.operator?.value)
+	)
+})
+const showTimespanPicker = computed(
+	() => ['Date', 'Datetime'].includes(filter.column?.type) && filter.operator?.value === 'timespan'
+)
+
+const showListPicker = computed(
+	() => ['in', 'not in'].includes(filter.operator?.value) && ['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
+)
+
+const showValueOptions = computed(
+	() => ['=', '!=', 'is'].includes(filter.operator?.value) && ['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
+)
+
+const valueList = computed(() => {
+	if (filter.operator?.value == 'is') {
+		return [
+			{ label: 'Set', value: 'set' },
+			{ label: 'Not Set', value: 'not set' },
+		]
+	}
+	return query.fetchColumnValuesData.value
+})
+
+const valuePlaceholder = computed(() => {
+	if (showDatePicker.value) {
+		return 'Select a date...'
+	}
+	if (isEmptyObj(filter.operator)) {
+		return 'Type a value...'
+	}
+	if (filter.operator?.value == 'between') {
+		return 'Type two comma separated values...'
+	}
+	if (filter.operator?.value == 'in' || filter.operator?.value == 'not in') {
+		return 'Type comma separated values...'
+	}
+	return 'Type a value...'
+})
+
+const applyDisabled = computed(
+	() => isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
+)
+
+watch(
+	() => filter.column,
+	(newColumn) => {
+		filter.column = newColumn
+		filter.operator = {}
+		filter.value = {}
+		query.fetchOperatorList({
+			fieldtype: filter.column?.type,
+		})
+	}
+)
+watch(
+	() => filter.operator,
+	(newOperator) => {
+		filter.operator = newOperator
+		filter.value = {}
+	}
+)
+watch(
+	() => filter.value,
+	(newValue) => {
+		if (newValue.value == filter.value.value) {
+			return
 		}
-	},
-	computed: {
-		column_list() {
-			// Column: { label, table, table_label, column, type }
-			return this.query.get_all_columns?.data?.message || []
-		},
-		column_options() {
-			return this.column_list.map((c) => {
-				return {
-					...c,
-					value: c.column,
-					secondary_label: c.table_label,
-				}
-			})
-		},
-		operator_list() {
-			// Operator: { label, value }
-			return this.$resources.operator_list.data || []
-		},
-		value_list() {
-			if (this._filter.operator.value == 'is') {
-				return [
-					{ label: 'Set', value: 'set' },
-					{ label: 'Not Set', value: 'not set' },
-				]
+		if (
+			newValue &&
+			!showListPicker.value &&
+			!showDatePicker.value &&
+			!showValueOptions.value &&
+			!showTimespanPicker.value
+		) {
+			filter.value = {
+				label: newValue.value,
+				value: newValue.value,
 			}
+		} else {
+			filter.value = newValue
+		}
+	}
+)
 
-			return this.query.get_column_values?.data?.message || []
+function apply() {
+	if (isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)) {
+		return
+	}
+	if (!filter.value.label && filter.value.value) {
+		filter.value.label = filter.value.value
+	}
+	emit('filter-select', {
+		filter: {
+			left: filter.column,
+			operator: filter.operator,
+			right: filter.value,
 		},
-		value_placeholder() {
-			if (this.show_date_picker) {
-				return 'Select a date...'
-			}
-			if (isEmptyObj(this._filter.operator)) {
-				return 'Type a value...'
-			}
-			if (this._filter.operator.value == 'between') {
-				return 'Type two comma separated values...'
-			}
-			if (this._filter.operator.value == 'in' || this._filter.operator.value == 'not in') {
-				return 'Type comma separated values...'
-			}
-			return 'Type a value...'
-		},
-		show_timespan_picker() {
-			return ['Date', 'Datetime'].includes(this._filter.left?.type) && this._filter.operator?.value === 'timespan'
-		},
-		show_date_picker() {
-			return (
-				['Date', 'Datetime'].includes(this._filter.left?.type) &&
-				['=', '!=', '>', '>=', '<', '<=', 'between'].includes(this._filter.operator?.value)
-			)
-		},
-		show_value_options() {
-			if (isEmptyObj(this._filter.left) || isEmptyObj(this._filter.operator)) {
-				return false
-			}
+	})
+}
 
-			return (
-				['=', '!='].includes(this._filter.operator.value) &&
-				['Varchar', 'Char', 'Enum'].includes(this._filter.left.type)
-			)
-		},
-		show_multiselect() {
-			if (isEmptyObj(this._filter.left) || isEmptyObj(this._filter.operator)) {
-				return false
-			}
+const checkAndFetchColumnValues = debounce(function (search_text) {
+	if (!search_text || isEmptyObj(filter.column) || !['=', '!=', 'in', 'not in'].includes(filter.operator?.value)) {
+		return
+	}
 
-			return (
-				['in', 'not in'].includes(this._filter.operator.value) &&
-				['Varchar', 'Char', 'Enum'].includes(this._filter.left.type)
-			)
-		},
-		apply_disabled() {
-			return isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)
-		},
-	},
-	watch: {
-		column(new_column) {
-			this._filter.left = new_column
-			this._filter.operator = {}
-			this._filter.right = {}
-			this.operator = {}
-			this.value = {}
-			this.$resources.operator_list.submit({
-				fieldtype: this._filter.left?.type,
-			})
-		},
-		operator(new_operator) {
-			this._filter.operator = new_operator
-			this._filter.right = {}
-			this.value = {}
-		},
-		value: {
-			handler(new_value) {
-				if (
-					new_value &&
-					!this.show_multiselect &&
-					!this.show_date_picker &&
-					!this.show_value_options &&
-					!this.show_timespan_picker
-				) {
-					this._filter.right = {
-						label: new_value.value,
-						value: new_value.value,
-					}
-				} else {
-					this._filter.right = new_value
-				}
-			},
-			deep: true,
-		},
-	},
-	methods: {
-		apply() {
-			if (isEmptyObj(this.column) || isEmptyObj(this.operator) || isEmptyObj(this.value)) {
-				return
-			}
-			this.$emit('filter-select', { filter: this._filter })
-		},
+	if (['Varchar', 'Char', 'Enum'].includes(filter.column?.type)) {
+		query.fetchColumnValues({
+			column: filter.column,
+			search_text,
+		})
+	}
+}, 300)
 
-		check_and_fetch_column_values: debounce(function (search_text) {
-			if (
-				!search_text ||
-				isEmptyObj(this._filter.left) ||
-				isEmptyObj(this._filter.operator) ||
-				!['=', '!=', 'in', 'not in'].includes(this._filter.operator.value)
-			) {
-				this.query.get_column_values.data.message = []
-				return
-			}
-
-			const left_is_smalltext = ['varchar', 'char', 'enum'].includes(this._filter.left.type.toLowerCase())
-			if (left_is_smalltext) {
-				this.query.get_column_values.submit({
-					column: this._filter.left,
-					search_text,
-				})
-			}
-		}, 300),
-
-		format_date(value) {
-			if (!value) {
-				return ''
-			}
-			return new Date(value).toLocaleString('en-US', {
-				month: 'short',
-				year: 'numeric',
-				day: 'numeric',
-			})
-		},
-	},
+function formatDate(value) {
+	if (!value) {
+		return ''
+	}
+	return new Date(value).toLocaleString('en-US', {
+		month: 'short',
+		year: 'numeric',
+		day: 'numeric',
+	})
 }
 </script>

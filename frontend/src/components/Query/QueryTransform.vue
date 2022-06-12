@@ -13,7 +13,7 @@
 				</div>
 			</div>
 
-			<Button appearance="white" @click="apply_transform" :loading="query.apply_transform.loading"> Apply </Button>
+			<Button appearance="white" @click="applyTransform" :loading="query.applyTransform.loading"> Apply </Button>
 		</div>
 		<div class="flex w-3/4 pl-4">
 			<div
@@ -87,12 +87,12 @@ export default {
 
 			return true
 		},
-		apply_transform() {
+		applyTransform() {
 			if (!this.validate_transform()) {
 				return
 			}
 
-			this.query.apply_transform.submit({
+			this.query.applyTransform.submit({
 				type: this.transform_type,
 				data: this.get_transform_data(),
 			})

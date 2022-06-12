@@ -24,9 +24,11 @@
 	</div>
 </template>
 
-<script>
-export default {
-	name: 'Expression',
-	props: ['condition'],
-}
+<script setup>
+defineProps({
+	condition: {
+		type: Object,
+		required: true,
+	},
+})
 </script>

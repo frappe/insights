@@ -104,6 +104,7 @@ const selectedOption = computed({
 		return props.modelValue || {}
 	},
 	set(value) {
+		// if value is not equal to old value
 		emit('update:modelValue', value || {})
 		emit('selectOption', value || {})
 	},

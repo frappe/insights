@@ -1,233 +1,213 @@
 <template>
 	<div class="flex flex-1 flex-col px-4 pb-4">
-		<div v-if="!adding_filter" class="mb-4 flex items-center justify-between">
+		<div v-if="!addingFilter" class="mb-4 flex items-center justify-between">
 			<div class="text-lg font-medium">Filters</div>
-			<Button icon="plus" @click="adding_filter = true"></Button>
+			<Button icon="plus" @click="addingFilter = true"></Button>
 		</div>
-		<div v-if="adding_filter">
+		<div v-if="addingFilter">
 			<div class="mb-4 flex h-7 items-center">
-				<Button icon="chevron-left" class="mr-2" @click="reset_new_filter"> </Button>
-				<div class="text-lg font-medium">{{ editing_filter ? 'Edit' : 'Add' }} a Filter</div>
+				<Button icon="chevron-left" class="mr-2" @click="resetNewFilter"> </Button>
+				<div class="text-lg font-medium">{{ editingFilter ? 'Edit' : 'Add' }} a Filter</div>
 			</div>
 			<div class="flex flex-col space-y-3">
 				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md font-light"
-						:class="{ 'border bg-white font-normal shadow-sm': filter_type == 'simple' }"
-						@click.prevent.stop="filter_type = 'simple'"
+						:class="{ 'border bg-white font-normal shadow-sm': newFilterType == 'simple' }"
+						@click.prevent.stop="newFilterType = 'simple'"
 					>
 						Simple
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md"
-						:class="{ 'border bg-white font-normal shadow-sm': filter_type == 'expression' }"
-						@click.prevent.stop="filter_type = 'expression'"
+						:class="{ 'border bg-white font-normal shadow-sm': newFilterType == 'expression' }"
+						@click.prevent.stop="newFilterType = 'expression'"
 					>
 						Expression
 					</div>
 				</div>
 				<SimpleFilterPicker
-					v-if="filter_type == 'simple'"
-					:query="query"
-					@filter-select="filter_selected"
-					:filter="get_filter_at(edit_filter_at)"
+					v-if="newFilterType == 'simple'"
+					@filter-select="filterSelected"
+					:filter="getFilterAt(editFilterAt)"
 				/>
 				<ExpressionFilterPicker
-					v-if="filter_type == 'expression'"
-					:query="query"
-					@filter-select="filter_selected"
-					:filter="get_filter_at(edit_filter_at)"
+					v-if="newFilterType == 'expression'"
+					@filter-select="filterSelected"
+					:filter="getFilterAt(editFilterAt)"
 				/>
 			</div>
 		</div>
-		<div
-			v-if="filters.conditions.length == 0 && !adding_filter"
-			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
-		>
-			<p>No filters added</p>
-		</div>
-		<div v-else-if="filters.conditions.length > 0 && !adding_filter" class="flex h-full items-start overflow-scroll">
-			<FilterTree
-				:filters="filters"
-				@remove_filter="remove_filter"
-				@branch_filter_at="branch_filter_at"
-				@toggle_group_operator="toggle_group_operator"
-				@edit_filter="
-					({ level, position, idx, is_expression }) => {
-						adding_filter = true
-						editing_filter = true
-						edit_filter_at = { level, position, idx, is_expression }
-						filter_type = is_expression ? 'expression' : 'simple'
-					}
-				"
-				@add_filter="
-					({ level, position }) => {
-						adding_filter = true
-						add_next_filter_at = { level, position }
-					}
-				"
-			/>
+		<div v-if="!addingFilter" class="flex flex-1 flex-col">
+			<div
+				v-if="query_filters.conditions.length == 0"
+				class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			>
+				<p>No filters added</p>
+			</div>
+			<div v-else-if="query_filters.conditions.length > 0" class="flex h-full items-start overflow-scroll">
+				<FilterTree
+					:filters="query_filters"
+					@remove-filter="removeFilter"
+					@branch-filter-at="branchFilterAt"
+					@toggle-group-operator="toggleGroupOperator"
+					@edit-filter="
+						({ level, position, idx, is_expression }) => {
+							addingFilter = true
+							editingFilter = true
+							newFilterType = is_expression ? 'expression' : 'simple'
+							Object.assign(editFilterAt, { level, position, idx, is_expression })
+						}
+					"
+					@add-filter="
+						({ level, position }) => {
+							addingFilter = true
+							Object.assign(addNextFilterAt, { level, position })
+						}
+					"
+				/>
+			</div>
 		</div>
 	</div>
 </template>
 
-<script>
+<script setup>
 import FilterTree from '@/components/Query/FilterTree.vue'
 import SimpleFilterPicker from '@/components/Query/SimpleFilterPicker.vue'
 import ExpressionFilterPicker from '@/components/Query/ExpressionFilterPicker.vue'
 
-import { inject } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 
-export default {
-	name: 'FilterPicker',
-	setup() {
-		const query = inject('query')
-		return {
-			query: query.resource,
+const query = inject('query')
+const query_filters = reactive(query.filters)
+
+const newFilterType = ref('simple')
+const addingFilter = ref(false)
+const editingFilter = ref(false)
+const editFilterAt = reactive({})
+const addNextFilterAt = reactive({ level: 1, position: 1 })
+
+const tables = computed(() =>
+	query.tables.map((t) => ({
+		label: row.label,
+		table: row.table,
+	}))
+)
+
+function toggleGroupOperator({ level, position }) {
+	const filters = get_filter_group_at({ level, position })
+	filters.group_operator = filters.group_operator == '&' ? 'or' : '&'
+	query.updateFilters({ filters: query_filters })
+}
+function filterSelected({ filter }) {
+	if (editFilterAt.level && editFilterAt.position && typeof editFilterAt.idx == 'number') {
+		const { level, position, idx } = editFilterAt
+		edit_filter({ filter, level, position, idx })
+	} else if (addNextFilterAt.level && addNextFilterAt.position) {
+		const { level, position } = addNextFilterAt
+		add_filter({ filter, level, position })
+	}
+}
+function add_filter({ filter, level, position }) {
+	const filter_group = get_filter_group_at({ level, position })
+	filter_group.conditions.push(filter)
+	resetNewFilter()
+	query.updateFilters({ filters: query_filters })
+}
+function edit_filter({ filter, level, position, idx }) {
+	const filter_group = get_filter_group_at({ level, position })
+	const conditions = filter_group.conditions
+	conditions[idx] = filter
+	resetNewFilter()
+	query.updateFilters({ filters: query_filters })
+}
+function branchFilterAt({ level, position, idx }) {
+	const filter_group = get_filter_group_at({ level, position })
+	const conditions = filter_group.conditions
+
+	const condition_to_replace = conditions[idx]
+	filter_group.conditions[idx] = {
+		level: level + 1,
+		position: idx + 1,
+		group_operator: filter_group.group_operator == '&' ? 'or' : '&',
+		conditions: [condition_to_replace],
+	}
+	query.updateFilters({ filters: query_filters })
+}
+function removeFilter({ level, position, idx }) {
+	if (level == 1 && typeof idx == 'number') {
+		// remove the filter from root level
+		query_filters.conditions.splice(idx, 1)
+	}
+
+	if (level > 1 && position && typeof idx == 'number') {
+		// remove the filter at `idx` from the filter group at `level` & `position`
+		const filter_group = get_filter_group_at({ level, position })
+		filter_group.conditions.splice(idx, 1)
+	}
+
+	query.updateFilters({ filters: query_filters })
+}
+function resetNewFilter() {
+	newFilterType.value = 'simple'
+	addingFilter.value = false
+	editingFilter.value = false
+	addNextFilterAt.level = 1
+	addNextFilterAt.position = 1
+	Object.keys(editFilterAt).forEach((key) => delete editFilterAt[key])
+}
+
+function get_filter_group_at({ filters, level, position, parent_index }) {
+	if (level == 1 && position == 1) {
+		return query_filters
+	}
+
+	// find the filter group at the given level and position
+	let filter_groups = filters || query_filters
+	let filter_group_at_level = null
+
+	for (let i = 0; i < filter_groups.conditions.length; i++) {
+		let filter_group = filter_groups.conditions[i]
+		if (filter_group.level == level && (filter_group.position == position || i == parent_index)) {
+			filter_group_at_level = filter_group
+			break
 		}
-	},
-	components: {
-		FilterTree,
-		SimpleFilterPicker,
-		ExpressionFilterPicker,
-	},
-	data() {
-		return {
-			filter_type: 'simple',
-			adding_filter: false,
-			editing_filter: false,
-			edit_filter_at: {},
-			add_next_filter_at: { level: 1, position: 1 },
+
+		if (filter_group.conditions?.length) {
+			let filter_group_at_level_in_group = get_filter_group_at({
+				filters: filter_group,
+				level,
+				position,
+			})
+			if (filter_group_at_level_in_group) {
+				filter_group_at_level = filter_group_at_level_in_group
+				break
+			}
 		}
-	},
-	computed: {
-		tables() {
-			return this.query.doc.tables.map((row) => {
-				return {
-					label: row.label,
-					table: row.table,
-				}
-			})
-		},
-		filters() {
-			return JSON.parse(this.query.doc.filters || '{}')
-		},
-	},
-	methods: {
-		get_filter_group_at({ filters, level, position, parent_index }) {
-			if (level == 1 && position == 1) {
-				return this.filters
-			}
+	}
 
-			// find the filter group at the given level and position
-			let filter_groups = filters || this.filters
-			let filter_group_at_level = null
+	return filter_group_at_level
+}
+function get_parent_filter_group_of({ level, position }) {
+	const parent_level = level - 1
+	const filter_group_index = position - 1
 
-			for (let i = 0; i < filter_groups.conditions.length; i++) {
-				let filter_group = filter_groups.conditions[i]
-				if (filter_group.level == level && (filter_group.position == position || i == parent_index)) {
-					filter_group_at_level = filter_group
-					break
-				}
+	return get_filter_group_at({
+		filters: query_filters,
+		level: parent_level,
+		parent_index: filter_group_index,
+	})
+}
+function getFilterAt({ level, position, idx }) {
+	if (!level || !position || typeof idx !== 'number') {
+		return { left: {}, operator: {}, right: {} }
+	}
 
-				if (filter_group.conditions?.length) {
-					let filter_group_at_level_in_group = this.get_filter_group_at({
-						filters: filter_group,
-						level,
-						position,
-					})
-					if (filter_group_at_level_in_group) {
-						filter_group_at_level = filter_group_at_level_in_group
-						break
-					}
-				}
-			}
+	let filter_group = get_filter_group_at({ level, position })
+	if (filter_group.conditions.length > idx) {
+		return filter_group.conditions[idx]
+	}
 
-			return filter_group_at_level
-		},
-		get_parent_filter_group_of({ level, position }) {
-			const parent_level = level - 1
-			const filter_group_index = position - 1
-
-			return this.get_filter_group_at({
-				filters: this.filters,
-				level: parent_level,
-				parent_index: filter_group_index,
-			})
-		},
-		get_filter_at({ level, position, idx }) {
-			if (!level || !position || typeof idx !== 'number') {
-				return {}
-			}
-
-			let filter_group = this.get_filter_group_at({ level, position })
-			if (filter_group.conditions.length > idx) {
-				return filter_group.conditions[idx]
-			}
-
-			return {}
-		},
-		toggle_group_operator({ level, position }) {
-			const filters = this.get_filter_group_at({ level, position })
-			filters.group_operator = filters.group_operator == '&' ? 'or' : '&'
-			this.query.update_filters.submit({ filters: this.filters })
-		},
-		filter_selected({ filter }) {
-			if (this.edit_filter_at.level && this.edit_filter_at.position && typeof this.edit_filter_at.idx == 'number') {
-				const { level, position, idx } = this.edit_filter_at
-				this.edit_filter({ filter, level, position, idx })
-			} else if (this.add_next_filter_at.level && this.add_next_filter_at.position) {
-				const { level, position } = this.add_next_filter_at
-				this.add_filter({ filter, level, position })
-			}
-		},
-		add_filter({ filter, level, position }) {
-			const filter_group = this.get_filter_group_at({ level, position })
-			filter_group.conditions.push(filter)
-			this.reset_new_filter()
-			this.query.update_filters.submit({ filters: this.filters })
-		},
-		edit_filter({ filter, level, position, idx }) {
-			const filter_group = this.get_filter_group_at({ level, position })
-			const conditions = filter_group.conditions
-			conditions[idx] = filter
-			this.reset_new_filter()
-			this.query.update_filters.submit({ filters: this.filters })
-		},
-		branch_filter_at({ level, position, idx }) {
-			const filter_group = this.get_filter_group_at({ level, position })
-			const conditions = filter_group.conditions
-
-			const condition_to_replace = conditions[idx]
-			filter_group.conditions[idx] = {
-				level: level + 1,
-				position: idx + 1,
-				group_operator: filter_group.group_operator == '&' ? 'or' : '&',
-				conditions: [condition_to_replace],
-			}
-			this.query.update_filters.submit({ filters: this.filters })
-		},
-		remove_filter({ level, position, idx }) {
-			if (level == 1 && typeof idx == 'number') {
-				// remove the filter from root level
-				this.filters.conditions.splice(idx, 1)
-			}
-
-			if (level > 1 && position && typeof idx == 'number') {
-				// remove the filter at `idx` from the filter group at `level` & `position`
-				const filter_group = this.get_filter_group_at({ level, position })
-				filter_group.conditions.splice(idx, 1)
-			}
-
-			this.query.update_filters.submit({ filters: this.filters })
-		},
-		reset_new_filter() {
-			this.filter_type = 'simple'
-			this.adding_filter = false
-			this.editing_filter = false
-			this.edit_filter_at = {}
-			this.add_next_filter_at = { level: 1, position: 1 }
-		},
-	},
+	return {}
 }
 </script>

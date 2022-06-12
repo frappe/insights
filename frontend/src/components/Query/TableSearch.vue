@@ -42,7 +42,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.get_all_tables.fetch(
+		this.query.fetchTables.fetch(
 			{},
 			{
 				onSuccess: () => {
@@ -53,7 +53,7 @@ export default {
 	},
 	computed: {
 		table_options() {
-			const tables = this.query.get_all_tables?.data?.message || []
+			const tables = this.query.fetchTables?.data?.message || []
 			return tables.filter((option, index, self) => {
 				return self.findIndex((t) => t.table === option.table) === index
 			})
@@ -67,7 +67,7 @@ export default {
 	},
 	methods: {
 		on_option_select(option) {
-			this.query.add_table.submit({ table: option })
+			this.query.addTable.submit({ table: option })
 			this.input_value = ''
 			this.$emit('on-blur')
 		},

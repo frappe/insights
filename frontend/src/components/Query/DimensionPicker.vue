@@ -3,148 +3,151 @@
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
 			<Autocomplete
-				v-model="_column"
-				:options="filtered_columns"
+				v-model="dimension.column"
+				:options="columnOptions"
 				placeholder="Select a column..."
-				@selectOption="on_column_select"
+				@selectOption="onColumnSelect"
 			/>
 		</div>
-		<div v-if="show_format_options" class="space-y-1 text-sm text-gray-600">
+		<div v-if="showFormatOptions" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Format</div>
 			<Autocomplete
-				v-model="format"
-				:options="format_options"
+				v-model="dimension.format"
+				:options="formatOptions"
 				placeholder="Select a format..."
-				@selectOption="on_format_select"
+				@selectOption="onFormatSelect"
 			/>
 		</div>
-		<div v-if="label" class="space-y-1 text-sm text-gray-600">
+		<div v-if="dimension.label" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Label</div>
-			<Input type="text" v-model="label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
+			<Input type="text" v-model="dimension.label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
 		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
-				v-if="column?.name"
+				v-if="column.name"
 				class="text-red-500"
 				appearance="white"
-				@click="query.remove_column.submit({ column })"
+				@click="
+					() => {
+						query.removeColumn({ column })
+						$emit('close')
+					}
+				"
 			>
 				Remove
 			</Button>
-			<Button @click="add_dimension" appearance="primary" :disabled="add_disabled">
-				{{ column ? 'Edit' : 'Add ' }}
+			<Button @click="addDimension" appearance="primary" :disabled="addDisabled">
+				{{ column.name ? 'Edit' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
 </template>
 
-<script>
+<script setup>
 import { isEmptyObj } from '@/utils/utils.js'
 import Autocomplete from '@/components/Autocomplete.vue'
 
-export default {
-	name: 'DimensionPicker',
-	components: {
-		Autocomplete,
+import { computed, inject, onMounted, reactive } from 'vue'
+
+const query = inject('query')
+
+const emit = defineEmits(['column-select', 'close'])
+const props = defineProps({
+	column: {
+		type: Object,
+		default: {},
 	},
-	props: ['query', 'column'],
-	data() {
+})
+
+const dimension = reactive({
+	column: props.column,
+	label: props.column.label,
+	format: props.column.format
+		? {
+				label: props.column.format,
+				value: props.column.format,
+		  }
+		: {},
+})
+
+onMounted(() => query.fetchColumns())
+
+const addDisabled = computed(() => {
+	return isEmptyObj(dimension.column) || !dimension.label
+})
+
+const columnOptions = computed(() => {
+	return query.fetchColumnsData.value?.map((c) => {
 		return {
-			_column: this.column || {},
-			label: this.column?.label || '',
-			format: this.column?.format
-				? {
-						label: this.column.format,
-						value: this.column.format,
-				  }
-				: {},
+			...c,
+			value: c.column,
+			secondary_label: c.table_label,
 		}
-	},
-	mounted() {
-		this.query.get_all_columns.fetch()
-	},
-	computed: {
-		add_disabled() {
-			return isEmptyObj(this._column) || !this.label
-		},
-		column_options() {
-			const column_list = this.query.get_all_columns?.data?.message || []
-			return column_list.map((c) => {
-				return {
-					...c,
-					value: c.column,
-					secondary_label: c.table_label,
-				}
-			})
-		},
-		filtered_columns() {
-			// return all columns except numeric columns
-			return this.column_options.filter((c) => !['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type))
-		},
-		show_format_options() {
-			return !isEmptyObj(this._column) && ['Datetime', 'Timestamp', 'Date'].includes(this._column.type)
-		},
-		format_options() {
-			if (!this.show_format_options) return []
+	})
+})
 
-			let format_options = []
+const showFormatOptions = computed(() => {
+	return !isEmptyObj(dimension.column) && ['Datetime', 'Timestamp', 'Date'].includes(dimension.column.type)
+})
 
-			if (['Datetime', 'Timestamp'].includes(this._column.type)) {
-				format_options = [
-					'Minute',
-					'Hour',
-					'Day',
-					'Month',
-					'Year',
-					'Minute of Hour',
-					'Hour of Day',
-					'Day of Week',
-					'Day of Month',
-					'Day of Year',
-					'Month of Year',
-					'Quarter of Year',
-				]
-			}
+const formatOptions = computed(() => {
+	if (!showFormatOptions.value) return []
 
-			if (this._column.type == 'Date') {
-				format_options = [
-					'Day',
-					'Month',
-					'Year',
-					'Day of Week',
-					'Day of Month',
-					'Day of Year',
-					'Month of Year',
-					'Quarter of Year',
-				]
-			}
+	let formatOptions = []
 
-			return format_options.map((f) => {
-				return {
-					label: f,
-					value: f,
-				}
-			})
-		},
-	},
-	methods: {
-		on_column_select(option) {
-			this._column = option ? option : {}
-			this.label = !this.label && this._column.label ? this._column.label : this.label
-		},
-		on_format_select(option) {
-			this.format = option ? option : {}
-		},
-		add_dimension() {
-			if (isEmptyObj(this._column)) {
-				return
-			}
+	if (['Datetime', 'Timestamp'].includes(dimension.column.type)) {
+		formatOptions = [
+			'Minute',
+			'Hour',
+			'Day',
+			'Month',
+			'Year',
+			'Minute of Hour',
+			'Hour of Day',
+			'Day of Week',
+			'Day of Month',
+			'Day of Year',
+			'Month of Year',
+			'Quarter of Year',
+		]
+	}
 
-			this._column.label = this.label
-			this._column.aggregation = 'Group By'
-			this._column.format = this.format.value
-			this.$emit('column-select', this._column)
-		},
-	},
+	if (dimension.column.type == 'Date') {
+		formatOptions = [
+			'Day',
+			'Month',
+			'Year',
+			'Day of Week',
+			'Day of Month',
+			'Day of Year',
+			'Month of Year',
+			'Quarter of Year',
+		]
+	}
+
+	return formatOptions.map((f) => {
+		return {
+			label: f,
+			value: f,
+		}
+	})
+})
+
+function onColumnSelect(option) {
+	dimension.column = option ? option : {}
+	dimension.label = !dimension.label && dimension.column.label ? dimension.column.label : dimension.label
+}
+function onFormatSelect(option) {
+	dimension.format = option ? option : {}
+}
+function addDimension() {
+	if (isEmptyObj(dimension.column)) {
+		return
+	}
+
+	dimension.column.label = dimension.label
+	dimension.column.aggregation = 'Group By'
+	dimension.column.format = dimension.format.value
+	emit('column-select', dimension.column)
 }
 </script>

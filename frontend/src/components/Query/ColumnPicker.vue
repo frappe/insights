@@ -1,166 +1,136 @@
 <template>
 	<div class="flex flex-1 flex-col px-4 pb-4">
-		<div v-if="!adding_column && !editing_column" class="mb-4 flex items-center justify-between">
-			<div class="text-lg font-medium">Dimension & Metrics</div>
-			<Button icon="plus" @click="adding_column = true"></Button>
+		<div v-if="!addingColumn && !editingColumn" class="flex flex-1 flex-col">
+			<div class="mb-4 flex items-center justify-between">
+				<div class="text-lg font-medium">Dimension & Metrics</div>
+				<Button icon="plus" @click="addingColumn = true"></Button>
+			</div>
+			<div
+				v-if="query.columns.length == 0"
+				class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			>
+				<p>No columns selected</p>
+			</div>
+			<div v-else-if="query.columns.length > 0" class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide">
+				<Draggable v-model="query.columns" group="columns" item-key="name" @sort="updateColumnOrder">
+					<template #item="{ element: column }">
+						<div
+							class="flex h-10 cursor-pointer items-center justify-between space-x-8 border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
+							@click.prevent.stop="
+								() => {
+									editColumn = column
+									editingColumn = true
+									newColumnType = column.aggregation == 'Group By' ? 'Dimension' : 'Metric'
+								}
+							"
+						>
+							<div class="flex items-center">
+								<DragHandleIcon class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400" />
+								<span
+									v-if="column.aggregation"
+									class="my-0 mr-2 flex-1 select-none whitespace-nowrap rounded border border-orange-200 px-1 py-0.5 text-xs text-orange-400/80"
+								>
+									{{ column.aggregation }}
+								</span>
+								<span class="text-base font-medium">{{ column.label }}</span>
+							</div>
+							<div class="flex items-center">
+								<div class="mr-1 font-light text-gray-500">{{ column.table_label }}</div>
+								<div
+									class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
+									@click.prevent.stop="query.removeColumn({ column })"
+								>
+									<FeatherIcon name="x" class="h-3 w-3" />
+								</div>
+							</div>
+						</div>
+					</template>
+				</Draggable>
+			</div>
 		</div>
-		<div v-if="adding_column || editing_column">
+		<div v-if="addingColumn || editingColumn">
 			<div class="mb-4 flex h-7 items-center">
-				<Button icon="chevron-left" class="mr-2" @click="reset_new_column"> </Button>
-				<div class="text-lg font-medium">{{ editing_column ? 'Edit' : 'Add' }} {{ new_column_type }}</div>
+				<Button icon="chevron-left" class="mr-2" @click="resetNewColumn"> </Button>
+				<div class="text-lg font-medium">{{ editingColumn ? 'Edit' : 'Add' }} {{ newColumnType }}</div>
 			</div>
 			<div class="flex flex-col space-y-3">
 				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md font-light"
-						:class="{ 'border bg-white font-normal shadow-sm': new_column_type == 'Metric' }"
-						@click.prevent.stop="new_column_type = 'Metric'"
+						:class="{ 'border bg-white font-normal shadow-sm': newColumnType == 'Metric' }"
+						@click.prevent.stop="newColumnType = 'Metric'"
 					>
 						Metric
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md"
-						:class="{ 'border bg-white font-normal shadow-sm': new_column_type == 'Dimension' }"
-						@click.prevent.stop="new_column_type = 'Dimension'"
+						:class="{ 'border bg-white font-normal shadow-sm': newColumnType == 'Dimension' }"
+						@click.prevent.stop="newColumnType = 'Dimension'"
 					>
 						Dimension
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md"
-						:class="{ 'border bg-white font-normal shadow-sm': new_column_type == 'Expression' }"
-						@click.prevent.stop="new_column_type = 'Expression'"
+						:class="{ 'border bg-white font-normal shadow-sm': newColumnType == 'Expression' }"
+						@click.prevent.stop="newColumnType = 'Expression'"
 					>
 						Expression
 					</div>
 				</div>
 				<MetricPicker
-					v-if="new_column_type == 'Metric'"
-					:column="edit_column"
-					:query="query"
-					@column-select="add_update_column"
+					v-if="newColumnType == 'Metric'"
+					:column="editColumn"
+					@column-select="addUpdateColumn"
+					@close="resetNewColumn"
 				/>
 				<DimensionPicker
-					v-if="new_column_type == 'Dimension'"
-					:column="edit_column"
-					:query="query"
-					@column-select="add_update_column"
+					v-if="newColumnType == 'Dimension'"
+					:column="editColumn"
+					@column-select="addUpdateColumn"
+					@close="resetNewColumn"
 				/>
-				<div v-if="new_column_type == 'Expression'" class="text-center text-gray-500">Coming Soon...</div>
+				<div v-if="newColumnType == 'Expression'" class="text-center text-gray-500">Coming Soon...</div>
 			</div>
-		</div>
-		<div
-			v-if="columns.length == 0 && !adding_column && !editing_column"
-			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
-		>
-			<p>No columns selected</p>
-		</div>
-		<div
-			v-else-if="columns.length > 0 && !adding_column && !editing_column"
-			class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
-		>
-			<Draggable v-model="columns" group="columns" item-key="name" @sort="update_column_order">
-				<template #item="{ element: column }">
-					<div
-						class="flex h-10 cursor-pointer items-center justify-between space-x-8 border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
-						@click.prevent.stop="
-							() => {
-								edit_column = column
-								editing_column = true
-								new_column_type = column.aggregation == 'Group By' ? 'Dimension' : 'Metric'
-							}
-						"
-					>
-						<div class="flex items-center">
-							<DragHandleIcon class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400" />
-							<span
-								v-if="column.aggregation"
-								class="my-0 mr-2 flex-1 select-none whitespace-nowrap rounded border border-orange-200 px-1 py-0.5 text-xs text-orange-400/80"
-							>
-								{{ column.aggregation }}
-							</span>
-							<span class="text-base font-medium">{{ column.label }}</span>
-						</div>
-						<div class="flex items-center">
-							<div class="mr-1 font-light text-gray-500">{{ column.table_label }}</div>
-							<div
-								class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
-								@click.prevent.stop="query.remove_column.submit({ column })"
-							>
-								<FeatherIcon name="x" class="h-3 w-3" />
-							</div>
-						</div>
-					</div>
-				</template>
-			</Draggable>
 		</div>
 	</div>
 </template>
 
-<script>
+<script setup>
 import Draggable from 'vuedraggable'
-import ColumnSearch from '@/components/Query/ColumnSearch.vue'
 import DragHandleIcon from '@/components/DragHandleIcon.vue'
-import ColumnMenu from '@/components/Query/ColumnMenu.vue'
 import MetricPicker from '@/components/Query/MetricPicker.vue'
 import DimensionPicker from '@/components/Query/DimensionPicker.vue'
 
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 
-export default {
-	name: 'ColumnPicker',
-	setup() {
-		const query = inject('query')
-		return {
-			query: query.resource,
-		}
-	},
-	components: {
-		Draggable,
-		ColumnSearch,
-		DragHandleIcon,
-		ColumnMenu,
-		MetricPicker,
-		DimensionPicker,
-	},
-	data() {
-		return {
-			adding_column: false,
-			edit_column: null,
-			editing_column: false,
-			new_column_type: 'Metric',
-		}
-	},
-	computed: {
-		tables() {
-			return this.query.doc.tables
-		},
-		columns() {
-			return this.query.doc.columns
-		},
-	},
-	methods: {
-		update_column_order(e) {
-			if (e.oldIndex != e.newIndex) {
-				this.query.move_column.submit({
-					from_index: e.oldIndex,
-					to_index: e.newIndex,
-				})
-			}
-		},
-		add_update_column(column) {
-			if (this.adding_column) {
-				this.query.add_column.submit({ column })
-			} else if (this.editing_column) {
-				this.query.update_column.submit({ column })
-			}
-			this.reset_new_column()
-		},
-		reset_new_column() {
-			this.new_column_type = 'Metric'
-			this.adding_column = false
-			this.editing_column = false
-			this.edit_column = null
-		},
-	},
+const query = inject('query')
+
+const newColumnType = ref('Metric')
+const addingColumn = ref(false)
+
+const editColumn = ref({})
+const editingColumn = ref(false)
+
+function addUpdateColumn(column) {
+	if (addingColumn.value) {
+		query.addColumn({ column })
+	} else if (editingColumn.value) {
+		query.updateColumn({ column })
+	}
+	resetNewColumn()
+}
+function resetNewColumn() {
+	newColumnType.value = 'Metric'
+	addingColumn.value = false
+	editingColumn.value = false
+	editColumn.value = {}
+}
+function updateColumnOrder(e) {
+	if (e.oldIndex != e.newIndex) {
+		query.moveColumn({
+			from_index: e.oldIndex,
+			to_index: e.newIndex,
+		})
+	}
 }
 </script>

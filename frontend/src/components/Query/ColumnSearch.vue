@@ -48,7 +48,7 @@ export default {
 		}
 		document.addEventListener('click', this.outside_click_listener)
 
-		this.query.get_all_columns.fetch(
+		this.query.fetchColumns.fetch(
 			{},
 			{
 				onSuccess: () => {
@@ -63,7 +63,7 @@ export default {
 	watch: {
 		show(val, old_val) {
 			if (val && val != old_val) {
-				this.query.get_all_columns.fetch()
+				this.query.fetchColumns.fetch()
 			}
 			if (!val && val != old_val) {
 				this.$emit('column_search_blur')
@@ -72,7 +72,7 @@ export default {
 	},
 	computed: {
 		column_list() {
-			return this.query.get_all_columns?.data?.message || []
+			return this.query.fetchColumns?.data?.message || []
 		},
 		suggestions() {
 			return this.get_column_suggestions(this.input_value)
@@ -80,7 +80,7 @@ export default {
 	},
 	methods: {
 		on_suggestion_select(suggestion) {
-			this.query.add_column.submit({ column: suggestion })
+			this.query.addColumn.submit({ column: suggestion })
 			this.reset()
 		},
 		reset() {

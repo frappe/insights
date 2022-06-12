@@ -86,7 +86,8 @@ const show_delete_dialog = ref(false)
 
 const hostname = window.location.hostname
 const port = window.location.port ? ':8000' : ''
-const open_form = () => {
+
+function open_form() {
 	window.open(`http://${hostname}${port}/app/query/${query.doc.name}`, '_blank').focus()
 }
 </script>

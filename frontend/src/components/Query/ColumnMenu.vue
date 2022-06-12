@@ -108,12 +108,12 @@ export default {
 				return
 			} else if (item.for_aggregation) {
 				this.column.aggregation = this.column.aggregation == item.value ? null : item.value
-				this.query.update_column.submit({ column: this.column })
+				this.query.updateColumn.submit({ column: this.column })
 			} else if (item.for_formatting) {
 				this.column.format = this.column.format == item.value ? null : item.value
-				this.query.update_column.submit({ column: this.column })
+				this.query.updateColumn.submit({ column: this.column })
 			} else if (item.for_removing) {
-				this.query.remove_column.submit({ column: this.column })
+				this.query.removeColumn.submit({ column: this.column })
 			}
 			this.show = false
 		},

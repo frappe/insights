@@ -3,151 +3,155 @@
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Type</div>
 			<Autocomplete
-				v-model="type"
-				:options="type_options"
+				v-model="metric.type"
+				:options="typeOptions"
 				placeholder="Select metric type..."
-				@selectOption="on_type_select"
+				@selectOption="onTypeSelect"
 			/>
 		</div>
-		<div v-if="column_needed" class="space-y-1 text-sm text-gray-600">
+		<div v-if="columnNeeded" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Column</div>
 			<Autocomplete
-				v-model="_column"
-				:options="filtered_columns"
+				v-model="metric.column"
+				:options="filteredColumns"
 				placeholder="Select a column..."
-				@selectOption="on_column_select"
+				@selectOption="onColumnSelect"
 			/>
 		</div>
-		<div v-if="label" class="space-y-1 text-sm text-gray-600">
+		<div v-if="metric.label" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Label</div>
-			<Input type="text" v-model="label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
+			<Input type="text" v-model="metric.label" class="h-8 placeholder:text-sm" placeholder="Enter a label..." />
 		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
-				v-if="column?.name"
+				v-if="column.name"
 				class="text-red-500"
 				appearance="white"
-				@click="query.remove_column.submit({ column })"
+				@click="
+					() => {
+						query.removeColumn({ column })
+						$emit('close')
+					}
+				"
 			>
 				Remove
 			</Button>
-			<Button @click="add_metric" appearance="primary" :disabled="add_disabled">
-				{{ column ? 'Edit' : 'Add ' }}
+			<Button @click="addMetric" appearance="primary" :disabled="addDisabled">
+				{{ column.name ? 'Edit' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
 </template>
 
-<script>
+<script setup>
 import { isEmptyObj } from '@/utils/utils.js'
 import Autocomplete from '@/components/Autocomplete.vue'
 
-export default {
-	name: 'MetricPicker',
-	components: {
-		Autocomplete,
+import { computed, inject, onMounted, reactive, ref } from 'vue'
+
+const query = inject('query')
+
+const emit = defineEmits(['column-select', 'close'])
+const props = defineProps({
+	column: {
+		type: Object,
+		default: {},
 	},
-	props: ['query', 'column'],
-	data() {
-		const type_options = [
-			{
-				label: 'Count of records',
-				value: 'Count',
-			},
-			{
-				label: 'Sum of',
-				value: 'Sum',
-			},
-			{
-				label: 'Avg of',
-				value: 'Avg',
-			},
-		]
-		const type = type_options.find((t) => t.value === this.column?.aggregation) || {}
+})
+
+const typeOptions = ref([
+	{
+		label: 'Count of records',
+		value: 'Count',
+	},
+	{
+		label: 'Sum of',
+		value: 'Sum',
+	},
+	{
+		label: 'Avg of',
+		value: 'Avg',
+	},
+])
+const metric = reactive({
+	column: props.column,
+	label: props.column.label,
+	type: typeOptions.value.find((t) => {
+		return t.value == props.column.aggregation
+	}),
+})
+
+onMounted(() => query.fetchColumns())
+
+const columnNeeded = computed(() => {
+	return !isEmptyObj(metric.type) && metric.type.value !== 'Count'
+})
+const addDisabled = computed(() => {
+	return isEmptyObj(metric.type) || (columnNeeded.value && isEmptyObj(metric.column)) || !metric.label
+})
+
+const columnOptions = computed(() => {
+	return query.fetchColumnsData.value?.map((c) => {
 		return {
-			_column: this.column || {},
-			label: this.column?.label || '',
-			type_options,
-			type,
+			...c,
+			value: c.column,
+			secondary_label: c.table_label,
 		}
-	},
-	mounted() {
-		this.query.get_all_columns.fetch()
-	},
-	computed: {
-		add_disabled() {
-			return isEmptyObj(this.type) || (this.column_needed && isEmptyObj(this._column)) || !this.label
-		},
-		column_options() {
-			const column_list = this.query.get_all_columns?.data?.message || []
-			return column_list.map((c) => {
-				return {
-					...c,
-					value: c.column,
-					secondary_label: c.table_label,
-				}
-			})
-		},
-		filtered_columns() {
-			if (isEmptyObj(this.type)) {
-				return []
-			}
-			if (this.type.value === 'Sum' || this.type.value === 'Avg') {
-				return this.column_options.filter((c) =>
-					['int', 'decimal', 'bigint', 'float', 'double'].includes(c.type.toLowerCase())
-				)
-			}
-		},
-		column_needed() {
-			return !isEmptyObj(this.type) && this.type.value !== 'Count'
-		},
-	},
-	methods: {
-		on_type_select(option) {
-			this.type = option ? option : {}
-			if (this.type.label) {
-				this.label = this.type.label + ' '
-			}
-		},
-		on_column_select(option) {
-			this._column = option ? option : {}
-		},
-		add_metric() {
-			if (isEmptyObj(this.type)) {
-				return
-			}
+	})
+})
+const filteredColumns = computed(() => {
+	if (isEmptyObj(metric.type)) {
+		return []
+	}
+	if (metric.type.value === 'Sum' || metric.type.value === 'Avg') {
+		return columnOptions.value.filter((c) => ['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type))
+	}
+})
 
-			if (this.column_needed && isEmptyObj(this._column)) {
-				return
-			}
+function onTypeSelect(option) {
+	metric.type = option ? option : {}
+	if (metric.type.label) {
+		metric.label = metric.type.label + ' '
+	}
+}
+function onColumnSelect(option) {
+	metric.column = option ? option : {}
+}
 
-			if (!this.column_needed) {
-				let column = this.get_count_column()
-				this.$emit('column-select', column)
-			}
+function addMetric() {
+	if (isEmptyObj(metric.type)) {
+		return
+	}
+	if (columnNeeded.value && isEmptyObj(metric.column)) {
+		return
+	}
 
-			if (this.column_needed) {
-				this._column.aggregation = this.type.value
-				this.$emit('column-select', this._column)
-			}
-		},
-		get_count_column() {
-			if (this.column) {
-				this.column.label = this.label
-				this.column.aggregation = this.type.value
-				return this.column
-			}
+	if (!columnNeeded.value) {
+		if (!isEmptyObj(props.column)) {
+			// edit
+			props.column.label = metric.label
+			props.column.aggregation = metric.type.value
+			emit('column-select', props.column)
+		} else {
+			// add
+			emit('column-select', makeCountColumn())
+		}
+	}
 
-			const table = this.query.doc.tables[0]
-			return {
-				type: 'Int',
-				column: 'name',
-				label: this.label,
-				table: table.table,
-				table_label: table.label,
-				aggregation: this.type.value,
-			}
-		},
-	},
+	if (columnNeeded.value) {
+		metric.column.aggregation = metric.type.value
+		emit('column-select', metric.column)
+	}
+}
+function makeCountColumn() {
+	const table = query.tables[0]
+	return {
+		type: 'Int',
+		column: 'name',
+		table: table.table,
+		label: metric.label,
+		table_label: table.label,
+		aggregation: metric.type.value,
+	}
 }
 </script>

@@ -167,7 +167,7 @@ class Query(Document):
         self.transform_result = self.transform_result.replace("NaN", "-")
 
     @frappe.whitelist()
-    def get_all_tables(self):
+    def fetch_tables(self):
         if not self.tables:
             return frappe.get_all(
                 "Table",
@@ -190,7 +190,7 @@ class Query(Document):
             return query.run(as_dict=True)
 
     @frappe.whitelist()
-    def get_all_columns(self):
+    def fetch_columns(self):
         if not self.tables:
             return []
 
@@ -220,12 +220,60 @@ class Query(Document):
         self.save()
 
     @frappe.whitelist()
-    def get_column_values(self, column, search_text):
+    def fetch_column_values(self, column, search_text):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         return data_source.get_distinct_column_values(column, search_text)
 
     @frappe.whitelist()
-    def get_join_options(self, table):
+    def fetch_operator_list(self, fieldtype=None):
+        operator_list = [
+            {"label": "equals", "value": "="},
+            {"label": "not equals", "value": "!="},
+            {"label": "is", "value": "is"},
+        ]
+
+        if not fieldtype:
+            return operator_list
+
+        text_data_types = ("char", "varchar", "enum", "text", "longtext")
+        number_data_types = ("int", "decimal", "bigint", "float", "double")
+        date_data_types = ("date", "datetime", "time", "timestamp")
+
+        fieldtype = fieldtype.lower()
+        if fieldtype in text_data_types:
+            operator_list += [
+                {"label": "contains", "value": "contains"},
+                {"label": "not contains", "value": "not contains"},
+                {"label": "starts with", "value": "starts with"},
+                {"label": "ends with", "value": "ends with"},
+                {"label": "is one of", "value": "in"},
+                {"label": "is not one of", "value": "not in"},
+            ]
+        if fieldtype in number_data_types:
+            operator_list += [
+                {"label": "is one of", "value": "in"},
+                {"label": "is not one of", "value": "not in"},
+                {"label": "greater than", "value": ">"},
+                {"label": "smaller than", "value": "<"},
+                {"label": "greater than equal to", "value": ">="},
+                {"label": "smaller than equal to", "value": "<="},
+                {"label": "between", "value": "between"},
+            ]
+
+        if fieldtype in date_data_types:
+            operator_list += [
+                {"label": "greater than", "value": ">"},
+                {"label": "smaller than", "value": "<"},
+                {"label": "greater than equal to", "value": ">="},
+                {"label": "smaller than equal to", "value": "<="},
+                {"label": "between", "value": "between"},
+                {"label": "within", "value": "timespan"},
+            ]
+
+        return operator_list
+
+    @frappe.whitelist()
+    def fetch_join_options(self, table):
         doc = frappe.get_cached_doc(
             "Table",
             {

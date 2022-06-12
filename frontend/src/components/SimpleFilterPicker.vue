@@ -50,7 +50,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.query.get_all_columns.submit({})
+		this.query.fetchColumns.submit({})
 	},
 	resources: {
 		operator_list() {
@@ -63,7 +63,7 @@ export default {
 	computed: {
 		column_list() {
 			// Column: { label, table, table_label, column, type }
-			return this.query.get_all_columns?.data?.message || []
+			return this.query.fetchColumns?.data?.message || []
 		},
 		column_options() {
 			return [''].concat(
