@@ -11,7 +11,7 @@
   "dependencies": {
     "feather-icons": "^4.28.0",
     "frappe-charts": "^1.6.2",
-    "frappe-ui": "^0.0.30",
+    "frappe-ui": "^0.0.31",
     "moment": "^2.29.3",
     "vue": "^3.2.25",
     "vue-router": "^4.0.12",
