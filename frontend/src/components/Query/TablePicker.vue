@@ -2,7 +2,7 @@
 	<div class="mx-4 mb-4 flex flex-1 flex-col">
 		<!-- Picker -->
 		<div v-if="!editTable" class="flex flex-1 flex-col">
-			<div v-show="addingTable" class="mb-4 flex flex-shrink-0">
+			<div v-if="addingTable" class="mb-4 flex flex-shrink-0">
 				<Autocomplete
 					ref="tableSearch"
 					v-model="newTable"
@@ -10,8 +10,8 @@
 					placeholder="Select a table..."
 					@selectOption="
 						(table) => {
-							query.addTable({ table })
 							addingTable = false
+							query.addTable({ table })
 						}
 					"
 				/>
@@ -180,13 +180,13 @@ function onJoinTableSelect(option) {
 	}
 }
 function applyJoin() {
-	editTable.value.join = join
-	query.updateTable({ table: editTable })
+	editTable.value.join = join.value
+	query.updateTable({ table: editTable.value })
 	editTable.value = null
 }
 function clear_join() {
 	editTable.value.join = ''
-	query.updateTable({ table: editTable })
+	query.updateTable({ table: editTable.value })
 	editTable.value = null
 }
 </script>
