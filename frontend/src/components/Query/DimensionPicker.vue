@@ -29,12 +29,12 @@
 		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
-				v-if="column.name"
+				v-if="row_name"
 				class="text-red-500"
 				appearance="white"
 				@click="
 					() => {
-						query.removeColumn({ column })
+						query.removeColumn({ column: dimension.column })
 						$emit('close')
 					}
 				"
@@ -42,7 +42,7 @@
 				Remove
 			</Button>
 			<Button @click="addDimension" appearance="primary" :disabled="addDisabled">
-				{{ column.name ? 'Edit' : 'Add ' }}
+				{{ row_name ? 'Edit' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
@@ -52,7 +52,7 @@
 import { isEmptyObj } from '@/utils/utils.js'
 import Autocomplete from '@/components/Autocomplete.vue'
 
-import { computed, inject, onMounted, reactive } from 'vue'
+import { computed, inject, onMounted, reactive, ref } from 'vue'
 
 const query = inject('query')
 
@@ -74,6 +74,8 @@ const dimension = reactive({
 		  }
 		: {},
 })
+// for editing a dimension
+const row_name = ref(props.column.name)
 
 onMounted(() => query.fetchColumns())
 
@@ -86,7 +88,7 @@ const columnOptions = computed(() => {
 		return {
 			...c,
 			value: c.column,
-			secondary_label: c.table_label,
+			description: c.table_label,
 		}
 	})
 })
@@ -145,6 +147,8 @@ function onColumnSelect(option) {
 	dimension.column = option ? option : {}
 	dimension.label =
 		!dimension.label && dimension.column.label ? dimension.column.label : dimension.label
+
+	dimension.column.name = row_name.value
 }
 function onFormatSelect(option) {
 	dimension.format = option ? option : {}

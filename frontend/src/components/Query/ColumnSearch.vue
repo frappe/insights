@@ -102,7 +102,7 @@ export default {
 			}
 			_suggestions.forEach((c) => {
 				c.icon = this.get_icon_for(c.type)
-				c.secondary_label = c.table_label
+				c.description = c.table_label
 			})
 			return _suggestions
 		},

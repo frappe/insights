@@ -53,7 +53,12 @@
 										'bg-white': !active,
 									}"
 								>
-									<span>{{ option.label }}</span>
+									<div class="flex items-baseline space-x-2">
+										<span>{{ option.label }}</span>
+										<span v-if="option.description" class="text-sm font-light text-gray-500">
+											{{ option.description }}
+										</span>
+									</div>
 									<FeatherIcon name="check" class="h-4 w-4" v-show="selected" />
 								</div>
 							</ComboboxOption>

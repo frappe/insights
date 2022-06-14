@@ -191,7 +191,7 @@ const columnOptions = computed(() => {
 		return {
 			...c,
 			value: c.column,
-			secondary_label: c.table_label,
+			description: c.table_label,
 		}
 	})
 })

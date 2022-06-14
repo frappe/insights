@@ -28,10 +28,10 @@
 					{{ suggestion.label }}
 				</div>
 				<div
-					v-if="suggestion.secondary_label"
+					v-if="suggestion.description"
 					class="ml-auto flex flex-shrink-0 whitespace-nowrap font-light text-gray-500"
 				>
-					{{ suggestion.secondary_label }}
+					{{ suggestion.description }}
 				</div>
 			</div>
 		</div>

@@ -96,9 +96,12 @@ class Query(Document):
         for row in self.columns:
             if row.get("name") == column.get("name"):
                 row.label = column.get("label")
+                row.table = column.get("table")
+                row.column = column.get("column")
                 row.format = column.get("format")
                 row.order_by = column.get("order_by")
                 row.aggregation = column.get("aggregation")
+                row.table_label = column.get("table_label")
                 row.aggregation_condition = column.get("aggregation_condition")
                 break
 

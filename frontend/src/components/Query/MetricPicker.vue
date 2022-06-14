@@ -29,12 +29,12 @@
 		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
-				v-if="column.name"
+				v-if="row_name"
 				class="text-red-500"
 				appearance="white"
 				@click="
 					() => {
-						query.removeColumn({ column })
+						query.removeColumn({ column: metric.column })
 						$emit('close')
 					}
 				"
@@ -42,7 +42,7 @@
 				Remove
 			</Button>
 			<Button @click="addMetric" appearance="primary" :disabled="addDisabled">
-				{{ column.name ? 'Edit' : 'Add ' }}
+				{{ row_name ? 'Edit' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
@@ -52,7 +52,7 @@
 import { isEmptyObj } from '@/utils/utils.js'
 import Autocomplete from '@/components/Autocomplete.vue'
 
-import { computed, inject, onMounted, reactive, ref } from 'vue'
+import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
 
 const query = inject('query')
 
@@ -85,6 +85,8 @@ const metric = reactive({
 		return t.value == props.column.aggregation
 	}),
 })
+// for editing a metric
+const row_name = ref(props.column.name)
 
 onMounted(() => query.fetchColumns())
 
@@ -102,7 +104,7 @@ const columnOptions = computed(() => {
 		return {
 			...c,
 			value: c.column,
-			secondary_label: c.table_label,
+			description: c.table_label,
 		}
 	})
 })
@@ -111,11 +113,16 @@ const filteredColumns = computed(() => {
 		return []
 	}
 	if (metric.type.value === 'Sum' || metric.type.value === 'Avg') {
-		return columnOptions.value.filter((c) =>
+		return columnOptions.value?.filter((c) =>
 			['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type)
 		)
 	}
 })
+
+watch(
+	() => metric.type,
+	(type) => (metric.column = {})
+)
 
 function onTypeSelect(option) {
 	metric.type = option ? option : {}
@@ -125,6 +132,7 @@ function onTypeSelect(option) {
 }
 function onColumnSelect(option) {
 	metric.column = option ? option : {}
+	metric.column.name = row_name.value
 }
 
 function addMetric() {
