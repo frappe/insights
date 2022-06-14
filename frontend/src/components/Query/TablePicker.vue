@@ -139,9 +139,9 @@ watch(editTable, (table) => {
 	join.value = { with: {}, key: {}, type: {} }
 	if (table) {
 		if (table.join) {
-			join.value.key = table.join.value.key
-			join.value.with = table.join.value.with
-			join.value.type = table.join.value.type
+			join.value.key = table.join.key
+			join.value.with = table.join.with
+			join.value.type = table.join.type
 		}
 		query.fetchJoinOptions({ table })
 	}
