@@ -15,7 +15,7 @@ from sqlparse import format as format_sql
 from pypika import Order
 from pypika.enums import JoinType
 
-from analytics.analytics.doctype.query.utils import (
+from insights.insights.doctype.query.utils import (
     get_date_range,
     Aggregations,
     ColumnFormat,

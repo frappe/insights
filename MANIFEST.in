@@ -4,15 +4,15 @@ include *.json
 include *.md
 include *.py
 include *.txt
-recursive-include analytics *.css
-recursive-include analytics *.csv
-recursive-include analytics *.html
-recursive-include analytics *.ico
-recursive-include analytics *.js
-recursive-include analytics *.json
-recursive-include analytics *.md
-recursive-include analytics *.png
-recursive-include analytics *.py
-recursive-include analytics *.svg
-recursive-include analytics *.txt
-recursive-exclude analytics *.pyc
+recursive-include insights *.css
+recursive-include insights *.csv
+recursive-include insights *.html
+recursive-include insights *.ico
+recursive-include insights *.js
+recursive-include insights *.json
+recursive-include insights *.md
+recursive-include insights *.png
+recursive-include insights *.py
+recursive-include insights *.svg
+recursive-include insights *.txt
+recursive-exclude insights *.pyc

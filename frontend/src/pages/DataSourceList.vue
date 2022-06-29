@@ -76,7 +76,7 @@ export default {
 	},
 	resources: {
 		get_data_sources: {
-			method: 'analytics.api.get_data_sources',
+			method: 'insights.api.get_data_sources',
 			auto: true,
 		},
 	},

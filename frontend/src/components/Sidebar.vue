@@ -2,7 +2,7 @@
 	<div class="fixed inset-y-0 flex w-64 flex-col" v-if="current_route">
 		<div class="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
 			<div class="flex flex-shrink-0 items-center px-5">
-				<FrappeAnalyticsLogo />
+				<FrappeInsightsLogo />
 			</div>
 			<div class="mt-5 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 px-2 pb-4">
@@ -34,12 +34,12 @@
 </template>
 
 <script>
-import FrappeAnalyticsLogo from '@/components/FrappeAnalyticsLogo.vue'
+import FrappeInsightsLogo from '@/components/FrappeInsightsLogo.vue'
 
 export default {
 	name: 'Sidebar',
 	components: {
-		FrappeAnalyticsLogo,
+		FrappeInsightsLogo,
 	},
 	data() {
 		return {

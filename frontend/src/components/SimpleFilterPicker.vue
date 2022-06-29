@@ -65,7 +65,7 @@ export default {
 	resources: {
 		operator_list() {
 			return {
-				method: 'analytics.api.get_operator_list',
+				method: 'insights.api.get_operator_list',
 				auto: true,
 			}
 		},

@@ -113,7 +113,7 @@ export default {
 	resources: {
 		query_chart() {
 			return {
-				method: 'analytics.api.get_query_chart',
+				method: 'insights.api.get_query_chart',
 				params: {
 					query: this.query.doc.name,
 				},
@@ -133,10 +133,10 @@ export default {
 			}
 		},
 		create_chart: {
-			method: 'analytics.api.create_query_chart',
+			method: 'insights.api.create_query_chart',
 		},
 		update_chart: {
-			method: 'analytics.api.update_query_chart',
+			method: 'insights.api.update_query_chart',
 		},
 	},
 	mounted() {

@@ -1,48 +1,45 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-02-26 08:09:05.723436",
+ "creation": "2022-05-16 05:59:26.973391",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "label",
-  "table",
-  "section_break_3",
-  "join"
+  "foreign_table",
+  "foreign_table_label",
+  "foreign_key"
  ],
  "fields": [
   {
-   "fieldname": "table",
+   "fieldname": "foreign_table",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Table",
+   "label": "Foreign Table",
    "reqd": 1
   },
   {
-   "fieldname": "label",
+   "fieldname": "foreign_key",
    "fieldtype": "Data",
-   "label": "Label",
+   "in_list_view": 1,
+   "label": "Foreign Key",
    "reqd": 1
   },
   {
-   "fieldname": "section_break_3",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "join",
-   "fieldtype": "Code",
-   "label": "Join",
-   "options": "JSON"
+   "fieldname": "foreign_table_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Foreign Table Label",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-06-08 13:09:07.003961",
+ "modified": "2022-06-08 11:33:29.050017",
  "modified_by": "Administrator",
- "module": "Analytics",
- "name": "Query Table",
+ "module": "Insights",
+ "name": "Table Link",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

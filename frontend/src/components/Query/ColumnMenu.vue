@@ -85,7 +85,7 @@ export default {
 	resources: {
 		column_menu_options() {
 			return {
-				method: 'analytics.api.get_column_menu_options',
+				method: 'insights.api.get_column_menu_options',
 				params: { fieldtype: this.column.type },
 				debounce: 300,
 				auto: true,

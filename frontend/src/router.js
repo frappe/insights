@@ -40,7 +40,7 @@ const routes = [
 ]
 
 let router = createRouter({
-	history: createWebHistory('/analytics'),
+	history: createWebHistory('/insights'),
 	routes,
 })
 

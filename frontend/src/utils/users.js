@@ -1,7 +1,7 @@
 import { createResource } from 'frappe-ui'
 
 export let usersResource = createResource({
-	method: 'analytics.api.user.get_user_info',
+	method: 'insights.api.user.get_user_info',
 	cache: 'users',
 	initialData: {},
 })

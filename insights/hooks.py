@@ -1,7 +1,7 @@
 from . import __version__ as app_version
 
-app_name = "analytics"
-app_title = "Frappe Analytics"
+app_name = "insights"
+app_title = "Frappe Insights"
 app_publisher = "Frappe Technologies Pvt. Ltd."
 app_description = "Powerful Reporting Tool for Frappe Apps"
 app_icon = "octicon octicon-file-directory"
@@ -13,15 +13,15 @@ app_license = "GNU GPLv3"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/analytics/css/analytics.css"
-app_include_js = "analytics.bundle.js"
+# app_include_css = "/assets/insights/css/insights.css"
+# app_include_js = "insights.bundle.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/analytics/css/analytics.css"
-# web_include_js = "/assets/analytics/js/analytics.js"
+# web_include_css = "/assets/insights/css/insights.css"
+# web_include_js = "/assets/insights/js/insights.js"
 
 # include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "analytics/public/scss/website"
+# website_theme_scss = "insights/public/scss/website"
 
 # include js, css files in header of web form
 # webform_include_js = {"doctype": "public/js/doctype.js"}
@@ -58,27 +58,27 @@ app_include_js = "analytics.bundle.js"
 
 # add methods and filters to jinja environment
 # jinja = {
-# 	"methods": "analytics.utils.jinja_methods",
-# 	"filters": "analytics.utils.jinja_filters"
+# 	"methods": "insights.utils.jinja_methods",
+# 	"filters": "insights.utils.jinja_filters"
 # }
 
 # Installation
 # ------------
 
-# before_install = "analytics.install.before_install"
-# after_install = "analytics.install.after_install"
+# before_install = "insights.install.before_install"
+# after_install = "insights.install.after_install"
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "analytics.uninstall.before_uninstall"
-# after_uninstall = "analytics.uninstall.after_uninstall"
+# before_uninstall = "insights.uninstall.before_uninstall"
+# after_uninstall = "insights.uninstall.after_uninstall"
 
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config
 
-# notification_config = "analytics.notifications.get_notification_config"
+# notification_config = "insights.notifications.get_notification_config"
 
 # Permissions
 # -----------
@@ -117,39 +117,39 @@ app_include_js = "analytics.bundle.js"
 
 # scheduler_events = {
 # 	"all": [
-# 		"analytics.tasks.all"
+# 		"insights.tasks.all"
 # 	],
 # 	"daily": [
-# 		"analytics.tasks.daily"
+# 		"insights.tasks.daily"
 # 	],
 # 	"hourly": [
-# 		"analytics.tasks.hourly"
+# 		"insights.tasks.hourly"
 # 	],
 # 	"weekly": [
-# 		"analytics.tasks.weekly"
+# 		"insights.tasks.weekly"
 # 	],
 # 	"monthly": [
-# 		"analytics.tasks.monthly"
+# 		"insights.tasks.monthly"
 # 	],
 # }
 
 # Testing
 # -------
 
-# before_tests = "analytics.install.before_tests"
+# before_tests = "insights.install.before_tests"
 
 # Overriding Methods
 # ------------------------------
 #
 # override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "analytics.event.get_events"
+# 	"frappe.desk.doctype.event.event.get_events": "insights.event.get_events"
 # }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 # override_doctype_dashboards = {
-# 	"Task": "analytics.task.get_dashboard_data"
+# 	"Task": "insights.task.get_dashboard_data"
 # }
 
 # exempt linked doctypes from being automatically cancelled
@@ -185,9 +185,9 @@ app_include_js = "analytics.bundle.js"
 # --------------------------------
 
 # auth_hooks = [
-# 	"analytics.auth.validate"
+# 	"insights.auth.validate"
 # ]
 
 website_route_rules = [
-    {"from_route": "/analytics/<path:app_path>", "to_route": "analytics"},
+    {"from_route": "/insights/<path:app_path>", "to_route": "insights"},
 ]

@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "vite",
     "serve": "vite preview",
-    "build": "vite build --base=/assets/analytics/frontend/ && yarn copy-html-entry",
-    "copy-html-entry": "cp ../analytics/public/frontend/index.html ../analytics/www/analytics.html"
+    "build": "vite build --base=/assets/insights/frontend/ && yarn copy-html-entry",
+    "copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html"
   },
   "dependencies": {
     "feather-icons": "^4.28.0",

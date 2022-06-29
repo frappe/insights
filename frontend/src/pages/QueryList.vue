@@ -78,7 +78,7 @@ const newQuery = reactive({
 	title: '',
 })
 
-const getQueries = createResource('analytics.api.get_queries')
+const getQueries = createResource('insights.api.get_queries')
 const queries = computed(() => {
 	const queries = getQueries.data || []
 	queries.forEach((query) => {
@@ -89,7 +89,7 @@ const queries = computed(() => {
 getQueries.fetch()
 
 const getDataSources = createResource({
-	method: 'analytics.api.get_data_sources',
+	method: 'insights.api.get_data_sources',
 	onSuccess(res) {
 		newQuery.dataSource = res[0]['name']
 	},
@@ -101,7 +101,7 @@ getDataSources.fetch()
 
 const router = useRouter()
 const createQuery = createResource({
-	method: 'analytics.api.create_query',
+	method: 'insights.api.create_query',
 	onSuccess(name) {
 		newQuery.title = ''
 		newQuery.data_source = ''

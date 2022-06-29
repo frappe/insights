@@ -3,11 +3,11 @@ from setuptools import setup, find_packages
 with open("requirements.txt") as f:
     install_requires = f.read().strip().split("\n")
 
-# get version from __version__ variable in analytics/__init__.py
-from analytics import __version__ as version
+# get version from __version__ variable in insights/__init__.py
+from insights import __version__ as version
 
 setup(
-    name="analytics",
+    name="insights",
     version=version,
     description="Powerful Reporting Tool for Frappe Apps",
     author="Frappe Technologies Pvt. Ltd.",

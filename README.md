@@ -1,4 +1,4 @@
-## Frappe Analytics
+## Frappe Insights
 
 Powerful Reporting Tool for Frappe Apps
 
