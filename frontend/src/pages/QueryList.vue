@@ -91,7 +91,9 @@ getQueries.fetch()
 const getDataSources = createResource({
 	method: 'insights.api.get_data_sources',
 	onSuccess(res) {
-		newQuery.dataSource = res[0]['name']
+		if (res.length) {
+			newQuery.dataSource = res[0].name
+		}
 	},
 })
 const dataSources = computed(() => {
