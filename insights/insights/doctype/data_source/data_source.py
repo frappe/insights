@@ -77,12 +77,15 @@ class DataSource(Document):
 
     @frappe.whitelist()
     def test_connection(self):
-        result = self.execute_query(
-            "Update `tabUser` set first_name = 'Test' where name = 'Administrator'"
-        )
-        if result:
-            frappe.msgprint("Connection Successful", alert=True)
-            return True
+        connection_status = False
+
+        try:
+            self.execute_query("select 1")
+            connection_status = True
+        except Exception as e:
+            frappe.log_error(title="Data Source Connection Test", message=e)
+
+        return connection_status
 
     def get_tables(self, tables=None):
         if not tables:

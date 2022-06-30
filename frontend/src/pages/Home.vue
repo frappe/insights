@@ -18,30 +18,25 @@
 	</div>
 </template>
 
-<script>
-export default {
-	name: 'Home',
-	data() {
-		return {
-			cards: [
-				{
-					label: 'Data Source',
-					route: '/data-source',
-				},
-				{
-					label: 'Table',
-					route: '/table',
-				},
-				{
-					label: 'Query',
-					route: '/query',
-				},
-				{
-					label: 'Dashboard',
-					route: '/dashboard',
-				},
-			],
-		}
+<script setup>
+import { ref } from 'vue'
+
+const cards = ref([
+	{
+		label: 'Data Source',
+		route: '/data-source',
 	},
-}
+	{
+		label: 'Table',
+		route: '/table',
+	},
+	{
+		label: 'Query',
+		route: '/query',
+	},
+	{
+		label: 'Dashboard',
+		route: '/dashboard',
+	},
+])
 </script>

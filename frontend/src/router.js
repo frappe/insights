@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getOnboardingStatus } from '@/controllers/onboarding'
 
 const routes = [
+	{
+		path: '/setup',
+		name: 'Setup',
+		component: () => import('@/pages/Onboarding.vue'),
+	},
 	{
 		path: '/',
 		name: 'Home',
@@ -44,10 +50,20 @@ let router = createRouter({
 	routes,
 })
 
-router.beforeEach((to, from, next) => {
-	const is_logged_in = !document.cookie.includes('user_id=Guest')
+router.beforeEach(async (to, from, next) => {
+	const isLoggedIn = !document.cookie.includes('user_id=Guest')
 
-	if (is_logged_in) {
+	if (isLoggedIn) {
+		const isOnboarded = await getOnboardingStatus()
+
+		if (!isOnboarded && to.name !== 'Setup') {
+			return next('/setup')
+		}
+
+		if (isOnboarded && to.name === 'Setup') {
+			return next('/')
+		}
+
 		if (to.path === '/login') {
 			next('/')
 		} else {

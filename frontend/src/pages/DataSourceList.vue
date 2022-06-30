@@ -3,9 +3,7 @@
 		<header class="flex h-[5rem] items-center justify-between border-b py-4">
 			<h1 class="text-3xl font-bold text-gray-900">Data Sources</h1>
 			<div>
-				<Button appearance="primary" @click="create_new_source_dialog = true">
-					+ Add Data Source
-				</Button>
+				<Button appearance="primary" @click="new_dialog = true"> + Add Data Source </Button>
 			</div>
 		</header>
 		<main class="flex h-[calc(100%-5rem)] flex-col space-y-4 py-4">
@@ -49,7 +47,7 @@
 				</div>
 			</div>
 		</main>
-		<Dialog :options="{ title: 'New Data Source' }" v-model="create_new_source_dialog">
+		<Dialog :options="{ title: 'New Data Source' }" v-model="new_dialog">
 			<template #body-content>
 				<div class="text-sm text-gray-400">Not implemented yet</div>
 			</template>
@@ -71,7 +69,7 @@ export default {
 	},
 	data() {
 		return {
-			create_new_source_dialog: false,
+			new_dialog: false,
 		}
 	},
 	resources: {

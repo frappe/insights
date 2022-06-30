@@ -6,13 +6,13 @@
 				<ol role="list" class="flex items-center space-x-2">
 					<li>
 						<div>
-							<a href="#">
+							<router-link to="/">
 								<img
 									class="app-logo"
 									style="width: 20px"
 									src="../assets/frappe-framework-logo.svg"
 								/>
-							</a>
+							</router-link>
 						</div>
 					</li>
 					<li v-for="(page, idx) in routes" :key="page.name">
