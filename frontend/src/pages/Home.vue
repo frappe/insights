@@ -1,9 +1,9 @@
 <template>
-	<div>
-		<header class="flex h-20 items-center border-b py-4">
+	<BasePage>
+		<template #header>
 			<h1 class="text-3xl font-bold leading-tight text-gray-900">Home</h1>
-		</header>
-		<main class="flex h-[calc(100%-5rem)] py-4">
+		</template>
+		<template #main>
 			<div class="grid w-full auto-rows-min grid-cols-3 gap-4">
 				<router-link
 					v-for="card in cards"
@@ -14,11 +14,13 @@
 					{{ card.label }}
 				</router-link>
 			</div>
-		</main>
-	</div>
+		</template>
+	</BasePage>
 </template>
 
 <script setup>
+import BasePage from '@/components/BasePage.vue'
+
 import { ref } from 'vue'
 
 const cards = ref([

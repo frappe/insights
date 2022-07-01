@@ -34,11 +34,6 @@ const routes = [
 		component: () => import('@/pages/Query.vue'),
 	},
 	{
-		path: '/reports',
-		name: 'Reports',
-		component: () => import('@/pages/Reports.vue'),
-	},
-	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
