@@ -64,7 +64,6 @@ import QueryTransform from '@/components/Query/QueryTransform.vue'
 import QueryChart from '@/components/Query/QueryChart.vue'
 import QueryMenu from '@/components/Query/QueryMenu.vue'
 
-import moment from 'moment'
 import Query from '@/controllers/query'
 import { computed, ref, provide, inject } from 'vue'
 
@@ -77,9 +76,6 @@ provide('query', query)
 
 const tableLabels = computed(() => {
 	return query.tables.map((table) => table.label).join(', ')
-})
-const lastUpdated = computed(() => {
-	return moment(query.doc.modified).fromNow()
 })
 const executionTime = computed(() => {
 	return Math.round(query.doc.execution_time * 100) / 100

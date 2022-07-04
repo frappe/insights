@@ -115,7 +115,7 @@ const createQuery = createResource({
 	method: 'insights.api.create_query',
 	onSuccess(name) {
 		newQuery.title = ''
-		newQuery.data_source = ''
+		newQuery.dataSource = ''
 		openDialog.value = false
 		router.push(`/query/${name}`)
 	},

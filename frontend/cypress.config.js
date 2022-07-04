@@ -6,7 +6,7 @@ module.exports = defineConfig({
 			framework: 'vue',
 			bundler: 'vite',
 		},
-		specPattern: '**/components/**/*.test.js',
+		specPattern: 'src/tests/components/**/*.test.js',
 		viewportWidth: 1280,
 		viewportHeight: 720,
 	},
@@ -16,7 +16,7 @@ module.exports = defineConfig({
 		env: {
 			adminPassword: 'frappe',
 		},
-		specPattern: '**/e2e/**/*.test.js',
+		specPattern: 'src/tests/e2e/**/*.test.js',
 		viewportWidth: 1280,
 		viewportHeight: 720,
 	},
