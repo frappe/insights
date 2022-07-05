@@ -1,27 +1,27 @@
 <template>
 	<div class="fixed inset-y-0 flex w-64 flex-col" v-if="current_route">
-		<div class="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
-			<div class="flex flex-shrink-0 items-center px-5">
-				<FrappeInsightsLogo />
+		<div class="flex flex-grow flex-col overflow-y-auto p-6 pr-0">
+			<div class="flex flex-shrink-0 items-center px-1">
+				<FrappeInsights />
 			</div>
-			<div class="mt-5 flex flex-grow flex-col">
-				<nav class="flex-1 space-y-1 px-2 pb-4">
+			<div class="mt-4 flex flex-grow flex-col">
+				<nav class="flex-1 space-y-1 pb-4 text-base">
 					<router-link
 						v-for="route in routes"
 						:key="route.path"
 						:to="route.path"
 						:class="[
 							route.current
-								? 'bg-gray-100 text-gray-900'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-							'group flex items-center rounded-md px-2 py-2 text-sm font-medium',
+								? 'bg-gray-200 text-gray-800'
+								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
+							'group flex items-center rounded-md px-2 py-2 font-medium',
 						]"
 						aria-current="page"
 					>
 						<FeatherIcon
 							:name="route.icon"
 							:class="[
-								route.current ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500',
+								route.current ? 'text-gray-600' : 'text-gray-500 group-hover:text-gray-600',
 								'mr-3 h-4 w-4 flex-shrink-0',
 							]"
 						/>
@@ -29,26 +29,35 @@
 					</router-link>
 				</nav>
 			</div>
+			<div class="flex flex-shrink-0 border-gray-200 px-2 pt-4 text-sm font-light text-gray-500">
+				Insights Beta v0.0.1
+			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import FrappeInsightsLogo from '@/components/FrappeInsightsLogo.vue'
+import FrappeInsights from '@/components/icons/FrappeInsights.vue'
 
 export default {
 	name: 'Sidebar',
 	components: {
-		FrappeInsightsLogo,
+		FrappeInsights,
 	},
 	data() {
 		return {
 			routes: [
 				{
-					path: '/',
+					path: '/dashboard',
 					label: 'Dashboards',
 					icon: 'bar-chart-2',
 					name: 'Dashboard',
+				},
+				{
+					path: '/data-source',
+					label: 'Data Sources',
+					icon: 'database',
+					name: 'Data Source',
 				},
 				{
 					path: '/query',

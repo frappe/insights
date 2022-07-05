@@ -2,7 +2,7 @@
 	<BasePage>
 		<template #header>
 			<div class="flex flex-1 justify-between">
-				<h1 class="text-3xl font-bold text-gray-900">Queries</h1>
+				<h1 class="text-3xl font-medium text-gray-900">Queries</h1>
 				<div>
 					<Button appearance="primary" @click="openDialog = true"> + Add Query </Button>
 				</div>
@@ -10,11 +10,11 @@
 		</template>
 		<template #main>
 			<div class="flex min-h-[26rem] flex-1 flex-col space-y-4">
-				<div class="flex space-x-4">
-					<Input type="text" placeholder="Title" inputClass="!bg-gray-200" />
-					<Input type="text" placeholder="Data Source" inputClass="!bg-gray-200" />
+				<div class="mt-2 flex space-x-4">
+					<Input type="text" placeholder="Title" />
+					<Input type="text" placeholder="Data Source" />
 				</div>
-				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border bg-white shadow">
+				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
 					<!-- List Header -->
 					<div class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500">
 						<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>

@@ -2,12 +2,12 @@
 	<div
 		class="flex h-full min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700"
 	>
-		<div class="flex h-[calc(100%-2.5rem)] divide-x pt-4">
+		<div class="-mx-3 flex h-[calc(100%-1.5rem)]">
 			<TablePicker />
 			<ColumnPicker />
 			<FilterPicker />
 		</div>
-		<div class="flex h-10 flex-shrink-0 border-t">
+		<div class="-mt-1 flex h-6 flex-shrink-0">
 			<LimitsAndOrder />
 		</div>
 	</div>

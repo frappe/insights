@@ -2,7 +2,7 @@
 	<BasePage>
 		<template #header>
 			<div class="flex flex-1 justify-between">
-				<h1 class="text-3xl font-bold text-gray-900">Data Sources</h1>
+				<h1 class="text-3xl font-medium text-gray-900">Data Sources</h1>
 				<div>
 					<Button appearance="primary" @click="new_dialog = true"> + Add Data Source </Button>
 				</div>
@@ -13,7 +13,7 @@
 				<div class="flex space-x-4">
 					<Input type="text" placeholder="Status" />
 				</div>
-				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border bg-white shadow">
+				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
 					<!-- List Header -->
 					<div class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500">
 						<p class="mr-4"><Input type="checkbox" class="rounded-md border-gray-400" /></p>

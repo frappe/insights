@@ -88,6 +88,14 @@ export default class Query {
 			return this.resource.setLimit.submit({ limit })
 		}
 	}
+
+	reload() {
+		return this.resource.reload.submit()
+	}
+
+	delete() {
+		return this.resource.delete.submit()
+	}
 }
 
 function getQueryResource(name) {

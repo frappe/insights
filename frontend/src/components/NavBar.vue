@@ -6,13 +6,6 @@
 		<!-- Breadcrumbs -->
 		<nav class="flex" aria-label="Breadcrumb">
 			<ol role="list" class="flex items-center space-x-2">
-				<li>
-					<div>
-						<router-link to="/">
-							<FrappeInsights />
-						</router-link>
-					</div>
-				</li>
 				<li v-for="(page, idx) in routes" :key="page.name">
 					<div class="flex items-center text-sm">
 						<FeatherIcon

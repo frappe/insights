@@ -2,37 +2,19 @@
 	<BasePage v-if="query.doc">
 		<template #header>
 			<!-- Height 5 rem -->
-			<div class="flex flex-1 flex-col">
-				<div class="flex justify-between pt-3">
-					<div class="relative flex flex-col items-start space-y-1">
-						<input
-							type="text"
-							v-model="query.doc.title"
-							ref="titleInput"
-							spellcheck="false"
-							@blur="query.reload()"
-							:size="Math.max(query.doc.title.length, 4)"
-							@keydown.enter="updateTitle"
-							class="-mx-2 -my-1 rounded border-none bg-transparent p-0 px-2 py-1 text-3xl font-bold caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
-						/>
-						<div class="flex space-x-3 text-base font-light text-gray-600">
-							<div v-if="query.dataSource" class="flex items-center">
-								<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
-								<span> {{ query.dataSource }} </span>
-							</div>
-							<div v-if="tableLabels" class="flex items-center">
-								<FeatherIcon name="layout" class="mr-1.5 h-3 w-3" />
-								<span> {{ tableLabels }} </span>
-							</div>
-							<div v-if="executionTime" class="flex items-center">
-								<FeatherIcon name="clock" class="mr-1.5 h-3 w-3" />
-								<span> Took {{ executionTime }} sec </span>
-							</div>
-						</div>
-					</div>
-					<div class="flex space-x-2">
-						<QueryMenu />
-					</div>
+			<div class="flex flex-1 items-center justify-between">
+				<input
+					type="text"
+					v-model="query.doc.title"
+					ref="titleInput"
+					spellcheck="false"
+					@blur="query.reload()"
+					:size="Math.max(query.doc.title.length, 4)"
+					@keydown.enter="updateTitle"
+					class="-mx-2 -my-1 rounded border-none bg-transparent p-0 px-2 py-1 text-3xl font-medium caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
+				/>
+				<div class="flex space-x-2">
+					<QueryMenu />
 				</div>
 			</div>
 		</template>
@@ -40,10 +22,8 @@
 		<template #main>
 			<div class="flex flex-1 flex-col">
 				<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
-				<!-- 100% - 2.5rem (tabs) + 1rem (margin-top) -->
-				<div
-					class="mt-4 flex h-[calc(100%-3.5rem)] min-h-[26rem] w-full rounded-md border bg-white shadow"
-				>
+				<!-- 100% - 2.5rem (tabs) -->
+				<div class="flex h-[calc(100%-2rem)] min-h-[26rem] w-full rounded-md">
 					<QueryBuilder v-show="active_tab == 'Build'" />
 					<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
 					<QueryTransform v-show="active_tab == 'Transform'" :query="query.resource" />

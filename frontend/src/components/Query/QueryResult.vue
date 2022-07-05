@@ -1,26 +1,29 @@
 <template>
-	<div class="relative flex h-full w-full select-text text-base">
+	<div class="relative flex h-full w-full select-text px-1 pt-4 text-base">
 		<div
-			v-if="!query.columns || query.columns.length === 0"
-			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
+			v-if="query.columns?.length === 0"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>Select at least one column to display the result</p>
 		</div>
 
 		<div
-			v-else-if="!needsExecution && (!result || result.length === 0)"
-			class="m-4 flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
+			v-else-if="!needsExecution && result?.length === 0"
+			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
 		</div>
 
 		<div
 			v-else
-			class="relative flex h-full w-full flex-col"
+			class="relative flex h-full w-full flex-col-reverse"
 			:class="{ 'blur-[2px]': needsExecution }"
 		>
+			<div class="-mb-1 flex h-10 w-full flex-shrink-0 pt-2">
+				<LimitsAndOrder />
+			</div>
 			<!-- Table -->
-			<div class="relative h-[calc(100%-2.5rem)] w-full overflow-scroll rounded-md">
+			<div class="relative h-[calc(100%-2.5rem)] w-full overflow-scroll rounded-md border">
 				<table class="border-separate">
 					<thead class="sticky top-0 text-gray-600">
 						<tr>
@@ -57,12 +60,9 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="flex h-10 w-full flex-shrink-0 border-t">
-				<LimitsAndOrder />
-			</div>
 		</div>
 		<div
-			v-if="needsExecution"
+			v-if="needsExecution && query.columns?.length > 0"
 			class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
 		>
 			<Button

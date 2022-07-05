@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full min-h-[12rem] w-full flex-1 p-4">
+	<div class="flex h-full min-h-[12rem] w-full flex-1 px-1 pt-4">
 		<div class="flex h-full w-1/4 flex-shrink-0 flex-col space-y-3 border-r pr-4">
 			<div class="space-y-2 text-gray-600">
 				<div class="text-sm font-light text-gray-500">Select Transform Type</div>
@@ -19,7 +19,7 @@
 		</div>
 		<div class="flex w-3/4 pl-4">
 			<div
-				v-if="!query.doc.transform_result"
+				v-if="!query.doc.transform_result || query.doc.transform_result == '{}'"
 				class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 			>
 				<p>Apply transform to view result</p>

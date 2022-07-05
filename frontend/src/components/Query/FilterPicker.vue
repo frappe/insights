@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 flex-col px-4 pb-4">
+	<div class="m-4 flex flex-1 flex-col">
 		<div v-if="!addingFilter" class="mb-4 flex items-center justify-between">
 			<div class="text-lg font-medium">Filters</div>
 			<Button icon="plus" @click="addingFilter = true"></Button>
