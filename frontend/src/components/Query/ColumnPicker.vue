@@ -111,7 +111,7 @@
 
 <script setup>
 import Draggable from 'vuedraggable'
-import DragHandleIcon from '@/components/DragHandleIcon.vue'
+import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
 import MetricPicker from '@/components/Query/MetricPicker.vue'
 import DimensionPicker from '@/components/Query/DimensionPicker.vue'
 

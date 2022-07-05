@@ -28,8 +28,8 @@ const routes = [
 		component: () => import('@/pages/QueryList.vue'),
 	},
 	{
-		name: 'Query',
 		props: true,
+		name: 'Query',
 		path: '/query/:name',
 		component: () => import('@/pages/Query.vue'),
 	},

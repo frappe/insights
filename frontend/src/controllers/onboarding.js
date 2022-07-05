@@ -5,6 +5,7 @@ const isOnboarded = ref(localStorage.getItem('isOnboarded') === 'true')
 
 const getOnboardingStatus = async () => {
 	if (localStorage.getItem('isOnboarded')) {
+		isOnboarded.value = localStorage.getItem('isOnboarded') === 'true'
 		return isOnboarded.value
 	}
 
