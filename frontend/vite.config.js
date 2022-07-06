@@ -12,7 +12,7 @@ export default defineConfig({
 			include: 'src/*',
 			exclude: ['node_modules', 'src/test/'],
 			extension: ['.js', '.vue'],
-			forceBuildInstrument: true,
+			// forceBuildInstrument: true,
 		}),
 	],
 	server: {
