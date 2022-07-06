@@ -59,7 +59,7 @@
 <script setup>
 import NavBar from '@/components/NavBar.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import FrappeInsights from '@/components/icons/FrappeInsights.vue'
+import FrappeInsights from '@/components/Icons/FrappeInsights.vue'
 
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'

@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import FrappeInsights from '@/components/icons/FrappeInsights.vue'
+import FrappeInsights from '@/components/Icons/FrappeInsights.vue'
 
 export default {
 	name: 'Sidebar',
