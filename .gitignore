@@ -17,3 +17,5 @@ node_modules
 insights/docs/current
 insights/public/frontend
 insights/www/insights.html
+.nyc_output
+coverage/

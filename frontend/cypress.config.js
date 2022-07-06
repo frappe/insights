@@ -19,5 +19,9 @@ module.exports = defineConfig({
 		specPattern: 'src/tests/e2e/**/*.test.js',
 		viewportWidth: 1280,
 		viewportHeight: 720,
+		setupNodeEvents(on, config) {
+			require('@cypress/code-coverage/task')(on, config)
+			return config
+		},
 	},
 })
