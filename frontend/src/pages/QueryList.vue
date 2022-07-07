@@ -80,6 +80,7 @@ import moment from 'moment'
 import { useRouter } from 'vue-router'
 import { computed, reactive, ref } from 'vue'
 import { createResource } from 'frappe-ui'
+import { updateDocumentTitle } from '@/utils/document'
 
 const openDialog = ref(false)
 const newQuery = reactive({
@@ -129,4 +130,9 @@ const submitQuery = () => {
 		})
 	}
 }
+
+const pageMeta = ref({
+	title: 'Queries',
+})
+updateDocumentTitle(pageMeta)
 </script>

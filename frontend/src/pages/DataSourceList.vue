@@ -63,6 +63,7 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import { Badge, createResource } from 'frappe-ui'
+import { updateDocumentTitle } from '@/utils/document'
 
 import moment from 'moment'
 import { computed, ref } from 'vue'
@@ -81,4 +82,9 @@ const dataSources = computed(() => {
 		return source
 	})
 })
+
+const pageMeta = ref({
+	title: 'Data Sources',
+})
+updateDocumentTitle(pageMeta)
 </script>

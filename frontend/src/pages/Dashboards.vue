@@ -12,5 +12,12 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import BasePage from '@/components/BasePage.vue'
+import { updateDocumentTitle } from '@/utils/document'
+
+const pageMeta = ref({
+	title: 'Dashboards',
+})
+updateDocumentTitle(pageMeta)
 </script>

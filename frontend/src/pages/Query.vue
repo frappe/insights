@@ -45,6 +45,7 @@ import QueryChart from '@/components/Query/QueryChart.vue'
 import QueryMenu from '@/components/Query/QueryMenu.vue'
 
 import Query from '@/controllers/query'
+import { updateDocumentTitle } from '@/utils/document'
 import { computed, ref, provide, inject } from 'vue'
 
 const tabs = ref(['Build', 'Result', 'Transform', 'Visualize'])
@@ -53,6 +54,14 @@ const active_tab = ref('Build')
 const props = defineProps(['name'])
 const query = new Query(props.name)
 provide('query', query)
+
+const pageMeta = computed(() => {
+	return {
+		title: query.doc?.name,
+		subtitle: 'Query',
+	}
+})
+updateDocumentTitle(pageMeta)
 
 const tableLabels = computed(() => {
 	return query.tables.map((table) => table.label).join(', ')

@@ -9,16 +9,63 @@
 			<div class="text-lg font-semibold text-gray-800">Add Database</div>
 			<div class="flex space-x-4">
 				<div class="flex-1 space-y-4">
-					<Input v-model="db.type" type="select" label="Database Type" :options="['MariaDB']" />
-					<Input v-model="db.title" type="text" label="Title" placeholder="LocalDB"></Input>
-					<Input v-model="db.host" type="text" label="Host" placeholder="localhost"></Input>
-					<Input v-model="db.port" type="number" label="Port" placeholder="1234"></Input>
-					<Input v-model="db.useSSL" type="checkbox" label="Use secure connection (SSL)?"></Input>
+					<Input
+						v-model="db.type"
+						type="select"
+						label="Database Type"
+						:options="['MariaDB']"
+						autocomplete="off"
+					/>
+					<Input
+						v-model="db.title"
+						type="text"
+						label="Title"
+						placeholder="LocalDB"
+						autocomplete="off"
+					/>
+					<Input
+						v-model="db.host"
+						type="text"
+						label="Host"
+						placeholder="localhost"
+						autocomplete="off"
+					/>
+					<Input
+						v-model="db.port"
+						type="number"
+						label="Port"
+						placeholder="1234"
+						autocomplete="off"
+					/>
+					<Input
+						v-model="db.useSSL"
+						type="checkbox"
+						label="Use secure connection (SSL)?"
+						autocomplete="off"
+					/>
 				</div>
 				<div class="flex-1 space-y-4">
-					<Input v-model="db.name" type="text" label="Database Name" placeholder="DB_1267891" />
-					<Input v-model="db.username" type="text" label="Username" placeholder="read_only_user" />
-					<Input v-model="db.password" type="password" label="Password" placeholder="****"></Input>
+					<Input
+						v-model="db.name"
+						type="text"
+						label="Database Name"
+						placeholder="DB_1267891"
+						autocomplete="off"
+					/>
+					<Input
+						v-model="db.username"
+						type="text"
+						label="Username"
+						placeholder="read_only_user"
+						autocomplete="off"
+					/>
+					<Input
+						v-model="db.password"
+						type="password"
+						label="Password"
+						placeholder="****"
+						autocomplete="off"
+					/>
 				</div>
 			</div>
 			<div class="flex justify-end space-x-2">
