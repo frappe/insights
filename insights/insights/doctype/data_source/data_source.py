@@ -20,6 +20,16 @@ class DataSource(Document):
         else:
             self.status = "Inactive"
 
+    def on_update(self):
+        self.import_tables()
+
+    def on_trash(self):
+        # TODO: optimize this
+        linked_doctypes = ["Table"]
+        for doctype in linked_doctypes:
+            for table in frappe.db.get_all(doctype, {"data_source": self.name}):
+                frappe.delete_doc(doctype, table.name)
+
     def create_db(self):
         if self.database_type != "MariaDB":
             raise NotImplementedError

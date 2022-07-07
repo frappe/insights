@@ -82,10 +82,11 @@
 				<Button
 					appearance="primary"
 					:disabled="submitDisabled"
+					loadingText="Adding Database..."
 					:loading="createDatabase.loading"
 					@click="createNewDatabase"
 				>
-					Submit
+					{{ submitLabel }}
 				</Button>
 			</div>
 		</main>
@@ -130,6 +131,11 @@ const connectIcon = computed(() => {
 	if (db.connectionSuccess === null) return
 	if (db.connectionSuccess) return 'check'
 	return 'alert-circle'
+})
+
+const submitLabel = computed(() => {
+	if (createDatabase.loading) return ''
+	return 'Add Database'
 })
 
 const testConnection = () => {
