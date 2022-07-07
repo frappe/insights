@@ -21,9 +21,23 @@
 
 		<template #main>
 			<div class="flex flex-1 flex-col">
+				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-base font-light text-gray-600">
+					<div v-if="query.dataSource" class="flex items-center">
+						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
+						<span> {{ query.dataSource }} </span>
+					</div>
+					<div v-if="tableLabels" class="flex items-center">
+						<FeatherIcon name="layout" class="mr-1.5 h-3 w-3" />
+						<span> {{ tableLabels }} </span>
+					</div>
+					<div v-if="executionTime" class="flex items-center">
+						<FeatherIcon name="clock" class="mr-1.5 h-3 w-3" />
+						<span> Took {{ executionTime }} sec </span>
+					</div>
+				</div>
 				<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
-				<!-- 100% - 2.5rem (tabs) -->
-				<div class="flex h-[calc(100%-2rem)] min-h-[26rem] w-full rounded-md">
+				<!-- 100% - 2rem (tabs) + 1.25rem (query meta) + -0.75rem (-ve margin-top) -->
+				<div class="flex h-[calc(100%-2.5rem)] min-h-[26rem] w-full rounded-md">
 					<QueryBuilder v-show="active_tab == 'Build'" />
 					<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
 					<QueryTransform v-show="active_tab == 'Transform'" :query="query.resource" />
