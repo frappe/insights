@@ -20,7 +20,7 @@
 		</template>
 
 		<template #main>
-			<div class="flex flex-1 flex-col">
+			<div class="flex w-full flex-col">
 				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-base font-light text-gray-600">
 					<div v-if="query.dataSource" class="flex items-center">
 						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
@@ -40,8 +40,7 @@
 				<div class="flex h-[calc(100%-2.5rem)] min-h-[26rem] w-full rounded-md">
 					<QueryBuilder v-show="active_tab == 'Build'" />
 					<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
-					<QueryTransform v-show="active_tab == 'Transform'" :query="query.resource" />
-					<QueryChart v-if="active_tab == 'Visualize'" :query="query.resource" />
+					<QueryVisualizer v-if="active_tab == 'Visualize'" :query="query.resource" />
 				</div>
 			</div>
 		</template>
@@ -55,14 +54,14 @@ import TabSwitcher from '@/components/TabSwitcher.vue'
 import QueryBuilder from '@/components/Query/QueryBuilder.vue'
 import QueryResult from '@/components/Query/QueryResult.vue'
 import QueryTransform from '@/components/Query/QueryTransform.vue'
-import QueryChart from '@/components/Query/QueryChart.vue'
+import QueryVisualizer from '@/components/Query/QueryVisualizer.vue'
 import QueryMenu from '@/components/Query/QueryMenu.vue'
 
 import Query from '@/controllers/query'
 import { updateDocumentTitle } from '@/utils/document'
 import { computed, ref, provide, inject } from 'vue'
 
-const tabs = ref(['Build', 'Result', 'Transform', 'Visualize'])
+const tabs = ref(['Build', 'Result', 'Visualize'])
 const active_tab = ref('Build')
 
 const props = defineProps(['name'])

@@ -79,6 +79,13 @@ export default class Query {
 		return JSON.parse(this.doc.result || '[]')
 	}
 
+	getColumnValues(column) {
+		const columnIdx = this.columns.findIndex((c) => c.column === column)
+		if (columnIdx > -1) {
+			return this.result.map((row) => row[columnIdx])
+		}
+	}
+
 	setValue(key, value) {
 		return this.resource.setValue.submit({ [key]: value })
 	}
