@@ -12,11 +12,11 @@
 				<p>No columns selected</p>
 			</div>
 			<div
-				v-else-if="query.columns.length > 0"
+				v-else-if="query.doc.columns.length > 0"
 				class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
 			>
 				<Draggable
-					v-model="query.columns"
+					v-model="query.doc.columns"
 					group="columns"
 					item-key="name"
 					@sort="updateColumnOrder"

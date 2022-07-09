@@ -7,7 +7,7 @@
 			<ColumnPicker />
 			<FilterPicker />
 		</div>
-		<div class="-mt-1 flex h-6 flex-shrink-0">
+		<div class="flex h-6 flex-shrink-0">
 			<LimitsAndOrder />
 		</div>
 	</div>
