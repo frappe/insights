@@ -171,12 +171,21 @@ class Query(Document):
 
     @frappe.whitelist()
     def fetch_tables(self):
+        _tables = []
         if not self.tables:
-            return frappe.get_all(
-                "Table",
-                filters={"data_source": self.data_source},
-                fields=["table", "label"],
+
+            def get_all_tables():
+                return frappe.get_all(
+                    "Table",
+                    filters={"data_source": self.data_source},
+                    fields=["table", "label"],
+                    debug=True,
+                )
+
+            _tables = frappe.cache().get_value(
+                f"query_tables_{self.data_source}", get_all_tables
             )
+
         else:
             tables = [d.table for d in self.tables]
             Table = frappe.qb.DocType("Table")
@@ -190,7 +199,9 @@ class Query(Document):
                 )
                 .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
             )
-            return query.run(as_dict=True)
+            _tables = query.run(as_dict=True)
+
+        return _tables
 
     @frappe.whitelist()
     def fetch_columns(self):

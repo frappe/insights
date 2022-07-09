@@ -9,7 +9,7 @@
 					@focus="togglePopover"
 					@change="
 						(e) => {
-							filter_query = e.target.value
+							filterQuery = e.target.value
 							togglePopover(true)
 						}
 					"
@@ -28,14 +28,14 @@
 					leave-to-class="transform scale-95 opacity-0"
 				>
 					<!-- `open` is `true` only when first input even is fired on ComboboxInput -->
-					<!-- So, before input event is fired on the input, filter_query is empty, so we can display the options  -->
-					<div v-show="(!filter_query || open) && options.length > 0">
+					<!-- So, before input event is fired on the input, filterQuery is empty, so we can display the options  -->
+					<div v-show="(!filterQuery || open) && uniqueOptions.length > 0">
 						<ComboboxOptions
 							static
 							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
 						>
 							<div
-								v-if="filteredOptions.length === 0 && filter_query !== ''"
+								v-if="filteredOptions.length === 0 && filterQuery !== ''"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
 							>
 								No results found
@@ -109,7 +109,7 @@ const props = defineProps({
 	},
 })
 
-const filter_query = ref('')
+const filterQuery = ref('')
 const selectedOption = computed({
 	get() {
 		return props.modelValue || {}
@@ -120,23 +120,23 @@ const selectedOption = computed({
 		emit('selectOption', value || {})
 	},
 })
-
-const filteredOptions = computed(() => {
-	// filter out duplicates
-	const options = props.options.filter((option, index, self) => {
+const uniqueOptions = computed(() => {
+	return props.options.filter((option, index, self) => {
 		return self.findIndex((t) => t.value === option.value) === index
 	})
-	return !filter_query.value
-		? options
-		: options.filter((option) =>
+})
+const filteredOptions = computed(() => {
+	return !filterQuery.value
+		? uniqueOptions.value.slice(0, 50)
+		: uniqueOptions.value.filter((option) =>
 				option.label
 					.toLowerCase()
 					.replace(/\s+/g, '')
-					.includes(filter_query.value.toLowerCase().replace(/\s+/g, ''))
+					.includes(filterQuery.value.toLowerCase().replace(/\s+/g, ''))
 		  )
 })
 
-watch(filter_query, (newValue, oldValue) => {
+watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 
 	if (newValue === '') {
