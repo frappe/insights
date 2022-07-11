@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.database.mariadb.database import MariaDBDatabase
+from frappe.utils import cint
 from frappe.model.document import Document
 
 from contextlib import contextmanager
@@ -37,7 +38,7 @@ class DataSource(Document):
         if self.database_type == "MariaDB":
             return MariaDBDatabase(
                 host=self.host,
-                port=self.port,
+                port=cint(self.port),
                 user=self.username,
                 password=self.get_password(),
             )
