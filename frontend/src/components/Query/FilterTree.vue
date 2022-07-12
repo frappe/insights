@@ -24,7 +24,12 @@
 						v-else
 						class="group relative flex h-9 w-fit cursor-pointer items-center rounded-md border px-2 hover:bg-gray-50"
 						@click.prevent.stop="
-							$emit('edit-filter', { level, position, idx, is_expression: condition.is_expression })
+							$emit('edit-filter', {
+								level,
+								position,
+								idx,
+								is_expression: condition.is_expression,
+							})
 						"
 					>
 						<Expression :condition="condition" />
@@ -39,7 +44,9 @@
 								'right-[-2.5rem] px-2': group_operator == '&',
 								'right-[-3rem] px-1.5': group_operator == 'or',
 							}"
-							@click.prevent.stop="$emit('branch-filter-at', { level, position, idx })"
+							@click.prevent.stop="
+								$emit('branch-filter-at', { level, position, idx })
+							"
 						>
 							+ {{ group_operator == '&' ? 'or' : 'and' }}
 						</div>

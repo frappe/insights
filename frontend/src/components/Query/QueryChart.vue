@@ -1,9 +1,15 @@
 <template>
 	<div class="flex h-full min-h-[12rem] w-full flex-1 px-1 pt-4">
-		<div class="flex h-full w-1/4 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4">
+		<div
+			class="flex h-full w-1/4 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4"
+		>
 			<div class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Chart Title</div>
-				<Input type="text" placeholder="Enter chart title..." v-model="unsaved_chart.title" />
+				<Input
+					type="text"
+					placeholder="Enter chart title..."
+					v-model="unsaved_chart.title"
+				/>
 			</div>
 			<div class="space-y-2">
 				<div class="text-base font-light text-gray-500">Select Chart Type</div>
@@ -11,8 +17,12 @@
 					<div
 						class="flex flex-col items-center space-y-1 text-gray-500"
 						:class="{
-							'cursor-pointer hover:text-gray-600': !invalid_chart_types.includes(chart.name),
-							'cursor-not-allowed hover:text-gray-500': invalid_chart_types.includes(chart.name),
+							'cursor-pointer hover:text-gray-600': !invalid_chart_types.includes(
+								chart.name
+							),
+							'cursor-not-allowed hover:text-gray-500': invalid_chart_types.includes(
+								chart.name
+							),
 						}"
 						v-for="(chart, i) in chart_types"
 						:key="i"
@@ -44,15 +54,25 @@
 			</div>
 			<div class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Select Dimension</div>
-				<Input type="select" v-model="unsaved_chart.label_column" :options="label_columns" />
+				<Input
+					type="select"
+					v-model="unsaved_chart.label_column"
+					:options="label_columns"
+				/>
 			</div>
 			<div class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Select Measure</div>
-				<Input type="select" v-model="unsaved_chart.value_column" :options="value_columns" />
+				<Input
+					type="select"
+					v-model="unsaved_chart.value_column"
+					:options="value_columns"
+				/>
 			</div>
 			<button
 				class="w-full rounded-md bg-gray-100 py-1.5 text-lg text-gray-500"
-				:class="{ 'cursor-pointer bg-blue-500 text-white hover:bg-blue-600': !save_disabled }"
+				:class="{
+					'cursor-pointer bg-blue-500 text-white hover:bg-blue-600': !save_disabled,
+				}"
 				@click="save_chart"
 			>
 				Save Changes
@@ -148,12 +168,16 @@ export default {
 		},
 		label_columns() {
 			return [''].concat(
-				this.query.doc.columns.filter((c) => c.aggregation == 'Group By').map((c) => c.label)
+				this.query.doc.columns
+					.filter((c) => c.aggregation == 'Group By')
+					.map((c) => c.label)
 			)
 		},
 		value_columns() {
 			return [''].concat(
-				this.query.doc.columns.filter((c) => c.aggregation != 'Group By').map((c) => c.label)
+				this.query.doc.columns
+					.filter((c) => c.aggregation != 'Group By')
+					.map((c) => c.label)
 			)
 		},
 		invalid_chart_types() {

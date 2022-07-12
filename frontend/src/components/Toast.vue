@@ -12,7 +12,11 @@
 						<div v-if="icon || appearanceIcon" class="mr-2">
 							<FeatherIcon
 								:name="icon || appearanceIcon"
-								:class="['h-5 w-5 rounded-full', appearanceIconClasses, iconClasses]"
+								:class="[
+									'h-5 w-5 rounded-full',
+									appearanceIconClasses,
+									iconClasses,
+								]"
 							/>
 						</div>
 						<div>

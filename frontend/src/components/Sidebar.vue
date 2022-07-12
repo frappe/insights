@@ -21,7 +21,9 @@
 						<FeatherIcon
 							:name="route.icon"
 							:class="[
-								route.current ? 'text-gray-600' : 'text-gray-500 group-hover:text-gray-600',
+								route.current
+									? 'text-gray-600'
+									: 'text-gray-500 group-hover:text-gray-600',
 								'mr-3 h-4 w-4 flex-shrink-0',
 							]"
 						/>
@@ -29,7 +31,9 @@
 					</router-link>
 				</nav>
 			</div>
-			<div class="flex flex-shrink-0 border-gray-200 px-2 pt-4 text-sm font-light text-gray-500">
+			<div
+				class="flex flex-shrink-0 border-gray-200 px-2 pt-4 text-sm font-light text-gray-500"
+			>
 				Insights Beta v0.0.1
 			</div>
 		</div>

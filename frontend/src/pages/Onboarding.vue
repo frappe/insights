@@ -113,7 +113,9 @@ const testConnectionDisabled = computed(() => {
 	return !db.type || !db.title || !db.name || !db.username || !db.password
 })
 const submitDisabled = computed(() => {
-	return !db.type || !db.title || !db.name || !db.username || !db.password || !db.connectionSuccess
+	return (
+		!db.type || !db.title || !db.name || !db.username || !db.password || !db.connectionSuccess
+	)
 })
 
 const connectAppearance = computed(() => {

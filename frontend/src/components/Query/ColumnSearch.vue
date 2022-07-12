@@ -107,10 +107,14 @@ export default {
 			return _suggestions
 		},
 		get_icon_for(column_type) {
-			if (['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())) {
+			if (
+				['varchar', 'char', 'enum', 'text', 'longtext'].includes(column_type.toLowerCase())
+			) {
 				return 'type'
 			}
-			if (['int', 'decimal', 'bigint', 'float', 'double'].includes(column_type.toLowerCase())) {
+			if (
+				['int', 'decimal', 'bigint', 'float', 'double'].includes(column_type.toLowerCase())
+			) {
 				return 'hash'
 			}
 			if (['date', 'datetime', 'time', 'timestamp'].includes(column_type.toLowerCase())) {

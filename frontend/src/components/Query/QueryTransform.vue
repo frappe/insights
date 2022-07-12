@@ -13,7 +13,11 @@
 				</div>
 			</div>
 
-			<Button appearance="white" @click="applyTransform" :loading="query.applyTransform.loading">
+			<Button
+				appearance="white"
+				@click="applyTransform"
+				:loading="query.applyTransform.loading"
+			>
 				Apply
 			</Button>
 		</div>

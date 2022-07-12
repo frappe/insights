@@ -1,9 +1,15 @@
 <template>
 	<div class="flex h-full min-h-[12rem] w-full flex-1 px-1 pt-4">
-		<div class="flex h-full w-64 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4">
+		<div
+			class="flex h-full w-64 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4"
+		>
 			<div class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Title</div>
-				<Input type="text" placeholder="Enter a suitable title..." v-model="visualization.title" />
+				<Input
+					type="text"
+					placeholder="Enter a suitable title..."
+					v-model="visualization.title"
+				/>
 			</div>
 			<div class="space-y-2">
 				<div class="text-base font-light text-gray-500">Select Visualization Type</div>
@@ -11,8 +17,12 @@
 					<div
 						class="flex flex-col items-center space-y-1 text-gray-500"
 						:class="{
-							'cursor-pointer hover:text-gray-600': !invalidVizTypes.includes(viz.type),
-							'cursor-not-allowed hover:text-gray-500': invalidVizTypes.includes(viz.type),
+							'cursor-pointer hover:text-gray-600': !invalidVizTypes.includes(
+								viz.type
+							),
+							'cursor-not-allowed hover:text-gray-500': invalidVizTypes.includes(
+								viz.type
+							),
 						}"
 						v-for="(viz, i) in visualizations"
 						:key="i"
@@ -57,7 +67,9 @@
 			</div>
 			<button
 				class="w-full rounded-md bg-gray-100 py-1.5 text-lg text-gray-500"
-				:class="{ 'cursor-pointer bg-blue-500 text-white hover:bg-blue-600': !saveDisabled }"
+				:class="{
+					'cursor-pointer bg-blue-500 text-white hover:bg-blue-600': !saveDisabled,
+				}"
 				@click="saveVisualization"
 			>
 				Save Changes

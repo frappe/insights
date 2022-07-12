@@ -16,7 +16,9 @@
 					class="form-input block h-8 w-full cursor-text select-none rounded-md px-3 placeholder-gray-500 focus:outline-none"
 					:value="selectedOptions.length ? formatValue(selectedOptions) : ''"
 				/>
-				<div class="absolute top-0 right-3 flex h-full cursor-pointer items-center text-gray-500">
+				<div
+					class="absolute top-0 right-3 flex h-full cursor-pointer items-center text-gray-500"
+				>
 					<FeatherIcon
 						name="x"
 						@click="selectedOptions = []"
@@ -57,7 +59,10 @@
 					leave-to-class="transform scale-95 opacity-0"
 				>
 					<div v-show="open && options.length > 0">
-						<ComboboxOptions static class="mt-2 max-h-48 w-full origin-top overflow-y-scroll">
+						<ComboboxOptions
+							static
+							class="mt-2 max-h-48 w-full origin-top overflow-y-scroll"
+						>
 							<div
 								v-if="filteredOptions.length === 0 && filter_query !== ''"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"

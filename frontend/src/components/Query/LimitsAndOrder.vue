@@ -5,7 +5,8 @@
 		<div v-if="sortedByColumns.length">
 			<span> Sorted by </span>
 			<span v-for="(sortedBy, idx) in sortedByColumns" :key="idx">
-				<span class="font-medium text-gray-600">{{ sortedBy.column }}</span> {{ sortedBy.order }}
+				<span class="font-medium text-gray-600">{{ sortedBy.column }}</span>
+				{{ sortedBy.order }}
 				<span v-if="idx < sortedByColumns.length - 1">, </span>
 			</span>
 		</div>

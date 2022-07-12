@@ -42,7 +42,9 @@
 							<JoinInnerIcon v-if="table.join.type.value == 'inner'" />
 							<JoinFullIcon v-if="table.join.type.value == 'full_outer'" />
 						</div>
-						<div v-if="table.join" class="text-base font-medium">{{ table.join.with.label }}</div>
+						<div v-if="table.join" class="text-base font-medium">
+							{{ table.join.with.label }}
+						</div>
 					</div>
 					<div
 						class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"

@@ -117,7 +117,9 @@ export default {
 				.map((condition) => {
 					return {
 						left: this.column_list.find((c) => c.column === condition.left.value),
-						operator: this.operator_options.find((o) => o.value === condition.operator.value),
+						operator: this.operator_options.find(
+							(o) => o.value === condition.operator.value
+						),
 						right: {
 							label: condition.right.value,
 							value: condition.right.value,

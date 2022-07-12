@@ -95,7 +95,9 @@ const columnNeeded = computed(() => {
 })
 const addDisabled = computed(() => {
 	return (
-		isEmptyObj(metric.type) || (columnNeeded.value && isEmptyObj(metric.column)) || !metric.label
+		isEmptyObj(metric.type) ||
+		(columnNeeded.value && isEmptyObj(metric.column)) ||
+		!metric.label
 	)
 })
 

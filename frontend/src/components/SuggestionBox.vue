@@ -1,5 +1,7 @@
 <template>
-	<div class="mt-0 rounded-md rounded-t-none border border-t-0 bg-white shadow focus:outline-none">
+	<div
+		class="mt-0 rounded-md rounded-t-none border border-t-0 bg-white shadow focus:outline-none"
+	>
 		<div
 			v-if="header"
 			class="sticky top-0 flex h-6 cursor-default items-center justify-between border-b border-gray-200 px-2 py-1 text-sm font-light text-gray-500"

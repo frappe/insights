@@ -10,17 +10,23 @@
 				<div class="text-lg font-medium">{{ editingFilter ? 'Edit' : 'Add' }} a Filter</div>
 			</div>
 			<div class="flex flex-col space-y-3">
-				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
+				<div
+					class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm"
+				>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md font-light"
-						:class="{ 'border bg-white font-normal shadow-sm': newFilterType == 'simple' }"
+						:class="{
+							'border bg-white font-normal shadow-sm': newFilterType == 'simple',
+						}"
 						@click.prevent.stop="newFilterType = 'simple'"
 					>
 						Simple
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md"
-						:class="{ 'border bg-white font-normal shadow-sm': newFilterType == 'expression' }"
+						:class="{
+							'border bg-white font-normal shadow-sm': newFilterType == 'expression',
+						}"
 						@click.prevent.stop="newFilterType = 'expression'"
 					>
 						Expression
@@ -171,7 +177,10 @@ function get_filter_group_at({ filters, level, position, parent_index }) {
 
 	for (let i = 0; i < filter_groups.conditions.length; i++) {
 		let filter_group = filter_groups.conditions[i]
-		if (filter_group.level == level && (filter_group.position == position || i == parent_index)) {
+		if (
+			filter_group.level == level &&
+			(filter_group.position == position || i == parent_index)
+		) {
 			filter_group_at_level = filter_group
 			break
 		}

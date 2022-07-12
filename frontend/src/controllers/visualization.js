@@ -45,7 +45,9 @@ class Visualization {
 			return defineAsyncComponent(() => import('@/components/Query/Visualizations/LineChart'))
 		}
 		if (this.type == 'Pivot') {
-			return defineAsyncComponent(() => import('@/components/Query/Visualizations/PivotTransform'))
+			return defineAsyncComponent(() =>
+				import('@/components/Query/Visualizations/PivotTransform')
+			)
 		}
 	}
 

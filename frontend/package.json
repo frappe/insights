@@ -1,42 +1,42 @@
 {
-  "name": "frappe-ui-frontend",
-  "private": true,
-  "version": "0.0.0",
-  "scripts": {
-    "dev": "vite",
-    "serve": "vite preview",
-    "build": "vite build --base=/assets/insights/frontend/ && yarn copy-html-entry",
-    "copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html",
-    "test:ci": "yarn test:e2e:ci",
-    "test": "yarn build && cypress open",
-    "test:e2e": "yarn build && cypress open --e2e",
-    "test:e2e:ci": "yarn build && cypress run --e2e"
-  },
-  "dependencies": {
-    "chart.js": "^3.8.0",
-    "feather-icons": "^4.28.0",
-    "frappe-charts": "^1.6.2",
-    "frappe-ui": "^0.0.31",
-    "moment": "^2.29.3",
-    "vue": "^3.2.25",
-    "vue-chartjs": "^4.1.1",
-    "vue-router": "^4.0.12",
-    "vuedraggable": "^4.1.0"
-  },
-  "devDependencies": {
-    "@cypress/code-coverage": "^3.10.0",
-    "@cypress/vue": "^3.1.0",
-    "@cypress/webpack-dev-server": "^2.0.0",
-    "@vitejs/plugin-vue": "^2.3.3",
-    "autoprefixer": "^10.4.7",
-    "cypress": "^10.3.0",
-    "eslint": "^8.19.0",
-    "eslint-plugin-vue": "^9.1.1",
-    "postcss": "^8.4.14",
-    "prettier": "^2.6.2",
-    "prettier-plugin-tailwindcss": "^0.1.11",
-    "tailwindcss": "^3.1.2",
-    "vite": "^2.9.12",
-    "vite-plugin-istanbul": "^2.8.0"
-  }
+	"name": "frappe-ui-frontend",
+	"private": true,
+	"version": "0.0.0",
+	"scripts": {
+		"dev": "vite",
+		"serve": "vite preview",
+		"build": "vite build --base=/assets/insights/frontend/ && yarn copy-html-entry",
+		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html",
+		"test:ci": "yarn test:e2e:ci",
+		"test": "yarn build && cypress open",
+		"test:e2e": "yarn build && cypress open --e2e",
+		"test:e2e:ci": "yarn build && cypress run --e2e"
+	},
+	"dependencies": {
+		"chart.js": "^3.8.0",
+		"feather-icons": "^4.28.0",
+		"frappe-charts": "^1.6.2",
+		"frappe-ui": "^0.0.31",
+		"moment": "^2.29.3",
+		"vue": "^3.2.25",
+		"vue-chartjs": "^4.1.1",
+		"vue-router": "^4.0.12",
+		"vuedraggable": "^4.1.0"
+	},
+	"devDependencies": {
+		"@cypress/code-coverage": "^3.10.0",
+		"@cypress/vue": "^3.1.0",
+		"@cypress/webpack-dev-server": "^2.0.0",
+		"@vitejs/plugin-vue": "^2.3.3",
+		"autoprefixer": "^10.4.7",
+		"cypress": "^10.3.0",
+		"eslint": "^8.19.0",
+		"eslint-plugin-vue": "^9.1.1",
+		"postcss": "^8.4.14",
+		"prettier": "^2.6.2",
+		"prettier-plugin-tailwindcss": "^0.1.11",
+		"tailwindcss": "^3.1.2",
+		"vite": "^2.9.12",
+		"vite-plugin-istanbul": "^2.8.0"
+	}
 }

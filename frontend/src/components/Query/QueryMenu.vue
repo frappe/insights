@@ -48,7 +48,10 @@
 			</template>
 		</Dialog>
 		<Dialog
-			:options="{ title: 'Reset Query', icon: { name: 'alert-circle', appearance: 'danger' } }"
+			:options="{
+				title: 'Reset Query',
+				icon: { name: 'alert-circle', appearance: 'danger' },
+			}"
 			v-model="show_reset_dialog"
 			:dismissable="true"
 		>

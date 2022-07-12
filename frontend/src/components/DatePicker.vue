@@ -53,7 +53,8 @@
 								:class="{
 									'text-gray-500': date.getMonth() !== currentMonth - 1,
 									'text-blue-500': toValue(date) === toValue(today),
-									'bg-blue-50 font-semibold text-blue-500': toValue(date) === value,
+									'bg-blue-50 font-semibold text-blue-500':
+										toValue(date) === value,
 								}"
 								@click="
 									() => {
@@ -175,7 +176,11 @@ export default {
 			}
 			let dates = []
 			while (count) {
-				date = this.getDate(date.getFullYear(), date.getMonth(), date.getDate() + incrementer)
+				date = this.getDate(
+					date.getFullYear(),
+					date.getMonth(),
+					date.getDate() + incrementer
+				)
 				dates.push(date)
 				count--
 			}

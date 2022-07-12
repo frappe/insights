@@ -23,7 +23,11 @@
 				class="cursor-pointer rounded border border-transparent py-1 text-gray-500 hover:border-gray-200 hover:bg-gray-100 hover:text-gray-600"
 			>
 				<FeatherIcon v-if="column.order_by == 'asc'" name="arrow-up" class="mx-1 h-3 w-3" />
-				<FeatherIcon v-else-if="column.order_by == 'desc'" name="arrow-down" class="mx-1 h-3 w-3" />
+				<FeatherIcon
+					v-else-if="column.order_by == 'desc'"
+					name="arrow-down"
+					class="mx-1 h-3 w-3"
+				/>
 				<FeatherIcon v-else name="code" class="mx-1 h-3 w-3 rotate-90" />
 			</div>
 			<ColumnMenu :query="query" :column="column" />

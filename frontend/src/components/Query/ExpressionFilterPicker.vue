@@ -19,7 +19,9 @@
 									isOpen && options?.length && filteredOptions?.length,
 							}"
 						/>
-						<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-gray-700">=</div>
+						<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-gray-700">
+							=
+						</div>
 					</div>
 				</template>
 				<template #body="{ isOpen, togglePopover }">
@@ -47,12 +49,14 @@
 				<li>
 					You can use following operators:
 					<ul class="pl-4" style="list-style-type: square">
-						<li>Arithmetic: <span class="font-medium tracking-widest"> +, -, *, /</span></li>
+						<li>
+							Arithmetic: <span class="font-medium tracking-widest"> +, -, *, /</span>
+						</li>
 						<li>
 							Comparison:
 							<span class="font-medium tracking-widest"
-								>, =, !=, &lt;, &gt;, &lt;=, &gt;=, is, in, not in, between, contains, starts with,
-								ends with, not contains
+								>, =, !=, &lt;, &gt;, &lt;=, &gt;=, is, in, not in, between,
+								contains, starts with, ends with, not contains
 							</span>
 						</li>
 					</ul>
@@ -60,7 +64,9 @@
 			</ul>
 		</div>
 		<div class="mt-3 flex justify-end">
-			<Button appearance="primary" @click="apply" :disabled="input.length == 0"> Apply </Button>
+			<Button appearance="primary" @click="apply" :disabled="input.length == 0">
+				Apply
+			</Button>
 		</div>
 	</div>
 </template>
@@ -312,9 +318,9 @@ function get_compare_operator() {
 	if (compare_operator.length > 1) {
 		$notify({
 			title: 'Only one compare operator is allowed',
-			message: `You have entered ${compare_operator.length} operators: ${compare_operator.join(
-				','
-			)}`,
+			message: `You have entered ${
+				compare_operator.length
+			} operators: ${compare_operator.join(',')}`,
 			appearance: 'warning',
 		})
 		return
@@ -349,7 +355,9 @@ function auto_add_close_square_brackets(e) {
 		// if open square bracket button is clicked,
 		// append close square bracket after caret position
 		input.value =
-			input.value.slice(0, caretPosition.value) + '] ' + input.value.slice(caretPosition.value)
+			input.value.slice(0, caretPosition.value) +
+			'] ' +
+			input.value.slice(caretPosition.value)
 		nextTick(() => {
 			// set caret position before close square bracket
 			e.target.setSelectionRange(caretPosition.value, caretPosition.value)
@@ -372,7 +380,8 @@ function auto_remove_close_square_bracket(e) {
 		if (deleted_character === '[' && input.value.charAt(caretPosition.value) === ']') {
 			nextTick(() => {
 				input.value =
-					input.value.slice(0, caretPosition.value - 1) + input.value.slice(caretPosition.value + 1)
+					input.value.slice(0, caretPosition.value - 1) +
+					input.value.slice(caretPosition.value + 1)
 			})
 		}
 	}
@@ -411,7 +420,8 @@ function auto_remove_quotes(e) {
 		if (deleted_character === '"' && input.value.charAt(caretPosition.value) === '"') {
 			nextTick(() => {
 				input.value =
-					input.value.slice(0, caretPosition.value - 1) + input.value.slice(caretPosition.value + 1)
+					input.value.slice(0, caretPosition.value - 1) +
+					input.value.slice(caretPosition.value + 1)
 			})
 		}
 	}

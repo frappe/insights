@@ -33,7 +33,8 @@
 								:to="idx === routes.length - 1 ? '#' : page.path"
 								class="ml-2 text-gray-600 hover:underline"
 								:class="{
-									'cursor-default text-gray-500 hover:no-underline': idx === routes.length - 1,
+									'cursor-default text-gray-500 hover:no-underline':
+										idx === routes.length - 1,
 								}"
 							>
 								{{ page.name }}

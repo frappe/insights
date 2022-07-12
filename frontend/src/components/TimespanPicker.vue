@@ -14,17 +14,24 @@
 			<div
 				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
 			>
-				<div class="flex h-8 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
+				<div
+					class="flex h-8 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm"
+				>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md border border-transparent font-light"
-						:class="{ 'border border-gray-200 bg-white font-normal shadow-sm': span == 'Last' }"
+						:class="{
+							'border border-gray-200 bg-white font-normal shadow-sm': span == 'Last',
+						}"
 						@click.prevent.stop="span = 'Last'"
 					>
 						Last
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md border border-transparent"
-						:class="{ 'border border-gray-200 bg-white font-normal shadow-sm': span == 'Current' }"
+						:class="{
+							'border border-gray-200 bg-white font-normal shadow-sm':
+								span == 'Current',
+						}"
 						@click.prevent.stop="span = 'Current'"
 					>
 						Current

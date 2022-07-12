@@ -28,7 +28,8 @@
 								() => {
 									editColumn = column
 									editingColumn = true
-									newColumnType = column.aggregation == 'Group By' ? 'Dimension' : 'Metric'
+									newColumnType =
+										column.aggregation == 'Group By' ? 'Dimension' : 'Metric'
 								}
 							"
 						>
@@ -45,7 +46,9 @@
 								<span class="text-base font-medium">{{ column.label }}</span>
 							</div>
 							<div class="flex items-center">
-								<div class="mr-1 font-light text-gray-500">{{ column.table_label }}</div>
+								<div class="mr-1 font-light text-gray-500">
+									{{ column.table_label }}
+								</div>
 								<div
 									class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
 									@click.prevent.stop="query.removeColumn({ column })"
@@ -66,24 +69,32 @@
 				</div>
 			</div>
 			<div class="flex flex-col space-y-3">
-				<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
+				<div
+					class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm"
+				>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md font-light"
-						:class="{ 'border bg-white font-normal shadow-sm': newColumnType == 'Metric' }"
+						:class="{
+							'border bg-white font-normal shadow-sm': newColumnType == 'Metric',
+						}"
 						@click.prevent.stop="newColumnType = 'Metric'"
 					>
 						Metric
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md"
-						:class="{ 'border bg-white font-normal shadow-sm': newColumnType == 'Dimension' }"
+						:class="{
+							'border bg-white font-normal shadow-sm': newColumnType == 'Dimension',
+						}"
 						@click.prevent.stop="newColumnType = 'Dimension'"
 					>
 						Dimension
 					</div>
 					<div
 						class="flex h-full flex-1 items-center justify-center rounded-md"
-						:class="{ 'border bg-white font-normal shadow-sm': newColumnType == 'Expression' }"
+						:class="{
+							'border bg-white font-normal shadow-sm': newColumnType == 'Expression',
+						}"
 						@click.prevent.stop="newColumnType = 'Expression'"
 					>
 						Expression

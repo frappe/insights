@@ -40,7 +40,8 @@
 					(options) => {
 						filter.value = {
 							value: options.map((option) => option.label),
-							label: options.length > 1 ? `${options.length} values` : options[0].label,
+							label:
+								options.length > 1 ? `${options.length} values` : options[0].label,
 						}
 					}
 				"
@@ -131,7 +132,8 @@ const showDatePicker = computed(() => {
 	)
 })
 const showTimespanPicker = computed(
-	() => ['Date', 'Datetime'].includes(filter.column?.type) && filter.operator?.value === 'timespan'
+	() =>
+		['Date', 'Datetime'].includes(filter.column?.type) && filter.operator?.value === 'timespan'
 )
 
 const showListPicker = computed(
