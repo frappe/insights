@@ -240,7 +240,7 @@ const saveVisualization = () => {
 		})
 	}
 
-	if (visualization.doc.name) {
+	if (visualization.doc?.name) {
 		const docname = visualization.doc.name
 		updateVisualizationDoc({ docname, title, type, data, onSuccess })
 	} else {

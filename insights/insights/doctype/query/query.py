@@ -98,11 +98,11 @@ class Query(Document):
                 row.label = column.get("label")
                 row.table = column.get("table")
                 row.column = column.get("column")
-                row.format = column.get("format")
                 row.order_by = column.get("order_by")
                 row.aggregation = column.get("aggregation")
                 row.table_label = column.get("table_label")
                 row.aggregation_condition = column.get("aggregation_condition")
+                row.format_option = dumps(column.get("format_option"), indent=2)
                 break
 
         self.save()
@@ -446,25 +446,24 @@ class Query(Document):
 
         for row in self.columns:
             _column = self.process_query_field(row.table, row.column)
+            # dates should be formatted before aggregagtions
+            _column = self.process_column_format(row, _column)
+            _column = self.process_aggregation(row, _column)
 
-            if row.format:
-                _column = self.process_column_format(row, _column)
-
-            if row.aggregation:
-                _column = self.process_aggregation(row, _column)
-
-            if row.order_by:
-                self.process_sorting(row, _column)
-
+            self.process_sorting(row, _column)
             _column = _column.as_(row.label)
-
             self._columns.append(_column)
 
     def process_column_format(self, row, column):
-        if row.type in ("Date", "Datetime"):
-            return ColumnFormat.format_date(row.format, column)
+        if row.format_option and row.type in ("Date", "Datetime"):
+            format_option = _dict(loads(row.format_option))
+            return ColumnFormat.format_date(format_option.date_format, column)
+        return column
 
     def process_aggregation(self, row, column):
+        if not row.aggregation:
+            return column
+
         if row.aggregation == "Count Distinct":
             column = Aggregations.apply("Distinct", column)
             column = Aggregations.apply("Count", column)
@@ -487,8 +486,12 @@ class Query(Document):
         return column
 
     def process_sorting(self, row, column):
-        if row.type in ("Date", "Datetime") and row.format:
-            date = ColumnFormat.parse_date(row.format, column)
+        if not row.order_by:
+            return column
+
+        if row.type in ("Date", "Datetime") and row.format_option:
+            format_option = _dict(loads(row.format_option))
+            date = ColumnFormat.parse_date(format_option.date_format, column)
             self._order_by_columns.append((date, row.order_by))
         else:
             self._order_by_columns.append((column, row.order_by))

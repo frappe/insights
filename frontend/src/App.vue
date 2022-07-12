@@ -1,5 +1,5 @@
 <template>
-	<div class="h-screen min-w-[80rem] select-none bg-gray-50 font-sans">
+	<div class="h-screen min-h-[42rem] min-w-[80rem] select-none bg-gray-50 font-sans">
 		<RouterView :key="$route.fullPath" />
 		<Toasts />
 	</div>

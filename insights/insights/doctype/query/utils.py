@@ -6,6 +6,7 @@ import operator
 
 from typing import Tuple
 
+from pypika import functions as fn
 from frappe.query_builder import CustomFunction, functions, Case
 from frappe.utils.data import (
     nowdate,
@@ -66,6 +67,10 @@ class ColumnFormat:
         if format in cls.date_formats:
             _format = cls.date_formats[format]
             return cls.FormatDate(column, _format)
+        elif format == "Quarter":
+            quarter_of_year = fn.Concat("Q", cls.Quarter(column))
+            year = cls.FormatDate(column, "%Y")
+            return fn.Concat(quarter_of_year, ", ", year)
         elif format == "Quarter of Year":
             return cls.Quarter(column)
 

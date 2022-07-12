@@ -66,6 +66,7 @@ export default class Query {
 			return {
 				...column,
 				value: column.column,
+				format_option: column.format_option ? JSON.parse(column.format_option) : null,
 				aggregation_condition: column.aggregation_condition
 					? JSON.parse(column.aggregation_condition)
 					: null,

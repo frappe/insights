@@ -15,7 +15,7 @@
   "aggregations_section",
   "aggregation",
   "aggregation_condition",
-  "format",
+  "format_option",
   "order_by"
  ],
  "fields": [
@@ -74,21 +74,23 @@
    "options": "\nasc\ndesc"
   },
   {
-   "fieldname": "format",
-   "fieldtype": "Data",
-   "label": "Format"
-  },
-  {
+   "depends_on": "aggregation_condition",
    "fieldname": "aggregation_condition",
    "fieldtype": "Code",
    "label": "Aggregation Condition",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "format_option",
+   "fieldtype": "Code",
+   "label": "Format Option",
    "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-05-25 09:59:12.282920",
+ "modified": "2022-07-12 11:34:58.816432",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Query Column",

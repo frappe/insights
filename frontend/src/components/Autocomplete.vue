@@ -97,13 +97,12 @@ const props = defineProps({
 		default: '',
 	},
 	modelValue: {
-		type: Object,
-		default: {},
 		required: true,
 	},
 	options: {
 		type: Array,
 		default: () => [],
+		required: true,
 		validate: (value) => {
 			return value.every((option) => {
 				return typeof option.label === 'string' && typeof option.value === 'string'
@@ -115,16 +114,29 @@ const props = defineProps({
 const filterQuery = ref('')
 const selectedOption = computed({
 	get() {
-		return props.modelValue || {}
+		return props.modelValue
 	},
 	set(value) {
-		// if value is not equal to old value
-		emit('update:modelValue', value || {})
-		emit('selectOption', value || {})
+		emit('update:modelValue', value)
+		emit('selectOption', value)
 	},
 })
+const options = computed(() => {
+	if (props.options.length === 0) {
+		return []
+	}
+	if (typeof props.options[0] !== 'object') {
+		return props.options.map((option) => {
+			return {
+				label: option,
+				value: option,
+			}
+		})
+	}
+	return props.options
+})
 const uniqueOptions = computed(() => {
-	return props.options.filter((option, index, self) => {
+	return options.value.filter((option, index, self) => {
 		return self.findIndex((t) => t.value === option.value) === index
 	})
 })
@@ -143,7 +155,7 @@ watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 
 	if (newValue === '') {
-		selectedOption.value = {}
+		selectedOption.value = undefined
 	}
 	emit('inputChange', newValue)
 })

@@ -54,7 +54,7 @@
 								class="whitespace-nowrap bg-white p-2.5 pr-4 font-light text-gray-600"
 								:class="{ 'text-right': isNumberColumn[j] }"
 							>
-								{{ cell }}
+								{{ hasFormatOptions[j] ? formatCell(cell, j) : cell }}
 							</td>
 						</tr>
 					</tbody>
@@ -82,14 +82,43 @@ import ColumnHeader from '@/components/Query/ColumnHeader.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
 
 import { computed, inject } from 'vue'
+import moment from 'moment'
 
 const query = inject('query')
 
 const result = computed(() => query.result?.slice(0, 1000))
 const needsExecution = computed(() => query.status === 'Pending Execution')
 const isNumberColumn = computed(() => {
-	return query.doc.columns.map((c) =>
+	return query.columns.map((c) =>
 		['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type)
 	)
 })
+const hasFormatOptions = computed(() => {
+	return query.columns.map((c) => c.format_option)
+})
+const formatCell = (data, column_idx) => {
+	const column = query.columns[column_idx]
+	if (column.format_option) {
+		return formatColumn(data, column)
+	}
+	return data
+}
+
+const formatColumn = (data, column) => {
+	if (['Int', 'Float', 'Bigint', 'Decimal', 'Double'].includes(column.type)) {
+		return formatNumber(data, column)
+	}
+	return data
+}
+
+const formatNumber = (data, column) => {
+	const formattedNumber = Number(data).toLocaleString()
+	if (column.format_option.prefix) {
+		return `${column.format_option.prefix} ${formattedNumber}`
+	}
+	if (column.format_option.suffix) {
+		return `${formattedNumber} ${column.format_option.suffix}`
+	}
+	return formattedNumber
+}
 </script>

@@ -4,7 +4,7 @@
 	>
 		<div class="-mx-3 flex h-[calc(100%-1.5rem)]">
 			<TablePicker />
-			<ColumnPicker />
+			<ColumnPanel />
 			<FilterPicker />
 		</div>
 		<div class="flex h-6 flex-shrink-0">
@@ -15,7 +15,7 @@
 
 <script setup>
 import TablePicker from '@/components/Query/TablePicker.vue'
-import ColumnPicker from '@/components/Query/ColumnPicker.vue'
+import ColumnPanel from '@/components/Query/ColumnPanel.vue'
 import FilterPicker from '@/components/Query/FilterPicker.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
 </script>

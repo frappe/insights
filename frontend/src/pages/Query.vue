@@ -21,7 +21,7 @@
 
 		<template #main>
 			<div class="flex w-full flex-col">
-				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-base font-light text-gray-600">
+				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-sm font-light text-gray-600">
 					<div v-if="query.dataSource" class="flex items-center">
 						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
 						<span> {{ query.dataSource }} </span>

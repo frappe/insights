@@ -9,15 +9,6 @@
 				@selectOption="onColumnSelect"
 			/>
 		</div>
-		<div v-if="showFormatOptions" class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Format</div>
-			<Autocomplete
-				v-model="dimension.format"
-				:options="formatOptions"
-				placeholder="Select a format..."
-				@selectOption="onFormatSelect"
-			/>
-		</div>
 		<div v-if="dimension.label" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Label</div>
 			<Input
@@ -67,12 +58,6 @@ const props = defineProps({
 const dimension = reactive({
 	column: props.column,
 	label: props.column.label,
-	format: props.column.format
-		? {
-				label: props.column.format,
-				value: props.column.format,
-		  }
-		: {},
 })
 // for editing a dimension
 const row_name = ref(props.column.name)
@@ -93,65 +78,12 @@ const columnOptions = computed(() => {
 	})
 })
 
-const showFormatOptions = computed(() => {
-	return (
-		!isEmptyObj(dimension.column) &&
-		['Datetime', 'Timestamp', 'Date'].includes(dimension.column.type)
-	)
-})
-
-const formatOptions = computed(() => {
-	if (!showFormatOptions.value) return []
-
-	let formatOptions = []
-
-	if (['Datetime', 'Timestamp'].includes(dimension.column.type)) {
-		formatOptions = [
-			'Minute',
-			'Hour',
-			'Day',
-			'Month',
-			'Year',
-			'Minute of Hour',
-			'Hour of Day',
-			'Day of Week',
-			'Day of Month',
-			'Day of Year',
-			'Month of Year',
-			'Quarter of Year',
-		]
-	}
-
-	if (dimension.column.type == 'Date') {
-		formatOptions = [
-			'Day',
-			'Month',
-			'Year',
-			'Day of Week',
-			'Day of Month',
-			'Day of Year',
-			'Month of Year',
-			'Quarter of Year',
-		]
-	}
-
-	return formatOptions.map((f) => {
-		return {
-			label: f,
-			value: f,
-		}
-	})
-})
-
 function onColumnSelect(option) {
 	dimension.column = option ? option : {}
 	dimension.label =
 		!dimension.label && dimension.column.label ? dimension.column.label : dimension.label
 
 	dimension.column.name = row_name.value
-}
-function onFormatSelect(option) {
-	dimension.format = option ? option : {}
 }
 function addDimension() {
 	if (isEmptyObj(dimension.column)) {
@@ -160,7 +92,6 @@ function addDimension() {
 
 	dimension.column.label = dimension.label
 	dimension.column.aggregation = 'Group By'
-	dimension.column.format = dimension.format.value
 	emit('column-select', dimension.column)
 }
 </script>
