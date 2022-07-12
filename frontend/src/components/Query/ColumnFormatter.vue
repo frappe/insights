@@ -40,8 +40,22 @@
 import Autocomplete from '@/components/Autocomplete.vue'
 
 import { reactive, ref, unref } from 'vue'
+import { safeJSONParse } from '@/utils'
 
 const dateFormats = [
+	{ label: 'January 12, 2020', value: 'Day' },
+	{ label: 'January, 2020', value: 'Month' },
+	{ label: 'Q1, 2020', value: 'Quarter' },
+	{ label: '2020', value: 'Year' },
+	{ label: 'Monday', value: 'Day of Week' },
+	{ label: 'January', value: 'Month of Year' },
+	{ label: 'Q1', value: 'Quarter of Year' },
+]
+
+const dateTimeFormats = [
+	{ label: 'January 12, 2020 1:14 PM', value: 'Minute' },
+	{ label: 'January 12, 2020 1:00 PM', value: 'Hour' },
+	{ label: '1:00 PM', value: 'Hour of Day' },
 	{ label: 'January 12, 2020', value: 'Day' },
 	{ label: 'January, 2020', value: 'Month' },
 	{ label: 'Q1, 2020', value: 'Quarter' },
@@ -65,15 +79,26 @@ const supportsFormatting = ref(
 		props.column.type
 	)
 )
-const columnFormat = JSON.parse(unref(props.column.format_option)) || {}
+const columnFormat = safeJSONParse(unref(props.column.format_option)) || {}
 const format = reactive({
-	dateFormat: dateFormats.find((format) => format.value === columnFormat.date_format) || {},
+	dateFormat:
+		props.column.type == 'Date'
+			? dateFormats.find((format) => format.value === columnFormat.date_format)
+			: props.column.type == 'Datetime'
+			? dateTimeFormats.find((format) => format.value === columnFormat.date_format)
+			: {},
 	prefix: columnFormat.prefix || '',
 	suffix: columnFormat.suffix || '',
 })
 
 const showDateFormatOptions = ref(['Date', 'Datetime', 'Timestamp'].includes(props.column.type))
-const dateFormatOptions = ref(props.column.type == 'Date' ? dateFormats : [])
+const dateFormatOptions = ref(
+	props.column.type == 'Date'
+		? dateFormats
+		: props.column.type == 'Datetime'
+		? dateTimeFormats
+		: []
+)
 
 const showNumberFormatOptions = ref(
 	['Int', 'Bigint', 'Float', 'Decimal', 'Double'].includes(props.column.type)

@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
+import { safeJSONParse } from '@/utils'
 
 const API_METHODS = {
 	run: 'run',
@@ -30,6 +31,8 @@ const API_METHODS = {
 }
 
 export default class Query {
+	NUMBER_FIELD_TYPES = ['Int', 'Decimal', 'Bigint', 'Float', 'Double']
+
 	constructor(id) {
 		this.id = id
 		this.resource = getQueryResource(id)
@@ -41,6 +44,8 @@ export default class Query {
 				this[`${key}Data`] = computed(() => this.resource[key].data?.message)
 			}
 		})
+
+		this.makeResult()
 	}
 
 	get doc() {
@@ -57,7 +62,7 @@ export default class Query {
 			return {
 				...table,
 				value: table.table,
-				join: table.join ? JSON.parse(table.join) : null,
+				join: table.join ? safeJSONParse(table.join) : null,
 			}
 		})
 	}
@@ -66,18 +71,19 @@ export default class Query {
 			return {
 				...column,
 				value: column.column,
-				format_option: column.format_option ? JSON.parse(column.format_option) : null,
+				format_option: column.format_option ? safeJSONParse(column.format_option) : null,
 				aggregation_condition: column.aggregation_condition
-					? JSON.parse(column.aggregation_condition)
+					? safeJSONParse(column.aggregation_condition)
 					: null,
 			}
 		})
 	}
 	get filters() {
-		return JSON.parse(this.doc.filters)
+		return safeJSONParse(this.doc.filters)
 	}
-	get result() {
-		return JSON.parse(this.doc.result || '[]')
+
+	makeResult() {
+		this.result = computed(() => new QueryResult(this.docRef.value, this.columns))
 	}
 
 	getColumnValues(column) {
@@ -103,6 +109,42 @@ export default class Query {
 
 	delete() {
 		return this.resource.delete.submit()
+	}
+}
+
+class QueryResult {
+	MAX_ROWS = 1000
+	NUMBER_FIELD_TYPES = ['Int', 'Decimal', 'Bigint', 'Float', 'Double']
+
+	constructor(doc, columns) {
+		this.doc = doc
+		this.columns = columns
+		this.data = safeJSONParse(doc.result, []).slice(0, this.MAX_ROWS)
+		this.formatCells()
+	}
+
+	formatCells() {
+		this.data = this.data.map((row) => {
+			return row.map((cell, idx) => {
+				const column = this.columns[idx]
+				if (this.NUMBER_FIELD_TYPES.includes(column.type)) {
+					cell = Number(cell).toLocaleString()
+				}
+				if (column.format_option) {
+					cell = this.applyColumnFormatOption(column, cell)
+				}
+				return cell
+			})
+		})
+	}
+
+	applyColumnFormatOption(column, cell) {
+		if (column.format_option.prefix) {
+			return `${column.format_option.prefix} ${cell}`
+		}
+		if (column.format_option.suffix) {
+			return `${cell} ${column.format_option.suffix}`
+		}
 	}
 }
 

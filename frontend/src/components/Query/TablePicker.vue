@@ -113,7 +113,7 @@ import Autocomplete from '@/components/Autocomplete.vue'
 import TableSearch from '@/components/Query/TableSearch.vue'
 
 import { computed, inject, ref, watch } from 'vue'
-import { isEmptyObj } from '@/utils/utils'
+import { isEmptyObj } from '@/utils'
 
 const query = inject('query')
 

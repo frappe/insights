@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { isEmptyObj } from '@/utils/utils.js'
+import { isEmptyObj } from '@/utils'
 import Autocomplete from '@/components/Autocomplete.vue'
 
 import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
@@ -115,9 +115,7 @@ const filteredColumns = computed(() => {
 		return []
 	}
 	if (metric.type.value === 'Sum' || metric.type.value === 'Avg') {
-		return columnOptions.value?.filter((c) =>
-			['Int', 'Decimal', 'Bigint', 'Float', 'Double'].includes(c.type)
-		)
+		return columnOptions.value?.filter((c) => query.NUMBER_FIELD_TYPES.includes(c.type))
 	}
 })
 

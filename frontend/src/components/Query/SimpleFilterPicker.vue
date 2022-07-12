@@ -82,7 +82,7 @@ import ListPicker from '@/components/ListPicker.vue'
 import DatePicker from '@/components/DatePicker.vue'
 
 import { debounce } from 'frappe-ui'
-import { isEmptyObj } from '@/utils/utils.js'
+import { isEmptyObj } from '@/utils'
 import { computed, inject, nextTick, onMounted, reactive, watch } from 'vue'
 
 const query = inject('query')

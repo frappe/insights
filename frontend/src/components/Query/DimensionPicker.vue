@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { isEmptyObj } from '@/utils/utils.js'
+import { isEmptyObj } from '@/utils'
 import Autocomplete from '@/components/Autocomplete.vue'
 
 import { computed, inject, onMounted, reactive, ref } from 'vue'
