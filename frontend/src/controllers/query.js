@@ -89,7 +89,7 @@ export default class Query {
 	getColumnValues(column) {
 		const columnIdx = this.columns.findIndex((c) => c.column === column)
 		if (columnIdx > -1) {
-			return this.result.map((row) => row[columnIdx])
+			return this.result.value.data.map((row) => row[columnIdx])
 		}
 	}
 
@@ -120,11 +120,12 @@ class QueryResult {
 		this.doc = doc
 		this.columns = columns
 		this.data = safeJSONParse(doc.result, []).slice(0, this.MAX_ROWS)
+		this.formattedData = this.data
 		this.formatCells()
 	}
 
 	formatCells() {
-		this.data = this.data.map((row) => {
+		this.formattedData = this.data.map((row) => {
 			return row.map((cell, idx) => {
 				const column = this.columns[idx]
 				if (!column) {

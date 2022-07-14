@@ -8,7 +8,7 @@
 		</div>
 
 		<div
-			v-else-if="!needsExecution && result?.length === 0"
+			v-else-if="!needsExecution && formattedResult?.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
@@ -42,7 +42,7 @@
 						</tr>
 					</thead>
 					<tbody class="pointer-events-none">
-						<tr v-for="(row, i) in result" :key="i">
+						<tr v-for="(row, i) in formattedResult" :key="i">
 							<td
 								class="sticky left-0 w-[2.5rem] whitespace-nowrap border-r bg-white text-center font-medium text-gray-600"
 							>
@@ -85,7 +85,7 @@ import { computed, inject } from 'vue'
 
 const query = inject('query')
 
-const result = computed(() => query.result.value.data)
+const formattedResult = computed(() => query.result.value.formattedData)
 const needsExecution = computed(() => query.status === 'Pending Execution')
 const isNumberColumn = computed(() => {
 	return query.columns.map((c) => query.NUMBER_FIELD_TYPES.includes(c.type))
