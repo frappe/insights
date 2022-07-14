@@ -127,6 +127,9 @@ class QueryResult {
 		this.data = this.data.map((row) => {
 			return row.map((cell, idx) => {
 				const column = this.columns[idx]
+				if (!column) {
+					return cell
+				}
 				if (this.NUMBER_FIELD_TYPES.includes(column.type)) {
 					cell = Number(cell).toLocaleString()
 				}
@@ -145,6 +148,7 @@ class QueryResult {
 		if (column.format_option.suffix) {
 			return `${cell} ${column.format_option.suffix}`
 		}
+		return cell
 	}
 }
 

@@ -23,12 +23,7 @@
 				v-if="row_name"
 				class="text-red-500"
 				appearance="white"
-				@click="
-					() => {
-						query.removeColumn({ column: dimension.column })
-						$emit('close')
-					}
-				"
+				@click="removeDimension"
 			>
 				Remove
 			</Button>
@@ -93,5 +88,9 @@ function addDimension() {
 	dimension.column.label = dimension.label
 	dimension.column.aggregation = 'Group By'
 	emit('column-select', dimension.column)
+}
+function removeDimension() {
+	query.removeColumn({ column: dimension.column })
+	emit('close')
 }
 </script>

@@ -18,11 +18,13 @@
 			v-if="currentTab == 'Metric'"
 			:column="props.column"
 			@column-select="editColumn"
+			@close="$emit('close')"
 		/>
 		<DimensionPicker
 			v-if="currentTab == 'Dimension'"
 			:column="props.column"
 			@column-select="editColumn"
+			@close="$emit('close')"
 		/>
 		<ColumnFormatter v-if="currentTab == 'Format'" :column="props.column" @save="editColumn" />
 	</div>

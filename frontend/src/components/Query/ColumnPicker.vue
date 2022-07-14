@@ -14,14 +14,8 @@
 				{{ tab }}
 			</div>
 		</div>
-		<MetricPicker
-			v-if="newColumnType == 'Metric'"
-			@column-select="(column) => query.addColumn({ column })"
-		/>
-		<DimensionPicker
-			v-if="newColumnType == 'Dimension'"
-			@column-select="(column) => query.addColumn({ column })"
-		/>
+		<MetricPicker v-if="newColumnType == 'Metric'" @column-select="addColumn" />
+		<DimensionPicker v-if="newColumnType == 'Dimension'" @column-select="addColumn" />
 		<div v-if="newColumnType == 'Expression'" class="text-center text-gray-500">
 			Coming Soon...
 		</div>
@@ -34,7 +28,12 @@ import DimensionPicker from '@/components/Query/DimensionPicker.vue'
 
 import { inject, ref } from 'vue'
 
-defineEmits(['close'])
 const query = inject('query')
 const newColumnType = ref('Metric')
+
+const emit = defineEmits(['close'])
+const addColumn = (column) => {
+	query.addColumn({ column })
+	emit('close')
+}
 </script>

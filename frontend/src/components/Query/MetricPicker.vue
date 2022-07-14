@@ -28,17 +28,7 @@
 			/>
 		</div>
 		<div class="flex justify-end space-x-2">
-			<Button
-				v-if="row_name"
-				class="text-red-500"
-				appearance="white"
-				@click="
-					() => {
-						query.removeColumn({ column: metric.column })
-						$emit('close')
-					}
-				"
-			>
+			<Button v-if="row_name" class="text-red-500" appearance="white" @click="removeMetric">
 				Remove
 			</Button>
 			<Button @click="addMetric" appearance="primary" :disabled="addDisabled">
@@ -170,5 +160,9 @@ function makeCountColumn() {
 		table_label: table.label,
 		aggregation: metric.type.value,
 	}
+}
+function removeMetric() {
+	query.removeColumn({ column: metric.column })
+	emit('close')
 }
 </script>
