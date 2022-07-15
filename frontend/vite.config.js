@@ -8,12 +8,12 @@ import { webserver_port } from '../../../sites/common_site_config.json'
 export default defineConfig({
 	plugins: [
 		vue(),
-		istanbul({
-			include: 'src/*',
-			exclude: ['node_modules', 'src/test/'],
-			extension: ['.js', '.vue'],
-			// forceBuildInstrument: true,
-		}),
+		// istanbul({
+		// 	include: 'src/*',
+		// 	exclude: ['node_modules', 'src/test/'],
+		// 	extension: ['.js', '.vue'],
+		// 	forceBuildInstrument: true,
+		// }),
 	],
 	server: {
 		port: 8080,
