@@ -37,7 +37,7 @@
 				</div>
 				<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
 				<!-- 100% - 2rem (tabs) + 1.25rem (query meta) + -0.75rem (-ve margin-top) -->
-				<div class="flex h-[calc(100%-2.5rem)] min-h-[26rem] w-full rounded-md">
+				<div class="flex h-[calc(100%-2.5rem)] w-full rounded-md">
 					<QueryBuilder v-show="active_tab == 'Build'" />
 					<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
 					<QueryVisualizer v-if="active_tab == 'Visualize'" :query="query.resource" />

@@ -44,6 +44,7 @@
 								v-for="(option, idx) in filteredOptions"
 								:key="idx"
 								:value="option"
+								:disabled="option.disabled"
 								v-slot="{ active, selected }"
 							>
 								<div
@@ -51,6 +52,8 @@
 									:class="{
 										'bg-gray-100 text-gray-800': active,
 										'bg-white': !active,
+										'!h-7 cursor-default !text-sm text-gray-600':
+											option.disabled,
 									}"
 								>
 									<div class="flex items-baseline space-x-2">

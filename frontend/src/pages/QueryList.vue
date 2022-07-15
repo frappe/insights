@@ -9,7 +9,7 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex min-h-[26rem] flex-1 flex-col space-y-4">
+			<div class="flex flex-1 flex-col space-y-4">
 				<div class="mt-2 flex space-x-4">
 					<Input type="text" placeholder="Title" />
 					<Input type="text" placeholder="Data Source" />

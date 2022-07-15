@@ -26,7 +26,8 @@ const API_METHODS = {
 	// filter methods
 	updateFilters: 'update_filters',
 
-	// transform methods
+	// visualization methods
+	getVisualizations: 'get_visualizations',
 	applyTransform: 'apply_transform',
 }
 
@@ -36,20 +37,28 @@ export default class Query {
 	constructor(id) {
 		this.id = id
 		this.resource = getQueryResource(id)
-		this.docRef = computed(() => this.resource.doc)
+		this._doc = computed(() => this.resource.doc)
 
 		Object.keys(API_METHODS).forEach((key) => {
 			if (!this[key]) {
-				this[key] = (...args) => this.resource[key].submit(...args)
-				this[`${key}Data`] = computed(() => this.resource[key].data?.message)
+				const whitelistedMethod = this.resource[key]
+				this[key] = (...args) => {
+					return {
+						req: whitelistedMethod.submit(...args),
+						data: computed(() => whitelistedMethod.data?.message),
+						loading: computed(() => whitelistedMethod.loading),
+					}
+				}
+				this[`${key}Data`] = computed(() => whitelistedMethod.data?.message)
 			}
 		})
 
 		this.makeResult()
+		this.visualizations = this.getVisualizations().data
 	}
 
 	get doc() {
-		return this.docRef.value
+		return this._doc.value
 	}
 	get status() {
 		return this.doc.status
@@ -58,6 +67,9 @@ export default class Query {
 		return this.doc.data_source
 	}
 	get tables() {
+		if (!this.doc) {
+			return []
+		}
 		return this.doc.tables.map((table) => {
 			return {
 				...table,
@@ -67,6 +79,9 @@ export default class Query {
 		})
 	}
 	get columns() {
+		if (!this.doc) {
+			return []
+		}
 		return this.doc.columns.map((column) => {
 			return {
 				...column,
@@ -79,11 +94,19 @@ export default class Query {
 		})
 	}
 	get filters() {
+		if (!this.doc) {
+			return {}
+		}
 		return safeJSONParse(this.doc.filters)
 	}
 
 	makeResult() {
-		this.result = computed(() => new QueryResult(this.docRef.value, this.columns))
+		this.result = computed(() => {
+			if (!this.doc) {
+				return []
+			}
+			return new QueryResult(this.doc, this.columns)
+		})
 	}
 
 	getColumnValues(column) {

@@ -1,7 +1,7 @@
 <template>
-	<div class="flex h-full min-h-[12rem] w-full flex-1 px-1 pt-4">
+	<div class="flex h-full w-full flex-1 px-1 py-4">
 		<div
-			class="flex h-full w-64 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4"
+			class="flex h-full w-72 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4"
 		>
 			<div class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Title</div>
@@ -24,7 +24,7 @@
 								viz.type
 							),
 						}"
-						v-for="(viz, i) in visualizations"
+						v-for="(viz, i) in visualizationTypes"
 						:key="i"
 						@click="setVizType(viz.type)"
 					>
@@ -65,19 +65,17 @@
 				<div class="text-base font-light text-gray-500">Select Column</div>
 				<Autocomplete v-model="visualization.data.pivotColumn" :options="labelColumns" />
 			</div>
-			<button
-				class="w-full rounded-md bg-gray-100 py-1.5 text-lg text-gray-500"
-				:class="{
-					'cursor-pointer bg-blue-500 text-white hover:bg-blue-600': !saveDisabled,
-				}"
+			<Button
+				appearance="primary"
 				@click="saveVisualization"
+				:loading="visualization.savingDoc"
 			>
 				Save Changes
-			</button>
+			</Button>
 		</div>
-		<div class="flex w-[calc(100%-16rem)] pl-4">
+		<div class="flex w-[calc(100%-18rem)] pl-4">
 			<component
-				v-if="visualization.componentProps"
+				v-if="visualization.component && visualization.componentProps"
 				:is="visualization.component"
 				v-bind="visualization.componentProps"
 			></component>
@@ -88,125 +86,23 @@
 <script setup>
 import Autocomplete from '@/components/Autocomplete.vue'
 
-import { computed, inject, markRaw, reactive, watch } from 'vue'
-import {
-	visualizations,
-	getVisualization,
-	getVisualizationDoc,
-	createVisualizationDoc,
-	updateVisualizationDoc,
-} from '@/controllers/visualization'
+import { computed, inject } from 'vue'
+import { useVisualization, visualizationTypes } from '@/controllers/visualization'
 
 const query = inject('query')
-const visualization = reactive({
-	doc: null,
-	type: '',
-	data: {},
-	dataSchema: {},
-	component: null,
-	controller: null,
-	componentProps: null,
-	query: query.doc.name,
-	title: query.doc.title,
-})
-
-const queryName = computed(() => query.doc.name)
-const fetchVisualizationDoc = (queryName) => {
-	getVisualizationDoc({
-		queryName,
-		onSuccess: (doc) => {
-			if (doc) {
-				doc.data = JSON.parse(doc.data)
-
-				visualization.doc = doc
-				visualization.type = doc.type
-				visualization.data = doc.data
-				visualization.title = doc.title
-			}
-		},
-	})
-}
-watch(queryName, fetchVisualizationDoc, { immediate: true })
-
-const onTypeChange = (type) => {
-	if (!type) {
-		visualization.dataSchema = {}
-		visualization.component = null
-		visualization.componentProps = null
-		return
-	}
-
-	if (!visualization.controller || visualization.controller.type != type) {
-		visualization.controller = getVisualization(type)
-	}
-
-	visualization.dataSchema = visualization.controller.getDataSchema()
-	// dynamic components shouldn't be reactive
-	visualization.component = markRaw(visualization.controller.getComponent())
-}
-watch(() => visualization.type, onTypeChange)
-
-const onDataChange = (data) => {
-	if (visualization.type == 'Pivot' && data.pivotColumn) {
-		applyPivotTransform(data.pivotColumn)
-		return
-	}
-	visualization.componentProps = visualization.controller?.getComponentProps(query, data)
-}
-watch(() => visualization.data, onDataChange, { deep: true })
-
-const applyPivotTransform = (pivotColumn) => {
-	query.applyTransform({
-		type: 'Pivot',
-		data: {
-			index_columns: labelColumns.value
-				.filter((c) => c.label !== pivotColumn.label)
-				.map((c) => c.label),
-			pivot_columns: [pivotColumn.label],
-		},
-	})
-}
-watch(
-	() => query.doc.transform_result,
-	(transformResult) => {
-		if (transformResult) {
-			visualization.componentProps = {
-				tableHtml: transformResult,
-			}
-		}
-	},
-	{ immediate: true }
-)
+const visualizationID = query.visualizations.value[0]
+const visualization = useVisualization({ visualizationID, query })
 
 const invalidVizTypes = computed(() => {
 	// TODO: change based on data
 	return ['Funnel', 'Row']
 })
 const setVizType = (type) => {
-	if (invalidVizTypes.value.includes(type)) {
-		return
+	if (!invalidVizTypes.value.includes(type)) {
+		visualization.type = type
+		visualization.data = {}
 	}
-	visualization.type = type
-	visualization.data = {}
 }
-
-const saveDisabled = computed(() => {
-	// TODO: fix this
-
-	// const { title, type, data } = visualization
-
-	// const validLocalChart = title && type && data
-	// const localAndRemoteChartMatches =
-	// 	visualization.doc &&
-	// 	visualization.doc.title == title &&
-	// 	visualization.doc.type == type &&
-	// 	JSON.stringify(visualization.doc.data) == JSON.stringify(data)
-
-	// console.log(visualization.doc.data, data)
-
-	// return (!visualization.doc && !validLocalChart) || localAndRemoteChartMatches
-	return false
-})
 
 const labelColumns = computed(() => {
 	return query.columns
@@ -231,20 +127,12 @@ const valueColumns = computed(() => {
 
 const $notify = inject('$notify')
 const saveVisualization = () => {
-	const { query: queryName, title, type, data } = visualization
 	const onSuccess = () => {
-		fetchVisualizationDoc(queryName)
 		$notify({
 			title: 'Visualization Saved',
 			appearance: 'success',
 		})
 	}
-
-	if (visualization.doc?.name) {
-		const docname = visualization.doc.name
-		updateVisualizationDoc({ docname, title, type, data, onSuccess })
-	} else {
-		createVisualizationDoc({ queryName, title, type, data, onSuccess })
-	}
+	visualization.updateDoc({ onSuccess })
 }
 </script>

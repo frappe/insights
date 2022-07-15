@@ -11,6 +11,8 @@ import {
 	LinearScale,
 } from 'chart.js'
 
+ChartJS.defaults.font.family = 'Inter'
+ChartJS.defaults.font.style = 'inherit'
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 export default defineComponent({
@@ -35,14 +37,21 @@ export default defineComponent({
 
 		const chartOptions = {
 			responsive: true,
-			maintainAspectRatio: false,
+			maintainAspectRatio: true,
+			plugins: {
+				legend: {
+					position: 'bottom',
+				},
+			},
 		}
 
 		return () =>
 			h(Bar, {
 				chartData,
 				chartOptions,
-				cssClasses: 'flex items-center justify-center w-full px-6 py-4',
+				width: 600,
+				height: 300,
+				cssClasses: 'flex justify-center w-full',
 			})
 	},
 })

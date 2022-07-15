@@ -123,7 +123,8 @@ const tableSearch = ref(null)
 watch(addingTable, (newValue) => {
 	newTable.value = {}
 	if (newValue) {
-		query.fetchTables().then(() => {
+		const { req } = query.fetchTables()
+		req.then(() => {
 			tableSearch.value.input.el.focus()
 		})
 	}

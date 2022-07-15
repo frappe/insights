@@ -1,7 +1,9 @@
-import { defineAsyncComponent } from 'vue'
-import { createResource } from 'frappe-ui'
+import { defineAsyncComponent, computed, markRaw, reactive, watch, watchEffect } from 'vue'
+import { createDocumentResource } from 'frappe-ui'
+import { safeJSONParse, isEmptyObj } from '@/utils'
+import Query from './query'
 
-class Visualization {
+class VisualizationType {
 	constructor(type, icon) {
 		this.type = type
 		this.icon = icon
@@ -50,29 +52,119 @@ class Visualization {
 			)
 		}
 	}
+}
 
-	getComponentProps(query, data) {
-		if (this.type == 'Bar' || this.type == 'Line' || this.type == 'Pie') {
-			return this.getSingleValueChartProps(query, data)
+const visualizationTypes = [
+	new VisualizationType('Bar', 'bar-chart-2'),
+	new VisualizationType('Line', 'trending-up'),
+	new VisualizationType('Pie', 'pie-chart'),
+	new VisualizationType('Row', 'align-left'),
+	new VisualizationType('Funnel', 'filter'),
+	new VisualizationType('Pivot', 'layout'),
+]
+
+const getRandomColor = () => {
+	const colors = [
+		'#B6D7F0',
+		'#B9F0E0',
+		'#EC94B7',
+		'#B3CCE8',
+		'#749AD6',
+		'#536CB0',
+		'#9E79AB',
+		'#898FAD',
+		'#25787E',
+	]
+	return colors[Math.floor(Math.random() * colors.length)]
+}
+
+function useVisualization({ visualizationID, queryID, query }) {
+	const resource = visualizationDocResource(visualizationID)
+	const doc = computed(() => resource.doc || {})
+
+	const visualization = reactive({
+		doc: null,
+		type: '',
+		title: '',
+		data: {},
+		dataSchema: {},
+		component: null,
+		componentProps: null,
+		updateDoc: updateDoc,
+	})
+
+	watchEffect(() => {
+		// load visualization data from doc
+		const _doc = doc.value
+		if (_doc.type || _doc.data || _doc.title) {
+			visualization.doc = _doc
+			visualization.type = _doc.type
+			visualization.title = _doc.title
+			visualization.data = safeJSONParse(_doc.data, {})
 		}
-		if (this.type == 'Pivot') {
-			return this.getPivotTransformProps(query, data)
+	})
+
+	watchEffect(() => {
+		const type = visualization.type
+		if (type) {
+			const typeController = visualizationTypes.find((v) => v.type === type)
+			visualization.dataSchema = typeController.getDataSchema()
+			visualization.component = markRaw(typeController.getComponent())
+			visualization.componentProps = null
+		}
+	})
+
+	if (!query) {
+		query = new Query(queryID)
+	}
+
+	watch(
+		() => ({
+			doc: query.doc,
+			data: visualization.data,
+		}),
+		buildComponentProps,
+		{ deep: true, immediate: true }
+	)
+
+	function buildComponentProps({ doc, data }) {
+		if (!doc || isEmptyObj(data)) {
+			visualization.componentProps = null
+			return
+		}
+
+		const type = visualization.type
+		if (type == 'Bar' || type == 'Line' || type == 'Pie') {
+			visualization.componentProps = buildSingleValueChartProps(type, data)
+			return
+		}
+
+		if (type == 'Pivot') {
+			// request backend to perform pivot transform
+			applyPivot(data)
+			// if previous pivot transformed result exists, display it
+			visualization.componentProps =
+				query.doc.transform_result !== '{}'
+					? { tableHtml: query.doc.transform_result }
+					: null
+			return
 		}
 	}
 
-	getSingleValueChartProps(query, data) {
+	function buildSingleValueChartProps(type, data) {
 		if (!data.labelColumn || !data.valueColumn) {
 			return null
 		}
 
 		const labelColumn = data.labelColumn.value
 		const valueColumn = data.valueColumn.value
+
 		const labels = query.getColumnValues(labelColumn)
 		const values = query.getColumnValues(valueColumn)
 
 		let labelValues = labels.map((label, idx) => ({ label, value: values[idx] }))
 
-		if (this.type == 'Pie') {
+		if (type == 'Pie') {
 			labelValues = labelValues.sort((a, b) => b.value - a.value)
 		}
 
@@ -99,67 +191,46 @@ class Visualization {
 		}
 	}
 
-	getPivotTransformProps(query) {}
+	function applyPivot(data) {
+		const pivotColumn = data.pivotColumn
+		return query.applyTransform({
+			type: 'Pivot',
+			data: {
+				index_columns: query.columns
+					.filter((c) => c.aggregation == 'Group By' && c.label !== pivotColumn.label)
+					.map((c) => c.label),
+				pivot_columns: [pivotColumn.label],
+			},
+		})
+	}
+
+	const pivotResult = computed(() => query.doc?.transform_result)
+	watch(pivotResult, (result) => {
+		if (result !== '{}') {
+			visualization.componentProps = { tableHtml: result }
+		}
+	})
+
+	function updateDoc({ onSuccess }) {
+		const params = {
+			doc: {
+				type: visualization.type,
+				title: visualization.title,
+				data: visualization.data,
+			},
+		}
+		const options = { onSuccess }
+		resource.updateDoc.submit(params, options)
+		visualization.savingDoc = computed(() => resource.updateDoc.loading)
+	}
+
+	return visualization
 }
 
-const visualizations = [
-	new Visualization('Bar', 'bar-chart-2'),
-	new Visualization('Line', 'trending-up'),
-	new Visualization('Pie', 'pie-chart'),
-	new Visualization('Row', 'align-left'),
-	new Visualization('Funnel', 'filter'),
-	new Visualization('Pivot', 'layout'),
-]
-
-const getVisualizationResource = createResource({
-	method: 'insights.api.get_query_visualization',
-})
-const getVisualizationDoc = ({ queryName, onSuccess }) => {
-	const options = { onSuccess }
-	const params = { query: queryName }
-	getVisualizationResource.submit(params, options)
+const visualizationDocResource = (name) => {
+	const doctype = 'Query Visualization'
+	const whitelistedMethods = { updateDoc: 'update_doc' }
+	return createDocumentResource({ doctype, name, whitelistedMethods })
 }
 
-const getVisualization = (type) => visualizations.find((v) => v.type === type)
-
-const createVisualizationResource = createResource({
-	method: 'insights.api.create_query_visualization',
-})
-const createVisualizationDoc = ({ queryName: query, title, type, data, onSuccess }) => {
-	const options = { onSuccess }
-	const params = { query, title, type, data }
-	createVisualizationResource.submit(params, options)
-}
-
-const updateVisualizationResource = createResource({
-	method: 'insights.api.update_query_visualization',
-})
-const updateVisualizationDoc = ({ docname, title, type, data, onSuccess }) => {
-	const options = { onSuccess }
-	const params = { docname, title, type, data }
-	updateVisualizationResource.submit(params, options)
-}
-
-const getRandomColor = () => {
-	const colors = [
-		'#B6D7F0',
-		'#B9F0E0',
-		'#EC94B7',
-		'#B3CCE8',
-		'#749AD6',
-		'#536CB0',
-		'#9E79AB',
-		'#898FAD',
-		'#25787E',
-	]
-	return colors[Math.floor(Math.random() * colors.length)]
-}
-
-export {
-	visualizations,
-	getRandomColor,
-	getVisualization,
-	getVisualizationDoc,
-	createVisualizationDoc,
-	updateVisualizationDoc,
-}
+export { visualizationTypes, getRandomColor, useVisualization }

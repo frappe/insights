@@ -16,6 +16,14 @@ def get_data_sources():
 
 
 @frappe.whitelist()
+def get_dashboard_list():
+    return frappe.get_all(
+        "Insights Dashboard",
+        fields=["name", "title", "modified"],
+    )
+
+
+@frappe.whitelist()
 def get_queries():
     Query = frappe.qb.DocType("Query")
     QueryTable = frappe.qb.DocType("Query Table")

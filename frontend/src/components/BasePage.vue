@@ -44,7 +44,7 @@
 				</ol>
 			</nav>
 			<div
-				class="flex h-[calc(100%-2.25rem)] min-h-[34rem] flex-col rounded-md border bg-white px-6 py-4 shadow-md"
+				class="flex h-[calc(100%-2.25rem)] min-h-[38rem] flex-col rounded-md border bg-white px-6 py-4 shadow-md"
 			>
 				<header class="mb-2 flex h-10">
 					<slot name="header" />

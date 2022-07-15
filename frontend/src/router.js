@@ -17,6 +17,12 @@ const routes = [
 		component: () => import('@/pages/Dashboards.vue'),
 	},
 	{
+		props: true,
+		name: 'Dashboard',
+		path: '/dashboard/:name',
+		component: () => import('@/pages/Dashboard.vue'),
+	},
+	{
 		path: '/data-source',
 		name: 'DataSourceList',
 		component: () => import('@/pages/DataSourceList.vue'),

@@ -34,15 +34,13 @@
    "fieldtype": "Autocomplete",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Bar\nLine\nPie",
-   "reqd": 1
+   "options": "Bar\nLine\nPie"
   },
   {
    "fieldname": "data",
    "fieldtype": "Code",
    "label": "Data",
-   "options": "JSON",
-   "reqd": 1
+   "options": "JSON"
   },
   {
    "fieldname": "column_break_3",
@@ -55,7 +53,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-07 20:25:26.567371",
+ "modified": "2022-07-14 23:39:15.367025",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Query Visualization",

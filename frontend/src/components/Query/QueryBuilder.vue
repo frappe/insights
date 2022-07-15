@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex h-full min-h-[16rem] w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700"
+		class="flex h-full w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700"
 	>
 		<div class="-mx-3 flex h-[calc(100%-1.5rem)]">
 			<TablePicker />

@@ -28,12 +28,30 @@ class Query(Document):
         # TODO: validate if a column is an expression and aggregation is "group by"
         pass
 
+    def on_update(self):
+        # create a query visualization if not exists
+        visualizations = self.get_visualizations()
+        if not visualizations:
+            frappe.get_doc(
+                {
+                    "doctype": "Query Visualization",
+                    "query": self.name,
+                    "title": self.title,
+                }
+            ).insert()
+
     def on_trash(self):
-        charts = frappe.get_all(
-            "Query Chart", filters={"query": self.name}, pluck="name"
+        visualizations = self.get_visualizations()
+        for visualization in visualizations:
+            frappe.delete_doc("Query Visualization", visualization)
+
+    @frappe.whitelist()
+    def get_visualizations(self):
+        return frappe.get_all(
+            "Query Visualization",
+            filters={"query": self.name},
+            pluck="name",
         )
-        for chart in charts:
-            frappe.delete_doc("Query Chart", chart)
 
     @frappe.whitelist()
     def add_table(self, table):

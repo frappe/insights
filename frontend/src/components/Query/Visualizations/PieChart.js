@@ -3,6 +3,8 @@ import { Pie } from 'vue-chartjs'
 import { getRandomColor } from '@/controllers/visualization'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js'
 
+ChartJS.defaults.font.family = 'Inter'
+ChartJS.defaults.font.style = 'inherit'
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 export default defineComponent({
@@ -28,13 +30,18 @@ export default defineComponent({
 		const chartOptions = {
 			responsive: true,
 			maintainAspectRatio: false,
+			plugins: {
+				legend: {
+					position: 'bottom',
+				},
+			},
 		}
 
 		return () =>
 			h(Pie, {
 				chartData,
 				chartOptions,
-				cssClasses: 'flex items-center justify-center w-full px-6 py-4',
+				cssClasses: 'flex justify-center w-full p-4',
 			})
 	},
 })

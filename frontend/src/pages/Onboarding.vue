@@ -1,5 +1,5 @@
 <template>
-	<div class="flex min-h-[45rem] flex-col items-center py-24">
+	<div class="flex flex-col items-center py-24">
 		<header class="flex h-20 items-center justify-center py-4">
 			<h1 class="text-3xl font-bold leading-tight text-gray-900">Setup</h1>
 		</header>
