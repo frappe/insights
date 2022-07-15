@@ -1,8 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from json import dumps
-
 import frappe
 from pypika import CustomFunction
 
@@ -181,35 +179,3 @@ def get_column_menu_options(fieldtype):
         "aggregation_options": aggregation_options,
         "format_options": format_options,
     }
-
-
-@frappe.whitelist()
-def create_query_visualization(query, title, type, data):
-    chart = frappe.new_doc("Query Visualization")
-    chart.title = title
-    chart.query = query
-    chart.type = type
-    chart.data = dumps(data, indent=2)
-    chart.save()
-
-
-@frappe.whitelist()
-def update_query_visualization(docname, title, type, data):
-    chart = frappe.get_doc("Query Visualization", docname)
-    chart.title = title
-    chart.type = type
-    chart.data = dumps(data, indent=2)
-    chart.save()
-
-
-@frappe.whitelist()
-def get_query_visualization(query):
-    if viz_name := frappe.db.exists("Query Visualization", {"query": query}):
-        viz = frappe.get_doc("Query Visualization", viz_name)
-        return {
-            "name": viz.name,
-            "query": viz.query,
-            "title": viz.title,
-            "type": viz.type,
-            "data": viz.data,
-        }
