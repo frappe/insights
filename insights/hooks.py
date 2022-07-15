@@ -66,7 +66,7 @@ app_license = "GNU GPLv3"
 # ------------
 
 # before_install = "insights.install.before_install"
-# after_install = "insights.install.after_install"
+after_install = "insights.setup.after_install"
 
 # Uninstallation
 # ------------

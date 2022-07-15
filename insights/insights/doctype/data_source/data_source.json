@@ -84,7 +84,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-05-16 07:36:13.537055",
+ "modified": "2022-07-15 20:12:56.153676",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Data Source",
@@ -100,6 +100,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
    "share": 1,
    "write": 1
   }

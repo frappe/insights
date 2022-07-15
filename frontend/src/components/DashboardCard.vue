@@ -2,7 +2,7 @@
 	<DraggableResizeable
 		v-if="visualization.doc"
 		:parentID="props.parentID"
-		:maintainAspectRatio="true"
+		:maintainAspectRatio="false"
 		:targetID="visualization.doc.name"
 		@move="onMove"
 		@resize="onResize"

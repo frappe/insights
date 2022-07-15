@@ -19,7 +19,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-06-30 17:59:52.181464",
+ "modified": "2022-07-15 20:14:00.110342",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
@@ -32,6 +32,14 @@
    "print": 1,
    "read": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Insights User",
    "share": 1,
    "write": 1
   }

@@ -9,7 +9,7 @@ from pypika import CustomFunction
 
 @frappe.whitelist()
 def get_data_sources():
-    return frappe.get_all(
+    return frappe.get_list(
         "Data Source",
         fields=["name", "title", "status", "database_type", "modified", "username"],
     )
@@ -17,7 +17,7 @@ def get_data_sources():
 
 @frappe.whitelist()
 def get_dashboard_list():
-    return frappe.get_all(
+    return frappe.get_list(
         "Insights Dashboard",
         fields=["name", "title", "modified"],
     )
@@ -25,6 +25,7 @@ def get_dashboard_list():
 
 @frappe.whitelist()
 def get_queries():
+    frappe.has_permission("Query", throw=True)
     Query = frappe.qb.DocType("Query")
     QueryTable = frappe.qb.DocType("Query Table")
     GroupConcat = CustomFunction("Group_Concat", ["column"])
