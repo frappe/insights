@@ -13,8 +13,8 @@ const routes = [
 	},
 	{
 		path: '/dashboard',
-		name: 'Dashboards',
-		component: () => import('@/pages/Dashboards.vue'),
+		name: 'DashboardList',
+		component: () => import('@/pages/DashboardList.vue'),
 	},
 	{
 		props: true,

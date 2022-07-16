@@ -4,13 +4,13 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Queries</h1>
 				<div>
-					<Button appearance="primary" @click="openDialog = true"> + Add Query </Button>
+					<Button appearance="primary" @click="openDialog = true"> + New Query </Button>
 				</div>
 			</div>
 		</template>
 		<template #main>
 			<div class="flex flex-1 flex-col space-y-4">
-				<div class="mt-2 flex space-x-4">
+				<div class="flex space-x-4">
 					<Input type="text" placeholder="Title" />
 					<Input type="text" placeholder="Data Source" />
 				</div>

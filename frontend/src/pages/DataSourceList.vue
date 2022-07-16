@@ -5,7 +5,7 @@
 				<h1 class="text-3xl font-medium text-gray-900">Data Sources</h1>
 				<div>
 					<Button appearance="primary" @click="new_dialog = true">
-						+ Add Data Source
+						+ New Data Source
 					</Button>
 				</div>
 			</div>

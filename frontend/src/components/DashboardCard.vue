@@ -8,9 +8,17 @@
 	>
 		<div :id="visualization.doc.name" class="h-fit w-fit p-1" :style="style">
 			<div
-				class="flex h-full w-full flex-col space-y-4 overflow-hidden rounded-md border bg-white p-4 shadow"
+				class="flex h-full w-full flex-col space-y-4 overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
 			>
-				<div class="text-base font-medium">{{ visualization.doc.title }}</div>
+				<div class="flex items-center justify-between">
+					<div class="text-base font-medium">{{ visualization.doc.title }}</div>
+					<Button
+						icon="x"
+						appearance="minimal"
+						@mousedown.prevent.stop=""
+						@click.prevent.stop="$emit('remove', props.visualizationID)"
+					/>
+				</div>
 				<component
 					v-if="visualization.component && visualization.componentProps"
 					:is="visualization.component"
@@ -27,6 +35,8 @@ import DraggableResizeable from '@/components/DraggableResizeable.vue'
 import { computed, reactive, inject } from 'vue'
 import { useVisualization } from '@/controllers/visualization'
 import { safeJSONParse } from '@/utils'
+
+defineEmits(['remove'])
 
 const dashboard = inject('dashboard')
 const props = defineProps({

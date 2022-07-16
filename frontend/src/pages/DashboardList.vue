@@ -3,6 +3,11 @@
 		<template #header>
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Dashboards</h1>
+				<div>
+					<Button appearance="primary" @click="showDialog = true">
+						+ New Dashboard
+					</Button>
+				</div>
 			</div>
 		</template>
 		<template #main>
@@ -56,22 +61,40 @@
 			</div>
 		</template>
 	</BasePage>
+
+	<Dialog :options="{ title: 'New Dashboard' }" v-model="showDialog">
+		<template #body-content>
+			<div class="space-y-4">
+				<Input
+					type="text"
+					label="Title"
+					placeholder="Enter a suitable title..."
+					v-model="newDashboard.title"
+				/>
+			</div>
+		</template>
+		<template #actions>
+			<Button appearance="primary" @click="createDashboard" :loading="creatingDashboard">
+				Create
+			</Button>
+		</template>
+	</Dialog>
 </template>
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import { createResource } from 'frappe-ui'
-import { updateDocumentTitle } from '@/utils/document'
 
 import moment from 'moment'
-import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { createResource } from 'frappe-ui'
+import { computed, reactive, ref } from 'vue'
+import { updateDocumentTitle } from '@/utils/document'
 
 const getDashboards = createResource({
 	method: 'insights.api.get_dashboard_list',
 	initialData: [],
 })
 getDashboards.fetch()
-
 const dashboards = computed(() => {
 	return getDashboards.data.map((dashboard) => {
 		dashboard.modified_from_now = moment(dashboard.modified).fromNow()
@@ -79,8 +102,31 @@ const dashboards = computed(() => {
 	})
 })
 
+const showDialog = ref(false)
+const newDashboard = reactive({ title: '' })
+const router = useRouter()
+const createDashboardResource = createResource({
+	method: 'insights.api.create_dashboard',
+	onSuccess(name) {
+		getDashboards.fetch()
+		showDialog.value = false
+		newDashboard.title = ''
+		router.push(`/dashboard/${name}`)
+	},
+})
+const creatingDashboard = computed(() => {
+	return createDashboardResource.loading
+})
+const createDashboard = () => {
+	if (newDashboard.title) {
+		createDashboardResource.submit({
+			title: newDashboard.title,
+		})
+	}
+}
+
 const pageMeta = ref({
-	title: 'Dashboards',
+	title: 'DashboardList',
 })
 updateDocumentTitle(pageMeta)
 </script>

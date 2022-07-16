@@ -22,6 +22,14 @@ def get_dashboard_list():
 
 
 @frappe.whitelist()
+def create_dashboard(title):
+    dashboard = frappe.get_doc(
+        {"doctype": "Insights Dashboard", "title": title}
+    ).insert()
+    return dashboard.name
+
+
+@frappe.whitelist()
 def get_queries():
     frappe.has_permission("Query", throw=True)
     Query = frappe.qb.DocType("Query")

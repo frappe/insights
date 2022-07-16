@@ -57,12 +57,12 @@ export default {
 					icon: 'bar-chart-2',
 					name: 'Dashboard',
 				},
-				{
-					path: '/data-source',
-					label: 'Data Sources',
-					icon: 'database',
-					name: 'Data Source',
-				},
+				// {
+				// 	path: '/data-source',
+				// 	label: 'Data Sources',
+				// 	icon: 'database',
+				// 	name: 'Data Source',
+				// },
 				{
 					path: '/query',
 					label: 'Queries',
