@@ -126,7 +126,13 @@ const selectedOption = computed({
 })
 const options = computed(() => {
 	if (props.options.length === 0) {
-		return []
+		return [
+			{
+				value: '',
+				label: 'No results found',
+				disabled: true,
+			},
+		]
 	}
 	if (typeof props.options[0] !== 'object') {
 		return props.options.map((option) => {

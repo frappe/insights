@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "visualization",
-  "query"
+  "query",
+  "column_break_3",
+  "layout"
  ],
  "fields": [
   {
@@ -27,12 +29,21 @@
    "options": "Query",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "layout",
+   "fieldtype": "JSON",
+   "label": "Position & Size"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-07-14 22:22:21.616978",
+ "modified": "2022-07-16 13:59:37.535811",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard Item",

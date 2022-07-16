@@ -15,13 +15,13 @@
 		<template #main>
 			<div
 				id="dashboard-container"
-				class="flex h-full w-full flex-wrap overflow-scroll rounded-md bg-slate-50 shadow-inner"
+				class="relative flex h-full w-full flex-wrap overflow-scroll rounded-md bg-slate-50 shadow-inner"
 			>
 				<DashboardCard
 					v-if="visualizations"
 					v-for="visualization in visualizations"
-					:key="visualization.id"
 					parentID="dashboard-container"
+					:key="visualization.id"
 					:visualizationID="visualization.id"
 					:queryID="visualization.query"
 				/>
@@ -41,7 +41,7 @@
 		</template>
 		<template #actions>
 			<Button appearance="primary" @click="addVisualization" :loading="addingVisualization">
-				Create
+				Add
 			</Button>
 		</template>
 	</Dialog>
@@ -51,7 +51,7 @@
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Autocomplete.vue'
 import DashboardCard from '@/components/DashboardCard.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, provide } from 'vue'
 
 import { createDocumentResource } from 'frappe-ui'
 
@@ -68,8 +68,10 @@ const dashboardResource = createDocumentResource({
 	whitelistedMethods: {
 		addVisualization: 'add_visualization',
 		getVisualizations: 'get_visualizations',
+		updateVisualizationLayout: 'update_visualization_layout',
 	},
 })
+provide('dashboard', dashboardResource)
 dashboardResource.getVisualizations.submit()
 const dashboard = computed(() => dashboardResource.doc)
 
@@ -84,24 +86,15 @@ const visualizations = computed(() =>
 
 const showDialog = ref(false)
 const newVisualization = ref({})
-const newVisualizations = computed(() => {
-	const visualizations = dashboardResource.getVisualizations.data?.message?.map((v) => {
+const newVisualizations = computed(() =>
+	dashboardResource.getVisualizations.data?.message?.map((v) => {
 		return {
 			value: v.name,
 			label: v.title,
 			description: v.type,
 		}
 	})
-	return visualizations.length
-		? visualizations
-		: [
-				{
-					value: '',
-					label: 'No visualizations found',
-					disabled: true,
-				},
-		  ]
-})
+)
 const addVisualization = () => {
 	dashboardResource.addVisualization.submit({
 		visualization: newVisualization.value.value,

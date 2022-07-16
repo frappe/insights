@@ -37,7 +37,7 @@ export default defineComponent({
 
 		const chartOptions = {
 			responsive: true,
-			maintainAspectRatio: true,
+			maintainAspectRatio: false,
 			plugins: {
 				legend: {
 					position: 'bottom',
@@ -49,8 +49,6 @@ export default defineComponent({
 			h(Bar, {
 				chartData,
 				chartOptions,
-				width: 600,
-				height: 300,
 				cssClasses: 'flex justify-center w-full',
 			})
 	},

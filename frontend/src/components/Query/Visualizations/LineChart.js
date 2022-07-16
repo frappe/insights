@@ -50,7 +50,7 @@ export default defineComponent({
 			h(Line, {
 				chartData,
 				chartOptions,
-				cssClasses: 'flex justify-center w-full p-4',
+				cssClasses: 'flex justify-center w-full',
 			})
 	},
 })
