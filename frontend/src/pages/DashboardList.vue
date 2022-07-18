@@ -126,7 +126,7 @@ const createDashboard = () => {
 }
 
 const pageMeta = ref({
-	title: 'DashboardList',
+	title: 'Dashboards',
 })
 updateDocumentTitle(pageMeta)
 </script>

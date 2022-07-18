@@ -1,13 +1,13 @@
 <template>
-	<div class="fixed inset-y-0 flex w-64 flex-col" v-if="current_route">
+	<div class="fixed inset-y-0 flex w-64 flex-col" v-if="currentRoute">
 		<div class="flex flex-grow flex-col overflow-y-auto p-6 pr-0">
 			<div class="flex flex-shrink-0 items-center px-1">
-				<FrappeInsights />
+				<FrappeInsightsLogo />
 			</div>
 			<div class="mt-4 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
 					<router-link
-						v-for="route in routes"
+						v-for="route in sidebarItems"
 						:key="route.path"
 						:to="route.path"
 						:class="[
@@ -34,64 +34,70 @@
 			<div
 				class="flex flex-shrink-0 border-gray-200 px-2 pt-4 text-sm font-light text-gray-500"
 			>
-				Insights Beta v0.0.1
+				{{ appVersion }}
 			</div>
 		</div>
 	</div>
 </template>
 
-<script>
-import FrappeInsights from '@/components/Icons/FrappeInsights.vue'
+<script setup>
+import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
 
-export default {
-	name: 'Sidebar',
-	components: {
-		FrappeInsights,
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { createResource } from 'frappe-ui'
+
+const sidebarItems = ref([
+	{
+		path: '/dashboard',
+		label: 'Dashboards',
+		icon: 'bar-chart-2',
+		name: 'Dashboard',
+		current: false,
 	},
-	data() {
-		return {
-			routes: [
-				{
-					path: '/dashboard',
-					label: 'Dashboards',
-					icon: 'bar-chart-2',
-					name: 'Dashboard',
-				},
-				// {
-				// 	path: '/data-source',
-				// 	label: 'Data Sources',
-				// 	icon: 'database',
-				// 	name: 'Data Source',
-				// },
-				{
-					path: '/query',
-					label: 'Queries',
-					icon: 'columns',
-					name: 'QueryBuilder',
-				},
-				{
-					path: '/settings',
-					label: 'Settings',
-					icon: 'settings',
-					name: 'Settings',
-				},
-			],
+	// {
+	// 	path: '/data-source',
+	// 	label: 'Data Sources',
+	// 	icon: 'database',
+	// 	name: 'Data Source',
+	// },
+	{
+		path: '/query',
+		label: 'Queries',
+		icon: 'columns',
+		name: 'QueryBuilder',
+		current: false,
+	},
+	{
+		path: '/settings',
+		label: 'Settings',
+		icon: 'settings',
+		name: 'Settings',
+		current: false,
+	},
+])
+
+const route = useRoute()
+const currentRoute = computed(() => {
+	sidebarItems.value.forEach((item) => {
+		if (
+			item.path == route.path ||
+			(item.path != '/' && route.path.includes(item.path)) // sub-route
+		) {
+			item.current = true
+		} else {
+			item.current = false
 		}
-	},
-	computed: {
-		current_route() {
-			this.routes.forEach((route) => {
-				if (
-					route.path == this.$route.path ||
-					(route.path != '/' && this.$route.path.includes(route.path)) // sub-route
-				) {
-					route.current = true
-				} else {
-					route.current = false
-				}
-			})
-			return this.$route.path
-		},
-	},
-}
+	})
+	return route.path
+})
+
+const getAppVersion = createResource({
+	method: 'insights.api.get_app_version',
+	initialData: '0.0.0',
+})
+getAppVersion.fetch()
+const appVersion = computed(() => {
+	return `Insights v${getAppVersion.data}`
+})
 </script>

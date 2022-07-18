@@ -79,6 +79,7 @@ import DashboardCard from '@/components/DashboardCard.vue'
 import { useRouter } from 'vue-router'
 import { computed, ref, provide } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
+import { updateDocumentTitle } from '@/utils/document'
 
 const props = defineProps({
 	name: {
@@ -144,4 +145,12 @@ const deleteDashboard = () => {
 	showDeleteDialog.value = false
 	router.push('/dashboard')
 }
+
+const pageMeta = computed(() => {
+	return {
+		title: dashboard.value?.name,
+		subtitle: 'Dashboard',
+	}
+})
+updateDocumentTitle(pageMeta)
 </script>

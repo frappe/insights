@@ -6,6 +6,11 @@ from pypika import CustomFunction
 
 
 @frappe.whitelist()
+def get_app_version():
+    return frappe.get_attr("insights" + ".__version__")
+
+
+@frappe.whitelist()
 def get_data_sources():
     return frappe.get_list(
         "Data Source",

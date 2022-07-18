@@ -7,11 +7,9 @@
 
 <script setup>
 import Toasts from '@/utils/toasts'
-// import NavBar from '@/components/NavBar.vue'
 
 import { provide } from 'vue'
 import { createToast } from '@/utils/toasts'
-// import { isOnboarded } from '@/controllers/onboarding'
 
 provide('$notify', createToast)
 </script>
