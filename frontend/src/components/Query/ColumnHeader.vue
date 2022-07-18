@@ -7,19 +7,11 @@
 			>
 				{{ column.aggregation }}
 			</span>
-			<input
-				type="text"
-				spellcheck="false"
-				v-model="column.label"
-				:size="Math.max(parseInt(column.label?.length * 1.2), 6)"
-				class="mr-2 -ml-1.5 cursor-text rounded border-none bg-transparent p-0 px-1.5 pr-2 text-base focus:bg-gray-100/75 focus:text-gray-600 focus:outline-none focus:ring-transparent"
-				@blur="update_column_label(column)"
-				@keydown.enter="update_column_label(column)"
-			/>
+			<div class="rounded pr-4 text-base">{{ column.label }}</div>
 		</div>
 		<div class="flex select-none items-center justify-end">
 			<div
-				@click.prevent.stop="order_by_column"
+				@click.prevent.stop="orderByColumn"
 				class="cursor-pointer rounded border border-transparent py-1 text-gray-500 hover:border-gray-200 hover:bg-gray-100 hover:text-gray-600"
 			>
 				<FeatherIcon v-if="column.order_by == 'asc'" name="arrow-up" class="mx-1 h-3 w-3" />
@@ -30,36 +22,27 @@
 				/>
 				<FeatherIcon v-else name="code" class="mx-1 h-3 w-3 rotate-90" />
 			</div>
-			<ColumnMenu :query="query" :column="column" />
 		</div>
 	</div>
 </template>
 
-<script>
-import ColumnMenu from '@/components/Query/ColumnMenu.vue'
+<script setup>
+import { inject } from 'vue'
 
-export default {
-	name: 'ColumnHeader',
-	props: ['column', 'query'],
-	components: {
-		ColumnMenu,
+const query = inject('query')
+const props = {
+	column: {
+		type: Object,
+		required: true,
 	},
-	methods: {
-		update_column_label(column) {
-			if (!column.label?.length) {
-				this.query.get.fetch()
-				return
-			}
-			this.query.updateColumn.submit({ column: column })
-		},
-		order_by_column() {
-			this.column.order_by = !this.column.order_by
-				? 'asc'
-				: this.column.order_by == 'asc'
-				? 'desc'
-				: null
-			this.query.updateColumn.submit({ column: this.column })
-		},
-	},
+}
+
+const orderByColumn = () => {
+	props.column.order_by = !props.column.order_by
+		? 'asc'
+		: props.column.order_by == 'asc'
+		? 'desc'
+		: null
+	query.updateColumn({ column: props.column })
 }
 </script>
