@@ -1,5 +1,5 @@
 <template>
-	<div class="relative flex h-full w-full select-text px-1 pt-4 text-base">
+	<div class="relative flex h-full w-full select-text pt-4 text-base">
 		<div
 			v-if="query.columns?.length === 0"
 			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
@@ -19,11 +19,11 @@
 			class="relative flex h-full w-full flex-col-reverse"
 			:class="{ 'blur-[2px]': needsExecution }"
 		>
-			<div class="-mb-1 flex h-10 w-full flex-shrink-0 pt-2">
+			<div class="mt-3 flex h-6 w-full flex-shrink-0">
 				<LimitsAndOrder />
 			</div>
 			<!-- Table -->
-			<div class="relative h-[calc(100%-2.5rem)] w-full overflow-scroll rounded-md border">
+			<div class="relative h-[calc(100%-2.25rem)] w-full overflow-scroll rounded-md border">
 				<table class="border-separate">
 					<thead class="sticky top-0 text-gray-600">
 						<tr>

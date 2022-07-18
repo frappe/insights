@@ -1,7 +1,7 @@
 <template>
 	<div class="flex h-full w-full">
 		<Sidebar />
-		<div class="ml-[16rem] flex w-[calc(100%-16rem)] flex-1 flex-col p-6">
+		<div class="ml-[16rem] flex w-[calc(100%-16rem)] flex-1 flex-col p-6 pl-3">
 			<nav class="mb-4 flex" aria-label="Breadcrumb">
 				<ol role="list" class="flex items-center space-x-2">
 					<li>

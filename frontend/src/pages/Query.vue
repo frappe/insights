@@ -20,7 +20,7 @@
 		</template>
 
 		<template #main>
-			<div class="flex w-full flex-col">
+			<div class="flex h-full w-full flex-col">
 				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-sm font-light text-gray-600">
 					<div v-if="query.dataSource" class="flex items-center">
 						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
@@ -36,8 +36,8 @@
 					</div>
 				</div>
 				<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
-				<!-- 100% - 2rem (tabs) + 1.25rem (query meta) + -0.75rem (-ve margin-top) -->
-				<div class="flex h-[calc(100%-2.5rem)] w-full rounded-md">
+				<!-- 100% - 2rem (tabs) + 1.5rem (query meta) -->
+				<div class="flex h-[calc(100%-3.5rem)] w-full rounded-md">
 					<QueryBuilder v-show="active_tab == 'Build'" />
 					<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
 					<QueryVisualizer v-if="active_tab == 'Visualize'" :query="query.resource" />

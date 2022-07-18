@@ -6,7 +6,7 @@
 	<div class="flex flex-col space-y-3">
 		<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
 			<div
-				v-for="tab in ['Metric', 'Dimension', 'Expression']"
+				v-for="tab in ['Dimension', 'Metric', 'Expression']"
 				class="flex h-full flex-1 items-center justify-center rounded-md"
 				:class="{ 'border bg-white font-normal shadow-sm': newColumnType == tab }"
 				@click.prevent.stop="newColumnType = tab"
@@ -29,7 +29,7 @@ import DimensionPicker from '@/components/Query/DimensionPicker.vue'
 import { inject, ref } from 'vue'
 
 const query = inject('query')
-const newColumnType = ref('Metric')
+const newColumnType = ref('Dimension')
 
 const emit = defineEmits(['close'])
 const addColumn = (column) => {

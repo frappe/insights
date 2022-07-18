@@ -1,6 +1,6 @@
 <template>
-	<div class="fixed inset-y-0 flex w-64 flex-col" v-if="currentRoute">
-		<div class="flex flex-grow flex-col overflow-y-auto p-6 pr-0">
+	<div class="fixed inset-y-0 flex w-64 flex-col bg-gray-50" v-if="currentRoute">
+		<div class="flex flex-grow flex-col overflow-y-auto p-6 pr-3">
 			<div class="flex flex-shrink-0 items-center px-1">
 				<FrappeInsightsLogo />
 			</div>
