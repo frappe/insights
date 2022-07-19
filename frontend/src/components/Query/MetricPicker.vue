@@ -69,7 +69,8 @@ const typeOptions = ref([
 	},
 ])
 const metric = reactive({
-	column: props.column,
+	// since props.column comes from doc.columns, it doesn't have value property
+	column: { ...props.column, value: props.column.column },
 	label: props.column.label,
 	type: typeOptions.value.find((t) => {
 		return t.value == props.column.aggregation
@@ -77,8 +78,6 @@ const metric = reactive({
 })
 // for editing a metric
 const row_name = ref(props.column.name)
-
-onMounted(() => query.fetchColumns())
 
 const columnNeeded = computed(() => {
 	return !isEmptyObj(metric.type) && metric.type.value !== 'Count'
@@ -91,6 +90,7 @@ const addDisabled = computed(() => {
 	)
 })
 
+onMounted(() => query.fetchColumns())
 const columnOptions = computed(() => {
 	return query.fetchColumnsData.value?.map((c) => {
 		return {

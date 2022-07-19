@@ -115,15 +115,6 @@ const props = defineProps({
 })
 
 const filterQuery = ref('')
-const selectedOption = computed({
-	get() {
-		return props.modelValue
-	},
-	set(value) {
-		emit('update:modelValue', value)
-		emit('selectOption', value)
-	},
-})
 const options = computed(() => {
 	if (props.options.length === 0) {
 		return [
@@ -143,6 +134,15 @@ const options = computed(() => {
 		})
 	}
 	return props.options
+})
+const selectedOption = computed({
+	get() {
+		return options.value.find((option) => option.value === props.modelValue?.value)
+	},
+	set(value) {
+		emit('update:modelValue', value)
+		emit('selectOption', value)
+	},
 })
 const uniqueOptions = computed(() => {
 	return options.value.filter((option, index, self) => {

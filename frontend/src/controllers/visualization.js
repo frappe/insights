@@ -159,6 +159,11 @@ function useVisualization({ visualizationID, queryID, query }) {
 		const labelColumn = data.labelColumn.value
 		const valueColumn = data.valueColumn.value
 
+		const columnLabels = query.doc.columns.map((c) => c.column)
+		if (columnLabels.indexOf(labelColumn) === -1 || columnLabels.indexOf(valueColumn) === -1) {
+			return null
+		}
+
 		const labels = query.getColumnValues(labelColumn)
 		const values = query.getColumnValues(valueColumn)
 
