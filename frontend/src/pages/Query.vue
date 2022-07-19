@@ -32,15 +32,15 @@
 					</div>
 					<div v-if="executionTime" class="flex items-center">
 						<FeatherIcon name="clock" class="mr-1.5 h-3 w-3" />
-						<span> Took {{ executionTime }} sec </span>
+						<span> {{ executionTime }} sec </span>
 					</div>
 				</div>
-				<TabSwitcher :tabs="tabs" @tab_switched="(tab) => (active_tab = tab)" />
+				<TabSwitcher :tabs="tabs" :activeTab="activeTab" @tab-switched="onTabSwitch" />
 				<!-- 100% - 2rem (tabs) + 1.5rem (query meta) -->
 				<div class="flex h-[calc(100%-3.5rem)] w-full rounded-md">
-					<QueryBuilder v-show="active_tab == 'Build'" />
-					<QueryResult v-show="active_tab == 'Result'" :query="query.resource" />
-					<QueryVisualizer v-if="active_tab == 'Visualize'" :query="query.resource" />
+					<QueryBuilder v-show="activeTab == 'Build'" />
+					<QueryResult v-show="activeTab == 'Result'" :query="query.resource" />
+					<QueryVisualizer v-if="activeTab == 'Visualize'" :query="query.resource" />
 				</div>
 			</div>
 		</template>
@@ -59,14 +59,49 @@ import QueryMenu from '@/components/Query/QueryMenu.vue'
 
 import Query from '@/controllers/query'
 import { updateDocumentTitle } from '@/utils/document'
-import { computed, ref, provide, inject } from 'vue'
-
-const tabs = ref(['Build', 'Result', 'Visualize'])
-const active_tab = ref('Build')
+import { computed, ref, provide, inject, watchEffect } from 'vue'
 
 const props = defineProps(['name'])
+const $notify = inject('$notify')
 const query = new Query(props.name)
 provide('query', query)
+
+const tabs = ref([
+	{
+		label: 'Build',
+		showIndicator: false,
+		disabled: false,
+		disabledMessage: '',
+	},
+	{
+		label: 'Result',
+		showIndicator: false,
+		disabled: false,
+		disabledMessage: '',
+	},
+	{
+		label: 'Visualize',
+		showIndicator: false,
+		disabled: false,
+		disabledMessage: '',
+	},
+])
+const activeTab = ref('Build')
+const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
+watchEffect(() => {
+	tabs.value.find((t) => t.label === 'Visualize').disabled = needsExecution.value
+	tabs.value.find((tab) => tab.label === 'Result').showIndicator = needsExecution.value
+})
+const onTabSwitch = (tab) => {
+	if (tab.label === 'Visualize' && needsExecution.value) {
+		$notify({
+			title: 'You need to execute the query first',
+			appearance: 'warning',
+		})
+		return
+	}
+	activeTab.value = tab.label
+}
 
 const pageMeta = computed(() => {
 	return {
@@ -83,7 +118,6 @@ const executionTime = computed(() => {
 	return Math.round(query.doc.execution_time * 100) / 100
 })
 
-const $notify = inject('$notify')
 const titleInput = ref(null)
 const updateTitle = () => {
 	if (!query.doc.title || query.doc.title.length == 0) {

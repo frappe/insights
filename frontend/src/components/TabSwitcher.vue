@@ -3,29 +3,33 @@
 		<div
 			v-for="(tab, i) in tabs"
 			:key="i"
-			class="flex h-8 w-fit cursor-pointer justify-center px-2 text-lg"
-			:class="{ 'border-b-2 border-blue-500 font-normal text-gray-600': active_tab === tab }"
-			@click="
-				() => {
-					active_tab = tab
-					$emit('tab_switched', tab)
-				}
-			"
+			class="relative flex h-8 w-fit cursor-pointer justify-center px-2 text-lg"
+			:class="{
+				'border-b-2 border-blue-500 font-normal text-gray-600':
+					props.activeTab == tab.label,
+				'cursor-not-allowed': tab.disabled,
+			}"
+			@click="$emit('tab-switched', tab)"
 		>
-			{{ tab }}
+			{{ tab.label }}
+			<span
+				v-if="tab.showIndicator"
+				class="absolute -top-1 right-0 h-1.5 w-1.5 rounded-full bg-red-500"
+			></span>
 		</div>
 	</div>
 </template>
 
-<script>
-export default {
-	name: 'TabSwitcher',
-	props: ['tabs'],
-	emits: ['tab_switched'],
-	data() {
-		return {
-			active_tab: this.tabs[0],
-		}
+<script setup>
+const props = defineProps({
+	tabs: {
+		type: Array,
+		required: true,
 	},
-}
+	activeTab: {
+		type: String,
+		default: '',
+	},
+})
+defineEmits(['tab-switched'])
 </script>
