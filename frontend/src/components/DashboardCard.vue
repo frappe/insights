@@ -6,7 +6,7 @@
 		@move="onMove"
 		@resize="onResize"
 	>
-		<div :id="visualization.doc.name" class="h-fit w-fit p-1" :style="style">
+		<div :id="visualization.doc.name" class="inline-block h-fit w-fit p-1" :style="style">
 			<div
 				class="flex h-full w-full flex-col space-y-4 overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
 			>
