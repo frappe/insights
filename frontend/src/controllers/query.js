@@ -133,6 +133,17 @@ export default class Query {
 	delete() {
 		return this.resource.delete.submit()
 	}
+
+	validateRemoveTable({ table, label }) {
+		const columnsFromTable = this.columns.filter((c) => c.table === table)
+		if (columnsFromTable.length > 0) {
+			return {
+				title: 'Cannot remove table',
+				message: `There are dimensions and metrics associated with table ${label}. Please remove them first.`,
+				appearance: 'error',
+			}
+		}
+	}
 }
 
 class QueryResult {

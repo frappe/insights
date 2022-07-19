@@ -48,7 +48,7 @@
 					</div>
 					<div
 						class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
-						@click.prevent.stop="query.removeTable({ table })"
+						@click.prevent.stop="removeTable(table)"
 					>
 						<FeatherIcon name="x" class="h-3 w-3" />
 					</div>
@@ -191,5 +191,13 @@ function clear_join() {
 	editTable.value.join = ''
 	query.updateTable({ table: editTable.value })
 	editTable.value = null
+}
+const $notify = inject('$notify')
+function removeTable(table) {
+	const validationError = query.validateRemoveTable(table)
+	if (validationError) {
+		return $notify(validationError)
+	}
+	query.removeTable({ table })
 }
 </script>
