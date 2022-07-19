@@ -91,7 +91,9 @@ class DraggableResizeable {
 		const relativeToParent = this.convertToRelative(rect)
 
 		this.isResizing && this.onResize && this.onResize(rect.width, rect.height)
-		this.isDragging && this.onMove && this.onMove(relativeToParent.left, relativeToParent.top)
+		this.isDragging &&
+			this.onMove &&
+			this.onMove(relativeToParent.left, this.parent.scrollTop + relativeToParent.top)
 
 		this.element.classList.remove('cursor-grabbing', 'opacity-75', 'z-10')
 		this.isDragging = false
@@ -119,15 +121,16 @@ class DraggableResizeable {
 		if (this.snapToGrid) {
 			dx = Math.round(dx / this.columnWidth) * this.columnWidth
 			dy = Math.round(dy / this.rowHeight) * this.rowHeight
-			if (dx === 0 && dy === 0) {
-				return
-			}
+		}
+
+		if (dx === 0 && dy === 0) {
+			return
 		}
 
 		if (this.isDragging) {
 			const rect = this.convertToRelative(this.element.getBoundingClientRect())
 			this.element.style.left = `${rect.left + dx}px`
-			this.element.style.top = `${rect.top + dy}px`
+			this.element.style.top = `${this.parent.scrollTop + rect.top + dy}px`
 			this.checkBoundaryAndSnap()
 		}
 
@@ -153,13 +156,14 @@ class DraggableResizeable {
 				this.boundary.right - this.boundary.left - newRect.width
 			}px`
 		}
-		if (newRect.top < this.boundary.top) {
+		if (this.parent.scrollTop + newRect.top < this.boundary.top) {
 			this.element.style.top = '0px'
-		} else if (newRect.bottom > this.boundary.bottom) {
-			this.element.style.top = `${
-				this.boundary.bottom - this.boundary.top - newRect.height
-			}px`
 		}
+		// else if (newRect.bottom > this.boundary.bottom) {
+		// 	this.element.style.top = `${
+		// 		this.boundary.bottom - this.boundary.top - newRect.height
+		// 	}px`
+		// }
 	}
 
 	checkBoundaryAndResize(newWidth, newHeight) {
