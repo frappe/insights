@@ -39,7 +39,9 @@
 						<span class="text-base font-medium">{{ column.label }}</span>
 					</div>
 					<div class="flex items-center">
-						<div class="mr-1 font-light text-gray-500">{{ column.table_label }}</div>
+						<div class="mr-1 font-light text-gray-500">
+							{{ column.is_expression ? 'Expression' : column.table_label }}
+						</div>
 						<div
 							class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
 							@click.prevent.stop="query.removeColumn({ column })"

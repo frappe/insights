@@ -16,15 +16,14 @@
 		</div>
 		<MetricPicker v-if="newColumnType == 'Metric'" @column-select="addColumn" />
 		<DimensionPicker v-if="newColumnType == 'Dimension'" @column-select="addColumn" />
-		<div v-if="newColumnType == 'Expression'" class="text-center text-gray-500">
-			Coming Soon...
-		</div>
+		<ColumnExpressionPicker v-if="newColumnType == 'Expression'" @column-select="addColumn" />
 	</div>
 </template>
 
 <script setup>
 import MetricPicker from '@/components/Query/MetricPicker.vue'
 import DimensionPicker from '@/components/Query/DimensionPicker.vue'
+import ColumnExpressionPicker from '@/components/Query/ColumnExpressionPicker.vue'
 
 import { inject, ref } from 'vue'
 

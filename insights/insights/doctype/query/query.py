@@ -98,6 +98,8 @@ class Query(Document):
             "column": column.get("column"),
             "table_label": column.get("table_label"),
             "aggregation": column.get("aggregation"),
+            "is_expression": column.get("is_expression"),
+            "expression": dumps(column.get("expression"), default=cstr, indent=2),
         }
         self.append("columns", new_column)
         self.save()
@@ -119,6 +121,7 @@ class Query(Document):
                 row.order_by = column.get("order_by")
                 row.aggregation = column.get("aggregation")
                 row.table_label = column.get("table_label")
+                row.expression = dumps(column.get("expression"), indent=2)
                 row.aggregation_condition = column.get("aggregation_condition")
                 row.format_option = dumps(column.get("format_option"), indent=2)
                 break
@@ -463,14 +466,40 @@ class Query(Document):
         self._order_by_columns = []
 
         for row in self.columns:
-            _column = self.process_query_field(row.table, row.column)
-            # dates should be formatted before aggregagtions
-            _column = self.process_column_format(row, _column)
-            _column = self.process_aggregation(row, _column)
+            if not row.is_expression:
+                _column = self.process_dimension_or_metric(row)
+            else:
+                expression = loads(row.expression)
+                _column = self.process_column_expression(expression.get("tree"))
 
             self.process_sorting(row, _column)
             _column = _column.as_(row.label)
             self._columns.append(_column)
+
+    def process_dimension_or_metric(self, row):
+        _column = self.process_query_field(row.table, row.column)
+        # dates should be formatted before aggregagtions
+        _column = self.process_column_format(row, _column)
+        _column = self.process_aggregation(row, _column)
+        return _column
+
+    def process_column_expression(self, expression):
+        expression = _dict(expression)
+        if expression.type == "BinaryExpression":
+            left = self.process_column_expression(expression.left)
+            right = self.process_column_expression(expression.right)
+            operator = expression.operator
+            operation = Operations.get_operation(operator)
+            return operation(left, right)
+
+        if expression.type == "ColumnLiteral":
+            column = self.process_query_field(
+                expression.value.get("table"), expression.value.get("column")
+            )
+            return column
+
+        if expression.type == "NumberLiteral":
+            return expression.value
 
     def process_column_format(self, row, column):
         if row.format_option and row.type in ("Date", "Datetime"):

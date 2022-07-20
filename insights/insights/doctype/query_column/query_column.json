@@ -9,9 +9,12 @@
   "label",
   "column",
   "type",
+  "is_expression",
   "column_break_5",
   "table",
   "table_label",
+  "section_break_8",
+  "expression",
   "aggregations_section",
   "aggregation",
   "aggregation_condition",
@@ -36,13 +39,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Name",
-   "reqd": 1
+   "mandatory_depends_on": "!is_expression"
   },
   {
    "fieldname": "table",
    "fieldtype": "Data",
    "label": "Table",
-   "reqd": 1
+   "mandatory_depends_on": "!is_expression"
   },
   {
    "columns": 1,
@@ -50,7 +53,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Type",
-   "reqd": 1
+   "mandatory_depends_on": "!is_expression"
   },
   {
    "fieldname": "aggregations_section",
@@ -65,7 +68,7 @@
    "fieldname": "table_label",
    "fieldtype": "Data",
    "label": "Table Label",
-   "reqd": 1
+   "mandatory_depends_on": "!is_expression"
   },
   {
    "fieldname": "order_by",
@@ -85,12 +88,28 @@
    "fieldtype": "Code",
    "label": "Format Option",
    "options": "JSON"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_expression",
+   "fieldtype": "Check",
+   "label": "Is Expression"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "is_expression",
+   "fieldname": "expression",
+   "fieldtype": "JSON",
+   "label": "Expression"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-07-12 11:34:58.816432",
+ "modified": "2022-07-20 20:40:22.532890",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Query Column",
