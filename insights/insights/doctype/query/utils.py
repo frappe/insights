@@ -233,6 +233,7 @@ class Functions:
     def get_functions(cls):
         return {
             "abs": fn.Abs,
+            "case": cls.case,
             "floor": fn.Floor,
             "lower": fn.Lower,
             "upper": fn.Upper,
@@ -268,6 +269,25 @@ class Functions:
     @classmethod
     def between(cls, field: Field, *values):
         return field.between(*values)
+
+    @classmethod
+    def ifelse(cls, condition, true_value, false_value):
+        return Case().when(condition, true_value).else_(false_value)
+
+    @classmethod
+    def case(cls, *args):
+        # TODO: validate args at a better place
+        _args = list(args)
+        if len(_args) % 2 == 0:
+            frappe.throw("Case requires an odd number of arguments")
+
+        case = Case()
+        default = _args.pop()
+        conditions = _args[::2]
+        values = _args[1::2]
+        for condition, value in zip(conditions, values):
+            case.when(condition, value)
+        return case.else_(default)
 
     @classmethod
     def is_valid(cls, function: str):

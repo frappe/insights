@@ -1,7 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-# import frappe
+import frappe
 import unittest
 from pypika import Table, Case
 from insights.insights.doctype.query.utils import parse_query_expression
@@ -35,10 +35,10 @@ class TestParseExpression(unittest.TestCase):
             },
         }
         expression = parse_query_expression(tree)
-        self.assertEquals(expression.left.table, Table("Car"))
-        self.assertEquals(expression.left.name, "price")
-        self.assertEquals(expression.operator.value, "+")
-        self.assertEquals(expression.right.value, 100)
+        self.assertEqual(expression.left.table, Table("Car"))
+        self.assertEqual(expression.left.name, "price")
+        self.assertEqual(expression.operator.value, "+")
+        self.assertEqual(expression.right.value, 100)
 
     def test_aggregation_expression(self):
         aggregations = ["count", "sum", "min", "max", "avg", "distinct"]
@@ -177,7 +177,7 @@ class TestParseExpression(unittest.TestCase):
             ],
         }
         expression = parse_query_expression(tree)
-        self.assertEquals(expression.get_sql().lower(), "price between 100 and 200")
+        self.assertEqual(expression.get_sql().lower(), "price between 100 and 200")
 
     def test_contains_function(self):
         tree = {
@@ -222,3 +222,77 @@ class TestParseExpression(unittest.TestCase):
         self.assertEqual(expression.args[0].name, "model")
         self.assertEqual(expression.args[1].value, "Audi")
         self.assertEqual(expression.args[2].value, "BMW")
+
+    def test_case_function(self):
+        tree = {
+            "type": "FunctionCall",
+            "function": "case",
+            "arguments": [
+                {
+                    "type": "BinaryExpression",
+                    "operator": "<",
+                    "left": {
+                        "type": "Column",
+                        "value": {"table": "Car", "column": "price"},
+                    },
+                    "right": {
+                        "type": "Number",
+                        "value": 300_000,
+                    },
+                },
+                {
+                    "type": "String",
+                    "value": "Low Price",
+                },
+            ],
+        }
+        self.assertRaises(frappe.ValidationError, parse_query_expression, tree)
+
+        tree = {
+            "type": "FunctionCall",
+            "function": "case",
+            "arguments": [
+                {
+                    "type": "BinaryExpression",
+                    "operator": "<",
+                    "left": {
+                        "type": "Column",
+                        "value": {"table": "Car", "column": "price"},
+                    },
+                    "right": {
+                        "type": "Number",
+                        "value": 300_000,
+                    },
+                },
+                {
+                    "type": "String",
+                    "value": "Low Price",
+                },
+                {
+                    "type": "BinaryExpression",
+                    "operator": ">",
+                    "left": {
+                        "type": "Column",
+                        "value": {"table": "Car", "column": "price"},
+                    },
+                    "right": {
+                        "type": "Number",
+                        "value": 500_000,
+                    },
+                },
+                {
+                    "type": "String",
+                    "value": "High Price",
+                },
+                {
+                    "type": "String",
+                    "value": "Usual Price",
+                },
+            ],
+        }
+        expression = parse_query_expression(tree)
+        self.assertEqual(type(expression), Case)
+        self.assertEqual(
+            expression.get_sql().lower().replace('"', ""),
+            "case when price<300000 then 'low price' when price>500000 then 'high price' else 'usual price' end",
+        )
