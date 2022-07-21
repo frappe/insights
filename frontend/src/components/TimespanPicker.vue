@@ -12,7 +12,7 @@
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
+				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded-md border bg-white p-3 text-base shadow-md"
 			>
 				<div
 					class="flex h-8 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm"

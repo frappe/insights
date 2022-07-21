@@ -2,7 +2,7 @@
 	<div class="m-4 flex flex-1 flex-col">
 		<!-- Picker -->
 		<div v-if="!editTable" class="flex flex-1 flex-col">
-			<div v-if="addingTable" class="mb-4 flex flex-shrink-0">
+			<div v-if="addingTable" class="mb-4 w-full">
 				<Autocomplete
 					ref="tableSearch"
 					v-model="newTable"
@@ -11,7 +11,7 @@
 					@selectOption="
 						(table) => {
 							addingTable = false
-							query.addTable({ table })
+							table && query.addTable({ table })
 						}
 					"
 				/>

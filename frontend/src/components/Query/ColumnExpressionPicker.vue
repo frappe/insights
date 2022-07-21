@@ -1,9 +1,10 @@
 <template>
 	<div class="flex flex-col space-y-3">
+		<!-- Expression Field -->
 		<Popover class="flex w-full flex-col [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
 				<div class="mb-1 text-sm font-light text-gray-600">Expression</div>
-				<div class="relative font-mono">
+				<div class="relative">
 					<input
 						type="text"
 						autocomplete="off"
@@ -14,19 +15,13 @@
 						@focus="togglePopover()"
 						@keydown.esc.exact="togglePopover()"
 						@keyup="input.caretPosition = $refs.inputElement.selectionStart"
-						class="form-input block h-8 w-full select-none rounded-md border border-transparent p-0 pl-5 text-sm placeholder-gray-500 caret-black focus:border-transparent"
+						class="form-input block h-8 w-full select-none rounded-md border border-transparent p-0 pl-5 font-mono text-sm placeholder-gray-500 caret-black focus:border-transparent"
 						:class="{
 							'border border-red-500 focus:border-red-500': Boolean(expression.error),
 						}"
 					/>
 					<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-gray-700">
 						=
-					</div>
-					<div
-						v-if="Boolean(expression.error)"
-						class="absolute top-0 right-0 flex h-8 items-center pr-2 text-gray-700"
-					>
-						<FeatherIcon name="alert-circle" class="h-4 w-4 text-red-500" />
 					</div>
 				</div>
 			</template>
@@ -38,6 +33,15 @@
 				/>
 			</template>
 		</Popover>
+		<!-- Expression Error -->
+		<div
+			v-if="expression.error"
+			class="!mt-1 flex items-center space-x-1 text-xs font-light text-red-500"
+		>
+			<FeatherIcon name="alert-circle" class="mr-1 h-3 w-3" />
+			{{ expression.error }}
+		</div>
+		<!-- Label Field -->
 		<div class="text-sm text-gray-600">
 			<div class="mb-1 font-light">Label</div>
 			<Input
@@ -47,6 +51,7 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
+		<!-- Action Buttons -->
 		<div class="flex justify-end space-x-2">
 			<Button
 				v-if="editing"
@@ -61,7 +66,7 @@
 				@click="addExpressionColumn"
 				:disabled="Boolean(expression.error)"
 			>
-				{{ editing ? 'Edit' : 'Add ' }}
+				{{ editing ? 'Update' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
@@ -107,23 +112,16 @@ onMounted(() => {
 const expression = reactive({
 	raw: input.value,
 	label: column.label,
-	tree: null,
+	ast: null,
 	error: null,
 	tokens: [],
 })
 watchEffect(() => {
 	expression.raw = input.value
-	try {
-		const { parsed, tokens } = parse(expression.raw)
-		expression.error = null
-		expression.tree = parsed
-		expression.tokens = tokens
-	} catch (error) {
-		console.warn(error.message)
-		expression.tree = null
-		expression.tokens = []
-		expression.error = error.message
-	}
+	const { ast, tokens, errorMessage } = parse(expression.raw)
+	expression.ast = ast
+	expression.tokens = tokens
+	expression.error = errorMessage
 })
 
 // show column dropdown if the caret is between two square brackets
@@ -180,7 +178,7 @@ const addExpressionColumn = () => {
 		is_expression: 1,
 		expression: {
 			raw: expression.raw,
-			tree: expression.tree,
+			ast: expression.ast,
 		},
 		label: expression.label,
 	}

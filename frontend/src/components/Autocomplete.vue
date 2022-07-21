@@ -1,7 +1,7 @@
 <template>
 	<Combobox v-model="selectedOption" v-slot="{ open }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover class="flex w-full [&>div:first-child]:w-full">
+		<Popover class="flex w-full">
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
@@ -152,12 +152,14 @@ const uniqueOptions = computed(() => {
 const filteredOptions = computed(() => {
 	return !filterQuery.value
 		? uniqueOptions.value.slice(0, 50)
-		: uniqueOptions.value.filter((option) =>
-				option.label
-					.toLowerCase()
-					.replace(/\s+/g, '')
-					.includes(filterQuery.value.toLowerCase().replace(/\s+/g, ''))
-		  )
+		: uniqueOptions.value
+				.filter((option) =>
+					option.label
+						.toLowerCase()
+						.replace(/\s+/g, '')
+						.includes(filterQuery.value.toLowerCase().replace(/\s+/g, ''))
+				)
+				.slice(0, 50)
 })
 
 watch(filterQuery, (newValue, oldValue) => {

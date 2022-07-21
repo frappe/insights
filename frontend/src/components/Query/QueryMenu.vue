@@ -64,9 +64,8 @@
 					:loading="query.resource.reset.loading"
 					@click="
 						() => {
-							query.reset().then(() => {
-								show_reset_dialog = false
-							})
+							const { req } = query.reset()
+							req.then(() => (show_reset_dialog = false))
 						}
 					"
 				>

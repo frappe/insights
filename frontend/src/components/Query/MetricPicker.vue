@@ -32,7 +32,7 @@
 				Remove
 			</Button>
 			<Button @click="addMetric" appearance="primary" :disabled="addDisabled">
-				{{ row_name ? 'Edit' : 'Add ' }}
+				{{ row_name ? 'Update' : 'Add ' }}
 			</Button>
 		</div>
 	</div>

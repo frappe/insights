@@ -6,8 +6,10 @@ import operator
 
 from typing import Tuple
 
+import frappe
+from frappe import _dict
 from pypika import functions as fn
-from frappe.query_builder import CustomFunction, functions, Case
+from frappe.query_builder import CustomFunction, functions, Case, Field, Table
 from frappe.utils.data import (
     nowdate,
     add_to_date,
@@ -23,23 +25,42 @@ from frappe.utils.data import (
 
 
 class Aggregations:
-
-    functions = {
-        "Sum": functions.Sum,
-        "Count": functions.Count,
-        "Min": functions.Min,
-        "Max": functions.Max,
-        "Avg": functions.Avg,
-        "Distinct": CustomFunction("DISTINCT", ["column"]),
-    }
+    @classmethod
+    def get_aggregations(cls):
+        return {
+            "sum": functions.Sum,
+            "min": functions.Min,
+            "max": functions.Max,
+            "avg": functions.Avg,
+            "count": functions.Count,
+            "sum_if": cls.sum_if,
+            "count_if": cls.count_if,
+            "distinct": CustomFunction("DISTINCT", ["column"]),
+        }
 
     @classmethod
-    def apply(cls, aggregation, column=None, **kwargs):
-        if aggregation == "Count if":
-            conditions = kwargs.get("conditions")
-            return functions.Sum(Case().when(conditions, 1).else_(0))
-        if aggregation in cls.functions:
-            return cls.functions[aggregation](column)
+    def get_aggregation_function(cls, aggregation):
+        return cls.get_aggregations()[aggregation]
+
+    @staticmethod
+    def sum_if(column, conditions):
+        return functions.Sum(Case().when(conditions, column).else_(0))
+
+    @staticmethod
+    def count_if(conditions):
+        return functions.Sum(Case().when(conditions, 1).else_(0))
+
+    @classmethod
+    def apply(cls, aggregation, *args, **kwargs):
+        function = cls.get_aggregation_function(aggregation)
+        if function:
+            return function(*args, **kwargs)
+
+        raise NotImplementedError(f"Aggregation {aggregation} not implemented")
+
+    @classmethod
+    def is_valid(cls, aggregation: str) -> bool:
+        return aggregation in cls.get_aggregations()
 
 
 class ColumnFormat:
@@ -147,6 +168,8 @@ class Operations:
                 field, cls.NULL_COMPARE_OPERATIONS[f"{operator} {value}"]
             )()
 
+        raise NotImplementedError(f"Operation {operator} not implemented")
+
 
 def get_date_range(
     timespan: str, n: int = 1
@@ -203,3 +226,92 @@ def get_date_range(
             if "current" in timespan
             else date_range_map[timespan](n)
         )
+
+
+class Functions:
+    @classmethod
+    def get_functions(cls):
+        return {
+            "abs": fn.Abs,
+            "floor": fn.Floor,
+            "lower": fn.Lower,
+            "upper": fn.Upper,
+            "concat": fn.Concat,
+            "isnull": fn.IsNull,
+            "ifnull": fn.IfNull,
+            "coalesce": fn.Coalesce,
+            "between": cls.between,
+            "contains": cls.contains,
+            "endswith": cls.endswith,
+            "startswith": cls.startswith,
+            "ceil": CustomFunction("CEIL", ["field"]),
+            "round": CustomFunction("ROUND", ["field"]),
+            "replace": CustomFunction("REPLACE", ["field", "find", "replace"]),
+        }
+
+    @classmethod
+    def get_function(cls, function):
+        return cls.get_functions()[function]
+
+    @classmethod
+    def contains(cls, field: Field, value):
+        return field.like(f"%{value}%")
+
+    @classmethod
+    def endswith(cls, field: Field, value):
+        return field.like(f"%{value}")
+
+    @classmethod
+    def startswith(cls, field: Field, value):
+        return field.like(f"{value}%")
+
+    @classmethod
+    def between(cls, field: Field, *values):
+        return field.between(*values)
+
+    @classmethod
+    def is_valid(cls, function: str):
+        return function in cls.get_functions()
+
+    @classmethod
+    def apply(cls, function, *args):
+        return cls.get_function(function)(*args)
+
+
+def parse_query_expression(expression):
+    expression = _dict(expression)
+
+    if expression.type == "BinaryExpression":
+        left = parse_query_expression(expression.left)
+        right = parse_query_expression(expression.right)
+        operator = expression.operator
+        operation = Operations.get_operation(operator)
+        return operation(left, right)
+
+    if expression.type == "FunctionCall":
+        function = expression.function
+        arguments = [parse_query_expression(arg) for arg in expression.arguments]
+        if Aggregations.is_valid(function):
+            return Aggregations.apply(function, *arguments)
+        if Functions.is_valid(function):
+            return Functions.apply(function, *arguments)
+
+        raise NotImplementedError(f"Function {function} not implemented")
+
+    if expression.type == "Column":
+        column = make_query_field(
+            expression.value.get("table"), expression.value.get("column")
+        )
+        return column
+
+    if expression.type == "String":
+        return expression.value
+
+    if expression.type == "Number":
+        return expression.value
+
+    frappe.throw("Invalid expression type: {}".format(expression.type))
+
+
+def make_query_field(table, column) -> Field:
+    return Table(table)[column]

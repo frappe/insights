@@ -28,7 +28,7 @@
 				Remove
 			</Button>
 			<Button @click="addDimension" appearance="primary" :disabled="addDisabled">
-				{{ row_name ? 'Edit' : 'Add ' }}
+				{{ row_name ? 'Update' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
