@@ -26,6 +26,12 @@
 			@column-select="editColumn"
 			@close="$emit('close')"
 		/>
+		<ColumnExpressionPicker
+			v-if="currentTab == 'Expression'"
+			:column="props.column"
+			@column-select="editColumn"
+			@close="$emit('close')"
+		/>
 		<ColumnFormatter v-if="currentTab == 'Format'" :column="props.column" @save="editColumn" />
 	</div>
 </template>
@@ -34,6 +40,7 @@
 import MetricPicker from '@/components/Query/MetricPicker.vue'
 import DimensionPicker from '@/components/Query/DimensionPicker.vue'
 import ColumnFormatter from '@/components/Query/ColumnFormatter.vue'
+import ColumnExpressionPicker from '@/components/Query/ColumnExpressionPicker.vue'
 
 import { inject, ref } from 'vue'
 
@@ -47,7 +54,11 @@ const props = defineProps({
 })
 const query = inject('query')
 const columnType = ref(
-	props.column.aggregation && props.column.aggregation === 'Group By' ? 'Dimension' : 'Metric'
+	props.column.is_expression
+		? 'Expression'
+		: props.column.aggregation && props.column.aggregation === 'Group By'
+		? 'Dimension'
+		: 'Metric'
 )
 const currentTab = ref(columnType.value)
 

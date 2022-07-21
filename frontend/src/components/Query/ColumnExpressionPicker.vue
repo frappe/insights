@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-col">
-		<div class="mb-1 text-sm font-light text-gray-600">Expression</div>
+	<div class="flex flex-col space-y-3">
 		<Popover class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
+				<div class="mb-1 text-sm font-light text-gray-600">Expression</div>
 				<div class="relative font-mono">
 					<input
 						type="text"
@@ -29,13 +29,6 @@
 						<FeatherIcon name="alert-circle" class="h-4 w-4 text-red-500" />
 					</div>
 				</div>
-				<!-- <div class="mt-2 rounded-md border bg-slate-50 p-2">
-					<pre>
-						<code>
-							{{ JSON.stringify(expression.tree, null, 2) }}
-						</code>
-					</pre>
-				</div> -->
 			</template>
 			<template #body>
 				<SuggestionBox
@@ -45,7 +38,7 @@
 				/>
 			</template>
 		</Popover>
-		<div class="mt-2 text-sm text-gray-600">
+		<div class="text-sm text-gray-600">
 			<div class="mb-1 font-light">Label</div>
 			<Input
 				type="text"
@@ -54,13 +47,21 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
-		<div class="mt-3 flex justify-end">
+		<div class="flex justify-end space-x-2">
+			<Button
+				v-if="editing"
+				class="text-red-500"
+				appearance="white"
+				@click="removeExpressionColumn"
+			>
+				Remove
+			</Button>
 			<Button
 				appearance="primary"
 				@click="addExpressionColumn"
 				:disabled="Boolean(expression.error)"
 			>
-				Add
+				{{ editing ? 'Edit' : 'Add ' }}
 			</Button>
 		</div>
 	</div>
@@ -69,15 +70,31 @@
 <script setup>
 import SuggestionBox from '@/components/SuggestionBox.vue'
 
+import { safeJSONParse } from '@/utils'
 import { parse } from '@/utils/expressions'
 import { ref, inject, onMounted, watchEffect, reactive, computed } from 'vue'
 import { autocompleteSquareBrackets, autocompleteQuotes } from '@/utils/autocomplete'
 
 const query = inject('query')
 const inputElement = ref(null)
+
+const emit = defineEmits(['column-select', 'close'])
+const props = defineProps({
+	column: {
+		type: Object,
+		default: {},
+		validate: (value) => {
+			if (value.is_expression != 1) {
+				return 'Column must be an expression'
+			}
+		},
+	},
+})
+const column = { ...props.column, expression: safeJSONParse(props.column.expression, {}) }
+const editing = ref(Boolean(column.name))
 const input = reactive({
-	value: '',
-	caretPosition: 0,
+	value: column.expression.raw || '',
+	caretPosition: column.expression.raw?.length || 0,
 })
 
 onMounted(() => {
@@ -88,8 +105,8 @@ onMounted(() => {
 
 // parse the expression when input changes
 const expression = reactive({
-	raw: '',
-	label: '',
+	raw: input.value,
+	label: column.label,
 	tree: null,
 	error: null,
 	tokens: [],
@@ -157,9 +174,9 @@ const onColumnSelect = (option) => {
 	)
 }
 
-const emit = defineEmits(['column-select'])
 const addExpressionColumn = () => {
 	const newColumn = {
+		name: props.column.name,
 		is_expression: 1,
 		expression: {
 			raw: expression.raw,
@@ -168,5 +185,10 @@ const addExpressionColumn = () => {
 		label: expression.label,
 	}
 	emit('column-select', newColumn)
+}
+
+const removeExpressionColumn = () => {
+	query.removeColumn({ column: props.column })
+	emit('close')
 }
 </script>
