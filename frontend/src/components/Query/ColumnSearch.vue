@@ -16,7 +16,7 @@
 			<template #content>
 				<SuggestionBox
 					v-if="show && suggestions?.length"
-					:header_and_suggestions="suggestions"
+					:suggestions="suggestions"
 					@option-select="on_suggestion_select"
 				/>
 			</template>

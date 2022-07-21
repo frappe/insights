@@ -71,75 +71,104 @@ function getOperatorTokenType(operator) {
 	}
 }
 
-export function tokenize(expression) {
+function tokenize(expression) {
 	let cursor = 0
+	let tokens = []
+	let char = expression[cursor]
 
-	const tokens = []
+	function advance() {
+		char = expression[++cursor]
+	}
+
+	function getNumberToken() {
+		let number = ''
+		while (isNumber(char) || (char == '.' && isNumber(expression[cursor + 1]))) {
+			number += char
+			advance()
+		}
+		return {
+			type: TOKEN_TYPES.NUMBER,
+			value: number,
+		}
+	}
+
+	function processColumnToken() {
+		tokens.push({
+			type: TOKEN_TYPES.OPEN_SQUARE_BRACKET,
+			position: cursor,
+		})
+		advance()
+
+		let columnStr = ''
+		while (char != ']' && cursor < expression.length) {
+			columnStr += char
+			advance()
+		}
+		if (columnStr.length) {
+			const start = cursor - columnStr.length
+			const [table, column] = columnStr.split('.')
+			tokens.push({
+				type: TOKEN_TYPES.COLUMN,
+				start: start,
+				end: cursor,
+				value: {
+					table: column ? table : null,
+					column: column ? column : table,
+				},
+			})
+		}
+
+		if (char === ']') {
+			tokens.push({
+				type: TOKEN_TYPES.CLOSE_SQUARE_BRACKET,
+				position: cursor,
+			})
+			advance()
+		}
+	}
+
 	while (cursor < expression.length) {
-		let char = expression[cursor]
-		let nextChar = expression[cursor + 1]
-
 		if (isWhiteSpace(char)) {
-			cursor++
+			advance()
 			continue
 		}
 
 		if (isOperator(char)) {
-			tokens.push({ type: getOperatorTokenType(char), value: char })
-			cursor++
+			tokens.push({
+				type: getOperatorTokenType(char),
+				value: char,
+			})
+			advance()
 			continue
 		}
 
 		if (isParenthesis(char)) {
-			tokens.push({ type: TOKEN_TYPES.PARENTHESIS, value: char })
-			cursor++
+			tokens.push({
+				type: TOKEN_TYPES.PARENTHESIS,
+				value: char,
+			})
+			advance()
 			continue
 		}
 
 		if (isNumber(char)) {
-			let number = ''
-			while (isNumber(char) || (char == '.' && isNumber(nextChar))) {
-				number += char
-				char = expression[++cursor]
-			}
-			tokens.push({ type: TOKEN_TYPES.NUMBER, value: Number(number) })
+			const number = getNumberToken()
+			tokens.push(number)
 			continue
 		}
 
 		if (isOpenSquareBracket(char)) {
-			// start of a column reference
-			tokens.push({ type: TOKEN_TYPES.OPEN_SQUARE_BRACKET, position: cursor })
-			char = expression[++cursor]
-			let columnStr = ''
-			while (char != ']' && cursor < expression.length) {
-				columnStr += char
-				char = expression[++cursor]
-			}
-			if (columnStr.length) {
-				const start = cursor - columnStr.length
-				const [table, column] = columnStr.split('.')
-				const value = {
-					table: column ? table : null,
-					column: column ? column : table,
-				}
-				tokens.push({
-					type: TOKEN_TYPES.COLUMN,
-					value: value,
-					start: start,
-					end: cursor,
-				})
-			}
-			if (char === ']') {
-				tokens.push({ type: TOKEN_TYPES.CLOSE_SQUARE_BRACKET, position: cursor })
-				cursor++
-			}
+			processColumnToken()
 			continue
 		}
 
 		throw new Error(`Unexpected character: ${char} while parsing expression: ${expression}`)
 	}
 
-	tokens.push({ type: TOKEN_TYPES.EOF })
+	tokens.push({
+		type: TOKEN_TYPES.EOF,
+	})
+
 	return tokens
 }
 

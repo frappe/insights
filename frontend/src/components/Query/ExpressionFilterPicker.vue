@@ -27,7 +27,7 @@
 				<template #body="{ isOpen, togglePopover }">
 					<SuggestionBox
 						v-if="isOpen && options?.length && filteredOptions?.length"
-						:header_and_suggestions="filteredOptions"
+						:suggestions="filteredOptions"
 						@option-select="
 							(option) => {
 								onOptionSelect(option)

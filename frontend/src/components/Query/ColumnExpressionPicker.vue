@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-col space-y-3">
-		<Popover class="flex w-full [&>div:first-child]:w-full">
+		<Popover class="flex w-full flex-col [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
 				<div class="mb-1 text-sm font-light text-gray-600">Expression</div>
 				<div class="relative font-mono">
@@ -33,7 +33,7 @@
 			<template #body>
 				<SuggestionBox
 					v-if="showColumnDropdown && filteredColumns?.length"
-					:header_and_suggestions="filteredColumns"
+					:suggestions="filteredColumns"
 					@option-select="onColumnSelect"
 				/>
 			</template>
