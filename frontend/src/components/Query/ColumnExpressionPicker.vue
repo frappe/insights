@@ -5,8 +5,8 @@
 			<template #target="{ togglePopover }">
 				<div class="mb-1 text-sm font-light text-gray-600">Expression</div>
 				<div class="relative">
-					<input
-						type="text"
+					<textarea
+						rows="5"
 						autocomplete="off"
 						spellcheck="false"
 						ref="inputElement"
@@ -15,19 +15,17 @@
 						@focus="togglePopover()"
 						@keydown.esc.exact="togglePopover()"
 						@keyup="input.caretPosition = $refs.inputElement.selectionStart"
-						class="form-input block h-8 w-full select-none rounded-md border border-transparent p-0 pl-5 font-mono text-sm placeholder-gray-500 caret-black focus:border-transparent"
+						class="form-input w-full select-none rounded-md border border-transparent p-2 pl-5 font-mono text-sm placeholder-gray-500 caret-black focus:border-transparent"
 						:class="{
 							'border border-red-500 focus:border-red-500': Boolean(expression.error),
 						}"
 					/>
-					<div class="absolute top-0 left-0 flex h-8 items-center pl-2 text-gray-700">
-						=
-					</div>
+					<div class="absolute top-0 left-0 p-2 pt-2.5 font-mono">=</div>
 				</div>
 			</template>
 			<template #body>
 				<SuggestionBox
-					v-if="showColumnDropdown && filteredColumns?.length"
+					v-show="showColumnDropdown && filteredColumns?.length"
 					:suggestions="filteredColumns"
 					@option-select="onColumnSelect"
 				/>
