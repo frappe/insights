@@ -20,6 +20,8 @@ export const TOKEN_TYPES = {
 	ARGUMENT_SEPARATOR: 'ARGUMENT_SEPARATOR',
 	FUNCTION_ARGUMENTS: 'FUNCTION_ARGUMENTS',
 	STRING: 'STRING',
+	LOGICAL_AND: 'LOGICAL_AND',
+	LOGICAL_OR: 'LOGICAL_OR',
 }
 
 const FUNCTION_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$'
@@ -90,6 +92,10 @@ function getOperatorTokenType(operator) {
 	}
 }
 
+function isLogicalOperator(char) {
+	return char === '&' || char === '|'
+}
+
 export default function tokenize(expression, offset = 0) {
 	// remove tabs, form-feed, carriage returns, and newlines
 	expression = expression.replace(/\t\f\r\n/g, '')
@@ -97,9 +103,11 @@ export default function tokenize(expression, offset = 0) {
 	let cursor = 0
 	let tokens = []
 	let char = expression[cursor]
+	let nextChar = expression[cursor + 1]
 
 	function advance() {
 		char = expression[++cursor]
+		nextChar = expression[cursor + 1]
 	}
 
 	function processNumberToken() {
@@ -203,6 +211,15 @@ export default function tokenize(expression, offset = 0) {
 		}
 	}
 
+	function processLogicalOperatorToken() {
+		tokens.push({
+			type: char == '&' ? TOKEN_TYPES.LOGICAL_AND : TOKEN_TYPES.LOGICAL_OR,
+			value: char + nextChar,
+		})
+		advance()
+		advance()
+	}
+
 	while (cursor < expression.length) {
 		if (isWhiteSpace(char)) {
 			advance()
@@ -220,7 +237,7 @@ export default function tokenize(expression, offset = 0) {
 
 		if (isParenthesis(char)) {
 			tokens.push({
-				type: char == ')' ? TOKEN_TYPES.OPEN_PARENTHESIS : TOKEN_TYPES.CLOSE_PARENTHESIS,
+				type: char == '(' ? TOKEN_TYPES.OPEN_PARENTHESIS : TOKEN_TYPES.CLOSE_PARENTHESIS,
 			})
 			advance()
 			continue
@@ -247,6 +264,11 @@ export default function tokenize(expression, offset = 0) {
 
 		if (isQuote(char)) {
 			processStringToken()
+			continue
+		}
+
+		if (isLogicalOperator(char) && isLogicalOperator(char) == isLogicalOperator(nextChar)) {
+			processLogicalOperatorToken()
 			continue
 		}
 

@@ -1,7 +1,8 @@
 import tokenize from '@/utils/expressions/tokenize'
+import { toLogicalExpression, mergeConditions } from '@/utils/expressions/filter'
 import { TOKEN_TYPES } from '@/utils/expressions/tokenize'
 
-const MAX_PRECEDENCE = 4
+const MAX_PRECEDENCE = 5
 
 function getPrecedence(tokenType) {
 	switch (tokenType) {
@@ -16,17 +17,21 @@ function getPrecedence(tokenType) {
 			return MAX_PRECEDENCE
 		case TOKEN_TYPES.OPERATOR_MUL:
 		case TOKEN_TYPES.OPERATOR_DIV:
-			return 3
+			return 4
 		case TOKEN_TYPES.OPERATOR_ADD:
 		case TOKEN_TYPES.OPERATOR_SUB:
-			return 2
+			return 3
 		case TOKEN_TYPES.OPERATOR_GT:
 		case TOKEN_TYPES.OPERATOR_LT:
 		case TOKEN_TYPES.OPERATOR_EQ:
 		case TOKEN_TYPES.OPERATOR_NEQ:
 		case TOKEN_TYPES.OPERATOR_GTE:
 		case TOKEN_TYPES.OPERATOR_LTE:
+			return 2
+		case TOKEN_TYPES.LOGICAL_AND:
 			return 1
+		case TOKEN_TYPES.LOGICAL_OR:
+			return 0
 		default:
 			return 100
 	}
@@ -39,13 +44,13 @@ export function parse(expression) {
 	let currentToken = tokens[cursor]
 	let errorMessage = null
 
-	function parseFor(precedence) {
+	function parseTokens(precedence) {
 		if (precedence < MAX_PRECEDENCE) {
-			let left = parseFor(precedence + 1)
+			let left = parseTokens(precedence + 1)
 			while (getPrecedence(currentToken.type) == precedence) {
 				const operator = currentToken.value
 				currentToken = tokens[++cursor]
-				const right = parseFor(precedence + 1)
+				const right = parseTokens(precedence + 1)
 				left = { type: 'BinaryExpression', operator, left, right }
 			}
 			return left
@@ -91,7 +96,7 @@ export function parse(expression) {
 			errorMessage = `Missing closing parenthesis for opening parenthesis`
 			throw new Error(`Failed to Parse Expression ${expression}: Missing closing parenthesis`)
 		}
-		const expr = parseFor(1)
+		const expr = parseTokens(0)
 		currentToken = tokens[++cursor]
 		return expr
 	}
@@ -144,7 +149,7 @@ export function parse(expression) {
 
 		const args = []
 		while (currentToken.type !== TOKEN_TYPES.CLOSE_PARENTHESIS) {
-			args.push(parseFor(1))
+			args.push(parseTokens(0))
 			if (currentToken.type === TOKEN_TYPES.ARGUMENT_SEPARATOR) {
 				currentToken = tokens[++cursor]
 			}
@@ -169,7 +174,9 @@ export function parse(expression) {
 
 	let ast = null
 	try {
-		ast = parseFor(1)
+		ast = parseTokens(0)
+		ast = toLogicalExpression(ast)
+		ast = mergeConditions(ast)
 	} catch (error) {
 		console.groupCollapsed('Failed to Parse Expression')
 		console.error(error)
