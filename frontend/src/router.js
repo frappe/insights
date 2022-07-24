@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getOnboardingStatus } from '@/controllers/onboarding'
+import { getOnboardingStatus } from '@/utils/onboarding'
 
 const routes = [
 	{

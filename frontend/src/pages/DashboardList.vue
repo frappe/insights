@@ -88,7 +88,7 @@ import moment from 'moment'
 import { useRouter } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
-import { updateDocumentTitle } from '@/utils/document'
+import { updateDocumentTitle } from '@/utils'
 
 const getDashboards = createResource({
 	method: 'insights.api.get_dashboard_list',

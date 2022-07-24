@@ -36,7 +36,7 @@
 					:loading="query.resource.delete.loading"
 					@click="
 						() => {
-							query.delete().then(() => {
+							query.delete.submit().then(() => {
 								$router.push('/query')
 								show_delete_dialog = false
 							})
@@ -61,11 +61,12 @@
 			<template #actions>
 				<Button
 					appearance="danger"
-					:loading="query.resource.reset.loading"
+					:loading="query.reset.loading"
 					@click="
 						() => {
-							const { req } = query.reset()
-							req.then(() => (show_reset_dialog = false))
+							query.reset.submit().then(() => {
+								show_reset_dialog = false
+							})
 						}
 					"
 				>

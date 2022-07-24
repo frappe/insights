@@ -94,7 +94,7 @@ import moment from 'moment'
 import { useRouter } from 'vue-router'
 import { computed, reactive, ref } from 'vue'
 import { createResource } from 'frappe-ui'
-import { updateDocumentTitle } from '@/utils/document'
+import { updateDocumentTitle } from '@/utils'
 
 const openDialog = ref(false)
 const newQuery = reactive({

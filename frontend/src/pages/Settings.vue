@@ -14,7 +14,7 @@
 <script setup>
 import { ref } from 'vue'
 import BasePage from '@/components/BasePage.vue'
-import { updateDocumentTitle } from '@/utils/document'
+import { updateDocumentTitle } from '@/utils'
 
 const pageMeta = ref({
 	title: 'Settings',

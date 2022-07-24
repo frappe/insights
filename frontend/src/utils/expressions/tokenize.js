@@ -59,9 +59,7 @@ function isOperator(char) {
 		char === '>' ||
 		char === '<' ||
 		char === '=' ||
-		char === '!=' ||
-		char === '>=' ||
-		char === '<='
+		char === '!'
 	)
 }
 
@@ -88,7 +86,7 @@ function getOperatorTokenType(operator) {
 		case '<=':
 			return TOKEN_TYPES.OPERATOR_LTE
 		default:
-			throw new Error(`Unknown operator: ${operator}`)
+			console.warn(`Unknown operator: ${operator}`)
 	}
 }
 
@@ -108,6 +106,18 @@ export default function tokenize(expression, offset = 0) {
 	function advance() {
 		char = expression[++cursor]
 		nextChar = expression[cursor + 1]
+	}
+
+	function processOperatorToken() {
+		let operator = ''
+		while (isOperator(char)) {
+			operator += char
+			advance()
+		}
+		tokens.push({
+			type: getOperatorTokenType(operator),
+			value: operator,
+		})
 	}
 
 	function processNumberToken() {
@@ -227,11 +237,7 @@ export default function tokenize(expression, offset = 0) {
 		}
 
 		if (isOperator(char)) {
-			tokens.push({
-				type: getOperatorTokenType(char),
-				value: char,
-			})
-			advance()
+			processOperatorToken()
 			continue
 		}
 

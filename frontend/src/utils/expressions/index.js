@@ -1,5 +1,4 @@
 import tokenize from '@/utils/expressions/tokenize'
-import { toLogicalExpression, mergeConditions } from '@/utils/expressions/filter'
 import { TOKEN_TYPES } from '@/utils/expressions/tokenize'
 
 const MAX_PRECEDENCE = 5
@@ -155,7 +154,7 @@ export function parse(expression) {
 			}
 		}
 		currentToken = tokens[++cursor]
-		return { type: 'FunctionCall', function: name, arguments: args }
+		return { type: 'CallExpression', function: name, arguments: args }
 	}
 
 	function checkForClosingParenthesis() {
@@ -175,8 +174,6 @@ export function parse(expression) {
 	let ast = null
 	try {
 		ast = parseTokens(0)
-		ast = toLogicalExpression(ast)
-		ast = mergeConditions(ast)
 	} catch (error) {
 		console.groupCollapsed('Failed to Parse Expression')
 		console.error(error)

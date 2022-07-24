@@ -3,9 +3,9 @@
 		class="flex h-full w-full flex-shrink-0 flex-col rounded-md bg-white text-base text-gray-700"
 	>
 		<div class="-mx-3 flex h-[calc(100%-1.5rem)]">
-			<TablePicker />
+			<TablePanel />
 			<ColumnPanel />
-			<FilterPicker />
+			<FilterPanel />
 		</div>
 		<div class="flex h-6 flex-shrink-0">
 			<LimitsAndOrder />
@@ -14,8 +14,8 @@
 </template>
 
 <script setup>
-import TablePicker from '@/components/Query/TablePicker.vue'
-import ColumnPanel from '@/components/Query/ColumnPanel.vue'
-import FilterPicker from '@/components/Query/FilterPicker.vue'
+import TablePanel from '@/components/Query/Table/TablePanel.vue'
+import ColumnPanel from '@/components/Query/Column/ColumnPanel.vue'
+import FilterPanel from '@/components/Query/Filter/FilterPanel.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
 </script>

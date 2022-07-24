@@ -20,7 +20,7 @@
 				class="form-input mx-1 bg-gray-100 py-0.5 pl-2 pr-1 font-medium text-gray-600 hover:underline focus:border-transparent focus:bg-gray-200 focus:text-gray-600"
 				@keydown.enter.stop="
 					() => {
-						query.setLimit({ limit })
+						query.setLimit.submit({ limit: parseInt(limit) })
 						$refs.limitInput.blur()
 					}
 				"

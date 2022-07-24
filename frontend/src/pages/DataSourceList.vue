@@ -87,7 +87,7 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import { Badge, createResource } from 'frappe-ui'
-import { updateDocumentTitle } from '@/utils/document'
+import { updateDocumentTitle } from '@/utils'
 
 import moment from 'moment'
 import { computed, ref } from 'vue'

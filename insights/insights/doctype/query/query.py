@@ -6,7 +6,7 @@ from json import dumps, loads
 
 import frappe
 from frappe import _dict
-from frappe.query_builder import Criterion, Table
+from frappe.query_builder import Table
 from frappe.utils import cstr, flt
 from sqlparse import format as format_sql
 
@@ -16,10 +16,8 @@ from pypika.enums import JoinType
 from insights.insights.doctype.query.utils import (
     parse_query_expression,
     make_query_field,
-    get_date_range,
     Aggregations,
     ColumnFormat,
-    Operations,
 )
 
 from insights.insights.doctype.query.query_client import QueryClient
@@ -28,7 +26,27 @@ from insights.insights.doctype.query.query_client import QueryClient
 class Query(QueryClient):
     def validate(self):
         # TODO: validate if a column is an expression and aggregation is "group by"
-        pass
+        self.validate_limit()
+        self.validate_filters()
+
+    def validate_limit(self):
+        if self.limit and self.limit < 1:
+            frappe.throw("Limit must be greater than 0")
+        if self.limit and self.limit > 1000:
+            frappe.throw("Limit must be less than 1000")
+
+    def validate_filters(self):
+        if not self.filters:
+            self.filters = dumps(
+                {
+                    "type": "LogicalExpression",
+                    "operator": "&&",
+                    "level": 1,
+                    "position": 1,
+                    "conditions": [],
+                },
+                indent=2,
+            )
 
     def on_update(self):
         # create a query visualization if not exists
@@ -86,7 +104,7 @@ class Query(QueryClient):
             for column, order in self._order_by_columns:
                 query = query.orderby(column, order=Order[order])
 
-        query = query.where(*self._filters)
+        query = query.where(self._filters)
 
         query = query.limit(self._limit)
 
@@ -203,90 +221,7 @@ class Query(QueryClient):
 
     def process_filters(self):
         filters = _dict(loads(self.filters))
-
-        def process_filter_group(filter_group):
-            _filters = []
-            for _filter in filter_group.get("conditions"):
-                _filter = _dict(_filter)
-                if _filter.group_operator:
-                    group_condition = process_filter_group(_filter)
-                    GroupCriteria = (
-                        Criterion.all
-                        if _filter.group_operator == "&"
-                        else Criterion.any
-                    )
-                    _filters.append(GroupCriteria(group_condition))
-                else:
-                    expression = self.process_expression(_filter)
-                    _filters.append(expression)
-
-            return _filters
-
-        RootCriteria = Criterion.all if filters.group_operator == "&" else Criterion.any
-        _filters = process_filter_group(filters)
-        self._filters = [RootCriteria(_filters)]
-
-    def process_expression(self, condition):
-        condition = _dict(condition)
-        condition.left = _dict(condition.left)
-        condition.right = _dict(condition.right)
-        condition.operator = _dict(condition.operator)
-
-        def is_literal_value(term):
-            return "value" in term
-
-        def is_query_field(term):
-            return "table" in term and "column" in term
-
-        def is_expression(term):
-            return "left" in term and "right" in term and "operator" in term
-
-        def process_term(term):
-            if is_expression(term):
-                return self.process_expression(term)
-
-            if is_query_field(term):
-                return make_query_field(term.table, term.column)
-
-            if is_literal_value(term):
-                return self.process_literal_value(term, condition.operator)
-
-        operation = Operations.get_operation(condition.operator.value)
-        condition_left = process_term(condition.left)
-        condition_right = process_term(condition.right)
-
-        return operation(condition_left, condition_right)
-
-    def process_literal_value(self, literal, operator):
-        if type(literal.value) == str:
-            literal.value = literal.value.replace('"', "")
-
-        if operator.value == "contains":
-            return f"%{literal.value}%"
-
-        if operator.value == "starts with":
-            return f"{literal.value}%"
-
-        if operator.value == "ends with":
-            return f"%{literal.value}"
-
-        if operator.value == "in":
-            return [d.lstrip().rstrip() for d in literal.value]
-
-        if operator.value == "between":
-            return [d.lstrip().rstrip() for d in literal.value.split(",")]
-
-        if operator.value == "timespan":
-            timespan_value = literal.value.lower().strip()
-            if "current" in timespan_value:
-                return get_date_range(timespan=timespan_value)
-
-            elif "last" in timespan_value:
-                [span, interval, interval_type] = timespan_value.split(" ")
-                timespan = span + " n " + interval_type
-                return get_date_range(timespan=timespan, n=int(interval))
-
-        return literal.value
+        self._filters = parse_query_expression(filters)
 
     def process_limit(self):
         self._limit: int = self.limit or 10

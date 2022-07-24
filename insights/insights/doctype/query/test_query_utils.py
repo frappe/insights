@@ -44,7 +44,7 @@ class TestParseExpression(unittest.TestCase):
         aggregations = ["count", "sum", "min", "max", "avg", "distinct"]
         for aggregation in aggregations:
             tree = {
-                "type": "FunctionCall",
+                "type": "CallExpression",
                 "function": aggregation,
                 "arguments": [
                     {
@@ -60,7 +60,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_conditional_aggregation(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "count_if",
             "arguments": [
                 {
@@ -95,7 +95,7 @@ class TestParseExpression(unittest.TestCase):
 
         for function in single_arg_functions:
             tree = {
-                "type": "FunctionCall",
+                "type": "CallExpression",
                 "function": function,
                 "arguments": [
                     {
@@ -111,7 +111,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_ifnull_function(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "ifnull",
             "arguments": [
                 {
@@ -132,7 +132,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_coalesce_function(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "coalesce",
             "arguments": [
                 {
@@ -159,7 +159,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_between_function(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "between",
             "arguments": [
                 {
@@ -181,7 +181,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_contains_function(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "contains",
             "arguments": [
                 {
@@ -199,7 +199,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_replace_function(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "replace",
             "arguments": [
                 {
@@ -225,7 +225,7 @@ class TestParseExpression(unittest.TestCase):
 
     def test_case_function(self):
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "case",
             "arguments": [
                 {
@@ -249,7 +249,7 @@ class TestParseExpression(unittest.TestCase):
         self.assertRaises(frappe.ValidationError, parse_query_expression, tree)
 
         tree = {
-            "type": "FunctionCall",
+            "type": "CallExpression",
             "function": "case",
             "arguments": [
                 {

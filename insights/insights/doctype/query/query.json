@@ -49,11 +49,10 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "{\n\t\"group_operator\": \"&\",\n\t\"level\": \"1\",\n\t\"position\": \"1\",\n\t\"conditions\": []\n}",
+   "default": "{\n\t\"type\": \"LogicalExpression\",\n\t\"operator\": \"&&\",\n\t\"level\": 1,\n\t\"position\": 1,\n\t\"conditions\": []\n}",
    "fieldname": "filters",
-   "fieldtype": "Code",
-   "label": "Filters",
-   "options": "JSON"
+   "fieldtype": "JSON",
+   "label": "Filters"
   },
   {
    "fieldname": "title",
@@ -180,7 +179,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-15 20:13:11.757806",
+ "modified": "2022-07-23 18:30:11.109308",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Query",

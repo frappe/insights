@@ -73,13 +73,13 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import Autocomplete from '@/components/Autocomplete.vue'
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import DashboardCard from '@/components/DashboardCard.vue'
 
 import { useRouter } from 'vue-router'
 import { computed, ref, provide } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
-import { updateDocumentTitle } from '@/utils/document'
+import { updateDocumentTitle } from '@/utils'
 
 const props = defineProps({
 	name: {

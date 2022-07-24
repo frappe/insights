@@ -1,0 +1,26 @@
+import { computed } from 'vue'
+import { safeJSONParse } from '@/utils'
+
+export function useQueryTables(query) {
+	return {
+		data: computed(() =>
+			query.doc.tables?.map((table) => {
+				return {
+					...table,
+					value: table.table,
+					join: table.join ? safeJSONParse(table.join) : null,
+				}
+			})
+		),
+		validateRemoveTable({ table, label }) {
+			const columnsFromTable = query.doc.columns.filter((c) => c.table === table)
+			if (columnsFromTable.length > 0) {
+				return {
+					title: 'Cannot remove table',
+					message: `There are dimensions and metrics associated with table ${label}. Please remove them first.`,
+					appearance: 'error',
+				}
+			}
+		},
+	}
+}

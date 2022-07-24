@@ -8,8 +8,8 @@
 					v-model="query.doc.title"
 					ref="titleInput"
 					spellcheck="false"
-					@blur="query.reload()"
-					:size="Math.max(query.doc.title.length, 4)"
+					@blur="query.reload.submit()"
+					:size="Math.max(query.doc.title.length || 0, 4)"
 					@keydown.enter="updateTitle"
 					class="-mx-2 -my-1 rounded border-none bg-transparent p-0 px-2 py-1 text-3xl font-medium caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
 				/>
@@ -22,9 +22,9 @@
 		<template #main>
 			<div class="flex h-full w-full flex-col">
 				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-sm font-light text-gray-600">
-					<div v-if="query.dataSource" class="flex items-center">
+					<div v-if="query.doc.data_source" class="flex items-center">
 						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
-						<span> {{ query.dataSource }} </span>
+						<span> {{ query.doc.data_source }} </span>
 					</div>
 					<div v-if="tableLabels" class="flex items-center">
 						<FeatherIcon name="layout" class="mr-1.5 h-3 w-3" />
@@ -51,19 +51,18 @@
 import BasePage from '@/components/BasePage.vue'
 
 import TabSwitcher from '@/components/TabSwitcher.vue'
-import QueryBuilder from '@/components/Query/QueryBuilder.vue'
-import QueryResult from '@/components/Query/QueryResult.vue'
-import QueryTransform from '@/components/Query/QueryTransform.vue'
-import QueryVisualizer from '@/components/Query/QueryVisualizer.vue'
 import QueryMenu from '@/components/Query/QueryMenu.vue'
+import QueryBuilder from '@/components/Query/QueryBuilder.vue'
+import QueryResult from '@/components/Query/Result/QueryResult.vue'
+import QueryVisualizer from '@/components/Query/Visualization/QueryVisualizer.vue'
 
-import Query from '@/controllers/query'
-import { updateDocumentTitle } from '@/utils/document'
+import { useQuery } from '@/utils/query'
+import { updateDocumentTitle } from '@/utils'
 import { computed, ref, provide, inject, watchEffect } from 'vue'
 
 const props = defineProps(['name'])
 const $notify = inject('$notify')
-const query = new Query(props.name)
+const query = useQuery(props.name)
 provide('query', query)
 
 const tabs = ref([
@@ -103,16 +102,8 @@ const onTabSwitch = (tab) => {
 	activeTab.value = tab.label
 }
 
-const pageMeta = computed(() => {
-	return {
-		title: query.doc?.name,
-		subtitle: 'Query',
-	}
-})
-updateDocumentTitle(pageMeta)
-
 const tableLabels = computed(() => {
-	return query.tables.map((table) => table.label).join(', ')
+	return query.tables.data?.map((table) => table.label).join(', ')
 })
 const executionTime = computed(() => {
 	return Math.round(query.doc.execution_time * 100) / 100
@@ -123,9 +114,9 @@ const updateTitle = () => {
 	if (!query.doc.title || query.doc.title.length == 0) {
 		// TODO: restore old title without fetching the doc again
 		// (?) create a local cache of the old document and compare it to the new one
-		return query.reload()
+		return query.reload.submit()
 	}
-	query.setValue('title', query.doc.title).then(() => {
+	query.setValue.submit({ title: query.doc.title }).then(() => {
 		$notify({
 			title: 'Query title updated',
 			appearance: 'success',
@@ -133,4 +124,12 @@ const updateTitle = () => {
 		titleInput.value.blur()
 	})
 }
+
+const pageMeta = computed(() => {
+	return {
+		title: props.name,
+		subtitle: 'Query',
+	}
+})
+updateDocumentTitle(pageMeta)
 </script>

@@ -8,7 +8,7 @@ from typing import Tuple
 
 import frappe
 from frappe import _dict
-from pypika import functions as fn
+from pypika import functions as fn, Criterion
 from frappe.query_builder import CustomFunction, functions, Case, Field, Table
 from frappe.utils.data import (
     nowdate,
@@ -106,7 +106,7 @@ class ColumnFormat:
         return column
 
 
-class Operations:
+class BinaryOperations:
 
     ARITHMETIC_OPERATIONS = {
         "+": operator.add,
@@ -122,53 +122,34 @@ class Operations:
         "<=": operator.le,
         ">=": operator.ge,
     }
-    COMPARE_FUNCTIONS = {
-        "in": "isin",
-        "not in": "notin",
-        "contains": "like",
-        "ends with": "like",
-        "starts with": "like",
-        "not contains": "not_like",
-    }
-    NULL_COMPARE_OPERATIONS = {
-        "is set": "isnotnull",
-        "is not set": "isnull",
-    }
-    RANGE_OPERATORS = {
-        "between": "between",
-        "timespan": "between",
+    LOGICAL_OPERATIONS = {
+        "&&": lambda a, b: Criterion.all([a, b]),
+        "||": lambda a, b: Criterion.any([a, b]),
     }
 
     @classmethod
     def get_operation(cls, operator):
-        """
-        if `operator` = 'like'
-        returns a callable method which takes two arguments,
-        def anonymous_func(field, value):
-            return field.like(value)
-        """
         if operator in cls.ARITHMETIC_OPERATIONS:
             return cls.ARITHMETIC_OPERATIONS[operator]
 
         if operator in cls.COMPARE_OPERATIONS:
             return cls.COMPARE_OPERATIONS[operator]
 
-        if operator in cls.COMPARE_FUNCTIONS:
-            function_name = cls.COMPARE_FUNCTIONS[operator]
-            return lambda field, value: getattr(field, function_name)(value)
-
-        if operator in cls.RANGE_OPERATORS:
-            function_name = cls.RANGE_OPERATORS[operator]
-            return lambda field, value: getattr(field, function_name)(
-                value[0], value[1]
-            )
-
-        if operator == "is":
-            return lambda field, value: getattr(
-                field, cls.NULL_COMPARE_OPERATIONS[f"{operator} {value}"]
-            )()
+        if operator in cls.LOGICAL_OPERATIONS:
+            return cls.LOGICAL_OPERATIONS[operator]
 
         raise NotImplementedError(f"Operation {operator} not implemented")
+
+
+def parse_timespan(timespan):
+    timespan = timespan.lower().strip()
+    if "current" in timespan:
+        return get_date_range(timespan=timespan)
+
+    elif "last" in timespan:
+        [span, interval, interval_type] = timespan.split(" ")
+        timespan = span + " n " + interval_type
+        return get_date_range(timespan=timespan, n=int(interval))
 
 
 def get_date_range(
@@ -233,18 +214,22 @@ class Functions:
     def get_functions(cls):
         return {
             "abs": fn.Abs,
+            "in": cls.isin,
+            "not_in": cls.isnotin,
             "case": cls.case,
             "floor": fn.Floor,
             "lower": fn.Lower,
             "upper": fn.Upper,
             "concat": fn.Concat,
             "isnull": fn.IsNull,
+            "isnotnull": cls.isnotnull,
             "ifnull": fn.IfNull,
             "coalesce": fn.Coalesce,
             "between": cls.between,
+            "timespan": cls.timespan,
             "contains": cls.contains,
-            "endswith": cls.endswith,
-            "startswith": cls.startswith,
+            "ends_with": cls.endswith,
+            "starts_with": cls.startswith,
             "ceil": CustomFunction("CEIL", ["field"]),
             "round": CustomFunction("ROUND", ["field"]),
             "replace": CustomFunction("REPLACE", ["field", "find", "replace"]),
@@ -254,28 +239,49 @@ class Functions:
     def get_function(cls, function):
         return cls.get_functions()[function]
 
-    @classmethod
-    def contains(cls, field: Field, value):
+    @staticmethod
+    def isin(field: Field, *values):
+        return field.isin(values)
+
+    @staticmethod
+    def isnotin(field: Field, *values):
+        return field.notin(values)
+
+    @staticmethod
+    def isnotnull(field: Field):
+        return field.isnotnull()
+
+    @staticmethod
+    def contains(field: Field, value):
         return field.like(f"%{value}%")
 
-    @classmethod
-    def endswith(cls, field: Field, value):
+    @staticmethod
+    def notcontains(field: Field, value):
+        return field.not_like(f"%{value}%")
+
+    @staticmethod
+    def endswith(field: Field, value):
         return field.like(f"%{value}")
 
-    @classmethod
-    def startswith(cls, field: Field, value):
+    @staticmethod
+    def startswith(field: Field, value):
         return field.like(f"{value}%")
 
-    @classmethod
-    def between(cls, field: Field, *values):
+    @staticmethod
+    def between(field: Field, *values):
         return field.between(*values)
 
-    @classmethod
-    def ifelse(cls, condition, true_value, false_value):
+    @staticmethod
+    def timespan(field: Field, timespan: str):
+        (start, end) = parse_timespan(timespan)
+        return field.between(start, end)
+
+    @staticmethod
+    def ifelse(condition, true_value, false_value):
         return Case().when(condition, true_value).else_(false_value)
 
-    @classmethod
-    def case(cls, *args):
+    @staticmethod
+    def case(*args):
         # TODO: validate args at a better place
         _args = list(args)
         if len(_args) % 2 == 0:
@@ -301,14 +307,22 @@ class Functions:
 def parse_query_expression(expression):
     expression = _dict(expression)
 
+    if expression.type == "LogicalExpression":
+        conditions = []
+        GroupCriteria = Criterion.all if expression.operator == "&&" else Criterion.any
+        for condition in expression.get("conditions"):
+            condition = _dict(condition)
+            conditions.append(parse_query_expression(condition))
+        return GroupCriteria(conditions)
+
     if expression.type == "BinaryExpression":
         left = parse_query_expression(expression.left)
         right = parse_query_expression(expression.right)
         operator = expression.operator
-        operation = Operations.get_operation(operator)
+        operation = BinaryOperations.get_operation(operator)
         return operation(left, right)
 
-    if expression.type == "FunctionCall":
+    if expression.type == "CallExpression":
         function = expression.function
         arguments = [parse_query_expression(arg) for arg in expression.arguments]
         if Aggregations.is_valid(function):

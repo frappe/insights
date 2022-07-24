@@ -95,7 +95,7 @@
 
 <script setup>
 import { computed, nextTick, reactive } from 'vue'
-import { createDatabase, testDatabaseConnection } from '@/controllers/onboarding'
+import { createDatabase, testDatabaseConnection } from '@/utils/onboarding'
 import { useRouter } from 'vue-router'
 
 const db = reactive({

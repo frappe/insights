@@ -1,8 +1,12 @@
-export function isEmptyObj(object) {
-	if (object === null || object === undefined) {
-		return true
-	}
-	return Object.keys(object).length === 0
+import { watch } from 'vue'
+
+export function isEmptyObj(...args) {
+	return args.every((arg) => {
+		if (arg === null || arg === undefined) {
+			return true
+		}
+		return Object.keys(arg).length === 0
+	})
 }
 
 export function safeJSONParse(str, defaultValue = null) {
@@ -19,4 +23,42 @@ export function safeJSONParse(str, defaultValue = null) {
 		console.groupEnd()
 		return defaultValue
 	}
+}
+
+export function formatDate(value) {
+	if (!value) {
+		return ''
+	}
+	return new Date(value).toLocaleString('en-US', {
+		month: 'short',
+		year: 'numeric',
+		day: 'numeric',
+	})
+}
+
+export function isEqual(a, b) {
+	if (a === b) {
+		return true
+	}
+	if (Array.isArray(a) && Array.isArray(b)) {
+		return a.length === b.length && a.every((item, index) => isEqual(item, b[index]))
+	}
+}
+
+export function updateDocumentTitle(meta) {
+	watch(
+		() => meta,
+		(meta) => {
+			if (!meta.value.title) return
+			if (meta.value.title && meta.value.subtitle) {
+				document.title = `${meta.value.title} | ${meta.value.subtitle}`
+				return
+			}
+			if (meta.value.title) {
+				document.title = `${meta.value.title} | Frappe Insights`
+				return
+			}
+		},
+		{ immediate: true, deep: true }
+	)
 }
