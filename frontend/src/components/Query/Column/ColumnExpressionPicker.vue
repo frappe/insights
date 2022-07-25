@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col space-y-3">
+	<div class="flex flex-col">
 		<!-- Expression Field -->
 		<Popover class="flex w-full flex-col [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
@@ -40,7 +40,7 @@
 			{{ expression.error }}
 		</div>
 		<!-- Label Field -->
-		<div class="text-sm text-gray-600">
+		<div class="mt-1 text-sm text-gray-600">
 			<div class="mb-1 font-light">Label</div>
 			<Input
 				type="text"
@@ -49,8 +49,11 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
+		<div class="mt-4 text-sm text-gray-600">
+			<Input type="checkbox" label="Group By" v-model="expression.groupBy" />
+		</div>
 		<!-- Action Buttons -->
-		<div class="flex justify-end space-x-2">
+		<div class="mt-3 flex justify-end space-x-2">
 			<Button
 				v-if="editing"
 				class="text-red-500"
@@ -112,6 +115,7 @@ onMounted(() => {
 const expression = reactive({
 	raw: input.value,
 	label: column.label,
+	groupBy: column.aggregation == 'Group By',
 	ast: null,
 	error: null,
 	tokens: [],
@@ -181,6 +185,7 @@ const addExpressionColumn = () => {
 			ast: expression.ast,
 		},
 		label: expression.label,
+		aggregation: expression.groupBy ? 'Group By' : '',
 	}
 	emit('column-select', newColumn)
 }

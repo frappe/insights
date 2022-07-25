@@ -177,7 +177,11 @@ class Query(QueryClient):
                 _column = parse_query_expression(expression.get("ast"))
 
             self.process_sorting(row, _column)
-            _column = _column.as_(row.label)
+            _column = _column.as_(row.label) if row.label else _column
+
+            if row.aggregation == "Group By":
+                self._group_by_columns.append(_column)
+
             self._columns.append(_column)
 
     def process_dimension_or_metric(self, row):
@@ -196,9 +200,6 @@ class Query(QueryClient):
     def process_aggregation(self, row, column):
         if not row.aggregation:
             return column
-
-        if row.aggregation == "Group By":
-            self._group_by_columns.append(column)
 
         elif not Aggregations.is_valid(row.aggregation.lower()):
             frappe.throw("Invalid aggregation function: {}".format(row.aggregation))
