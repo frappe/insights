@@ -28,6 +28,8 @@ const chartData = {
 		data: dataset.data,
 		label: dataset.label,
 		backgroundColor: getRandomColor(),
+		barPercentage: 0.7,
+		borderRadius: 4,
 	})),
 }
 
