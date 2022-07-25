@@ -1,7 +1,7 @@
 <template>
 	<Combobox v-model="selectedOption" v-slot="{ open }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover class="flex w-full">
+		<Popover class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
