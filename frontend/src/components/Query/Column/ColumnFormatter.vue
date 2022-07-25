@@ -1,7 +1,7 @@
 <template>
 	<div v-if="!supportsFormatting" class="px-12 text-center text-sm font-light text-gray-600">
 		<p class="mb-2">The app doesn't support formatting for this column type just yet</p>
-		<a href="https://github.com/frappe/insights/issue/new" class="text-blue-400 underline">
+		<a href="https://github.com/frappe/insights/issues/new" class="text-blue-400 underline">
 			Do you want to raise a feature request?
 		</a>
 	</div>
