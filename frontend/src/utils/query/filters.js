@@ -1,6 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { reactive, ref, watch, computed } from 'vue'
-import { FIELDTYPES } from '@/utils/query'
+import { FIELDTYPES } from '@/utils'
 import { getColumn } from '@/utils/query/columns'
 import { convertIntoQueryFilters } from '@/utils/expressions/filter'
 

@@ -80,14 +80,15 @@
 <script setup>
 import ColumnHeader from '@/components/Query/Result/ColumnHeader.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
+import { FIELDTYPES } from '@/utils'
 
 import { computed, inject } from 'vue'
 
 const query = inject('query')
 
-const formattedResult = computed(() => query.results.formattedData.value)
+const formattedResult = computed(() => query.results.formattedData)
 const needsExecution = computed(() => query.doc.status === 'Pending Execution')
 const isNumberColumn = computed(() => {
-	return query.doc.columns.map((c) => query.FIELDTYPES.NUMBER.includes(c.type))
+	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 })
 </script>

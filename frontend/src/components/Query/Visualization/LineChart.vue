@@ -42,7 +42,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="flex h-full w-full justify-center">
+	<div class="flex h-full w-full justify-center pt-2">
 		<canvas ref="chartRef"></canvas>
 	</div>
 </template>

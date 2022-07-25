@@ -90,7 +90,7 @@ import { computed, inject } from 'vue'
 import { useVisualization, visualizationTypes } from '@/utils/visualization'
 
 const query = inject('query')
-const visualizationID = query.visualizations.value[0]
+const visualizationID = query.visualizations[0]
 const visualization = useVisualization({ visualizationID, query })
 
 const invalidVizTypes = computed(() => {
@@ -110,7 +110,7 @@ const labelColumns = computed(() => {
 		.map((c) => {
 			return {
 				label: c.label,
-				value: c.value,
+				value: c.column,
 			}
 		})
 })
@@ -120,7 +120,7 @@ const valueColumns = computed(() => {
 		.map((c) => {
 			return {
 				label: c.label,
-				value: c.value,
+				value: c.column,
 			}
 		})
 })

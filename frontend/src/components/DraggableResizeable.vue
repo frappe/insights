@@ -25,9 +25,7 @@ onMounted(() => {
 		if (!parent || !target) {
 			return
 		}
-		new DraggableResizeable({
-			element: target,
-			parent: parent,
+		new DraggableResizeable(target, parent, {
 			onMove: (x, y) => emit('move', { x, y }),
 			onResize: (width, height) => emit('resize', { width, height }),
 		})
@@ -35,12 +33,14 @@ onMounted(() => {
 })
 
 class DraggableResizeable {
-	constructor({ element, parent, onMove, onResize }) {
+	constructor(element, parent, { minWidth, minHeight, snapToGrid, onMove, onResize }) {
 		this.element = element
 		this.parent = parent
 		this.onMove = onMove
 		this.onResize = onResize
-		this.snapToGrid = false
+		this.minWidth = minWidth || 50
+		this.minHeight = minHeight || 50
+		this.snapToGrid = snapToGrid || false
 		this.init()
 	}
 
@@ -71,7 +71,7 @@ class DraggableResizeable {
 	}
 
 	onMouseDown(e) {
-		this.element.classList.add('cursor-grabbing', 'opacity-75', 'z-10')
+		this.element.classList.add('cursor-grabbing', 'z-10')
 		if (e.target.classList.contains('cursor-se-resize')) {
 			this.isResizing = true
 			this.isDragging = false
@@ -95,7 +95,7 @@ class DraggableResizeable {
 			this.onMove &&
 			this.onMove(relativeToParent.left, this.parent.scrollTop + relativeToParent.top)
 
-		this.element.classList.remove('cursor-grabbing', 'opacity-75', 'z-10')
+		this.element.classList.remove('cursor-grabbing', 'z-10')
 		this.isDragging = false
 		this.isResizing = false
 
@@ -167,8 +167,8 @@ class DraggableResizeable {
 	}
 
 	checkBoundaryAndResize(newWidth, newHeight) {
-		newWidth = Math.max(newWidth, 500)
-		newHeight = Math.max(newHeight, 300)
+		newWidth = Math.max(newWidth, this.minWidth)
+		newHeight = Math.max(newHeight, this.minHeight)
 		newWidth = Math.min(newWidth, this.boundary.width)
 
 		if (newHeight > this.boundary.height) {

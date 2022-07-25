@@ -8,7 +8,7 @@
 	>
 		<div :id="visualization.doc.name" class="inline-block h-fit w-fit p-1" :style="style">
 			<div
-				class="flex h-full w-full flex-col space-y-4 overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
+				class="flex h-full w-full flex-col overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
 			>
 				<div class="flex h-8 items-center justify-between">
 					<div class="text-base font-medium">{{ visualization.doc.title }}</div>
@@ -34,7 +34,7 @@
 <script setup>
 import DraggableResizeable from '@/components/DraggableResizeable.vue'
 
-import { computed, reactive, inject } from 'vue'
+import { computed, reactive, inject, provide } from 'vue'
 import { useVisualization } from '@/utils/visualization'
 import { safeJSONParse } from '@/utils'
 
@@ -67,6 +67,7 @@ const layout = reactive({
 	width: visualizationRow.layout.width,
 	height: visualizationRow.layout.height,
 })
+provide('layout', layout) // used by components to listen to resize events
 
 const visualization = useVisualization({
 	visualizationID: props.visualizationID,

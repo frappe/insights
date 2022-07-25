@@ -17,7 +17,7 @@ export function useQueryTables(query) {
 			if (columnsFromTable.length > 0) {
 				return {
 					title: 'Cannot remove table',
-					message: `There are dimensions and metrics associated with table ${label}. Please remove them first.`,
+					message: `There are dimensions and metrics associated with ${label} table. Please remove them first.`,
 					appearance: 'error',
 				}
 			}

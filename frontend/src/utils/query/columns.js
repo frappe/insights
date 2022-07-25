@@ -1,6 +1,6 @@
 import { reactive, computed, watch } from 'vue'
 import { isEqual, safeJSONParse } from '@/utils'
-import { FIELDTYPES } from '@/utils/query'
+import { FIELDTYPES } from '@/utils'
 
 const cache = reactive({
 	columns: {},

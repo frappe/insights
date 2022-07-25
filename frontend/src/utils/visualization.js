@@ -18,6 +18,14 @@ class VisualizationType {
 			}
 		}
 
+		if (this.type == 'Number') {
+			return {
+				labelColumn: false,
+				valueColumn: true,
+				multipleValues: false,
+			}
+		}
+
 		if (this.type == 'Pie') {
 			return {
 				labelColumn: true,
@@ -52,6 +60,11 @@ class VisualizationType {
 				import('@/components/Query/Visualization/LineChart.vue')
 			)
 		}
+		if (this.type == 'Number') {
+			return defineAsyncComponent(() =>
+				import('@/components/Query/Visualization/NumberCard.vue')
+			)
+		}
 		if (this.type == 'Pivot') {
 			return defineAsyncComponent(() =>
 				import('@/components/Query/Visualization/PivotTransform')
@@ -64,6 +77,7 @@ const visualizationTypes = [
 	new VisualizationType('Bar', 'bar-chart-2'),
 	new VisualizationType('Line', 'trending-up'),
 	new VisualizationType('Pie', 'pie-chart'),
+	new VisualizationType('Number', 'hash'),
 	new VisualizationType('Row', 'align-left'),
 	new VisualizationType('Funnel', 'filter'),
 	new VisualizationType('Pivot', 'layout'),
@@ -145,6 +159,11 @@ function useVisualization({ visualizationID, queryID, query }) {
 			return
 		}
 
+		if (type == 'Number') {
+			visualization.componentProps = buildNumberCardProps(data)
+			return
+		}
+
 		if (type == 'Pivot') {
 			// request backend to perform pivot transform
 			applyPivot(data)
@@ -158,15 +177,15 @@ function useVisualization({ visualizationID, queryID, query }) {
 	}
 
 	function buildSingleValueChartProps(type, data) {
-		if (!data.labelColumn || !data.valueColumn) {
+		if (isEmptyObj(data.labelColumn, data.valueColumn)) {
 			return null
 		}
 
-		const labelColumn = data.labelColumn.value
-		const valueColumn = data.valueColumn.value
+		const labelColumn = data.labelColumn?.value
+		const valueColumn = data.valueColumn?.value
 
-		const columnLabels = query.doc.columns.map((c) => c.column)
-		if (columnLabels.indexOf(labelColumn) === -1 || columnLabels.indexOf(valueColumn) === -1) {
+		const columnNames = query.doc.columns.map((c) => c.column)
+		if (columnNames.indexOf(labelColumn) === -1 || columnNames.indexOf(valueColumn) === -1) {
 			return null
 		}
 
@@ -200,6 +219,22 @@ function useVisualization({ visualizationID, queryID, query }) {
 				],
 			},
 		}
+	}
+
+	function buildNumberCardProps(data) {
+		if (isEmptyObj(data.valueColumn)) {
+			return null
+		}
+
+		const valueColumn = data.valueColumn?.value
+
+		const columnNames = query.doc.columns.map((c) => c.column)
+		if (columnNames.indexOf(valueColumn) === -1) {
+			return null
+		}
+
+		const value = query.results.getColumnValues(valueColumn)[0]
+		return { value }
 	}
 
 	function applyPivot(data) {

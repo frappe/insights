@@ -5,12 +5,6 @@ import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
 
-export const FIELDTYPES = {
-	NUMBER: ['Int', 'Decimal', 'Bigint', 'Float', 'Double'],
-	TEXT: ['Char', 'Varchar', 'Enum', 'Text', 'Longtext'],
-	DATE: ['Date', 'Datetime', 'Time', 'Timestamp'],
-}
-
 const API_METHODS = {
 	run: 'run',
 	reset: 'reset',

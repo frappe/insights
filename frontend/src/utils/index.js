@@ -1,5 +1,11 @@
 import { watch } from 'vue'
 
+export const FIELDTYPES = {
+	NUMBER: ['Int', 'Decimal', 'Bigint', 'Float', 'Double'],
+	TEXT: ['Char', 'Varchar', 'Enum', 'Text', 'Longtext'],
+	DATE: ['Date', 'Datetime', 'Time', 'Timestamp'],
+}
+
 export function isEmptyObj(...args) {
 	return args.every((arg) => {
 		if (arg === null || arg === undefined) {

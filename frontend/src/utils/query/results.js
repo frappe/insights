@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { safeJSONParse } from '@/utils'
-import { FIELDTYPES } from '@/utils/query'
+import { FIELDTYPES } from '@/utils'
 
 export function useQueryResults(query) {
 	const maxRows = 1000
