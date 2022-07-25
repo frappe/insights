@@ -38,13 +38,19 @@ class VisualizationType {
 
 	getComponent() {
 		if (this.type == 'Bar') {
-			return defineAsyncComponent(() => import('@/components/Query/Visualization/BarChart'))
+			return defineAsyncComponent(() =>
+				import('@/components/Query/Visualization/BarChart.vue')
+			)
 		}
 		if (this.type == 'Pie') {
-			return defineAsyncComponent(() => import('@/components/Query/Visualization/PieChart'))
+			return defineAsyncComponent(() =>
+				import('@/components/Query/Visualization/PieChart.vue')
+			)
 		}
 		if (this.type == 'Line') {
-			return defineAsyncComponent(() => import('@/components/Query/Visualization/LineChart'))
+			return defineAsyncComponent(() =>
+				import('@/components/Query/Visualization/LineChart.vue')
+			)
 		}
 		if (this.type == 'Pivot') {
 			return defineAsyncComponent(() =>

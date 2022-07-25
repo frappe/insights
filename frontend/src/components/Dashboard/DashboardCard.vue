@@ -10,7 +10,7 @@
 			<div
 				class="flex h-full w-full flex-col space-y-4 overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
 			>
-				<div class="flex items-center justify-between">
+				<div class="flex h-8 items-center justify-between">
 					<div class="text-base font-medium">{{ visualization.doc.title }}</div>
 					<Button
 						icon="x"
@@ -19,11 +19,13 @@
 						@click.prevent.stop="$emit('remove', props.visualizationID)"
 					/>
 				</div>
-				<component
-					v-if="visualization.component && visualization.componentProps"
-					:is="visualization.component"
-					v-bind="visualization.componentProps"
-				></component>
+				<div class="h-[calc(100%-2rem)]">
+					<component
+						v-if="visualization.component && visualization.componentProps"
+						:is="visualization.component"
+						v-bind="visualization.componentProps"
+					></component>
+				</div>
 			</div>
 		</div>
 	</DraggableResizeable>
