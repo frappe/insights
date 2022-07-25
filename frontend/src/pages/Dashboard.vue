@@ -74,7 +74,7 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import DashboardCard from '@/components/DashboardCard.vue'
+import DashboardCard from '@/components/Dashboard/DashboardCard.vue'
 
 import { useRouter } from 'vue-router'
 import { computed, ref, provide } from 'vue'
