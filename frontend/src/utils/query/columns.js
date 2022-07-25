@@ -1,5 +1,5 @@
 import { reactive, computed, watch } from 'vue'
-import { isEqual } from '@/utils'
+import { isEqual, safeJSONParse } from '@/utils'
 import { FIELDTYPES } from '@/utils/query'
 
 const cache = reactive({

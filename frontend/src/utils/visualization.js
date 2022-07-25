@@ -164,8 +164,8 @@ function useVisualization({ visualizationID, queryID, query }) {
 			return null
 		}
 
-		const labels = query.getColumnValues(labelColumn)
-		const values = query.getColumnValues(valueColumn)
+		const labels = query.results.getColumnValues(labelColumn)
+		const values = query.results.getColumnValues(valueColumn)
 
 		let labelValues = labels.map((label, idx) => ({ label, value: values[idx] }))
 
@@ -209,7 +209,7 @@ function useVisualization({ visualizationID, queryID, query }) {
 		})
 	}
 
-	const pivotResult = computed(() => query.doc.transform_result)
+	const pivotResult = computed(() => query.doc?.transform_result)
 	watch(pivotResult, (result) => {
 		if (result !== '{}') {
 			visualization.componentProps = { tableHtml: result }

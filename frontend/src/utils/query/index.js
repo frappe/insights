@@ -45,7 +45,7 @@ export function useQuery(name) {
 	query.tables = useQueryTables(query)
 	query.columns = useQueryColumns(query)
 	query.filters = useQueryFilters(query)
-	query.result = useQueryResults(query)
+	query.results = useQueryResults(query)
 
 	query.getVisualizations.submit()
 	query.visualizations = computed(() => query.getVisualizations.data?.message)

@@ -85,7 +85,7 @@ import { computed, inject } from 'vue'
 
 const query = inject('query')
 
-const formattedResult = computed(() => query.result.formattedData.value)
+const formattedResult = computed(() => query.results.formattedData.value)
 const needsExecution = computed(() => query.doc.status === 'Pending Execution')
 const isNumberColumn = computed(() => {
 	return query.doc.columns.map((c) => query.FIELDTYPES.NUMBER.includes(c.type))
