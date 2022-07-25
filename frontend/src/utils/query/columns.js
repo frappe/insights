@@ -23,7 +23,7 @@ export function useQueryColumns(query) {
 	watch(
 		() => query.doc?.tables?.map((row) => row.table),
 		(newVal, oldVal) => {
-			if (!isEqual(newVal, oldVal)) {
+			if (newVal && !isEqual(newVal, oldVal)) {
 				query.fetchColumns.submit()
 			}
 		},

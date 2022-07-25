@@ -39,8 +39,8 @@
 				<!-- 100% - 2rem (tabs) + 1.5rem (query meta) -->
 				<div class="flex h-[calc(100%-3.5rem)] w-full rounded-md">
 					<QueryBuilder v-show="activeTab == 'Build'" />
-					<QueryResult v-show="activeTab == 'Result'" :query="query.resource" />
-					<QueryVisualizer v-if="activeTab == 'Visualize'" :query="query.resource" />
+					<QueryResult v-show="activeTab == 'Result'" />
+					<QueryVisualizer v-if="activeTab == 'Visualize'" />
 				</div>
 			</div>
 		</template>

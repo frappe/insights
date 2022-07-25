@@ -8,6 +8,7 @@ from pandas import DataFrame
 import frappe
 from frappe.utils import cstr, cint
 from frappe.model.document import Document
+from insights.api import get_tables
 
 
 class QueryClient(Document):
@@ -159,18 +160,7 @@ class QueryClient(Document):
     def fetch_tables(self):
         _tables = []
         if not self.tables:
-
-            def get_all_tables():
-                return frappe.get_all(
-                    "Table",
-                    filters={"data_source": self.data_source},
-                    fields=["table", "label"],
-                    debug=True,
-                )
-
-            _tables = frappe.cache().get_value(
-                f"query_tables_{self.data_source}", get_all_tables
-            )
+            _tables = get_tables(self.data_source)
 
         else:
             tables = [d.table for d in self.tables]
@@ -185,7 +175,7 @@ class QueryClient(Document):
                 )
                 .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
             )
-            _tables = query.run(as_dict=True)
+            _tables = query.run(as_dict=True, debug=True)
 
         return _tables
 

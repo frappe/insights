@@ -19,6 +19,25 @@ def get_data_sources():
 
 
 @frappe.whitelist()
+def get_tables(data_source=None):
+    if not data_source:
+        return []
+
+    def get_all_tables():
+        return frappe.get_all(
+            "Table",
+            filters={"data_source": data_source},
+            fields=["table", "label"],
+        )
+
+    return frappe.cache().hget(
+        "insights",
+        "get_tables_" + data_source,
+        generator=get_all_tables,
+    )
+
+
+@frappe.whitelist()
 def get_dashboard_list():
     return frappe.get_list(
         "Insights Dashboard",
@@ -57,10 +76,17 @@ def get_queries():
 
 
 @frappe.whitelist()
-def create_query(title, data_source):
+def create_query(title, data_source, table):
     query = frappe.new_doc("Query")
     query.title = title
     query.data_source = data_source
+    query.append(
+        "tables",
+        {
+            "table": table.get("value"),
+            "label": table.get("label"),
+        },
+    )
     query.save()
     return query.name
 

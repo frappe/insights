@@ -128,7 +128,7 @@ watch(addingTable, (newValue) => {
 	}
 })
 const newTableOptions = computed(() => {
-	return query.fetchTable.data?.message.map((table) => ({
+	return query.fetchTables.data?.message.map((table) => ({
 		...table,
 		value: table.table,
 	}))

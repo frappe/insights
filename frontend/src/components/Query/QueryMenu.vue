@@ -33,7 +33,7 @@
 			<template #actions>
 				<Button
 					appearance="danger"
-					:loading="query.resource.delete.loading"
+					:loading="query.delete.loading"
 					@click="
 						() => {
 							query.delete.submit().then(() => {

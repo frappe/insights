@@ -29,7 +29,7 @@
 				>
 					<!-- `open` is `true` only when first input even is fired on ComboboxInput -->
 					<!-- So, before input event is fired on the input, filterQuery is empty, so we can display the options  -->
-					<div v-show="(!filterQuery || open) && uniqueOptions.length > 0">
+					<div v-show="!filterQuery || open">
 						<ComboboxOptions
 							static
 							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"

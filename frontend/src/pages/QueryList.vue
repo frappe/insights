@@ -76,11 +76,29 @@
 					v-model="newQuery.dataSource"
 					:options="dataSources"
 				/>
-				<Input type="text" label="Title" v-model="newQuery.title" />
+				<div>
+					<div class="mb-2 block text-sm leading-4 text-gray-700">Table</div>
+					<Autocomplete
+						v-model="newQuery.table"
+						:options="tableOptions"
+						placeholder="Select a table..."
+					/>
+				</div>
+				<Input
+					type="text"
+					label="Title"
+					v-model="newQuery.title"
+					placeholder="Enter a suitable title..."
+				/>
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="submitQuery" :loading="createQuery.loading">
+			<Button
+				appearance="primary"
+				@click="submitQuery"
+				:disabled="createDisabled"
+				:loading="createQuery.loading"
+			>
 				Create
 			</Button>
 		</template>
@@ -89,10 +107,11 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 import moment from 'moment'
 import { useRouter } from 'vue-router'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
 
@@ -100,6 +119,7 @@ const openDialog = ref(false)
 const newQuery = reactive({
 	dataSource: '',
 	title: '',
+	table: null,
 })
 
 const getQueries = createResource('insights.api.get_queries')
@@ -124,6 +144,25 @@ const dataSources = computed(() => {
 	return getDataSources.data?.map((d) => d['name']) || []
 })
 getDataSources.fetch()
+watch(
+	() => newQuery.dataSource,
+	(data_source, old) => {
+		if (data_source !== old) {
+			getTableOptions.submit({ data_source })
+		}
+	}
+)
+
+const getTableOptions = createResource({
+	method: 'insights.api.get_tables',
+	initialData: [],
+})
+const tableOptions = computed(() =>
+	getTableOptions.data.map((table) => ({
+		...table,
+		value: table.table,
+	}))
+)
 
 const router = useRouter()
 const createQuery = createResource({
@@ -136,11 +175,15 @@ const createQuery = createResource({
 	},
 })
 
+const createDisabled = computed(() => {
+	return !newQuery.dataSource || !newQuery.table || !newQuery.title
+})
 const submitQuery = () => {
-	if (newQuery.title && newQuery.dataSource) {
+	if (!createDisabled.value) {
 		createQuery.submit({
 			title: newQuery.title,
 			data_source: newQuery.dataSource,
+			table: newQuery.table,
 		})
 	}
 }
