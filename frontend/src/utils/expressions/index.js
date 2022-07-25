@@ -46,7 +46,10 @@ export function parse(expression) {
 	function parseTokens(precedence) {
 		if (precedence < MAX_PRECEDENCE) {
 			let left = parseTokens(precedence + 1)
-			while (getPrecedence(currentToken.type) == precedence) {
+			while (
+				getPrecedence(currentToken.type) == precedence &&
+				currentToken.type !== TOKEN_TYPES.EOF
+			) {
 				const operator = currentToken.value
 				currentToken = tokens[++cursor]
 				const right = parseTokens(precedence + 1)
@@ -147,7 +150,10 @@ export function parse(expression) {
 		}
 
 		const args = []
-		while (currentToken.type !== TOKEN_TYPES.CLOSE_PARENTHESIS) {
+		while (
+			currentToken.type !== TOKEN_TYPES.CLOSE_PARENTHESIS &&
+			currentToken.type !== TOKEN_TYPES.EOF
+		) {
 			args.push(parseTokens(0))
 			if (currentToken.type === TOKEN_TYPES.ARGUMENT_SEPARATOR) {
 				currentToken = tokens[++cursor]

@@ -171,36 +171,36 @@ export default function tokenize(expression, offset = 0) {
 			fn += char
 			advance()
 		}
-		if (fn) {
+		if (!fn) return
+		tokens.push({
+			type: TOKEN_TYPES.FUNCTION,
+			start: offset + cursor - fn.length,
+			end: offset + cursor,
+			value: fn,
+		})
+		if (char === '(') {
 			tokens.push({
-				type: TOKEN_TYPES.FUNCTION,
-				start: offset + cursor - fn.length,
-				end: offset + cursor,
-				value: fn,
+				type: TOKEN_TYPES.OPEN_PARENTHESIS,
 			})
-			if (char === '(') {
-				tokens.push({
-					type: TOKEN_TYPES.OPEN_PARENTHESIS,
-				})
-				advance()
-			}
-			let argsStart = cursor
-			let closeParenthesis = expression.indexOf(')', cursor)
-			let argsEnd = closeParenthesis > -1 ? closeParenthesis : expression.length
-			let argsStr = expression.substring(argsStart, argsEnd)
-			let fnArgs = tokenize(argsStr, offset + argsStart).filter(
-				(token) => token.type !== TOKEN_TYPES.EOF
-			)
-			tokens = tokens.concat(fnArgs)
-
-			cursor = argsEnd - 1
 			advance()
-			if (char === ')') {
-				tokens.push({
-					type: TOKEN_TYPES.CLOSE_PARENTHESIS,
-				})
-				advance()
-			}
+		}
+		let argsStart = cursor
+		let closeParenthesis = expression.indexOf(')', cursor)
+		let argsEnd = closeParenthesis > -1 ? closeParenthesis : expression.length
+		let argsStr = expression.substring(argsStart, argsEnd)
+		if (!argsStr) return
+		let fnArgs = tokenize(argsStr, offset + argsStart).filter(
+			(token) => token.type !== TOKEN_TYPES.EOF
+		)
+		tokens = tokens.concat(fnArgs)
+
+		cursor = argsEnd - 1
+		advance()
+		if (char === ')') {
+			tokens.push({
+				type: TOKEN_TYPES.CLOSE_PARENTHESIS,
+			})
+			advance()
 		}
 	}
 

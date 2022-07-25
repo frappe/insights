@@ -118,7 +118,7 @@ const expression = reactive({
 })
 watchEffect(() => {
 	expression.raw = input.value
-	const { ast, tokens, errorMessage } = parse(expression.raw)
+	const { ast, tokens, errorMessage } = parse(input.value)
 	expression.ast = ast
 	expression.tokens = tokens
 	expression.error = errorMessage
