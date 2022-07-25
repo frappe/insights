@@ -1,5 +1,5 @@
 <template>
-	<div class="m-4 flex flex-1 flex-shrink-0 flex-col">
+	<div class="flex w-1/3 flex-col p-4">
 		<!-- Picker -->
 		<div v-if="!editTable" class="flex flex-1 flex-col">
 			<div v-if="addingTable" class="mb-4 w-full">

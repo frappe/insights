@@ -77,14 +77,14 @@ export function getOperatorOptions(columnType) {
 			{ label: 'not contains', value: 'not_contains' },
 			{ label: 'starts with', value: 'starts_with' },
 			{ label: 'ends with', value: 'ends_with' },
-			{ label: 'in', value: 'in' },
-			{ label: 'not in', value: 'not_in' },
+			{ label: 'one of', value: 'in' },
+			{ label: 'not one of', value: 'not_in' },
 		])
 	}
 	if (FIELDTYPES.NUMBER.includes(columnType)) {
 		options = options.concat([
-			{ label: 'in', value: 'in' },
-			{ label: 'not in', value: 'not_in' },
+			{ label: 'one of', value: 'in' },
+			{ label: 'not one of', value: 'not_in' },
 			{ label: 'greater than', value: '>' },
 			{ label: 'smaller than', value: '<' },
 			{ label: 'greater than equal to', value: '>=' },

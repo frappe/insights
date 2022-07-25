@@ -149,7 +149,7 @@ const filteredOptions = computed(() => {
 })
 
 const formatValue = (options) => {
-	const labels = options.map((option) => option.label)
+	const labels = typeof options[0] === 'string' ? options : options.map((option) => option.label)
 	if (labels.length <= 2) {
 		return labels.join(', ')
 	}

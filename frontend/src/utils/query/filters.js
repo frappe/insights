@@ -4,9 +4,26 @@ import { FIELDTYPES } from '@/utils/query'
 import { getColumn } from '@/utils/query/columns'
 import { convertIntoQueryFilters } from '@/utils/expressions/filter'
 
+const DEFAULT_FILTERS = {
+	type: 'LogicalExpression',
+	level: 1,
+	position: 1,
+	operator: '&&',
+	conditions: [],
+}
+
 export function useQueryFilters(query) {
 	const data = computed(() => {
-		return safeJSONParse(query.doc.filters, {})
+		const filters = safeJSONParse(query.doc.filters, DEFAULT_FILTERS)
+		if (filters.conditions.length === 0) {
+			return filters
+		}
+		if (!query.columns.options || query.columns.options.length === 0) {
+			// if column options are not yet fetched, then return empty filters
+			// column options are needed to format binary expressions
+			return DEFAULT_FILTERS
+		}
+		return filters
 	})
 
 	const addNextFilterAt = reactive({
@@ -54,7 +71,6 @@ export function useQueryFilters(query) {
 		expression.operator = expression.operator == '&&' ? '||' : '&&'
 		updateFilters()
 	}
-
 	const updateFilters = () => {
 		let filters = convertIntoQueryFilters(data.value)
 		query.updateFilters.submit({ filters })
@@ -99,6 +115,7 @@ function getLogicalExpressionAt({ filters, level, position, parentIdx }) {
 	return expression
 }
 
+// utility functions to convert a simple filter into expression and vice versa
 const BINARY_OPERATORS = {
 	'=': 'equals',
 	'!=': 'not equals',
@@ -109,8 +126,8 @@ const BINARY_OPERATORS = {
 }
 const CALL_FUNCTIONS = {
 	is: 'is',
-	in: 'in',
-	not_in: 'not in',
+	in: 'one of',
+	not_in: 'not one of',
 	between: 'between',
 	timespan: 'within',
 	starts_with: 'starts with',
@@ -119,11 +136,21 @@ const CALL_FUNCTIONS = {
 	not_contains: 'not contains',
 }
 
+function getOperatorFromCallFunction(functionName) {
+	if (CALL_FUNCTIONS[functionName]) {
+		return functionName
+	}
+	if (functionName.indexOf('null') > -1) {
+		return 'is'
+	}
+	// is not a simple filter call function
+	return null
+}
 function isBinaryOperator(operator) {
 	return Boolean(BINARY_OPERATORS[operator])
 }
-function isCallFunction(operator) {
-	return Boolean(CALL_FUNCTIONS[operator])
+function isCallFunction(functionName) {
+	return Boolean(CALL_FUNCTIONS[getOperatorFromCallFunction(functionName)])
 }
 
 function convertIntoBinaryExpression(simpleFilter) {
@@ -192,6 +219,22 @@ export function convertIntoExpression(simpleFilter) {
 	}
 }
 
+function makeValueFromCallFunction(expression) {
+	if (expression.function == 'isnull') return ['Not Set', 'Not Set']
+	if (expression.function == 'isnotnull') return ['Set', 'Set']
+	if (expression.function == 'between') {
+		const value = expression.arguments[1].value + ', ' + expression.arguments[2].value
+		return [value, value]
+	}
+	if (['in', 'not_in'].includes(expression.function)) {
+		const values = expression.arguments.slice(1).map((a) => a.value)
+		const label = values.length > 1 ? values.length + ' values' : values[0]
+		return [label, values]
+	}
+	const value = expression.arguments[1].value
+	return [value, value]
+}
+
 export function convertIntoSimpleFilter(expression) {
 	if (isBinaryOperator(expression.operator)) {
 		const column = getColumn(expression.left.value)
@@ -207,30 +250,19 @@ export function convertIntoSimpleFilter(expression) {
 	}
 
 	if (isCallFunction(expression.function)) {
+		const operator = getOperatorFromCallFunction(expression.function)
 		const column = getColumn(expression.arguments[0].value)
-		const operatorFunction = ['isnull', 'isnotnull'].includes(expression.function)
-			? 'is'
-			: expression.function
-		const operator = {
-			label: CALL_FUNCTIONS[operatorFunction],
-			value: operatorFunction,
+		const [label, value] = makeValueFromCallFunction(expression)
+		return {
+			column: column,
+			operator: {
+				label: CALL_FUNCTIONS[operator],
+				value: operator,
+			},
+			value: {
+				label: label || value,
+				value: value,
+			},
 		}
-
-		function makeValue() {
-			if (expression.function == 'isnull') return 'Not Set'
-			if (expression.function == 'isnotnull') return 'Set'
-			if (expression.function == 'between') {
-				return expression.arguments[1].value + ',' + expression.arguments[2].value
-			}
-			if (['in', 'not_in'].includes(expression.function)) {
-				return expression.arguments
-					.slice(1)
-					.map((a) => ({ label: a.value, value: a.value }))
-			}
-			return expression.arguments[1].value
-		}
-
-		const value = makeValue()
-		return { column, operator, value: { label: value, value } }
 	}
 }

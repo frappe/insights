@@ -1,5 +1,5 @@
 <template>
-	<div class="m-4 flex flex-1 flex-shrink-0 flex-col">
+	<div class="flex w-1/3 flex-col p-4">
 		<div v-if="!pickingFilter" class="mb-4 flex items-center justify-between">
 			<div class="text-lg font-medium">Filters</div>
 			<Button icon="plus" @click="pickingFilter = true"></Button>
@@ -12,7 +12,7 @@
 		</div>
 		<div
 			v-if="!pickingFilter && filters.conditions?.length > 0"
-			class="flex h-full items-start overflow-scroll"
+			class="-mx-2 flex h-full items-start overflow-scroll"
 		>
 			<LogicalExpression
 				:expression="filters"

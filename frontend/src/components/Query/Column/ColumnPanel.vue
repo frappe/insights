@@ -1,5 +1,5 @@
 <template>
-	<div class="m-4 flex flex-1 flex-shrink-0 flex-col">
+	<div class="flex w-1/3 flex-col p-4">
 		<div v-if="!addingColumn && !editingColumn" class="flex flex-1 flex-col">
 			<div class="mb-4 flex items-center justify-between">
 				<div class="text-lg font-medium">Dimension & Metrics</div>

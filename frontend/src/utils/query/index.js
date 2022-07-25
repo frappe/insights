@@ -50,12 +50,14 @@ export function useQuery(name) {
 	query.getVisualizations.submit()
 	query.visualizations = computed(() => query.getVisualizations.data?.message)
 
-	window.queryResource = query
-
 	return query
 }
 
 function getQueryResource(name) {
 	const doctype = 'Query'
-	return createDocumentResource({ doctype, name, whitelistedMethods: API_METHODS })
+	return createDocumentResource({
+		doctype,
+		name,
+		whitelistedMethods: API_METHODS,
+	})
 }
