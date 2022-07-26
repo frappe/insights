@@ -13,8 +13,7 @@ export const TOKEN_TYPES = {
 	OPERATOR_NEQ: 'OPERATOR_NEQ',
 	OPERATOR_GTE: 'OPERATOR_GTE',
 	OPERATOR_LTE: 'OPERATOR_LTE',
-	OPEN_SQUARE_BRACKET: 'OPEN_SQUARE_BRACKET',
-	CLOSE_SQUARE_BRACKET: 'CLOSE_SQUARE_BRACKET',
+	BACKTICK: 'BACKTICK',
 	COLUMN: 'COLUMN',
 	FUNCTION: 'FUNCTION',
 	ARGUMENT_SEPARATOR: 'ARGUMENT_SEPARATOR',
@@ -38,8 +37,8 @@ function isNumber(char) {
 	return /^[0-9]$/.test(char)
 }
 
-function isOpenSquareBracket(char) {
-	return char === '['
+function isBackTick(char) {
+	return char === '`'
 }
 
 function isArgumentSeparator(char) {
@@ -134,12 +133,12 @@ export default function tokenize(expression, offset = 0) {
 
 	function processColumnToken() {
 		tokens.push({
-			type: TOKEN_TYPES.OPEN_SQUARE_BRACKET,
+			type: TOKEN_TYPES.BACKTICK,
 		})
 		advance()
 
 		let columnStr = ''
-		while (char != ']' && cursor < expression.length) {
+		while (char != '`' && cursor < expression.length) {
 			columnStr += char
 			advance()
 		}
@@ -157,9 +156,9 @@ export default function tokenize(expression, offset = 0) {
 			})
 		}
 
-		if (char === ']') {
+		if (char === '`') {
 			tokens.push({
-				type: TOKEN_TYPES.CLOSE_SQUARE_BRACKET,
+				type: TOKEN_TYPES.BACKTICK,
 			})
 			advance()
 		}
@@ -263,7 +262,7 @@ export default function tokenize(expression, offset = 0) {
 			continue
 		}
 
-		if (isOpenSquareBracket(char)) {
+		if (isBackTick(char)) {
 			processColumnToken()
 			continue
 		}

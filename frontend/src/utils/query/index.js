@@ -55,3 +55,26 @@ function getQueryResource(name) {
 		whitelistedMethods: API_METHODS,
 	})
 }
+
+export const FUNCTIONS = {
+	abs: 'abs',
+	in: 'in',
+	not_in: 'not in',
+	case: 'case',
+	floor: 'floor',
+	lower: 'lower',
+	upper: 'upper',
+	concat: 'concat',
+	is_set: 'is set',
+	is_not_set: 'is not set',
+	if_null: 'if null',
+	coalesce: 'coalesce',
+	between: 'between',
+	timespan: 'timespan',
+	contains: 'contains',
+	ends_with: 'ends with',
+	starts_with: 'starts with',
+	ceil: 'ceil',
+	round: 'round',
+	replace: 'replace',
+}

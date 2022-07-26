@@ -11,8 +11,7 @@ function getPrecedence(tokenType) {
 		case TOKEN_TYPES.FUNCTION:
 		case TOKEN_TYPES.OPEN_PARENTHESIS:
 		case TOKEN_TYPES.CLOSE_PARENTHESIS:
-		case TOKEN_TYPES.OPEN_SQUARE_BRACKET:
-		case TOKEN_TYPES.CLOSE_SQUARE_BRACKET:
+		case TOKEN_TYPES.BACKTICK:
 			return MAX_PRECEDENCE
 		case TOKEN_TYPES.OPERATOR_MUL:
 		case TOKEN_TYPES.OPERATOR_DIV:
@@ -66,7 +65,7 @@ export function parse(expression) {
 				return parseString()
 			case TOKEN_TYPES.OPEN_PARENTHESIS:
 				return parseParenthesis()
-			case TOKEN_TYPES.OPEN_SQUARE_BRACKET:
+			case TOKEN_TYPES.BACKTICK:
 				return parseColumn()
 			case TOKEN_TYPES.FUNCTION:
 				return parseFunction()
@@ -121,10 +120,10 @@ export function parse(expression) {
 		}
 
 		currentToken = tokens[++cursor]
-		if (currentToken.type !== TOKEN_TYPES.CLOSE_SQUARE_BRACKET) {
-			errorMessage = `Missing closing square bracket`
+		if (currentToken.type !== TOKEN_TYPES.BACKTICK) {
+			errorMessage = `Missing closing backtick`
 			throw new Error(
-				`Failed to Parse Expression ${expression}: Expected closing square bracket, got: ${currentToken.type}`
+				`Failed to Parse Expression ${expression}: Expected closing backtick, got: ${currentToken.type}`
 			)
 		}
 		currentToken = tokens[++cursor]
@@ -135,7 +134,7 @@ export function parse(expression) {
 		const name = currentToken.value
 		currentToken = tokens[++cursor]
 		if (currentToken.type !== TOKEN_TYPES.OPEN_PARENTHESIS) {
-			errorMessage = `Expected opening parenthesis after function ${name}`
+			errorMessage = `Expected opening parenthesis after ${name} function`
 			throw new Error(
 				`Failed to Parse Expression ${expression}: Expected opening parenthesis, got: ${currentToken.type}`
 			)
@@ -143,9 +142,9 @@ export function parse(expression) {
 		currentToken = tokens[++cursor]
 
 		if (!checkForClosingParenthesis()) {
-			errorMessage = `Missing closing parenthesis for function ${name}`
+			errorMessage = `Missing closing parenthesis for ${name} function`
 			throw new Error(
-				`Failed to Parse Expression ${expression}: Missing closing parenthesis for function ${name}`
+				`Failed to Parse Expression ${expression}: Missing closing parenthesis for ${name} function`
 			)
 		}
 

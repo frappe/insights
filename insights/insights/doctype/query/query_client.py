@@ -246,15 +246,7 @@ class QueryClient(Document):
     def reset(self):
         self.tables = []
         self.columns = []
-        self.filters = dumps(
-            {
-                "group_operator": "&",
-                "level": "1",
-                "position": "1",
-                "conditions": [],
-            },
-            indent=2,
-        )
+        self.filters = None
         self.sql = None
         self.result = None
         self.status = "Pending Execution"

@@ -13,13 +13,16 @@
 		"test:e2e:ci": "yarn build && cypress run --e2e"
 	},
 	"dependencies": {
+		"@codemirror/lang-javascript": "^6.0.2",
 		"chart.js": "^3.8.0",
+		"codemirror": "^6.0.1",
 		"feather-icons": "^4.28.0",
 		"frappe-charts": "^1.6.2",
 		"frappe-ui": "^0.0.31",
 		"moment": "^2.29.3",
 		"vue": "^3.2.25",
 		"vue-chartjs": "^4.1.1",
+		"vue-codemirror": "^6.0.1",
 		"vue-router": "^4.0.12",
 		"vuedraggable": "^4.1.0"
 	},

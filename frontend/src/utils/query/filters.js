@@ -116,7 +116,7 @@ function getLogicalExpressionAt({ filters, level, position, parentIdx }) {
 }
 
 // utility functions to convert a simple filter into expression and vice versa
-const BINARY_OPERATORS = {
+export const BINARY_OPERATORS = {
 	'=': 'equals',
 	'!=': 'not equals',
 	'>': 'greater than',
@@ -124,7 +124,7 @@ const BINARY_OPERATORS = {
 	'<': 'less than',
 	'<=': 'less than equal to',
 }
-const CALL_FUNCTIONS = {
+export const FILTER_FUNCTIONS = {
 	is: 'is',
 	in: 'one of',
 	not_in: 'not one of',
@@ -137,7 +137,7 @@ const CALL_FUNCTIONS = {
 }
 
 function getOperatorFromCallFunction(functionName) {
-	if (CALL_FUNCTIONS[functionName]) {
+	if (FILTER_FUNCTIONS[functionName]) {
 		return functionName
 	}
 	if (functionName.indexOf('null') > -1) {
@@ -150,7 +150,7 @@ function isBinaryOperator(operator) {
 	return Boolean(BINARY_OPERATORS[operator])
 }
 function isCallFunction(functionName) {
-	return Boolean(CALL_FUNCTIONS[getOperatorFromCallFunction(functionName)])
+	return Boolean(FILTER_FUNCTIONS[getOperatorFromCallFunction(functionName)])
 }
 
 function convertIntoBinaryExpression(simpleFilter) {
@@ -176,7 +176,7 @@ function convertIntoCallExpression(simpleFilter) {
 	const { column, operator, value } = simpleFilter
 
 	const operatorFunction =
-		operator.value == 'is' ? (value.value == 'set' ? 'isnotnull' : 'isnull') : operator.value
+		operator.value == 'is' ? (value.value == 'set' ? 'is_not_set' : 'is_set') : operator.value
 
 	function makeArgs() {
 		if (operator.value == 'is') return []
@@ -220,8 +220,8 @@ export function convertIntoExpression(simpleFilter) {
 }
 
 function makeValueFromCallFunction(expression) {
-	if (expression.function == 'isnull') return ['Not Set', 'Not Set']
-	if (expression.function == 'isnotnull') return ['Set', 'Set']
+	if (expression.function == 'is_set') return ['Not Set', 'Not Set']
+	if (expression.function == 'is_not_set') return ['Set', 'Set']
 	if (expression.function == 'between') {
 		const value = expression.arguments[1].value + ', ' + expression.arguments[2].value
 		return [value, value]
@@ -256,7 +256,7 @@ export function convertIntoSimpleFilter(expression) {
 		return {
 			column: column,
 			operator: {
-				label: CALL_FUNCTIONS[operator],
+				label: FILTER_FUNCTIONS[operator],
 				value: operator,
 			},
 			value: {
