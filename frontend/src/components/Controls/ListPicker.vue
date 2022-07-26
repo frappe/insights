@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import {
 	Combobox,
 	ComboboxLabel,
@@ -133,6 +133,7 @@ const props = defineProps({
 const filter_query = ref('')
 const selectedOptions = ref(props.value.slice())
 
+const $utils = inject('$utils')
 const filteredOptions = computed(() => {
 	// filter out duplicates
 	const options = props.options.filter((option, index, self) => {
@@ -140,12 +141,10 @@ const filteredOptions = computed(() => {
 	})
 	return !filter_query.value
 		? options
-		: options.filter((option) =>
-				option.label
-					.toLowerCase()
-					.replace(/\s+/g, '')
-					.includes(filter_query.value.toLowerCase().replace(/\s+/g, ''))
-		  )
+		: $utils.fuzzySearch(options, {
+				term: filter_query.value,
+				keys: ['label', 'value'],
+		  })
 })
 
 const formatValue = (options) => {

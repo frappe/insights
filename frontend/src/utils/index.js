@@ -68,3 +68,33 @@ export function updateDocumentTitle(meta) {
 		{ immediate: true, deep: true }
 	)
 }
+
+export function fuzzySearch(arr, { term, keys }) {
+	// search for term in all keys of arr items and sort by relevance
+	const results = arr.reduce((acc, item) => {
+		const score = keys.reduce((acc, key) => {
+			const value = item[key]
+			if (value) {
+				const match = value.toLowerCase().indexOf(term.toLowerCase())
+				if (match !== -1) {
+					return acc + match
+				}
+			}
+			return acc
+		}, 0)
+		if (score) {
+			acc.push({ item, score })
+		}
+		return acc
+	}, [])
+	return results.sort((a, b) => a.score - b.score).map((item) => item.item)
+}
+
+export default {
+	isEmptyObj,
+	safeJSONParse,
+	formatDate,
+	isEqual,
+	updateDocumentTitle,
+	fuzzySearch,
+}

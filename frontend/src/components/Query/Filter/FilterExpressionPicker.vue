@@ -115,6 +115,7 @@ watchEffect(() => {
 	columnTokenToEdit.value = columnToken
 })
 
+const $utils = inject('$utils')
 const filteredColumns = computed(() => {
 	if (!showColumnDropdown.value) {
 		return []
@@ -124,11 +125,10 @@ const filteredColumns = computed(() => {
 	if (string && string.length === 0) {
 		return query.columns.options
 	}
-	return query.columns.options?.filter(
-		(column) =>
-			column.label.toLowerCase().indexOf(string) > -1 ||
-			column.column.toLowerCase().indexOf(string) > -1
-	)
+	return $utils.fuzzySearch(query.columns.options, {
+		term: string,
+		keys: ['label', 'column'],
+	})
 })
 
 const onColumnSelect = (option) => {

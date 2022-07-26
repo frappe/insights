@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import {
 	Combobox,
 	ComboboxLabel,
@@ -85,6 +85,8 @@ import {
 	ComboboxOptions,
 	ComboboxOption,
 } from '@headlessui/vue'
+
+const $utils = inject('$utils')
 
 const input = ref(null)
 defineExpose({ input })
@@ -143,13 +145,11 @@ const uniqueOptions = computed(() => {
 const filteredOptions = computed(() => {
 	return !filterQuery.value
 		? uniqueOptions.value.slice(0, 50)
-		: uniqueOptions.value
-				.filter((option) =>
-					option.label
-						.toLowerCase()
-						.replace(/\s+/g, '')
-						.includes(filterQuery.value.toLowerCase().replace(/\s+/g, ''))
-				)
+		: $utils
+				.fuzzySearch(uniqueOptions.value, {
+					term: filterQuery.value,
+					keys: ['label', 'value'],
+				})
 				.slice(0, 50)
 })
 

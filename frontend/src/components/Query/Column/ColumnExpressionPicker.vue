@@ -76,7 +76,6 @@
 <script setup>
 import SuggestionBox from '@/components/SuggestionBox.vue'
 
-import { safeJSONParse } from '@/utils'
 import { parse } from '@/utils/expressions'
 import { ref, inject, onMounted, watchEffect, reactive, computed } from 'vue'
 import { autocompleteSquareBrackets, autocompleteQuotes } from '@/utils/autocomplete'
@@ -98,7 +97,7 @@ const props = defineProps({
 })
 const column = {
 	...props.column,
-	expression: safeJSONParse(props.column.expression, {}),
+	expression: $utils.safeJSONParse(props.column.expression, {}),
 }
 const editing = ref(Boolean(column.name))
 const input = reactive({
@@ -147,6 +146,7 @@ watchEffect(() => {
 	columnTokenToEdit.value = columnToken
 })
 
+const $utils = inject('$utils')
 const filteredColumns = computed(() => {
 	if (!showColumnDropdown.value) {
 		return []
@@ -156,11 +156,10 @@ const filteredColumns = computed(() => {
 	if (string && string.length === 0) {
 		return query.columns.options
 	}
-	return query.columns.options?.filter(
-		(column) =>
-			column.label.toLowerCase().indexOf(string) > -1 ||
-			column.column.toLowerCase().indexOf(string) > -1
-	)
+	return $utils.fuzzySearch(query.columns.options, {
+		term: string,
+		keys: ['label', 'column'],
+	})
 })
 
 const onColumnSelect = (option) => {

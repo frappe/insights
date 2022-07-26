@@ -10,6 +10,8 @@ import Toasts from '@/utils/toasts'
 
 import { provide } from 'vue'
 import { createToast } from '@/utils/toasts'
+import $utils from '@/utils'
 
 provide('$notify', createToast)
+provide('$utils', $utils)
 </script>
