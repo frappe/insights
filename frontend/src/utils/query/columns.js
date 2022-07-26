@@ -20,15 +20,22 @@ export function useQueryColumns(query) {
 	)
 
 	// if tables changes then update columns options
-	watch(
-		() => query.doc?.tables?.map((row) => row.table),
-		(newVal, oldVal) => {
-			if (newVal && !isEqual(newVal, oldVal)) {
-				query.fetchColumns.submit()
+	const tables = () =>
+		query.tables.data?.reduce((acc, row) => {
+			acc.push(row.table)
+			if (row.join && row.join.with.value) {
+				acc.push(row.join.with.value)
 			}
-		},
-		{ immediate: true }
-	)
+			return acc
+		}, [])
+	const fetchColumns = (newVal, oldVal) => {
+		if (newVal && !isEqual(newVal, oldVal)) {
+			console.log('fetching columns')
+			query.fetchColumns.submit()
+		}
+	}
+	watch(tables, fetchColumns, { immediate: true })
+
 	const options = computed(() =>
 		query.fetchColumns.data?.message.map((c) => {
 			return {

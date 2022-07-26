@@ -4,7 +4,7 @@ import { safeJSONParse } from '@/utils'
 export function useQueryTables(query) {
 	return {
 		data: computed(() =>
-			query.doc.tables?.map((table) => {
+			query.doc?.tables.map((table) => {
 				return {
 					...table,
 					value: table.table,

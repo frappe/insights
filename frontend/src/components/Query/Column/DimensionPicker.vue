@@ -51,7 +51,7 @@ const props = defineProps({
 })
 
 const dimension = reactive({
-	column: props.column,
+	column: { ...props.column, value: props.column.column },
 	label: props.column.label,
 })
 // for editing a dimension

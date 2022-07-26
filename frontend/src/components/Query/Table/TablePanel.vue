@@ -153,7 +153,7 @@ const joinTypeOptions = ref([
 	{ label: 'Right', value: 'right' },
 	{ label: 'Full', value: 'full_outer' },
 ])
-const joinOptions = query.fetchJoinOptionsData // is computed
+const joinOptions = computed(() => query.fetchJoinOptions.data?.message) // is computed
 const joinTableOptions = computed(() => {
 	return joinOptions.value?.map(({ label, table }) => {
 		return { label, value: table }

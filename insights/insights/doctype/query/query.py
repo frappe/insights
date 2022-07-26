@@ -198,7 +198,7 @@ class Query(QueryClient):
         return column
 
     def process_aggregation(self, row, column):
-        if not row.aggregation:
+        if not row.aggregation or row.aggregation == "Group By":
             return column
 
         elif not Aggregations.is_valid(row.aggregation.lower()):
