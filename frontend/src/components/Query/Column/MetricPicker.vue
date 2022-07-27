@@ -96,7 +96,7 @@ const filteredColumns = computed(() => {
 		return []
 	}
 	if (metric.type.value === 'Sum' || metric.type.value === 'Avg') {
-		return columnOptions.value?.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+		return columnOptions?.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	}
 })
 
