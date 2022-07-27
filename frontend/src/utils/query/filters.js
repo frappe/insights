@@ -140,7 +140,7 @@ function getOperatorFromCallFunction(functionName) {
 	if (FILTER_FUNCTIONS[functionName]) {
 		return functionName
 	}
-	if (functionName.indexOf('null') > -1) {
+	if (functionName.indexOf('set') > -1) {
 		return 'is'
 	}
 	// is not a simple filter call function
