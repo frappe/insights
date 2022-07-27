@@ -218,3 +218,15 @@ def get_column_menu_options(fieldtype):
         "aggregation_options": aggregation_options,
         "format_options": format_options,
     }
+
+
+@frappe.whitelist()
+def get_running_queries(data_source):
+    data_source = frappe.get_doc("Data Source", data_source)
+    return data_source.get_running_queries()
+
+
+@frappe.whitelist()
+def kill_query(data_source, query_id):
+    data_source = frappe.get_doc("Data Source", data_source)
+    return data_source.kill_query(query_id)

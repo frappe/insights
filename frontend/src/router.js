@@ -43,6 +43,11 @@ const routes = [
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
 	},
+	{
+		path: '/settings/running-queries',
+		name: 'Running Queries',
+		component: () => import('@/pages/RunningQueries.vue'),
+	},
 ]
 
 let router = createRouter({

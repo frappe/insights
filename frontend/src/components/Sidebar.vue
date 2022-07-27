@@ -80,14 +80,7 @@ const sidebarItems = ref([
 const route = useRoute()
 const currentRoute = computed(() => {
 	sidebarItems.value.forEach((item) => {
-		if (
-			item.path == route.path ||
-			(item.path != '/' && route.path.includes(item.path)) // sub-route
-		) {
-			item.current = true
-		} else {
-			item.current = false
-		}
+		item.current = item.path == route.path
 	})
 	return route.path
 })

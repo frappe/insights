@@ -77,7 +77,9 @@ class DataSource(Document):
         if not query:
             return
 
-        self.validate_query(query)
+        skip_validation = kwargs.pop("skip_validation", False)
+        if not skip_validation:
+            self.validate_query(query)
 
         result = []
         db_instance = self.get_db_instance()
@@ -353,6 +355,27 @@ class DataSource(Document):
                     pass
 
         return dynamic_link_map
+
+    def get_running_queries(self):
+        query = f"""select
+                id, user, db, command, time, state, info, progress
+            from
+                information_schema.processlist
+            where
+                user = "{self.username}"
+                and db = "{self.database_name}"
+                and info not like '%information_schema.processlist%'
+            """
+        processlist = self.execute_query(
+            query,
+            skip_validation=True,
+            as_dict=True,
+        )
+
+        return processlist
+
+    def kill_query(self, query_id):
+        self.execute_query(f"kill {query_id}", skip_validation=True)
 
 
 @contextmanager
