@@ -1,36 +1,10 @@
 <template>
 	<div class="flex flex-col space-y-3">
-		<!-- Expression Field -->
-		<Popover class="flex w-full flex-col [&>div:first-child]:w-full">
-			<template #target="{ togglePopover }">
-				<div class="mb-1 text-sm font-light text-gray-600">Expression</div>
-				<div class="relative">
-					<textarea
-						rows="5"
-						autocomplete="off"
-						spellcheck="false"
-						ref="inputElement"
-						v-model="input.value"
-						placeholder="Enter an expression..."
-						@focus="togglePopover()"
-						@keydown.esc.exact="togglePopover()"
-						@keyup="input.caretPosition = $refs.inputElement.selectionStart"
-						class="form-input w-full select-none rounded-md border border-transparent p-2 pl-5 font-mono text-sm placeholder-gray-500 caret-black focus:border-transparent"
-						:class="{
-							'border border-red-500 focus:border-red-500': Boolean(expression.error),
-						}"
-					/>
-					<div class="absolute top-0 left-0 p-2 pt-2.5 font-mono">=</div>
-				</div>
-			</template>
-			<template #body>
-				<SuggestionBox
-					v-show="showColumnDropdown && filteredColumns?.length"
-					:suggestions="filteredColumns"
-					@option-select="onColumnSelect"
-				/>
-			</template>
-		</Popover>
+		<!-- Expression Code Field -->
+		<div class="mb-1 text-sm font-light">Expression</div>
+		<div class="h-40 w-full text-sm">
+			<Code v-model="input.value" :completions="getCompletions"></Code>
+		</div>
 		<!-- Expression Error -->
 		<div
 			v-if="expression.error"
@@ -53,15 +27,13 @@
 </template>
 
 <script setup>
-import SuggestionBox from '@/components/SuggestionBox.vue'
+import Code from '@/components/Controls/Code.vue'
 
-import { safeJSONParse } from '@/utils'
+import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
-import { ref, inject, onMounted, watchEffect, reactive, computed } from 'vue'
-import { autocompleteSquareBrackets, autocompleteQuotes } from '@/utils/autocomplete'
+import { inject, watchEffect, reactive } from 'vue'
 
 const query = inject('query')
-const inputElement = ref(null)
 
 const emit = defineEmits(['filter-select', 'close'])
 const props = defineProps({
@@ -70,15 +42,10 @@ const props = defineProps({
 		default: {},
 	},
 })
+const editing = false
 const input = reactive({
 	value: '',
 	caretPosition: 0,
-})
-const editing = false
-
-onMounted(() => {
-	autocompleteSquareBrackets(inputElement.value, input)
-	autocompleteQuotes(inputElement.value, input)
 })
 
 // parse the expression when input changes
@@ -96,52 +63,24 @@ watchEffect(() => {
 	expression.error = errorMessage
 })
 
-// show column dropdown if the caret is between two square brackets
-const showColumnDropdown = ref(false)
-const columnTokenToEdit = ref(null)
-watchEffect(() => {
-	if (!expression.tokens || !expression.tokens.length) {
-		showColumnDropdown.value = false
-		columnTokenToEdit.value = null
-		return
+const getCompletions = (context, syntaxTree) => {
+	let word = context.matchBefore(/\w*/)
+	let nodeBefore = syntaxTree.resolveInner(context.pos, -1)
+
+	if (nodeBefore.name === 'TemplateString') {
+		return {
+			from: word.from,
+			options: query.columns.options.map((c) => {
+				return { label: `${c.table}.${c.column}` }
+			}),
+		}
 	}
-	const columnToken = expression.tokens.find(
-		(token) =>
-			token.type === 'COLUMN' &&
-			token.start <= input.caretPosition &&
-			token.end >= input.caretPosition
-	)
-	showColumnDropdown.value = Boolean(columnToken)
-	columnTokenToEdit.value = columnToken
-})
-
-const $utils = inject('$utils')
-const filteredColumns = computed(() => {
-	if (!showColumnDropdown.value) {
-		return []
+	if (nodeBefore.name === 'VariableName') {
+		return {
+			from: word.from,
+			options: Object.keys(FUNCTIONS).map((label) => ({ label })),
+		}
 	}
-
-	const string = columnTokenToEdit.value?.value?.column?.toLowerCase()
-	if (string && string.length === 0) {
-		return query.columns.options
-	}
-	return $utils.fuzzySearch(query.columns.options, {
-		term: string,
-		keys: ['label', 'column'],
-	})
-})
-
-const onColumnSelect = (option) => {
-	const stringBeforeColumn = input.value.slice(0, columnTokenToEdit.value.start - 1)
-	const stringAfterColumn = input.value.slice(columnTokenToEdit.value.end + 1)
-
-	const columnValue = `${option.table}.${option.column}`
-	input.value = stringBeforeColumn + `[${columnValue}]` + stringAfterColumn
-
-	inputElement.value.setSelectionRange(
-		columnTokenToEdit.value.end + 1,
-		columnTokenToEdit.value.end + 1
-	)
 }
 
 const addExpressionFilter = () => {

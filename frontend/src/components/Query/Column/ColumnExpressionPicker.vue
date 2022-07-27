@@ -48,12 +48,11 @@
 </template>
 
 <script setup>
-import SuggestionBox from '@/components/SuggestionBox.vue'
 import Code from '@/components/Controls/Code.vue'
 
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
-import { ref, inject, watchEffect, reactive, computed } from 'vue'
+import { ref, inject, watchEffect, reactive } from 'vue'
 
 const $utils = inject('$utils')
 const query = inject('query')
