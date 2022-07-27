@@ -71,7 +71,7 @@ export function updateDocumentTitle(meta) {
 
 export function fuzzySearch(arr, { term, keys }) {
 	// search for term in all keys of arr items and sort by relevance
-	const lowerCaseTerm = term.toLowerCase().replace(/\s+/g, '')
+	const lowerCaseTerm = term.toLowerCase()
 	const results = arr.reduce((acc, item) => {
 		const score = keys.reduce((acc, key) => {
 			const value = item[key]
