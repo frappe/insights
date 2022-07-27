@@ -8,13 +8,14 @@ const cache = reactive({
 
 export function useQueryColumns(query) {
 	const data = computed(() =>
-		query.doc.columns.map((column) => {
+		query.doc?.columns.map((column) => {
 			return {
 				...column,
 				format_option: column.format_option ? safeJSONParse(column.format_option) : null,
 				aggregation_condition: column.aggregation_condition
 					? safeJSONParse(column.aggregation_condition)
 					: null,
+				expression: column.is_expression ? safeJSONParse(column.expression) : null,
 			}
 		})
 	)

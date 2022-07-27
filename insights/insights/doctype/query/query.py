@@ -175,10 +175,10 @@ class Query(QueryClient):
             else:
                 expression = loads(row.expression)
                 _column = parse_query_expression(expression.get("ast"))
+                _column = self.process_column_format(row, _column)
 
             self.process_sorting(row, _column)
             _column = _column.as_(row.label) if row.label else _column
-
             if row.aggregation == "Group By":
                 self._group_by_columns.append(_column)
 

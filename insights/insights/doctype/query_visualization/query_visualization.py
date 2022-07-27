@@ -9,6 +9,9 @@ from frappe.model.document import Document
 
 
 class QueryVisualization(Document):
+    def on_trash(self):
+        frappe.db.delete("Insights Dashboard Item", {"visualization": self.name})
+
     @frappe.whitelist()
     def update_doc(self, doc):
         doc = _dict(doc)

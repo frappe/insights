@@ -79,7 +79,7 @@ const supportsFormatting = ref(
 		props.column.type
 	)
 )
-const columnFormat = safeJSONParse(unref(props.column.format_option)) || {}
+const columnFormat = props.column.format_option || {}
 const format = reactive({
 	dateFormat:
 		props.column.type == 'Date'
@@ -105,6 +105,7 @@ const showNumberFormatOptions = ref(
 )
 const saveFormattingOptions = () => {
 	const updatedColumn = unref(props.column)
+	updatedColumn.format_option = null
 	if (showDateFormatOptions.value) {
 		updatedColumn.format_option = {
 			date_format: format.dateFormat.value,
@@ -121,7 +122,7 @@ const saveFormattingOptions = () => {
 
 const clearFormattingOptions = () => {
 	const updatedColumn = unref(props.column)
-	updatedColumn.format_option = {}
+	updatedColumn.format_option = null
 	emit('save', updatedColumn)
 }
 </script>

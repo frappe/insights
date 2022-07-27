@@ -23,6 +23,17 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
+		<!-- Type Field -->
+		<div class="mt-2 text-sm text-gray-600">
+			<div class="mb-1 font-light">Type</div>
+			<Input
+				type="select"
+				v-model="expression.valueType"
+				class="h-8 placeholder:text-sm"
+				placeholder="Select a type..."
+				:options="Object.values(typeMap)"
+			/>
+		</div>
 		<div class="mt-4 text-sm text-gray-600">
 			<Input type="checkbox" label="Group By" v-model="expression.groupBy" />
 		</div>
@@ -54,7 +65,6 @@ import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
 import { ref, inject, watchEffect, reactive } from 'vue'
 
-const $utils = inject('$utils')
 const query = inject('query')
 
 const emit = defineEmits(['column-select', 'close'])
@@ -72,7 +82,7 @@ const props = defineProps({
 
 const column = {
 	...props.column,
-	expression: $utils.safeJSONParse(props.column.expression, {}),
+	expression: props.column.expression || {},
 }
 const editing = ref(Boolean(column.name))
 const input = reactive({
@@ -80,11 +90,22 @@ const input = reactive({
 	caretPosition: column.expression.raw?.length || 0,
 })
 
+const typeMap = {
+	Time: 'Time',
+	Date: 'Date',
+	Varchar: 'String',
+	Int: 'Integer',
+	Float: 'Decimal',
+	Datetime: 'Datetime',
+	Timestamp: 'Timestamp',
+}
+
 // parse the expression when input changes
 const expression = reactive({
 	raw: input.value,
 	label: column.label,
 	groupBy: column.aggregation == 'Group By',
+	valueType: typeMap[column.type] || 'String',
 	ast: null,
 	error: null,
 	tokens: [],
@@ -118,6 +139,7 @@ const getCompletions = (context, syntaxTree) => {
 }
 
 const addExpressionColumn = () => {
+	const type = Object.keys(typeMap).find((key) => typeMap[key] === expression.valueType)
 	const newColumn = {
 		name: props.column.name,
 		is_expression: 1,
@@ -125,6 +147,7 @@ const addExpressionColumn = () => {
 			raw: expression.raw,
 			ast: expression.ast,
 		},
+		type: type,
 		label: expression.label,
 		aggregation: expression.groupBy ? 'Group By' : '',
 	}

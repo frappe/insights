@@ -66,7 +66,7 @@ class QueryClient(Document):
             "table_label": column.get("table_label"),
             "aggregation": column.get("aggregation"),
             "is_expression": column.get("is_expression"),
-            "expression": dumps(column.get("expression"), default=cstr, indent=2),
+            "expression": dumps(column.get("expression"), indent=2),
         }
         self.append("columns", new_column)
         self.save()
@@ -82,6 +82,7 @@ class QueryClient(Document):
     def update_column(self, column):
         for row in self.columns:
             if row.get("name") == column.get("name"):
+                row.type = column.get("type")
                 row.label = column.get("label")
                 row.table = column.get("table")
                 row.column = column.get("column")
@@ -90,7 +91,11 @@ class QueryClient(Document):
                 row.table_label = column.get("table_label")
                 row.expression = dumps(column.get("expression"), indent=2)
                 row.aggregation_condition = column.get("aggregation_condition")
-                row.format_option = dumps(column.get("format_option"), indent=2)
+                row.format_option = (
+                    dumps(column.get("format_option"), indent=2)
+                    if column.get("format_option")
+                    else ""
+                )
                 break
 
         self.save()

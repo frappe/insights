@@ -18,7 +18,7 @@ export function useQueryTables(query) {
 				return {
 					title: 'Cannot remove table',
 					message: `Remove dimensions and metrics associated with ${label} table and try again`,
-					appearance: 'error',
+					appearance: 'warning',
 				}
 			}
 		},

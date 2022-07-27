@@ -1,20 +1,15 @@
 <template>
 	<div
-		v-if="query.doc.columns.length == 0"
+		v-if="columns.length == 0"
 		class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 	>
 		<p>No columns selected</p>
 	</div>
 	<div
-		v-else-if="query.doc.columns.length > 0"
+		v-else-if="columns.length > 0"
 		class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
 	>
-		<Draggable
-			v-model="query.doc.columns"
-			group="columns"
-			item-key="name"
-			@sort="updateColumnOrder"
-		>
+		<Draggable v-model="columns" group="columns" item-key="name" @sort="updateColumnOrder">
 			<template #item="{ element: column }">
 				<div
 					class="flex h-10 cursor-pointer items-center justify-between space-x-8 border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
@@ -59,10 +54,18 @@
 import Draggable from 'vuedraggable'
 import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
 
-import { inject } from 'vue'
+import { inject, unref, ref, watch } from 'vue'
 
 const query = inject('query')
 defineEmits(['edit-column'])
+
+const columns = ref(unref(query.columns.data))
+watch(
+	() => query.columns.data,
+	(newColumns) => {
+		columns.value = newColumns
+	}
+)
 
 function updateColumnOrder(e) {
 	if (e.oldIndex != e.newIndex) {
