@@ -136,3 +136,15 @@ const saveVisualization = () => {
 	visualization.updateDoc({ onSuccess })
 }
 </script>
+
+<style lang="postcss">
+.dataframe th {
+	@apply whitespace-nowrap border-r border-b bg-gray-50 py-2 px-4 text-left text-sm font-medium text-gray-700;
+}
+.dataframe td {
+	@apply whitespace-nowrap border-r border-b bg-white py-2 px-4 text-right text-sm text-gray-700;
+}
+.dataframe tr > th:first-child {
+	@apply sticky left-0;
+}
+</style>
