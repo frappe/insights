@@ -32,7 +32,7 @@ class Aggregations:
             "min": functions.Min,
             "max": functions.Max,
             "avg": functions.Avg,
-            "count": functions.Count,
+            "count": cls.count,
             "sum_if": cls.sum_if,
             "count_if": cls.count_if,
             "distinct": CustomFunction("DISTINCT", ["column"]),
@@ -41,6 +41,10 @@ class Aggregations:
     @classmethod
     def get_aggregation_function(cls, aggregation):
         return cls.get_aggregations()[aggregation]
+
+    @staticmethod
+    def count(column):
+        return functions.Count("*")
 
     @staticmethod
     def sum_if(column, conditions):
