@@ -100,6 +100,10 @@ class DataSource(Document):
 
         return connection_status
 
+    def check_if_frappe_db(self):
+        # check if table `tabDoctype` exists in the database
+        return self.execute_query("show tables like 'tabDoctype'", skip_validation=True)
+
     def get_tables(self, tables=None):
         if not tables:
             tables = []
@@ -200,8 +204,12 @@ class DataSource(Document):
         return values
 
     def get_foreign_key_constraints(self):
-        # save Link Fields & Table Fields as ForeignKeyConstraints
+        if self.check_if_frappe_db():
+            return self.build_frappe_constraints()
+        return {}
 
+    def build_frappe_constraints(self):
+        # save Link Fields & Table Fields as ForeignKeyConstraints
         DocField = frappe.qb.DocType("DocField")
         query = (
             frappe.qb.from_(DocField)

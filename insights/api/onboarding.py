@@ -43,3 +43,11 @@ def update_onboarding_status():
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1
     settings.save()
+
+
+@frappe.whitelist()
+def setup_demo():
+    from insights.setup.demo import setup_db
+
+    setup_db()
+    update_onboarding_status()
