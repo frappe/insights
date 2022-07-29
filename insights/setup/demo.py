@@ -2,115 +2,182 @@
 # For license information, please see license.txt
 
 import os
+import csv
 import frappe
-from frappe.database.db_manager import DbManager
-from frappe.installer import extract_sql_gzip
-from frappe.database.mariadb.setup_db import get_root_connection
+from frappe.installer import extract_files
 
 
-def setup_db():
-    db_name, db_user, db_password = (
-        "insights_demo",
-        "insights_demo",
-        "demo_pass",
-    )
-
-    if demo_db_exists(db_name):
-        return
-
-    # create a new database
-    create_database(db_name, db_user, db_password)
-
-    # create a data source for the new database
-    data_source = frappe.get_doc(
-        {
-            "doctype": "Data Source",
-            "title": "Demo Database",
-            "database_type": "MariaDB",
-            "database_name": db_name,
-            "username": db_user,
-            "password": db_password,
-        }
-    )
-    data_source.insert(ignore_if_duplicate=True)
+DATA_URL = "https://drive.google.com/u/0/uc?id=1pPWaZ7pz-9ecFjbpjKvYxR1f7VDoJmYU&export=download"
+TAR_FILE = "insights_demo_data.tar"
+FOLDER_NAME = "insights_demo_data"
+PRIVATE_FILES_PATH = None
 
 
-def demo_db_exists(db_name):
-    frappe.local.session = frappe._dict({"user": "Administrator"})
+def setup_demo():
+    global PRIVATE_FILES_PATH
+    PRIVATE_FILES_PATH = frappe.get_site_path("private", "files")
 
-    root_conn = get_root_connection(None, None)
-    dbman = DbManager(root_conn)
-
-    db_exists = db_name in dbman.get_database_list()
-
-    root_conn.close()
-    return db_exists
-
-
-def create_database(db_name, db_user, db_password, force=False):
-    frappe.local.session = frappe._dict({"user": "Administrator"})
-
-    root_conn = get_root_connection(None, None)
-    dbman = DbManager(root_conn)
-
-    if force:
-        dbman.delete_user(db_user)
-        dbman.drop_database(db_name)
-
-    dbman.create_user(db_user, db_password)
-    dbman.create_database(db_name)
-
-    dbman.grant_all_privileges(db_name, db_user)
-    dbman.flush_privileges()
-
-    download_demo_db()
-    restore_demo_db(db_name, db_user, db_password)
-
-    root_conn.close()
+    download_demo_data()
+    extract_tar()
+    meta = get_meta()
+    create_tables(meta)
+    csv_files = get_csv_files()
+    import_csv_rows(csv_files, meta)
+    remove_tar()
 
 
-def download_demo_db():
+def download_demo_data():
     import requests
-    from urllib.parse import urlparse
-
-    url = "https://github.com/frappe/insights/raw/setup-demo/insights/fixtures/insights_demo.sql.gz"
 
     """Download file locally under sites path and return local path"""
-    filename = urlparse(url).path.split("/")[-1]
-    local_filename = os.path.join(frappe.get_site_path("private", "files"), filename)
+    local_filename = os.path.join(PRIVATE_FILES_PATH, TAR_FILE)
 
     try:
-        with requests.get(url, stream=True) as r:
+        with requests.get(DATA_URL, stream=True) as r:
             r.raise_for_status()
             with open(local_filename, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
-                    # If you have chunk encoded response uncomment if
-                    # and set chunk_size parameter to None.
                     f.write(chunk)
     except Exception as e:
         frappe.log_error(
-            "Error downloading demo database. Please check your internet connection."
+            "Error downloading demo data. Please check your internet connection."
         )
         raise e
 
 
-def restore_demo_db(db_name, db_user, db_password):
-    sql_path = ""
+def extract_tar():
+    import tarfile
+
     try:
-        sql_path = extract_sql_gzip(
-            frappe.get_site_path("private", "files", "insights_demo.sql.gz")
-        )
-        DbManager.restore_database(db_name, sql_path, db_user, db_password)
+        with tarfile.open(os.path.join(PRIVATE_FILES_PATH, TAR_FILE)) as tar:
+            tar.extractall(PRIVATE_FILES_PATH)
+            tar.close()
 
     except Exception as e:
         frappe.log_error(
-            "Error restoring insights_demo.sql.gz. Please check if the file exists and is not corrupted."
+            "Error restoring demo data. Please check if the file exists and is not corrupted."
         )
         raise e
-    finally:
-        remove_extracted_sql(sql_path)
 
 
-def remove_extracted_sql(sql_path):
-    if os.path.exists(sql_path):
-        os.remove(sql_path)
+def get_meta():
+    return {
+        "Current Department Employee": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "Department ID": "varchar(255)",
+                "From Date": "date",
+                "To Date": "date",
+            }
+        },
+        "Employee": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "Birth Date": "date",
+                "First Name": "varchar(255)",
+                "Last Name": "varchar(255)",
+                "Gender": "varchar(5)",
+                "Hire Date": "date",
+            },
+        },
+        "Department": {
+            "columns": {
+                "Department ID": "varchar(255)",
+                "Department Name": "varchar(255)",
+            },
+        },
+        "Salary": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "Salary": "int",
+                "From Date": "date",
+                "To Date": "date",
+            }
+        },
+        "Department Employee": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "Department ID": "varchar(255)",
+                "From Date": "date",
+                "To Date": "date",
+            }
+        },
+        "Department Employee Latest Date": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "From Date": "date",
+                "To Date": "date",
+            }
+        },
+        "Department Manager": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "Department ID": "varchar(255)",
+                "From Date": "date",
+                "To Date": "date",
+            }
+        },
+        "Title": {
+            "columns": {
+                "Employee ID": "varchar(255)",
+                "Title": "varchar(255)",
+                "From Date": "date",
+                "To Date": "date",
+            }
+        },
+    }
+
+
+def create_tables(meta):
+    for table in meta.keys():
+        columns = meta[table]["columns"]
+        # create a table
+        frappe.db.sql("DROP TABLE IF EXISTS `{}`".format(table))
+        frappe.db.sql(
+            f"""CREATE TABLE `{table}` (
+                `ID` INT(11) NOT NULL AUTO_INCREMENT,
+                {','.join([f"`{col}` {columns[col]}" for col in columns.keys()])},
+                PRIMARY KEY (`ID`)
+            )"""
+        )
+
+
+def get_csv_files():
+    # get all .csv files from downloaded folder
+    folder_path = os.path.join(PRIVATE_FILES_PATH, FOLDER_NAME)
+    return [
+        f"{os.path.join(folder_path, f)}"
+        for f in os.listdir(folder_path)
+        if f.endswith(".csv")
+    ]
+
+
+def import_csv_rows(csv_files, meta):
+    for csv_file in csv_files:
+        table = csv_file.split("/")[-1].split(".")[0]
+        columns = meta.get(table, {}).get("columns", {})
+
+        if not columns:
+            continue
+
+        with open(csv_file, "r") as f:
+            reader = csv.reader(f)
+            header = next(reader)
+            header = [f"`{col}`" for col in columns]
+            header.insert(0, "ID")
+            rows = list(reader)
+            values = [cell for row in rows for cell in row]
+            # insert data into table
+            frappe.db.sql(
+                f"""
+                    INSERT INTO `{table}` ({','.join(header)})
+                    VALUES {", ".join([f"({','.join(['%s'] * len(header))})" for _ in rows])}
+                """,
+                values,
+            )
+            frappe.db.commit()
+
+
+def remove_tar():
+    if os.path.exists(os.path.join(PRIVATE_FILES_PATH, TAR_FILE)):
+        os.remove(os.path.join(PRIVATE_FILES_PATH, TAR_FILE))

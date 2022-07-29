@@ -47,7 +47,7 @@ def update_onboarding_status():
 
 @frappe.whitelist()
 def setup_demo():
-    from insights.setup.demo import setup_db
+    from insights.setup.demo import setup_demo
 
-    setup_db()
+    setup_demo()
     update_onboarding_status()
