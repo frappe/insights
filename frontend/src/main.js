@@ -2,6 +2,7 @@ import './index.css'
 import App from './App.vue'
 import router from './router'
 import { createApp } from 'vue'
+import utils from './utils'
 import { userInfo } from './utils/users'
 import { createToast } from './utils/toasts'
 import {
@@ -24,6 +25,8 @@ app.component('Popover', Popover)
 app.component('FeatherIcon', FeatherIcon)
 app.directive('on-outside-click', onOutsideClickDirective)
 
-app.config.globalProperties.$user = userInfo
-app.config.globalProperties.$notify = createToast
+app.provide('$utils', utils)
+app.provide('$user', userInfo)
+app.provide('$notify', createToast)
+app.provide('$socket', app.config.globalProperties.$socket)
 app.mount('#app')

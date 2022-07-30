@@ -13,19 +13,59 @@ PRIVATE_FILES_PATH = None
 META = None
 
 
-def setup_demo():
+def setup():
+    if demo_data_exists():
+        update_progress("Done", 99)
+        return
+
     global PRIVATE_FILES_PATH
     PRIVATE_FILES_PATH = frappe.get_site_path("private", "files")
 
+    update_progress("Downloading...", 5)
     download_demo_data()
+
+    update_progress("Extracting...", 15)
     extract_demo_data()
+
+    update_progress("Inserting...", 30)
     get_meta()
     create_tables()
     import_csv()
+
+    update_progress("Optimizing...", 75)
     create_indexes()
+
+    update_progress("Cleaning up...", 90)
     create_data_source()
     hide_other_tables()
     remove_demo_data()
+
+    update_progress("Done", 99)
+
+
+def update_progress(message, progress):
+    frappe.publish_realtime(
+        event="insights_demo_setup_progress",
+        message={
+            "message": message,
+            "progress": progress,
+            "user": frappe.session.user,
+        },
+    )
+
+
+def demo_data_exists():
+    tables = list(META.keys())
+    return frappe.db.sql(
+        f"""
+            SELECT 1
+            FROM `tabTable`
+            WHERE `data_source` = "Demo Data"
+                AND `table` IN ({','.join(['%s'] * len(tables))})
+        """,
+        tables,
+        as_dict=True,
+    )
 
 
 def download_demo_data():
@@ -33,7 +73,6 @@ def download_demo_data():
 
     """Download file locally under sites path and return local path"""
     local_filename = os.path.join(PRIVATE_FILES_PATH, TAR_FILE)
-
     try:
         with requests.get(DATA_URL, stream=True) as r:
             r.raise_for_status()
@@ -44,6 +83,7 @@ def download_demo_data():
         frappe.log_error(
             "Error downloading demo data. Please check your internet connection."
         )
+        update_progress("Error...", -1)
         raise e
 
 
@@ -57,8 +97,9 @@ def extract_demo_data():
 
     except Exception as e:
         frappe.log_error(
-            "Error restoring demo data. Please check if the file exists and is not corrupted."
+            "Error extracting demo data. Please check if the file exists and is not corrupted."
         )
+        update_progress("Error...", -1)
         raise e
 
 
@@ -134,7 +175,9 @@ def get_meta():
 
 
 def create_tables():
-    for table in META.keys():
+    start_progress = 30
+    end_progress = 40
+    for idx, table in enumerate(META.keys()):
         columns = META[table]["columns"]
         # create a table
         frappe.db.sql("DROP TABLE IF EXISTS `{}`".format(table))
@@ -144,6 +187,10 @@ def create_tables():
                 {','.join([f"`{col}` {columns[col]}" for col in columns.keys()])},
                 PRIMARY KEY (`ID`)
             )"""
+        )
+        update_progress(
+            "Inserting...",
+            start_progress + (idx * (end_progress - start_progress)) / len(META.keys()),
         )
 
 
@@ -158,15 +205,17 @@ def get_csv_files():
 
 
 def import_csv():
-    csv_files = get_csv_files()
-    for csv_file in csv_files:
-        table = csv_file.split("/")[-1].split(".")[0]
+    start_progress = 40
+    end_progress = 75
+    files = get_csv_files()
+    for idx, file in enumerate(files):
+        table = file.split("/")[-1].split(".")[0]
         columns = META.get(table, {}).get("columns", {})
 
         if not columns:
             continue
 
-        with open(csv_file, "r") as f:
+        with open(file, "r") as f:
             reader = csv.reader(f)
             header = next(reader)
             header = [f"`{col}`" for col in columns]
@@ -182,6 +231,10 @@ def import_csv():
                 values,
             )
             frappe.db.commit()
+            update_progress(
+                "Inserting...",
+                start_progress + (idx * (end_progress - start_progress)) / len(files),
+            )
 
 
 def create_indexes():

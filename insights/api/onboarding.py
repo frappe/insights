@@ -2,6 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
+from insights.setup.demo import setup
+from frappe.utils.scheduler import is_scheduler_inactive
+from frappe.core.page.background_jobs.background_jobs import get_info
 
 
 @frappe.whitelist()
@@ -47,7 +50,28 @@ def update_onboarding_status():
 
 @frappe.whitelist()
 def setup_demo():
-    from insights.setup.demo import setup_demo
+    if is_scheduler_inactive():
+        return
 
-    setup_demo()
+    job_name = "insights_demo_setup"
+    if not job_already_enqueued(job_name):
+        frappe.enqueue(_setup_demo, job_name=job_name)
+
+
+def _setup_demo():
+    setup()
     update_onboarding_status()
+    frappe.publish_realtime(
+        event="insights_demo_setup_progress",
+        message={
+            "progress": 100,
+            "message": "Done",
+            "user": frappe.session.user,
+        },
+    )
+
+
+def job_already_enqueued(job_name):
+    enqueued_jobs = [d.get("job_name") for d in get_info()]
+    if job_name in enqueued_jobs:
+        return True

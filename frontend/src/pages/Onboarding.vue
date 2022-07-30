@@ -12,7 +12,7 @@
 						connectDB
 							? 'Connect to your database'
 							: demoDB
-							? 'Select a demo database'
+							? 'Setting up demo data'
 							: 'Connect to your database or explore with a dummy database'
 					}}
 				</p>
@@ -34,17 +34,14 @@
 					<p class="mb-3 text-center text-sm font-light text-gray-600">
 						You can explore the app with a dummy database and choose to connect later
 					</p>
-					<Button
-						appearance="white"
-						@click="createDemoDb.submit()"
-						:loading="createDemoDb.loading"
-					>
-						{{ exploreText }}
-					</Button>
+					<Button appearance="white" @click="demoDB = true"> Explore </Button>
 				</div>
 			</div>
 			<div v-if="connectDB">
 				<AddDatabase @close="connectDB = false" />
+			</div>
+			<div v-if="demoDB">
+				<SettingUpDemoData />
 			</div>
 		</div>
 	</div>
@@ -52,21 +49,10 @@
 
 <script setup>
 import AddDatabase from '@/components/Onboarding/AddDatabase.vue'
+import SettingUpDemoData from '@/components/Onboarding/SettingUpDemoData.vue'
 
-import { useRouter } from 'vue-router'
-import { computed, ref, nextTick } from 'vue'
-import { createResource } from 'frappe-ui'
+import { ref } from 'vue'
 
 const connectDB = ref(false)
 const demoDB = ref(false)
-
-const exploreText = computed(() => (createDemoDb.loading ? 'Setting Up...' : 'Explore'))
-const router = useRouter()
-const createDemoDb = createResource({
-	method: 'insights.api.onboarding.setup_demo',
-	onSuccess: () => {
-		localStorage.removeItem('isOnboarded')
-		nextTick(() => router.push('/'))
-	},
-})
 </script>
