@@ -39,7 +39,7 @@
 				<!-- 100% - 2rem (tabs) + 1.5rem (query meta) -->
 				<div class="flex h-[calc(100%-3.5rem)] w-full rounded-md">
 					<QueryBuilder v-show="activeTab == 'Build'" />
-					<QueryResult v-show="activeTab == 'Result'" />
+					<QueryResult v-if="activeTab == 'Result'" />
 					<QueryVisualizer v-if="activeTab == 'Visualize'" />
 				</div>
 			</div>
