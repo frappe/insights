@@ -28,7 +28,6 @@ def setup():
     extract_demo_data()
 
     update_progress("Inserting...", 30)
-    get_meta()
     create_tables()
     import_csv()
 
@@ -55,6 +54,7 @@ def update_progress(message, progress):
 
 
 def demo_data_exists():
+    get_meta()
     tables = list(META.keys())
     return frappe.db.sql(
         f"""
