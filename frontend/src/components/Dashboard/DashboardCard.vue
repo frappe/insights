@@ -12,12 +12,20 @@
 			>
 				<div class="flex h-8 items-center justify-between">
 					<div class="text-base font-medium">{{ visualization.doc.title }}</div>
-					<Button
-						icon="x"
-						appearance="minimal"
-						@mousedown.prevent.stop=""
-						@click.prevent.stop="$emit('remove', props.visualizationID)"
-					/>
+					<div>
+						<Button
+							icon="settings"
+							appearance="minimal"
+							@mousedown.prevent.stop=""
+							@click.prevent.stop="$emit('edit', props.queryID)"
+						/>
+						<Button
+							icon="x"
+							appearance="minimal"
+							@mousedown.prevent.stop=""
+							@click.prevent.stop="$emit('remove', props.visualizationID)"
+						/>
+					</div>
 				</div>
 				<div class="h-[calc(100%-2rem)]">
 					<component
@@ -38,7 +46,7 @@ import { computed, reactive, inject, provide } from 'vue'
 import { useVisualization } from '@/utils/visualization'
 import { safeJSONParse } from '@/utils'
 
-defineEmits(['remove'])
+defineEmits(['edit', 'remove'])
 
 const dashboard = inject('dashboard')
 const props = defineProps({

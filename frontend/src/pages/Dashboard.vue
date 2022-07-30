@@ -33,6 +33,7 @@
 					:key="visualization.id"
 					:visualizationID="visualization.id"
 					:queryID="visualization.query"
+					@edit="editVisualization"
 					@remove="removeVisualization"
 				/>
 			</div>
@@ -144,6 +145,10 @@ const deleteDashboard = () => {
 	dashboardResource.delete.submit()
 	showDeleteDialog.value = false
 	router.push('/dashboard')
+}
+
+const editVisualization = (queryID) => {
+	router.push(`/query/${queryID}`)
 }
 
 const pageMeta = computed(() => {
