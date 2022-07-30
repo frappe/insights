@@ -26,8 +26,26 @@ from insights.insights.doctype.query.query_client import QueryClient
 class Query(QueryClient):
     def validate(self):
         # TODO: validate if a column is an expression and aggregation is "group by"
+        self.validate_tables()
         self.validate_limit()
         self.validate_filters()
+
+    def validate_tables(self):
+        for row in self.tables:
+            if not row.table:
+                frappe.throw(f"Row #{row.idx}: Table is required")
+
+        tables = [row.table for row in self.tables]
+        tables = frappe.get_all(
+            "Table",
+            filters={"name": ("in", tables)},
+            fields=["table", "data_source", "hidden"],
+        )
+        for table in tables:
+            if table.hidden:
+                frappe.throw(f"Table {table.table} is hidden. You cannot query it")
+            if table.data_source != self.data_source:
+                frappe.throw(f"Table {table.table} is not in the same data source")
 
     def validate_limit(self):
         if self.limit and self.limit < 1:

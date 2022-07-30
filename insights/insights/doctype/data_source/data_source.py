@@ -104,10 +104,7 @@ class DataSource(Document):
         # check if table `tabDoctype` exists in the database
         return self.execute_query("show tables like 'tabDoctype'", skip_validation=True)
 
-    def get_tables(self, tables=None):
-        if not tables:
-            tables = []
-
+    def get_tables(self):
         query = """
             SELECT table_name
             FROM information_schema.tables
@@ -117,10 +114,11 @@ class DataSource(Document):
         tables = {d[0] for d in tables}
 
         # TODO: caching
+        replace_tab = self.check_if_frappe_db()
         _tables = [
             {
                 "table": table,
-                "label": table.replace("tab", ""),
+                "label": table.replace("tab", "") if replace_tab else table,
             }
             for table in list(tables)
         ]
@@ -141,6 +139,7 @@ class DataSource(Document):
                 "name",
             ):
                 doc = frappe.get_doc("Table", table_docname)
+                doc.label = table.get("label")
             else:
                 doc = frappe.get_doc(
                     {

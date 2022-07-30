@@ -4,13 +4,13 @@
 import os
 import csv
 import frappe
-from frappe.installer import extract_files
 
 
 DATA_URL = "https://drive.google.com/u/0/uc?id=1pPWaZ7pz-9ecFjbpjKvYxR1f7VDoJmYU&export=download"
 TAR_FILE = "insights_demo_data.tar"
 FOLDER_NAME = "insights_demo_data"
 PRIVATE_FILES_PATH = None
+META = None
 
 
 def setup_demo():
@@ -18,12 +18,14 @@ def setup_demo():
     PRIVATE_FILES_PATH = frappe.get_site_path("private", "files")
 
     download_demo_data()
-    extract_tar()
-    meta = get_meta()
-    create_tables(meta)
-    csv_files = get_csv_files()
-    import_csv_rows(csv_files, meta)
-    remove_tar()
+    extract_demo_data()
+    get_meta()
+    create_tables()
+    import_csv()
+    create_indexes()
+    create_data_source()
+    hide_other_tables()
+    remove_demo_data()
 
 
 def download_demo_data():
@@ -45,7 +47,7 @@ def download_demo_data():
         raise e
 
 
-def extract_tar():
+def extract_demo_data():
     import tarfile
 
     try:
@@ -61,7 +63,10 @@ def extract_tar():
 
 
 def get_meta():
-    return {
+    global META
+    if META:
+        return
+    META = {
         "Current Department Employee": {
             "columns": {
                 "Employee ID": "varchar(255)",
@@ -128,9 +133,9 @@ def get_meta():
     }
 
 
-def create_tables(meta):
-    for table in meta.keys():
-        columns = meta[table]["columns"]
+def create_tables():
+    for table in META.keys():
+        columns = META[table]["columns"]
         # create a table
         frappe.db.sql("DROP TABLE IF EXISTS `{}`".format(table))
         frappe.db.sql(
@@ -152,10 +157,11 @@ def get_csv_files():
     ]
 
 
-def import_csv_rows(csv_files, meta):
+def import_csv():
+    csv_files = get_csv_files()
     for csv_file in csv_files:
         table = csv_file.split("/")[-1].split(".")[0]
-        columns = meta.get(table, {}).get("columns", {})
+        columns = META.get(table, {}).get("columns", {})
 
         if not columns:
             continue
@@ -178,6 +184,59 @@ def import_csv_rows(csv_files, meta):
             frappe.db.commit()
 
 
-def remove_tar():
+def create_indexes():
+    indexes = {
+        "Current Department Employee": ["`Employee ID`", "`Department ID`"],
+        "Employee": ["`Employee ID`"],
+        "Department": ["`Department ID`"],
+        "Salary": ["`Employee ID`"],
+        "Department Employee": ["`Employee ID`", "`Department ID`"],
+        "Department Employee Latest Date": ["`Employee ID`"],
+        "Department Manager": ["`Employee ID`", "`Department ID`"],
+        "Title": ["`Employee ID`"],
+    }
+    for table in indexes.keys():
+        scrubbed = frappe.scrub(table)
+        frappe.db.sql(
+            f"CREATE INDEX `{scrubbed}` ON `{table}` ({','.join(indexes[table])})"
+        )
+
+
+def create_data_source():
+    if frappe.db.exists("Data Source", "Demo Data"):
+        doc = frappe.get_doc("Data Source", "Demo Data")
+        doc.database_name = frappe.conf.db_name
+        doc.username = frappe.conf.db_name
+        doc.password = frappe.conf.db_password
+        doc.save()
+        return
+
+    data_source = frappe.get_doc(
+        {
+            "doctype": "Data Source",
+            "title": "Demo Data",
+            "database_type": "MariaDB",
+            "database_name": frappe.conf.db_name,
+            "username": frappe.conf.db_name,
+            "password": frappe.conf.db_password,
+        }
+    )
+    data_source.insert()
+
+
+def hide_other_tables():
+    tables = list(META.keys())
+    frappe.db.sql(
+        f"""
+            UPDATE `tabTable`
+            SET `hidden` = 1
+            WHERE `data_source` = "Demo Data"
+                AND `table` NOT IN ({','.join(['%s'] * len(tables))})
+        """,
+        tables,
+    )
+
+
+def remove_demo_data():
     if os.path.exists(os.path.join(PRIVATE_FILES_PATH, TAR_FILE)):
         os.remove(os.path.join(PRIVATE_FILES_PATH, TAR_FILE))
