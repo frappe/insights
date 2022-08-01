@@ -1,8 +1,9 @@
 <template>
 	<div class="fixed inset-y-0 flex w-64 flex-col bg-gray-50" v-if="currentRoute">
 		<div class="flex flex-grow flex-col overflow-y-auto p-6 pl-4 pr-2">
-			<div class="flex flex-shrink-0 items-center">
+			<div class="flex h-6 flex-shrink-0 items-end text-sm text-gray-500">
 				<FrappeInsightsLogo />
+				<span class="ml-1">{{ appVersion }}</span>
 			</div>
 			<div class="mt-4 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
@@ -31,21 +32,24 @@
 					</router-link>
 				</nav>
 			</div>
-			<div
-				class="flex flex-shrink-0 border-gray-200 px-2 pt-4 text-sm font-light text-gray-500"
-			>
-				{{ appVersion }}
+
+			<div class="flex items-center text-base text-gray-600">
+				<Avatar :label="user.full_name" :imageURL="user.user_image" />
+				<span class="ml-2">{{ user.full_name }}</span>
+				<Button icon="log-out" appearance="minimal" class="ml-auto" @click="logout" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
+import { Avatar } from 'frappe-ui'
 import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
 
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
+import { user, logout } from '@/utils/auth'
 
 const sidebarItems = ref([
 	{
@@ -91,6 +95,6 @@ const getAppVersion = createResource({
 })
 getAppVersion.fetch()
 const appVersion = computed(() => {
-	return `Insights v${getAppVersion.data}`
+	return `v${getAppVersion.data}`
 })
 </script>

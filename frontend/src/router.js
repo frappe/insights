@@ -1,11 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getOnboardingStatus } from '@/utils/onboarding'
+import { isLoggedIn } from '@/utils/auth'
 
 const routes = [
 	{
 		path: '/setup',
 		name: 'Setup',
 		component: () => import('@/pages/Onboarding.vue'),
+	},
+	{
+		path: '/login',
+		name: 'Login',
+		component: () => import('@/pages/Login.vue'),
+		meta: {
+			isLoginPage: true,
+		},
 	},
 	{
 		path: '/',
@@ -56,9 +65,7 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	const isLoggedIn = !document.cookie.includes('user_id=Guest')
-
-	if (isLoggedIn) {
+	if (isLoggedIn.value) {
 		const isOnboarded = await getOnboardingStatus()
 
 		if (!isOnboarded && to.name !== 'Setup') {
@@ -74,11 +81,12 @@ router.beforeEach(async (to, from, next) => {
 		} else {
 			next()
 		}
-	} else if (to.path === '/login') {
-		next()
 	} else {
-		// redirect to frappe login page
-		window.location.href = '/login'
+		if (!to.meta.isLoginPage) {
+			next({ name: 'Login', query: { route: to.path } })
+		} else {
+			next()
+		}
 	}
 })
 

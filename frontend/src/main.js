@@ -13,6 +13,7 @@ import {
 	onOutsideClickDirective,
 	Popover,
 	Dialog,
+	ErrorMessage,
 } from 'frappe-ui'
 
 let app = createApp(App)
@@ -22,6 +23,7 @@ app.component('Input', Input)
 app.component('Button', Button)
 app.component('Dialog', Dialog)
 app.component('Popover', Popover)
+app.component('ErrorMessage', ErrorMessage)
 app.component('FeatherIcon', FeatherIcon)
 app.directive('on-outside-click', onOutsideClickDirective)
 
