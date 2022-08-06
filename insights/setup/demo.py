@@ -21,17 +21,17 @@ def setup():
     global PRIVATE_FILES_PATH
     PRIVATE_FILES_PATH = frappe.get_site_path("private", "files")
 
-    update_progress("Downloading...", 5)
+    update_progress("Downloading data...", 5)
     download_demo_data()
 
-    update_progress("Extracting...", 15)
+    update_progress("Extracting data...", 15)
     extract_demo_data()
 
-    update_progress("Inserting...", 30)
+    update_progress("Inserting a lot of entries...", 30)
     create_tables()
     import_csv()
 
-    update_progress("Optimizing...", 75)
+    update_progress("Optimizing reads...", 75)
     create_indexes()
 
     update_progress("Cleaning up...", 90)
@@ -189,7 +189,7 @@ def create_tables():
             )"""
         )
         update_progress(
-            "Inserting...",
+            "Inserting a lot of entries...",
             start_progress + (idx * (end_progress - start_progress)) / len(META.keys()),
         )
 
@@ -232,7 +232,7 @@ def import_csv():
             )
             frappe.db.commit()
             update_progress(
-                "Inserting...",
+                "Inserting a lot of entries...",
                 start_progress + (idx * (end_progress - start_progress)) / len(files),
             )
 

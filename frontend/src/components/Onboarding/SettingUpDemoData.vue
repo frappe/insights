@@ -1,6 +1,7 @@
 <template>
-	<div class="text-gray-800">
+	<div class="text-base text-gray-800">
 		<div class="flex flex-col items-center justify-center space-y-3">
+			<div class="flex items-center">{{ progress }}%</div>
 			<div class="mt-2 h-2 w-2/3 rounded-lg bg-gray-100">
 				<div
 					class="h-full rounded-lg transition-all"

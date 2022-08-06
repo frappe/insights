@@ -5,15 +5,21 @@
 		>
 			<div class="">
 				<h1 class="text-4xl font-medium leading-relaxed text-gray-900">
-					Welcome to Frappe Insights!
-				</h1>
-				<p class="font-light text-gray-600">
 					{{
 						connectDB
 							? 'Connect to your database'
 							: demoDB
 							? 'Setting up demo data'
-							: 'Connect to your database or explore with a dummy database'
+							: 'Welcome to Frappe Insights!'
+					}}
+				</h1>
+				<p class="font-light text-gray-600">
+					{{
+						connectDB
+							? 'Enter your credentials to connect'
+							: demoDB
+							? 'This might take few minutes'
+							: 'Connect to your database or explore with demo data'
 					}}
 				</p>
 			</div>
