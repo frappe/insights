@@ -18,7 +18,7 @@
 		"codemirror": "^6.0.1",
 		"feather-icons": "^4.28.0",
 		"frappe-charts": "^1.6.2",
-		"frappe-ui": "^0.0.31",
+		"frappe-ui": "^0.0.45",
 		"moment": "^2.29.3",
 		"vue": "^3.2.25",
 		"vue-chartjs": "^4.1.1",

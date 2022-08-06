@@ -54,7 +54,7 @@ def setup_demo():
         return
 
     job_name = "insights_demo_setup"
-    if not job_already_enqueued(job_name):
+    if not job_enqueued(job_name):
         frappe.enqueue(_setup_demo, job_name=job_name)
 
 
@@ -71,7 +71,7 @@ def _setup_demo():
     )
 
 
-def job_already_enqueued(job_name):
+def job_enqueued(job_name):
     enqueued_jobs = [d.get("job_name") for d in get_info()]
     if job_name in enqueued_jobs:
         return True

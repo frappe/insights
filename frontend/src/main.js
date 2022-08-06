@@ -5,6 +5,8 @@ import { createApp } from 'vue'
 import utils from './utils'
 import { userInfo } from './utils/users'
 import { createToast } from './utils/toasts'
+import { socketio_port } from '../../../../sites/common_site_config.json'
+
 import {
 	FrappeUI,
 	Button,
@@ -18,7 +20,11 @@ import {
 
 let app = createApp(App)
 app.use(router)
-app.use(FrappeUI)
+app.use(FrappeUI, {
+	socketio: {
+		port: socketio_port,
+	},
+})
 app.component('Input', Input)
 app.component('Button', Button)
 app.component('Dialog', Dialog)
