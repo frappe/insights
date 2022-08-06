@@ -17,7 +17,7 @@
 
 <script setup>
 import { computed, inject, onMounted, ref, nextTick } from 'vue'
-import { Spinner, createResource } from 'frappe-ui'
+import { createResource } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 
 const $socket = inject('$socket')

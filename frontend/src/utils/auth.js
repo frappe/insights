@@ -15,14 +15,12 @@ cookies
 	})
 
 export async function login(email, password) {
-	localStorage.removeItem('isLoggedIn')
-	isLoggedIn.value = false
+	resetAuth()
 	let res = await call('login', {
 		usr: email,
 		pwd: password,
 	})
 	if (res) {
-		console.log(res)
 		localStorage.setItem('isLoggedIn', true)
 		user.full_name = res.full_name
 		user.user_image = res.user_image
@@ -31,8 +29,12 @@ export async function login(email, password) {
 	return isLoggedIn.value
 }
 export async function logout() {
-	localStorage.removeItem('isLoggedIn')
-	isLoggedIn.value = false
+	resetAuth()
 	await call('logout')
 	window.location.reload()
+}
+
+export function resetAuth() {
+	localStorage.removeItem('isLoggedIn')
+	isLoggedIn.value = false
 }
