@@ -1,0 +1,25 @@
+import { reactive } from 'vue'
+import { createResource } from 'frappe-ui'
+
+const updateUserDefaultResource = createResource('insights.api.update_user_default')
+const getDefaultsResource = createResource('insights.api.get_user_defaults')
+
+export default function useSettings() {
+	const settings = reactive({
+		updating: false,
+		update,
+	})
+	function update(key, value) {
+		updateUserDefaultResource.submit({ key, value })
+		settings.updating = updateUserDefaultResource.loading
+	}
+	getDefaultsResource.fetch(null, {
+		onSuccess(res) {
+			for (const key in res) {
+				if (key == 'hide_sidebar') res[key] = res[key] == '1' ? true : false
+				settings[key] = res[key]
+			}
+		},
+	})
+	return settings
+}
