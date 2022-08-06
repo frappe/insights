@@ -11,7 +11,7 @@ let cookies = document.cookie.split('; ')
 cookies
 	.map((c) => c.split('='))
 	.forEach(([key, value]) => {
-		user[key] = value
+		user[key] = decodeURIComponent(value)
 	})
 
 export async function login(email, password) {
