@@ -31,9 +31,7 @@
 import { ref } from 'vue'
 import BasePage from '@/components/BasePage.vue'
 import { updateDocumentTitle } from '@/utils'
-import useSettings from '@/utils/settings'
-
-const settings = useSettings()
+import settings from '@/utils/settings'
 
 const pageMeta = ref({
 	title: 'Settings',

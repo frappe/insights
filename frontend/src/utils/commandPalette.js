@@ -1,24 +1,29 @@
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 
-export default function useCommandPalette() {
-	const commandPalette = reactive({
-		commands: [],
-		search,
+const commandPalette = reactive({
+	isOpen: false,
+	commands: [],
+	open,
+	close,
+	search,
+})
+
+function open() {
+	commandPalette.isOpen = true
+}
+function close() {
+	commandPalette.isOpen = false
+}
+function search(searchTerm) {
+	return commandPalette.commands.filter((command) => {
+		return command.title.toLowerCase().includes(searchTerm.toLowerCase())
 	})
-	function search(searchTerm) {
-		return commandPalette.commands.filter((command) => {
-			return command.title.toLowerCase().includes(searchTerm.toLowerCase())
-		})
-	}
-
-	initNavigationCommands(commandPalette)
-
-	return commandPalette
 }
 
 function initNavigationCommands(commandPalette) {
 	const router = useRouter()
+	commandPalette.commands = []
 	commandPalette.commands.push({
 		title: 'Query',
 		description: 'Go to query list',
@@ -43,4 +48,9 @@ function initNavigationCommands(commandPalette) {
 			router.push('/settings')
 		},
 	})
+}
+
+export default function useCommandPalette() {
+	initNavigationCommands(commandPalette)
+	return commandPalette
 }

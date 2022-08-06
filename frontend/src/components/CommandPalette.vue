@@ -4,12 +4,15 @@
 		class="absolute z-10 flex h-full w-full justify-center pt-20 text-base backdrop-blur-sm"
 	>
 		<div class="max-h-[28rem] w-[38rem] rounded-md border bg-white shadow-md">
-			<input
-				ref="searchInput"
-				v-model="searchTerm"
-				class="flex h-12 w-full items-center rounded-t-md border-b px-4 focus:outline-none"
-				placeholder="Search..."
-			/>
+			<div class="flex items-center border-b px-3">
+				<FeatherIcon name="search" class="absolute h-4 w-4 text-gray-500" />
+				<input
+					ref="searchInput"
+					v-model="searchTerm"
+					class="ml-2 flex h-12 w-full items-center rounded-t-md px-4 focus:outline-none"
+					placeholder="Search..."
+				/>
+			</div>
 			<div class="mt-2 flex flex-col px-2">
 				<div v-if="commands.length > 0">
 					<div class="text-sm text-gray-500">Navigation</div>
@@ -20,7 +23,7 @@
 						:class="[activeIndex === idx ? 'bg-gray-50' : '']"
 						@click="
 							() => {
-								show = false
+								commandPalette.close()
 								command.action()
 							}
 						"
@@ -48,20 +51,22 @@ import { ref, watch, computed, nextTick } from 'vue'
 import { useMagicKeys } from '@vueuse/core'
 import useCommandPalette from '@/utils/commandPalette'
 
+const commandPalette = useCommandPalette()
+
 const keys = useMagicKeys()
-const CmdShiftP = keys['Meta+Shift+P']
+const cmdK = keys['Meta+K']
 const escape = keys['Escape']
 const searchInput = ref()
 
-const show = ref(false)
-watch(CmdShiftP, (pressed) => {
+const show = computed(() => commandPalette.isOpen)
+watch(cmdK, (pressed) => {
 	if (pressed) {
-		show.value = true
+		commandPalette.open()
 	}
 })
 watch(escape, (pressed) => {
 	if (pressed && show.value) {
-		show.value = false
+		commandPalette.close()
 	}
 })
 
@@ -73,7 +78,6 @@ watch(show, (value) => {
 	}
 })
 
-const commandPalette = useCommandPalette()
 const searchTerm = ref('')
 const commands = computed(() => {
 	return commandPalette.search(searchTerm.value)
@@ -97,7 +101,7 @@ watch(ArrowUp, (pressed) => {
 const enter = keys['Enter']
 watch(enter, (pressed) => {
 	if (pressed && show.value) {
-		show.value = false
+		commandPalette.close()
 		commands.value[activeIndex.value].action()
 	}
 })

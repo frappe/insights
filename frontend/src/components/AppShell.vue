@@ -12,11 +12,10 @@
 
 <script setup>
 import { computed } from 'vue'
-import useSettings from '@/utils/settings'
+import settings from '@/utils/settings'
 import { isOnboarded } from '@/utils/onboarding'
 import Sidebar from '@/components/Sidebar.vue'
 
-const settings = useSettings()
 const hideSidebar = computed(() => {
 	return settings.hide_sidebar || !isOnboarded.value
 })
