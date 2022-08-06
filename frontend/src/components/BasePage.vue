@@ -73,7 +73,10 @@ const routes = computed(() =>
 		.filter(Boolean)
 		.map((route) => {
 			return {
-				name: route.charAt(0).toUpperCase() + route.slice(1),
+				name: route
+					.split('-')
+					.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+					.join(' '),
 				path: `/${route}`,
 			}
 		})

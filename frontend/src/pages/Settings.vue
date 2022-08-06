@@ -6,7 +6,14 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="h-96 w-full rounded-lg border-4 border-dashed border-gray-200"></div>
+			<div class="flex flex-1 flex-col space-y-6">
+				<div class="space-y-3">
+					<h2 class="text-xl">Queries</h2>
+					<Button appearance="white" @click="$router.push('/settings/running-queries')">
+						Show Running Queries
+					</Button>
+				</div>
+			</div>
 		</template>
 	</BasePage>
 </template>

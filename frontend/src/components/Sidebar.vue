@@ -84,7 +84,7 @@ const sidebarItems = ref([
 const route = useRoute()
 const currentRoute = computed(() => {
 	sidebarItems.value.forEach((item) => {
-		item.current = item.path == route.path
+		item.current = route.path.includes(item.path)
 	})
 	return route.path
 })
