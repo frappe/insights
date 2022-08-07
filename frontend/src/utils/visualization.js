@@ -83,19 +83,17 @@ const visualizationTypes = [
 	new VisualizationType('Pivot', 'layout'),
 ]
 
-const getRandomColor = () => {
-	const colors = [
-		'#B6D7F0',
-		'#B9F0E0',
-		'#EC94B7',
-		'#B3CCE8',
-		'#749AD6',
-		'#536CB0',
-		'#9E79AB',
-		'#898FAD',
-		'#25787E',
-	]
-	return colors[Math.floor(Math.random() * colors.length)]
+const getRandomColor = (num = 1) => {
+	const colors = []
+	let hue = Math.floor(Math.random() * 360)
+	let alpha = 1
+	for (let i = 0; i < num; i++) {
+		const color = `hsla(${hue}, 50%, 40%, ${alpha})`
+		colors.push(color)
+		alpha -= 0.085
+		alpha = Math.max(alpha, 0.05)
+	}
+	return colors
 }
 
 function useVisualization({ visualizationID, queryID, query }) {

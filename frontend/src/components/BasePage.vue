@@ -1,6 +1,6 @@
 <template>
 	<nav class="mb-4 -mt-1 flex justify-between">
-		<ol role="list" class="flex items-center space-x-2">
+		<ol role="list" class="flex items-center space-x-2 text-base">
 			<li>
 				<div>
 					<a href="#" class="text-gray-500">
@@ -20,7 +20,7 @@
 				</div>
 			</li>
 			<li v-for="(page, idx) in routes" :key="page.name">
-				<div class="flex items-center text-sm">
+				<div class="flex items-center">
 					<FeatherIcon
 						name="chevron-right"
 						class="h-5 w-5 flex-shrink-0 text-gray-500"

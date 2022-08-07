@@ -28,7 +28,7 @@ const chartData = {
 		hoverOffset: 4,
 		data: dataset.data,
 		label: dataset.label,
-		backgroundColor: getRandomColor(),
+		backgroundColor: getRandomColor(dataset.data.length),
 	})),
 }
 
