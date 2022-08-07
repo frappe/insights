@@ -7,11 +7,15 @@ export const user = reactive({
 	user_image: '',
 })
 
-let cookies = document.cookie.split('; ')
-cookies
+document.cookie
+	.split('; ')
 	.map((c) => c.split('='))
 	.forEach(([key, value]) => {
 		user[key] = decodeURIComponent(value)
+		if (key === 'user_id') {
+			isLoggedIn.value = value !== 'Guest'
+			localStorage.setItem('isLoggedIn', value !== 'Guest')
+		}
 	})
 
 export async function login(email, password) {
