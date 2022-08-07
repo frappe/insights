@@ -3,7 +3,7 @@
 		<Sidebar v-if="!hideSidebar" />
 		<div
 			class="flex flex-1 flex-col p-6 pl-2"
-			:class="[hideSidebar ? 'ml-4 w-full' : 'ml-[16rem] w-[calc(100%-16rem)]']"
+			:class="[hideSidebar ? 'ml-4 w-[calc(100%-1rem)]' : 'ml-[16rem] w-[calc(100%-16rem)]']"
 		>
 			<RouterView :key="$route.fullPath" />
 		</div>
