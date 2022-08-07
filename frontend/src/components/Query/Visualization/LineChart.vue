@@ -24,11 +24,15 @@ const props = defineProps({
 })
 const chartData = {
 	labels: props.data.labels,
-	datasets: props.data.datasets.map((dataset) => ({
-		data: dataset.data,
-		label: dataset.label,
-		backgroundColor: getRandomColor(),
-	})),
+	datasets: props.data.datasets.map((dataset) => {
+		const color = getRandomColor(2)
+		return {
+			data: dataset.data,
+			label: dataset.label,
+			backgroundColor: color[0],
+			borderColor: color[1],
+		}
+	}),
 }
 
 const chartRef = ref(null)
