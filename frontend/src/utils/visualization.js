@@ -86,9 +86,10 @@ const visualizationTypes = [
 const getRandomColor = (num = 1) => {
 	const colors = []
 	let hue = Math.floor(Math.random() * 360)
+	let lightness = num == 1 ? '60%' : '40%'
 	let alpha = 1
 	for (let i = 0; i < num; i++) {
-		const color = `hsla(${hue}, 50%, 40%, ${alpha})`
+		const color = `hsla(${hue}, 50%, ${lightness}, ${alpha})`
 		colors.push(color)
 		alpha -= 0.085
 		alpha = Math.max(alpha, 0.05)
@@ -153,7 +154,15 @@ function useVisualization({ visualizationID, queryID, query }) {
 
 		const type = visualization.type
 		if (type == 'Bar' || type == 'Line' || type == 'Pie') {
-			visualization.componentProps = buildSingleValueChartProps(type, data)
+			if (isEmptyObj(data.labelColumn, data.valueColumn)) {
+				return null
+			}
+			// check if data.valueColumn is an array
+			if (Array.isArray(data.valueColumn)) {
+				visualization.componentProps = buildMultipleValueChartProps(data)
+			} else {
+				visualization.componentProps = buildSingleValueChartProps(type, data)
+			}
 			return
 		}
 
@@ -175,10 +184,6 @@ function useVisualization({ visualizationID, queryID, query }) {
 	}
 
 	function buildSingleValueChartProps(type, data) {
-		if (isEmptyObj(data.labelColumn, data.valueColumn)) {
-			return null
-		}
-
 		const labelColumn = data.labelColumn?.value
 		const valueColumn = data.valueColumn?.value
 
@@ -215,6 +220,49 @@ function useVisualization({ visualizationID, queryID, query }) {
 						data: labelValues.map((item) => item.value),
 					},
 				],
+			},
+		}
+	}
+
+	function buildMultipleValueChartProps(data) {
+		const labelColumn = data.labelColumn?.value
+		const valueColumns = data.valueColumn.map((col) => col.value)
+
+		const columnNames = query.doc.columns.map((c) => c.column)
+		if (
+			columnNames.indexOf(labelColumn) === -1 ||
+			valueColumns.some((col) => columnNames.indexOf(col) === -1)
+		) {
+			return null
+		}
+
+		const labels = query.results.getColumnValues(labelColumn)
+		const values = valueColumns.map((col) => query.results.getColumnValues(col))
+
+		let labelValues = labels.map((label, idx) => ({
+			label,
+			values: values.map((col) => col[idx]),
+		}))
+
+		labelValues = labelValues.reduce((acc, curr) => {
+			const existing = acc.find((item) => item.label == curr.label)
+			if (existing) {
+				existing.values = existing.values.map((value, idx) => value + curr.values[idx])
+			} else {
+				acc.push(curr)
+			}
+			return acc
+		}, [])
+
+		debugger
+
+		return {
+			data: {
+				labels: labelValues.map((item) => item.label),
+				datasets: valueColumns.map((col, idx) => ({
+					label: data.valueColumn[idx].label,
+					data: labelValues.map((item) => item.values[idx]),
+				})),
 			},
 		}
 	}

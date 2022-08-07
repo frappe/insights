@@ -59,7 +59,25 @@
 			</div>
 			<div v-if="visualization.dataSchema.valueColumn" class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Select Measure</div>
-				<Autocomplete v-model="visualization.data.valueColumn" :options="valueColumns" />
+				<ListPicker
+					v-if="visualization.dataSchema.multipleValues"
+					:value="
+						Array.isArray(visualization.data.valueColumn)
+							? visualization.data.valueColumn
+							: [visualization.data.valueColumn]
+					"
+					:options="valueColumns"
+					@selectOption="
+						(options) => {
+							visualization.data.valueColumn = options
+						}
+					"
+				/>
+				<Autocomplete
+					v-else
+					v-model="visualization.data.valueColumn"
+					:options="valueColumns"
+				/>
 			</div>
 			<div v-if="visualization.dataSchema.pivotColumn" class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Select Column</div>
@@ -84,6 +102,7 @@
 </template>
 
 <script setup>
+import ListPicker from '@/components/Controls/ListPicker.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 import { computed, inject } from 'vue'
