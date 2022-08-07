@@ -91,11 +91,14 @@ class QueryClient(Document):
                 row.table_label = column.get("table_label")
                 row.expression = dumps(column.get("expression"), indent=2)
                 row.aggregation_condition = column.get("aggregation_condition")
-                row.format_option = (
-                    dumps(column.get("format_option"), indent=2)
-                    if column.get("format_option")
-                    else ""
-                )
+                format_option = column.get("format_option")
+                if format_option:
+                    # check if format option is an object
+                    row.format_option = (
+                        dumps(format_option, indent=2)
+                        if isinstance(format_option, dict)
+                        else format_option
+                    )
                 break
 
         self.save()
