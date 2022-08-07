@@ -58,13 +58,13 @@
 					leave-from-class="transform scale-100 opacity-100"
 					leave-to-class="transform scale-95 opacity-0"
 				>
-					<div v-show="open && options.length > 0">
+					<div>
 						<ComboboxOptions
 							static
 							class="mt-2 max-h-48 w-full origin-top overflow-y-scroll"
 						>
 							<div
-								v-if="filteredOptions.length === 0 && filter_query !== ''"
+								v-if="filteredOptions.length === 0"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
 							>
 								No results found
