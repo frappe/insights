@@ -1,4 +1,12 @@
-import { defineAsyncComponent, computed, markRaw, reactive, watch, watchEffect } from 'vue'
+import {
+	defineAsyncComponent,
+	computed,
+	markRaw,
+	reactive,
+	watch,
+	watchEffect,
+	nextTick,
+} from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { useQuery } from '@/utils/query'
@@ -146,17 +154,20 @@ function useVisualization({ visualizationID, queryID, query }) {
 		{ deep: true, immediate: true }
 	)
 
-	function buildComponentProps({ doc, data }) {
+	async function buildComponentProps({ doc, data }) {
+		// reset the componentProps so that on each update the component is re-rendered
+		visualization.componentProps = null
+		await nextTick()
+
 		if (!doc || isEmptyObj(data)) {
-			visualization.componentProps = null
+			return
+		}
+		if (isEmptyObj(data.labelColumn, data.valueColumn)) {
 			return
 		}
 
 		const type = visualization.type
 		if (type == 'Bar' || type == 'Line' || type == 'Pie') {
-			if (isEmptyObj(data.labelColumn, data.valueColumn)) {
-				return null
-			}
 			// check if data.valueColumn is an array
 			if (Array.isArray(data.valueColumn)) {
 				visualization.componentProps = buildMultipleValueChartProps(data)
@@ -253,8 +264,6 @@ function useVisualization({ visualizationID, queryID, query }) {
 			}
 			return acc
 		}, [])
-
-		debugger
 
 		return {
 			data: {

@@ -7,7 +7,7 @@ export const FIELDTYPES = {
 }
 
 export function isEmptyObj(...args) {
-	return args.every((arg) => {
+	return args.some((arg) => {
 		if (arg === null || arg === undefined) {
 			return true
 		}

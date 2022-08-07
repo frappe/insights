@@ -64,7 +64,9 @@
 					:value="
 						Array.isArray(visualization.data.valueColumn)
 							? visualization.data.valueColumn
-							: [visualization.data.valueColumn]
+							: visualization.data.valueColumn
+							? [visualization.data.valueColumn]
+							: undefined
 					"
 					:options="valueColumns"
 					@selectOption="
