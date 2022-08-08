@@ -5,6 +5,7 @@ const updateUserDefaultResource = createResource('insights.api.update_user_defau
 const getDefaultsResource = createResource('insights.api.get_user_defaults')
 
 const settings = reactive({
+	hide_sidebar: true,
 	updating: false,
 	update,
 })
