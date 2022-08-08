@@ -47,8 +47,8 @@ function axisChart(type, icon) {
 	}
 
 	function columnsExist(query, ...columns) {
-		const columnNames = query.doc.columns.map((c) => c.column)
-		return columns.every((col) => columnNames.indexOf(col) !== -1)
+		const columnNames = query.doc.columns.map((c) => (c.is_expression ? c.label : c.column))
+		return columns.every((c) => columnNames.includes(c))
 	}
 
 	function buildSingleValueData(query, data) {
@@ -93,6 +93,8 @@ function axisChart(type, icon) {
 		if (!columnsExist(query, labelColumn, ...valueColumns)) {
 			return null
 		}
+
+		console.log('columns exists')
 
 		const labels = query.results.getColumnValues(labelColumn)
 		const values = valueColumns.map((col) => query.results.getColumnValues(col))

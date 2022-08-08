@@ -23,7 +23,9 @@ export function useQueryResults(query) {
 	})
 
 	function getColumnValues(column) {
-		const columnIdx = query.columns.data.findIndex((c) => c.column === column)
+		const columnIdx = query.columns.data.findIndex((c) =>
+			c.is_expression ? c.label === column : c.column === column
+		)
 		if (columnIdx > -1) {
 			return data.value.map((row) => row[columnIdx])
 		}

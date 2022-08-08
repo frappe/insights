@@ -121,6 +121,7 @@
 import ListPicker from '@/components/Controls/ListPicker.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
+import { FIELDTYPES } from '@/utils'
 import { computed, inject } from 'vue'
 import { useVisualization, types } from '@/utils/visualizations'
 
@@ -140,21 +141,21 @@ const setVizType = (type) => {
 
 const labelColumns = computed(() => {
 	return query.doc.columns
-		.filter((c) => c.aggregation == 'Group By')
+		.filter((c) => !FIELDTYPES.NUMBER.includes(c.type))
 		.map((c) => {
 			return {
 				label: c.label,
-				value: c.column,
+				value: c.column || c.label,
 			}
 		})
 })
 const valueColumns = computed(() => {
 	return query.doc.columns
-		.filter((c) => c.aggregation != 'Group By')
+		.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 		.map((c) => {
 			return {
 				label: c.label,
-				value: c.column,
+				value: c.column || c.label,
 			}
 		})
 })
