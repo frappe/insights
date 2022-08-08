@@ -43,7 +43,7 @@
 import DraggableResizeable from '@/components/DraggableResizeable.vue'
 
 import { computed, reactive, inject, provide } from 'vue'
-import { useVisualization } from '@/utils/visualization'
+import { useVisualization } from '@/utils/visualizations'
 import { safeJSONParse } from '@/utils'
 
 defineEmits(['edit', 'remove'])

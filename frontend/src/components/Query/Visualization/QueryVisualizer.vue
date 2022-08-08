@@ -24,7 +24,7 @@
 								viz.type
 							),
 						}"
-						v-for="(viz, i) in visualizationTypes"
+						v-for="(viz, i) in types"
 						:key="i"
 						@click="setVizType(viz.type)"
 					>
@@ -108,7 +108,7 @@ import ListPicker from '@/components/Controls/ListPicker.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 import { computed, inject } from 'vue'
-import { useVisualization, visualizationTypes } from '@/utils/visualization'
+import { useVisualization, types } from '@/utils/visualizations'
 
 const query = inject('query')
 const visualizationID = query.visualizations[0]
@@ -120,8 +120,7 @@ const invalidVizTypes = computed(() => {
 })
 const setVizType = (type) => {
 	if (!invalidVizTypes.value.includes(type)) {
-		visualization.type = type
-		visualization.data = {}
+		visualization.setType(type)
 	}
 }
 

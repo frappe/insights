@@ -1,5 +1,5 @@
 <script setup>
-import { getRandomColor } from '@/utils/visualization'
+import { getRandomColor } from '@/utils/visualizations'
 import { onMounted, ref } from 'vue'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
