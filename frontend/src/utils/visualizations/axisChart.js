@@ -34,9 +34,15 @@ function axisChart(type, icon) {
 		}
 
 		if (visualization.dataSchema.multipleValues && Array.isArray(data.valueColumn)) {
-			visualization.componentProps = buildMultiValueChartProps(query, data)
+			visualization.componentProps = {
+				data: buildMultiValueData(query, data),
+				options: buildOptions(data),
+			}
 		} else {
-			visualization.componentProps = buildSingleValueChartProps(query, data)
+			visualization.componentProps = {
+				data: buildSingleValueData(query, data),
+				options: buildOptions(data),
+			}
 		}
 	}
 
@@ -45,7 +51,7 @@ function axisChart(type, icon) {
 		return columns.every((col) => columnNames.indexOf(col) !== -1)
 	}
 
-	function buildSingleValueChartProps(query, data) {
+	function buildSingleValueData(query, data) {
 		const labelColumn = data.labelColumn?.value
 		const valueColumn = data.valueColumn?.value
 
@@ -70,19 +76,17 @@ function axisChart(type, icon) {
 		}, [])
 
 		return {
-			data: {
-				labels: labelValues.map((item) => item.label),
-				datasets: [
-					{
-						label: data.valueColumn.label,
-						data: labelValues.map((item) => item.value),
-					},
-				],
-			},
+			labels: labelValues.map((item) => item.label),
+			datasets: [
+				{
+					label: data.valueColumn.label,
+					data: labelValues.map((item) => item.value),
+				},
+			],
 		}
 	}
 
-	function buildMultiValueChartProps(query, data) {
+	function buildMultiValueData(query, data) {
 		const labelColumn = data.labelColumn?.value
 		const valueColumns = data.valueColumn.map((col) => col.value)
 
@@ -110,14 +114,20 @@ function axisChart(type, icon) {
 		}, [])
 
 		return {
-			data: {
-				labels: labelValues.map((item) => item.label),
-				datasets: valueColumns.map((col, idx) => ({
-					label: data.valueColumn[idx].label,
-					data: labelValues.map((item) => item.values[idx]),
-				})),
-			},
+			labels: labelValues.map((item) => item.label),
+			datasets: valueColumns.map((col, idx) => ({
+				label: data.valueColumn[idx].label,
+				data: labelValues.map((item) => item.values[idx]),
+			})),
 		}
+	}
+
+	function buildOptions(data) {
+		const options = {}
+		if (visualization.type == 'Line') {
+			options.tension = data.lineSmoothness
+		}
+		return options
 	}
 
 	return visualization

@@ -2,6 +2,7 @@ import { computed, markRaw, reactive, watch, watchEffect, nextTick } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { useQuery } from '@/utils/query'
+import { watchDebounced } from '@vueuse/core'
 
 import { Bar, Line } from './axisChart'
 import Pie from './pieChart'
@@ -83,14 +84,14 @@ function useVisualization({ visualizationID, queryID, query }) {
 		}
 	})
 
-	watch(
+	watchDebounced(
 		// if query.doc or data changes then re-render visualization
 		() => ({
 			queryDoc: query.doc,
 			data: visualization.data,
 		}),
 		({ data }) => buildComponentProps(query, data),
-		{ deep: true, immediate: true }
+		{ deep: true, immediate: true, debounce: 300 }
 	)
 
 	async function buildComponentProps(query, data) {
@@ -117,7 +118,9 @@ function useVisualization({ visualizationID, queryID, query }) {
 		}
 		const options = { onSuccess }
 		resource.updateDoc.submit(params, options)
-		visualization.savingDoc = resource.updateDoc.loading
+		if (!visualization.savingDoc) {
+			visualization.savingDoc = computed(() => resource.updateDoc.loading)
+		}
 	}
 
 	return visualization

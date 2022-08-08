@@ -21,6 +21,10 @@ const props = defineProps({
 		type: Object,
 		required: true,
 	},
+	options: {
+		type: Object,
+		default: {},
+	},
 })
 const chartData = {
 	labels: props.data.labels,
@@ -31,6 +35,7 @@ const chartData = {
 			label: dataset.label,
 			backgroundColor: color[0],
 			borderColor: color[1],
+			tension: props.options.tension,
 		}
 	}),
 }

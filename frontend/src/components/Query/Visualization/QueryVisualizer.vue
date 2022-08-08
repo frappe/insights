@@ -85,6 +85,20 @@
 				<div class="text-base font-light text-gray-500">Select Column</div>
 				<Autocomplete v-model="visualization.data.pivotColumn" :options="labelColumns" />
 			</div>
+			<div v-if="visualization.type == 'Line'" class="space-y-2 text-gray-600">
+				<div class="text-base font-light text-gray-500">Line Curveness</div>
+				<div class="flex w-full items-center">
+					<input
+						type="range"
+						min="0"
+						max="1"
+						step="0.1"
+						v-model="visualization.data.lineSmoothness"
+						class="flex-1 focus:outline-none"
+					/>
+					<span class="ml-2 text-sm">{{ visualization.data.lineSmoothness }}</span>
+				</div>
+			</div>
 			<Button
 				appearance="primary"
 				@click="saveVisualization"
