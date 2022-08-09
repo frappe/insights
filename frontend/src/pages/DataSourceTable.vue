@@ -1,10 +1,28 @@
 <template>
 	<BasePage>
 		<template #header>
-			<div class="flex flex-1 justify-between">
-				<h1 v-if="dataSourceTable.doc" class="text-3xl font-medium text-gray-900">
-					{{ dataSourceTable.doc.label }}
-				</h1>
+			<div v-if="dataSourceTable.doc" class="flex flex-1 justify-between">
+				<div class="flex items-center space-x-4">
+					<h1 class="text-3xl font-medium text-gray-900">
+						{{ dataSourceTable.doc.label }}
+					</h1>
+					<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
+						{{ hidden ? 'Disabled' : 'Enabled' }}
+					</Badge>
+				</div>
+				<div class="space-x-2">
+					<Dropdown
+						placement="right"
+						:button="{ icon: 'more-horizontal', appearance: 'white' }"
+						:options="[
+							{
+								label: hidden ? 'Enable' : 'Disable',
+								icon: hidden ? 'eye' : 'eye-off',
+								handler: () => (hidden = !hidden),
+							},
+						]"
+					/>
+				</div>
 			</div>
 		</template>
 		<template #main>
@@ -62,6 +80,8 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import { useDataSourceTable } from '@/utils/datasource'
+import { Dropdown, Badge } from 'frappe-ui'
+import { computed } from 'vue'
 
 const props = defineProps({
 	name: {
@@ -77,4 +97,15 @@ const props = defineProps({
 const MAX_COLS = 8
 
 const dataSourceTable = useDataSourceTable(props.name, props.table)
+const hidden = computed({
+	get() {
+		return dataSourceTable.doc.hidden
+	},
+	set(value) {
+		if (value !== dataSourceTable.doc.hidden) {
+			dataSourceTable.doc.hidden = value
+			dataSourceTable.updateVisibility(value)
+		}
+	},
+})
 </script>

@@ -10,6 +10,7 @@
 		<template #main>
 			<div v-if="dataSource.tables" class="flex flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
+					<Input type="text" placeholder="Label" v-model="labelFilter" />
 					<Input
 						type="select"
 						placeholder="Status"
@@ -89,13 +90,13 @@ const props = defineProps({
 const dataSource = useDataSource(props.name)
 
 const statusFilter = ref('Enabled')
+const labelFilter = ref('')
 const tables = computed(() => {
-	return dataSource.tables.filter(({ hidden }) => {
-		return statusFilter.value == 'All'
-			? true
-			: statusFilter.value == 'Enabled'
-			? !hidden
-			: hidden
+	return dataSource.tables.filter(({ hidden, label }) => {
+		const statusMatch =
+			statusFilter.value == 'All' ? true : statusFilter.value == 'Enabled' ? !hidden : hidden
+		const labelMatch = label.toLowerCase().includes(labelFilter.value.toLowerCase())
+		return statusMatch && labelMatch
 	})
 })
 </script>

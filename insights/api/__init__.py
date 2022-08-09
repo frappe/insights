@@ -53,6 +53,19 @@ def get_data_source_table(name, table):
 
 
 @frappe.whitelist()
+def update_data_source_table(name, table, hidden):
+    table = frappe.get_doc(
+        "Table",
+        {
+            "data_source": name,
+            "table": table,
+        },
+    )
+    table.hidden = hidden
+    table.save()
+
+
+@frappe.whitelist()
 def get_tables(data_source=None):
     if not data_source:
         return []
