@@ -20,7 +20,10 @@
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
-						<p class="flex-1" v-for="column in dataSourceTable.columns">
+						<p
+							class="flex-1"
+							v-for="column in dataSourceTable.columns.slice(0, MAX_COLS)"
+						>
 							{{ column[0] }}
 						</p>
 					</div>
@@ -36,7 +39,7 @@
 									<Input type="checkbox" class="rounded-md border-gray-400" />
 								</p>
 								<p
-									v-for="value in row"
+									v-for="value in row.slice(0, MAX_COLS)"
 									class="flex-1 whitespace-nowrap text-sm text-gray-500"
 								>
 									{{ value }}
@@ -71,6 +74,7 @@ const props = defineProps({
 	},
 })
 
+const MAX_COLS = 8
+
 const dataSourceTable = useDataSourceTable(props.name, props.table)
-window.dataSourceTable = dataSourceTable
 </script>
