@@ -20,6 +20,11 @@
 					handler: () => (show_sql_dialog = true),
 				},
 				{
+					label: 'Duplicate',
+					icon: 'copy',
+					handler: duplicateQuery,
+				},
+				{
 					label: 'Delete',
 					icon: 'trash-2',
 					handler: () => (show_delete_dialog = true),
@@ -93,8 +98,9 @@
 </template>
 
 <script setup>
-import { ref, inject, computed } from 'vue'
+import { ref, inject, computed, nextTick } from 'vue'
 import { Dialog, Dropdown } from 'frappe-ui'
+import { useRouter } from 'vue-router'
 
 const query = inject('query')
 
@@ -112,4 +118,17 @@ function open_form() {
 const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
 })
+
+const $router = useRouter()
+const $notify = inject('$notify')
+function duplicateQuery() {
+	query.duplicate.submit().then(async (res) => {
+		await nextTick()
+		$router.push('/query/' + res.message)
+		$notify({
+			appearance: 'success',
+			title: 'Query Duplicated',
+		})
+	})
+}
 </script>

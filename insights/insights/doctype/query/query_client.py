@@ -13,6 +13,12 @@ from insights.api import get_tables
 
 class QueryClient(Document):
     @frappe.whitelist()
+    def duplicate(self):
+        new_query = frappe.copy_doc(self)
+        new_query.save()
+        return new_query.name
+
+    @frappe.whitelist()
     def get_visualizations(self):
         return frappe.get_all(
             "Query Visualization",
@@ -89,7 +95,6 @@ class QueryClient(Document):
                 row.order_by = column.get("order_by")
                 row.aggregation = column.get("aggregation")
                 row.table_label = column.get("table_label")
-                row.expression = dumps(column.get("expression"), indent=2)
                 row.aggregation_condition = column.get("aggregation_condition")
                 format_option = column.get("format_option")
                 if format_option:
@@ -98,6 +103,14 @@ class QueryClient(Document):
                         dumps(format_option, indent=2)
                         if isinstance(format_option, dict)
                         else format_option
+                    )
+                expression = column.get("expression")
+                if expression:
+                    # check if expression is an object
+                    row.expression = (
+                        dumps(expression, indent=2)
+                        if isinstance(expression, dict)
+                        else expression
                     )
                 break
 

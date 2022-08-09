@@ -9,6 +9,7 @@ const API_METHODS = {
 	run: 'run',
 	reset: 'reset',
 	setLimit: 'set_limit',
+	duplicate: 'duplicate',
 	fetchTables: 'fetch_tables',
 	fetchColumns: 'fetch_columns',
 	fetchColumnValues: 'fetch_column_values',
