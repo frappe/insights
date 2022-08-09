@@ -81,6 +81,19 @@
 					:options="valueColumns"
 				/>
 			</div>
+			<div v-if="visualization.dataSchema.anyColumn" class="space-y-2 text-gray-600">
+				<div class="text-base font-light text-gray-500">Select Columns</div>
+				<ListPicker
+					v-if="visualization.dataSchema.multiple"
+					:value="visualization.data.columns ? visualization.data.columns : undefined"
+					:options="allColumns"
+					@selectOption="
+						(options) => {
+							visualization.data.columns = options
+						}
+					"
+				/>
+			</div>
 			<div v-if="visualization.dataSchema.pivotColumn" class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Select Column</div>
 				<Autocomplete v-model="visualization.data.pivotColumn" :options="labelColumns" />
@@ -138,6 +151,15 @@ const setVizType = (type) => {
 		visualization.setType(type)
 	}
 }
+
+const allColumns = computed(() => {
+	return query.doc.columns.map((c) => {
+		return {
+			label: c.label,
+			value: c.column || c.label,
+		}
+	})
+})
 
 const labelColumns = computed(() => {
 	return query.doc.columns

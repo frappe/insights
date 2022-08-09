@@ -8,6 +8,7 @@ import { Bar, Line } from './axisChart'
 import Pie from './pieChart'
 import Number from './number'
 import Pivot from './pivot'
+import Table from './table'
 
 const types = [
 	{ type: 'Bar', icon: 'bar-chart-2' },
@@ -17,9 +18,10 @@ const types = [
 	{ type: 'Row', icon: 'align-left' },
 	{ type: 'Funnel', icon: 'filter' },
 	{ type: 'Pivot', icon: 'layout' },
+	{ type: 'Table', icon: 'grid' },
 ]
 
-const controllers = { Bar, Line, Pie, Number, Pivot }
+const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
 const getRandomColor = (num = 1) => {
 	const colors = []

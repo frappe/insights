@@ -31,10 +31,9 @@
   },
   {
    "fieldname": "type",
-   "fieldtype": "Autocomplete",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Type",
-   "options": "Bar\nLine\nPie"
+   "label": "Type"
   },
   {
    "fieldname": "data",
@@ -53,7 +52,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-15 20:13:30.177801",
+ "modified": "2022-08-09 20:48:04.891092",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Query Visualization",

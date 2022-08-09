@@ -31,10 +31,20 @@ export function useQueryResults(query) {
 		}
 	}
 
+	function getRows(...columns) {
+		const columnIndexes = columns.map((c) =>
+			query.columns.data.findIndex((col) =>
+				col.is_expression ? col.label === c : col.column === c
+			)
+		)
+		return data.value.map((row) => columnIndexes.map((idx) => row[idx]))
+	}
+
 	return {
 		data,
 		formattedData,
 		getColumnValues,
+		getRows,
 	}
 }
 
