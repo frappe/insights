@@ -51,9 +51,6 @@
 									class="flex flex-1 flex-col whitespace-nowrap text-sm font-medium text-gray-900"
 								>
 									<span>{{ table.label }}</span>
-									<span class="text-xs font-light"
-										>{{ Math.floor(Math.random() * 10000) }} records
-									</span>
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
 									<Badge :color="table.hidden ? 'yellow' : 'green'">
