@@ -79,7 +79,7 @@ const routes = computed(() =>
 		.filter(Boolean)
 		.map((route) => {
 			return {
-				name: route
+				name: decodeURIComponent(route)
 					.split('-')
 					.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 					.join(' '),

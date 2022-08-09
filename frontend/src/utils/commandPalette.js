@@ -41,6 +41,14 @@ function initNavigationCommands(commandPalette) {
 		},
 	})
 	commandPalette.commands.push({
+		title: 'Data Source',
+		description: 'Go to data source list',
+		icon: 'arrow-right',
+		action: () => {
+			router.push('/data-source')
+		},
+	})
+	commandPalette.commands.push({
 		title: 'Settings',
 		description: 'Go to settings',
 		icon: 'arrow-right',

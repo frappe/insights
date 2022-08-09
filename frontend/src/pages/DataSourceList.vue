@@ -34,7 +34,8 @@
 						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
 						<li v-for="source in dataSources" :key="source.name">
-							<a
+							<router-link
+								:to="{ name: 'DataSource', params: { name: source.name } }"
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
@@ -64,7 +65,7 @@
 								>
 									{{ source.modified_from_now }}
 								</p>
-							</a>
+							</router-link>
 						</li>
 					</ul>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">

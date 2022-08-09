@@ -59,12 +59,12 @@ const sidebarItems = ref([
 		name: 'Dashboard',
 		current: false,
 	},
-	// {
-	// 	path: '/data-source',
-	// 	label: 'Data Sources',
-	// 	icon: 'database',
-	// 	name: 'Data Source',
-	// },
+	{
+		path: '/data-source',
+		label: 'Data Sources',
+		icon: 'database',
+		name: 'Data Source',
+	},
 	{
 		path: '/query',
 		label: 'Queries',
