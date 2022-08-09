@@ -1,7 +1,7 @@
 {
     "private": true,
     "scripts": {
-        "postinstall": "cd frontend && yarn install",
+        "postinstall": "cd frontend && yarn install --ignore-engines",
         "dev": "cd frontend && yarn dev",
         "build": "cd frontend && yarn build",
         "test": "cd frontend && yarn test"
