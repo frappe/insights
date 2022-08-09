@@ -47,11 +47,7 @@
 			>
 				Remove
 			</Button>
-			<Button
-				appearance="primary"
-				@click="addExpressionColumn"
-				:disabled="Boolean(expression.error)"
-			>
+			<Button appearance="primary" @click="addExpressionColumn" :disabled="addDisabled">
 				{{ editing ? 'Update' : 'Add ' }}
 			</Button>
 		</div>
@@ -63,7 +59,7 @@ import Code from '@/components/Controls/Code.vue'
 
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
-import { ref, inject, watchEffect, reactive } from 'vue'
+import { ref, inject, watchEffect, reactive, computed } from 'vue'
 
 const query = inject('query')
 
@@ -137,6 +133,12 @@ const getCompletions = (context, syntaxTree) => {
 		}
 	}
 }
+
+const addDisabled = computed(() => {
+	return Boolean(
+		expression.error || !expression.raw || !expression.label || !expression.valueType
+	)
+})
 
 const addExpressionColumn = () => {
 	const type = Object.keys(typeMap).find((key) => typeMap[key] === expression.valueType)
