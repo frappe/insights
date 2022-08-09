@@ -234,7 +234,8 @@ class QueryClient(Document):
 
         return [
             {
-                "key": d.foreign_key,
+                "primary_key": d.primary_key,
+                "foreign_key": d.foreign_key,
                 "table": d.foreign_table,
                 "label": d.foreign_table_label,
             }

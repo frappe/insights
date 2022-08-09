@@ -169,7 +169,9 @@ class Query(QueryClient):
             LeftTable = Table(table.table)
             RightTable = Table(_join.get("with").get("value"))
             join_type = _join.get("type").get("value")
-            key = _join.get("key").get("value")
+            condition = _join.get("condition").get("value")
+            left_key = condition.split("=")[0].strip()
+            right_key = condition.split("=")[1].strip()
 
             self._joins.append(
                 _dict(
@@ -177,7 +179,7 @@ class Query(QueryClient):
                         "left": LeftTable,
                         "right": RightTable,
                         "type": JoinType[join_type],
-                        "condition": LeftTable["name"] == RightTable[key],
+                        "condition": LeftTable[left_key] == RightTable[right_key],
                     }
                 )
             )

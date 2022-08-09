@@ -9,3 +9,4 @@ insights.patches.add_position_key_to_filter
 insights.patches.add_last_execution_field
 insights.patches.rename_like_to_contains
 insights.patches.reset_query_filters
+insights.patches.refresh_tables

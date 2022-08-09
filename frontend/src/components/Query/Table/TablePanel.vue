@@ -83,9 +83,9 @@
 					<div class="space-y-1 text-sm text-gray-600">
 						<div class="font-light">On</div>
 						<Autocomplete
-							v-model="join.key"
-							:options="joinKeyOptions"
-							placeholder="Select a key..."
+							v-model="join.condition"
+							:options="joinConditionOptions"
+							placeholder="Select a condition..."
 						/>
 					</div>
 				</div>
@@ -93,7 +93,7 @@
 					<Button :disabled="!editTable.join" @click="clear_join"> Clear </Button>
 					<Button
 						appearance="primary"
-						:disabled="!join.with || !join.key || !join.type"
+						:disabled="!join.with || !join.condition || !join.type"
 						@click="applyJoin"
 					>
 						Apply
@@ -134,13 +134,13 @@ const newTableOptions = computed(() => {
 	}))
 })
 
-const join = ref({ with: {}, key: {}, type: {} })
+const join = ref({ with: {}, condition: {}, type: {} })
 const editTable = ref(null) // table that is being edited
 watch(editTable, (table) => {
-	join.value = { with: {}, key: {}, type: {} }
+	join.value = { with: {}, condition: {}, type: {} }
 	if (table) {
 		if (table.join) {
-			join.value.key = table.join.key
+			join.value.condition = table.join.condition
 			join.value.with = table.join.with
 			join.value.type = table.join.type
 		}
@@ -159,15 +159,15 @@ const joinTableOptions = computed(() => {
 		return { label, value: table }
 	})
 })
-const joinKeyOptions = computed(() => {
+const joinConditionOptions = computed(() => {
 	if (!isEmptyObj(join.value.with) && joinOptions.value) {
 		return joinOptions.value
 			.filter(({ table }) => {
 				return table == join.value.with.value
 			})
-			.map(({ key }) => ({
-				label: key,
-				value: key,
+			.map(({ primary_key, foreign_key }) => ({
+				label: `${primary_key} = ${foreign_key}`,
+				value: `${primary_key} = ${foreign_key}`,
 			}))
 	}
 	return []
@@ -175,9 +175,9 @@ const joinKeyOptions = computed(() => {
 
 function onJoinTableSelect(option) {
 	join.value.with = option
-	join.value.key = {}
-	if (joinKeyOptions.value.length == 1) {
-		join.value.key = joinKeyOptions.value[0]
+	join.value.condition = {}
+	if (joinConditionOptions.value.length == 1) {
+		join.value.condition = joinConditionOptions.value[0]
 	}
 }
 function applyJoin() {

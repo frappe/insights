@@ -125,7 +125,7 @@ class DataSource(Document):
         return _tables
 
     @frappe.whitelist()
-    def import_tables(self):
+    def import_tables(self, refresh_links=False):
         tables = self.get_tables()
         table_links = self.get_foreign_key_constraints()
 
@@ -149,6 +149,9 @@ class DataSource(Document):
                         "label": table.get("label"),
                     }
                 )
+
+            if refresh_links:
+                doc.table_links = []
 
             for table_link in table_links.get(table.get("label"), []):
                 if not doc.get("table_links", table_link):
@@ -209,6 +212,8 @@ class DataSource(Document):
 
     def build_frappe_constraints(self):
         # save Link Fields & Table Fields as ForeignKeyConstraints
+        foreign_links = {}
+
         DocField = frappe.qb.DocType("DocField")
         query = (
             frappe.qb.from_(DocField)
@@ -239,23 +244,24 @@ class DataSource(Document):
         )
         custom_links = self.execute_query(query, as_dict=1)
 
-        dynamic_links = self.get_dynamic_link_map()
-
-        links = standard_links + custom_links
-
-        foreign_links = {}
-        for link in links:
+        for link in standard_links + custom_links:
             if link.get("fieldtype") == "Link":
+                # User is linked with ToDo by `owner` field
+                # User.name = ToDo.owner
                 foreign_links.setdefault(link.get("options"), []).append(
                     {
+                        "primary_key": "name",
                         "foreign_key": link.get("fieldname"),
                         "foreign_table": "tab" + link.get("parent"),
                         "foreign_table_label": link.get("parent"),
                     }
                 )
+                # ToDo is linked with User by `owner` field
+                # ToDo.owner = User.name
                 foreign_links.setdefault(link.get("parent"), []).append(
                     {
-                        "foreign_key": link.get("fieldname"),
+                        "primary_key": link.get("fieldname"),
+                        "foreign_key": "name",
                         "foreign_table": "tab" + link.get("options"),
                         "foreign_table_label": link.get("options"),
                     }
@@ -263,6 +269,7 @@ class DataSource(Document):
             if link.get("fieldtype") == "Table":
                 foreign_links.setdefault(link.get("parent"), []).append(
                     {
+                        "primary_key": "name",
                         "foreign_key": "parent",
                         "foreign_table": "tab" + link.get("options"),
                         "foreign_table_label": link.get("options"),
@@ -270,12 +277,14 @@ class DataSource(Document):
                 )
                 foreign_links.setdefault(link.get("options"), []).append(
                     {
-                        "foreign_key": "parent",
+                        "primary_key": "parent",
+                        "foreign_key": "name",
                         "foreign_table": "tab" + link.get("parent"),
                         "foreign_table_label": link.get("parent"),
                     }
                 )
 
+        dynamic_links = self.get_dynamic_link_map()
         for doctype in dynamic_links:
             if not doctype:
                 continue
@@ -283,6 +292,7 @@ class DataSource(Document):
             for link in dynamic_links.get(doctype):
                 foreign_links.setdefault(doctype, []).append(
                     {
+                        "primary_key": "name",
                         "foreign_key": link.get("fieldname"),
                         "foreign_table": "tab" + link.get("parent"),
                         "foreign_table_label": link.get("parent"),
@@ -290,7 +300,8 @@ class DataSource(Document):
                 )
                 foreign_links.setdefault(link.get("parent"), []).append(
                     {
-                        "foreign_key": link.get("fieldname"),
+                        "primary_key": link.get("fieldname"),
+                        "foreign_key": "name",
                         "foreign_table": "tab" + doctype,
                         "foreign_table_label": doctype,
                     }

@@ -8,6 +8,8 @@
  "field_order": [
   "foreign_table",
   "foreign_table_label",
+  "column_break_3",
+  "primary_key",
   "foreign_key"
  ],
  "fields": [
@@ -31,12 +33,22 @@
    "in_list_view": 1,
    "label": "Foreign Table Label",
    "reqd": 1
+  },
+  {
+   "fieldname": "primary_key",
+   "fieldtype": "Data",
+   "label": "Primary Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-06-08 11:33:29.050017",
+ "modified": "2022-08-09 17:28:32.172665",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Table Link",

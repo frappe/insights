@@ -158,55 +158,6 @@ def create_query(title, data_source, table):
 
 
 @frappe.whitelist()
-def get_operator_list(fieldtype=None):
-    operator_list = [
-        {"label": "equals", "value": "="},
-        {"label": "not equals", "value": "!="},
-        {"label": "is", "value": "is"},
-    ]
-
-    if not fieldtype:
-        return operator_list
-
-    text_data_types = ("char", "varchar", "enum", "text", "longtext")
-    number_data_types = ("int", "decimal", "bigint", "float", "double")
-    date_data_types = ("date", "datetime", "time", "timestamp")
-
-    fieldtype = fieldtype.lower()
-    if fieldtype in text_data_types:
-        operator_list += [
-            {"label": "contains", "value": "contains"},
-            {"label": "not contains", "value": "not contains"},
-            {"label": "starts with", "value": "starts with"},
-            {"label": "ends with", "value": "ends with"},
-            {"label": "is one of", "value": "in"},
-            {"label": "is not one of", "value": "not in"},
-        ]
-    if fieldtype in number_data_types:
-        operator_list += [
-            {"label": "is one of", "value": "in"},
-            {"label": "is not one of", "value": "not in"},
-            {"label": "greater than", "value": ">"},
-            {"label": "smaller than", "value": "<"},
-            {"label": "greater than equal to", "value": ">="},
-            {"label": "smaller than equal to", "value": "<="},
-            {"label": "between", "value": "between"},
-        ]
-
-    if fieldtype in date_data_types:
-        operator_list += [
-            {"label": "greater than", "value": ">"},
-            {"label": "smaller than", "value": "<"},
-            {"label": "greater than equal to", "value": ">="},
-            {"label": "smaller than equal to", "value": "<="},
-            {"label": "between", "value": "between"},
-            {"label": "within", "value": "timespan"},
-        ]
-
-    return operator_list
-
-
-@frappe.whitelist()
 def get_running_queries(data_source):
     data_source = frappe.get_doc("Data Source", data_source)
     return data_source.get_running_queries()
