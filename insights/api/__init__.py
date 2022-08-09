@@ -21,14 +21,7 @@ def get_data_sources():
 @frappe.whitelist()
 def get_data_source(name):
     doc = frappe.get_doc("Data Source", name)
-    tables = frappe.get_all(
-        "Table",
-        filters={
-            "data_source": name,
-        },
-        fields=["table", "label", "hidden"],
-        order_by="hidden asc, label asc",
-    )
+    tables = get_all_tables(name)
     return {
         "doc": doc.as_dict(),
         "tables": tables,
@@ -70,7 +63,7 @@ def get_tables(data_source=None):
     if not data_source:
         return []
 
-    def get_all_tables():
+    def _get_tables():
         return frappe.get_all(
             "Table",
             filters={
@@ -78,12 +71,35 @@ def get_tables(data_source=None):
                 "data_source": data_source,
             },
             fields=["table", "label"],
+            order_by="label asc",
         )
 
     return frappe.cache().hget(
         "insights",
         "get_tables_" + data_source,
-        generator=get_all_tables,
+        generator=_get_tables,
+    )
+
+
+def get_all_tables(data_source=None):
+    if not data_source:
+        return []
+
+    def _get_all_tables():
+        return frappe.get_all(
+            "Table",
+            filters={
+                "hidden": 0,
+                "data_source": data_source,
+            },
+            fields=["table", "label", "hidden"],
+            order_by="hidden asc, label asc",
+        )
+
+    return frappe.cache().hget(
+        "insights",
+        "get_all_tables_" + data_source,
+        generator=_get_all_tables,
     )
 
 

@@ -89,11 +89,17 @@ const dataSource = useDataSource(props.name)
 const statusFilter = ref('Enabled')
 const labelFilter = ref('')
 const tables = computed(() => {
-	return dataSource.tables.filter(({ hidden, label }) => {
-		const statusMatch =
-			statusFilter.value == 'All' ? true : statusFilter.value == 'Enabled' ? !hidden : hidden
-		const labelMatch = label.toLowerCase().includes(labelFilter.value.toLowerCase())
-		return statusMatch && labelMatch
-	})
+	return dataSource.tables
+		.filter(({ hidden, label }) => {
+			const statusMatch =
+				statusFilter.value == 'All'
+					? true
+					: statusFilter.value == 'Enabled'
+					? !hidden
+					: hidden
+			const labelMatch = label.toLowerCase().includes(labelFilter.value.toLowerCase())
+			return statusMatch && labelMatch
+		})
+		.slice(0, 100)
 })
 </script>
