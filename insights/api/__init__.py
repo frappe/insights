@@ -183,3 +183,42 @@ def get_user_defaults():
     defaults = frappe.defaults.get_defaults()
     keys = ["hide_sidebar"]
     return {key: defaults.get(key) for key in keys}
+
+
+@frappe.whitelist()
+def create_table_link(
+    data_source, primary_table, foreign_table, primary_key, foreign_key
+):
+    primary = frappe.get_doc(
+        "Table",
+        {
+            "data_source": data_source,
+            "table": primary_table.get("table"),
+        },
+    )
+    link = {
+        "primary_key": primary_key,
+        "foreign_key": foreign_key,
+        "foreign_table": foreign_table.get("table"),
+        "foreign_table_label": foreign_table.get("label"),
+    }
+    if not primary.get("table_links", link):
+        primary.append("table_links", link)
+        primary.save()
+
+    foreign = frappe.get_doc(
+        "Table",
+        {
+            "data_source": data_source,
+            "table": foreign_table.get("table"),
+        },
+    )
+    link = {
+        "primary_key": foreign_key,
+        "foreign_key": primary_key,
+        "foreign_table": primary_table.get("table"),
+        "foreign_table_label": primary_table.get("label"),
+    }
+    if not foreign.get("table_links", link):
+        foreign.append("table_links", link)
+        foreign.save()
