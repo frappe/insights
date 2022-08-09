@@ -94,11 +94,21 @@ const isNumberColumn = computed(() => {
 	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 })
 
+const $notify = inject('$notify')
 watch(
 	needsExecution,
 	(newVal) => {
 		if (newVal && !noColumns.value) {
-			query.run.submit()
+			query.run.submit(null, {
+				onError() {
+					query.run.loading = false
+					$notify({
+						appearance: 'error',
+						title: 'Error while executing query',
+						message: 'Please review the query and try again.',
+					})
+				},
+			})
 		}
 	},
 	{ immediate: true }

@@ -15,6 +15,11 @@
 					handler: open_form,
 				},
 				{
+					label: 'View SQL',
+					icon: 'help-circle',
+					handler: () => (show_sql_dialog = true),
+				},
+				{
 					label: 'Delete',
 					icon: 'trash-2',
 					handler: () => (show_delete_dialog = true),
@@ -74,18 +79,28 @@
 				</Button>
 			</template>
 		</Dialog>
+
+		<Dialog :options="{ title: 'Generated SQL' }" v-model="show_sql_dialog" :dismissable="true">
+			<template #body-content>
+				<p
+					class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
+					style="font-family: 'Fira Code'"
+					v-html="formattedSQL"
+				></p>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, inject, computed } from 'vue'
 import { Dialog, Dropdown } from 'frappe-ui'
 
 const query = inject('query')
 
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
+const show_sql_dialog = ref(false)
 
 const hostname = window.location.hostname
 const port = window.location.port ? ':8000' : ''
@@ -93,4 +108,8 @@ const port = window.location.port ? ':8000' : ''
 function open_form() {
 	window.open(`http://${hostname}${port}/app/query/${query.doc.name}`, '_blank').focus()
 }
+
+const formattedSQL = computed(() => {
+	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
+})
 </script>
