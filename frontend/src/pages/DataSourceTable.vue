@@ -47,7 +47,8 @@
 							class="flex-1"
 							v-for="column in dataSourceTable.columns.slice(0, MAX_COLS)"
 						>
-							{{ column[0] }}
+							<span class="mr-1 font-medium text-gray-600">{{ column[0] }}</span>
+							<span class="text-xs">({{ formatType(column[1]) }})</span>
 						</p>
 					</div>
 					<ul
@@ -233,5 +234,9 @@ function createLink() {
 		primary_key: newLink.primaryKey,
 		foreign_key: newLink.foreignKey,
 	})
+}
+
+function formatType(columnType) {
+	return columnType.replace(/\(.*\)/, '').toUpperCase()
 }
 </script>
