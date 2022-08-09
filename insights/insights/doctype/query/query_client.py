@@ -244,6 +244,8 @@ class QueryClient(Document):
 
     @frappe.whitelist()
     def run(self):
+        if not self.sql:
+            return
         self.execute()
         self.update_result()
 
@@ -253,18 +255,6 @@ class QueryClient(Document):
 
     @frappe.whitelist()
     def reset(self):
-        self.tables = []
-        self.columns = []
-        self.filters = None
-        self.sql = None
-        self.result = None
-        self.status = "Pending Execution"
-        self.limit = 10
-        self.execution_time = 0
-        self.last_execution = None
-        self.transform_type = None
-        self.transform_data = None
-        self.transform_result = None
+        self.clear()
         self.skip_before_save = True
-
         self.save()

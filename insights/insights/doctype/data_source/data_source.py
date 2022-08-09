@@ -167,7 +167,7 @@ class DataSource(Document):
             """
                 select column_name, data_type
                 from information_schema.columns
-                where table_name = %s order by column_name
+                where table_name = %s
             """,
             values=table.get("table"),
             as_dict=1,

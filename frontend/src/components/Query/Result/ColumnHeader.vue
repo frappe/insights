@@ -7,10 +7,12 @@
 			>
 				{{ props.column.aggregation }}
 			</span>
-			<div class="rounded pr-4 text-base">{{ props.column.label }}</div>
+			<div class="rounded pr-12 text-base">{{ props.column.label }}</div>
 		</div>
 		<div class="flex select-none items-center justify-end">
+			<!-- show sort options only if column is from doc.columns -->
 			<div
+				v-if="props.column.name"
 				@click.prevent.stop="orderByColumn"
 				class="cursor-pointer rounded border border-transparent py-1 text-gray-500 hover:border-gray-200 hover:bg-gray-100 hover:text-gray-600"
 			>

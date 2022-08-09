@@ -24,6 +24,17 @@ from insights.insights.doctype.query.query_client import QueryClient
 
 
 class Query(QueryClient):
+    DEFAULT_FILTERS = dumps(
+        {
+            "type": "LogicalExpression",
+            "operator": "&&",
+            "level": 1,
+            "position": 1,
+            "conditions": [],
+        },
+        indent=2,
+    )
+
     def validate(self):
         # TODO: validate if a column is an expression and aggregation is "group by"
         self.validate_tables()
@@ -55,16 +66,7 @@ class Query(QueryClient):
 
     def validate_filters(self):
         if not self.filters:
-            self.filters = dumps(
-                {
-                    "type": "LogicalExpression",
-                    "operator": "&&",
-                    "level": 1,
-                    "position": 1,
-                    "conditions": [],
-                },
-                indent=2,
-            )
+            self.filters = self.DEFAULT_FILTERS
 
     def on_update(self):
         # create a query visualization if not exists
@@ -83,12 +85,27 @@ class Query(QueryClient):
         for visualization in visualizations:
             frappe.delete_doc("Query Visualization", visualization)
 
+    def clear(self):
+        self.tables = []
+        self.columns = []
+        self.filters = self.DEFAULT_FILTERS
+        self.sql = None
+        self.result = None
+        self.limit = 10
+        self.execution_time = 0
+        self.last_execution = None
+        self.transform_type = None
+        self.transform_data = None
+        self.transform_result = None
+        self.status = "Execution Successful"
+
     def before_save(self):
         if self.get("skip_before_save"):
             self.skip_before_save = False
             return
 
-        if not self.columns or not self.filters:
+        if not self.tables:
+            self.clear()
             return
 
         self.process()
@@ -111,6 +128,9 @@ class Query(QueryClient):
                 joins = [d for d in self._joins if d.left == table]
                 for join in joins:
                     query = query.join(join.right, join.type).on(join.condition)
+
+        if not self._columns and self.tables:
+            query = query.select("*")
 
         for column in self._columns:
             query = query.select(column)
@@ -141,9 +161,9 @@ class Query(QueryClient):
     def execute(self):
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         start = time.time()
-        result = data_source.execute_query(self.sql, debug=True)
+        data = data_source.execute_query(self.sql, debug=True)
         end = time.time()
-        self._result = list(result)
+        self._result = list(data)
         self.execution_time = flt(end - start, 3)
         self.last_execution = frappe.utils.now()
 
