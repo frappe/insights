@@ -11,11 +11,11 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex flex-1 flex-col space-y-4">
-				<div class="flex space-x-4">
+			<div class="flex flex-1 flex-col">
+				<div class="mb-4 flex space-x-4">
 					<Input type="text" placeholder="Title" />
 				</div>
-				<div class="flex h-[calc(100%-1.75rem)] flex-col rounded-md border">
+				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
 					<!-- List Header -->
 					<div
 						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"

@@ -19,6 +19,34 @@ def get_data_sources():
 
 
 @frappe.whitelist()
+def get_data_source(name):
+    doc = frappe.get_doc("Data Source", name)
+    tables = get_tables(name)
+    return {
+        "doc": doc.as_dict(),
+        "tables": tables,
+    }
+
+
+@frappe.whitelist()
+def get_data_source_table(name, table):
+    table = frappe.get_doc(
+        "Table",
+        {
+            "data_source": name,
+            "table": table,
+            "hidden": 0,
+        },
+    )
+    columns, data = table.preview()
+    return {
+        "doc": table.as_dict(),
+        "columns": columns,
+        "data": data,
+    }
+
+
+@frappe.whitelist()
 def get_tables(data_source=None):
     if not data_source:
         return []

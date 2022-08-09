@@ -27,7 +27,7 @@
 						aria-hidden="true"
 					/>
 					<router-link
-						:to="idx === routes.length - 1 ? '#' : page.path"
+						:to="idx === routes.length - 1 ? '#' : `/${page.path}`"
 						class="ml-2 text-gray-600 hover:underline"
 						:class="{
 							'cursor-default text-gray-500 hover:no-underline':
@@ -73,18 +73,19 @@ import useCommandPalette from '@/utils/commandPalette'
 const route = useRoute()
 const commandPalette = useCommandPalette()
 
-const routes = computed(() =>
-	route.path
+const routes = computed(() => {
+	return route.path
 		.split('/')
 		.filter(Boolean)
-		.map((route) => {
-			return {
-				name: decodeURIComponent(route)
+		.reduce((routes, path) => {
+			routes.push({
+				name: decodeURIComponent(path)
 					.split('-')
 					.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 					.join(' '),
-				path: `/${route}`,
-			}
-		})
-)
+				path: routes.length ? `${routes[routes.length - 1].path}/${path}` : `${path}`,
+			})
+			return routes
+		}, [])
+})
 </script>

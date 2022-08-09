@@ -363,6 +363,11 @@ class DataSource(Document):
 
         return dynamic_link_map
 
+    def describe_table(self, table, limit=20):
+        columns = self.execute_query(f"""desc `{table}`""", skip_validation=True)
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
+        return columns, data
+
     def get_running_queries(self):
         query = f"""select
                 id, user, db, command, time, state, info, progress

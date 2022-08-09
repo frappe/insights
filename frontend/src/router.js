@@ -43,6 +43,12 @@ const routes = [
 		component: () => import('@/pages/DataSource.vue'),
 	},
 	{
+		props: true,
+		name: 'DataSourceTable',
+		path: '/data-source/:name/:table',
+		component: () => import('@/pages/DataSourceTable.vue'),
+	},
+	{
 		path: '/query',
 		name: 'QueryList',
 		component: () => import('@/pages/QueryList.vue'),

@@ -2,13 +2,13 @@
 	<BasePage>
 		<template #header>
 			<div class="flex flex-1 justify-between">
-				<h1 v-if="dataSource.doc" class="text-3xl font-medium text-gray-900">
-					{{ dataSource.doc.title }}
+				<h1 v-if="dataSourceTable.doc" class="text-3xl font-medium text-gray-900">
+					{{ dataSourceTable.doc.label }}
 				</h1>
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSource.tables" class="flex flex-1 flex-col">
+			<div v-if="dataSourceTable.columns" class="flex h-full flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
 					<Input type="text" placeholder="Status" />
 				</div>
@@ -20,42 +20,34 @@
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
-						<p class="flex-1">Label</p>
-						<p class="flex-1">Table</p>
+						<p class="flex-1" v-for="column in dataSourceTable.columns">
+							{{ column[0] }}
+						</p>
 					</div>
 					<ul
 						role="list"
 						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
-						<li v-for="table in dataSource.tables" :key="table.table">
-							<router-link
-								:to="{
-									name: 'DataSourceTable',
-									params: {
-										name: dataSource.doc.name,
-										table: table.table,
-									},
-								}"
+						<li v-for="row in dataSourceTable.data">
+							<a
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
 									<Input type="checkbox" class="rounded-md border-gray-400" />
 								</p>
 								<p
-									class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900"
+									v-for="value in row"
+									class="flex-1 whitespace-nowrap text-sm text-gray-500"
 								>
-									{{ table.label }}
+									{{ value }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
-									{{ table.table }}
-								</p>
-							</router-link>
+							</a>
 						</li>
 					</ul>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">
-							Showing {{ dataSource.tables.length }} of
-							{{ dataSource.tables.length }}
+							Showing {{ dataSourceTable.data.length }} of
+							{{ dataSourceTable.data.length }}
 						</p>
 					</div>
 				</div>
@@ -66,15 +58,19 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import { useDataSource } from '@/utils/datasource'
+import { useDataSourceTable } from '@/utils/datasource'
 
 const props = defineProps({
 	name: {
 		type: String,
 		required: true,
 	},
+	table: {
+		type: String,
+		required: true,
+	},
 })
 
-const dataSource = useDataSource(props.name)
-window.dataSource = dataSource
+const dataSourceTable = useDataSourceTable(props.name, props.table)
+window.dataSourceTable = dataSourceTable
 </script>
