@@ -94,8 +94,6 @@ function axisChart(type, icon) {
 			return null
 		}
 
-		console.log('columns exists')
-
 		const labels = query.results.getColumnValues(labelColumn)
 		const values = valueColumns.map((col) => query.results.getColumnValues(col))
 
