@@ -25,12 +25,13 @@ function buildComponentProps(query, data) {
 	if (isEmptyObj(data.columns)) {
 		return null
 	}
-	const columns = data.columns.map((c) => c.value)
-	if (!columnsExist(query, ...columns)) {
+	const columnNames = data.columns.map((c) => c.value)
+	if (!columnsExist(query, ...columnNames)) {
 		return null
 	}
 
-	const rows = query.results.getRows(...columns)
+	const columns = data.columns.map((c) => c.label)
+	const rows = query.results.getRows(...columnNames)
 	visualization.componentProps = { columns, rows }
 }
 
