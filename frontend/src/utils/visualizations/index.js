@@ -71,8 +71,9 @@ function useVisualization({ visualizationID, queryID, query }) {
 
 	watchEffect(() => {
 		const type = visualization.type
-		if (type) {
-			visualization.controller = controllers[type]
+		if (!type) return
+		if (type && controllers[type]) {
+			visualization.controller = controllers[type]()
 			visualization.dataSchema = visualization.controller.dataSchema
 			visualization.component = markRaw(visualization.controller.getComponent())
 			visualization.componentProps = computed({
@@ -83,7 +84,9 @@ function useVisualization({ visualizationID, queryID, query }) {
 					visualization.controller.componentProps = value
 				},
 			})
+			return
 		}
+		console.warn(`No visualization controller found for type - ${type}`)
 	})
 
 	watchDebounced(

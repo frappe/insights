@@ -127,6 +127,7 @@ const addVisualization = () => {
 	dashboardResource.addVisualization.submit({
 		visualization: newVisualization.value.value,
 	})
+	newVisualization.value = {}
 	showAddDialog.value = false
 }
 const addingVisualization = computed(() => dashboardResource.addVisualization.loading)
@@ -136,7 +137,6 @@ const removeVisualization = (visualizationID) => {
 		visualization: visualizationID,
 	})
 }
-const removingVisualization = computed(() => dashboardResource.removeVisualization.loading)
 
 const router = useRouter()
 const showDeleteDialog = ref(false)

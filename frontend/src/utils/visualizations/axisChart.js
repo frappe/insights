@@ -1,7 +1,7 @@
 import { reactive, defineAsyncComponent } from 'vue'
 import { isEmptyObj } from '@/utils'
 
-function axisChart(type, icon) {
+function useAxisChart(type, icon) {
 	const visualization = reactive({
 		type,
 		icon,
@@ -133,5 +133,9 @@ function axisChart(type, icon) {
 	return visualization
 }
 
-export const Bar = axisChart('Bar', 'bar-chart-2')
-export const Line = axisChart('Line', 'trending-up')
+export function Bar() {
+	return useAxisChart('Bar', 'bar-chart-2')
+}
+export function Line() {
+	return useAxisChart('Line', 'trending-up')
+}
