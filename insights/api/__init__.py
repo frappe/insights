@@ -89,7 +89,6 @@ def get_all_tables(data_source=None):
         return frappe.get_all(
             "Table",
             filters={
-                "hidden": 0,
                 "data_source": data_source,
             },
             fields=["table", "label", "hidden"],
