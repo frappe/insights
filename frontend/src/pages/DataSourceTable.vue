@@ -31,53 +31,14 @@
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSourceTable.columns" class="flex h-full flex-1 flex-col">
+			<div v-if="dataSourceTable.columns" class="flex h-full w-full flex-col">
 				<div class="mb-4 flex space-x-4">
 					<Input type="text" placeholder="Status" />
 				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
-					<!-- List Header -->
-					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
-					>
-						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-400" />
-						</p>
-						<p
-							class="flex-1"
-							v-for="column in dataSourceTable.columns.slice(0, MAX_COLS)"
-						>
-							<span class="mr-1 font-medium text-gray-600">{{ column[0] }}</span>
-							<span class="text-xs">({{ formatType(column[1]) }})</span>
-						</p>
-					</div>
-					<ul
-						role="list"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
-					>
-						<li v-for="row in dataSourceTable.data">
-							<a
-								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
-							>
-								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-400" />
-								</p>
-								<p
-									v-for="value in row.slice(0, MAX_COLS)"
-									class="flex-1 whitespace-nowrap text-sm text-gray-500"
-								>
-									{{ value }}
-								</p>
-							</a>
-						</li>
-					</ul>
-					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
-						<p class="ml-auto">
-							Showing {{ dataSourceTable.data.length }} of
-							{{ dataSourceTable.data.length }}
-						</p>
-					</div>
-				</div>
+				<Table
+					:columns="dataSourceTable.columns.map((c) => `${c[0]} (${formatType(c[1])})`)"
+					:rows="dataSourceTable.data"
+				/>
 			</div>
 		</template>
 	</BasePage>
@@ -123,6 +84,7 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
+import Table from '@/components/Query/Visualization/Table.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/utils/datasource'
 import { Dropdown, Badge, createResource } from 'frappe-ui'
