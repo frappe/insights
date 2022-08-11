@@ -9,4 +9,5 @@ def execute():
     for data_source in data_sources:
         data_source = frappe.get_doc("Data Source", data_source.name)
         data_source.import_tables(refresh_links=True)
+        data_source.save()
         frappe.db.commit()
