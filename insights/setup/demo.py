@@ -54,18 +54,18 @@ def update_progress(message, progress):
 
 
 def demo_data_exists():
-    get_meta()
+    get_schema()
     tables = list(META.keys())
-    return frappe.db.sql(
+    res = frappe.db.sql(
         f"""
-            SELECT 1
+            SELECT name
             FROM `tabTable`
             WHERE `data_source` = "Demo Data"
                 AND `table` IN ({','.join(['%s'] * len(tables))})
         """,
         tables,
-        as_dict=True,
     )
+    return len(res) == len(tables)
 
 
 def download_demo_data():
@@ -103,7 +103,7 @@ def extract_demo_data():
         raise e
 
 
-def get_meta():
+def get_schema():
     global META
     if META:
         return
