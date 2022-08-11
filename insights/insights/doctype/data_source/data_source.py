@@ -101,8 +101,10 @@ class DataSource(Document):
         return connection_status
 
     def check_if_frappe_db(self):
-        # check if table `tabDoctype` exists in the database
-        return self.execute_query("show tables like 'tabDoctype'", skip_validation=True)
+        # check if table `tabDocType` exists in the database
+        return self.execute_query(
+            "select * from information_schema.tables where table_name = 'tabDocType'"
+        )
 
     def get_tables(self):
         query = """
