@@ -47,7 +47,7 @@ class Aggregations:
         return functions.Count("*")
 
     @staticmethod
-    def sum_if(column, conditions):
+    def sum_if(conditions, column):
         return functions.Sum(Case().when(conditions, column).else_(0))
 
     @staticmethod
