@@ -108,7 +108,7 @@ window.fetch = async function () {
 	if (res.ok) {
 		return res
 	}
-	if (res.status === 403 && document.cookie.includes('user_id=Guest')) {
+	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
 		resetAuth()
 		router.push('/login')
 	}
