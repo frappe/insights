@@ -3,7 +3,7 @@ import App from './App.vue'
 import router from './router'
 import { createApp } from 'vue'
 import utils from './utils'
-import { userInfo } from './utils/users'
+import auth from './utils/auth'
 import { createToast } from './utils/toasts'
 import { socketio_port } from '../../../../sites/common_site_config.json'
 
@@ -34,7 +34,7 @@ app.component('FeatherIcon', FeatherIcon)
 app.directive('on-outside-click', onOutsideClickDirective)
 
 app.provide('$utils', utils)
-app.provide('$user', userInfo)
+app.provide('$auth', auth)
 app.provide('$notify', createToast)
 app.provide('$socket', app.config.globalProperties.$socket)
 app.mount('#app')

@@ -12,12 +12,12 @@
 
 <script setup>
 import { computed } from 'vue'
+import auth from '@/utils/auth'
 import settings from '@/utils/settings'
-import { isLoggedIn } from '@/utils/auth'
 import { isOnboarded } from '@/utils/onboarding'
 import Sidebar from '@/components/Sidebar.vue'
 
 const hideSidebar = computed(() => {
-	return settings.hide_sidebar || !isOnboarded.value || !isLoggedIn.value
+	return settings.hide_sidebar || !isOnboarded.value || !auth.isLoggedIn
 })
 </script>

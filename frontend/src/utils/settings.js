@@ -7,6 +7,7 @@ const getDefaultsResource = createResource('insights.api.get_user_defaults')
 const settings = reactive({
 	hide_sidebar: true,
 	updating: false,
+	fetch,
 	update,
 })
 
@@ -15,13 +16,15 @@ function update(key, value) {
 	settings.updating = updateUserDefaultResource.loading
 }
 
-getDefaultsResource.fetch(null, {
-	onSuccess(res) {
-		for (const key in res) {
-			if (key == 'hide_sidebar') res[key] = res[key] == '1' ? true : false
-			settings[key] = res[key]
-		}
-	},
-})
+function fetch() {
+	getDefaultsResource.fetch(null, {
+		onSuccess(res) {
+			for (const key in res) {
+				if (key == 'hide_sidebar') res[key] = res[key] == '1' ? true : false
+				settings[key] = res[key]
+			}
+		},
+	})
+}
 
 export default settings

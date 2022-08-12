@@ -32,7 +32,7 @@
 import LoginBox from '@/components/LoginBox.vue'
 import { onMounted, ref } from '@vue/runtime-core'
 import { useRoute, useRouter } from 'vue-router'
-import { login } from '@/utils/auth'
+import auth from '@/utils/auth'
 
 const loggingIn = ref(null)
 const email = ref(null)
@@ -55,7 +55,7 @@ const makeLoginRequest = async () => {
 	try {
 		errorMessage.value = null
 		loggingIn.value = true
-		let res = await login(email.value, password.value)
+		let res = await auth.login(email.value, password.value)
 		if (res) {
 			router.push(redirectRoute.value || '/')
 		}

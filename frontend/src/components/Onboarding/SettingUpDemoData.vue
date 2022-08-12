@@ -22,9 +22,9 @@ import { createResource } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 
 const $socket = inject('$socket')
-const $user = inject('$user')
+const $auth = inject('$auth')
 
-const user = computed(() => $user().name)
+const user = computed(() => $auth.user.user_id)
 const message = ref('Starting...')
 const progress = ref(0)
 

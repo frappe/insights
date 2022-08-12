@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getOnboardingStatus } from '@/utils/onboarding'
-import { isLoggedIn, resetAuth } from '@/utils/auth'
+import auth from '@/utils/auth'
 
 const routes = [
 	{
@@ -77,7 +77,7 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	if (isLoggedIn.value) {
+	if (auth.isLoggedIn) {
 		const isOnboarded = await getOnboardingStatus()
 
 		if (!isOnboarded && to.name !== 'Setup') {
@@ -95,7 +95,12 @@ router.beforeEach(async (to, from, next) => {
 		}
 	} else {
 		if (!to.meta.isLoginPage) {
-			next({ name: 'Login', query: { route: to.path } })
+			next({
+				name: 'Login',
+				query: {
+					route: to.path,
+				},
+			})
 		} else {
 			next()
 		}
@@ -109,7 +114,7 @@ window.fetch = async function () {
 		return res
 	}
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
-		resetAuth()
+		auth.reset()
 		router.push('/login')
 	}
 	return res

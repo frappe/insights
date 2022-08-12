@@ -1,44 +1,62 @@
 import { call } from 'frappe-ui'
-import { reactive, ref } from 'vue'
+import settings from '@/utils/settings'
+import { reactive, ref, watch } from 'vue'
 
-export const isLoggedIn = ref(localStorage.getItem('isLoggedIn') !== null)
-export const user = reactive({
-	full_name: '',
-	user_image: '',
+const auth = reactive({
+	isLoggedIn: ref(localStorage.getItem('isLoggedIn') !== null),
+	user: {
+		user_id: '',
+		full_name: '',
+		user_image: '',
+	},
+	login,
+	logout,
+	reset,
 })
 
 document.cookie
 	.split('; ')
 	.map((c) => c.split('='))
 	.forEach(([key, value]) => {
-		user[key] = decodeURIComponent(value)
+		auth.user[key] = decodeURIComponent(value)
 		if (key === 'user_id') {
-			isLoggedIn.value = value !== 'Guest'
+			auth.isLoggedIn = value !== 'Guest'
 			localStorage.setItem('isLoggedIn', value !== 'Guest')
 		}
 	})
 
-export async function login(email, password) {
-	resetAuth()
+watch(
+	() => auth.isLoggedIn,
+	(newVal, oldVal) => {
+		if (newVal && !oldVal) {
+			settings.fetch()
+		}
+	},
+	{ immediate: true }
+)
+
+async function login(email, password) {
+	reset()
 	let res = await call('login', {
 		usr: email,
 		pwd: password,
 	})
 	if (res) {
 		localStorage.setItem('isLoggedIn', true)
-		user.full_name = res.full_name
-		user.user_image = res.user_image
-		isLoggedIn.value = true
+		auth.user.full_name = res.full_name
+		auth.user.user_image = res.user_image
+		auth.isLoggedIn = true
 	}
-	return isLoggedIn.value
+	return auth.isLoggedIn
 }
-export async function logout() {
-	resetAuth()
+async function logout() {
+	reset()
 	await call('logout')
 	window.location.reload()
 }
-
-export function resetAuth() {
+function reset() {
 	localStorage.removeItem('isLoggedIn')
-	isLoggedIn.value = false
+	auth.isLoggedIn = false
 }
+
+export default auth

@@ -34,9 +34,9 @@
 			</div>
 
 			<div class="flex items-center text-base text-gray-600">
-				<Avatar :label="user.full_name" :imageURL="user.user_image" />
-				<span class="ml-2">{{ user.full_name }}</span>
-				<Button icon="log-out" appearance="minimal" class="ml-auto" @click="logout" />
+				<Avatar :label="auth.user.full_name" :imageURL="auth.user.user_image" />
+				<span class="ml-2">{{ auth.user.full_name }}</span>
+				<Button icon="log-out" appearance="minimal" class="ml-auto" @click="auth.logout" />
 			</div>
 		</div>
 	</div>
@@ -49,7 +49,7 @@ import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
-import { user, logout } from '@/utils/auth'
+import auth from '@/utils/auth'
 
 const sidebarItems = ref([
 	{
