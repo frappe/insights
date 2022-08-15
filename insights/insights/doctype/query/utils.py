@@ -234,6 +234,7 @@ class Functions:
             "between": cls.between,
             "timespan": cls.timespan,
             "contains": cls.contains,
+            "not_contains": cls.not_contains,
             "ends_with": cls.endswith,
             "starts_with": cls.startswith,
             "ceil": CustomFunction("CEIL", ["field"]),
@@ -266,7 +267,7 @@ class Functions:
         return field.like(f"%{value}%")
 
     @staticmethod
-    def notcontains(field: Field, value):
+    def not_contains(field: Field, value):
         return field.not_like(f"%{value}%")
 
     @staticmethod

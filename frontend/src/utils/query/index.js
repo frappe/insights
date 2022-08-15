@@ -58,6 +58,15 @@ function getQueryResource(name) {
 }
 
 export const FUNCTIONS = {
+	sum: 'sum',
+	min: 'min',
+	max: 'max',
+	avg: 'avg',
+	count: 'count',
+	sum_if: 'sum_if',
+	count_if: 'count_if',
+	distinct: 'distinct',
+
 	abs: 'abs',
 	in: 'in',
 	not_in: 'not in',
@@ -68,11 +77,12 @@ export const FUNCTIONS = {
 	concat: 'concat',
 	is_set: 'is set',
 	is_not_set: 'is not set',
-	if_null: 'if null',
+	if_null: 'if_null',
 	coalesce: 'coalesce',
 	between: 'between',
 	timespan: 'timespan',
 	contains: 'contains',
+	not_contains: 'not contains',
 	ends_with: 'ends with',
 	starts_with: 'starts with',
 	ceil: 'ceil',
