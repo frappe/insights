@@ -22,7 +22,8 @@ class DataSource(Document):
             self.status = "Inactive"
 
     def on_update(self):
-        self.import_tables()
+        if self.status == "Active":
+            self.import_tables()
 
     def on_trash(self):
         # TODO: optimize this
@@ -189,7 +190,7 @@ class DataSource(Document):
 
         return _columns
 
-    def get_distinct_column_values(self, column, search_text, limit=50):
+    def get_distinct_column_values(self, column, search_text=None, limit=25):
         Table = frappe.qb.Table(column.get("table"))
         Field = frappe.qb.Field(column.get("column"))
         query = (
@@ -197,12 +198,12 @@ class DataSource(Document):
             .select(Field.as_("label"))
             .distinct()
             .select(Field.as_("value"))
-            .where(Field.like(f"%{search_text}%"))
             .limit(limit)
-            .get_sql()
         )
+        if search_text:
+            query = query.where(Field.like(f"%{search_text}%"))
 
-        values = self.execute_query(query, as_dict=1)
+        values = self.execute_query(query.get_sql(), as_dict=1)
 
         # TODO: caching
         return values

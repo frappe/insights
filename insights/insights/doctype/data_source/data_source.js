@@ -4,7 +4,14 @@
 frappe.ui.form.on('Data Source', {
 	refresh: function (frm) {
 		frm.add_custom_button('Test Connection', () => {
-			frm.call('test_connection')
+			frm.call('test_connection').then((res) => {
+				frappe.show_alert({
+					message: res.message
+						? 'Connection Successful'
+						: 'Connection Failed',
+					indicator: res.message ? 'green' : 'red',
+				})
+			})
 		})
 		frm.add_custom_button('Import Tables', () => {
 			frappe
