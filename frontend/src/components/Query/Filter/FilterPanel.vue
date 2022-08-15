@@ -50,6 +50,7 @@ const showFilterPicker = ({ condition, level, position, idx }) => {
 		query.filters.editFilterAt.position = position
 		query.filters.editFilterAt.idx = idx
 	} else {
+		editFilter.value = null
 		query.filters.addNextFilterAt.level = level
 		query.filters.addNextFilterAt.position = position
 	}
@@ -61,6 +62,7 @@ function onFilterSelect(filter) {
 	} else {
 		query.filters.add(filter)
 	}
+	editFilter.value = null
 	pickingFilter.value = false
 }
 

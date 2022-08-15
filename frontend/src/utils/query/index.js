@@ -78,4 +78,6 @@ export const FUNCTIONS = {
 	ceil: 'ceil',
 	round: 'round',
 	replace: 'replace',
+	now: 'now',
+	today: 'today',
 }

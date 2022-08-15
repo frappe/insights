@@ -122,7 +122,7 @@ const showTimespanPicker = computed(
 
 const showListPicker = computed(
 	() =>
-		['in', 'not in'].includes(filter.operator?.value) &&
+		['in', 'not_in'].includes(filter.operator?.value) &&
 		['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
 )
 
@@ -152,7 +152,7 @@ const valuePlaceholder = computed(() => {
 	if (filter.operator?.value == 'between') {
 		return 'Type two comma separated values...'
 	}
-	if (filter.operator?.value == 'in' || filter.operator?.value == 'not in') {
+	if (filter.operator?.value == 'in' || filter.operator?.value == 'not_in') {
 		return 'Select one or more values...'
 	}
 	return 'Type a value...'
@@ -219,9 +219,8 @@ function apply() {
 
 const checkAndFetchColumnValues = debounce(function (search_text) {
 	if (
-		!search_text ||
 		isEmptyObj(filter.column) ||
-		!['=', '!=', 'in', 'not in'].includes(filter.operator?.value)
+		!['=', '!=', 'in', 'not_in'].includes(filter.operator?.value)
 	) {
 		return
 	}

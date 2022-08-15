@@ -218,7 +218,9 @@ class Functions:
     def get_functions(cls):
         return {
             "abs": fn.Abs,
+            "now": fn.Now,
             "in": cls.isin,
+            "today": cls.today,
             "not_in": cls.isnotin,
             "case": cls.case,
             "floor": fn.Floor,
@@ -242,6 +244,10 @@ class Functions:
     @classmethod
     def get_function(cls, function):
         return cls.get_functions()[function]
+
+    @staticmethod
+    def today():
+        return CustomFunction("CURDATE", [])()
 
     @staticmethod
     def isin(field: Field, *values):
