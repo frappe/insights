@@ -23,7 +23,11 @@ function useNumberChart() {
 			return null
 		}
 		const valueColumn = data.valueColumn?.value
-		if (!query.doc.columns.some((c) => c.column === valueColumn)) {
+		if (
+			!query.doc.columns.some((c) =>
+				c.is_expression ? c.label === valueColumn : c.column === valueColumn
+			)
+		) {
 			return null
 		}
 

@@ -26,7 +26,7 @@ function usePieChart() {
 	}
 
 	function columnsExist(query, ...columns) {
-		const columnNames = query.doc.columns.map((c) => c.column)
+		const columnNames = query.doc.columns.map((c) => (c.is_expression ? c.label : c.column))
 		return columns.every((col) => columnNames.indexOf(col) !== -1)
 	}
 
