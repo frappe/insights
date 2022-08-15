@@ -1,9 +1,9 @@
 <template>
 	<div class="relative flex w-full">
-		<div class="z-10 flex w-full items-center">
+		<div class="z-[5] flex w-full items-center">
 			<div
 				ref="operatorRef"
-				class="z-10 mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white font-light hover:border-blue-300 hover:font-medium hover:text-blue-500"
+				class="z-[5] mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white font-light hover:border-blue-300 hover:font-medium hover:text-blue-500"
 				@click.prevent.stop="$emit('toggle-operator', { level, position })"
 			>
 				{{ operator == '&&' ? '&' : 'or' }}
