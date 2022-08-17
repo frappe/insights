@@ -7,17 +7,30 @@
 				</h1>
 				<div class="space-x-2">
 					<Button
-						icon="plus"
+						iconLeft="refresh-ccw"
+						appearance="white"
+						title="Refresh Dashboard"
+						@click="refreshVisualizations"
+						:loading="refreshing"
+					>
+						Refresh
+					</Button>
+					<Button
+						iconLeft="plus"
 						appearance="white"
 						title="Add Visualization"
 						@click="showAddDialog = true"
-					/>
+					>
+						Add
+					</Button>
 					<Button
-						icon="trash-2"
+						iconLeft="trash-2"
 						appearance="white"
 						title="Delete Dashboard"
 						@click="showDeleteDialog = true"
-					/>
+					>
+						Delete
+					</Button>
 				</div>
 			</div>
 		</template>
@@ -25,9 +38,11 @@
 			<div
 				id="dashboard-container"
 				class="relative flex h-full w-full flex-wrap overflow-scroll rounded-md bg-slate-50 shadow-inner"
+				:class="{ 'blur-[4px]': refreshing }"
+				@click="() => (refreshing ? $event.stopPropagation() : null)"
+				v-if="visualizations"
 			>
 				<DashboardCard
-					v-if="visualizations"
 					v-for="visualization in visualizations"
 					parentID="dashboard-container"
 					:key="visualization.id"
@@ -95,6 +110,7 @@ const dashboardResource = createDocumentResource({
 	whitelistedMethods: {
 		addVisualization: 'add_visualization',
 		getVisualizations: 'get_visualizations',
+		refreshVisualizations: 'refresh_visualizations',
 		removeVisualization: 'remove_visualization',
 		updateVisualizationLayout: 'update_visualization_layout',
 	},
@@ -149,6 +165,11 @@ const deleteDashboard = () => {
 
 const editVisualization = (queryID) => {
 	router.push(`/query/${queryID}`)
+}
+
+const refreshing = computed(() => dashboardResource.refreshVisualizations.loading)
+const refreshVisualizations = () => {
+	dashboardResource.refreshVisualizations.submit()
 }
 
 const pageMeta = computed(() => {

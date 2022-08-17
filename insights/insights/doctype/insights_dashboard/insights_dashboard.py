@@ -23,6 +23,11 @@ class InsightsDashboard(Document):
         self.save()
 
     @frappe.whitelist()
+    def refresh_visualizations(self):
+        for visualization in self.visualizations:
+            frappe.get_doc("Query", visualization.query).run()
+
+    @frappe.whitelist()
     def remove_visualization(self, visualization):
         for row in self.visualizations:
             if row.visualization == visualization:
