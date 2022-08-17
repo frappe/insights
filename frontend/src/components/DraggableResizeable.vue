@@ -26,6 +26,7 @@ onMounted(() => {
 			return
 		}
 		new DraggableResizeable(target, parent, {
+			snapToGrid: true,
 			onMove: (x, y) => emit('move', { x, y }),
 			onResize: (width, height) => emit('resize', { width, height }),
 		})
@@ -49,9 +50,8 @@ class DraggableResizeable {
 		this.boundary = this.parent.getBoundingClientRect().toJSON()
 
 		if (this.snapToGrid) {
-			this.gridSize = 12
-			this.columnWidth = Math.floor(this.boundary.width / this.gridSize)
-			this.rowHeight = Math.floor(this.boundary.height / this.gridSize)
+			this.columnWidth = 5
+			this.rowHeight = 5
 		}
 
 		this.attachResizers()
