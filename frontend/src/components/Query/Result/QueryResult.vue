@@ -16,7 +16,9 @@
 				<LimitsAndOrder />
 			</div>
 			<!-- Table -->
-			<div class="relative h-[calc(100%-2.25rem)] w-full overflow-scroll rounded-md border">
+			<div
+				class="relative h-[calc(100%-2.25rem)] w-full overflow-scroll rounded-md border scrollbar-hide"
+			>
 				<table class="border-separate">
 					<thead class="sticky top-0 text-gray-600">
 						<tr>

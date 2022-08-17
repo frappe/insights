@@ -37,7 +37,7 @@
 		<template #main>
 			<div
 				id="dashboard-container"
-				class="relative flex h-full w-full flex-wrap overflow-scroll rounded-md bg-slate-50 shadow-inner"
+				class="relative flex h-full w-full flex-wrap overflow-scroll rounded-md bg-slate-50 shadow-inner scrollbar-hide"
 				:class="{ 'blur-[4px]': refreshing }"
 				@click="() => (refreshing ? $event.stopPropagation() : null)"
 				v-if="visualizations"

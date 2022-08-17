@@ -1,5 +1,5 @@
 <template>
-	<div class="relative mt-2 flex h-full w-full flex-col overflow-scroll text-base">
+	<div class="relative mt-2 flex h-full w-full flex-col overflow-scroll text-base scrollbar-hide">
 		<table v-if="props.columns">
 			<thead class="sticky top-0">
 				<tr>

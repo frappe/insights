@@ -17,7 +17,7 @@ export default defineComponent({
 				},
 				[
 					h('div', {
-						class: 'relative overflow-scroll border',
+						class: 'relative overflow-scroll scrollbar-hide border',
 						innerHTML: props.tableHtml,
 					}),
 				]
