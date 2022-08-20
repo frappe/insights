@@ -2,7 +2,7 @@
 	<BasePage v-if="query.doc">
 		<template #header>
 			<!-- Height 5 rem -->
-			<div class="flex flex-1 items-center justify-between">
+			<div class="flex flex-1 items-start justify-between">
 				<input
 					type="text"
 					v-model="query.doc.title"
@@ -21,7 +21,7 @@
 
 		<template #main>
 			<div class="flex h-full w-full flex-col">
-				<div class="-mt-3 mb-4 flex h-5 space-x-3 text-sm font-light text-gray-600">
+				<div class="-mt-2 mb-3 flex h-5 space-x-3 text-sm font-light text-gray-600">
 					<div v-if="query.doc.data_source" class="flex items-center">
 						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
 						<span> {{ query.doc.data_source }} </span>
@@ -36,7 +36,7 @@
 					</div>
 				</div>
 				<TabSwitcher :tabs="tabs" :activeTab="activeTab" @tab-switched="onTabSwitch" />
-				<!-- 100% - 2rem (tabs) + 1.5rem (query meta) -->
+				<!-- 100% - (h-5 + mb-3 - -mt-2 = 1.5rem) - (2rem) -->
 				<div class="flex h-[calc(100%-3.5rem)] w-full rounded-md">
 					<QueryBuilder v-show="activeTab == 'Build'" />
 					<QueryResult v-if="activeTab == 'Result'" />

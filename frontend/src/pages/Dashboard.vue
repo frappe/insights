@@ -52,7 +52,7 @@
 		<template #main>
 			<div
 				id="dashboard-container"
-				class="relative flex h-full w-full flex-wrap overflow-scroll scrollbar-hide"
+				class="relative mt-1 flex h-full w-full flex-wrap overflow-scroll scrollbar-hide"
 				:class="{
 					'blur-[4px]': refreshing,
 					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,

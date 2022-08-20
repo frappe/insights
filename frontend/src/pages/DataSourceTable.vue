@@ -2,13 +2,15 @@
 	<BasePage>
 		<template #header>
 			<div v-if="dataSourceTable.doc" class="flex flex-1 justify-between">
-				<div class="flex items-center space-x-4">
+				<div class="flex items-start space-x-4">
 					<h1 class="text-3xl font-medium text-gray-900">
 						{{ dataSourceTable.doc.label }}
 					</h1>
-					<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
-						{{ hidden ? 'Disabled' : 'Enabled' }}
-					</Badge>
+					<div class="flex h-8 items-center">
+						<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
+							{{ hidden ? 'Disabled' : 'Enabled' }}
+						</Badge>
+					</div>
 				</div>
 				<div class="space-x-2">
 					<Dropdown
@@ -32,7 +34,7 @@
 		</template>
 		<template #main>
 			<div v-if="dataSourceTable.columns" class="flex h-full w-full flex-col">
-				<div class="mb-4 flex space-x-4">
+				<div class="mb-2 flex space-x-4">
 					<Input type="text" placeholder="Status" />
 				</div>
 				<Table
