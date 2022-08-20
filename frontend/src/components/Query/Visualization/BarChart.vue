@@ -14,6 +14,18 @@ const chartOptions = {
 			position: 'bottom',
 		},
 	},
+	scales: {
+		x: {
+			grid: {
+				display: false,
+			},
+		},
+		y: {
+			grid: {
+				display: false,
+			},
+		},
+	},
 }
 
 const props = defineProps({

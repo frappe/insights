@@ -14,6 +14,18 @@ const chartOptions = {
 			position: 'bottom',
 		},
 	},
+	scales: {
+		x: {
+			grid: {
+				display: false,
+			},
+		},
+		y: {
+			grid: {
+				display: false,
+			},
+		},
+	},
 }
 
 const props = defineProps({
@@ -35,6 +47,8 @@ const chartData = {
 			label: dataset.label,
 			backgroundColor: color[0],
 			borderColor: color[1],
+			pointRadius: 0,
+			borderWidth: 2,
 			tension: props.options.tension,
 		}
 	}),
