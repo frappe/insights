@@ -2,43 +2,61 @@
 	<BasePage>
 		<template #header>
 			<div class="flex flex-1 justify-between">
-				<h1 v-if="dashboard" class="text-3xl font-medium text-gray-900">
-					{{ dashboard.title }}
+				<h1 v-if="dashboard.doc" class="text-3xl font-medium text-gray-900">
+					{{ dashboard.doc.title }}
 				</h1>
-				<div class="space-x-2">
+				<div class="flex items-start space-x-2">
 					<Button
-						iconLeft="refresh-ccw"
+						v-if="dashboard.editingLayout"
 						appearance="white"
-						title="Refresh Dashboard"
-						@click="refreshVisualizations"
-						:loading="refreshing"
+						@click="dashboard.editingLayout = false"
 					>
-						Refresh
+						Discard
 					</Button>
 					<Button
-						iconLeft="plus"
-						appearance="white"
-						title="Add Visualization"
-						@click="showAddDialog = true"
+						v-if="dashboard.editingLayout"
+						appearance="primary"
+						@click="updateLayout"
 					>
-						Add
+						Done
 					</Button>
-					<Button
-						iconLeft="trash-2"
-						appearance="white"
-						title="Delete Dashboard"
-						@click="showDeleteDialog = true"
-					>
-						Delete
-					</Button>
+					<Dropdown
+						placement="right"
+						:button="{ icon: 'more-horizontal', appearance: 'white' }"
+						:options="[
+							{
+								label: 'Refresh',
+								icon: 'refresh-ccw',
+								handler: refreshVisualizations,
+							},
+							{
+								label: 'Edit Layout',
+								icon: 'edit',
+								handler: () => (dashboard.editingLayout = true),
+							},
+							{
+								label: 'Add Visualization',
+								icon: 'plus',
+								handler: () => (showAddDialog = true),
+							},
+							{
+								label: 'Delete',
+								icon: 'trash-2',
+								handler: () => (showDeleteDialog = true),
+							},
+						]"
+					/>
 				</div>
 			</div>
 		</template>
 		<template #main>
 			<div
 				id="dashboard-container"
-				class="relative flex h-full w-full flex-wrap overflow-scroll rounded-md bg-slate-50 shadow-inner scrollbar-hide"
-				:class="{ 'blur-[4px]': refreshing }"
+				class="relative flex h-full w-full flex-wrap overflow-scroll scrollbar-hide"
+				:class="{
+					'blur-[4px]': refreshing,
+					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,
+				}"
 				@click="() => (refreshing ? $event.stopPropagation() : null)"
 				v-if="visualizations"
 			>
@@ -50,6 +68,7 @@
 					:queryID="visualization.query"
 					@edit="editVisualization"
 					@remove="removeVisualization"
+					@layoutChange="updateVisualizationLayout"
 				/>
 			</div>
 		</template>
@@ -61,7 +80,7 @@
 				<Autocomplete
 					placeholder="Select a visualization"
 					v-model="newVisualization"
-					:options="newVisualizations"
+					:options="newVisualizationOptions"
 				/>
 			</div>
 		</template>
@@ -88,13 +107,14 @@
 </template>
 
 <script setup>
+import { Dropdown } from 'frappe-ui'
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import DashboardCard from '@/components/Dashboard/DashboardCard.vue'
 
 import { useRouter } from 'vue-router'
-import { computed, ref, provide } from 'vue'
-import { createDocumentResource } from 'frappe-ui'
+import { computed, ref, provide, reactive } from 'vue'
+import useDashboard from '@/utils/dashboard'
 import { updateDocumentTitle } from '@/utils'
 
 const props = defineProps({
@@ -104,23 +124,11 @@ const props = defineProps({
 	},
 })
 
-const dashboardResource = createDocumentResource({
-	doctype: 'Insights Dashboard',
-	name: props.name,
-	whitelistedMethods: {
-		addVisualization: 'add_visualization',
-		getVisualizations: 'get_visualizations',
-		refreshVisualizations: 'refresh_visualizations',
-		removeVisualization: 'remove_visualization',
-		updateVisualizationLayout: 'update_visualization_layout',
-	},
-})
-provide('dashboard', dashboardResource)
-dashboardResource.getVisualizations.submit()
-const dashboard = computed(() => dashboardResource.doc)
+const dashboard = useDashboard(props.name)
+provide('dashboard', dashboard)
 
 const visualizations = computed(() =>
-	dashboard.value?.visualizations.map((v) => {
+	dashboard.doc?.visualizations.map((v) => {
 		return {
 			query: v.query,
 			id: v.visualization,
@@ -130,35 +138,28 @@ const visualizations = computed(() =>
 
 const showAddDialog = ref(false)
 const newVisualization = ref({})
-const newVisualizations = computed(() =>
-	dashboardResource.getVisualizations.data?.message?.map((v) => {
-		return {
-			value: v.name,
-			label: v.title,
-			description: v.type,
-		}
-	})
-)
+const newVisualizationOptions = dashboard.newVisualizationOptions
+
 const addVisualization = () => {
-	dashboardResource.addVisualization.submit({
+	dashboard.addVisualization.submit({
 		visualization: newVisualization.value.value,
 	})
 	newVisualization.value = {}
 	showAddDialog.value = false
 }
-const addingVisualization = computed(() => dashboardResource.addVisualization.loading)
+const addingVisualization = computed(() => dashboard.addVisualization.loading)
 
 const removeVisualization = (visualizationID) => {
-	dashboardResource.removeVisualization.submit({
+	dashboard.removeVisualization.submit({
 		visualization: visualizationID,
 	})
 }
 
 const router = useRouter()
 const showDeleteDialog = ref(false)
-const deletingDashboard = computed(() => dashboardResource.delete.loading)
+const deletingDashboard = computed(() => dashboard.delete.loading)
 const deleteDashboard = () => {
-	dashboardResource.delete.submit()
+	dashboard.delete.submit()
 	showDeleteDialog.value = false
 	router.push('/dashboard')
 }
@@ -167,14 +168,32 @@ const editVisualization = (queryID) => {
 	router.push(`/query/${queryID}`)
 }
 
-const refreshing = computed(() => dashboardResource.refreshVisualizations.loading)
+const refreshing = computed(() => dashboard.refreshVisualizations.loading)
 const refreshVisualizations = () => {
-	dashboardResource.refreshVisualizations.submit()
+	dashboard.refreshVisualizations.submit()
+}
+
+const updatedLayouts = reactive({})
+const updateVisualizationLayout = (id, layout) => {
+	updatedLayouts[id] = layout
+
+	dashboard.doc?.visualizations.some((v) => {
+		if (v.visualization === id) {
+			v.layout = JSON.stringify(layout)
+			return true
+		}
+	})
+}
+const updateLayout = () => {
+	dashboard.updateLayout.submit({
+		visualizations: updatedLayouts,
+	})
+	dashboard.editingLayout = false
 }
 
 const pageMeta = computed(() => {
 	return {
-		title: dashboard.value?.name,
+		title: dashboard.doc?.name,
 		subtitle: 'Dashboard',
 	}
 })

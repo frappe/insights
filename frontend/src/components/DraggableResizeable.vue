@@ -14,6 +14,10 @@ const props = defineProps({
 		type: String,
 		required: true,
 	},
+	enabled: {
+		type: Boolean,
+		default: true,
+	},
 })
 
 const emit = defineEmits(['move', 'resize'])
@@ -46,7 +50,6 @@ class DraggableResizeable {
 	}
 
 	init() {
-		this.element.classList.add('absolute', 'cursor-grab')
 		this.boundary = this.parent.getBoundingClientRect().toJSON()
 
 		if (this.snapToGrid) {
@@ -71,6 +74,10 @@ class DraggableResizeable {
 	}
 
 	onMouseDown(e) {
+		if (!props.enabled) {
+			this.removeListeners()
+			return
+		}
 		this.element.classList.add('cursor-grabbing', 'z-10')
 		if (e.target.classList.contains('cursor-se-resize')) {
 			this.isResizing = true
@@ -82,11 +89,16 @@ class DraggableResizeable {
 
 		this.dragStartX = e.clientX
 		this.dragStartY = e.clientY
+
 		window.addEventListener('mousemove', this.onMouseMove.bind(this))
 		window.addEventListener('mouseup', this.onMouseUp.bind(this))
 	}
 
 	onMouseUp() {
+		if (!props.enabled) {
+			this.removeListeners()
+			return
+		}
 		const rect = this.element.getBoundingClientRect()
 		const relativeToParent = this.convertToRelative(rect)
 
@@ -99,6 +111,10 @@ class DraggableResizeable {
 		this.isDragging = false
 		this.isResizing = false
 
+		this.removeListeners()
+	}
+
+	removeListeners() {
 		window.removeEventListener('mousemove', this.onMouseMove)
 		window.removeEventListener('mouseup', this.onMouseUp)
 	}
@@ -115,6 +131,14 @@ class DraggableResizeable {
 	}
 
 	onMouseMove(e) {
+		if (!props.enabled) {
+			return
+		}
+
+		if (!this.isDragging && !this.isResizing) {
+			return
+		}
+
 		let dx = e.clientX - this.dragStartX
 		let dy = e.clientY - this.dragStartY
 

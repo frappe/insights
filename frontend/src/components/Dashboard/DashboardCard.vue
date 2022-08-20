@@ -3,10 +3,16 @@
 		v-if="visualization.doc"
 		:parentID="props.parentID"
 		:targetID="visualization.doc.name"
+		:enabled="dashboard.editingLayout"
 		@move="onMove"
 		@resize="onResize"
 	>
-		<div :id="visualization.doc.name" class="inline-block h-fit w-fit p-1" :style="style">
+		<div
+			:id="visualization.doc.name"
+			class="inline-block h-fit w-fit p-1"
+			:style="style"
+			:class="{ 'cursor-grab': dashboard.editingLayout }"
+		>
 			<div
 				class="flex h-full w-full flex-col overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
 			>
@@ -46,7 +52,7 @@ import { computed, reactive, inject, provide } from 'vue'
 import { useVisualization } from '@/utils/visualizations'
 import { safeJSONParse } from '@/utils'
 
-defineEmits(['edit', 'remove'])
+const emit = defineEmits(['edit', 'remove', 'layoutChange'])
 
 const dashboard = inject('dashboard')
 const props = defineProps({
@@ -67,13 +73,13 @@ const props = defineProps({
 const visualizationRow = dashboard.doc.visualizations.find(
 	(row) => row.visualization === props.visualizationID
 )
-visualizationRow.layout = safeJSONParse(visualizationRow.layout, {})
+const initialLayout = safeJSONParse(visualizationRow.layout, {})
 
 const layout = reactive({
-	top: visualizationRow.layout.top,
-	left: visualizationRow.layout.left,
-	width: visualizationRow.layout.width,
-	height: visualizationRow.layout.height,
+	top: initialLayout.top,
+	left: initialLayout.left,
+	width: initialLayout.width,
+	height: initialLayout.height,
 })
 provide('layout', layout) // used by components to listen to resize events
 
@@ -83,7 +89,7 @@ const visualization = useVisualization({
 })
 
 const style = computed(() => {
-	let style = ``
+	let style = `position: absolute; `
 	if (layout.left) style += `left: ${layout.left}px;`
 	if (layout.top) style += `top: ${layout.top}px;`
 
@@ -95,22 +101,11 @@ const style = computed(() => {
 const onMove = ({ x, y }) => {
 	layout.left = x
 	layout.top = y
-	updateLayout()
+	emit('layoutChange', props.visualizationID, layout)
 }
 const onResize = ({ width, height }) => {
 	layout.width = width
 	layout.height = height
-	updateLayout()
-}
-const updateLayout = () => {
-	dashboard.updateVisualizationLayout.submit({
-		visualization: props.visualizationID,
-		layout: {
-			left: layout.left,
-			top: layout.top,
-			width: layout.width,
-			height: layout.height,
-		},
-	})
+	emit('layoutChange', props.visualizationID, layout)
 }
 </script>
