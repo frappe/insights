@@ -14,7 +14,7 @@
 			:class="{ 'cursor-grab': dashboard.editingLayout }"
 		>
 			<div
-				class="flex h-full w-full flex-col overflow-hidden rounded-md border bg-white p-4 pt-3 shadow"
+				class="flex h-full w-full flex-col overflow-hidden rounded-md border bg-white px-4 py-2 shadow"
 			>
 				<div class="flex h-8 items-center justify-between">
 					<div class="text-base font-medium">{{ visualization.doc.title }}</div>
