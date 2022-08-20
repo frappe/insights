@@ -14,6 +14,7 @@ def get_app_version():
 def get_data_sources():
     return frappe.get_list(
         "Data Source",
+        filters={"status": "Active"},
         fields=["name", "title", "status", "database_type", "modified", "username"],
     )
 

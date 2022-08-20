@@ -11,8 +11,13 @@
 		<template #main>
 			<div class="flex flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
-					<Input type="text" placeholder="Title" />
-					<Input type="text" placeholder="Data Source" />
+					<Input type="text" placeholder="Title" v-model="filter.title" />
+					<Input
+						type="select"
+						placeholder="Data Source"
+						v-model="filter.dataSource"
+						:options="['', ...dataSources]"
+					/>
 				</div>
 				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
 					<!-- List Header -->
@@ -123,14 +128,34 @@ const newQuery = reactive({
 })
 
 const getQueries = createResource('insights.api.get_queries')
-const queries = computed(() => {
-	const queries = getQueries.data || []
-	queries.forEach((query) => {
-		query.modified_from_now = moment(query.modified).fromNow()
-	})
-	return queries
-})
 getQueries.fetch()
+watch(
+	() => getQueries.data,
+	(data) => {
+		if (data && data.length) {
+			getQueries.data.forEach((query) => {
+				query.modified_from_now = moment(query.modified).fromNow()
+			})
+		}
+	}
+)
+
+const filter = reactive({
+	title: '',
+	dataSource: '',
+})
+const queries = computed(() => {
+	if (!getQueries.data) return []
+	if (!filter.title && !filter.dataSource) {
+		return getQueries.data
+	}
+	return getQueries.data.filter((query) => {
+		return (
+			query.title.toLowerCase().includes(filter.title.toLowerCase()) &&
+			query.data_source.toLowerCase().includes(filter.dataSource.toLowerCase())
+		)
+	})
+})
 
 const getDataSources = createResource({
 	method: 'insights.api.get_data_sources',
