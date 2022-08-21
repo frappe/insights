@@ -9,7 +9,6 @@
 					ref="titleInput"
 					spellcheck="false"
 					@blur="query.reload.submit()"
-					:size="Math.max(query.doc.title.length || 0, 4)"
 					@keydown.enter="updateTitle"
 					class="-mx-2 -my-1 rounded border-none bg-transparent p-0 px-2 py-1 text-3xl font-medium caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
 				/>

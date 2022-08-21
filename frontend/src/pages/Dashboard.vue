@@ -80,7 +80,7 @@
 				<Autocomplete
 					placeholder="Select a visualization"
 					v-model="newVisualization"
-					:options="newVisualizationOptions"
+					:options="dashboard.newVisualizationOptions"
 				/>
 			</div>
 		</template>
@@ -138,7 +138,6 @@ const visualizations = computed(() =>
 
 const showAddDialog = ref(false)
 const newVisualization = ref({})
-const newVisualizationOptions = dashboard.newVisualizationOptions
 
 const addVisualization = () => {
 	dashboard.addVisualization.submit({

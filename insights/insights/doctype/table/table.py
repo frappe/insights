@@ -12,6 +12,10 @@ class Table(Document):
             "insights",
             "get_tables_" + self.data_source,
         )
+        frappe.cache().hdel(
+            "insights",
+            "get_all_tables_" + self.data_source,
+        )
 
     def preview(self, limit=20):
         return frappe.get_doc("Data Source", self.data_source).describe_table(
