@@ -5,7 +5,7 @@
 				<FrappeInsightsLogo />
 				<span class="ml-1">{{ appVersion }}</span>
 			</div>
-			<div
+			<!-- <div
 				class="relative mt-4 flex cursor-pointer items-center rounded-md border bg-white px-2 text-base text-gray-500"
 				@click="commandPalette.open()"
 			>
@@ -17,7 +17,7 @@
 					disabled
 				/>
 				<span class="absolute right-2 text-sm">⌘K</span>
-			</div>
+			</div> -->
 			<div class="mt-4 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
 					<router-link
