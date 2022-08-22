@@ -6,6 +6,7 @@
 		:indent-with-tab="true"
 		:extensions="extensions"
 		placeholder="Enter an expression..."
+		@update="onUpdate"
 	/>
 </template>
 
@@ -27,7 +28,28 @@ const props = defineProps({
 		default: null,
 	},
 })
-const emit = defineEmits(['update:modelValue', 'inputChange'])
+const emit = defineEmits(['update:modelValue', 'inputChange', 'autocomplete', 'viewUpdate'])
+
+const onUpdate = (editor) => {
+	emit('viewUpdate')
+	const tree = syntaxTree(editor.state)
+	if (
+		editor?.transactions.length &&
+		editor?.transactions[0].annotations.length &&
+		editor?.transactions[0].annotations[0].value == 'input.complete'
+	) {
+		const from = editor.changedRanges[0].fromA
+		const to = editor.changedRanges[0].toB
+		const insertedNode = tree.resolve(to - 1)
+		const insertedText = editor.state.doc.text[0].slice(from, to)
+		emit('autocomplete', {
+			from,
+			to,
+			node: insertedNode,
+			text: insertedText,
+		})
+	}
+}
 
 const code = computed({
 	get: () => props.modelValue || '',

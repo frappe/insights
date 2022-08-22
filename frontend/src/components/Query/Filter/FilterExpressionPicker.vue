@@ -1,9 +1,33 @@
 <template>
-	<div class="flex flex-col space-y-3">
+	<div class="relative flex flex-col space-y-3">
 		<!-- Expression Code Field -->
 		<div class="mb-1 text-sm font-light">Expression</div>
 		<div class="h-40 w-full text-sm">
-			<Code v-model="input.value" :completions="getCompletions"></Code>
+			<Code
+				v-model="input.value"
+				:completions="getCompletions"
+				@autocomplete="onAutocomplete"
+				@viewUpdate="codeViewUpdate"
+			></Code>
+		</div>
+		<!-- Function Help -->
+		<div
+			v-if="expression.help?.syntax"
+			class="absolute -left-[20.5rem] top-[22px] w-[20rem] rounded-md border bg-white p-2 shadow-lg"
+		>
+			<span class="mr-1 font-light">Syntax:</span>
+			<span class="font-medium italic" style="font-family: 'Fira Code'">
+				{{ expression.help.syntax }}
+			</span>
+			<br />
+			<br />
+			<span>{{ expression.help.description }}</span>
+			<br />
+			<br />
+			<span class="mr-1 font-light">Example:</span>
+			<span class="font-medium" style="font-family: 'Fira Code'">
+				{{ expression.help.example }}
+			</span>
 		</div>
 		<!-- Expression Error -->
 		<div
@@ -54,6 +78,7 @@ const expression = reactive({
 	ast: null,
 	error: null,
 	tokens: [],
+	help: null,
 })
 watchEffect(() => {
 	expression.raw = input.value
@@ -79,6 +104,17 @@ const getCompletions = (context, syntaxTree) => {
 		return {
 			from: word.from,
 			options: Object.keys(FUNCTIONS).map((label) => ({ label })),
+		}
+	}
+}
+
+const codeViewUpdate = () => {
+	expression.help = null
+}
+const onAutocomplete = ({ node, text }) => {
+	if (node.type.name == 'VariableName') {
+		if (text && FUNCTIONS[text]) {
+			expression.help = FUNCTIONS[text]
 		}
 	}
 }
