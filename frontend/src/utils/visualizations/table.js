@@ -22,18 +22,19 @@ function useTableChart() {
 		return columns.every((c) => columnNames.includes(c))
 	}
 
-	function buildComponentProps(query, data) {
-		if (isEmptyObj(data.columns)) {
+	function buildComponentProps(query, doc) {
+		if (isEmptyObj(doc.data.columns)) {
 			return null
 		}
-		const columnNames = data.columns.map((c) => c.value)
+		const columnNames = doc.data.columns.map((c) => c.value)
 		if (!columnsExist(query, ...columnNames)) {
 			return null
 		}
 
-		const columns = data.columns.map((c) => c.label)
+		const columns = doc.data.columns.map((c) => c.label)
 		const rows = query.results.getRows(...columnNames)
-		visualization.componentProps = { columns, rows }
+		const title = doc.title
+		visualization.componentProps = { title, columns, rows }
 	}
 
 	return visualization

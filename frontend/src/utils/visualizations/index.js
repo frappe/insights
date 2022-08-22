@@ -65,7 +65,9 @@ function useVisualization({ visualizationID, queryID, query }) {
 			visualization.doc = _doc
 			visualization.type = _doc.type
 			visualization.title = _doc.title
-			visualization.data = safeJSONParse(_doc.data, {})
+			const data = safeJSONParse(_doc.data, {})
+			visualization.doc.data = data
+			visualization.data = data
 		}
 	})
 
@@ -90,22 +92,22 @@ function useVisualization({ visualizationID, queryID, query }) {
 	})
 
 	watchDebounced(
-		// if query.doc or data changes then re-render visualization
+		// if query.doc or doc changes then re-render visualization
 		() => ({
 			queryDoc: query.doc,
-			data: visualization.data,
+			doc: visualization.doc,
 		}),
-		({ data }) => buildComponentProps(query, data),
+		buildComponentProps,
 		{ deep: true, immediate: true, debounce: 300 }
 	)
 
-	async function buildComponentProps(query, data) {
+	async function buildComponentProps() {
 		visualization.componentProps = null
 		await nextTick()
-		if (!query.doc || isEmptyObj(data)) {
+		if (!query.doc || isEmptyObj(visualization.doc.data)) {
 			return
 		}
-		visualization.controller.buildComponentProps(query, data)
+		visualization.controller.buildComponentProps(query, visualization.doc)
 	}
 
 	function setType(type) {

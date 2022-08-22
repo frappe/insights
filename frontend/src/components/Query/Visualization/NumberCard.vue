@@ -1,6 +1,10 @@
 <script setup>
 import { computed, inject, watch, ref, onMounted } from 'vue'
 const props = defineProps({
+	title: {
+		type: String,
+		default: '',
+	},
 	value: {
 		type: Number,
 		required: true,
@@ -19,26 +23,11 @@ const formattedValue = computed(() => {
 	}
 	return (props.value / 1000000000).toFixed(1) + 'b'
 })
-
-// resize the font if width or height is changed
-const valueElem = ref(null)
-onMounted(() => {
-	if (layout) {
-		watch(
-			layout,
-			() => {
-				// set font size to fit
-				const fontSize = layout.width / 5
-				valueElem.value.style.fontSize = fontSize + 'px'
-			},
-			{ immediate: true }
-		)
-	}
-})
 </script>
 
 <template>
-	<div class="flex h-full w-full items-center justify-center">
-		<div ref="valueElem" class="text-8xl">{{ formattedValue }}</div>
+	<div class="flex h-full w-full flex-col items-center justify-center">
+		<div class="text-base font-semibold text-gray-600">{{ props.title }}</div>
+		<div class="text-[44px] leading-tight">{{ formattedValue }}</div>
 	</div>
 </template>

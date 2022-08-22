@@ -20,6 +20,10 @@ export function safeJSONParse(str, defaultValue = null) {
 		return defaultValue
 	}
 
+	if (typeof str === 'object') {
+		return str
+	}
+
 	try {
 		return JSON.parse(str)
 	} catch (e) {

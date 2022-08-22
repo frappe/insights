@@ -1,4 +1,4 @@
-import { reactive, defineAsyncComponent } from 'vue'
+import { reactive, defineAsyncComponent, watch } from 'vue'
 
 function usePivotChart() {
 	const visualization = reactive({
@@ -12,38 +12,51 @@ function usePivotChart() {
 	})
 
 	function getComponent() {
-		return defineAsyncComponent(() => import('@/components/Query/Visualization/PivotTransform'))
+		return defineAsyncComponent(() =>
+			import('@/components/Query/Visualization/PivotTransform.vue')
+		)
 	}
 
-	function buildComponentProps(query, data) {
+	function buildComponentProps(query, doc) {
 		// request backend to perform pivot transform
-		applyPivot(query, data)
+		applyPivot(query, doc.data)
 
 		// watch for changes to transform result
-		const pivotResult = computed(() => query.doc?.transform_result)
-		const unwatch = watch(pivotResult, (result) => {
-			if (result !== '{}') {
-				// once pivot transform is complete, set props as result
-				visualization.componentProps = { tableHtml: result }
+		const unwatch = watch(
+			() => query.doc?.transform_result,
+			(result) => {
+				if (result !== '{}') {
+					// once pivot transform is complete, set props as result
+					visualization.componentProps = {
+						title: doc.title,
+						tableHtml: result,
+					}
+				}
+				unwatch()
 			}
-			unwatch()
-		})
+		)
 
 		// if previous pivot transform result exists, display it
 		visualization.componentProps =
-			query.doc.transform_result !== '{}' ? { tableHtml: query.doc.transform_result } : null
+			query.doc.transform_result !== '{}'
+				? {
+						title: doc.title,
+						tableHtml: query.doc.transform_result,
+				  }
+				: null
 	}
 
 	function applyPivot(query, data) {
 		const pivotColumn = data.pivotColumn
+		const pivotData = {
+			index_columns: query.doc.columns
+				.filter((c) => c.aggregation == 'Group By' && c.label !== pivotColumn.label)
+				.map((c) => c.label),
+			pivot_columns: [pivotColumn.label],
+		}
 		return query.applyTransform.submit({
 			type: 'Pivot',
-			data: {
-				index_columns: query.doc.columns
-					.filter((c) => c.aggregation == 'Group By' && c.label !== pivotColumn.label)
-					.map((c) => c.label),
-				pivot_columns: [pivotColumn.label],
-			},
+			data: pivotData,
 		})
 	}
 	return visualization

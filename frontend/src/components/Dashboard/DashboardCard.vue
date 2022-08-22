@@ -14,26 +14,23 @@
 			:class="{ 'cursor-grab': dashboard.editingLayout }"
 		>
 			<div
-				class="flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
+				class="relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
 			>
-				<div class="flex h-8 items-center justify-between">
-					<div class="text-base font-medium">{{ visualization.doc.title }}</div>
-					<div>
-						<Button
-							icon="settings"
-							appearance="minimal"
-							@mousedown.prevent.stop=""
-							@click.prevent.stop="$emit('edit', props.queryID)"
-						/>
-						<Button
-							icon="x"
-							appearance="minimal"
-							@mousedown.prevent.stop=""
-							@click.prevent.stop="$emit('remove', props.visualizationID)"
-						/>
-					</div>
+				<div v-if="dashboard.editingLayout" class="absolute top-0 right-0 p-1">
+					<Button
+						icon="edit"
+						appearance="minimal"
+						@mousedown.prevent.stop=""
+						@click.prevent.stop="$emit('edit', props.queryID)"
+					/>
+					<Button
+						icon="x"
+						appearance="minimal"
+						@mousedown.prevent.stop=""
+						@click.prevent.stop="$emit('remove', props.visualizationID)"
+					/>
 				</div>
-				<div class="h-[calc(100%-2rem)]">
+				<div class="h-full">
 					<component
 						v-if="visualization.component && visualization.componentProps"
 						:is="visualization.component"
@@ -67,6 +64,10 @@ const props = defineProps({
 	queryID: {
 		type: String,
 		required: true,
+	},
+	editing: {
+		type: Boolean,
+		default: false,
 	},
 })
 

@@ -13,7 +13,7 @@ class InsightsDashboard(Document):
         visualizations = [row.visualization for row in self.visualizations]
         return frappe.get_all(
             "Query Visualization",
-            filters={"name": ("not in", visualizations)},
+            filters={"name": ("not in", visualizations), "type": ["!=", "Pivot"]},
             fields=["name", "title", "type"],
         )
 

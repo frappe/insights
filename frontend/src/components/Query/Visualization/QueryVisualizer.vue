@@ -96,7 +96,7 @@
 			</div>
 			<div v-if="visualization.dataSchema.pivotColumn" class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Select Column</div>
-				<Autocomplete v-model="visualization.data.pivotColumn" :options="labelColumns" />
+				<Autocomplete v-model="visualization.data.pivotColumn" :options="pivotColumns" />
 			</div>
 			<div v-if="visualization.type == 'Line'" class="space-y-2 text-gray-600">
 				<div class="text-base font-light text-gray-500">Line Curveness</div>
@@ -182,6 +182,17 @@ const valueColumns = computed(() => {
 		})
 })
 
+const pivotColumns = computed(() => {
+	return query.doc.columns
+		.filter((c) => c.aggregation == 'Group By')
+		.map((c) => {
+			return {
+				label: c.label,
+				value: c.column || c.label,
+			}
+		})
+})
+
 const $notify = inject('$notify')
 const saveVisualization = () => {
 	const onSuccess = () => {
@@ -193,15 +204,3 @@ const saveVisualization = () => {
 	visualization.updateDoc({ onSuccess })
 }
 </script>
-
-<style lang="postcss">
-.dataframe th {
-	@apply whitespace-nowrap border-r border-b bg-gray-50 py-2 px-4 text-left text-sm font-medium text-gray-700;
-}
-.dataframe td {
-	@apply whitespace-nowrap border-r border-b bg-white py-2 px-4 text-right text-sm text-gray-700;
-}
-.dataframe tr > th:first-child {
-	@apply sticky left-0;
-}
-</style>
