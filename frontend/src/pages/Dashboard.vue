@@ -164,7 +164,7 @@ const deleteDashboard = () => {
 }
 
 const editVisualization = (queryID) => {
-	window.open(`/query/${queryID}`, '_blank')
+	window.open(`/insights/query/${queryID}`, '_blank')
 }
 
 const refreshing = computed(() => dashboard.refreshVisualizations.loading)
