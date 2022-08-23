@@ -16,19 +16,26 @@
 			<div
 				class="relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
 			>
-				<div v-if="dashboard.editingLayout" class="absolute top-0 right-0 p-1">
-					<Button
-						icon="edit"
-						appearance="minimal"
-						@mousedown.prevent.stop=""
-						@click.prevent.stop="$emit('edit', props.queryID)"
-					/>
-					<Button
-						icon="x"
-						appearance="minimal"
-						@mousedown.prevent.stop=""
-						@click.prevent.stop="$emit('remove', props.visualizationID)"
-					/>
+				<div
+					v-if="dashboard.editingLayout"
+					class="absolute top-2 right-2 flex h-5 items-center"
+				>
+					<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
+						<FeatherIcon
+							name="external-link"
+							class="h-3.5 w-3.5"
+							@mousedown.prevent.stop=""
+							@click.prevent.stop="$emit('edit', props.queryID)"
+						/>
+					</div>
+					<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
+						<FeatherIcon
+							name="x"
+							class="h-4 w-4"
+							@mousedown.prevent.stop=""
+							@click.prevent.stop="$emit('remove', props.visualizationID)"
+						/>
+					</div>
 				</div>
 				<div class="h-full">
 					<component
