@@ -70,10 +70,7 @@ insights.setup.slides_settings = [
 			})
 		},
 		show_success_section(slide) {
-			slide.$body.find('.form-section').hide()
-			slide.$body
-				.find('.form-section[data-fieldname="success_section_break"]')
-				.show()
+			slide.$body.find('.form-section').not(':last').hide()
 		},
 		show_success_message(message, slide) {
 			slide.slides_footer.find('.complete-btn').show()
