@@ -18,9 +18,6 @@ def setup():
         update_progress("Done", 99)
         return
 
-    global PRIVATE_FILES_PATH
-    PRIVATE_FILES_PATH = frappe.get_site_path("private", "files")
-
     update_progress("Downloading data...", 5)
     download_demo_data()
 
@@ -57,8 +54,6 @@ def update_progress(message, progress):
 
 
 def demo_data_exists():
-    get_schema()
-    return False
     tables = list(META.keys())
     res = frappe.db.sql(
         f"""
@@ -70,6 +65,14 @@ def demo_data_exists():
         tables,
     )
     return len(res) == len(tables)
+
+
+def initialize_demo_setup():
+    global META
+    META = get_schema()
+
+    global PRIVATE_FILES_PATH
+    PRIVATE_FILES_PATH = frappe.get_site_path("private", "files")
 
 
 def download_demo_data():
@@ -108,10 +111,7 @@ def extract_demo_data():
 
 
 def get_schema():
-    global META
-    if META:
-        return
-    META = {
+    return {
         "Customers": {
             "columns": {
                 "customer_id": "varchar(255)",
@@ -194,9 +194,15 @@ def get_schema():
     }
 
 
+def create_entries():
+    create_tables()
+    import_csv()
+
+
 def create_tables():
     start_progress = 30
     end_progress = 40
+    frappe.db.commit()
     for idx, table in enumerate(META.keys()):
         columns = META[table]["columns"]
         # create a table
@@ -348,6 +354,11 @@ def create_table_links():
                 },
             )
         doc.save()
+
+
+def cleanup():
+    hide_other_tables()
+    remove_demo_data()
 
 
 def hide_other_tables():
