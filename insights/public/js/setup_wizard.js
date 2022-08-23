@@ -1,5 +1,9 @@
 frappe.provide('insights.setup')
 
+// redirect to desk page 'insights' after setup wizard is complete
+// 'insights' desk page redirects to '/insights'
+frappe.setup.welcome_page = '/app/insights'
+
 frappe.setup.on('before_load', function () {
 	insights.setup.slides_settings.map(frappe.setup.add_slide)
 })
