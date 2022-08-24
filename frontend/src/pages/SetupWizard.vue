@@ -54,8 +54,8 @@
 </template>
 
 <script setup>
-import AddDatabase from '@/components/Onboarding/AddDatabase.vue'
-import SettingUpDemoData from '@/components/Onboarding/SettingUpDemoData.vue'
+import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
+import SettingUpDemoData from '@/components/SetupWizard/SettingUpDemoData.vue'
 
 import { ref } from 'vue'
 

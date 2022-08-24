@@ -8,7 +8,7 @@ from frappe.core.page.background_jobs.background_jobs import get_info
 
 
 @frappe.whitelist()
-def is_onboarded():
+def setup_complete():
     return bool(frappe.get_single("Insights Settings").setup_complete)
 
 
@@ -39,10 +39,10 @@ def test_database_connection(db):
 def add_database(db):
     data_source = get_new_datasource(db)
     data_source.save()
-    update_onboarding_status()
+    update_setup_status()
 
 
-def update_onboarding_status():
+def update_setup_status():
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1
     settings.save()
@@ -60,7 +60,7 @@ def setup_demo():
 
 def _setup_demo():
     setup()
-    update_onboarding_status()
+    update_setup_status()
     frappe.publish_realtime(
         event="insights_demo_setup_progress",
         message={

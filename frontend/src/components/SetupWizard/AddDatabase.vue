@@ -88,7 +88,7 @@
 
 <script setup>
 import { computed, nextTick, reactive } from 'vue'
-import { createDatabase, testDatabaseConnection } from '@/utils/onboarding'
+import { createDatabase, testDatabaseConnection } from '@/utils/setupWizard'
 import { useRouter } from 'vue-router'
 
 defineEmits(['close'])

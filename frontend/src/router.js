@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getOnboardingStatus } from '@/utils/onboarding'
+import { getSetupStatus } from '@/utils/setupWizard'
 import auth from '@/utils/auth'
 
 const routes = [
 	{
 		path: '/setup',
 		name: 'Setup',
-		component: () => import('@/pages/Onboarding.vue'),
+		component: () => import('@/pages/SetupWizard.vue'),
 	},
 	{
 		path: '/login',
@@ -79,13 +79,13 @@ let router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
 	if (auth.isLoggedIn) {
-		const isOnboarded = await getOnboardingStatus()
+		const setupComplete = await getSetupStatus()
 
-		if (!isOnboarded && to.name !== 'Setup') {
+		if (!setupComplete && to.name !== 'Setup') {
 			return next('/setup')
 		}
 
-		if (isOnboarded && to.name === 'Setup') {
+		if (setupComplete && to.name === 'Setup') {
 			return next('/')
 		}
 

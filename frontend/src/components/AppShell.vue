@@ -14,10 +14,10 @@
 import { computed } from 'vue'
 import auth from '@/utils/auth'
 import settings from '@/utils/settings'
-import { isOnboarded } from '@/utils/onboarding'
+import { setupComplete } from '@/utils/setupWizard'
 import Sidebar from '@/components/Sidebar.vue'
 
 const hideSidebar = computed(() => {
-	return settings.hide_sidebar || !isOnboarded.value || !auth.isLoggedIn
+	return settings.hide_sidebar || !setupComplete.value || !auth.isLoggedIn
 })
 </script>

@@ -29,7 +29,7 @@ const message = ref('Starting...')
 const progress = ref(0)
 
 const router = useRouter()
-const createDemoDb = createResource('insights.api.onboarding.setup_demo')
+const createDemoDb = createResource('insights.api.setup.setup_demo')
 $socket.on('insights_demo_setup_progress', (data) => {
 	console.log(data)
 	if (!data.user == user.value) {
