@@ -78,6 +78,7 @@
 		<template #body-content>
 			<div class="space-y-4">
 				<Autocomplete
+					ref="autocomplete"
 					placeholder="Select a visualization"
 					v-model="newVisualization"
 					:options="dashboard.newVisualizationOptions"
@@ -113,7 +114,7 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import DashboardCard from '@/components/Dashboard/DashboardCard.vue'
 
 import { useRouter } from 'vue-router'
-import { computed, ref, provide, reactive } from 'vue'
+import { computed, ref, provide, reactive, watch } from 'vue'
 import useDashboard from '@/utils/dashboard'
 import { updateDocumentTitle } from '@/utils'
 
@@ -189,6 +190,16 @@ const updateLayout = () => {
 	})
 	dashboard.editingLayout = false
 }
+
+const autocomplete = ref(null)
+watch(showAddDialog, (show) => {
+	if (show) {
+		setTimeout(() => {
+			autocomplete.value.input.$el.blur()
+			autocomplete.value.input.$el.focus()
+		}, 400)
+	}
+})
 
 const pageMeta = computed(() => {
 	return {
