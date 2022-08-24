@@ -18,7 +18,7 @@ const routes = [
 	},
 	{
 		path: '/',
-		redirect: '/dashboard',
+		redirect: '/get-started',
 	},
 	{
 		path: '/get-started',
