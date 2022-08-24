@@ -18,7 +18,8 @@ const routes = [
 	},
 	{
 		path: '/',
-		redirect: '/dashboard',
+		name: 'Home',
+		component: () => import('@/pages/HomePage.vue'),
 	},
 	{
 		path: '/dashboard',
