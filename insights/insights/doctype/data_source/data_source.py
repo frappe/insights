@@ -117,14 +117,19 @@ class DataSource(Document):
         tables = {d[0] for d in tables}
 
         # TODO: caching
-        replace_tab = self.check_if_frappe_db()
+        frappe_db = self.check_if_frappe_db()
         _tables = [
             {
                 "table": table,
-                "label": table.replace("tab", "") if replace_tab else table,
+                "label": table.replace("tab", "") if frappe_db else table,
             }
             for table in list(tables)
         ]
+
+        if frappe_db:
+            # filter out tables starting with __ if frappe db
+            _tables = [table for table in _tables if "__" not in table.get("table")]
+
         return _tables
 
     @frappe.whitelist()
