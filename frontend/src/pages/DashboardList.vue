@@ -28,6 +28,7 @@
 					</div>
 					<ul
 						role="list"
+						v-if="dashboards.length > 0"
 						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
 						<li v-for="dashboard in dashboards" :key="dashboard.name">
@@ -52,6 +53,17 @@
 							</router-link>
 						</li>
 					</ul>
+					<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
+						<div class="text-base font-light text-gray-500">
+							You haven't created any dashboards yet.
+						</div>
+						<div
+							class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
+							@click="showDialog = true"
+						>
+							Create new?
+						</div>
+					</div>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">
 							Showing {{ dashboards.length }} of {{ dashboards.length }}

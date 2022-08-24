@@ -58,7 +58,7 @@
 					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,
 				}"
 				@click="() => (refreshing ? $event.stopPropagation() : null)"
-				v-if="visualizations"
+				v-if="visualizations && visualizations.length > 0"
 			>
 				<DashboardCard
 					v-for="visualization in visualizations"
@@ -70,6 +70,17 @@
 					@remove="removeVisualization"
 					@layoutChange="updateVisualizationLayout"
 				/>
+			</div>
+			<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
+				<div class="text-base font-light text-gray-500">
+					You haven't added any visualizations.
+				</div>
+				<div
+					class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
+					@click="showAddDialog = true"
+				>
+					Add one?
+				</div>
 			</div>
 		</template>
 	</BasePage>

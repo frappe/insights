@@ -10,9 +10,9 @@
 					spellcheck="false"
 					@blur="query.reload.submit()"
 					@keydown.enter="updateTitle"
-					class="-mx-2 -my-1 rounded border-none bg-transparent p-0 px-2 py-1 text-3xl font-medium caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
+					class="-mx-2 flex-1 rounded border-none bg-transparent p-0 py-1 px-2 text-3xl font-medium caret-black focus:border-none focus:bg-gray-100/75 focus:outline-none focus:ring-transparent"
 				/>
-				<div class="flex space-x-2">
+				<div class="ml-4">
 					<QueryMenu />
 				</div>
 			</div>
@@ -20,7 +20,7 @@
 
 		<template #main>
 			<div class="flex h-full w-full flex-col">
-				<div class="-mt-2 mb-3 flex h-5 space-x-3 text-sm font-light text-gray-600">
+				<div class="-mt-1 mb-3 flex h-5 space-x-3 text-sm font-light text-gray-600">
 					<div v-if="query.doc.data_source" class="flex items-center">
 						<FeatherIcon name="database" class="mr-1.5 h-3 w-3" />
 						<span> {{ query.doc.data_source }} </span>
@@ -35,8 +35,8 @@
 					</div>
 				</div>
 				<TabSwitcher :tabs="tabs" :activeTab="activeTab" @tab-switched="onTabSwitch" />
-				<!-- 100% - (h-5 + mb-3 - -mt-2 = 1.5rem) - (2rem) -->
-				<div class="flex h-[calc(100%-3.5rem)] w-full rounded-md">
+				<!-- 100% - (h-5 + mb-3 - -mt-1 = 1.75rem) - (2rem) -->
+				<div class="flex h-[calc(100%-3.25rem)] w-full rounded-md">
 					<QueryBuilder v-show="activeTab == 'Build'" />
 					<QueryResult v-if="activeTab == 'Result'" />
 					<QueryVisualizer v-if="activeTab == 'Visualize'" />

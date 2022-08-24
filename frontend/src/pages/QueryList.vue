@@ -34,6 +34,7 @@
 					</div>
 					<ul
 						role="list"
+						v-if="queries.length > 0"
 						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
 						<li v-for="query in queries" :key="query.name">
@@ -64,6 +65,17 @@
 							</router-link>
 						</li>
 					</ul>
+					<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
+						<div class="text-base font-light text-gray-500">
+							You haven't created any queries yet.
+						</div>
+						<div
+							class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
+							@click="openDialog = true"
+						>
+							Create new?
+						</div>
+					</div>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">Showing {{ queries.length }} of {{ queries.length }}</p>
 					</div>
@@ -123,7 +135,7 @@ import { updateDocumentTitle } from '@/utils'
 const openDialog = ref(false)
 const newQuery = reactive({
 	dataSource: '',
-	title: '',
+	title: 'Untitled',
 	table: null,
 })
 

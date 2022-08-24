@@ -2,12 +2,12 @@
 	<div
 		class="flex h-[calc(100%)] min-h-[38rem] flex-col items-center justify-center rounded-md bg-gray-100 pb-12"
 	>
-		<div class="flex flex-col space-y-3 text-base">
-			<div class="text-2xl text-gray-600">Get Started</div>
+		<div class="flex flex-col space-y-2 text-base">
+			<div class="mb-1 text-2xl text-gray-600">Get Started</div>
 			<router-link
 				:to="step.to"
 				v-for="step in onboardingSteps"
-				class="flex cursor-pointer items-center py-1.5 font-medium text-gray-600 hover:text-gray-700"
+				class="flex cursor-pointer items-center py-1.5 text-gray-600 hover:text-gray-700"
 				@click="step.clickAction ? step.clickAction() : null"
 			>
 				<FeatherIcon
