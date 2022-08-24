@@ -41,6 +41,8 @@
 </template>
 
 <script setup>
+import { ellipsis } from '@/utils'
+
 const props = defineProps({
 	title: {
 		type: String,
@@ -53,11 +55,4 @@ const props = defineProps({
 		type: Array,
 	},
 })
-
-function ellipsis(value, length) {
-	if (value && value.length > length) {
-		return value.substring(0, length) + '...'
-	}
-	return value
-}
 </script>

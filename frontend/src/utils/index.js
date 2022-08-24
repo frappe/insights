@@ -95,6 +95,13 @@ export function fuzzySearch(arr, { term, keys }) {
 	return results.sort((a, b) => a.score - b.score).map((item) => item.item)
 }
 
+export function ellipsis(value, length) {
+	if (value && value.length > length) {
+		return value.substring(0, length) + '...'
+	}
+	return value
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,
