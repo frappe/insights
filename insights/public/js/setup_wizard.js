@@ -92,7 +92,7 @@ insights.setup.slides_settings = [
 						</svg>
 					</div>
 					<br>
-					<div class="text-muted text-center" style="width: 70%">${message}</div>
+					<div class="text-muted text-center mt-2" style="width: 70%">${message}</div>
 				</div>`
 			)
 		},
