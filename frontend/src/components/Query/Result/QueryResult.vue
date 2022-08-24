@@ -49,7 +49,7 @@
 								class="whitespace-nowrap bg-white p-2.5 pr-4 font-light text-gray-600"
 								:class="{ 'text-right': isNumberColumn[j] }"
 							>
-								{{ cell }}
+								{{ ellipsis(cell, 100) }}
 							</td>
 						</tr>
 					</tbody>
@@ -76,7 +76,7 @@
 <script setup>
 import ColumnHeader from '@/components/Query/Result/ColumnHeader.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
-import { FIELDTYPES, isEmptyObj } from '@/utils'
+import { FIELDTYPES, isEmptyObj, ellipsis } from '@/utils'
 
 import { computed, inject, watch } from 'vue'
 
