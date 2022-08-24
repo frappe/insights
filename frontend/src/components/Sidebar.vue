@@ -58,9 +58,6 @@
 <script setup>
 import { Avatar } from 'frappe-ui'
 import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
-import useCommandPalette from '@/utils/commandPalette'
-
-const commandPalette = useCommandPalette()
 
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
