@@ -380,7 +380,8 @@ class DataSource(Document):
     def describe_table(self, table, limit=20):
         columns = self.execute_query(f"""desc `{table}`""", skip_validation=True)
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
-        return columns, data
+        no_of_rows = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
+        return columns, data, no_of_rows
 
     def get_running_queries(self):
         query = f"""select

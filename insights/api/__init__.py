@@ -38,11 +38,12 @@ def get_data_source_table(name, table):
             "table": table,
         },
     )
-    columns, data = table.preview()
+    columns, data, no_of_rows = table.preview()
     return {
         "doc": table.as_dict(),
+        "no_of_rows": no_of_rows,
         "columns": columns,
-        "data": data,
+        "rows": data,
     }
 
 

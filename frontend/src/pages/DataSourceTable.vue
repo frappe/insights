@@ -34,13 +34,18 @@
 		</template>
 		<template #main>
 			<div v-if="dataSourceTable.columns" class="flex h-full w-full flex-col">
-				<div class="mb-2 flex space-x-4">
-					<Input type="text" placeholder="Status" />
+				<div class="flex h-6 space-x-1 text-sm font-light text-gray-600">
+					{{ dataSourceTable.columns.length }} Columns -
+					{{ dataSourceTable.no_of_rows }} Rows
 				</div>
-				<Table
-					:columns="dataSourceTable.columns.map((c) => `${c[0]} (${formatType(c[1])})`)"
-					:rows="dataSourceTable.data"
-				/>
+				<div class="h-[calc(100%-1.5rem)] w-full">
+					<Table
+						:columns="
+							dataSourceTable.columns.map((c) => `${c[0]} (${formatType(c[1])})`)
+						"
+						:rows="dataSourceTable.rows"
+					/>
+				</div>
 			</div>
 		</template>
 	</BasePage>

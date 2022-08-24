@@ -9,7 +9,7 @@
 		</header>
 		<main
 			class="flex"
-			:class="[routes.length > 1 ? 'h-[calc(100%-4rem)]' : 'h-[calc(100%-2.5rem)]']"
+			:class="[routes.length > 1 ? 'h-[calc(100%-4.25rem)]' : 'h-[calc(100%-2.5rem)]']"
 		>
 			<slot name="main" />
 		</main>
