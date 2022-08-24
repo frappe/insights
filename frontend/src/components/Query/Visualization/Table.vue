@@ -20,10 +20,10 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="row in props.rows">
+					<tr v-for="row in props.rows" class="border-b">
 						<td
 							v-for="cell in row"
-							class="whitespace-nowrap bg-white p-2.5 font-light text-gray-600"
+							class="whitespace-nowrap bg-white px-2.5 py-2 font-light text-gray-600"
 						>
 							{{ ellipsis(cell, 100) }}
 						</td>
