@@ -14,6 +14,8 @@ META = None
 
 
 def setup():
+    initialize_demo_setup()
+
     if demo_data_exists():
         update_progress("Done", 99)
         return
