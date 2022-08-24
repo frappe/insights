@@ -1,31 +1,47 @@
-import { call, createResource } from 'frappe-ui'
+import { call } from 'frappe-ui'
+import { useStorage } from '@vueuse/core'
 import { ref } from 'vue'
 
-const isOnboarded = ref(localStorage.getItem('isOnboarded') === 'true')
+const onboardingComplete = ref(localStorage.getItem('onboardingComplete') === 'true')
+const completedSteps = useStorage('insights:completedSteps', {
+	browseData: false,
+	createQuery: false,
+	createVisualization: false,
+	createDashboard: false,
+	addVisualization: false,
+})
 
 const getOnboardingStatus = async () => {
-	if (localStorage.getItem('isOnboarded')) {
-		isOnboarded.value = localStorage.getItem('isOnboarded') === 'true'
-		return isOnboarded.value
+	if (localStorage.getItem('onboardingComplete')) {
+		onboardingComplete.value = localStorage.getItem('onboardingComplete') === 'true'
+		return onboardingComplete.value
 	}
-
-	const is_onboarded = await call('insights.api.onboarding.is_onboarded')
-	localStorage.setItem('isOnboarded', is_onboarded)
-	isOnboarded.value = is_onboarded
-
-	return isOnboarded.value
+	await updateOnboardingStatus()
+	return onboardingComplete.value
 }
 
-const testDatabaseConnection = createResource({
-	method: 'insights.api.onboarding.test_database_connection',
-})
+async function updateOnboardingStatus() {
+	const onboarding_status = await call('insights.api.get_onboarding_status')
+	console.log(onboarding_status)
+	onboardingComplete.value = onboarding_status.is_onboarded
+	updateSteps(onboarding_status)
+}
 
-const createDatabase = createResource({
-	method: 'insights.api.onboarding.add_database',
-	onSuccess() {
-		localStorage.removeItem('isOnboarded')
-		getOnboardingStatus()
-	},
-})
+function updateStep(step, completionStatus) {
+	completedSteps.value[step] = completionStatus
+}
 
-export { isOnboarded, getOnboardingStatus, createDatabase, testDatabaseConnection }
+function updateSteps(onboarding_status) {
+	updateStep('createQuery', onboarding_status.query_created)
+	updateStep('createVisualization', onboarding_status.visualization_created)
+	updateStep('createDashboard', onboarding_status.dashboard_created)
+	updateStep('addVisualization', onboarding_status.visualization_added)
+}
+
+export {
+	onboardingComplete,
+	completedSteps,
+	getOnboardingStatus,
+	updateOnboardingStatus,
+	updateStep,
+}

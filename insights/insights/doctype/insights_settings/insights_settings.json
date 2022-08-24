@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "onboarding_section",
-  "setup_complete"
+  "setup_complete",
+  "onboarding_complete"
  ],
  "fields": [
   {
@@ -18,14 +19,19 @@
   },
   {
    "fieldname": "onboarding_section",
-   "fieldtype": "Section Break",
-   "label": "Onboarding"
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "onboarding_complete",
+   "fieldtype": "Check",
+   "label": "Onboarding Complete"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-08-06 21:34:52.573971",
+ "modified": "2022-08-24 13:12:28.900403",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

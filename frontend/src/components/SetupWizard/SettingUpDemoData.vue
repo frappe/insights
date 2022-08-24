@@ -45,7 +45,7 @@ $socket.on('insights_demo_setup_progress', (data) => {
 	message.value = data.message
 	if (data.progress === 100) {
 		$socket.off('insights_demo_setup_progress')
-		localStorage.removeItem('isOnboarded')
+		localStorage.removeItem('setupComplete')
 		nextTick(() => router.push('/'))
 	}
 })

@@ -223,3 +223,20 @@ def create_table_link(
     if not foreign.get("table_links", link):
         foreign.append("table_links", link)
         foreign.save()
+
+
+@frappe.whitelist()
+def get_onboarding_status():
+    return {
+        "is_onboarded": frappe.db.get_single_value(
+            "Insights Settings", "onboarding_complete"
+        ),
+        "query_created": bool(frappe.db.a_row_exists("Query")),
+        "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
+        "visualization_created": bool(
+            frappe.db.exists(
+                "Query Visualization", {"data": ["is", "set"], "type": ["is", "set"]}
+            )
+        ),
+        "visualization_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
+    }

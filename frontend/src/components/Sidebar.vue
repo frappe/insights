@@ -63,6 +63,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
+import { getOnboardingStatus } from '@/utils/onboarding'
 
 const sidebarItems = ref([
 	{
@@ -93,6 +94,19 @@ const sidebarItems = ref([
 		current: false,
 	},
 ])
+
+getOnboardingStatus().then((onboardingComplete) => {
+	if (!onboardingComplete) {
+		// add onboarding item as first item in sidebar
+		sidebarItems.value.unshift({
+			path: '/get-started',
+			label: 'Get Started',
+			icon: 'star',
+			name: 'GetStarted',
+			current: false,
+		})
+	}
+})
 
 const route = useRoute()
 const currentRoute = computed(() => {

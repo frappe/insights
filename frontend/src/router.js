@@ -18,8 +18,12 @@ const routes = [
 	},
 	{
 		path: '/',
-		name: 'Home',
-		component: () => import('@/pages/HomePage.vue'),
+		redirect: '/dashboard',
+	},
+	{
+		path: '/get-started',
+		name: 'Get Started',
+		component: () => import('@/pages/GetStarted.vue'),
 	},
 	{
 		path: '/dashboard',
