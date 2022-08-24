@@ -1,8 +1,11 @@
 <template>
 	<div class="h-full w-full">
-		<div class="h-5 text-base font-semibold text-gray-600">{{ props.title }}</div>
+		<div v-if="props.title" class="h-5 text-base font-semibold text-gray-600">
+			{{ props.title }}
+		</div>
 		<div
-			class="relative mt-2 flex h-[calc(100%-1.5rem)] w-full flex-col overflow-scroll text-base scrollbar-hide"
+			class="relative mt-2 flex w-full flex-col overflow-scroll text-base scrollbar-hide"
+			:class="[props.title ? 'h-[calc(100%-1.75rem)]' : 'h-[calc(100%-1rem)]']"
 		>
 			<table v-if="props.columns">
 				<thead class="sticky top-0">
@@ -22,11 +25,17 @@
 							v-for="cell in row"
 							class="whitespace-nowrap bg-white p-2.5 font-light text-gray-600"
 						>
-							{{ cell }}
+							{{ ellipsis(cell, 100) }}
 						</td>
 					</tr>
 				</tbody>
 			</table>
+			<div
+				v-if="props.rows.length == 0"
+				class="mt-2 flex h-[calc(100%-1.5rem)] w-full items-center justify-center text-lg font-light text-gray-500"
+			>
+				No Data
+			</div>
 		</div>
 	</div>
 </template>
@@ -44,4 +53,11 @@ const props = defineProps({
 		type: Array,
 	},
 })
+
+function ellipsis(value, length) {
+	if (value && value.length > length) {
+		return value.substring(0, length) + '...'
+	}
+	return value
+}
 </script>
