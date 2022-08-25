@@ -240,3 +240,8 @@ def get_onboarding_status():
         ),
         "visualization_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
     }
+
+
+@frappe.whitelist()
+def skip_onboarding():
+    frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)

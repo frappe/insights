@@ -35,6 +35,23 @@ function updateSteps(onboarding_status) {
 	updateStep('createVisualization', onboarding_status.visualization_created)
 	updateStep('createDashboard', onboarding_status.dashboard_created)
 	updateStep('addVisualization', onboarding_status.visualization_added)
+
+	if (
+		!onboarding_status.is_onboarded &&
+		onboarding_status.query_created &&
+		onboarding_status.visualization_created &&
+		onboarding_status.dashboard_created &&
+		onboarding_status.visualization_added
+	) {
+		skipOnboarding()
+	}
+}
+
+async function skipOnboarding() {
+	localStorage.setItem('onboardingComplete', true)
+	await call('insights.api.skip_onboarding')
+	onboardingComplete.value = true
+	updateOnboardingStatus()
 }
 
 export {
@@ -42,5 +59,6 @@ export {
 	completedSteps,
 	getOnboardingStatus,
 	updateOnboardingStatus,
+	skipOnboarding,
 	updateStep,
 }

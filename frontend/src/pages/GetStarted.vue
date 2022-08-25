@@ -1,30 +1,50 @@
 <template>
-	<div
-		class="flex h-[calc(100%)] min-h-[38rem] flex-col items-center justify-center rounded-md bg-gray-100 pb-12"
-	>
-		<div class="flex flex-col space-y-2 text-base">
-			<div class="mb-1 text-2xl text-gray-600">Get Started</div>
-			<router-link
-				:to="step.to"
-				v-for="step in onboardingSteps"
-				class="flex cursor-pointer items-center py-1.5 text-gray-600 hover:text-gray-700"
-				@click="step.clickAction ? step.clickAction() : null"
-			>
-				<FeatherIcon
-					:name="step.completed ? 'check-circle' : 'circle'"
-					class="mr-2 h-4 w-4"
-					:class="[step.completed ? 'text-green-600' : '']"
-				/>
-				<p>{{ step.label }}</p>
-			</router-link>
+	<div class="flex h-[calc(100%)] min-h-[38rem] flex-col rounded-md bg-gray-100 pb-8">
+		<div class="flex flex-1 flex-col items-center justify-center">
+			<div class="flex flex-col text-base">
+				<div class="mb-2 text-2xl text-gray-600">Get Started</div>
+				<router-link
+					:to="step.to"
+					v-for="step in onboardingSteps"
+					class="mt-1 flex cursor-pointer items-center py-1.5 text-gray-600 hover:text-gray-700"
+					@click="step.clickAction ? step.clickAction() : null"
+				>
+					<FeatherIcon
+						:name="step.completed ? 'check-circle' : 'circle'"
+						class="mr-2 h-4 w-4"
+						:class="[step.completed ? 'text-green-600' : '']"
+					/>
+					<p>{{ step.label }}</p>
+				</router-link>
+			</div>
+		</div>
+		<div
+			class="cursor-pointer text-center text-sm font-light text-gray-500 hover:underline"
+			@click="openDialog = true"
+		>
+			Skip?
 		</div>
 	</div>
+
+	<Dialog :options="{ title: 'Skip Onboarding' }" v-model="openDialog">
+		<template #body-content>
+			<p class="text-base text-gray-600">Are you sure you want to skip onboarding?</p>
+		</template>
+		<template #actions>
+			<Button appearance="danger" @click="skip"> Yes </Button>
+		</template>
+	</Dialog>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { updateDocumentTitle } from '@/utils'
-import { completedSteps, updateStep, updateOnboardingStatus } from '@/utils/onboarding'
+import {
+	completedSteps,
+	updateStep,
+	updateOnboardingStatus,
+	skipOnboarding,
+} from '@/utils/onboarding'
 
 updateOnboardingStatus()
 
@@ -57,6 +77,12 @@ const onboardingSteps = ref([
 		completed: completedSteps.value.addVisualization,
 	},
 ])
+
+const openDialog = ref(false)
+const skip = () => {
+	skipOnboarding()
+	openDialog.value = false
+}
 
 const pageMeta = ref({
 	title: 'Get Started',

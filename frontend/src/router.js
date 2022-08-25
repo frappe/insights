@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getSetupStatus } from '@/utils/setupWizard'
+import { getOnboardingStatus } from '@/utils/onboarding'
 import auth from '@/utils/auth'
 
 const routes = [
@@ -82,33 +83,38 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	if (auth.isLoggedIn) {
-		const setupComplete = await getSetupStatus()
-
-		if (!setupComplete && to.name !== 'Setup') {
-			return next('/setup')
-		}
-
-		if (setupComplete && to.name === 'Setup') {
-			return next('/')
-		}
-
-		if (to.path === '/login') {
-			next('/')
-		} else {
-			next()
-		}
-	} else {
+	if (!auth.isLoggedIn) {
 		if (!to.meta.isLoginPage) {
-			next({
+			return next({
 				name: 'Login',
 				query: {
 					route: to.path,
 				},
 			})
 		} else {
-			next()
+			return next()
 		}
+	}
+
+	// force redirect to Setup page if not yet setup
+	const setupComplete = await getSetupStatus()
+	if (!setupComplete && to.name !== 'Setup') {
+		return next('/setup')
+	}
+	if (setupComplete && to.name === 'Setup') {
+		return next('/')
+	}
+
+	// redirect to /dashboard if onboarding is complete
+	const onboardingComplete = await getOnboardingStatus()
+	if (onboardingComplete && to.name == 'Get Started') {
+		return next('/dashboard')
+	}
+
+	if (to.path === '/login') {
+		next('/')
+	} else {
+		next()
 	}
 })
 
