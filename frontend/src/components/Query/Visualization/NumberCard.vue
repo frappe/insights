@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, watch, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 const props = defineProps({
 	title: {
 		type: String,
@@ -10,18 +10,18 @@ const props = defineProps({
 		required: true,
 	},
 })
-const layout = inject('layout')
 const formattedValue = computed(() => {
-	if (props.value < 1000) {
-		return props.value
+	const value = props.value.toFixed(1)
+	if (value < 1000) {
+		return value
 	}
-	if (props.value < 1000000) {
-		return (props.value / 1000).toFixed(1) + 'k'
+	if (value < 1000000) {
+		return (value / 1000).toFixed(1) + 'k'
 	}
-	if (props.value < 1000000000) {
-		return (props.value / 1000000).toFixed(1) + 'm'
+	if (value < 1000000000) {
+		return (value / 1000000).toFixed(1) + 'm'
 	}
-	return (props.value / 1000000000).toFixed(1) + 'b'
+	return (value / 1000000000).toFixed(1) + 'b'
 })
 </script>
 
