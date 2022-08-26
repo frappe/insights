@@ -26,7 +26,7 @@ const formattedValue = computed(() => {
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col items-center justify-center">
+	<div class="flex h-full min-h-[6rem] w-full min-w-40 flex-col items-center justify-center">
 		<div class="text-base font-semibold text-gray-600">{{ props.title }}</div>
 		<div class="text-[44px] leading-tight">{{ formattedValue }}</div>
 	</div>
