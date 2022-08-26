@@ -15,8 +15,8 @@ const types = [
 	{ type: 'Line', icon: 'trending-up' },
 	{ type: 'Pie', icon: 'pie-chart' },
 	{ type: 'Number', icon: 'hash' },
-	{ type: 'Row', icon: 'align-left' },
-	{ type: 'Funnel', icon: 'filter' },
+	// { type: 'Row', icon: 'align-left' },
+	// { type: 'Funnel', icon: 'filter' },
 	{ type: 'Pivot', icon: 'layout' },
 	{ type: 'Table', icon: 'grid' },
 ]
