@@ -14,11 +14,11 @@
 			:class="{ 'cursor-grab': dashboard.editingLayout }"
 		>
 			<div
-				class="relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
+				class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
 			>
 				<div
-					v-if="dashboard.editingLayout"
-					class="absolute top-2 right-2 flex h-5 items-center"
+					v-if="!dashboard.editingLayout"
+					class="invisible absolute top-2 right-2 flex h-5 items-center group-hover:visible"
 				>
 					<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
 						<FeatherIcon
@@ -47,6 +47,7 @@
 			</div>
 		</div>
 	</DraggableResizeable>
+	<div v-else class="inline-block h-fit w-fit rounded-md bg-gray-50" :style="style"></div>
 </template>
 
 <script setup>
