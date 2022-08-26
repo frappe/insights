@@ -45,6 +45,7 @@ import { safeJSONParse } from '@/utils'
 const dateFormats = [
 	{ label: 'January 12, 2020', value: 'Day' },
 	{ label: 'January, 2020', value: 'Month' },
+	{ label: 'Jan 20', value: 'Mon' },
 	{ label: 'Q1, 2020', value: 'Quarter' },
 	{ label: '2020', value: 'Year' },
 	{ label: 'Monday', value: 'Day of Week' },
@@ -58,6 +59,7 @@ const dateTimeFormats = [
 	{ label: '1:00 PM', value: 'Hour of Day' },
 	{ label: 'January 12, 2020', value: 'Day' },
 	{ label: 'January, 2020', value: 'Month' },
+	{ label: 'Jan 20', value: 'Mon' },
 	{ label: 'Q1, 2020', value: 'Quarter' },
 	{ label: '2020', value: 'Year' },
 	{ label: 'Monday', value: 'Day of Week' },

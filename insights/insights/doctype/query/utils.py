@@ -74,6 +74,7 @@ class ColumnFormat:
         "Hour": "%D %M, %Y, %l:00 %p",
         "Day": "%D %M, %Y",
         "Month": "%M, %Y",
+        "Mon": "%b %y",
         "Year": "%Y",
         "Minute of Hour": "%i",
         "Hour of Day": "%l:00 %p",
