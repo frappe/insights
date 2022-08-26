@@ -152,18 +152,26 @@ const showAddDialog = ref(false)
 const newVisualization = ref({})
 
 const addVisualization = () => {
-	dashboard.addVisualization.submit({
-		visualization: newVisualization.value.value,
-	})
-	newVisualization.value = {}
-	showAddDialog.value = false
+	dashboard.addVisualization
+		.submit({
+			visualization: newVisualization.value.value,
+		})
+		.then(() => {
+			newVisualization.value = {}
+			showAddDialog.value = false
+			dashboard.updateNewVisualizationOptions()
+		})
 }
 const addingVisualization = computed(() => dashboard.addVisualization.loading)
 
 const removeVisualization = (visualizationID) => {
-	dashboard.removeVisualization.submit({
-		visualization: visualizationID,
-	})
+	dashboard.removeVisualization
+		.submit({
+			visualization: visualizationID,
+		})
+		.then(() => {
+			dashboard.updateNewVisualizationOptions()
+		})
 }
 
 const router = useRouter()

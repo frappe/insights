@@ -4,7 +4,9 @@ import { createDocumentResource } from 'frappe-ui'
 export default function useDashboard(name) {
 	const dashboard = makeDashboardResource(name)
 
-	dashboard.getVisualizations.submit()
+	dashboard.updateNewVisualizationOptions = () => {
+		dashboard.getVisualizations.submit()
+	}
 	dashboard.newVisualizationOptions = computed(() =>
 		dashboard.getVisualizations.data?.message?.map((v) => {
 			return {
@@ -14,6 +16,7 @@ export default function useDashboard(name) {
 			}
 		})
 	)
+	dashboard.updateNewVisualizationOptions()
 
 	dashboard.editingLayout = false
 
