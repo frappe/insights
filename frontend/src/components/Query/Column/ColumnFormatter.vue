@@ -6,15 +6,6 @@
 		</a>
 	</div>
 	<div v-else class="flex flex-col space-y-3">
-		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Date Format</div>
-			<Autocomplete
-				v-model="format.dateFormat"
-				:options="dateFormatOptions"
-				placeholder="Select a date format..."
-				@selectOption="(option) => (format.dateFormat = option)"
-			/>
-		</div>
 		<div v-if="showNumberFormatOptions" class="space-y-3 text-sm text-gray-600">
 			<div class="space-y-1">
 				<div class="font-light">Prefix</div>
@@ -40,32 +31,6 @@
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 import { reactive, ref, unref } from 'vue'
-import { safeJSONParse } from '@/utils'
-
-const dateFormats = [
-	{ label: 'January 12, 2020', value: 'Day' },
-	{ label: 'January, 2020', value: 'Month' },
-	{ label: 'Jan 20', value: 'Mon' },
-	{ label: 'Q1, 2020', value: 'Quarter' },
-	{ label: '2020', value: 'Year' },
-	{ label: 'Monday', value: 'Day of Week' },
-	{ label: 'January', value: 'Month of Year' },
-	{ label: 'Q1', value: 'Quarter of Year' },
-]
-
-const dateTimeFormats = [
-	{ label: 'January 12, 2020 1:14 PM', value: 'Minute' },
-	{ label: 'January 12, 2020 1:00 PM', value: 'Hour' },
-	{ label: '1:00 PM', value: 'Hour of Day' },
-	{ label: 'January 12, 2020', value: 'Day' },
-	{ label: 'January, 2020', value: 'Month' },
-	{ label: 'Jan 20', value: 'Mon' },
-	{ label: 'Q1, 2020', value: 'Quarter' },
-	{ label: '2020', value: 'Year' },
-	{ label: 'Monday', value: 'Day of Week' },
-	{ label: 'January', value: 'Month of Year' },
-	{ label: 'Q1', value: 'Quarter of Year' },
-]
 
 const emit = defineEmits(['save'])
 const props = defineProps({
@@ -77,30 +42,13 @@ const props = defineProps({
 })
 
 const supportsFormatting = ref(
-	['Int', 'Bigint', 'Float', 'Decimal', 'Double', 'Date', 'Datetime', 'Timestamp'].includes(
-		props.column.type
-	)
+	['Int', 'Bigint', 'Float', 'Decimal', 'Double'].includes(props.column.type)
 )
 const columnFormat = props.column.format_option || {}
 const format = reactive({
-	dateFormat:
-		props.column.type == 'Date'
-			? dateFormats.find((format) => format.value === columnFormat.date_format)
-			: props.column.type == 'Datetime'
-			? dateTimeFormats.find((format) => format.value === columnFormat.date_format)
-			: {},
 	prefix: columnFormat.prefix || '',
 	suffix: columnFormat.suffix || '',
 })
-
-const showDateFormatOptions = ref(['Date', 'Datetime', 'Timestamp'].includes(props.column.type))
-const dateFormatOptions = ref(
-	props.column.type == 'Date'
-		? dateFormats
-		: props.column.type == 'Datetime'
-		? dateTimeFormats
-		: []
-)
 
 const showNumberFormatOptions = ref(
 	['Int', 'Bigint', 'Float', 'Decimal', 'Double'].includes(props.column.type)
@@ -108,11 +56,6 @@ const showNumberFormatOptions = ref(
 const saveFormattingOptions = () => {
 	const updatedColumn = unref(props.column)
 	updatedColumn.format_option = null
-	if (showDateFormatOptions.value) {
-		updatedColumn.format_option = {
-			date_format: format.dateFormat.value,
-		}
-	}
 	if (showNumberFormatOptions.value) {
 		updatedColumn.format_option = {
 			prefix: format.prefix,

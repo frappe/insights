@@ -18,6 +18,15 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
+		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
+			<div class="font-light">Date Format</div>
+			<Autocomplete
+				v-model="dimension.dateFormat"
+				:options="dateFormats"
+				placeholder="Select a date format..."
+				@selectOption="(option) => (dimension.dateFormat = option)"
+			/>
+		</div>
 		<div class="flex justify-end space-x-2">
 			<Button
 				v-if="row_name"
@@ -38,7 +47,8 @@
 import { isEmptyObj } from '@/utils'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
-import { computed, inject, onMounted, reactive, ref } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
+import { dateFormats } from '@/utils/format'
 
 const query = inject('query')
 
@@ -53,9 +63,13 @@ const props = defineProps({
 const dimension = reactive({
 	column: { ...props.column, value: props.column.column },
 	label: props.column.label,
+	dateFormat: ['Date', 'Datetime'].includes(props.column.type)
+		? dateFormats.find((format) => format.value === props.column.format_option?.date_format)
+		: {},
 })
 // for editing a dimension
 const row_name = ref(props.column.name)
+const showDateFormatOptions = computed(() => ['Date', 'Datetime'].includes(dimension.column.type))
 
 const addDisabled = computed(() => {
 	return isEmptyObj(dimension.column) || !dimension.label
@@ -77,6 +91,13 @@ function addDimension() {
 
 	dimension.column.label = dimension.label
 	dimension.column.aggregation = 'Group By'
+
+	if (showDateFormatOptions.value) {
+		dimension.column.format_option = {
+			date_format: dimension.dateFormat.value,
+		}
+	}
+
 	emit('column-select', dimension.column)
 }
 function removeDimension() {
