@@ -1,7 +1,9 @@
 <template>
 	<div class="mb-4 flex h-7 items-center">
 		<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
-		<div class="text-lg font-medium">Edit {{ props.column.label }}</div>
+		<div class="whitespace-nowrap text-lg font-medium">
+			Edit {{ ellipsis(props.column.label, 16) }}
+		</div>
 	</div>
 	<div class="flex flex-col space-y-3">
 		<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
@@ -43,6 +45,7 @@ import ColumnFormatter from '@/components/Query/Column/ColumnFormatter.vue'
 import ColumnExpressionPicker from '@/components/Query/Column/ColumnExpressionPicker.vue'
 
 import { inject, ref } from 'vue'
+import { ellipsis } from '@/utils'
 
 const emit = defineEmits(['close'])
 const props = defineProps({

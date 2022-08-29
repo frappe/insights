@@ -28,11 +28,17 @@
 						>
 							{{ column.aggregation }}
 						</span>
-						<span class="text-base font-medium">{{ column.label }}</span>
+						<span class="whitespace-nowrap text-base font-medium">
+							{{ ellipsis(column.label, 14) }}
+						</span>
 					</div>
 					<div class="flex items-center">
 						<div class="mr-1 font-light text-gray-500">
-							{{ column.is_expression ? 'Expression' : column.table_label }}
+							{{
+								column.is_expression
+									? 'Expression'
+									: ellipsis(column.table_label, 12)
+							}}
 						</div>
 						<div
 							class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
@@ -52,6 +58,7 @@ import Draggable from 'vuedraggable'
 import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
 
 import { inject, unref, ref, watch } from 'vue'
+import { ellipsis } from '@/utils'
 
 const query = inject('query')
 defineEmits(['edit-column'])
