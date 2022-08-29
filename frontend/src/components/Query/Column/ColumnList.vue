@@ -5,10 +5,7 @@
 	>
 		<p>No columns selected</p>
 	</div>
-	<div
-		v-else-if="columns.length > 0"
-		class="flex flex-1 select-none flex-col overflow-scroll scrollbar-hide"
-	>
+	<div v-else-if="columns.length > 0" class="flex flex-1 flex-col overflow-scroll scrollbar-hide">
 		<Draggable v-model="columns" group="columns" item-key="name" @sort="updateColumnOrder">
 			<template #item="{ element: column }">
 				<div
