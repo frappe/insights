@@ -2,29 +2,40 @@
 
 <img src=".github/logo.png" alt="Frappe Insights logo" width="384"/>
 
-
 **Free and Open Source Data Analytics Tool for your Frappe Apps**
 
 </div>
 
----
+<div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
+	<img src=".github/hero-image.png" alt="Hero Image" width="72%" />
+</div>
 
-## Preview
+<div align="center" style="text-align: center; font-size: 20px;">
+	Demo
+</div>
 
-### Query
+<div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
+	<img src=".github/preview.gif" alt="Frappe Insights Preview" width="70%" style="border-radius: 6px" />
+</div>
 
-<img src=".github/query-view.png" alt="Frappe Insights Preview"/>
+## Features
 
+- **Multiple Data Sources** - Connect to multiple data sources and query them at one place.
+- **Complex Queries** - Write complex queries get the results in a tabular format.
+- **Visualize Data** - Visualize your data in the form of charts.
+- **Dashboards** - Create dashboards to automate tracking of important metrics.
 
-### Result
+## Planned Features
 
-<img src=".github/result-view.png" alt="Frappe Insights Preview"/>
-
-### Visualize
-
-<img src=".github/visualize-view.png" alt="Frappe Insights Preview"/>
-
----
+- [ ] **Dashboard Filters**: Add filters to dashboards to make them more dynamic.
+- [ ] **More Connectors**: Add support for more data sources. (CSV, Postgres)
+- [ ] **More Charts**: Add support for more chart types. (Donut, Scatter, Line with Bars & more)
+- [ ] **SQL Editor**: Add support for writing SQL queries.
+- [ ] **Automatic Alerts**: Add support for automatic alerts based on the data.
+- [ ] **Join Queries**: Add support for joining multiple data sources.
+- [ ] **Chart Customization**: Add support for customizing charts.
+- [ ] **Keyboard Shortcuts**: Add support for keyboard shortcuts.
+- [ ] **Contextual Command Palette**: Add support for a contextual command palette.
 
 ## Installation
 
