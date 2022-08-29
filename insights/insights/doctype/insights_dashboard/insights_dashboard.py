@@ -25,7 +25,10 @@ class InsightsDashboard(Document):
     @frappe.whitelist()
     def refresh_visualizations(self):
         for visualization in self.visualizations:
-            frappe.get_doc("Query", visualization.query).run()
+            try:
+                frappe.get_doc("Query", visualization.query).run()
+            except BaseException:
+                frappe.log_error(title="Error while executing query")
 
     @frappe.whitelist()
     def remove_visualization(self, visualization):
