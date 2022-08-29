@@ -163,6 +163,11 @@ class DraggableResizeable {
 			let newWidth = rect.width + dx
 			let newHeight = rect.height + dy
 
+			if (this.snapToGrid) {
+				newWidth = Math.round(newWidth / this.columnWidth) * this.columnWidth
+				newHeight = Math.round(newHeight / this.rowHeight) * this.rowHeight
+			}
+
 			this.element.style.width = `${newWidth}px`
 			this.element.style.height = `${newHeight}px`
 			this.checkBoundaryAndResize(newWidth, newHeight)
