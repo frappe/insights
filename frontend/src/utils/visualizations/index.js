@@ -26,13 +26,12 @@ const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 const getRandomColor = (num = 1) => {
 	const colors = []
 	let hue = Math.floor(Math.random() * 360)
-	let lightness = num == 1 ? '60%' : '40%'
+	let lightness = '50%'
 	let alpha = 1
 	for (let i = 0; i < num; i++) {
 		const color = `hsla(${hue}, 50%, ${lightness}, ${alpha})`
 		colors.push(color)
-		alpha -= 0.085
-		alpha = Math.max(alpha, 0.05)
+		hue = Math.floor(Math.random() * 360)
 	}
 	return colors
 }

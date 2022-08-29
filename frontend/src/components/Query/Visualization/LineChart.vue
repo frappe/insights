@@ -45,12 +45,12 @@ const props = defineProps({
 const chartData = {
 	labels: props.data.labels,
 	datasets: props.data.datasets.map((dataset) => {
-		const color = getRandomColor(2)
+		const color = getRandomColor()
 		return {
 			data: dataset.data,
 			label: dataset.label,
-			backgroundColor: color[0],
-			borderColor: color[1],
+			backgroundColor: color,
+			borderColor: color,
 			pointRadius: 0,
 			borderWidth: 2,
 			tension: props.options.tension,
