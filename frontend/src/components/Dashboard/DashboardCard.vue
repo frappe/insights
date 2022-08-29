@@ -1,6 +1,6 @@
 <template>
 	<DraggableResizeable
-		v-if="visualization.doc"
+		v-if="show"
 		:parentID="props.parentID"
 		:targetID="visualization.doc.name"
 		:enabled="dashboard.editingLayout"
@@ -77,6 +77,10 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+})
+
+const show = computed(() => {
+	return visualization.doc && visualization.component && visualization.componentProps
 })
 
 const visualizationRow = dashboard.doc.visualizations.find(

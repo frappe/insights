@@ -1,4 +1,4 @@
-import { reactive, computed } from 'vue'
+import { computed } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 
 export default function useDashboard(name) {

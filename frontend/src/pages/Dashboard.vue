@@ -187,9 +187,16 @@ const editVisualization = (queryID) => {
 	window.open(`/insights/query/${queryID}`, '_blank')
 }
 
-const refreshing = computed(() => dashboard.refreshVisualizations.loading)
-const refreshVisualizations = () => {
-	dashboard.refreshVisualizations.submit()
+const refreshing = ref(false)
+const refreshVisualizations = async () => {
+	refreshing.value = true
+	// hack: update the visualizations
+	await dashboard.refreshVisualizations.submit()
+	// then reload the dashboard doc
+	// to re-render the visualizations with new data
+	dashboard.doc.visualizations = []
+	await dashboard.reload()
+	refreshing.value = false
 }
 
 const updatedLayouts = reactive({})
