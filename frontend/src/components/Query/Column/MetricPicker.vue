@@ -67,6 +67,14 @@ const typeOptions = ref([
 		label: 'Avg of',
 		value: 'Avg',
 	},
+	{
+		label: 'Min of',
+		value: 'Min',
+	},
+	{
+		label: 'Max of',
+		value: 'Max',
+	},
 ])
 const metric = reactive({
 	// since props.column comes from doc.columns, it doesn't have value property
@@ -108,12 +116,15 @@ watch(
 function onTypeSelect(option) {
 	metric.type = option ? option : {}
 	if (metric.type.label) {
-		metric.label = metric.type.label + ' '
+		metric.label = metric.type.label
 	}
 }
 function onColumnSelect(option) {
 	metric.column = option ? option : {}
 	metric.column.name = row_name.value
+	if (metric.label == metric.type.label) {
+		metric.label += ' ' + metric.column.label
+	}
 }
 
 function addMetric() {
