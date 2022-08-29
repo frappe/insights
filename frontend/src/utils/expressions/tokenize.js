@@ -171,36 +171,50 @@ export default function tokenize(expression, offset = 0) {
 			advance()
 		}
 		if (!fn) return
-		tokens.push({
+		const fnToken = {
 			type: TOKEN_TYPES.FUNCTION,
 			start: offset + cursor - fn.length,
 			end: offset + cursor,
 			value: fn,
-		})
+		}
+
+		let openParenToken = null
 		if (char === '(') {
-			tokens.push({
+			openParenToken = {
 				type: TOKEN_TYPES.OPEN_PARENTHESIS,
-			})
+			}
 			advance()
 		}
+
 		let argsStart = cursor
 		let closeParenthesis = expression.indexOf(')', cursor)
 		let argsEnd = closeParenthesis > -1 ? closeParenthesis : expression.length
 		let argsStr = expression.substring(argsStart, argsEnd)
-		if (!argsStr) return
+		if (!argsStr) {
+			fnToken.end = offset + cursor
+			tokens.push(fnToken)
+			openParenToken && tokens.push(openParenToken)
+			return
+		}
 		let fnArgs = tokenize(argsStr, offset + argsStart).filter(
 			(token) => token.type !== TOKEN_TYPES.EOF
 		)
-		tokens = tokens.concat(fnArgs)
 
 		cursor = argsEnd - 1
 		advance()
+		let closeParenToken = null
 		if (char === ')') {
-			tokens.push({
+			closeParenToken = {
 				type: TOKEN_TYPES.CLOSE_PARENTHESIS,
-			})
+			}
 			advance()
 		}
+
+		fnToken.end = offset + cursor
+		tokens.push(fnToken)
+		openParenToken && tokens.push(openParenToken)
+		tokens = tokens.concat(fnArgs)
+		closeParenToken && tokens.push(closeParenToken)
 	}
 
 	function processStringToken() {
