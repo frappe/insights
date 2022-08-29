@@ -1,5 +1,5 @@
 <script setup>
-import { getRandomColor } from '@/utils/visualizations'
+import { getColors } from '@/utils/visualizations/colors'
 import { onMounted, ref } from 'vue'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
@@ -32,7 +32,7 @@ const chartData = {
 		hoverOffset: 4,
 		data: dataset.data,
 		label: dataset.label,
-		backgroundColor: getRandomColor(dataset.data.length),
+		backgroundColor: getColors(dataset.data.length),
 	})),
 }
 

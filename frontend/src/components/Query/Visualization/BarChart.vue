@@ -1,5 +1,5 @@
 <script setup>
-import { getRandomColor } from '@/utils/visualizations'
+import { getColors } from '@/utils/visualizations/colors'
 import { onMounted, ref } from 'vue'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
@@ -38,12 +38,13 @@ const props = defineProps({
 		required: true,
 	},
 })
+const colors = getColors(props.data.datasets.length)
 const chartData = {
 	labels: props.data.labels,
-	datasets: props.data.datasets.map((dataset) => ({
+	datasets: props.data.datasets.map((dataset, i) => ({
 		data: dataset.data,
 		label: dataset.label,
-		backgroundColor: getRandomColor(),
+		backgroundColor: colors[i],
 		barPercentage: 0.7,
 		borderRadius: 4,
 	})),

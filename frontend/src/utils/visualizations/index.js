@@ -23,19 +23,6 @@ const types = [
 
 const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
-const getRandomColor = (num = 1) => {
-	const colors = []
-	let hue = Math.floor(Math.random() * 360)
-	let lightness = '50%'
-	let alpha = 1
-	for (let i = 0; i < num; i++) {
-		const color = `hsla(${hue}, 50%, ${lightness}, ${alpha})`
-		colors.push(color)
-		hue = Math.floor(Math.random() * 360)
-	}
-	return colors
-}
-
 function useVisualization({ visualizationID, queryID, query }) {
 	const resource = visualizationDocResource(visualizationID)
 	const doc = computed(() => resource.doc || {})
@@ -138,4 +125,4 @@ const visualizationDocResource = (name) => {
 	return createDocumentResource({ doctype, name, whitelistedMethods })
 }
 
-export { types, getRandomColor, useVisualization }
+export { types, useVisualization }
