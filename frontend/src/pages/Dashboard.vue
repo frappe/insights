@@ -115,7 +115,6 @@
 </template>
 
 <script setup>
-import { Dropdown } from 'frappe-ui'
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import DashboardCard from '@/components/Dashboard/DashboardCard.vue'
