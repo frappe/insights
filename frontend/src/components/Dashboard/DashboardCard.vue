@@ -11,7 +11,7 @@
 			:id="visualization.doc.name"
 			class="inline-block h-fit w-fit"
 			:style="style"
-			:class="{ 'cursor-grab': dashboard.editingLayout }"
+			:class="{ 'cursor-grab select-none': dashboard.editingLayout }"
 		>
 			<div
 				class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
