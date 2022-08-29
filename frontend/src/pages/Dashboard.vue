@@ -7,44 +7,40 @@
 				</h1>
 				<div class="flex items-start space-x-2">
 					<Button
+						v-if="!dashboard.editingLayout"
+						appearance="white"
+						icon="refresh-ccw"
+						@click="refreshVisualizations"
+					/>
+					<Button
+						v-if="!dashboard.editingLayout"
+						appearance="white"
+						icon="edit"
+						@click="() => (dashboard.editingLayout = true)"
+					/>
+					<Button
 						v-if="dashboard.editingLayout"
 						appearance="white"
+						icon="plus"
+						@click="() => (showAddDialog = true)"
+					/>
+					<Button
+						v-if="!dashboard.editingLayout"
+						appearance="white"
+						icon="trash-2"
+						@click="() => (showDeleteDialog = true)"
+					/>
+					<Button
+						v-if="dashboard.editingLayout"
+						appearance="danger"
+						icon="x"
 						@click="dashboard.editingLayout = false"
-					>
-						Discard
-					</Button>
+					/>
 					<Button
 						v-if="dashboard.editingLayout"
 						appearance="primary"
+						icon="check"
 						@click="updateLayout"
-					>
-						Done
-					</Button>
-					<Dropdown
-						placement="right"
-						:button="{ icon: 'more-horizontal', appearance: 'white' }"
-						:options="[
-							{
-								label: 'Refresh',
-								icon: 'refresh-ccw',
-								handler: refreshVisualizations,
-							},
-							{
-								label: 'Edit Layout',
-								icon: 'edit',
-								handler: () => (dashboard.editingLayout = true),
-							},
-							{
-								label: 'Add Visualization',
-								icon: 'plus',
-								handler: () => (showAddDialog = true),
-							},
-							{
-								label: 'Delete',
-								icon: 'trash-2',
-								handler: () => (showDeleteDialog = true),
-							},
-						]"
 					/>
 				</div>
 			</div>
