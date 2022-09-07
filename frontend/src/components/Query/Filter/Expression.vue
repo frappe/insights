@@ -1,13 +1,13 @@
 <template>
 	<div
-		class="group relative flex h-9 w-fit cursor-pointer items-center rounded-md border px-2 hover:bg-gray-50"
+		class="group relative flex w-full max-w-fit cursor-pointer items-center rounded-md border border-gray-300 p-2 pr-6 hover:border-gray-400"
 		@click.prevent.stop="$emit('edit')"
 	>
 		<BinaryExpression v-if="expression.type == 'BinaryExpression'" :expression="expression" />
 		<CallExpression v-else-if="expression.type == 'CallExpression'" :expression="expression" />
 		<FeatherIcon
 			name="x"
-			class="ml-2 h-3 w-3 self-center text-gray-500 hover:text-gray-700"
+			class="absolute right-1.5 h-3 w-3 self-center text-gray-500 hover:text-gray-700"
 			@click.prevent.stop="$emit('remove')"
 		/>
 	</div>
@@ -51,7 +51,7 @@ if (isSimpleFilter) {
 					column: simpleFilter.column?.label,
 				},
 			},
-			operator: simpleFilter.operator.label,
+			operator: simpleFilter.operator.label, // TODO: store proper label
 			right: {
 				type: 'String',
 				value: simpleFilter.value.label,

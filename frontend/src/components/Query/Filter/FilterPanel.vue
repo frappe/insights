@@ -12,7 +12,7 @@
 		</div>
 		<div
 			v-if="!pickingFilter && filters.conditions?.length > 0"
-			class="-mx-2 flex h-full items-start overflow-scroll scrollbar-hide"
+			class="-ml-2 flex h-full items-start overflow-hidden"
 		>
 			<LogicalExpression
 				:expression="filters"

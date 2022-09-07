@@ -6,7 +6,6 @@
 			<Code
 				v-model="input.value"
 				:completions="getCompletions"
-				@autocomplete="onAutocomplete"
 				@viewUpdate="codeViewUpdate"
 			></Code>
 		</div>
@@ -52,6 +51,7 @@
 
 <script setup>
 import Code from '@/components/Controls/Code.vue'
+import { debounce } from 'frappe-ui'
 
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
@@ -108,16 +108,18 @@ const getCompletions = (context, syntaxTree) => {
 	}
 }
 
-const codeViewUpdate = () => {
+const codeViewUpdate = debounce(function ({ cursorPos }) {
 	expression.help = null
-}
-const onAutocomplete = ({ node, text }) => {
-	if (node.type.name == 'VariableName') {
-		if (text && FUNCTIONS[text]) {
-			expression.help = FUNCTIONS[text]
+
+	const { tokens } = expression
+	const token = tokens.find((t) => t.start <= cursorPos && t.end >= cursorPos)
+	if (token) {
+		const { type, value } = token
+		if (type == 'FUNCTION' && FUNCTIONS[value]) {
+			expression.help = FUNCTIONS[value]
 		}
 	}
-}
+}, 300)
 
 const addExpressionFilter = () => {
 	emit('filter-select', expression.ast)

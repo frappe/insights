@@ -112,7 +112,7 @@ const operatorOptions = computed(() => query.columns.getOperatorOptions(filter.c
 const showDatePicker = computed(() => {
 	return (
 		['Date', 'Datetime'].includes(filter.column?.type) &&
-		['=', '!=', '>', '>=', '<', '<=', 'between'].includes(filter.operator?.value)
+		['=', '!=', '>', '>=', '<', '<='].includes(filter.operator?.value)
 	)
 })
 const showTimespanPicker = computed(

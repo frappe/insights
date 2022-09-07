@@ -11,3 +11,7 @@
 .dataframe tr > th:first-child {
 	@apply sticky left-0;
 }
+
+.font-code {
+  font-family: 'Fira Code' !important;
+}
