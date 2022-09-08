@@ -28,7 +28,7 @@
   },
   {
    "fieldname": "database_type",
-   "fieldtype": "Autocomplete",
+   "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Database Type",
    "options": "MariaDB",

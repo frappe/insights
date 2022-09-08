@@ -34,7 +34,9 @@ class DataSource(Document):
 
     def create_db(self):
         if self.database_type != "MariaDB":
-            raise NotImplementedError
+            frappe.throw(
+                "Only MariaDB is supported for now. Please set Database Type to MariaDB and try again."
+            )
 
         if self.database_type == "MariaDB":
             return MariaDBDatabase(
