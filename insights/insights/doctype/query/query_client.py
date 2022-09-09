@@ -73,6 +73,7 @@ class QueryClient(Document):
             "aggregation": column.get("aggregation"),
             "is_expression": column.get("is_expression"),
             "expression": dumps(column.get("expression"), indent=2),
+            "format_option": dumps(column.get("format_option"), indent=2),
         }
         self.append("columns", new_column)
         self.save()
