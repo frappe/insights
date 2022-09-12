@@ -179,7 +179,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-23 18:30:11.109308",
+ "modified": "2022-09-12 15:49:55.361804",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Query",
@@ -216,5 +216,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }

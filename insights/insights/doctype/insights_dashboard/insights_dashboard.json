@@ -26,7 +26,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-15 20:13:48.828024",
+ "modified": "2022-09-12 15:49:35.321982",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard",
@@ -62,5 +62,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }
