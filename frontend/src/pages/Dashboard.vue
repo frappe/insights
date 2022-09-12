@@ -173,9 +173,10 @@ const router = useRouter()
 const showDeleteDialog = ref(false)
 const deletingDashboard = computed(() => dashboard.delete.loading)
 const deleteDashboard = () => {
-	dashboard.delete.submit()
-	showDeleteDialog.value = false
-	router.push('/dashboard')
+	dashboard.delete.submit().then(() => {
+		showDeleteDialog.value = false
+		router.push('/dashboard')
+	})
 }
 
 const editVisualization = (queryID) => {

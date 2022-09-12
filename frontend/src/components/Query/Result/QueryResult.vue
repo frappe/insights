@@ -41,7 +41,7 @@
 								<ColumnHeader :column="column" :query="query" />
 							</th>
 							<th
-								class="border-b border-r bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
+								class="border-b bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
 								scope="col"
 								width="99%"
 							></th>
@@ -58,7 +58,7 @@
 								{{ ellipsis(cell, 100) }}
 							</td>
 							<td
-								class="border-b border-r bg-gray-50 px-3 py-2 text-gray-600"
+								class="border-b bg-gray-50 px-3 py-2 text-gray-600"
 								width="99%"
 							></td>
 						</tr>
