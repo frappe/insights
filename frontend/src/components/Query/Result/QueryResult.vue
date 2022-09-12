@@ -94,7 +94,7 @@ import { computed, inject, watch } from 'vue'
 const query = inject('query')
 
 const formattedResult = computed(() => query.results.formattedData)
-const needsExecution = computed(() => query.doc.status === 'Pending Execution')
+const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
 	return isEmptyObj(query.doc.columns) ? query.columns.options : query.doc.columns
 })
@@ -103,25 +103,19 @@ const isNumberColumn = computed(() => {
 })
 
 const $notify = inject('$notify')
-watch(
-	needsExecution,
-	(newVal, oldVal) => {
-		if (newVal == undefined || oldVal == undefined) return
-		if (newVal !== oldVal) {
-			query.debouncedRun(null, {
-				onError() {
-					query.run.loading = false
-					$notify({
-						appearance: 'error',
-						title: 'Error while executing query',
-						message: 'Please review the query and try again.',
-					})
-				},
+const executeQuery = async () => {
+	query.debouncedRun(null, {
+		onError() {
+			query.run.loading = false
+			$notify({
+				appearance: 'error',
+				title: 'Error while executing query',
+				message: 'Please review the query and try again.',
 			})
-		}
-	},
-	{ immediate: true }
-)
+		},
+	})
+}
+watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && executeQuery(), { immediate: true })
 
 const executionTime = computed(() => {
 	const rounded = Math.round(query.doc.execution_time * 100) / 100
