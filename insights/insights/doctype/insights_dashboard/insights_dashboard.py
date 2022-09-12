@@ -39,10 +39,26 @@ class InsightsDashboard(Document):
                 break
 
     @frappe.whitelist()
-    def update_layout(self, visualizations):
-        for visualization, layout in visualizations.items():
-            row = self.get("visualizations", {"visualization": visualization})
-            if not row:
-                continue
-            row[0].layout = dumps(layout, indent=2)
+    def update_layout(self, updated_layout):
+        updated_layout = frappe._dict(updated_layout)
+        if not updated_layout.moved and not updated_layout.resized:
+            return
+
+        for item in updated_layout.moved:
+            item = frappe._dict(item)
+            self.move_visualization(item.from_index, item.to_index)
+        for item in updated_layout.resized:
+            item = frappe._dict(item)
+            self.resize_visualization(item.name, item.width, item.height)
         self.save()
+
+    def move_visualization(self, from_index, to_index):
+        self.visualizations.insert(to_index, self.visualizations.pop(from_index))
+        for row in self.visualizations:
+            row.idx = self.visualizations.index(row) + 1
+
+    def resize_visualization(self, name, width, height):
+        for row in self.visualizations:
+            if str(row.name) == str(name):
+                row.layout = dumps({"width": width, "height": height}, indent=2)
+                break

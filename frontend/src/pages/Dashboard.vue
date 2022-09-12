@@ -47,25 +47,29 @@
 		</template>
 		<template #main>
 			<div
-				id="dashboard-container"
-				class="relative mt-2 flex h-full w-full flex-wrap overflow-scroll scrollbar-hide"
+				v-if="visualizations && visualizations.length > 0"
+				class="mt-2 h-full w-full overflow-scroll"
 				:class="{
 					'blur-[4px]': refreshing,
 					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,
 				}"
 				@click="() => (refreshing ? $event.stopPropagation() : null)"
-				v-if="visualizations && visualizations.length > 0"
 			>
-				<DashboardCard
-					v-for="visualization in visualizations"
-					parentID="dashboard-container"
-					:key="visualization.id"
-					:visualizationID="visualization.id"
-					:queryID="visualization.query"
-					@edit="editVisualization"
-					@remove="removeVisualization"
-					@layoutChange="updateVisualizationLayout"
-				/>
+				<DraggableResizeable
+					:enabled="dashboard.editingLayout"
+					:items="visualizations"
+					@sort="updateOrder"
+					@resize="updateSize"
+				>
+					<template #item="{ item: visualization }">
+						<DashboardCard
+							:visualizationID="visualization.id"
+							:queryID="visualization.query"
+							@edit="editVisualization"
+							@remove="removeVisualization"
+						/>
+					</template>
+				</DraggableResizeable>
 			</div>
 			<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
 				<div class="text-base font-light text-gray-500">
@@ -124,6 +128,8 @@ import { computed, ref, provide, reactive, watch } from 'vue'
 import useDashboard from '@/utils/dashboard'
 import { updateDocumentTitle } from '@/utils'
 
+import DraggableResizeable from '@/components/DraggableResizeable.vue'
+
 const props = defineProps({
 	name: {
 		type: String,
@@ -134,14 +140,14 @@ const props = defineProps({
 const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
-const visualizations = computed(() =>
-	dashboard.doc?.visualizations.map((v) => {
+const visualizations = computed(() => {
+	return dashboard.doc?.visualizations.map((v) => {
 		return {
-			query: v.query,
 			id: v.visualization,
+			...v,
 		}
 	})
-)
+})
 
 const showAddDialog = ref(false)
 const newVisualization = ref({})
@@ -195,20 +201,24 @@ const refreshVisualizations = async () => {
 	refreshing.value = false
 }
 
-const updatedLayouts = reactive({})
-const updateVisualizationLayout = (id, layout) => {
-	updatedLayouts[id] = layout
+const updatedLayout = reactive({
+	moved: [],
+	resized: [],
+})
 
-	dashboard.doc?.visualizations.some((v) => {
-		if (v.visualization === id) {
-			v.layout = JSON.stringify(layout)
-			return true
-		}
+const updateOrder = ({ oldIndex, newIndex }) => {
+	updatedLayout['moved'].push({
+		from_index: oldIndex,
+		to_index: newIndex,
 	})
+}
+
+const updateSize = ({ name, width, height }) => {
+	updatedLayout['resized'].push({ name, width, height })
 }
 const updateLayout = () => {
 	dashboard.updateLayout.submit({
-		visualizations: updatedLayouts,
+		updated_layout: updatedLayout,
 	})
 	dashboard.editingLayout = false
 }
