@@ -4,7 +4,7 @@
 import frappe
 from insights.setup.demo import setup
 from frappe.utils.scheduler import is_scheduler_inactive
-from frappe.core.page.background_jobs.background_jobs import get_info
+from frappe.utils.background_jobs import is_job_queued
 
 
 @frappe.whitelist()
@@ -54,7 +54,7 @@ def setup_demo():
         return
 
     job_name = "insights_demo_setup"
-    if not job_enqueued(job_name):
+    if not is_job_queued(job_name):
         frappe.enqueue(_setup_demo, job_name=job_name)
 
 
@@ -69,9 +69,3 @@ def _setup_demo():
             "user": frappe.session.user,
         },
     )
-
-
-def job_enqueued(job_name):
-    enqueued_jobs = [d.get("job_name") for d in get_info()]
-    if job_name in enqueued_jobs:
-        return True
