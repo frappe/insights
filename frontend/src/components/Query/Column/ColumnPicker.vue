@@ -1,14 +1,16 @@
 <template>
-	<div class="mb-4 flex h-7 items-center">
+	<div class="sticky top-0 z-10 flex items-center bg-white pb-3 pt-1">
 		<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
-		<div class="text-lg font-medium">Add {{ newColumnType }}</div>
+		<div class="text-sm tracking-wide text-gray-600">ADD {{ newColumnType.toUpperCase() }}</div>
 	</div>
 	<div class="flex flex-col space-y-3">
-		<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
+		<div
+			class="flex h-9 cursor-pointer items-center space-x-2 rounded-md bg-gray-50 p-1 text-sm"
+		>
 			<div
 				v-for="tab in ['Dimension', 'Metric', 'Expression']"
 				class="flex h-full flex-1 items-center justify-center rounded-md"
-				:class="{ 'border bg-white font-normal shadow-sm': newColumnType == tab }"
+				:class="{ ' bg-white font-normal shadow': newColumnType == tab }"
 				@click.prevent.stop="newColumnType = tab"
 			>
 				{{ tab }}

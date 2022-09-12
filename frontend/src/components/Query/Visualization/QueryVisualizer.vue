@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full w-full flex-1 px-1 py-4">
+	<div class="flex h-full w-full flex-1 items-center pt-2">
 		<div
 			class="flex h-full w-72 flex-shrink-0 flex-col space-y-3 overflow-y-scroll border-r pr-4"
 		>
@@ -120,7 +120,7 @@
 				Save Changes
 			</Button>
 		</div>
-		<div class="flex w-[calc(100%-18rem)] pl-4">
+		<div class="flex h-[70%] w-[calc(100%-18rem)] pl-4">
 			<component
 				v-if="visualization.component && visualization.componentProps"
 				:is="visualization.component"

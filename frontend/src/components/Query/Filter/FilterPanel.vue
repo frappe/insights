@@ -1,7 +1,10 @@
 <template>
-	<div class="flex w-1/3 flex-col p-4">
-		<div v-if="!pickingFilter" class="mb-4 flex items-center justify-between">
-			<div class="text-lg font-medium">Filters</div>
+	<div class="flex h-full w-1/3 flex-col overflow-scroll pl-4 pb-4">
+		<div
+			v-if="!pickingFilter"
+			class="sticky top-0 flex items-center justify-between bg-white pb-3 pt-1"
+		>
+			<div class="text-sm tracking-wide text-gray-600">FILTERS</div>
 			<Button icon="plus" @click="pickingFilter = true"></Button>
 		</div>
 		<div
@@ -12,7 +15,7 @@
 		</div>
 		<div
 			v-if="!pickingFilter && filters.conditions?.length > 0"
-			class="-ml-2 flex h-full items-start overflow-hidden"
+			class="flex h-full items-start overflow-hidden"
 		>
 			<LogicalExpression
 				:expression="filters"

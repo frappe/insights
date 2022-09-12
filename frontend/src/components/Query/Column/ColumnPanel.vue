@@ -1,8 +1,8 @@
 <template>
-	<div class="flex w-1/3 flex-col p-4">
+	<div class="flex h-full w-1/3 flex-col overflow-scroll px-4 pb-4">
 		<div v-if="!addingColumn && !editingColumn" class="flex flex-1 flex-col">
-			<div class="mb-4 flex items-center justify-between">
-				<div class="text-lg font-medium">Dimension & Metrics</div>
+			<div class="sticky top-0 flex items-center justify-between bg-white pb-3 pt-1">
+				<div class="text-sm tracking-wide text-gray-600">COLUMNS</div>
 				<Button icon="plus" @click="addingColumn = true"></Button>
 			</div>
 			<ColumnList

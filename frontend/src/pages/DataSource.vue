@@ -1,14 +1,14 @@
 <template>
 	<BasePage>
 		<template #header>
-			<div class="flex flex-1 justify-between">
+			<div class="flex flex-1 items-center justify-between">
 				<h1 v-if="dataSource.doc" class="text-3xl font-medium text-gray-900">
 					{{ dataSource.doc.title }}
 				</h1>
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSource.tables" class="flex flex-1 flex-col">
+			<div v-if="dataSource.tables" class="flex flex-1 flex-col pt-2">
 				<div class="mb-4 flex space-x-4">
 					<Input type="text" placeholder="Label" v-model="labelFilter" />
 					<Input

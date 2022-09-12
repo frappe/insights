@@ -1,18 +1,13 @@
 <template>
-	<div class="h-fit rounded-md shadow">
+	<div class="h-fit">
 		<Dropdown
-			placement="right"
-			:button="{ icon: 'more-horizontal', appearance: 'white' }"
+			placement="left"
+			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 			:options="[
 				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
 					handler: () => (show_reset_dialog = true),
-				},
-				{
-					label: 'View Form',
-					icon: 'edit',
-					handler: open_form,
 				},
 				{
 					label: 'View SQL',
@@ -107,13 +102,6 @@ const query = inject('query')
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
-
-const hostname = window.location.hostname
-const port = window.location.port ? ':8000' : ''
-
-function open_form() {
-	window.open(`http://${hostname}${port}/app/query/${query.doc.name}`, '_blank').focus()
-}
 
 const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')

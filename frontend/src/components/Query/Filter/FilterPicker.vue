@@ -1,7 +1,7 @@
 <template>
 	<div class="mb-4 flex h-7 items-center">
 		<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
-		<div class="text-lg font-medium">{{ editing ? 'Edit' : 'Add' }} a Filter</div>
+		<div class="text-sm tracking-wide text-gray-600">{{ editing ? 'EDIT' : 'ADD' }} FILTER</div>
 	</div>
 	<div class="flex flex-col space-y-3">
 		<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">

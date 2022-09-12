@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { createDocumentResource } from 'frappe-ui'
+import { createDocumentResource, debounce } from 'frappe-ui'
 import { useQueryTables } from '@/utils/query/tables'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
@@ -44,6 +44,7 @@ export function useQuery(name) {
 
 	query.getVisualizations.submit()
 	query.visualizations = computed(() => query.getVisualizations.data?.message)
+	query.debouncedRun = debounce(query.run.submit, 500)
 
 	return query
 }

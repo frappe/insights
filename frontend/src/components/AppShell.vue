@@ -1,9 +1,9 @@
 <template>
-	<div class="flex h-full w-full">
+	<div class="mx-auto flex h-full w-full max-w-[1440px] text-base">
 		<Sidebar v-if="!hideSidebar" />
 		<div
-			class="flex flex-1 flex-col p-4 pl-2"
-			:class="[hideSidebar ? 'ml-4 w-[calc(100%-1rem)]' : 'ml-[16rem] w-[calc(100%-16rem)]']"
+			class="flex flex-1 flex-col pl-2"
+			:class="[hideSidebar ? 'ml-4 w-[calc(100%-1rem)]' : 'ml-[15rem] w-[calc(100%-15rem)]']"
 		>
 			<RouterView :key="$route.fullPath" />
 		</div>

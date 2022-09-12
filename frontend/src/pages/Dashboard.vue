@@ -1,7 +1,7 @@
 <template>
 	<BasePage>
 		<template #header>
-			<div class="flex flex-1 justify-between">
+			<div class="flex flex-1 items-center justify-between">
 				<h1 v-if="dashboard.doc" class="text-3xl font-medium text-gray-900">
 					{{ dashboard.doc.title }}
 				</h1>
@@ -48,7 +48,7 @@
 		<template #main>
 			<div
 				id="dashboard-container"
-				class="relative mt-1 flex h-full w-full flex-wrap overflow-scroll scrollbar-hide"
+				class="relative mt-2 flex h-full w-full flex-wrap overflow-scroll scrollbar-hide"
 				:class="{
 					'blur-[4px]': refreshing,
 					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,

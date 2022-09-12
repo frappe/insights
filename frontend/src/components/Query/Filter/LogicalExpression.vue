@@ -3,7 +3,7 @@
 		<div class="z-[5] flex w-full items-center">
 			<div
 				ref="operatorRef"
-				class="z-[5] mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white font-light hover:border-blue-300 hover:font-medium hover:text-blue-500"
+				class="z-[5] mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white font-light hover:border-blue-300 hover:font-normal hover:text-blue-500"
 				@click.prevent.stop="$emit('toggle-operator', { level, position })"
 			>
 				{{ operator == '&&' ? '&' : 'or' }}
@@ -25,13 +25,13 @@
 						@remove="$emit('remove-filter', { level, position, idx })"
 					/>
 				</div>
-				<!-- <div
+				<div
 					ref="addConditionRef"
 					class="!-mt-0.5 !-mb-2 flex h-9 cursor-pointer items-center text-sm font-light text-gray-400 hover:text-gray-500"
 					@click.prevent.stop="$emit('add-filter', { level, position })"
 				>
 					+ {{ operator == '&&' ? 'and' : 'or' }} condition
-				</div> -->
+				</div>
 			</div>
 		</div>
 		<div class="absolute top-0 left-0 z-0 h-full w-full">
@@ -72,14 +72,14 @@ onMounted(() => {
 })
 
 const operatorRef = ref(null)
-// const addConditionRef = ref(null)
+const addConditionRef = ref(null)
 const connectorsRef = ref(null)
 const conditionRefs = ref([])
 
 function draw_connectors() {
 	if (
 		!connectorsRef.value ||
-		// !addConditionRef.value ||
+		!addConditionRef.value ||
 		!operatorRef.value ||
 		!conditionRefs.value?.length
 	) {
@@ -89,7 +89,7 @@ function draw_connectors() {
 	conditionRefs.value.forEach((condition) => {
 		add_connector(operatorRef.value, condition)
 	})
-	// add_connector(operatorRef.value, addConditionRef.value, true)
+	add_connector(operatorRef.value, addConditionRef.value, true)
 }
 function add_connector(parent_node, child_node, dotted = false) {
 	let path = document.createElementNS('http://www.w3.org/2000/svg', 'path')

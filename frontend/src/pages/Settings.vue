@@ -6,9 +6,9 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex flex-1 flex-col space-y-6">
+			<div class="flex w-2/3 flex-col space-y-6">
 				<div class="space-y-3">
-					<h2 class="text-xl">General</h2>
+					<div class="text-sm tracking-wide text-gray-600">GENERAL</div>
 					<Input
 						type="checkbox"
 						label="Hide Sidebar"
@@ -17,7 +17,7 @@
 					/>
 				</div>
 				<div class="space-y-3">
-					<h2 class="text-xl">Queries</h2>
+					<div class="text-sm tracking-wide text-gray-600">QUERY</div>
 					<Button appearance="white" @click="$router.push('/settings/running-queries')">
 						Show Running Queries
 					</Button>

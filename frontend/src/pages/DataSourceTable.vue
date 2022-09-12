@@ -1,7 +1,7 @@
 <template>
 	<BasePage>
 		<template #header>
-			<div v-if="dataSourceTable.doc" class="flex flex-1 justify-between">
+			<div v-if="dataSourceTable.doc" class="flex flex-1 items-center space-x-4">
 				<div class="flex items-start space-x-4">
 					<h1 class="text-3xl font-medium text-gray-900">
 						{{ dataSourceTable.doc.label }}
@@ -14,8 +14,8 @@
 				</div>
 				<div class="space-x-2">
 					<Dropdown
-						placement="right"
-						:button="{ icon: 'more-horizontal', appearance: 'white' }"
+						placement="left"
+						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 						:options="[
 							{
 								label: hidden ? 'Enable' : 'Disable',
@@ -33,7 +33,7 @@
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSourceTable.columns" class="flex h-full w-full flex-col">
+			<div v-if="dataSourceTable.columns" class="flex h-full w-full flex-col pt-1">
 				<div class="flex h-6 space-x-1 text-sm font-light text-gray-600">
 					{{ dataSourceTable.columns.length }} Columns -
 					{{ dataSourceTable.no_of_rows }} Rows

@@ -17,6 +17,7 @@
 						placeholder="Data Source"
 						v-model="filter.dataSource"
 						:options="['', ...dataSources]"
+						class="w-40"
 					/>
 				</div>
 				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
@@ -45,9 +46,7 @@
 								<p class="mr-4">
 									<Input type="checkbox" class="rounded-md border-gray-400" />
 								</p>
-								<p
-									class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900"
-								>
+								<p class="flex-1 break-words text-sm font-medium text-gray-900">
 									{{ query.title }}
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">

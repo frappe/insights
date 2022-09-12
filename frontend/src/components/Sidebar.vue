@@ -1,5 +1,5 @@
 <template>
-	<div class="fixed inset-y-0 flex w-64 flex-col bg-gray-50" v-if="currentRoute">
+	<div class="fixed inset-y-0 flex w-60 flex-col bg-gray-50" v-if="currentRoute">
 		<div class="flex flex-grow flex-col overflow-y-auto p-4 pl-4 pr-2">
 			<div class="flex h-6 flex-shrink-0 items-end text-sm text-gray-500">
 				<FrappeInsightsLogo />
@@ -26,7 +26,7 @@
 						:to="route.path"
 						:class="[
 							route.current
-								? 'bg-gray-200 text-gray-800'
+								? 'bg-gray-200/70'
 								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
 							'group flex items-center rounded-md px-2 py-2 font-medium',
 						]"

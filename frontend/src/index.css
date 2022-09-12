@@ -15,3 +15,52 @@
 .font-code {
   font-family: 'Fira Code' !important;
 }
+
+/* Code Control */
+
+.cm-gutters {
+	display: none !important;
+}
+.cm-editor {
+	height: 100%;
+	border-radius: 0.375rem;
+	padding: 0.5rem;
+	@apply !bg-gray-100;
+}
+.cm-placeholder {
+	@apply !text-gray-500;
+}
+.cm-content {
+	padding: 0px !important;
+}
+.cm-activeLine {
+	@apply !bg-gray-100;
+}
+.cm-scroller {
+	font-family: 'Fira Code' !important;
+	line-height: 1.5rem !important;
+	@apply !text-gray-500
+}
+.cm-matchingBracket {
+	font-weight: 500 !important;
+	background: none !important;
+	border-bottom: 1px solid #000 !important;
+	outline: none !important;
+}
+.cm-focused {
+	outline: none !important;
+}
+.cm-tooltip-autocomplete {
+	border: 1px solid #fafafa !important;
+	padding: 0.25rem;
+	background-color: #fff !important;
+	border-radius: 0.375rem;
+	filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));
+}
+.cm-tooltip-autocomplete > ul {
+	font-family: 'Inter' !important;
+}
+.cm-tooltip-autocomplete ul li[aria-selected='true'] {
+	@apply !bg-gray-200/80 !rounded;
+	color: #000 !important;
+}

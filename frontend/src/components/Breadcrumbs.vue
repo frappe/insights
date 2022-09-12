@@ -1,6 +1,6 @@
 <template>
 	<nav>
-		<ol role="list" class="flex h-7 items-start space-x-1 text-sm font-light text-gray-500">
+		<ol role="list" class="flex h-5 items-start space-x-1 text-sm font-light text-gray-500">
 			<li v-for="(page, idx) in props.routes" :key="page.name">
 				<div class="flex items-center">
 					<router-link

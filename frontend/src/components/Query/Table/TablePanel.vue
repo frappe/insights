@@ -1,7 +1,14 @@
 <template>
-	<div class="flex w-1/3 flex-col p-4">
+	<div class="flex h-full w-1/3 flex-col overflow-scroll pr-4 pb-4">
 		<!-- Picker -->
 		<div v-if="!editTable" class="flex flex-1 flex-col">
+			<div
+				v-if="!addingTable"
+				class="sticky top-0 flex items-center justify-between bg-white pb-3 pt-1"
+			>
+				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
+				<Button icon="plus" @click="addingTable = true"></Button>
+			</div>
 			<div v-if="addingTable" class="mb-4 w-full">
 				<Autocomplete
 					ref="tableSearch"
@@ -15,10 +22,6 @@
 						}
 					"
 				/>
-			</div>
-			<div v-if="!addingTable" class="mb-4 flex items-center justify-between">
-				<div class="text-lg font-medium">Tables</div>
-				<Button icon="plus" @click="addingTable = true"></Button>
 			</div>
 			<div
 				v-if="query.tables.data?.length == 0"
@@ -46,11 +49,16 @@
 							{{ table.join.with.label }}
 						</div>
 					</div>
-					<div
-						class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
-						@click.prevent.stop="removeTable(table)"
-					>
-						<FeatherIcon name="x" class="h-3 w-3" />
+					<div class="flex items-center text-sm">
+						<div class="mr-1 font-light text-gray-500">
+							{{ ellipsis(query.doc.data_source, 12) }}
+						</div>
+						<div
+							class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
+							@click.prevent.stop="removeTable(table)"
+						>
+							<FeatherIcon name="x" class="h-3 w-3" />
+						</div>
 					</div>
 				</div>
 			</div>
@@ -112,7 +120,7 @@ import JoinFullIcon from '@/components/Icons/JoinFullIcon.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 import { computed, inject, ref, watch } from 'vue'
-import { isEmptyObj } from '@/utils'
+import { isEmptyObj, ellipsis } from '@/utils'
 
 const query = inject('query')
 

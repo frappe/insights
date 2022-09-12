@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="group relative flex w-full max-w-fit cursor-pointer items-center rounded-md border border-gray-300 p-2 pr-6 hover:border-gray-400"
+		class="group relative flex w-full max-w-fit cursor-pointer items-center rounded-md border p-2 pr-6 hover:border-gray-300"
 		@click.prevent.stop="$emit('edit')"
 	>
 		<BinaryExpression v-if="expression.type == 'BinaryExpression'" :expression="expression" />

@@ -1,61 +1,72 @@
 <template>
-	<div class="relative flex h-full w-full select-text pt-4 text-base">
+	<!-- Result Header -->
+	<div class="flex h-8 items-start">
+		<div class="text-sm tracking-wide text-gray-600">RESULT</div>
+		<div v-if="executionTime" class="ml-auto text-sm font-light text-gray-500">
+			Executed in {{ executionTime }} seconds
+		</div>
+	</div>
+	<!-- Result  -->
+	<div class="relative h-[calc(100%-2rem)] w-full">
+		<!-- Empty State -->
 		<div
 			v-if="!needsExecution && formattedResult?.length === 0"
-			class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
+			class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
 		>
 			<p>No results found</p>
 		</div>
-
+		<!-- Table & Limits -->
 		<div
 			v-else
-			class="relative flex h-full w-full flex-col-reverse"
+			class="flex h-full w-full select-text flex-col-reverse"
 			:class="{ 'blur-[2px]': needsExecution }"
 		>
+			<!-- Limits -->
 			<div class="mt-3 flex h-6 w-full flex-shrink-0">
 				<LimitsAndOrder />
 			</div>
 			<!-- Table -->
 			<div
-				class="relative h-[calc(100%-2.25rem)] w-full overflow-scroll rounded-md border scrollbar-hide"
+				class="relative h-[calc(100%-2.25rem)] w-full overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide"
 			>
-				<table class="border-separate">
+				<table class="border-separate border-spacing-0 text-sm">
 					<thead class="sticky top-0 text-gray-600">
 						<tr>
 							<th
-								class="sticky top-0 flex h-10 w-[2.5rem] items-center justify-center whitespace-nowrap border-b border-r bg-white px-2 text-center font-medium"
-								scope="col"
-							></th>
-							<th
 								v-for="column in columns"
 								:key="column.name"
-								class="h-10 whitespace-nowrap border-b bg-white px-2 text-left font-medium"
+								class="whitespace-nowrap border-b border-r bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
 								scope="col"
 							>
 								<ColumnHeader :column="column" :query="query" />
 							</th>
+							<th
+								class="border-b border-r bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
+								scope="col"
+								width="99%"
+							></th>
 						</tr>
 					</thead>
 					<tbody class="pointer-events-none">
 						<tr v-for="(row, i) in formattedResult" :key="i">
 							<td
-								class="sticky left-0 w-[2.5rem] whitespace-nowrap border-r bg-white text-center font-medium text-gray-600"
-							>
-								{{ i + 1 }}
-							</td>
-							<td
 								v-for="(cell, j) in row"
 								:key="j"
-								class="whitespace-nowrap bg-white p-2.5 pr-4 font-light text-gray-600"
+								class="whitespace-nowrap border-b border-r bg-gray-50 px-3 py-2 text-gray-600"
 								:class="{ 'text-right': isNumberColumn[j] }"
 							>
 								{{ ellipsis(cell, 100) }}
 							</td>
+							<td
+								class="border-b border-r bg-gray-50 px-3 py-2 text-gray-600"
+								width="99%"
+							></td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 		</div>
+		<!-- If Pending Execution -->
 		<div
 			v-if="needsExecution"
 			class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
@@ -63,7 +74,7 @@
 			<Button
 				appearance="primary"
 				class="!shadow-md"
-				@click="query.run.submit()"
+				@click="query.debouncedRun()"
 				:loading="query.run.loading"
 				loadingText="Executing..."
 			>
@@ -95,8 +106,9 @@ const $notify = inject('$notify')
 watch(
 	needsExecution,
 	(newVal, oldVal) => {
+		if (newVal == undefined || oldVal == undefined) return
 		if (newVal !== oldVal) {
-			query.run.submit(null, {
+			query.debouncedRun(null, {
 				onError() {
 					query.run.loading = false
 					$notify({
@@ -110,4 +122,9 @@ watch(
 	},
 	{ immediate: true }
 )
+
+const executionTime = computed(() => {
+	const rounded = Math.round(query.doc.execution_time * 100) / 100
+	return rounded < 0.01 ? '< 0.01' : rounded
+})
 </script>
