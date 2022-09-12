@@ -11,7 +11,11 @@ const props = defineProps({
 	},
 })
 const formattedValue = computed(() => {
-	const value = props.value.toFixed(1)
+	let value = props.value
+	// check if value has a decimal part
+	if (value % 1 !== 0) {
+		value = value.toFixed(1)
+	}
 	if (value < 1000) {
 		return value
 	}
