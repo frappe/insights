@@ -14,6 +14,23 @@ class NotSelectQuery(frappe.ValidationError):
     pass
 
 
+class MariaDB(MariaDBDatabase):
+    def __init__(self, dbName, *args, useSSL=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.useSSL = useSSL
+        self.dbName = dbName
+
+    def get_connection_settings(self) -> dict:
+        conn_settings = super().get_connection_settings()
+        conn_settings["ssl"] = self.useSSL
+        conn_settings["ssl_verify_cert"] = self.useSSL
+
+        if self.user != "root":
+            # Fix: cannot connect to non-frappe MariaDB instances where database name != user name
+            conn_settings["database"] = self.dbName
+        return conn_settings
+
+
 class DataSource(Document):
     def before_save(self):
         if self.test_connection():
@@ -39,11 +56,13 @@ class DataSource(Document):
             )
 
         if self.database_type == "MariaDB":
-            return MariaDBDatabase(
+            return MariaDB(
                 host=self.host,
                 port=cint(self.port),
                 user=self.username,
                 password=self.get_password(),
+                useSSL=self.use_ssl,
+                dbName=self.database_name,
             )
 
     def get_db_instance(self):
