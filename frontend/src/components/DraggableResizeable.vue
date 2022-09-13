@@ -46,7 +46,7 @@ const items = ref(unref(props.items))
 
 const resizing = ref(false)
 const dragDisabled = computed(() => resizing.value || !props.enabled)
-const SNAP_WIDTH = 15
+const SNAP_WIDTH = 5
 
 const keys = useMagicKeys()
 const cmd = keys['Meta']
@@ -77,6 +77,8 @@ document.addEventListener('mousedown', (e) => {
 			dx = Math.round(dx / SNAP_WIDTH) * SNAP_WIDTH
 			dy = Math.round(dy / SNAP_WIDTH) * SNAP_WIDTH
 		}
+
+		if (dx === 0 && dy === 0) return
 
 		const target = resizer.previousElementSibling
 		const rect = target.getBoundingClientRect()
