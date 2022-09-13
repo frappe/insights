@@ -22,7 +22,7 @@ const chartOptions = {
 		},
 		y: {
 			grid: {
-				display: false,
+				display: true,
 			},
 		},
 	},
