@@ -17,7 +17,7 @@ const types = [
 	{ type: 'Number', icon: 'hash' },
 	// { type: 'Row', icon: 'align-left' },
 	// { type: 'Funnel', icon: 'filter' },
-	{ type: 'Pivot', icon: 'layout' },
+	// { type: 'Pivot', icon: 'layout' },
 	{ type: 'Table', icon: 'grid' },
 ]
 
@@ -82,6 +82,7 @@ function useVisualization({ visualizationID, queryID, query }) {
 		() => ({
 			queryDoc: query.doc,
 			doc: visualization.doc,
+			data: visualization.data,
 		}),
 		buildComponentProps,
 		{ deep: true, immediate: true, debounce: 300 }
@@ -115,6 +116,16 @@ function useVisualization({ visualizationID, queryID, query }) {
 			visualization.savingDoc = computed(() => resource.updateDoc.loading)
 		}
 	}
+
+	visualization.isDirty = computed(() => {
+		const doc = visualization.doc
+		if (!doc) return false
+		return (
+			doc.type !== visualization.type ||
+			doc.title !== visualization.title ||
+			JSON.stringify(doc.data) !== JSON.stringify(visualization.data)
+		)
+	})
 
 	return visualization
 }

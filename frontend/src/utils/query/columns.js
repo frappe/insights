@@ -47,7 +47,28 @@ export function useQueryColumns(query) {
 	)
 	watch(options, updateColumnOptionsCache)
 
-	return { data, options, getOperatorOptions }
+	const indexOptions = computed(() => {
+		return query.doc.columns
+			.filter((c) => !FIELDTYPES.NUMBER.includes(c.type))
+			.map((c) => {
+				return {
+					label: c.label,
+					value: c.column || c.label,
+				}
+			})
+	})
+	const valueOptions = computed(() => {
+		return query.doc.columns
+			.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+			.map((c) => {
+				return {
+					label: c.label,
+					value: c.column || c.label,
+				}
+			})
+	})
+
+	return { data, options, indexOptions, valueOptions, getOperatorOptions }
 }
 
 function updateColumnOptionsCache(columns) {

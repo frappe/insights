@@ -48,7 +48,7 @@ onMounted(() => {
 
 <template>
 	<div class="h-full w-full">
-		<div class="h-5 text-base font-semibold text-gray-600">{{ props.title }}</div>
+		<div class="h-5 text-center font-semibold text-gray-600">{{ props.title }}</div>
 		<div class="flex h-[calc(100%-1.5rem)] w-full justify-center pt-2">
 			<canvas ref="chartRef"></canvas>
 		</div>

@@ -1,5 +1,5 @@
 <template>
-	<div class="h-full w-full">
+	<div class="mx-auto h-full max-w-full">
 		<div v-if="props.title" class="h-5 text-base font-semibold text-gray-600">
 			{{ props.title }}
 		</div>
