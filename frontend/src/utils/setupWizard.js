@@ -9,9 +9,9 @@ const getSetupStatus = async () => {
 		return setupComplete.value
 	}
 
-	const is_onboarded = await call('insights.api.setup.setup_complete')
-	localStorage.setItem('setupComplete', is_onboarded)
-	setupComplete.value = is_onboarded
+	const setup_complete = await call('insights.api.setup.setup_complete')
+	localStorage.setItem('setupComplete', setup_complete)
+	setupComplete.value = setup_complete
 
 	return setupComplete.value
 }
@@ -22,10 +22,6 @@ const testDatabaseConnection = createResource({
 
 const createDatabase = createResource({
 	method: 'insights.api.setup.add_database',
-	onSuccess() {
-		localStorage.removeItem('setupComplete')
-		getSetupStatus()
-	},
 })
 
 export { setupComplete, getSetupStatus, createDatabase, testDatabaseConnection }

@@ -85,12 +85,13 @@
 
 	<Dialog :options="{ title: 'New Data Source' }" v-model="new_dialog">
 		<template #body-content>
-			<div class="text-sm text-gray-400">Not implemented yet</div>
+			<AddDatabase @create="onNewDatasource" />
 		</template>
 	</Dialog>
 </template>
 
 <script setup>
+import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
 import BasePage from '@/components/BasePage.vue'
 import { Badge, createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
@@ -112,6 +113,11 @@ const dataSources = computed(() => {
 		return source
 	})
 })
+
+const onNewDatasource = () => {
+	new_dialog.value = false
+	getDataSources.fetch()
+}
 
 const pageMeta = ref({
 	title: 'Data Sources',

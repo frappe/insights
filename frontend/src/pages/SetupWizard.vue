@@ -44,7 +44,11 @@
 				</div>
 			</div>
 			<div v-if="connectDB">
-				<AddDatabase @close="connectDB = false" />
+				<AddDatabase
+					:showDiscard="true"
+					@create="completeSetup"
+					@discard="connectDB = false"
+				/>
 			</div>
 			<div v-if="demoDB">
 				<SettingUpDemoData />
@@ -56,9 +60,19 @@
 <script setup>
 import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
 import SettingUpDemoData from '@/components/SetupWizard/SettingUpDemoData.vue'
+import { getSetupStatus } from '@/utils/setupWizard'
+import { useRouter } from 'vue-router'
 
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 const connectDB = ref(false)
 const demoDB = ref(false)
+
+const router = useRouter()
+const completeSetup = () => {
+	localStorage.removeItem('setupComplete')
+	getSetupStatus().then(() => {
+		nextTick(() => router.push('/'))
+	})
+}
 </script>

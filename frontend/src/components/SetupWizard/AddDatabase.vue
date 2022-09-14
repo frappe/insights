@@ -26,7 +26,7 @@
 				v-model="db.port"
 				type="number"
 				label="Port (Optional)"
-				placeholder="1234"
+				placeholder="3306"
 				autocomplete="off"
 			/>
 			<Input
@@ -61,8 +61,8 @@
 		</div>
 	</div>
 	<div class="mt-6 flex justify-between">
-		<Button @click="$emit('close')"> Prev </Button>
-		<div class="space-x-2">
+		<Button v-if="$props.showDiscard" @click="$emit('created', 'discard')"> Discard </Button>
+		<div class="ml-auto flex items-center space-x-2">
 			<Button
 				:appearance="connectAppearance"
 				:disabled="testConnectionDisabled"
@@ -87,11 +87,10 @@
 </template>
 
 <script setup>
-import { computed, nextTick, reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { createDatabase, testDatabaseConnection } from '@/utils/setupWizard'
-import { useRouter } from 'vue-router'
 
-defineEmits(['close'])
+const emit = defineEmits(['create', 'discard'])
 
 const db = reactive({
 	type: 'MariaDB',
@@ -136,10 +135,24 @@ const submitLabel = computed(() => {
 })
 
 const testConnection = () => {
-	testDatabaseConnection.submit({ db }, { onSuccess: (res) => (db.connectionSuccess = res) })
+	testDatabaseConnection.submit(
+		{ db },
+		{
+			onSuccess(res) {
+				db.connectionSuccess = res
+			},
+		}
+	)
 }
-const router = useRouter()
+
 const createNewDatabase = () => {
-	createDatabase.submit({ db }, { onSuccess: () => nextTick(() => router.push('/')) })
+	createDatabase.submit(
+		{ db },
+		{
+			onSuccess() {
+				emit('create')
+			},
+		}
+	)
 }
 </script>

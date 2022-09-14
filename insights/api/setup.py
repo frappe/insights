@@ -3,8 +3,6 @@
 
 import frappe
 from insights.setup.demo import setup
-from frappe.utils.scheduler import is_scheduler_inactive
-from frappe.utils.background_jobs import is_job_queued
 
 
 @frappe.whitelist()
@@ -50,6 +48,9 @@ def update_setup_status():
 
 @frappe.whitelist()
 def setup_demo():
+    from frappe.utils.scheduler import is_scheduler_inactive
+    from frappe.utils.background_jobs import is_job_queued
+
     if is_scheduler_inactive():
         return
 

@@ -26,7 +26,7 @@
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
-						<p class="flex-1">Label</p>
+						<p class="flex-1">Table</p>
 						<p class="flex-1">Status</p>
 					</div>
 					<ul
