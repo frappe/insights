@@ -216,20 +216,16 @@ class DataSource(Document):
 
         return _columns
 
-    def get_distinct_column_values(self, column, search_text=None, limit=25):
+    def get_distinct_column_values(
+        self, column, search_text=None, limit=25
+    ) -> list[str]:
         Table = frappe.qb.Table(column.get("table"))
-        Field = frappe.qb.Field(column.get("column"))
-        query = (
-            frappe.qb.from_(Table)
-            .select(Field.as_("label"))
-            .distinct()
-            .select(Field.as_("value"))
-            .limit(limit)
-        )
+        Column = frappe.qb.Field(column.get("column"))
+        query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)
         if search_text:
-            query = query.where(Field.like(f"%{search_text}%"))
+            query = query.where(Column.like(f"%{search_text}%"))
 
-        values = self.execute_query(query.get_sql(), as_dict=1)
+        values = self.execute_query(query.get_sql(), pluck=True)
 
         # TODO: caching
         return values

@@ -232,7 +232,7 @@ class QueryClient(Document):
         self.save()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text):
+    def fetch_column_values(self, column, search_text) -> list[str]:
         data_source = frappe.get_cached_doc("Data Source", self.data_source)
         return data_source.get_distinct_column_values(column, search_text)
 

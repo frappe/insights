@@ -1,11 +1,6 @@
 <script setup>
 import { defineAsyncComponent, computed, inject } from 'vue'
-const props = defineProps({
-	chartType: {
-		type: String,
-		required: true,
-	},
-})
+const props = defineProps(['chartType'])
 
 const visualization = inject('visualization')
 

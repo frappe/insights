@@ -27,7 +27,7 @@ const visualization = inject('visualization')
 					: undefined
 			"
 			:options="query.columns.valueColumns"
-			@selectOption="(options) => (visualization.data.valueColumn = options)"
+			@change="(options) => (visualization.data.valueColumn = options)"
 		/>
 	</div>
 

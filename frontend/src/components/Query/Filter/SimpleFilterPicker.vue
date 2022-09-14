@@ -33,11 +33,10 @@
 			/>
 			<ListPicker
 				v-else-if="showListPicker"
-				:value="filter.value.value"
+				v-model="filter.value.value"
 				:options="valueOptions"
 				:placeholder="valuePlaceholder"
 				@inputChange="checkAndFetchColumnValues"
-				@selectOption="processListPickerOption"
 			/>
 			<DatePicker
 				v-else-if="showDatePicker"
@@ -76,7 +75,7 @@ import DatePicker from '@/components/Controls/DatePicker.vue'
 
 import { debounce } from 'frappe-ui'
 import { isEmptyObj, formatDate } from '@/utils'
-import { computed, inject, nextTick, reactive, watch } from 'vue'
+import { computed, inject, onMounted, reactive, watch } from 'vue'
 
 const query = inject('query')
 
@@ -101,9 +100,6 @@ let filter = reactive(initalData)
 if (props.filter && props.filter.type) {
 	const simpleFilter = query.filters.convertIntoSimpleFilter(props.filter)
 	filter = reactive(simpleFilter)
-	nextTick(() => {
-		checkAndFetchColumnValues(filter.value.value)
-	})
 }
 
 const columnOptions = query.columns.options
@@ -125,6 +121,12 @@ const showListPicker = computed(
 		['in', 'not_in'].includes(filter.operator?.value) &&
 		['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
 )
+onMounted(() => {
+	if (showListPicker.value) {
+		// if filter is being edited, fetch values for the column
+		checkAndFetchColumnValues()
+	}
+})
 
 const showValueOptions = computed(
 	() =>
@@ -200,12 +202,12 @@ watch(
 
 function processListPickerOption(options) {
 	filter.value = {
-		value: options.map((option) => option.value),
+		value: options.map((option) => (option.hasOwnProperty('value') ? option.value : option)),
 		label:
 			options.length > 1
 				? options.length + ' values'
 				: options.length > 0
-				? options[0].value
+				? options[0].value || options[0]
 				: '',
 	}
 }
@@ -214,10 +216,20 @@ function apply() {
 	if (applyDisabled.value) {
 		return
 	}
+	if (showListPicker.value) {
+		processListPickerOption(filter.value.value)
+	}
 	emit('filter-select', query.filters.convertIntoExpression(filter))
 }
 
-const checkAndFetchColumnValues = debounce(function (search_text) {
+watch(showListPicker, (show) => {
+	if (show) {
+		// if operator is changed, fetch values for the column
+		checkAndFetchColumnValues()
+	}
+})
+
+const checkAndFetchColumnValues = debounce(function (search_text = '') {
 	if (
 		isEmptyObj(filter.column) ||
 		!['=', '!=', 'in', 'not_in'].includes(filter.operator?.value)
