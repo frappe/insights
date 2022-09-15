@@ -1,23 +1,25 @@
 <template>
-	<div class="mb-4 flex h-7 items-center">
+	<div class="mb-3 flex h-7 items-center">
 		<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
 		<div class="text-sm tracking-wide text-gray-600">{{ editing ? 'EDIT' : 'ADD' }} FILTER</div>
 	</div>
-	<div class="flex flex-col space-y-3">
-		<div class="flex h-9 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm">
+	<div class="flex h-[calc(100%-2.75rem)] flex-col space-y-3">
+		<div
+			class="flex h-9 flex-shrink-0 items-center space-x-2 rounded-md bg-gray-100 p-1 text-sm"
+		>
 			<div
-				class="flex h-full flex-1 items-center justify-center rounded-md font-light"
+				class="flex h-full flex-1 items-center justify-center rounded font-light"
 				:class="{
-					'border bg-white font-normal shadow-sm': filterType == 'simple',
+					'bg-white font-normal shadow': filterType == 'simple',
 				}"
 				@click.prevent.stop="filterType = 'simple'"
 			>
 				Simple
 			</div>
 			<div
-				class="flex h-full flex-1 items-center justify-center rounded-md"
+				class="flex h-full flex-1 items-center justify-center rounded"
 				:class="{
-					'border bg-white font-normal shadow-sm': filterType == 'expression',
+					' bg-white font-normal shadow': filterType == 'expression',
 				}"
 				@click.prevent.stop="filterType = 'expression'"
 			>

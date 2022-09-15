@@ -5,11 +5,11 @@
 	</div>
 	<div class="flex flex-col space-y-3">
 		<div
-			class="flex h-9 cursor-pointer items-center space-x-2 rounded-md bg-gray-50 p-1 text-sm"
+			class="flex h-9 cursor-pointer items-center space-x-2 rounded-md bg-gray-100 p-1 text-sm"
 		>
 			<div
 				v-for="tab in ['Dimension', 'Metric', 'Expression']"
-				class="flex h-full flex-1 items-center justify-center rounded-md"
+				class="flex h-full flex-1 items-center justify-center rounded"
 				:class="{ ' bg-white font-normal shadow': newColumnType == tab }"
 				@click.prevent.stop="newColumnType = tab"
 			>

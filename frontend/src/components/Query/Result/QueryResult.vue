@@ -119,6 +119,6 @@ watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && executeQuery(), {
 
 const executionTime = computed(() => {
 	const rounded = Math.round(query.doc.execution_time * 100) / 100
-	return rounded && rounded < 0.01 ? '< 0.01' : rounded
+	return query.doc.execution_time && rounded < 0.01 ? '< 0.01' : rounded
 })
 </script>
