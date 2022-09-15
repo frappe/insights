@@ -9,12 +9,17 @@
 		:disabled="dragDisabled"
 	>
 		<template #item="{ element: item }">
-			<div class="relative p-1">
+			<div class="relative flex items-start p-1">
 				<slot name="item" v-bind="{ item }"></slot>
 				<div
-					class="resizer absolute right-0 z-10 flex h-6 w-6 -translate-y-4 cursor-se-resize"
+					v-show="props.enabled"
+					ref="resizeHandle"
+					class="absolute right-0 bottom-0 z-10 flex cursor-se-resize items-end pr-2 pb-2"
 					:data-id="item.name"
-				></div>
+				>
+					<div class="h-1 w-4 rounded-l-full bg-gray-200"></div>
+					<div class="h-5 w-1 rounded-t-full bg-gray-200"></div>
+				</div>
 			</div>
 		</template>
 	</Draggable>
@@ -22,8 +27,8 @@
 
 <script setup>
 import Draggable from 'vuedraggable'
-import { computed, ref, watch, unref } from 'vue'
-import { useMagicKeys } from '@vueuse/core'
+import { computed, ref, unref, onMounted } from 'vue'
+import useResizer from '@/utils/resizer'
 
 const emit = defineEmits(['sort', 'resize'])
 const props = defineProps({
@@ -46,67 +51,24 @@ const items = ref(unref(props.items))
 
 const resizing = ref(false)
 const dragDisabled = computed(() => resizing.value || !props.enabled)
-const SNAP_WIDTH = 5
 
-const keys = useMagicKeys()
-const cmd = keys['Meta']
-const enableFineMovement = ref(false)
-watch(cmd, (pressed) => {
-	enableFineMovement.value = pressed
-})
+const resizeHandle = ref(null)
 
-document.addEventListener('mousedown', (e) => {
-	if (!e.target.classList.contains('resizer') || !props.enabled) return
-
-	e.preventDefault()
-	const resizer = e.target
-	resizing.value = true
-
-	let startX, startY
-	startX = e.clientX
-	startY = e.clientY
-
-	window.addEventListener('mousemove', resize)
-	window.addEventListener('mouseup', stopResize)
-
-	function resize(e) {
-		let dx = e.clientX - startX
-		let dy = e.clientY - startY
-
-		if (!enableFineMovement.value) {
-			dx = Math.round(dx / SNAP_WIDTH) * SNAP_WIDTH
-			dy = Math.round(dy / SNAP_WIDTH) * SNAP_WIDTH
-		}
-
-		if (dx === 0 && dy === 0) return
-
-		const target = resizer.previousElementSibling
-		const rect = target.getBoundingClientRect()
-		let newWidth = rect.width + dx
-		let newHeight = rect.height + dy
-
-		if (!enableFineMovement.value) {
-			newWidth = Math.round(newWidth / SNAP_WIDTH) * SNAP_WIDTH
-			newHeight = Math.round(newHeight / SNAP_WIDTH) * SNAP_WIDTH
-		}
-
-		target.style.width = `${newWidth}px`
-		target.style.height = `${newHeight}px`
-
-		startX = e.clientX
-		startY = e.clientY
-	}
-
-	function stopResize() {
-		resizing.value = false
-		const element = resizer.previousElementSibling
-		emit('resize', {
-			name: resizer.getAttribute('data-id'),
-			width: parseInt(element.style.width.replace('px', '')),
-			height: parseInt(element.style.height.replace('px', '')),
-		})
-		window.removeEventListener('mousemove', resize)
-	}
+onMounted(() => {
+	useResizer({
+		disabled: !props.enabled,
+		handle: resizeHandle,
+		target: resizeHandle.value.previousElementSibling,
+		start: () => (resizing.value = true),
+		stop: () => (resizing.value = false),
+		resize(width, height) {
+			emit('resize', {
+				width: width,
+				height: height,
+				name: resizeHandle.value.getAttribute('data-id'),
+			})
+		},
+	})
 })
 
 const onSort = (e) => {

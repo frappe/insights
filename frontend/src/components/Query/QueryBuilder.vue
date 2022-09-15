@@ -1,12 +1,10 @@
 <template>
-	<div class="relative flex h-1/2">
+	<div class="min-h-1/2 relative flex flex-1">
 		<TablePanel />
 		<ColumnPanel />
 		<FilterPanel />
 	</div>
-	<div class="h-1/2">
-		<QueryResult />
-	</div>
+	<QueryResult />
 </template>
 
 <script setup>

@@ -1,11 +1,11 @@
 <template>
 	<div
-		v-if="show"
-		class="inline-block h-fit w-fit"
-		:style="style"
+		class="inline-block h-fit w-fit rounded-md bg-gray-50"
 		:class="{ 'cursor-grab select-none': dashboard.editingLayout }"
+		:style="style"
 	>
 		<div
+			v-if="show"
 			class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
 		>
 			<div
@@ -38,7 +38,6 @@
 			</div>
 		</div>
 	</div>
-	<div v-else class="inline-block h-fit w-fit rounded-md bg-gray-50" :style="style"></div>
 </template>
 
 <script setup>
