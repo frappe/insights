@@ -11,7 +11,7 @@ def setup_complete():
 
 
 def get_new_datasource(db):
-    data_source = frappe.new_doc("Data Source")
+    data_source = frappe.new_doc("Insights Data Source")
     data_source.update(
         {
             "database_type": db.get("type"),

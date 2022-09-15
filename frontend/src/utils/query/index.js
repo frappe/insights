@@ -50,7 +50,7 @@ export function useQuery(name) {
 }
 
 function getQueryResource(name) {
-	const doctype = 'Query'
+	const doctype = 'Insights Query'
 	return createDocumentResource({
 		doctype,
 		name,

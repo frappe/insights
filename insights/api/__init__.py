@@ -13,7 +13,7 @@ def get_app_version():
 @frappe.whitelist()
 def get_data_sources():
     return frappe.get_list(
-        "Data Source",
+        "Insights Data Source",
         filters={"status": "Active"},
         fields=["name", "title", "status", "database_type", "modified", "username"],
     )
@@ -21,7 +21,7 @@ def get_data_sources():
 
 @frappe.whitelist()
 def get_data_source(name):
-    doc = frappe.get_doc("Data Source", name)
+    doc = frappe.get_doc("Insights Data Source", name)
     tables = get_all_tables(name)
     return {
         "doc": doc.as_dict(),
@@ -32,7 +32,7 @@ def get_data_source(name):
 @frappe.whitelist()
 def get_data_source_table(name, table):
     table = frappe.get_doc(
-        "Table",
+        "Insights Table",
         {
             "data_source": name,
             "table": table,
@@ -50,7 +50,7 @@ def get_data_source_table(name, table):
 @frappe.whitelist()
 def update_data_source_table(name, table, hidden):
     table = frappe.get_doc(
-        "Table",
+        "Insights Table",
         {
             "data_source": name,
             "table": table,
@@ -67,7 +67,7 @@ def get_tables(data_source=None):
 
     def _get_tables():
         return frappe.get_all(
-            "Table",
+            "Insights Table",
             filters={
                 "hidden": 0,
                 "data_source": data_source,
@@ -89,7 +89,7 @@ def get_all_tables(data_source=None):
 
     def _get_all_tables():
         return frappe.get_all(
-            "Table",
+            "Insights Table",
             filters={
                 "data_source": data_source,
             },
@@ -122,9 +122,9 @@ def create_dashboard(title):
 
 @frappe.whitelist()
 def get_queries():
-    frappe.has_permission("Query", throw=True)
-    Query = frappe.qb.DocType("Query")
-    QueryTable = frappe.qb.DocType("Query Table")
+    frappe.has_permission("Insights Query", throw=True)
+    Query = frappe.qb.DocType("Insights Query")
+    QueryTable = frappe.qb.DocType("Insights Query Table")
     GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
@@ -144,7 +144,7 @@ def get_queries():
 
 @frappe.whitelist()
 def create_query(title, data_source, table):
-    query = frappe.new_doc("Query")
+    query = frappe.new_doc("Insights Query")
     query.title = title
     query.data_source = data_source
     query.append(
@@ -160,13 +160,13 @@ def create_query(title, data_source, table):
 
 @frappe.whitelist()
 def get_running_queries(data_source):
-    data_source = frappe.get_doc("Data Source", data_source)
+    data_source = frappe.get_doc("Insights Data Source", data_source)
     return data_source.get_running_queries()
 
 
 @frappe.whitelist()
 def kill_query(data_source, query_id):
-    data_source = frappe.get_doc("Data Source", data_source)
+    data_source = frappe.get_doc("Insights Data Source", data_source)
     return data_source.kill_query(query_id)
 
 
@@ -191,7 +191,7 @@ def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
     primary = frappe.get_doc(
-        "Table",
+        "Insights Table",
         {
             "data_source": data_source,
             "table": primary_table.get("table"),
@@ -208,7 +208,7 @@ def create_table_link(
         primary.save()
 
     foreign = frappe.get_doc(
-        "Table",
+        "Insights Table",
         {
             "data_source": data_source,
             "table": foreign_table.get("table"),
@@ -231,11 +231,11 @@ def get_onboarding_status():
         "is_onboarded": frappe.db.get_single_value(
             "Insights Settings", "onboarding_complete"
         ),
-        "query_created": bool(frappe.db.a_row_exists("Query")),
+        "query_created": bool(frappe.db.a_row_exists("Insights Query")),
         "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
         "visualization_created": bool(
             frappe.db.exists(
-                "Query Visualization", {"data": ["is", "set"], "type": ["is", "set"]}
+                "Insights Query Chart", {"data": ["is", "set"], "type": ["is", "set"]}
             )
         ),
         "visualization_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),

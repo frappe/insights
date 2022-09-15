@@ -60,7 +60,7 @@ def demo_data_exists():
     res = frappe.db.sql(
         f"""
             SELECT name
-            FROM `tabTable`
+            FROM `tabInsights Table`
             WHERE `data_source` = "Demo Data"
                 AND `table` IN ({','.join(['%s'] * len(tables))})
         """,
@@ -287,8 +287,8 @@ def create_indexes():
 
 
 def create_data_source():
-    if frappe.db.exists("Data Source", "Demo Data"):
-        doc = frappe.get_doc("Data Source", "Demo Data")
+    if frappe.db.exists("Insights Data Source", "Demo Data"):
+        doc = frappe.get_doc("Insights Data Source", "Demo Data")
         doc.database_name = frappe.conf.db_name
         doc.username = frappe.conf.db_name
         doc.password = frappe.conf.db_password
@@ -297,7 +297,7 @@ def create_data_source():
 
     data_source = frappe.get_doc(
         {
-            "doctype": "Data Source",
+            "doctype": "Insights Data Source",
             "title": "Demo Data",
             "database_type": "MariaDB",
             "database_name": frappe.conf.db_name,
@@ -344,7 +344,9 @@ def create_table_links():
         ],
     }
     for table, links in foreign_key_relations.items():
-        doc = frappe.get_doc("Table", {"table": table, "data_source": "Demo Data"})
+        doc = frappe.get_doc(
+            "Insights Table", {"table": table, "data_source": "Demo Data"}
+        )
         for link in links:
             doc.append(
                 "table_links",
@@ -367,7 +369,7 @@ def hide_other_tables():
     tables = list(META.keys())
     frappe.db.sql(
         f"""
-            UPDATE `tabTable`
+            UPDATE `tabInsights Table`
             SET `hidden` = 1
             WHERE `data_source` = "Demo Data"
                 AND `table` NOT IN ({','.join(['%s'] * len(tables))})

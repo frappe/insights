@@ -1,0 +1,221 @@
+{
+ "actions": [],
+ "autoname": "format:QRY-{####}",
+ "creation": "2022-01-29 14:40:51.105176",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tab_break_1",
+  "status",
+  "title",
+  "column_break_3",
+  "data_source",
+  "section_break_3",
+  "tables",
+  "column_break_4",
+  "columns",
+  "section_break_4",
+  "filters",
+  "section_break_2",
+  "limit",
+  "query_and_result_tab",
+  "section_break_11",
+  "sql",
+  "result",
+  "section_break_17",
+  "execution_time",
+  "column_break_19",
+  "last_execution",
+  "transform_tab",
+  "section_break_18",
+  "transform_type",
+  "transform_data",
+  "transform_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "columns",
+   "fieldtype": "Table",
+   "label": "Columns",
+   "options": "Insights Query Column"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "{\n\t\"type\": \"LogicalExpression\",\n\t\"operator\": \"&&\",\n\t\"level\": 1,\n\t\"position\": 1,\n\t\"conditions\": []\n}",
+   "fieldname": "filters",
+   "fieldtype": "JSON",
+   "label": "Filters"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "default": "10",
+   "fieldname": "limit",
+   "fieldtype": "Int",
+   "label": "Limit"
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Code",
+   "label": "Result",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sql",
+   "fieldtype": "Code",
+   "label": "SQL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "query_and_result_tab",
+   "fieldtype": "Tab Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "tab_break_1",
+   "fieldtype": "Tab Break",
+   "label": "Query"
+  },
+  {
+   "fieldname": "tables",
+   "fieldtype": "Table",
+   "label": "Tables",
+   "options": "Insights Query Table"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "label": "Data Source",
+   "options": "Insights Data Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "transform_tab",
+   "fieldtype": "Tab Break",
+   "label": "Transform"
+  },
+  {
+   "fieldname": "section_break_18",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "transform_type",
+   "fieldtype": "Select",
+   "label": "Transform Type",
+   "options": "Pivot"
+  },
+  {
+   "fieldname": "transform_data",
+   "fieldtype": "Code",
+   "label": "Transform Data",
+   "options": "JSON"
+  },
+  {
+   "default": "{}",
+   "fieldname": "transform_result",
+   "fieldtype": "Code",
+   "label": "Transform Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "execution_time",
+   "fieldtype": "Float",
+   "label": "Execution Time (seconds)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_execution",
+   "fieldtype": "Datetime",
+   "label": "Last Executed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending Execution",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Status",
+   "options": "Pending Execution\nExecution Successful",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-09-15 12:36:06.236954",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Query",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "status",
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

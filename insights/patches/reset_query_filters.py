@@ -3,10 +3,10 @@ import frappe
 
 
 def execute():
-    if not frappe.db.a_row_exists("Query"):
+    if not frappe.db.a_row_exists("Insights Query"):
         return
 
-    Query = frappe.qb.DocType("Query")
+    Query = frappe.qb.DocType("Insights Query")
     default_filters = json.dumps(
         {
             "type": "LogicalExpression",

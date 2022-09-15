@@ -131,7 +131,7 @@ function useVisualization({ visualizationID, queryID, query }) {
 }
 
 const visualizationDocResource = (name) => {
-	const doctype = 'Query Visualization'
+	const doctype = 'Insights Query Chart'
 	const whitelistedMethods = { updateDoc: 'update_doc' }
 	return createDocumentResource({ doctype, name, whitelistedMethods })
 }

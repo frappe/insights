@@ -4,10 +4,10 @@ from frappe.utils import cstr
 
 
 def execute():
-    if not frappe.db.a_row_exists("Query"):
+    if not frappe.db.a_row_exists("Insights Query"):
         return
 
-    queries = frappe.get_all("Query", fields=["name", "filters"])
+    queries = frappe.get_all("Insights Query", fields=["name", "filters"])
 
     for query in queries:
         _filters = json.loads(query.get("filters"))

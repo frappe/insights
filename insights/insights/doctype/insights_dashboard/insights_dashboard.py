@@ -12,7 +12,7 @@ class InsightsDashboard(Document):
     def get_visualizations(self):
         visualizations = [row.visualization for row in self.visualizations]
         return frappe.get_all(
-            "Query Visualization",
+            "Insights Query Chart",
             filters={"name": ("not in", visualizations), "type": ["!=", "Pivot"]},
             fields=["name", "title", "type"],
         )
@@ -26,7 +26,7 @@ class InsightsDashboard(Document):
     def refresh_visualizations(self):
         for visualization in self.visualizations:
             try:
-                frappe.get_doc("Query", visualization.query).run()
+                frappe.get_doc("Insights Query", visualization.query).run()
             except BaseException:
                 frappe.log_error(title="Error while executing query")
 

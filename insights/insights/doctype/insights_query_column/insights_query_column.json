@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-13 07:15:12.616962",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "label",
+  "column",
+  "type",
+  "is_expression",
+  "column_break_5",
+  "table",
+  "table_label",
+  "section_break_8",
+  "expression",
+  "aggregations_section",
+  "aggregation",
+  "aggregation_condition",
+  "format_option",
+  "order_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 2,
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Column",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "mandatory_depends_on": "!is_expression"
+  },
+  {
+   "fieldname": "table",
+   "fieldtype": "Data",
+   "label": "Table",
+   "mandatory_depends_on": "!is_expression"
+  },
+  {
+   "columns": 1,
+   "fieldname": "type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Type",
+   "mandatory_depends_on": "!is_expression"
+  },
+  {
+   "fieldname": "aggregations_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "aggregation",
+   "fieldtype": "Data",
+   "label": "Aggregation"
+  },
+  {
+   "fieldname": "table_label",
+   "fieldtype": "Data",
+   "label": "Table Label",
+   "mandatory_depends_on": "!is_expression"
+  },
+  {
+   "fieldname": "order_by",
+   "fieldtype": "Select",
+   "label": "Order By",
+   "options": "\nasc\ndesc"
+  },
+  {
+   "depends_on": "aggregation_condition",
+   "fieldname": "aggregation_condition",
+   "fieldtype": "Code",
+   "label": "Aggregation Condition",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "format_option",
+   "fieldtype": "Code",
+   "label": "Format Option",
+   "options": "JSON"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_expression",
+   "fieldtype": "Check",
+   "label": "Is Expression"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "is_expression",
+   "fieldname": "expression",
+   "fieldtype": "JSON",
+   "label": "Expression"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-07-20 20:40:22.532890",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Query Column",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
