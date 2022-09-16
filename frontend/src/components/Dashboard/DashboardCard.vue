@@ -60,7 +60,7 @@ const props = defineProps({
 })
 
 const show = computed(() => {
-	return visualization.doc && visualization.component && visualization.componentProps
+	return visualization.type && visualization.component && visualization.componentProps
 })
 
 const visualizationRow = dashboard.doc.visualizations.find(

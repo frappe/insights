@@ -1,4 +1,4 @@
-import { computed, markRaw, reactive, watch, watchEffect, nextTick } from 'vue'
+import { computed, markRaw, reactive, watchEffect, nextTick } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { useQuery } from '@/utils/query'
@@ -24,15 +24,14 @@ const types = [
 const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
 function useVisualization({ visualizationID, queryID, query }) {
-	const resource = visualizationDocResource(visualizationID)
-	const doc = computed(() => resource.doc || {})
-
 	if (!query) {
 		query = useQuery(queryID)
 	}
 
+	const resource = visualizationDocResource(visualizationID)
+	const initialDoc = computed(() => resource.doc || {})
+
 	const visualization = reactive({
-		doc: null,
 		type: '',
 		title: '',
 		data: {},
@@ -46,14 +45,11 @@ function useVisualization({ visualizationID, queryID, query }) {
 
 	watchEffect(() => {
 		// load visualization data from doc
-		const _doc = doc.value
-		if (_doc.type || _doc.data || _doc.title) {
-			visualization.doc = _doc
-			visualization.type = _doc.type
-			visualization.title = _doc.title
-			const data = safeJSONParse(_doc.data, {})
-			visualization.doc.data = data
-			visualization.data = data
+		const doc = initialDoc.value
+		if (doc.type || doc.title) {
+			visualization.type = doc.type
+			visualization.title = doc.title
+			visualization.data = safeJSONParse(doc.data, {})
 		}
 	})
 
@@ -78,23 +74,26 @@ function useVisualization({ visualizationID, queryID, query }) {
 	})
 
 	watchDebounced(
-		// if query.doc or doc changes then re-render visualization
+		// if query.doc or chart options changes then re-render visualization
 		() => ({
 			queryDoc: query.doc,
-			doc: visualization.doc,
-			data: visualization.data,
+			options: {
+				type: visualization.type,
+				title: visualization.title,
+				data: visualization.data,
+			},
 		}),
 		buildComponentProps,
 		{ deep: true, immediate: true, debounce: 300 }
 	)
 
-	async function buildComponentProps() {
+	async function buildComponentProps({ queryDoc, options }) {
 		visualization.componentProps = null
 		await nextTick()
-		if (!query.doc || isEmptyObj(visualization.doc.data)) {
+		if (!query.doc || isEmptyObj(options.data)) {
 			return
 		}
-		visualization.controller.buildComponentProps(query, visualization.doc)
+		visualization.controller.buildComponentProps(query, options)
 	}
 
 	function setType(type) {
@@ -118,13 +117,12 @@ function useVisualization({ visualizationID, queryID, query }) {
 	}
 
 	visualization.isDirty = computed(() => {
-		const doc = visualization.doc
-		if (!doc) return false
-		return (
-			doc.type !== visualization.type ||
-			doc.title !== visualization.title ||
-			JSON.stringify(doc.data) !== JSON.stringify(visualization.data)
-		)
+		if (!initialDoc.value) return false
+
+		const doc = initialDoc.value
+		const initialData = safeJSONParse(doc.data, {})
+		const dataChanged = JSON.stringify(initialData) !== JSON.stringify(visualization.data)
+		return doc.type !== visualization.type || doc.title !== visualization.title || dataChanged
 	})
 
 	return visualization

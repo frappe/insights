@@ -28,22 +28,22 @@ function useAxisChart(type, icon) {
 		}
 	}
 
-	function buildComponentProps(query, doc) {
-		if (isEmptyObj(doc.data.labelColumn, doc.data.valueColumn)) {
+	function buildComponentProps(query, options) {
+		if (isEmptyObj(options.data.labelColumn, options.data.valueColumn)) {
 			return
 		}
 
-		if (visualization.dataSchema.multipleValues && Array.isArray(doc.data.valueColumn)) {
+		if (visualization.dataSchema.multipleValues && Array.isArray(options.data.valueColumn)) {
 			visualization.componentProps = {
-				title: doc.title,
-				data: buildMultiValueData(query, doc.data),
-				options: buildOptions(doc.data),
+				title: options.title,
+				data: buildMultiValueData(query, options.data),
+				options: buildOptions(options.data),
 			}
 		} else {
 			visualization.componentProps = {
-				title: doc.title,
-				data: buildSingleValueData(query, doc.data),
-				options: buildOptions(doc.data),
+				title: options.title,
+				data: buildSingleValueData(query, options.data),
+				options: buildOptions(options.data),
 			}
 		}
 	}

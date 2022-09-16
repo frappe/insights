@@ -17,9 +17,9 @@ function usePivotChart() {
 		)
 	}
 
-	function buildComponentProps(query, doc) {
+	function buildComponentProps(query, options) {
 		// request backend to perform pivot transform
-		applyPivot(query, doc.data)
+		applyPivot(query, options.data)
 
 		// watch for changes to transform result
 		const unwatch = watch(
@@ -28,7 +28,7 @@ function usePivotChart() {
 				if (result !== '{}') {
 					// once pivot transform is complete, set props as result
 					visualization.componentProps = {
-						title: doc.title,
+						title: options.title,
 						tableHtml: result,
 					}
 				}
@@ -40,7 +40,7 @@ function usePivotChart() {
 		visualization.componentProps =
 			query.doc.transform_result !== '{}'
 				? {
-						title: doc.title,
+						title: options.title,
 						tableHtml: query.doc.transform_result,
 				  }
 				: null

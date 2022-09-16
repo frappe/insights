@@ -18,11 +18,11 @@ function useNumberChart() {
 		return defineAsyncComponent(() => import('@/components/Query/Visualization/NumberCard.vue'))
 	}
 
-	function buildComponentProps(query, doc) {
-		if (isEmptyObj(doc.data.valueColumn)) {
+	function buildComponentProps(query, options) {
+		if (isEmptyObj(options.data.valueColumn)) {
 			return null
 		}
-		const valueColumn = doc.data.valueColumn?.value
+		const valueColumn = options.data.valueColumn?.value
 		if (
 			!query.doc.columns.some((c) =>
 				c.is_expression ? c.label === valueColumn : c.column === valueColumn
@@ -32,7 +32,7 @@ function useNumberChart() {
 		}
 
 		const value = query.results.getColumnValues(valueColumn)[0]
-		visualization.componentProps = { value, title: doc.title }
+		visualization.componentProps = { value, title: options.title }
 	}
 
 	return visualization

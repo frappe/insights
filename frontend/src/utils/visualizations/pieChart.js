@@ -18,13 +18,13 @@ function usePieChart() {
 		return defineAsyncComponent(() => import('@/components/Query/Visualization/PieChart.vue'))
 	}
 
-	function buildComponentProps(query, doc) {
-		if (isEmptyObj(doc.data.labelColumn, doc.data.valueColumn)) {
+	function buildComponentProps(query, options) {
+		if (isEmptyObj(options.data.labelColumn, options.data.valueColumn)) {
 			return
 		}
-		const props = buildSingleValueChartProps(query, doc.data)
+		const props = buildSingleValueChartProps(query, options.data)
 		visualization.componentProps = {
-			title: doc.title,
+			title: options.title,
 			...props,
 		}
 	}
