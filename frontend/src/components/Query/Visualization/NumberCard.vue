@@ -1,12 +1,12 @@
 <script setup>
 import { computed } from 'vue'
 const props = defineProps({
-	title: {
-		type: String,
-		default: '',
-	},
 	value: {
 		type: Number,
+	},
+	options: {
+		type: Object,
+		default: {},
 	},
 })
 const formattedValue = computed(() => {
@@ -26,11 +26,18 @@ const formattedValue = computed(() => {
 	}
 	return (value / 1000000000).toFixed(1) + 'b'
 })
+
+const prefix = computed(() => {
+	return props.options.data.prefix || ''
+})
+const suffix = computed(() => {
+	return props.options.data.suffix || ''
+})
 </script>
 
 <template>
 	<div class="flex h-full min-h-[6rem] w-full min-w-40 flex-col items-center justify-center">
-		<div class="text-base font-semibold text-gray-600">{{ props.title }}</div>
-		<div class="text-[44px] leading-tight">{{ formattedValue }}</div>
+		<div class="text-base font-semibold text-gray-600">{{ props.options.title }}</div>
+		<div class="text-[44px] leading-tight">{{ prefix }}{{ formattedValue }}{{ suffix }}</div>
 	</div>
 </template>

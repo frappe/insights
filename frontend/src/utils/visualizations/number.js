@@ -32,7 +32,7 @@ function useNumberChart() {
 		}
 
 		const value = query.results.getColumnValues(valueColumn)[0]
-		visualization.componentProps = { value, title: options.title }
+		visualization.componentProps = { value, options }
 	}
 
 	return visualization
