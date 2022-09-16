@@ -9,7 +9,7 @@
 		:disabled="dragDisabled"
 	>
 		<template #item="{ element: item }">
-			<div class="relative flex items-start p-1">
+			<div class="relative flex h-fit items-start p-1">
 				<slot name="item" v-bind="{ item }"></slot>
 				<div
 					v-show="props.enabled"
@@ -17,8 +17,8 @@
 					class="absolute right-0 bottom-0 z-10 flex cursor-se-resize items-end pr-2 pb-2"
 					:data-id="item.name"
 				>
-					<div class="h-1 w-4 rounded-l-full bg-gray-200"></div>
-					<div class="h-5 w-1 rounded-t-full bg-gray-200"></div>
+					<div class="h-1 w-3 rounded-l-full bg-gray-200"></div>
+					<div class="h-4 w-1 rounded-t-full bg-gray-200"></div>
 				</div>
 			</div>
 		</template>
@@ -27,7 +27,7 @@
 
 <script setup>
 import Draggable from 'vuedraggable'
-import { computed, ref, unref, onMounted } from 'vue'
+import { computed, ref, unref, onMounted, watchEffect } from 'vue'
 import useResizer from '@/utils/resizer'
 
 const emit = defineEmits(['sort', 'resize'])
@@ -48,6 +48,9 @@ const props = defineProps({
 })
 
 const items = ref(unref(props.items))
+watchEffect(() => {
+	items.value = unref(props.items)
+})
 
 const resizing = ref(false)
 const dragDisabled = computed(() => resizing.value || !props.enabled)

@@ -71,7 +71,10 @@
 					</template>
 				</DraggableResizeable>
 			</div>
-			<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
+			<div
+				v-if="visualizations && visualizations.length == 0"
+				class="flex flex-1 flex-col items-center justify-center space-y-1"
+			>
 				<div class="text-base font-light text-gray-500">
 					You haven't added any visualizations.
 				</div>
