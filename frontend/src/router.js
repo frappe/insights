@@ -84,16 +84,8 @@ let router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
 	if (!auth.isLoggedIn) {
-		if (!to.meta.isLoginPage) {
-			return next({
-				name: 'Login',
-				query: {
-					route: to.path,
-				},
-			})
-		} else {
-			return next()
-		}
+		window.location.href = '/login'
+		return next(false)
 	}
 
 	// force redirect to Setup page if not yet setup
@@ -121,9 +113,6 @@ router.beforeEach(async (to, from, next) => {
 const _fetch = window.fetch
 window.fetch = async function () {
 	const res = await _fetch(...arguments)
-	if (res.ok) {
-		return res
-	}
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
 		auth.reset()
 		router.push('/login')
