@@ -1,12 +1,12 @@
 <template>
 	<div ref="resultContainer" class="h-1/2">
 		<!-- Result Header -->
-		<div class="flex h-8 items-center">
+		<div class="relative flex h-8 items-center">
 			<div class="text-sm tracking-wide text-gray-600">RESULT</div>
 			<div class="flex flex-1 items-center justify-center">
 				<div
 					ref="resizerHandle"
-					class="transition-al h-2 w-16 cursor-s-resize rounded-full bg-gray-100"
+					class="transition-al h-1.5 w-16 cursor-s-resize rounded-full bg-gray-100"
 					:class="[isResizing ? 'bg-gray-200' : '']"
 				></div>
 			</div>
