@@ -33,7 +33,7 @@ export default function useResizer({
 
 		e.preventDefault()
 
-		start?.()
+		start && start()
 		isDragging.value = true
 		startX.value = e.clientX
 		startY.value = e.clientY
@@ -58,7 +58,7 @@ export default function useResizer({
 						state.newWidth = limits.maxWidth
 					}
 				}
-				$target.style.width = `${state.newWidth}px`
+				$target.style.width = state.newWidth + 'px'
 			}
 
 			if (!direction || direction == 'y') {
@@ -80,8 +80,8 @@ export default function useResizer({
 		document.removeEventListener('mousemove', onMouseMove)
 		document.removeEventListener('mouseup', onMouseUp)
 
-		stop?.()
-		resize?.(state.newWidth, state.newHeight)
+		stop && stop()
+		resize && resize(state.newWidth, state.newHeight)
 	}
 
 	unref(handle).addEventListener('mousedown', onMouseDown)
