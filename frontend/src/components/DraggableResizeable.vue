@@ -63,7 +63,7 @@ onMounted(() => {
 		useResizer({
 			disabled,
 			handle,
-			target: handle.parentElement,
+			target: handle.previousElementSibling,
 			start: () => (resizing.value = true),
 			stop: () => (resizing.value = false),
 			resize(width, height) {

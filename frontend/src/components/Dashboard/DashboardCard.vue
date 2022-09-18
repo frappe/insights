@@ -1,5 +1,5 @@
 <template>
-	<div class="h-full w-full rounded-md bg-gray-50" :style="style">
+	<div class="h-fit w-fit rounded-md bg-gray-50" :style="style">
 		<div
 			v-if="show"
 			class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
