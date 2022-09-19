@@ -1,5 +1,5 @@
 <template>
-	<div class="h-fit w-fit rounded-md bg-gray-50" :style="style">
+	<div class="h-full w-full rounded-md bg-gray-50">
 		<div
 			v-if="show"
 			class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
@@ -75,12 +75,5 @@ provide('layout', layout) // used by components to listen to resize events
 const visualization = useVisualization({
 	visualizationID: props.visualizationID,
 	queryID: props.queryID,
-})
-
-const style = computed(() => {
-	let style = ``
-	if (layout.width) style += `width: ${layout.width}px;`
-	if (layout.height) style += `height: ${layout.height}px;`
-	return style
 })
 </script>

@@ -40,7 +40,7 @@
 						v-if="dashboard.editingLayout"
 						appearance="primary"
 						icon="check"
-						@click="updateLayout"
+						@click="commitLayout"
 					/>
 				</div>
 			</div>
@@ -48,28 +48,34 @@
 		<template #main>
 			<div
 				v-if="visualizations && visualizations.length > 0"
-				class="mt-2 h-full w-full overflow-scroll"
+				class="-mx-1 h-full w-full overflow-scroll pt-1"
 				:class="{
 					'blur-[4px]': refreshing,
 					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,
 				}"
 				@click="() => (refreshing ? $event.stopPropagation() : null)"
 			>
-				<DraggableResizeable
-					:enabled="dashboard.editingLayout"
+				<GridLayout
 					:items="visualizations"
-					@sort="updateOrder"
-					@resize="updateSize"
+					itemKey="name"
+					@layoutChange="updateLayout"
+					:disabled="!dashboard.editingLayout"
+					:options="{
+						float: true,
+						margin: 4,
+						column: 20,
+						cellHeight: 30,
+					}"
 				>
-					<template #item="{ item: visualization }">
+					<template #item="{ item }">
 						<DashboardCard
-							:visualizationID="visualization.id"
-							:queryID="visualization.query"
+							:visualizationID="item.visualizationID"
+							:queryID="item.query"
 							@edit="editVisualization"
 							@remove="removeVisualization"
 						/>
 					</template>
-				</DraggableResizeable>
+				</GridLayout>
 			</div>
 			<div
 				v-if="visualizations && visualizations.length == 0"
@@ -131,7 +137,8 @@ import { computed, ref, provide, reactive, watch } from 'vue'
 import useDashboard from '@/utils/dashboard'
 import { updateDocumentTitle } from '@/utils'
 
-import DraggableResizeable from '@/components/DraggableResizeable.vue'
+import GridLayout from '@/components/Dashboard/GridLayout.vue'
+import { safeJSONParse } from '@/utils'
 
 const props = defineProps({
 	name: {
@@ -143,14 +150,32 @@ const props = defineProps({
 const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
-const visualizations = computed(() => {
-	return dashboard.doc?.visualizations.map((v) => {
+const visualizations = computed(() =>
+	dashboard.doc?.visualizations.map((v) => {
+		const layout = safeJSONParse(v.layout, {})
 		return {
-			id: v.visualization,
 			...v,
+			...layout,
+			visualizationID: v.visualization,
 		}
 	})
-})
+)
+
+const updatedLayout = reactive({})
+const updateLayout = (changedItems) => {
+	changedItems.forEach((item) => {
+		const name = item.id
+		delete item.id
+		updatedLayout[name] = item
+	})
+}
+
+const commitLayout = () => {
+	dashboard.updateLayout.submit({
+		updated_layout: updatedLayout,
+	})
+	dashboard.editingLayout = false
+}
 
 const showAddDialog = ref(false)
 const newVisualization = ref({})
@@ -202,28 +227,6 @@ const refreshVisualizations = async () => {
 	dashboard.doc.visualizations = []
 	await dashboard.reload()
 	refreshing.value = false
-}
-
-const updatedLayout = reactive({
-	moved: [],
-	resized: [],
-})
-
-const updateOrder = ({ oldIndex, newIndex }) => {
-	updatedLayout['moved'].push({
-		from_index: oldIndex,
-		to_index: newIndex,
-	})
-}
-
-const updateSize = ({ name, width, height }) => {
-	updatedLayout['resized'].push({ name, width, height })
-}
-const updateLayout = () => {
-	dashboard.updateLayout.submit({
-		updated_layout: updatedLayout,
-	})
-	dashboard.editingLayout = false
 }
 
 const autocomplete = ref(null)
