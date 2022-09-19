@@ -245,3 +245,21 @@ def get_onboarding_status():
 @frappe.whitelist()
 def skip_onboarding():
     frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)
+
+
+@frappe.whitelist()
+def get_dashboard_options(visualization):
+    DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
+
+    exclude_dashboards = (
+        frappe.qb.from_(DashboardItem)
+        .select(DashboardItem.parent)
+        .distinct()
+        .where(DashboardItem.visualization == visualization)
+        .run(pluck="parent")
+    )
+    return frappe.get_list(
+        "Insights Dashboard",
+        filters={"name": ["not in", exclude_dashboards]},
+        pluck="name",
+    )

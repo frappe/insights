@@ -8,6 +8,15 @@ from frappe.model.document import Document
 
 
 class InsightsDashboard(Document):
+    def validate(self):
+        self.validate_duplicate_items()
+
+    def validate_duplicate_items(self):
+        items = [d.visualization for d in self.visualizations]
+        if len(items) != len(set(items)):
+            duplicates = [item for item in items if items.count(item) > 1]
+            frappe.throw("Duplicate items found: {0}".format(", ".join(duplicates)))
+
     @frappe.whitelist()
     def get_visualizations(self):
         visualizations = [row.visualization for row in self.visualizations]
@@ -18,8 +27,16 @@ class InsightsDashboard(Document):
         )
 
     @frappe.whitelist()
-    def add_visualization(self, visualization):
-        self.append("visualizations", {"visualization": visualization})
+    def add_visualization(self, visualization, layout=None):
+        if not layout:
+            layout = {"w": 8, "h": 8}
+        self.append(
+            "visualizations",
+            {
+                "visualization": visualization,
+                "layout": dumps(layout, indent=2),
+            },
+        )
         self.save()
 
     @frappe.whitelist()

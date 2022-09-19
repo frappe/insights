@@ -41,6 +41,7 @@ function useVisualization({ visualizationID, queryID, query }) {
 		componentProps: null,
 		setType,
 		updateDoc,
+		addToDashboard,
 	})
 
 	watchEffect(() => {
@@ -125,12 +126,21 @@ function useVisualization({ visualizationID, queryID, query }) {
 		return doc.type !== visualization.type || doc.title !== visualization.title || dataChanged
 	})
 
+	function addToDashboard(dashboard, layout, { onSuccess }) {
+		const params = { dashboard, layout }
+		const options = { onSuccess }
+		resource.addToDashboard.submit(params, options)
+		if (!visualization.addingToDashboard) {
+			visualization.addingToDashboard = computed(() => resource.addToDashboard.loading)
+		}
+	}
+
 	return visualization
 }
 
 const visualizationDocResource = (name) => {
 	const doctype = 'Insights Query Chart'
-	const whitelistedMethods = { updateDoc: 'update_doc' }
+	const whitelistedMethods = { updateDoc: 'update_doc', addToDashboard: 'add_to_dashboard' }
 	return createDocumentResource({ doctype, name, whitelistedMethods })
 }
 

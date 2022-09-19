@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { createDocumentResource } from 'frappe-ui'
+import { createDocumentResource, createResource } from 'frappe-ui'
 
 export default function useDashboard(name) {
 	const dashboard = makeDashboardResource(name)
@@ -21,6 +21,14 @@ export default function useDashboard(name) {
 	dashboard.editingLayout = false
 
 	return dashboard
+}
+
+const getDashboardOptionsResource = createResource({
+	method: 'insights.api.get_dashboard_options',
+	initialData: [],
+})
+export function getDashboardOptions(visualization) {
+	return getDashboardOptionsResource.submit({ visualization })
 }
 
 function makeDashboardResource(name) {
