@@ -12,3 +12,4 @@ insights.patches.add_last_execution_field
 insights.patches.rename_like_to_contains
 insights.patches.reset_query_filters
 insights.patches.refresh_tables #v3
+insights.patches.modify_dashboard_layout
