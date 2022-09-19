@@ -11,19 +11,18 @@ def execute():
     layouts = frappe.get_all(DASHBOARD_ITEM, fields=["name", "layout"])
 
     for row in layouts:
-        if row.layout:
-            layout = frappe.parse_json(row.layout)
-            if not layout.width and not layout.height:
-                continue
-
+        layout = frappe.parse_json(row.layout or {})
+        new_layout = dumps({"w": 4, "h": 4}, indent=2)
+        if layout.width or layout.height:
             new_layout = update_width_height(layout)
-            frappe.db.set_value(
-                DASHBOARD_ITEM,
-                row.name,
-                "layout",
-                new_layout,
-                update_modified=False,
-            )
+
+        frappe.db.set_value(
+            DASHBOARD_ITEM,
+            row.name,
+            "layout",
+            new_layout,
+            update_modified=False,
+        )
 
 
 def update_width_height(layout):
