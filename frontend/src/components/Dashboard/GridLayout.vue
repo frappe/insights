@@ -1,6 +1,6 @@
 <script setup>
 import 'gridstack/dist/gridstack.min.css'
-import { GridStack } from 'gridstack'
+import GridStack from 'gridstack/dist/gridstack-all.js'
 import { computed, nextTick, onMounted, watch } from 'vue'
 
 const emit = defineEmits(['layoutChange'])
@@ -103,16 +103,16 @@ function disableGrid(disabled) {
 }
 @for $i from 1 through 20 {
 	.grid-stack > .grid-stack-item[gs-w='#{$i}'] {
-		width: percentage($i / 20);
+		width: percentage(calc($i / 20));
 	}
 	.grid-stack > .grid-stack-item[gs-x='#{$i}'] {
-		left: percentage($i / 20);
+		left: percentage(calc($i / 20));
 	}
 	.grid-stack > .grid-stack-item[gs-min-w='#{$i}'] {
-		min-width: percentage($i / 20);
+		min-width: percentage(calc($i / 20));
 	}
 	.grid-stack > .grid-stack-item[gs-max-w='#{$i}'] {
-		max-width: percentage($i / 20);
+		max-width: percentage(calc($i / 20));
 	}
 }
 </style>
