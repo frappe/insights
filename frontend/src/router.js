@@ -84,6 +84,10 @@ let router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
 	if (!auth.isLoggedIn) {
+		if (import.meta.env.DEV) {
+			return to.fullPath === '/login' ? next() : next('/login')
+		}
+		// redirect to frappe login page, for oauth and signup
 		window.location.href = '/login'
 		return next(false)
 	}
