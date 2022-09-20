@@ -218,4 +218,9 @@ export const FUNCTIONS = {
 		description: 'Returns the sum of the values of the given column that satisfy the condition',
 		example: 'sum_if(`customer` = "John", `grand_total`)',
 	},
+	time_elapsed: {
+		syntax: 'time_elapsed(unit, date1, date2)',
+		description: 'Returns the time elapsed between two dates',
+		example: 'time_elapsed("day", `posting_date`, today())',
+	},
 }

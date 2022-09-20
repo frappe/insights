@@ -238,6 +238,7 @@ class Functions:
             "not_contains": cls.not_contains,
             "ends_with": cls.endswith,
             "starts_with": cls.startswith,
+            "time_elapsed": cls.time_elapsed,
             "ceil": CustomFunction("CEIL", ["field"]),
             "round": CustomFunction("ROUND", ["field"]),
             "replace": CustomFunction("REPLACE", ["field", "find", "replace"]),
@@ -306,6 +307,32 @@ class Functions:
         for condition, value in zip(conditions, values):
             case.when(condition, value)
         return case.else_(default)
+
+    @staticmethod
+    def time_elapsed(unit, start_date, end_date):
+        from pypika.terms import LiteralValue
+
+        VALID_UNITS = [
+            "MICROSECOND",
+            "SECOND",
+            "MINUTE",
+            "HOUR",
+            "DAY",
+            "WEEK",
+            "MONTH",
+            "QUARTER",
+            "YEAR",
+        ]
+        if unit.upper() not in VALID_UNITS:
+            frappe.throw(
+                f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}"
+            )
+
+        timestamp_diff = CustomFunction(
+            "TIMESTAMPDIFF", ["unit", "start_date", "end_date"]
+        )
+        unit = LiteralValue(unit.upper())
+        return timestamp_diff(unit, start_date, end_date)
 
     @classmethod
     def is_valid(cls, function: str):
