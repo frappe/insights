@@ -19,14 +19,8 @@ const visualization = inject('visualization')
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Measure</div>
 		<ListPicker
-			:value="
-				Array.isArray(visualization.data.valueColumn)
-					? visualization.data.valueColumn
-					: visualization.data.valueColumn
-					? [visualization.data.valueColumn]
-					: undefined
-			"
-			:options="query.columns.valueColumns"
+			:value="visualization.data.valueColumn"
+			:options="query.columns.valueOptions"
 			@change="(options) => (visualization.data.valueColumn = options)"
 		/>
 	</div>

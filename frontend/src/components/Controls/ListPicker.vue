@@ -158,9 +158,7 @@ const selectedOptions = computed({
 		return makeOptions(valuePassed ? attrs.value?.slice() : props.modelValue.slice())
 	},
 	set(val) {
-		const event = valuePassed ? 'change' : 'update:modelValue'
-		console.log('set selectedOptions', event, val)
-		emit(event, val)
+		emit(valuePassed ? 'change' : 'update:modelValue', val)
 	},
 })
 
