@@ -12,10 +12,10 @@ export function useQueryResults(query) {
 			return row.map((cell, idx) => {
 				const column = query.columns.data[idx] || {}
 				if (FIELDTYPES.NUMBER.includes(column.type)) {
-					cell = Number(cell).toLocaleString()
 					if (column.type == 'Int') {
 						cell = parseInt(cell)
 					}
+					cell = Number(cell).toLocaleString()
 				}
 				if (column.format_option) {
 					cell = applyColumnFormatOption(column, cell)
