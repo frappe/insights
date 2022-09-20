@@ -186,23 +186,23 @@ def get_date_range(
         ),
         "last n days": lambda n: (
             add_to_date(today, days=-1 * n),
-            add_to_date(today, days=-1 * n),
+            add_to_date(today, days=-1),
         ),
         "last n weeks": lambda n: (
             get_first_day_of_week(add_to_date(today, days=-7 * n)),
-            get_last_day_of_week(add_to_date(today, days=-7 * n)),
+            get_last_day_of_week(add_to_date(today, days=-7)),
         ),
         "last n months": lambda n: (
             get_first_day(add_to_date(today, months=-1 * n)),
-            get_last_day(add_to_date(today, months=-1 * n)),
+            get_last_day(add_to_date(today, months=-1)),
         ),
         "last n quarters": lambda n: (
             get_quarter_start(add_to_date(today, months=-3 * n)),
-            get_quarter_ending(add_to_date(today, months=-3 * n)),
+            get_quarter_ending(add_to_date(today, months=-3)),
         ),
         "last n years": lambda n: (
             get_year_start(add_to_date(today, years=-1 * n)),
-            get_year_ending(add_to_date(today, years=-1 * n)),
+            get_year_ending(add_to_date(today, years=-1)),
         ),
     }
 
