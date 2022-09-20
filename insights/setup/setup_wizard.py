@@ -99,7 +99,7 @@ def run_stage_task(args):
     return args.task()
 
 
-def create_datasource(args):
+def get_new_datasource(args):
     data_source = frappe.new_doc("Insights Data Source")
     data_source.update(
         {
@@ -113,6 +113,11 @@ def create_datasource(args):
             "use_ssl": args.get("db_use_ssl"),
         }
     )
+    return data_source
+
+
+def create_datasource(args):
+    data_source = get_new_datasource(args)
     data_source.save()
 
 
@@ -132,24 +137,8 @@ def login_as_first_user(args):
 
 @frappe.whitelist()
 def test_db_connection(db):
-    from frappe.database.mariadb.database import MariaDBDatabase
-    from frappe.utils import cint
-
-    if type(db) is not dict:
-        db = frappe.parse_json(db)
-
-    db = frappe._dict(db)
-
+    db = frappe.parse_json(db)
     if db.db_type == "MariaDB":
-        try:
-            db_instance = MariaDBDatabase(
-                host=db.db_host,
-                port=cint(db.db_port),
-                user=db.db_username,
-                password=db.db_password,
-            )
-            db_instance.sql("select 1")
-            return True
-        except BaseException:
-            frappe.log_error(title="Setup Wizard Database Connection Error")
-            return False
+        data_source = get_new_datasource(db)
+        return data_source.test_connection()
+    return False

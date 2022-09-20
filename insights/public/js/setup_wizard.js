@@ -22,11 +22,16 @@ insights.setup.slides_settings = [
 		},
 		attach_test_connection_listener(slide) {
 			const $test_conn_btn = slide.$body.find('.test-conn-btn')
+			let testing_connection = false
 			$test_conn_btn.on('click', () => {
+				if (testing_connection) return
+
+				testing_connection = true
 				const values = slide.form.get_values(true)
 				if (
 					values.db_type &&
 					values.db_name &&
+					values.db_title &&
 					values.db_username &&
 					values.db_password
 				) {
@@ -34,6 +39,7 @@ insights.setup.slides_settings = [
 						method: 'insights.setup.setup_wizard.test_db_connection',
 						args: { db: values },
 						callback: (r) => {
+							testing_connection = false
 							if (r.message) {
 								const success_msg = __(
 									'Successfully connected to databse'

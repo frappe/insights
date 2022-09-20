@@ -117,8 +117,8 @@ class InsightsDataSource(Document):
         try:
             self.execute_query("select 1")
             connection_status = True
-        except Exception as e:
-            frappe.log_error(title="Data Source Connection Test", message=e)
+        except BaseException:
+            frappe.log_error(title="Data Source Connection Test")
 
         return connection_status
 
