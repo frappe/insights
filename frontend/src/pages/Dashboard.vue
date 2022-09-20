@@ -9,15 +9,19 @@
 					<Button
 						v-if="!dashboard.editingLayout"
 						appearance="white"
-						icon="refresh-ccw"
+						iconLeft="refresh-ccw"
 						@click="refreshVisualizations"
-					/>
+					>
+						Refresh
+					</Button>
 					<Button
 						v-if="!dashboard.editingLayout"
 						appearance="white"
-						icon="edit"
+						iconLeft="edit"
 						@click="() => (dashboard.editingLayout = true)"
-					/>
+					>
+						Edit
+					</Button>
 					<Button
 						v-if="dashboard.editingLayout"
 						appearance="white"
@@ -27,9 +31,12 @@
 					<Button
 						v-if="!dashboard.editingLayout"
 						appearance="white"
-						icon="trash-2"
+						class="!text-red-600"
+						iconLeft="trash-2"
 						@click="() => (showDeleteDialog = true)"
-					/>
+					>
+						Delete
+					</Button>
 					<Button
 						v-if="dashboard.editingLayout"
 						appearance="danger"

@@ -67,7 +67,7 @@
 		<div v-else>
 			<div class="mb-4 flex h-7 items-center">
 				<Button icon="chevron-left" class="mr-2" @click="editTable = null"> </Button>
-				<div class="text-lg font-medium">Join - {{ editTable.label }}</div>
+				<div class="text-sm tracking-wide text-gray-600">JOIN</div>
 			</div>
 			<div class="flex flex-col space-y-3">
 				<div class="flex flex-col space-y-3">
