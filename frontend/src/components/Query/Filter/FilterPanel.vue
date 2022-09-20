@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full w-1/3 flex-col pl-4 pb-4">
+	<div class="flex h-full w-1/3 flex-col pl-4 pb-2">
 		<div v-if="!pickingFilter" class="flex items-center justify-between bg-white pb-3 pt-1">
 			<div class="text-sm tracking-wide text-gray-600">FILTERS</div>
 			<Button icon="plus" @click="pickingFilter = true"></Button>

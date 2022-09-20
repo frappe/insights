@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-full w-1/3 flex-col overflow-scroll pr-4 pb-4">
+	<div class="flex h-full w-1/3 flex-col overflow-scroll pr-4 pb-2">
 		<!-- Picker -->
 		<div v-if="!editTable" class="flex flex-1 flex-col">
 			<div
