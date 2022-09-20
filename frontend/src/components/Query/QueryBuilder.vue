@@ -1,5 +1,5 @@
 <template>
-	<div class="min-h-1/2 relative flex flex-1">
+	<div class="relative flex min-h-[50%] flex-1">
 		<TablePanel />
 		<ColumnPanel />
 		<FilterPanel />
