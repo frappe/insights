@@ -58,6 +58,8 @@
 					placeholder="Select a dashboard"
 					v-model="toDashboard"
 					:options="dashboardOptions"
+					:allowCreate="true"
+					@createOption="(option) => _createDashboard(option)"
 				/>
 			</div>
 		</template>
@@ -77,7 +79,7 @@ import { computed, inject, nextTick, provide, ref, watch } from 'vue'
 import { useVisualization, types } from '@/utils/visualizations'
 
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import { getDashboardOptions } from '@/utils/dashboard.js'
+import { getDashboardOptions, createDashboard } from '@/utils/dashboard.js'
 
 const query = inject('query')
 const visualizationID = query.visualizations[0]
@@ -132,6 +134,24 @@ function addToDashboard() {
 	}
 	// TODO: move default dimensions to insights_dashboard.py
 	const defaultDimensions = visualization.type == 'Number' ? { w: 4, h: 4 } : { w: 8, h: 8 }
-	visualization.addToDashboard(toDashboard.value.value, defaultDimensions, { onSuccess })
+	const dashboardName = toDashboard.value.value
+	visualization.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
+}
+
+function _createDashboard(newDashboardName) {
+	createDashboard(newDashboardName).then(({ name, title }) => {
+		if (name && title) {
+			$notify({
+				title: 'Dashboard Created',
+				appearance: 'success',
+			})
+			showDashboardDialog.value = false
+			toDashboard.value = {
+				value: name,
+				label: title,
+			}
+			addToDashboard()
+		}
+	})
 }
 </script>

@@ -30,6 +30,12 @@ const getDashboardOptionsResource = createResource({
 export function getDashboardOptions(visualization) {
 	return getDashboardOptionsResource.submit({ visualization })
 }
+const createDashboardResource = createResource({
+	method: 'insights.api.create_dashboard',
+})
+export function createDashboard(title) {
+	return createDashboardResource.submit({ title })
+}
 
 function makeDashboardResource(name) {
 	return createDocumentResource({

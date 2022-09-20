@@ -1,5 +1,5 @@
 <template>
-	<Combobox v-model="selectedOption" v-slot="{ open }" nullable>
+	<Combobox as="div" v-model="selectedOption" v-slot="{ open }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
 		<Popover class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
@@ -35,11 +35,18 @@
 							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
 						>
 							<div
-								v-if="filteredOptions.length === 0"
+								v-if="filteredOptions.length === 0 && !$props.allowCreate"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
 							>
 								No results found
 							</div>
+							<ComboboxOption
+								v-if="$props.allowCreate && filterQuery"
+								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
+								@click.prevent="$emit('createOption', filterQuery)"
+							>
+								<FeatherIcon name="plus" class="mr-1 h-3.5 w-3.5" /> Create New
+							</ComboboxOption>
 							<ComboboxOption
 								v-for="(option, idx) in filteredOptions"
 								:key="idx"
@@ -91,7 +98,13 @@ const $utils = inject('$utils')
 const input = ref(null)
 defineExpose({ input })
 
-const emit = defineEmits(['update:modelValue', 'inputChange', 'selectOption', 'blur'])
+const emit = defineEmits([
+	'update:modelValue',
+	'inputChange',
+	'selectOption',
+	'blur',
+	'createOption',
+])
 const props = defineProps({
 	label: {
 		type: String,
@@ -113,6 +126,10 @@ const props = defineProps({
 				return typeof option.label === 'string' && typeof option.value === 'string'
 			})
 		},
+	},
+	allowCreate: {
+		type: Boolean,
+		default: false,
 	},
 })
 

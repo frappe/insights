@@ -117,7 +117,10 @@ def create_dashboard(title):
     dashboard = frappe.get_doc(
         {"doctype": "Insights Dashboard", "title": title}
     ).insert()
-    return dashboard.name
+    return {
+        "name": dashboard.name,
+        "title": dashboard.title,
+    }
 
 
 @frappe.whitelist()
@@ -261,5 +264,5 @@ def get_dashboard_options(visualization):
     return frappe.get_list(
         "Insights Dashboard",
         filters={"name": ["not in", exclude_dashboards]},
-        pluck="name",
+        fields=["name as value", "title as label"],
     )

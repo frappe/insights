@@ -119,7 +119,7 @@ const newDashboard = reactive({ title: '' })
 const router = useRouter()
 const createDashboardResource = createResource({
 	method: 'insights.api.create_dashboard',
-	onSuccess(name) {
+	onSuccess({ name }) {
 		getDashboards.fetch()
 		showDialog.value = false
 		newDashboard.title = ''

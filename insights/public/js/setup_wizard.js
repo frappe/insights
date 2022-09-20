@@ -119,16 +119,19 @@ function get_database_setup_fields() {
 			label: __('Title'),
 			fieldtype: 'Data',
 			reqd: 1,
+			placeholder: 'InsightsDB',
 		},
 		{
 			fieldname: 'db_host',
 			fieldtype: 'Data',
 			label: 'Host',
+			placeholder: 'localhost',
 		},
 		{
 			fieldname: 'db_port',
 			fieldtype: 'Data',
 			label: 'Port',
+			placeholder: '3306',
 		},
 		{
 			fieldname: 'column_break',
@@ -139,18 +142,21 @@ function get_database_setup_fields() {
 			fieldtype: 'Data',
 			label: 'Database Name',
 			reqd: 1,
+			placeholder: 'insights',
 		},
 		{
 			fieldname: 'db_username',
 			fieldtype: 'Data',
 			label: 'Username',
 			reqd: 1,
+			placeholder: 'read-only-user',
 		},
 		{
 			fieldname: 'db_password',
 			fieldtype: 'Password',
 			label: 'Password',
 			reqd: 1,
+			placeholder: '**********',
 		},
 		{
 			default: '0',
