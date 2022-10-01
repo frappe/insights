@@ -260,10 +260,12 @@ class InsightsQueryClient(Document):
     def run(self):
         if not self.sql:
             return
+        self.process()
+        self.build()
+        self.update_query()
         self.execute()
         self.update_result()
 
-        # skip processing and updating query since it's already done
         self.skip_before_save = True
         self.save()
 
