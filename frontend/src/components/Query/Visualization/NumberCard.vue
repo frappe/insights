@@ -15,16 +15,10 @@ const formattedValue = computed(() => {
 	if (value % 1 !== 0) {
 		value = value.toFixed(1)
 	}
-	if (value < 1000) {
-		return value
-	}
-	if (value < 1000000) {
-		return (value / 1000).toFixed(1) + 'k'
-	}
-	if (value < 1000000000) {
-		return (value / 1000000).toFixed(1) + 'm'
-	}
-	return (value / 1000000000).toFixed(1) + 'b'
+	const locale = 'en-IN' // TODO: get locale from user settings
+	return new Intl.NumberFormat(locale, {
+		notation: 'compact',
+	}).format(value)
 })
 
 const prefix = computed(() => {
