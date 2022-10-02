@@ -11,7 +11,7 @@
 				v-if="visualizations && visualizations.length > 0"
 				class="-mx-1 h-full w-full overflow-scroll pt-1"
 				:class="{
-					'blur-[4px]': false,
+					'blur-[4px]': dashboard.refreshing,
 					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,
 				}"
 			>

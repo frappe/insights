@@ -117,9 +117,7 @@ const showTimespanPicker = computed(
 )
 
 const showListPicker = computed(
-	() =>
-		['in', 'not_in'].includes(filter.operator?.value) &&
-		['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
+	() => ['in', 'not_in'].includes(filter.operator?.value) && filter.column?.type == 'String'
 )
 onMounted(() => {
 	if (showListPicker.value) {
@@ -129,9 +127,7 @@ onMounted(() => {
 })
 
 const showValueOptions = computed(
-	() =>
-		['=', '!=', 'is'].includes(filter.operator?.value) &&
-		['Varchar', 'Char', 'Enum'].includes(filter.column?.type)
+	() => ['=', '!=', 'is'].includes(filter.operator?.value) && filter.column?.type == 'String'
 )
 
 const valueOptions = computed(() => {
@@ -237,7 +233,7 @@ const checkAndFetchColumnValues = debounce(function (search_text = '') {
 		return
 	}
 
-	if (['Varchar', 'Char', 'Enum'].includes(filter.column?.type)) {
+	if (filter.column?.type == 'String') {
 		query.fetchColumnValues.submit({
 			column: filter.column,
 			search_text,

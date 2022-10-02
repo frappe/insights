@@ -1,9 +1,9 @@
 import { watch } from 'vue'
 
 export const FIELDTYPES = {
-	NUMBER: ['Int', 'Decimal', 'Bigint', 'Float', 'Double'],
-	TEXT: ['Char', 'Varchar', 'Enum', 'Text', 'Longtext'],
-	DATE: ['Date', 'Datetime', 'Time', 'Timestamp'],
+	NUMBER: ['Integer', 'Decimal'],
+	TEXT: ['Text', 'String'],
+	DATE: ['Date', 'Datetime', 'Time'],
 }
 
 export function isEmptyObj(...args) {

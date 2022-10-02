@@ -11,6 +11,7 @@
   "title",
   "column_break_3",
   "data_source",
+  "from_query_store",
   "section_break_3",
   "tables",
   "column_break_4",
@@ -175,11 +176,19 @@
    "label": "Status",
    "options": "Pending Execution\nExecution Successful",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "data_source.is_query_store",
+   "fieldname": "from_query_store",
+   "fieldtype": "Check",
+   "label": "From Query Store",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-15 12:36:06.236954",
+ "modified": "2022-10-02 19:45:07.855290",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

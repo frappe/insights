@@ -37,6 +37,11 @@ class InsightsQuery(InsightsQueryClient):
         indent=2,
     )
 
+    def before_validate(self):
+        self.from_query_store = frappe.db.get_value(
+            "Insights Data Source", self.data_source, "is_query_store", cache=True
+        )
+
     def validate(self):
         # TODO: validate if a column is an expression and aggregation is "group by"
         self.validate_tables()
@@ -82,10 +87,20 @@ class InsightsQuery(InsightsQueryClient):
                 }
             ).insert()
 
+        if not frappe.db.exists("Insights Table", {"table": self.name}):
+            self.create_query_table()
+
+        old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
+        if old_title and old_title != self.title:
+            self.update_title()
+
     def on_trash(self):
         visualizations = self.get_visualizations()
         for visualization in visualizations:
             frappe.delete_doc("Insights Query Chart", visualization)
+
+        if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
+            frappe.delete_doc("Insights Table", table_name)
 
     def clear(self):
         self.tables = []
@@ -103,7 +118,6 @@ class InsightsQuery(InsightsQueryClient):
 
     def before_save(self):
         if self.get("skip_before_save"):
-            self.skip_before_save = False
             return
 
         if not self.tables:
@@ -161,17 +175,18 @@ class InsightsQuery(InsightsQueryClient):
         self.status = "Pending Execution"
 
     def execute(self):
-        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
-        start = time.time()
-        data = data_source.execute_query(self.sql, debug=True)
-        end = time.time()
+        if self.from_query_store:
+            start, end, data = self.fetch_results_from_query_store()
+        else:
+            start, end, data = self.fetch_results_from_datasource()
+
         self._result = list(data)
         self.execution_time = flt(end - start, 3)
         self.last_execution = frappe.utils.now()
-
-    def update_result(self):
         self.result = dumps(self._result, default=cstr)
         self.status = "Execution Successful"
+
+        self.update_query_table()
 
     def process_tables(self):
         self._tables = []
@@ -268,3 +283,123 @@ class InsightsQuery(InsightsQueryClient):
 
     def process_limit(self):
         self._limit: int = self.limit or 10
+
+    def build_temporary_table(self):
+        columns = ["ID INT PRIMARY KEY"]
+        rows = []
+
+        mysql_type_map = {
+            "Time": "TIME",
+            "Date": "DATE",
+            "String": "VARCHAR(255)",
+            "Integer": "INT",
+            "Decimal": "FLOAT",
+            "Datetime": "DATETIME",
+            "Text": "TEXT",
+        }
+
+        for row in self.columns:
+            columns.append(
+                f"`{row.column or row.label}` {mysql_type_map.get(row.type, 'VARCHAR(255)')}"
+            )
+
+        result = loads(self.result)
+        for i, row in enumerate(result):
+            rows.append([i] + list(row))
+
+        create_table = f"CREATE TEMPORARY TABLE `{self.name}`({', '.join(columns)})"
+        insert_records = (
+            f"INSERT INTO `{self.name}` VALUES {', '.join(['%s'] * len(rows))}"
+        )
+
+        frappe.db.sql(create_table)
+        # since "create temporary table" doesn't count as a write
+        # to avoid "implicit commit" error
+        frappe.db.transaction_writes -= 1
+        frappe.db.sql(insert_records, values=rows)
+
+    def fetch_results_from_datasource(self):
+        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
+        start = time.time()
+        data = data_source.execute_query(self.sql)
+        end = time.time()
+        return start, end, data
+
+    def fetch_results_from_query_store(self):
+        for row in self.get_selected_tables():
+            # TODO: validate table is a valid query and not a database table
+            frappe.get_doc("Insights Query", row.table).build_temporary_table()
+
+        start = time.time()
+        data = frappe.db.sql(self.sql)
+        end = time.time()
+        return start, end, data
+
+    def update_query_table(self):
+        if not self.tables:
+            return
+
+        table = self.get_query_table()
+        old_columns = [(row.column, row.label, row.type) for row in table.columns]
+
+        updated_columns = [("ID", "ID", "Integer")]
+        if not self.columns:
+            updated_columns += [
+                (row.column or row.label, row.label, row.type)
+                for row in self.fetch_columns()
+            ]
+        else:
+            updated_columns += [
+                (row.column or row.label, row.label, row.type) for row in self.columns
+            ]
+
+        if old_columns != updated_columns:
+            table.set(
+                "columns",
+                [
+                    {
+                        "column": row[0],
+                        "label": row[1],
+                        "type": row[2],
+                    }
+                    for row in updated_columns
+                ],
+            )
+            table.save()
+
+    def get_query_table(self):
+        if not frappe.db.exists("Insights Table", {"table": self.name}):
+            return self.create_query_table()
+        else:
+            return frappe.get_doc("Insights Table", {"table": self.name})
+
+    def create_query_table(self):
+        table = frappe.get_doc(
+            {
+                "doctype": "Insights Table",
+                "table": self.name,
+                "data_source": "Query Store",
+                "label": self.title,
+                "columns": [
+                    {
+                        "column": "ID",
+                        "label": "ID",
+                        "type": "Integer",
+                    }
+                ],
+            }
+        )
+        table.insert(ignore_permissions=True)
+        return table
+
+    def update_title(self):
+        Chart = frappe.qb.DocType("Insights Query Chart")
+        frappe.qb.update(Chart).set(Chart.title, self.title).where(
+            Chart.query == self.name
+        ).run()
+
+        # this still doesn't updates the old title stored the query column
+        Table = frappe.qb.DocType("Insights Table")
+        frappe.qb.update(Table).set(Table.label, self.title).where(
+            Table.table == self.name
+        ).run()

@@ -14,6 +14,22 @@ class NotSelectQuery(frappe.ValidationError):
     pass
 
 
+COLUMN_TYPE_MAP = {
+    "time": "Time",
+    "date": "Date",
+    "varchar": "String",
+    "int": "Integer",
+    "float": "Decimal",
+    "datetime": "Datetime",
+    "text": "Text",
+    "longtext": "Text",
+    "enum": "String",
+    "decimal": "Decimal",
+    "bigint": "Integer",
+    "timestamp": "Datetime",
+}
+
+
 class MariaDB(MariaDBDatabase):
     def __init__(self, dbName, *args, useSSL=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,24 +48,41 @@ class MariaDB(MariaDBDatabase):
 
 
 class InsightsDataSource(Document):
+    def before_insert(self):
+        if self.is_query_store and frappe.db.exists(
+            "Insights Data Source", {"is_query_store": 1}
+        ):
+            frappe.throw("Only one Query Store can be created")
+
     def before_save(self):
+        if self.is_query_store:
+            self.status = "Active"
+            self.flags.ignore_mandatory = True
+            return
+
         if self.test_connection():
             self.status = "Active"
         else:
             self.status = "Inactive"
 
-    def on_update(self):
-        if self.status == "Active":
-            self.import_tables()
-
     def on_trash(self):
+        if self.is_query_store:
+            frappe.throw("Cannot delete Query Store")
+
         # TODO: optimize this
         linked_doctypes = ["Insights Table"]
         for doctype in linked_doctypes:
             for table in frappe.db.get_all(doctype, {"data_source": self.name}):
                 frappe.delete_doc(doctype, table.name)
 
+    def on_update(self):
+        if self.status == "Active" and not self.is_query_store:
+            self.import_tables()
+
     def create_db(self):
+        if self.is_query_store:
+            return frappe.db
+
         if self.database_type != "MariaDB":
             frappe.throw(
                 "Only MariaDB is supported for now. Please set Database Type to MariaDB and try again."
@@ -102,6 +135,9 @@ class InsightsDataSource(Document):
         skip_validation = kwargs.pop("skip_validation", False)
         if not skip_validation:
             self.validate_query(query)
+
+        if self.is_query_store:
+            return frappe.db.sql(query, **kwargs)
 
         result = []
         db_instance = self.get_db_instance()
@@ -198,17 +234,15 @@ class InsightsDataSource(Document):
                 from information_schema.columns
                 where table_name = %s
             """,
-            values=table.get("table"),
+            values=table,
             as_dict=1,
         )
 
         # TODO: caching
         _columns = [
             {
-                "table": table.get("table"),
                 "column": d.get("column_name"),
-                "table_label": table.get("label"),
-                "type": d.get("data_type").title(),
+                "type": COLUMN_TYPE_MAP.get(d.get("data_type").lower(), "String"),
                 "label": frappe.unscrub(d.get("column_name")).rstrip().lstrip(),
             }
             for d in columns
@@ -400,6 +434,9 @@ class InsightsDataSource(Document):
         return dynamic_link_map
 
     def describe_table(self, table, limit=20):
+        if self.is_query_store and frappe.db.exists("Insights Query", table):
+            frappe.get_doc("Insights Query", table).build_temporary_table()
+
         columns = self.execute_query(f"""desc `{table}`""", skip_validation=True)
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
         no_of_rows = self.execute_query(f"""select count(*) from `{table}`""")[0][0]

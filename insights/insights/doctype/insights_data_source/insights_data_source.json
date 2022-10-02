@@ -15,7 +15,8 @@
   "column_break_5",
   "database_name",
   "username",
-  "password"
+  "password",
+  "is_query_store"
  ],
  "fields": [
   {
@@ -80,11 +81,18 @@
    "label": "Status",
    "options": "Inactive\nActive",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_query_store",
+   "fieldtype": "Check",
+   "label": "Is Query Store",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-15 20:12:56.153676",
+ "modified": "2022-10-02 21:00:59.161024",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",

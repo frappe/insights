@@ -69,7 +69,7 @@
 				v-model="expression.valueType"
 				class="h-8 placeholder:text-sm"
 				placeholder="Select a type..."
-				:options="Object.values(typeMap)"
+				:options="columnTypes"
 			/>
 		</div>
 		<div class="mt-4 text-sm text-gray-600">
@@ -126,22 +126,14 @@ const input = reactive({
 	caretPosition: column.expression.raw?.length || 0,
 })
 
-const typeMap = {
-	Time: 'Time',
-	Date: 'Date',
-	Varchar: 'String',
-	Int: 'Integer',
-	Float: 'Decimal',
-	Datetime: 'Datetime',
-	Timestamp: 'Timestamp',
-}
+const columnTypes = ['Time', 'Date', 'String', 'Integer', 'Decimal', 'Datetime', 'Text']
 
 // parse the expression when input changes
 const expression = reactive({
 	raw: input.value,
 	label: column.label,
 	groupBy: column.aggregation == 'Group By',
-	valueType: typeMap[column.type] || 'String',
+	valueType: 'String',
 	ast: null,
 	error: null,
 	tokens: [],
@@ -197,7 +189,6 @@ const addDisabled = computed(() => {
 })
 
 const addExpressionColumn = () => {
-	const type = Object.keys(typeMap).find((key) => typeMap[key] === expression.valueType)
 	const newColumn = {
 		name: props.column.name,
 		is_expression: 1,
@@ -205,7 +196,7 @@ const addExpressionColumn = () => {
 			raw: expression.raw,
 			ast: expression.ast,
 		},
-		type: type,
+		type: expression.valueType,
 		label: expression.label,
 		aggregation: expression.groupBy ? 'Group By' : '',
 	}

@@ -21,3 +21,29 @@ class InsightsTable(Document):
         return frappe.get_doc("Insights Data Source", self.data_source).describe_table(
             self.table, limit
         )
+
+    def get_columns(self):
+        if not self.columns:
+            self.update_columns()
+        return self.columns
+
+    def update_columns(self):
+        if frappe.db.get_value(
+            "Insights Data Source", self.data_source, "is_query_store", cache=True
+        ):
+            return
+
+        data_source = frappe.get_doc("Insights Data Source", self.data_source)
+        columns = data_source.get_columns(self.table)
+        self.set(
+            "columns",
+            [
+                {
+                    "column": row.get("column"),
+                    "label": row.get("label"),
+                    "type": row.get("type"),
+                }
+                for row in columns
+            ],
+        )
+        self.save()

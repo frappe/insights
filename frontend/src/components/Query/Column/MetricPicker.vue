@@ -155,8 +155,8 @@ function addMetric() {
 function makeCountColumn() {
 	const table = query.tables.data[0]
 	return {
-		type: 'Int',
-		column: '*',
+		type: 'Integer',
+		column: 'count',
 		table: table.table,
 		label: metric.label,
 		table_label: table.label,

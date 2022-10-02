@@ -199,6 +199,11 @@ class InsightsQueryClient(Document):
             )
             _tables = query.run(as_dict=True, debug=True)
 
+        if self.from_query_store:
+            # remove the current query table from the table list
+            # you should not be querying self
+            _tables = [t for t in _tables if t.get("table") != self.name]
+
         return _tables
 
     @frappe.whitelist()
@@ -206,22 +211,40 @@ class InsightsQueryClient(Document):
         if not self.tables:
             return []
 
-        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
         columns = []
+        selected_tables = self.get_selected_tables()
+        for table in selected_tables:
+            table_doc = frappe.get_doc("Insights Table", {"table": table.get("table")})
+            _columns = table_doc.get_columns()
+            columns += [
+                frappe._dict(
+                    {
+                        "table": table.get("table"),
+                        "table_label": table.get("label"),
+                        "column": c.get("column"),
+                        "label": c.get("label"),
+                        "type": c.get("type"),
+                    }
+                )
+                for c in _columns
+            ]
+        return columns
+
+    def get_selected_tables(self):
         join_tables = []
         for table in self.tables:
             if table.join:
                 join = loads(table.join)
                 join_tables.append(
-                    {
-                        "table": join.get("with").get("value"),
-                        "label": join.get("with").get("label"),
-                    }
+                    frappe._dict(
+                        {
+                            "table": join.get("with").get("value"),
+                            "label": join.get("with").get("label"),
+                        }
+                    )
                 )
 
-        for table in self.tables + join_tables:
-            columns += data_source.get_columns(table)
-        return columns
+        return self.tables + join_tables
 
     @frappe.whitelist()
     def set_limit(self, limit):
@@ -233,8 +256,28 @@ class InsightsQueryClient(Document):
 
     @frappe.whitelist()
     def fetch_column_values(self, column, search_text) -> list[str]:
+        if self.from_query_store:
+            return self.fetch_column_values_from_query_store(column, search_text)
+        else:
+            return self.fetch_column_values_from_data_source(column, search_text)
+
+    def fetch_column_values_from_data_source(self, column, search_text) -> list[str]:
         data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
         return data_source.get_distinct_column_values(column, search_text)
+
+    def fetch_column_values_from_query_store(self, column, search_text) -> list[str]:
+        if not frappe.db.exists("Insights Query", column.get("table")):
+            return []
+
+        query = frappe.get_cached_doc("Insights Query", column.get("table"))
+        query.build_temporary_table()
+        Table = frappe.qb.Table(column.get("table"))
+        Column = frappe.qb.Field(column.get("column"))
+        query = frappe.qb.from_(Table).select(Column).distinct().limit(25)
+        if search_text:
+            query = query.where(Column.like(f"%{search_text}%"))
+
+        return query.run(pluck=True)
 
     @frappe.whitelist()
     def fetch_join_options(self, table):
@@ -264,8 +307,6 @@ class InsightsQueryClient(Document):
         self.build()
         self.update_query()
         self.execute()
-        self.update_result()
-
         self.skip_before_save = True
         self.save()
 

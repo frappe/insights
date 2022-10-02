@@ -41,18 +41,14 @@ const props = defineProps({
 	},
 })
 
-const supportsFormatting = ref(
-	['Int', 'Bigint', 'Float', 'Decimal', 'Double'].includes(props.column.type)
-)
+const supportsFormatting = ref(['Integer', 'Decimal'].includes(props.column.type))
 const columnFormat = props.column.format_option || {}
 const format = reactive({
 	prefix: columnFormat.prefix || '',
 	suffix: columnFormat.suffix || '',
 })
 
-const showNumberFormatOptions = ref(
-	['Int', 'Bigint', 'Float', 'Decimal', 'Double'].includes(props.column.type)
-)
+const showNumberFormatOptions = ref(['Integer', 'Decimal'].includes(props.column.type))
 const saveFormattingOptions = () => {
 	const updatedColumn = unref(props.column)
 	updatedColumn.format_option = null

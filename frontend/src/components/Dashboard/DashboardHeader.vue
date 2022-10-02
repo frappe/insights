@@ -14,16 +14,15 @@ const deleteDashboard = () => {
 	})
 }
 
-const refreshing = ref(false)
 const refreshVisualizations = async () => {
-	refreshing.value = true
+	dashboard.refreshing = true
 	// hack: update the visualizations
 	await dashboard.refreshVisualizations.submit()
 	// then reload the dashboard doc
 	// to re-render the visualizations with new data
 	dashboard.doc.visualizations = []
 	await dashboard.reload()
-	refreshing.value = false
+	dashboard.refreshing = false
 }
 
 defineEmits(['addChart', 'commitLayout'])

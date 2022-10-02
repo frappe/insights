@@ -10,6 +10,8 @@
   "column_break_3",
   "label",
   "hidden",
+  "section_break_6",
+  "columns",
   "links_section",
   "table_links"
  ],
@@ -57,11 +59,21 @@
    "fieldname": "hidden",
    "fieldtype": "Check",
    "label": "Hidden"
+  },
+  {
+   "fieldname": "columns",
+   "fieldtype": "Table",
+   "label": "Columns",
+   "options": "Insights Table Column"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-12 15:49:51.336030",
+ "modified": "2022-10-02 19:51:55.759979",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table",
