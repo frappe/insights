@@ -44,12 +44,19 @@ $socket.on('insights_demo_setup_progress', (data) => {
 	progress.value = data.progress
 	message.value = data.message
 	if (data.progress === 100) {
-		$socket.off('insights_demo_setup_progress')
-		localStorage.removeItem('setupComplete')
-		nextTick(() => router.push('/'))
+		wrapUp()
 	}
 })
 onMounted(() => {
-	createDemoDb.submit()
+	createDemoDb.submit().then(() => {
+		wrapUp()
+	})
 })
+
+function wrapUp() {
+	$socket.off('insights_demo_setup_progress')
+	localStorage.removeItem('setupComplete')
+	localStorage.removeItem('onboardingComplete')
+	nextTick(() => router.push('/'))
+}
 </script>

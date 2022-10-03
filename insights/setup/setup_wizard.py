@@ -10,7 +10,7 @@ def get_setup_stages(args=None):
     # to make setup wizard tasks run in a background job
     frappe.local.conf["trigger_site_setup_in_background"] = 1
 
-    if frappe.db.sql("select name from `tabInsights Data Source`"):
+    if frappe.db.exists("Insights Data Source", "Demo Data"):
         stages = [
             {
                 "status": _("Wrapping up"),
