@@ -179,7 +179,6 @@
   },
   {
    "default": "0",
-   "fetch_from": "data_source.is_query_store",
    "fieldname": "from_query_store",
    "fieldtype": "Check",
    "label": "From Query Store",

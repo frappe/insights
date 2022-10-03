@@ -49,13 +49,13 @@ class MariaDB(MariaDBDatabase):
 
 class InsightsDataSource(Document):
     def before_insert(self):
-        if self.is_query_store and frappe.db.exists(
-            "Insights Data Source", {"is_query_store": 1}
+        if self.database_type == "Query Store" and frappe.db.exists(
+            "Insights Data Source", {"database_type": "Query Store"}
         ):
             frappe.throw("Only one Query Store can be created")
 
     def before_save(self):
-        if self.is_query_store:
+        if self.database_type == "Query Store":
             self.status = "Active"
             self.flags.ignore_mandatory = True
             return
@@ -66,7 +66,7 @@ class InsightsDataSource(Document):
             self.status = "Inactive"
 
     def on_trash(self):
-        if self.is_query_store:
+        if self.database_type == "Query Store":
             frappe.throw("Cannot delete Query Store")
 
         # TODO: optimize this
@@ -76,11 +76,11 @@ class InsightsDataSource(Document):
                 frappe.delete_doc(doctype, table.name)
 
     def on_update(self):
-        if self.status == "Active" and not self.is_query_store:
+        if self.status == "Active" and self.database_type != "Query Store":
             self.import_tables()
 
     def create_db(self):
-        if self.is_query_store:
+        if self.database_type == "Query Store":
             return frappe.db
 
         if self.database_type != "MariaDB":
@@ -136,7 +136,7 @@ class InsightsDataSource(Document):
         if not skip_validation:
             self.validate_query(query)
 
-        if self.is_query_store:
+        if self.database_type == "Query Store":
             return frappe.db.sql(query, **kwargs)
 
         result = []
@@ -434,7 +434,9 @@ class InsightsDataSource(Document):
         return dynamic_link_map
 
     def describe_table(self, table, limit=20):
-        if self.is_query_store and frappe.db.exists("Insights Query", table):
+        if self.database_type == "Query Store" and frappe.db.exists(
+            "Insights Query", table
+        ):
             frappe.get_doc("Insights Query", table).build_temporary_table()
 
         columns = self.execute_query(f"""desc `{table}`""", skip_validation=True)

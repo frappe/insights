@@ -28,8 +28,11 @@ class InsightsTable(Document):
         return self.columns
 
     def update_columns(self):
-        if frappe.db.get_value(
-            "Insights Data Source", self.data_source, "is_query_store", cache=True
+        if (
+            frappe.db.get_value(
+                "Insights Data Source", self.data_source, "database_type", cache=True
+            )
+            == "Query Store"
         ):
             return
 

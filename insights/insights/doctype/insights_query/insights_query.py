@@ -38,8 +38,11 @@ class InsightsQuery(InsightsQueryClient):
     )
 
     def before_validate(self):
-        self.from_query_store = frappe.db.get_value(
-            "Insights Data Source", self.data_source, "is_query_store", cache=True
+        self.from_query_store = (
+            frappe.db.get_value(
+                "Insights Data Source", self.data_source, "database_type", cache=True
+            )
+            == "Query Store"
         )
 
     def validate(self):

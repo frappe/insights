@@ -15,8 +15,7 @@
   "column_break_5",
   "database_name",
   "username",
-  "password",
-  "is_query_store"
+  "password"
  ],
  "fields": [
   {
@@ -32,7 +31,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Database Type",
-   "options": "MariaDB",
+   "options": "MariaDB\nQuery Store",
    "reqd": 1
   },
   {
@@ -81,18 +80,11 @@
    "label": "Status",
    "options": "Inactive\nActive",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_query_store",
-   "fieldtype": "Check",
-   "label": "Is Query Store",
-   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-02 21:00:59.161024",
+ "modified": "2022-10-03 12:02:49.145562",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",
