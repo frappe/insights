@@ -288,7 +288,6 @@ class InsightsQuery(InsightsQueryClient):
         self._limit: int = self.limit or 10
 
     def build_temporary_table(self):
-        columns = ["ID INT PRIMARY KEY"]
         rows = []
 
         mysql_type_map = {
@@ -301,14 +300,20 @@ class InsightsQuery(InsightsQueryClient):
             "Text": "TEXT",
         }
 
-        for row in self.columns:
+        columns = []
+        for row in self.columns or self.fetch_columns():
             columns.append(
                 f"`{row.column or row.label}` {mysql_type_map.get(row.type, 'VARCHAR(255)')}"
             )
 
+        id_column = ["TEMPID INT PRIMARY KEY AUTO_INCREMENT"]
+        if "TEMPID" not in columns[0]:
+            columns = id_column + columns
+
         result = loads(self.result)
+        rows = []
         for i, row in enumerate(result):
-            rows.append([i] + list(row))
+            rows.append([i + 1] + list(row))
 
         create_table = f"CREATE TEMPORARY TABLE `{self.name}`({', '.join(columns)})"
         insert_records = (
@@ -345,7 +350,7 @@ class InsightsQuery(InsightsQueryClient):
         table = self.get_query_table()
         old_columns = [(row.column, row.label, row.type) for row in table.columns]
 
-        updated_columns = [("ID", "ID", "Integer")]
+        updated_columns = [("TEMPID", "ID", "Integer")]
         if not self.columns:
             updated_columns += [
                 (row.column or row.label, row.label, row.type)
