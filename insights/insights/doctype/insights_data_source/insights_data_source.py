@@ -81,7 +81,9 @@ class InsightsDataSource(Document):
 
     def create_db(self):
         if self.database_type == "Query Store":
-            return frappe.db
+            return MariaDBDatabase(
+                user=frappe.conf.db_name, password=frappe.conf.db_password
+            )
 
         if self.database_type != "MariaDB":
             frappe.throw(
@@ -136,13 +138,17 @@ class InsightsDataSource(Document):
         if not skip_validation:
             self.validate_query(query)
 
-        if self.database_type == "Query Store":
-            return frappe.db.sql(query, **kwargs)
-
         result = []
         db_instance = self.get_db_instance()
-        with connect_to_db(db_instance) as db:
-            result = db.sql(query, **kwargs)
+        if not hasattr(self, "keep_alive") or not self.keep_alive:
+            with connect_to_db(db_instance) as db:
+                result = db.sql(query, **kwargs)
+        else:
+            try:
+                result = db_instance.sql(query, **kwargs)
+            except BaseException:
+                db_instance.close()
+                log_error("Error executing query", raise_exception=True)
 
         return result
 
@@ -154,7 +160,7 @@ class InsightsDataSource(Document):
             self.execute_query("select 1")
             connection_status = True
         except BaseException:
-            frappe.log_error(title="Data Source Connection Test")
+            log_error("Error connecting to database")
 
         return connection_status
 
@@ -465,17 +471,75 @@ class InsightsDataSource(Document):
     def kill_query(self, query_id):
         self.execute_query(f"kill {query_id}", skip_validation=True)
 
+    def create_temporary_tables(self, tables):
+        for table in tables:
+            query = frappe.get_doc("Insights Query", table)
+            columns = query.get_columns()
+            result = query.get_result()
+
+            mysql_type_map = {
+                "Time": "TIME",
+                "Date": "DATE",
+                "String": "VARCHAR(255)",
+                "Integer": "INT",
+                "Decimal": "FLOAT",
+                "Datetime": "DATETIME",
+                "Text": "TEXT",
+            }
+
+            _columns = []
+            for row in columns:
+                _columns.append(
+                    f"`{row.column or row.label}` {mysql_type_map.get(row.type, 'VARCHAR(255)')}"
+                )
+
+            id_column = ["TEMPID INT PRIMARY KEY AUTO_INCREMENT"]
+            if "TEMPID" not in _columns[0]:
+                _columns = id_column + _columns
+
+            create_table = (
+                f"CREATE TEMPORARY TABLE `{query.name}`({', '.join(_columns)})"
+            )
+
+            rows = []
+            for i, row in enumerate(result):
+                rows.append([i + 1] + list(row))
+            insert_records = (
+                f"INSERT INTO `{query.name}` VALUES {', '.join(['%s'] * len(rows))}"
+            )
+
+            self.execute_query(create_table, skip_validation=True)
+            # since "create temporary table" doesn't cause an implict commit
+            # to avoid "implicit commit" error from frappe/database.py -> check_implict_commit
+            self.db_instance.transaction_writes -= 1
+            self.execute_query(insert_records, values=rows, skip_validation=True)
+
+    def keep_connection_alive(self):
+        # sets a flag to keep the db connection alive
+        self.keep_alive = True
+
+    def close_connection(self):
+        # closes the db connection
+        self.keep_alive = False
+        self.db_instance.close() if self.db_instance else None
+
 
 @contextmanager
 def connect_to_db(db):
     try:
         db.connect()
         yield db
-    except Exception as e:
-        frappe.log_error(
-            title="Error connecting to database",
-            message=frappe.get_traceback(),
-        )
-        raise e
+    except BaseException:
+        log_error("Error connecting to database")
     finally:
         db.close()
+
+
+def log_error(title, raise_exception=False, **kwargs):
+    frappe.log_error(
+        title=title,
+        message=frappe.get_traceback(),
+        **kwargs,
+    )
+    if raise_exception:
+        frappe.throw(title)

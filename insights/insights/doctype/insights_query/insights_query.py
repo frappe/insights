@@ -287,44 +287,11 @@ class InsightsQuery(InsightsQueryClient):
     def process_limit(self):
         self._limit: int = self.limit or 10
 
-    def build_temporary_table(self):
-        rows = []
+    def get_columns(self):
+        return self.columns or self.fetch_columns()
 
-        mysql_type_map = {
-            "Time": "TIME",
-            "Date": "DATE",
-            "String": "VARCHAR(255)",
-            "Integer": "INT",
-            "Decimal": "FLOAT",
-            "Datetime": "DATETIME",
-            "Text": "TEXT",
-        }
-
-        columns = []
-        for row in self.columns or self.fetch_columns():
-            columns.append(
-                f"`{row.column or row.label}` {mysql_type_map.get(row.type, 'VARCHAR(255)')}"
-            )
-
-        id_column = ["TEMPID INT PRIMARY KEY AUTO_INCREMENT"]
-        if "TEMPID" not in columns[0]:
-            columns = id_column + columns
-
-        result = loads(self.result)
-        rows = []
-        for i, row in enumerate(result):
-            rows.append([i + 1] + list(row))
-
-        create_table = f"CREATE TEMPORARY TABLE `{self.name}`({', '.join(columns)})"
-        insert_records = (
-            f"INSERT INTO `{self.name}` VALUES {', '.join(['%s'] * len(rows))}"
-        )
-
-        frappe.db.sql(create_table)
-        # since "create temporary table" doesn't count as a write
-        # to avoid "implicit commit" error
-        frappe.db.transaction_writes -= 1
-        frappe.db.sql(insert_records, values=rows)
+    def get_result(self):
+        return loads(self.result)
 
     def fetch_results_from_datasource(self):
         data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
@@ -334,13 +301,19 @@ class InsightsQuery(InsightsQueryClient):
         return start, end, data
 
     def fetch_results_from_query_store(self):
-        for row in self.get_selected_tables():
-            # TODO: validate table is a valid query and not a database table
-            frappe.get_doc("Insights Query", row.table).build_temporary_table()
+
+        # TODO: validate table is a valid query and not a database table
+        temp_tables = [row.table for row in self.get_selected_tables()]
+
+        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
 
         start = time.time()
-        data = frappe.db.sql(self.sql)
+        data_source.keep_connection_alive()
+        data_source.create_temporary_tables(temp_tables)
+        data = data_source.execute_query(self.sql)
+        data_source.close_connection()
         end = time.time()
+
         return start, end, data
 
     def update_query_table(self):
