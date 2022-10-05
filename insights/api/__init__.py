@@ -190,6 +190,17 @@ def get_user_defaults():
 
 
 @frappe.whitelist()
+def get_user_info():
+    return {
+        "user_id": frappe.session.user,
+        "permissions": {
+            "Query": frappe.has_permission("Insights Query", throw=False),
+            "Dashboard": frappe.has_permission("Insights Dashboard", throw=False),
+        },
+    }
+
+
+@frappe.whitelist()
 def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):

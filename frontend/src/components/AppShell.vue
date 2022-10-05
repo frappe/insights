@@ -16,8 +16,12 @@ import auth from '@/utils/auth'
 import settings from '@/utils/settings'
 import { setupComplete } from '@/utils/setupWizard'
 import Sidebar from '@/components/Sidebar.vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const hideSidebar = computed(() => {
-	return settings.hide_sidebar || !setupComplete.value || !auth.isLoggedIn
+	return (
+		route.meta.hideSidebar || !setupComplete.value || !auth.isLoggedIn || settings.hideSidebar
+	)
 })
 </script>

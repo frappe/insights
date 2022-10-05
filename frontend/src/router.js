@@ -8,6 +8,9 @@ const routes = [
 		path: '/setup',
 		name: 'Setup',
 		component: () => import('@/pages/SetupWizard.vue'),
+		meta: {
+			hideSidebar: true,
+		},
 	},
 	{
 		path: '/login',
@@ -15,6 +18,7 @@ const routes = [
 		component: () => import('@/pages/Login.vue'),
 		meta: {
 			isLoginPage: true,
+			hideSidebar: true,
 		},
 	},
 	{
@@ -75,6 +79,22 @@ const routes = [
 		name: 'Running Queries',
 		component: () => import('@/pages/RunningQueries.vue'),
 	},
+	{
+		path: '/no-permission',
+		name: 'No Permission',
+		component: () => import('@/pages/NoPermission.vue'),
+		meta: {
+			hideSidebar: true,
+		},
+	},
+	{
+		path: '/not-found',
+		name: 'Not Found',
+		component: () => import('@/pages/NotFound.vue'),
+		meta: {
+			hideSidebar: true,
+		},
+	},
 ]
 
 let router = createRouter({
@@ -84,6 +104,7 @@ let router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
 	if (!auth.isLoggedIn) {
+		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
 			return to.fullPath === '/login' ? next() : next('/login')
 		}
@@ -92,7 +113,15 @@ router.beforeEach(async (to, from, next) => {
 		return next(false)
 	}
 
-	// force redirect to Setup page if not yet setup
+	const hasPermission = await auth.hasPermission('Query')
+	if (!hasPermission && to.name !== 'No Permission') {
+		return next('/no-permission')
+	}
+	if (hasPermission && to.name === 'No Permission') {
+		return next('/not-found')
+	}
+
+	// force redirect to Setup page if database not set up yet
 	const setupComplete = await getSetupStatus()
 	if (!setupComplete && to.name !== 'Setup') {
 		return next('/setup')
