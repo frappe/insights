@@ -328,12 +328,13 @@ class InsightsQuery(InsightsQueryClient):
         updated_columns = [("TEMPID", "ID", "Integer")]
         if not self.columns:
             updated_columns += [
-                (row.column or row.label, row.label, row.type)
+                (row.column or row.label, row.label, row.type or "String")
                 for row in self.fetch_columns()
             ]
         else:
             updated_columns += [
-                (row.column or row.label, row.label, row.type) for row in self.columns
+                (row.column or row.label, row.label, row.type or "String")
+                for row in self.columns
             ]
 
         if old_columns != updated_columns:
