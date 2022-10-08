@@ -20,10 +20,10 @@
 import { ref, watchEffect } from 'vue'
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 
-defineProps(['label'])
+const props = defineProps(['modelValue', 'label'])
 const emits = defineEmits(['input', 'change', 'update:modelValue'])
 
-const enabled = ref(false)
+const enabled = ref(Boolean(props.modelValue))
 watchEffect(() => {
 	emits('input', enabled.value)
 	emits('change', enabled.value)
