@@ -270,14 +270,13 @@ class InsightsQueryClient(Document):
             return []
 
         query = frappe.get_cached_doc("Insights Query", column.get("table"))
-        query.build_temporary_table()
         Table = frappe.qb.Table(column.get("table"))
         Column = frappe.qb.Field(column.get("column"))
         query = frappe.qb.from_(Table).select(Column).distinct().limit(25)
         if search_text:
             query = query.where(Column.like(f"%{search_text}%"))
 
-        return query.run(pluck=True)
+        return query.fetch_results_from_query_store(query.get_sql())
 
     @frappe.whitelist()
     def fetch_join_options(self, table):

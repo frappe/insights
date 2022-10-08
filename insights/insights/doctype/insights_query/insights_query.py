@@ -302,8 +302,8 @@ class InsightsQuery(InsightsQueryClient):
         end = time.time()
         return start, end, data
 
-    def fetch_results_from_query_store(self):
-
+    def fetch_results_from_query_store(self, sql=None):
+        # TODO: refactor and move this to data source
         # TODO: validate table is a valid query and not a database table
         temp_tables = [row.table for row in self.get_selected_tables()]
 
@@ -312,7 +312,7 @@ class InsightsQuery(InsightsQueryClient):
         start = time.time()
         data_source.keep_connection_alive()
         data_source.create_temporary_tables(temp_tables)
-        data = data_source.execute_query(self.sql)
+        data = data_source.execute_query(sql or self.sql)
         data_source.close_connection()
         end = time.time()
 

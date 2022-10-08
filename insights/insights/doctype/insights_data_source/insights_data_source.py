@@ -440,14 +440,21 @@ class InsightsDataSource(Document):
         return dynamic_link_map
 
     def describe_table(self, table, limit=20):
+        from_query_store = False
         if self.database_type == "Query Store" and frappe.db.exists(
             "Insights Query", table
         ):
-            frappe.get_doc("Insights Query", table).build_temporary_table()
+            from_query_store = True
+            self.keep_connection_alive()
+            self.create_temporary_tables([table])
 
         columns = self.execute_query(f"""desc `{table}`""", skip_validation=True)
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
         no_of_rows = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
+
+        if from_query_store:
+            self.close_connection()
+
         return columns, data, no_of_rows
 
     def get_running_queries(self):
