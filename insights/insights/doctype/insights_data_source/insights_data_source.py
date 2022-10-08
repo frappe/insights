@@ -258,7 +258,7 @@ class InsightsDataSource(Document):
 
     def get_distinct_column_values(
         self, column, search_text=None, limit=25
-    ) -> list[str]:
+    ) -> "list[str]":
         Table = frappe.qb.Table(column.get("table"))
         Column = frappe.qb.Field(column.get("column"))
         query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)

@@ -255,17 +255,17 @@ class InsightsQueryClient(Document):
         self.save()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text) -> list[str]:
+    def fetch_column_values(self, column, search_text) -> "list[str]":
         if self.from_query_store:
             return self.fetch_column_values_from_query_store(column, search_text)
         else:
             return self.fetch_column_values_from_data_source(column, search_text)
 
-    def fetch_column_values_from_data_source(self, column, search_text) -> list[str]:
+    def fetch_column_values_from_data_source(self, column, search_text) -> "list[str]":
         data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
         return data_source.get_distinct_column_values(column, search_text)
 
-    def fetch_column_values_from_query_store(self, column, search_text) -> list[str]:
+    def fetch_column_values_from_query_store(self, column, search_text) -> "list[str]":
         if not frappe.db.exists("Insights Query", column.get("table")):
             return []
 
