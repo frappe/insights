@@ -6,7 +6,7 @@
 		>
 			<div
 				v-if="!dashboard.editingLayout"
-				class="invisible absolute top-2 right-2 flex h-5 items-center group-hover:visible"
+				class="invisible absolute top-2 right-2 z-10 flex h-5 items-center group-hover:visible"
 			>
 				<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
 					<FeatherIcon
