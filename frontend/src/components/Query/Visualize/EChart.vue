@@ -37,6 +37,7 @@ const customizableOptions = {
 	color: getColors(),
 	tooltip: {
 		trigger: 'axis',
+		appendToBody: true,
 	},
 	legend: {
 		type: 'plain',

@@ -29,7 +29,7 @@ const chartOptions = ref({
 			data: dataset.data,
 			type: 'bar',
 			itemStyle: {
-				barBorderRadius: [4, 4, 0, 0],
+				borderRadius: [4, 4, 0, 0],
 			},
 		}
 	}),

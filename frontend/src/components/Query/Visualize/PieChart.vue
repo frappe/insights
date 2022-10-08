@@ -17,6 +17,7 @@ const chartOptions = ref({
 	title: props.title,
 	tooltip: {
 		trigger: 'item',
+		appendToBody: true,
 	},
 	series: props.data.datasets.map((dataset) => {
 		return {
