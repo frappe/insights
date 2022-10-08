@@ -1,20 +1,6 @@
 <script setup>
-import { getColors } from '@/utils/visualizations/colors'
-import { onMounted, ref } from 'vue'
-import { Chart, registerables } from 'chart.js'
-Chart.register(...registerables)
-Chart.defaults.font.family = 'Inter'
-Chart.defaults.font.style = 'inherit'
-
-const chartOptions = {
-	responsive: true,
-	maintainAspectRatio: false,
-	plugins: {
-		legend: {
-			position: 'bottom',
-		},
-	},
-}
+import { ref } from 'vue'
+import EChart from './EChart.vue'
 
 const props = defineProps({
 	title: {
@@ -23,34 +9,61 @@ const props = defineProps({
 	},
 	data: {
 		type: Object,
-		required: true,
+		default: {},
 	},
 })
-const chartData = {
-	labels: props.data.labels,
-	datasets: props.data.datasets.map((dataset) => ({
-		hoverOffset: 4,
-		data: dataset.data,
-		label: dataset.label,
-		backgroundColor: getColors(dataset.data.length),
-	})),
-}
 
-const chartRef = ref(null)
-onMounted(() => {
-	new Chart(chartRef.value, {
-		type: 'pie',
-		data: chartData,
-		options: chartOptions,
-	})
+const chartOptions = ref({
+	title: props.title,
+	tooltip: {
+		trigger: 'item',
+	},
+	series: props.data.datasets.map((dataset) => {
+		return {
+			name: props.title,
+			type: 'pie',
+			radius: '65%',
+			top: '-6%',
+			data: dataset.data.map((value, index) => {
+				return {
+					name: props.data.labels[index],
+					value: value,
+				}
+			}),
+			labelLine: {
+				show: false,
+			},
+			label: {
+				show: false,
+			},
+			emphasis: {
+				itemStyle: {
+					shadowBlur: 5,
+					shadowOffsetX: 0,
+					shadowColor: 'rgba(0, 0, 0, 0.1)',
+				},
+			},
+		}
+	}),
 })
+
+// const chartOptions = ref({
+// 	title: props.title,
+// 	subtitle: props.subtitle,
+// 	labels: props.data.labels,
+// 	data: props.data.datasets.map((dataset) => {
+// 		return {
+// 			name: dataset.label,
+// 			data: dataset.data,
+// 			type: 'bar',
+// 			itemStyle: {
+// 				barBorderRadius: [4, 4, 0, 0],
+// 			},
+// 		}
+// 	}),
+// })
 </script>
 
 <template>
-	<div class="h-full w-full">
-		<div class="h-5 text-center font-semibold text-gray-600">{{ props.title }}</div>
-		<div class="flex h-[calc(100%-1.5rem)] w-full justify-center pt-2">
-			<canvas ref="chartRef"></canvas>
-		</div>
-	</div>
+	<EChart :chartOptions="chartOptions" />
 </template>

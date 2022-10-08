@@ -2,7 +2,7 @@
 	<div class="h-full w-full rounded-md bg-gray-50">
 		<div
 			v-if="show"
-			class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white px-4 py-2"
+			class="group relative flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-300 bg-white p-3"
 		>
 			<div
 				v-if="!dashboard.editingLayout"

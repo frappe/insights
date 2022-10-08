@@ -27,7 +27,7 @@ const LIGHT_COLOR_MAP = {
 export const randomColor = (num = 1) => {
 	const colors = []
 	let hue = Math.floor(Math.random() * 360)
-	let lightness = '50%'
+	let lightness = '65%'
 	let alpha = 1
 	for (let i = 0; i < num; i++) {
 		const color = `hsla(${hue}, 50%, ${lightness}, ${alpha})`
@@ -37,7 +37,7 @@ export const randomColor = (num = 1) => {
 	return colors
 }
 
-export const getColors = (num) => {
+export const getColors = (num = Object.keys(COLOR_MAP).length) => {
 	if (num == 1) {
 		return randomColor()
 	}
