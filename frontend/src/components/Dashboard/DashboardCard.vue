@@ -21,15 +21,15 @@
 						name="x"
 						class="h-4 w-4"
 						@mousedown.prevent.stop=""
-						@click.prevent.stop="$emit('remove', props.visualizationID)"
+						@click.prevent.stop="$emit('remove', props.chartID)"
 					/>
 				</div>
 			</div>
 			<div class="h-full">
 				<component
-					v-if="visualization.component && visualization.componentProps"
-					:is="visualization.component"
-					v-bind="visualization.componentProps"
+					v-if="chart.component && chart.componentProps"
+					:is="chart.component"
+					v-bind="chart.componentProps"
 				></component>
 			</div>
 		</div>
@@ -37,15 +37,14 @@
 </template>
 
 <script setup>
-import { computed, reactive, inject, provide } from 'vue'
-import { useVisualization } from '@/utils/visualizations'
-import { safeJSONParse } from '@/utils'
+import { computed, inject } from 'vue'
+import { useQueryChart } from '@/utils/charts'
 
-const emit = defineEmits(['edit', 'remove', 'layoutChange'])
+const emit = defineEmits(['edit', 'remove'])
 
 const dashboard = inject('dashboard')
 const props = defineProps({
-	visualizationID: {
+	chartID: {
 		type: String,
 		required: true,
 	},
@@ -56,24 +55,11 @@ const props = defineProps({
 })
 
 const show = computed(() => {
-	return visualization.type && visualization.component && visualization.componentProps
+	return chart.type && chart.component && chart.componentProps
 })
 
-const visualizationRow = dashboard.doc.visualizations.find(
-	(row) => row.visualization === props.visualizationID
-)
-const initialLayout = safeJSONParse(visualizationRow.layout, {})
-
-const layout = reactive({
-	top: initialLayout.top,
-	left: initialLayout.left,
-	width: initialLayout.width,
-	height: initialLayout.height,
-})
-provide('layout', layout) // used by components to listen to resize events
-
-const visualization = useVisualization({
-	visualizationID: props.visualizationID,
+const chart = useQueryChart({
+	chartID: props.chartID,
 	queryID: props.queryID,
 })
 </script>

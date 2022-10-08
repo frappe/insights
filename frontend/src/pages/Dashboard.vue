@@ -8,7 +8,7 @@
 		</template>
 		<template #main>
 			<div
-				v-if="visualizations && visualizations.length > 0"
+				v-if="charts && charts.length > 0"
 				class="-mx-1 h-full w-full overflow-scroll pt-1"
 				:class="{
 					'blur-[4px]': dashboard.refreshing,
@@ -16,7 +16,7 @@
 				}"
 			>
 				<GridLayout
-					:items="visualizations"
+					:items="charts"
 					itemKey="name"
 					@layoutChange="updateLayout"
 					:disabled="!dashboard.editingLayout"
@@ -29,21 +29,19 @@
 				>
 					<template #item="{ item }">
 						<DashboardCard
-							:visualizationID="item.visualizationID"
+							:chartID="item.chartID"
 							:queryID="item.query"
-							@edit="editVisualization"
-							@remove="removeVisualization"
+							@edit="editChart"
+							@remove="removeChart"
 						/>
 					</template>
 				</GridLayout>
 			</div>
 			<div
-				v-if="visualizations && visualizations.length == 0"
+				v-if="charts && charts.length == 0"
 				class="flex flex-1 flex-col items-center justify-center space-y-1"
 			>
-				<div class="text-base font-light text-gray-500">
-					You haven't added any visualizations.
-				</div>
+				<div class="text-base font-light text-gray-500">You haven't added any charts.</div>
 				<div
 					class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
 					@click="showAddDialog = true"
@@ -54,21 +52,19 @@
 		</template>
 	</BasePage>
 
-	<Dialog :options="{ title: 'Add Visualization' }" v-model="showAddDialog" :dismissable="true">
+	<Dialog :options="{ title: 'Add Chart' }" v-model="showAddDialog" :dismissable="true">
 		<template #body-content>
 			<div class="space-y-4">
 				<Autocomplete
 					ref="autocomplete"
-					placeholder="Select a visualization"
-					v-model="newVisualization"
-					:options="dashboard.newVisualizationOptions"
+					placeholder="Select a chart"
+					v-model="newChart"
+					:options="dashboard.newChartOptions"
 				/>
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="addVisualization" :loading="addingVisualization">
-				Add
-			</Button>
+			<Button appearance="primary" @click="addChart" :loading="addingChart"> Add </Button>
 		</template>
 	</Dialog>
 </template>
@@ -96,13 +92,13 @@ const props = defineProps({
 const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
-const visualizations = computed(() =>
-	dashboard.doc?.visualizations.map((v) => {
+const charts = computed(() =>
+	dashboard.doc?.items.map((v) => {
 		const layout = safeJSONParse(v.layout, {})
 		return {
 			...v,
 			...layout,
-			visualizationID: v.visualization,
+			chartID: v.query_chart,
 		}
 	})
 )
@@ -124,32 +120,32 @@ const commitLayout = () => {
 }
 
 const showAddDialog = ref(false)
-const newVisualization = ref({})
+const newChart = ref({})
 
-const addVisualization = () => {
-	dashboard.addVisualization
+const addChart = () => {
+	dashboard.addChart
 		.submit({
-			visualization: newVisualization.value.value,
+			query_chart: newChart.value.value,
 		})
 		.then(() => {
-			newVisualization.value = {}
+			newChart.value = {}
 			showAddDialog.value = false
-			dashboard.updateNewVisualizationOptions()
+			dashboard.updateNewChartOptions()
 		})
 }
-const addingVisualization = computed(() => dashboard.addVisualization.loading)
+const addingChart = computed(() => dashboard.addChart.loading)
 
-const removeVisualization = (visualizationID) => {
-	dashboard.removeVisualization
+const removeChart = (chartID) => {
+	dashboard.removeChart
 		.submit({
-			visualization: visualizationID,
+			query_chart: chartID,
 		})
 		.then(() => {
-			dashboard.updateNewVisualizationOptions()
+			dashboard.updateNewChartOptions()
 		})
 }
 
-const editVisualization = (queryID) => {
+const editChart = (queryID) => {
 	window.open(`/insights/query/${queryID}`, '_blank')
 }
 

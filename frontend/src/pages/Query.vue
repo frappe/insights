@@ -24,7 +24,7 @@ import Tabs from '@/components/Tabs.vue'
 
 import QueryHeader from '@/components/Query/QueryHeader.vue'
 import QueryBuilder from '@/components/Query/QueryBuilder.vue'
-import QueryVisualizer from '@/components/Query/Visualization/QueryVisualizer.vue'
+import QueryVisualizer from '@/components/Query/Visualize/QueryVisualizer.vue'
 
 import { useQuery } from '@/utils/query'
 import { updateDocumentTitle } from '@/utils'

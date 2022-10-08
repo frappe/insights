@@ -2,7 +2,7 @@ import { reactive, defineAsyncComponent } from 'vue'
 import { isEmptyObj } from '@/utils'
 
 function useNumberChart() {
-	const visualization = reactive({
+	const chart = reactive({
 		type: 'Number',
 		icon: 'hash',
 		dataSchema: {
@@ -15,7 +15,7 @@ function useNumberChart() {
 	})
 
 	function getComponent() {
-		return defineAsyncComponent(() => import('@/components/Query/Visualization/NumberCard.vue'))
+		return defineAsyncComponent(() => import('@/components/Query/Visualize/NumberCard.vue'))
 	}
 
 	function buildComponentProps(query, options) {
@@ -32,10 +32,10 @@ function useNumberChart() {
 		}
 
 		const value = query.results.getColumnValues(valueColumn)[0]
-		visualization.componentProps = { value, options }
+		chart.componentProps = { value, options }
 	}
 
-	return visualization
+	return chart
 }
 
 export default useNumberChart

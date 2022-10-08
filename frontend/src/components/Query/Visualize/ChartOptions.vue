@@ -2,7 +2,7 @@
 import { defineAsyncComponent, computed, inject } from 'vue'
 const props = defineProps(['chartType'])
 
-const visualization = inject('visualization')
+const chart = inject('chart')
 
 const component = computed(() => {
 	switch (props.chartType) {
@@ -25,7 +25,7 @@ const component = computed(() => {
 <template>
 	<div class="!mt-0 space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Title</div>
-		<Input type="text" placeholder="Enter a suitable title..." v-model="visualization.title" />
+		<Input type="text" placeholder="Enter a suitable title..." v-model="chart.title" />
 	</div>
 
 	<component :is="component"></component>

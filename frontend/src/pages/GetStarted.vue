@@ -62,9 +62,9 @@ const onboardingSteps = ref([
 		completed: completionState.value.createQuery,
 	},
 	{
-		label: 'Create visualization',
+		label: 'Create a chart',
 		to: { name: 'QueryList' },
-		completed: completionState.value.createVisualization,
+		completed: completionState.value.createChart,
 	},
 	{
 		label: 'Create dashboard',
@@ -72,9 +72,9 @@ const onboardingSteps = ref([
 		completed: completionState.value.createDashboard,
 	},
 	{
-		label: 'Add visualization',
+		label: 'Add to dashboard',
 		to: { name: 'DashboardList' },
-		completed: completedSteps.value.addVisualization,
+		completed: completedSteps.value.addChart,
 	},
 ])
 

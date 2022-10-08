@@ -9,9 +9,6 @@ from frappe.model.document import Document
 
 
 class InsightsQueryChart(Document):
-    def on_trash(self):
-        frappe.db.delete("Insights Dashboard Item", {"visualization": self.name})
-
     @frappe.whitelist()
     def update_doc(self, doc):
         doc = _dict(doc)
@@ -25,4 +22,4 @@ class InsightsQueryChart(Document):
         if not dashboard:
             frappe.throw("Dashboard is required")
         dashboard_doc = frappe.get_doc("Insights Dashboard", dashboard)
-        dashboard_doc.add_visualization(self.name, layout)  # saves the dashboard
+        dashboard_doc.add_chart(self.name, layout)  # saves the dashboard

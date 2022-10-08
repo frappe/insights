@@ -2,7 +2,7 @@ import { reactive, defineAsyncComponent } from 'vue'
 import { isEmptyObj } from '@/utils'
 
 function useAxisChart(type, icon) {
-	const visualization = reactive({
+	const chart = reactive({
 		type,
 		icon,
 		dataSchema: {
@@ -16,15 +16,11 @@ function useAxisChart(type, icon) {
 	})
 
 	function getComponent() {
-		if (visualization.type == 'Bar') {
-			return defineAsyncComponent(() =>
-				import('@/components/Query/Visualization/BarChart.vue')
-			)
+		if (chart.type == 'Bar') {
+			return defineAsyncComponent(() => import('@/components/Query/Visualize/BarChart.vue'))
 		}
-		if (visualization.type == 'Line') {
-			return defineAsyncComponent(() =>
-				import('@/components/Query/Visualization/LineChart.vue')
-			)
+		if (chart.type == 'Line') {
+			return defineAsyncComponent(() => import('@/components/Query/Visualize/LineChart.vue'))
 		}
 	}
 
@@ -33,14 +29,14 @@ function useAxisChart(type, icon) {
 			return
 		}
 
-		if (visualization.dataSchema.multipleValues && Array.isArray(options.data.valueColumn)) {
-			visualization.componentProps = {
+		if (chart.dataSchema.multipleValues && Array.isArray(options.data.valueColumn)) {
+			chart.componentProps = {
 				title: options.title,
 				data: buildMultiValueData(query, options.data),
 				options: buildOptions(options.data),
 			}
 		} else {
-			visualization.componentProps = {
+			chart.componentProps = {
 				title: options.title,
 				data: buildSingleValueData(query, options.data),
 				options: buildOptions(options.data),
@@ -126,13 +122,13 @@ function useAxisChart(type, icon) {
 
 	function buildOptions(data) {
 		const options = {}
-		if (visualization.type == 'Line') {
+		if (chart.type == 'Line') {
 			options.tension = data.lineSmoothness
 		}
 		return options
 	}
 
-	return visualization
+	return chart
 }
 
 export function Bar() {

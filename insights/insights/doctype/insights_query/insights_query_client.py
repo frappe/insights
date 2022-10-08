@@ -19,7 +19,7 @@ class InsightsQueryClient(Document):
         return new_query.name
 
     @frappe.whitelist()
-    def get_visualizations(self):
+    def get_charts(self):
         return frappe.get_all(
             "Insights Query Chart",
             filters={"query": self.name},

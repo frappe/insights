@@ -6,22 +6,22 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "visualization",
+  "query_chart",
   "query",
   "column_break_3",
   "layout"
  ],
  "fields": [
   {
-   "fieldname": "visualization",
+   "fieldname": "query_chart",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Visualization",
+   "label": "Chart",
    "options": "Insights Query Chart",
    "reqd": 1
   },
   {
-   "fetch_from": "visualization.query",
+   "fetch_from": "query_chart.query",
    "fieldname": "query",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -43,7 +43,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-09-15 12:06:11.580985",
+ "modified": "2022-10-08 17:37:12.195600",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard Item",

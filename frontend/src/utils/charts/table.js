@@ -2,7 +2,7 @@ import { reactive, defineAsyncComponent } from 'vue'
 import { isEmptyObj } from '@/utils'
 
 function useTableChart() {
-	const visualization = reactive({
+	const chart = reactive({
 		type: 'Table',
 		icon: 'grid',
 		dataSchema: {
@@ -14,7 +14,7 @@ function useTableChart() {
 	})
 
 	function getComponent() {
-		return defineAsyncComponent(() => import('@/components/Query/Visualization/Table.vue'))
+		return defineAsyncComponent(() => import('@/components/Query/Visualize/Table.vue'))
 	}
 
 	function columnsExist(query, ...columns) {
@@ -34,10 +34,10 @@ function useTableChart() {
 		const columns = options.data.columns.map((c) => c.label)
 		const rows = query.results.getRows(...columnNames)
 		const title = options.title
-		visualization.componentProps = { title, columns, rows }
+		chart.componentProps = { title, columns, rows }
 	}
 
-	return visualization
+	return chart
 }
 
 export default useTableChart

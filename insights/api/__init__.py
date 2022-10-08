@@ -247,12 +247,12 @@ def get_onboarding_status():
         ),
         "query_created": bool(frappe.db.a_row_exists("Insights Query")),
         "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "visualization_created": bool(
+        "chart_created": bool(
             frappe.db.exists(
                 "Insights Query Chart", {"data": ["is", "set"], "type": ["is", "set"]}
             )
         ),
-        "visualization_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
+        "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
     }
 
 
@@ -262,14 +262,14 @@ def skip_onboarding():
 
 
 @frappe.whitelist()
-def get_dashboard_options(visualization):
+def get_dashboard_options(query_chart):
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
 
     exclude_dashboards = (
         frappe.qb.from_(DashboardItem)
         .select(DashboardItem.parent)
         .distinct()
-        .where(DashboardItem.visualization == visualization)
+        .where(DashboardItem.query_chart == query_chart)
         .run(pluck="parent")
     )
     return frappe.get_list(

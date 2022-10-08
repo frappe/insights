@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref, onBeforeUnmount } from 'vue'
-import { getColors } from '@/utils/visualizations/colors'
+import { getColors } from '@/utils/charts/colors'
 import * as echarts from 'echarts'
 
 const props = defineProps({

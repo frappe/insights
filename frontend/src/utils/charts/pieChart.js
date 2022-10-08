@@ -2,7 +2,7 @@ import { reactive, defineAsyncComponent } from 'vue'
 import { isEmptyObj } from '@/utils'
 
 function usePieChart() {
-	const visualization = reactive({
+	const chart = reactive({
 		type: 'Pie',
 		icon: 'pie-chart',
 		dataSchema: {
@@ -15,7 +15,7 @@ function usePieChart() {
 	})
 
 	function getComponent() {
-		return defineAsyncComponent(() => import('@/components/Query/Visualization/PieChart.vue'))
+		return defineAsyncComponent(() => import('@/components/Query/Visualize/PieChart.vue'))
 	}
 
 	function buildComponentProps(query, options) {
@@ -23,7 +23,7 @@ function usePieChart() {
 			return
 		}
 		const props = buildSingleValueChartProps(query, options.data)
-		visualization.componentProps = {
+		chart.componentProps = {
 			title: options.title,
 			...props,
 		}
@@ -73,7 +73,7 @@ function usePieChart() {
 		}
 	}
 
-	return visualization
+	return chart
 }
 
 export default usePieChart

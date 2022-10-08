@@ -7,14 +7,14 @@
 					v-if="types?.length > 0"
 					:chartTypes="types"
 					:invalidTypes="invalidTypes"
-					:currentType="visualization.type"
+					:currentType="chart.type"
 					@chartTypeChange="setVizType"
 				/>
 			</div>
 
 			<div class="flex-1 space-y-3 overflow-y-scroll">
 				<div class="mb-2 text-sm tracking-wide text-gray-600">CHART OPTIONS</div>
-				<ChartOptions :chartType="visualization.type" />
+				<ChartOptions :chartType="chart.type" />
 			</div>
 		</div>
 		<div class="flex h-full w-[calc(100%-18rem)] flex-col space-y-4">
@@ -22,24 +22,24 @@
 				<Button
 					appearance="white"
 					@click="showDashboardDialog = true"
-					:disabled="visualization.isDirty"
+					:disabled="chart.isDirty"
 				>
 					Add to Dashboard
 				</Button>
 				<Button
 					appearance="primary"
-					@click="saveVisualization"
-					:loading="visualization.savingDoc"
-					:disabled="!visualization.isDirty"
+					@click="saveChart"
+					:loading="chart.savingDoc"
+					:disabled="!chart.isDirty"
 				>
 					Save
 				</Button>
 			</div>
 			<div class="max-h-[30rem] flex-1 rounded-md border p-4">
 				<component
-					v-if="visualization.component && visualization.componentProps"
-					:is="visualization.component"
-					v-bind="visualization.componentProps"
+					v-if="chart.component && chart.componentProps"
+					:is="chart.component"
+					v-bind="chart.componentProps"
 				></component>
 			</div>
 		</div>
@@ -72,19 +72,19 @@
 </template>
 
 <script setup>
-import ChartSelector from '@/components/Query/Visualization/ChartSelector.vue'
-import ChartOptions from '@/components/Query/Visualization/ChartOptions.vue'
+import ChartSelector from '@/components/Query/Visualize/ChartSelector.vue'
+import ChartOptions from '@/components/Query/Visualize/ChartOptions.vue'
 
 import { computed, inject, nextTick, provide, ref, watch } from 'vue'
-import { useVisualization, types } from '@/utils/visualizations'
+import { useQueryChart, types } from '@/utils/charts'
 
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { getDashboardOptions, createDashboard } from '@/utils/dashboard.js'
 
 const query = inject('query')
-const visualizationID = query.visualizations[0]
-const visualization = useVisualization({ visualizationID, query })
-provide('visualization', visualization)
+const chartID = query.charts[0]
+const chart = useQueryChart({ chartID, query })
+provide('chart', chart)
 
 const invalidTypes = computed(() => {
 	// TODO: change based on data
@@ -92,19 +92,19 @@ const invalidTypes = computed(() => {
 })
 const setVizType = (type) => {
 	if (!invalidTypes.value.includes(type)) {
-		visualization.setType(type)
+		chart.setType(type)
 	}
 }
 
 const $notify = inject('$notify')
-const saveVisualization = () => {
+const saveChart = () => {
 	const onSuccess = () => {
 		$notify({
-			title: 'Visualization Saved',
+			title: 'Chart Saved',
 			appearance: 'success',
 		})
 	}
-	visualization.updateDoc({ onSuccess })
+	chart.updateDoc({ onSuccess })
 }
 
 const showDashboardDialog = ref(false)
@@ -114,7 +114,7 @@ const $autocomplete = ref(null)
 watch(showDashboardDialog, async (val) => {
 	if (val) {
 		await nextTick()
-		getDashboardOptions(visualizationID).then((options) => {
+		getDashboardOptions(chartID).then((options) => {
 			dashboardOptions.value = options
 			setTimeout(() => {
 				$autocomplete.value.input.$el.blur()
@@ -123,19 +123,19 @@ watch(showDashboardDialog, async (val) => {
 		})
 	}
 })
-const addingToDashboard = computed(() => visualization.addToDashboard?.loading)
+const addingToDashboard = computed(() => chart.addToDashboard?.loading)
 function addToDashboard() {
 	const onSuccess = () => {
 		$notify({
-			title: 'Visualization Added to Dashboard',
+			title: 'Chart Added to Dashboard',
 			appearance: 'success',
 		})
 		showDashboardDialog.value = false
 	}
 	// TODO: move default dimensions to insights_dashboard.py
-	const defaultDimensions = visualization.type == 'Number' ? { w: 4, h: 4 } : { w: 8, h: 8 }
+	const defaultDimensions = chart.type == 'Number' ? { w: 4, h: 4 } : { w: 8, h: 8 }
 	const dashboardName = toDashboard.value.value
-	visualization.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
+	chart.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
 }
 
 function _createDashboard(newDashboardName) {

@@ -79,9 +79,9 @@ class InsightsQuery(InsightsQueryClient):
             self.filters = self.DEFAULT_FILTERS
 
     def on_update(self):
-        # create a query visualization if not exists
-        visualizations = self.get_visualizations()
-        if not visualizations:
+        # create a query chart if not exists
+        charts = self.get_charts()
+        if not charts:
             frappe.get_doc(
                 {
                     "doctype": "Insights Query Chart",
@@ -98,9 +98,11 @@ class InsightsQuery(InsightsQueryClient):
             self.update_title()
 
     def on_trash(self):
-        visualizations = self.get_visualizations()
-        for visualization in visualizations:
-            frappe.delete_doc("Insights Query Chart", visualization)
+        charts = self.get_charts()
+        for chart in charts:
+            frappe.delete_doc("Insights Query Chart", chart)
+
+        frappe.db.delete("Insights Dashboard Item", {"query_chart": self.name})
 
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
             frappe.delete_doc("Insights Table", table_name)

@@ -9,48 +9,48 @@ from frappe.model.document import Document
 
 class InsightsDashboard(Document):
     def validate(self):
-        self.validate_duplicate_items()
+        self.validate_duplicate_charts()
 
-    def validate_duplicate_items(self):
-        items = [d.visualization for d in self.visualizations]
-        if len(items) != len(set(items)):
-            duplicates = [item for item in items if items.count(item) > 1]
-            frappe.throw("Duplicate items found: {0}".format(", ".join(duplicates)))
+    def validate_duplicate_charts(self):
+        charts = [d.query_chart for d in self.items if d.query_chart]
+        if len(charts) != len(set(charts)):
+            duplicates = [item for item in charts if charts.count(item) > 1]
+            frappe.throw("Duplicate charts found: {0}".format(", ".join(duplicates)))
 
     @frappe.whitelist()
-    def get_visualizations(self):
-        visualizations = [row.visualization for row in self.visualizations]
+    def get_charts(self):
+        charts = [row.query_chart for row in self.items if row.query_chart]
         return frappe.get_all(
             "Insights Query Chart",
-            filters={"name": ("not in", visualizations), "type": ["!=", "Pivot"]},
+            filters={"name": ("not in", charts), "type": ["!=", "Pivot"]},
             fields=["name", "title", "type"],
         )
 
     @frappe.whitelist()
-    def add_visualization(self, visualization, layout=None):
+    def add_chart(self, chart, layout=None):
         if not layout:
             layout = {"w": 8, "h": 8}
         self.append(
-            "visualizations",
+            "items",
             {
-                "visualization": visualization,
+                "query_chart": chart,
                 "layout": dumps(layout, indent=2),
             },
         )
         self.save()
 
     @frappe.whitelist()
-    def refresh_visualizations(self):
-        for visualization in self.visualizations:
+    def refresh_items(self):
+        for item in self.items:
             try:
-                frappe.get_doc("Insights Query", visualization.query).run()
+                frappe.get_doc("Insights Query", item.query).run()
             except BaseException:
                 frappe.log_error(title="Error while executing query")
 
     @frappe.whitelist()
-    def remove_visualization(self, visualization):
-        for row in self.visualizations:
-            if row.visualization == visualization:
+    def remove_item(self, item):
+        for row in self.items:
+            if row.name == item:
                 self.remove(row)
                 self.save()
                 break
@@ -61,7 +61,7 @@ class InsightsDashboard(Document):
         if not updated_layout:
             return
 
-        for row in self.visualizations:
+        for row in self.items:
             # row.name can be an interger which could get converted to a string
             if str(row.name) in updated_layout or row.name in updated_layout:
                 new_layout = (

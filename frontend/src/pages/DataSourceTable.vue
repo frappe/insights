@@ -91,7 +91,7 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import Table from '@/components/Query/Visualization/Table.vue'
+import Table from '@/components/Query/Visualize/Table.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/utils/datasource'
 import { Dropdown, Badge, createResource } from 'frappe-ui'

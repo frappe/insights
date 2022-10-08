@@ -29,8 +29,8 @@ const API_METHODS = {
 	// filter methods
 	updateFilters: 'update_filters',
 
-	// visualization methods
-	getVisualizations: 'get_visualizations',
+	// chart methods
+	getCharts: 'get_charts',
 	applyTransform: 'apply_transform',
 }
 
@@ -42,8 +42,8 @@ export function useQuery(name) {
 	query.filters = useQueryFilters(query)
 	query.results = useQueryResults(query)
 
-	query.getVisualizations.submit()
-	query.visualizations = computed(() => query.getVisualizations.data?.message)
+	query.getCharts.submit()
+	query.charts = computed(() => query.getCharts.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
 
 	return query

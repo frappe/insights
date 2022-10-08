@@ -6,9 +6,9 @@ const onboardingComplete = ref(localStorage.getItem('onboardingComplete') === 't
 const completedSteps = useStorage('insights:completedSteps', {
 	browseData: false,
 	createQuery: false,
-	createVisualization: false,
+	createChart: false,
 	createDashboard: false,
-	addVisualization: false,
+	addChart: false,
 })
 
 const getOnboardingStatus = async () => {
@@ -32,16 +32,16 @@ function updateStep(step, completionStatus) {
 
 function updateSteps(onboarding_status) {
 	updateStep('createQuery', onboarding_status.query_created)
-	updateStep('createVisualization', onboarding_status.visualization_created)
+	updateStep('createChart', onboarding_status.chart_created)
 	updateStep('createDashboard', onboarding_status.dashboard_created)
-	updateStep('addVisualization', onboarding_status.visualization_added)
+	updateStep('addChart', onboarding_status.chart_added)
 
 	if (
 		!onboarding_status.is_onboarded &&
 		onboarding_status.query_created &&
-		onboarding_status.visualization_created &&
+		onboarding_status.chart_created &&
 		onboarding_status.dashboard_created &&
-		onboarding_status.visualization_added
+		onboarding_status.chart_added
 	) {
 		skipOnboarding()
 	}

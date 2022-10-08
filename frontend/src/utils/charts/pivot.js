@@ -1,7 +1,7 @@
 import { reactive, defineAsyncComponent, watch } from 'vue'
 
 function usePivotChart() {
-	const visualization = reactive({
+	const chart = reactive({
 		type: 'Pivot',
 		icon: 'layout',
 		dataSchema: {
@@ -12,9 +12,7 @@ function usePivotChart() {
 	})
 
 	function getComponent() {
-		return defineAsyncComponent(() =>
-			import('@/components/Query/Visualization/PivotTransform.vue')
-		)
+		return defineAsyncComponent(() => import('@/components/Query/Visualize/PivotTransform.vue'))
 	}
 
 	function buildComponentProps(query, options) {
@@ -27,7 +25,7 @@ function usePivotChart() {
 			(result) => {
 				if (result !== '{}') {
 					// once pivot transform is complete, set props as result
-					visualization.componentProps = {
+					chart.componentProps = {
 						title: options.title,
 						tableHtml: result,
 					}
@@ -37,7 +35,7 @@ function usePivotChart() {
 		)
 
 		// if previous pivot transform result exists, display it
-		visualization.componentProps =
+		chart.componentProps =
 			query.doc.transform_result !== '{}'
 				? {
 						title: options.title,
@@ -59,7 +57,7 @@ function usePivotChart() {
 			data: pivotData,
 		})
 	}
-	return visualization
+	return chart
 }
 
 export default usePivotChart

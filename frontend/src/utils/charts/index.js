@@ -23,15 +23,15 @@ const types = [
 
 const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
-function useVisualization({ visualizationID, queryID, query }) {
+function useQueryChart({ chartID, queryID, query }) {
 	if (!query) {
 		query = useQuery(queryID)
 	}
 
-	const resource = visualizationDocResource(visualizationID)
+	const resource = queryChartResource(chartID)
 	const initialDoc = computed(() => resource.doc || {})
 
-	const visualization = reactive({
+	const chart = reactive({
 		type: '',
 		title: '',
 		data: {},
@@ -45,43 +45,43 @@ function useVisualization({ visualizationID, queryID, query }) {
 	})
 
 	watchEffect(() => {
-		// load visualization data from doc
+		// load chart data from doc
 		const doc = initialDoc.value
 		if (doc.type || doc.title) {
-			visualization.type = doc.type
-			visualization.title = doc.title
-			visualization.data = safeJSONParse(doc.data, {})
+			chart.type = doc.type
+			chart.title = doc.title
+			chart.data = safeJSONParse(doc.data, {})
 		}
 	})
 
 	watchEffect(() => {
-		const type = visualization.type
+		const type = chart.type
 		if (!type) return
 		if (type && controllers[type]) {
-			visualization.controller = controllers[type]()
-			visualization.dataSchema = visualization.controller.dataSchema
-			visualization.component = markRaw(visualization.controller.getComponent())
-			visualization.componentProps = computed({
+			chart.controller = controllers[type]()
+			chart.dataSchema = chart.controller.dataSchema
+			chart.component = markRaw(chart.controller.getComponent())
+			chart.componentProps = computed({
 				get() {
-					return visualization.controller.componentProps
+					return chart.controller.componentProps
 				},
 				set(value) {
-					visualization.controller.componentProps = value
+					chart.controller.componentProps = value
 				},
 			})
 			return
 		}
-		console.warn(`No visualization controller found for type - ${type}`)
+		console.warn(`No chart controller found for type - ${type}`)
 	})
 
 	watchDebounced(
-		// if query.doc or chart options changes then re-render visualization
+		// if query.doc or chart options changes then re-render chart
 		() => ({
 			queryDoc: query.doc,
 			options: {
-				type: visualization.type,
-				title: visualization.title,
-				data: visualization.data,
+				type: chart.type,
+				title: chart.title,
+				data: chart.data,
 			},
 		}),
 		buildComponentProps,
@@ -89,59 +89,59 @@ function useVisualization({ visualizationID, queryID, query }) {
 	)
 
 	async function buildComponentProps({ queryDoc, options }) {
-		visualization.componentProps = null
+		chart.componentProps = null
 		await nextTick()
 		if (!query.doc || isEmptyObj(options.data)) {
 			return
 		}
-		visualization.controller.buildComponentProps(query, options)
+		chart.controller.buildComponentProps(query, options)
 	}
 
 	function setType(type) {
-		visualization.type = type
-		visualization.data = {}
+		chart.type = type
+		chart.data = {}
 	}
 
 	function updateDoc({ onSuccess }) {
 		const params = {
 			doc: {
-				type: visualization.type,
-				title: visualization.title,
-				data: visualization.data,
+				type: chart.type,
+				title: chart.title,
+				data: chart.data,
 			},
 		}
 		const options = { onSuccess }
 		resource.updateDoc.submit(params, options)
-		if (!visualization.savingDoc) {
-			visualization.savingDoc = computed(() => resource.updateDoc.loading)
+		if (!chart.savingDoc) {
+			chart.savingDoc = computed(() => resource.updateDoc.loading)
 		}
 	}
 
-	visualization.isDirty = computed(() => {
+	chart.isDirty = computed(() => {
 		if (!initialDoc.value) return false
 
 		const doc = initialDoc.value
 		const initialData = safeJSONParse(doc.data, {})
-		const dataChanged = JSON.stringify(initialData) !== JSON.stringify(visualization.data)
-		return doc.type !== visualization.type || doc.title !== visualization.title || dataChanged
+		const dataChanged = JSON.stringify(initialData) !== JSON.stringify(chart.data)
+		return doc.type !== chart.type || doc.title !== chart.title || dataChanged
 	})
 
 	function addToDashboard(dashboard, layout, { onSuccess }) {
 		const params = { dashboard, layout }
 		const options = { onSuccess }
 		resource.addToDashboard.submit(params, options)
-		if (!visualization.addingToDashboard) {
-			visualization.addingToDashboard = computed(() => resource.addToDashboard.loading)
+		if (!chart.addingToDashboard) {
+			chart.addingToDashboard = computed(() => resource.addToDashboard.loading)
 		}
 	}
 
-	return visualization
+	return chart
 }
 
-const visualizationDocResource = (name) => {
+const queryChartResource = (name) => {
 	const doctype = 'Insights Query Chart'
 	const whitelistedMethods = { updateDoc: 'update_doc', addToDashboard: 'add_to_dashboard' }
 	return createDocumentResource({ doctype, name, whitelistedMethods })
 }
 
-export { types, useVisualization }
+export { types, useQueryChart }

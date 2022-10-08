@@ -4,11 +4,11 @@ import { createDocumentResource, createResource } from 'frappe-ui'
 export default function useDashboard(name) {
 	const dashboard = makeDashboardResource(name)
 
-	dashboard.updateNewVisualizationOptions = () => {
-		dashboard.getVisualizations.submit()
+	dashboard.updateNewChartOptions = () => {
+		dashboard.getChartOptions.submit()
 	}
-	dashboard.newVisualizationOptions = computed(() =>
-		dashboard.getVisualizations.data?.message?.map((v) => {
+	dashboard.newChartOptions = computed(() =>
+		dashboard.getChartOptions.data?.message?.map((v) => {
 			return {
 				value: v.name,
 				label: v.title,
@@ -16,7 +16,7 @@ export default function useDashboard(name) {
 			}
 		})
 	)
-	dashboard.updateNewVisualizationOptions()
+	dashboard.updateNewChartOptions()
 
 	dashboard.editingLayout = false
 
@@ -27,8 +27,8 @@ const getDashboardOptionsResource = createResource({
 	method: 'insights.api.get_dashboard_options',
 	initialData: [],
 })
-export function getDashboardOptions(visualization) {
-	return getDashboardOptionsResource.submit({ visualization })
+export function getDashboardOptions(query_chart) {
+	return getDashboardOptionsResource.submit({ query_chart })
 }
 const createDashboardResource = createResource({
 	method: 'insights.api.create_dashboard',
@@ -42,10 +42,10 @@ function makeDashboardResource(name) {
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
-			addVisualization: 'add_visualization',
-			getVisualizations: 'get_visualizations',
-			refreshVisualizations: 'refresh_visualizations',
-			removeVisualization: 'remove_visualization',
+			addChart: 'add_chart',
+			getChartOptions: 'get_charts',
+			refreshCharts: 'refresh_charts',
+			removeChart: 'remove_chart',
 			updateLayout: 'update_layout',
 		},
 	})

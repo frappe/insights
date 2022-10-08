@@ -4,24 +4,21 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
 
 const query = inject('query')
-const visualization = inject('visualization')
+const chart = inject('chart')
 </script>
 
 <template>
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Dimension</div>
-		<Autocomplete
-			v-model="visualization.data.labelColumn"
-			:options="query.columns.indexOptions"
-		/>
+		<Autocomplete v-model="chart.data.labelColumn" :options="query.columns.indexOptions" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Measure</div>
 		<ListPicker
-			:value="visualization.data.valueColumn"
+			:value="chart.data.valueColumn"
 			:options="query.columns.valueOptions"
-			@change="(options) => (visualization.data.valueColumn = options)"
+			@change="(options) => (chart.data.valueColumn = options)"
 		/>
 	</div>
 
@@ -33,10 +30,10 @@ const visualization = inject('visualization')
 				min="0"
 				max="1"
 				step="0.1"
-				v-model="visualization.data.lineSmoothness"
+				v-model="chart.data.lineSmoothness"
 				class="flex-1 focus:outline-none"
 			/>
-			<span class="ml-2 text-sm">{{ visualization.data.lineSmoothness }}</span>
+			<span class="ml-2 text-sm">{{ chart.data.lineSmoothness }}</span>
 		</div>
 	</div>
 </template>
