@@ -124,6 +124,7 @@ function useAxisChart(type, icon) {
 		const options = {}
 		if (chart.type == 'Line') {
 			options.smoothLines = data.smoothLines
+			options.showPoints = data.showPoints
 		}
 		return options
 	}

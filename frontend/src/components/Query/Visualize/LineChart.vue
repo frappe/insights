@@ -33,6 +33,7 @@ const chartOptions = ref({
 			data: dataset.data,
 			type: 'line',
 			smooth: props.options.smoothLines,
+			showSymbol: props.options.showPoints,
 		}
 	}),
 })

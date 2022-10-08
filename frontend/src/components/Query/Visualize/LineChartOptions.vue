@@ -26,4 +26,8 @@ const chart = inject('chart')
 	<div class="space-y-2 text-gray-600">
 		<Checkbox v-model="chart.data.smoothLines" label="Enable Curved Lines" />
 	</div>
+
+	<div class="space-y-2 text-gray-600">
+		<Checkbox v-model="chart.data.showPoints" label="Show Data Points" />
+	</div>
 </template>
