@@ -11,6 +11,10 @@ const props = defineProps({
 		type: Object,
 		default: {},
 	},
+	options: {
+		type: Object,
+		default: {},
+	},
 })
 
 const chartOptions = ref({
@@ -28,7 +32,7 @@ const chartOptions = ref({
 			name: dataset.label,
 			data: dataset.data,
 			type: 'line',
-			smooth: false,
+			smooth: props.options.smoothLines,
 		}
 	}),
 })

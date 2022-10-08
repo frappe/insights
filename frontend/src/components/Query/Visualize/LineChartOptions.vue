@@ -1,5 +1,6 @@
 <script setup>
 import { inject } from 'vue'
+import Checkbox from '@/components/Controls/Checkbox.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
 
@@ -9,12 +10,12 @@ const chart = inject('chart')
 
 <template>
 	<div class="space-y-2 text-gray-600">
-		<div class="text-base font-light text-gray-500">Select Dimension</div>
+		<div class="text-gray-500">Select Dimension</div>
 		<Autocomplete v-model="chart.data.labelColumn" :options="query.columns.indexOptions" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
-		<div class="text-base font-light text-gray-500">Select Measure</div>
+		<div class="text-gray-500">Select Measure</div>
 		<ListPicker
 			:value="chart.data.valueColumn"
 			:options="query.columns.valueOptions"
@@ -23,17 +24,6 @@ const chart = inject('chart')
 	</div>
 
 	<div class="space-y-2 text-gray-600">
-		<div class="text-base font-light text-gray-500">Line Smoothness</div>
-		<div class="flex w-full items-center">
-			<input
-				type="range"
-				min="0"
-				max="1"
-				step="0.1"
-				v-model="chart.data.lineSmoothness"
-				class="flex-1 focus:outline-none"
-			/>
-			<span class="ml-2 text-sm">{{ chart.data.lineSmoothness }}</span>
-		</div>
+		<Checkbox v-model="chart.data.smoothLines" label="Enable Curved Lines" />
 	</div>
 </template>

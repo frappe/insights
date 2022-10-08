@@ -123,7 +123,7 @@ function useAxisChart(type, icon) {
 	function buildOptions(data) {
 		const options = {}
 		if (chart.type == 'Line') {
-			options.tension = data.lineSmoothness
+			options.smoothLines = data.smoothLines
 		}
 		return options
 	}
