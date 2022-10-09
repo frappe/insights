@@ -33,8 +33,8 @@ const suffix = computed(() => {
 	<div class="flex h-full w-full min-w-40 flex-col items-center justify-center px-2">
 		<div class="text-[38px] leading-tight">{{ prefix }}{{ formattedValue }}{{ suffix }}</div>
 		<div
-			class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[14px] font-light"
 			:title="props.options.title"
+			class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-base text-gray-600"
 		>
 			{{ props.options.title }}
 		</div>

@@ -65,7 +65,7 @@ provide('convertAttributesToOptions', convertAttributesToOptions)
 
 <template>
 	<div v-bind="$attrs" :class="['mx-3', subtitle ? 'h-11' : 'h-6']">
-		<div class="text-xl font-medium leading-6">{{ title }}</div>
+		<div class="text-lg font-normal leading-6 text-gray-800">{{ title }}</div>
 		<div v-if="subtitle" class="text-base font-light">
 			{{ subtitle }}
 		</div>
