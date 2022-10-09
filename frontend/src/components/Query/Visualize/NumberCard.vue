@@ -34,6 +34,7 @@ const suffix = computed(() => {
 		<div class="text-[38px] leading-tight">{{ prefix }}{{ formattedValue }}{{ suffix }}</div>
 		<div
 			class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[14px] font-light"
+			:title="props.options.title"
 		>
 			{{ props.options.title }}
 		</div>
