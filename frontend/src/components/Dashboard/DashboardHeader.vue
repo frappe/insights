@@ -81,7 +81,10 @@ defineEmits(['addChart', 'commitLayout'])
 	</div>
 
 	<Dialog
-		:options="{ title: 'Delete Query', icon: { name: 'trash', appearance: 'danger' } }"
+		:options="{
+			title: 'Delete Query',
+			icon: { name: 'trash', appearance: 'danger' },
+		}"
 		v-model="showDeleteDialog"
 		:dismissable="true"
 	>

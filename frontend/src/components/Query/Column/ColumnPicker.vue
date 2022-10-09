@@ -10,7 +10,9 @@
 			<div
 				v-for="tab in ['Dimension', 'Metric', 'Expression']"
 				class="flex h-full flex-1 items-center justify-center rounded"
-				:class="{ ' bg-white font-normal shadow': newColumnType == tab }"
+				:class="{
+					' bg-white font-normal shadow': newColumnType == tab,
+				}"
 				@click.prevent.stop="newColumnType = tab"
 			>
 				{{ tab }}

@@ -60,14 +60,22 @@ export function useQueryFilters(query) {
 
 		if (level > 1 && position && typeof idx == 'number') {
 			// remove the filter at `idx` from the filter group at `level` & `position`
-			const expression = getLogicalExpressionAt({ filters: data.value, level, position })
+			const expression = getLogicalExpressionAt({
+				filters: data.value,
+				level,
+				position,
+			})
 			expression.conditions.splice(idx, 1)
 		}
 
 		updateFilters()
 	}
 	const toggleOperator = (level, position) => {
-		const expression = getLogicalExpressionAt({ filters: data.value, level, position })
+		const expression = getLogicalExpressionAt({
+			filters: data.value,
+			level,
+			position,
+		})
 		expression.operator = expression.operator == '&&' ? '||' : '&&'
 		updateFilters()
 	}

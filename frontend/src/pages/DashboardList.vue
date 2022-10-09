@@ -33,7 +33,10 @@
 					>
 						<li v-for="dashboard in dashboards" :key="dashboard.name">
 							<router-link
-								:to="{ name: 'Dashboard', params: { name: dashboard.name } }"
+								:to="{
+									name: 'Dashboard',
+									params: { name: dashboard.name },
+								}"
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
@@ -66,7 +69,8 @@
 					</div>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">
-							Showing {{ dashboards.length }} of {{ dashboards.length }}
+							Showing {{ dashboards.length }} of
+							{{ dashboards.length }}
 						</p>
 					</div>
 				</div>

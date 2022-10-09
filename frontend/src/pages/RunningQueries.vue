@@ -6,7 +6,11 @@
 				<div>
 					<Button
 						appearance="primary"
-						@click="getRunningQueries.submit({ data_source: dataSource })"
+						@click="
+							getRunningQueries.submit({
+								data_source: dataSource,
+							})
+						"
 					>
 						Refresh
 					</Button>
@@ -46,7 +50,9 @@
 							</p>
 							<p
 								class="text-sm text-gray-900"
-								:class="{ '!w-28 text-right': ['time', 'progress'].includes(key) }"
+								:class="{
+									'!w-28 text-right': ['time', 'progress'].includes(key),
+								}"
 								v-for="key in ['time', 'progress']"
 							>
 								{{ query[key] }}

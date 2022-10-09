@@ -21,7 +21,14 @@
 					<Expression
 						v-else
 						:expression="condition"
-						@edit="$emit('edit-filter', { condition, level, position, idx })"
+						@edit="
+							$emit('edit-filter', {
+								condition,
+								level,
+								position,
+								idx,
+							})
+						"
 						@remove="$emit('remove-filter', { level, position, idx })"
 					/>
 				</div>

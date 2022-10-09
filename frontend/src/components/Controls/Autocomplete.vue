@@ -45,7 +45,8 @@
 								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
 								@click.prevent="$emit('createOption', filterQuery)"
 							>
-								<FeatherIcon name="plus" class="mr-1 h-3.5 w-3.5" /> Create New
+								<FeatherIcon name="plus" class="mr-1 h-3.5 w-3.5" />
+								Create New
 							</ComboboxOption>
 							<ComboboxOption
 								v-for="(option, idx) in filteredOptions"

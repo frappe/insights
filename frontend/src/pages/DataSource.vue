@@ -62,7 +62,8 @@
 					</ul>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">
-							Showing {{ tables.length }} of {{ dataSource.tables.length }}
+							Showing {{ tables.length }} of
+							{{ dataSource.tables.length }}
 						</p>
 					</div>
 				</div>

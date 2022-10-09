@@ -60,7 +60,10 @@ function useAxisChart(type, icon) {
 		const labels = query.results.getColumnValues(labelColumn)
 		const values = query.results.getColumnValues(valueColumn)
 
-		let labelValues = labels.map((label, idx) => ({ label, value: values[idx] }))
+		let labelValues = labels.map((label, idx) => ({
+			label,
+			value: values[idx],
+		}))
 
 		// if the labels are not unique, add the values of the same label
 		labelValues = labelValues.reduce((acc, curr) => {

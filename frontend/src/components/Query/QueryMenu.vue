@@ -28,7 +28,10 @@
 		/>
 
 		<Dialog
-			:options="{ title: 'Delete Query', icon: { name: 'trash', appearance: 'danger' } }"
+			:options="{
+				title: 'Delete Query',
+				icon: { name: 'trash', appearance: 'danger' },
+			}"
 			v-model="show_delete_dialog"
 			:dismissable="true"
 		>

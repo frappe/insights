@@ -8,7 +8,9 @@
 			<div
 				v-for="tab in [columnType, 'Format']"
 				class="flex h-full flex-1 items-center justify-center rounded-md"
-				:class="{ 'border bg-white font-normal shadow-sm': currentTab == tab }"
+				:class="{
+					'border bg-white font-normal shadow-sm': currentTab == tab,
+				}"
 				@click.prevent.stop="currentTab = tab"
 			>
 				{{ tab }}

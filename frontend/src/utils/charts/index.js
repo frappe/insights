@@ -140,7 +140,10 @@ function useQueryChart({ chartID, queryID, query }) {
 
 const queryChartResource = (name) => {
 	const doctype = 'Insights Query Chart'
-	const whitelistedMethods = { updateDoc: 'update_doc', addToDashboard: 'add_to_dashboard' }
+	const whitelistedMethods = {
+		updateDoc: 'update_doc',
+		addToDashboard: 'add_to_dashboard',
+	}
 	return createDocumentResource({ doctype, name, whitelistedMethods })
 }
 

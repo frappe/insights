@@ -24,7 +24,9 @@ onMounted(() => {
 	chart.setOption(options)
 })
 
-watch(options, (newOptions) => chart && chart.setOption(newOptions), { deep: true })
+watch(options, (newOptions) => chart && chart.setOption(newOptions), {
+	deep: true,
+})
 
 const resizeObserver = new ResizeObserver(() => {
 	chart.resize()

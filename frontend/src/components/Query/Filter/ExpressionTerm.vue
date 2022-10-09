@@ -5,7 +5,9 @@
 	<p class="w-fit" v-else-if="type == 'Column'">{{ value.table }} &#8594; {{ value.column }}</p>
 	<!-- Number or String -->
 	<p class="w-fit" v-else-if="type == 'String'">"{{ value }}"</p>
-	<p class="w-fit" v-else-if="type == 'Number'">{{ value }}</p>
+	<p class="w-fit" v-else-if="type == 'Number'">
+		{{ value }}
+	</p>
 </template>
 
 <script setup>

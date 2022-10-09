@@ -126,7 +126,9 @@ const executeQuery = async () => {
 		},
 	})
 }
-watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && executeQuery(), { immediate: true })
+watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && executeQuery(), {
+	immediate: true,
+})
 
 const executionTime = computed(() => {
 	const rounded = Math.round(query.doc.execution_time * 100) / 100

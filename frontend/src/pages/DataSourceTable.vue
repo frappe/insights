@@ -15,7 +15,10 @@
 				<div class="space-x-2">
 					<Dropdown
 						placement="left"
-						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+						:button="{
+							icon: 'more-horizontal',
+							appearance: 'minimal',
+						}"
 						:options="[
 							{
 								label: hidden ? 'Enable' : 'Disable',

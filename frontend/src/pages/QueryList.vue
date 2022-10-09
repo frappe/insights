@@ -40,7 +40,10 @@
 					>
 						<li v-for="query in queries" :key="query.name">
 							<router-link
-								:to="{ name: 'Query', params: { name: query.name } }"
+								:to="{
+									name: 'Query',
+									params: { name: query.name },
+								}"
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">

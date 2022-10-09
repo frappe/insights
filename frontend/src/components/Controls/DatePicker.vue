@@ -139,7 +139,10 @@ export default {
 		},
 		formatMonth() {
 			let date = this.getDate(this.currentYear, this.currentMonth - 1, 1)
-			return date.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+			return date.toLocaleString('en-US', {
+				month: 'short',
+				year: 'numeric',
+			})
 		},
 	},
 	methods: {

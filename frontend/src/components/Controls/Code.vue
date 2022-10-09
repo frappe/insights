@@ -81,8 +81,14 @@ const getHighlighterStyle = () =>
 			tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
 			color: coral,
 		},
-		{ tag: [tags.function(tags.variableName), tags.labelName], color: malibu },
-		{ tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)], color: whiskey },
+		{
+			tag: [tags.function(tags.variableName), tags.labelName],
+			color: malibu,
+		},
+		{
+			tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)],
+			color: whiskey,
+		},
 		{ tag: [tags.definition(tags.name), tags.separator], color: ivory },
 		{
 			tag: [
@@ -115,8 +121,14 @@ const getHighlighterStyle = () =>
 		{ tag: tags.strikethrough, textDecoration: 'line-through' },
 		{ tag: tags.link, color: stone, textDecoration: 'underline' },
 		{ tag: tags.heading, fontWeight: 'bold', color: coral },
-		{ tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: whiskey },
-		{ tag: [tags.processingInstruction, tags.string, tags.inserted], color: sage },
+		{
+			tag: [tags.atom, tags.bool, tags.special(tags.variableName)],
+			color: whiskey,
+		},
+		{
+			tag: [tags.processingInstruction, tags.string, tags.inserted],
+			color: sage,
+		},
 		{ tag: tags.invalid, color: invalid },
 	])
 
