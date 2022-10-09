@@ -20,7 +20,7 @@ const chart = inject('chart')
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Label Position</div>
 		<Autocomplete
-			v-model="chart.data.labelPosition"
+			v-model="chart.options.labelPosition"
 			:options="['Top', 'Left', 'Bottom', 'Right']"
 		/>
 	</div>

@@ -25,7 +25,7 @@ function usePieChart() {
 		const props = buildSingleValueChartProps(query, options.data)
 		chart.componentProps = {
 			title: options.title,
-			options: buildOptions(options.data),
+			options: options.options,
 			...props,
 		}
 	}
@@ -72,12 +72,6 @@ function usePieChart() {
 				],
 			},
 		}
-	}
-
-	function buildOptions(data) {
-		const options = {}
-		options.labelPosition = data.labelPosition
-		return options
 	}
 
 	return chart

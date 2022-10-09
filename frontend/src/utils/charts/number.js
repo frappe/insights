@@ -32,7 +32,13 @@ function useNumberChart() {
 		}
 
 		const value = query.results.getColumnValues(valueColumn)[0]
-		chart.componentProps = { value, options }
+		chart.componentProps = {
+			data: {
+				value,
+				title: options.title,
+			},
+			options: options.options,
+		}
 	}
 
 	return chart

@@ -14,11 +14,11 @@ const chart = inject('chart')
 	<div class="space-y-3 text-sm text-gray-600">
 		<div class="space-y-1">
 			<div class="font-light">Prefix</div>
-			<Input type="text" v-model="chart.data.prefix" placeholder="Enter a prefix..." />
+			<Input type="text" v-model="chart.options.prefix" placeholder="Enter a prefix..." />
 		</div>
 		<div class="space-y-1">
 			<div class="font-light">Suffix</div>
-			<Input type="text" v-model="chart.data.suffix" placeholder="Enter a suffix..." />
+			<Input type="text" v-model="chart.options.suffix" placeholder="Enter a suffix..." />
 		</div>
 	</div>
 </template>

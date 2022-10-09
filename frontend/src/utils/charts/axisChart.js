@@ -33,13 +33,13 @@ function useAxisChart(type, icon) {
 			chart.componentProps = {
 				title: options.title,
 				data: buildMultiValueData(query, options.data),
-				options: buildOptions(options.data),
+				options: options.options,
 			}
 		} else {
 			chart.componentProps = {
 				title: options.title,
 				data: buildSingleValueData(query, options.data),
-				options: buildOptions(options.data),
+				options: options.options,
 			}
 		}
 	}
@@ -121,15 +121,6 @@ function useAxisChart(type, icon) {
 				data: labelValues.map((item) => item.values[idx]),
 			})),
 		}
-	}
-
-	function buildOptions(data) {
-		const options = {}
-		if (chart.type == 'Line') {
-			options.smoothLines = data.smoothLines
-			options.showPoints = data.showPoints
-		}
-		return options
 	}
 
 	return chart

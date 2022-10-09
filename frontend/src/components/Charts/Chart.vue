@@ -21,12 +21,13 @@ onMounted(() => {
 	chart = echarts.init(chartRef.value, 'light', {
 		renderer: 'svg',
 	})
-	chart.setOption(options)
+	setOption(options)
 })
+watch(options, setOption, { deep: true })
 
-watch(options, (newOptions) => chart && chart.setOption(newOptions), {
-	deep: true,
-})
+function setOption(options) {
+	chart && chart.setOption(options)
+}
 
 const resizeObserver = new ResizeObserver(() => {
 	chart.resize()
@@ -64,10 +65,10 @@ provide('convertAttributesToOptions', convertAttributesToOptions)
 </script>
 
 <template>
-	<div v-bind="$attrs" :class="['mx-3', subtitle ? 'h-11' : 'h-6']">
-		<div class="text-lg font-normal leading-6 text-gray-800">{{ title }}</div>
-		<div v-if="subtitle" class="text-base font-light">
-			{{ subtitle }}
+	<div v-bind="$attrs" :class="['mx-3', $attrs.subtitle ? 'h-11' : 'h-6']">
+		<div class="text-lg font-normal leading-6 text-gray-800">{{ $attrs.title }}</div>
+		<div v-if="$attrs.subtitle" class="text-base font-light">
+			{{ $attrs.subtitle }}
 		</div>
 	</div>
 	<div

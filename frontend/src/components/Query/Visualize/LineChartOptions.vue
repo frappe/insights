@@ -24,10 +24,10 @@ const chart = inject('chart')
 	</div>
 
 	<div class="space-y-2 text-gray-600">
-		<Checkbox v-model="chart.data.smoothLines" label="Enable Curved Lines" />
+		<Checkbox v-model="chart.options.smoothLines" label="Enable Curved Lines" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
-		<Checkbox v-model="chart.data.showPoints" label="Show Data Points" />
+		<Checkbox v-model="chart.options.showPoints" label="Show Data Points" />
 	</div>
 </template>

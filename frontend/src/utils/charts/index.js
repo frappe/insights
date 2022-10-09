@@ -1,4 +1,4 @@
-import { computed, markRaw, reactive, watchEffect, nextTick } from 'vue'
+import { computed, markRaw, reactive, watchEffect, nextTick, watch } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { useQuery } from '@/utils/query'
@@ -31,14 +31,19 @@ function useQueryChart({ chartID, queryID, query }) {
 	const resource = queryChartResource(chartID)
 	const initialDoc = computed(() => resource.doc || {})
 
-	const chart = reactive({
+	const emptyChart = {
 		type: '',
 		title: '',
 		data: {},
-		controller: null,
+		options: {},
 		dataSchema: {},
+		controller: null,
 		component: null,
 		componentProps: null,
+	}
+
+	const chart = reactive({
+		...emptyChart,
 		setType,
 		updateDoc,
 		addToDashboard,
@@ -51,28 +56,35 @@ function useQueryChart({ chartID, queryID, query }) {
 			chart.type = doc.type
 			chart.title = doc.title
 			chart.data = safeJSONParse(doc.data, {})
+			chart.options = chart.data.options || {}
 		}
 	})
 
-	watchEffect(() => {
-		const type = chart.type
-		if (!type) return
-		if (type && controllers[type]) {
-			chart.controller = controllers[type]()
-			chart.dataSchema = chart.controller.dataSchema
-			chart.component = markRaw(chart.controller.getComponent())
-			chart.componentProps = computed({
-				get() {
-					return chart.controller.componentProps
-				},
-				set(value) {
-					chart.controller.componentProps = value
-				},
-			})
-			return
-		}
-		console.warn(`No chart controller found for type - ${type}`)
-	})
+	watch(
+		() => chart.type,
+		(type) => {
+			if (!type) {
+				Object.assign(chart, emptyChart)
+				return
+			}
+			if (type && controllers[type]) {
+				chart.controller = controllers[type]()
+				chart.dataSchema = chart.controller.dataSchema
+				chart.component = markRaw(chart.controller.getComponent())
+				return
+			}
+			console.warn(`No chart controller found for type - ${type}`)
+		},
+		{ immediate: true }
+	)
+
+	watchDebounced(
+		() => chart.controller?.componentProps,
+		(props) => {
+			chart.componentProps = props
+		},
+		{ deep: true, immediate: true }
+	)
 
 	watchDebounced(
 		// if query.doc or chart options changes then re-render chart
@@ -82,6 +94,7 @@ function useQueryChart({ chartID, queryID, query }) {
 				type: chart.type,
 				title: chart.title,
 				data: chart.data,
+				options: chart.options,
 			},
 		}),
 		buildComponentProps,
@@ -89,8 +102,6 @@ function useQueryChart({ chartID, queryID, query }) {
 	)
 
 	async function buildComponentProps({ queryDoc, options }) {
-		chart.componentProps = null
-		await nextTick()
 		if (!query.doc || isEmptyObj(options.data)) {
 			return
 		}
@@ -99,7 +110,6 @@ function useQueryChart({ chartID, queryID, query }) {
 
 	function setType(type) {
 		chart.type = type
-		chart.data = {}
 	}
 
 	function updateDoc({ onSuccess }) {
@@ -107,7 +117,9 @@ function useQueryChart({ chartID, queryID, query }) {
 			doc: {
 				type: chart.type,
 				title: chart.title,
-				data: chart.data,
+				data: Object.assign({}, chart.data, {
+					options: chart.options,
+				}),
 			},
 		}
 		const options = { onSuccess }
@@ -122,8 +134,11 @@ function useQueryChart({ chartID, queryID, query }) {
 
 		const doc = initialDoc.value
 		const initialData = safeJSONParse(doc.data, {})
+		const initalOptions = initialData.options || {}
 		const dataChanged = JSON.stringify(initialData) !== JSON.stringify(chart.data)
-		return doc.type !== chart.type || doc.title !== chart.title || dataChanged
+		const optionsChanged = JSON.stringify(initalOptions) !== JSON.stringify(chart.options)
+
+		return doc.type !== chart.type || doc.title !== chart.title || dataChanged || optionsChanged
 	})
 
 	function addToDashboard(dashboard, layout, { onSuccess }) {
