@@ -14,10 +14,10 @@ const deleteDashboard = () => {
 	})
 }
 
-const refreshCharts = async () => {
+const refreshItems = async () => {
 	dashboard.refreshing = true
 	// hack: update the charts
-	await dashboard.refreshCharts.submit()
+	await dashboard.refreshItems.submit()
 	// then reload the dashboard doc
 	// to re-render the charts with new data
 	dashboard.doc.items = []
@@ -38,7 +38,7 @@ defineEmits(['addChart', 'commitLayout'])
 				v-if="!dashboard.editingLayout"
 				appearance="white"
 				iconLeft="refresh-ccw"
-				@click="refreshCharts"
+				@click="refreshItems"
 			>
 				Refresh
 			</Button>

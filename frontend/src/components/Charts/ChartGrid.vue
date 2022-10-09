@@ -1,18 +1,15 @@
-<template></template>
+<template>
+	<slot v-bind="$attrs"></slot>
+</template>
 
 <script setup>
-import { inject, computed, useAttrs } from 'vue'
-
+import { inject, useAttrs } from 'vue'
 const options = inject('options')
-const subtext = computed(() => options.title?.subtext)
-const SUBTEXT_HEIGHT = 20
-
-const { top = 50, bottom = 50, left = 50, right = 50 } = useAttrs()
-
-options.grid = {
-	top: subtext.value ? top + SUBTEXT_HEIGHT : top,
-	bottom: subtext.value ? bottom + SUBTEXT_HEIGHT : bottom,
-	left: left,
-	right: right,
+const defaults = {
+	top: 25,
+	bottom: 55,
+	left: 45,
+	right: 30,
 }
+options.grid = { ...defaults, ...useAttrs() }
 </script>

@@ -44,8 +44,8 @@ function makeDashboardResource(name) {
 		whitelistedMethods: {
 			addChart: 'add_chart',
 			getChartOptions: 'get_charts',
-			refreshCharts: 'refresh_charts',
-			removeChart: 'remove_chart',
+			refreshItems: 'refresh_items',
+			removeItem: 'remove_item',
 			updateLayout: 'update_layout',
 		},
 	})

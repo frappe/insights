@@ -1,6 +1,10 @@
 <script setup>
-import { ref } from 'vue'
-import EChart from './EChart.vue'
+import Chart from '@/components/Charts/Chart.vue'
+import ChartGrid from '@/components/Charts/ChartGrid.vue'
+import ChartAxis from '@/components/Charts/ChartAxis.vue'
+import ChartSeries from '@/components/Charts/ChartSeries.vue'
+import ChartLegend from '@/components/Charts/ChartLegend.vue'
+import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
 
 const props = defineProps({
 	title: {
@@ -11,31 +15,32 @@ const props = defineProps({
 		type: Object,
 		default: {},
 	},
-})
-
-const chartOptions = ref({
-	title: props.title,
-	subtitle: props.subtitle,
-	xAxis: {
-		type: 'category',
-		data: props.data.labels,
+	options: {
+		type: Object,
+		default: {},
 	},
-	yAxis: {
-		type: 'value',
-	},
-	series: props.data.datasets.map((dataset) => {
-		return {
-			name: dataset.label,
-			data: dataset.data,
-			type: 'bar',
-			itemStyle: {
-				borderRadius: [4, 4, 0, 0],
-			},
-		}
-	}),
 })
 </script>
 
 <template>
-	<EChart :chartOptions="chartOptions" />
+	<Chart :title="props.title" :subtitle="props.subtitle">
+		<ChartGrid>
+			<ChartLegend bottom="bottom" />
+			<ChartAxis
+				axisType="xAxis"
+				type="category"
+				:axisTick="false"
+				:data="props.data.labels"
+			/>
+			<ChartAxis axisType="yAxis" type="value" splitLine-lineStyle-type="dashed" />
+			<ChartSeries
+				v-for="dataset in props.data.datasets"
+				type="bar"
+				:name="dataset.label"
+				:data="dataset.data"
+				:itemStyle-borderRadius="[4, 4, 0, 0]"
+			/>
+			<ChartTooltip trigger="item" :appendToBody="true" />
+		</ChartGrid>
+	</Chart>
 </template>

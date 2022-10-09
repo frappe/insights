@@ -27,13 +27,13 @@ class InsightsDashboard(Document):
         )
 
     @frappe.whitelist()
-    def add_chart(self, chart, layout=None):
+    def add_chart(self, query_chart, layout=None):
         if not layout:
             layout = {"w": 8, "h": 8}
         self.append(
             "items",
             {
-                "query_chart": chart,
+                "query_chart": query_chart,
                 "layout": dumps(layout, indent=2),
             },
         )

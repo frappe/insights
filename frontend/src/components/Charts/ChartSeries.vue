@@ -7,9 +7,19 @@ const attributes = useAttrs()
 const options = inject('options')
 const convertAttributesToOptions = inject('convertAttributesToOptions')
 
+if (!options.series) {
+	options.series = []
+}
+
 watch(() => attributes, updateOptions, { deep: true, immediate: true })
+
 function updateOptions(newAttributes) {
 	const optionsObject = convertAttributesToOptions(newAttributes)
-	options.series = [...(options.series || []), optionsObject]
+	const existingSeries = options.series.find((series) => series.name === newAttributes.name)
+	if (existingSeries) {
+		Object.assign(existingSeries, optionsObject)
+	} else {
+		options.series.push(optionsObject)
+	}
 }
 </script>

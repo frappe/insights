@@ -1,17 +1,17 @@
-<template>
-	<div ref="chartRef" class="h-full w-full">
-		<slot></slot>
-	</div>
-</template>
-
 <script setup>
 import * as echarts from 'echarts'
+import { getColors } from '@/utils/charts/colors'
 import { onMounted, ref, reactive, onBeforeUnmount, provide, watch, useAttrs } from 'vue'
 
 const chartRef = ref(null)
-const attributes = useAttrs()
-const options = reactive({
+const { title, subtitle, ...attributes } = useAttrs()
+
+const defaults = {
 	fontFamily: 'Inter',
+	color: getColors(),
+}
+const options = reactive({
+	...defaults,
 	...attributes,
 })
 provide('options', options)
@@ -46,17 +46,34 @@ function convertAttributesToOptions(attributes) {
 			// options like "splitLines-lineStyle-type = 'dashed'"
 			// construct the object from the keys by splitting on '-'
 			// eg. { splitLines: { lineStyle: { type: 'dashed' } } }
-			const keys = key.split('-')
-			const value = attributes[key]
-			return keys.reduceRight((acc, key, index) => {
-				if (index === keys.length - 1) {
-					return { [key]: value }
-				}
-				return { [key]: acc }
-			}, acc)
+			// and append it to the accumulator
+			const keys = key.split('-') // ['splitLines', 'lineStyle', 'type']
+			const value = attributes[key] // 'dashed'
+			const lastKey = keys.pop() // 'type'
+			const lastObject = keys.reduce((acc, key) => {
+				acc[key] = acc[key] || {}
+				return acc[key]
+			}, acc) // { splitLines: { lineStyle: {} } }
+			lastObject[lastKey] = value // { splitLines: { lineStyle: { type: 'dashed' } } }
+			return acc
 		}
 		return { ...acc, [key]: attributes[key] }
 	}, {})
 }
 provide('convertAttributesToOptions', convertAttributesToOptions)
 </script>
+
+<template>
+	<div v-bind="$attrs" :class="['mx-3', subtitle ? 'h-11' : 'h-6']">
+		<div class="text-xl font-medium leading-6">{{ title }}</div>
+		<div v-if="subtitle" class="text-base font-light">
+			{{ subtitle }}
+		</div>
+	</div>
+	<div
+		ref="chartRef"
+		:class="['w-full', subtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]']"
+	>
+		<slot></slot>
+	</div>
+</template>

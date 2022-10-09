@@ -102,6 +102,18 @@ export function ellipsis(value, length) {
 	return value
 }
 
+function getShortNumber(number) {
+	const locale = 'en-IN' // TODO: get locale from user settings
+	let formatted = new Intl.NumberFormat(locale, {
+		notation: 'compact',
+	}).format(number)
+
+	if (locale == 'en-IN') {
+		formatted = formatted.replace('T', 'K')
+	}
+	return formatted
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,
@@ -109,4 +121,5 @@ export default {
 	isEqual,
 	updateDocumentTitle,
 	fuzzySearch,
+	getShortNumber,
 }

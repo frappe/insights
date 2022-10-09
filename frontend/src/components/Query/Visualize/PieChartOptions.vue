@@ -16,4 +16,12 @@ const chart = inject('chart')
 		<div class="text-base font-light text-gray-500">Select Column</div>
 		<Autocomplete v-model="chart.data.valueColumn" :options="query.columns.valueOptions" />
 	</div>
+
+	<div class="space-y-2 text-gray-600">
+		<div class="text-base font-light text-gray-500">Label Position</div>
+		<Autocomplete
+			v-model="chart.data.labelPosition"
+			:options="['Top', 'Left', 'Bottom', 'Right']"
+		/>
+	</div>
 </template>

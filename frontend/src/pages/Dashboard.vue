@@ -32,7 +32,7 @@
 							:chartID="item.chartID"
 							:queryID="item.query"
 							@edit="editChart"
-							@remove="removeChart"
+							@remove="removeItem"
 						/>
 					</template>
 				</GridLayout>
@@ -135,10 +135,11 @@ const addChart = () => {
 }
 const addingChart = computed(() => dashboard.addChart.loading)
 
-const removeChart = (chartID) => {
-	dashboard.removeChart
+const removeItem = (chartID) => {
+	const rowName = dashboard.doc.items.find((v) => v.query_chart == chartID).name
+	dashboard.removeItem
 		.submit({
-			query_chart: chartID,
+			item: rowName,
 		})
 		.then(() => {
 			dashboard.updateNewChartOptions()
