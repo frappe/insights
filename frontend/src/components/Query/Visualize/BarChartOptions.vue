@@ -2,6 +2,7 @@
 import { inject } from 'vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
+import Color from '@/components/Controls/Color.vue'
 
 const query = inject('query')
 const chart = inject('chart')
@@ -21,4 +22,11 @@ const chart = inject('chart')
 			@change="(options) => (chart.data.valueColumn = options)"
 		/>
 	</div>
+
+	<Color
+		label="Colors"
+		v-model="chart.options.colors"
+		:max="chart.data?.valueColumn?.length || 1"
+		multiple
+	/>
 </template>

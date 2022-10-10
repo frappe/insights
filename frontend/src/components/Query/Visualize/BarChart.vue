@@ -23,7 +23,7 @@ const props = defineProps({
 </script>
 
 <template>
-	<Chart :title="props.title" :subtitle="props.subtitle">
+	<Chart :title="props.title" :subtitle="props.subtitle" :color="props.options.colors">
 		<ChartGrid>
 			<ChartLegend type="scroll" bottom="bottom" />
 			<ChartAxis

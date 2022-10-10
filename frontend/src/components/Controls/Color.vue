@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="mb-1 text-sm text-gray-600" v-if="label">
+		<div class="mb-1 text-sm text-gray-500" v-if="label">
 			{{ label }}
 		</div>
 		<Popover placement="bottom-start" class="w-full">
@@ -23,7 +23,7 @@
 										? value
 										: [value]"
 									:key="idx"
-									class="h-5 w-5 rounded-full"
+									class="h-4 w-4 rounded-full"
 									:style="{ backgroundColor: color }"
 								></div>
 							</div>
@@ -179,7 +179,11 @@ export default {
 			return this.options || Object.values(COLOR_MAP)
 		},
 		selectedColorLabel() {
-			return this.multiple ? this.modelValue.length + ' colors selected' : this.modelValue
+			return this.multiple
+				? this.modelValue.length > 1
+					? `${this.modelValue.length} colors`
+					: this.value[0]
+				: this.value
 		},
 	},
 }
