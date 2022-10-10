@@ -102,6 +102,8 @@ function useQueryChart({ chartID, queryID, query }) {
 	)
 
 	async function buildComponentProps({ queryDoc, options }) {
+		chart.componentProps = null
+		await nextTick()
 		if (!query.doc || isEmptyObj(options.data)) {
 			return
 		}
