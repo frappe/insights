@@ -7,6 +7,8 @@ import {
 	Dialog,
 	ErrorMessage,
 } from 'frappe-ui'
+import Checkbox from '@/components/Controls/Checkbox.vue'
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 import utils from './utils'
 import auth from './utils/auth'
@@ -17,6 +19,8 @@ export function registerGlobalComponents(app) {
 	app.component('Button', Button)
 	app.component('Dialog', Dialog)
 	app.component('Popover', Popover)
+	app.component('Checkbox', Checkbox)
+	app.component('Autocomplete', Autocomplete)
 	app.component('ErrorMessage', ErrorMessage)
 	app.component('FeatherIcon', FeatherIcon)
 	app.directive('on-outside-click', onOutsideClickDirective)

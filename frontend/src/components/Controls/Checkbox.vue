@@ -1,5 +1,5 @@
 <template>
-	<SwitchGroup>
+	<SwitchGroup v-bind="$attrs">
 		<div class="flex items-center justify-between">
 			<SwitchLabel class="mr-4 text-gray-500">{{ $props.label }}</SwitchLabel>
 			<Switch

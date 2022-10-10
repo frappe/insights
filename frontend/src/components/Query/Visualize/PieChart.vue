@@ -30,7 +30,15 @@ const data = computed(() =>
 	})
 )
 
-const legendOptions = reactive({ type: 'plain', bottom: 0 })
+const legendOptions = reactive({
+	type: 'plain',
+	bottom: 0,
+	pageIconSize: 12,
+	pageIconColor: '#64748B',
+	pageIconInactiveColor: '#C0CCDA',
+	pageFormatter: '{current}',
+	pageButtonItemGap: 2,
+})
 const center = ref(['50%', '45%'])
 const radius = ref('75%')
 
@@ -40,32 +48,37 @@ if (props.options.labelPosition?.value) {
 }
 
 function updateLegendOptions(position) {
+	legendOptions.type = props.options.scrollLabels ? 'scroll' : 'plain'
 	legendOptions.orient = position === 'Top' || position === 'Bottom' ? 'horizontal' : 'vertical'
 
 	switch (position) {
 		case 'Top':
 			radius.value = '75%'
-			legendOptions.top = 10
+			legendOptions.top = 0
 			legendOptions.left = 'center'
 			center.value[1] = '60%'
+			legendOptions.padding = 20
 			break
 		case 'Bottom':
 			radius.value = '75%'
 			legendOptions.bottom = 0
 			legendOptions.left = 'center'
 			center.value[1] = '45%'
+			legendOptions.padding = [20, 20, 10, 20]
 			break
 		case 'Right':
 			radius.value = '85%'
 			center.value = ['35%', '50%']
 			legendOptions.left = '65%'
 			legendOptions.top = 'middle'
+			legendOptions.padding = [20, 0, 20, 0]
 			break
 		case 'Left':
 			radius.value = '85%'
 			center.value = ['65%', '50%']
 			legendOptions.right = '65%'
 			legendOptions.top = 'middle'
+			legendOptions.padding = [20, 0, 20, 0]
 			break
 	}
 }

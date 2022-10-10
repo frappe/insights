@@ -10,6 +10,10 @@ const auth = reactive({
 		user_image: '',
 		permissions: undefined,
 	},
+	login,
+	logout,
+	reset,
+	hasPermission,
 })
 
 // fetch inital state from cookies
@@ -79,10 +83,4 @@ async function hasPermission(permission) {
 	return auth.user.permissions[permission]
 }
 
-export default {
-	login,
-	logout,
-	reset,
-	hasPermission,
-	...auth,
-}
+export default auth

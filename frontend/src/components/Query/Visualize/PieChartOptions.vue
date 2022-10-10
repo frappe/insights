@@ -24,4 +24,6 @@ const chart = inject('chart')
 			:options="['Top', 'Left', 'Bottom', 'Right']"
 		/>
 	</div>
+
+	<Checkbox class="text-gray-600" v-model="chart.options.scrollLabels" label="Paginate Labels" />
 </template>

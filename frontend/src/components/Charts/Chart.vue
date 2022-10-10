@@ -10,10 +10,7 @@ const defaults = {
 	fontFamily: 'Inter',
 	color: getColors(),
 }
-const options = reactive({
-	...defaults,
-	...attributes,
-})
+const options = reactive({ ...defaults, ...attributes })
 provide('options', options)
 
 let chart
