@@ -45,11 +45,6 @@ const data = computed(() => {
 const legendOptions = reactive({
 	type: 'plain',
 	bottom: 0,
-	pageIconSize: 12,
-	pageIconColor: '#64748B',
-	pageIconInactiveColor: '#C0CCDA',
-	pageFormatter: '{current}',
-	pageButtonItemGap: 2,
 })
 const center = ref(['50%', '45%'])
 const radius = ref('75%')

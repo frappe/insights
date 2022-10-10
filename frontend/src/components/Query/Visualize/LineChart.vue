@@ -25,7 +25,7 @@ const props = defineProps({
 <template>
 	<Chart :title="props.title" :subtitle="props.subtitle">
 		<ChartGrid>
-			<ChartLegend bottom="bottom" />
+			<ChartLegend type="scroll" bottom="bottom" />
 			<ChartAxis
 				axisType="xAxis"
 				type="category"
