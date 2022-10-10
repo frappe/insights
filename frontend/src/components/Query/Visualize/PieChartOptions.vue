@@ -1,6 +1,7 @@
 <script setup>
-import { inject } from 'vue'
+import { inject, computed } from 'vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import Color from '@/components/Controls/Color.vue'
 
 const query = inject('query')
 const chart = inject('chart')
@@ -19,7 +20,7 @@ const chart = inject('chart')
 
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Maximum Slices</div>
-		<Input class="h-8" v-model="chart.options.maxSlices" type="number" value="10" />
+		<Input class="h-8" v-model="chart.options.maxSlices" type="number" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
@@ -29,6 +30,8 @@ const chart = inject('chart')
 			:options="['Top', 'Left', 'Bottom', 'Right']"
 		/>
 	</div>
+
+	<Color label="Colors" v-model="chart.options.colors" :max="chart.options.maxSlices" multiple />
 
 	<Checkbox class="text-gray-600" v-model="chart.options.scrollLabels" label="Paginate Labels" />
 </template>

@@ -1,4 +1,4 @@
-const COLOR_MAP = {
+export const COLOR_MAP = {
 	pink: '#F683AE',
 	blue: '#318AD8',
 	green: '#48BB74',
@@ -9,6 +9,17 @@ const COLOR_MAP = {
 	cyan: '#15CCEF',
 	orange: '#F8814F',
 	grey: '#A6B1B9',
+	'#449CF0': '#449CF0',
+	'#ECAD4B': '#ECAD4B',
+	'#761ACB': '#761ACB',
+	'#CB2929': '#CB2929',
+	'#ED6396': '#ED6396',
+	'#29CD42': '#29CD42',
+	'#4463F0': '#4463F0',
+	'#EC864B': '#EC864B',
+	'#4F9DD9': '#4F9DD9',
+	'#39E4A5': '#39E4A5',
+	'#B4CD29': '#B4CD29',
 }
 
 const LIGHT_COLOR_MAP = {

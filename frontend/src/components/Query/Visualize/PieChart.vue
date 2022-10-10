@@ -92,7 +92,7 @@ function updateLegendOptions(position) {
 </script>
 
 <template>
-	<Chart :title="props.title" :subtitle="props.subtitle">
+	<Chart :title="props.title" :subtitle="props.subtitle" :color="props.options.colors">
 		<ChartSeries
 			type="pie"
 			:name="dataset.label"
