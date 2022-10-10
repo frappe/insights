@@ -24,7 +24,7 @@
 				v-model="dimension.dateFormat"
 				:options="dateFormats"
 				placeholder="Select a date format..."
-				@selectOption="(option) => (dimension.dateFormat = option)"
+				@selectOption="selectDateFormat"
 			/>
 		</div>
 		<div class="flex justify-end space-x-2">
@@ -103,5 +103,12 @@ function addDimension() {
 function removeDimension() {
 	query.removeColumn.submit({ column: dimension.column })
 	emit('close')
+}
+
+function selectDateFormat(option) {
+	if (dimension.label === dimension.column.label) {
+		dimension.label = `${option.value} of ${dimension.column.label}`
+	}
+	dimension.dateFormat = option
 }
 </script>
