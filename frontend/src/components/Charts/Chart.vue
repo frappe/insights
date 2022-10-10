@@ -13,21 +13,36 @@ const defaults = {
 const options = reactive({ ...defaults, ...attributes })
 provide('options', options)
 
-let chart
+const chart = ref(null)
+defineExpose({
+	downloadChart: () => {
+		const image = new Image()
+		const type = 'png'
+		image.src = chart.value?.getDataURL({
+			type,
+			pixelRatio: 2,
+			backgroundColor: '#fff',
+		})
+		const link = document.createElement('a')
+		link.href = image.src
+		link.download = `${title}.${type}`
+		link.click()
+	},
+})
 onMounted(() => {
-	chart = echarts.init(chartRef.value, 'light', {
-		renderer: 'svg',
+	chart.value = echarts.init(chartRef.value, 'light', {
+		renderer: 'canvas',
 	})
 	setOption(options)
 })
 watch(options, setOption, { deep: true })
 
 function setOption(options) {
-	chart && chart.setOption(options)
+	chart.value && chart.value.setOption(options)
 }
 
 const resizeObserver = new ResizeObserver(() => {
-	chart.resize()
+	chart.value.resize()
 })
 onMounted(() => {
 	setTimeout(() => {

@@ -23,7 +23,12 @@ const props = defineProps({
 </script>
 
 <template>
-	<Chart :title="props.title" :subtitle="props.subtitle" :color="props.options.colors">
+	<Chart
+		ref="eChart"
+		:title="props.title"
+		:subtitle="props.subtitle"
+		:color="props.options.colors"
+	>
 		<ChartGrid>
 			<ChartLegend type="scroll" bottom="bottom" />
 			<ChartAxis

@@ -22,10 +22,21 @@
 				<Button
 					appearance="white"
 					@click="showDashboardDialog = true"
+					iconLeft="bookmark"
 					:disabled="chart.isDirty"
 				>
 					Add to Dashboard
 				</Button>
+				<Button
+					v-if="canDownload"
+					appearance="white"
+					iconLeft="download"
+					:disabled="chart.isDirty"
+					@click="downloadChart()"
+				>
+					Download
+				</Button>
+
 				<Button
 					appearance="primary"
 					@click="saveChart"
@@ -38,6 +49,7 @@
 			<div class="max-h-[30rem] flex-1 rounded-md border p-4">
 				<component
 					v-if="chart.component && chart.componentProps"
+					ref="eChart"
 					:is="chart.component"
 					v-bind="chart.componentProps"
 				></component>
@@ -153,5 +165,15 @@ function _createDashboard(newDashboardName) {
 			addToDashboard()
 		}
 	})
+}
+
+const eChart = ref(null)
+const canDownload = computed(() => {
+	return eChart.value?.$refs?.eChart?.downloadChart
+})
+function downloadChart() {
+	if (canDownload.value) {
+		eChart.value.$refs.eChart.downloadChart()
+	}
 }
 </script>
