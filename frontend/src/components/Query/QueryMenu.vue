@@ -85,11 +85,18 @@
 
 		<Dialog :options="{ title: 'Generated SQL' }" v-model="show_sql_dialog" :dismissable="true">
 			<template #body-content>
-				<p
-					class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
-					style="font-family: 'Fira Code'"
-					v-html="formattedSQL"
-				></p>
+				<div class="relative">
+					<p
+						class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
+						style="font-family: 'Fira Code'"
+						v-html="formattedSQL"
+					></p>
+					<Button
+						icon="copy"
+						appearance="white"
+						class="absolute bottom-2 right-2"
+					></Button>
+				</div>
 			</template>
 		</Dialog>
 	</div>
