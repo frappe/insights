@@ -18,6 +18,11 @@ const chart = inject('chart')
 	</div>
 
 	<div class="space-y-2 text-gray-600">
+		<div class="text-base font-light text-gray-500">Maximum Slices</div>
+		<Input class="h-8" v-model="chart.options.maxSlices" type="number" value="10" />
+	</div>
+
+	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Label Position</div>
 		<Autocomplete
 			v-model="chart.options.labelPosition"

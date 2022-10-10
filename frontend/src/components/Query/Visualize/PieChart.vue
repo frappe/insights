@@ -21,14 +21,26 @@ const props = defineProps({
 })
 
 const dataset = computed(() => props.data.datasets?.[0])
-const data = computed(() =>
-	dataset.value?.data.map((value, index) => {
+const data = computed(() => {
+	const slices = dataset.value?.data.slice(0, parseInt(props.options.maxSlices) || 9)
+	const otherSlices = dataset.value?.data
+		.slice(parseInt(props.options.maxSlices) || 9)
+		.reduce((a, b) => a + b, 0)
+
+	const _data = slices.map((value, index) => {
 		return {
 			name: props.data.labels[index],
 			value: value,
 		}
 	})
-)
+	if (otherSlices) {
+		_data.push({
+			name: 'Others',
+			value: otherSlices,
+		})
+	}
+	return _data
+})
 
 const legendOptions = reactive({
 	type: 'plain',
