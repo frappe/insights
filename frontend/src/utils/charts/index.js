@@ -33,7 +33,6 @@ function useQueryChart({ chartID, queryID, query }) {
 
 	const emptyChart = {
 		type: '',
-		title: '',
 		data: {},
 		options: {},
 		dataSchema: {},
@@ -43,22 +42,25 @@ function useQueryChart({ chartID, queryID, query }) {
 	}
 
 	const chart = reactive({
+		title: '',
 		...emptyChart,
 		setType,
 		updateDoc,
 		addToDashboard,
 	})
 
-	watchEffect(() => {
-		// load chart data from doc
-		const doc = initialDoc.value
-		if (doc.type || doc.title) {
-			chart.type = doc.type
-			chart.title = doc.title
-			chart.data = safeJSONParse(doc.data, {})
-			chart.options = chart.data.options || {}
+	watch(
+		() => initialDoc.value,
+		(doc) => {
+			// load chart data from doc
+			if (doc.type || doc.title) {
+				chart.type = doc.type
+				chart.title = doc.title
+				chart.data = safeJSONParse(doc.data, {})
+				chart.options = chart.data.options || {}
+			}
 		}
-	})
+	)
 
 	watch(
 		() => chart.type,
