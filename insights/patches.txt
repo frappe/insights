@@ -5,6 +5,7 @@ execute:frappe.delete_doc('DocType', 'Query Filter', ignore_missing=True)
 execute:frappe.delete_doc('DocType', 'Query Field', ignore_missing=True)
 execute:frappe.delete_doc('DocType', 'Query Chart', ignore_missing=True)
 insights.patches.add_roles
+insights.patches.rename_data_source_options
 
 [post_model_sync]
 insights.patches.add_position_key_to_filter

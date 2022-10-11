@@ -12,7 +12,7 @@
 				v-model="db.title"
 				type="text"
 				label="Title"
-				placeholder="LocalDB"
+				placeholder="frappe.io"
 				autocomplete="off"
 			/>
 			<Input

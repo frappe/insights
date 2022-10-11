@@ -295,17 +295,16 @@ def create_data_source():
         doc.save()
         return
 
-    data_source = frappe.get_doc(
-        {
-            "doctype": "Insights Data Source",
-            "title": "Demo Data",
-            "database_type": "MariaDB",
-            "database_name": frappe.conf.db_name,
-            "username": frappe.conf.db_name,
-            "password": frappe.conf.db_password,
-        }
-    )
+    data_source = frappe.new_doc("Insights Data Source")
+    data_source.title = "Demo Data"
+    data_source.source_type = "Remote Database"  # TODO: change to "Application Database" when create_insights_tables is fixed
+    data_source.database_type = "MariaDB"
+    data_source.database_name = frappe.conf.db_name
+    data_source.username = frappe.conf.db_name
+    data_source.password = frappe.conf.db_password
+    data_source.status = "Active"
     data_source.insert()
+    data_source.connector.create_insights_tables()
 
 
 def create_table_links():

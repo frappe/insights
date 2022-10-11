@@ -25,7 +25,6 @@
 						</p>
 						<p class="flex-1">Title</p>
 						<p class="flex-1">Status</p>
-						<p class="flex-1">Username</p>
 						<p class="flex-1">Database Type</p>
 						<p class="flex-1 text-right">Last Modified</p>
 					</div>
@@ -57,9 +56,6 @@
 									>
 										{{ source.status }}
 									</Badge>
-								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
-									{{ source.username }}
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
 									{{ source.database_type }}

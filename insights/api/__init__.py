@@ -15,7 +15,7 @@ def get_data_sources():
     return frappe.get_list(
         "Insights Data Source",
         filters={"status": "Active"},
-        fields=["name", "title", "status", "database_type", "modified", "username"],
+        fields=["name", "title", "status", "database_type", "modified"],
     )
 
 
@@ -162,15 +162,17 @@ def create_query(title, data_source, table):
 
 
 @frappe.whitelist()
-def get_running_queries(data_source):
+def get_running_jobs(data_source):
     data_source = frappe.get_doc("Insights Data Source", data_source)
-    return data_source.get_running_queries()
+    # TODO: fix: connector might not have this method
+    return data_source.connector.get_running_jobs()
 
 
 @frappe.whitelist()
-def kill_query(data_source, query_id):
+def kill_running_job(data_source, query_id):
     data_source = frappe.get_doc("Insights Data Source", data_source)
-    return data_source.kill_query(query_id)
+    # TODO: fix: connector might not have this method
+    return data_source.connector.kill_running_job(query_id)
 
 
 @frappe.whitelist()

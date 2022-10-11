@@ -103,6 +103,7 @@ def get_new_datasource(args):
     data_source = frappe.new_doc("Insights Data Source")
     data_source.update(
         {
+            "source_type": "Remote Database",  # TODO: don't assume here
             "database_type": args.get("db_type"),
             "database_name": args.get("db_name"),
             "title": args.get("db_title"),
@@ -140,5 +141,5 @@ def test_db_connection(db):
     db = frappe.parse_json(db)
     if db.db_type == "MariaDB":
         data_source = get_new_datasource(db)
-        return data_source.test_connection()
+        return data_source.connector.test_connection()
     return False

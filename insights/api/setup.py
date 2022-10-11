@@ -14,6 +14,7 @@ def get_new_datasource(db):
     data_source = frappe.new_doc("Insights Data Source")
     data_source.update(
         {
+            "source_type": "Remote Database",  # TODO: don't assume here
             "database_type": db.get("type"),
             "database_name": db.get("name"),
             "title": db.get("title"),
@@ -30,7 +31,7 @@ def get_new_datasource(db):
 @frappe.whitelist()
 def test_database_connection(db):
     data_source = get_new_datasource(db)
-    return data_source.test_connection()
+    return data_source.connector.test_connection()
 
 
 @frappe.whitelist()

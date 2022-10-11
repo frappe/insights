@@ -18,9 +18,9 @@ class InsightsTable(Document):
         )
 
     def preview(self, limit=20):
-        return frappe.get_doc("Insights Data Source", self.data_source).describe_table(
-            self.table, limit
-        )
+        return frappe.get_doc(
+            "Insights Data Source", self.data_source
+        ).connector.describe_table(self.table, limit)
 
     def get_columns(self):
         if not self.columns:
@@ -28,16 +28,12 @@ class InsightsTable(Document):
         return self.columns
 
     def update_columns(self):
-        if (
-            frappe.db.get_value(
-                "Insights Data Source", self.data_source, "database_type", cache=True
-            )
-            == "Query Store"
-        ):
+        if self.data_source == "Query Store":
             return
 
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        columns = data_source.get_columns(self.table)
+        # TODO: fix: connector might not have this method
+        columns = data_source.connector.get_columns(self.table)
         self.set(
             "columns",
             [

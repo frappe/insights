@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "source_type",
   "title",
   "status",
   "database_type",
@@ -25,14 +26,6 @@
    "label": "Title",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "database_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Database Type",
-   "options": "MariaDB\nQuery Store",
-   "reqd": 1
   },
   {
    "fieldname": "port",
@@ -80,11 +73,26 @@
    "label": "Status",
    "options": "Inactive\nActive",
    "read_only": 1
+  },
+  {
+   "fieldname": "database_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Database Type",
+   "options": "MariaDB",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Select",
+   "label": "Source Type",
+   "options": "Remote Database\nApplication Database\nFile\nAPI",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-03 12:02:49.145562",
+ "modified": "2022-10-11 17:19:31.139849",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",
@@ -116,6 +124,7 @@
    "write": 1
   }
  ],
+ "quick_entry": 1,
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

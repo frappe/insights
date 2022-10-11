@@ -38,12 +38,7 @@ class InsightsQuery(InsightsQueryClient):
     )
 
     def before_validate(self):
-        self.from_query_store = (
-            frappe.db.get_value(
-                "Insights Data Source", self.data_source, "database_type", cache=True
-            )
-            == "Query Store"
-        )
+        self.from_query_store = self.data_source == "Query Store"
 
     def validate(self):
         # TODO: validate if a column is an expression and aggregation is "group by"
@@ -296,9 +291,9 @@ class InsightsQuery(InsightsQueryClient):
         return loads(self.result)
 
     def fetch_results_from_datasource(self):
-        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
+        data_source = frappe.get_doc("Insights Data Source", self.data_source)
         start = time.time()
-        data = data_source.execute_query(self.sql)
+        data = data_source.connector.get_data(self.sql)
         end = time.time()
         return start, end, data
 
@@ -307,13 +302,15 @@ class InsightsQuery(InsightsQueryClient):
         # TODO: validate table is a valid query and not a database table
         temp_tables = [row.table for row in self.get_selected_tables()]
 
-        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
+        data_source = frappe.get_doc("Insights Data Source", self.data_source)
 
         start = time.time()
-        data_source.keep_connection_alive()
-        data_source.create_temporary_tables(temp_tables)
-        data = data_source.execute_query(sql or self.sql)
-        data_source.close_connection()
+        for table in temp_tables:
+            # TODO: fix: connector might not have this method
+            data_source.connector.create_temporary_table(table)
+        data = data_source.connector.get_data(sql or self.sql)
+        # TODO: fix: connector might not have this method
+        data_source.connector.close_connection()
         end = time.time()
 
         return start, end, data

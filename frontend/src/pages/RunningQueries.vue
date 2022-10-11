@@ -99,7 +99,7 @@ const dataSources = computed(() => {
 })
 
 const getRunningQueries = createResource({
-	method: 'insights.api.get_running_queries',
+	method: 'insights.api.get_running_jobs',
 	initialData: [],
 })
 const runningQueries = computed(() => {
@@ -116,7 +116,7 @@ const runningQueries = computed(() => {
 })
 
 const killQueryResource = createResource({
-	method: 'insights.api.kill_query',
+	method: 'insights.api.kill_running_job',
 	onSuccess(res) {
 		getRunningQueries.submit({ data_source: dataSource.value })
 	},
