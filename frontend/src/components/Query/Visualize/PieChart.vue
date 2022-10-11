@@ -46,7 +46,7 @@ const legendOptions = reactive({
 	type: 'plain',
 	bottom: 0,
 })
-const center = ref(['50%', '45%'])
+const center = ref(['50%', '43%'])
 const radius = ref('75%')
 
 if (props.options.labelPosition?.value) {
@@ -70,7 +70,7 @@ function updateLegendOptions(position) {
 			radius.value = '75%'
 			legendOptions.bottom = 0
 			legendOptions.left = 'center'
-			center.value[1] = '45%'
+			center.value[1] = '43%'
 			legendOptions.padding = [20, 20, 10, 20]
 			break
 		case 'Right':
