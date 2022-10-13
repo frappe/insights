@@ -82,6 +82,9 @@ def download_demo_data():
 
     """Download file locally under sites path and return local path"""
     local_filename = os.path.join(PRIVATE_FILES_PATH, TAR_FILE)
+    if os.path.exists(local_filename):
+        return
+
     try:
         with requests.get(DATA_URL, stream=True) as r:
             r.raise_for_status()
@@ -297,14 +300,14 @@ def create_data_source():
 
     data_source = frappe.new_doc("Insights Data Source")
     data_source.title = "Demo Data"
-    data_source.source_type = "Remote Database"  # TODO: change to "Application Database" when create_insights_tables is fixed
+    data_source.source_type = "Database"  # TODO: change to "Site Database" when create_insights_tables is fixed
     data_source.database_type = "MariaDB"
     data_source.database_name = frappe.conf.db_name
     data_source.username = frappe.conf.db_name
     data_source.password = frappe.conf.db_password
     data_source.status = "Active"
     data_source.insert()
-    data_source.connector.create_insights_tables()
+    data_source.import_data()
 
 
 def create_table_links():

@@ -14,7 +14,7 @@ def get_new_datasource(db):
     data_source = frappe.new_doc("Insights Data Source")
     data_source.update(
         {
-            "source_type": "Remote Database",  # TODO: don't assume here
+            "source_type": "Database",
             "database_type": db.get("type"),
             "database_name": db.get("name"),
             "title": db.get("title"),

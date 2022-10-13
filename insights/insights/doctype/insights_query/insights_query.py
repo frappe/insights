@@ -3,43 +3,28 @@
 
 import time
 from json import dumps, loads
-
-import frappe
-from frappe import _dict
-from frappe.query_builder import Table
-from frappe.utils import cstr, flt
 from sqlparse import format as format_sql
 
-from pypika import Order
-from pypika.enums import JoinType
+import frappe
+from frappe.model.document import Document
+from frappe.utils import cstr, flt
 
-from insights.insights.doctype.insights_query.utils import (
-    parse_query_expression,
-    make_query_field,
-    Aggregations,
-    ColumnFormat,
+from .insights_query_client import InsightsQueryClient
+
+
+DEFAULT_FILTERS = dumps(
+    {
+        "type": "LogicalExpression",
+        "operator": "&&",
+        "level": 1,
+        "position": 1,
+        "conditions": [],
+    },
+    indent=2,
 )
 
-from insights.insights.doctype.insights_query.insights_query_client import (
-    InsightsQueryClient,
-)
 
-
-class InsightsQuery(InsightsQueryClient):
-    DEFAULT_FILTERS = dumps(
-        {
-            "type": "LogicalExpression",
-            "operator": "&&",
-            "level": 1,
-            "position": 1,
-            "conditions": [],
-        },
-        indent=2,
-    )
-
-    def before_validate(self):
-        self.from_query_store = self.data_source == "Query Store"
-
+class InsightsQueryValidation:
     def validate(self):
         # TODO: validate if a column is an expression and aggregation is "group by"
         self.validate_tables()
@@ -71,10 +56,56 @@ class InsightsQuery(InsightsQueryClient):
 
     def validate_filters(self):
         if not self.filters:
-            self.filters = self.DEFAULT_FILTERS
+            self.filters = DEFAULT_FILTERS
+
+
+class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
+    def before_save(self):
+        if self.get("skip_before_save"):
+            return
+
+        if not self.tables:
+            self.clear()
+            return
+
+        self.update_query()
 
     def on_update(self):
-        # create a query chart if not exists
+        self.create_default_chart()
+        self.store_in_query_store()
+        self.update_link_docs_title()
+
+    def on_trash(self):
+        self.delete_linked_charts()
+        self.delete_insights_table()
+
+    def update_query(self):
+        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
+        query = data_source.build_query(query=self.as_dict())
+        query = format_query(query)
+        if self.sql != query:
+            self.sql = query
+            self.status = "Pending Execution"
+
+    def build_and_execute(self):
+        start = time.time()
+        self.fetch_data_from_source()
+        self.execution_time = flt(time.time() - start, 3)
+        self.last_execution = frappe.utils.now()
+        self.executed = True
+        self.store_result()
+
+        self.update_query_table()
+
+    def fetch_data_from_source(self):
+        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
+        self._result = data_source.run_query(query=self.as_dict())
+
+    def store_result(self):
+        self.result = dumps(self._result, default=cstr)
+        self.status = "Execution Successful"
+
+    def create_default_chart(self):
         charts = self.get_charts()
         if not charts:
             frappe.get_doc(
@@ -85,27 +116,38 @@ class InsightsQuery(InsightsQueryClient):
                 }
             ).insert()
 
+    def store_in_query_store(self):
         if not frappe.db.exists("Insights Table", {"table": self.name}):
             self.create_query_table()
 
+    def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
         if old_title and old_title != self.title:
-            self.update_title()
+            Chart = frappe.qb.DocType("Insights Query Chart")
+            frappe.qb.update(Chart).set(Chart.title, self.title).where(
+                Chart.query == self.name
+            ).run()
 
-    def on_trash(self):
+            # this still doesn't updates the old title stored the query column
+            Table = frappe.qb.DocType("Insights Table")
+            frappe.qb.update(Table).set(Table.label, self.title).where(
+                Table.table == self.name
+            ).run()
+
+    def delete_linked_charts(self):
         charts = self.get_charts()
         for chart in charts:
             frappe.delete_doc("Insights Query Chart", chart)
-
         frappe.db.delete("Insights Dashboard Item", {"query_chart": self.name})
 
+    def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
             frappe.delete_doc("Insights Table", table_name)
 
     def clear(self):
         self.tables = []
         self.columns = []
-        self.filters = self.DEFAULT_FILTERS
+        self.filters = DEFAULT_FILTERS
         self.sql = None
         self.result = None
         self.limit = 10
@@ -116,204 +158,11 @@ class InsightsQuery(InsightsQueryClient):
         self.transform_result = None
         self.status = "Execution Successful"
 
-    def before_save(self):
-        if self.get("skip_before_save"):
-            return
-
-        if not self.tables:
-            self.clear()
-            return
-
-        self.process()
-        self.build()
-        self.update_query()
-
-    def process(self):
-        self.process_tables()
-        self.process_joins()
-        self.process_columns()
-        self.process_filters()
-        self.process_limit()
-
-    def build(self):
-        query = frappe.qb
-
-        for table in self._tables:
-            query = query.from_(table)
-            if self._joins:
-                joins = [d for d in self._joins if d.left == table]
-                for join in joins:
-                    query = query.join(join.right, join.type).on(join.condition)
-
-        if not self._columns and self.tables:
-            query = query.select("*")
-
-        for column in self._columns:
-            query = query.select(column)
-
-        if self._group_by_columns:
-            query = query.groupby(*self._group_by_columns)
-
-        if self._order_by_columns:
-            for column, order in self._order_by_columns:
-                query = query.orderby(column, order=Order[order])
-
-        query = query.where(self._filters)
-
-        query = query.limit(self._limit)
-
-        self._query = query
-
-    def update_query(self):
-        updated_query = format_sql(
-            str(self._query), keyword_case="upper", reindent_aligned=True
-        )
-        if self.sql == updated_query:
-            return
-
-        self.sql = updated_query
-        self.status = "Pending Execution"
-
-    def execute(self):
-        if self.from_query_store:
-            start, end, data = self.fetch_results_from_query_store()
-        else:
-            start, end, data = self.fetch_results_from_datasource()
-
-        self._result = list(data)
-        self.execution_time = flt(end - start, 3)
-        self.last_execution = frappe.utils.now()
-        self.result = dumps(self._result, default=cstr)
-        self.status = "Execution Successful"
-
-        self.update_query_table()
-
-    def process_tables(self):
-        self._tables = []
-        for row in self.tables:
-            table = Table(row.table)
-            if table not in self._tables:
-                self._tables.append(table)
-
-    def process_joins(self):
-        self._joins = []
-        for table in self.tables:
-            if not table.join:
-                continue
-
-            # TODO: validate table.join
-            _join = loads(table.join)
-            LeftTable = Table(table.table)
-            RightTable = Table(_join.get("with").get("value"))
-            join_type = _join.get("type").get("value")
-            condition = _join.get("condition").get("value")
-            left_key = condition.split("=")[0].strip()
-            right_key = condition.split("=")[1].strip()
-
-            self._joins.append(
-                _dict(
-                    {
-                        "left": LeftTable,
-                        "right": RightTable,
-                        "type": JoinType[join_type],
-                        "condition": LeftTable[left_key] == RightTable[right_key],
-                    }
-                )
-            )
-
-    def process_columns(self):
-        self._columns = []
-        self._group_by_columns = []
-        self._order_by_columns = []
-
-        for row in self.columns:
-            if not row.is_expression:
-                _column = self.process_dimension_or_metric(row)
-            else:
-                expression = loads(row.expression)
-                _column = parse_query_expression(expression.get("ast"))
-                _column = self.process_column_format(row, _column)
-
-            self.process_sorting(row, _column)
-            _column = _column.as_(row.label) if row.label else _column
-            if row.aggregation == "Group By":
-                self._group_by_columns.append(_column)
-
-            self._columns.append(_column)
-
-    def process_dimension_or_metric(self, row):
-        _column = make_query_field(row.table, row.column)
-        # dates should be formatted before aggregagtions
-        _column = self.process_column_format(row, _column)
-        _column = self.process_aggregation(row, _column)
-        return _column
-
-    def process_column_format(self, row, column):
-        if row.format_option and row.type in ("Date", "Datetime"):
-            format_option = _dict(loads(row.format_option))
-            return ColumnFormat.format_date(format_option.date_format, column)
-        return column
-
-    def process_aggregation(self, row, column):
-        if not row.aggregation or row.aggregation == "Group By":
-            return column
-
-        elif not Aggregations.is_valid(row.aggregation.lower()):
-            frappe.throw("Invalid aggregation function: {}".format(row.aggregation))
-
-        else:
-            column = Aggregations.apply(row.aggregation.lower(), column)
-
-        return column
-
-    def process_sorting(self, row, column):
-        if not row.order_by:
-            return column
-
-        if row.type in ("Date", "Datetime") and row.format_option:
-            format_option = _dict(loads(row.format_option))
-            date = ColumnFormat.parse_date(format_option.date_format, column)
-            self._order_by_columns.append((date, row.order_by))
-        else:
-            self._order_by_columns.append((column, row.order_by))
-
-    def process_filters(self):
-        filters = _dict(loads(self.filters))
-        self._filters = parse_query_expression(filters)
-
-    def process_limit(self):
-        self._limit: int = self.limit or 10
-
     def get_columns(self):
         return self.columns or self.fetch_columns()
 
-    def get_result(self):
+    def load_result(self):
         return loads(self.result)
-
-    def fetch_results_from_datasource(self):
-        data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        start = time.time()
-        data = data_source.connector.get_data(self.sql)
-        end = time.time()
-        return start, end, data
-
-    def fetch_results_from_query_store(self, sql=None):
-        # TODO: refactor and move this to data source
-        # TODO: validate table is a valid query and not a database table
-        temp_tables = [row.table for row in self.get_selected_tables()]
-
-        data_source = frappe.get_doc("Insights Data Source", self.data_source)
-
-        start = time.time()
-        for table in temp_tables:
-            # TODO: fix: connector might not have this method
-            data_source.connector.create_temporary_table(table)
-        data = data_source.connector.get_data(sql or self.sql)
-        # TODO: fix: connector might not have this method
-        data_source.connector.close_connection()
-        end = time.time()
-
-        return start, end, data
 
     def update_query_table(self):
         if not self.tables:
@@ -373,14 +222,10 @@ class InsightsQuery(InsightsQueryClient):
         table.insert(ignore_permissions=True)
         return table
 
-    def update_title(self):
-        Chart = frappe.qb.DocType("Insights Query Chart")
-        frappe.qb.update(Chart).set(Chart.title, self.title).where(
-            Chart.query == self.name
-        ).run()
 
-        # this still doesn't updates the old title stored the query column
-        Table = frappe.qb.DocType("Insights Table")
-        frappe.qb.update(Table).set(Table.label, self.title).where(
-            Table.table == self.name
-        ).run()
+def format_query(query):
+    return format_sql(
+        query,
+        keyword_case="upper",
+        reindent_aligned=True,
+    )

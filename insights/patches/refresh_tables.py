@@ -10,7 +10,11 @@ def execute():
         filters={"status": "Active", "name": ["!=", "Demo Data"]},
     )
     for data_source in data_sources:
-        data_source = frappe.get_doc("Insights Data Source", data_source.name)
-        data_source.connector.create_insights_tables(force=True)
-        data_source.save()
-        frappe.db.commit()
+        try:
+            data_source = frappe.get_doc("Insights Data Source", data_source.name)
+            data_source.import_data(force=True)
+            data_source.save()
+            frappe.db.commit()
+        except Exception as e:
+            frappe.db.rollback()
+            frappe.log_error(e)

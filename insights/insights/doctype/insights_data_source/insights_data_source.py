@@ -1,29 +1,28 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
+
 import frappe
 from frappe import _dict
 from frappe.model.document import Document
 
-from insights.insights.doctype.insights_data_source.connectors.remote_db import (
-    RemoteMariaDB,
-    RemoteFrappeDB,
-)
-from insights.insights.doctype.insights_data_source.connectors.local_db import (
-    AppDB,
-    QueryStore,
-)
+from .sources.site_db import SiteDB
+from .sources.query_store import QueryStore
+from .sources.frappe_db import is_frappe_db, FrappeDB
+
+from .sources.models import BaseDataSource
+from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
 SOURCE_TYPES = _dict(
     {
-        "RemoteDB": "Remote Database",
-        "AppDB": "Application Database",
+        "RemoteDB": "Database",
+        "SiteDB": "Site Database",
         "File": "File",
         "API": "API",
     }
 )
-
 
 SOURCE_STATUS = _dict(
     {
@@ -34,64 +33,69 @@ SOURCE_STATUS = _dict(
 
 
 class InsightsDataSource(Document):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @cached_property
+    def source(self) -> BaseDataSource:
+        return self._get_source()
 
-    @property
-    def connector(self):
-        return self.get_connector()
-
-    def get_connector(self):
-        if self.is_new() or not self.name:
-            return None
-
+    def _get_source(self):
         if self.name == "Query Store":
-            return QueryStore(self)
+            return QueryStore()
 
-        if not self.source_type:
-            return None
+        if self.source_type == SOURCE_TYPES.RemoteDB:
+            return self._get_remote_db_source()
 
-        if (
-            self.source_type == SOURCE_TYPES.RemoteDB
-            and self.database_type == "MariaDB"
-            and self.check_if_frappe_db()
-        ):
-            return RemoteFrappeDB(self)
-
-        if (
-            self.source_type == SOURCE_TYPES.RemoteDB
-            and self.database_type == "MariaDB"
-        ):
-            return RemoteMariaDB(self)
-
-        if self.source_type == SOURCE_TYPES.AppDB:
-            return AppDB()
+        if self.source_type == SOURCE_TYPES.SiteDB:
+            return SiteDB()
 
         frappe.throw(
             f"Unsupported data source type: {self.source_type} and database type: {self.database_type}"
         )
 
-    def set_status(self):
-        if not self.connector:
+    def _get_remote_db_source(self):
+        params = {
+            "data_source": self.name,
+            "host": self.host,
+            "port": self.port,
+            "use_ssl": self.use_ssl,
+            "username": self.username,
+            "password": self.get_password(),
+            "database_name": self.database_name,
+        }
+
+        if is_frappe_db(params):
+            return FrappeDB(**params)
+
+        frappe.throw(f"Unsupported database type: {self.database_type}")
+
+    def validate(self):
+        if self.name == "Query Store":
             return
+        if self.source_type == SOURCE_TYPES.RemoteDB:
+            self._validate_remote_db()
+        elif self.source_type == SOURCE_TYPES.SiteDB:
+            self._validate_site_db()
+        elif self.source_type == SOURCE_TYPES.File:
+            self._validate_file()
+        elif self.source_type == SOURCE_TYPES.API:
+            self._validate_api()
 
-        self.status = (
-            SOURCE_STATUS.Active
-            if self.connector.test_connection()
-            else SOURCE_STATUS.Inactive
-        )
+    def _validate_remote_db(self):
+        mandatory = ("host", "port", "username", "password", "database_name")
+        for field in mandatory:
+            if not self.get(field):
+                frappe.throw(f"{field} is mandatory for Database")
 
-    def check_if_frappe_db(self):
-        # check if table `tabDocType` exists in the database
-        return RemoteMariaDB(self).get_data(
-            "select * from information_schema.tables where table_name = 'tabDocType'"
-        )
+    def _validate_site_db(self):
+        pass
 
-    def before_save(self):
-        self.set_status()
+    def _validate_file(self):
+        pass
+
+    def _validate_api(self):
+        pass
 
     def on_trash(self):
-        if self.is_query_store:
+        if self.name == "Query Store":
             frappe.throw("Cannot delete Query Store")
 
         # TODO: optimize this
@@ -99,3 +103,38 @@ class InsightsDataSource(Document):
         for doctype in linked_doctypes:
             for table in frappe.db.get_all(doctype, {"data_source": self.name}):
                 frappe.delete_doc(doctype, table.name)
+
+    def before_save(self):
+        self._set_status()
+
+    def _set_status(self):
+        self.status = (
+            SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
+        )
+
+    def test_connection(self):
+        try:
+            self.source.connection.test()
+            return True
+        except BaseException:
+            print(f"Test Connection failed for {self.name}")
+            return False
+
+    def build_query(self, query: InsightsQuery):
+        return self.source.query_builder.build(query)
+
+    def run_query(self, query: InsightsQuery):
+        return self.source.query(self.build_query(query))
+
+    def get_running_jobs(self):
+        # TODO: implement this
+        return []
+
+    def kill_job(self, job_id):
+        return
+
+    def get_distinct_column_values(self, *args, **kwargs):
+        return self.source.get_distinct_column_values(*args, **kwargs)
+
+    def import_data(self, force=False):
+        self.source.import_data(force=force)

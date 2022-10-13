@@ -20,7 +20,7 @@ class InsightsTable(Document):
     def preview(self, limit=20):
         return frappe.get_doc(
             "Insights Data Source", self.data_source
-        ).connector.describe_table(self.table, limit)
+        ).source.describe_table(self.table, limit)
 
     def get_columns(self):
         if not self.columns:
@@ -32,8 +32,7 @@ class InsightsTable(Document):
             return
 
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        # TODO: fix: connector might not have this method
-        columns = data_source.connector.get_columns(self.table)
+        columns = data_source.source.get_columns(self.table)
         self.set(
             "columns",
             [

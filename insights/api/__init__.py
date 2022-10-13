@@ -163,16 +163,12 @@ def create_query(title, data_source, table):
 
 @frappe.whitelist()
 def get_running_jobs(data_source):
-    data_source = frappe.get_doc("Insights Data Source", data_source)
-    # TODO: fix: connector might not have this method
-    return data_source.connector.get_running_jobs()
+    return []
 
 
 @frappe.whitelist()
 def kill_running_job(data_source, query_id):
-    data_source = frappe.get_doc("Insights Data Source", data_source)
-    # TODO: fix: connector might not have this method
-    return data_source.connector.kill_running_job(query_id)
+    return
 
 
 @frappe.whitelist()
@@ -181,7 +177,6 @@ def update_user_default(key, value):
     if key not in keys:
         return
     frappe.defaults.set_user_default(key, value)
-    print(frappe.defaults.get_user_default(key))
 
 
 @frappe.whitelist()

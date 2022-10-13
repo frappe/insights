@@ -45,7 +45,7 @@ class InsightsDashboard(Document):
             try:
                 frappe.get_doc("Insights Query", item.query).run()
             except BaseException:
-                frappe.log_error(title="Error while executing query")
+                frappe.log_error(title="Error while refreshing dashboard item")
 
     @frappe.whitelist()
     def remove_item(self, item):

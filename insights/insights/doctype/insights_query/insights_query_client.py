@@ -7,11 +7,11 @@ from pandas import DataFrame
 
 import frappe
 from frappe.utils import cstr, cint
-from frappe.model.document import Document
+
 from insights.api import get_tables
 
 
-class InsightsQueryClient(Document):
+class InsightsQueryClient:
     @frappe.whitelist()
     def duplicate(self):
         new_query = frappe.copy_doc(self)
@@ -256,30 +256,10 @@ class InsightsQueryClient(Document):
 
     @frappe.whitelist()
     def fetch_column_values(self, column, search_text) -> "list[str]":
-        if self.from_query_store:
-            return self.fetch_column_values_from_query_store(column, search_text)
-        else:
-            return self.fetch_column_values_from_data_source(column, search_text)
-
-    def fetch_column_values_from_data_source(self, column, search_text) -> "list[str]":
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        # TODO: fix: connector might not have this method
-        return data_source.connector.get_distinct_column_values(
+        return data_source.get_distinct_column_values(
             column.get("table"), column.get("column"), search_text
         )
-
-    def fetch_column_values_from_query_store(self, column, search_text) -> "list[str]":
-        if not frappe.db.exists("Insights Query", column.get("table")):
-            return []
-
-        query = frappe.get_cached_doc("Insights Query", column.get("table"))
-        Table = frappe.qb.Table(column.get("table"))
-        Column = frappe.qb.Field(column.get("column"))
-        query = frappe.qb.from_(Table).select(Column).distinct().limit(25)
-        if search_text:
-            query = query.where(Column.like(f"%{search_text}%"))
-
-        return query.fetch_results_from_query_store(query.get_sql())
 
     @frappe.whitelist()
     def fetch_join_options(self, table):
@@ -303,13 +283,7 @@ class InsightsQueryClient(Document):
 
     @frappe.whitelist()
     def run(self):
-        if not self.sql:
-            return
-        self.process()
-        self.build()
-        self.update_query()
-        self.execute()
-        self.skip_before_save = True
+        self.build_and_execute()
         self.save()
 
     @frappe.whitelist()

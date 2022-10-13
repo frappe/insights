@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "source_type",
+  "column_break_2",
   "title",
+  "section_break_4",
   "status",
   "database_type",
   "host",
@@ -16,7 +18,9 @@
   "column_break_5",
   "database_name",
   "username",
-  "password"
+  "password",
+  "configuration_section",
+  "file"
  ],
  "fields": [
   {
@@ -28,6 +32,7 @@
    "unique": 1
   },
   {
+   "default": "3306",
    "fieldname": "port",
    "fieldtype": "Data",
    "label": "Port"
@@ -36,19 +41,19 @@
    "fieldname": "database_name",
    "fieldtype": "Data",
    "label": "Database Name",
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.source_type == 'Database'"
   },
   {
    "fieldname": "username",
    "fieldtype": "Data",
    "label": "Username",
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.source_type == 'Database'"
   },
   {
    "fieldname": "password",
    "fieldtype": "Password",
    "label": "Password",
-   "reqd": 1
+   "mandatory_depends_on": "eval: doc.source_type == 'Database'"
   },
   {
    "default": "0",
@@ -61,6 +66,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "localhost",
    "fieldname": "host",
    "fieldtype": "Data",
    "label": "Host"
@@ -79,20 +85,39 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Database Type",
-   "options": "MariaDB",
-   "reqd": 1
+   "options": "MariaDB"
   },
   {
    "fieldname": "source_type",
    "fieldtype": "Select",
    "label": "Source Type",
-   "options": "Remote Database\nApplication Database\nFile\nAPI",
+   "options": "Database\nSite Database\nFile\nAPI",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.source_type == 'Database'",
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.source_type == 'File'",
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Attach",
+   "label": "File",
+   "mandatory_depends_on": "eval: doc.source_type == 'File'"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-11 17:19:31.139849",
+ "modified": "2022-10-13 14:08:42.996602",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",

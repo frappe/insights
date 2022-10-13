@@ -373,7 +373,7 @@ def parse_query_expression(expression):
         raise NotImplementedError(f"Function {function} not implemented")
 
     if expression.type == "Column":
-        column = make_query_field(
+        column = build_query_field(
             expression.value.get("table"), expression.value.get("column")
         )
         return column
@@ -387,5 +387,5 @@ def parse_query_expression(expression):
     frappe.throw("Invalid expression type: {}".format(expression.type))
 
 
-def make_query_field(table, column) -> Field:
+def build_query_field(table, column) -> Field:
     return Table(table)[column]
