@@ -38,7 +38,6 @@ onMounted(() => {
 watch(options, setOption, { deep: true })
 
 function setOption(options) {
-	console.log(options)
 	chart && chart.setOption(options)
 }
 
@@ -47,7 +46,7 @@ const resizeObserver = new ResizeObserver(() => {
 })
 onMounted(() => {
 	setTimeout(() => {
-		resizeObserver.observe(chartRef.value)
+		chartRef.value && resizeObserver.observe(chartRef.value)
 	}, 1000)
 })
 onBeforeUnmount(() => {

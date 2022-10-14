@@ -23,14 +23,6 @@ const chart = inject('chart')
 		<Input class="h-8" v-model="chart.options.maxSlices" type="number" />
 	</div>
 
-	<div class="space-y-2 text-gray-600">
-		<div class="text-base font-light text-gray-500">Label Position</div>
-		<Autocomplete
-			v-model="chart.options.labelPosition"
-			:options="['Top', 'Left', 'Bottom', 'Right']"
-		/>
-	</div>
-
 	<Color
 		label="Colors"
 		v-model="chart.options.colors"
@@ -38,5 +30,14 @@ const chart = inject('chart')
 		multiple
 	/>
 
+	<div class="space-y-2 text-gray-600" v-show="!chart.options.inlineLabels">
+		<div class="text-base font-light text-gray-500">Label Position</div>
+		<Autocomplete
+			v-model="chart.options.labelPosition"
+			:options="['Top', 'Left', 'Bottom', 'Right']"
+		/>
+	</div>
+
+	<Checkbox class="text-gray-600" v-model="chart.options.inlineLabels" label="Inline Labels" />
 	<Checkbox class="text-gray-600" v-model="chart.options.scrollLabels" label="Paginate Labels" />
 </template>
