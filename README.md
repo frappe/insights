@@ -4,7 +4,7 @@
 
 **Free and Open Source Data Analytics Tool for your Frappe Apps**
 
-[![codecov](https://codecov.io/github/frappe/insights/branch/main/graph/badge.svg?token=8ZXHCY4G9U)](https://codecov.io/github/frappe/insights)
+[![codecov](https://codecov.io/github/frappe/insights/branch/develop/graph/badge.svg?token=8ZXHCY4G9U)](https://codecov.io/github/frappe/insights)
 
 </div>
 
