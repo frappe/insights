@@ -7,6 +7,7 @@ from frappe.model.document import Document
 
 class InsightsTable(Document):
     def on_update(self):
+        self.update_columns()
         # clear cache
         frappe.cache().hdel(
             "insights",
@@ -32,16 +33,14 @@ class InsightsTable(Document):
             return
 
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        columns = data_source.source.get_columns(self.table)
-        self.set(
-            "columns",
-            [
+        columns = data_source.source.data_importer.get_columns(self.table)
+        self.columns = []
+        for column in columns:
+            self.append(
+                "columns",
                 {
-                    "column": row.get("column"),
-                    "label": row.get("label"),
-                    "type": row.get("type"),
-                }
-                for row in columns
-            ],
-        )
-        self.save()
+                    "column": column.get("column"),
+                    "label": column.get("label"),
+                    "type": column.get("type"),
+                },
+            )
