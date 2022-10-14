@@ -2,7 +2,7 @@
   {
     "doctype": "Insights Query",
     "title": "Test Todo Count",
-    "data_source": "Test Insights Query",
+    "data_source": "Test Site DB",
     "filters": {
       "type": "LogicalExpression",
       "operator": "&&",
@@ -46,7 +46,7 @@
   },
   {
     "title": "Test Todo Count",
-    "data_source": "Test Insights Query",
+    "data_source": "Test Site DB",
     "doctype": "Insights Query",
     "columns": [
       {

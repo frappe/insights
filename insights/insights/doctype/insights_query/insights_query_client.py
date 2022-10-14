@@ -166,7 +166,7 @@ class InsightsQueryClient:
 
         # TODO: validate if two columns doesn't have same label
 
-        result = loads(self.result)
+        result = frappe.parse_json(self.result)
         columns = [d.get("label") for d in self.get("columns")]
 
         dataframe = DataFrame(columns=columns, data=result)
@@ -234,7 +234,7 @@ class InsightsQueryClient:
         join_tables = []
         for table in self.tables:
             if table.join:
-                join = loads(table.join)
+                join = frappe.parse_json(table.join)
                 join_tables.append(
                     frappe._dict(
                         {

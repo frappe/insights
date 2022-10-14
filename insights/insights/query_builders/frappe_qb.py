@@ -48,7 +48,7 @@ class FrappeQueryBuilder(QueryBuilder):
                 continue
 
             # TODO: validate table.join
-            _join = loads(table.join)
+            _join = frappe.parse_json(table.join)
             LeftTable = Table(table.table)
             RightTable = Table(_join.get("with").get("value"))
             join_type = _join.get("type").get("value")
@@ -77,7 +77,7 @@ class FrappeQueryBuilder(QueryBuilder):
             if not row.is_expression:
                 _column = self.process_dimension_or_metric(row)
             else:
-                expression = loads(row.expression)
+                expression = frappe.parse_json(row.expression)
                 _column = parse_query_expression(expression.get("ast"))
                 _column = self.process_column_format(row, _column)
 
@@ -97,7 +97,7 @@ class FrappeQueryBuilder(QueryBuilder):
 
     def process_column_format(self, row, column):
         if row.format_option and row.type in ("Date", "Datetime"):
-            format_option = _dict(loads(row.format_option))
+            format_option = frappe.parse_json(row.format_option)
             return ColumnFormat.format_date(format_option.date_format, column)
         return column
 
@@ -116,7 +116,7 @@ class FrappeQueryBuilder(QueryBuilder):
             return column
 
         if row.type in ("Date", "Datetime") and row.format_option:
-            format_option = _dict(loads(row.format_option))
+            format_option = frappe.parse_json(row.format_option)
             date = ColumnFormat.parse_date(format_option.date_format, column)
             self._order_by_columns.append((date, row.order_by))
         else:
@@ -124,7 +124,7 @@ class FrappeQueryBuilder(QueryBuilder):
 
     def process_filters(self):
         """converts the insights filters into a pypika filters and appends it to self._filters"""
-        filters = _dict(loads(self.query.filters))
+        filters = frappe.parse_json(self.query.filters)
         self._filters = parse_query_expression(filters)
 
     def process_limit(self):

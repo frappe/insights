@@ -4,13 +4,15 @@
 import frappe
 import unittest
 
+test_dependencies = ["Insights Data Source", "Insights Table"]
+
 
 class TestFrappeDBDataSource(unittest.TestCase):
     def setUp(self) -> None:
-        self.data_source = create_data_source()
+        self.data_source = create_frappe_db()
 
     def tearDown(self) -> None:
-        frappe.delete_doc("Insights Data Source", self.data_source.name, force=True)
+        self.data_source.delete(force=True)
 
     def test_connection(self):
         self.assertTrue(self.data_source.test_connection())
@@ -31,16 +33,19 @@ class TestFrappeDBDataSource(unittest.TestCase):
         self.data_source.get_running_jobs()
 
 
-def create_data_source():
-    frappe.delete_doc("Insights Data Source", "Test Data Source", force=True)
-    data_source = frappe.new_doc("Insights Data Source")
-    data_source.source_type = "Database"
-    data_source.title = "Test Data Source"
-    data_source.database_type = "MariaDB"
-    data_source.host = "localhost"
-    data_source.port = 3306
-    data_source.database_name = frappe.conf.db_name
-    data_source.username = frappe.conf.db_name
-    data_source.password = frappe.conf.db_password
-    data_source.insert()
-    return data_source
+def create_frappe_db():
+    source = frappe.get_doc(
+        {
+            "source_type": "Database",
+            "title": "Test Frappe DB",
+            "database_type": "MariaDB",
+            "doctype": "Insights Data Source",
+        }
+    )
+    source.host = "localhost"
+    source.port = 3306
+    source.username = frappe.conf.db_name
+    source.password = frappe.conf.db_password
+    source.database_name = frappe.conf.db_name
+    source.save()
+    return source

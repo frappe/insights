@@ -4,11 +4,8 @@
 import json
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from insights.tests.utils import (
-    create_data_source,
-    create_insights_table,
-)
 
+test_dependencies = ("Insights Data Source", "Insights Table")
 test_records = frappe.get_test_records("Insights Query")
 
 
@@ -25,9 +22,6 @@ class TestInsightsQuery(FrappeTestCase):
             )
             todo.insert()
         frappe.db.commit()
-        # create an insights query to get the count of open todos
-        data_source = create_data_source("Test Insights Query")
-        create_insights_table("tabToDo", "ToDo", data_source.name)
         test_records[0]["filters"] = json.dumps(test_records[0]["filters"])
         query = frappe.get_doc(test_records[0])
         query.save()
@@ -53,8 +47,6 @@ class TestInsightsQuery(FrappeTestCase):
         frappe.db.commit()
 
         # create an insights query to get the count of todos by due date
-        data_source = create_data_source("Test Insights Query")
-        create_insights_table("tabToDo", "ToDo", data_source.name)
         query = frappe.get_doc(test_records[1])
         query.save()
         query.build_and_execute()

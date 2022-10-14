@@ -33,7 +33,7 @@ class InsightsTable(Document):
             return
 
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        columns = data_source.source.data_importer.get_columns(self.table)
+        columns = data_source.source.get_columns(self.table)
         self.columns = []
         for column in columns:
             self.append(

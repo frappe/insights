@@ -4,17 +4,12 @@
 import json
 import frappe
 import unittest
-from insights.tests.utils import (
-    create_data_source,
-    create_insights_query,
-    create_insights_table,
-)
+from insights.tests.utils import create_insights_query
+
+test_dependencies = ["Insights Data Source", "Insights Table"]
 
 
 class TestQueryStoreDataSource(unittest.TestCase):
-    def tearDown(self) -> None:
-        frappe.delete_doc("Insights Data Source", "Test Data Source", force=True)
-
     def test_duplicate_query_store_creation(self):
         fixtures_path = frappe.get_app_path("insights", "fixtures")
         with open(f"{fixtures_path}/insights_data_source.json") as f:
@@ -28,9 +23,7 @@ class TestQueryStoreDataSource(unittest.TestCase):
 
     def test_temporary_table(self):
         # initialize a query
-        data_source = create_data_source("Test Data Source", "Database")
-        table = create_insights_table("tabUser", "User", "Test Data Source")
-        db_query = create_insights_query("Test Query", data_source.name)
+        db_query = create_insights_query("Test Query", "Test Site DB")
         db_query.append("tables", {"table": "tabUser", "label": "User"})
         db_query.save()
         db_query.build_and_execute()
@@ -48,5 +41,3 @@ class TestQueryStoreDataSource(unittest.TestCase):
         with self.assertRaises(BaseException) as error:
             frappe.db.sql(f"SELECT * FROM `{db_query.name}`")
         self.assertTrue("doesn't exist" in str(error.exception))
-
-        table.delete()

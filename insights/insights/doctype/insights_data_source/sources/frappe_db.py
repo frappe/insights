@@ -298,6 +298,9 @@ class FrappeDB(BaseDataSource):
         ][0]
         return columns, data, no_of_rows
 
+    def get_columns(self, table):
+        return self.data_importer.get_columns(table)
+
 
 def convert_to_insights_column_type(data_type):
     COLUMN_TYPE_MAP = {

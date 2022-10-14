@@ -162,7 +162,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return self.columns or self.fetch_columns()
 
     def load_result(self):
-        return loads(self.result)
+        return frappe.parse_json(self.result)
 
     def update_query_table(self):
         if not self.tables:
