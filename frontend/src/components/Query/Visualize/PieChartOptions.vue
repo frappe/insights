@@ -1,5 +1,5 @@
 <script setup>
-import { inject, computed } from 'vue'
+import { inject } from 'vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Color from '@/components/Controls/Color.vue'
 
@@ -31,7 +31,12 @@ const chart = inject('chart')
 		/>
 	</div>
 
-	<Color label="Colors" v-model="chart.options.colors" :max="chart.options.maxSlices" multiple />
+	<Color
+		label="Colors"
+		v-model="chart.options.colors"
+		:max="parseInt(chart.options.maxSlices)"
+		multiple
+	/>
 
 	<Checkbox class="text-gray-600" v-model="chart.options.scrollLabels" label="Paginate Labels" />
 </template>

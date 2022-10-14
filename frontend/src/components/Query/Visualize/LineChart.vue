@@ -36,6 +36,7 @@ const props = defineProps({
 				type="category"
 				:axisTick="false"
 				:data="props.data.labels"
+				axisLabel-align="left"
 			/>
 			<ChartAxis axisType="yAxis" type="value" splitLine-lineStyle-type="dashed" />
 			<ChartSeries
@@ -46,7 +47,7 @@ const props = defineProps({
 				:smooth="props.options.smoothLines"
 				:showSymbol="props.options.showPoints"
 			/>
-			<ChartTooltip trigger="axis" :appendToBody="true" />
+			<ChartTooltip />
 		</ChartGrid>
 	</Chart>
 </template>
