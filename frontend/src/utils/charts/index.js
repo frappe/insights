@@ -1,4 +1,4 @@
-import { computed, markRaw, reactive, watchEffect, nextTick, watch } from 'vue'
+import { computed, markRaw, reactive, nextTick, watch } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { useQuery } from '@/utils/query'
@@ -50,7 +50,7 @@ function useQueryChart({ chartID, queryID, query }) {
 	})
 
 	watch(
-		() => initialDoc.value,
+		initialDoc,
 		(doc) => {
 			// load chart data from doc
 			if (doc.type || doc.title) {
@@ -59,12 +59,13 @@ function useQueryChart({ chartID, queryID, query }) {
 				chart.data = safeJSONParse(doc.data, {})
 				chart.options = chart.data.options || {}
 			}
-		}
+		},
+		{ deep: true, immediate: true }
 	)
 
 	watch(
 		() => chart.type,
-		(type) => {
+		(type, old) => {
 			if (!type) {
 				Object.assign(chart, emptyChart)
 				return
