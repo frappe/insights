@@ -8,8 +8,9 @@ const options = inject('options')
 const defaults = {
 	top: 25,
 	bottom: 55,
-	left: 45,
+	left: 20,
 	right: 30,
+	containLabel: true,
 }
 options.grid = { ...defaults, ...useAttrs() }
 </script>
