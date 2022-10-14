@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - develop
+    paths:
+      - "**.py"
 
 concurrency:
   group: develop-insights-${{ github.event.number }}
