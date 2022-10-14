@@ -4,7 +4,7 @@
 import frappe
 import unittest
 from pypika import Table, Case
-from insights.insights.doctype.query.utils import parse_query_expression
+from insights.insights.doctype.insights_query.utils import parse_query_expression
 
 
 class TestQueryUtils(unittest.TestCase):
@@ -88,9 +88,10 @@ class TestParseExpression(unittest.TestCase):
             "lower",
             "upper",
             "concat",
-            "isnull",
             "ceil",
             "round",
+            "count",
+            "distinct",
         ]
 
         for function in single_arg_functions:
@@ -109,10 +110,10 @@ class TestParseExpression(unittest.TestCase):
             self.assertEqual(agg_column.args[0].table, Table("Car"))
             self.assertEqual(agg_column.args[0].name, "price")
 
-    def test_ifnull_function(self):
+    def test_if_null_function(self):
         tree = {
             "type": "CallExpression",
-            "function": "ifnull",
+            "function": "if_null",
             "arguments": [
                 {
                     "type": "Column",
@@ -125,7 +126,7 @@ class TestParseExpression(unittest.TestCase):
             ],
         }
         agg_column = parse_query_expression(tree)
-        self.assertEqual(agg_column.name.lower(), "ifnull")
+        self.assertEqual(agg_column.name, "IFNULL")
         self.assertEqual(agg_column.args[0].table, Table("Car"))
         self.assertEqual(agg_column.args[0].name, "price")
         self.assertEqual(agg_column.args[1].value, 100)
