@@ -110,12 +110,11 @@ function formatLabel({ name, percent }) {
 			:radius="radius"
 			:labelLine-show="props.options.inlineLabels"
 			:labelLine-lineStyle-width="2"
-			:labelLine-length="15"
-			:labelLine-length2="25"
+			:labelLine-length="10"
+			:labelLine-length2="20"
 			:labelLine-smooth="true"
 			:label-show="props.options.inlineLabels"
 			:label-formatter="formatLabel"
-			label-alignTo="labelLine"
 			:emphasis-scaleSize="5"
 		/>
 		<ChartTooltip trigger="item" :appendToBody="true" />
