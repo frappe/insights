@@ -1,4 +1,3 @@
-
 name: CI
 
 on:
@@ -10,6 +9,9 @@ on:
 concurrency:
   group: develop-insights-${{ github.event.number }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   tests:
@@ -31,10 +33,18 @@ jobs:
       - name: Clone
         uses: actions/checkout@v2
 
+      - name: Check for valid Python & Merge Conflicts
+        run: |
+          python -m compileall -q -f "${GITHUB_WORKSPACE}"
+          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}"
+              then echo "Found merge conflicts"
+              exit 1
+          fi
+
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -79,7 +89,7 @@ jobs:
           bench --site test_site install-app insights
           bench build
         env:
-          CI: 'Yes'
+          CI: "Yes"
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
@@ -88,3 +98,27 @@ jobs:
           bench --site test_site run-tests --app insights
         env:
           TYPE: server
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ matrix.container }}
+          path: /home/runner/frappe-bench/sites/coverage.xml
+
+  coverage:
+    name: Coverage Wrap Up
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Upload coverage data
+        uses: codecov/codecov-action@v3
+        with:
+          name: coverage-unittests
+          fail_ci_if_error: true
+          verbose: true
