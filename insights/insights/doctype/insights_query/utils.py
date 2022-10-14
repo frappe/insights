@@ -388,4 +388,6 @@ def parse_query_expression(expression):
 
 
 def build_query_field(table, column) -> Field:
+    if not column or column == "*":
+        return "*"  # TODO: handle this better
     return Table(table)[column]

@@ -109,9 +109,7 @@ class FrappeQueryBuilder(QueryBuilder):
             frappe.throw("Invalid aggregation function: {}".format(row.aggregation))
 
         else:
-            column = Aggregations.apply(row.aggregation.lower(), column)
-
-        return column
+            return Aggregations.apply(row.aggregation.lower(), column)
 
     def process_sorting(self, row, column):
         if not row.order_by:

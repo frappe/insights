@@ -81,7 +81,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def update_query(self):
         data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
-        query = data_source.build_query(query=self.as_dict())
+        query = data_source.build_query(query=self)
         query = format_query(query)
         if self.sql != query:
             self.sql = query
@@ -99,7 +99,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def fetch_data_from_source(self):
         data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
-        self._result = data_source.run_query(query=self.as_dict())
+        self._result = data_source.run_query(query=self)
 
     def store_result(self):
         self.result = dumps(self._result, default=cstr)
