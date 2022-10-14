@@ -15,8 +15,10 @@ EXCLUSIONS = [
     "*/test_*",
     "*/node_modules/*",
     "*/patches/*",
+    "*/config/*",
     "*/tests/*",
-    "*/insights/coverage.py",
+    "*/insights/setup.py",
+    "*/coverage.py",
     "*/patches/*",
 ]
 
