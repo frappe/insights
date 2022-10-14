@@ -24,8 +24,9 @@ class TestQueryStoreDataSource(unittest.TestCase):
     def test_temporary_table(self):
         # initialize a query
         data_source = create_data_source("Test Data Source", "Database")
+        table = create_insights_table("tabUser", "User", "Test Data Source")
         db_query = create_insights_query("Test Query", data_source.name)
-        db_query.append("tables", {"table": "tabUser", "label": "ToDo"})
+        db_query.append("tables", {"table": "tabUser", "label": "User"})
         db_query.save()
         db_query.build_and_execute()
         db_query.save()
@@ -42,6 +43,8 @@ class TestQueryStoreDataSource(unittest.TestCase):
         with self.assertRaises(BaseException) as error:
             frappe.db.sql(f"SELECT * FROM `{db_query.name}`")
         self.assertTrue("doesn't exist" in str(error.exception))
+
+        table.delete()
 
 
 def create_data_source(
@@ -72,4 +75,17 @@ def create_insights_query(title, data_source):
     query = frappe.new_doc("Insights Query")
     query.title = title or "Test Query"
     query.data_source = data_source
+    query.save()
     return query
+
+
+def create_insights_table(table, label, data_source):
+    frappe.delete_doc(
+        "Insights Table", {"table": table, "data_source": data_source}, force=True
+    )
+    insights_table = frappe.new_doc("Insights Table")
+    insights_table.table = table or "tabUser"
+    insights_table.label = label or "User"
+    insights_table.data_source = data_source
+    insights_table.save()
+    return insights_table

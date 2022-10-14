@@ -46,10 +46,10 @@ const legendOptions = reactive({
 	type: 'plain',
 	bottom: 0,
 })
-const center = ref(['50%', '43%'])
+const center = ref(['50%', '50%'])
 const radius = ref('75%')
 
-if (props.options.labelPosition?.value) {
+if (!props.options.inlineLabels && props.options.labelPosition?.value) {
 	const position = props.options.labelPosition.value
 	updateLegendOptions(position)
 }
@@ -63,14 +63,14 @@ function updateLegendOptions(position) {
 			radius.value = '75%'
 			legendOptions.top = 0
 			legendOptions.left = 'center'
-			center.value[1] = '60%'
+			center.value = ['50%', '60%']
 			legendOptions.padding = 20
 			break
 		case 'Bottom':
 			radius.value = '75%'
 			legendOptions.bottom = 0
 			legendOptions.left = 'center'
-			center.value[1] = '43%'
+			center.value = ['50%', '45%']
 			legendOptions.padding = [20, 20, 10, 20]
 			break
 		case 'Right':
@@ -89,6 +89,10 @@ function updateLegendOptions(position) {
 			break
 	}
 }
+
+function formatLabel({ name, percent }) {
+	return `${name} (${percent.toFixed(0)}%)`
+}
 </script>
 
 <template>
@@ -104,11 +108,16 @@ function updateLegendOptions(position) {
 			:data="data"
 			:center="center"
 			:radius="radius"
-			:labelLine-show="false"
-			:label-show="false"
+			:labelLine-show="props.options.inlineLabels"
+			:labelLine-lineStyle-width="2"
+			:labelLine-length="10"
+			:labelLine-length2="20"
+			:labelLine-smooth="true"
+			:label-show="props.options.inlineLabels"
+			:label-formatter="formatLabel"
 			:emphasis-scaleSize="5"
 		/>
 		<ChartTooltip trigger="item" :appendToBody="true" />
-		<ChartLegend v-bind="legendOptions" />
+		<ChartLegend v-if="!props.options.inlineLabels" v-bind="legendOptions" />
 	</Chart>
 </template>

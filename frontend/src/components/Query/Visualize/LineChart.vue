@@ -36,7 +36,6 @@ const props = defineProps({
 				type="category"
 				:axisTick="false"
 				:data="props.data.labels"
-				axisLabel-align="left"
 			/>
 			<ChartAxis axisType="yAxis" type="value" splitLine-lineStyle-type="dashed" />
 			<ChartSeries

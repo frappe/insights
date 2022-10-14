@@ -44,7 +44,7 @@ class Aggregations:
 
     @staticmethod
     def count(column):
-        return functions.Count("*")
+        return functions.Count(column or "*")
 
     @staticmethod
     def sum_if(conditions, column):
