@@ -95,7 +95,7 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-tests --app insights --with-coverage
+          bench --site test_site run-tests --app insights --coverage
         env:
           TYPE: server
 
