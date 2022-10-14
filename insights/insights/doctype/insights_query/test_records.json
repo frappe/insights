@@ -1,0 +1,79 @@
+[
+  {
+    "doctype": "Insights Query",
+    "title": "Test Todo Count",
+    "data_source": "Test Insights Query",
+    "filters": {
+      "type": "LogicalExpression",
+      "operator": "&&",
+      "level": 1,
+      "position": 1,
+      "conditions": [
+        {
+          "type": "BinaryExpression",
+          "operator": "=",
+          "left": {
+            "type": "Column",
+            "value": {
+              "column": "status",
+              "table": "tabToDo"
+            }
+          },
+          "right": {
+            "type": "String",
+            "value": "Open"
+          }
+        }
+      ]
+    },
+    "columns": [
+      {
+        "label": "Count",
+        "type": "Integer",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Count",
+        "doctype": "Insights Query Column"
+      }
+    ],
+    "tables": [
+      {
+        "label": "ToDo",
+        "table": "tabToDo",
+        "doctype": "Insights Query Table"
+      }
+    ]
+  },
+  {
+    "title": "Test Todo Count",
+    "data_source": "Test Insights Query",
+    "doctype": "Insights Query",
+    "columns": [
+      {
+        "label": "Due Date",
+        "column": "date",
+        "type": "Date",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Group By",
+        "format_option": "{\n  \"date_format\": \"Day\"\n}",
+        "doctype": "Insights Query Column"
+      },
+      {
+        "label": "Count",
+        "type": "Integer",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Count",
+        "doctype": "Insights Query Column"
+      }
+    ],
+    "tables": [
+      {
+        "label": "ToDo",
+        "table": "tabToDo",
+        "doctype": "Insights Query Table"
+      }
+    ]
+  }
+]

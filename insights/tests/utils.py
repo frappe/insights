@@ -46,27 +46,3 @@ def create_insights_table(table, label, data_source):
     insights_table.data_source = data_source
     insights_table.save()
     return insights_table
-
-
-def add_table(query, table, label=None):
-    query.add_table(
-        {
-            "table": table,
-            "label": label or table,
-        }
-    )
-
-
-def add_column(
-    query, column, table, label=None, type="String", table_label=None, aggregation=None
-):
-    query.add_column(
-        {
-            "type": type,
-            "column": column,
-            "label": label or column or aggregation,
-            "table": table,
-            "table_label": table_label or table,
-            "aggregation": aggregation,
-        }
-    )
