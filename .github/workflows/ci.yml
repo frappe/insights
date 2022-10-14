@@ -2,10 +2,10 @@
 name: CI
 
 on:
+  pull_request:
   push:
     branches:
       - develop
-  pull_request:
 
 concurrency:
   group: develop-insights-${{ github.event.number }}
