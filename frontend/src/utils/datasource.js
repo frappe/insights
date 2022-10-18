@@ -1,5 +1,5 @@
-import { createResource } from 'frappe-ui'
-import { reactive, watch } from 'vue'
+import { createDocumentResource, createResource } from 'frappe-ui'
+import { reactive, watch, computed, inject } from 'vue'
 
 const dataSourceResource = createResource({
 	method: 'insights.api.get_data_source',
@@ -18,28 +18,24 @@ export function useDataSource(name) {
 	return dataSource
 }
 
-const dataSourceTableResource = createResource({
-	method: 'insights.api.get_data_source_table',
-	initalData: {},
-})
-const dataSourceTableUpdateResource = createResource({
-	method: 'insights.api.update_data_source_table',
-	initalData: {},
-})
-
-export function useDataSourceTable(name, table) {
-	const dataSourceTable = reactive({
-		updateVisibility,
+export function useDataSourceTable(name) {
+	const $notify = inject('$notify')
+	const dataSourceTable = createDocumentResource({
+		doctype: 'Insights Table',
+		name: name,
+		whitelistedMethods: {
+			syncTable: 'sync_table',
+			updateVisibility: 'update_visibility',
+			getPreview: 'get_preview',
+		},
 	})
-
-	dataSourceTableResource.fetch({ name, table })
-	watch(
-		() => dataSourceTableResource.data,
-		(data) => Object.assign(dataSourceTable, data)
-	)
-
-	function updateVisibility(hidden) {
-		dataSourceTableUpdateResource.submit({ name, table, hidden })
+	dataSourceTable.getPreview.submit()
+	dataSourceTable.rows = computed(() => dataSourceTable.getPreview.data?.message || {})
+	dataSourceTable.sync = () => {
+		dataSourceTable.syncing = true
+		dataSourceTable.syncTable.submit().then(() => {
+			dataSourceTable.syncing = false
+		})
 	}
 
 	return dataSourceTable

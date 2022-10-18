@@ -276,11 +276,16 @@ class FrappeDB(BaseDataSource):
             # when force is true, it will overwrite the existing columns & links
             create_insights_table(table, force=force)
 
-    def describe_table(self, table, limit=20):
-        columns = self.execute_query(f"""desc `{table}`""")
+    def get_table_preview(self, table, limit=20):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
-        no_of_rows = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
-        return columns, data, no_of_rows
+        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
+        return {
+            "data": data or [],
+            "length": length or 0,
+        }
+
+    def get_table_columns(self, table):
+        return self.table_factory.get_table_columns(table)
 
 
 class SiteDB(FrappeDB):

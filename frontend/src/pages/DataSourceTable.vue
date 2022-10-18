@@ -1,10 +1,10 @@
 <template>
 	<BasePage>
 		<template #header>
-			<div v-if="dataSourceTable.doc" class="flex flex-1 items-center space-x-4">
+			<div v-if="doc" class="flex flex-1 items-center space-x-4">
 				<div class="flex items-start space-x-4">
 					<h1 class="text-3xl font-medium text-gray-900">
-						{{ dataSourceTable.doc.label }}
+						{{ doc.label }}
 					</h1>
 					<div class="flex h-8 items-center">
 						<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
@@ -26,6 +26,11 @@
 								handler: () => (hidden = !hidden),
 							},
 							{
+								label: 'Sync Table',
+								icon: 'refresh-cw',
+								handler: () => dataSourceTable.sync(),
+							},
+							{
 								label: 'Add Link',
 								icon: 'link',
 								handler: () => (addLinkDialog = true),
@@ -36,18 +41,26 @@
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSourceTable.columns" class="flex h-full w-full flex-col pt-1">
+			<div
+				v-if="doc && doc.columns && dataSourceTable.rows?.data"
+				class="flex h-full w-full flex-col pt-1"
+			>
 				<div class="flex h-6 space-x-1 text-sm font-light text-gray-600">
-					{{ dataSourceTable.columns.length }} Columns -
-					{{ dataSourceTable.no_of_rows }} Rows
+					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
 				</div>
-				<div class="h-[calc(100%-1.5rem)] w-full">
+				<div class="flex h-[calc(100%-1.5rem)] w-full">
 					<Table
-						:columns="
-							dataSourceTable.columns.map((c) => `${c[0]} (${formatType(c[1])})`)
-						"
-						:rows="dataSourceTable.rows"
+						v-if="!dataSourceTable.syncing"
+						:columns="doc.columns.map((c) => `${c.label} (${c.type})`)"
+						:rows="dataSourceTable.rows.data"
 					/>
+					<div
+						v-else
+						class="mt-2 flex w-full flex-col items-center justify-center rounded-md bg-gray-50"
+					>
+						<Spinner class="mb-2 w-8 text-gray-400" />
+						<div class="text-lg text-gray-500">Syncing columns from database...</div>
+					</div>
 				</div>
 			</div>
 		</template>
@@ -67,8 +80,8 @@
 				<Input
 					type="select"
 					v-model="newLink.primaryKey"
-					:options="dataSourceTable.columns.map((c) => c[0])"
-					:label="`Select a column from ${dataSourceTable.doc.label}`"
+					:options="doc.columns.map((c) => c[0])"
+					:label="`Select a column from ${doc.label}`"
 				/>
 				<Input
 					v-if="newLink.table?.value"
@@ -97,7 +110,7 @@ import BasePage from '@/components/BasePage.vue'
 import Table from '@/components/Query/Visualize/Table.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/utils/datasource'
-import { Dropdown, Badge, createResource } from 'frappe-ui'
+import { Dropdown, Badge, createResource, Spinner } from 'frappe-ui'
 import { computed, ref, reactive, watch, inject } from 'vue'
 
 const props = defineProps({
@@ -111,7 +124,6 @@ const props = defineProps({
 	},
 })
 
-const MAX_COLS = 8
 const addLinkDialog = ref(false)
 const newLink = reactive({
 	table: '',
@@ -119,15 +131,17 @@ const newLink = reactive({
 	foreignKey: '',
 })
 
-const dataSourceTable = useDataSourceTable(props.name, props.table)
+const dataSourceTable = useDataSourceTable(props.table)
+const doc = computed(() => {
+	return dataSourceTable.doc
+})
 const hidden = computed({
 	get() {
-		return dataSourceTable.doc.hidden
+		return doc.hidden
 	},
 	set(value) {
-		if (value !== dataSourceTable.doc.hidden) {
-			dataSourceTable.doc.hidden = value
-			dataSourceTable.updateVisibility(value)
+		if (value !== doc.hidden) {
+			doc.updateVisibility(value)
 		}
 	},
 })
@@ -196,8 +210,8 @@ function createLink() {
 	createLinkResource.submit({
 		data_source: props.name,
 		primary_table: {
-			label: dataSourceTable.doc.label,
-			table: dataSourceTable.doc.table,
+			label: doc.label,
+			table: doc.table,
 		},
 		foreign_table: {
 			label: newLink.table.label,
@@ -206,9 +220,5 @@ function createLink() {
 		primary_key: newLink.primaryKey,
 		foreign_key: newLink.foreignKey,
 	})
-}
-
-function formatType(columnType) {
-	return columnType.replace(/\(.*\)/, '').toUpperCase()
 }
 </script>

@@ -135,13 +135,15 @@ class QueryStore(BaseDataSource):
 
     def describe_table(self, table, limit=20):
         self.create_temporary_table(table)
-        columns = self._execute(f"""desc `{table}`""")
-        data = self._execute(f"""select * from `{table}` limit {limit}""")
-        no_of_rows = self._execute(f"""select count(*) from `{table}`""")[0][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
+        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         self.conn.close()
-        return columns, data, no_of_rows
+        return {
+            "data": data or [],
+            "length": length or 0,
+        }
 
-    def get_distinct_column_values(self, column, search_text=None, limit=25):
+    def get_column_options(self, column, search_text=None, limit=25):
         if not frappe.db.exists("Insights Query", column.get("table")):
             return []
 
@@ -153,3 +155,6 @@ class QueryStore(BaseDataSource):
             query = query.where(Column.like(f"%{search_text}%"))
 
         return self.execute_query(query.get_sql())
+
+    def get_table_columns(self):
+        return None

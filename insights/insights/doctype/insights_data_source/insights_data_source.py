@@ -85,21 +85,11 @@ class InsightsDataSource(Document):
     def sync_tables(self, *args, **kwargs):
         self.db.sync_tables(*args, **kwargs)
 
-    def get_table_list(self, *args, **kwargs):
-        return self.db.get_table_list(*args, **kwargs)
-
-    def get_column_list(self, *args, **kwargs):
-        return self.adapter.get_column_list(*args, **kwargs)
+    def get_table_columns(self, table):
+        return self.db.get_table_columns(table)
 
     def get_column_options(self, *args, **kwargs):
-        return self.adapter.get_column_options(*args, **kwargs)
+        return self.db.get_column_options(*args, **kwargs)
 
-    def describe_table(self, table):
-        return self.adapter.describe_table(table)
-
-    def get_running_jobs(self):
-        # TODO: implement this
-        return []
-
-    def kill_job(self, job_id):
-        return
+    def get_table_preview(self, table, limit=20):
+        return self.db.get_table_preview(table, limit)

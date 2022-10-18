@@ -39,7 +39,7 @@
 									name: 'DataSourceTable',
 									params: {
 										name: dataSource.doc.name,
-										table: table.table,
+										table: table.name,
 									},
 								}"
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"

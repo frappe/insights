@@ -75,9 +75,9 @@ def create_insights_table(table, force=False):
         )
 
     doc.label = table.label
+    doc.columns = []
     if force:
         doc.table_links = []
-        doc.columns = []
 
     for table_link in table.table_links or []:
         if not doc.get("table_links", table_link):

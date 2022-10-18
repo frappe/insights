@@ -22,14 +22,11 @@ class BaseDataSource:
     def sync_tables(self):
         raise NotImplementedError
 
-    def get_columns(self, table_name: str):
+    def get_table_columns(self):
         raise NotImplementedError
 
-    def get_column_values(self):
+    def get_column_options(self):
         raise NotImplementedError
 
-    def get_table_list(self):
-        raise NotImplementedError
-
-    def describe_table(self):
+    def get_table_preview(self):
         raise NotImplementedError
