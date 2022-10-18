@@ -74,7 +74,11 @@ class InsightsDataSource(Document):
         )
 
     def test_connection(self):
-        return self.db.test_connection()
+        try:
+            return self.db.test_connection()
+        except Exception as e:
+            frappe.log_error("Testing Data Source connection failed", e)
+            return False
 
     def build_query(self, query: InsightsQuery):
         return self.db.build_query(query)

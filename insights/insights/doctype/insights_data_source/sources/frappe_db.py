@@ -261,7 +261,7 @@ class FrappeDB(BaseDataSource):
 
     def test_connection(self):
         try:
-            return self.conn.a_row_exists("DocType")
+            return self.conn.sql("select name from `tabDocType` limit 1")
         except Exception as e:
             frappe.log_error(f"Error connecting to Site: {e}")
 
