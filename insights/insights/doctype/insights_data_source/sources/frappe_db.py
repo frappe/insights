@@ -298,11 +298,11 @@ class SiteDB(FrappeDB):
 
     def sync_tables(self, tables=None, force=False):
         # only import tables that are not related to insights
-        _tables = [
+        _tables = tables or [
             table
             for table in frappe.db.get_tables()
             if not table.startswith("tabInsights")
-        ] or tables
+        ]
         return super().sync_tables(_tables, force)
 
 

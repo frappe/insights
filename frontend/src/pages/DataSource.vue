@@ -1,10 +1,31 @@
 <template>
 	<BasePage>
 		<template #header>
-			<div class="flex flex-1 items-center justify-between">
-				<h1 v-if="dataSource.doc" class="text-3xl font-medium text-gray-900">
-					{{ dataSource.doc.title }}
-				</h1>
+			<div v-if="dataSource.doc" class="flex flex-1 items-center space-x-4">
+				<div class="flex items-start space-x-4">
+					<h1 class="text-3xl font-medium text-gray-900">
+						{{ dataSource.doc.title }}
+					</h1>
+					<div class="flex h-8 items-center">
+						<Badge color="green" class="h-fit">Active</Badge>
+					</div>
+				</div>
+				<div class="space-x-2">
+					<Dropdown
+						placement="left"
+						:button="{
+							icon: 'more-horizontal',
+							appearance: 'minimal',
+						}"
+						:options="[
+							{
+								label: 'Import CSV',
+								icon: 'upload',
+								handler: () => (showImportDialog = true),
+							},
+						]"
+					/>
+				</div>
 			</div>
 		</template>
 		<template #main>
@@ -70,13 +91,16 @@
 			</div>
 		</template>
 	</BasePage>
+
+	<ImportDialog :show="showImportDialog" @close="showImportDialog = false"></ImportDialog>
 </template>
 
 <script setup>
-import { Badge } from 'frappe-ui'
+import { Badge, Dropdown } from 'frappe-ui'
 import BasePage from '@/components/BasePage.vue'
 import { useDataSource } from '@/utils/datasource'
 import { ref, computed } from 'vue'
+import ImportDialog from '@/components/ImportDialog.vue'
 
 const props = defineProps({
 	name: {
@@ -103,4 +127,6 @@ const tables = computed(() => {
 		})
 		.slice(0, 100)
 })
+
+const showImportDialog = ref(false)
 </script>

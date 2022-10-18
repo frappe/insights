@@ -10,6 +10,10 @@ from frappe.model.document import Document
 
 
 class InsightsTableImport(Document):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._filepath = None
+
     def before_validate(self):
         if not frappe.db.exists("Insights Data Source", {"is_site_db": 1}):
             frappe.throw("Please create a site database data source first")
@@ -61,7 +65,7 @@ class InsightsTableImport(Document):
         import_table.enqueue(
             docname=self.name,
             filepath=self._filepath,
-            now=frappe.flags.in_test or frappe.flags.in_setup_wizard,
+            now=True,  # frappe.flags.in_test or frappe.flags.in_setup_wizard,
         )
 
     def create_table(self):
@@ -93,11 +97,12 @@ class InsightsTableImport(Document):
 
     def import_records(self):
         with open(self._filepath, "r") as f:
+            column_labels = [d.label for d in self.columns]
+            column_names = [d.column for d in self.columns]
             reader = csv.DictReader(f)
             values = []
             for idx, row in enumerate(reader):
-                column_names = [d.column for d in self.columns]
-                values.append([idx + 1] + [row.get(column) for column in column_names])
+                values.append([idx + 1] + [row.get(column) for column in column_labels])
                 if len(values) == 10000 or idx == self.rows - 1:
                     self.insert_rows(values, list(["pk"] + column_names))
                     values = []
@@ -105,7 +110,9 @@ class InsightsTableImport(Document):
     def insert_rows(self, values, column_names):
         # values = [[1, "a", "b"], [2, "c", "d"]]
         # column_names = ["name", "column1", "column2"]
-        column_name_str = ",".join(column_names)  # name,column1,column2
+        column_name_str = ",".join(
+            [f"`{c}`" for c in column_names]
+        )  # "`name`,`column1`,`column2`"
         values_str = ",".join(["%s"] * len(values[0]))  # %s,%s,%s
         values_str = ",".join(
             [f"({values_str})"] * len(values)
@@ -126,6 +133,7 @@ def import_table(docname, filepath=None):
         doc.import_records()
         doc.db_set("status", "Success")
         doc._data_source.db.conn.commit()
+        doc._data_source.sync_tables(tables=[doc.table_name])
     except BaseException:
         doc._data_source.db.conn.rollback()
         frappe.log_error(title=f"Failed to import table - {doc.table_name}")

@@ -114,6 +114,25 @@ function getShortNumber(number) {
 	return formatted
 }
 
+export async function getDataURL(type, data) {
+	const blob = new Blob([data], { type })
+
+	return new Promise((resolve) => {
+		const fr = new FileReader()
+		fr.addEventListener('loadend', () => {
+			resolve(fr.result)
+		})
+
+		fr.readAsDataURL(blob)
+	})
+}
+
+export async function convertFileToDataURL(file, type) {
+	const buffer = await file.arrayBuffer()
+	const array = new Uint8Array(buffer)
+	return await getDataURL(type, array)
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,

@@ -260,3 +260,54 @@ def get_dashboard_options(query_chart):
         filters={"name": ["not in", exclude_dashboards]},
         fields=["name as value", "title as label"],
     )
+
+
+def get_csv_from_base64(encoded_string):
+    import base64
+    from io import StringIO
+
+    data = encoded_string.split(",")[1]  # remove data uri
+    data = base64.b64decode(data)
+    data = StringIO(data.decode("utf-8"))
+    return data
+
+
+@frappe.whitelist()
+def get_columns_from_csv(file):
+    import csv
+
+    file_type = file.get("type")
+    data = file.get("data")  # base64 encoded
+
+    if file_type == "text/csv":
+        data = get_csv_from_base64(data)
+        reader = csv.reader(data)
+        return next(reader)
+
+
+def create_csv_file(file):
+    file_doc = frappe.new_doc("File")
+    file_doc.file_name = file.get("name")
+    file_doc.content = get_csv_from_base64(file.get("data")).read()
+    file_doc.save()
+    return file_doc
+
+
+@frappe.whitelist()
+def upload_csv(label, file, if_exists, columns):
+    table_import = frappe.new_doc("Insights Table Import")
+    table_import.table_name = frappe.scrub(label)
+    table_import.table_label = label
+    table_import.if_exists = if_exists
+    table_import.source = create_csv_file(file).file_url
+    for column in columns:
+        table_import.append(
+            "columns",
+            {
+                "column": frappe.scrub(column.get("label")),
+                "label": column.get("label"),
+                "type": column.get("data_type"),
+            },
+        )
+    table_import.save()
+    table_import.submit()
