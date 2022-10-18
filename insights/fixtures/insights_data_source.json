@@ -5,6 +5,7 @@
     "name": "Site DB",
     "title": "Site DB",
     "status": "Active",
+    "database_type": "MariaDB",
     "modified": "2022-01-01 00:01:00.000000",
     "creation": "2022-01-01 00:01:00.000000"
   },
@@ -13,6 +14,7 @@
     "status": "Active",
     "name": "Query Store",
     "title": "Query Store",
+    "database_type": "MariaDB",
     "modified": "2022-01-01 00:01:00.000000",
     "creation": "2022-01-01 00:01:00.000000"
   }

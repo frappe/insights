@@ -86,7 +86,7 @@ class InsightsDataSource(Document):
         self.db.sync_tables(*args, **kwargs)
 
     def get_table_list(self, *args, **kwargs):
-        return self.adapter.get_table_list(*args, **kwargs)
+        return self.db.get_table_list(*args, **kwargs)
 
     def get_column_list(self, *args, **kwargs):
         return self.adapter.get_column_list(*args, **kwargs)
