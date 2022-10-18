@@ -1,6 +1,6 @@
 [
   {
-    "data_source": "Test Site DB",
+    "data_source": "Site DB",
     "table": "tabToDo",
     "label": "ToDo",
     "hidden": 0,
@@ -9,7 +9,7 @@
     "columns": []
   },
   {
-    "data_source": "Test Site DB",
+    "data_source": "Site DB",
     "table": "tabUser",
     "label": "User",
     "hidden": 0,

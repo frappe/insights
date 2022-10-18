@@ -1,7 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from json import dumps, loads
+from json import dumps
 from copy import deepcopy
 from pandas import DataFrame
 
@@ -199,7 +199,7 @@ class InsightsQueryClient:
             )
             _tables = query.run(as_dict=True, debug=True)
 
-        if self.from_query_store:
+        if self.data_source == "Query Store":
             # remove the current query table from the table list
             # you should not be querying self
             _tables = [t for t in _tables if t.get("table") != self.name]
@@ -257,7 +257,7 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def fetch_column_values(self, column, search_text) -> "list[str]":
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        return data_source.get_distinct_column_values(
+        return data_source.get_column_options(
             column.get("table"), column.get("column"), search_text
         )
 

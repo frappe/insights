@@ -11,7 +11,7 @@
   "title",
   "column_break_3",
   "data_source",
-  "from_query_store",
+  "is_stored",
   "section_break_3",
   "tables",
   "column_break_4",
@@ -179,15 +179,14 @@
   },
   {
    "default": "0",
-   "fieldname": "from_query_store",
+   "fieldname": "is_stored",
    "fieldtype": "Check",
-   "label": "From Query Store",
-   "read_only": 1
+   "label": "Stored"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-02 19:45:07.855290",
+ "modified": "2022-10-18 00:48:09.149101",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

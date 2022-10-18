@@ -1,8 +1,9 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
 import time
-from json import dumps, loads
+from json import dumps
 from sqlparse import format as format_sql
 
 import frappe
@@ -79,9 +80,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.delete_linked_charts()
         self.delete_insights_table()
 
+    @cached_property
+    def _data_source(self):
+        return frappe.get_doc("Insights Data Source", self.data_source)
+
     def update_query(self):
-        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
-        query = data_source.build_query(query=self)
+        query = self._data_source.build_query(query=self)
         query = format_query(query)
         if self.sql != query:
             self.sql = query
@@ -89,17 +93,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def build_and_execute(self):
         start = time.time()
-        self.fetch_data_from_source()
+        self._result = self._data_source.run_query(query=self)
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
         self.executed = True
         self.store_result()
 
         self.update_query_table()
-
-    def fetch_data_from_source(self):
-        data_source = frappe.get_cached_doc("Insights Data Source", self.data_source)
-        self._result = data_source.run_query(query=self)
 
     def store_result(self):
         self.result = dumps(self._result, default=cstr)
@@ -207,8 +207,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         table = frappe.get_doc(
             {
                 "doctype": "Insights Table",
-                "table": self.name,
                 "data_source": "Query Store",
+                "table": self.name,
                 "label": self.title,
                 "columns": [
                     {

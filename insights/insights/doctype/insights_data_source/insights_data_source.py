@@ -1,58 +1,48 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
-
 import frappe
-from frappe import _dict
+from functools import cached_property
 from frappe.model.document import Document
 
-from .sources.site_db import SiteDB
-from .sources.query_store import QueryStore
-from .sources.frappe_db import is_frappe_db, FrappeDB
-
 from .sources.models import BaseDataSource
+from .sources.query_store import QueryStore
+from .sources.frappe_db import is_frappe_db, FrappeDB, SiteDB
+
+from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
-SOURCE_TYPES = _dict(
-    {
-        "RemoteDB": "Database",
-        "SiteDB": "Site Database",
-        "File": "File",
-        "API": "API",
-    }
-)
-
-SOURCE_STATUS = _dict(
-    {
-        "Active": "Active",
-        "Inactive": "Inactive",
-    }
-)
-
-
 class InsightsDataSource(Document):
-    @cached_property
-    def source(self) -> BaseDataSource:
-        return self._get_source()
+    def before_insert(self):
+        if self.is_site_db and frappe.db.exists(
+            "Insights Data Source", {"is_site_db": 1}
+        ):
+            frappe.throw("Only one site database can be configured")
 
-    def _get_source(self):
+    def on_trash(self):
+        if self.is_site_db:
+            frappe.throw("Cannot delete the site database. It is needed for Insights.")
+        if self.name == "Query Store":
+            frappe.throw("Cannot delete the Query Store. It is needed for Insights.")
+
+        linked_doctypes = ["Insights Table"]
+        for doctype in linked_doctypes:
+            for name in frappe.db.get_all(
+                doctype, {"data_source": self.name}, pluck="name"
+            ):
+                frappe.delete_doc(doctype, name)
+
+    @cached_property
+    def db(self) -> BaseDataSource:
+        if self.is_site_db:
+            return SiteDB(data_source=self.name)
         if self.name == "Query Store":
             return QueryStore()
+        return self.get_database()
 
-        if self.source_type == SOURCE_TYPES.RemoteDB:
-            return self._get_remote_db_source()
-
-        if self.source_type == SOURCE_TYPES.SiteDB:
-            return SiteDB()
-
-        frappe.throw(
-            f"Unsupported data source type: {self.source_type} and database type: {self.database_type}"
-        )
-
-    def _get_remote_db_source(self):
-        params = {
+    def get_database(self):
+        conn_args = {
             "data_source": self.name,
             "host": self.host,
             "port": self.port,
@@ -62,69 +52,50 @@ class InsightsDataSource(Document):
             "database_name": self.database_name,
         }
 
-        if is_frappe_db(params):
-            return FrappeDB(**params)
+        if is_frappe_db(conn_args):
+            return FrappeDB(**conn_args)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
     def validate(self):
-        if self.name == "Query Store":
+        if self.is_site_db or self.name == "Query Store":
             return
-        if self.source_type == SOURCE_TYPES.RemoteDB:
-            self._validate_remote_db()
-        elif self.source_type == SOURCE_TYPES.SiteDB:
-            self._validate_site_db()
-        elif self.source_type == SOURCE_TYPES.File:
-            self._validate_file()
-        elif self.source_type == SOURCE_TYPES.API:
-            self._validate_api()
+        self.db_connection_fields()
 
-    def _validate_remote_db(self):
+    def db_connection_fields(self):
         mandatory = ("host", "port", "username", "password", "database_name")
         for field in mandatory:
             if not self.get(field):
                 frappe.throw(f"{field} is mandatory for Database")
 
-    def _validate_site_db(self):
-        pass
-
-    def _validate_file(self):
-        pass
-
-    def _validate_api(self):
-        pass
-
-    def on_trash(self):
-        if self.name == "Query Store":
-            frappe.throw("Cannot delete Query Store")
-
-        # TODO: optimize this
-        linked_doctypes = ["Insights Table"]
-        for doctype in linked_doctypes:
-            for table in frappe.db.get_all(doctype, {"data_source": self.name}):
-                frappe.delete_doc(doctype, table.name)
-
     def before_save(self):
-        self._set_status()
-
-    def _set_status(self):
         self.status = (
             SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
         )
 
     def test_connection(self):
-        try:
-            self.source.connection.test()
-            return True
-        except BaseException:
-            print(f"Test Connection failed for {self.name}")
-            return False
+        return self.db.test_connection()
 
     def build_query(self, query: InsightsQuery):
-        return self.source.query_builder.build(query)
+        return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        return self.source.query(self.build_query(query))
+        return self.db.execute_query(self.build_query(query))
+
+    def sync_tables(self, *args, **kwargs):
+        self.db.sync_tables(*args, **kwargs)
+
+    def get_table_list(self, *args, **kwargs):
+        return self.adapter.get_table_list(*args, **kwargs)
+
+    def get_column_list(self, *args, **kwargs):
+        return self.adapter.get_column_list(*args, **kwargs)
+
+    def get_column_options(self, *args, **kwargs):
+        return self.adapter.get_column_options(*args, **kwargs)
+
+    def describe_table(self, table):
+        return self.adapter.describe_table(table)
 
     def get_running_jobs(self):
         # TODO: implement this
@@ -132,9 +103,3 @@ class InsightsDataSource(Document):
 
     def kill_job(self, job_id):
         return
-
-    def get_distinct_column_values(self, *args, **kwargs):
-        return self.source.get_distinct_column_values(*args, **kwargs)
-
-    def import_data(self, force=False):
-        self.source.import_data(force=force)

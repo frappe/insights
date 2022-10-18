@@ -3,11 +3,10 @@
 
 
 import unittest
-
-from .demo import setup, demo_data_exists
+from .demo import DemoDataFactory
 
 
 class TestDemoSetup(unittest.TestCase):
-    def test_demo_setup(self):
-        setup()
-        self.assertTrue(demo_data_exists())
+    def test_import_demo_data(self):
+        factory = DemoDataFactory().run()
+        self.assertTrue(factory.demo_data_exists())

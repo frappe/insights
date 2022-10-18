@@ -1,8 +1,0 @@
-[
-  {
-    "source_type": "Site Database",
-    "title": "Test Site DB",
-    "database_type": "MariaDB",
-    "doctype": "Insights Data Source"
-  }
-]
