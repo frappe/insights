@@ -15,5 +15,5 @@ insights.patches.refresh_tables #v5
 insights.patches.modify_dashboard_layout
 insights.patches.fix_select_options_after_rename
 insights.patches.rename_column_type
-insights.patches.create_query_tables v3
 insights.patches.rename_visualization
+insights.patches.store_queries #v2

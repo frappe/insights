@@ -73,7 +73,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def on_update(self):
         self.create_default_chart()
-        self.store_in_query_store()
+        self.update_query_store()
         self.update_link_docs_title()
 
     def on_trash(self):
@@ -99,7 +99,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.executed = True
         self.store_result()
 
-        self.update_query_table()
+        self.update_query_store()
 
     def store_result(self):
         self.result = dumps(self._result, default=cstr)
@@ -115,10 +115,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     "title": self.title,
                 }
             ).insert()
-
-    def store_in_query_store(self):
-        if not frappe.db.exists("Insights Table", {"table": self.name}):
-            self.create_query_table()
 
     def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
@@ -158,69 +154,18 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.transform_result = None
         self.status = "Execution Successful"
 
+    def update_query_store(self):
+        if self.is_stored:
+            query_store = frappe.get_doc("Insights Data Source", "Query Store")
+            query_store.sync_tables(queries=[self.name])
+        elif tablename := frappe.db.exists("Insights Table", {"table": self.name}):
+            frappe.delete_doc("Insights Table", tablename)
+
     def get_columns(self):
         return self.columns or self.fetch_columns()
 
     def load_result(self):
         return frappe.parse_json(self.result)
-
-    def update_query_table(self):
-        if not self.tables:
-            return
-
-        table = self.get_query_table()
-        old_columns = [(row.column, row.label, row.type) for row in table.columns]
-
-        updated_columns = [("TEMPID", "ID", "Integer")]
-        if not self.columns:
-            updated_columns += [
-                (row.column or row.label, row.label, row.type or "String")
-                for row in self.fetch_columns()
-            ]
-        else:
-            updated_columns += [
-                (row.column or row.label, row.label, row.type or "String")
-                for row in self.columns
-            ]
-
-        if old_columns != updated_columns:
-            table.set(
-                "columns",
-                [
-                    {
-                        "column": row[0],
-                        "label": row[1],
-                        "type": row[2],
-                    }
-                    for row in updated_columns
-                ],
-            )
-            table.save()
-
-    def get_query_table(self):
-        if not frappe.db.exists("Insights Table", {"table": self.name}):
-            return self.create_query_table()
-        else:
-            return frappe.get_doc("Insights Table", {"table": self.name})
-
-    def create_query_table(self):
-        table = frappe.get_doc(
-            {
-                "doctype": "Insights Table",
-                "data_source": "Query Store",
-                "table": self.name,
-                "label": self.title,
-                "columns": [
-                    {
-                        "column": "ID",
-                        "label": "ID",
-                        "type": "Integer",
-                    }
-                ],
-            }
-        )
-        table.insert(ignore_permissions=True)
-        return table
 
 
 def format_query(query):

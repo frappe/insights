@@ -4,6 +4,13 @@
 			placement="left"
 			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 			:options="[
+				!query.doc.is_stored
+					? {
+							label: 'Store Query',
+							icon: 'bookmark',
+							handler: storeQuery,
+					  }
+					: null,
 				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
@@ -126,6 +133,15 @@ function duplicateQuery() {
 		$notify({
 			appearance: 'success',
 			title: 'Query Duplicated',
+		})
+	})
+}
+
+function storeQuery() {
+	query.store.submit().then((res) => {
+		$notify({
+			appearance: 'success',
+			title: 'Query Stored',
 		})
 	})
 }

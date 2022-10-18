@@ -20,32 +20,38 @@ class StoredQueryTableFactory:
         self.data_source = "Query Store"
 
     def get_tables(self, queries=None):
-        # create table object from the stored queries
         tables = []
-        for query in self.get_stored_queries(queries):
-            doc = frappe.get_doc("Insights Query", query.name)
-            columns = doc.get_columns()
-            tables.append(
-                frappe._dict(
-                    {
-                        "table": doc.name,
-                        "label": doc.title,
-                        "data_source": self.data_source,
-                        "columns": self.get_columns(columns),
-                    }
-                )
-            )
+        # create table object from the stored queries
+        for docname in queries or self.get_stored_queries():
+            doc = frappe.get_doc("Insights Query", docname)
+            tables.append(self.make_table(doc))
         return tables
 
-    def get_stored_queries(self, queries=None):
-        # get all queries that are marked as stored
-        filters = {"is_stored": 1}
-        if queries:
-            filters["name"] = ("in", queries)
-        return frappe.get_all("Insights Query", filters=filters, pluck="name")
+    def make_table(self, query):
+        return frappe._dict(
+            {
+                "table": query.name,
+                "label": query.title,
+                "data_source": self.data_source,
+                "columns": self.make_columns(query.get_columns()),
+            }
+        )
 
-    def get_columns(self, columns):
-        return [
+    def get_stored_queries(self):
+        # get all queries that are marked as stored
+        return frappe.get_all("Insights Query", filters={"is_stored": 1}, pluck="name")
+
+    def make_columns(self, columns):
+        primary_key_column = [
+            frappe._dict(
+                {
+                    "column": "ID",
+                    "label": "ID",
+                    "type": "Integer",
+                },
+            )
+        ]
+        return primary_key_column + [
             frappe._dict(
                 {
                     "column": column.column or column.label,
@@ -99,8 +105,8 @@ class QueryStore(BaseDataSource):
         for row in columns:
             _columns.append(make_column_def(row.column, row.type))
 
-        if "TEMPID" not in _columns[0]:
-            _columns = ["TEMPID INT PRIMARY KEY AUTO_INCREMENT"] + _columns
+        if "ID" not in _columns[0]:
+            _columns = ["ID INT PRIMARY KEY AUTO_INCREMENT"] + _columns
 
         create_table = f"CREATE TEMPORARY TABLE `{query.name}`({', '.join(_columns)})"
 
@@ -133,10 +139,10 @@ class QueryStore(BaseDataSource):
             frappe.log_error(f"Error fetching data from QueryStore: {e}")
             raise
 
-    def describe_table(self, table, limit=20):
+    def get_table_preview(self, table, limit=20):
         self.create_temporary_table(table)
-        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
-        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
+        data = self._execute(f"""select * from `{table}` limit {limit}""")
+        length = self._execute(f"""select count(*) from `{table}`""")[0][0]
         self.conn.close()
         return {
             "data": data or [],

@@ -48,7 +48,7 @@
 				<div class="flex h-6 space-x-1 text-sm font-light text-gray-600">
 					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
 				</div>
-				<div class="flex h-[calc(100%-1.5rem)] w-full">
+				<div class="h-[calc(100%-1.5rem)] w-full">
 					<Table
 						v-if="!dataSourceTable.syncing"
 						:columns="doc.columns.map((c) => `${c.label} (${c.type})`)"
@@ -56,7 +56,7 @@
 					/>
 					<div
 						v-else
-						class="mt-2 flex w-full flex-col items-center justify-center rounded-md bg-gray-50"
+						class="mt-2 flex h-full flex-col items-center justify-center rounded-md bg-gray-50"
 					>
 						<Spinner class="mb-2 w-8 text-gray-400" />
 						<div class="text-lg text-gray-500">Syncing columns from database...</div>

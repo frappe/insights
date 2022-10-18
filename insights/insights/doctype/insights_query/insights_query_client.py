@@ -291,3 +291,8 @@ class InsightsQueryClient:
         self.clear()
         self.skip_before_save = True
         self.save()
+
+    @frappe.whitelist()
+    def store(self):
+        self.is_stored = 1
+        self.save()

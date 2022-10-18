@@ -23,6 +23,12 @@ def execute():
     )
 
     frappe.delete_doc("Insights Data Source", "Demo Data")
-    site_db = frappe.get_doc("Insights Data Source", "Site DB")
+    if not frappe.db.exists("Insights Data Source", "Site DB"):
+        site_db = frappe.new_doc("Insights Data Source")
+        site_db.title = "Site DB"
+        site_db.is_site_db = 1
+        site_db.save()
+    else:
+        site_db = frappe.get_doc("Insights Data Source", "Site DB")
     site_db.sync_tables()
     site_db.save()
