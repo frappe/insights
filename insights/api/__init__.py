@@ -44,21 +44,15 @@ def get_all_tables(data_source=None):
 
 
 @frappe.whitelist()
-def get_data_source_table(name, table):
-    table = frappe.get_doc(
+def get_table_columns(data_source, table):
+    doc = frappe.get_doc(
         "Insights Table",
         {
-            "data_source": name,
+            "data_source": data_source,
             "table": table,
         },
     )
-    columns, data, no_of_rows = table.preview()
-    return {
-        "doc": table.as_dict(),
-        "no_of_rows": no_of_rows,
-        "columns": columns,
-        "rows": data,
-    }
+    return {"columns": doc.columns}
 
 
 @frappe.whitelist()
@@ -187,6 +181,7 @@ def get_user_info():
 def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
+    print(data_source, primary_table, foreign_table, primary_key, foreign_key)
     primary = frappe.get_doc(
         "Insights Table",
         {
@@ -311,3 +306,9 @@ def upload_csv(label, file, if_exists, columns):
         )
     table_import.save()
     table_import.submit()
+
+
+@frappe.whitelist()
+def sync_data_source(data_source):
+    data_source = frappe.get_doc("Insights Data Source", data_source)
+    data_source.sync_tables()

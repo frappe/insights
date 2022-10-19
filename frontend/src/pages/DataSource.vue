@@ -19,6 +19,11 @@
 						}"
 						:options="[
 							{
+								label: 'Sync Tables',
+								icon: 'refresh-cw',
+								handler: syncTables,
+							},
+							{
 								label: 'Import CSV',
 								icon: 'upload',
 								handler: () => (showImportDialog = true),
@@ -99,7 +104,7 @@
 import { Badge, Dropdown } from 'frappe-ui'
 import BasePage from '@/components/BasePage.vue'
 import { useDataSource } from '@/utils/datasource'
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import ImportDialog from '@/components/ImportDialog.vue'
 
 const props = defineProps({
@@ -129,4 +134,16 @@ const tables = computed(() => {
 })
 
 const showImportDialog = ref(false)
+
+const $notify = inject('$notify')
+function syncTables() {
+	$notify({
+		title: 'Syncing Tables',
+		message: 'This may take a while',
+	})
+	dataSource
+		.syncTables()
+		.then(() => $notify({ title: 'Synced Tables', appearance: 'success' }))
+		.catch((err) => $notify({ title: 'Error Syncing Tables' }))
+}
 </script>

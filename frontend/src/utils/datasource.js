@@ -1,8 +1,12 @@
 import { createDocumentResource, createResource } from 'frappe-ui'
-import { reactive, watch, computed, inject } from 'vue'
+import { reactive, watch, computed } from 'vue'
 
 const dataSourceResource = createResource({
 	method: 'insights.api.get_data_source',
+	initalData: {},
+})
+const syncDataSourceResource = createResource({
+	method: 'insights.api.sync_data_source',
 	initalData: {},
 })
 
@@ -14,12 +18,14 @@ export function useDataSource(name) {
 		() => dataSourceResource.data,
 		(data) => Object.assign(dataSource, data)
 	)
+	dataSource.syncTables = () => {
+		return syncDataSourceResource.submit({ data_source: name })
+	}
 
 	return dataSource
 }
 
 export function useDataSourceTable(name) {
-	const $notify = inject('$notify')
 	const dataSourceTable = createDocumentResource({
 		doctype: 'Insights Table',
 		name: name,
