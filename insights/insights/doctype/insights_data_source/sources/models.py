@@ -22,7 +22,7 @@ class BaseDataSource:
     def sync_tables(self):
         raise NotImplementedError
 
-    def get_table_columns(self):
+    def get_table_columns(self, table):
         raise NotImplementedError
 
     def get_column_options(self):

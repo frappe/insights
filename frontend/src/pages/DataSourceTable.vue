@@ -77,19 +77,26 @@
 						placeholder="Select a table..."
 					/>
 				</div>
-				<Input
-					type="select"
-					v-model="newLink.primaryKey"
-					:options="doc.columns.map((c) => c[0])"
-					:label="`Select a column from ${doc.label}`"
-				/>
-				<Input
-					v-if="newLink.table?.value"
-					type="select"
-					v-model="newLink.foreignKey"
-					:options="foreignKeyOptions"
-					:label="`Select a column from ${newLink.table.label}`"
-				/>
+				<div>
+					<div class="mb-2 block text-sm leading-4 text-gray-700">
+						Select a column from {{ doc.label }}
+					</div>
+					<Autocomplete
+						v-model="newLink.primaryKey"
+						:options="
+							doc.columns.map((c) => ({
+								label: `${c.label} (${c.type})`,
+								value: c.column,
+							}))
+						"
+					/>
+				</div>
+				<div v-if="newLink.table?.value">
+					<div class="mb-2 block text-sm leading-4 text-gray-700">
+						Select a column from {{ newLink.table.label }}
+					</div>
+					<Autocomplete v-model="newLink.foreignKey" :options="foreignKeyOptions" />
+				</div>
 			</div>
 		</template>
 		<template #actions>
@@ -126,9 +133,9 @@ const props = defineProps({
 
 const addLinkDialog = ref(false)
 const newLink = reactive({
-	table: '',
-	primaryKey: '',
-	foreignKey: '',
+	table: {},
+	primaryKey: {},
+	foreignKey: {},
 })
 
 const dataSourceTable = useDataSourceTable(props.table)
@@ -137,11 +144,11 @@ const doc = computed(() => {
 })
 const hidden = computed({
 	get() {
-		return doc.hidden
+		return doc.value.hidden
 	},
 	set(value) {
-		if (value !== doc.hidden) {
-			doc.updateVisibility(value)
+		if (value !== doc.value.hidden) {
+			dataSourceTable.updateVisibility(value)
 		}
 	},
 })
@@ -159,7 +166,7 @@ const tableOptions = computed(() =>
 getTableOptions.submit({ data_source: props.name })
 
 const getForeignKeyOptions = createResource({
-	method: 'insights.api.get_data_source_table',
+	method: 'insights.api.get_table_columns',
 	initialData: [],
 })
 watch(
@@ -167,7 +174,7 @@ watch(
 	(table) => {
 		if (table) {
 			getForeignKeyOptions.submit({
-				name: props.name,
+				data_source: props.name,
 				table: table.table,
 			})
 		} else {
@@ -177,7 +184,14 @@ watch(
 )
 const foreignKeyOptions = computed({
 	get() {
-		return getForeignKeyOptions.data?.columns?.map((c) => c[0]) || []
+		return (
+			getForeignKeyOptions.data?.columns?.map((c) => {
+				return {
+					label: `${c.label} (${c.type})`,
+					value: c.column,
+				}
+			}) || []
+		)
 	},
 	set(value) {
 		getForeignKeyOptions.data = value
@@ -185,7 +199,11 @@ const foreignKeyOptions = computed({
 })
 
 const createLinkDisabled = computed(() => {
-	return !newLink.table || !newLink.primaryKey || !newLink.foreignKey
+	return (
+		!newLink.table ||
+		!(newLink.primaryKey && newLink.primaryKey.value) ||
+		!(newLink.foreignKey && newLink.foreignKey.value)
+	)
 })
 
 const $notify = inject('$notify')
@@ -210,15 +228,15 @@ function createLink() {
 	createLinkResource.submit({
 		data_source: props.name,
 		primary_table: {
-			label: doc.label,
-			table: doc.table,
+			label: doc.value.label,
+			table: doc.value.table,
 		},
 		foreign_table: {
 			label: newLink.table.label,
 			table: newLink.table.table,
 		},
-		primary_key: newLink.primaryKey,
-		foreign_key: newLink.foreignKey,
+		primary_key: newLink.primaryKey.value,
+		foreign_key: newLink.foreignKey.value,
 	})
 }
 </script>

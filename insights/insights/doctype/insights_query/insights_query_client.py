@@ -197,7 +197,7 @@ class InsightsQueryClient:
                 )
                 .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
             )
-            _tables = query.run(as_dict=True, debug=True)
+            _tables = query.run(as_dict=True)
 
         if self.data_source == "Query Store":
             # remove the current query table from the table list

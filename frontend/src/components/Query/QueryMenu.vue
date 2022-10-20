@@ -102,6 +102,7 @@
 						icon="copy"
 						appearance="white"
 						class="absolute bottom-2 right-2"
+						@click="copySQL"
 					></Button>
 				</div>
 			</template>
@@ -144,5 +145,20 @@ function storeQuery() {
 			title: 'Query Stored',
 		})
 	})
+}
+
+function copySQL() {
+	if (navigator.clipboard) {
+		navigator.clipboard.writeText(query.doc.sql)
+		$notify({
+			appearance: 'success',
+			title: 'SQL Copied',
+		})
+	} else {
+		$notify({
+			appearance: 'warning',
+			title: 'Copy to clipboard not supported',
+		})
+	}
 }
 </script>

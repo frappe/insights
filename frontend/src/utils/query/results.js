@@ -12,7 +12,7 @@ export function useQueryResults(query) {
 			return row.map((cell, idx) => {
 				const column = query.columns.data[idx] || {}
 				if (FIELDTYPES.NUMBER.includes(column.type)) {
-					if (column.type == 'Int') {
+					if (column.type == 'Integer') {
 						cell = parseInt(cell)
 					}
 					cell = Number(cell).toLocaleString()

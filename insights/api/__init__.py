@@ -181,7 +181,6 @@ def get_user_info():
 def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
-    print(data_source, primary_table, foreign_table, primary_key, foreign_key)
     primary = frappe.get_doc(
         "Insights Table",
         {

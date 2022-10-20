@@ -21,7 +21,7 @@ class FrappeTableFactory:
     def get_tables(self, table_names=None):
         tables = []
         for table in self.get_db_tables(table_names):
-            table.columns = self.get_table_columns(table)
+            table.columns = self.get_table_columns(table.table)
             table.table_links = self.get_table_links(table.label)
             tables.append(table)
         return tables
@@ -58,7 +58,7 @@ class FrappeTableFactory:
         columns = self.db_conn.sql(
             frappe.qb.from_(columns)
             .select(columns.column_name.as_("name"), columns.data_type.as_("type"))
-            .where(columns.table_name == table.table)
+            .where(columns.table_name == table)
             .get_sql(),
             as_dict=True,
         )

@@ -198,6 +198,7 @@ const addExpressionColumn = () => {
 		},
 		type: expression.valueType,
 		label: expression.label,
+		column: expression.label.replace(/\s/g, '_'),
 		aggregation: expression.groupBy ? 'Group By' : '',
 	}
 	emit('column-select', newColumn)

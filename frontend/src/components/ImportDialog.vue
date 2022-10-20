@@ -1,7 +1,6 @@
 <script setup>
 import Attachment from './Controls/Attachment.vue'
 import Draggable from 'vuedraggable'
-import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
 import { reactive, watch, computed, ref } from 'vue'
 import { createResource } from 'frappe-ui'
 

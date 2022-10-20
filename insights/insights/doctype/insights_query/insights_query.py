@@ -155,7 +155,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.status = "Execution Successful"
 
     def update_query_store(self):
-        if self.is_stored:
+        if self.is_stored or self.data_source == "Query Store":
             query_store = frappe.get_doc("Insights Data Source", "Query Store")
             query_store.sync_tables(queries=[self.name])
         elif tablename := frappe.db.exists("Insights Table", {"table": self.name}):

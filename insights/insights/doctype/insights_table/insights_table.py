@@ -32,7 +32,7 @@ class InsightsTable(Document):
 
     def update_columns(self):
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        if columns := data_source.get_table_columns(self):
+        if columns := data_source.get_table_columns(self.table):
             self.columns = []
             for column in columns:
                 self.append(
