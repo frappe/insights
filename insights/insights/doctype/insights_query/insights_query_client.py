@@ -20,7 +20,7 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def get_charts(self):
-        return frappe.get_all(
+        return frappe.get_list(
             "Insights Query Chart",
             filters={"query": self.name},
             pluck="name",

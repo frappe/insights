@@ -33,7 +33,7 @@ def get_all_tables(data_source=None):
     if not data_source:
         return []
 
-    return frappe.get_all(
+    return frappe.get_list(
         "Insights Table",
         filters={
             "data_source": data_source,
@@ -73,7 +73,7 @@ def get_tables(data_source=None):
     if not data_source:
         return []
 
-    return frappe.get_all(
+    return frappe.get_list(
         "Insights Table",
         filters={
             "hidden": 0,
