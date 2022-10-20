@@ -43,3 +43,7 @@ class InsightsTable(Document):
                         "type": column.get("type"),
                     },
                 )
+
+
+def on_doctype_update():
+    frappe.db.add_index("Insights Table", ["data_source", "table"])
