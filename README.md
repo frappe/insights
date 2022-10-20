@@ -13,12 +13,10 @@
 	<img src=".github/hero-image.png" alt="Hero Image" width="72%" />
 </div>
 
-<div align="center" style="text-align: center; font-size: 20px;">
-	Demo
-</div>
-
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
-	<img src=".github/preview.gif" alt="Frappe Insights Preview" width="70%" style="border-radius: 6px" />
+	<a href=".github/preview.gif">Preview</a>
+	-
+	<a href="https://frappeinsights.frappe.cloud/docs">Documentation</a>
 </div>
 
 ## Features
