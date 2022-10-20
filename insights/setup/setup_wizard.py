@@ -111,6 +111,7 @@ def get_new_datasource(args):
 def create_datasource(args):
     data_source = get_new_datasource(args)
     data_source.save()
+    data_source.sync_tables()
 
 
 def wrap_up(args):

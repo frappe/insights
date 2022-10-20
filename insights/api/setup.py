@@ -37,6 +37,7 @@ def test_database_connection(db):
 def add_database(db):
     data_source = get_new_datasource(db)
     data_source.save()
+    data_source.sync_tables()
     update_setup_status()
 
 
