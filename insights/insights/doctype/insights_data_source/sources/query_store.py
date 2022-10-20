@@ -149,13 +149,13 @@ class QueryStore(BaseDataSource):
             "length": length or 0,
         }
 
-    def get_column_options(self, column, search_text=None, limit=25):
-        if not frappe.db.exists("Insights Query", column.get("table")):
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        if not frappe.db.exists("Insights Query", table):
             return []
 
-        query = frappe.get_cached_doc("Insights Query", column.get("table"))
-        Table = frappe.qb.Table(column.get("table"))
-        Column = frappe.qb.Field(column.get("column"))
+        query = frappe.get_cached_doc("Insights Query", table)
+        Table = frappe.qb.Table(table)
+        Column = frappe.qb.Field(column)
         query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)
         if search_text:
             query = query.where(Column.like(f"%{search_text}%"))

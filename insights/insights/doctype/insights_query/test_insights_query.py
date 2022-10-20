@@ -32,6 +32,13 @@ class TestInsightsQuery(FrappeTestCase):
         self.assertTrue("`status`='Open'" in query.sql)
         self.assertTrue("5" in query.result)
 
+        column_values = query.fetch_column_values(
+            {"table": "tabToDo", "column": "status"}
+        )
+        self.assertTrue(len(column_values), 2)
+        self.assertTrue("Open" in column_values)
+        self.assertTrue("Closed" in column_values)
+
     def test_todo_by_creation(self):
         frappe.db.delete("ToDo")
         for i in range(10):

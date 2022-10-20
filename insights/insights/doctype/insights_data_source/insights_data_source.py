@@ -92,8 +92,8 @@ class InsightsDataSource(Document):
     def get_table_columns(self, table):
         return self.db.get_table_columns(table)
 
-    def get_column_options(self, *args, **kwargs):
-        return self.db.get_column_options(*args, **kwargs)
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        return self.db.get_column_options(table, column, search_text, limit)
 
     def get_table_preview(self, table, limit=20):
         return self.db.get_table_preview(table, limit)

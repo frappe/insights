@@ -25,7 +25,7 @@ class BaseDataSource:
     def get_table_columns(self, table):
         raise NotImplementedError
 
-    def get_column_options(self):
+    def get_column_options(self, table, column, search_text=None, limit=25):
         raise NotImplementedError
 
     def get_table_preview(self):

@@ -255,7 +255,7 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text) -> "list[str]":
+    def fetch_column_values(self, column, search_text=None) -> "list[str]":
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
         return data_source.get_column_options(
             column.get("table"), column.get("column"), search_text

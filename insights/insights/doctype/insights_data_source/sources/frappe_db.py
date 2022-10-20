@@ -287,6 +287,16 @@ class FrappeDB(BaseDataSource):
     def get_table_columns(self, table):
         return self.table_factory.get_table_columns(table)
 
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        Table = frappe.qb.Table(table)
+        Column = frappe.qb.Field(column)
+        query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)
+        if search_text:
+            query = query.where(Column.like(f"%{search_text}%"))
+        values = self.execute_query(query.get_sql(), pluck=True)
+        # TODO: cache
+        return values
+
 
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
