@@ -13,20 +13,19 @@
 				<div class="space-x-2">
 					<Dropdown
 						placement="left"
-						:button="{
-							icon: 'more-horizontal',
-							appearance: 'minimal',
-						}"
+						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 						:options="[
+							dataSource.doc.name == 'Site DB'
+								? {
+										label: 'Import CSV',
+										icon: 'upload',
+										handler: () => (showImportDialog = true),
+								  }
+								: null,
 							{
 								label: 'Sync Tables',
 								icon: 'refresh-cw',
 								handler: syncTables,
-							},
-							{
-								label: 'Import CSV',
-								icon: 'upload',
-								handler: () => (showImportDialog = true),
 							},
 						]"
 					/>
