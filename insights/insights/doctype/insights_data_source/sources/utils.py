@@ -75,8 +75,8 @@ def create_insights_table(table, force=False):
         )
 
     doc.label = table.label
-    doc.columns = []
     if force:
+        doc.columns = []
         doc.table_links = []
 
     for table_link in table.table_links or []:
@@ -86,6 +86,11 @@ def create_insights_table(table, force=False):
     for column in table.columns or []:
         if not doc.get("columns", column):
             doc.append("columns", column)
+
+    column_names = [c.column for c in table.columns]
+    for column in doc.columns:
+        if column.column not in column_names:
+            doc.remove(column)
 
     doc.save()
     return doc.name

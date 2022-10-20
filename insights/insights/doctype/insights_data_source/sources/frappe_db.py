@@ -53,16 +53,32 @@ class FrappeTableFactory:
             }
         )
 
-    def get_table_columns(self, table):
+    def get_all_columns(self):
         columns = frappe.qb.Schema("information_schema").columns
-        columns = self.db_conn.sql(
+        database_name = self.db_conn.sql("SELECT DATABASE()")[0][0]
+
+        query = (
             frappe.qb.from_(columns)
-            .select(columns.column_name.as_("name"), columns.data_type.as_("type"))
-            .where(columns.table_name == table)
-            .get_sql(),
-            as_dict=True,
+            .select(
+                columns.table_name,
+                columns.column_name.as_("name"),
+                columns.data_type.as_("type"),
+            )
+            .where(columns.table_schema == database_name)
         )
-        return (self.get_column(c.name, c.type) for c in columns)
+
+        columns = self.db_conn.sql(query.get_sql(), as_dict=True)
+        columns_by_table = {}
+        for c in columns:
+            columns_by_table.setdefault(c.table_name, []).append(
+                self.get_column(c.name, c.type)
+            )
+        return columns_by_table
+
+    def get_table_columns(self, table):
+        if not hasattr(self, "_all_columns") or not self._all_columns:
+            self._all_columns = self.get_all_columns()
+        return self._all_columns.get(table, [])
 
     def get_column(self, column_name, column_type):
         return frappe._dict(
