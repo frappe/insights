@@ -334,7 +334,8 @@ class SiteDB(FrappeDB):
 
 def is_frappe_db(db_params):
     try:
-        return FrappeDB(**db_params).test_connection()
+        db = FrappeDB(**db_params)
+        return db if db.test_connection() else None
     except BaseException:
         print("Not a Frappe DB")
         return False

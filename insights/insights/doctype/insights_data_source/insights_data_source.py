@@ -52,8 +52,8 @@ class InsightsDataSource(Document):
             "database_name": self.database_name,
         }
 
-        if is_frappe_db(conn_args):
-            return FrappeDB(**conn_args)
+        if db := is_frappe_db(conn_args):
+            return db
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
