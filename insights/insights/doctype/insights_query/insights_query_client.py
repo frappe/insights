@@ -244,7 +244,7 @@ class InsightsQueryClient:
                     )
                 )
 
-        return list(set(self.tables + join_tables))
+        return self.tables + join_tables
 
     @frappe.whitelist()
     def set_limit(self, limit):
