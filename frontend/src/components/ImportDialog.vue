@@ -60,7 +60,7 @@ function submit() {
 </script>
 
 <template>
-	<Dialog :options="{ title: 'Import Table' }" v-model="props.show">
+	<Dialog :options="{ title: 'Import Table' }" v-model="props.show" :dismissable="true">
 		<template #body-content>
 			<!-- Table Name, Table Label, Action if exists, Attach file, Columns -->
 			<div class="mb-4 flex gap-4">

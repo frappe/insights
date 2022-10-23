@@ -20,8 +20,8 @@ const allColumns = computed(() => {
 		<div class="text-base font-light text-gray-500">Select Columns</div>
 		<ListPicker
 			:options="allColumns"
-			:value="chart.data.columns"
-			@change="(options) => (chart.data.columns = options)"
+			:value="chart.config.columns"
+			@change="(options) => (chart.config.columns = options)"
 		/>
 	</div>
 </template>

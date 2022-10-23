@@ -14,7 +14,7 @@ class InsightsQueryChart(Document):
         doc = _dict(doc)
         self.title = doc.title
         self.type = doc.type
-        self.data = dumps(doc.data, indent=2)
+        self.config = dumps(doc.config, indent=2)
         self.save()
 
     @frappe.whitelist()

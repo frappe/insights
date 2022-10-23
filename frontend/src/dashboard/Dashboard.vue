@@ -3,12 +3,12 @@
 		<template #header>
 			<DashboardHeader
 				@addChart="() => (showAddDialog = true)"
-				@commitLayout="commitLayout"
+				@commitLayout="dashboard.commitLayout"
 			/>
 		</template>
 		<template #main>
 			<div
-				v-if="charts && charts.length > 0"
+				v-if="dashboard.items && dashboard.items.length > 0"
 				class="-mx-1 h-full w-full overflow-scroll pt-1"
 				:class="{
 					'blur-[4px]': dashboard.refreshing,
@@ -16,9 +16,9 @@
 				}"
 			>
 				<GridLayout
-					:items="charts"
+					:items="dashboard.items"
 					itemKey="name"
-					@layoutChange="updateLayout"
+					@layoutChange="dashboard.updateLayout"
 					:disabled="!dashboard.editingLayout"
 					:options="{
 						float: true,
@@ -28,17 +28,12 @@
 					}"
 				>
 					<template #item="{ item }">
-						<DashboardCard
-							:chartID="item.chartID"
-							:queryID="item.query"
-							@edit="editChart"
-							@remove="removeItem"
-						/>
+						<DashboardItem :item="item" />
 					</template>
 				</GridLayout>
 			</div>
 			<div
-				v-if="charts && charts.length == 0"
+				v-if="dashboard.items && dashboard.items.length == 0"
 				class="flex flex-1 flex-col items-center justify-center space-y-1"
 			>
 				<div class="text-base font-light text-gray-500">You haven't added any charts.</div>
@@ -64,7 +59,19 @@
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="addChart" :loading="addingChart"> Add </Button>
+			<Button
+				appearance="primary"
+				@click="
+					() =>
+						dashboard.addChart(newChart.value).then(() => {
+							newChart = {}
+							showAddDialog = false
+						})
+				"
+				:loading="dashboard.addingChart"
+			>
+				Add
+			</Button>
 		</template>
 	</Dialog>
 </template>
@@ -72,15 +79,13 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import DashboardHeader from '@/components/Dashboard/DashboardHeader.vue'
-import DashboardCard from '@/components/Dashboard/DashboardCard.vue'
+import DashboardHeader from '@/dashboard/DashboardHeader.vue'
+import DashboardItem from '@/dashboard/DashboardItem.vue'
+import GridLayout from '@/dashboard/GridLayout.vue'
 
-import { computed, ref, provide, reactive, watch } from 'vue'
-import useDashboard from '@/utils/dashboard'
+import { computed, ref, provide, watch } from 'vue'
 import { updateDocumentTitle } from '@/utils'
-
-import GridLayout from '@/components/Dashboard/GridLayout.vue'
-import { safeJSONParse } from '@/utils'
+import useDashboard from '@/dashboard/useDashboard'
 
 const props = defineProps({
 	name: {
@@ -92,63 +97,8 @@ const props = defineProps({
 const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
-const charts = computed(() =>
-	dashboard.doc?.items.map((v) => {
-		const layout = safeJSONParse(v.layout, {})
-		return {
-			...v,
-			...layout,
-			chartID: v.query_chart,
-		}
-	})
-)
-
-const updatedLayout = reactive({})
-const updateLayout = (changedItems) => {
-	changedItems.forEach((item) => {
-		const name = item.id
-		delete item.id
-		updatedLayout[name] = item
-	})
-}
-
-const commitLayout = () => {
-	dashboard.updateLayout.submit({
-		updated_layout: updatedLayout,
-	})
-	dashboard.editingLayout = false
-}
-
 const showAddDialog = ref(false)
 const newChart = ref({})
-
-const addChart = () => {
-	dashboard.addChart
-		.submit({
-			query_chart: newChart.value.value,
-		})
-		.then(() => {
-			newChart.value = {}
-			showAddDialog.value = false
-			dashboard.updateNewChartOptions()
-		})
-}
-const addingChart = computed(() => dashboard.addChart.loading)
-
-const removeItem = (chartID) => {
-	const rowName = dashboard.doc.items.find((v) => v.query_chart == chartID).name
-	dashboard.removeItem
-		.submit({
-			item: rowName,
-		})
-		.then(() => {
-			dashboard.updateNewChartOptions()
-		})
-}
-
-const editChart = (queryID) => {
-	window.open(`/insights/query/${queryID}`, '_blank')
-}
 
 const autocomplete = ref(null)
 watch(showAddDialog, (show) => {
@@ -162,7 +112,7 @@ watch(showAddDialog, (show) => {
 
 const pageMeta = computed(() => {
 	return {
-		title: dashboard.doc?.name,
+		title: props.name,
 		subtitle: 'Dashboard',
 	}
 })

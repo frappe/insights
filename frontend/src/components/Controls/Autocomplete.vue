@@ -5,6 +5,7 @@
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
+					autocomplete="off"
 					:placeholder="placeholder"
 					@focus="togglePopover"
 					@change="
@@ -135,6 +136,9 @@ const props = defineProps({
 })
 
 const filterQuery = ref('')
+const modelValueIsObject = computed(() => {
+	return typeof props.modelValue === 'object' || !props.modelValue
+})
 const options = computed(() => {
 	if (typeof props.options[0] !== 'object') {
 		return props.options.map((option) => {
@@ -148,11 +152,14 @@ const options = computed(() => {
 })
 const selectedOption = computed({
 	get() {
-		return options.value.find((option) => option.value === props.modelValue?.value)
+		return modelValueIsObject.value
+			? props.modelValue
+			: options.value.find((option) => option.value === props.modelValue)
 	},
 	set(value) {
-		emit('update:modelValue', value)
-		emit('selectOption', value)
+		const _value = modelValueIsObject.value ? value : value.value
+		emit('update:modelValue', _value)
+		emit('selectOption', _value)
 	},
 })
 const uniqueOptions = computed(() => {

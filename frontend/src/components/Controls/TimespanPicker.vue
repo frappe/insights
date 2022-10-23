@@ -4,7 +4,7 @@
 			<input
 				readonly
 				type="text"
-				:value="modelValue?.label"
+				:value="_value"
 				:placeholder="placeholder"
 				@focus="togglePopover()"
 				class="form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500"
@@ -77,27 +77,29 @@
 <script>
 export default {
 	name: 'TimespanPicker',
-	props: ['modelValue', 'placeholder'],
+	emits: ['update:modelValue', 'change'],
+	props: ['value', 'modelValue', 'placeholder'],
 	data() {
-		const [span, interval, interval_type] = this.modelValue?.value?.split(' ') || [
-			'Last',
-			'1',
-			'Days',
-		]
-		return {
-			span,
-			interval,
-			interval_type,
+		const initalValue = this.valuePropPassed() ? this.value : this.modelValue?.value || ''
+		if (initalValue.includes('Current')) {
+			return {
+				span: 'Current',
+				interval: '1',
+				interval_type: initalValue.split(' ')[1] || 'Day',
+			}
+		} else {
+			return {
+				span: 'Last',
+				interval: initalValue.split(' ')[1] || '1',
+				interval_type: initalValue.split(' ')[2] || 'Months',
+			}
 		}
 	},
 	computed: {
-		value() {
+		_value() {
 			return this.span === 'Current'
 				? `${this.span} ${this.interval_type}`
 				: `${this.span} ${this.interval} ${this.interval_type}`
-		},
-		label() {
-			return this.value
 		},
 	},
 	watch: {
@@ -111,11 +113,18 @@ export default {
 		},
 	},
 	methods: {
+		valuePropPassed() {
+			return this.value !== undefined
+		},
 		apply() {
-			this.$emit('update:modelValue', {
-				label: this.value,
-				value: this.value,
-			})
+			if (this.valuePropPassed()) {
+				this.$emit('change', this._value)
+			} else {
+				this.$emit('update:modelValue', {
+					value: this._value,
+					label: this._value,
+				})
+			}
 		},
 	},
 }

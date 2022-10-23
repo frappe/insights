@@ -311,3 +311,14 @@ def upload_csv(label, file, if_exists, columns):
 def sync_data_source(data_source):
     data_source = frappe.get_doc("Insights Data Source", data_source)
     data_source.sync_tables()
+
+
+@frappe.whitelist()
+def get_query_data(query):
+    return frappe.db.get_value("Insights Query", query, "result")
+
+
+@frappe.whitelist()
+def get_chart_data(dashboard, chart):
+    doc = frappe.get_doc("Insights Dashboard", dashboard)
+    return doc.get_chart_data(chart)

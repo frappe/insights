@@ -93,17 +93,24 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def build_and_execute(self):
         start = time.time()
-        self._result = self._data_source.run_query(query=self)
+        results = list(self._data_source.run_query(query=self))
+        columns = [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
+        results.insert(0, columns)
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
-        self.executed = True
-        self.store_result()
+        self.result = dumps(results, default=cstr)
+        self.status = "Execution Successful"
 
         self.update_query_store()
 
-    def store_result(self):
-        self.result = dumps(self._result, default=cstr)
-        self.status = "Execution Successful"
+    def run_with_filters(self, filter_conditions):
+        filters = frappe.parse_json(self.filters)
+        filters.conditions.extend(filter_conditions)
+        self.filters = dumps(filters, indent=2)
+        results = list(self._data_source.run_query(query=self))
+        columns = [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
+        results.insert(0, columns)
+        return results
 
     def create_default_chart(self):
         charts = self.get_charts()

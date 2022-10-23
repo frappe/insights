@@ -6,24 +6,6 @@ const dashboard = inject('dashboard')
 
 const router = useRouter()
 const showDeleteDialog = ref(false)
-const deletingDashboard = computed(() => dashboard.delete.loading)
-const deleteDashboard = () => {
-	dashboard.delete.submit().then(() => {
-		showDeleteDialog.value = false
-		router.push('/dashboard')
-	})
-}
-
-const refreshItems = async () => {
-	dashboard.refreshing = true
-	// hack: update the charts
-	await dashboard.refreshItems.submit()
-	// then reload the dashboard doc
-	// to re-render the charts with new data
-	dashboard.doc.items = []
-	await dashboard.reload()
-	dashboard.refreshing = false
-}
 
 defineEmits(['addChart', 'commitLayout'])
 </script>
@@ -38,7 +20,7 @@ defineEmits(['addChart', 'commitLayout'])
 				v-if="!dashboard.editingLayout"
 				appearance="white"
 				iconLeft="refresh-ccw"
-				@click="refreshItems"
+				@click="dashboard.refreshItems"
 			>
 				Refresh
 			</Button>
@@ -92,7 +74,16 @@ defineEmits(['addChart', 'commitLayout'])
 			<p class="text-base text-gray-600">Are you sure you want to delete this dashboard?</p>
 		</template>
 		<template #actions>
-			<Button appearance="danger" @click="deleteDashboard" :loading="deletingDashboard">
+			<Button
+				appearance="danger"
+				@click="
+					dashboard.deleteDashboard().then(() => {
+						showDeleteDialog = false
+						router.push('/dashboard')
+					})
+				"
+				:loading="deletingDashboard"
+			>
 				Yes
 			</Button>
 		</template>

@@ -77,16 +77,18 @@ provide('convertAttributesToOptions', convertAttributesToOptions)
 </script>
 
 <template>
-	<div v-bind="$attrs" :class="['mx-3', $attrs.subtitle ? 'h-11' : 'h-6']">
-		<div class="text-lg font-normal leading-6 text-gray-800">{{ $attrs.title }}</div>
-		<div v-if="$attrs.subtitle" class="text-base font-light">
-			{{ $attrs.subtitle }}
+	<div class="h-full w-full rounded-md border px-2 py-3">
+		<div v-bind="$attrs" :class="['mx-3', $attrs.subtitle ? 'h-11' : 'h-6']">
+			<div class="text-lg font-normal leading-6 text-gray-800">{{ $attrs.title }}</div>
+			<div v-if="$attrs.subtitle" class="text-base font-light">
+				{{ $attrs.subtitle }}
+			</div>
 		</div>
-	</div>
-	<div
-		ref="chartRef"
-		:class="['w-full', subtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]']"
-	>
-		<slot></slot>
+		<div
+			ref="chartRef"
+			:class="['w-full', subtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]']"
+		>
+			<slot></slot>
+		</div>
 	</div>
 </template>

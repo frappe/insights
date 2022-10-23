@@ -11,7 +11,7 @@
   "column_break_3",
   "type",
   "section_break_5",
-  "data"
+  "config"
  ],
  "fields": [
   {
@@ -36,23 +36,22 @@
    "label": "Type"
   },
   {
-   "fieldname": "data",
-   "fieldtype": "Code",
-   "label": "Data",
-   "options": "JSON"
-  },
-  {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_5",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "JSON",
+   "label": "Config"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-15 12:00:07.100926",
+ "modified": "2022-10-23 13:31:40.223868",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Chart",

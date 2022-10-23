@@ -20,7 +20,7 @@ export function safeJSONParse(str, defaultValue = null) {
 		return defaultValue
 	}
 
-	if (typeof str === 'object') {
+	if (typeof str !== 'string') {
 		return str
 	}
 

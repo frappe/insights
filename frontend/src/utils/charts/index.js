@@ -1,7 +1,6 @@
 import { computed, markRaw, reactive, nextTick, watch } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
-import { useQuery } from '@/utils/query'
 import { watchDebounced } from '@vueuse/core'
 
 import { Bar, Line } from './axisChart'
@@ -23,17 +22,14 @@ const types = [
 
 const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
-function useQueryChart({ chartID, queryID, query }) {
-	if (!query) {
-		query = useQuery(queryID)
-	}
-
+function useChart({ chartID, data }) {
 	const resource = queryChartResource(chartID)
 	const initialDoc = computed(() => resource.doc || {})
 
 	const emptyChart = {
 		type: '',
-		data: {},
+		data: [],
+		config: {},
 		options: {},
 		dataSchema: {},
 		controller: null,
@@ -56,16 +52,27 @@ function useQueryChart({ chartID, queryID, query }) {
 			if (doc.type || doc.title) {
 				chart.type = doc.type
 				chart.title = doc.title
-				chart.data = safeJSONParse(doc.data, {})
-				chart.options = chart.data.options || {}
+				chart.config = safeJSONParse(doc.config, {})
+				chart.options = chart.config.options || {}
+				if (data) {
+					chart.data = safeJSONParse(data.value || data, [])
+				}
 			}
 		},
 		{ deep: true, immediate: true }
 	)
 
 	watch(
+		() => data.value || data,
+		(newData) => {
+			chart.data = safeJSONParse(newData, [])
+		},
+		{ immediate: true, deep: true }
+	)
+
+	watch(
 		() => chart.type,
-		(type, old) => {
+		(type) => {
 			if (!type) {
 				Object.assign(chart, emptyChart)
 				return
@@ -90,27 +97,25 @@ function useQueryChart({ chartID, queryID, query }) {
 	)
 
 	watchDebounced(
-		// if query.doc or chart options changes then re-render chart
+		// re-render chart if one of these props change
 		() => ({
-			queryDoc: query.doc,
-			options: {
-				type: chart.type,
-				title: chart.title,
-				data: chart.data,
-				options: chart.options,
-			},
+			type: chart.type,
+			title: chart.title,
+			data: chart.data,
+			config: chart.config,
+			options: chart.options,
 		}),
 		buildComponentProps,
 		{ deep: true, immediate: true, debounce: 300 }
 	)
 
-	async function buildComponentProps({ queryDoc, options }) {
+	async function buildComponentProps() {
 		chart.componentProps = null
 		await nextTick()
-		if (!query.doc || isEmptyObj(options.data)) {
+		if (isEmptyObj(chart.config)) {
 			return
 		}
-		chart.controller.buildComponentProps(query, options)
+		chart.controller.buildComponentProps({ ...chart })
 	}
 
 	function setType(type) {
@@ -122,7 +127,7 @@ function useQueryChart({ chartID, queryID, query }) {
 			doc: {
 				type: chart.type,
 				title: chart.title,
-				data: Object.assign({}, chart.data, {
+				config: Object.assign({}, chart.config, {
 					options: chart.options,
 				}),
 			},
@@ -138,12 +143,10 @@ function useQueryChart({ chartID, queryID, query }) {
 		if (!initialDoc.value) return false
 
 		const doc = initialDoc.value
-		const initialData = safeJSONParse(doc.data, {})
-		const initalOptions = initialData.options || {}
-		const dataChanged = JSON.stringify(initialData) !== JSON.stringify(chart.data)
-		const optionsChanged = JSON.stringify(initalOptions) !== JSON.stringify(chart.options)
+		const initialConfig = safeJSONParse(doc.config, {})
+		const configChanged = JSON.stringify(initialConfig) !== JSON.stringify(chart.config)
 
-		return doc.type !== chart.type || doc.title !== chart.title || dataChanged || optionsChanged
+		return doc.type !== chart.type || doc.title !== chart.title || configChanged
 	})
 
 	function addToDashboard(dashboard, layout, { onSuccess }) {
@@ -167,4 +170,4 @@ const queryChartResource = (name) => {
 	return createDocumentResource({ doctype, name, whitelistedMethods })
 }
 
-export { types, useQueryChart }
+export { types, useChart }
