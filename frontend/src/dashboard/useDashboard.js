@@ -48,16 +48,15 @@ export default function useDashboard(dashboardName) {
 				dashboard.editingLayout = false
 			})
 	}
-	dashboard.addChart = (chart) => {
-		return dashboard.add_chart
-			.submit({
-				query_chart: chart,
-			})
-			.then(() => {
-				dashboard.updateNewChartOptions()
-			})
+	dashboard.addItem = (item) => {
+		let layout = null
+		if (item.item_type === 'Filter') {
+			layout = { x: 0, y: 0, w: 4, h: 3 }
+		}
+		return dashboard.add_item.submit({ item, layout }).then(() => {
+			dashboard.updateNewChartOptions()
+		})
 	}
-	dashboard.addingChart = computed(() => dashboard.add_chart.loading)
 
 	dashboard.removeItem = (name) => {
 		dashboard.remove_item
@@ -119,7 +118,7 @@ function makeDashboardResource(name) {
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
-			add_chart: 'add_chart',
+			add_item: 'add_item',
 			get_chart_options: 'get_charts',
 			refresh_items: 'refresh_items',
 			update_layout: 'update_layout',

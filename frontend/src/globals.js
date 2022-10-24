@@ -6,6 +6,7 @@ import {
 	Popover,
 	Dialog,
 	ErrorMessage,
+	Dropdown,
 } from 'frappe-ui'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
@@ -20,6 +21,7 @@ export function registerGlobalComponents(app) {
 	app.component('Dialog', Dialog)
 	app.component('Popover', Popover)
 	app.component('Checkbox', Checkbox)
+	app.component('Dropdown', Dropdown)
 	app.component('Autocomplete', Autocomplete)
 	app.component('ErrorMessage', ErrorMessage)
 	app.component('FeatherIcon', FeatherIcon)

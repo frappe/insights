@@ -47,14 +47,31 @@
 		</template>
 	</BasePage>
 
-	<Dialog :options="{ title: 'Add Chart' }" v-model="showAddDialog" :dismissable="true">
+	<Dialog :options="{ title: 'Add an item' }" v-model="showAddDialog" :dismissable="true">
 		<template #body-content>
 			<div class="space-y-4">
+				<Tabs
+					:tabs="addItemTabs"
+					@switch="
+						(tab) => {
+							addItemTabs.forEach((t) => {
+								t.active = t.label === tab.label
+							})
+							newItem.item_type = tab.label
+						}
+					"
+				/>
 				<Autocomplete
+					v-if="addItemTabs.find((t) => t.active).label === 'Chart'"
 					ref="autocomplete"
 					placeholder="Select a chart"
-					v-model="newChart"
+					v-model="newItem"
 					:options="dashboard.newChartOptions"
+				/>
+
+				<DashboardFilterForm
+					v-model="newItem"
+					v-if="addItemTabs.find((t) => t.active).label === 'Filter'"
 				/>
 			</div>
 		</template>
@@ -62,13 +79,12 @@
 			<Button
 				appearance="primary"
 				@click="
-					() =>
-						dashboard.addChart(newChart.value).then(() => {
-							newChart = {}
-							showAddDialog = false
-						})
+					() => {
+						dashboard.addItem(newItem)
+						showAddDialog = false
+					}
 				"
-				:loading="dashboard.addingChart"
+				:loading="dashboard.add_item.loading"
 			>
 				Add
 			</Button>
@@ -82,8 +98,10 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import DashboardHeader from '@/dashboard/DashboardHeader.vue'
 import DashboardItem from '@/dashboard/DashboardItem.vue'
 import GridLayout from '@/dashboard/GridLayout.vue'
+import Tabs from '@/components/Tabs.vue'
+import DashboardFilterForm from './DashboardFilterForm.vue'
 
-import { computed, ref, provide, watch } from 'vue'
+import { computed, ref, provide, watch, reactive } from 'vue'
 import { updateDocumentTitle } from '@/utils'
 import useDashboard from '@/dashboard/useDashboard'
 
@@ -98,7 +116,13 @@ const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
 const showAddDialog = ref(false)
-const newChart = ref({})
+const newItem = ref({
+	item_type: 'Chart',
+	chart: null,
+	filter_label: '',
+	filter_type: 'String', // default
+	filter_operator: 'equals', // default
+})
 
 const autocomplete = ref(null)
 watch(showAddDialog, (show) => {
@@ -109,6 +133,17 @@ watch(showAddDialog, (show) => {
 		}, 400)
 	}
 })
+
+const addItemTabs = ref([
+	{
+		label: 'Chart',
+		active: true,
+	},
+	{
+		label: 'Filter',
+		active: false,
+	},
+])
 
 const pageMeta = computed(() => {
 	return {

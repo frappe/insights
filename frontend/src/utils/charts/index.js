@@ -23,6 +23,11 @@ const types = [
 const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
 function useChart({ chartID, data }) {
+	if (!chartID) {
+		console.error('Chart ID is required')
+		return
+	}
+
 	const resource = queryChartResource(chartID)
 	const initialDoc = computed(() => resource.doc || {})
 
