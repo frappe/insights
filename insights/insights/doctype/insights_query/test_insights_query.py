@@ -59,4 +59,4 @@ class TestInsightsQuery(FrappeTestCase):
         query.build_and_execute()
         query.save()
 
-        self.assertEqual(len(json.loads(query.result)), 10)
+        self.assertEqual(len(json.loads(query.result)), 11)

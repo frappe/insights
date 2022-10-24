@@ -99,7 +99,8 @@ class QueryStore(BaseDataSource):
         # create temporary table for an existing insights query
         query = frappe.get_doc("Insights Query", table)
         columns = query.get_columns()
-        result = query.load_result()
+        result = list(query.load_result())
+        result.pop(0)
 
         _columns = []
         for row in columns:

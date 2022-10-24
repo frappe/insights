@@ -33,7 +33,7 @@ class TestQueryStoreDataSource(unittest.TestCase):
         store_query.append("tables", {"table": db_query.name, "label": db_query.title})
         store_query.save()
         store_query.run()
-        data = json.loads(store_query.result)
+        data = json.loads(store_query.result)[1:]
         self.assertEqual(len(data), frappe.db.count("User"))
         # Temporary table should be dropped on closing the connection
         with self.assertRaises(BaseException) as error:
