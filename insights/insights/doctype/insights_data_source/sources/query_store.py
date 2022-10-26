@@ -4,7 +4,7 @@
 
 import re
 import frappe
-from .models import BaseDataSource
+from .models import BaseDatabase
 from .utils import create_insights_table
 from frappe.database.mariadb.database import MariaDBDatabase
 from insights.insights.query_builders.frappe_qb import FrappeQueryBuilder
@@ -63,7 +63,7 @@ class StoredQueryTableFactory:
         ]
 
 
-class QueryStore(BaseDataSource):
+class QueryStore(BaseDatabase):
     def __init__(self):
         self.conn: MariaDBDatabase = MariaDBDatabase()
         self.query_builder: FrappeQueryBuilder = FrappeQueryBuilder()

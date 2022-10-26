@@ -5,7 +5,7 @@ import frappe
 from functools import cached_property
 from frappe.model.document import Document
 
-from .sources.models import BaseDataSource
+from .sources.models import BaseDatabase
 from .sources.query_store import QueryStore
 from .sources.frappe_db import is_frappe_db, FrappeDB, SiteDB
 
@@ -34,7 +34,7 @@ class InsightsDataSource(Document):
                 frappe.delete_doc(doctype, name)
 
     @cached_property
-    def db(self) -> BaseDataSource:
+    def db(self) -> BaseDatabase:
         if self.is_site_db:
             return SiteDB(data_source=self.name)
         if self.name == "Query Store":

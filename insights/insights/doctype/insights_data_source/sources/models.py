@@ -4,7 +4,7 @@
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
-class BaseDataSource:
+class BaseDatabase:
     data_source = None
     connection = None
     query_builder = None

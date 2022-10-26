@@ -5,7 +5,7 @@
 import frappe
 
 from frappe.utils import cint
-from .models import BaseDataSource
+from .models import BaseDatabase
 from frappe.database.mariadb.database import MariaDBDatabase
 from .utils import SecureMariaDB, create_insights_table, MARIADB_TO_GENERIC_TYPES
 from insights.insights.query_builders.frappe_qb import FrappeQueryBuilder
@@ -258,7 +258,7 @@ class FrappeTableFactory:
         return dynamic_link_map
 
 
-class FrappeDB(BaseDataSource):
+class FrappeDB(BaseDatabase):
     def __init__(
         self, data_source, host, port, username, password, database_name, use_ssl
     ):
