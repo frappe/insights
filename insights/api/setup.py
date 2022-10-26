@@ -50,17 +50,13 @@ def update_setup_status():
 @frappe.whitelist()
 def setup_demo():
     from frappe.utils.scheduler import is_scheduler_inactive
-    from frappe.utils.background_jobs import is_job_queued
 
     if is_scheduler_inactive():
         frappe.errprint("Scheduler is inactive")
         _setup_demo()
         return
 
-    job_name = "insights_demo_setup"
-
-    if not is_job_queued(job_name):
-        frappe.enqueue(_setup_demo, job_name=job_name, now=True)
+    frappe.enqueue(_setup_demo, job_name="insights_demo_setup", now=False)
 
 
 def _setup_demo():
