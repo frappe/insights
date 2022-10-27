@@ -7,7 +7,7 @@ import frappe
 from .models import BaseDatabase
 from .utils import create_insights_table
 from frappe.database.mariadb.database import MariaDBDatabase
-from insights.insights.query_builders.frappe_qb import FrappeQueryBuilder
+from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     make_column_def,
 )
@@ -66,7 +66,7 @@ class StoredQueryTableFactory:
 class QueryStore(BaseDatabase):
     def __init__(self):
         self.conn: MariaDBDatabase = MariaDBDatabase()
-        self.query_builder: FrappeQueryBuilder = FrappeQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: StoredQueryTableFactory = StoredQueryTableFactory()
 
     def test_connection(self):

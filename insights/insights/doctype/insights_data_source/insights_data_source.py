@@ -6,8 +6,9 @@ from functools import cached_property
 from frappe.model.document import Document
 
 from .sources.models import BaseDatabase
+from .sources.mariadb import MariaDB
 from .sources.query_store import QueryStore
-from .sources.frappe_db import is_frappe_db, FrappeDB, SiteDB
+from .sources.frappe_db import is_frappe_db, SiteDB
 
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
@@ -54,6 +55,9 @@ class InsightsDataSource(Document):
 
         if db := is_frappe_db(conn_args):
             return db
+
+        if self.database_type == "MariaDB":
+            return MariaDB(**conn_args)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 

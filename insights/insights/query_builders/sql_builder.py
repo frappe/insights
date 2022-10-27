@@ -22,7 +22,7 @@ from .models import QueryBuilder
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
-class FrappeQueryBuilder(QueryBuilder):
+class SQLQueryBuilder(QueryBuilder):
     def build(self, query: InsightsQuery):
         self.query = query
         self.process_tables()

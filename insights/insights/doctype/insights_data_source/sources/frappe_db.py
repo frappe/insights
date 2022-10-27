@@ -8,7 +8,7 @@ from frappe.utils import cint
 from .models import BaseDatabase
 from frappe.database.mariadb.database import MariaDBDatabase
 from .utils import SecureMariaDB, create_insights_table, MARIADB_TO_GENERIC_TYPES
-from insights.insights.query_builders.frappe_qb import FrappeQueryBuilder
+from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
 
 class FrappeTableFactory:
@@ -270,7 +270,7 @@ class FrappeDB(BaseDatabase):
             port=cint(port),
             useSSL=use_ssl,
         )
-        self.query_builder: FrappeQueryBuilder = FrappeQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: FrappeTableFactory = FrappeTableFactory(
             data_source, db_conn=self.conn
         )
@@ -317,7 +317,7 @@ class FrappeDB(BaseDatabase):
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
         self.conn: MariaDBDatabase = MariaDBDatabase()
-        self.query_builder: FrappeQueryBuilder = FrappeQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: FrappeTableFactory = FrappeTableFactory(
             data_source, db_conn=self.conn
         )
