@@ -141,7 +141,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         charts = self.get_charts()
         for chart in charts:
             frappe.delete_doc("Insights Query Chart", chart)
-        frappe.db.delete("Insights Dashboard Item", {"query_chart": self.name})
+        frappe.db.delete("Insights Dashboard Item", {"chart": self.name})
 
     def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):

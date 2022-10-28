@@ -239,14 +239,14 @@ def skip_onboarding():
 
 
 @frappe.whitelist()
-def get_dashboard_options(query_chart):
+def get_dashboard_options(chart):
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
 
     exclude_dashboards = (
         frappe.qb.from_(DashboardItem)
         .select(DashboardItem.parent)
         .distinct()
-        .where(DashboardItem.query_chart == query_chart)
+        .where((DashboardItem.chart == chart) and (DashboardItem.item_type == "Chart"))
         .run(pluck="parent")
     )
     return frappe.get_list(

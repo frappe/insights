@@ -14,7 +14,6 @@ export default function useDashboard(dashboardName) {
 			return {
 				...v,
 				...layout,
-				chartID: v.query_chart,
 			}
 		})
 	)

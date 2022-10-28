@@ -94,8 +94,9 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { getDashboardOptions, createDashboard } from '@/utils/dashboard.js'
 
 const query = inject('query')
+const chartName = query.charts[0]
 const chart = useChart({
-	chartID: query.charts[0],
+	chartID: chartName,
 	data: query.results.data,
 })
 provide('chart', chart)
@@ -128,7 +129,7 @@ const $autocomplete = ref(null)
 watch(showDashboardDialog, async (val) => {
 	if (val) {
 		await nextTick()
-		getDashboardOptions(query.charts[0]).then((options) => {
+		getDashboardOptions(chartName).then((options) => {
 			dashboardOptions.value = options
 			setTimeout(() => {
 				$autocomplete.value.input.$el.blur()

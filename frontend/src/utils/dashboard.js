@@ -4,8 +4,8 @@ const getDashboardOptionsResource = createResource({
 	method: 'insights.api.get_dashboard_options',
 	initialData: [],
 })
-export function getDashboardOptions(query_chart) {
-	return getDashboardOptionsResource.submit({ query_chart })
+export function getDashboardOptions(chart) {
+	return getDashboardOptionsResource.submit({ chart })
 }
 const createDashboardResource = createResource({
 	method: 'insights.api.create_dashboard',
