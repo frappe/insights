@@ -32,7 +32,6 @@
    "unique": 1
   },
   {
-   "default": "3306",
    "fieldname": "port",
    "fieldtype": "Data",
    "label": "Port"
@@ -66,7 +65,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "localhost",
    "fieldname": "host",
    "fieldtype": "Data",
    "label": "Host"
@@ -117,7 +115,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-13 14:08:42.996602",
+ "modified": "2022-10-28 14:08:42.996602",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",
