@@ -48,16 +48,13 @@ function useChart({ chartID, data }) {
 	chart.data = computed(() => safeJSONParse(unref(data), []))
 	watch(initialDoc, loadChart, { deep: true, immediate: true })
 	function loadChart(doc) {
-		// load chart data from doc
-		if (doc.type || doc.title) {
-			chart.type = doc.type
-			chart.title = doc.title
-			chart.config = safeJSONParse(doc.config, {})
-			chart.options = chart.config.options || {}
-		}
+		chart.type = doc.type
+		chart.title = doc.title
+		chart.config = safeJSONParse(doc.config, {})
+		chart.options = chart.config.options || {}
 	}
 
-	watch(() => chart.type, makeChartComponent)
+	watch(() => chart.type, makeChartComponent, { immediate: true })
 	async function makeChartComponent(type, oldType) {
 		if (type === oldType) return
 		if (controllers[type]) {
