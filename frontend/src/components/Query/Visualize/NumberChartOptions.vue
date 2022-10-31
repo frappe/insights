@@ -20,5 +20,9 @@ const chart = inject('chart')
 			<div class="font-light">Suffix</div>
 			<Input type="text" v-model="chart.options.suffix" placeholder="Enter a suffix..." />
 		</div>
+		<div class="space-y-1">
+			<div class="font-light">Decimals</div>
+			<Input type="number" v-model="chart.options.decimals" placeholder="Enter a number..." />
+		</div>
 	</div>
 </template>

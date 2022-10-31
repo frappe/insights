@@ -102,10 +102,11 @@ export function ellipsis(value, length) {
 	return value
 }
 
-function getShortNumber(number) {
+function getShortNumber(number, precision = 0) {
 	const locale = 'en-IN' // TODO: get locale from user settings
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
+		maximumFractionDigits: precision,
 	}).format(number)
 
 	if (locale == 'en-IN') {

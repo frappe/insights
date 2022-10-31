@@ -53,7 +53,7 @@ function useChart({ chartID, data }) {
 			chart.type = doc.type
 			chart.title = doc.title
 			chart.config = safeJSONParse(doc.config, {})
-			chart.options = computed(() => chart.config.options || {})
+			chart.options = chart.config.options || {}
 		}
 	}
 
@@ -116,9 +116,13 @@ function useChart({ chartID, data }) {
 
 		const doc = initialDoc.value
 		const initialConfig = safeJSONParse(doc.config, {})
+		const initialOptions = initialConfig.options || {}
 		const configChanged = JSON.stringify(initialConfig) !== JSON.stringify(chart.config)
+		const optionsChanged = JSON.stringify(initialOptions) !== JSON.stringify(chart.options)
 
-		return doc.type !== chart.type || doc.title !== chart.title || configChanged
+		return (
+			doc.type !== chart.type || doc.title !== chart.title || configChanged || optionsChanged
+		)
 	})
 
 	function addToDashboard(dashboard, layout, { onSuccess }) {

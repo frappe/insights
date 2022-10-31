@@ -14,12 +14,8 @@ const $utils = inject('$utils')
 
 const formattedValue = computed(() => {
 	let value = props.data.value || 0
-	// check if value has a decimal part
-	if (value % 1 !== 0) {
-		value = value.toFixed(1)
-	}
-
-	return $utils.getShortNumber(value)
+	value = $utils.getShortNumber(value, props.options.decimals)
+	return value
 })
 
 const prefix = computed(() => {
