@@ -3,32 +3,21 @@ import * as echarts from 'echarts'
 import { getColors } from '@/utils/charts/colors'
 import { onMounted, ref, reactive, onBeforeUnmount, provide, watch, useAttrs } from 'vue'
 
-const chartRef = ref(null)
-const { title, subtitle, ...attributes } = useAttrs()
-
-const defaults = {
+const options = reactive({
 	fontFamily: 'Inter',
 	color: getColors(),
-}
-const options = reactive({ ...defaults, ...attributes })
+})
 provide('options', options)
 
+const attributes = useAttrs()
+watch(() => attributes, updateOptions, { deep: true, immediate: true })
+function updateOptions(newAttributes) {
+	const { title, subtitle, ...rest } = newAttributes
+	Object.assign(options, rest)
+}
+
+const chartRef = ref(null)
 let chart = null
-defineExpose({
-	downloadChart: () => {
-		const image = new Image()
-		const type = 'png'
-		image.src = chart.getDataURL({
-			type,
-			pixelRatio: 2,
-			backgroundColor: '#fff',
-		})
-		const link = document.createElement('a')
-		link.href = image.src
-		link.download = `${title}.${type}`
-		link.click()
-	},
-})
 onMounted(() => {
 	chart = echarts.init(chartRef.value, 'light', {
 		renderer: 'canvas',
@@ -36,22 +25,17 @@ onMounted(() => {
 	setOption(options)
 })
 watch(options, setOption, { deep: true })
-
-function setOption(options) {
+function setOption() {
 	chart && chart.setOption(options)
 }
 
-const resizeObserver = new ResizeObserver(() => {
-	chart.resize()
-})
-onMounted(() => {
+const resizeObserver = new ResizeObserver(() => chart.resize())
+onMounted(() =>
 	setTimeout(() => {
 		chartRef.value && resizeObserver.observe(chartRef.value)
 	}, 1000)
-})
-onBeforeUnmount(() => {
-	resizeObserver.unobserve(chartRef.value)
-})
+)
+onBeforeUnmount(() => resizeObserver.unobserve(chartRef.value))
 
 function convertAttributesToOptions(attributes) {
 	return Object.keys(attributes).reduce((acc, key) => {
@@ -74,6 +58,21 @@ function convertAttributesToOptions(attributes) {
 	}, {})
 }
 provide('convertAttributesToOptions', convertAttributesToOptions)
+
+defineExpose({ downloadChart })
+function downloadChart() {
+	const image = new Image()
+	const type = 'png'
+	image.src = chart.getDataURL({
+		type,
+		pixelRatio: 2,
+		backgroundColor: '#fff',
+	})
+	const link = document.createElement('a')
+	link.href = image.src
+	link.download = `${title}.${type}`
+	link.click()
+}
 </script>
 
 <template>
@@ -86,7 +85,10 @@ provide('convertAttributesToOptions', convertAttributesToOptions)
 		</div>
 		<div
 			ref="chartRef"
-			:class="['w-full', subtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]']"
+			:class="[
+				'w-full',
+				$attrs.subtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]',
+			]"
 		>
 			<slot></slot>
 		</div>

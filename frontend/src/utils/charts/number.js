@@ -5,11 +5,6 @@ function useNumberChart() {
 	const chart = reactive({
 		type: 'Number',
 		icon: 'hash',
-		dataSchema: {
-			labelColumn: false,
-			valueColumn: true,
-			multipleValues: false,
-		},
 		getComponent,
 		buildComponentProps,
 	})
@@ -31,7 +26,7 @@ function useNumberChart() {
 		}
 		const valueColumn = queryChart.config.valueColumn?.label
 		const value = getColumnValues(valueColumn, queryChart.data)[0]
-		chart.componentProps = {
+		return {
 			data: {
 				value,
 				title: queryChart.title,

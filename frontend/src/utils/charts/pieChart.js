@@ -5,11 +5,6 @@ function usePieChart() {
 	const chart = reactive({
 		type: 'Pie',
 		icon: 'pie-chart',
-		dataSchema: {
-			labelColumn: true,
-			valueColumn: true,
-			multipleValues: false,
-		},
 		getComponent,
 		buildComponentProps,
 	})
@@ -27,7 +22,7 @@ function usePieChart() {
 		}
 
 		const props = buildSingleValueChartProps(queryChart)
-		chart.componentProps = {
+		return {
 			title: queryChart.title,
 			options: queryChart.options,
 			...props,

@@ -4,9 +4,6 @@ function usePivotChart() {
 	const chart = reactive({
 		type: 'Pivot',
 		icon: 'layout',
-		dataSchema: {
-			pivotColumn: true,
-		},
 		getComponent,
 		buildComponentProps,
 	})

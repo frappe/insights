@@ -5,10 +5,6 @@ function useTableChart() {
 	const chart = reactive({
 		type: 'Table',
 		icon: 'grid',
-		dataSchema: {
-			anyColumn: true,
-			multiple: true,
-		},
 		getComponent,
 		buildComponentProps,
 	})
@@ -30,7 +26,7 @@ function useTableChart() {
 		const columns = queryChart.config.columns.map((c) => c.label)
 		const rows = getRows(columns, queryChart.data)
 		const title = queryChart.title
-		chart.componentProps = { title, columns, rows }
+		return { title, columns, rows }
 	}
 
 	return chart

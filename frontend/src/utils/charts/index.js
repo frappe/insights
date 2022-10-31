@@ -1,4 +1,4 @@
-import { computed, markRaw, reactive, nextTick, watch } from 'vue'
+import { computed, markRaw, reactive, watch, unref } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
@@ -23,83 +23,52 @@ const types = [
 const controllers = { Bar, Line, Pie, Number, Pivot, Table }
 
 function useChart({ chartID, data }) {
-	if (!chartID) {
-		console.error('Chart ID is required')
-		return
-	}
+	if (!chartID) return console.error('Chart ID is required')
 
 	const resource = queryChartResource(chartID)
 	const initialDoc = computed(() => resource.doc || {})
 
 	const emptyChart = {
+		title: '',
 		type: '',
 		data: [],
 		config: {},
 		options: {},
-		dataSchema: {},
-		controller: null,
 		component: null,
 		componentProps: null,
 	}
 
 	const chart = reactive({
-		title: '',
 		...emptyChart,
 		setType,
 		updateDoc,
 		addToDashboard,
 	})
 
-	watch(
-		initialDoc,
-		(doc) => {
-			// load chart data from doc
-			if (doc.type || doc.title) {
-				chart.type = doc.type
-				chart.title = doc.title
-				chart.config = safeJSONParse(doc.config, {})
-				chart.options = chart.config.options || {}
-				if (data) {
-					chart.data = safeJSONParse(data.value || data, [])
-				}
-			}
-		},
-		{ deep: true, immediate: true }
-	)
+	chart.data = computed(() => safeJSONParse(unref(data), []))
+	watch(initialDoc, loadChart, { deep: true, immediate: true })
+	function loadChart(doc) {
+		// load chart data from doc
+		if (doc.type || doc.title) {
+			chart.type = doc.type
+			chart.title = doc.title
+			chart.config = safeJSONParse(doc.config, {})
+			chart.options = computed(() => chart.config.options || {})
+		}
+	}
 
-	watch(
-		() => data.value || data,
-		(newData) => {
-			chart.data = safeJSONParse(newData, [])
-		},
-		{ immediate: true, deep: true }
-	)
-
-	watch(
-		() => chart.type,
-		(type) => {
-			if (!type) {
-				Object.assign(chart, emptyChart)
-				return
-			}
-			if (type && controllers[type]) {
-				chart.controller = controllers[type]()
-				chart.dataSchema = chart.controller.dataSchema
-				chart.component = markRaw(chart.controller.getComponent())
-				return
-			}
-			console.warn(`No chart controller found for type - ${type}`)
-		},
-		{ immediate: true }
-	)
-
-	watchDebounced(
-		() => chart.controller?.componentProps,
-		(props) => {
-			chart.componentProps = props
-		},
-		{ deep: true, immediate: true }
-	)
+	watch(() => chart.type, makeChartComponent)
+	async function makeChartComponent(type, oldType) {
+		if (type === oldType) return
+		if (controllers[type]) {
+			chart.controller = controllers[type]()
+			chart.component = markRaw(chart.controller.getComponent())
+		} else {
+			chart.controller = null
+			chart.component = null
+			type && console.warn(`No chart controller found for type - ${type}`)
+		}
+	}
 
 	watchDebounced(
 		// re-render chart if one of these props change
@@ -114,13 +83,11 @@ function useChart({ chartID, data }) {
 		{ deep: true, immediate: true, debounce: 300 }
 	)
 
-	async function buildComponentProps() {
-		chart.componentProps = null
-		await nextTick()
-		if (isEmptyObj(chart.config)) {
-			return
-		}
-		chart.controller.buildComponentProps({ ...chart })
+	function buildComponentProps() {
+		if (!chart.controller) return
+		if (isEmptyObj(chart.config)) return
+		const newProps = chart.controller.buildComponentProps({ ...chart })
+		chart.componentProps = newProps
 	}
 
 	function setType(type) {
