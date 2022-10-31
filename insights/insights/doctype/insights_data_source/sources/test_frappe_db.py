@@ -32,7 +32,7 @@ def make_test_data_source():
     data_source.database_name = frappe.conf.db_name
     data_source.username = frappe.conf.db_name
     data_source.password = frappe.conf.db_password
-    data_source.host = frappe.conf.db_host
-    data_source.port = frappe.conf.db_port
+    data_source.host = frappe.conf.db_host or "localhost"
+    data_source.port = frappe.conf.db_port or 3306
     data_source.save()
     return data_source
