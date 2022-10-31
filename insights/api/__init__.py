@@ -316,9 +316,3 @@ def sync_data_source(data_source):
 @frappe.whitelist()
 def get_query_data(query):
     return frappe.db.get_value("Insights Query", query, "result")
-
-
-@frappe.whitelist()
-def get_chart_data(dashboard, chart):
-    doc = frappe.get_doc("Insights Dashboard", dashboard)
-    return doc.get_chart_data(chart)
