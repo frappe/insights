@@ -165,7 +165,6 @@ export default function tokenize(expression, offset = 0) {
 	}
 
 	function processFunctionToken() {
-		debugger
 		let fn = ''
 		while (FUNCTION_CHARS.includes(char) && cursor < expression.length) {
 			fn += char
@@ -245,7 +244,6 @@ export default function tokenize(expression, offset = 0) {
 	}
 
 	while (cursor < expression.length) {
-		debugger
 		if (isWhiteSpace(char)) {
 			advance()
 			continue
