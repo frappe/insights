@@ -27,6 +27,8 @@ const XandY = ref([
 		type: 'category',
 		data: props.options.invertAxis ? props.data.labels.reverse() : props.data.labels,
 		axisTick: false,
+		'axisLabel-interval': 0,
+		'axisLabel-rotate': props.options.rotateLabels,
 	},
 	{
 		axisType: props.options.invertAxis ? 'xAxis' : 'yAxis',

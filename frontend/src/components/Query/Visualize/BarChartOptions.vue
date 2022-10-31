@@ -31,6 +31,15 @@ const chart = inject('chart')
 	/>
 
 	<div class="space-y-2 text-gray-600">
+		<Input
+			type="select"
+			label="Rotate Labels"
+			v-model="chart.options.rotateLabels"
+			:options="['0', '45', '90']"
+		/>
+	</div>
+
+	<div class="space-y-2 text-gray-600">
 		<Checkbox v-model="chart.options.invertAxis" label="Switch X and Y Axis" />
 	</div>
 </template>

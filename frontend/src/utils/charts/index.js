@@ -1,4 +1,4 @@
-import { computed, markRaw, reactive, watch, unref } from 'vue'
+import { computed, markRaw, reactive, watch, unref, nextTick } from 'vue'
 import { createDocumentResource } from 'frappe-ui'
 import { safeJSONParse, isEmptyObj } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
@@ -80,7 +80,11 @@ function useChart({ chartID, data }) {
 		{ deep: true, immediate: true, debounce: 300 }
 	)
 
-	function buildComponentProps() {
+	async function buildComponentProps() {
+		// to force re-mount of chart component
+		chart.componentProps = null
+		await nextTick()
+
 		if (!chart.controller) return
 		if (isEmptyObj(chart.config)) return
 		const newProps = chart.controller.buildComponentProps({ ...chart })
