@@ -46,7 +46,7 @@
 					Save
 				</Button>
 			</div>
-			<div class="max-h-[30rem] flex-1">
+			<div class="flex max-h-[30rem] flex-1 items-center justify-center">
 				<component
 					v-if="chart.component && chart.componentProps"
 					ref="eChart"

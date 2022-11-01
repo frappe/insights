@@ -6,6 +6,7 @@ import { watchDebounced } from '@vueuse/core'
 import { Bar, Line } from './axisChart'
 import Pie from './pieChart'
 import Number from './number'
+import Progress from './progress'
 import Pivot from './pivot'
 import Table from './table'
 
@@ -18,9 +19,10 @@ const types = [
 	// { type: 'Funnel', icon: 'filter' },
 	// { type: 'Pivot', icon: 'layout' },
 	{ type: 'Table', icon: 'grid' },
+	{ type: 'Progress', icon: 'percent' },
 ]
 
-const controllers = { Bar, Line, Pie, Number, Pivot, Table }
+const controllers = { Bar, Line, Pie, Number, Pivot, Table, Progress }
 
 function useChart({ chartID, data }) {
 	if (!chartID) return console.error('Chart ID is required')
@@ -60,9 +62,11 @@ function useChart({ chartID, data }) {
 		if (controllers[type]) {
 			chart.controller = controllers[type]()
 			chart.component = markRaw(chart.controller.getComponent())
+			chart.componentProps = null
 		} else {
 			chart.controller = null
 			chart.component = null
+			chart.componentProps = null
 			type && console.warn(`No chart controller found for type - ${type}`)
 		}
 	}
