@@ -156,7 +156,7 @@ function makeCountColumn() {
 	const table = query.tables.data[0]
 	return {
 		type: 'Integer',
-		column: '*',
+		column: '__count',
 		table: table.table,
 		label: metric.label,
 		table_label: table.label,

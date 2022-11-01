@@ -42,16 +42,7 @@ class StoredQueryTableFactory:
         return frappe.get_all("Insights Query", filters={"is_stored": 1}, pluck="name")
 
     def make_columns(self, columns):
-        primary_key_column = [
-            frappe._dict(
-                {
-                    "column": "ID",
-                    "label": "ID",
-                    "type": "Integer",
-                },
-            )
-        ]
-        return primary_key_column + [
+        return [
             frappe._dict(
                 {
                     "column": column.column or column.label,
@@ -76,9 +67,13 @@ class QueryStore(BaseDatabase):
         # converts insights query to a sql query
         return self.query_builder.build(query)
 
+    def run_query(self, query):
+        # runs insights query
+        self.create_temporary_tables(query.get_selected_tables())
+        return self.execute_query(self.build_query(query))
+
     def execute_query(self, query, *args, **kwargs):
         self.validate_query(query)
-        self.create_temporary_tables(query)
         result = self._execute(query, *args, **kwargs)
         self.conn.close()
         return result
@@ -87,10 +82,9 @@ class QueryStore(BaseDatabase):
         for table in self.table_factory.get_tables(queries=queries):
             create_insights_table(table, force=force)
 
-    def create_temporary_tables(self, query):
-        tables = re.findall(r"from\s+`?([a-zA-Z0-9_-]+)`?", query, re.IGNORECASE)
-        for table in tables:
-            self.create_temporary_table(table)
+    def create_temporary_tables(self, query_tables):
+        for table in query_tables:
+            self.create_temporary_table(table.table)
 
     def create_temporary_table(self, table):
         if not frappe.db.exists("Insights Query", table):
@@ -106,23 +100,17 @@ class QueryStore(BaseDatabase):
         for row in columns:
             _columns.append(make_column_def(row.column, row.type))
 
-        if "ID" not in _columns[0]:
-            _columns = ["ID INT PRIMARY KEY AUTO_INCREMENT"] + _columns
-
         create_table = f"CREATE TEMPORARY TABLE `{query.name}`({', '.join(_columns)})"
 
-        rows = []
-        for i, row in enumerate(result):
-            rows.append([i + 1] + list(row))
         insert_records = (
-            f"INSERT INTO `{query.name}` VALUES {', '.join(['%s'] * len(rows))}"
+            f"INSERT INTO `{query.name}` VALUES {', '.join(['%s'] * len(result))}"
         )
 
         self._execute(create_table)
         # since "create temporary table" doesn't cause an implict commit
         # to avoid "implicit commit" error from frappe/database.py -> check_implict_commit
         self.conn.transaction_writes -= 1
-        self._execute(insert_records, values=rows)
+        self._execute(insert_records, values=result)
 
     def validate_query(self, query):
         if not query.strip().lower().startswith("select"):
@@ -163,5 +151,9 @@ class QueryStore(BaseDatabase):
 
         return self.execute_query(query.get_sql())
 
-    def get_table_columns(self):
-        return None
+    def get_table_columns(self, table):
+        if not frappe.db.exists("Insights Query", table):
+            return []
+
+        query = frappe.get_cached_doc("Insights Query", table)
+        return query.get_columns()

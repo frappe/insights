@@ -44,7 +44,9 @@ class Aggregations:
 
     @staticmethod
     def count(column):
-        return functions.Count(column or "*")
+        if "__count" in column.get_sql():
+            return functions.Count("*")
+        return functions.Count(column)
 
     @staticmethod
     def sum_if(conditions, column):
@@ -388,6 +390,4 @@ def parse_query_expression(expression):
 
 
 def build_query_field(table, column) -> Field:
-    if not column or column == "*":
-        return "*"  # TODO: handle this better
     return Table(table)[column]

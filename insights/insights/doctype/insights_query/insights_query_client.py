@@ -181,7 +181,7 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def fetch_tables(self):
         _tables = []
-        if not self.tables:
+        if not self.tables or self.data_source == "Query Store":
             _tables = get_tables(self.data_source)
 
         else:

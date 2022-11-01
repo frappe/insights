@@ -33,6 +33,7 @@
         "table": "tabToDo",
         "table_label": "ToDo",
         "aggregation": "Count",
+        "column": "__count",
         "doctype": "Insights Query Column"
       }
     ],
@@ -65,6 +66,7 @@
         "table": "tabToDo",
         "table_label": "ToDo",
         "aggregation": "Count",
+        "column": "__count",
         "doctype": "Insights Query Column"
       }
     ],

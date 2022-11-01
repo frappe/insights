@@ -16,6 +16,9 @@ class BaseDatabase:
     def build_query(self, query: InsightsQuery):
         raise NotImplementedError
 
+    def run_query(self, query: InsightsQuery):
+        return self.execute_query(self.build_query(query))
+
     def execute_query(self, query: str):
         raise NotImplementedError
 

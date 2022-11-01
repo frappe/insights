@@ -8,7 +8,13 @@ def execute():
     QueryColumn = frappe.qb.DocType("Insights Query Column")
     (
         frappe.qb.update(QueryColumn)
-        .set(QueryColumn.column, "*")
+        .set(QueryColumn.column, "__count")
         .where(QueryColumn.column == "count")
+        .run()
+    )
+    (
+        frappe.qb.update(QueryColumn)
+        .set(QueryColumn.column, "__count")
+        .where((QueryColumn.column == "*") and (QueryColumn.aggregation == "Count"))
         .run()
     )

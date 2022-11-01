@@ -88,7 +88,7 @@ class InsightsDataSource(Document):
         return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        return self.db.execute_query(self.build_query(query))
+        return self.db.run_query(query)
 
     def sync_tables(self, *args, **kwargs):
         self.db.sync_tables(*args, **kwargs)
