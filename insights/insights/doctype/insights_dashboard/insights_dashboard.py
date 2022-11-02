@@ -101,12 +101,12 @@ class InsightsDashboard(Document):
                     "items",
                     {
                         "item_type": "Filter",
-                        "filter_label": chart_filter.get("filter"),
+                        "filter_label": chart_filter.get("filter").get("label"),
                     },
                 )[0]
                 if not filter.filter_value:
                     continue
-                table, column = chart_filter.get("column").split(".")
+                table, column = chart_filter.get("column").get("value").split(".")
                 filter_conditions.append(convert_to_expression(table, column, filter))
             return query.run_with_filters(filter_conditions)
         else:
