@@ -72,6 +72,14 @@
 				:options="columnTypes"
 			/>
 		</div>
+		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
+			<div class="font-light">Date Format</div>
+			<Autocomplete
+				v-model="expression.dateFormat"
+				:options="dateFormats"
+				placeholder="Select a date format..."
+			/>
+		</div>
 		<div class="mt-4 text-sm text-gray-600">
 			<Input type="checkbox" label="Group By" v-model="expression.groupBy" />
 		</div>
@@ -93,10 +101,12 @@
 </template>
 
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Code from '@/components/Controls/Code.vue'
 import Tooltip from '@/components/Tooltip.vue'
 import { debounce } from 'frappe-ui'
 
+import { dateFormats } from '@/utils/format'
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
 import { ref, inject, watchEffect, reactive, computed } from 'vue'
@@ -138,6 +148,9 @@ const expression = reactive({
 	error: null,
 	tokens: [],
 	help: null,
+	dateFormat: ['Date', 'Datetime'].includes(props.column.type)
+		? dateFormats.find((format) => format.value === props.column.format_option?.date_format)
+		: {},
 })
 watchEffect(() => {
 	expression.raw = input.value
@@ -146,6 +159,7 @@ watchEffect(() => {
 	expression.tokens = tokens
 	expression.error = errorMessage
 })
+const showDateFormatOptions = computed(() => ['Date', 'Datetime'].includes(expression.valueType))
 
 const codeViewUpdate = debounce(function ({ cursorPos }) {
 	expression.help = null
@@ -200,6 +214,12 @@ const addExpressionColumn = () => {
 		label: expression.label,
 		column: expression.label.replace(/\s/g, '_'),
 		aggregation: expression.groupBy ? 'Group By' : '',
+	}
+
+	if (showDateFormatOptions.value) {
+		newColumn.format_option = {
+			date_format: expression.dateFormat.value
+		}
 	}
 	emit('column-select', newColumn)
 }
