@@ -72,7 +72,7 @@
 				:options="columnTypes"
 			/>
 		</div>
-		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
+		<div v-if="showDateFormatOptions" class="mt-2 text-sm text-gray-600">
 			<div class="font-light">Date Format</div>
 			<Autocomplete
 				v-model="expression.dateFormat"
