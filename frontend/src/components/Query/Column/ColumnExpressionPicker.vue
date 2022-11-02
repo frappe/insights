@@ -81,7 +81,12 @@
 			/>
 		</div>
 		<div class="mt-4 text-sm text-gray-600">
-			<Input type="checkbox" label="Group By" v-model="expression.groupBy" />
+			<Input
+				type="checkbox"
+				:label="!showDateFormatOptions ? 'Group By' : 'Group By (Unable to group by Date/Datetime expressions at this time).'"
+				v-model="expression.groupBy"
+				:disabled="showDateFormatOptions"
+			/>
 		</div>
 		<!-- Action Buttons -->
 		<div class="mt-3 flex justify-end space-x-2">
@@ -160,6 +165,13 @@ watchEffect(() => {
 	expression.error = errorMessage
 })
 const showDateFormatOptions = computed(() => ['Date', 'Datetime'].includes(expression.valueType))
+watchEffect(() => {
+	if (showDateFormatOptions.value) {
+		// Currently group by date field is not supported on expressions due to.
+		// pymysql.err.OperationalError: (1056, "Can't group on '{AGGREGATE} of {DATE_FIELD}'")
+		expression.groupBy = false;
+	}
+});
 
 const codeViewUpdate = debounce(function ({ cursorPos }) {
 	expression.help = null
