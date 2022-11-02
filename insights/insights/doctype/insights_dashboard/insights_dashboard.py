@@ -70,10 +70,10 @@ class InsightsDashboard(Document):
         filter = frappe._dict(filter)
         for row in self.items:
             if row.name == filter.name:
-                row.filter_label = filter.label
-                row.filter_type = filter.type
-                row.filter_operator = filter.operator
-                row.filter_value = filter.value
+                row.filter_label = filter.filter_label
+                row.filter_type = filter.filter_type
+                row.filter_operator = filter.filter_operator
+                row.filter_value = filter.filter_value
                 self.save()
                 break
 
