@@ -113,14 +113,14 @@ class InsightsDashboard(Document):
             return frappe.db.get_value("Insights Query", row.query, "result")
 
 
-BINARY_OPERATORS = [
-    "=",
-    "!=",
-    "<",
-    ">",
-    "<=",
-    ">=",
-]
+BINARY_OPERATORS = {
+    "equals": "=",
+    "not equals": "!=",
+    "smaller than": "<",
+    "greater than": ">",
+    "smaller than equal to": "<=",
+    "greater than equal to": ">=",
+}
 
 FUNCTION_OPERATORS = [
     "is",
@@ -145,7 +145,7 @@ def convert_to_expression(table, column, filter):
 def make_binary_expression(table, column, filter):
     return {
         "type": "BinaryExpression",
-        "operator": filter.filter_operator,
+        "operator": BINARY_OPERATORS[filter.filter_operator],
         "left": {
             "type": "Column",
             "value": {
