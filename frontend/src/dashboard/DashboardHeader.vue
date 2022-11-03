@@ -82,7 +82,7 @@ defineEmits(['addChart', 'commitLayout'])
 						router.push('/dashboard')
 					})
 				"
-				:loading="deletingDashboard"
+				:loading="dashboard.deletingDashboard"
 			>
 				Yes
 			</Button>
