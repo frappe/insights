@@ -246,7 +246,7 @@ def get_dashboard_options(chart):
         frappe.qb.from_(DashboardItem)
         .select(DashboardItem.parent)
         .distinct()
-        .where((DashboardItem.chart == chart) and (DashboardItem.item_type == "Chart"))
+        .where(DashboardItem.chart == chart)
         .run(pluck="parent")
     )
     return frappe.get_list(
