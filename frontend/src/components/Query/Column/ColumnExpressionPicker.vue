@@ -73,7 +73,7 @@
 			/>
 		</div>
 		<div v-if="showDateFormatOptions" class="mt-2 text-sm text-gray-600">
-			<div class="font-light">Date Format</div>
+			<div class="mb-1 font-light">Date Format</div>
 			<Autocomplete
 				v-model="expression.dateFormat"
 				:options="dateFormats"
