@@ -19,7 +19,7 @@ watch(allColumns, async () => {
 		return {
 			column: filter.column,
 			filter: filter.filter,
-			columnOptions: getColumnOptions(getFilterType(filter.filter)),
+			columnOptions: getColumnOptions(getFilterType(filter.filter.label)),
 		}
 	})
 	filters.value = initialFilters.length ? initialFilters : filters.value
@@ -33,7 +33,7 @@ function getFilterType(filter_label) {
 
 async function updateColumnOptions(filter) {
 	await nextTick()
-	const filter_type = getFilterType(filter.filter)
+	const filter_type = getFilterType(filter.filter.label)
 	filter.columnOptions = getColumnOptions(filter_type)
 }
 

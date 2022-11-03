@@ -70,10 +70,10 @@ class InsightsDashboard(Document):
         filter = frappe._dict(filter)
         for row in self.items:
             if row.name == filter.name:
-                row.filter_label = filter.label
-                row.filter_type = filter.type
-                row.filter_operator = filter.operator
-                row.filter_value = filter.value
+                row.filter_label = filter.filter_label
+                row.filter_type = filter.filter_type
+                row.filter_operator = filter.filter_operator
+                row.filter_value = filter.filter_value
                 self.save()
                 break
 
@@ -101,26 +101,26 @@ class InsightsDashboard(Document):
                     "items",
                     {
                         "item_type": "Filter",
-                        "filter_label": chart_filter.get("filter"),
+                        "filter_label": chart_filter.get("filter").get("label"),
                     },
                 )[0]
                 if not filter.filter_value:
                     continue
-                table, column = chart_filter.get("column").split(".")
+                table, column = chart_filter.get("column").get("value").split(".")
                 filter_conditions.append(convert_to_expression(table, column, filter))
             return query.run_with_filters(filter_conditions)
         else:
             return frappe.db.get_value("Insights Query", row.query, "result")
 
 
-BINARY_OPERATORS = [
-    "=",
-    "!=",
-    "<",
-    ">",
-    "<=",
-    ">=",
-]
+BINARY_OPERATORS = {
+    "equals": "=",
+    "not equals": "!=",
+    "smaller than": "<",
+    "greater than": ">",
+    "smaller than equal to": "<=",
+    "greater than equal to": ">=",
+}
 
 FUNCTION_OPERATORS = [
     "is",
@@ -145,7 +145,7 @@ def convert_to_expression(table, column, filter):
 def make_binary_expression(table, column, filter):
     return {
         "type": "BinaryExpression",
-        "operator": filter.filter_operator,
+        "operator": BINARY_OPERATORS[filter.filter_operator],
         "left": {
             "type": "Column",
             "value": {
