@@ -62,30 +62,18 @@
 					"
 				/>
 				<Autocomplete
-					v-if="addItemTabs.find((t) => t.active).label === 'Chart'"
+					v-if="newItemType == 'Chart'"
 					ref="autocomplete"
 					placeholder="Select a chart"
 					v-model="newItem"
 					:options="dashboard.newChartOptions"
 				/>
 
-				<DashboardFilterForm
-					v-model="newItem"
-					v-if="addItemTabs.find((t) => t.active).label === 'Filter'"
-				/>
+				<DashboardFilterForm v-if="newItemType == 'Filter'" v-model="newItem" />
 			</div>
 		</template>
 		<template #actions>
-			<Button
-				appearance="primary"
-				@click="
-					() => {
-						dashboard.addItem(newItem)
-						showAddDialog = false
-					}
-				"
-				:loading="dashboard.add_item.loading"
-			>
+			<Button appearance="primary" @click="addItem" :loading="dashboard.add_item.loading">
 				Add
 			</Button>
 		</template>
@@ -101,7 +89,7 @@ import GridLayout from '@/dashboard/GridLayout.vue'
 import Tabs from '@/components/Tabs.vue'
 import DashboardFilterForm from './DashboardFilterForm.vue'
 
-import { computed, ref, provide, watch, reactive } from 'vue'
+import { computed, ref, provide, watch } from 'vue'
 import { updateDocumentTitle } from '@/utils'
 import useDashboard from '@/dashboard/useDashboard'
 
@@ -144,6 +132,26 @@ const addItemTabs = ref([
 		active: false,
 	},
 ])
+const newItemType = computed(() => {
+	return addItemTabs.value.find((t) => t.active).label
+})
+
+function addItem() {
+	if (newItemType.value == 'Chart') {
+		dashboard.addItem({
+			item_type: 'Chart',
+			chart: newItem.value.value,
+		})
+	} else {
+		dashboard.addItem({
+			item_type: 'Filter',
+			filter_label: newItem.value.filter_label,
+			filter_type: newItem.value.filter_type,
+			filter_operator: newItem.value.filter_operator,
+		})
+	}
+	showAddDialog.value = false
+}
 
 const pageMeta = computed(() => {
 	return {
