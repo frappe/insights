@@ -19,24 +19,21 @@ const filter = reactive({
 	filter_value: props.item.filter_value,
 })
 
-watch(
-	() => filter,
-	() => {
-		dashboard.update_filter
-			.submit({
-				filter: {
-					name: props.item.name,
-					...filter,
-				},
-			})
-			.then(() => {
-				dashboard.refreshItems()
-			})
-	},
-	{ deep: true }
-)
-
 const showEditFilterDialog = ref(false)
+function editFilter() {
+	dashboard.update_filter
+		.submit({
+			filter: {
+				name: props.item.name,
+				...filter,
+			},
+		})
+		.then(dashboard.refreshItems)
+		.catch((e) => {
+			console.error(e)
+		})
+	showEditFilterDialog.value = false
+}
 
 const valueType = computed(() => {
 	if (
@@ -102,7 +99,7 @@ const valueType = computed(() => {
 			<DashboardFilterForm v-model="filter" />
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="showEditFilterDialog = false"> Done </Button>
+			<Button appearance="primary" @click="editFilter"> Done </Button>
 		</template>
 	</Dialog>
 </template>
