@@ -72,8 +72,21 @@
 				:options="columnTypes"
 			/>
 		</div>
+		<div v-if="showDateFormatOptions" class="mt-2 text-sm text-gray-600">
+			<div class="mb-1 font-light">Date Format</div>
+			<Autocomplete
+				v-model="expression.dateFormat"
+				:options="dateFormats"
+				placeholder="Select a date format..."
+			/>
+		</div>
 		<div class="mt-4 text-sm text-gray-600">
-			<Input type="checkbox" label="Group By" v-model="expression.groupBy" />
+			<Input
+				v-if="!showDateFormatOptions"
+				type="checkbox"
+				label="Group By"
+				v-model="expression.groupBy"
+			/>
 		</div>
 		<!-- Action Buttons -->
 		<div class="mt-3 flex justify-end space-x-2">
@@ -93,10 +106,12 @@
 </template>
 
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Code from '@/components/Controls/Code.vue'
 import Tooltip from '@/components/Tooltip.vue'
 import { debounce } from 'frappe-ui'
 
+import { dateFormats } from '@/utils/format'
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
 import { ref, inject, watchEffect, reactive, computed } from 'vue'
@@ -133,11 +148,14 @@ const expression = reactive({
 	raw: input.value,
 	label: column.label,
 	groupBy: column.aggregation == 'Group By',
-	valueType: 'String',
+	valueType: column.type,
 	ast: null,
 	error: null,
 	tokens: [],
 	help: null,
+	dateFormat: ['Date', 'Datetime'].includes(props.column.type)
+		? dateFormats.find((format) => format.value === props.column.format_option?.date_format)
+		: {},
 })
 watchEffect(() => {
 	expression.raw = input.value
@@ -146,6 +164,14 @@ watchEffect(() => {
 	expression.tokens = tokens
 	expression.error = errorMessage
 })
+const showDateFormatOptions = computed(() => ['Date', 'Datetime'].includes(expression.valueType))
+watchEffect(() => {
+	if (showDateFormatOptions.value) {
+		// Currently group by date field is not supported on expressions due to.
+		// pymysql.err.OperationalError: (1056, "Can't group on '{AGGREGATE} of {DATE_FIELD}'")
+		expression.groupBy = false;
+	}
+});
 
 const codeViewUpdate = debounce(function ({ cursorPos }) {
 	expression.help = null
@@ -200,6 +226,12 @@ const addExpressionColumn = () => {
 		label: expression.label,
 		column: expression.label.replace(/\s/g, '_'),
 		aggregation: expression.groupBy ? 'Group By' : '',
+	}
+
+	if (showDateFormatOptions.value) {
+		newColumn.format_option = {
+			date_format: expression.dateFormat.value
+		}
 	}
 	emit('column-select', newColumn)
 }
