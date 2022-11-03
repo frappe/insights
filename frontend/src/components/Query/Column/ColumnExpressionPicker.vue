@@ -82,10 +82,10 @@
 		</div>
 		<div class="mt-4 text-sm text-gray-600">
 			<Input
+				v-if="!showDateFormatOptions"
 				type="checkbox"
-				:label="!showDateFormatOptions ? 'Group By' : 'Group By (Unable to group by Date/Datetime expressions at this time).'"
+				label="Group By"
 				v-model="expression.groupBy"
-				:disabled="showDateFormatOptions"
 			/>
 		</div>
 		<!-- Action Buttons -->
