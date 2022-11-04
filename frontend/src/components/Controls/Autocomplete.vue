@@ -42,7 +42,7 @@
 								No results found
 							</div>
 							<ComboboxOption
-								v-if="$props.allowCreate && filterQuery"
+								v-if="$props.allowCreate"
 								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
 								@click.prevent="$emit('createOption', filterQuery)"
 							>

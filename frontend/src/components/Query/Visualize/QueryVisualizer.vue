@@ -89,6 +89,7 @@ import ChartOptions from '@/components/Query/Visualize/ChartOptions.vue'
 
 import { computed, inject, nextTick, provide, ref, watch } from 'vue'
 import { useChart, types } from '@/utils/charts'
+import { useRouter } from 'vue-router'
 
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { getDashboardOptions, createDashboard } from '@/utils/dashboard.js'
@@ -153,7 +154,9 @@ function addToDashboard() {
 	chart.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
 }
 
+const router = useRouter()
 function _createDashboard(newDashboardName) {
+	if (!newDashboardName) return router.push('/dashboard')
 	createDashboard(newDashboardName).then(({ name, title }) => {
 		if (name && title) {
 			$notify({
