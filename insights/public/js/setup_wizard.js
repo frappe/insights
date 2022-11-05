@@ -1,91 +1,93 @@
-frappe.provide('insights.setup')
+frappe.provide("insights.setup");
 
 // redirect to desk page 'insights' after setup wizard is complete
 // 'insights' desk page redirects to '/insights'
-frappe.setup.welcome_page = '/app/insights'
+frappe.setup.welcome_page = "/app/insights";
 
-frappe.setup.on('before_load', function () {
-	insights.setup.slides_settings.map(frappe.setup.add_slide)
-})
+frappe.setup.on("before_load", function () {
+	insights.setup.slides_settings.map(frappe.setup.add_slide);
+});
 
 insights.setup.slides_settings = [
 	{
-		name: 'Database',
-		title: __('Database Setup'),
+		name: "Database",
+		title: __("Database Setup"),
 		fields: get_database_setup_fields(),
 		onload(slide) {
-			this.attach_test_connection_listener(slide)
-			this.attach_setup_demo_listener(slide)
+			this.attach_test_connection_listener(slide);
+			this.attach_setup_demo_listener(slide);
 			setTimeout(() => {
-				slide.slides_footer.find('.complete-btn').hide()
-			}, 500)
+				slide.slides_footer.find(".complete-btn").hide();
+			}, 500);
 		},
 		attach_test_connection_listener(slide) {
-			const $test_conn_btn = slide.$body.find('.test-conn-btn')
-			let testing_connection = false
-			$test_conn_btn.on('click', () => {
-				if (testing_connection) return
+			const $test_conn_btn = slide.$body.find(".test-conn-btn");
+			let testing_connection = false;
+			$test_conn_btn.on("click", () => {
+				if (testing_connection) return;
 
-				testing_connection = true
-				const values = slide.form.get_values(true)
+				testing_connection = true;
+				const values = slide.form.get_values(true);
 				if (
 					values.db_type &&
 					values.db_name &&
 					values.db_title &&
 					values.db_username &&
+					values.db_host &&
+					values.db_port &&
 					values.db_password
 				) {
 					frappe.call({
-						method: 'insights.setup.setup_wizard.test_db_connection',
+						method: "insights.setup.setup_wizard.test_db_connection",
 						args: { db: values },
 						callback: (r) => {
-							testing_connection = false
+							testing_connection = false;
 							if (r.message) {
 								const success_msg = __(
-									'Successfully connected to databse'
-								)
-								this.show_success_message(success_msg, slide)
+									"Successfully connected to databse"
+								);
+								this.show_success_message(success_msg, slide);
 							} else {
 								frappe.show_alert({
 									message: __(
-										'Could not connect. Please check the credentials.'
+										"Could not connect. Please check the credentials."
 									),
-									indicator: 'orange',
-								})
+									indicator: "orange",
+								});
 							}
 						},
-					})
+					});
 				} else {
 					frappe.show_alert({
 						message: __(
-							'You need to enter credentials to test the connection.'
+							"You need to enter credentials to test the connection."
 						),
-						indicator: 'orange',
-					})
+						indicator: "orange",
+					});
 				}
-			})
+			});
 		},
 		attach_setup_demo_listener(slide) {
-			const $setup_demo_btn = slide.$body.find('.setup-demo-btn')
+			const $setup_demo_btn = slide.$body.find(".setup-demo-btn");
 			$setup_demo_btn.click(() => {
 				const success_msg = __(
-					'Demo data will be imported once you complete the setup'
-				)
-				this.show_success_message(success_msg, slide)
-				slide.get_field('setup_demo_db').set_value(1)
-				slide.get_field('db_title').df.reqd = 0
-				slide.get_field('db_name').df.reqd = 0
-				slide.get_field('db_username').df.reqd = 0
-				slide.get_field('db_password').df.reqd = 0
-			})
+					"Demo data will be imported once you complete the setup"
+				);
+				this.show_success_message(success_msg, slide);
+				slide.get_field("setup_demo_db").set_value(1);
+				slide.get_field("db_title").df.reqd = 0;
+				slide.get_field("db_name").df.reqd = 0;
+				slide.get_field("db_username").df.reqd = 0;
+				slide.get_field("db_password").df.reqd = 0;
+			});
 		},
 		show_success_section(slide) {
-			slide.$body.find('.form-section').not(':last').hide()
+			slide.$body.find(".form-section").not(":last").hide();
 		},
 		show_success_message(message, slide) {
-			slide.slides_footer.find('.complete-btn').show()
-			this.show_success_section(slide)
-			slide.get_field('success_html').$wrapper.append(
+			slide.slides_footer.find(".complete-btn").show();
+			this.show_success_section(slide);
+			slide.get_field("success_html").$wrapper.append(
 				`<div class="d-flex" style="flex-direction: column; align-items: center;">
 					<div style="
 							width: 40px; height: 40px;
@@ -100,103 +102,105 @@ insights.setup.slides_settings = [
 					<br>
 					<div class="text-muted text-center mt-2" style="width: 70%">${message}</div>
 				</div>`
-			)
+			);
 		},
 	},
-]
+];
 
 function get_database_setup_fields() {
 	return [
 		{
-			fieldtype: 'Select',
-			fieldname: 'db_type',
-			label: __('Database Type'),
-			options: ['MariaDB'],
-			default: 'MariaDB',
+			fieldtype: "Select",
+			fieldname: "db_type",
+			label: __("Database Type"),
+			options: ["MariaDB"],
+			default: "MariaDB",
 		},
 		{
-			fieldname: 'db_title',
-			label: __('Title'),
-			fieldtype: 'Data',
+			fieldname: "db_title",
+			label: __("Title"),
+			fieldtype: "Data",
 			reqd: 1,
-			placeholder: 'InsightsDB',
+			placeholder: "InsightsDB",
 		},
 		{
-			fieldname: 'db_host',
-			fieldtype: 'Data',
-			label: 'Host',
-			placeholder: 'localhost',
-		},
-		{
-			fieldname: 'db_port',
-			fieldtype: 'Data',
-			label: 'Port',
-			placeholder: '3306',
-		},
-		{
-			fieldname: 'column_break',
-			fieldtype: 'Column Break',
-		},
-		{
-			fieldname: 'db_name',
-			fieldtype: 'Data',
-			label: 'Database Name',
+			fieldname: "db_host",
+			fieldtype: "Data",
+			label: "Host",
+			placeholder: "localhost",
 			reqd: 1,
-			placeholder: 'insights',
 		},
 		{
-			fieldname: 'db_username',
-			fieldtype: 'Data',
-			label: 'Username',
+			fieldname: "db_port",
+			fieldtype: "Data",
+			label: "Port",
+			default: "3306",
 			reqd: 1,
-			placeholder: 'read-only-user',
 		},
 		{
-			fieldname: 'db_password',
-			fieldtype: 'Password',
-			label: 'Password',
+			fieldname: "column_break",
+			fieldtype: "Column Break",
+		},
+		{
+			fieldname: "db_name",
+			fieldtype: "Data",
+			label: "Database Name",
 			reqd: 1,
-			placeholder: '**********',
+			placeholder: "insights",
 		},
 		{
-			default: '0',
-			fieldname: 'db_use_ssl',
-			fieldtype: 'Check',
-			label: 'Use SSL',
+			fieldname: "db_username",
+			fieldtype: "Data",
+			label: "Username",
+			reqd: 1,
+			placeholder: "read-only-user",
 		},
 		{
-			fieldtype: 'Section Break',
-			fieldname: 'section_break',
+			fieldname: "db_password",
+			fieldtype: "Password",
+			label: "Password",
+			reqd: 1,
+			placeholder: "**********",
 		},
 		{
-			fieldtype: 'HTML',
-			fieldname: 'test_conn_html',
+			default: "0",
+			fieldname: "db_use_ssl",
+			fieldtype: "Check",
+			label: "Use SSL",
+		},
+		{
+			fieldtype: "Section Break",
+			fieldname: "section_break",
+		},
+		{
+			fieldtype: "HTML",
+			fieldname: "test_conn_html",
 			options: get_test_conn_html(),
 		},
 		{
-			fieldtype: 'HTML',
-			fieldname: 'or_separator_html',
+			fieldtype: "HTML",
+			fieldname: "or_separator_html",
 			options: get_separator_html(),
 		},
 		{
-			fieldtype: 'HTML',
-			fieldname: 'setup_demo_html',
+			fieldtype: "HTML",
+			fieldname: "setup_demo_html",
 			options: get_setup_demo_html(),
 		},
 		{
-			fieldtype: 'Check',
-			fieldname: 'setup_demo_db',
+			fieldtype: "Check",
+			fieldname: "setup_demo_db",
 			hidden: 1,
 		},
 		{
-			fieldtype: 'Section Break',
-			fieldname: 'success_section_break',
+			fieldtype: "Section Break",
+			fieldname: "success_section_break",
 		},
 		{
-			fieldtype: 'HTML',
-			fieldname: 'success_html',
+			fieldtype: "HTML",
+			fieldname: "success_html",
 		},
-	]
+	];
 }
 
 function get_separator_html() {
@@ -220,7 +224,7 @@ function get_separator_html() {
 			}
 		</style>
 		<div class="mt-4 or mb-4">OR</div>
-	`
+	`;
 }
 
 function get_test_conn_html() {
@@ -236,7 +240,7 @@ function get_test_conn_html() {
 				Test Connection
 			</button>
 		</div>
-	`
+	`;
 }
 
 function get_setup_demo_html() {
@@ -252,5 +256,5 @@ function get_setup_demo_html() {
 				Setup Demo Data
 			</button>
 		</div>
-	`
+	`;
 }
