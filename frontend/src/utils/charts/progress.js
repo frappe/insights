@@ -15,20 +15,28 @@ export default function useProgressChart() {
 
 	function buildComponentProps(queryChart) {
 		if (queryChart.data.length == 0) return
-		if (isEmptyObj(queryChart.config.progressColumn, queryChart.config.targetColumn)) return
+		if (isEmptyObj(queryChart.config.progressColumn) || !queryChart.config.target) return
 
 		const progressColIndex = queryChart.data[0].findIndex((col) =>
 			col.includes(queryChart.config.progressColumn.label)
 		)
-		const targetColIndex = queryChart.data[0].findIndex((col) =>
-			col.includes(queryChart.config.targetColumn.label)
-		)
 
 		return {
 			title: queryChart.title,
-			progress: queryChart.data[1][progressColIndex],
-			target: queryChart.data[1][targetColIndex],
 			options: queryChart.options,
+			progress: queryChart.data[1][progressColIndex],
+			target: getTarget(queryChart),
+		}
+	}
+
+	function getTarget(queryChart) {
+		if (typeof queryChart.config.target === 'object') {
+			const targetColIndex = queryChart.data[0].findIndex((col) =>
+				col.includes(queryChart.config.target.label)
+			)
+			return queryChart.data[1][targetColIndex]
+		} else {
+			return parseInt(queryChart.config.target)
 		}
 	}
 

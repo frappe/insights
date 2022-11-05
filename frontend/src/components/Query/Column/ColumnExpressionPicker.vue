@@ -169,9 +169,9 @@ watchEffect(() => {
 	if (showDateFormatOptions.value) {
 		// Currently group by date field is not supported on expressions due to.
 		// pymysql.err.OperationalError: (1056, "Can't group on '{AGGREGATE} of {DATE_FIELD}'")
-		expression.groupBy = false;
+		expression.groupBy = false
 	}
-});
+})
 
 const codeViewUpdate = debounce(function ({ cursorPos }) {
 	expression.help = null
@@ -230,7 +230,7 @@ const addExpressionColumn = () => {
 
 	if (showDateFormatOptions.value) {
 		newColumn.format_option = {
-			date_format: expression.dateFormat.value
+			date_format: expression.dateFormat.value,
 		}
 	}
 	emit('column-select', newColumn)
