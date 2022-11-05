@@ -310,7 +310,7 @@ def upload_csv(label, file, if_exists, columns):
 @frappe.whitelist()
 def sync_data_source(data_source):
     data_source = frappe.get_doc("Insights Data Source", data_source)
-    data_source.sync_tables()
+    data_source.sync_tables.enqueue(self=data_source)
 
 
 @frappe.whitelist()

@@ -136,13 +136,8 @@ const showImportDialog = ref(false)
 
 const $notify = inject('$notify')
 function syncTables() {
-	$notify({
-		title: 'Syncing Tables',
-		message: 'This may take a while',
-	})
 	dataSource
 		.syncTables()
-		.then(() => $notify({ title: 'Synced Tables', appearance: 'success' }))
-		.catch((err) => $notify({ title: 'Error Syncing Tables' }))
+		.catch((err) => $notify({ title: 'Error Syncing Tables', appearance: 'error' }))
 }
 </script>
