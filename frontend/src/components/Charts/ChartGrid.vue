@@ -7,7 +7,7 @@ import { inject, useAttrs } from 'vue'
 const options = inject('options')
 const defaults = {
 	top: 25,
-	bottom: 55,
+	bottom: 35,
 	left: 20,
 	right: 30,
 	containLabel: true,

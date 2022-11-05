@@ -2,9 +2,20 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils import cint
-from .models import Connection, QueryRunner
 from frappe.database.mariadb.database import MariaDBDatabase
+
+
+MARIADB_TO_GENERIC_TYPES = {
+    "int": "Integer",
+    "bigint": "Long Int",
+    "decimal": "Decimal",
+    "text": "Text",
+    "longtext": "Long Text",
+    "date": "Date",
+    "datetime": "Datetime",
+    "time": "Time",
+    "varchar": "String",
+}
 
 
 class SecureMariaDB(MariaDBDatabase):
@@ -23,44 +34,15 @@ class SecureMariaDB(MariaDBDatabase):
             conn_settings["database"] = self.dbName
         return conn_settings
 
-
-class FrappeSiteConnection(Connection):
-    def __init__(self, host, port, username, password, database_name, use_ssl):
-        self._connection = SecureMariaDB(
-            dbName=database_name,
-            user=username,
-            password=password,
-            host=host,
-            port=cint(port),
-            useSSL=use_ssl,
-        )
-
-    def get(self):
-        return self._connection
-
-    def test(self) -> bool:
-        try:
-            return self._connection.a_row_exists("DocType")
-        except Exception as e:
-            frappe.log_error(f"Error connecting to Site: {e}")
-
-    def close(self) -> None:
-        self._connection.close()
-
-
-class DatabaseQueryRunner(QueryRunner):
-    def __init__(self, connection: Connection):
-        self.connection = connection
-
-    def execute(self, query, *args, skip_validation=False, **kwargs):
+    def sql(self, query, *args, skip_validation=False, **kwargs):
         self.validate_query(query, skip_validation)
         try:
-            return self.connection.get().sql(query, *args, **kwargs)
+            return super().sql(query, *args, **kwargs)
         except Exception as e:
-            frappe.log_error(f"Error fetching data from RemoteDB: {e}")
+            frappe.log_error(f"Error fetching data from Secure MariaDB: {e}")
             raise
         finally:
-            self.connection.close()
+            self.close()
 
     def validate_query(self, query, skip_validation=False):
         if skip_validation:
@@ -71,12 +53,44 @@ class DatabaseQueryRunner(QueryRunner):
             )
 
 
-def get_site_db_connection():
-    return FrappeSiteConnection(
-        host=None,
-        port=None,
-        username=frappe.conf.db_name,
-        password=frappe.conf.db_password,
-        database_name=frappe.conf.db_name,
-        use_ssl=False,
+def create_insights_table(table, force=False):
+    exists = frappe.db.exists(
+        "Insights Table",
+        {
+            "data_source": table.data_source,
+            "table": table.table,
+        },
     )
+
+    if docname := exists:
+        doc = frappe.get_doc("Insights Table", docname)
+    else:
+        doc = frappe.get_doc(
+            {
+                "doctype": "Insights Table",
+                "data_source": table.data_source,
+                "table": table.table,
+                "label": table.label,
+            }
+        )
+
+    doc.label = table.label
+    if force:
+        doc.columns = []
+        doc.table_links = []
+
+    for table_link in table.table_links or []:
+        if not doc.get("table_links", table_link):
+            doc.append("table_links", table_link)
+
+    for column in table.columns or []:
+        if not doc.get("columns", column):
+            doc.append("columns", column)
+
+    column_names = [c.column for c in table.columns]
+    for column in doc.columns:
+        if column.column not in column_names:
+            doc.remove(column)
+
+    doc.save()
+    return doc.name

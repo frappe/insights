@@ -33,13 +33,13 @@ const routes = [
 	{
 		path: '/dashboard',
 		name: 'DashboardList',
-		component: () => import('@/pages/DashboardList.vue'),
+		component: () => import('@/dashboard/DashboardList.vue'),
 	},
 	{
 		props: true,
 		name: 'Dashboard',
 		path: '/dashboard/:name',
-		component: () => import('@/pages/Dashboard.vue'),
+		component: () => import('@/dashboard/Dashboard.vue'),
 	},
 	{
 		path: '/data-source',

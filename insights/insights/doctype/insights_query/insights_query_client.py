@@ -1,7 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from json import dumps, loads
+from json import dumps
 from copy import deepcopy
 from pandas import DataFrame
 
@@ -20,7 +20,7 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def get_charts(self):
-        return frappe.get_all(
+        return frappe.get_list(
             "Insights Query Chart",
             filters={"query": self.name},
             pluck="name",
@@ -166,7 +166,7 @@ class InsightsQueryClient:
 
         # TODO: validate if two columns doesn't have same label
 
-        result = loads(self.result)
+        result = frappe.parse_json(self.result)
         columns = [d.get("label") for d in self.get("columns")]
 
         dataframe = DataFrame(columns=columns, data=result)
@@ -181,7 +181,7 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def fetch_tables(self):
         _tables = []
-        if not self.tables:
+        if not self.tables or self.data_source == "Query Store":
             _tables = get_tables(self.data_source)
 
         else:
@@ -197,9 +197,9 @@ class InsightsQueryClient:
                 )
                 .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
             )
-            _tables = query.run(as_dict=True, debug=True)
+            _tables = query.run(as_dict=True)
 
-        if self.from_query_store:
+        if self.data_source == "Query Store":
             # remove the current query table from the table list
             # you should not be querying self
             _tables = [t for t in _tables if t.get("table") != self.name]
@@ -234,7 +234,7 @@ class InsightsQueryClient:
         join_tables = []
         for table in self.tables:
             if table.join:
-                join = loads(table.join)
+                join = frappe.parse_json(table.join)
                 join_tables.append(
                     frappe._dict(
                         {
@@ -255,9 +255,9 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text) -> "list[str]":
+    def fetch_column_values(self, column, search_text=None) -> "list[str]":
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        return data_source.get_distinct_column_values(
+        return data_source.get_column_options(
             column.get("table"), column.get("column"), search_text
         )
 
@@ -290,4 +290,9 @@ class InsightsQueryClient:
     def reset(self):
         self.clear()
         self.skip_before_save = True
+        self.save()
+
+    @frappe.whitelist()
+    def store(self):
+        self.is_stored = 1
         self.save()

@@ -5,10 +5,6 @@ function useTableChart() {
 	const chart = reactive({
 		type: 'Table',
 		icon: 'grid',
-		dataSchema: {
-			anyColumn: true,
-			multiple: true,
-		},
 		getComponent,
 		buildComponentProps,
 	})
@@ -17,24 +13,20 @@ function useTableChart() {
 		return defineAsyncComponent(() => import('@/components/Query/Visualize/Table.vue'))
 	}
 
-	function columnsExist(query, ...columns) {
-		const columnNames = query.doc.columns.map((c) => (c.is_expression ? c.label : c.column))
-		return columns.every((c) => columnNames.includes(c))
+	function getRows(columns, data) {
+		const columnLabels = data[0].map((d) => d.split('::')[0])
+		const columnIndexes = columnLabels.map((label) => columns.indexOf(label))
+		return data.slice(1).map((row) => columnIndexes.map((index) => row[index]))
 	}
 
-	function buildComponentProps(query, options) {
-		if (isEmptyObj(options.data.columns)) {
+	function buildComponentProps(queryChart) {
+		if (isEmptyObj(queryChart.config.columns)) {
 			return null
 		}
-		const columnNames = options.data.columns.map((c) => c.value)
-		if (!columnsExist(query, ...columnNames)) {
-			return null
-		}
-
-		const columns = options.data.columns.map((c) => c.label)
-		const rows = query.results.getRows(...columnNames)
-		const title = options.title
-		chart.componentProps = { title, columns, rows }
+		const columns = queryChart.config.columns.map((c) => c.label)
+		const rows = getRows(columns, queryChart.data)
+		const title = queryChart.title
+		return { title, columns, rows }
 	}
 
 	return chart

@@ -8,6 +8,7 @@ import { useQueryResults } from '@/utils/query/results'
 const API_METHODS = {
 	run: 'run',
 	reset: 'reset',
+	store: 'store',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
 	fetchTables: 'fetch_tables',

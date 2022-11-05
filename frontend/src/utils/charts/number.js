@@ -5,11 +5,6 @@ function useNumberChart() {
 	const chart = reactive({
 		type: 'Number',
 		icon: 'hash',
-		dataSchema: {
-			labelColumn: false,
-			valueColumn: true,
-			multipleValues: false,
-		},
 		getComponent,
 		buildComponentProps,
 	})
@@ -18,26 +13,25 @@ function useNumberChart() {
 		return defineAsyncComponent(() => import('@/components/Query/Visualize/NumberCard.vue'))
 	}
 
-	function buildComponentProps(query, options) {
-		if (isEmptyObj(options.data.valueColumn)) {
-			return null
-		}
-		const valueColumn = options.data.valueColumn?.value
-		if (
-			!query.doc.columns.some((c) =>
-				c.is_expression ? c.label === valueColumn : c.column === valueColumn
-			)
-		) {
-			return null
-		}
+	function getColumnValues(column, data) {
+		// data = [["col1::type", "col2::type"], ["val1", "val2"], ["val3", "val4"]]
+		const columns = data[0].map((d) => d.split('::')[0])
+		const index = columns.indexOf(column)
+		return data.slice(1).map((row) => row[index])
+	}
 
-		const value = query.results.getColumnValues(valueColumn)[0]
-		chart.componentProps = {
+	function buildComponentProps(queryChart) {
+		if (isEmptyObj(queryChart.config.valueColumn) || queryChart.data.length == 0) {
+			return
+		}
+		const valueColumn = queryChart.config.valueColumn?.label
+		const value = getColumnValues(valueColumn, queryChart.data)[0]
+		return {
 			data: {
 				value,
-				title: options.title,
+				title: queryChart.title,
 			},
-			options: options.options,
+			options: queryChart.options,
 		}
 	}
 

@@ -1,11 +1,21 @@
-{
-	"docstatus": 0,
-	"status": "Active",
-	"name": "Query Store",
-	"title": "Query Store",
-	"source_type": "Site Database",
-	"database_type": "MariaDB",
-	"doctype": "Insights Data Source",
-	"modified": "2022-01-01 00:01:00.000000",
-	"creation": "2022-01-01 00:01:00.000000"
-}
+[
+  {
+    "doctype": "Insights Data Source",
+    "is_site_db": 1,
+    "name": "Site DB",
+    "title": "Site DB",
+    "status": "Active",
+    "database_type": "MariaDB",
+    "modified": "2022-01-01 00:01:00.000000",
+    "creation": "2022-01-01 00:01:00.000000"
+  },
+  {
+    "doctype": "Insights Data Source",
+    "status": "Active",
+    "name": "Query Store",
+    "title": "Query Store",
+    "database_type": "MariaDB",
+    "modified": "2022-01-01 00:01:00.000000",
+    "creation": "2022-01-01 00:01:00.000000"
+  }
+]

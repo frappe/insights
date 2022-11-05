@@ -29,22 +29,30 @@ def get_data_source(name):
     }
 
 
+def get_all_tables(data_source=None):
+    if not data_source:
+        return []
+
+    return frappe.get_list(
+        "Insights Table",
+        filters={
+            "data_source": data_source,
+        },
+        fields=["name", "table", "label", "hidden"],
+        order_by="hidden asc, label asc",
+    )
+
+
 @frappe.whitelist()
-def get_data_source_table(name, table):
-    table = frappe.get_doc(
+def get_table_columns(data_source, table):
+    doc = frappe.get_doc(
         "Insights Table",
         {
-            "data_source": name,
+            "data_source": data_source,
             "table": table,
         },
     )
-    columns, data, no_of_rows = table.preview()
-    return {
-        "doc": table.as_dict(),
-        "no_of_rows": no_of_rows,
-        "columns": columns,
-        "rows": data,
-    }
+    return {"columns": doc.columns}
 
 
 @frappe.whitelist()
@@ -65,42 +73,14 @@ def get_tables(data_source=None):
     if not data_source:
         return []
 
-    def _get_tables():
-        return frappe.get_all(
-            "Insights Table",
-            filters={
-                "hidden": 0,
-                "data_source": data_source,
-            },
-            fields=["table", "label"],
-            order_by="label asc",
-        )
-
-    return frappe.cache().hget(
-        "insights",
-        "get_tables_" + data_source,
-        generator=_get_tables,
-    )
-
-
-def get_all_tables(data_source=None):
-    if not data_source:
-        return []
-
-    def _get_all_tables():
-        return frappe.get_all(
-            "Insights Table",
-            filters={
-                "data_source": data_source,
-            },
-            fields=["table", "label", "hidden"],
-            order_by="hidden asc, label asc",
-        )
-
-    return frappe.cache().hget(
-        "insights",
-        "get_all_tables_" + data_source,
-        generator=_get_all_tables,
+    return frappe.get_list(
+        "Insights Table",
+        filters={
+            "hidden": 0,
+            "data_source": data_source,
+        },
+        fields=["name", "table", "label"],
+        order_by="label asc",
     )
 
 
@@ -259,14 +239,14 @@ def skip_onboarding():
 
 
 @frappe.whitelist()
-def get_dashboard_options(query_chart):
+def get_dashboard_options(chart):
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
 
     exclude_dashboards = (
         frappe.qb.from_(DashboardItem)
         .select(DashboardItem.parent)
         .distinct()
-        .where(DashboardItem.query_chart == query_chart)
+        .where(DashboardItem.chart == chart)
         .run(pluck="parent")
     )
     return frappe.get_list(
@@ -274,3 +254,65 @@ def get_dashboard_options(query_chart):
         filters={"name": ["not in", exclude_dashboards]},
         fields=["name as value", "title as label"],
     )
+
+
+def get_csv_from_base64(encoded_string):
+    import base64
+    from io import StringIO
+
+    data = encoded_string.split(",")[1]  # remove data uri
+    data = base64.b64decode(data)
+    data = StringIO(data.decode("utf-8"))
+    return data
+
+
+@frappe.whitelist()
+def get_columns_from_csv(file):
+    import csv
+
+    file_type = file.get("type")
+    data = file.get("data")  # base64 encoded
+
+    if file_type == "text/csv":
+        data = get_csv_from_base64(data)
+        reader = csv.reader(data)
+        return next(reader)
+
+
+def create_csv_file(file):
+    file_doc = frappe.new_doc("File")
+    file_doc.file_name = file.get("name")
+    file_doc.content = get_csv_from_base64(file.get("data")).read()
+    file_doc.save()
+    return file_doc
+
+
+@frappe.whitelist()
+def upload_csv(label, file, if_exists, columns):
+    table_import = frappe.new_doc("Insights Table Import")
+    table_import.table_name = frappe.scrub(label)
+    table_import.table_label = label
+    table_import.if_exists = if_exists
+    table_import.source = create_csv_file(file).file_url
+    for column in columns:
+        table_import.append(
+            "columns",
+            {
+                "column": frappe.scrub(column.get("label")),
+                "label": column.get("label"),
+                "type": column.get("data_type"),
+            },
+        )
+    table_import.save()
+    table_import.submit()
+
+
+@frappe.whitelist()
+def sync_data_source(data_source):
+    data_source = frappe.get_doc("Insights Data Source", data_source)
+    data_source.sync_tables()
+
+
+@frappe.whitelist()
+def get_query_data(query):
+    return frappe.db.get_value("Insights Query", query, "result")

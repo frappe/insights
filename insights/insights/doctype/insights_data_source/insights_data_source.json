@@ -6,21 +6,17 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "source_type",
-  "column_break_2",
   "title",
-  "section_break_4",
   "status",
   "database_type",
+  "is_site_db",
   "host",
   "port",
   "use_ssl",
   "column_break_5",
   "database_name",
   "username",
-  "password",
-  "configuration_section",
-  "file"
+  "password"
  ],
  "fields": [
   {
@@ -32,30 +28,32 @@
    "unique": 1
   },
   {
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "port",
    "fieldtype": "Data",
    "label": "Port"
   },
   {
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "database_name",
    "fieldtype": "Data",
-   "label": "Database Name",
-   "mandatory_depends_on": "eval: doc.source_type == 'Database'"
+   "label": "Database Name"
   },
   {
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "username",
    "fieldtype": "Data",
-   "label": "Username",
-   "mandatory_depends_on": "eval: doc.source_type == 'Database'"
+   "label": "Username"
   },
   {
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "password",
    "fieldtype": "Password",
-   "label": "Password",
-   "mandatory_depends_on": "eval: doc.source_type == 'Database'"
+   "label": "Password"
   },
   {
    "default": "0",
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "use_ssl",
    "fieldtype": "Check",
    "label": "Use SSL"
@@ -65,6 +63,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "host",
    "fieldtype": "Data",
    "label": "Host"
@@ -79,38 +78,21 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: !doc.is_site_db",
    "fieldname": "database_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Database Type",
-   "options": "MariaDB"
+   "options": "MariaDB",
+   "default": "MariaDB"
   },
   {
-   "fieldname": "source_type",
-   "fieldtype": "Select",
-   "label": "Source Type",
-   "options": "Database\nSite Database\nFile\nAPI",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval: doc.source_type == 'Database'",
-   "fieldname": "section_break_4",
-   "fieldtype": "Section Break"
-  },
-  {
-   "depends_on": "eval: doc.source_type == 'File'",
-   "fieldname": "configuration_section",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "file",
-   "fieldtype": "Attach",
-   "label": "File",
-   "mandatory_depends_on": "eval: doc.source_type == 'File'"
+   "default": "0",
+   "depends_on": "is_site_db",
+   "fieldname": "is_site_db",
+   "fieldtype": "Check",
+   "label": "Site Database",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -147,7 +129,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

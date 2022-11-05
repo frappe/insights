@@ -20,7 +20,7 @@ export function safeJSONParse(str, defaultValue = null) {
 		return defaultValue
 	}
 
-	if (typeof str === 'object') {
+	if (typeof str !== 'string') {
 		return str
 	}
 
@@ -102,16 +102,36 @@ export function ellipsis(value, length) {
 	return value
 }
 
-function getShortNumber(number) {
+function getShortNumber(number, precision = 0) {
 	const locale = 'en-IN' // TODO: get locale from user settings
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
+		maximumFractionDigits: precision,
 	}).format(number)
 
 	if (locale == 'en-IN') {
 		formatted = formatted.replace('T', 'K')
 	}
 	return formatted
+}
+
+export async function getDataURL(type, data) {
+	const blob = new Blob([data], { type })
+
+	return new Promise((resolve) => {
+		const fr = new FileReader()
+		fr.addEventListener('loadend', () => {
+			resolve(fr.result)
+		})
+
+		fr.readAsDataURL(blob)
+	})
+}
+
+export async function convertFileToDataURL(file, type) {
+	const buffer = await file.arrayBuffer()
+	const array = new Uint8Array(buffer)
+	return await getDataURL(type, array)
 }
 
 export default {

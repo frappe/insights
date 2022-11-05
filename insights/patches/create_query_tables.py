@@ -11,7 +11,6 @@ def execute():
                 "status": "Active",
                 "name": "Query Store",
                 "title": "Query Store",
-                "source_type": "Site Database",
                 "database_type": "MariaDB",
                 "doctype": "Insights Data Source",
                 "modified": "2022-01-01 00:01:00.000000",

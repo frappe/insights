@@ -4,7 +4,7 @@
 			<!-- Height 2.5 rem -->
 			<div class="flex flex-1 items-center justify-between">
 				<QueryHeader />
-				<Tabs :tabs="tabs" @switch="switchTab" />
+				<Tabs class="w-40" :tabs="tabs" @switch="switchTab" />
 			</div>
 		</template>
 
