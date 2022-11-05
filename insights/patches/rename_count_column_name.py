@@ -1,17 +1,22 @@
 import frappe
+from pypika import Criterion
 
 
 def execute():
     if not frappe.db.a_row_exists("Insights Query"):
         return
 
-    QueryColumn = frappe.qb.DocType("Insights Query Column")
-    (
-        frappe.qb.update(QueryColumn)
-        .set(QueryColumn.column, "count")
-        .where(
-            (QueryColumn.column == "__count")
-            or (QueryColumn.column == "*" and (QueryColumn.aggregation == "Count"))
-        )
-        .run()
+    frappe.db.sql(
+        """
+        UPDATE
+            `tabInsights Query Column`
+        SET
+            `column` = 'count'
+        WHERE
+            `column` = '__count'
+            OR (
+                `column` = '*'
+                AND `aggregation` = 'Count'
+            )
+        """
     )
