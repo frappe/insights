@@ -35,6 +35,7 @@ export function useDataSourceTable(name) {
 			getPreview: 'get_preview',
 		},
 	})
+	dataSourceTable.get.fetch()
 	dataSourceTable.getPreview.submit()
 	dataSourceTable.rows = computed(() => dataSourceTable.getPreview.data?.message || {})
 	dataSourceTable.sync = () => {
