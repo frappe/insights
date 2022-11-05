@@ -6,6 +6,10 @@ def execute():
         return
 
     Item = frappe.qb.DocType("Insights Dashboard Item")
-    frappe.qb.update(Item).set(Item.item_type, "Chart").set(
-        Item.chart, Item.query_chart
-    ).run()
+    (
+        frappe.qb.update(Item)
+        .set(Item.item_type, "Chart")
+        .set(Item.chart, Item.query_chart)
+        .where((Item.item_type.isnull()) or (Item.item_type == ""))
+        .run()
+    )
