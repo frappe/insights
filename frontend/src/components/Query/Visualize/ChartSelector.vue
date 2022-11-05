@@ -4,7 +4,7 @@ defineProps(['currentType', 'chartTypes', 'invalidTypes'])
 </script>
 
 <template>
-	<div class="flex space-x-3 overflow-scroll rounded-md">
+	<div class="flex flex-wrap gap-x-4 gap-y-3 rounded-md">
 		<div
 			v-for="(chart, i) in $props.chartTypes"
 			:key="i"
