@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 
-import re
 import frappe
 from .models import BaseDatabase
 from .utils import create_insights_table
