@@ -6,10 +6,6 @@ def execute():
         return
 
     Query = frappe.qb.DocType("Insights Query")
-    frappe.qb.update(Query).set(Query.is_stored, 1).where(
-        Query.data_source == "Query Store"
-    ).run()
-
     queries_on_query_store = frappe.get_all(
         "Insights Query", filters={"data_source": "Query Store"}, pluck="name"
     )
@@ -24,5 +20,11 @@ def execute():
                 queries_to_stored.append(table)
 
     if queries_to_stored:
+        (
+            frappe.qb.update(Query)
+            .set(Query.is_stored, 1)
+            .where(Query.name.isin(queries_to_stored))
+            .run()
+        )
         query_store = frappe.get_doc("Insights Data Source", "Query Store")
         query_store.sync_tables(queries=queries_to_stored)
