@@ -3,7 +3,6 @@
 
 import frappe
 from frappe import task
-from insights import notify
 from functools import cached_property
 from frappe.model.document import Document
 
@@ -94,9 +93,7 @@ class InsightsDataSource(Document):
 
     @task(queue="short")
     def sync_tables(self, *args, **kwargs):
-        notify("Syncing Tables")
         self.db.sync_tables(*args, **kwargs)
-        notify("Tables Synced Successfully")
 
     def get_table_columns(self, table):
         return self.db.get_table_columns(table)
