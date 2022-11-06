@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from insights import notify
 from pypika import CustomFunction
 
 
@@ -310,7 +311,9 @@ def upload_csv(label, file, if_exists, columns):
 @frappe.whitelist()
 def sync_data_source(data_source):
     data_source = frappe.get_doc("Insights Data Source", data_source)
-    data_source.sync_tables()
+    notify("Syncing Tables")
+    data_source.sync_tables.enqueue(self=data_source)
+    notify("Tables Synced Successfully")
 
 
 @frappe.whitelist()

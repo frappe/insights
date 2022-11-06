@@ -113,7 +113,7 @@ export default function useDashboard(dashboardName) {
 }
 
 function makeDashboardResource(name) {
-	return createDocumentResource({
+	const resource = createDocumentResource({
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
@@ -128,4 +128,6 @@ function makeDashboardResource(name) {
 			update_chart_filters: 'update_chart_filters',
 		},
 	})
+	resource.get.fetch()
+	return resource
 }

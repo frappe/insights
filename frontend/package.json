@@ -20,7 +20,7 @@
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
 		"frappe-charts": "^1.6.2",
-		"frappe-ui": "^0.0.45",
+		"frappe-ui": "^0.0.84",
 		"gridstack": "^6.0.1",
 		"moment": "^2.29.3",
 		"vue": "^3.2.25",

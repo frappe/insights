@@ -143,12 +143,16 @@ function useChart({ chartID, data }) {
 }
 
 const queryChartResource = (name) => {
-	const doctype = 'Insights Query Chart'
-	const whitelistedMethods = {
-		updateDoc: 'update_doc',
-		addToDashboard: 'add_to_dashboard',
-	}
-	return createDocumentResource({ doctype, name, whitelistedMethods })
+	const resource = createDocumentResource({
+		doctype: 'Insights Query Chart',
+		name: name,
+		whitelistedMethods: {
+			updateDoc: 'update_doc',
+			addToDashboard: 'add_to_dashboard',
+		},
+	})
+	resource.get.fetch()
+	return resource
 }
 
 export { types, useChart }
