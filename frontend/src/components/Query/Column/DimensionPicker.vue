@@ -89,16 +89,14 @@ function addDimension() {
 		return
 	}
 
-	dimension.column.label = dimension.label
-	dimension.column.aggregation = 'Group By'
-
-	if (showDateFormatOptions.value) {
-		dimension.column.format_option = {
+	emit('column-select', {
+		...dimension.column,
+		label: dimension.label,
+		aggregation: 'Group By',
+		format_option: {
 			date_format: dimension.dateFormat.value,
-		}
-	}
-
-	emit('column-select', dimension.column)
+		},
+	})
 }
 function removeDimension() {
 	query.removeColumn.submit({ column: dimension.column })
@@ -106,9 +104,6 @@ function removeDimension() {
 }
 
 function selectDateFormat(option) {
-	if (dimension.label === dimension.column.label) {
-		dimension.label = `${option.value} of ${dimension.column.label}`
-	}
 	dimension.dateFormat = option
 }
 </script>
