@@ -13,7 +13,7 @@ class InsightsTable(Document):
     @frappe.whitelist()
     def sync_table(self):
         source = frappe.get_doc("Insights Data Source", self.data_source)
-        source.sync_tables([self.table])
+        source.sync_tables([self.table], force=True)
 
     @frappe.whitelist()
     def update_visiblity(self, hidden):

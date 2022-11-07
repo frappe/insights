@@ -41,6 +41,7 @@ class StoredQueryTableFactory:
         return frappe.get_all("Insights Query", filters={"is_stored": 1}, pluck="name")
 
     def make_columns(self, columns):
+        set_date_fields_as_string(columns)
         return [
             frappe._dict(
                 {
@@ -91,7 +92,7 @@ class QueryStore(BaseDatabase):
 
         # create temporary table for an existing insights query
         query = frappe.get_doc("Insights Query", table)
-        columns = query.get_columns()
+        columns = self.get_table_columns(table)
         result = list(query.load_result())
         result.pop(0)
 
@@ -155,4 +156,14 @@ class QueryStore(BaseDatabase):
             return []
 
         query = frappe.get_cached_doc("Insights Query", table)
-        return query.get_columns()
+        columns = query.get_columns()
+        set_date_fields_as_string(columns)
+        return columns
+
+
+def set_date_fields_as_string(columns):
+    for column in columns:
+        if column.format_option and column.type in ("Date", "Datetime"):
+            format_option = frappe.parse_json(column.format_option)
+            if format_option.date_format:
+                column.type = "String"
