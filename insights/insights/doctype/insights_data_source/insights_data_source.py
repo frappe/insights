@@ -10,6 +10,7 @@ from .sources.models import BaseDatabase
 from .sources.mariadb import MariaDB
 from .sources.query_store import QueryStore
 from .sources.frappe_db import is_frappe_db, SiteDB
+from .sources.sqlite import SQLiteDB
 
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
@@ -41,6 +42,8 @@ class InsightsDataSource(Document):
             return SiteDB(data_source=self.name)
         if self.name == "Query Store":
             return QueryStore()
+        if self.database_type == "SQLite":
+            return SQLiteDB(data_source=self.name, database_name=self.database_name)
         return self.get_database()
 
     def get_database(self):
@@ -65,9 +68,18 @@ class InsightsDataSource(Document):
     def validate(self):
         if self.is_site_db or self.name == "Query Store":
             return
-        self.db_connection_fields()
+        if self.database_type == "SQLite":
+            self.validate_sqlite_fields()
+        else:
+            self.validate_remote_db_fields()
 
-    def db_connection_fields(self):
+    def validate_sqlite_fields(self):
+        mandatory = ("database_name",)
+        for field in mandatory:
+            if not self.get(field):
+                frappe.throw(f"{field} is mandatory for SQLite")
+
+    def validate_remote_db_fields(self):
         mandatory = ("host", "port", "username", "password", "database_name")
         for field in mandatory:
             if not self.get(field):

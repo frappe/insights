@@ -2,13 +2,16 @@
 # For license information, please see license.txt
 
 
+import csv
 import frappe
-
 from frappe.utils import cint
 from .models import BaseDatabase
 from frappe.database.mariadb.database import MariaDBDatabase
 from .utils import SecureMariaDB, create_insights_table, MARIADB_TO_GENERIC_TYPES
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+from insights.insights.doctype.insights_table_import.insights_table_import import (
+    InsightsTableImport,
+)
 
 
 class FrappeTableFactory:
@@ -314,10 +317,63 @@ class FrappeDB(BaseDatabase):
         return values
 
 
+class TableImporter:
+    def __init__(self, db_conn) -> None:
+        self.db_conn: MariaDBDatabase = db_conn
+
+    def import_table(self, import_doc):
+        self.import_doc = import_doc
+        if self.import_doc.if_exists == "Overwrite":
+            self.db_conn.sql(f"DROP TABLE IF EXISTS `{self.import_doc.table_name}`")
+
+        self.create_table()
+        self.import_records()
+
+    def create_table(self):
+        # TODO: convert this into pypika query
+        pk = "pk bigint primary key"
+        column_defs = ", ".join(
+            [make_column_def(row.column, row.type) for row in self.import_doc.columns]
+        )
+        query = f"""CREATE TABLE `{self.import_doc.table_name}` ({pk}, {column_defs})
+                ENGINE="InnoDB"
+                ROW_FORMAT=DYNAMIC
+                CHARACTER SET=utf8mb4
+                COLLATE=utf8mb4_unicode_ci"""
+        self.db_conn.sql(query)
+
+    def import_records(self):
+        with open(self.import_doc._filepath, "r") as f:
+            column_labels = [d.label for d in self.import_doc.columns]
+            column_names = [d.column for d in self.import_doc.columns]
+            reader = csv.DictReader(f)
+            values = []
+            for idx, row in enumerate(reader):
+                values.append([idx + 1] + [row.get(column) for column in column_labels])
+                if len(values) == 10000 or idx == self.import_doc.rows - 1:
+                    self.insert_rows(values, list(["pk"] + column_names))
+                    values = []
+
+    def insert_rows(self, values, column_names):
+        # values = [[1, "a", "b"], [2, "c", "d"]]
+        # column_names = ["name", "column1", "column2"]
+        column_name_str = ",".join(
+            [f"`{c}`" for c in column_names]
+        )  # "`name`,`column1`,`column2`"
+        values_str = ",".join(["%s"] * len(values[0]))  # %s,%s,%s
+        values_str = ",".join(
+            [f"({values_str})"] * len(values)
+        )  # (%s,%s,%s),(%s,%s,%s)
+        values = [cell or None for row in values for cell in row]
+        query = f"""INSERT INTO `{self.import_doc.table_name}` ({column_name_str}) VALUES {values_str}"""
+        self.db_conn.sql(query, values)
+
+
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
         self.conn: MariaDBDatabase = MariaDBDatabase()
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.table_importer: TableImporter = TableImporter(self.conn)
         self.table_factory: FrappeTableFactory = FrappeTableFactory(
             data_source, db_conn=self.conn
         )
@@ -331,11 +387,30 @@ class SiteDB(FrappeDB):
         ]
         return super().sync_tables(_tables, force)
 
+    def table_exists(self, table: str):
+        return self.execute_query("SHOW TABLES LIKE %s", (table,))
+
+    def import_table(self, import_doc: InsightsTableImport):
+        self.table_importer.import_table(import_doc)
+        self.sync_tables(tables=[import_doc.table_name])
+        # need to commit to release the lock
+        self.conn.commit()
+
 
 def is_frappe_db(db_params):
     try:
         db = FrappeDB(**db_params)
         return db if db.test_connection() else None
     except BaseException:
-        print("Not a Frappe DB")
         return False
+
+
+def make_column_def(column, type):
+    from insights.constants import COLUMN_TYPES
+
+    if not column or not type:
+        frappe.throw("Column name and type are required")
+
+    d = COLUMN_TYPES.get(type)
+    column_type = f"{d[0]}({d[1]})" if d[1] else d[0]
+    return f"`{column}` {column_type}"

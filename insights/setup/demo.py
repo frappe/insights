@@ -192,8 +192,6 @@ class DemoDataFactory:
             table_import.save(ignore_permissions=True)
             table_import.submit()
 
-        self.data_source.sync_tables(tables=self.table_names)
-
     def cleanup(self):
         if os.path.exists(os.path.join(self.files_folder, self.tar_filename)):
             os.remove(os.path.join(self.files_folder, self.tar_filename))
@@ -248,7 +246,7 @@ class DemoDataFactory:
             table_name = frappe.scrub(table)
             index_name = f"idx_{table_name}_{'_'.join(indexes[table])}"
             columns = ", ".join([f"`{c}`" for c in indexes[table]])
-            self.data_source.db.conn.sql(
+            self.data_source.db.execute_query(
                 f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})"
             )
 
@@ -307,7 +305,7 @@ class DemoDataFactory:
         for table, links in foreign_key_relations.items():
             doc = frappe.get_doc(
                 "Insights Table",
-                {"table": frappe.scrub(table), "data_source": "Site DB"},
+                {"table": frappe.scrub(table), "data_source": self.data_source.name},
             )
             for link in links:
                 doc.append(

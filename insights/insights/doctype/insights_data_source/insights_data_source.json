@@ -13,6 +13,7 @@
   "host",
   "port",
   "use_ssl",
+  "allow_imports",
   "column_break_5",
   "database_name",
   "username",
@@ -78,13 +79,13 @@
    "read_only": 1
   },
   {
+   "default": "MariaDB",
    "depends_on": "eval: !doc.is_site_db",
    "fieldname": "database_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Database Type",
-   "options": "MariaDB",
-   "default": "MariaDB"
+   "options": "MariaDB\nSQLite"
   },
   {
    "default": "0",
@@ -93,11 +94,17 @@
    "fieldtype": "Check",
    "label": "Site Database",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_imports",
+   "fieldtype": "Check",
+   "label": "Allow Table Import"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-28 14:08:42.996602",
+ "modified": "2022-11-07 21:15:17.441717",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",
