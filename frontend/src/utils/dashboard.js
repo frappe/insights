@@ -1,52 +1,15 @@
-import { computed } from 'vue'
-import { createDocumentResource, createResource } from 'frappe-ui'
-
-export default function useDashboard(name) {
-	const dashboard = makeDashboardResource(name)
-
-	dashboard.updateNewChartOptions = () => {
-		dashboard.getChartOptions.submit()
-	}
-	dashboard.newChartOptions = computed(() =>
-		dashboard.getChartOptions.data?.message?.map((v) => {
-			return {
-				value: v.name,
-				label: v.title,
-				description: v.type,
-			}
-		})
-	)
-	dashboard.updateNewChartOptions()
-
-	dashboard.editingLayout = false
-
-	return dashboard
-}
+import { createResource } from 'frappe-ui'
 
 const getDashboardOptionsResource = createResource({
 	method: 'insights.api.get_dashboard_options',
 	initialData: [],
 })
-export function getDashboardOptions(query_chart) {
-	return getDashboardOptionsResource.submit({ query_chart })
+export function getDashboardOptions(chart) {
+	return getDashboardOptionsResource.submit({ chart })
 }
 const createDashboardResource = createResource({
 	method: 'insights.api.create_dashboard',
 })
 export function createDashboard(title) {
 	return createDashboardResource.submit({ title })
-}
-
-function makeDashboardResource(name) {
-	return createDocumentResource({
-		doctype: 'Insights Dashboard',
-		name: name,
-		whitelistedMethods: {
-			addChart: 'add_chart',
-			getChartOptions: 'get_charts',
-			refreshItems: 'refresh_items',
-			removeItem: 'remove_item',
-			updateLayout: 'update_layout',
-		},
-	})
 }

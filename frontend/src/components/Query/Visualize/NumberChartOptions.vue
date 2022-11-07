@@ -9,7 +9,7 @@ const chart = inject('chart')
 <template>
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Column</div>
-		<Autocomplete v-model="chart.data.valueColumn" :options="query.columns.valueOptions" />
+		<Autocomplete v-model="chart.config.valueColumn" :options="query.columns.valueOptions" />
 	</div>
 	<div class="space-y-3 text-sm text-gray-600">
 		<div class="space-y-1">
@@ -19,6 +19,10 @@ const chart = inject('chart')
 		<div class="space-y-1">
 			<div class="font-light">Suffix</div>
 			<Input type="text" v-model="chart.options.suffix" placeholder="Enter a suffix..." />
+		</div>
+		<div class="space-y-1">
+			<div class="font-light">Decimals</div>
+			<Input type="number" v-model="chart.options.decimals" placeholder="Enter a number..." />
 		</div>
 	</div>
 </template>

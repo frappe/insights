@@ -143,7 +143,7 @@ fixtures = ["Insights Data Source"]
 # Testing
 # -------
 
-# before_tests = "insights.install.before_tests"
+before_tests = "insights.tests.utils.before_tests"
 
 # Overriding Methods
 # ------------------------------

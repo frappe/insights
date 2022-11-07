@@ -46,7 +46,7 @@
 					Save
 				</Button>
 			</div>
-			<div class="max-h-[30rem] flex-1 rounded-md border p-4">
+			<div class="flex max-h-[30rem] flex-1 items-center justify-center">
 				<component
 					v-if="chart.component && chart.componentProps"
 					ref="eChart"
@@ -88,14 +88,18 @@ import ChartSelector from '@/components/Query/Visualize/ChartSelector.vue'
 import ChartOptions from '@/components/Query/Visualize/ChartOptions.vue'
 
 import { computed, inject, nextTick, provide, ref, watch } from 'vue'
-import { useQueryChart, types } from '@/utils/charts'
+import { useChart, types } from '@/utils/charts'
+import { useRouter } from 'vue-router'
 
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { getDashboardOptions, createDashboard } from '@/utils/dashboard.js'
 
 const query = inject('query')
-const chartID = query.charts[0]
-const chart = useQueryChart({ chartID, query })
+const chartName = query.charts[0]
+const chart = useChart({
+	chartID: chartName,
+	data: query.results.data,
+})
 provide('chart', chart)
 
 const invalidTypes = computed(() => {
@@ -120,13 +124,13 @@ const saveChart = () => {
 }
 
 const showDashboardDialog = ref(false)
-const toDashboard = ref(null)
+const toDashboard = ref({})
 const dashboardOptions = ref([])
 const $autocomplete = ref(null)
 watch(showDashboardDialog, async (val) => {
 	if (val) {
 		await nextTick()
-		getDashboardOptions(chartID).then((options) => {
+		getDashboardOptions(chartName).then((options) => {
 			dashboardOptions.value = options
 			setTimeout(() => {
 				$autocomplete.value.input.$el.blur()
@@ -150,7 +154,9 @@ function addToDashboard() {
 	chart.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
 }
 
+const router = useRouter()
 function _createDashboard(newDashboardName) {
+	if (!newDashboardName) return router.push('/dashboard')
 	createDashboard(newDashboardName).then(({ name, title }) => {
 		if (name && title) {
 			$notify({

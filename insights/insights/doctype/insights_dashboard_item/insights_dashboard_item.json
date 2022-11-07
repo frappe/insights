@@ -6,30 +6,18 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "query_chart",
+  "item_type",
+  "chart",
   "query",
+  "chart_filters",
+  "filter_label",
+  "filter_type",
+  "filter_operator",
+  "filter_value",
   "column_break_3",
   "layout"
  ],
  "fields": [
-  {
-   "fieldname": "query_chart",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Chart",
-   "options": "Insights Query Chart",
-   "reqd": 1
-  },
-  {
-   "fetch_from": "query_chart.query",
-   "fieldname": "query",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Query",
-   "options": "Insights Query",
-   "read_only": 1,
-   "reqd": 1
-  },
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
@@ -38,12 +26,65 @@
    "fieldname": "layout",
    "fieldtype": "JSON",
    "label": "Position & Size"
+  },
+  {
+   "fieldname": "item_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Chart\nFilter"
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Chart'",
+   "fieldname": "chart",
+   "fieldtype": "Link",
+   "label": "Chart",
+   "options": "Insights Query Chart"
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Filter'",
+   "fieldname": "filter_type",
+   "fieldtype": "Data",
+   "label": "Filter Type"
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Filter'",
+   "fieldname": "filter_operator",
+   "fieldtype": "Data",
+   "label": "Filter Operator"
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Filter'",
+   "fieldname": "filter_value",
+   "fieldtype": "Data",
+   "label": "Filter Value"
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Filter'",
+   "fieldname": "filter_label",
+   "fieldtype": "Data",
+   "label": "Filter Label"
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Chart'",
+   "fetch_from": "chart.query",
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "label": "Query",
+   "options": "Insights Query",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.item_type == 'Chart'",
+   "fieldname": "chart_filters",
+   "fieldtype": "JSON",
+   "label": "Chart Filters"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-10-08 17:37:12.195600",
+ "modified": "2022-10-23 13:22:20.448983",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard Item",

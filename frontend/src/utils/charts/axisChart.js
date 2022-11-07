@@ -1,102 +1,46 @@
 import { reactive, defineAsyncComponent } from 'vue'
 import { isEmptyObj } from '@/utils'
 
-function useAxisChart(type, icon) {
-	const chart = reactive({
-		type,
-		icon,
-		dataSchema: {
-			labelColumn: true,
-			valueColumn: true,
-			multipleValues: true,
-		},
-		getComponent,
+function useAxisChart(type) {
+	const axisChart = reactive({
 		componentProps: null,
+		getComponent,
 		buildComponentProps,
 	})
 
 	function getComponent() {
-		if (chart.type == 'Bar') {
+		if (type == 'Bar') {
 			return defineAsyncComponent(() => import('@/components/Query/Visualize/BarChart.vue'))
 		}
-		if (chart.type == 'Line') {
+		if (type == 'Line') {
 			return defineAsyncComponent(() => import('@/components/Query/Visualize/LineChart.vue'))
 		}
 	}
 
-	function buildComponentProps(query, options) {
-		if (isEmptyObj(options.data.labelColumn, options.data.valueColumn)) {
+	function buildComponentProps(doc) {
+		if (isEmptyObj(doc.config.labelColumn, doc.config.valueColumn) || doc.data.length == 0) {
 			return
 		}
-
-		if (chart.dataSchema.multipleValues && Array.isArray(options.data.valueColumn)) {
-			chart.componentProps = {
-				title: options.title,
-				data: buildMultiValueData(query, options.data),
-				options: options.options,
-			}
-		} else {
-			chart.componentProps = {
-				title: options.title,
-				data: buildSingleValueData(query, options.data),
-				options: options.options,
-			}
-		}
-	}
-
-	function columnsExist(query, ...columns) {
-		const columnNames = query.doc.columns.map((c) => (c.is_expression ? c.label : c.column))
-		return columns.every((c) => columnNames.includes(c))
-	}
-
-	function buildSingleValueData(query, data) {
-		const labelColumn = data.labelColumn?.value
-		const valueColumn = data.valueColumn?.value
-
-		if (!columnsExist(query, labelColumn, valueColumn)) {
-			return null
-		}
-
-		const labels = query.results.getColumnValues(labelColumn)
-		const values = query.results.getColumnValues(valueColumn)
-
-		let labelValues = labels.map((label, idx) => ({
-			label,
-			value: values[idx],
-		}))
-
-		// if the labels are not unique, add the values of the same label
-		labelValues = labelValues.reduce((acc, curr) => {
-			const existing = acc.find((item) => item.label == curr.label)
-			if (existing) {
-				existing.value += curr.value
-			} else {
-				acc.push(curr)
-			}
-			return acc
-		}, [])
-
 		return {
-			labels: labelValues.map((item) => item.label),
-			datasets: [
-				{
-					label: data.valueColumn.label,
-					data: labelValues.map((item) => item.value),
-				},
-			],
+			title: doc.title,
+			data: buildMultiValueData(doc),
+			options: doc.options,
 		}
 	}
 
-	function buildMultiValueData(query, data) {
-		const labelColumn = data.labelColumn?.value
-		const valueColumns = data.valueColumn.map((col) => col.value)
+	function getColumnValues(column, data) {
+		// data = [["col1::type", "col2::type"], ["val1", "val2"], ["val3", "val4"]]
+		const columns = data[0].map((d) => d.split('::')[0])
+		const index = columns.indexOf(column)
+		return data.slice(1).map((row) => row[index])
+	}
 
-		if (!columnsExist(query, labelColumn, ...valueColumns)) {
-			return null
-		}
+	function buildMultiValueData(doc) {
+		const labelColumn = doc.config.labelColumn?.label
+		const valueColumns = doc.config.valueColumn.map((col) => col.label)
 
-		const labels = query.results.getColumnValues(labelColumn)
-		const values = valueColumns.map((col) => query.results.getColumnValues(col))
+		const labels = getColumnValues(labelColumn, doc.data)
+		const values = valueColumns.map((col) => getColumnValues(col, doc.data))
 
 		let labelValues = labels.map((label, idx) => ({
 			label,
@@ -117,13 +61,13 @@ function useAxisChart(type, icon) {
 		return {
 			labels: labelValues.map((item) => item.label),
 			datasets: valueColumns.map((col, idx) => ({
-				label: data.valueColumn[idx].label,
+				label: doc.config.valueColumn[idx].label,
 				data: labelValues.map((item) => item.values[idx]),
 			})),
 		}
 	}
 
-	return chart
+	return axisChart
 }
 
 export function Bar() {

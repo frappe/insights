@@ -27,6 +27,8 @@ const XandY = ref([
 		type: 'category',
 		data: props.options.invertAxis ? props.data.labels.reverse() : props.data.labels,
 		axisTick: false,
+		'axisLabel-interval': 0,
+		'axisLabel-rotate': props.options.rotateLabels,
 	},
 	{
 		axisType: props.options.invertAxis ? 'xAxis' : 'yAxis',
@@ -55,7 +57,7 @@ const series = ref(
 		<ChartGrid>
 			<ChartLegend type="scroll" bottom="bottom" />
 			<ChartAxis v-for="(axis, i) in XandY" v-bind="axis" :key="i" />
-			<ChartSeries v-bind="series[0]" />
+			<ChartSeries v-for="(data, i) in series" v-bind="data" :key="i" />
 			<ChartTooltip trigger="item" :appendToBody="true" />
 		</ChartGrid>
 	</Chart>

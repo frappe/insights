@@ -14,12 +14,16 @@ class InsightsQueryChart(Document):
         doc = _dict(doc)
         self.title = doc.title
         self.type = doc.type
-        self.data = dumps(doc.data, indent=2)
+        self.config = dumps(doc.config, indent=2)
         self.save()
 
     @frappe.whitelist()
     def add_to_dashboard(self, dashboard, layout=None):
-        if not dashboard:
-            frappe.throw("Dashboard is required")
         dashboard_doc = frappe.get_doc("Insights Dashboard", dashboard)
-        dashboard_doc.add_chart(self.name, layout)  # saves the dashboard
+        dashboard_doc.add_item(
+            {
+                "item_type": "Chart",
+                "chart": self.name,
+            },
+            layout,
+        )

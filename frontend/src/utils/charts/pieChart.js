@@ -5,11 +5,6 @@ function usePieChart() {
 	const chart = reactive({
 		type: 'Pie',
 		icon: 'pie-chart',
-		dataSchema: {
-			labelColumn: true,
-			valueColumn: true,
-			multipleValues: false,
-		},
 		getComponent,
 		buildComponentProps,
 	})
@@ -18,33 +13,35 @@ function usePieChart() {
 		return defineAsyncComponent(() => import('@/components/Query/Visualize/PieChart.vue'))
 	}
 
-	function buildComponentProps(query, options) {
-		if (isEmptyObj(options.data.labelColumn, options.data.valueColumn)) {
+	function buildComponentProps(queryChart) {
+		if (
+			isEmptyObj(queryChart.config.labelColumn, queryChart.config.valueColumn) ||
+			queryChart.data.length == 0
+		) {
 			return
 		}
-		const props = buildSingleValueChartProps(query, options.data)
-		chart.componentProps = {
-			title: options.title,
-			options: options.options,
+
+		const props = buildSingleValueChartProps(queryChart)
+		return {
+			title: queryChart.title,
+			options: queryChart.options,
 			...props,
 		}
 	}
 
-	function columnsExist(query, ...columns) {
-		const columnNames = query.doc.columns.map((c) => (c.is_expression ? c.label : c.column))
-		return columns.every((col) => columnNames.indexOf(col) !== -1)
+	function getColumnValues(column, data) {
+		// data = [["col1::type", "col2::type"], ["val1", "val2"], ["val3", "val4"]]
+		const columns = data[0].map((d) => d.split('::')[0])
+		const index = columns.indexOf(column)
+		return data.slice(1).map((row) => row[index])
 	}
 
-	function buildSingleValueChartProps(query, data) {
-		const labelColumn = data.labelColumn?.value
-		const valueColumn = data.valueColumn?.value
+	function buildSingleValueChartProps(queryChart) {
+		const labelColumn = queryChart.config.labelColumn?.label
+		const valueColumn = queryChart.config.valueColumn?.label
 
-		if (!columnsExist(query, labelColumn, valueColumn)) {
-			return null
-		}
-
-		const labels = query.results.getColumnValues(labelColumn)
-		const values = query.results.getColumnValues(valueColumn)
+		const labels = getColumnValues(labelColumn, queryChart.data)
+		const values = getColumnValues(valueColumn, queryChart.data)
 
 		let labelValues = labels
 			.map((label, idx) => ({ label, value: values[idx] }))
@@ -66,7 +63,7 @@ function usePieChart() {
 				labels: labelValues.map((item) => item.label),
 				datasets: [
 					{
-						label: data.valueColumn.label,
+						label: queryChart.config.valueColumn.label,
 						data: labelValues.map((item) => item.value),
 					},
 				],

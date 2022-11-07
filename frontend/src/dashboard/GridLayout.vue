@@ -46,6 +46,9 @@ function initializeGrid() {
 
 function attachChangeEvent() {
 	grid.on('change', function (evt, updatedItems) {
+		if (!updatedItems) {
+			return
+		}
 		emit(
 			'layoutChange',
 			updatedItems.map((item) => {

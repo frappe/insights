@@ -5,6 +5,7 @@
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
+					autocomplete="off"
 					:placeholder="placeholder"
 					@focus="togglePopover"
 					@change="
@@ -41,7 +42,7 @@
 								No results found
 							</div>
 							<ComboboxOption
-								v-if="$props.allowCreate && filterQuery"
+								v-if="$props.allowCreate"
 								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
 								@click.prevent="$emit('createOption', filterQuery)"
 							>
@@ -135,6 +136,9 @@ const props = defineProps({
 })
 
 const filterQuery = ref('')
+const modelValueIsObject = computed(() => {
+	return typeof props.modelValue === 'object' || !props.modelValue
+})
 const options = computed(() => {
 	if (typeof props.options[0] !== 'object') {
 		return props.options.map((option) => {
@@ -148,16 +152,19 @@ const options = computed(() => {
 })
 const selectedOption = computed({
 	get() {
-		return options.value.find((option) => option.value === props.modelValue?.value)
+		return modelValueIsObject.value
+			? props.modelValue
+			: options.value.find((option) => option.value === props.modelValue)
 	},
 	set(value) {
-		emit('update:modelValue', value)
-		emit('selectOption', value)
+		const _value = modelValueIsObject.value ? value : value.value
+		emit('update:modelValue', _value)
+		emit('selectOption', _value)
 	},
 })
 const uniqueOptions = computed(() => {
 	return options.value.filter((option, index, self) => {
-		return self.findIndex((t) => t.value === option.value) === index
+		return self.findIndex((t) => t.value === option.value && t.label === option.label) === index
 	})
 })
 const filteredOptions = computed(() => {

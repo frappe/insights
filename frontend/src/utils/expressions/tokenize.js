@@ -187,8 +187,8 @@ export default function tokenize(expression, offset = 0) {
 		}
 
 		let argsStart = cursor
-		let closeParenthesis = expression.indexOf(')', cursor)
-		let argsEnd = closeParenthesis > -1 ? closeParenthesis : expression.length
+		let closeParenthesis = findMatchingParenthesis(expression, cursor - 1)
+		let argsEnd = closeParenthesis !== -1 ? closeParenthesis : expression.length
 		let argsStr = expression.substring(argsStart, argsEnd)
 		if (!argsStr) {
 			fnToken.end = offset + cursor
@@ -305,4 +305,14 @@ export default function tokenize(expression, offset = 0) {
 	})
 
 	return tokens
+}
+
+function findMatchingParenthesis(str, start) {
+	let open = 0
+	for (let i = start; i < str.length; i++) {
+		if (str[i] == '(') open++
+		if (str[i] == ')') open--
+		if (open == 0) return i
+	}
+	return -1
 }

@@ -4,6 +4,13 @@
 			placement="left"
 			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 			:options="[
+				!query.doc.is_stored
+					? {
+							label: 'Store Query',
+							icon: 'bookmark',
+							handler: storeQuery,
+					  }
+					: null,
 				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
@@ -95,6 +102,7 @@
 						icon="copy"
 						appearance="white"
 						class="absolute bottom-2 right-2"
+						@click="copySQL"
 					></Button>
 				</div>
 			</template>
@@ -128,5 +136,29 @@ function duplicateQuery() {
 			title: 'Query Duplicated',
 		})
 	})
+}
+
+function storeQuery() {
+	query.store.submit().then((res) => {
+		$notify({
+			appearance: 'success',
+			title: 'Query Stored',
+		})
+	})
+}
+
+function copySQL() {
+	if (navigator.clipboard) {
+		navigator.clipboard.writeText(query.doc.sql)
+		$notify({
+			appearance: 'success',
+			title: 'SQL Copied',
+		})
+	} else {
+		$notify({
+			appearance: 'warning',
+			title: 'Copy to clipboard not supported',
+		})
+	}
 }
 </script>

@@ -1,0 +1,20 @@
+[
+  {
+    "data_source": "Site DB",
+    "table": "tabToDo",
+    "label": "ToDo",
+    "hidden": 0,
+    "doctype": "Insights Table",
+    "table_links": [],
+    "columns": []
+  },
+  {
+    "data_source": "Site DB",
+    "table": "tabUser",
+    "label": "User",
+    "hidden": 0,
+    "doctype": "Insights Table",
+    "table_links": [],
+    "columns": []
+  }
+]

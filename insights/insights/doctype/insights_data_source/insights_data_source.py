@@ -1,58 +1,50 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
-
 import frappe
-from frappe import _dict
+from frappe import task
+from functools import cached_property
 from frappe.model.document import Document
 
-from .sources.site_db import SiteDB
+from .sources.models import BaseDatabase
+from .sources.mariadb import MariaDB
 from .sources.query_store import QueryStore
-from .sources.frappe_db import is_frappe_db, FrappeDB
+from .sources.frappe_db import is_frappe_db, SiteDB
 
-from .sources.models import BaseDataSource
+from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
-SOURCE_TYPES = _dict(
-    {
-        "RemoteDB": "Database",
-        "SiteDB": "Site Database",
-        "File": "File",
-        "API": "API",
-    }
-)
-
-SOURCE_STATUS = _dict(
-    {
-        "Active": "Active",
-        "Inactive": "Inactive",
-    }
-)
-
-
 class InsightsDataSource(Document):
-    @cached_property
-    def source(self) -> BaseDataSource:
-        return self._get_source()
+    def before_insert(self):
+        if self.is_site_db and frappe.db.exists(
+            "Insights Data Source", {"is_site_db": 1}
+        ):
+            frappe.throw("Only one site database can be configured")
 
-    def _get_source(self):
+    def on_trash(self):
+        if self.is_site_db:
+            frappe.throw("Cannot delete the site database. It is needed for Insights.")
+        if self.name == "Query Store":
+            frappe.throw("Cannot delete the Query Store. It is needed for Insights.")
+
+        linked_doctypes = ["Insights Table"]
+        for doctype in linked_doctypes:
+            for name in frappe.db.get_all(
+                doctype, {"data_source": self.name}, pluck="name"
+            ):
+                frappe.delete_doc(doctype, name)
+
+    @cached_property
+    def db(self) -> BaseDatabase:
+        if self.is_site_db:
+            return SiteDB(data_source=self.name)
         if self.name == "Query Store":
             return QueryStore()
+        return self.get_database()
 
-        if self.source_type == SOURCE_TYPES.RemoteDB:
-            return self._get_remote_db_source()
-
-        if self.source_type == SOURCE_TYPES.SiteDB:
-            return SiteDB()
-
-        frappe.throw(
-            f"Unsupported data source type: {self.source_type} and database type: {self.database_type}"
-        )
-
-    def _get_remote_db_source(self):
-        params = {
+    def get_database(self):
+        conn_args = {
             "data_source": self.name,
             "host": self.host,
             "port": self.port,
@@ -62,79 +54,52 @@ class InsightsDataSource(Document):
             "database_name": self.database_name,
         }
 
-        if is_frappe_db(params):
-            return FrappeDB(**params)
+        if db := is_frappe_db(conn_args):
+            return db
+
+        if self.database_type == "MariaDB":
+            return MariaDB(**conn_args)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
     def validate(self):
-        if self.name == "Query Store":
+        if self.is_site_db or self.name == "Query Store":
             return
-        if self.source_type == SOURCE_TYPES.RemoteDB:
-            self._validate_remote_db()
-        elif self.source_type == SOURCE_TYPES.SiteDB:
-            self._validate_site_db()
-        elif self.source_type == SOURCE_TYPES.File:
-            self._validate_file()
-        elif self.source_type == SOURCE_TYPES.API:
-            self._validate_api()
+        self.db_connection_fields()
 
-    def _validate_remote_db(self):
+    def db_connection_fields(self):
         mandatory = ("host", "port", "username", "password", "database_name")
         for field in mandatory:
             if not self.get(field):
                 frappe.throw(f"{field} is mandatory for Database")
 
-    def _validate_site_db(self):
-        pass
-
-    def _validate_file(self):
-        pass
-
-    def _validate_api(self):
-        pass
-
-    def on_trash(self):
-        if self.name == "Query Store":
-            frappe.throw("Cannot delete Query Store")
-
-        # TODO: optimize this
-        linked_doctypes = ["Insights Table"]
-        for doctype in linked_doctypes:
-            for table in frappe.db.get_all(doctype, {"data_source": self.name}):
-                frappe.delete_doc(doctype, table.name)
-
     def before_save(self):
-        self._set_status()
-
-    def _set_status(self):
         self.status = (
             SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
         )
 
     def test_connection(self):
         try:
-            self.source.connection.test()
-            return True
-        except BaseException:
-            print(f"Test Connection failed for {self.name}")
+            return self.db.test_connection()
+        except Exception as e:
+            frappe.log_error("Testing Data Source connection failed", e)
             return False
 
     def build_query(self, query: InsightsQuery):
-        return self.source.query_builder.build(query)
+        return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        return self.source.query(self.build_query(query))
+        return self.db.run_query(query)
 
-    def get_running_jobs(self):
-        # TODO: implement this
-        return []
+    @task(queue="short")
+    def sync_tables(self, *args, **kwargs):
+        self.db.sync_tables(*args, **kwargs)
 
-    def kill_job(self, job_id):
-        return
+    def get_table_columns(self, table):
+        return self.db.get_table_columns(table)
 
-    def get_distinct_column_values(self, *args, **kwargs):
-        return self.source.get_distinct_column_values(*args, **kwargs)
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        return self.db.get_column_options(table, column, search_text, limit)
 
-    def import_data(self, force=False):
-        self.source.import_data(force=force)
+    def get_table_preview(self, table, limit=20):
+        return self.db.get_table_preview(table, limit)

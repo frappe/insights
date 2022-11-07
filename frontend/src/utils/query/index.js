@@ -8,6 +8,7 @@ import { useQueryResults } from '@/utils/query/results'
 const API_METHODS = {
 	run: 'run',
 	reset: 'reset',
+	store: 'store',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
 	fetchTables: 'fetch_tables',
@@ -50,12 +51,13 @@ export function useQuery(name) {
 }
 
 function getQueryResource(name) {
-	const doctype = 'Insights Query'
-	return createDocumentResource({
-		doctype,
-		name,
+	const resource = createDocumentResource({
+		doctype: 'Insights Query',
+		name: name,
 		whitelistedMethods: API_METHODS,
 	})
+	resource.get.fetch()
+	return resource
 }
 
 export const FUNCTIONS = {

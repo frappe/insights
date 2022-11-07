@@ -8,11 +8,11 @@ export function useQueryResults(query) {
 		return safeJSONParse(query.doc.result, []).slice(0, maxRows)
 	})
 	const formattedData = computed(() => {
-		return data.value?.map((row) => {
+		return data.value?.slice(1).map((row) => {
 			return row.map((cell, idx) => {
 				const column = query.columns.data[idx] || {}
 				if (FIELDTYPES.NUMBER.includes(column.type)) {
-					if (column.type == 'Int') {
+					if (column.type == 'Integer') {
 						cell = parseInt(cell)
 					}
 					cell = Number(cell).toLocaleString()

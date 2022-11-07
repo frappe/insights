@@ -1,57 +1,35 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from typing import Protocol
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
-class Connection(Protocol):
-    def get(self):
-        ...
-
-    def test(self) -> bool:
-        ...
-
-    def close(self) -> None:
-        ...
-
-
-class QueryBuilder(Protocol):
-    def build(self, query: InsightsQuery):
-        ...
-
-
-class QueryRunner(Protocol):
-    connection: Connection = None
-
-    def execute(self):
-        ...
-
-
-class DataSourceImporter(Protocol):
-    data_source: str = None
-    connection: Connection = None
-    query_runner: QueryRunner = None
-
-    def import_data(self):
-        ...
-
-
-class BaseDataSource:
-    def __init__(self):
-        self.connection: Connection = None
-        self.query_builder: QueryBuilder = None
-        self.query_runner: QueryRunner = None
-        self.data_importer: DataSourceImporter = None
+class BaseDatabase:
+    data_source = None
+    connection = None
+    query_builder = None
+    table_factory = None
 
     def test_connection(self):
-        return self.connection.test()
+        raise NotImplementedError
 
     def build_query(self, query: InsightsQuery):
-        return self.query_builder.build(query)
+        raise NotImplementedError
 
-    def query(self, query, *args, **kwargs):
-        return self.query_runner.execute(query, *args, **kwargs)
+    def run_query(self, query: InsightsQuery):
+        return self.execute_query(self.build_query(query))
 
-    def import_data(self, *args, **kwargs):
-        return self.data_importer.import_data(*args, **kwargs)
+    def execute_query(self, query: str):
+        raise NotImplementedError
+
+    def sync_tables(self):
+        raise NotImplementedError
+
+    def get_table_columns(self, table):
+        raise NotImplementedError
+
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        raise NotImplementedError
+
+    def get_table_preview(self):
+        raise NotImplementedError

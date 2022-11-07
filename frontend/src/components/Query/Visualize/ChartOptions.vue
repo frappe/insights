@@ -16,6 +16,8 @@ const component = computed(() => {
 			return defineAsyncComponent(() => import('./TableChartOptions.vue'))
 		case 'Number':
 			return defineAsyncComponent(() => import('./NumberChartOptions.vue'))
+		case 'Progress':
+			return defineAsyncComponent(() => import('./ProgressChartOptions.vue'))
 		default:
 			return null
 	}

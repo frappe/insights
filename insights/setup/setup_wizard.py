@@ -52,26 +52,18 @@ def get_setup_stages(args=None):
 
 
 def get_demo_setup_stages():
-    from insights.setup.demo import (
-        initialize_demo_setup,
-        download_demo_data,
-        extract_demo_data,
-        create_entries,
-        create_indexes,
-        create_data_source,
-        create_table_links,
-        cleanup,
-    )
+    from insights.setup.demo import DemoDataFactory
+
+    factory = DemoDataFactory()
 
     stages_by_fn = {
-        _("Starting demo setup"): initialize_demo_setup,
-        _("Downloading data"): download_demo_data,
-        _("Extracting data"): extract_demo_data,
-        _("Inserting data"): create_entries,
-        _("Optimizing reads"): create_indexes,
-        _("Creating datasource"): create_data_source,
-        _("Creating links"): create_table_links,
-        _("Finishing demo setup"): cleanup,
+        _("Starting demo setup"): factory.initialize,
+        _("Downloading data"): factory.download_demo_data,
+        _("Extracting data"): factory.extract_demo_data,
+        _("Inserting data"): factory.import_data,
+        _("Optimizing reads"): factory.create_indexes,
+        _("Creating links"): factory.create_table_links,
+        _("Finishing demo setup"): factory.cleanup,
     }
 
     stages = []
@@ -103,7 +95,6 @@ def get_new_datasource(args):
     data_source = frappe.new_doc("Insights Data Source")
     data_source.update(
         {
-            "source_type": "Database",  # TODO: don't assume here
             "database_type": args.get("db_type"),
             "database_name": args.get("db_name"),
             "title": args.get("db_title"),
@@ -120,6 +111,7 @@ def get_new_datasource(args):
 def create_datasource(args):
     data_source = get_new_datasource(args)
     data_source.save()
+    data_source.sync_tables()
 
 
 def wrap_up(args):
@@ -141,5 +133,5 @@ def test_db_connection(db):
     db = frappe.parse_json(db)
     if db.db_type == "MariaDB":
         data_source = get_new_datasource(db)
-        return data_source.connector.test_connection()
+        return data_source.test_connection()
     return False

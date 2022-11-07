@@ -7,21 +7,23 @@ from frappe.model.document import Document
 
 class InsightsTable(Document):
     def on_update(self):
-        self.update_columns()
-        # clear cache
-        frappe.cache().hdel(
-            "insights",
-            "get_tables_" + self.data_source,
-        )
-        frappe.cache().hdel(
-            "insights",
-            "get_all_tables_" + self.data_source,
-        )
+        if not self.columns:
+            self.update_columns()
 
-    def preview(self, limit=20):
-        return frappe.get_doc(
-            "Insights Data Source", self.data_source
-        ).source.describe_table(self.table, limit)
+    @frappe.whitelist()
+    def sync_table(self):
+        source = frappe.get_doc("Insights Data Source", self.data_source)
+        source.sync_tables([self.table])
+
+    @frappe.whitelist()
+    def update_visiblity(self, hidden):
+        self.hidden = hidden
+        self.save()
+
+    @frappe.whitelist()
+    def get_preview(self):
+        data_source = frappe.get_doc("Insights Data Source", self.data_source)
+        return data_source.get_table_preview(self.table)
 
     def get_columns(self):
         if not self.columns:
@@ -29,18 +31,21 @@ class InsightsTable(Document):
         return self.columns
 
     def update_columns(self):
-        if self.data_source == "Query Store":
-            return
-
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        columns = data_source.source.data_importer.get_columns(self.table)
-        self.columns = []
-        for column in columns:
-            self.append(
-                "columns",
-                {
-                    "column": column.get("column"),
-                    "label": column.get("label"),
-                    "type": column.get("type"),
-                },
-            )
+        if columns := data_source.get_table_columns(self.table):
+            self.columns = []
+            for column in columns:
+                self.append(
+                    "columns",
+                    {
+                        "column": column.get("column"),
+                        "label": column.get("label"),
+                        "type": column.get("type"),
+                    },
+                )
+
+
+def on_doctype_update():
+    frappe.db.add_index(
+        "Insights Table", ["`data_source`", "`table`"], "data_source_table_index"
+    )

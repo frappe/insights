@@ -5,5 +5,8 @@
 from frappe.tests.utils import FrappeTestCase
 
 
+test_dependencies = ["Insights Data Source"]
+
+
 class TestInsightsTable(FrappeTestCase):
     pass
