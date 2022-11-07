@@ -305,6 +305,8 @@ def create_data_source():
     data_source.database_name = frappe.conf.db_name
     data_source.username = frappe.conf.db_name
     data_source.password = frappe.conf.db_password
+    data_source.host = "localhost"
+    data_source.port = 3306
     data_source.status = "Active"
     data_source.insert()
     data_source.import_data()
