@@ -142,6 +142,9 @@ def import_table(docname, filepath=None):
 
 
 def make_column_def(column, type):
+    if not column or not type:
+        frappe.throw("Column name and type are required")
+
     d = COLUMN_TYPES.get(type)
     column_type = f"{d[0]}({d[1]})" if d[1] else d[0]
     return f"`{column}` {column_type}"

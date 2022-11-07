@@ -97,7 +97,7 @@ class QueryStore(BaseDatabase):
 
         _columns = []
         for row in columns:
-            _columns.append(make_column_def(row.column, row.type))
+            _columns.append(make_column_def(row.column or row.label, row.type))
 
         create_table = f"CREATE TEMPORARY TABLE `{query.name}`({', '.join(_columns)})"
 
