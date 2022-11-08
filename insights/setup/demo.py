@@ -69,7 +69,16 @@ class DemoDataFactory:
         self.local_filename = os.path.join(self.files_folder, self.tar_filename)
         self.file_schema = self.get_schema()
         self.table_names = [frappe.scrub(table) for table in self.file_schema.keys()]
-        self.data_source = frappe.get_doc("Insights Data Source", "Site DB")
+
+        if not frappe.db.exists("Insights Data Source", "Demo Data"):
+            data_source = frappe.new_doc("Insights Data Source")
+            data_source.title = "Demo Data"
+            data_source.database_type = "SQLite"
+            data_source.database_name = "insights_demo_data"
+            data_source.allow_imports = 1
+            data_source.save()
+
+        self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
         if frappe.flags.in_test:
             self.local_filename = os.path.join(
                 os.path.dirname(__file__), "test_demo_data.tar"
