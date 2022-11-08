@@ -49,9 +49,9 @@ class DemoDataFactory:
         self.initialize()
 
     @staticmethod
-    def run():
+    def run(force=False):
         factory = DemoDataFactory()
-        if factory.demo_data_exists():
+        if factory.demo_data_exists() and not force:
             return factory
         factory.download_demo_data()
         factory.extract_demo_data()

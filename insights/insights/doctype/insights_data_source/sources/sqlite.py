@@ -7,13 +7,12 @@ import sqlite3
 import pandas as pd
 from sqlite3 import Connection
 from .models import BaseDatabase
-from insights.insights.doctype.insights_table_import.insights_table_import import (
-    InsightsTableImport,
-)
-from .utils import create_insights_table
-
-
 from pypika import SQLLiteQuery, Table
+from .utils import create_insights_table
+from ...insights_table_import.insights_table_import import InsightsTableImport
+from insights.insights.query_builders.sqlite.sqlite_query_builder import (
+    SQLiteQueryBuilder,
+)
 
 
 class SQLiteTableFactory:
@@ -73,16 +72,22 @@ class SQLiteTableFactory:
 
 
 class SQLiteDB(BaseDatabase):
-    def __init__(self, data_source, database_name, is_local=True) -> None:
+    def __init__(self, data_source, database_name) -> None:
         self.data_source = data_source
-        self.conn = sqlite3.connect(database_name) if is_local else None
+        self.conn = sqlite3.connect(
+            frappe.get_site_path("private", "files", f"{database_name}.sqlite")
+        )
         self.table_factory = SQLiteTableFactory(data_source, self.conn)
+        self.query_builder = SQLiteQueryBuilder()
 
     def test_connection(self):
         try:
             return self.conn.execute("SELECT 1").fetchone()
         except Exception as e:
             frappe.log_error(f"Error connecting to MariaDB: {e}")
+
+    def build_query(self, query):
+        return self.query_builder.build(query)
 
     def execute_query(self, query, *args, **kwargs):
         return self.conn.execute(query, *args, **kwargs).fetchall()

@@ -64,7 +64,10 @@ class InsightsTableImport(Document):
 
         self.db_set("status", "Queued")
         self.start_import.enqueue(
-            self=self, now=frappe.flags.in_test or frappe.flags.in_setup_wizard
+            self=self,
+            now=frappe.flags.in_test
+            or frappe.flags.in_setup_wizard
+            or frappe.flags.in_migrate,
         )
 
     @task(queue="long")

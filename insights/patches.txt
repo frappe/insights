@@ -23,3 +23,4 @@ insights.patches.rename_data_to_config
 insights.patches.migrate_dashboard_charts
 insights.patches.rename_target_column_field
 execute:frappe.db.sql("update `tabInsights Table Import` set `data_source`='Site DB' where `data_source` is null")
+insights.patches.replace_demo_data_source

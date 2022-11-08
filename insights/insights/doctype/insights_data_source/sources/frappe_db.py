@@ -8,7 +8,9 @@ from frappe.utils import cint
 from .models import BaseDatabase
 from frappe.database.mariadb.database import MariaDBDatabase
 from .utils import SecureMariaDB, create_insights_table, MARIADB_TO_GENERIC_TYPES
-from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+from insights.insights.query_builders.mariadb.mariadb_query_builder import (
+    MariaDBQueryBuilder,
+)
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
 )
@@ -273,7 +275,7 @@ class FrappeDB(BaseDatabase):
             port=cint(port),
             useSSL=use_ssl,
         )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: MariaDBQueryBuilder = MariaDBQueryBuilder()
         self.table_factory: FrappeTableFactory = FrappeTableFactory(
             data_source, db_conn=self.conn
         )
@@ -372,7 +374,7 @@ class TableImporter:
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
         self.conn: MariaDBDatabase = MariaDBDatabase()
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: MariaDBQueryBuilder = MariaDBQueryBuilder()
         self.table_importer: TableImporter = TableImporter(self.conn)
         self.table_factory: FrappeTableFactory = FrappeTableFactory(
             data_source, db_conn=self.conn

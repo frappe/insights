@@ -1,15 +1,16 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+
 import datetime
 import operator
-
-from typing import Tuple
-
 import frappe
+from typing import Tuple
 from frappe import _dict
+from pypika import Query, Column
+from contextlib import suppress
 from pypika import functions as fn, Criterion
-from frappe.query_builder import CustomFunction, functions, Case, Field, Table
+from frappe.query_builder import CustomFunction, functions, Case, Field
 from frappe.utils.data import (
     nowdate,
     add_to_date,
@@ -40,7 +41,8 @@ class Aggregations:
 
     @classmethod
     def get_aggregation_function(cls, aggregation):
-        return cls.get_aggregations()[aggregation]
+        if aggregation in cls.get_aggregations():
+            return cls.get_aggregations()[aggregation]
 
     @staticmethod
     def count(column):
@@ -70,21 +72,19 @@ class Aggregations:
 
 
 class ColumnFormat:
-
     date_formats = {
-        "Minute": "%D %M, %Y, %l:%i %p",
-        "Hour": "%D %M, %Y, %l:00 %p",
-        "Day": "%D %M, %Y",
-        "Day Short": "%D %b, %y",
-        "Month": "%M, %Y",
-        "Mon": "%b %y",
-        "Year": "%Y",
-        "Minute of Hour": "%i",
-        "Hour of Day": "%l:00 %p",
-        "Day of Week": "%W",
-        "Day of Month": "%D",
-        "Day of Year": "%j",
-        "Month of Year": "%M",
+        # Valid Dates
+        "Minute": "%Y-%m-%d %H:%i",  # eg. 2021-01-10 13:21
+        "Hour": "%Y-%m-%d %H:00",  # eg. 2021-01-10 13:00
+        "Day": "%Y-%m-%d",  # eg. 2021-01-10
+        "Month": "%Y-%m-01",  # eg. 2021-01-01
+        "Year": "%Y-01-01",  # eg. 2021-01-01
+        "Minute of Hour": "00:%i",  # eg. 00:21
+        "Hour of Day": "%H:00",  # eg. 13:00
+        "Day of Week": "%w",  # eg. 1
+        "Day of Month": "%d",  # eg. 01
+        "Day of Year": "%j",  # eg. 001
+        "Month of Year": "%m",  # eg. 01
     }
 
     FormatDate = CustomFunction("DATE_FORMAT", ["date", "format"])
@@ -96,12 +96,15 @@ class ColumnFormat:
         if format in cls.date_formats:
             _format = cls.date_formats[format]
             return cls.FormatDate(column, _format)
-        elif format == "Quarter":
-            quarter_of_year = fn.Concat("Q", cls.Quarter(column))
-            year = cls.FormatDate(column, "%Y")
-            return fn.Concat(quarter_of_year, ", ", year)
         elif format == "Quarter of Year":
             return cls.Quarter(column)
+        elif format == "Quarter":
+            # converts any date to the first day of the quarter
+            Year = CustomFunction("YEAR", ["date"])
+            return cls.ParseDate(
+                fn.Concat(Year(column), "-", (cls.Quarter(column) * 3) - 2, "-01"),
+                "%Y-%m-%d",
+            )
 
         return column
 
@@ -115,7 +118,6 @@ class ColumnFormat:
 
 
 class BinaryOperations:
-
     ARITHMETIC_OPERATIONS = {
         "+": operator.add,
         "-": operator.sub,
@@ -147,74 +149,6 @@ class BinaryOperations:
             return cls.LOGICAL_OPERATIONS[operator]
 
         raise NotImplementedError(f"Operation {operator} not implemented")
-
-
-def parse_timespan(timespan):
-    timespan = timespan.lower().strip()
-    if "current" in timespan:
-        return get_date_range(timespan=timespan)
-
-    elif "last" in timespan:
-        [span, interval, interval_type] = timespan.split(" ")
-        timespan = span + " n " + interval_type
-        return get_date_range(timespan=timespan, n=int(interval))
-
-
-def get_date_range(
-    timespan: str, n: int = 1
-) -> Tuple[datetime.datetime, datetime.datetime]:
-
-    today = nowdate()
-
-    date_range_map = {
-        "current day": lambda: (
-            today,
-            today,
-        ),
-        "current week": lambda: (
-            get_first_day_of_week(today),
-            get_last_day_of_week(today),
-        ),
-        "current month": lambda: (
-            get_first_day(today),
-            get_last_day(today),
-        ),
-        "current quarter": lambda: (
-            get_quarter_start(today),
-            get_quarter_ending(today),
-        ),
-        "current year": lambda: (
-            get_year_start(today),
-            get_year_ending(today),
-        ),
-        "last n days": lambda n: (
-            add_to_date(today, days=-1 * n),
-            add_to_date(today, days=-1),
-        ),
-        "last n weeks": lambda n: (
-            get_first_day_of_week(add_to_date(today, days=-7 * n)),
-            get_last_day_of_week(add_to_date(today, days=-7)),
-        ),
-        "last n months": lambda n: (
-            get_first_day(add_to_date(today, months=-1 * n)),
-            get_last_day(add_to_date(today, months=-1)),
-        ),
-        "last n quarters": lambda n: (
-            get_quarter_start(add_to_date(today, months=-3 * n)),
-            get_quarter_ending(add_to_date(today, months=-3)),
-        ),
-        "last n years": lambda n: (
-            get_year_start(add_to_date(today, years=-1 * n)),
-            get_year_ending(add_to_date(today, years=-1)),
-        ),
-    }
-
-    if timespan in date_range_map:
-        return (
-            date_range_map[timespan]()
-            if "current" in timespan
-            else date_range_map[timespan](n)
-        )
 
 
 class Functions:
@@ -289,7 +223,14 @@ class Functions:
 
     @staticmethod
     def timespan(field: Field, timespan: str):
-        (start, end) = parse_timespan(timespan)
+        timespan = timespan.lower().strip()
+        if "current" in timespan:
+            (start, end) = get_date_range(timespan=timespan)
+
+        elif "last" in timespan:
+            [span, interval, interval_type] = timespan.split(" ")
+            timespan = span + " n " + interval_type
+            (start, end) = get_date_range(timespan=timespan, n=int(interval))
         return field.between(start, end)
 
     @staticmethod
@@ -343,51 +284,153 @@ class Functions:
 
     @classmethod
     def apply(cls, function, *args):
-        return cls.get_function(function)(*args)
+        if cls.is_valid(function):
+            return cls.get_function(function)(*args)
+        raise NotImplementedError(f"Function {function} not implemented")
 
 
-def parse_query_expression(expression):
-    expression = _dict(expression)
+def get_date_range(
+    timespan: str, n: int = 1
+) -> Tuple[datetime.datetime, datetime.datetime]:
 
-    if expression.type == "LogicalExpression":
+    today = nowdate()
+
+    date_range_map = {
+        "current day": lambda: (
+            today,
+            today,
+        ),
+        "current week": lambda: (
+            get_first_day_of_week(today),
+            get_last_day_of_week(today),
+        ),
+        "current month": lambda: (
+            get_first_day(today),
+            get_last_day(today),
+        ),
+        "current quarter": lambda: (
+            get_quarter_start(today),
+            get_quarter_ending(today),
+        ),
+        "current year": lambda: (
+            get_year_start(today),
+            get_year_ending(today),
+        ),
+        "last n days": lambda n: (
+            add_to_date(today, days=-1 * n),
+            add_to_date(today, days=-1),
+        ),
+        "last n weeks": lambda n: (
+            get_first_day_of_week(add_to_date(today, days=-7 * n)),
+            get_last_day_of_week(add_to_date(today, days=-7)),
+        ),
+        "last n months": lambda n: (
+            get_first_day(add_to_date(today, months=-1 * n)),
+            get_last_day(add_to_date(today, months=-1)),
+        ),
+        "last n quarters": lambda n: (
+            get_quarter_start(add_to_date(today, months=-3 * n)),
+            get_quarter_ending(add_to_date(today, months=-3)),
+        ),
+        "last n years": lambda n: (
+            get_year_start(add_to_date(today, years=-1 * n)),
+            get_year_ending(add_to_date(today, years=-1)),
+        ),
+    }
+
+    if timespan in date_range_map:
+        return (
+            date_range_map[timespan]()
+            if "current" in timespan
+            else date_range_map[timespan](n)
+        )
+
+
+class ColumnProcessor:
+    query_cls = Query
+    aggregations = Aggregations
+    formatter = ColumnFormat
+
+    @classmethod
+    def make_column(cls, column: str, table: str):
+        return cls.query_cls.Table(table)[column]
+
+    @classmethod
+    def process_aggregation(cls, aggregation: str, column: Column) -> Column:
+        if not aggregation or aggregation.lower() == "group by":
+            return column
+        else:
+            return cls.aggregations.apply(aggregation.lower(), column)
+
+    @classmethod
+    def process_format(
+        cls, format_option: dict, column_type: str, column: Column
+    ) -> Column:
+        if format_option and column_type in ("Date", "Datetime"):
+            return cls.formatter.format_date(format_option.date_format, column)
+        return column
+
+    @classmethod
+    def parse_date(cls, format_option: dict, column: Column) -> Column:
+        return cls.formatter.parse_date(format_option.date_format, column)
+
+
+class ExpressionProcessor:
+    column_processor = ColumnProcessor
+
+    @classmethod
+    def process(cls, expression):
+        expression = _dict(expression)
+
+        if expression.type == "LogicalExpression":
+            return cls.process_logical_expression(expression)
+
+        if expression.type == "BinaryExpression":
+            return cls.process_binary_expression(expression)
+
+        if expression.type == "CallExpression":
+            return cls.process_call_expression(expression)
+
+        if expression.type == "Column":
+            return cls.column_processor.make_column(
+                expression.value.get("column"),
+                expression.value.get("table"),
+            )
+
+        if expression.type == "String":
+            return expression.value
+
+        if expression.type == "Number":
+            return expression.value
+
+        frappe.throw("Invalid expression type: {}".format(expression.type))
+
+    @classmethod
+    def process_logical_expression(cls, expression):
         conditions = []
         GroupCriteria = Criterion.all if expression.operator == "&&" else Criterion.any
         for condition in expression.get("conditions"):
             condition = _dict(condition)
-            conditions.append(parse_query_expression(condition))
+            conditions.append(cls.process(condition))
         return GroupCriteria(conditions)
 
-    if expression.type == "BinaryExpression":
-        left = parse_query_expression(expression.left)
-        right = parse_query_expression(expression.right)
+    @classmethod
+    def process_binary_expression(cls, expression):
+        left = cls.process(expression.left)
+        right = cls.process(expression.right)
         operator = expression.operator
         operation = BinaryOperations.get_operation(operator)
         return operation(left, right)
 
-    if expression.type == "CallExpression":
+    @classmethod
+    def process_call_expression(cls, expression):
         function = expression.function
-        arguments = [parse_query_expression(arg) for arg in expression.arguments]
-        if Aggregations.is_valid(function):
-            return Aggregations.apply(function, *arguments)
-        if Functions.is_valid(function):
+        arguments = [cls.process(arg) for arg in expression.arguments]
+
+        with suppress(NotImplementedError):
             return Functions.apply(function, *arguments)
 
+        with suppress(NotImplementedError):
+            return cls.column_processor.aggregations.apply(function, *arguments)
+
         raise NotImplementedError(f"Function {function} not implemented")
-
-    if expression.type == "Column":
-        column = build_query_field(
-            expression.value.get("table"), expression.value.get("column")
-        )
-        return column
-
-    if expression.type == "String":
-        return expression.value
-
-    if expression.type == "Number":
-        return expression.value
-
-    frappe.throw("Invalid expression type: {}".format(expression.type))
-
-
-def build_query_field(table, column) -> Field:
-    return Table(table)[column]

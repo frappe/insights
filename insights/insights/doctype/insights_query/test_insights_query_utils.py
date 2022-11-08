@@ -4,20 +4,26 @@
 import frappe
 import unittest
 from pypika import Table, Case
-from insights.insights.doctype.insights_query.utils import parse_query_expression
+
+from insights.insights.query_builders.sqlite.helpers import (
+    ExpressionProcessor as SQLiteExpressionProcessor,
+)
+from insights.insights.query_builders.pypika.helpers import (
+    ExpressionProcessor as PypikaExpressionProcessor,
+)
 
 
 class TestQueryUtils(unittest.TestCase):
     pass
 
 
-class TestParseExpression(unittest.TestCase):
+class TestExpressionProcessor:
     def test_column(self):
         tree = {
             "type": "Column",
             "value": {"table": "Car", "column": "price"},
         }
-        column = parse_query_expression(tree)
+        column = self.expression_processor.process(tree)
         self.assertEqual(column.table, Table("Car"))
         self.assertEqual(column.name, "price")
 
@@ -34,7 +40,7 @@ class TestParseExpression(unittest.TestCase):
                 "value": 100,
             },
         }
-        expression = parse_query_expression(tree)
+        expression = self.expression_processor.process(tree)
         self.assertEqual(expression.left.table, Table("Car"))
         self.assertEqual(expression.left.name, "price")
         self.assertEqual(expression.operator.value, "+")
@@ -53,10 +59,13 @@ class TestParseExpression(unittest.TestCase):
                     },
                 ],
             }
-            agg_column = parse_query_expression(tree)
+            agg_column = self.expression_processor.process(tree)
             self.assertEqual(agg_column.name.lower(), aggregation)
-            self.assertEqual(agg_column.args[0].table, Table("Car"))
-            self.assertEqual(agg_column.args[0].name, "price")
+            if aggregation != "count":
+                self.assertEqual(agg_column.args[0].table, Table("Car"))
+                self.assertEqual(agg_column.args[0].name, "price")
+            else:
+                self.assertEqual(agg_column.args[0], "*")
 
     def test_conditional_aggregation(self):
         tree = {
@@ -77,7 +86,7 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        agg_column = parse_query_expression(tree)
+        agg_column = self.expression_processor.process(tree)
         self.assertEqual(agg_column.name.lower(), "sum")
         self.assertEqual(type(agg_column.args[0]), Case)
 
@@ -90,7 +99,6 @@ class TestParseExpression(unittest.TestCase):
             "concat",
             "ceil",
             "round",
-            "count",
             "distinct",
         ]
 
@@ -105,7 +113,7 @@ class TestParseExpression(unittest.TestCase):
                     },
                 ],
             }
-            agg_column = parse_query_expression(tree)
+            agg_column = self.expression_processor.process(tree)
             self.assertEqual(agg_column.name.lower(), function)
             self.assertEqual(agg_column.args[0].table, Table("Car"))
             self.assertEqual(agg_column.args[0].name, "price")
@@ -125,7 +133,7 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        agg_column = parse_query_expression(tree)
+        agg_column = self.expression_processor.process(tree)
         self.assertEqual(agg_column.name, "IFNULL")
         self.assertEqual(agg_column.args[0].table, Table("Car"))
         self.assertEqual(agg_column.args[0].name, "price")
@@ -150,7 +158,7 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        agg_column = parse_query_expression(tree)
+        agg_column = self.expression_processor.process(tree)
         self.assertEqual(agg_column.name.lower(), "coalesce")
         self.assertEqual(agg_column.args[0].table, Table("Car"))
         self.assertEqual(agg_column.args[0].name, "price")
@@ -177,7 +185,7 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        expression = parse_query_expression(tree)
+        expression = self.expression_processor.process(tree)
         self.assertEqual(expression.get_sql().lower(), "price between 100 and 200")
 
     def test_contains_function(self):
@@ -195,7 +203,7 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        expression = parse_query_expression(tree)
+        expression = self.expression_processor.process(tree)
         self.assertTrue(expression.get_sql().lower(), "like '%audi%'")
 
     def test_replace_function(self):
@@ -217,7 +225,7 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        expression = parse_query_expression(tree)
+        expression = self.expression_processor.process(tree)
         self.assertEqual(expression.name.lower(), "replace")
         self.assertEqual(expression.args[0].table, Table("Car"))
         self.assertEqual(expression.args[0].name, "model")
@@ -247,7 +255,9 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        self.assertRaises(frappe.ValidationError, parse_query_expression, tree)
+        self.assertRaises(
+            frappe.ValidationError, self.expression_processor.process, tree
+        )
 
         tree = {
             "type": "CallExpression",
@@ -291,9 +301,21 @@ class TestParseExpression(unittest.TestCase):
                 },
             ],
         }
-        expression = parse_query_expression(tree)
+        expression = self.expression_processor.process(tree)
         self.assertEqual(type(expression), Case)
         self.assertEqual(
             expression.get_sql().lower().replace('"', ""),
             "case when price<300000 then 'low price' when price>500000 then 'high price' else 'usual price' end",
         )
+
+
+class TestSQLiteExpressionProcessor(unittest.TestCase, TestExpressionProcessor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.expression_processor = SQLiteExpressionProcessor()
+
+
+class TestPypikaExpressionProcessor(unittest.TestCase, TestExpressionProcessor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.expression_processor = PypikaExpressionProcessor()
