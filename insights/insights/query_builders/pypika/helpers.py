@@ -165,8 +165,8 @@ class Functions:
             "lower": fn.Lower,
             "upper": fn.Upper,
             "concat": fn.Concat,
-            "is_set": fn.IsNull,
-            "is_not_set": cls.isnotnull,
+            "is_set": cls.isnotnull,
+            "is_not_set": fn.IsNull,
             "if_null": fn.IfNull,
             "coalesce": fn.Coalesce,
             "between": cls.between,
@@ -225,13 +225,13 @@ class Functions:
     def timespan(field: Field, timespan: str):
         timespan = timespan.lower().strip()
         if "current" in timespan:
-            (start, end) = get_date_range(timespan=timespan)
+            date_range = get_date_range(timespan=timespan)
 
         elif "last" in timespan:
             [span, interval, interval_type] = timespan.split(" ")
             timespan = span + " n " + interval_type
-            (start, end) = get_date_range(timespan=timespan, n=int(interval))
-        return field.between(start, end)
+            date_range = get_date_range(timespan=timespan, n=int(interval))
+        return field.between(date_range[0], date_range[1])
 
     @staticmethod
     def ifelse(condition, true_value, false_value):
