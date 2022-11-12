@@ -2,6 +2,7 @@
 # See license.txt
 
 import json
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -28,8 +29,8 @@ class TestInsightsQuery(FrappeTestCase):
         query.build_and_execute()
         query.save()
 
-        self.assertTrue("count(*)" in query.sql.lower())
-        self.assertTrue("`status`='Open'" in query.sql)
+        self.assertTrue("count('*')" in query.sql.lower())
+        self.assertTrue("status = 'Open'" in query.sql)
         self.assertTrue("5" in query.result)
 
         column_values = query.fetch_column_values(

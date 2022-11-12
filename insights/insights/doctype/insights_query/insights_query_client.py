@@ -1,12 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from json import dumps
 from copy import deepcopy
-from pandas import DataFrame
+from json import dumps
 
 import frappe
-from frappe.utils import cstr, cint
+from frappe.utils import cint, cstr
+from pandas import DataFrame
 
 from insights.api import get_tables
 

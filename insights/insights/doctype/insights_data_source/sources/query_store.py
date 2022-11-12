@@ -3,15 +3,14 @@
 
 
 import frappe
-from .models import BaseDatabase
-from .utils import create_insights_table
 from frappe.database.mariadb.database import MariaDBDatabase
+
 from insights.insights.query_builders.mariadb.mariadb_query_builder import (
     MariaDBQueryBuilder,
 )
-from insights.insights.doctype.insights_data_source.sources.frappe_db import (
-    make_column_def,
-)
+
+from .models import BaseDatabase
+from .utils import create_insights_table
 
 
 class StoredQueryTableFactory:
@@ -169,3 +168,14 @@ def set_date_fields_as_string(columns):
             format_option = frappe.parse_json(column.format_option)
             if format_option.date_format:
                 column.type = "String"
+
+
+def make_column_def(column, type):
+    from insights.constants import COLUMN_TYPES
+
+    if not column or not type:
+        frappe.throw("Column name and type are required")
+
+    d = COLUMN_TYPES.get(type)
+    column_type = f"{d[0]}({d[1]})" if d[1] else d[0]
+    return f"`{column}` {column_type}"

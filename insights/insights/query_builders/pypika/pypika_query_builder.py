@@ -1,13 +1,14 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from frappe import _dict, parse_json
 from pypika import Order
 from pypika.enums import JoinType
 
-from ..models import QueryBuilder
-from frappe import _dict, parse_json
-from .helpers import ColumnProcessor, ExpressionProcessor
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
+
+from ..models import QueryBuilder
+from .helpers import ColumnProcessor, ExpressionProcessor
 
 
 class PypikaQueryBuilder(QueryBuilder):
@@ -77,7 +78,9 @@ class PypikaQueryBuilder(QueryBuilder):
             else:
                 expression = parse_json(row.expression)
                 _column = self.expression_processor.process(expression.get("ast"))
-                _column = self.column_processor.process_format(row, _column)
+                _column = self.column_processor.process_format(
+                    parse_json(row.format_option), row.type, _column
+                )
 
             self.process_sorting(row, _column)
             _column = _column.as_(row.label) if row.label else _column

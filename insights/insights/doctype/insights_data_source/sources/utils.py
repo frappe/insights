@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.database.mariadb.database import MariaDBDatabase
-
+from sqlalchemy.engine.base import Engine
 
 MARIADB_TO_GENERIC_TYPES = {
     "int": "Integer",
@@ -16,6 +16,24 @@ MARIADB_TO_GENERIC_TYPES = {
     "time": "Time",
     "varchar": "String",
 }
+
+
+def get_sqlalchemy_engine(**kwargs) -> Engine:
+    from sqlalchemy import create_engine
+
+    dialect = kwargs.pop("dialect")
+    driver = kwargs.pop("driver")
+    user = kwargs.pop("username")
+    password = kwargs.pop("password")
+    database = kwargs.pop("database")
+    host = kwargs.pop("host", "localhost")
+    port = kwargs.pop("port", 3306)
+    extra_params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
+
+    uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
+
+    # TODO: cache the engine by uri
+    return create_engine(uri)
 
 
 class SecureMariaDB(MariaDBDatabase):

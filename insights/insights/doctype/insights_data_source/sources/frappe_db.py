@@ -2,26 +2,36 @@
 # For license information, please see license.txt
 
 
-import csv
 import frappe
-from frappe.utils import cint
+from frappe import _dict
+from sqlalchemy import column as Column
+from sqlalchemy import select as Select
+from sqlalchemy import table as Table
+from sqlalchemy import text
+from sqlalchemy.engine.base import Connection
+
+from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+
 from .models import BaseDatabase
-from frappe.database.mariadb.database import MariaDBDatabase
-from .utils import SecureMariaDB, create_insights_table, MARIADB_TO_GENERIC_TYPES
-from insights.insights.query_builders.mariadb.mariadb_query_builder import (
-    MariaDBQueryBuilder,
-)
-from insights.insights.doctype.insights_table_import.insights_table_import import (
-    InsightsTableImport,
+from .utils import (
+    MARIADB_TO_GENERIC_TYPES,
+    create_insights_table,
+    get_sqlalchemy_engine,
 )
 
 
 class FrappeTableFactory:
     """Fetchs tables and columns from database and links from doctype"""
 
-    def __init__(self, data_source, db_conn) -> None:
-        self.db_conn: SecureMariaDB = db_conn
+    def __init__(self, data_source) -> None:
+        self.db_conn: Connection
         self.data_source = data_source
+
+    def sync_tables(self, connection, tables, force=False):
+        self.db_conn = connection
+        for table in self.get_tables(table_names=tables):
+            # when force is true, it will overwrite the existing columns & links
+            create_insights_table(table, force=force)
 
     def get_tables(self, table_names=None):
         tables = []
@@ -32,25 +42,31 @@ class FrappeTableFactory:
         return tables
 
     def get_db_tables(self, table_names=None):
-        table = frappe.qb.Schema("information_schema").tables
-        database_name = self.db_conn.sql("SELECT DATABASE()")[0][0]
+        t = Table(
+            "tables",
+            Column("table_name"),
+            Column("table_schema"),
+            Column("table_type"),
+            schema="information_schema",
+        )
 
         query = (
-            frappe.qb.from_(table)
-            .select(table.table_name)
-            .where(
-                (table.table_schema == database_name)
-                and (table.table_type == "BASE TABLE")
-            )
+            t.select()
+            .where(t.c.table_schema == text("DATABASE()"))
+            .where(t.c.table_type == "BASE TABLE")
         )
         if table_names:
-            query = query.where(table.table_name.isin(table_names))
+            query = query.where(t.c.table_name.in_(table_names))
 
-        tables = self.db_conn.sql(query.get_sql(), pluck=True)
-        return [self.get_table(table) for table in tables if not table.startswith("__")]
+        tables = self.db_conn.execute(query).fetchall()
+        return [
+            self.get_table(table[0])
+            for table in tables
+            if not table[0].startswith("__")
+        ]
 
     def get_table(self, table_name):
-        return frappe._dict(
+        return _dict(
             {
                 "table": table_name,
                 "label": table_name.replace("tab", ""),
@@ -59,24 +75,21 @@ class FrappeTableFactory:
         )
 
     def get_all_columns(self):
-        columns = frappe.qb.Schema("information_schema").columns
-        database_name = self.db_conn.sql("SELECT DATABASE()")[0][0]
-
-        query = (
-            frappe.qb.from_(columns)
-            .select(
-                columns.table_name,
-                columns.column_name.as_("name"),
-                columns.data_type.as_("type"),
-            )
-            .where(columns.table_schema == database_name)
+        t = Table(
+            "columns",
+            Column("table_name"),
+            Column("column_name"),
+            Column("data_type"),
+            Column("table_schema"),
+            schema="information_schema",
         )
 
-        columns = self.db_conn.sql(query.get_sql(), as_dict=True)
+        query = t.select().where(t.c.table_schema == text("DATABASE()"))
+        columns = self.db_conn.execute(query).fetchall()
         columns_by_table = {}
-        for c in columns:
-            columns_by_table.setdefault(c.table_name, []).append(
-                self.get_column(c.name, c.type)
+        for col in columns:
+            columns_by_table.setdefault(col[0], []).append(
+                self.get_column(col[1], col[2])
             )
         return columns_by_table
 
@@ -86,7 +99,7 @@ class FrappeTableFactory:
         return self._all_columns.get(table, [])
 
     def get_column(self, column_name, column_type):
-        return frappe._dict(
+        return _dict(
             {
                 "column": column_name,
                 "label": frappe.unscrub(column_name),
@@ -114,7 +127,7 @@ class FrappeTableFactory:
             .where((DocField.fieldtype == "Link") | (DocField.fieldtype == "Table"))
             .get_sql()
         )
-        standard_links = self.db_conn.sql(query, as_dict=1)
+        standard_links = self.db_conn.execute(query).fetchall()
 
         CustomField = frappe.qb.DocType("Custom Field")
         query = (
@@ -130,45 +143,46 @@ class FrappeTableFactory:
             )
             .get_sql()
         )
-        custom_links = self.db_conn.sql(query, as_dict=1)
+        custom_links = self.db_conn.execute(query).fetchall()
 
-        for link in standard_links + custom_links:
-            if link.get("fieldtype") == "Link":
+        for link_row in standard_links + custom_links:
+            link = _dict(link_row._asdict())
+            if link.fieldtype == "Link":
                 # User is linked with ToDo by `owner` field
                 # User.name = ToDo.owner
-                doctype_links.setdefault(link.get("options"), []).append(
+                doctype_links.setdefault(link.options, []).append(
                     {
                         "primary_key": "name",
-                        "foreign_key": link.get("fieldname"),
-                        "foreign_table": "tab" + link.get("parent"),
-                        "foreign_table_label": link.get("parent"),
+                        "foreign_key": link.fieldname,
+                        "foreign_table": "tab" + link.parent,
+                        "foreign_table_label": link.parent,
                     }
                 )
                 # ToDo is linked with User by `owner` field
                 # ToDo.owner = User.name
-                doctype_links.setdefault(link.get("parent"), []).append(
+                doctype_links.setdefault(link.parent, []).append(
                     {
-                        "primary_key": link.get("fieldname"),
+                        "primary_key": link.fieldname,
                         "foreign_key": "name",
-                        "foreign_table": "tab" + link.get("options"),
-                        "foreign_table_label": link.get("options"),
+                        "foreign_table": "tab" + link.options,
+                        "foreign_table_label": link.options,
                     }
                 )
-            if link.get("fieldtype") == "Table":
-                doctype_links.setdefault(link.get("parent"), []).append(
+            if link.fieldtype == "Table":
+                doctype_links.setdefault(link.parent, []).append(
                     {
                         "primary_key": "name",
                         "foreign_key": "parent",
-                        "foreign_table": "tab" + link.get("options"),
-                        "foreign_table_label": link.get("options"),
+                        "foreign_table": "tab" + link.options,
+                        "foreign_table_label": link.options,
                     }
                 )
-                doctype_links.setdefault(link.get("options"), []).append(
+                doctype_links.setdefault(link.options, []).append(
                     {
                         "primary_key": "parent",
                         "foreign_key": "name",
-                        "foreign_table": "tab" + link.get("parent"),
-                        "foreign_table_label": link.get("parent"),
+                        "foreign_table": "tab" + link.parent,
+                        "foreign_table_label": link.parent,
                     }
                 )
 
@@ -181,14 +195,14 @@ class FrappeTableFactory:
                 doctype_links.setdefault(doctype, []).append(
                     {
                         "primary_key": "name",
-                        "foreign_key": link.get("fieldname"),
-                        "foreign_table": "tab" + link.get("parent"),
-                        "foreign_table_label": link.get("parent"),
+                        "foreign_key": link.fieldname,
+                        "foreign_table": "tab" + link.parent,
+                        "foreign_table_label": link.parent,
                     }
                 )
-                doctype_links.setdefault(link.get("parent"), []).append(
+                doctype_links.setdefault(link.parent, []).append(
                     {
-                        "primary_key": link.get("fieldname"),
+                        "primary_key": link.fieldname,
                         "foreign_key": "name",
                         "foreign_table": "tab" + doctype,
                         "foreign_table_label": doctype,
@@ -244,21 +258,19 @@ class FrappeTableFactory:
         dynamic_link_map = {}
         dynamic_links = []
         for query in dynamic_link_queries:
-            dynamic_links += self.db_conn.sql(query, as_dict=True)
+            dynamic_links += self.db_conn.execute(query).fetchall()
 
-        for df in dynamic_links:
+        for df_row in dynamic_links:
+            df = _dict(df_row._asdict())
             if df.issingle:
                 dynamic_link_map.setdefault(df.parent, []).append(df)
             else:
-                try:
-                    links = self.db_conn.sql(
-                        """select distinct {options} from `tab{parent}`""".format(**df)
-                    )
-                    links = [l[0] for l in links]
-                    for doctype in links:
-                        dynamic_link_map.setdefault(doctype, []).append(df)
-                except frappe.db.TableMissingError:  # noqa: E722
-                    pass
+                links = self.db_conn.execute(
+                    f"""select distinct {df.options} from `tab{df.parent}`"""
+                ).fetchall()
+                links = [l[0] for l in links]
+                for doctype in links:
+                    dynamic_link_map.setdefault(doctype, []).append(df)
 
         return dynamic_link_map
 
@@ -267,35 +279,41 @@ class FrappeDB(BaseDatabase):
     def __init__(
         self, data_source, host, port, username, password, database_name, use_ssl
     ):
-        self.conn: SecureMariaDB = SecureMariaDB(
-            dbName=database_name,
-            user=username,
+        self.engine = get_sqlalchemy_engine(
+            dialect="mysql",
+            driver="pymysql",
+            username=username,
             password=password,
+            database=database_name,
             host=host,
-            port=cint(port),
-            useSSL=use_ssl,
+            port=port,
+            ssl=use_ssl,
+            ssl_verify_cert=True,
+            charset="utf8mb4",
+            use_unicode=True,
         )
-        self.query_builder: MariaDBQueryBuilder = MariaDBQueryBuilder()
-        self.table_factory: FrappeTableFactory = FrappeTableFactory(
-            data_source, db_conn=self.conn
-        )
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
     def test_connection(self):
         try:
-            return self.conn.sql("select name from `tabDocType` limit 1")
+            return self.execute_query(
+                "select name from `tabDocType` limit 1", pluck=True
+            )
         except Exception as e:
-            frappe.log_error(f"Error connecting to Site: {e}")
+            frappe.log_error(f"Error connecting to FrappeDB: {e}")
 
     def build_query(self, query):
-        return self.query_builder.build(query)
+        return self.query_builder.build(query, dialect=self.engine.dialect)
 
-    def execute_query(self, query, *args, **kwargs):
-        return self.conn.sql(query, *args, **kwargs)
+    def execute_query(self, query, pluck=False):
+        with self.engine.connect() as connection:
+            result = connection.execute(query).fetchall()
+            return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def sync_tables(self, tables=None, force=False):
-        for table in self.table_factory.get_tables(table_names=tables):
-            # when force is true, it will overwrite the existing columns & links
-            create_insights_table(table, force=force)
+        with self.engine.connect() as connection:
+            self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=20):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
@@ -306,79 +324,35 @@ class FrappeDB(BaseDatabase):
         }
 
     def get_table_columns(self, table):
-        return self.table_factory.get_table_columns(table)
+        with self.engine.connect() as connection:
+            self.table_factory.db_conn = connection
+            return self.table_factory.get_table_columns(table)
 
     def get_column_options(self, table, column, search_text=None, limit=25):
-        Table = frappe.qb.Table(table)
-        Column = frappe.qb.Field(column)
-        query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)
+        query = Select(Column(column)).select_from(Table(table)).distinct().limit(limit)
         if search_text:
-            query = query.where(Column.like(f"%{search_text}%"))
-        values = self.execute_query(query.get_sql(), pluck=True)
-        # TODO: cache
-        return values
+            query = query.where(Column(column).like(f"%{search_text}%"))
 
-
-class TableImporter:
-    def __init__(self, db_conn) -> None:
-        self.db_conn: MariaDBDatabase = db_conn
-
-    def import_table(self, import_doc):
-        self.import_doc = import_doc
-        if self.import_doc.if_exists == "Overwrite":
-            self.db_conn.sql(f"DROP TABLE IF EXISTS `{self.import_doc.table_name}`")
-
-        self.create_table()
-        self.import_records()
-
-    def create_table(self):
-        # TODO: convert this into pypika query
-        pk = "pk bigint primary key"
-        column_defs = ", ".join(
-            [make_column_def(row.column, row.type) for row in self.import_doc.columns]
-        )
-        query = f"""CREATE TABLE `{self.import_doc.table_name}` ({pk}, {column_defs})
-                ENGINE="InnoDB"
-                ROW_FORMAT=DYNAMIC
-                CHARACTER SET=utf8mb4
-                COLLATE=utf8mb4_unicode_ci"""
-        self.db_conn.sql(query)
-
-    def import_records(self):
-        with open(self.import_doc._filepath, "r") as f:
-            column_labels = [d.label for d in self.import_doc.columns]
-            column_names = [d.column for d in self.import_doc.columns]
-            reader = csv.DictReader(f)
-            values = []
-            for idx, row in enumerate(reader):
-                values.append([idx + 1] + [row.get(column) for column in column_labels])
-                if len(values) == 10000 or idx == self.import_doc.rows - 1:
-                    self.insert_rows(values, list(["pk"] + column_names))
-                    values = []
-
-    def insert_rows(self, values, column_names):
-        # values = [[1, "a", "b"], [2, "c", "d"]]
-        # column_names = ["name", "column1", "column2"]
-        column_name_str = ",".join(
-            [f"`{c}`" for c in column_names]
-        )  # "`name`,`column1`,`column2`"
-        values_str = ",".join(["%s"] * len(values[0]))  # %s,%s,%s
-        values_str = ",".join(
-            [f"({values_str})"] * len(values)
-        )  # (%s,%s,%s),(%s,%s,%s)
-        values = [cell or None for row in values for cell in row]
-        query = f"""INSERT INTO `{self.import_doc.table_name}` ({column_name_str}) VALUES {values_str}"""
-        self.db_conn.sql(query, values)
+        return self.execute_query(query, pluck=True)
 
 
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
-        self.conn: MariaDBDatabase = MariaDBDatabase()
-        self.query_builder: MariaDBQueryBuilder = MariaDBQueryBuilder()
-        self.table_importer: TableImporter = TableImporter(self.conn)
-        self.table_factory: FrappeTableFactory = FrappeTableFactory(
-            data_source, db_conn=self.conn
+        self.engine = get_sqlalchemy_engine(
+            dialect="mysql",
+            driver="pymysql",
+            username=frappe.conf.db_name,
+            password=frappe.conf.db_password,
+            database=frappe.conf.db_name,
+            host=frappe.conf.db_host or "127.0.0.1",
+            port=frappe.conf.db_port or "3306",
+            ssl=False,
+            ssl_verify_cert=True,
+            charset="utf8mb4",
+            use_unicode=True,
         )
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
     def sync_tables(self, tables=None, force=False):
         # only import tables that are not related to insights
@@ -389,15 +363,6 @@ class SiteDB(FrappeDB):
         ]
         return super().sync_tables(_tables, force)
 
-    def table_exists(self, table: str):
-        return self.execute_query("SHOW TABLES LIKE %s", (table,))
-
-    def import_table(self, import_doc: InsightsTableImport):
-        self.table_importer.import_table(import_doc)
-        self.sync_tables(tables=[import_doc.table_name])
-        # need to commit to release the lock
-        self.conn.commit()
-
 
 def is_frappe_db(db_params):
     try:
@@ -405,14 +370,3 @@ def is_frappe_db(db_params):
         return db if db.test_connection() else None
     except BaseException:
         return False
-
-
-def make_column_def(column, type):
-    from insights.constants import COLUMN_TYPES
-
-    if not column or not type:
-        frappe.throw("Column name and type are required")
-
-    d = COLUMN_TYPES.get(type)
-    column_type = f"{d[0]}({d[1]})" if d[1] else d[0]
-    return f"`{column}` {column_type}"
