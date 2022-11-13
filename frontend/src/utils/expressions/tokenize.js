@@ -308,6 +308,7 @@ export default function tokenize(expression, offset = 0) {
 }
 
 function findMatchingParenthesis(str, start) {
+	if (str[start] !== '(') return -1
 	let open = 0
 	for (let i = start; i < str.length; i++) {
 		if (str[i] == '(') open++
