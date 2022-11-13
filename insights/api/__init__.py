@@ -2,8 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-from insights import notify
 from pypika import CustomFunction
+
+from insights import notify
 
 
 @frappe.whitelist()

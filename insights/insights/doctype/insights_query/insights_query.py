@@ -1,17 +1,16 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
 import time
+from functools import cached_property
 from json import dumps
-from sqlparse import format as format_sql
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr, flt
+from sqlparse import format as format_sql
 
 from .insights_query_client import InsightsQueryClient
-
 
 DEFAULT_FILTERS = dumps(
     {

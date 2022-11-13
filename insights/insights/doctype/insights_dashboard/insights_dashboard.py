@@ -2,8 +2,9 @@
 # For license information, please see license.txt
 
 
-import frappe
 from json import dumps
+
+import frappe
 from frappe.model.document import Document
 
 

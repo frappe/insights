@@ -1,11 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import os
 import csv
+import os
+from functools import cached_property
+
 import frappe
 from frappe import task
-from functools import cached_property
 from frappe.model.document import Document
 
 

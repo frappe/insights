@@ -4,25 +4,26 @@
 
 import datetime
 import operator
-import frappe
-from typing import Tuple
-from frappe import _dict
-from pypika import Query, Column
 from contextlib import suppress
-from pypika import functions as fn, Criterion
-from frappe.query_builder import CustomFunction, functions, Case, Field
+from typing import Tuple
+
+import frappe
+from frappe import _dict
+from frappe.query_builder import Case, CustomFunction, Field, functions
 from frappe.utils.data import (
-    nowdate,
     add_to_date,
-    get_first_day_of_week,
-    get_last_day_of_week,
     get_first_day,
+    get_first_day_of_week,
     get_last_day,
-    get_quarter_start,
+    get_last_day_of_week,
     get_quarter_ending,
-    get_year_start,
+    get_quarter_start,
     get_year_ending,
+    get_year_start,
+    nowdate,
 )
+from pypika import Column, Criterion, Query
+from pypika import functions as fn
 
 
 class Aggregations:

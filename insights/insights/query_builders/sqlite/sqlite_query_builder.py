@@ -3,7 +3,8 @@
 
 from sqlalchemy import Column
 from sqlalchemy.sql import func
-from ..sql_builder import SQLQueryBuilder, Functions
+
+from ..sql_builder import Functions, SQLQueryBuilder
 
 
 class SQLiteColumnFormatter:

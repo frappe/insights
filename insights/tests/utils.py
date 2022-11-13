@@ -2,6 +2,7 @@
 # See license.txt
 
 import frappe
+
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 

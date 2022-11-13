@@ -1,19 +1,20 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
+
 import frappe
 from frappe import task
-from functools import cached_property
 from frappe.model.document import Document
-
-from .sources.models import BaseDatabase
-from .sources.mariadb import MariaDB
-from .sources.query_store import QueryStore
-from .sources.frappe_db import is_frappe_db, SiteDB
-from .sources.sqlite import SQLiteDB
 
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
+
+from .sources.frappe_db import SiteDB, is_frappe_db
+from .sources.mariadb import MariaDB
+from .sources.models import BaseDatabase
+from .sources.query_store import QueryStore
+from .sources.sqlite import SQLiteDB
 
 
 class InsightsDataSource(Document):

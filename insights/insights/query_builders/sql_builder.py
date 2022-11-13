@@ -3,8 +3,8 @@ from contextlib import suppress
 
 from frappe import _dict, parse_json
 from frappe.utils.data import (
-    get_date_str,
     add_to_date,
+    get_date_str,
     get_first_day,
     get_first_day_of_week,
     get_last_day,
@@ -15,7 +15,7 @@ from frappe.utils.data import (
     get_year_start,
     nowdate,
 )
-from sqlalchemy import Column, column, table, select
+from sqlalchemy import Column, column, select, table
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import and_, case, func, or_, text
 

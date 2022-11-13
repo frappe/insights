@@ -3,6 +3,7 @@
 
 
 from pypika import MySQLQuery
+
 from ..pypika.helpers import ColumnProcessor, ExpressionProcessor
 from ..pypika.pypika_query_builder import PypikaQueryBuilder
 
