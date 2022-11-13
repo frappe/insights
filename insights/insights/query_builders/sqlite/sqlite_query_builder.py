@@ -3,7 +3,7 @@
 
 from sqlalchemy import Column
 from sqlalchemy.sql import func
-from ..sql_builder import SQLQueryBuilder
+from ..sql_builder import SQLQueryBuilder, Functions
 
 
 class SQLiteColumnFormatter:
@@ -54,5 +54,57 @@ class SQLiteColumnFormatter:
         return column
 
 
+class SQLiteFunctions(Functions):
+    @classmethod
+    def apply(cls, function, *args):
+
+        if function == "concat":
+            from functools import reduce
+
+            return reduce(lambda x, y: x + y, args)
+
+        if function == "time_elapsed":
+            VALID_UNITS = [
+                "MICROSECOND",
+                "SECOND",
+                "MINUTE",
+                "HOUR",
+                "DAY",
+                "WEEK",
+                "MONTH",
+                "QUARTER",
+                "YEAR",
+            ]
+            unit = args[0].upper()
+            if unit not in VALID_UNITS:
+                raise Exception(
+                    f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}"
+                )
+
+            day_diff = func.julianday(args[1]) - func.julianday(args[2])
+
+            if unit == "MICROSECOND":
+                return day_diff * 86400000000
+            if unit == "SECOND":
+                return day_diff * 86400
+            if unit == "MINUTE":
+                return day_diff * 1440
+            if unit == "HOUR":
+                return day_diff * 24
+            if unit == "DAY":
+                return day_diff
+            if unit == "WEEK":
+                return day_diff / 7
+            if unit == "MONTH":
+                return day_diff / 30
+            if unit == "QUARTER":
+                return day_diff / 90
+            if unit == "YEAR":
+                return day_diff / 365
+
+        return super().apply(function, *args)
+
+
 class SQLiteQueryBuilder(SQLQueryBuilder):
     column_formatter = SQLiteColumnFormatter
+    functions = SQLiteFunctions

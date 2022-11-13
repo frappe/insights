@@ -60,6 +60,7 @@ class InsightsTableImport(Document):
         if not self._filepath:
             self.db_set("status", "Failed")
             self.db_set("error", "Attached file not found")
+            print("Attached file not found")
             return
 
         self.db_set("status", "Queued")
@@ -77,7 +78,8 @@ class InsightsTableImport(Document):
         try:
             self._data_source.db.import_table(self)
             self.db_set("status", "Success")
-        except BaseException:
+        except BaseException as e:
+            print(f"Error importing table {self.table_name}", e)
             frappe.log_error(
                 title=f"Insights: Failed to import table - {self.table_name}"
             )

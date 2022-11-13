@@ -5,7 +5,6 @@
 import frappe
 from frappe import _dict
 from sqlalchemy import column as Column
-from sqlalchemy import select as Select
 from sqlalchemy import table as Table
 from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
@@ -312,7 +311,8 @@ class FrappeDB(BaseDatabase):
             return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def sync_tables(self, tables=None, force=False):
-        with self.engine.connect() as connection:
+        # "begin" ensures that the connection is committed and closed
+        with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=20):
@@ -329,10 +329,10 @@ class FrappeDB(BaseDatabase):
             return self.table_factory.get_table_columns(table)
 
     def get_column_options(self, table, column, search_text=None, limit=25):
-        query = Select(Column(column)).select_from(Table(table)).distinct().limit(limit)
+        t = Table(table, Column(column))
+        query = t.select().distinct().limit(limit)
         if search_text:
             query = query.where(Column(column).like(f"%{search_text}%"))
-
         return self.execute_query(query, pluck=True)
 
 

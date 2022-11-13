@@ -3,22 +3,31 @@
 
 
 import frappe
-import sqlite3
 import pandas as pd
-from sqlite3 import Connection
-from .models import BaseDatabase
-from pypika import SQLLiteQuery, Table
-from .utils import create_insights_table
-from ...insights_table_import.insights_table_import import InsightsTableImport
+from sqlalchemy import column as Column
+from sqlalchemy import create_engine
+from sqlalchemy import table as Table
+from sqlalchemy.engine.base import Connection
+
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (
     SQLiteQueryBuilder,
 )
 
+from ...insights_table_import.insights_table_import import InsightsTableImport
+from .models import BaseDatabase
+from .utils import create_insights_table
+
 
 class SQLiteTableFactory:
-    def __init__(self, data_source, db_conn) -> None:
-        self.db_conn: Connection = db_conn
+    def __init__(self, data_source) -> None:
+        self.db_conn: Connection
         self.data_source = data_source
+
+    def sync_tables(self, connection, tables, force=False):
+        self.db_conn = connection
+        for table in self.get_tables(table_names=tables):
+            # when force is true, it will overwrite the existing columns & links
+            create_insights_table(table, force=force)
 
     def get_tables(self, table_names=None):
         tables = []
@@ -28,14 +37,16 @@ class SQLiteTableFactory:
         return tables
 
     def get_db_tables(self, table_names=None):
-        table = Table("sqlite_master")
-        query = (
-            SQLLiteQuery.from_(table).select(table.name).where(table.type == "table")
+        t = Table(
+            "sqlite_master",
+            Column("name"),
+            Column("type"),
         )
+        query = t.select().where(t.c.type == "table")
         if table_names:
-            query = query.where(table.name.isin(table_names))
+            query = query.where(t.c.name.in_(table_names))
 
-        tables = self.db_conn.execute(query.get_sql()).fetchall()
+        tables = self.db_conn.execute(query).fetchall()
         return [self.get_table(table[0]) for table in tables]
 
     def get_table(self, table_name):
@@ -73,52 +84,58 @@ class SQLiteTableFactory:
 
 class SQLiteDB(BaseDatabase):
     def __init__(self, data_source, database_name) -> None:
-        self.data_source = data_source
-        self.conn = sqlite3.connect(
-            frappe.get_site_path("private", "files", f"{database_name}.sqlite")
+        database_path = frappe.get_site_path(
+            "private", "files", f"{database_name}.sqlite"
         )
-        self.table_factory = SQLiteTableFactory(data_source, self.conn)
+        self.engine = create_engine(f"sqlite:///{database_path}")
+
+        self.data_source = data_source
+        self.table_factory = SQLiteTableFactory(data_source)
         self.query_builder = SQLiteQueryBuilder()
 
     def test_connection(self):
         try:
-            return self.conn.execute("SELECT 1").fetchone()
+            return self.execute_query("SELECT 1")
         except Exception as e:
-            frappe.log_error(f"Error connecting to MariaDB: {e}")
+            frappe.log_error(f"Error connecting to SQLite: {e}")
 
     def build_query(self, query):
-        return self.query_builder.build(query)
+        return self.query_builder.build(query, dialect=self.engine.dialect)
 
-    def execute_query(self, query, *args, **kwargs):
-        return self.conn.execute(query, *args, **kwargs).fetchall()
+    def execute_query(self, query, pluck=False):
+        with self.engine.connect() as connection:
+            result = connection.execute(query).fetchall()
+            return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def sync_tables(self, tables=None, force=False):
-        for table in self.table_factory.get_tables(table_names=tables):
-            create_insights_table(table, force=force)
+        with self.engine.begin() as connection:
+            self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=20):
-        data = self.execute_query(
-            SQLLiteQuery.from_(table).select("*").limit(limit).get_sql()
-        )
-        count = self.execute_query("SELECT COUNT(*) FROM %s" % table)[0][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
+        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
             "data": data or [],
-            "length": count or 0,
+            "length": length or 0,
         }
+
+    def get_table_columns(self, table):
+        with self.engine.connect() as connection:
+            self.table_factory.db_conn = connection
+            return self.table_factory.get_table_columns(table)
 
     def table_exists(self, table):
         return self.execute_query(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table,),
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'",
         )
 
     def import_table(self, import_doc: InsightsTableImport):
-        if import_doc.if_exists == "Overwrite":
-            self.conn.execute(f"DROP TABLE IF EXISTS {import_doc.table_name}")
-
         df = pd.read_csv(import_doc._filepath)
-        df.to_sql(import_doc.table_name, self.conn, index=False)
-
-        self.sync_tables(tables=[import_doc.table_name])
-        # need to commit to release the lock
-        self.conn.commit()
+        table = import_doc.table_name
+        df.to_sql(
+            name=table,
+            con=self.engine,
+            index=False,
+            if_exists="replace",
+        )
+        self.sync_tables(tables=[table])

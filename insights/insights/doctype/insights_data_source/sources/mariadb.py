@@ -142,7 +142,7 @@ class MariaDB(BaseDatabase):
             return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def sync_tables(self, tables=None, force=False):
-        with self.engine.connect() as connection:
+        with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=20):

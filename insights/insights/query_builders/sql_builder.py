@@ -3,6 +3,7 @@ from contextlib import suppress
 
 from frappe import _dict, parse_json
 from frappe.utils.data import (
+    get_date_str,
     add_to_date,
     get_first_day,
     get_first_day_of_week,
@@ -16,7 +17,6 @@ from frappe.utils.data import (
 )
 from sqlalchemy import Column, column, table, select
 from sqlalchemy.engine import Dialect
-from sqlalchemy.orm import Query
 from sqlalchemy.sql import and_, case, func, or_, text
 
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
@@ -24,7 +24,7 @@ from insights.insights.doctype.insights_query.insights_query import InsightsQuer
 
 class Aggregations:
     @classmethod
-    def apply(cls, aggregation, column=None, conditions=None, **kwargs):
+    def apply(cls, aggregation, column=None):
         if not aggregation:
             return column
         if aggregation == "Group By":
@@ -41,12 +41,6 @@ class Aggregations:
             return func.avg(column)
         if agg_lower == "count":
             return func.count(text("*"))
-        if agg_lower == "sum_if":
-            return func.sum(case([(conditions, column)], else_=0))
-        if agg_lower == "count_if":
-            return func.sum(case([(conditions, 1)], else_=0))
-        if agg_lower == "distinct":
-            return func.distinct(column)
 
         raise NotImplementedError(f"Aggregation {aggregation} not implemented")
 
@@ -99,20 +93,19 @@ class ColumnFormatter:
 class Functions:
     @classmethod
     def apply(cls, function, *args):
-        if function == "abs":
-            return func.abs(args[0])
+
+        # no args functions
 
         if function == "now":
             return func.now()
 
-        if function == "in":
-            return args[0].in_(args[1])
-
         if function == "today":
             return func.date(func.now())
 
-        if function == "not_in":
-            return args[0].notin_(args[1])
+        # single arg functions
+
+        if function == "abs":
+            return func.abs(args[0])
 
         if function == "floor":
             return func.floor(args[0])
@@ -123,8 +116,11 @@ class Functions:
         if function == "upper":
             return func.upper(args[0])
 
-        if function == "concat":
-            return func.concat(*args)
+        if function == "ceil":
+            return func.ceil(args[0])
+
+        if function == "round":
+            return func.round(args[0])
 
         if function == "is_set":
             return args[0].isnot(None)
@@ -132,14 +128,16 @@ class Functions:
         if function == "is_not_set":
             return args[0].is_(None)
 
-        if function == "if_null":
-            return func.ifnull(args[0], args[1])
+        if function == "count_if":
+            return func.sum(case([(args[0], 1)], else_=0))
 
-        if function == "coalesce":
-            return func.coalesce(*args)
+        # two arg functions
 
-        if function == "between":
-            return args[0].between(args[1], args[2])
+        if function == "in":
+            return args[0].in_(args[1])
+
+        if function == "not_in":
+            return args[0].notin_(args[1])
 
         if function == "contains":
             return args[0].like("%" + args[1] + "%")
@@ -153,14 +151,25 @@ class Functions:
         if function == "starts_with":
             return args[0].like(args[1] + "%")
 
-        if function == "ceil":
-            return func.ceil(args[0])
+        if function == "if_null":
+            return func.ifnull(args[0], args[1])
 
-        if function == "round":
-            return func.round(args[0])
+        if function == "sum_if":
+            return func.sum(case([(args[0], args[1])], else_=0))
+
+        # three arg functions
+
+        if function == "between":
+            return args[0].between(args[1], args[2])
 
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
+
+        if function == "concat":
+            return func.concat(*args)
+
+        if function == "coalesce":
+            return func.coalesce(*args)
 
         if function == "case":
             _args = list(args)
@@ -174,7 +183,7 @@ class Functions:
 
         if function == "timespan":
             timespan = args[0].lower().strip()
-            if "current" not in timespan or "last" not in timespan:
+            if "current" not in timespan and "last" not in timespan:
                 raise Exception(f"Invalid timespan: {timespan}")
 
             if "current" in timespan:
@@ -183,7 +192,10 @@ class Functions:
                 [span, interval, interval_type] = timespan.split(" ")
                 timespan = span + " n " + interval_type
                 date_range = get_date_range(timespan, n=int(interval))
-            return args[1].between(date_range[0], date_range[1])
+            return args[1].between(
+                get_date_str(date_range[0]),
+                get_date_str(date_range[1]),
+            )
 
         if function == "time_elapsed":
             VALID_UNITS = [
@@ -202,7 +214,7 @@ class Functions:
                 raise Exception(
                     f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}"
                 )
-            return func.timestampdiff(unit, args[1], args[2])
+            return func.timestampdiff(text(unit), args[1], args[2])
 
         raise NotImplementedError(f"Function {function} not implemented")
 
@@ -295,6 +307,8 @@ class BinaryOperations:
 
 
 class ExpressionProcessor:
+    query: InsightsQuery = None
+
     @classmethod
     def process(cls, expression, query: InsightsQuery = None):
         expression = _dict(expression)
@@ -348,8 +362,9 @@ class ExpressionProcessor:
         with suppress(NotImplementedError):
             return cls.query.functions.apply(function, *arguments)
 
-        with suppress(NotImplementedError):
-            return cls.query.aggregations.apply(function, *arguments)
+        if len(arguments) <= 2:
+            with suppress(NotImplementedError):
+                return cls.query.aggregations.apply(function, *arguments)
 
         raise NotImplementedError(f"Function {function} not implemented")
 
@@ -432,7 +447,7 @@ class SQLQueryBuilder:
                 _column = self.aggregations.apply(row.aggregation, _column)
             else:
                 expression = parse_json(row.expression)
-                _column = ExpressionProcessor.process(expression.get("ast"))
+                _column = ExpressionProcessor.process(expression.get("ast"), query=self)
                 _column = self.column_formatter.format(
                     parse_json(row.format_option), row.type, _column
                 )
@@ -451,7 +466,7 @@ class SQLQueryBuilder:
 
     def process_filters(self):
         filters = parse_json(self.query.filters)
-        self._filters = ExpressionProcessor.process(filters, self)
+        self._filters = ExpressionProcessor.process(filters, query=self)
 
     def make_query(self):
         sql = None
@@ -479,20 +494,31 @@ class SQLQueryBuilder:
             joins = [d for d in self._joins if d.left == _table]
             for join in joins:
                 if join.type == "inner":
-                    sql = sql.select_entity_from(join.left).join(
-                        join.right, join.left_key == join.right_key
+                    sql = sql.join_from(
+                        join.left,
+                        join.right,
+                        join.left_key == join.right_key,
                     )
                 elif join.type == "left":
-                    sql = sql.select_entity_from(join.left).join(
-                        join.right, join.left_key == join.right_key, isouter=True
+                    sql = sql.join_from(
+                        join.left,
+                        join.right,
+                        join.left_key == join.right_key,
+                        isouter=True,
                     )
                 elif join.type == "right":
-                    sql = sql.select_entity_from(join.right).join(
-                        join.left, join.right_key == join.left_key, isouter=True
+                    sql = sql.join_from(
+                        join.right,
+                        join.left,
+                        join.right_key == join.left_key,
+                        isouter=True,
                     )
                 elif join.type == "full":
-                    sql = sql.select_entity_from(join.left).join(
-                        join.right, join.left_key == join.right_key, full=True
+                    sql = sql.join_from(
+                        join.left,
+                        join.right,
+                        join.left_key == join.right_key,
+                        full=True,
                     )
 
     def compile(self, query):
