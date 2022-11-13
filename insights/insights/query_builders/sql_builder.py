@@ -84,10 +84,15 @@ class ColumnFormatter:
         if format == "Month of Year":
             return func.date_format(column, "%m")
         if format == "Quarter of Year":
-            return func.Quarter(column)
+            return func.quarter(column)
         if format == "Quarter":
             return func.str_to_date(
-                func.year(column) + "-" + ((func.Quarter(column) * 3) - 2) + "-01",
+                func.concat(
+                    func.year(column),  # 2018
+                    "-",  # 2018-
+                    (func.quarter(column) * 3) - 2,  # 2018-4
+                    "-01",  # 2018-4-01
+                ),
                 "%Y-%m-%d",
             )
 
@@ -120,7 +125,7 @@ class Functions:
             return func.upper(args[0])
 
         if function == "concat":
-            return reduce(lambda x, y: x + y, args)
+            return func.concat(*args)
 
         if function == "is_set":
             return args[0].isnot(None)
@@ -325,7 +330,7 @@ class ExpressionProcessor:
         for condition in expression.get("conditions"):
             condition = _dict(condition)
             conditions.append(cls.process(condition))
-        return GroupCriteria(*conditions)
+        return GroupCriteria(*conditions if conditions else [True])
 
     @classmethod
     def process_binary_expression(cls, expression):
