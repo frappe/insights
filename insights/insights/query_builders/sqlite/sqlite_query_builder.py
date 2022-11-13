@@ -59,6 +59,12 @@ class SQLiteFunctions(Functions):
     @classmethod
     def apply(cls, function, *args):
 
+        if function == "floor":
+            return func.round(args[0] - 0.5)
+
+        if function == "ceil":
+            return func.round(args[0] + 0.5)
+
         if function == "concat":
             from functools import reduce
 
