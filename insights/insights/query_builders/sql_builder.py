@@ -1,6 +1,5 @@
 import operator
 from contextlib import suppress
-from functools import reduce
 
 from frappe import _dict, parse_json
 from frappe.utils.data import (
@@ -15,10 +14,10 @@ from frappe.utils.data import (
     get_year_start,
     nowdate,
 )
-from sqlalchemy import Column, column, table
+from sqlalchemy import Column, column, table, select
 from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import and_, case, func, or_
+from sqlalchemy.sql import and_, case, func, or_, text
 
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
@@ -41,7 +40,7 @@ class Aggregations:
         if agg_lower == "avg":
             return func.avg(column)
         if agg_lower == "count":
-            return func.count("*")
+            return func.count(text("*"))
         if agg_lower == "sum_if":
             return func.sum(case([(conditions, column)], else_=0))
         if agg_lower == "count_if":
@@ -330,7 +329,8 @@ class ExpressionProcessor:
         for condition in expression.get("conditions"):
             condition = _dict(condition)
             conditions.append(cls.process(condition))
-        return GroupCriteria(*conditions if conditions else [True])
+        if conditions:
+            return GroupCriteria(*conditions)
 
     @classmethod
     def process_binary_expression(cls, expression):
@@ -346,16 +346,18 @@ class ExpressionProcessor:
         arguments = [cls.process(arg) for arg in expression.arguments]
 
         with suppress(NotImplementedError):
-            return Functions.apply(function, *arguments)
+            return cls.query.functions.apply(function, *arguments)
 
         with suppress(NotImplementedError):
-            return Aggregations.apply(function, *arguments)
+            return cls.query.aggregations.apply(function, *arguments)
 
         raise NotImplementedError(f"Function {function} not implemented")
 
 
 class SQLQueryBuilder:
     column_formatter = ColumnFormatter
+    aggregations = Aggregations
+    functions = Functions
 
     def build(self, query: InsightsQuery, dialect: Dialect = None):
         self.query = query
@@ -379,7 +381,8 @@ class SQLQueryBuilder:
     def find_or_add_column(self, name, table):
         _table = self.find_or_add_table(table)
         if name not in _table.c:
-            _table.append_column(column(name))
+            is_star = name == "*"
+            _table.append_column(column(name, is_literal=is_star))
         return _table.c[name]
 
     def process_joins(self):
@@ -426,7 +429,7 @@ class SQLQueryBuilder:
                 _column = self.column_formatter.format(
                     parse_json(row.format_option), row.type, _column
                 )
-                _column = Aggregations.apply(row.aggregation, _column)
+                _column = self.aggregations.apply(row.aggregation, _column)
             else:
                 expression = parse_json(row.expression)
                 _column = ExpressionProcessor.process(expression.get("ast"))
@@ -451,46 +454,50 @@ class SQLQueryBuilder:
         self._filters = ExpressionProcessor.process(filters, self)
 
     def make_query(self):
-        query = Query(self._tables)
+        sql = None
+        if not self._columns and self._tables:
+            # if no columns, then select * from table
+            sql = select(text("*")).select_from(*self._tables)
+        if self._columns:
+            sql = select(*self._columns).select_from(*self._tables)
 
         if self._joins:
-            for _table in self._tables:
-                joins = [d for d in self._joins if d.left == _table]
-                for join in joins:
-                    if join.type == "inner":
-                        query = query.select_entity_from(join.left).join(
-                            join.right, join.left_key == join.right_key
-                        )
-                    elif join.type == "left":
-                        query = query.select_entity_from(join.left).join(
-                            join.right, join.left_key == join.right_key, isouter=True
-                        )
-                    elif join.type == "right":
-                        query = query.select_entity_from(join.right).join(
-                            join.left, join.right_key == join.left_key, isouter=True
-                        )
-                    elif join.type == "full":
-                        query = query.select_entity_from(join.left).join(
-                            join.right, join.left_key == join.right_key, full=True
-                        )
-
-        if not self._columns and self._tables:
-            # if no columns, then display all columns
-            query = query.with_entities(column("*"))
-        if self._columns:
-            query = query.with_entities(*self._columns)
+            self.do_join(sql)
         if self._group_by_columns:
-            query = query.group_by(*self._group_by_columns)
+            sql = sql.group_by(*self._group_by_columns)
         if self._order_by_columns:
-            query = query.order_by(*self._order_by_columns)
+            sql = sql.order_by(*self._order_by_columns)
         if self._filters is not None:
-            query = query.filter(self._filters)
+            sql = sql.filter(self._filters)
 
-        return self.compiled(query)
+        sql = sql.limit(self.query.limit or 10)
 
-    def compiled(self, query):
+        return self.compile(sql)
+
+    def do_join(self, sql):
+        for _table in self._tables:
+            joins = [d for d in self._joins if d.left == _table]
+            for join in joins:
+                if join.type == "inner":
+                    sql = sql.select_entity_from(join.left).join(
+                        join.right, join.left_key == join.right_key
+                    )
+                elif join.type == "left":
+                    sql = sql.select_entity_from(join.left).join(
+                        join.right, join.left_key == join.right_key, isouter=True
+                    )
+                elif join.type == "right":
+                    sql = sql.select_entity_from(join.right).join(
+                        join.left, join.right_key == join.left_key, isouter=True
+                    )
+                elif join.type == "full":
+                    sql = sql.select_entity_from(join.left).join(
+                        join.right, join.left_key == join.right_key, full=True
+                    )
+
+    def compile(self, query):
         compile_args = {"compile_kwargs": {"literal_binds": True}}
         if self.dialect:
             compile_args["dialect"] = self.dialect
-        compiled = query.statement.compile(**compile_args)
+        compiled = query.compile(**compile_args)
         return str(compiled)

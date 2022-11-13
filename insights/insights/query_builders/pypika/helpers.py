@@ -46,7 +46,7 @@ class Aggregations:
 
     @staticmethod
     def count(column):
-        if "count" in column.get_sql():
+        if "*" in column.get_sql():
             return functions.Count("*")
         return functions.Count(column)
 
