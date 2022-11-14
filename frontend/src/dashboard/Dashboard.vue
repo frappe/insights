@@ -54,22 +54,19 @@
 					:tabs="addItemTabs"
 					@switch="
 						(tab) => {
-							addItemTabs.forEach((t) => {
-								t.active = t.label === tab.label
-							})
 							newItem.item_type = tab.label
 						}
 					"
 				/>
 				<Autocomplete
-					v-if="newItemType == 'Chart'"
+					v-if="newItem.item_type == 'Chart'"
 					ref="autocomplete"
 					placeholder="Select a chart"
 					v-model="newItem"
 					:options="dashboard.newChartOptions"
 				/>
 
-				<DashboardFilterForm v-if="newItemType == 'Filter'" v-model="newItem" />
+				<DashboardFilterForm v-if="newItem.item_type == 'Filter'" v-model="newItem" />
 			</div>
 		</template>
 		<template #actions>
@@ -116,8 +113,8 @@ const autocomplete = ref(null)
 watch(showAddDialog, (show) => {
 	if (show) {
 		setTimeout(() => {
-			autocomplete.value.input.$el.blur()
-			autocomplete.value.input.$el.focus()
+			autocomplete.value?.input.$el.blur()
+			autocomplete.value?.input.$el.focus()
 		}, 400)
 	}
 })
@@ -132,12 +129,18 @@ const addItemTabs = ref([
 		active: false,
 	},
 ])
-const newItemType = computed(() => {
-	return addItemTabs.value.find((t) => t.active).label
-})
+watch(
+	() => newItem.value.item_type,
+	(type) => {
+		addItemTabs.value.forEach((tab) => {
+			tab.active = tab.label == type
+		})
+	},
+	{ immediate: true }
+)
 
 function addItem() {
-	if (newItemType.value == 'Chart') {
+	if (newItem.item_type == 'Chart') {
 		dashboard.addItem({
 			item_type: 'Chart',
 			chart: newItem.value.value,
@@ -151,6 +154,13 @@ function addItem() {
 		})
 	}
 	showAddDialog.value = false
+	newItem.value = {
+		item_type: 'Chart',
+		chart: null,
+		filter_label: '',
+		filter_type: 'String', // default
+		filter_operator: 'equals', // default
+	}
 }
 
 const pageMeta = computed(() => {
