@@ -100,10 +100,9 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 
-import moment from 'moment'
 import { useRouter } from 'vue-router'
 import { createResource } from 'frappe-ui'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, inject } from 'vue'
 import { updateDocumentTitle } from '@/utils'
 
 const getDashboards = createResource({
@@ -111,9 +110,11 @@ const getDashboards = createResource({
 	initialData: [],
 })
 getDashboards.fetch()
+
+const dayjs = inject('$dayjs')
 const dashboards = computed(() => {
 	return getDashboards.data.map((dashboard) => {
-		dashboard.modified_from_now = moment(dashboard.modified).fromNow()
+		dashboard.modified_from_now = dayjs(dashboard.modified).fromNow()
 		return dashboard
 	})
 })

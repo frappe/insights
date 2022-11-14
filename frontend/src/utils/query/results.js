@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { FIELDTYPES } from '@/utils'
+import { getFormattedDate } from '../format'
 
 export function useQueryResults(query) {
 	const maxRows = 1000
@@ -57,6 +58,9 @@ function applyColumnFormatOption(column, cell) {
 	}
 	if (column.format_option.suffix) {
 		return `${cell} ${column.format_option.suffix}`
+	}
+	if (column.format_option.date_format) {
+		return getFormattedDate(cell, column.format_option.date_format)
 	}
 	return cell
 }

@@ -93,8 +93,7 @@ import BasePage from '@/components/BasePage.vue'
 import { Badge, createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
 
-import moment from 'moment'
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 
 const new_dialog = ref(false)
 
@@ -104,9 +103,10 @@ const getDataSources = createResource({
 })
 getDataSources.fetch()
 
+const dayjs = inject('$dayjs')
 const dataSources = computed(() => {
 	return getDataSources.data.map((source) => {
-		source.modified_from_now = moment(source.modified).fromNow()
+		source.modified_from_now = dayjs(source.modified).fromNow()
 		return source
 	})
 })

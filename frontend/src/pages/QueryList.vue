@@ -132,9 +132,8 @@
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
-import moment from 'moment'
 import { useRouter } from 'vue-router'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, inject } from 'vue'
 import { createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
 
@@ -147,12 +146,14 @@ const newQuery = reactive({
 
 const getQueries = createResource('insights.api.get_queries')
 getQueries.fetch()
+
+const dayjs = inject('$dayjs')
 watch(
 	() => getQueries.data,
 	(data) => {
 		if (data && data.length) {
 			getQueries.data.forEach((query) => {
-				query.modified_from_now = moment(query.modified).fromNow()
+				query.modified_from_now = dayjs(query.modified).fromNow()
 			})
 		}
 	}

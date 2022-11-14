@@ -4,16 +4,10 @@
 from sqlalchemy import Column
 from sqlalchemy.sql import func
 
-from ..sql_builder import Functions, SQLQueryBuilder
+from ..sql_builder import Functions, SQLQueryBuilder, ColumnFormatter
 
 
-class SQLiteColumnFormatter:
-    @classmethod
-    def format(cls, format_option: dict, column_type: str, column: Column) -> Column:
-        if format_option and column_type in ("Date", "Datetime"):
-            return cls.format_date(format_option.date_format, column)
-        return column
-
+class SQLiteColumnFormatter(ColumnFormatter):
     @classmethod
     def format_date(cls, format, column: Column):
         if format == "Minute":
@@ -41,7 +35,7 @@ class SQLiteColumnFormatter:
 
         if format == "Quarter of Year":
             month = func.strftime("%m", column)
-            return (month - 1) / 3
+            return ((month - 1) / 3) + 1
 
         if format == "Quarter":
             date = func.strftime("%Y-%m-01", column)
