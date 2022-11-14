@@ -3,13 +3,14 @@
 
 
 import frappe
-from frappe.database.mariadb.database import MariaDBDatabase
+import pandas as pd
+from sqlalchemy import create_engine
 
-from insights.insights.query_builders.mariadb.mariadb_query_builder import (
-    MariaDBQueryBuilder,
+from insights.insights.doctype.insights_data_source.sources.sqlite import SQLiteDB
+from insights.insights.query_builders.sqlite.sqlite_query_builder import (
+    SQLiteQueryBuilder,
 )
 
-from .models import BaseDatabase
 from .utils import create_insights_table
 
 
@@ -19,13 +20,28 @@ class StoredQueryTableFactory:
     def __init__(self) -> None:
         self.data_source = "Query Store"
 
-    def get_tables(self, queries=None):
-        tables = []
+    def import_query(self, query):
+        result = frappe.parse_json(query.result)
+        if not result:
+            return
+        columns = [r.split("::")[0] for r in result[0]]
+        df = pd.DataFrame(result[1:], columns=columns)
+        df.to_sql(query.name, self.connection, if_exists="replace", index=False)
+
+    def sync_tables(self, connection, tables=None, force=False):
+        self.connection = connection
+        for table in self.get_tables(tables):
+            create_insights_table(table, force=force)
+
+    def get_tables(self, tables=None):
+        _tables = []
         # create table object from the stored queries
-        for docname in queries or self.get_stored_queries():
+        for docname in tables or self.get_stored_queries():
             doc = frappe.get_doc("Insights Query", docname)
-            tables.append(self.make_table(doc))
-        return tables
+            # since we already have doc here, we can use it to import query result
+            self.import_query(doc)
+            _tables.append(self.make_table(doc))
+        return _tables
 
     def make_table(self, query):
         return frappe._dict(
@@ -42,11 +58,10 @@ class StoredQueryTableFactory:
         return frappe.get_all("Insights Query", filters={"is_stored": 1}, pluck="name")
 
     def make_columns(self, columns):
-        set_date_fields_as_string(columns)
         return [
             frappe._dict(
                 {
-                    "column": column.column or column.label,
+                    "column": column.label,  # use label as column name
                     "label": column.label,
                     "type": column.type,
                 }
@@ -55,119 +70,18 @@ class StoredQueryTableFactory:
         ]
 
 
-class QueryStore(BaseDatabase):
-    def __init__(self):
-        self.conn: MariaDBDatabase = MariaDBDatabase()
-        self.query_builder: MariaDBQueryBuilder = MariaDBQueryBuilder()
-        self.table_factory: StoredQueryTableFactory = StoredQueryTableFactory()
-
-    def test_connection(self):
-        return True
-
-    def build_query(self, query):
-        # converts insights query to a sql query
-        return self.query_builder.build(query)
-
-    def run_query(self, query):
-        # runs insights query
-        self.create_temporary_tables(query.get_selected_tables())
-        return self.execute_query(self.build_query(query))
-
-    def execute_query(self, query, *args, **kwargs):
-        self.validate_query(query)
-        result = self._execute(query, *args, **kwargs)
-        self.conn.close()
-        return result
-
-    def sync_tables(self, queries=None, force=False):
-        for table in self.table_factory.get_tables(queries=queries):
-            create_insights_table(table, force=force)
-
-    def create_temporary_tables(self, query_tables):
-        for table in query_tables:
-            self.create_temporary_table(table.table)
-
-    def create_temporary_table(self, table):
-        if not frappe.db.exists("Insights Query", table):
-            return
-
-        # create temporary table for an existing insights query
-        query = frappe.get_doc("Insights Query", table)
-        columns = self.get_table_columns(table)
-        result = list(query.load_result())
-        result.pop(0)
-
-        _columns = []
-        for row in columns:
-            _columns.append(make_column_def(row.column or row.label, row.type))
-
-        create_table = f"CREATE TEMPORARY TABLE `{query.name}`({', '.join(_columns)})"
-
-        insert_records = (
-            f"INSERT INTO `{query.name}` VALUES {', '.join(['%s'] * len(result))}"
+class QueryStore(SQLiteDB):
+    def __init__(self) -> None:
+        database_path = frappe.get_site_path(
+            "private", "files", "insights_query_store.sqlite"
         )
+        self.engine = create_engine(f"sqlite:///{database_path}")
+        self.table_factory = StoredQueryTableFactory()
+        self.query_builder = SQLiteQueryBuilder()
 
-        self._execute(create_table)
-        # since "create temporary table" doesn't cause an implict commit
-        # to avoid "implicit commit" error from frappe/database.py -> check_implict_commit
-        self.conn.transaction_writes -= 1
-        self._execute(insert_records, values=result)
-
-    def validate_query(self, query):
-        if not query.strip().lower().startswith("select"):
-            raise frappe.ValidationError(
-                "Only SELECT statements are allowed in Query Store"
-            )
-
-    def _execute(self, query: str, *args, **kwargs):
-        # doesn't close the connection after execution
-        try:
-            return self.conn.sql(query, *args, **kwargs)
-        except Exception as e:
-            # close the connection if there is an error
-            self.conn.close()
-            frappe.log_error(f"Error fetching data from QueryStore: {e}")
-            raise
-
-    def get_table_preview(self, table, limit=20):
-        self.create_temporary_table(table)
-        data = self._execute(f"""select * from `{table}` limit {limit}""")
-        length = self._execute(f"""select count(*) from `{table}`""")[0][0]
-        self.conn.close()
-        return {
-            "data": data or [],
-            "length": length or 0,
-        }
-
-    def get_column_options(self, table, column, search_text=None, limit=25):
-        if not frappe.db.exists("Insights Query", table):
-            return []
-
-        query = frappe.get_cached_doc("Insights Query", table)
-        Table = frappe.qb.Table(table)
-        Column = frappe.qb.Field(column)
-        query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)
-        if search_text:
-            query = query.where(Column.like(f"%{search_text}%"))
-
-        return self.execute_query(query.get_sql())
-
-    def get_table_columns(self, table):
-        if not frappe.db.exists("Insights Query", table):
-            return []
-
-        query = frappe.get_cached_doc("Insights Query", table)
-        columns = query.get_columns()
-        set_date_fields_as_string(columns)
-        return columns
-
-
-def set_date_fields_as_string(columns):
-    for column in columns:
-        if column.format_option and column.type in ("Date", "Datetime"):
-            format_option = frappe.parse_json(column.format_option)
-            if format_option.date_format:
-                column.type = "String"
+    def sync_tables(self, tables=None, force=False):
+        with self.engine.begin() as connection:
+            self.table_factory.sync_tables(connection, tables, force=force)
 
 
 def make_column_def(column, type):
@@ -179,3 +93,8 @@ def make_column_def(column, type):
     d = COLUMN_TYPES.get(type)
     column_type = f"{d[0]}({d[1]})" if d[1] else d[0]
     return f"`{column}` {column_type}"
+
+
+def sync_query_store(tables=None, force=False):
+    query_store = QueryStore()
+    query_store.sync_tables(tables, force)

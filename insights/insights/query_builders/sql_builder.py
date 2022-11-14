@@ -19,8 +19,6 @@ from sqlalchemy import Column, column, select, table
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import and_, case, func, or_, text
 
-from insights.insights.doctype.insights_query.insights_query import InsightsQuery
-
 
 class Aggregations:
     @classmethod
@@ -307,26 +305,25 @@ class BinaryOperations:
 
 
 class ExpressionProcessor:
-    query: InsightsQuery = None
+    def __init__(self, builder):
+        self.builder = builder
 
-    @classmethod
-    def process(cls, expression, query: InsightsQuery = None):
+    def process(self, expression):
         expression = _dict(expression)
-        cls.query = query if query else cls.query
 
         if expression.type == "LogicalExpression":
-            return cls.process_logical_expression(expression)
+            return self.process_logical_expression(expression)
 
         if expression.type == "BinaryExpression":
-            return cls.process_binary_expression(expression)
+            return self.process_binary_expression(expression)
 
         if expression.type == "CallExpression":
-            return cls.process_call_expression(expression)
+            return self.process_call_expression(expression)
 
         if expression.type == "Column":
             column = expression.value.get("column")
             table = expression.value.get("table")
-            return cls.query.find_or_add_column(column, table)
+            return self.builder.find_or_add_column(column, table)
 
         if expression.type == "String":
             return expression.value
@@ -336,45 +333,52 @@ class ExpressionProcessor:
 
         raise NotImplementedError(f"Invalid expression type: {expression.type}")
 
-    @classmethod
-    def process_logical_expression(cls, expression):
+    def process_logical_expression(self, expression):
         conditions = []
         GroupCriteria = and_ if expression.operator == "&&" else or_
         for condition in expression.get("conditions"):
             condition = _dict(condition)
-            conditions.append(cls.process(condition))
+            conditions.append(self.process(condition))
         if conditions:
             return GroupCriteria(*conditions)
 
-    @classmethod
-    def process_binary_expression(cls, expression):
-        left = cls.process(expression.left)
-        right = cls.process(expression.right)
+    def process_binary_expression(self, expression):
+        left = self.process(expression.left)
+        right = self.process(expression.right)
         operator = expression.operator
         operation = BinaryOperations.get_operation(operator)
         return operation(left, right)
 
-    @classmethod
-    def process_call_expression(cls, expression):
+    def process_call_expression(self, expression):
         function = expression.function
-        arguments = [cls.process(arg) for arg in expression.arguments]
+        arguments = [self.process(arg) for arg in expression.arguments]
 
         with suppress(NotImplementedError):
-            return cls.query.functions.apply(function, *arguments)
+            return self.builder.functions.apply(function, *arguments)
 
         if len(arguments) <= 2:
             with suppress(NotImplementedError):
-                return cls.query.aggregations.apply(function, *arguments)
+                return self.builder.aggregations.apply(function, *arguments)
 
         raise NotImplementedError(f"Function {function} not implemented")
 
 
 class SQLQueryBuilder:
-    column_formatter = ColumnFormatter
-    aggregations = Aggregations
-    functions = Functions
+    def __init__(self) -> None:
+        self.functions = Functions
+        self.aggregations = Aggregations
+        self.column_formatter = ColumnFormatter
+        self.expression_processor = ExpressionProcessor(self)
 
-    def build(self, query: InsightsQuery, dialect: Dialect = None):
+        self._tables = []
+        self._joins = []
+        self._columns = []
+        self._filters = []
+        self._group_by_columns = []
+        self._order_by_columns = []
+        self._limit = 10
+
+    def build(self, query, dialect: Dialect = None):
         self.query = query
         self.dialect = dialect
         self.process_tables()
@@ -386,18 +390,18 @@ class SQLQueryBuilder:
     def process_tables(self):
         self._tables = []
         for row in self.query.tables:
-            table = self.find_or_add_table(row.table)
-            if table not in self._tables:
-                self._tables.append(table)
+            self.find_or_add_table(row.table)
 
     def find_or_add_table(self, name):
-        return next((t for t in self._tables if t.name == name), table(name))
+        _table = next((t for t in self._tables if t.name == name), table(name))
+        if _table not in self._tables:
+            self._tables.append(_table)
+        return _table
 
     def find_or_add_column(self, name, table):
         _table = self.find_or_add_table(table)
         if name not in _table.c:
-            is_star = name == "*"
-            _table.append_column(column(name, is_literal=is_star))
+            _table.append_column(column(name))
         return _table.c[name]
 
     def process_joins(self):
@@ -447,7 +451,7 @@ class SQLQueryBuilder:
                 _column = self.aggregations.apply(row.aggregation, _column)
             else:
                 expression = parse_json(row.expression)
-                _column = ExpressionProcessor.process(expression.get("ast"), query=self)
+                _column = self.expression_processor.process(expression.get("ast"))
                 _column = self.column_formatter.format(
                     parse_json(row.format_option), row.type, _column
                 )
@@ -466,7 +470,7 @@ class SQLQueryBuilder:
 
     def process_filters(self):
         filters = parse_json(self.query.filters)
-        self._filters = ExpressionProcessor.process(filters, query=self)
+        self._filters = self.expression_processor.process(filters)
 
     def make_query(self):
         sql = None
@@ -485,7 +489,7 @@ class SQLQueryBuilder:
         if self._filters is not None:
             sql = sql.filter(self._filters)
 
-        sql = sql.limit(self.query.limit or 10)
+        sql = sql.limit(self.query.limit or self._limit)
 
         return self.compile(sql)
 

@@ -4,6 +4,7 @@ import { useQueryTables } from '@/utils/query/tables'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
+import { createToast } from '@/utils/toasts'
 
 const API_METHODS = {
 	run: 'run',
@@ -46,6 +47,24 @@ export function useQuery(name) {
 	query.getCharts.submit()
 	query.charts = computed(() => query.getCharts.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
+	query.execute = async () => {
+		query.debouncedRun(null, {
+			onSuccess() {
+				createToast({
+					appearance: 'success',
+					title: 'Execution Successful',
+				})
+			},
+			onError() {
+				query.run.loading = false
+				createToast({
+					appearance: 'error',
+					title: 'Error while executing query',
+					message: 'Please review the query and try again.',
+				})
+			},
+		})
+	}
 
 	return query
 }

@@ -4,7 +4,7 @@
 from sqlalchemy import Column
 from sqlalchemy.sql import func
 
-from ..sql_builder import Functions, SQLQueryBuilder, ColumnFormatter
+from ..sql_builder import ColumnFormatter, Functions, SQLQueryBuilder
 
 
 class SQLiteColumnFormatter(ColumnFormatter):
@@ -107,5 +107,7 @@ class SQLiteFunctions(Functions):
 
 
 class SQLiteQueryBuilder(SQLQueryBuilder):
-    column_formatter = SQLiteColumnFormatter
-    functions = SQLiteFunctions
+    def __init__(self):
+        super().__init__()
+        self.functions = SQLiteFunctions
+        self.column_formatter = SQLiteColumnFormatter

@@ -8,7 +8,8 @@ export function useQueryResults(query) {
 	const data = computed(() => {
 		return safeJSONParse(query.doc.result, []).slice(0, maxRows)
 	})
-	const formattedResult = getFormattedResult(data, query.columns.data)
+	const columns = computed(() => query.columns.data)
+	const formattedResult = getFormattedResult(data, columns)
 
 	function getColumnValues(column) {
 		const columnIdx = query.columns.data.findIndex((c) =>
@@ -36,15 +37,15 @@ export function useQueryResults(query) {
 	}
 }
 
-function applyColumnFormatOption(column, cell) {
-	if (column.format_option.prefix) {
-		return `${column.format_option.prefix} ${cell}`
+function applyColumnFormatOption(formatOption, cell) {
+	if (formatOption.prefix) {
+		return `${formatOption.prefix} ${cell}`
 	}
-	if (column.format_option.suffix) {
-		return `${cell} ${column.format_option.suffix}`
+	if (formatOption.suffix) {
+		return `${cell} ${formatOption.suffix}`
 	}
-	if (column.format_option.date_format) {
-		return getFormattedDate(cell, column.format_option.date_format)
+	if (formatOption.date_format) {
+		return getFormattedDate(cell, formatOption.date_format)
 	}
 	return cell
 }
@@ -56,20 +57,23 @@ export function getFormattedResult(data, columns) {
 
 		if (!_data || _data.length == 0) return []
 
+		const columnTypes = _data[0].map((c) => c.split('::')[1])
+
 		return _data.map((row, index) => {
 			if (index == 0) return row // header row
 			return row.map((cell, idx) => {
-				const column = _columns[idx] || {}
-				if (FIELDTYPES.NUMBER.includes(column.type)) {
-					if (column.type == 'Integer') {
+				const columnType = columnTypes[idx]
+				if (FIELDTYPES.NUMBER.includes(columnType)) {
+					if (columnType == 'Integer') {
 						cell = parseInt(cell)
 					}
-					if (column.type == 'Decimal') {
+					if (columnType == 'Decimal') {
 						cell = parseFloat(cell)
 					}
 				}
-				if (column.format_option) {
-					cell = applyColumnFormatOption(column, cell)
+				const formatOption = _columns[idx]?.format_option
+				if (formatOption) {
+					cell = applyColumnFormatOption(formatOption, cell)
 				}
 				return cell
 			})

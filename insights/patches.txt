@@ -16,8 +16,8 @@ insights.patches.modify_dashboard_layout
 insights.patches.fix_select_options_after_rename
 insights.patches.rename_column_type #v2
 insights.patches.rename_visualization
-insights.patches.store_queries #v2
-insights.patches.rename_count_column_name #v3
+insights.patches.store_queries #v3
+insights.patches.rename_count_column_name #v4
 insights.patches.add_column_row_to_result
 insights.patches.rename_data_to_config
 insights.patches.migrate_dashboard_charts

@@ -13,10 +13,6 @@ def execute():
         SET
             `column` = '*'
         WHERE
-            `column` = '__count'
-            OR (
-                `column` = 'count'
-                AND `aggregation` = 'Count'
-            )
+            `column` = '__count' OR `column` = 'count'
         """
     )

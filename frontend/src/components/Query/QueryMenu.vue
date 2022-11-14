@@ -12,6 +12,11 @@
 					  }
 					: null,
 				{
+					label: 'Execute',
+					icon: 'play',
+					handler: query.execute,
+				},
+				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
 					handler: () => (show_reset_dialog = true),

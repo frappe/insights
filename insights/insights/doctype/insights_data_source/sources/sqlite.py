@@ -88,7 +88,6 @@ class SQLiteDB(BaseDatabase):
             "private", "files", f"{database_name}.sqlite"
         )
         self.engine = create_engine(f"sqlite:///{database_path}")
-
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)
         self.query_builder = SQLiteQueryBuilder()
@@ -103,9 +102,16 @@ class SQLiteDB(BaseDatabase):
         return self.query_builder.build(query, dialect=self.engine.dialect)
 
     def execute_query(self, query, pluck=False):
+        self.validate_query(query)
         with self.engine.connect() as connection:
             result = connection.execute(query).fetchall()
             return [r[0] for r in result] if pluck else [list(r) for r in result]
+
+    def validate_query(self, query):
+        if not str(query).strip().lower().startswith("select"):
+            raise frappe.ValidationError(
+                "Only SELECT statements are allowed in Query Store"
+            )
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
@@ -123,6 +129,13 @@ class SQLiteDB(BaseDatabase):
         with self.engine.connect() as connection:
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
+
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        t = Table(table, Column(column))
+        query = t.select().distinct().limit(limit)
+        if search_text:
+            query = query.where(Column(column).like(f"%{search_text}%"))
+        return self.execute_query(query, pluck=True)
 
     def table_exists(self, table):
         return self.execute_query(
