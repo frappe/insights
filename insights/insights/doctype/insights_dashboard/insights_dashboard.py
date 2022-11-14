@@ -88,8 +88,9 @@ class InsightsDashboard(Document):
                 break
 
     @frappe.whitelist()
-    def get_columns_for(self, query):
-        return frappe.get_doc("Insights Query", query).fetch_columns()
+    def get_all_columns(self, query):
+        # fetches all the columns for all the tables selected in the query
+        return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
     @frappe.whitelist()
     def get_chart_data(self, chart):
@@ -112,6 +113,10 @@ class InsightsDashboard(Document):
             return query.run_with_filters(filter_conditions)
         else:
             return frappe.db.get_value("Insights Query", row.query, "result")
+
+    @frappe.whitelist()
+    def get_columns(self, query):
+        return frappe.get_cached_doc("Insights Query", query).get_columns()
 
 
 BINARY_OPERATORS = {
@@ -189,7 +194,7 @@ def make_args_for_call_expression(operator_function, filter):
         return []
 
     if operator_function == "between":
-        values = filter.filter_value.split(",")
+        values = [v.strip() for v in filter.filter_value.split(",")]
         return [
             {
                 "type": "Number" if filter.filter_type == "Number" else "String",

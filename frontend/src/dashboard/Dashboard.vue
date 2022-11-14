@@ -62,7 +62,7 @@
 					v-if="newItem.item_type == 'Chart'"
 					ref="autocomplete"
 					placeholder="Select a chart"
-					v-model="newItem"
+					v-model="newChart"
 					:options="dashboard.newChartOptions"
 				/>
 
@@ -139,11 +139,14 @@ watch(
 	{ immediate: true }
 )
 
+const newChart = ref({})
+watch(newChart, (chart) => chart && (newItem.value.chart = chart.value))
+
 function addItem() {
-	if (newItem.item_type == 'Chart') {
+	if (newItem.value.item_type == 'Chart') {
 		dashboard.addItem({
 			item_type: 'Chart',
-			chart: newItem.value.value,
+			chart: newItem.value.chart,
 		})
 	} else {
 		dashboard.addItem({

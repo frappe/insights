@@ -61,8 +61,7 @@
 									:class="{
 										'bg-gray-100 text-gray-800': active,
 										'bg-white': !active,
-										'!h-7 cursor-default !text-sm text-gray-600':
-											option.disabled,
+										'cursor-not-allowed !opacity-50': option.disabled,
 									}"
 								>
 									<div class="flex items-baseline space-x-2">

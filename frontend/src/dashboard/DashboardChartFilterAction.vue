@@ -12,7 +12,7 @@ const filters = ref([
 	},
 ])
 
-const allColumns = dashboard.getColumnsFor(chart.query)
+const allColumns = dashboard.getAllColumns(chart.query)
 watch(allColumns, async () => {
 	await nextTick()
 	const initialFilters = safeJSONParse(chart.chart_filters, []).map((filter) => {
@@ -38,13 +38,17 @@ async function updateColumnOptions(filter) {
 }
 
 function getColumnOptions(filter_type) {
-	return allColumns.value
-		?.filter((c) => c.type === filter_type)
-		.map((c) => ({
-			label: c.label,
-			description: c.table_label,
-			value: `${c.table}.${c.column}`,
-		}))
+	return (
+		allColumns.value
+			.map((c) => ({
+				label: c.label,
+				description: `${c.type}`,
+				value: `${c.table}.${c.column}`,
+				disabled: c.type !== filter_type,
+			}))
+			// sort enabled options first
+			.sort((a, b) => (a.disabled === b.disabled ? 0 : a.disabled ? 1 : -1))
+	)
 }
 
 function addFilter() {

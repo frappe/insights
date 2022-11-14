@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, unref } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { FIELDTYPES } from '@/utils'
 import { getFormattedDate } from '../format'
@@ -8,23 +8,7 @@ export function useQueryResults(query) {
 	const data = computed(() => {
 		return safeJSONParse(query.doc.result, []).slice(0, maxRows)
 	})
-	const formattedData = computed(() => {
-		return data.value?.slice(1).map((row) => {
-			return row.map((cell, idx) => {
-				const column = query.columns.data[idx] || {}
-				if (FIELDTYPES.NUMBER.includes(column.type)) {
-					if (column.type == 'Integer') {
-						cell = parseInt(cell)
-					}
-					cell = Number(cell).toLocaleString()
-				}
-				if (column.format_option) {
-					cell = applyColumnFormatOption(column, cell)
-				}
-				return cell
-			})
-		})
-	})
+	const formattedResult = getFormattedResult(data, query.columns.data)
 
 	function getColumnValues(column) {
 		const columnIdx = query.columns.data.findIndex((c) =>
@@ -46,7 +30,7 @@ export function useQueryResults(query) {
 
 	return {
 		data,
-		formattedData,
+		formattedResult,
 		getColumnValues,
 		getRows,
 	}
@@ -65,20 +49,30 @@ function applyColumnFormatOption(column, cell) {
 	return cell
 }
 
-function formatCells() {
-	return this.data.map((row) => {
-		return row.map((cell, idx) => {
-			const column = this.columns[idx]
-			if (!column) {
+export function getFormattedResult(data, columns) {
+	return computed(() => {
+		const _data = unref(data)
+		const _columns = unref(columns)
+
+		if (!_data || _data.length == 0) return []
+
+		return _data.map((row, index) => {
+			if (index == 0) return row // header row
+			return row.map((cell, idx) => {
+				const column = _columns[idx] || {}
+				if (FIELDTYPES.NUMBER.includes(column.type)) {
+					if (column.type == 'Integer') {
+						cell = parseInt(cell)
+					}
+					if (column.type == 'Decimal') {
+						cell = parseFloat(cell)
+					}
+				}
+				if (column.format_option) {
+					cell = applyColumnFormatOption(column, cell)
+				}
 				return cell
-			}
-			if (FIELDTYPES.NUMBER.includes(column.type)) {
-				cell = Number(cell).toLocaleString()
-			}
-			if (column.format_option) {
-				cell = this.applyColumnFormatOption(column, cell)
-			}
-			return cell
+			})
 		})
 	})
 }

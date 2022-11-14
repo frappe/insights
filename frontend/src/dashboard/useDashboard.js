@@ -48,9 +48,9 @@ export default function useDashboard(dashboardName) {
 			})
 	}
 	dashboard.addItem = (item) => {
-		let layout = null
+		let layout = { w: 8, h: 8, x: 0, y: 0 }
 		if (item.item_type === 'Filter') {
-			layout = { x: 0, y: 0, w: 4, h: 3 }
+			layout = { w: 4, h: 3, x: 0, y: 0 }
 		}
 		return dashboard.add_item.submit({ item, layout }).then(() => {
 			dashboard.updateNewChartOptions()
@@ -98,14 +98,19 @@ export default function useDashboard(dashboardName) {
 		dashboard.get_chart_data.submit({ chart: chartID }).then((r) => {
 			data.value = r.message
 		})
-		return computed(() => data.value)
+		return computed(() => safeJSONParse(data.value, []))
 	}
 
 	dashboard.filters = computed(() => dashboard.doc?.items.filter((v) => v.item_type == 'Filter'))
 
-	dashboard.getColumnsFor = (query) => {
-		dashboard.get_columns_for.submit({ query })
-		return computed(() => dashboard.get_columns_for.data?.message || [])
+	dashboard.getAllColumns = (query) => {
+		dashboard.get_all_columns.submit({ query })
+		return computed(() => dashboard.get_all_columns.data?.message || [])
+	}
+
+	dashboard.getColumns = (query) => {
+		dashboard.get_columns.submit({ query })
+		return computed(() => dashboard.get_columns.data?.message || [])
 	}
 
 	dashboard.updateNewChartOptions()
@@ -124,7 +129,8 @@ function makeDashboardResource(name) {
 			remove_item: 'remove_item',
 			get_chart_data: 'get_chart_data',
 			update_filter: 'update_filter',
-			get_columns_for: 'get_columns_for',
+			get_all_columns: 'get_all_columns',
+			get_columns: 'get_columns',
 			update_chart_filters: 'update_chart_filters',
 		},
 	})

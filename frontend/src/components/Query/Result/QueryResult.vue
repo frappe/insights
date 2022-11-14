@@ -63,7 +63,11 @@
 									class="whitespace-nowrap border-b border-r bg-gray-50 px-3 py-2 text-gray-600"
 									:class="{ 'text-right': isNumberColumn[j] }"
 								>
-									{{ ellipsis(cell, 100) }}
+									{{
+										isNumberColumn[j]
+											? Number(cell).toLocaleString()
+											: ellipsis(cell, 100)
+									}}
 								</td>
 								<td
 									class="border-b bg-gray-50 px-3 py-2 text-gray-600"
@@ -104,7 +108,7 @@ import useResizer from '@/utils/resizer'
 
 const query = inject('query')
 
-const formattedResult = computed(() => query.results.formattedData)
+const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
 	return isEmptyObj(query.doc.columns) ? query.columns.options : query.doc.columns
