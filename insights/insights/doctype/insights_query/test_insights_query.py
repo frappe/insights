@@ -126,21 +126,26 @@ class TestInsightsQuery(FrappeTestCase):
             )
             query.append("columns", make_query_column_expression(expression))
 
-        query = frappe.get_doc(test_records[2])
-        query.data_source = self.data_source
-        for func in ["in", "not_in"]:
-            expression = make_call_expression(
-                func, make_todo_column("docstatus"), make_string(["0", "1"])
-            )
-            query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
-
     def test_three_arg_function(self):
         query = frappe.get_doc(test_records[2])
         query.data_source = self.data_source
         for func in ["between", "replace", "concat", "coalesce"]:
             expression = make_call_expression(
                 func, make_todo_column("docstatus"), make_string("0"), make_string("1")
+            )
+            query.append("columns", make_query_column_expression(expression))
+        query.save().build_and_execute()
+
+    def test_in_operator(self):
+        query = frappe.get_doc(test_records[2])
+        query.data_source = self.data_source
+        for func in ["in", "not_in"]:
+            expression = make_call_expression(
+                func,
+                make_todo_column("docstatus"),
+                make_string("0"),
+                make_string("1"),
+                make_string("2"),
             )
             query.append("columns", make_query_column_expression(expression))
         query.save().build_and_execute()

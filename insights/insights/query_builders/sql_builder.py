@@ -132,10 +132,12 @@ class Functions:
         # two arg functions
 
         if function == "in":
-            return args[0].in_(args[1])
+            # args = [column, value1, value2, ...]
+            return args[0].in_(args[1:])
 
         if function == "not_in":
-            return args[0].notin_(args[1])
+            # args = [column, value1, value2, ...]
+            return args[0].notin_(args[1:])
 
         if function == "contains":
             return args[0].like("%" + args[1] + "%")
@@ -305,7 +307,7 @@ class BinaryOperations:
 
 
 class ExpressionProcessor:
-    def __init__(self, builder):
+    def __init__(self, builder: "SQLQueryBuilder"):
         self.builder = builder
 
     def process(self, expression):
