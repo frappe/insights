@@ -48,8 +48,10 @@ export function useQuery(name) {
 	query.charts = computed(() => query.getCharts.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
 	query.execute = async () => {
-		query.debouncedRun(null, {
+		return query.debouncedRun(null, {
 			onSuccess() {
+				// TODO: fix: query.doc.status should have been updated on the server, but it doesn't
+				query.doc.status = 'Execution Successful'
 				createToast({
 					appearance: 'success',
 					title: 'Execution Successful',
