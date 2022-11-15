@@ -22,7 +22,7 @@ from sqlalchemy.sql import and_, case, func, or_, text
 
 class Aggregations:
     @classmethod
-    def apply(cls, aggregation, column=None):
+    def apply(cls, aggregation: str, column=None):
         if not aggregation:
             return column
         if aggregation == "Group By":
@@ -182,7 +182,7 @@ class Functions:
             return case(conditions, else_=default)
 
         if function == "timespan":
-            timespan = args[0].lower().strip()
+            timespan = args[1].lower().strip()
             if "current" not in timespan and "last" not in timespan:
                 raise Exception(f"Invalid timespan: {timespan}")
 
@@ -192,7 +192,7 @@ class Functions:
                 [span, interval, interval_type] = timespan.split(" ")
                 timespan = span + " n " + interval_type
                 date_range = get_date_range(timespan, n=int(interval))
-            return args[1].between(
+            return args[0].between(
                 get_date_str(date_range[0]),
                 get_date_str(date_range[1]),
             )
