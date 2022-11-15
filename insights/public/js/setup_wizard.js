@@ -83,6 +83,7 @@ insights.setup.slides_settings = [
 				slide.get_field("db_name").df.reqd = 0;
 				slide.get_field("db_username").df.reqd = 0;
 				slide.get_field("db_password").df.reqd = 0;
+				slide.get_field("db_host").df.reqd = 0;
 			});
 		},
 		show_success_message(message, slide) {
