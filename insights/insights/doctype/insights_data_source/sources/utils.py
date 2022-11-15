@@ -27,7 +27,7 @@ def get_sqlalchemy_engine(**kwargs) -> Engine:
     password = kwargs.pop("password")
     database = kwargs.pop("database")
     host = kwargs.pop("host", "localhost")
-    port = kwargs.pop("port", 3306)
+    port = kwargs.pop("port") or 3306
     extra_params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
 
     uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
