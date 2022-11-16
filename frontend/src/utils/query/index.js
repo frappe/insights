@@ -50,8 +50,6 @@ export function useQuery(name) {
 	query.execute = () => {
 		return query.debouncedRun(null, {
 			onSuccess() {
-				// TODO: fix: query.doc.status should have been updated on the server, but it doesn't
-				query.doc.status = 'Execution Successful'
 				createToast({
 					appearance: 'success',
 					title: 'Execution Successful',

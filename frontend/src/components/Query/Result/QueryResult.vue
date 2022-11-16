@@ -80,7 +80,7 @@
 			</div>
 			<!-- If Pending Execution -->
 			<div
-				v-if="needsExecution"
+				v-if="query.run.loading || needsExecution"
 				class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
 			>
 				<Button
