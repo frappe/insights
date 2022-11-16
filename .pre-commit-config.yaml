@@ -29,6 +29,11 @@ repos:
         types: [file]
         types_or: [javascript, vue, html]
 
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.9.1
+    hooks:
+      - id: isort
+
 ci:
   autoupdate_schedule: weekly
   skip: []

@@ -1,4 +1,5 @@
 import frappe
+
 from insights.insights.doctype.insights_data_source.sources.query_store import (
     sync_query_store,
 )

@@ -10,8 +10,8 @@ from frappe.model.document import Document
 from frappe.utils import cstr, flt
 from sqlparse import format as format_sql
 
-from .insights_query_client import InsightsQueryClient
 from ..insights_data_source.sources.query_store import sync_query_store
+from .insights_query_client import InsightsQueryClient
 
 DEFAULT_FILTERS = dumps(
     {

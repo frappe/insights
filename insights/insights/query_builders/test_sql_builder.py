@@ -36,7 +36,7 @@ class TestSQLBuilder(unittest.TestCase):
         self.assertTrue(sql)
 
     def test_joins(self):
-        from sqlalchemy import column, table, select, text
+        from sqlalchemy import column, select, table, text
 
         todo = table(
             "tabToDo", column("name"), column("allocated_to"), column("reference_name")
