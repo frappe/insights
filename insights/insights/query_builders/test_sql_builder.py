@@ -9,7 +9,8 @@ from .sql_builder import SQLQueryBuilder
 
 
 class TestSQLBuilder(unittest.TestCase):
-    def test_connection_to_site_db(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         conn_args = {
             "data_source": "Test Site Connection",
             "database_name": frappe.conf.db_name,
@@ -29,11 +30,29 @@ class TestSQLBuilder(unittest.TestCase):
         self.site_db = frappe_db
 
     def test_query(self):
-        self.test_connection_to_site_db()
         builder = SQLQueryBuilder()
         doc = frappe.get_doc(TEST_QUERY)
         sql = builder.build(doc, dialect=self.site_db.engine.dialect)
         self.assertTrue(sql)
+
+    def test_joins(self):
+        from sqlalchemy import column, table, select, text
+
+        todo = table(
+            "tabToDo", column("name"), column("allocated_to"), column("reference_name")
+        )
+        user = table("tabUser", column("name"), column("full_name"))
+        comment = table("tabComment", column("name"))
+
+        query = (
+            select(text("count(*)"))
+            .select_from(todo)
+            .join(user, todo.c.allocated_to == user.c.name)
+            .outerjoin(comment, todo.c.reference_name == comment.c.name)
+            .where(user.c.full_name == "Administrator")
+        )
+
+        self.site_db.execute_query(query)
 
 
 TEST_QUERY = {

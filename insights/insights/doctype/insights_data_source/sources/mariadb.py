@@ -137,7 +137,7 @@ class MariaDB(BaseDatabase):
         return self.query_builder.build(query, dialect=self.engine.dialect)
 
     def execute_query(self, query, pluck=False):
-        if not query:
+        if query is None:
             return []
         with self.engine.connect() as connection:
             result = connection.execute(query).fetchall()

@@ -102,7 +102,7 @@ class SQLiteDB(BaseDatabase):
         return self.query_builder.build(query, dialect=self.engine.dialect)
 
     def execute_query(self, query, pluck=False):
-        if not query:
+        if query is None:
             return []
         self.validate_query(query)
         with self.engine.connect() as connection:
