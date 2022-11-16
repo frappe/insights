@@ -28,9 +28,10 @@
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
-						<p class="flex-1">Title</p>
-						<p class="flex-1">Tables</p>
+						<p class="flex-1 flex-grow-[2]">Title</p>
+						<p class="flex-1 flex-grow-[2]">Tables</p>
 						<p class="flex-1">Data Source</p>
+						<p class="flex-1">ID</p>
 						<p class="flex-1 text-right">Last Modified</p>
 					</div>
 					<ul
@@ -50,17 +51,20 @@
 									<Input type="checkbox" class="rounded-md border-gray-400" />
 								</p>
 								<p
-									class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
+									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
 								>
 									{{ query.title }}
 								</p>
 								<p
-									class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
+									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
 								>
 									{{ query.tables?.replace(/,/g, ', ') }}
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
 									{{ query.data_source }}
+								</p>
+								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+									{{ query.name }}
 								</p>
 								<p
 									class="flex-1 text-right text-sm text-gray-500"
