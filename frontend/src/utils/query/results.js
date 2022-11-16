@@ -66,9 +66,11 @@ export function getFormattedResult(data, columns) {
 				if (FIELDTYPES.NUMBER.includes(columnType)) {
 					if (columnType == 'Integer') {
 						cell = parseInt(cell)
+						cell = isNaN(cell) ? 0 : cell
 					}
 					if (columnType == 'Decimal') {
 						cell = parseFloat(cell)
+						cell = isNaN(cell) ? 0 : cell
 					}
 				}
 				const formatOption = _columns[idx]?.format_option

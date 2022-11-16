@@ -47,7 +47,7 @@ export function useQuery(name) {
 	query.getCharts.submit()
 	query.charts = computed(() => query.getCharts.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
-	query.execute = async () => {
+	query.execute = () => {
 		return query.debouncedRun(null, {
 			onSuccess() {
 				// TODO: fix: query.doc.status should have been updated on the server, but it doesn't

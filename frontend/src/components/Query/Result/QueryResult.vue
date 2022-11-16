@@ -64,8 +64,8 @@
 									:class="{ 'text-right': isNumberColumn[j] }"
 								>
 									{{
-										isNumberColumn[j]
-											? Number(cell).toLocaleString()
+										typeof cell == 'number'
+											? cell.toLocaleString()
 											: ellipsis(cell, 100)
 									}}
 								</td>
