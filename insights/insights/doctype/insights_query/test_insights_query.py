@@ -167,8 +167,8 @@ class TestInsightsQuery(FrappeTestCase):
         query.data_source = self.data_source
         expression = make_call_expression(
             "timespan",
-            make_string("Last 1 Years"),
             make_todo_column("date"),
+            make_string("Last 1 Years"),
         )
         query.append("columns", make_query_column_expression(expression))
         query.save().build_and_execute()
