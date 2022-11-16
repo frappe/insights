@@ -26,3 +26,5 @@ execute:frappe.db.sql("update `tabInsights Table Import` set `data_source`='Site
 insights.patches.replace_demo_data_source
 execute:frappe.db.sql("update `tabInsights Query` set `status`='Pending Execution'")
 execute:frappe.db.sql("update `tabInsights Query Column` set `format_option`='{}' where `type` not in ('Date', 'Datetime', 'Time')")
+execute:frappe.db.sql("""update `tabInsights Query Table` set `join`=replace(`join`, '"Right"', '"Inner"') where `join` like '%Right%'""")
+execute:frappe.db.sql("""update `tabInsights Query Table` set `join`=replace(`join`, '"right"', '"inner"') where `join` like '%right%'""")

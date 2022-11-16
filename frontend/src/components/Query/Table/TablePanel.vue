@@ -164,8 +164,6 @@ watch(editTable, (table) => {
 const joinTypeOptions = ref([
 	{ label: 'Inner', value: 'inner' },
 	{ label: 'Left', value: 'left' },
-	{ label: 'Right', value: 'right' },
-	{ label: 'Full', value: 'full_outer' },
 ])
 const joinOptions = computed(() => query.fetchJoinOptions.data?.message) // is computed
 const joinTableOptions = computed(() => {

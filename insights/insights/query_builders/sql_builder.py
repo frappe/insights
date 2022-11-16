@@ -485,7 +485,7 @@ class SQLQueryBuilder:
         else:
             sql = select(*self._columns)
 
-        sql = sql.select_from(self._tables[0])
+        sql = sql.select_from(*self._tables)
 
         if self._joins:
             sql = self.do_join(sql)
