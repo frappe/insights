@@ -84,17 +84,6 @@ class QueryStore(SQLiteDB):
             self.table_factory.sync_tables(connection, tables, force=force)
 
 
-def make_column_def(column, type):
-    from insights.constants import COLUMN_TYPES
-
-    if not column or not type:
-        frappe.throw("Column name and type are required")
-
-    d = COLUMN_TYPES.get(type)
-    column_type = f"{d[0]}({d[1]})" if d[1] else d[0]
-    return f"`{column}` {column_type}"
-
-
 def sync_query_store(tables=None, force=False):
     query_store = QueryStore()
     query_store.sync_tables(tables, force)
