@@ -283,6 +283,13 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def run(self):
+        if self.data_source == "Query Store":
+            tables = (t.table for t in self.tables)
+            subqueries = frappe.db.get_all(
+                "Insights Query", {"name": ["in", tables]}, pluck="name"
+            )
+            for subquery in subqueries:
+                frappe.get_doc("Insights Query", subquery).run()
         self.build_and_execute()
         self.save()
 
