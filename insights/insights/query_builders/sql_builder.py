@@ -475,15 +475,20 @@ class SQLQueryBuilder:
         self._filters = self.expression_processor.process(filters)
 
     def make_query(self):
+        if not self._tables:
+            return
+
         sql = None
-        if not self._columns and self._tables:
+        if not self._columns:
             # if no columns, then select * from table
-            sql = select(text("*")).select_from(*self._tables)
-        if self._columns:
-            sql = select(*self._columns).select_from(*self._tables)
+            sql = select(text("*"))
+        else:
+            sql = select(*self._columns)
+
+        sql = sql.select_from(self._tables[0])
 
         if self._joins:
-            self.do_join(sql)
+            sql = self.do_join(sql)
         if self._group_by_columns:
             sql = sql.group_by(*self._group_by_columns)
         if self._order_by_columns:
@@ -496,36 +501,17 @@ class SQLQueryBuilder:
         return self.compile(sql)
 
     def do_join(self, sql):
-        for _table in self._tables:
-            joins = [d for d in self._joins if d.left == _table]
-            for join in joins:
-                if join.type == "inner":
-                    sql = sql.join_from(
-                        join.left,
-                        join.right,
-                        join.left_key == join.right_key,
-                    )
-                elif join.type == "left":
-                    sql = sql.join_from(
-                        join.left,
-                        join.right,
-                        join.left_key == join.right_key,
-                        isouter=True,
-                    )
-                elif join.type == "right":
-                    sql = sql.join_from(
-                        join.right,
-                        join.left,
-                        join.right_key == join.left_key,
-                        isouter=True,
-                    )
-                elif join.type == "full":
-                    sql = sql.join_from(
-                        join.left,
-                        join.right,
-                        join.left_key == join.right_key,
-                        full=True,
-                    )
+        inner_joins = [j for j in self._joins if j.type == "inner"]
+        left_joins = [j for j in self._joins if j.type == "left"]
+        # TODO: add right and full joins
+        # right_joins = [j for j in self._joins if j.type == "right"]
+
+        for join in inner_joins:
+            sql = sql.join(join.right, join.left_key == join.right_key)
+        for join in left_joins:
+            sql = sql.join(join.right, join.left_key == join.right_key, isouter=True)
+
+        return sql
 
     def compile(self, query):
         compile_args = {"compile_kwargs": {"literal_binds": True}}

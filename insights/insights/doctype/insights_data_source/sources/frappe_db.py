@@ -306,6 +306,8 @@ class FrappeDB(BaseDatabase):
         return self.query_builder.build(query, dialect=self.engine.dialect)
 
     def execute_query(self, query, pluck=False):
+        if not query:
+            return []
         with self.engine.connect() as connection:
             result = connection.execute(query).fetchall()
             return [r[0] for r in result] if pluck else [list(r) for r in result]
