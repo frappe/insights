@@ -11,6 +11,7 @@
 		<template #main>
 			<div class="flex flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
+					<Input type="text" placeholder="ID" v-model="filter.name" />
 					<Input type="text" placeholder="Title" v-model="filter.title" />
 					<Input
 						type="select"
@@ -164,16 +165,18 @@ watch(
 )
 
 const filter = reactive({
+	name: '',
 	title: '',
 	dataSource: '',
 })
 const queries = computed(() => {
 	if (!getQueries.data) return []
-	if (!filter.title && !filter.dataSource) {
+	if (!filter.name && !filter.title && !filter.dataSource) {
 		return getQueries.data
 	}
 	return getQueries.data.filter((query) => {
 		return (
+			query.name.toLowerCase().includes(filter.name.toLowerCase()) &&
 			query.title.toLowerCase().includes(filter.title.toLowerCase()) &&
 			query.data_source.toLowerCase().includes(filter.dataSource.toLowerCase())
 		)

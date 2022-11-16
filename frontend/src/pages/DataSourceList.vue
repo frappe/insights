@@ -13,7 +13,7 @@
 		<template #main>
 			<div class="flex flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
-					<Input type="text" placeholder="Status" />
+					<Input type="select" :options="['Active', 'Inactive']" />
 				</div>
 				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
 					<!-- List Header -->
