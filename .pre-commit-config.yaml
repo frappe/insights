@@ -33,6 +33,7 @@ repos:
     rev: 5.9.1
     hooks:
       - id: isort
+        args: [--profile, black]
 
 ci:
   autoupdate_schedule: weekly
