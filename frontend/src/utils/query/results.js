@@ -1,29 +1,15 @@
-import { computed } from 'vue'
+import { computed, unref } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { FIELDTYPES } from '@/utils'
+import { getFormattedDate } from '../format'
 
 export function useQueryResults(query) {
 	const maxRows = 1000
 	const data = computed(() => {
 		return safeJSONParse(query.doc.result, []).slice(0, maxRows)
 	})
-	const formattedData = computed(() => {
-		return data.value?.slice(1).map((row) => {
-			return row.map((cell, idx) => {
-				const column = query.columns.data[idx] || {}
-				if (FIELDTYPES.NUMBER.includes(column.type)) {
-					if (column.type == 'Integer') {
-						cell = parseInt(cell)
-					}
-					cell = Number(cell).toLocaleString()
-				}
-				if (column.format_option) {
-					cell = applyColumnFormatOption(column, cell)
-				}
-				return cell
-			})
-		})
-	})
+	const columns = computed(() => query.columns.data)
+	const formattedResult = getFormattedResult(data, columns)
 
 	function getColumnValues(column) {
 		const columnIdx = query.columns.data.findIndex((c) =>
@@ -45,36 +31,54 @@ export function useQueryResults(query) {
 
 	return {
 		data,
-		formattedData,
+		formattedResult,
 		getColumnValues,
 		getRows,
 	}
 }
 
-function applyColumnFormatOption(column, cell) {
-	if (column.format_option.prefix) {
-		return `${column.format_option.prefix} ${cell}`
+function applyColumnFormatOption(formatOption, cell) {
+	if (formatOption.prefix) {
+		return `${formatOption.prefix} ${cell}`
 	}
-	if (column.format_option.suffix) {
-		return `${cell} ${column.format_option.suffix}`
+	if (formatOption.suffix) {
+		return `${cell} ${formatOption.suffix}`
+	}
+	if (formatOption.date_format) {
+		return getFormattedDate(cell, formatOption.date_format)
 	}
 	return cell
 }
 
-function formatCells() {
-	return this.data.map((row) => {
-		return row.map((cell, idx) => {
-			const column = this.columns[idx]
-			if (!column) {
+export function getFormattedResult(data, columns) {
+	return computed(() => {
+		const _data = unref(data)
+		const _columns = unref(columns)
+
+		if (!_data || _data.length == 0) return []
+
+		const columnTypes = _data[0].map((c) => c.split('::')[1])
+
+		return _data.map((row, index) => {
+			if (index == 0) return row // header row
+			return row.map((cell, idx) => {
+				const columnType = columnTypes[idx]
+				if (FIELDTYPES.NUMBER.includes(columnType)) {
+					if (columnType == 'Integer') {
+						cell = parseInt(cell)
+						cell = isNaN(cell) ? 0 : cell
+					}
+					if (columnType == 'Decimal') {
+						cell = parseFloat(cell)
+						cell = isNaN(cell) ? 0 : cell
+					}
+				}
+				const formatOption = _columns[idx]?.format_option
+				if (formatOption) {
+					cell = applyColumnFormatOption(formatOption, cell)
+				}
 				return cell
-			}
-			if (FIELDTYPES.NUMBER.includes(column.type)) {
-				cell = Number(cell).toLocaleString()
-			}
-			if (column.format_option) {
-				cell = this.applyColumnFormatOption(column, cell)
-			}
-			return cell
+			})
 		})
 	})
 }

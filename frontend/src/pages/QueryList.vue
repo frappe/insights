@@ -11,6 +11,7 @@
 		<template #main>
 			<div class="flex flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
+					<Input type="text" placeholder="ID" v-model="filter.name" />
 					<Input type="text" placeholder="Title" v-model="filter.title" />
 					<Input
 						type="select"
@@ -28,9 +29,10 @@
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
-						<p class="flex-1">Title</p>
-						<p class="flex-1">Tables</p>
+						<p class="flex-1 flex-grow-[2]">Title</p>
+						<p class="flex-1 flex-grow-[2]">Tables</p>
 						<p class="flex-1">Data Source</p>
+						<p class="flex-1">ID</p>
 						<p class="flex-1 text-right">Last Modified</p>
 					</div>
 					<ul
@@ -50,17 +52,20 @@
 									<Input type="checkbox" class="rounded-md border-gray-400" />
 								</p>
 								<p
-									class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
+									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
 								>
 									{{ query.title }}
 								</p>
 								<p
-									class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
+									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
 								>
 									{{ query.tables?.replace(/,/g, ', ') }}
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
 									{{ query.data_source }}
+								</p>
+								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+									{{ query.name }}
 								</p>
 								<p
 									class="flex-1 text-right text-sm text-gray-500"
@@ -132,9 +137,8 @@
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
-import moment from 'moment'
 import { useRouter } from 'vue-router'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, inject } from 'vue'
 import { createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
 
@@ -147,28 +151,32 @@ const newQuery = reactive({
 
 const getQueries = createResource('insights.api.get_queries')
 getQueries.fetch()
+
+const dayjs = inject('$dayjs')
 watch(
 	() => getQueries.data,
 	(data) => {
 		if (data && data.length) {
 			getQueries.data.forEach((query) => {
-				query.modified_from_now = moment(query.modified).fromNow()
+				query.modified_from_now = dayjs(query.modified).fromNow()
 			})
 		}
 	}
 )
 
 const filter = reactive({
+	name: '',
 	title: '',
 	dataSource: '',
 })
 const queries = computed(() => {
 	if (!getQueries.data) return []
-	if (!filter.title && !filter.dataSource) {
+	if (!filter.name && !filter.title && !filter.dataSource) {
 		return getQueries.data
 	}
 	return getQueries.data.filter((query) => {
 		return (
+			query.name.toLowerCase().includes(filter.name.toLowerCase()) &&
 			query.title.toLowerCase().includes(filter.title.toLowerCase()) &&
 			query.data_source.toLowerCase().includes(filter.dataSource.toLowerCase())
 		)

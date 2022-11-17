@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+
 from insights.setup.demo import setup
 
 

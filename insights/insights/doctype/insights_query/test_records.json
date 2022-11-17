@@ -33,7 +33,7 @@
         "table": "tabToDo",
         "table_label": "ToDo",
         "aggregation": "Count",
-        "column": "count",
+        "column": "*",
         "doctype": "Insights Query Column"
       }
     ],
@@ -66,7 +66,7 @@
         "table": "tabToDo",
         "table_label": "ToDo",
         "aggregation": "Count",
-        "column": "count",
+        "column": "*",
         "doctype": "Insights Query Column"
       }
     ],
@@ -75,6 +75,30 @@
         "label": "ToDo",
         "table": "tabToDo",
         "doctype": "Insights Query Table"
+      }
+    ]
+  },
+  {
+    "title": "Test Query",
+    "data_source": "Site DB",
+    "doctype": "Insights Query",
+    "tables": [
+      {
+        "label": "ToDo",
+        "table": "tabToDo",
+        "doctype": "Insights Query Table"
+      }
+    ],
+    "columns": [
+      {
+        "label": "Name",
+        "column": "name",
+        "type": "String",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Group By",
+        "format_option": "{}",
+        "doctype": "Insights Query Column"
       }
     ]
   }

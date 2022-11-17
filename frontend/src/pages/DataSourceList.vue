@@ -13,7 +13,7 @@
 		<template #main>
 			<div class="flex flex-1 flex-col">
 				<div class="mb-4 flex space-x-4">
-					<Input type="text" placeholder="Status" />
+					<Input type="select" :options="['Active', 'Inactive']" />
 				</div>
 				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
 					<!-- List Header -->
@@ -93,8 +93,7 @@ import BasePage from '@/components/BasePage.vue'
 import { Badge, createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
 
-import moment from 'moment'
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 
 const new_dialog = ref(false)
 
@@ -104,9 +103,10 @@ const getDataSources = createResource({
 })
 getDataSources.fetch()
 
+const dayjs = inject('$dayjs')
 const dataSources = computed(() => {
 	return getDataSources.data.map((source) => {
-		source.modified_from_now = moment(source.modified).fromNow()
+		source.modified_from_now = dayjs(source.modified).fromNow()
 		return source
 	})
 })

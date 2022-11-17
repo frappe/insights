@@ -98,7 +98,7 @@ const query = inject('query')
 const chartName = query.charts[0]
 const chart = useChart({
 	chartID: chartName,
-	data: query.results.data,
+	data: query.results.formattedResult,
 })
 provide('chart', chart)
 

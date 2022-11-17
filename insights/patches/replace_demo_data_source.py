@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+
 from insights.setup.demo import DemoDataFactory
 
 
@@ -42,9 +43,10 @@ def execute():
         .run(pluck="name")
     )
 
-    (
-        frappe.qb.update(InsightsQuery)
-        .set(InsightsQuery.data_source, "Demo Data")
-        .where(InsightsQuery.name.isin(queries))
-        .run()
-    )
+    if queries:
+        (
+            frappe.qb.update(InsightsQuery)
+            .set(InsightsQuery.data_source, "Demo Data")
+            .where(InsightsQuery.name.isin(queries))
+            .run()
+        )

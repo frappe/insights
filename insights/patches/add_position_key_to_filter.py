@@ -1,4 +1,5 @@
 import json
+
 import frappe
 from frappe.utils import cstr
 

@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
 )
@@ -16,10 +15,10 @@ class BaseDatabase:
     def test_connection(self):
         raise NotImplementedError
 
-    def build_query(self, query: InsightsQuery):
+    def build_query(self, query):
         raise NotImplementedError
 
-    def run_query(self, query: InsightsQuery):
+    def run_query(self, query):
         return self.execute_query(self.build_query(query))
 
     def execute_query(self, query: str):

@@ -14,6 +14,7 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import utils from './utils'
 import auth from './utils/auth'
 import { createToast } from './utils/toasts'
+import dayjs from './utils/dayjs'
 
 export function registerGlobalComponents(app) {
 	app.component('Input', Input)
@@ -33,4 +34,12 @@ export function registerControllers(app) {
 	app.provide('$auth', auth)
 	app.provide('$notify', createToast)
 	app.provide('$socket', app.config.globalProperties.$socket)
+	app.provide('$dayjs', dayjs)
+
+	if (import.meta.env.DEV) {
+		window.$utils = utils
+		window.$auth = auth
+		window.$notify = createToast
+		window.$dayjs = dayjs
+	}
 }

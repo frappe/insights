@@ -2,8 +2,10 @@
 # See license.txt
 
 import json
-import frappe
 import unittest
+
+import frappe
+
 from insights.tests.utils import create_insights_query
 
 test_dependencies = ["Insights Data Source", "Insights Table"]

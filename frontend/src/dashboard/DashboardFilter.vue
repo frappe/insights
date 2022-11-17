@@ -19,6 +19,23 @@ const filter = reactive({
 	filter_value: props.item.filter_value,
 })
 
+watch(
+	() => filter.filter_value,
+	() => {
+		dashboard.update_filter
+			.submit({
+				filter: {
+					name: props.item.name,
+					...filter,
+				},
+			})
+			.then(dashboard.refreshItems)
+			.catch((e) => {
+				console.error(e)
+			})
+	}
+)
+
 const showEditFilterDialog = ref(false)
 function editFilter() {
 	dashboard.update_filter

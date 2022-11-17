@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import os
+
 import frappe
 
 
@@ -255,7 +256,7 @@ class DemoDataFactory:
             table_name = frappe.scrub(table)
             index_name = f"idx_{table_name}_{'_'.join(indexes[table])}"
             columns = ", ".join([f"`{c}`" for c in indexes[table]])
-            self.data_source.db.execute_query(
+            self.data_source.db.engine.execute(
                 f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})"
             )
 

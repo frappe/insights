@@ -1,12 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from json import dumps
 from copy import deepcopy
-from pandas import DataFrame
+from json import dumps
 
 import frappe
-from frappe.utils import cstr, cint
+from frappe.utils import cint, cstr
+from pandas import DataFrame
 
 from insights.api import get_tables
 
@@ -283,7 +283,15 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def run(self):
+        if self.data_source == "Query Store":
+            tables = (t.table for t in self.tables)
+            subqueries = frappe.db.get_all(
+                "Insights Query", {"name": ["in", tables]}, pluck="name"
+            )
+            for subquery in subqueries:
+                frappe.get_doc("Insights Query", subquery).run()
         self.build_and_execute()
+        self.skip_before_save = True
         self.save()
 
     @frappe.whitelist()

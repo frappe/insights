@@ -1,7 +1,6 @@
-exclude: 'node_modules|.git'
+exclude: "node_modules|.git"
 default_stages: [commit]
 fail_fast: false
-
 
 repos:
   - repo: https://github.com/psf/black
@@ -10,8 +9,8 @@ repos:
       - id: black
         types_or: [python, pyi]
 
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
     hooks:
       - id: flake8
         additional_dependencies:
@@ -30,7 +29,13 @@ repos:
         types: [file]
         types_or: [javascript, vue, html]
 
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.9.1
+    hooks:
+      - id: isort
+        args: [--profile, black]
+
 ci:
-    autoupdate_schedule: weekly
-    skip: []
-    submodules: false
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

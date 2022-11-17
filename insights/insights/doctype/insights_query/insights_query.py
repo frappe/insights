@@ -1,17 +1,17 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
 import time
+from functools import cached_property
 from json import dumps
-from sqlparse import format as format_sql
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr, flt
+from sqlparse import format as format_sql
 
+from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_query_client import InsightsQueryClient
-
 
 DEFAULT_FILTERS = dumps(
     {
@@ -73,8 +73,9 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def on_update(self):
         self.create_default_chart()
-        self.update_query_store()
+        self.sync_query_store()
         self.update_link_docs_title()
+        # TODO: update result columns on update
 
     def on_trash(self):
         self.delete_linked_charts()
@@ -100,8 +101,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.last_execution = frappe.utils.now()
         self.result = dumps(results, default=cstr)
         self.status = "Execution Successful"
-
-        self.update_query_store()
 
     def run_with_filters(self, filter_conditions):
         filters = frappe.parse_json(self.filters)
@@ -161,12 +160,9 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.transform_result = None
         self.status = "Execution Successful"
 
-    def update_query_store(self):
-        if self.is_stored or self.data_source == "Query Store":
-            query_store = frappe.get_doc("Insights Data Source", "Query Store")
-            query_store.sync_tables(queries=[self.name])
-        elif tablename := frappe.db.exists("Insights Table", {"table": self.name}):
-            frappe.delete_doc("Insights Table", tablename)
+    def sync_query_store(self):
+        if self.is_stored:
+            sync_query_store(tables=[self.name], force=True)
 
     def get_columns(self):
         return self.columns or self.fetch_columns()
