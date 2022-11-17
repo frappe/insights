@@ -21,9 +21,8 @@ class InsightsDashboard(Document):
         )
 
     @frappe.whitelist()
-    def add_item(self, item, layout=None):
-        if not layout:
-            layout = {"w": 8, "h": 8}
+    def add_item(self, item):
+        layout = get_dashboard_item_size(item)
         self.append(
             "items",
             {
@@ -94,7 +93,10 @@ class InsightsDashboard(Document):
 
     @frappe.whitelist()
     def get_chart_data(self, chart):
-        row = self.get("items", {"chart": chart})[0]
+        row = self.get("items", {"chart": chart})
+        if not row:
+            return
+        row = row[0]
         if chart_filters := frappe.parse_json(row.chart_filters):
             query = frappe.get_doc("Insights Query", row.query)
             filter_conditions = []
@@ -212,3 +214,16 @@ def make_args_for_call_expression(operator_function, filter):
             "value": filter.filter_value,
         }
     ]
+
+
+def get_dashboard_item_size(item):
+    item = frappe._dict(item)
+    if item.item_type == "Filter":
+        return {"w": 4, "h": 3, "x": 0, "y": 0}
+    if item.item_type == "Chart":
+        chart_type = frappe.db.get_value("Insights Query Chart", item.chart, "type")
+        if chart_type == "Number":
+            return {"w": 4, "h": 4, "x": 0, "y": 0}
+        if chart_type == "Progress":
+            return {"w": 6, "h": 5, "x": 0, "y": 0}
+        return {"w": 12, "h": 9, "x": 0, "y": 0}

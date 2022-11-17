@@ -18,12 +18,11 @@ class InsightsQueryChart(Document):
         self.save()
 
     @frappe.whitelist()
-    def add_to_dashboard(self, dashboard, layout=None):
+    def add_to_dashboard(self, dashboard):
         dashboard_doc = frappe.get_doc("Insights Dashboard", dashboard)
         dashboard_doc.add_item(
             {
                 "item_type": "Chart",
                 "chart": self.name,
-            },
-            layout,
+            }
         )

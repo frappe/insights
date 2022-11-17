@@ -164,6 +164,7 @@ function addItem() {
 		filter_type: 'String', // default
 		filter_operator: 'equals', // default
 	}
+	newChart.value = {}
 }
 
 const pageMeta = computed(() => {

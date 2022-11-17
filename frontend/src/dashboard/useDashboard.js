@@ -20,7 +20,7 @@ export default function useDashboard(dashboardName) {
 
 	// methods
 	dashboard.updateNewChartOptions = () => {
-		dashboard.get_chart_options.submit()
+		return dashboard.get_chart_options.submit()
 	}
 	dashboard.newChartOptions = computed(() =>
 		dashboard.get_chart_options.data?.message?.map((v) => {
@@ -48,12 +48,8 @@ export default function useDashboard(dashboardName) {
 			})
 	}
 	dashboard.addItem = (item) => {
-		let layout = { w: 8, h: 8, x: 0, y: 0 }
-		if (item.item_type === 'Filter') {
-			layout = { w: 4, h: 3, x: 0, y: 0 }
-		}
-		return dashboard.add_item.submit({ item, layout }).then(() => {
-			dashboard.updateNewChartOptions()
+		return dashboard.add_item.submit({ item }).then(() => {
+			dashboard.updateNewChartOptions().then(() => (dashboard.editingLayout = false))
 		})
 	}
 
@@ -83,6 +79,7 @@ export default function useDashboard(dashboardName) {
 	}
 
 	dashboard.refreshItems = async () => {
+		dashboard.editingLayout = false
 		dashboard.refreshing = true
 		// hack: update the charts
 		await dashboard.refresh_items.submit()
