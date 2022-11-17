@@ -184,7 +184,7 @@ function convertIntoCallExpression(simpleFilter) {
 	const { column, operator, value } = simpleFilter
 
 	const operatorFunction =
-		operator.value == 'is' ? (value.value == 'set' ? 'is_not_set' : 'is_set') : operator.value
+		operator.value == 'is' ? (value.value == 'set' ? 'is_set' : 'is_not_set') : operator.value
 
 	function makeArgs() {
 		if (operator.value == 'is') return []
@@ -228,8 +228,8 @@ export function convertIntoExpression(simpleFilter) {
 }
 
 function makeValueFromCallFunction(expression) {
-	if (expression.function == 'is_set') return ['Not Set', 'Not Set']
-	if (expression.function == 'is_not_set') return ['Set', 'Set']
+	if (expression.function == 'is_set') return ['Set', 'Set']
+	if (expression.function == 'is_not_set') return ['Not Set', 'Not Set']
 	if (expression.function == 'between') {
 		const value = expression.arguments[1].value + ', ' + expression.arguments[2].value
 		return [value, value]
