@@ -26,7 +26,7 @@ function useTableChart() {
 		const columns = queryChart.config.columns.map((c) => c.label)
 		const rows = getRows(columns, queryChart.data)
 		const title = queryChart.title
-		return { title, columns, rows }
+		return { title, columns, rows, options: queryChart.config.options }
 	}
 
 	return chart
