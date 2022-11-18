@@ -75,7 +75,7 @@ export function getFormattedResult(data, columns) {
 				}
 				const formatOption = _columns[idx]?.format_option
 				if (formatOption) {
-					cell = applyColumnFormatOption(formatOption, cell)
+					cell = applyColumnFormatOption(safeJSONParse(formatOption), cell)
 				}
 				return cell
 			})
