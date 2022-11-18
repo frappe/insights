@@ -38,6 +38,7 @@ export function useQueryResults(query) {
 }
 
 function applyColumnFormatOption(formatOption, cell) {
+	if (!formatOption) return cell
 	if (formatOption.prefix) {
 		return `${formatOption.prefix} ${cell}`
 	}

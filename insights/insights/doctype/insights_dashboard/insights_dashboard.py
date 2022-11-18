@@ -40,6 +40,8 @@ class InsightsDashboard(Document):
             except BaseException:
                 frappe.log_error(title="Error while refreshing dashboard item")
 
+        self.db_set("last_updated_on", frappe.utils.now())
+
     @frappe.whitelist()
     def remove_item(self, item):
         for row in self.items:
