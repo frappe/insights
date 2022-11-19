@@ -102,6 +102,9 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.result = dumps(results, default=cstr)
         self.status = "Execution Successful"
 
+        if self.transforms:
+            self.apply_transform()
+
     def run_with_filters(self, filter_conditions):
         filters = frappe.parse_json(self.filters)
         filters.conditions.extend(filter_conditions)
@@ -169,6 +172,66 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def load_result(self):
         return frappe.parse_json(self.result)
+
+    def apply_transform(self):
+        from pandas import DataFrame
+
+        for row in self.transforms:
+            if row.type == "Pivot":
+                result = frappe.parse_json(self.result)
+                options = frappe.parse_json(row.options)
+
+                pivot_column = next(
+                    (c for c in self.columns if c.column == options.column), None
+                )
+                index_column = next(
+                    (c for c in self.columns if c.column == options.index), None
+                )
+                value_column = next(
+                    (c for c in self.columns if c.column == options.value), None
+                )
+
+                if not (pivot_column and index_column and value_column):
+                    frappe.throw("Invalid Pivot Options")
+
+                results_df = DataFrame(
+                    result[1:], columns=[d.split("::")[0] for d in result[0]]
+                )
+
+                pivot_column_values = results_df[pivot_column.label]
+                index_column_values = results_df[index_column.label]
+                value_column_values = results_df[value_column.label]
+
+                # make a dataframe for pivot table
+                pivot_df = DataFrame(
+                    {
+                        index_column.label: index_column_values,
+                        pivot_column.label: pivot_column_values,
+                        value_column.label: value_column_values,
+                    }
+                )
+
+                pivoted = pivot_df.pivot_table(
+                    index=[pivot_df.columns[0]],
+                    columns=[pivot_df.columns[1]],
+                    values=[pivot_df.columns[2]],
+                    aggfunc="sum",
+                )
+
+                pivoted.columns = pivoted.columns.droplevel(0)
+                pivoted = pivoted.reset_index()
+                pivoted.columns.name = None
+                pivoted = pivoted.fillna(0)
+
+                cols = pivoted.columns.to_list()
+                cols = [f"{cols[0]}::{index_column.type}"] + [
+                    f"{c}::{value_column.type}" for c in cols[1:]
+                ]
+                data = pivoted.values.tolist()
+
+                self.result = dumps([cols] + data, default=cstr)
+
+                break  # only process one pivot transform for now
 
 
 def format_query(query):
