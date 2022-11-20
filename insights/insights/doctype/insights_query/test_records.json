@@ -101,5 +101,48 @@
         "doctype": "Insights Query Column"
       }
     ]
+  },
+  {
+    "title": "Test Pivot Query",
+    "data_source": "Site DB",
+    "doctype": "Insights Query",
+    "tables": [
+      {
+        "label": "ToDo",
+        "table": "tabToDo",
+        "doctype": "Insights Query Table"
+      }
+    ],
+    "columns": [
+      {
+        "label": "Status",
+        "column": "status",
+        "type": "String",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Group By",
+        "format_option": "{}",
+        "doctype": "Insights Query Column"
+      },
+      {
+        "label": "Reference Type",
+        "column": "reference_type",
+        "type": "String",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Group By",
+        "format_option": "{}",
+        "doctype": "Insights Query Column"
+      },
+      {
+        "label": "Count",
+        "type": "Integer",
+        "table": "tabToDo",
+        "table_label": "ToDo",
+        "aggregation": "Count",
+        "column": "*",
+        "doctype": "Insights Query Column"
+      }
+    ]
   }
 ]

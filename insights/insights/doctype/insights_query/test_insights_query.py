@@ -68,6 +68,42 @@ class TestInsightsQuery(FrappeTestCase):
 
         self.assertEqual(len(json.loads(query.result)), 11)
 
+    def test_pivot_transform(self):
+        frappe.db.delete("ToDo")
+        reference_types = ["User", "Report", "Error Log", "Server Script"]
+        for i in range(10):
+            todo = frappe.get_doc(
+                {
+                    "doctype": "ToDo",
+                    "description": f"Test {i}",
+                    "status": "Open" if i % 2 == 0 else "Closed",
+                    "reference_type": reference_types[i % 4],
+                }
+            )
+            todo.insert()
+        frappe.db.commit()
+
+        query = frappe.get_doc(test_records[3])
+        query.data_source = self.data_source
+        query.save()
+        query.build_and_execute()
+        result = json.loads(query.result)
+        self.assertEqual(len(result), 5)
+        self.assertEqual(len(result[0]), 3)
+
+        query.add_transform(
+            "Pivot", {"index": "status", "column": "reference_type", "value": "*"}
+        )
+        result = json.loads(query.result)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result[0]), 5)
+
+
+class TestInsightsQueryBuilder(FrappeTestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.data_source = "Site DB"
+
     def test_no_arg_function(self):
         query = frappe.get_doc(test_records[2])
         query.data_source = self.data_source
@@ -236,7 +272,7 @@ def make_string(value):
     }
 
 
-class TestInsightsQueryWithSQLite(TestInsightsQuery):
+class TestInsightsQueryBuilderWithSQLite(TestInsightsQueryBuilder):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data_source = "Test SQLite DB"
