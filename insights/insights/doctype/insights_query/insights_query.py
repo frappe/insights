@@ -61,6 +61,8 @@ class InsightsQueryValidation:
             self.filters = DEFAULT_FILTERS
 
     def validate_columns(self):
+        if frappe.flags.in_test:
+            return
         # check if no duplicate labelled columns
         labels = []
         for row in self.columns:
@@ -244,7 +246,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 return [cols] + data
 
     def has_cumulative_columns(self):
-        return any("Cumulative" in c.aggregation for c in self.columns)
+        return any(
+            col.aggregation and "Cumulative" in col.aggregation
+            for col in self.get_columns()
+        )
 
     def apply_cumulative_sum(self, results):
         from pandas import DataFrame
