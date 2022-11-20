@@ -101,28 +101,29 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             self.sql = query
             self.status = "Pending Execution"
 
-    def build_and_execute(self):
-        start = time.time()
+    def fetch_results(self):
         results = list(self._data_source.run_query(query=self))
         columns = [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
         results.insert(0, columns)
+        if self.transforms:
+            results = self.apply_transform(results)
+        if self.has_cumulative_columns():
+            results = self.apply_cumulative_sum(results)
+        return results
+
+    def build_and_execute(self):
+        start = time.time()
+        results = self.fetch_results()
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
         self.result = dumps(results, default=cstr)
         self.status = "Execution Successful"
 
-        if self.transforms:
-            self.apply_transform()
-        if self.has_cumulative_columns():
-            self.apply_cumulative()
-
     def run_with_filters(self, filter_conditions):
         filters = frappe.parse_json(self.filters)
         filters.conditions.extend(filter_conditions)
         self.filters = dumps(filters, indent=2)
-        results = list(self._data_source.run_query(query=self))
-        columns = [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
-        results.insert(0, columns)
+        results = self.fetch_results()
         return results
 
     def create_default_chart(self):
@@ -184,12 +185,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def load_result(self):
         return frappe.parse_json(self.result)
 
-    def apply_transform(self):
+    def apply_transform(self, results):
         from pandas import DataFrame
 
         for row in self.transforms:
             if row.type == "Pivot":
-                result = frappe.parse_json(self.result)
+                result = frappe.parse_json(results)
                 options = frappe.parse_json(row.options)
 
                 pivot_column = next(
@@ -240,17 +241,15 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 ]
                 data = pivoted.values.tolist()
 
-                self.result = dumps([cols] + data, default=cstr)
-
-                break  # only process one pivot transform for now
+                return dumps([cols] + data, default=cstr)
 
     def has_cumulative_columns(self):
-        return any("Cumulative" in c.aggregation for c in self.get_columns())
+        return any("Cumulative" in c.aggregation for c in self.columns)
 
-    def apply_cumulative(self):
+    def apply_cumulative_sum(self, results):
         from pandas import DataFrame
 
-        result = frappe.parse_json(self.result)
+        result = frappe.parse_json(results)
         results_df = DataFrame(
             result[1:], columns=[d.split("::")[0] for d in result[0]]
         )
@@ -259,7 +258,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             if "Cumulative" in column.aggregation:
                 results_df[column.label] = results_df[column.label].cumsum()
 
-        self.result = dumps([result[0]] + results_df.values.tolist(), default=cstr)
+        return dumps([result[0]] + results_df.values.tolist(), default=cstr)
 
 
 def format_query(query):
