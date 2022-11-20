@@ -111,7 +111,7 @@ const query = inject('query')
 const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
-	return query.results.formattedResult[0].map((c) => c.split('::')[0])
+	return query.results.formattedResult[0]?.map((c) => c.split('::')[0])
 })
 const isNumberColumn = computed(() => {
 	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
