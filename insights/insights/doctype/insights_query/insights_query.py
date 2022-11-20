@@ -31,6 +31,7 @@ class InsightsQueryValidation:
         self.validate_tables()
         self.validate_limit()
         self.validate_filters()
+        self.validate_columns()
 
     def validate_tables(self):
         for row in self.tables:
@@ -58,6 +59,14 @@ class InsightsQueryValidation:
     def validate_filters(self):
         if not self.filters:
             self.filters = DEFAULT_FILTERS
+
+    def validate_columns(self):
+        # check if no duplicate labelled columns
+        labels = []
+        for row in self.columns:
+            if row.label and row.label in labels:
+                frappe.throw(f"Duplicate Column {row.label}")
+            labels.append(row.label)
 
 
 class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
@@ -104,6 +113,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
         if self.transforms:
             self.apply_transform()
+        if self.has_cumulative_columns():
+            self.apply_cumulative()
 
     def run_with_filters(self, filter_conditions):
         filters = frappe.parse_json(self.filters)
@@ -232,6 +243,23 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 self.result = dumps([cols] + data, default=cstr)
 
                 break  # only process one pivot transform for now
+
+    def has_cumulative_columns(self):
+        return any("Cumulative" in c.aggregation for c in self.get_columns())
+
+    def apply_cumulative(self):
+        from pandas import DataFrame
+
+        result = frappe.parse_json(self.result)
+        results_df = DataFrame(
+            result[1:], columns=[d.split("::")[0] for d in result[0]]
+        )
+
+        for column in self.columns:
+            if "Cumulative" in column.aggregation:
+                results_df[column.label] = results_df[column.label].cumsum()
+
+        self.result = dumps([result[0]] + results_df.values.tolist(), default=cstr)
 
 
 def format_query(query):

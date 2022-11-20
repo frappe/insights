@@ -75,6 +75,14 @@ const typeOptions = ref([
 		label: 'Max of',
 		value: 'Max',
 	},
+	{
+		label: 'Cumulative Count',
+		value: 'Cumulative Count',
+	},
+	{
+		label: 'Cumulative Sum of',
+		value: 'Cumulative Sum',
+	},
 ])
 const metric = reactive({
 	// since props.column comes from doc.columns, it doesn't have value property
@@ -88,7 +96,7 @@ const metric = reactive({
 const row_name = ref(props.column.name)
 
 const columnNeeded = computed(() => {
-	return !isEmptyObj(metric.type) && metric.type.value !== 'Count'
+	return !isEmptyObj(metric.type) && !metric.type.value.includes('Count')
 })
 const addDisabled = computed(() => {
 	return (
@@ -103,7 +111,13 @@ const filteredColumns = computed(() => {
 	if (isEmptyObj(metric.type)) {
 		return []
 	}
-	if (metric.type.value === 'Sum' || metric.type.value === 'Avg') {
+	if (
+		metric.type.value === 'Sum' ||
+		metric.type.value === 'Avg' ||
+		metric.type.value === 'Min' ||
+		metric.type.value === 'Max' ||
+		metric.type.value === 'Cumulative Sum'
+	) {
 		return columnOptions?.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	}
 })

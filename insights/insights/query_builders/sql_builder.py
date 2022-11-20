@@ -29,7 +29,7 @@ class Aggregations:
             return column
 
         agg_lower = aggregation.lower()
-        if agg_lower == "sum":
+        if agg_lower == "sum" or agg_lower == "cumulative sum":
             return func.sum(column)
         if agg_lower == "min":
             return func.min(column)
@@ -37,7 +37,7 @@ class Aggregations:
             return func.max(column)
         if agg_lower == "avg":
             return func.avg(column)
-        if agg_lower == "count":
+        if agg_lower == "count" or agg_lower == "cumulative count":
             return func.count(text("*"))
 
         raise NotImplementedError(f"Aggregation {aggregation} not implemented")
