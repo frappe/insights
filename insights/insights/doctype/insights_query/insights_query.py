@@ -241,7 +241,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 ]
                 data = pivoted.values.tolist()
 
-                return dumps([cols] + data, default=cstr)
+                return [cols] + data
 
     def has_cumulative_columns(self):
         return any("Cumulative" in c.aggregation for c in self.columns)
@@ -258,7 +258,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             if "Cumulative" in column.aggregation:
                 results_df[column.label] = results_df[column.label].cumsum()
 
-        return dumps([result[0]] + results_df.values.tolist(), default=cstr)
+        return [result[0]] + results_df.values.tolist()
 
 
 def format_query(query):
