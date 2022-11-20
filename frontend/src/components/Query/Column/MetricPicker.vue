@@ -170,7 +170,7 @@ function makeCountColumn() {
 	const table = query.tables.data[0]
 	return {
 		type: 'Integer',
-		column: 'count',
+		column: metric.type.value.toLowerCase().replace(' ', '_'),
 		table: table.table,
 		label: metric.label,
 		table_label: table.label,
