@@ -184,7 +184,6 @@ function autoLayout() {
 			}
 		})
 	dashboard.updateLayout(layouts)
-	dashboard.commitLayout()
 }
 
 const pageMeta = computed(() => {
