@@ -31,6 +31,7 @@
 						</p>
 						<p class="flex-1 flex-grow-[2]">Title</p>
 						<p class="flex-1 flex-grow-[2]">Tables</p>
+						<p class="flex-1">Chart Type</p>
 						<p class="flex-1">Data Source</p>
 						<p class="flex-1">ID</p>
 						<p class="flex-1 text-right">Last Modified</p>
@@ -60,6 +61,9 @@
 									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
 								>
 									{{ query.tables?.replace(/,/g, ', ') }}
+								</p>
+								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+									{{ query.chart_type || '-' }}
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
 									{{ query.data_source }}
