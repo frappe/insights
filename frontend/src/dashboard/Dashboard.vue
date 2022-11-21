@@ -4,6 +4,7 @@
 			<DashboardHeader
 				@addChart="() => (showAddDialog = true)"
 				@commitLayout="dashboard.commitLayout"
+				@autoLayout="autoLayout"
 			/>
 		</template>
 		<template #main>
@@ -16,8 +17,9 @@
 				}"
 			>
 				<GridLayout
-					:items="dashboard.items"
+					ref="gridLayout"
 					itemKey="name"
+					:items="dashboard.items"
 					@layoutChange="dashboard.updateLayout"
 					:disabled="!dashboard.editingLayout"
 					:options="{
@@ -165,6 +167,24 @@ function addItem() {
 		filter_operator: 'equals', // default
 	}
 	newChart.value = {}
+}
+
+const gridLayout = ref(null)
+function autoLayout() {
+	const layouts = gridLayout.value.grid
+		.compact()
+		.save()
+		.map((item) => {
+			return {
+				name: item.i,
+				x: item.x,
+				y: item.y,
+				w: item.w,
+				h: item.h,
+			}
+		})
+	dashboard.updateLayout(layouts)
+	dashboard.commitLayout()
 }
 
 const pageMeta = computed(() => {

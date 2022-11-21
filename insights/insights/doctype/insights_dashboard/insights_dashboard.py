@@ -235,10 +235,10 @@ def get_item_size(item):
 
 
 def get_item_position(item, existing_layouts):
-    new_layout = get_item_size(item)
+    new_layout = frappe.parse_json(item.layout) or get_item_size(item)
     # find the first available position
-    for y in range(0, 100, new_layout.get("h")):
-        for x in range(0, 20, new_layout.get("w")):
+    for y in range(0, 100_000):
+        for x in range(0, 20):
             new_layout["x"] = x
             new_layout["y"] = y
             if not any(
@@ -252,8 +252,8 @@ def get_item_position(item, existing_layouts):
 
 def layout_overlap(new_layout, existing_layout):
     return (
-        new_layout["x"] < existing_layout["x"] + existing_layout["w"]
-        and new_layout["x"] + new_layout["w"] > existing_layout["x"]
-        and new_layout["y"] < existing_layout["y"] + existing_layout["h"]
-        and new_layout["y"] + new_layout["h"] > existing_layout["y"]
+        new_layout.get("x") < existing_layout.get("x") + existing_layout.get("w")
+        and new_layout.get("x") + new_layout.get("w") > existing_layout.get("x")
+        and new_layout.get("y") < existing_layout.get("y") + existing_layout.get("h")
+        and new_layout.get("y") + new_layout.get("h") > existing_layout.get("y")
     )

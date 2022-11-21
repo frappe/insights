@@ -1,7 +1,7 @@
 <script setup>
 import 'gridstack/dist/gridstack.min.css'
 import GridStack from 'gridstack/dist/gridstack-all.js'
-import { nextTick, onMounted, watch } from 'vue'
+import { nextTick, onMounted, watch, ref } from 'vue'
 import { debounce } from 'frappe-ui'
 
 const emit = defineEmits(['layoutChange'])
@@ -24,7 +24,8 @@ const props = defineProps({
 	},
 })
 
-let grid = null
+const grid = ref(null)
+defineExpose({ grid })
 
 onMounted(async () => {
 	await nextTick()
@@ -34,7 +35,7 @@ onMounted(async () => {
 })
 
 function initializeGrid() {
-	grid = GridStack.init({
+	grid.value = GridStack.init({
 		animate: true,
 		column: 20,
 		float: false,
@@ -43,7 +44,7 @@ function initializeGrid() {
 }
 
 function attachChangeEvent() {
-	grid.on('change', function (evt, updatedItems) {
+	grid.value.on('change', function (evt, updatedItems) {
 		if (!updatedItems) {
 			return
 		}
@@ -69,14 +70,14 @@ function watchProps() {
 
 function disableGrid(disabled) {
 	if (disabled) {
-		grid.disable()
+		grid.value.disable()
 	} else {
-		grid.enable()
+		grid.value.enable()
 	}
 }
 
 function updateGrid() {
-	grid.destroy(false)
+	grid.value.destroy(false)
 	initializeGrid()
 }
 </script>
@@ -85,9 +86,9 @@ function updateGrid() {
 	<div class="grid-stack">
 		<div
 			v-for="item in props.items"
-			:key="item[key]"
+			:key="item[props.itemKey]"
 			class="grid-stack-item"
-			:gs-id="item[key]"
+			:gs-id="item[props.itemKey]"
 			:gs-w="item.w"
 			:gs-h="item.h"
 			:gs-x="item.x"
