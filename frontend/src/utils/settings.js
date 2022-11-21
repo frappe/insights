@@ -1,30 +1,12 @@
-import { reactive } from 'vue'
-import { createResource } from 'frappe-ui'
+import { createDocumentResource } from 'frappe-ui'
 
-const updateUserDefaultResource = createResource('insights.api.update_user_default')
-const getDefaultsResource = createResource('insights.api.get_user_defaults')
-
-const settings = reactive({
-	hide_sidebar: true,
-	updating: false,
-	fetch,
-	update,
+const resource = createDocumentResource({
+	doctype: 'Insights Settings',
+	name: 'Insights Settings',
+	whitelistedMethods: { update_settings: 'update_settings' },
 })
-
-function update(key, value) {
-	updateUserDefaultResource.submit({ key, value })
-	settings.updating = updateUserDefaultResource.loading
+resource.get.fetch()
+resource.updateSettings = (settings) => {
+	resource.update_settings.submit({ settings })
 }
-
-function fetch() {
-	getDefaultsResource.fetch(null, {
-		onSuccess(res) {
-			for (const key in res) {
-				if (key == 'hide_sidebar') res[key] = res[key] == '1' ? true : false
-				settings[key] = res[key]
-			}
-		},
-	})
-}
-
-export default settings
+export default resource

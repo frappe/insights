@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { createDocumentResource, call, debounce } from 'frappe-ui'
-import dayjs from '@/utils/dayjs'
+import settings from '@/utils/settings'
 
 export default function useDashboard(dashboardName) {
 	const dashboard = makeDashboardResource(dashboardName)
@@ -113,19 +113,22 @@ export default function useDashboard(dashboardName) {
 
 	dashboard.updateNewChartOptions()
 
-	watch(
-		() => dashboard.doc?.last_updated_on,
-		() => {
-			const last_updated_on = dayjs(dashboard.doc.last_updated_on)
-			const in_minutes = dayjs().diff(last_updated_on, 'minute')
-			console.log('in_minutes', in_minutes)
+	if (settings.doc?.auto_refresh_dashboard_in_minutes) {
+		watch(
+			() => dashboard.doc?.last_updated_on,
+			() => {
+				const last_updated_on = dayjs(dashboard.doc.last_updated_on)
+				const minute_diff = dayjs().diff(last_updated_on, 'minute')
 
-			// if last refreshed more than 10 minutes ago
-			if (!dashboard.doc.last_updated_on || in_minutes > 10) {
-				dashboard.refreshItems()
+				if (
+					!dashboard.doc.last_updated_on ||
+					minute_diff > settings.doc.auto_refresh_dashboard_in_minutes
+				) {
+					dashboard.refreshItems()
+				}
 			}
-		}
-	)
+		)
+	}
 
 	return dashboard
 }

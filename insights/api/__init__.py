@@ -154,21 +154,6 @@ def kill_running_job(data_source, query_id):
 
 
 @frappe.whitelist()
-def update_user_default(key, value):
-    keys = ["hide_sidebar"]
-    if key not in keys:
-        return
-    frappe.defaults.set_user_default(key, value)
-
-
-@frappe.whitelist()
-def get_user_defaults():
-    defaults = frappe.defaults.get_defaults()
-    keys = ["hide_sidebar"]
-    return {key: defaults.get(key) for key in keys}
-
-
-@frappe.whitelist()
 def get_user_info():
     return {
         "user_id": frappe.session.user,

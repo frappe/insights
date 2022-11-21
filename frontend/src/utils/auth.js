@@ -1,5 +1,4 @@
 import { call, createResource } from 'frappe-ui'
-import userSettings from '@/utils/settings'
 import { reactive, watch } from 'vue'
 
 const auth = reactive({
@@ -39,7 +38,6 @@ watch(
 	(newVal, oldVal) => {
 		if (newVal && !oldVal) {
 			userInfo.fetch()
-			userSettings.fetch()
 		}
 	},
 	{ immediate: true }

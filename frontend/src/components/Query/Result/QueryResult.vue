@@ -101,6 +101,7 @@
 import ColumnHeader from '@/components/Query/Result/ColumnHeader.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
 import { FIELDTYPES, isEmptyObj, ellipsis } from '@/utils'
+import settings from '@/utils/settings'
 
 import { computed, inject, watch, onMounted, ref } from 'vue'
 
@@ -117,9 +118,11 @@ const isNumberColumn = computed(() => {
 	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 })
 
-// watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && query.execute(), {
-// 	immediate: true,
-// })
+if (settings.doc?.auto_execute_query) {
+	watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && query.execute(), {
+		immediate: true,
+	})
+}
 
 const executionTime = computed(() => {
 	const rounded = Math.round(query.doc.execution_time * 100) / 100
