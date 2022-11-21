@@ -33,17 +33,13 @@ export default function useDashboard(dashboardName) {
 			}
 		})
 	)
-	dashboard.updateLayout = (changedItems) => {
-		changedItems.forEach((item) => {
-			const name = item.id
-			delete item.id
-			dashboard.updatedLayout[name] = item
-		})
-	}
-	dashboard.commitLayout = () => {
+	dashboard.saveLayout = (layouts) => {
 		dashboard.update_layout
 			.submit({
-				updated_layout: dashboard.updatedLayout,
+				updated_layout: layouts.reduce((acc, v) => {
+					acc[v.id] = { x: v.x, y: v.y, w: v.w, h: v.h }
+					return acc
+				}, {}),
 			})
 			.then(() => {
 				dashboard.editingLayout = false

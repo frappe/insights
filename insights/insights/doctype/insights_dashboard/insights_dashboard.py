@@ -235,7 +235,7 @@ def get_item_size(item):
 
 
 def get_item_position(item, existing_layouts):
-    new_layout = frappe.parse_json(item.layout) or get_item_size(item)
+    new_layout = frappe.parse_json(item.get("layout")) or get_item_size(item)
     # find the first available position
     for y in range(0, 100_000):
         for x in range(0, 20):

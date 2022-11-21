@@ -4,7 +4,6 @@ import GridStack from 'gridstack/dist/gridstack-all.js'
 import { nextTick, onMounted, watch, ref } from 'vue'
 import { debounce } from 'frappe-ui'
 
-const emit = defineEmits(['layoutChange'])
 const props = defineProps({
 	items: {
 		type: Array,
@@ -24,61 +23,44 @@ const props = defineProps({
 	},
 })
 
-const grid = ref(null)
-defineExpose({ grid })
+let grid = null
+const gridRef = ref(null)
+defineExpose({ grid: gridRef })
 
 onMounted(async () => {
 	await nextTick()
 	initializeGrid()
-	attachChangeEvent()
 	watchProps()
 })
 
 function initializeGrid() {
-	grid.value = GridStack.init({
+	grid = GridStack.init({
 		animate: true,
 		column: 20,
 		float: false,
+		alwaysShowResizeHandle: true,
 		...props.options,
 	})
-}
-
-function attachChangeEvent() {
-	grid.value.on('change', function (evt, updatedItems) {
-		if (!updatedItems) {
-			return
-		}
-		emit(
-			'layoutChange',
-			updatedItems.map((item) => {
-				return {
-					id: item.el.getAttribute('gs-id'),
-					x: item.x,
-					y: item.y,
-					w: item.w,
-					h: item.h,
-				}
-			})
-		)
-	})
+	gridRef.value = grid
 }
 
 function watchProps() {
-	watch(() => props.disabled, disableGrid, { immediate: true })
+	watch(() => props.disabled, toggleGrid, { immediate: true })
 	watch(() => props.items, debounce(updateGrid, 300))
 }
 
-function disableGrid(disabled) {
-	if (disabled) {
-		grid.value.disable()
+function toggleGrid() {
+	if (props.disabled) {
+		grid.disable()
 	} else {
-		grid.value.enable()
+		grid.enable()
 	}
 }
 
-function updateGrid() {
-	grid.value.destroy(false)
+async function updateGrid() {
+	grid.destroy(false)
 	initializeGrid()
+	toggleGrid()
 }
 </script>
 
@@ -122,5 +104,9 @@ function updateGrid() {
 	.grid-stack > .grid-stack-item[gs-max-w='#{$i}'] {
 		max-width: percentage(calc($i / 20));
 	}
+}
+.grid-stack > .grid-stack-item > .ui-resizable-se {
+	@apply mr-1 mb-1 h-4 w-4 rotate-0 border-r-4 border-b-4 bg-none;
+	z-index: 0 !important;
 }
 </style>
