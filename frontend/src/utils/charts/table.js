@@ -14,7 +14,7 @@ function useTableChart() {
 	}
 
 	function getRows(columns, data) {
-		const columnLabels = data[0].map((d) => d.split('::')[0])
+		const columnLabels = data[0]?.map((d) => d.split('::')[0])
 		const columnIndexes = columnLabels.map((label) => columns.indexOf(label))
 		return data.slice(1).map((row) => columnIndexes.map((index) => row[index]))
 	}

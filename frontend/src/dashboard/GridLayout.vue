@@ -1,7 +1,8 @@
 <script setup>
 import 'gridstack/dist/gridstack.min.css'
 import GridStack from 'gridstack/dist/gridstack-all.js'
-import { computed, nextTick, onMounted, watch } from 'vue'
+import { nextTick, onMounted, watch } from 'vue'
+import { debounce } from 'frappe-ui'
 
 const emit = defineEmits(['layoutChange'])
 const props = defineProps({
@@ -22,9 +23,6 @@ const props = defineProps({
 		default: {},
 	},
 })
-
-const key = computed(() => props.itemKey)
-const items = computed(() => props.items)
 
 let grid = null
 
@@ -66,6 +64,7 @@ function attachChangeEvent() {
 
 function watchProps() {
 	watch(() => props.disabled, disableGrid, { immediate: true })
+	watch(() => props.items, debounce(updateGrid, 300))
 }
 
 function disableGrid(disabled) {
@@ -75,12 +74,17 @@ function disableGrid(disabled) {
 		grid.enable()
 	}
 }
+
+function updateGrid() {
+	grid.destroy(false)
+	initializeGrid()
+}
 </script>
 
 <template>
 	<div class="grid-stack">
 		<div
-			v-for="item in items"
+			v-for="item in props.items"
 			:key="item[key]"
 			class="grid-stack-item"
 			:gs-id="item[key]"
@@ -90,7 +94,7 @@ function disableGrid(disabled) {
 			:gs-y="item.y"
 		>
 			<div class="grid-stack-item-content">
-				<slot name="item" v-bind="{ item }"> {{ item[key] }}</slot>
+				<slot name="item" v-bind="{ item }"> {{ item[props.itemKey] }}</slot>
 			</div>
 		</div>
 	</div>

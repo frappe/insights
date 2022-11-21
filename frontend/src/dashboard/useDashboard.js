@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { createDocumentResource, call, debounce } from 'frappe-ui'
 import settings from '@/utils/settings'
+import dayjs from '@/utils/dayjs'
 
 export default function useDashboard(dashboardName) {
 	const dashboard = makeDashboardResource(dashboardName)
@@ -50,7 +51,7 @@ export default function useDashboard(dashboardName) {
 	}
 	dashboard.addItem = (item) => {
 		return dashboard.add_item.submit({ item }).then(() => {
-			dashboard.updateNewChartOptions().then(() => (dashboard.editingLayout = false))
+			dashboard.updateNewChartOptions()
 		})
 	}
 

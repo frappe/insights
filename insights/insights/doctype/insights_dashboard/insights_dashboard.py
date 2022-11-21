@@ -22,7 +22,9 @@ class InsightsDashboard(Document):
 
     @frappe.whitelist()
     def add_item(self, item):
-        layout = get_dashboard_item_size(item)
+        layout = get_item_position(
+            item, [frappe.parse_json(item.layout) for item in self.items]
+        )
         self.append(
             "items",
             {
@@ -218,7 +220,7 @@ def make_args_for_call_expression(operator_function, filter):
     ]
 
 
-def get_dashboard_item_size(item):
+def get_item_size(item):
     item = frappe._dict(item)
     if item.item_type == "Filter":
         return {"w": 4, "h": 3, "x": 0, "y": 0}
@@ -229,3 +231,29 @@ def get_dashboard_item_size(item):
         if chart_type == "Progress":
             return {"w": 6, "h": 5, "x": 0, "y": 0}
         return {"w": 12, "h": 9, "x": 0, "y": 0}
+    return {"w": 6, "h": 6, "x": 0, "y": 0}
+
+
+def get_item_position(item, existing_layouts):
+    new_layout = get_item_size(item)
+    # find the first available position
+    for y in range(0, 100, new_layout.get("h")):
+        for x in range(0, 20, new_layout.get("w")):
+            new_layout["x"] = x
+            new_layout["y"] = y
+            if not any(
+                [
+                    layout_overlap(new_layout, existing_layout)
+                    for existing_layout in existing_layouts
+                ]
+            ):
+                return new_layout
+
+
+def layout_overlap(new_layout, existing_layout):
+    return (
+        new_layout["x"] < existing_layout["x"] + existing_layout["w"]
+        and new_layout["x"] + new_layout["w"] > existing_layout["x"]
+        and new_layout["y"] < existing_layout["y"] + existing_layout["h"]
+        and new_layout["y"] + new_layout["h"] > existing_layout["y"]
+    )
