@@ -86,6 +86,7 @@ const props = defineProps({
 	},
 	options: {
 		type: Object,
+		default: {},
 	},
 })
 
