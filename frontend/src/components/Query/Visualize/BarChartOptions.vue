@@ -11,14 +11,14 @@ const chart = inject('chart')
 <template>
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Dimension</div>
-		<Autocomplete v-model="chart.config.labelColumn" :options="query.columns.indexOptions" />
+		<Autocomplete v-model="chart.config.labelColumn" :options="query.results.indexOptions" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Measure</div>
 		<ListPicker
 			:value="chart.config.valueColumn"
-			:options="query.columns.valueOptions"
+			:options="query.results.valueOptions"
 			@change="(options) => (chart.config.valueColumn = options)"
 		/>
 	</div>

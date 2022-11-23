@@ -9,7 +9,7 @@ const chart = inject('chart')
 <template>
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Select Column</div>
-		<Autocomplete v-model="chart.config.valueColumn" :options="query.columns.valueOptions" />
+		<Autocomplete v-model="chart.config.valueColumn" :options="query.results.valueOptions" />
 	</div>
 	<div class="space-y-3 text-sm text-gray-600">
 		<div class="space-y-1">

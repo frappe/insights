@@ -17,7 +17,7 @@ if (chart.config.targetColumn) {
 <template>
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Progress</div>
-		<Autocomplete v-model="chart.config.progressColumn" :options="query.columns.valueOptions" />
+		<Autocomplete v-model="chart.config.progressColumn" :options="query.results.valueOptions" />
 	</div>
 	<div class="space-y-2 text-gray-600">
 		<div class="text-base font-light text-gray-500">Target</div>
@@ -35,7 +35,7 @@ if (chart.config.targetColumn) {
 						v-if="chart.config.targetType === 'Column'"
 						v-model="chart.config.target"
 						placeholder="Select a column..."
-						:options="query.columns.valueOptions"
+						:options="query.results.valueOptions"
 					/>
 					<Input
 						v-if="chart.config.targetType === 'Value'"

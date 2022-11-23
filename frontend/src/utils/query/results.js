@@ -11,6 +11,24 @@ export function useQueryResults(query) {
 	const columns = computed(() => query.columns.data)
 	const formattedResult = getFormattedResult(data, columns)
 
+	const resultColumns = computed(() =>
+		data.value?.[0].map((c) => {
+			return {
+				column: c.split('::')[0],
+				type: c.split('::')[1],
+			}
+		})
+	)
+	const allColumnOptions = computed(() =>
+		resultColumns.value.map((c) => ({ label: c.column, value: c.column, description: c.type }))
+	)
+	const indexOptions = computed(() =>
+		allColumnOptions.value.filter((col) => !FIELDTYPES.NUMBER.includes(col.description))
+	)
+	const valueOptions = computed(() =>
+		allColumnOptions.value.filter((col) => FIELDTYPES.NUMBER.includes(col.description))
+	)
+
 	function getColumnValues(column) {
 		const columnIdx = query.columns.data.findIndex((c) =>
 			c.is_expression ? c.label === column : c.column === column
@@ -32,6 +50,9 @@ export function useQueryResults(query) {
 	return {
 		data,
 		formattedResult,
+		allColumnOptions,
+		indexOptions,
+		valueOptions,
 		getColumnValues,
 		getRows,
 	}
