@@ -1,5 +1,5 @@
 <script setup>
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
@@ -7,6 +7,12 @@ import Color from '@/components/Controls/Color.vue'
 
 const query = inject('query')
 const chart = inject('chart')
+const refLineOptions = ref([
+	{ label: 'Average', value: 'average' },
+	{ label: 'Min', value: 'min' },
+	{ label: 'Max', value: 'max' },
+	{ label: 'Median', value: 'median' },
+])
 </script>
 
 <template>
@@ -22,6 +28,11 @@ const chart = inject('chart')
 			:options="query.results.valueOptions"
 			@change="(options) => (chart.config.valueColumn = options)"
 		/>
+	</div>
+
+	<div class="space-y-2 text-gray-600">
+		<div class="text-base font-light text-gray-500">Reference Line</div>
+		<Autocomplete v-model="chart.options.referenceLine" :options="refLineOptions" />
 	</div>
 
 	<Color
