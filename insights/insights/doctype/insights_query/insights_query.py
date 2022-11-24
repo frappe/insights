@@ -207,6 +207,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
                 if not (pivot_column and index_column and value_column):
                     frappe.throw("Invalid Pivot Options")
+                if pivot_column == index_column:
+                    frappe.throw("Pivot Column and Index Column cannot be same")
 
                 results_df = DataFrame(
                     result[1:], columns=[d.split("::")[0] for d in result[0]]
