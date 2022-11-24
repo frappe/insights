@@ -51,6 +51,10 @@ const refLineOptions = ref([
 	</div>
 
 	<div class="space-y-2 text-gray-600">
+		<Checkbox v-model="chart.options.stack" label="Stack Values" />
+	</div>
+
+	<div class="space-y-2 text-gray-600">
 		<Checkbox v-model="chart.options.invertAxis" label="Switch X and Y Axis" />
 	</div>
 </template>

@@ -55,6 +55,7 @@ const series = ref(
 		data: props.options.invertAxis ? dataset.data.reverse() : dataset.data,
 		'itemStyle-borderRadius': '[4, 4, 0, 0]',
 		markLine: markLine,
+		stack: props.options.stack ? 'stack' : null,
 	}))
 )
 </script>
