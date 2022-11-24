@@ -5,7 +5,7 @@
 				readonly
 				type="text"
 				:placeholder="placeholder"
-				:value="value && formatter ? formatter(value) : value"
+				:value="formatter ? formatDates(value) : value"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
 					'form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500',
@@ -15,7 +15,7 @@
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 w-fit select-none space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
+				class="my-2 w-[16rem] select-none space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
 			>
 				<div class="flex items-center text-gray-700">
 					<div
@@ -33,17 +33,11 @@
 					</div>
 				</div>
 				<div class="flex space-x-2">
-					<Input
-						type="text"
-						:value="value"
-						@change="selectDate(getDate($event)) || togglePopover()"
-					></Input>
-					<Button class="h-7" @click="selectDate(getDate()) || togglePopover()">
-						Today
-					</Button>
+					<Input type="text" v-model="fromDate"></Input>
+					<Input type="text" v-model="toDate"></Input>
 				</div>
 				<div class="mt-2 flex flex-col items-center justify-center text-base">
-					<div class="flex w-full items-center space-x-1 text-gray-600">
+					<div class="flex w-full items-center justify-center space-x-1 text-gray-600">
 						<div
 							class="flex h-[30px] w-[30px] items-center justify-center text-center"
 							v-for="(d, i) in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
@@ -52,22 +46,31 @@
 							{{ d }}
 						</div>
 					</div>
-					<div v-for="(week, i) in datesAsWeeks" :key="i" class="mt-1">
+					<div v-for="(week, i) in datesAsWeeks" :key="i">
 						<div class="flex w-full items-center">
 							<div
 								v-for="date in week"
 								:key="toValue(date)"
-								class="mr-1 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-md last:mr-0 hover:bg-blue-50 hover:text-blue-500"
+								class="flex h-[30px] w-[30px] cursor-pointer items-center justify-center hover:bg-blue-50 hover:text-blue-500"
 								:class="{
 									'text-gray-500': date.getMonth() !== currentMonth - 1,
 									'text-blue-500': toValue(date) === toValue(today),
-									'bg-blue-50 font-semibold text-blue-500':
-										toValue(date) === value,
+									'bg-blue-50 text-blue-500': isInRange(date),
+									'rounded-l-md bg-blue-100':
+										fromDate && toValue(date) === toValue(fromDate),
+									'rounded-r-md bg-blue-100':
+										toDate && toValue(date) === toValue(toDate),
 								}"
 								@click="
 									() => {
-										selectDate(date)
-										togglePopover()
+										if (fromDate && toDate) {
+											fromDate = toValue(date)
+											toDate = ''
+										} else if (fromDate && !toDate) {
+											toDate = toValue(date)
+										} else {
+											fromDate = toValue(date)
+										}
 									}
 								"
 							>
@@ -77,18 +80,15 @@
 					</div>
 				</div>
 
-				<div class="mt-1 flex w-full justify-end">
-					<div
-						class="cursor-pointer rounded-md px-2 py-1 hover:bg-gray-100"
-						@click="
-							() => {
-								selectDate('')
-								togglePopover()
-							}
-						"
+				<div class="mt-1 flex w-full justify-end space-x-2">
+					<Button @click="$emit('change', '')" :disabled="!value"> Clear </Button>
+					<Button
+						@click="selectDates() || togglePopover()"
+						:disabled="!fromDate || !toDate"
+						appearance="primary"
 					>
-						Clear
-					</div>
+						Apply
+					</Button>
 				</div>
 			</div>
 		</template>
@@ -97,13 +97,17 @@
 
 <script>
 export default {
-	name: 'DatePicker',
+	name: 'DateRangePicker',
 	props: ['value', 'placeholder', 'formatter', 'readonly', 'inputClass'],
 	emits: ['change'],
 	data() {
+		const fromDate = this.value ? this.value.split(',')[0] : ''
+		const toDate = this.value ? this.value.split(',')[1] : ''
 		return {
 			currentYear: null,
 			currentMonth: null,
+			fromDate,
+			toDate,
 		}
 	},
 	created() {
@@ -155,14 +159,11 @@ export default {
 		},
 	},
 	methods: {
-		selectDate(date) {
-			this.$emit('change', this.toValue(date))
+		selectDates() {
+			this.$emit('change', `${this.fromDate},${this.toDate}`)
 		},
 		selectCurrentMonthYear() {
-			let date = this.value ? this.getDate(this.value) : this.getDate()
-			if (date === 'Invalid Date') {
-				date = this.getDate()
-			}
+			let date = this.toDate ? this.getDate(this.toDate) : this.today
 			this.currentYear = date.getFullYear()
 			this.currentMonth = date.getMonth() + 1
 		},
@@ -225,6 +226,9 @@ export default {
 			if (!date) {
 				return ''
 			}
+			if (typeof date === 'string') {
+				return date
+			}
 
 			// toISOString is buggy and reduces the day by one
 			// this is because it considers the UTC timestamp
@@ -239,6 +243,21 @@ export default {
 		getDate(...args) {
 			let d = new Date(...args)
 			return d
+		},
+
+		isInRange(date) {
+			if (!this.fromDate || !this.toDate) {
+				return false
+			}
+			return date >= this.getDate(this.fromDate) && date <= this.getDate(this.toDate)
+		},
+
+		formatDates(value) {
+			if (!value) {
+				return ''
+			}
+			const values = value.split(',')
+			return this.formatter(values[0]) + ' to ' + this.formatter(values[1])
 		},
 	},
 }

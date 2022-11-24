@@ -38,12 +38,27 @@
 				:placeholder="valuePlaceholder"
 				@inputChange="checkAndFetchColumnValues"
 			/>
+			<DateRangePicker
+				v-else-if="showDatePicker && filter.operator.value === 'between'"
+				id="value"
+				:value="filter.value.value"
+				:placeholder="valuePlaceholder"
+				:formatter="formatDate"
+				@change="
+					(date) => {
+						filter.value = {
+							value: date,
+							label: formatDate(date),
+						}
+					}
+				"
+			/>
 			<DatePicker
 				v-else-if="showDatePicker"
 				id="value"
 				:value="filter.value.value"
 				:placeholder="valuePlaceholder"
-				:formatValue="formatDate"
+				:formatter="formatDate"
 				@change="
 					(date) => {
 						filter.value = {
@@ -72,6 +87,7 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
 import DatePicker from '@/components/Controls/DatePicker.vue'
+import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
 
 import { debounce } from 'frappe-ui'
 import { isEmptyObj, formatDate } from '@/utils'
@@ -108,7 +124,7 @@ const operatorOptions = computed(() => query.columns.getOperatorOptions(filter.c
 const showDatePicker = computed(() => {
 	return (
 		['Date', 'Datetime'].includes(filter.column?.type) &&
-		['=', '!=', '>', '>=', '<', '<='].includes(filter.operator?.value)
+		['=', '!=', '>', '>=', '<', '<=', 'between'].includes(filter.operator?.value)
 	)
 })
 const showTimespanPicker = computed(
