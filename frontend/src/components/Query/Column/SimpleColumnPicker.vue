@@ -80,31 +80,31 @@ const aggregations = ref([
 		value: 'Group By',
 	},
 	{
-		label: 'Count',
+		label: 'Count of Records',
 		value: 'Count',
 	},
 	{
-		label: 'Sum',
+		label: 'Sum of',
 		value: 'Sum',
 	},
 	{
-		label: 'Avg',
+		label: 'Avg of',
 		value: 'Avg',
 	},
 	{
-		label: 'Min',
+		label: 'Min of',
 		value: 'Min',
 	},
 	{
-		label: 'Max',
+		label: 'Max of',
 		value: 'Max',
 	},
 	{
-		label: 'Cumulative Count',
+		label: 'Cumulative Count of Records',
 		value: 'Cumulative Count',
 	},
 	{
-		label: 'Cumulative Sum',
+		label: 'Cumulative Sum of',
 		value: 'Cumulative Sum',
 	},
 ])
