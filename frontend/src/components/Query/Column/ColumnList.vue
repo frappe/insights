@@ -31,12 +31,6 @@
 						class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400"
 					/>
 					<span
-						v-if="column.aggregation"
-						class="my-0 mr-2 select-none whitespace-nowrap rounded border border-orange-200 px-1 py-0.5 text-xs text-orange-400/80"
-					>
-						{{ column.aggregation }}
-					</span>
-					<span
 						class="overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"
 					>
 						{{ column.label }}

@@ -23,9 +23,8 @@ import ColumnList from '@/components/Query/Column/ColumnList.vue'
 import ColumnPicker from '@/components/Query/Column/ColumnPicker.vue'
 import ColumnEditor from '@/components/Query/Column/ColumnEditor.vue'
 
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 
-const query = inject('query')
 const addingColumn = ref(false)
 const editColumn = ref({})
 const editingColumn = ref(false)

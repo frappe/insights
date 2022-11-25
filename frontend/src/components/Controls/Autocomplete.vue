@@ -39,7 +39,7 @@
 								v-if="filteredOptions.length === 0 && !$props.allowCreate"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
 							>
-								No results found
+								{{ emptyText }}
 							</div>
 							<ComboboxOption
 								v-if="$props.allowCreate"
@@ -114,6 +114,10 @@ const props = defineProps({
 	placeholder: {
 		type: String,
 		default: '',
+	},
+	emptyText: {
+		type: String,
+		default: 'No results found',
 	},
 	modelValue: {
 		required: true,
