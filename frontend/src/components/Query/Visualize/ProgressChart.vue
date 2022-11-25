@@ -55,7 +55,7 @@ const suffix = computed(() => {
 				<div class="mt-1 rounded-full bg-blue-100">
 					<div
 						class="h-2 rounded-full bg-blue-500"
-						:style="{ width: progressPercent + '%' }"
+						:style="{ width: progressPercent > 100 ? '100%' : progressPercent + '%' }"
 					></div>
 				</div>
 			</div>
