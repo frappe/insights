@@ -31,13 +31,13 @@
 You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, run the following commands:
 
 ```
-git clone https://github.com/frappe/gameplan
-cd gameplan/docker
+git clone https://github.com/frappe/insights
+cd insights/docker
 docker-compose up
 ```
 
 Wait for sometime until the setup script creates a site. After that you can
-access `http://localhost:8000` in your browser and Gameplan's login screen
+Open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
 should show up.
 
 ### Local
