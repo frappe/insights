@@ -26,19 +26,19 @@
 - **Visualize Data** - Visualize your data in the form of charts.
 - **Dashboards** - Create dashboards to automate tracking of important metrics.
 
-## Planned Features
-
-- [ ] **Dashboard Filters**: Add filters to dashboards to make them more dynamic.
-- [ ] **More Connectors**: Add support for more data sources. (CSV, Postgres)
-- [ ] **More Charts**: Add support for more chart types. (Donut, Scatter, Line with Bars & more)
-- [ ] **SQL Editor**: Add support for writing SQL queries.
-- [ ] **Automatic Alerts**: Add support for automatic alerts based on the data.
-- [ ] **Join Queries**: Add support for joining multiple data sources.
-- [ ] **Chart Customization**: Add support for customizing charts.
-- [ ] **Keyboard Shortcuts**: Add support for keyboard shortcuts.
-- [ ] **Contextual Command Palette**: Add support for a contextual command palette.
-
 ## Installation
+### Docker
+You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, run the following commands:
+
+```
+git clone https://github.com/frappe/gameplan
+cd gameplan/docker
+docker-compose up
+```
+
+Wait for sometime until the setup script creates a site. After that you can
+access `http://localhost:8000` in your browser and Gameplan's login screen
+should show up.
 
 ### Local
 
