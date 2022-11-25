@@ -167,7 +167,14 @@ const selectedOption = computed({
 })
 const uniqueOptions = computed(() => {
 	return options.value.filter((option, index, self) => {
-		return self.findIndex((t) => t.value === option.value && t.label === option.label) === index
+		return (
+			self.findIndex(
+				(t) =>
+					t.value === option.value &&
+					t.label === option.label &&
+					t.description === option.description
+			) === index
+		)
 	})
 })
 const filteredOptions = computed(() => {
