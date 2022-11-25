@@ -9,19 +9,22 @@
 				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
 				<Button icon="plus" @click="addingTable = true"></Button>
 			</div>
-			<div v-if="addingTable" class="mb-4 w-full">
-				<Autocomplete
-					ref="tableSearch"
-					v-model="newTable"
-					:options="newTableOptions"
-					placeholder="Select a table..."
-					@selectOption="
-						(table) => {
-							addingTable = false
-							table && query.addTable.submit({ table })
-						}
-					"
-				/>
+			<div v-if="addingTable" class="flex w-full space-x-2 pt-1 pb-3">
+				<div class="flex-1">
+					<Autocomplete
+						ref="tableSearch"
+						v-model="newTable"
+						:options="newTableOptions"
+						placeholder="Select a table..."
+						@selectOption="
+							(table) => {
+								addingTable = false
+								table && query.addTable.submit({ table })
+							}
+						"
+					/>
+				</div>
+				<Button icon="x" @click="addingTable = false"></Button>
 			</div>
 			<div
 				v-if="query.tables.data?.length == 0"
