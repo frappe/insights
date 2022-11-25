@@ -121,7 +121,7 @@ const simpleColumn = reactive({
 		return t.value == props.column.format_option?.date_format
 	}),
 })
-if (!simpleColumn.aggType) simpleColumn.aggType = { label: 'Group By', value: 'Group By' }
+if (!simpleColumn.aggType) simpleColumn.aggType = { label: 'No Aggregation', value: '' }
 
 const columnNeeded = computed(() => {
 	return !simpleColumn.aggType.value.includes('Count')
