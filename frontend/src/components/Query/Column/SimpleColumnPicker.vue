@@ -166,7 +166,11 @@ function onTypeSelect(option) {
 function onColumnSelect(option) {
 	simpleColumn.column = option ? option : {}
 	simpleColumn.column.name = props.column.name
-	simpleColumn.label = simpleColumn.aggType.label + ' ' + simpleColumn.column.label
+	if (simpleColumn.aggType.value) {
+		simpleColumn.label = simpleColumn.aggType.label + ' ' + simpleColumn.column.label
+	} else {
+		simpleColumn.label = simpleColumn.column.label
+	}
 }
 
 function addOrEditColumn() {
