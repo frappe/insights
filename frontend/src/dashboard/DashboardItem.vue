@@ -1,6 +1,10 @@
 <template>
 	<div class="relative flex h-full w-full items-center justify-center rounded-md bg-gray-50">
-		<div v-if="show" class="flex h-full w-full bg-white">
+		<div
+			v-if="show"
+			class="flex h-full w-full bg-white"
+			:class="{ 'rounded-md border-2 border-dashed': dashboard.editingLayout }"
+		>
 			<!-- dynamically rendered component based on item type (Text, Filter, Chart)-->
 			<component
 				v-if="item.component && item.componentProps"

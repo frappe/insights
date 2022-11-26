@@ -19,4 +19,14 @@ export default function useDashboardItem(dashboard, item) {
 			componentProps,
 		})
 	}
+
+	if (item.item_type == 'Text') {
+		const component = markRaw(defineAsyncComponent(() => import('./DashboardText.vue')))
+		const componentProps = computed(() => ({ item }))
+
+		return reactive({
+			component,
+			componentProps,
+		})
+	}
 }

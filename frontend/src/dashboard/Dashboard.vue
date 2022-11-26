@@ -69,6 +69,16 @@
 				/>
 
 				<DashboardFilterForm v-if="newItem.item_type == 'Filter'" v-model="newItem" />
+
+				<TextEditor
+					v-if="newItem.item_type == 'Text'"
+					ref="textEditor"
+					:content="newItem.markdown"
+					placeholder="# Heading"
+					:editable="newItem.item_type == 'Text'"
+					editor-class="min-h-[4rem] prose-sm cursor-text bg-gray-100 rounded-md p-4"
+					@change="(val) => (newItem.markdown = val)"
+				/>
 			</div>
 		</template>
 		<template #actions>
@@ -87,6 +97,7 @@ import DashboardItem from '@/dashboard/DashboardItem.vue'
 import GridLayout from '@/dashboard/GridLayout.vue'
 import Tabs from '@/components/Tabs.vue'
 import DashboardFilterForm from './DashboardFilterForm.vue'
+import { TextEditor } from 'frappe-ui'
 
 import { computed, ref, provide, watch } from 'vue'
 import { updateDocumentTitle } from '@/utils'
@@ -109,6 +120,7 @@ const newItem = ref({
 	filter_label: '',
 	filter_type: 'String', // default
 	filter_operator: 'equals', // default
+	markdown: '',
 })
 
 const autocomplete = ref(null)
@@ -130,6 +142,10 @@ const addItemTabs = ref([
 		label: 'Filter',
 		active: false,
 	},
+	{
+		label: 'Text',
+		active: false,
+	},
 ])
 watch(
 	() => newItem.value.item_type,
@@ -149,6 +165,11 @@ function addItem() {
 		dashboard.addItem({
 			item_type: 'Chart',
 			chart: newItem.value.chart,
+		})
+	} else if (newItem.value.item_type == 'Text') {
+		dashboard.addItem({
+			item_type: 'Text',
+			markdown: newItem.value.markdown,
 		})
 	} else {
 		dashboard.addItem({

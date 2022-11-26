@@ -105,8 +105,13 @@ async function updateGrid() {
 		max-width: percentage(calc($i / 20));
 	}
 }
+.grid-stack > .grid-stack-item {
+	&:hover {
+		@apply cursor-grab;
+	}
+}
 .grid-stack > .grid-stack-item > .ui-resizable-se {
-	@apply mr-1 mb-1 h-4 w-4 rotate-0 border-r-4 border-b-4 bg-none;
+	@apply mr-2 mb-2 h-3 w-3 rotate-0 border-r-[3px] border-b-[3px] bg-none;
 	z-index: 0 !important;
 }
 </style>

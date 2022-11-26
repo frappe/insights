@@ -145,6 +145,7 @@ function makeDashboardResource(name) {
 			get_all_columns: 'get_all_columns',
 			get_columns: 'get_columns',
 			update_chart_filters: 'update_chart_filters',
+			update_markdown: 'update_markdown',
 		},
 	})
 	resource.get.fetch()

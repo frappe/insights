@@ -124,6 +124,15 @@ class InsightsDashboard(Document):
     def get_columns(self, query):
         return frappe.get_cached_doc("Insights Query", query).get_columns()
 
+    @frappe.whitelist()
+    def update_markdown(self, item):
+        item = frappe._dict(item)
+        for row in self.items:
+            if row.name == item.name:
+                row.markdown = item.markdown
+                self.save()
+                break
+
 
 BINARY_OPERATORS = {
     "equals": "=",
@@ -222,6 +231,8 @@ def make_args_for_call_expression(operator_function, filter):
 
 def get_item_size(item):
     item = frappe._dict(item)
+    if item.item_type == "Text":
+        return {"w": 20, "h": 3, "x": 0, "y": 0}
     if item.item_type == "Filter":
         return {"w": 4, "h": 3, "x": 0, "y": 0}
     if item.item_type == "Chart":
