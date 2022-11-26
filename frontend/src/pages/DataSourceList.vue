@@ -82,7 +82,7 @@
 
 	<Dialog :options="{ title: 'New Data Source' }" v-model="new_dialog">
 		<template #body-content>
-			<AddDatabase @create="onNewDatasource" />
+			<AddDatabase @success="onNewDatasource" />
 		</template>
 	</Dialog>
 </template>
