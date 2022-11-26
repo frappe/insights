@@ -301,10 +301,16 @@ def upload_csv(label, file, if_exists, columns):
 
 @frappe.whitelist()
 def sync_data_source(data_source):
-    data_source = frappe.get_doc("Insights Data Source", data_source)
-    notify("Syncing Tables")
-    data_source.sync_tables.enqueue(self=data_source)
-    notify("Tables Synced Successfully")
+    if type(data_source) == str:
+        data_source = frappe.get_doc("Insights Data Source", data_source)
+
+    try:
+        notify("Syncing Tables")
+        data_source.sync_tables.enqueue(self=data_source)
+        notify("Tables Synced Successfully")
+    except Exception as e:
+        frappe.log_error(title="Insights: Error syncing tables", message=e)
+        notify("Error Syncing Tables")
 
 
 @frappe.whitelist()
