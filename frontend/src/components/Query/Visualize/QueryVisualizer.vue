@@ -18,7 +18,7 @@
 			</div>
 		</div>
 		<div class="flex h-full w-[calc(100%-18rem)] flex-col space-y-4">
-			<div class="flex space-x-2">
+			<div class="flex space-x-2" v-if="chart.component && chart.componentProps">
 				<Button
 					appearance="white"
 					@click="showDashboardDialog = true"
