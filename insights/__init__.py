@@ -6,13 +6,13 @@ import frappe
 __version__ = "0.1.0-beta"
 
 
-def notify(message: str, title=None, notification_type="info"):
+def notify(**kwargs):
     frappe.publish_realtime(
         event="insights_notification",
         message={
-            "message": message,
-            "title": title,
-            "type": notification_type,
+            "message": kwargs.get("message"),
+            "title": kwargs.get("title"),
+            "type": kwargs.get("type"),
             "user": frappe.session.user,
         },
     )

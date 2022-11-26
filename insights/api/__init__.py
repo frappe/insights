@@ -300,17 +300,44 @@ def upload_csv(label, file, if_exists, columns):
 
 
 @frappe.whitelist()
-def sync_data_source(data_source):
-    if type(data_source) == str:
-        data_source = frappe.get_doc("Insights Data Source", data_source)
+def sync_data_source(data_source: str):
+    from frappe.utils.scheduler import is_scheduler_inactive
 
-    try:
-        notify("Syncing Tables")
-        data_source.sync_tables.enqueue(self=data_source)
-        notify("Tables Synced Successfully")
-    except Exception as e:
-        frappe.log_error(title="Insights: Error syncing tables", message=e)
-        notify("Error Syncing Tables")
+    if is_scheduler_inactive():
+        notify(
+            **{
+                "title": "Error",
+                "message": "Scheduler is inactive",
+                "type": "error",
+            }
+        )
+
+    frappe.enqueue(
+        _sync_data_source,
+        data_source=data_source,
+        job_name="sync_data_source",
+        queue="long",
+        timeout=3600,
+        now=True,
+    )
+
+
+def _sync_data_source(data_source):
+    notify(
+        **{
+            "title": "Info",
+            "message": "Syncing Data Source",
+            "type": "info",
+        }
+    )
+    frappe.get_doc("Insights Data Source", data_source).sync_tables()
+    notify(
+        **{
+            "title": "Success",
+            "message": "Data Source Synced",
+            "type": "success",
+        }
+    )
 
 
 @frappe.whitelist()
