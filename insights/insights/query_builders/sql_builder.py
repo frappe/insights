@@ -1,5 +1,6 @@
 import operator
 from contextlib import suppress
+from datetime import timedelta
 
 from frappe import _dict, parse_json
 from frappe.utils.data import (
@@ -182,20 +183,20 @@ class Functions:
             return case(conditions, else_=default)
 
         if function == "timespan":
-            timespan = args[1].lower().strip()
-            if "current" not in timespan and "last" not in timespan:
-                raise Exception(f"Invalid timespan: {timespan}")
+            column = args[0]
+            timespan = args[1].lower()
+            timespan = timespan[:-1] if timespan.endswith("s") else timespan
 
-            if "current" in timespan:
-                date_range = get_date_range(timespan)
-            elif "last" in timespan:
-                [span, interval, interval_type] = timespan.split(" ")
-                timespan = span + " n " + interval_type
-                date_range = get_date_range(timespan, n=int(interval))
-            return args[0].between(
-                get_date_str(date_range[0]),
-                get_date_str(date_range[1]),
-            )
+            units = ["day", "week", "month", "quarter", "year"]
+            unit = timespan.split(" ")[-1]
+            if unit not in units:
+                raise Exception(f"Invalid timespan unit {unit}")
+
+            dates = get_date_range(timespan)
+            if not dates:
+                raise Exception(f"Invalid timespan {args[1]}")
+
+            return column.between(get_date_str(dates[0]), get_date_str(dates[1]))
 
         if function == "time_elapsed":
             VALID_UNITS = [
@@ -219,57 +220,79 @@ class Functions:
         raise NotImplementedError(f"Function {function} not implemented")
 
 
-def get_date_range(timespan: str, n: int = 1):
+def get_current_date_range(unit):
     today = nowdate()
-    date_range_map = {
-        "current day": lambda: (
-            today,
-            today,
-        ),
-        "current week": lambda: (
-            get_first_day_of_week(today),
-            get_last_day_of_week(today),
-        ),
-        "current month": lambda: (
-            get_first_day(today),
-            get_last_day(today),
-        ),
-        "current quarter": lambda: (
-            get_quarter_start(today),
-            get_quarter_ending(today),
-        ),
-        "current year": lambda: (
-            get_year_start(today),
-            get_year_ending(today),
-        ),
-        "last n days": lambda n: (
-            add_to_date(today, days=-1 * n),
-            add_to_date(today, days=-1),
-        ),
-        "last n weeks": lambda n: (
-            get_first_day_of_week(add_to_date(today, days=-7 * n)),
-            get_last_day_of_week(add_to_date(today, days=-7)),
-        ),
-        "last n months": lambda n: (
-            get_first_day(add_to_date(today, months=-1 * n)),
-            get_last_day(add_to_date(today, months=-1)),
-        ),
-        "last n quarters": lambda n: (
-            get_quarter_start(add_to_date(today, months=-3 * n)),
-            get_quarter_ending(add_to_date(today, months=-3)),
-        ),
-        "last n years": lambda n: (
-            get_year_start(add_to_date(today, years=-1 * n)),
-            get_year_ending(add_to_date(today, years=-1)),
-        ),
-    }
+    if unit == "day":
+        return [today, today]
+    if unit == "week":
+        return [get_first_day_of_week(today), get_last_day_of_week(today)]
+    if unit == "month":
+        return [get_first_day(today), get_last_day(today)]
+    if unit == "quarter":
+        return [get_quarter_start(today), get_quarter_ending(today)]
+    if unit == "year":
+        return [get_year_start(today), get_year_ending(today)]
 
-    if timespan in date_range_map:
-        return (
-            date_range_map[timespan]()
-            if "current" in timespan
-            else date_range_map[timespan](n)
-        )
+
+def get_directional_date_range(direction, unit, number_of_unit):
+    dates = []
+    today = nowdate()
+    if unit == "day":
+        dates = [
+            add_to_date(today, days=direction * number_of_unit),
+            add_to_date(today, days=direction),
+        ]
+    if unit == "week":
+        dates = [
+            get_first_day_of_week(
+                add_to_date(today, days=direction * 7 * number_of_unit)
+            ),
+            get_last_day_of_week(add_to_date(today, days=direction * 7)),
+        ]
+    if unit == "month":
+        dates = [
+            get_first_day(add_to_date(today, months=direction * number_of_unit)),
+            get_last_day(add_to_date(today, months=direction)),
+        ]
+    if unit == "quarter":
+        dates = [
+            get_quarter_start(
+                add_to_date(today, months=direction * 3 * number_of_unit)
+            ),
+            get_quarter_ending(add_to_date(today, months=direction * 3)),
+        ]
+    if unit == "year":
+        dates = [
+            get_year_start(add_to_date(today, years=direction * number_of_unit)),
+            get_year_ending(add_to_date(today, years=direction)),
+        ]
+
+    if dates[0] > dates[1]:
+        dates.reverse()
+    return dates
+
+
+def get_date_range(timespan, include_current=False):
+    # timespan = "last 7 days" or "next 3 months"
+    direction = timespan.lower().split(" ")[0]  # "last" or "next" or "current"
+    unit = timespan.lower().split(" ")[-1]  # "day", "week", "month", "quarter", "year"
+
+    if direction == "current":
+        return get_current_date_range(unit)
+
+    number_of_unit = int(timespan.split(" ")[1])  # 7, 3, etc
+
+    if direction == "last" or direction == "next":
+        direction = -1 if direction == "last" else 1
+
+        dates = get_directional_date_range(direction, unit, number_of_unit)
+
+        if include_current:
+            current_dates = get_current_date_range(unit)
+            dates[0] = min(dates[0], current_dates[0])
+            dates[1] = max(dates[1], current_dates[1])
+
+        return dates
 
 
 class BinaryOperations:

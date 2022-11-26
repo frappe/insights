@@ -2,6 +2,7 @@
 # See license.txt
 
 import unittest
+from unittest.mock import patch
 
 import frappe
 
@@ -53,6 +54,55 @@ class TestSQLBuilder(unittest.TestCase):
         )
 
         self.site_db.execute_query(query)
+
+    def test_date_ranges(self):
+        from frappe.utils.data import get_date_str
+
+        from .sql_builder import get_date_range
+
+        nowdate_path = "insights.insights.query_builders.sql_builder.nowdate"
+        with patch(nowdate_path, return_value="2022-11-26"):
+            assertions_map = {
+                "Current Day": ["2022-11-26", "2022-11-26"],
+                "Current Week": ["2022-11-20", "2022-11-26"],
+                "Current Month": ["2022-11-01", "2022-11-30"],
+                "Current Quarter": ["2022-10-01", "2022-12-31"],
+                "Current Year": ["2022-01-01", "2022-12-31"],
+                "Last 1 Day": ["2022-11-25", "2022-11-25"],
+                "Last 1 Week": ["2022-11-13", "2022-11-19"],
+                "Last 1 Month": ["2022-10-01", "2022-10-31"],
+                "Last 1 Quarter": ["2022-07-01", "2022-09-30"],
+                "Last 1 Year": ["2021-01-01", "2021-12-31"],
+                "Next 1 Day": ["2022-11-27", "2022-11-27"],
+                "Next 1 Week": ["2022-11-27", "2022-12-03"],
+                "Next 1 Month": ["2022-12-01", "2022-12-31"],
+                "Next 1 Quarter": ["2023-01-01", "2023-03-31"],
+                "Next 1 Year": ["2023-01-01", "2023-12-31"],
+            }
+            for key, value in assertions_map.items():
+                dates = [get_date_str(d) for d in get_date_range(key)]
+                self.assertEqual(dates, value)
+
+            assertions_with_include_current = {
+                "Current Day": ["2022-11-26", "2022-11-26"],
+                "Current Week": ["2022-11-20", "2022-11-26"],
+                "Current Month": ["2022-11-01", "2022-11-30"],
+                "Current Quarter": ["2022-10-01", "2022-12-31"],
+                "Current Year": ["2022-01-01", "2022-12-31"],
+                "Last 1 Day": ["2022-11-25", "2022-11-26"],
+                "Last 1 Week": ["2022-11-13", "2022-11-26"],
+                "Last 1 Month": ["2022-10-01", "2022-11-30"],
+                "Last 1 Quarter": ["2022-07-01", "2022-12-31"],
+                "Last 1 Year": ["2021-01-01", "2022-12-31"],
+                "Next 1 Day": ["2022-11-26", "2022-11-27"],
+                "Next 1 Week": ["2022-11-20", "2022-12-03"],
+                "Next 1 Month": ["2022-11-01", "2022-12-31"],
+                "Next 1 Quarter": ["2022-10-01", "2023-03-31"],
+                "Next 1 Year": ["2022-01-01", "2023-12-31"],
+            }
+            for key, value in assertions_with_include_current.items():
+                dates = [get_date_str(d) for d in get_date_range(key, True)]
+                self.assertEqual(dates, value)
 
 
 TEST_QUERY = {
