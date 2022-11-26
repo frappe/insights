@@ -79,8 +79,7 @@ import BasePage from '@/components/BasePage.vue'
 import { createResource } from 'frappe-ui'
 import { updateDocumentTitle } from '@/utils'
 
-import moment from 'moment'
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 
 const dataSource = ref('')
 const getDataSources = createResource({
@@ -102,12 +101,14 @@ const getRunningQueries = createResource({
 	method: 'insights.api.get_running_jobs',
 	initialData: [],
 })
+
+const dayjs = inject('$dayjs')
 const runningQueries = computed(() => {
 	console.log(getRunningQueries.data)
 	return getRunningQueries.data
 		.filter((d) => d.info)
 		.map((d) => {
-			d['time'] = moment(d['time']).format('S') + 's'
+			d['time'] = dayjs(d['time']).format('S') + 's'
 			d['progress'] = `${d['progress']}%`
 			// trim info to fit in the table
 			// d['info'] = d['info']?.substring(0, 100) + '...'

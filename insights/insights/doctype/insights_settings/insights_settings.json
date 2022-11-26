@@ -8,7 +8,9 @@
  "field_order": [
   "onboarding_section",
   "setup_complete",
-  "onboarding_complete"
+  "onboarding_complete",
+  "auto_execute_query",
+  "auto_refresh_dashboard_in_minutes"
  ],
  "fields": [
   {
@@ -26,12 +28,24 @@
    "fieldname": "onboarding_complete",
    "fieldtype": "Check",
    "label": "Onboarding Complete"
+  },
+  {
+   "default": "30",
+   "fieldname": "auto_refresh_dashboard_in_minutes",
+   "fieldtype": "Int",
+   "label": "Auto Refresh Dashboard In (Minutes)"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_execute_query",
+   "fieldtype": "Check",
+   "label": "Auto Execute Query"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-08-24 13:12:28.900403",
+ "modified": "2022-11-21 13:58:21.557046",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

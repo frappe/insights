@@ -1,9 +1,10 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
 import math
 from json import dumps
+
+import frappe
 
 
 def execute():

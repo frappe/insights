@@ -15,7 +15,7 @@ const defaults = {
 				return value
 			}
 			if (type === 'value') {
-				return $utils.getShortNumber(value)
+				return $utils.getShortNumber(value, 1)
 			}
 		},
 	},

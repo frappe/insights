@@ -11,12 +11,8 @@ def execute():
         UPDATE
             `tabInsights Query Column`
         SET
-            `column` = 'count'
+            `column` = '*'
         WHERE
-            `column` = '__count'
-            OR (
-                `column` = '*'
-                AND `aggregation` = 'Count'
-            )
+            `column` = '__count' OR `column` = 'count'
         """
     )

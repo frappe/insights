@@ -3,19 +3,34 @@
 
 
 import frappe
+from sqlalchemy import column as Column
+from sqlalchemy import select as Select
+from sqlalchemy import table as Table
+from sqlalchemy import text
+from sqlalchemy.engine.base import Connection
 
-from frappe.utils import cint
-from .models import BaseDatabase
-from .utils import SecureMariaDB, create_insights_table, MARIADB_TO_GENERIC_TYPES
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+
+from .models import BaseDatabase
+from .utils import (
+    MARIADB_TO_GENERIC_TYPES,
+    create_insights_table,
+    get_sqlalchemy_engine,
+)
 
 
 class MariaDBTableFactory:
     """Fetchs tables and columns from database and links from doctype"""
 
-    def __init__(self, data_source, db_conn) -> None:
-        self.db_conn: SecureMariaDB = db_conn
+    def __init__(self, data_source) -> None:
+        self.db_conn: Connection
         self.data_source = data_source
+
+    def sync_tables(self, connection, tables, force=False):
+        self.db_conn = connection
+        for table in self.get_tables(table_names=tables):
+            # when force is true, it will overwrite the existing columns & links
+            create_insights_table(table, force=force)
 
     def get_tables(self, table_names=None):
         tables = []
@@ -26,22 +41,28 @@ class MariaDBTableFactory:
         return tables
 
     def get_db_tables(self, table_names=None):
-        table = frappe.qb.Schema("information_schema").tables
-        database_name = self.db_conn.sql("SELECT DATABASE()")[0][0]
+        t = Table(
+            "tables",
+            Column("table_name"),
+            Column("table_schema"),
+            Column("table_type"),
+            schema="information_schema",
+        )
 
         query = (
-            frappe.qb.from_(table)
-            .select(table.table_name)
-            .where(
-                (table.table_schema == database_name)
-                and (table.table_type == "BASE TABLE")
-            )
+            t.select()
+            .where(t.c.table_schema == text("DATABASE()"))
+            .where(t.c.table_type == "BASE TABLE")
         )
         if table_names:
-            query = query.where(table.table_name.isin(table_names))
+            query = query.where(t.c.table_name.in_(table_names))
 
-        tables = self.db_conn.sql(query.get_sql(), pluck=True)
-        return [self.get_table(table) for table in tables if not table.startswith("__")]
+        tables = self.db_conn.execute(query).fetchall()
+        return [
+            self.get_table(table[0])
+            for table in tables
+            if not table[0].startswith("__")
+        ]
 
     def get_table(self, table_name):
         return frappe._dict(
@@ -53,24 +74,21 @@ class MariaDBTableFactory:
         )
 
     def get_all_columns(self):
-        columns = frappe.qb.Schema("information_schema").columns
-        database_name = self.db_conn.sql("SELECT DATABASE()")[0][0]
-
-        query = (
-            frappe.qb.from_(columns)
-            .select(
-                columns.table_name,
-                columns.column_name.as_("name"),
-                columns.data_type.as_("type"),
-            )
-            .where(columns.table_schema == database_name)
+        t = Table(
+            "columns",
+            Column("table_name"),
+            Column("column_name"),
+            Column("data_type"),
+            Column("table_schema"),
+            schema="information_schema",
         )
 
-        columns = self.db_conn.sql(query.get_sql(), as_dict=True)
+        query = t.select().where(t.c.table_schema == text("DATABASE()"))
+        columns = self.db_conn.execute(query).fetchall()
         columns_by_table = {}
-        for c in columns:
-            columns_by_table.setdefault(c.table_name, []).append(
-                self.get_column(c.name, c.type)
+        for col in columns:
+            columns_by_table.setdefault(col[0], []).append(
+                self.get_column(col[1], col[2])
             )
         return columns_by_table
 
@@ -93,35 +111,41 @@ class MariaDB(BaseDatabase):
     def __init__(
         self, data_source, host, port, username, password, database_name, use_ssl
     ):
-        self.conn: SecureMariaDB = SecureMariaDB(
-            dbName=database_name,
-            user=username,
+        self.engine = get_sqlalchemy_engine(
+            dialect="mysql",
+            driver="pymysql",
+            username=username,
             password=password,
+            database=database_name,
             host=host,
-            port=cint(port),
-            useSSL=use_ssl,
+            port=port,
+            ssl=use_ssl,
+            ssl_verify_cert=True,
+            charset="utf8mb4",
+            use_unicode=True,
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
-        self.table_factory: MariaDBTableFactory = MariaDBTableFactory(
-            data_source, db_conn=self.conn
-        )
+        self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
 
     def test_connection(self):
         try:
-            return self.conn.sql("select 1")
+            return self.execute_query("select 1")
         except Exception as e:
             frappe.log_error(f"Error connecting to MariaDB: {e}")
 
     def build_query(self, query):
-        return self.query_builder.build(query)
+        return self.query_builder.build(query, dialect=self.engine.dialect)
 
-    def execute_query(self, query, *args, **kwargs):
-        return self.conn.sql(query, *args, **kwargs)
+    def execute_query(self, query, pluck=False):
+        if query is None:
+            return []
+        with self.engine.connect() as connection:
+            result = connection.execute(query).fetchall()
+            return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def sync_tables(self, tables=None, force=False):
-        for table in self.table_factory.get_tables(table_names=tables):
-            # when force is true, it will overwrite the existing columns & links
-            create_insights_table(table, force=force)
+        with self.engine.begin() as connection:
+            self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=20):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
@@ -132,14 +156,13 @@ class MariaDB(BaseDatabase):
         }
 
     def get_table_columns(self, table):
-        return self.table_factory.get_table_columns(table)
+        with self.engine.connect() as connection:
+            self.table_factory.db_conn = connection
+            return self.table_factory.get_table_columns(table)
 
     def get_column_options(self, table, column, search_text=None, limit=25):
-        Table = frappe.qb.Table(table)
-        Column = frappe.qb.Field(column)
-        query = frappe.qb.from_(Table).select(Column).distinct().limit(limit)
+        query = Select(Column(column)).select_from(Table(table)).distinct().limit(limit)
         if search_text:
-            query = query.where(Column.like(f"%{search_text}%"))
-        values = self.execute_query(query.get_sql(), pluck=True)
-        # TODO: cache
-        return values
+            query = query.where(Column(column).like(f"%{search_text}%"))
+
+        return self.execute_query(query, pluck=True)

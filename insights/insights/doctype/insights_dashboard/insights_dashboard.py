@@ -2,8 +2,9 @@
 # For license information, please see license.txt
 
 
-import frappe
 from json import dumps
+
+import frappe
 from frappe.model.document import Document
 
 
@@ -20,9 +21,10 @@ class InsightsDashboard(Document):
         )
 
     @frappe.whitelist()
-    def add_item(self, item, layout=None):
-        if not layout:
-            layout = {"w": 8, "h": 8}
+    def add_item(self, item):
+        layout = get_item_position(
+            item, [frappe.parse_json(item.layout) for item in self.items]
+        )
         self.append(
             "items",
             {
@@ -39,6 +41,8 @@ class InsightsDashboard(Document):
                 frappe.get_doc("Insights Query", item.query).run()
             except BaseException:
                 frappe.log_error(title="Error while refreshing dashboard item")
+
+        self.db_set("last_updated_on", frappe.utils.now())
 
     @frappe.whitelist()
     def remove_item(self, item):
@@ -87,12 +91,16 @@ class InsightsDashboard(Document):
                 break
 
     @frappe.whitelist()
-    def get_columns_for(self, query):
-        return frappe.get_doc("Insights Query", query).fetch_columns()
+    def get_all_columns(self, query):
+        # fetches all the columns for all the tables selected in the query
+        return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
     @frappe.whitelist()
     def get_chart_data(self, chart):
-        row = self.get("items", {"chart": chart})[0]
+        row = self.get("items", {"chart": chart})
+        if not row:
+            return
+        row = row[0]
         if chart_filters := frappe.parse_json(row.chart_filters):
             query = frappe.get_doc("Insights Query", row.query)
             filter_conditions = []
@@ -111,6 +119,10 @@ class InsightsDashboard(Document):
             return query.run_with_filters(filter_conditions)
         else:
             return frappe.db.get_value("Insights Query", row.query, "result")
+
+    @frappe.whitelist()
+    def get_columns(self, query):
+        return frappe.get_cached_doc("Insights Query", query).get_columns()
 
 
 BINARY_OPERATORS = {
@@ -188,7 +200,7 @@ def make_args_for_call_expression(operator_function, filter):
         return []
 
     if operator_function == "between":
-        values = filter.filter_value.split(",")
+        values = [v.strip() for v in filter.filter_value.split(",")]
         return [
             {
                 "type": "Number" if filter.filter_type == "Number" else "String",
@@ -206,3 +218,42 @@ def make_args_for_call_expression(operator_function, filter):
             "value": filter.filter_value,
         }
     ]
+
+
+def get_item_size(item):
+    item = frappe._dict(item)
+    if item.item_type == "Filter":
+        return {"w": 4, "h": 3, "x": 0, "y": 0}
+    if item.item_type == "Chart":
+        chart_type = frappe.db.get_value("Insights Query Chart", item.chart, "type")
+        if chart_type == "Number":
+            return {"w": 4, "h": 4, "x": 0, "y": 0}
+        if chart_type == "Progress":
+            return {"w": 6, "h": 5, "x": 0, "y": 0}
+        return {"w": 12, "h": 9, "x": 0, "y": 0}
+    return {"w": 6, "h": 6, "x": 0, "y": 0}
+
+
+def get_item_position(item, existing_layouts):
+    new_layout = frappe.parse_json(item.get("layout")) or get_item_size(item)
+    # find the first available position
+    for y in range(0, 100_000):
+        for x in range(0, 20):
+            new_layout["x"] = x
+            new_layout["y"] = y
+            if not any(
+                [
+                    layout_overlap(new_layout, existing_layout)
+                    for existing_layout in existing_layouts
+                ]
+            ):
+                return new_layout
+
+
+def layout_overlap(new_layout, existing_layout):
+    return (
+        new_layout.get("x") < existing_layout.get("x") + existing_layout.get("w")
+        and new_layout.get("x") + new_layout.get("w") > existing_layout.get("x")
+        and new_layout.get("y") < existing_layout.get("y") + existing_layout.get("h")
+        and new_layout.get("y") + new_layout.get("h") > existing_layout.get("y")
+    )

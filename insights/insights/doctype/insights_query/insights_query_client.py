@@ -1,12 +1,11 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from json import dumps
 from copy import deepcopy
-from pandas import DataFrame
+from json import dumps
 
 import frappe
-from frappe.utils import cstr, cint
+from frappe.utils import cint, cstr
 
 from insights.api import get_tables
 
@@ -162,21 +161,25 @@ class InsightsQueryClient:
 
         self.save()
 
-    def pivot(self, transform_data):
+    @frappe.whitelist()
+    def add_transform(self, type, options):
+        existing = self.get("transforms", {"type": type})
+        if existing:
+            existing[0].options = frappe.as_json(options)
+        else:
+            self.append(
+                "transforms",
+                {
+                    "type": type,
+                    "options": frappe.as_json(options),
+                },
+            )
+        self.run()
 
-        # TODO: validate if two columns doesn't have same label
-
-        result = frappe.parse_json(self.result)
-        columns = [d.get("label") for d in self.get("columns")]
-
-        dataframe = DataFrame(columns=columns, data=result)
-        pivoted = dataframe.pivot(
-            index=transform_data.get("index_columns"),
-            columns=transform_data.get("pivot_columns"),
-        )
-
-        self.transform_result = pivoted.to_html()
-        self.transform_result = self.transform_result.replace("NaN", "-")
+    @frappe.whitelist()
+    def reset_transforms(self):
+        self.transforms = []
+        self.run()
 
     @frappe.whitelist()
     def fetch_tables(self):
@@ -198,6 +201,10 @@ class InsightsQueryClient:
                 .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
             )
             _tables = query.run(as_dict=True)
+            # add all selected tables to the list too
+            _tables = _tables + [
+                {"table": d.table, "label": d.label} for d in self.tables
+            ]
 
         if self.data_source == "Query Store":
             # remove the current query table from the table list
@@ -283,7 +290,15 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def run(self):
+        if self.data_source == "Query Store":
+            tables = (t.table for t in self.tables)
+            subqueries = frappe.db.get_all(
+                "Insights Query", {"name": ["in", tables]}, pluck="name"
+            )
+            for subquery in subqueries:
+                frappe.get_doc("Insights Query", subquery).run()
         self.build_and_execute()
+        self.skip_before_save = True
         self.save()
 
     @frappe.whitelist()

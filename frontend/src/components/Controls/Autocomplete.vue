@@ -39,7 +39,7 @@
 								v-if="filteredOptions.length === 0 && !$props.allowCreate"
 								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
 							>
-								No results found
+								{{ emptyText }}
 							</div>
 							<ComboboxOption
 								v-if="$props.allowCreate"
@@ -61,8 +61,7 @@
 									:class="{
 										'bg-gray-100 text-gray-800': active,
 										'bg-white': !active,
-										'!h-7 cursor-default !text-sm text-gray-600':
-											option.disabled,
+										'cursor-not-allowed !opacity-50': option.disabled,
 									}"
 								>
 									<div class="flex items-baseline space-x-2">
@@ -116,6 +115,10 @@ const props = defineProps({
 		type: String,
 		default: '',
 	},
+	emptyText: {
+		type: String,
+		default: 'No results found',
+	},
 	modelValue: {
 		required: true,
 	},
@@ -164,7 +167,14 @@ const selectedOption = computed({
 })
 const uniqueOptions = computed(() => {
 	return options.value.filter((option, index, self) => {
-		return self.findIndex((t) => t.value === option.value && t.label === option.label) === index
+		return (
+			self.findIndex(
+				(t) =>
+					t.value === option.value &&
+					t.label === option.label &&
+					t.description === option.description
+			) === index
+		)
 	})
 })
 const filteredOptions = computed(() => {

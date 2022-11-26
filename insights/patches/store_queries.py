@@ -1,5 +1,9 @@
 import frappe
 
+from insights.insights.doctype.insights_data_source.sources.query_store import (
+    sync_query_store,
+)
+
 
 def execute():
     if not frappe.db.a_row_exists("Insights Query"):
@@ -26,5 +30,4 @@ def execute():
             .where(Query.name.isin(queries_to_stored))
             .run()
         )
-        query_store = frappe.get_doc("Insights Data Source", "Query Store")
-        query_store.sync_tables(queries=queries_to_stored)
+        sync_query_store(tables=queries_to_stored, force=True)

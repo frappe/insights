@@ -131,7 +131,7 @@ function useChart({ chartID, data }) {
 	})
 
 	function addToDashboard(dashboard, layout, { onSuccess }) {
-		const params = { dashboard, layout }
+		const params = { dashboard }
 		const options = { onSuccess }
 		resource.addToDashboard.submit(params, options)
 		if (!chart.addingToDashboard) {

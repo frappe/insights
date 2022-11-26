@@ -80,7 +80,7 @@ export default {
 	emits: ['update:modelValue', 'change'],
 	props: ['value', 'modelValue', 'placeholder'],
 	data() {
-		const initalValue = this.valuePropPassed() ? this.value : this.modelValue?.value || ''
+		const initalValue = (this.valuePropPassed() ? this.value : this.modelValue?.value) || ''
 		if (initalValue.includes('Current')) {
 			return {
 				span: 'Current',

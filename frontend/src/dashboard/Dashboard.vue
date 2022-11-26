@@ -3,7 +3,8 @@
 		<template #header>
 			<DashboardHeader
 				@addChart="() => (showAddDialog = true)"
-				@commitLayout="dashboard.commitLayout"
+				@saveLayout="saveLayout"
+				@autoLayout="autoLayout"
 			/>
 		</template>
 		<template #main>
@@ -16,8 +17,9 @@
 				}"
 			>
 				<GridLayout
-					:items="dashboard.items"
+					ref="gridLayout"
 					itemKey="name"
+					:items="dashboard.items"
 					@layoutChange="dashboard.updateLayout"
 					:disabled="!dashboard.editingLayout"
 					:options="{
@@ -54,22 +56,19 @@
 					:tabs="addItemTabs"
 					@switch="
 						(tab) => {
-							addItemTabs.forEach((t) => {
-								t.active = t.label === tab.label
-							})
 							newItem.item_type = tab.label
 						}
 					"
 				/>
 				<Autocomplete
-					v-if="newItemType == 'Chart'"
+					v-if="newItem.item_type == 'Chart'"
 					ref="autocomplete"
 					placeholder="Select a chart"
-					v-model="newItem"
+					v-model="newChart"
 					:options="dashboard.newChartOptions"
 				/>
 
-				<DashboardFilterForm v-if="newItemType == 'Filter'" v-model="newItem" />
+				<DashboardFilterForm v-if="newItem.item_type == 'Filter'" v-model="newItem" />
 			</div>
 		</template>
 		<template #actions>
@@ -116,8 +115,8 @@ const autocomplete = ref(null)
 watch(showAddDialog, (show) => {
 	if (show) {
 		setTimeout(() => {
-			autocomplete.value.input.$el.blur()
-			autocomplete.value.input.$el.focus()
+			autocomplete.value?.input.$el.blur()
+			autocomplete.value?.input.$el.focus()
 		}, 400)
 	}
 })
@@ -132,15 +131,24 @@ const addItemTabs = ref([
 		active: false,
 	},
 ])
-const newItemType = computed(() => {
-	return addItemTabs.value.find((t) => t.active).label
-})
+watch(
+	() => newItem.value.item_type,
+	(type) => {
+		addItemTabs.value.forEach((tab) => {
+			tab.active = tab.label == type
+		})
+	},
+	{ immediate: true }
+)
+
+const newChart = ref({})
+watch(newChart, (chart) => chart && (newItem.value.chart = chart.value))
 
 function addItem() {
-	if (newItemType.value == 'Chart') {
+	if (newItem.value.item_type == 'Chart') {
 		dashboard.addItem({
 			item_type: 'Chart',
-			chart: newItem.value.value,
+			chart: newItem.value.chart,
 		})
 	} else {
 		dashboard.addItem({
@@ -151,6 +159,23 @@ function addItem() {
 		})
 	}
 	showAddDialog.value = false
+	newItem.value = {
+		item_type: 'Chart',
+		chart: null,
+		filter_label: '',
+		filter_type: 'String', // default
+		filter_operator: 'equals', // default
+	}
+	newChart.value = {}
+}
+
+const gridLayout = ref(null)
+function saveLayout() {
+	dashboard.saveLayout(gridLayout.value.grid.save(false))
+}
+async function autoLayout() {
+	gridLayout.value.grid.compact()
+	console.log(gridLayout.value.grid.getGridItems())
 }
 
 const pageMeta = computed(() => {

@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import os
+
 import frappe
 
 
@@ -49,9 +50,9 @@ class DemoDataFactory:
         self.initialize()
 
     @staticmethod
-    def run():
+    def run(force=False):
         factory = DemoDataFactory()
-        if factory.demo_data_exists():
+        if factory.demo_data_exists() and not force:
             return factory
         factory.download_demo_data()
         factory.extract_demo_data()
@@ -69,7 +70,16 @@ class DemoDataFactory:
         self.local_filename = os.path.join(self.files_folder, self.tar_filename)
         self.file_schema = self.get_schema()
         self.table_names = [frappe.scrub(table) for table in self.file_schema.keys()]
-        self.data_source = frappe.get_doc("Insights Data Source", "Site DB")
+
+        if not frappe.db.exists("Insights Data Source", "Demo Data"):
+            data_source = frappe.new_doc("Insights Data Source")
+            data_source.title = "Demo Data"
+            data_source.database_type = "SQLite"
+            data_source.database_name = "insights_demo_data"
+            data_source.allow_imports = 1
+            data_source.save()
+
+        self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
         if frappe.flags.in_test:
             self.local_filename = os.path.join(
                 os.path.dirname(__file__), "test_demo_data.tar"
@@ -192,8 +202,6 @@ class DemoDataFactory:
             table_import.save(ignore_permissions=True)
             table_import.submit()
 
-        self.data_source.sync_tables(tables=self.table_names)
-
     def cleanup(self):
         if os.path.exists(os.path.join(self.files_folder, self.tar_filename)):
             os.remove(os.path.join(self.files_folder, self.tar_filename))
@@ -248,7 +256,7 @@ class DemoDataFactory:
             table_name = frappe.scrub(table)
             index_name = f"idx_{table_name}_{'_'.join(indexes[table])}"
             columns = ", ".join([f"`{c}`" for c in indexes[table]])
-            self.data_source.db.conn.sql(
+            self.data_source.db.engine.execute(
                 f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})"
             )
 
@@ -307,7 +315,7 @@ class DemoDataFactory:
         for table, links in foreign_key_relations.items():
             doc = frappe.get_doc(
                 "Insights Table",
-                {"table": frappe.scrub(table), "data_source": "Site DB"},
+                {"table": frappe.scrub(table), "data_source": self.data_source.name},
             )
             for link in links:
                 doc.append(

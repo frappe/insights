@@ -6,4 +6,12 @@ from frappe.model.document import Document
 
 
 class InsightsSettings(Document):
-    pass
+    @frappe.whitelist()
+    def update_settings(self, settings):
+        settings = frappe.parse_json(settings)
+        self.auto_execute_query = settings.auto_execute_query or self.auto_execute_query
+        self.auto_refresh_dashboard_in_minutes = (
+            settings.auto_refresh_dashboard_in_minutes
+            or self.auto_refresh_dashboard_in_minutes
+        )
+        self.save()

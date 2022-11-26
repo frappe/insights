@@ -6,21 +6,24 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex w-2/3 flex-col space-y-6">
-				<div class="space-y-3">
+			<div class="flex w-1/3 flex-col space-y-6" v-if="settings.doc">
+				<div class="space-y-4">
 					<div class="text-sm tracking-wide text-gray-600">GENERAL</div>
 					<Input
 						type="checkbox"
-						label="Hide Sidebar"
-						v-model="settings.hide_sidebar"
-						@input="(checked) => settings.update('hide_sidebar', checked)"
+						label="Auto Execute Query"
+						:value="settings.doc.auto_execute_query"
+						@input="(c) => settings.updateSettings({ auto_execute_query: c })"
 					/>
-				</div>
-				<div class="space-y-3">
-					<div class="text-sm tracking-wide text-gray-600">QUERY</div>
-					<Button appearance="white" @click="$router.push('/settings/running-queries')">
-						Show Running Queries
-					</Button>
+					<Input
+						type="number"
+						min="0"
+						label="Auto Refresh Dashboard In (Minutes)"
+						:value="settings.doc.auto_refresh_dashboard_in_minutes"
+						@input="
+							(c) => settings.updateSettings({ auto_refresh_dashboard_in_minutes: c })
+						"
+					/>
 				</div>
 			</div>
 		</template>

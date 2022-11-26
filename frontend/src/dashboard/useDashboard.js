@@ -1,6 +1,8 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { safeJSONParse } from '@/utils'
-import { createDocumentResource, call } from 'frappe-ui'
+import { createDocumentResource, call, debounce } from 'frappe-ui'
+import settings from '@/utils/settings'
+import dayjs from '@/utils/dayjs'
 
 export default function useDashboard(dashboardName) {
 	const dashboard = makeDashboardResource(dashboardName)
@@ -20,7 +22,7 @@ export default function useDashboard(dashboardName) {
 
 	// methods
 	dashboard.updateNewChartOptions = () => {
-		dashboard.get_chart_options.submit()
+		return dashboard.get_chart_options.submit()
 	}
 	dashboard.newChartOptions = computed(() =>
 		dashboard.get_chart_options.data?.message?.map((v) => {
@@ -31,28 +33,20 @@ export default function useDashboard(dashboardName) {
 			}
 		})
 	)
-	dashboard.updateLayout = (changedItems) => {
-		changedItems.forEach((item) => {
-			const name = item.id
-			delete item.id
-			dashboard.updatedLayout[name] = item
-		})
-	}
-	dashboard.commitLayout = () => {
+	dashboard.saveLayout = (layouts) => {
 		dashboard.update_layout
 			.submit({
-				updated_layout: dashboard.updatedLayout,
+				updated_layout: layouts.reduce((acc, v) => {
+					acc[v.id] = { x: v.x, y: v.y, w: v.w, h: v.h }
+					return acc
+				}, {}),
 			})
 			.then(() => {
 				dashboard.editingLayout = false
 			})
 	}
 	dashboard.addItem = (item) => {
-		let layout = null
-		if (item.item_type === 'Filter') {
-			layout = { x: 0, y: 0, w: 4, h: 3 }
-		}
-		return dashboard.add_item.submit({ item, layout }).then(() => {
+		return dashboard.add_item.submit({ item }).then(() => {
 			dashboard.updateNewChartOptions()
 		})
 	}
@@ -82,7 +76,8 @@ export default function useDashboard(dashboardName) {
 		return dashboard.delete.submit()
 	}
 
-	dashboard.refreshItems = async () => {
+	dashboard.refreshItems = debounce(async () => {
+		dashboard.editingLayout = false
 		dashboard.refreshing = true
 		// hack: update the charts
 		await dashboard.refresh_items.submit()
@@ -91,24 +86,47 @@ export default function useDashboard(dashboardName) {
 		dashboard.doc.items = []
 		await dashboard.reload()
 		dashboard.refreshing = false
-	}
+	}, 500)
 
 	dashboard.getChartData = (chartID) => {
 		const data = ref([])
 		dashboard.get_chart_data.submit({ chart: chartID }).then((r) => {
 			data.value = r.message
 		})
-		return computed(() => data.value)
+		return computed(() => safeJSONParse(data.value, []))
 	}
 
 	dashboard.filters = computed(() => dashboard.doc?.items.filter((v) => v.item_type == 'Filter'))
 
-	dashboard.getColumnsFor = (query) => {
-		dashboard.get_columns_for.submit({ query })
-		return computed(() => dashboard.get_columns_for.data?.message || [])
+	dashboard.getAllColumns = (query) => {
+		dashboard.get_all_columns.submit({ query })
+		return computed(() => dashboard.get_all_columns.data?.message || [])
+	}
+
+	dashboard.getColumns = (query) => {
+		dashboard.get_columns.submit({ query })
+		return computed(() => dashboard.get_columns.data?.message || [])
 	}
 
 	dashboard.updateNewChartOptions()
+
+	if (settings.doc?.auto_refresh_dashboard_in_minutes) {
+		watch(
+			() => dashboard.doc?.last_updated_on,
+			() => {
+				const last_updated_on = dayjs(dashboard.doc.last_updated_on)
+				const minute_diff = dayjs().diff(last_updated_on, 'minute')
+
+				if (
+					!dashboard.doc.last_updated_on ||
+					minute_diff > settings.doc.auto_refresh_dashboard_in_minutes
+				) {
+					dashboard.refreshItems()
+				}
+			}
+		)
+	}
+
 	return dashboard
 }
 
@@ -124,7 +142,8 @@ function makeDashboardResource(name) {
 			remove_item: 'remove_item',
 			get_chart_data: 'get_chart_data',
 			update_filter: 'update_filter',
-			get_columns_for: 'get_columns_for',
+			get_all_columns: 'get_all_columns',
+			get_columns: 'get_columns',
 			update_chart_filters: 'update_chart_filters',
 		},
 	})

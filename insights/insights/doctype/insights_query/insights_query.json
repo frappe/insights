@@ -30,9 +30,7 @@
   "last_execution",
   "transform_tab",
   "section_break_18",
-  "transform_type",
-  "transform_data",
-  "transform_result"
+  "transforms"
  ],
  "fields": [
   {
@@ -116,6 +114,8 @@
   {
    "fieldname": "data_source",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Data Source",
    "options": "Insights Data Source",
    "reqd": 1
@@ -128,25 +128,6 @@
   {
    "fieldname": "section_break_18",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "transform_type",
-   "fieldtype": "Select",
-   "label": "Transform Type",
-   "options": "Pivot"
-  },
-  {
-   "fieldname": "transform_data",
-   "fieldtype": "Code",
-   "label": "Transform Data",
-   "options": "JSON"
-  },
-  {
-   "default": "{}",
-   "fieldname": "transform_result",
-   "fieldtype": "Code",
-   "label": "Transform Result",
-   "read_only": 1
   },
   {
    "fieldname": "execution_time",
@@ -173,6 +154,8 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "hidden": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending Execution\nExecution Successful",
    "read_only": 1
@@ -182,11 +165,17 @@
    "fieldname": "is_stored",
    "fieldtype": "Check",
    "label": "Stored"
+  },
+  {
+   "fieldname": "transforms",
+   "fieldtype": "Table",
+   "label": "Transforms",
+   "options": "Insights Query Transform"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-18 00:48:09.149101",
+ "modified": "2022-11-18 16:34:41.260340",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

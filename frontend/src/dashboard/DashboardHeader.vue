@@ -8,7 +8,7 @@ const dashboard = inject('dashboard')
 const router = useRouter()
 const showDeleteDialog = ref(false)
 
-defineEmits(['addChart', 'commitLayout'])
+defineEmits(['addChart', 'saveLayout', 'autoLayout'])
 
 const $notify = inject('$notify')
 function updateTitle(title) {
@@ -50,9 +50,19 @@ function updateTitle(title) {
 			<Button
 				v-if="dashboard.editingLayout"
 				appearance="white"
-				icon="plus"
+				iconLeft="plus"
 				@click="$emit('addChart')"
-			/>
+			>
+				Add
+			</Button>
+			<Button
+				v-if="dashboard.editingLayout"
+				appearance="white"
+				iconLeft="grid"
+				@click="$emit('autoLayout')"
+			>
+				Auto Layout
+			</Button>
 			<Button
 				v-if="!dashboard.editingLayout"
 				appearance="white"
@@ -65,15 +75,19 @@ function updateTitle(title) {
 			<Button
 				v-if="dashboard.editingLayout"
 				appearance="danger"
-				icon="x"
+				iconLeft="x"
 				@click="dashboard.editingLayout = false"
-			/>
+			>
+				Cancel
+			</Button>
 			<Button
 				v-if="dashboard.editingLayout"
 				appearance="primary"
-				icon="check"
-				@click="$emit('commitLayout')"
-			/>
+				iconLeft="check"
+				@click="$emit('saveLayout')"
+			>
+				Save
+			</Button>
 		</div>
 	</div>
 

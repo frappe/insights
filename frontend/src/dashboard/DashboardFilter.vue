@@ -5,6 +5,7 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
 import DatePicker from '@/components/Controls/DatePicker.vue'
+import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
 
 import { computed, reactive, watch, inject, ref } from 'vue'
 import { formatDate } from '@/utils'
@@ -18,6 +19,23 @@ const filter = reactive({
 	filter_operator: props.item.filter_operator,
 	filter_value: props.item.filter_value,
 })
+
+watch(
+	() => filter.filter_value,
+	() => {
+		dashboard.update_filter
+			.submit({
+				filter: {
+					name: props.item.name,
+					...filter,
+				},
+			})
+			.then(dashboard.refreshItems)
+			.catch((e) => {
+				console.error(e)
+			})
+	}
+)
 
 const showEditFilterDialog = ref(false)
 function editFilter() {
@@ -38,7 +56,7 @@ function editFilter() {
 const valueType = computed(() => {
 	if (
 		['Date', 'Datetime'].includes(filter.filter_type) &&
-		['=', '!=', '>', '>=', '<', '<='].includes(filter.filter_operator)
+		['=', '!=', '>', '>=', '<', '<=', 'between'].includes(filter.filter_operator)
 	) {
 		return 'datePicker'
 	}
@@ -76,12 +94,20 @@ const valueType = computed(() => {
 			</div>
 		</div>
 
+		<DateRangePicker
+			v-if="valueType == 'datePicker' && filter.filter_operator == 'between'"
+			id="value"
+			:value="filter.filter_value"
+			:formatter="formatDate"
+			placeholder="Select Date"
+			@change="(date) => (filter.filter_value = date)"
+		/>
 		<DatePicker
-			v-if="valueType == 'datePicker'"
+			v-else-if="valueType == 'datePicker'"
 			id="value"
 			:value="filter.filter_value"
 			placeholder="Select Date"
-			:formatValue="formatDate"
+			:formatter="formatDate"
 			@change="(date) => (filter.filter_value = date)"
 		/>
 		<TimespanPicker

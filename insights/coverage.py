@@ -33,7 +33,6 @@ class CodeCoverage:
             import os
 
             from coverage import Coverage
-
             from frappe.utils import get_bench_path
 
             # Generate coverage report only for app that is being tested

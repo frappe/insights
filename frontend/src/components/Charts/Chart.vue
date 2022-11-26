@@ -70,7 +70,7 @@ function downloadChart() {
 	})
 	const link = document.createElement('a')
 	link.href = image.src
-	link.download = `${title}.${type}`
+	link.download = `${attributes.title}.${type}`
 	link.click()
 }
 </script>

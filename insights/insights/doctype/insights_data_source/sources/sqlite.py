@@ -1,0 +1,156 @@
+# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+# For license information, please see license.txt
+
+
+import frappe
+import pandas as pd
+from sqlalchemy import column as Column
+from sqlalchemy import create_engine
+from sqlalchemy import table as Table
+from sqlalchemy.engine.base import Connection
+
+from insights.insights.query_builders.sqlite.sqlite_query_builder import (
+    SQLiteQueryBuilder,
+)
+
+from ...insights_table_import.insights_table_import import InsightsTableImport
+from .models import BaseDatabase
+from .utils import create_insights_table
+
+
+class SQLiteTableFactory:
+    def __init__(self, data_source) -> None:
+        self.db_conn: Connection
+        self.data_source = data_source
+
+    def sync_tables(self, connection, tables, force=False):
+        self.db_conn = connection
+        for table in self.get_tables(table_names=tables):
+            # when force is true, it will overwrite the existing columns & links
+            create_insights_table(table, force=force)
+
+    def get_tables(self, table_names=None):
+        tables = []
+        for table in self.get_db_tables(table_names):
+            table.columns = self.get_table_columns(table.table)
+            tables.append(table)
+        return tables
+
+    def get_db_tables(self, table_names=None):
+        t = Table(
+            "sqlite_master",
+            Column("name"),
+            Column("type"),
+        )
+        query = t.select().where(t.c.type == "table")
+        if table_names:
+            query = query.where(t.c.name.in_(table_names))
+
+        tables = self.db_conn.execute(query).fetchall()
+        return [self.get_table(table[0]) for table in tables]
+
+    def get_table(self, table_name):
+        return frappe._dict(
+            {
+                "table": table_name,
+                "label": frappe.unscrub(table_name),
+                "data_source": self.data_source,
+            }
+        )
+
+    def get_table_columns(self, table_name):
+        columns = self.db_conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+        return [
+            frappe._dict(
+                {
+                    "column": column[1],
+                    "label": frappe.unscrub(column[1]),
+                    "type": self.get_column_type(column[2]),
+                }
+            )
+            for column in columns
+        ]
+
+    def get_column_type(self, column_type):
+        TYPE_MAP = {
+            "NULL": "Integer",
+            "INTEGER": "Integer",
+            "REAL": "Decimal",
+            "TEXT": "String",
+            "BLOB": "String",
+        }
+        return TYPE_MAP.get(column_type, "String")
+
+
+class SQLiteDB(BaseDatabase):
+    def __init__(self, data_source, database_name) -> None:
+        database_path = frappe.get_site_path(
+            "private", "files", f"{database_name}.sqlite"
+        )
+        self.engine = create_engine(f"sqlite:///{database_path}")
+        self.data_source = data_source
+        self.table_factory = SQLiteTableFactory(data_source)
+        self.query_builder = SQLiteQueryBuilder()
+
+    def test_connection(self):
+        try:
+            return self.execute_query("SELECT 1")
+        except Exception as e:
+            frappe.log_error(f"Error connecting to SQLite: {e}")
+
+    def build_query(self, query):
+        return self.query_builder.build(query, dialect=self.engine.dialect)
+
+    def execute_query(self, query, pluck=False):
+        if query is None:
+            return []
+        self.validate_query(query)
+        with self.engine.connect() as connection:
+            result = connection.execute(query).fetchall()
+            return [r[0] for r in result] if pluck else [list(r) for r in result]
+
+    def validate_query(self, query):
+        if not str(query).strip().lower().startswith("select"):
+            raise frappe.ValidationError(
+                "Only SELECT statements are allowed in Query Store"
+            )
+
+    def sync_tables(self, tables=None, force=False):
+        with self.engine.begin() as connection:
+            self.table_factory.sync_tables(connection, tables, force)
+
+    def get_table_preview(self, table, limit=20):
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
+        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
+        return {
+            "data": data or [],
+            "length": length or 0,
+        }
+
+    def get_table_columns(self, table):
+        with self.engine.connect() as connection:
+            self.table_factory.db_conn = connection
+            return self.table_factory.get_table_columns(table)
+
+    def get_column_options(self, table, column, search_text=None, limit=25):
+        t = Table(table, Column(column))
+        query = t.select().distinct().limit(limit)
+        if search_text:
+            query = query.where(Column(column).like(f"%{search_text}%"))
+        return self.execute_query(query, pluck=True)
+
+    def table_exists(self, table):
+        return self.execute_query(
+            f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'",
+        )
+
+    def import_table(self, import_doc: InsightsTableImport):
+        df = pd.read_csv(import_doc._filepath)
+        table = import_doc.table_name
+        df.to_sql(
+            name=table,
+            con=self.engine,
+            index=False,
+            if_exists="replace",
+        )
+        self.sync_tables(tables=[table])

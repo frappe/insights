@@ -12,7 +12,7 @@ const filters = ref([
 	},
 ])
 
-const allColumns = dashboard.getColumnsFor(chart.query)
+const allColumns = dashboard.getAllColumns(chart.query)
 watch(allColumns, async () => {
 	await nextTick()
 	const initialFilters = safeJSONParse(chart.chart_filters, []).map((filter) => {
@@ -25,7 +25,18 @@ watch(allColumns, async () => {
 	filters.value = initialFilters.length ? initialFilters : filters.value
 })
 
-const filterOptions = computed(() => dashboard.filters?.map((f) => f.filter_label))
+const filterOptions = computed(() =>
+	dashboard.filters
+		?.map((f) => {
+			const disabled = filters.value.some((filter) => filter.filter.label === f.filter_label)
+			return {
+				label: f.filter_label,
+				description: disabled ? 'Already selected' : '',
+				disabled,
+			}
+		})
+		.sort((a, b) => (a.disabled === b.disabled ? 0 : a.disabled ? 1 : -1))
+)
 
 function getFilterType(filter_label) {
 	return dashboard.filters.find((f) => `${f.filter_label}` === `${filter_label}`)?.filter_type
@@ -38,13 +49,17 @@ async function updateColumnOptions(filter) {
 }
 
 function getColumnOptions(filter_type) {
-	return allColumns.value
-		?.filter((c) => c.type === filter_type)
-		.map((c) => ({
-			label: c.label,
-			description: c.table_label,
-			value: `${c.table}.${c.column}`,
-		}))
+	return (
+		allColumns.value
+			.map((c) => ({
+				label: c.label,
+				description: `${c.type}`,
+				value: `${c.table}.${c.column}`,
+				disabled: c.type !== filter_type,
+			}))
+			// sort enabled options first
+			.sort((a, b) => (a.disabled === b.disabled ? 0 : a.disabled ? 1 : -1))
+	)
 }
 
 function addFilter() {
@@ -93,7 +108,7 @@ const submitDisabled = computed(() => {
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="min-w-[24rem] max-w-[40rem] rounded-md border bg-white pt-2 text-base text-gray-800 shadow-md"
+				class="w-[28rem] rounded-md border bg-white pt-2 text-base text-gray-800 shadow-md"
 			>
 				<span class="px-3 text-gray-600">Connect Filters</span>
 				<div class="space-y-3 p-3">
@@ -103,7 +118,7 @@ const submitDisabled = computed(() => {
 						:key="index"
 					>
 						<Autocomplete
-							class="w-1/2"
+							class="w-[14rem]"
 							label="Filter"
 							:options="filterOptions"
 							v-model="filter.filter"
@@ -111,7 +126,7 @@ const submitDisabled = computed(() => {
 						></Autocomplete>
 						<span class="h-6">=</span>
 						<Autocomplete
-							class="w-1/2"
+							class="w-[14rem]"
 							label="Column"
 							:options="filter.columnOptions"
 							v-model="filter.column"

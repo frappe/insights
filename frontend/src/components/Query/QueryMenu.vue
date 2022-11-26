@@ -12,6 +12,21 @@
 					  }
 					: null,
 				{
+					label: 'Execute',
+					icon: 'play',
+					handler: query.execute,
+				},
+				{
+					label: 'Pivot',
+					icon: 'git-branch',
+					handler: () => (show_pivot_dialog = true),
+				},
+				{
+					label: 'Unpivot',
+					icon: 'git-merge',
+					handler: resetPivot,
+				},
+				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
 					handler: () => (show_reset_dialog = true),
@@ -62,6 +77,7 @@
 				</Button>
 			</template>
 		</Dialog>
+
 		<Dialog
 			:options="{
 				title: 'Reset Query',
@@ -107,11 +123,50 @@
 				</div>
 			</template>
 		</Dialog>
+
+		<Dialog
+			:options="{ title: 'Pivot Transform' }"
+			v-model="show_pivot_dialog"
+			:dismissable="true"
+		>
+			<template #body-content>
+				<div class="space-y-4">
+					<Input
+						type="select"
+						label="Pivot Column"
+						v-model="pivot.column"
+						:options="[''].concat(query.columns.indexOptions)"
+					/>
+					<Input
+						type="select"
+						label="Index Column"
+						v-model="pivot.index"
+						:options="[''].concat(query.columns.indexOptions)"
+					/>
+					<Input
+						type="select"
+						label="Value Column"
+						v-model="pivot.value"
+						:options="[''].concat(query.columns.valueOptions)"
+					/>
+				</div>
+			</template>
+			<template #actions>
+				<Button
+					appearance="primary"
+					@click="applyPivotTransform"
+					:disabled="pivotDisabled"
+					:loading="query.addTransform?.loading"
+				>
+					Apply
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
-import { ref, inject, computed, nextTick } from 'vue'
+import { ref, inject, computed, nextTick, reactive } from 'vue'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 
@@ -120,6 +175,13 @@ const query = inject('query')
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
+const show_pivot_dialog = ref(false)
+
+const pivot = reactive({
+	column: null,
+	index: null,
+	value: null,
+})
 
 const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
@@ -161,4 +223,30 @@ function copySQL() {
 		})
 	}
 }
+
+function applyPivotTransform() {
+	query.addTransform
+		.submit({
+			type: 'Pivot',
+			options: {
+				column: pivot.column,
+				index: pivot.index,
+				value: pivot.value,
+			},
+		})
+		.then(() => {
+			show_pivot_dialog.value = false
+			pivot.column = null
+			pivot.index = null
+			pivot.value = null
+		})
+}
+
+function resetPivot() {
+	query.resetTransforms.submit()
+}
+
+const pivotDisabled = computed(() => {
+	return !pivot.column || !pivot.index || !pivot.value
+})
 </script>

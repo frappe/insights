@@ -118,7 +118,7 @@ import { ref, inject, watchEffect, reactive, computed } from 'vue'
 
 const query = inject('query')
 
-const emit = defineEmits(['column-select', 'close'])
+const emit = defineEmits(['close'])
 const props = defineProps({
 	column: {
 		type: Object,
@@ -233,7 +233,8 @@ const addExpressionColumn = () => {
 			date_format: expression.dateFormat.value,
 		}
 	}
-	emit('column-select', newColumn)
+	query.addColumn.submit({ column: newColumn })
+	emit('close')
 }
 
 const removeExpressionColumn = () => {

@@ -61,7 +61,7 @@
 		</div>
 	</div>
 	<div class="mt-6 flex justify-between">
-		<Button v-if="$props.showDiscard" @click="$emit('created', 'discard')"> Discard </Button>
+		<Button v-if="$props.showDiscard" @click="$emit('discard')"> Discard </Button>
 		<div class="ml-auto flex items-center space-x-2">
 			<Button
 				:appearance="connectAppearance"
@@ -90,13 +90,13 @@
 import { computed, reactive } from 'vue'
 import { createDatabase, testDatabaseConnection } from '@/utils/setupWizard'
 
-const emit = defineEmits(['create', 'discard'])
+const emit = defineEmits(['success', 'discard'])
 
 const db = reactive({
 	type: 'MariaDB',
 	title: '',
 	host: '',
-	port: '',
+	port: 3306,
 	name: '',
 	username: '',
 	password: '',
@@ -104,11 +104,17 @@ const db = reactive({
 	connectionSuccess: null,
 })
 const testConnectionDisabled = computed(() => {
-	return !db.type || !db.title || !db.name || !db.username || !db.password
+	return !db.type || !db.title || !db.host || !db.name || !db.username || !db.password
 })
 const submitDisabled = computed(() => {
 	return (
-		!db.type || !db.title || !db.name || !db.username || !db.password || !db.connectionSuccess
+		!db.type ||
+		!db.title ||
+		!db.host ||
+		!db.name ||
+		!db.username ||
+		!db.password ||
+		!db.connectionSuccess
 	)
 })
 
@@ -150,7 +156,7 @@ const createNewDatabase = () => {
 		{ db },
 		{
 			onSuccess() {
-				emit('create')
+				emit('success')
 			},
 		}
 	)

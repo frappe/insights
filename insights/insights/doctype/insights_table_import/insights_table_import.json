@@ -10,6 +10,7 @@
   "table_name",
   "if_exists",
   "column_break_3",
+  "data_source",
   "source",
   "status",
   "rows",
@@ -91,12 +92,19 @@
    "fieldtype": "Text",
    "label": "Error",
    "read_only": 1
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "label": "Data Source",
+   "options": "Insights Data Source",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-10-17 13:23:36.188038",
+ "modified": "2022-11-07 21:16:42.059005",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import",

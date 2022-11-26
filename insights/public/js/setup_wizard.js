@@ -16,9 +16,13 @@ insights.setup.slides_settings = [
 		onload(slide) {
 			this.attach_test_connection_listener(slide);
 			this.attach_setup_demo_listener(slide);
+		},
+		before_show() {
+			this.$body.find(".form-section").show();
+			this.get_field("success_html").$wrapper.html("");
 			setTimeout(() => {
-				slide.slides_footer.find(".complete-btn").hide();
-			}, 500);
+				this.slides_footer.find(".complete-btn").hide();
+			}, 0);
 		},
 		attach_test_connection_listener(slide) {
 			const $test_conn_btn = slide.$body.find(".test-conn-btn");
@@ -79,14 +83,17 @@ insights.setup.slides_settings = [
 				slide.get_field("db_name").df.reqd = 0;
 				slide.get_field("db_username").df.reqd = 0;
 				slide.get_field("db_password").df.reqd = 0;
+				slide.get_field("db_host").df.reqd = 0;
 			});
 		},
-		show_success_section(slide) {
-			slide.$body.find(".form-section").not(":last").hide();
-		},
 		show_success_message(message, slide) {
+			// hide other sections except 'Success' section
+			slide.$body.find(".form-section").not(":last").hide();
+
 			slide.slides_footer.find(".complete-btn").show();
-			this.show_success_section(slide);
+			slide.slides_footer.find(".skip-btn").hide();
+
+			// show success message
 			slide.get_field("success_html").$wrapper.append(
 				`<div class="d-flex" style="flex-direction: column; align-items: center;">
 					<div style="

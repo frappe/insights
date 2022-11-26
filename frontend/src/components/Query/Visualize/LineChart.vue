@@ -20,6 +20,18 @@ const props = defineProps({
 		default: {},
 	},
 })
+
+const markLine = props.options.referenceLine?.value
+	? {
+			data: [
+				{
+					name: props.options.referenceLine?.label,
+					type: props.options.referenceLine?.value,
+					label: { position: 'middle', formatter: '{b}: {c}' },
+				},
+			],
+	  }
+	: {}
 </script>
 
 <template>
@@ -45,6 +57,7 @@ const props = defineProps({
 				type="line"
 				:smooth="props.options.smoothLines"
 				:showSymbol="props.options.showPoints"
+				:markLine="markLine"
 			/>
 			<ChartTooltip />
 		</ChartGrid>

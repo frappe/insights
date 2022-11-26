@@ -37,12 +37,25 @@ const XandY = ref([
 	},
 ])
 
+const markLine = props.options.referenceLine?.value
+	? {
+			data: [
+				{
+					name: props.options.referenceLine?.label,
+					type: props.options.referenceLine?.value,
+					label: { position: 'middle', formatter: '{b}: {c}' },
+				},
+			],
+	  }
+	: {}
 const series = ref(
 	props.data.datasets.map((dataset) => ({
 		type: 'bar',
 		name: dataset.label,
 		data: props.options.invertAxis ? dataset.data.reverse() : dataset.data,
 		'itemStyle-borderRadius': '[4, 4, 0, 0]',
+		markLine: markLine,
+		stack: props.options.stack ? 'stack' : null,
 	}))
 )
 </script>

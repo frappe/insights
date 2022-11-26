@@ -2,8 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-from insights import notify
 from pypika import CustomFunction
+
+from insights import notify
 
 
 @frappe.whitelist()
@@ -109,17 +110,21 @@ def get_queries():
     frappe.has_permission("Insights Query", throw=True)
     Query = frappe.qb.DocType("Insights Query")
     QueryTable = frappe.qb.DocType("Insights Query Table")
+    QueryChart = frappe.qb.DocType("Insights Query Chart")
     GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
         .left_join(QueryTable)
         .on(Query.name == QueryTable.parent)
+        .left_join(QueryChart)
+        .on(QueryChart.query == Query.name)
         .select(
             Query.name,
             Query.title,
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.modified,
+            QueryChart.type.as_("chart_type"),
         )
         .groupby(Query.name)
         .orderby(Query.modified, order=frappe.qb.desc)
@@ -150,21 +155,6 @@ def get_running_jobs(data_source):
 @frappe.whitelist()
 def kill_running_job(data_source, query_id):
     return
-
-
-@frappe.whitelist()
-def update_user_default(key, value):
-    keys = ["hide_sidebar"]
-    if key not in keys:
-        return
-    frappe.defaults.set_user_default(key, value)
-
-
-@frappe.whitelist()
-def get_user_defaults():
-    defaults = frappe.defaults.get_defaults()
-    keys = ["hide_sidebar"]
-    return {key: defaults.get(key) for key in keys}
 
 
 @frappe.whitelist()
@@ -291,6 +281,7 @@ def create_csv_file(file):
 @frappe.whitelist()
 def upload_csv(label, file, if_exists, columns):
     table_import = frappe.new_doc("Insights Table Import")
+    table_import.data_source = "Site DB"
     table_import.table_name = frappe.scrub(label)
     table_import.table_label = label
     table_import.if_exists = if_exists
@@ -309,11 +300,44 @@ def upload_csv(label, file, if_exists, columns):
 
 
 @frappe.whitelist()
-def sync_data_source(data_source):
-    data_source = frappe.get_doc("Insights Data Source", data_source)
-    notify("Syncing Tables")
-    data_source.sync_tables.enqueue(self=data_source)
-    notify("Tables Synced Successfully")
+def sync_data_source(data_source: str):
+    from frappe.utils.scheduler import is_scheduler_inactive
+
+    if is_scheduler_inactive():
+        notify(
+            **{
+                "title": "Error",
+                "message": "Scheduler is inactive",
+                "type": "error",
+            }
+        )
+
+    frappe.enqueue(
+        _sync_data_source,
+        data_source=data_source,
+        job_name="sync_data_source",
+        queue="long",
+        timeout=3600,
+        now=True,
+    )
+
+
+def _sync_data_source(data_source):
+    notify(
+        **{
+            "title": "Info",
+            "message": "Syncing Data Source",
+            "type": "info",
+        }
+    )
+    frappe.get_doc("Insights Data Source", data_source).sync_tables()
+    notify(
+        **{
+            "title": "Success",
+            "message": "Data Source Synced",
+            "type": "success",
+        }
+    )
 
 
 @frappe.whitelist()

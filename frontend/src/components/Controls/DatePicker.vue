@@ -5,7 +5,7 @@
 				readonly
 				type="text"
 				:placeholder="placeholder"
-				:value="value && formatValue ? formatValue(value) : value"
+				:value="value && formatter ? formatter(value) : value"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
 					'form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500',
@@ -15,29 +15,37 @@
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 w-fit select-none rounded-md border border-gray-50 bg-white p-3 text-left shadow"
+				class="my-2 w-fit select-none space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
 			>
-				<div class="flex items-center justify-between">
-					<span class="text-lg font-medium text-blue-500">
+				<div class="flex items-center text-gray-700">
+					<div
+						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+					>
+						<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
+					</div>
+					<div class="flex-1 text-center text-lg font-medium text-blue-500">
 						{{ formatMonth }}
-					</span>
-					<span class="flex text-gray-700">
-						<div
-							class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
-						>
-							<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
-						</div>
-						<div
-							class="ml-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
-						>
-							<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
-						</div>
-					</span>
+					</div>
+					<div
+						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+					>
+						<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
+					</div>
 				</div>
-				<div class="mt-2 text-base">
-					<div class="flex w-full items-center text-gray-600">
+				<div class="flex space-x-2">
+					<Input
+						type="text"
+						:value="value"
+						@change="selectDate(getDate($event)) || togglePopover()"
+					></Input>
+					<Button class="h-7" @click="selectDate(getDate()) || togglePopover()">
+						Today
+					</Button>
+				</div>
+				<div class="mt-2 flex flex-col items-center justify-center text-base">
+					<div class="flex w-full items-center space-x-1 text-gray-600">
 						<div
-							class="mr-1 flex h-7 w-7 items-center justify-center text-center last:mr-0"
+							class="flex h-[30px] w-[30px] items-center justify-center text-center"
 							v-for="(d, i) in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
 							:key="i"
 						>
@@ -49,7 +57,7 @@
 							<div
 								v-for="date in week"
 								:key="toValue(date)"
-								class="mr-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md last:mr-0 hover:bg-blue-50 hover:text-blue-500"
+								class="mr-1 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-md last:mr-0 hover:bg-blue-50 hover:text-blue-500"
 								:class="{
 									'text-gray-500': date.getMonth() !== currentMonth - 1,
 									'text-blue-500': toValue(date) === toValue(today),
@@ -68,9 +76,10 @@
 						</div>
 					</div>
 				</div>
+
 				<div class="mt-1 flex w-full justify-end">
 					<div
-						class="cursor-pointer rounded-md px-2 py-1 text-sm hover:bg-gray-100"
+						class="cursor-pointer rounded-md px-2 py-1 hover:bg-gray-100"
 						@click="
 							() => {
 								selectDate('')
@@ -89,7 +98,7 @@
 <script>
 export default {
 	name: 'DatePicker',
-	props: ['value', 'placeholder', 'formatValue', 'readonly', 'inputClass'],
+	props: ['value', 'placeholder', 'formatter', 'readonly', 'inputClass'],
 	emits: ['change'],
 	data() {
 		return {
@@ -151,6 +160,9 @@ export default {
 		},
 		selectCurrentMonthYear() {
 			let date = this.value ? this.getDate(this.value) : this.getDate()
+			if (date === 'Invalid Date') {
+				date = this.getDate()
+			}
 			this.currentYear = date.getFullYear()
 			this.currentMonth = date.getMonth() + 1
 		},

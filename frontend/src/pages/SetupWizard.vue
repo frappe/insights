@@ -46,7 +46,7 @@
 			<div v-if="connectDB">
 				<AddDatabase
 					:showDiscard="true"
-					@create="completeSetup"
+					@success="completeSetup"
 					@discard="connectDB = false"
 				/>
 			</div>
