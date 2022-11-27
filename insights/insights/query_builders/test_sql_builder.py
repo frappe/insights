@@ -115,9 +115,12 @@ TEST_QUERY = {
             "table": "tabToDo",
             "doctype": "Insights Query Table",
             "join": {
-                "with": {"label": "User", "value": "tabUser"},
-                "condition": {"label": "owner = name", "value": "owner = name"},
                 "type": {"label": "Right", "value": "right"},
+                "with": {"label": "User", "value": "tabUser"},
+                "condition": {
+                    "left": {"label": "owner", "value": "owner"},
+                    "right": {"label": "name", "value": "name"},
+                },
             },
         },
     ],
