@@ -123,11 +123,11 @@ def get_queries():
             Query.title,
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
-            Query.modified,
+            Query.creation,
             QueryChart.type.as_("chart_type"),
         )
         .groupby(Query.name)
-        .orderby(Query.modified, order=frappe.qb.desc)
+        .orderby(Query.creation, order=frappe.qb.desc)
     ).run(as_dict=True)
 
 

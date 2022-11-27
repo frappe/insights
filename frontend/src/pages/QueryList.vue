@@ -34,7 +34,7 @@
 						<p class="flex-1">Chart Type</p>
 						<p class="flex-1">Data Source</p>
 						<p class="flex-1">ID</p>
-						<p class="flex-1 text-right">Last Modified</p>
+						<p class="flex-1 text-right">Created</p>
 					</div>
 					<ul
 						role="list"
@@ -73,9 +73,9 @@
 								</p>
 								<p
 									class="flex-1 text-right text-sm text-gray-500"
-									:title="query.modified"
+									:title="query.creation"
 								>
-									{{ query.modified_from_now }}
+									{{ query.creation_from_now }}
 								</p>
 							</router-link>
 						</li>
@@ -162,7 +162,7 @@ watch(
 	(data) => {
 		if (data && data.length) {
 			getQueries.data.forEach((query) => {
-				query.modified_from_now = dayjs(query.modified).fromNow()
+				query.creation_from_now = dayjs(query.creation).fromNow()
 			})
 		}
 	}
