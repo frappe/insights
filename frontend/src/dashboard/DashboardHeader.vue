@@ -32,57 +32,56 @@ function updateTitle(title) {
 		/>
 		<div class="flex items-start space-x-2">
 			<Button
-				v-if="!dashboard.editingLayout"
 				appearance="white"
+				v-if="!dashboard.editingLayout"
 				iconLeft="refresh-ccw"
 				@click="dashboard.refreshItems"
 			>
 				Refresh
 			</Button>
 			<Button
-				v-if="!dashboard.editingLayout"
 				appearance="white"
+				v-if="!dashboard.editingLayout"
 				iconLeft="edit"
 				@click="() => (dashboard.editingLayout = true)"
 			>
 				Edit
 			</Button>
 			<Button
-				v-if="dashboard.editingLayout"
 				appearance="white"
+				v-if="dashboard.editingLayout"
 				iconLeft="plus"
 				@click="$emit('addChart')"
 			>
 				Add
 			</Button>
 			<Button
-				v-if="dashboard.editingLayout"
 				appearance="white"
+				v-if="dashboard.editingLayout"
 				iconLeft="grid"
 				@click="$emit('autoLayout')"
 			>
 				Auto Layout
 			</Button>
 			<Button
-				v-if="!dashboard.editingLayout"
 				appearance="white"
-				class="!text-red-600"
+				v-if="!dashboard.editingLayout"
 				iconLeft="trash-2"
 				@click="() => (showDeleteDialog = true)"
 			>
 				Delete
 			</Button>
 			<Button
+				appearance="white"
 				v-if="dashboard.editingLayout"
-				appearance="danger"
 				iconLeft="x"
 				@click="dashboard.editingLayout = false"
 			>
 				Cancel
 			</Button>
 			<Button
+				appearance="white"
 				v-if="dashboard.editingLayout"
-				appearance="primary"
 				iconLeft="check"
 				@click="$emit('saveLayout')"
 			>
