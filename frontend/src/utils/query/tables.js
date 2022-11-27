@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { safeJSONParse } from '@/utils'
 
 export function useQueryTables(query) {
+	query.fetchTables.submit()
 	return {
 		data: computed(() =>
 			query.doc?.tables.map((table) => {
@@ -12,6 +13,12 @@ export function useQueryTables(query) {
 				}
 			})
 		),
+		options: computed(() => {
+			return query.fetchTables.data?.message.map((table) => ({
+				...table,
+				value: table.table,
+			}))
+		}),
 		validateRemoveTable({ table, label }) {
 			const columnsFromTable = query.doc.columns.filter((c) => c.table === table)
 			if (columnsFromTable.length > 0) {

@@ -19,7 +19,7 @@
 				>
 				</ComboboxInput>
 			</template>
-			<template #body>
+			<template #body="{ togglePopover }">
 				<transition
 					enter-active-class="transition duration-100 ease-out"
 					enter-from-class="transform scale-95 opacity-0"
@@ -54,6 +54,7 @@
 								:key="idx"
 								:value="option"
 								:disabled="option.disabled"
+								@click="togglePopover(false)"
 								v-slot="{ active, selected }"
 							>
 								<div

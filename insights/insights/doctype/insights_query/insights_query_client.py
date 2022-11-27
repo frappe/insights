@@ -183,6 +183,7 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
+        return get_tables(self.data_source)
         _tables = []
         if not self.tables or self.data_source == "Query Store":
             _tables = get_tables(self.data_source)
@@ -269,24 +270,39 @@ class InsightsQueryClient:
         )
 
     @frappe.whitelist()
-    def fetch_join_options(self, table):
-        doc = frappe.get_cached_doc(
+    def fetch_join_options(self, left_table, right_table):
+        left_doc = frappe.get_cached_doc(
             "Insights Table",
             {
-                "table": table.get("table"),
+                "table": left_table,
+                "data_source": self.data_source,
+            },
+        )
+        right_doc = frappe.get_cached_doc(
+            "Insights Table",
+            {
+                "table": right_table,
                 "data_source": self.data_source,
             },
         )
 
-        return [
-            {
-                "primary_key": d.primary_key,
-                "foreign_key": d.foreign_key,
-                "table": d.foreign_table,
-                "label": d.foreign_table_label,
-            }
-            for d in doc.get("table_links")
-        ]
+        links = []
+        for link in left_doc.table_links:
+            if link.foreign_table == right_table:
+                links.append(
+                    frappe._dict(
+                        {
+                            "left": link.primary_key,
+                            "right": link.foreign_key,
+                        }
+                    )
+                )
+
+        return {
+            "left_columns": left_doc.get_columns(),
+            "right_columns": right_doc.get_columns(),
+            "saved_links": links,
+        }
 
     @frappe.whitelist()
     def run(self):

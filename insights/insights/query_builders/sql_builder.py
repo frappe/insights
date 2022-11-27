@@ -1,6 +1,5 @@
 import operator
 from contextlib import suppress
-from datetime import timedelta
 
 from frappe import _dict, parse_json
 from frappe.utils.data import (
@@ -441,9 +440,9 @@ class SQLQueryBuilder:
             left_table = self.find_or_add_table(row.table)
             right_table = self.find_or_add_table(_join.get("with").get("value"))
 
-            condition = _join.get("condition").get("value")
-            left_key = condition.split("=")[0].strip()
-            right_key = condition.split("=")[1].strip()
+            condition = _join.get("condition")
+            left_key = condition.get("left").get("value")
+            right_key = condition.get("right").get("value")
 
             left_key = self.find_or_add_column(left_key, row.table)
             right_key = self.find_or_add_column(
