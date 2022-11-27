@@ -14,4 +14,7 @@ class InsightsSettings(Document):
             settings.auto_refresh_dashboard_in_minutes
             or self.auto_refresh_dashboard_in_minutes
         )
+        self.query_result_expiry = (
+            settings.query_result_expiry or self.query_result_expiry
+        )
         self.save()

@@ -40,6 +40,6 @@ const item = useDashboardItem(dashboard, props.item)
 provide('item', props.item)
 
 const show = computed(() => {
-	return Boolean(item && item.component && item.componentProps)
+	return Boolean(item && item.component && item.componentProps && !item.loading)
 })
 </script>

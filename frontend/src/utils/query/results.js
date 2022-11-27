@@ -9,7 +9,7 @@ export function useQueryResults(query) {
 		return safeJSONParse(query.doc.result, []).slice(0, maxRows)
 	})
 	const columns = computed(() => query.columns.data)
-	const formattedResult = getFormattedResult(data, columns)
+	const formattedResult = computed(() => getFormattedResult(unref(data), unref(columns)))
 
 	const resultColumns = computed(() =>
 		data.value?.[0].map((c) => {
@@ -73,37 +73,32 @@ function applyColumnFormatOption(formatOption, cell) {
 }
 
 export function getFormattedResult(data, columns) {
-	return computed(() => {
-		const _data = unref(data)
-		const _columns = unref(columns)
+	if (!data || !data.length) return []
 
-		if (!_data || !_data.length) return []
+	const columnTypes = data[0].map((c) => c.split('::')[1])
 
-		const columnTypes = _data[0].map((c) => c.split('::')[1])
-
-		return _data.map((row, index) => {
-			if (index == 0) return row // header row
-			return row.map((cell, idx) => {
-				const columnType = columnTypes[idx]
-				if (FIELDTYPES.NUMBER.includes(columnType)) {
-					if (columnType == 'Integer') {
-						cell = parseInt(cell)
-						cell = isNaN(cell) ? 0 : cell
-					}
-					if (columnType == 'Decimal') {
-						cell = parseFloat(cell)
-						cell = isNaN(cell) ? 0 : cell
-					}
+	return data.map((row, index) => {
+		if (index == 0) return row // header row
+		return row.map((cell, idx) => {
+			const columnType = columnTypes[idx]
+			if (FIELDTYPES.NUMBER.includes(columnType)) {
+				if (columnType == 'Integer') {
+					cell = parseInt(cell)
+					cell = isNaN(cell) ? 0 : cell
 				}
-				if (FIELDTYPES.DATE.includes(columnType)) {
-					// only use format options for dates
-					const formatOption = _columns[idx]?.format_option
-					if (formatOption) {
-						cell = applyColumnFormatOption(safeJSONParse(formatOption), cell)
-					}
+				if (columnType == 'Decimal') {
+					cell = parseFloat(cell)
+					cell = isNaN(cell) ? 0 : cell
 				}
-				return cell
-			})
+			}
+			if (FIELDTYPES.DATE.includes(columnType)) {
+				// only use format options for dates
+				const formatOption = columns[idx]?.format_option
+				if (formatOption) {
+					cell = applyColumnFormatOption(safeJSONParse(formatOption), cell)
+				}
+			}
+			return cell
 		})
 	})
 }

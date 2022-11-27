@@ -13,16 +13,14 @@
 						type="checkbox"
 						label="Auto Execute Query"
 						:value="settings.doc.auto_execute_query"
-						@input="(c) => settings.updateSettings({ auto_execute_query: c })"
+						@change="(c) => settings.updateSettings({ auto_execute_query: c })"
 					/>
 					<Input
 						type="number"
 						min="0"
-						label="Auto Refresh Dashboard In (Minutes)"
-						:value="settings.doc.auto_refresh_dashboard_in_minutes"
-						@input="
-							(c) => settings.updateSettings({ auto_refresh_dashboard_in_minutes: c })
-						"
+						label="Cache Query Results For (Minutes)"
+						:value="settings.doc.query_result_expiry"
+						@change="(c) => settings.updateSettings({ query_result_expiry: c })"
 					/>
 				</div>
 			</div>

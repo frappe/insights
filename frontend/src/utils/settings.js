@@ -1,4 +1,5 @@
 import { createDocumentResource } from 'frappe-ui'
+import { createToast } from '@/utils/toasts'
 
 const resource = createDocumentResource({
 	doctype: 'Insights Settings',
@@ -7,6 +8,12 @@ const resource = createDocumentResource({
 })
 resource.get.fetch()
 resource.updateSettings = (settings) => {
-	resource.update_settings.submit({ settings })
+	resource.update_settings.submit({ settings }).then(() => {
+		createToast({
+			title: 'Settings Updated',
+			message: 'Your settings have been updated successfully',
+			appearance: 'success',
+		})
+	})
 }
 export default resource

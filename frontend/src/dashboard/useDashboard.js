@@ -1,15 +1,13 @@
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { createDocumentResource, call, debounce } from 'frappe-ui'
 import settings from '@/utils/settings'
 import dayjs from '@/utils/dayjs'
 
 export default function useDashboard(dashboardName) {
-	const dashboard = makeDashboardResource(dashboardName)
+	const dashboard = fetchDashboard(dashboardName)
 
-	// reactive properties
 	dashboard.editing = false
-	dashboard.updatedLayout = {}
 	dashboard.items = computed(() =>
 		dashboard.doc?.items.map((v) => {
 			const layout = safeJSONParse(v.layout, {})
@@ -20,7 +18,6 @@ export default function useDashboard(dashboardName) {
 		})
 	)
 
-	// methods
 	dashboard.updateNewChartOptions = () => {
 		return dashboard.get_chart_options.submit()
 	}
@@ -33,6 +30,8 @@ export default function useDashboard(dashboardName) {
 			}
 		})
 	)
+	dashboard.updateNewChartOptions()
+
 	dashboard.saveLayout = (layouts) => {
 		dashboard.update_layout
 			.submit({
@@ -78,37 +77,36 @@ export default function useDashboard(dashboardName) {
 
 	dashboard.refreshItems = debounce(async () => {
 		dashboard.editingLayout = false
-		dashboard.refreshing = true
-		// hack: update the charts
-		await dashboard.refresh_items.submit()
-		// then reload the dashboard doc
+		// reload the dashboard doc
 		// to re-render the charts with new data
 		dashboard.doc.items = []
-		await dashboard.reload()
-		dashboard.refreshing = false
+		dashboard.reload()
 	}, 500)
 
-	dashboard.getChartData = (chartID) => {
-		const data = ref([])
-		dashboard.get_chart_data.submit({ chart: chartID }).then((r) => {
-			data.value = r.message
+	dashboard.fetchChartData = (chartID) => {
+		const request = fetchData(dashboard.get_chart_data, { chart: chartID })
+		const parsedData = computed(() => safeJSONParse(request.data, []))
+		return reactive({
+			data: parsedData,
+			loading: computed(() => request.loading),
 		})
-		return computed(() => safeJSONParse(data.value, []))
 	}
 
-	dashboard.filters = computed(() => dashboard.doc?.items.filter((v) => v.item_type == 'Filter'))
+	dashboard.fetchQueryColumns = (query) => {
+		return fetchData(dashboard.get_columns, { query })
+	}
+
+	dashboard.filters = computed(() =>
+		dashboard.doc?.items.filter((item) => {
+			return item.item_type == 'Filter'
+		})
+	)
 
 	dashboard.getAllColumns = (query) => {
+		// returns all columns from all the tables selected in the query
 		dashboard.get_all_columns.submit({ query })
 		return computed(() => dashboard.get_all_columns.data?.message || [])
 	}
-
-	dashboard.getColumns = (query) => {
-		dashboard.get_columns.submit({ query })
-		return computed(() => dashboard.get_columns.data?.message || [])
-	}
-
-	dashboard.updateNewChartOptions()
 
 	if (settings.doc?.auto_refresh_dashboard_in_minutes) {
 		watch(
@@ -130,7 +128,7 @@ export default function useDashboard(dashboardName) {
 	return dashboard
 }
 
-function makeDashboardResource(name) {
+function fetchDashboard(name) {
 	const resource = createDocumentResource({
 		doctype: 'Insights Dashboard',
 		name: name,
@@ -138,6 +136,7 @@ function makeDashboardResource(name) {
 			add_item: 'add_item',
 			get_chart_options: 'get_charts',
 			refresh_items: 'refresh_items',
+			refresh_item: 'refresh_item',
 			update_layout: 'update_layout',
 			remove_item: 'remove_item',
 			get_chart_data: 'get_chart_data',
@@ -150,4 +149,25 @@ function makeDashboardResource(name) {
 	})
 	resource.get.fetch()
 	return resource
+}
+
+function fetchData(documentRequest, args) {
+	// a generic function to fetch data from the a whitelisted method of a document
+	// and return a reactive object
+	const state = reactive({
+		data: [],
+		error: null,
+		loading: true,
+	})
+	documentRequest
+		.submit(args)
+		.then((res) => {
+			state.data = res.message
+			state.loading = false
+		})
+		.catch((err) => {
+			state.error = err
+			state.loading = false
+		})
+	return state
 }

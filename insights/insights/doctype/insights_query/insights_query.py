@@ -121,13 +121,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.result = dumps(results, default=cstr)
         self.status = "Execution Successful"
 
-    def run_with_filters(self, filter_conditions):
-        filters = frappe.parse_json(self.filters)
-        filters.conditions.extend(filter_conditions)
-        self.filters = dumps(filters, indent=2)
-        results = self.fetch_results()
-        return results
-
     def create_default_chart(self):
         charts = self.get_charts()
         if not charts:

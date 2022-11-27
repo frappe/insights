@@ -4,10 +4,14 @@ import { getFormattedResult } from '@/utils/query/results'
 
 export default function useDashboardItem(dashboard, item) {
 	if (item.item_type == 'Chart') {
-		const data = dashboard.getChartData(item.chart)
-		const columns = dashboard.getColumns(item.query)
-		const formattedResult = getFormattedResult(data, columns)
-		return useChart({ chartID: item.chart, data: formattedResult })
+		const chartDataRequest = dashboard.fetchChartData(item.chart)
+		const queryColumnsRequest = dashboard.fetchQueryColumns(item.query)
+		const formattedResult = computed(() =>
+			getFormattedResult(chartDataRequest.data, queryColumnsRequest.data)
+		)
+		const chart = useChart({ chartID: item.chart, data: formattedResult })
+		chart.loading = computed(() => chartDataRequest.loading || queryColumnsRequest.loading)
+		return chart
 	}
 
 	if (item.item_type == 'Filter') {

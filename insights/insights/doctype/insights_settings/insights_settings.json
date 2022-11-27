@@ -10,7 +10,8 @@
   "setup_complete",
   "onboarding_complete",
   "auto_execute_query",
-  "auto_refresh_dashboard_in_minutes"
+  "auto_refresh_dashboard_in_minutes",
+  "query_result_expiry"
  ],
  "fields": [
   {
@@ -40,12 +41,18 @@
    "fieldname": "auto_execute_query",
    "fieldtype": "Check",
    "label": "Auto Execute Query"
+  },
+  {
+   "default": "1440",
+   "fieldname": "query_result_expiry",
+   "fieldtype": "Int",
+   "label": "Cache Query Results For (Minutes)"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-11-21 13:58:21.557046",
+ "modified": "2022-11-27 23:17:16.366788",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
