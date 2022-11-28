@@ -38,8 +38,14 @@ async function discardText() {
 </script>
 
 <template>
-	<div class="relative h-full w-full">
-		<TextEditor editor-class="min-h-[4rem] prose-sm" :content="markdown" :editable="false" />
+	<div class="relative flex h-full w-full items-center">
+		<div @dblclick="dashboard.editingLayout && (editMarkdown = true)" class="w-full">
+			<TextEditor
+				editor-class="h-fit prose-sm flex flex-col justify-end"
+				:content="markdown"
+				:editable="false"
+			/>
+		</div>
 
 		<div
 			class="absolute top-0 right-0 flex cursor-pointer space-x-1 p-1"
@@ -87,3 +93,16 @@ async function discardText() {
 		</Dialog>
 	</div>
 </template>
+
+<style lang="scss">
+.prose-sm {
+	& > h1,
+	& > h2,
+	& > h3,
+	& > h4,
+	& > h5,
+	& > h6 {
+		@apply my-1;
+	}
+}
+</style>
