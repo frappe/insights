@@ -1,25 +1,26 @@
 <template>
-	<Combobox as="div" v-model="selectedOption" v-slot="{ open }" nullable>
+	<Combobox as="div" v-model="selectedOption" v-slot="{ open: isComboBoxOpen }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
 		<Popover class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
-				<ComboboxInput
-					ref="input"
-					autocomplete="off"
-					:placeholder="placeholder"
-					@focus="togglePopover"
-					@change="
-						(e) => {
-							filterQuery = e.target.value
-							togglePopover(true)
-						}
-					"
-					:displayValue="(option) => option?.label"
-					class="form-input block h-8 w-full placeholder-gray-500"
-				>
-				</ComboboxInput>
+				<ComboboxButton class="w-full" @click="togglePopover(true)">
+					<ComboboxInput
+						ref="input"
+						autocomplete="off"
+						:placeholder="placeholder"
+						@change="
+							(e) => {
+								filterQuery = e.target.value
+								togglePopover(true)
+							}
+						"
+						:displayValue="(option) => option?.label"
+						class="form-input block h-8 w-full placeholder-gray-500"
+					>
+					</ComboboxInput>
+				</ComboboxButton>
 			</template>
-			<template #body="{ togglePopover }">
+			<template #body>
 				<transition
 					enter-active-class="transition duration-100 ease-out"
 					enter-from-class="transform scale-95 opacity-0"
@@ -28,9 +29,7 @@
 					leave-from-class="transform scale-100 opacity-100"
 					leave-to-class="transform scale-95 opacity-0"
 				>
-					<!-- `open` is `true` only when first input even is fired on ComboboxInput -->
-					<!-- So, before input event is fired on the input, filterQuery is empty, so we can display the options  -->
-					<div v-show="!filterQuery || open">
+					<div v-show="isComboBoxOpen">
 						<ComboboxOptions
 							static
 							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
@@ -54,7 +53,6 @@
 								:key="idx"
 								:value="option"
 								:disabled="option.disabled"
-								@click="togglePopover(false)"
 								v-slot="{ active, selected }"
 							>
 								<div
@@ -93,6 +91,7 @@ import {
 	ComboboxInput,
 	ComboboxOptions,
 	ComboboxOption,
+	ComboboxButton,
 } from '@headlessui/vue'
 
 const $utils = inject('$utils')
