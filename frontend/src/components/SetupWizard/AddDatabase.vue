@@ -18,14 +18,14 @@
 			<Input
 				v-model="db.host"
 				type="text"
-				label="Host (Optional)"
+				label="Host"
 				placeholder="localhost"
 				autocomplete="off"
 			/>
 			<Input
 				v-model="db.port"
 				type="number"
-				label="Port (Optional)"
+				label="Port"
 				placeholder="3306"
 				autocomplete="off"
 			/>

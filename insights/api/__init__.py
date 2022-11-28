@@ -17,7 +17,8 @@ def get_data_sources():
     return frappe.get_list(
         "Insights Data Source",
         filters={"status": "Active"},
-        fields=["name", "title", "status", "database_type", "modified"],
+        fields=["name", "title", "status", "database_type", "creation"],
+        order_by="creation desc",
     )
 
 
@@ -330,7 +331,8 @@ def _sync_data_source(data_source):
             "type": "info",
         }
     )
-    frappe.get_doc("Insights Data Source", data_source).sync_tables()
+    source = frappe.get_doc("Insights Data Source", data_source)
+    source.sync_tables()
     notify(
         **{
             "title": "Success",

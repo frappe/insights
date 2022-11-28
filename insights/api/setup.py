@@ -39,7 +39,7 @@ def test_database_connection(db):
 def add_database(db):
     data_source = get_new_datasource(db)
     data_source.save()
-    sync_data_source(data_source)
+    sync_data_source(data_source.name)
     update_setup_status()
 
 

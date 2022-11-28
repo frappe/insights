@@ -26,7 +26,7 @@
 						<p class="flex-1">Title</p>
 						<p class="flex-1">Status</p>
 						<p class="flex-1">Database Type</p>
-						<p class="flex-1 text-right">Last Modified</p>
+						<p class="flex-1 text-right">Created</p>
 					</div>
 					<ul
 						role="list"
@@ -62,9 +62,9 @@
 								</p>
 								<p
 									class="flex-1 text-right text-sm text-gray-500"
-									:title="source.modified"
+									:title="source.creation"
 								>
-									{{ source.modified_from_now }}
+									{{ source.created_from_now }}
 								</p>
 							</router-link>
 						</li>
@@ -106,7 +106,7 @@ getDataSources.fetch()
 const dayjs = inject('$dayjs')
 const dataSources = computed(() => {
 	return getDataSources.data.map((source) => {
-		source.modified_from_now = dayjs(source.modified).fromNow()
+		source.created_from_now = dayjs(source.creation).fromNow()
 		return source
 	})
 })
