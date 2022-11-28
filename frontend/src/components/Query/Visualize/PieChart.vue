@@ -20,9 +20,11 @@ const props = defineProps({
 	},
 })
 
+const MAX_SLICES = 9
+
 const dataset = computed(() => props.data.datasets?.[0])
 const data = computed(() => {
-	const slices = dataset.value?.data.slice(0, parseInt(props.options.maxSlices) || 9)
+	const slices = dataset.value?.data.slice(0, parseInt(props.options.maxSlices) || MAX_SLICES)
 	const otherSlices = dataset.value?.data
 		.slice(parseInt(props.options.maxSlices) || 9)
 		.reduce((a, b) => a + b, 0)
@@ -93,6 +95,28 @@ function updateLegendOptions(position) {
 function formatLabel({ name, percent }) {
 	return `${name} (${percent.toFixed(0)}%)`
 }
+
+function formatLegend(name) {
+	let total = dataset.value?.data.reduce((a, b) => a + b, 0)
+	const labelIndex = props.data.labels.indexOf(name)
+
+	if (labelIndex === -1 && name == 'Others') {
+		const otherSlicesTotal = dataset.value?.data
+			.slice(parseInt(props.options.maxSlices) || MAX_SLICES)
+			.reduce((a, b) => a + b, 0)
+		const percent = (otherSlicesTotal / total) * 100
+		return `${name} (${percent.toFixed(0)}%)`
+	}
+
+	const percent = (dataset.value?.data[labelIndex] / total) * 100
+	return `${name} (${percent.toFixed(0)}%)`
+}
+
+function appendPercentage(value) {
+	let total = dataset.value?.data.reduce((a, b) => a + b, 0)
+	const percent = (value / total) * 100
+	return `${value} (${percent.toFixed(0)}%)`
+}
 </script>
 
 <template>
@@ -117,7 +141,11 @@ function formatLabel({ name, percent }) {
 			:label-formatter="formatLabel"
 			:emphasis-scaleSize="5"
 		/>
-		<ChartTooltip trigger="item" :appendToBody="true" />
-		<ChartLegend v-if="!props.options.inlineLabels" v-bind="legendOptions" />
+		<ChartTooltip trigger="item" :appendToBody="true" :valueFormatter="appendPercentage" />
+		<ChartLegend
+			v-if="!props.options.inlineLabels"
+			v-bind="legendOptions"
+			:formatter="formatLegend"
+		/>
 	</Chart>
 </template>
