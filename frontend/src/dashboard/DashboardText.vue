@@ -39,7 +39,7 @@ async function discardText() {
 
 <template>
 	<div class="relative h-full w-full">
-		<TextEditor editor-class="min-h-[4rem] prose-sm" :content="markdown" />
+		<TextEditor editor-class="min-h-[4rem] prose-sm" :content="markdown" :editable="false" />
 
 		<div
 			class="absolute top-0 right-0 flex cursor-pointer space-x-1 p-1"

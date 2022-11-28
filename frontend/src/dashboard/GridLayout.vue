@@ -111,7 +111,11 @@ async function updateGrid() {
 	}
 }
 .grid-stack > .grid-stack-item > .ui-resizable-se {
-	@apply mr-2 mb-2 h-3 w-3 rotate-0 border-r-[3px] border-b-[3px] bg-none;
+	@apply flex h-5 w-5 rotate-0  bg-none;
 	z-index: 0 !important;
+	&::before {
+		@apply h-3 w-3 border-r-[3px] border-b-[3px] bg-none;
+		content: '';
+	}
 }
 </style>
