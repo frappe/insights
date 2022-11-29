@@ -2,12 +2,11 @@
 	<div class="flex flex-col space-y-3">
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Aggregation Type</div>
-			<Input
-				type="select"
+			<Autocomplete
 				v-model="simpleColumn.aggType"
 				:options="aggregations"
 				placeholder="Select aggregation type"
-				@change="onTypeSelect"
+				@selectOption="onTypeSelect"
 			/>
 		</div>
 		<div v-if="columnNeeded" class="space-y-1 text-sm text-gray-600">
