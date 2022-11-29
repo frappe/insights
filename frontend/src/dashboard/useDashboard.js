@@ -75,7 +75,7 @@ export default function useDashboard(dashboardName) {
 		return dashboard.delete.submit()
 	}
 
-	dashboard.refreshItems = debounce(async () => {
+	dashboard.refreshItems = debounce(() => {
 		dashboard.editingLayout = false
 		// reload the dashboard doc
 		// to re-render the charts with new data
@@ -106,23 +106,6 @@ export default function useDashboard(dashboardName) {
 		// returns all columns from all the tables selected in the query
 		dashboard.get_all_columns.submit({ query })
 		return computed(() => dashboard.get_all_columns.data?.message || [])
-	}
-
-	if (settings.doc?.auto_refresh_dashboard_in_minutes) {
-		watch(
-			() => dashboard.doc?.last_updated_on,
-			() => {
-				const last_updated_on = dayjs(dashboard.doc.last_updated_on)
-				const minute_diff = dayjs().diff(last_updated_on, 'minute')
-
-				if (
-					!dashboard.doc.last_updated_on ||
-					minute_diff > settings.doc.auto_refresh_dashboard_in_minutes
-				) {
-					dashboard.refreshItems()
-				}
-			}
-		)
 	}
 
 	return dashboard
