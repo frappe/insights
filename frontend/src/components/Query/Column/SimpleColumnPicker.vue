@@ -124,7 +124,7 @@ const simpleColumn = reactive({
 if (!simpleColumn.aggType) simpleColumn.aggType = { label: 'No Aggregation', value: '' }
 
 const columnNeeded = computed(() => {
-	return !simpleColumn.aggType.label.includes('Count')
+	return simpleColumn.aggType.label && !simpleColumn.aggType.label?.includes('Count')
 })
 const applyDisabled = computed(() => {
 	return (
