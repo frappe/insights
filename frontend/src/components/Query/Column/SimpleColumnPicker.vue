@@ -2,11 +2,12 @@
 	<div class="flex flex-col space-y-3">
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Aggregation Type</div>
-			<Autocomplete
+			<Input
+				type="select"
 				v-model="simpleColumn.aggType"
 				:options="aggregations"
 				placeholder="Select aggregation type"
-				@selectOption="onTypeSelect"
+				@change="onTypeSelect"
 			/>
 		</div>
 		<div v-if="columnNeeded" class="space-y-1 text-sm text-gray-600">
@@ -124,7 +125,7 @@ const simpleColumn = reactive({
 if (!simpleColumn.aggType) simpleColumn.aggType = { label: 'No Aggregation', value: '' }
 
 const columnNeeded = computed(() => {
-	return !simpleColumn.aggType.value.includes('Count')
+	return !simpleColumn.aggType.label.includes('Count')
 })
 const applyDisabled = computed(() => {
 	return (

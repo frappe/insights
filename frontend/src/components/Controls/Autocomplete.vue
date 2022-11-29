@@ -11,7 +11,6 @@
 						@change="
 							(e) => {
 								filterQuery = e.target.value
-								togglePopover(true)
 							}
 						"
 						:displayValue="(option) => option?.label"
@@ -189,7 +188,7 @@ const filteredOptions = computed(() => {
 })
 
 watch(filterQuery, (newValue, oldValue) => {
-	if (newValue === oldValue) return
+	if (!newValue || newValue === oldValue) return
 
 	if (newValue === '') {
 		selectedOption.value = undefined
