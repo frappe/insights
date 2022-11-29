@@ -68,7 +68,8 @@ def create_insights_table(table, force=False):
 
     for column in table.columns or []:
         # do not overwrite existing columns, since type or label might have been changed
-        if any([doc_column.column == column.column] for doc_column in doc.columns):
+        if any([doc_column.column == column.column for doc_column in doc.columns]):
+            print("skipping", column.column)
             continue
         doc.append("columns", column)
 
