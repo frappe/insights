@@ -3,23 +3,18 @@
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
 		<Popover class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
-				<ComboboxButton class="w-full" @click="togglePopover(true)">
-					<ComboboxInput
-						ref="input"
-						autocomplete="off"
-						:placeholder="placeholder"
-						@change="
-							(e) => {
-								filterQuery = e.target.value
-							}
-						"
-						:displayValue="(option) => option?.label"
-						class="form-input block h-8 w-full placeholder-gray-500"
-					>
-					</ComboboxInput>
-				</ComboboxButton>
+				<ComboboxInput
+					ref="input"
+					autocomplete="off"
+					:placeholder="placeholder"
+					@focus="togglePopover(true)"
+					@change="filterQuery = $event.target.value"
+					:displayValue="(option) => option?.label"
+					class="form-input block h-8 w-full placeholder-gray-500"
+				>
+				</ComboboxInput>
 			</template>
-			<template #body>
+			<template #body="{ isOpen: isPopoverOpen, togglePopover }">
 				<transition
 					enter-active-class="transition duration-100 ease-out"
 					enter-from-class="transform scale-95 opacity-0"
@@ -28,7 +23,7 @@
 					leave-from-class="transform scale-100 opacity-100"
 					leave-to-class="transform scale-95 opacity-0"
 				>
-					<div v-show="isComboBoxOpen">
+					<div v-show="isComboBoxOpen || isPopoverOpen">
 						<ComboboxOptions
 							static
 							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
@@ -52,6 +47,7 @@
 								:key="idx"
 								:value="option"
 								:disabled="option.disabled"
+								@click="togglePopover(false)"
 								v-slot="{ active, selected }"
 							>
 								<div
@@ -188,9 +184,9 @@ const filteredOptions = computed(() => {
 })
 
 watch(filterQuery, (newValue, oldValue) => {
-	if (!newValue || newValue === oldValue) return
+	if (newValue === oldValue) return
 
-	if (newValue === '') {
+	if (!newValue) {
 		selectedOption.value = undefined
 	}
 	emit('inputChange', newValue)
