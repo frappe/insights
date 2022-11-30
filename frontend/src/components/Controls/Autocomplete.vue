@@ -1,7 +1,7 @@
 <template>
 	<Combobox as="div" v-model="selectedOption" v-slot="{ open: isComboBoxOpen }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover class="flex w-full [&>div:first-child]:w-full">
+		<Popover ref="popover" class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
@@ -14,7 +14,7 @@
 				>
 				</ComboboxInput>
 			</template>
-			<template #body="{ isOpen: isPopoverOpen, togglePopover }">
+			<template #body="{ isOpen: isPopoverOpen }">
 				<transition
 					enter-active-class="transition duration-100 ease-out"
 					enter-from-class="transform scale-95 opacity-0"
@@ -47,7 +47,6 @@
 								:key="idx"
 								:value="option"
 								:disabled="option.disabled"
-								@click="togglePopover(false)"
 								v-slot="{ active, selected }"
 							>
 								<div
@@ -86,7 +85,6 @@ import {
 	ComboboxInput,
 	ComboboxOptions,
 	ComboboxOption,
-	ComboboxButton,
 } from '@headlessui/vue'
 
 const $utils = inject('$utils')
@@ -133,6 +131,7 @@ const props = defineProps({
 	},
 })
 
+const popover = ref(null)
 const filterQuery = ref('')
 const modelValueIsObject = computed(() => {
 	return typeof props.modelValue === 'object' || !props.modelValue
@@ -155,6 +154,10 @@ const selectedOption = computed({
 			: options.value.find((option) => option.value === props.modelValue)
 	},
 	set(value) {
+		if (value) {
+			popover.value.close()
+			input.value.$el.blur()
+		}
 		const _value = modelValueIsObject.value ? value : value.value
 		emit('update:modelValue', _value)
 		emit('selectOption', _value)
@@ -185,10 +188,6 @@ const filteredOptions = computed(() => {
 
 watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
-
-	if (!newValue) {
-		selectedOption.value = undefined
-	}
 	emit('inputChange', newValue)
 })
 </script>
