@@ -10,7 +10,7 @@ from frappe.model.document import Document
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
-from .sources.frappe_db import SiteDB, is_frappe_db
+from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
 from .sources.models import BaseDatabase
 from .sources.query_store import QueryStore
@@ -58,8 +58,8 @@ class InsightsDataSource(Document):
             "database_name": self.database_name,
         }
 
-        if db := is_frappe_db(conn_args):
-            return db
+        if is_frappe_db(conn_args):
+            return FrappeDB(**conn_args)
 
         if self.database_type == "MariaDB":
             return MariaDB(**conn_args)

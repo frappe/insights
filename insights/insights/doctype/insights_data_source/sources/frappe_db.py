@@ -366,9 +366,16 @@ class SiteDB(FrappeDB):
         return super().sync_tables(_tables, force)
 
 
+from insights.cache_utils import get_or_set_cache, make_cache_key
+
+
 def is_frappe_db(db_params):
-    try:
-        db = FrappeDB(**db_params)
-        return db if db.test_connection() else None
-    except BaseException:
-        return False
+    def _is_frappe_db():
+        try:
+            db = FrappeDB(**db_params)
+            return db.test_connection()
+        except BaseException:
+            return False
+
+    key = make_cache_key("is_frappe_db", db_params)
+    return get_or_set_cache(key, _is_frappe_db, expiry=None)

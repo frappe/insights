@@ -23,7 +23,7 @@ def get_or_set_cache(key, func, *args, **kwargs):
     if cached_value:
         return cached_value
 
-    expiry = kwargs.pop("expiry", EXPIRY)
+    expiry = kwargs.pop("expiry") if "expiry" in kwargs else EXPIRY
     value = func(*args, **kwargs)
     cache.set_value(f"insights|{key}", value, expires_in_sec=expiry)
     return value
