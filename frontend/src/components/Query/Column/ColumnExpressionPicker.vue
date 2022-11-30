@@ -98,7 +98,7 @@
 			>
 				Remove
 			</Button>
-			<Button appearance="primary" @click="addExpressionColumn" :disabled="addDisabled">
+			<Button appearance="primary" @click="addOrEditColumn" :disabled="addDisabled">
 				{{ editing ? 'Update' : 'Add ' }}
 			</Button>
 		</div>
@@ -214,7 +214,7 @@ const addDisabled = computed(() => {
 	)
 })
 
-const addExpressionColumn = () => {
+const addOrEditColumn = () => {
 	const newColumn = {
 		name: props.column.name,
 		is_expression: 1,
@@ -233,7 +233,12 @@ const addExpressionColumn = () => {
 			date_format: expression.dateFormat.value,
 		}
 	}
-	query.addColumn.submit({ column: newColumn })
+
+	if (props.column.name) {
+		query.updateColumn.submit({ column: newColumn })
+	} else {
+		query.addColumn.submit({ column: newColumn })
+	}
 	emit('close')
 }
 
