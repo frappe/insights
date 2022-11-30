@@ -145,8 +145,7 @@ def run_query(query_name, additional_filters=None):
         query.filters = dumps(filters, indent=2)
         return query.fetch_results()
 
-    query_result_expiry = frappe.db.get_value(
-        "Insights Settings", None, "query_result_expiry", cache=True
+    query_result_expiry = frappe.db.get_single_value(
+        "Insights Settings", "query_result_expiry"
     )
-    DAY = 60 * 60 * 24
-    return get_or_set_cache(key, get_result, expiry=query_result_expiry or DAY)
+    return get_or_set_cache(key, get_result, expiry=query_result_expiry or 3600)

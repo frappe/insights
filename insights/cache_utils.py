@@ -5,7 +5,7 @@ import hashlib
 
 import frappe
 
-EXPIRY = 60 * 60 * 24
+EXPIRY = 60 * 60
 
 
 def make_cache_key(*args):
