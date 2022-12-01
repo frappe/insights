@@ -347,7 +347,7 @@ class ExpressionProcessor:
         if expression.type == "Column":
             column = expression.value.get("column")
             table = expression.value.get("table")
-            return self.builder.find_or_add_column(column, table)
+            return self.builder.make_column(column, table)
 
         if expression.type == "String":
             return expression.value
@@ -394,7 +394,7 @@ class SQLQueryBuilder:
         self.column_formatter = ColumnFormatter
         self.expression_processor = ExpressionProcessor(self)
 
-        self._tables = []
+        self._tables = {}
         self._joins = []
         self._columns = []
         self._filters = []
@@ -405,30 +405,23 @@ class SQLQueryBuilder:
     def build(self, query, dialect: Dialect = None):
         self.query = query
         self.dialect = dialect
-        self.process_tables()
-        self.process_joins()
+        self.process_tables_and_joins()
         self.process_columns()
         self.process_filters()
         return self.make_query()
 
-    def process_tables(self):
-        self._tables = []
-        for row in self.query.tables:
-            self.find_or_add_table(row.table)
+    def make_table(self, name):
+        if not hasattr(self, "_tables"):
+            self._tables = {}
+        if name not in self._tables:
+            self._tables[name] = table(name).alias(f"t{len(self._tables)}")
+        return self._tables[name]
 
-    def find_or_add_table(self, name):
-        _table = next((t for t in self._tables if t.name == name), table(name))
-        if _table not in self._tables:
-            self._tables.append(_table)
-        return _table
+    def make_column(self, columnname, tablename):
+        _table = self.make_table(tablename)
+        return column(columnname, _selectable=_table)
 
-    def find_or_add_column(self, name, table):
-        _table = self.find_or_add_table(table)
-        if name not in _table.c:
-            _table.append_column(column(name))
-        return _table.c[name]
-
-    def process_joins(self):
+    def process_tables_and_joins(self):
         self._joins = []
         for row in self.query.tables:
             if not row.join:
@@ -437,17 +430,15 @@ class SQLQueryBuilder:
             _join = parse_json(row.join)
             join_type = _join.get("type").get("value")
 
-            left_table = self.find_or_add_table(row.table)
-            right_table = self.find_or_add_table(_join.get("with").get("value"))
+            left_table = self.make_table(row.table)
+            right_table = self.make_table(_join.get("with").get("value"))
 
             condition = _join.get("condition")
             left_key = condition.get("left").get("value")
             right_key = condition.get("right").get("value")
 
-            left_key = self.find_or_add_column(left_key, row.table)
-            right_key = self.find_or_add_column(
-                right_key, _join.get("with").get("value")
-            )
+            left_key = self.make_column(left_key, row.table)
+            right_key = self.make_column(right_key, _join.get("with").get("value"))
 
             self._joins.append(
                 _dict(
@@ -468,7 +459,7 @@ class SQLQueryBuilder:
 
         for row in self.query.columns:
             if not row.is_expression:
-                _column = self.find_or_add_column(row.column, row.table)
+                _column = self.make_column(row.column, row.table)
                 _column = self.column_formatter.format(
                     parse_json(row.format_option), row.type, _column
                 )
@@ -497,7 +488,7 @@ class SQLQueryBuilder:
         self._filters = self.expression_processor.process(filters)
 
     def make_query(self):
-        if not self._tables:
+        if not self.query.tables:
             return
 
         sql = None
@@ -507,7 +498,8 @@ class SQLQueryBuilder:
         else:
             sql = select(*self._columns)
 
-        sql = sql.select_from(*self._tables)
+        main_table = self.query.tables[0].table
+        sql = sql.select_from(self.make_table(main_table))
 
         if self._joins:
             sql = self.do_join(sql)
@@ -523,15 +515,16 @@ class SQLQueryBuilder:
         return self.compile(sql)
 
     def do_join(self, sql):
-        inner_joins = [j for j in self._joins if j.type == "inner"]
-        left_joins = [j for j in self._joins if j.type == "left"]
         # TODO: add right and full joins
-        # right_joins = [j for j in self._joins if j.type == "right"]
 
-        for join in inner_joins:
-            sql = sql.join(join.right, join.left_key == join.right_key)
-        for join in left_joins:
-            sql = sql.join(join.right, join.left_key == join.right_key, isouter=True)
+        for join in self._joins:
+
+            sql = sql.join_from(
+                join.left,
+                join.right,
+                join.left_key == join.right_key,
+                isouter=join.type == "left",
+            )
 
         return sql
 
