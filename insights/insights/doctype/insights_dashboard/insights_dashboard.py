@@ -148,4 +148,7 @@ def run_query(query_name, additional_filters=None):
     query_result_expiry = frappe.db.get_single_value(
         "Insights Settings", "query_result_expiry"
     )
-    return get_or_set_cache(key, get_result, expiry=query_result_expiry or 3600)
+    query_result_expiry_in_seconds = query_result_expiry * 60
+    return get_or_set_cache(
+        key, get_result, expiry=query_result_expiry_in_seconds or 3600
+    )
