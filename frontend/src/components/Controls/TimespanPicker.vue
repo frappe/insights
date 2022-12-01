@@ -69,10 +69,10 @@ export default {
 		let [span, interval, intervalType] = initalValue.split(' ')
 
 		if (span == 'Current') intervalType = interval // eg. Current Day
-		if (intervalType.at(-1) == 's') intervalType = intervalType.slice(0, -1) // eg. Days
+		if (intervalType?.at(-1) == 's') intervalType = intervalType.slice(0, -1) // eg. Days
 
 		return {
-			span,
+			span: span || 'Last',
 			interval: interval || '1',
 			intervalType: intervalType || 'Day',
 		}
