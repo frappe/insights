@@ -6,7 +6,7 @@ import { getFormattedDate } from '../format'
 export function useQueryResults(query) {
 	const maxRows = 1000
 	const data = computed(() => {
-		return safeJSONParse(query.doc.result, []).slice(0, maxRows)
+		return safeJSONParse(query.doc.results, []).slice(0, maxRows)
 	})
 	const columns = computed(() => query.columns.data)
 	const formattedResult = computed(() => getFormattedResult(unref(data), unref(columns)))

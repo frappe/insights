@@ -36,7 +36,7 @@ class TestInsightsQuery(FrappeTestCase):
 
         self.assertTrue("count(*)" in query.sql.lower())
         self.assertTrue("status = 'Open'" in query.sql)
-        self.assertTrue("5" in query.result)
+        self.assertTrue("5" in query.results)
 
         column_values = query.fetch_column_values(
             {"table": "tabToDo", "column": "status"}
@@ -66,7 +66,7 @@ class TestInsightsQuery(FrappeTestCase):
         query.build_and_execute()
         query.save()
 
-        self.assertEqual(len(json.loads(query.result)), 11)
+        self.assertEqual(len(json.loads(query.results)), 11)
 
     def test_pivot_transform(self):
         frappe.db.delete("ToDo")
@@ -87,14 +87,14 @@ class TestInsightsQuery(FrappeTestCase):
         query.data_source = self.data_source
         query.save()
         query.build_and_execute()
-        result = json.loads(query.result)
+        result = json.loads(query.results)
         self.assertEqual(len(result), 5)
         self.assertEqual(len(result[0]), 3)
 
         query.add_transform(
             "Pivot", {"index": "status", "column": "reference_type", "value": "*"}
         )
-        result = json.loads(query.result)
+        result = json.loads(query.results)
         self.assertEqual(len(result), 3)
         self.assertEqual(len(result[0]), 5)
 
@@ -129,7 +129,7 @@ class TestInsightsQuery(FrappeTestCase):
         query.save()
         query.build_and_execute()
         query.save()
-        result = json.loads(query.result)
+        result = json.loads(query.results)
         self.assertEqual(len(result), 11)
         self.assertEqual(result[-1][2], 10)
 

@@ -5,7 +5,7 @@ import hashlib
 
 import frappe
 
-EXPIRY = 60 * 60
+EXPIRY = 60 * 10
 
 
 def make_cache_key(*args):
@@ -14,16 +14,22 @@ def make_cache_key(*args):
         if isinstance(arg, dict):
             key += frappe.as_json(arg)
         key += frappe.cstr(arg)
-    return hashlib.md5(key.encode("utf-8")).hexdigest()
+    key = hashlib.md5(key.encode("utf-8")).hexdigest()
+    return f"insights|{key}"
 
 
-def get_or_set_cache(key, func, *args, **kwargs):
-    cache = frappe.cache()
-    cached_value = cache.get_value(f"insights|{key}")
-    if cached_value:
+def get_or_set_cache(key, func, force=False, expiry=EXPIRY):
+    cached_value = frappe.cache().get_value(key)
+    if cached_value and not force:
         return cached_value
 
-    expiry = kwargs.pop("expiry") if "expiry" in kwargs else EXPIRY
-    value = func(*args, **kwargs)
-    cache.set_value(f"insights|{key}", value, expires_in_sec=expiry)
+    value = func()
+    frappe.cache().set_value(key, value, expires_in_sec=expiry)
     return value
+
+
+@frappe.whitelist()
+def reset_insights_cache():
+    frappe.only_for("System Manager")
+    cache = frappe.cache()
+    cache.delete_keys("insights|*")

@@ -43,7 +43,7 @@
    "label": "Auto Execute Query"
   },
   {
-   "default": "1440",
+   "default": "10",
    "fieldname": "query_result_expiry",
    "fieldtype": "Int",
    "label": "Cache Query Results For (Minutes)"
@@ -52,7 +52,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-11-27 23:17:16.366788",
+ "modified": "2022-12-01 20:50:00.029125",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

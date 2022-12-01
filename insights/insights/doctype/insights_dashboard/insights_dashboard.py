@@ -132,23 +132,21 @@ class InsightsDashboard(Document):
 
 
 def run_query(query_name, additional_filters=None):
-    last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
-    key = make_cache_key(query_name, last_modified, additional_filters)
-
     def get_result():
         query = frappe.get_cached_doc("Insights Query", query_name)
         if not additional_filters:
-            return query.fetch_results()
+            return query.results
 
         filters = frappe.parse_json(query.filters)
         filters.conditions.extend(additional_filters)
         query.filters = dumps(filters, indent=2)
         return query.fetch_results()
 
+    last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
+    key = make_cache_key(query_name, last_modified, additional_filters)
+
     query_result_expiry = frappe.db.get_single_value(
         "Insights Settings", "query_result_expiry"
     )
     query_result_expiry_in_seconds = query_result_expiry * 60
-    return get_or_set_cache(
-        key, get_result, expiry=query_result_expiry_in_seconds or 3600
-    )
+    return get_or_set_cache(key, get_result, expiry=query_result_expiry_in_seconds)

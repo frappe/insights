@@ -12,7 +12,7 @@ def execute():
     for query in queries:
         try:
             doc = frappe.get_doc("Insights Query", query)
-            results = doc.load_result()
+            results = frappe.parse_json(doc.results)
             if not results or "::" in str(results[0][0]):
                 continue
             columns = [f"{c.label or c.column}::{c.type}" for c in doc.get_columns()]

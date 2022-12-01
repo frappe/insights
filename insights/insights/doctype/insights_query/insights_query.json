@@ -23,7 +23,7 @@
   "query_and_result_tab",
   "section_break_11",
   "sql",
-  "result",
+  "results",
   "section_break_17",
   "execution_time",
   "column_break_19",
@@ -69,13 +69,6 @@
   {
    "fieldname": "section_break_11",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "result",
-   "fieldtype": "Code",
-   "label": "Result",
-   "options": "JSON",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_3",
@@ -171,11 +164,18 @@
    "fieldtype": "Table",
    "label": "Transforms",
    "options": "Insights Query Transform"
+  },
+  {
+   "fieldname": "results",
+   "fieldtype": "Long Text",
+   "is_virtual": 1,
+   "label": "Results",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-18 16:34:41.260340",
+ "modified": "2022-12-01 20:48:46.940675",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

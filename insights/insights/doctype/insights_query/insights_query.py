@@ -10,6 +10,8 @@ from frappe.model.document import Document
 from frappe.utils import cstr, flt
 from sqlparse import format as format_sql
 
+from insights.cache_utils import get_or_set_cache, make_cache_key
+
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_query_client import InsightsQueryClient
 
@@ -96,6 +98,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def _data_source(self):
         return frappe.get_doc("Insights Data Source", self.data_source)
 
+    @property
+    def results(self) -> str:
+        try:
+            return self.store_results()
+        except Exception:
+            print("Error getting results")
+
     def update_query(self):
         query = self._data_source.build_query(query=self)
         query = format_query(query)
@@ -113,12 +122,18 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             results = self.apply_cumulative_sum(results)
         return results
 
+    def store_results(self, force=False) -> str:
+        def _fetch_results():
+            return frappe.as_json(self.fetch_results())
+
+        cache_key = make_cache_key(self.name, self.modified)
+        return get_or_set_cache(cache_key, _fetch_results, force=force) or ""
+
     def build_and_execute(self):
         start = time.time()
-        results = self.fetch_results()
+        self.store_results(force=True)
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
-        self.result = dumps(results, default=cstr)
         self.status = "Execution Successful"
 
     def create_default_chart(self):
@@ -161,7 +176,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.columns = []
         self.filters = DEFAULT_FILTERS
         self.sql = None
-        self.result = None
         self.limit = 10
         self.execution_time = 0
         self.last_execution = None
@@ -176,9 +190,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def get_columns(self):
         return self.columns or self.fetch_columns()
-
-    def load_result(self):
-        return frappe.parse_json(self.result)
 
     def apply_transform(self, results):
         from pandas import DataFrame
