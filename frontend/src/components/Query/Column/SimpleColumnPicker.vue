@@ -174,7 +174,6 @@ function onColumnSelect(option) {
 }
 
 function addOrEditColumn() {
-	debugger
 	if (applyDisabled.value) return
 	const editing = props.column?.name
 
