@@ -184,35 +184,6 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def fetch_tables(self):
         return get_tables(self.data_source)
-        _tables = []
-        if not self.tables or self.data_source == "Query Store":
-            _tables = get_tables(self.data_source)
-
-        else:
-            tables = [d.table for d in self.tables]
-            Table = frappe.qb.DocType("Insights Table")
-            TableLink = frappe.qb.DocType("Insights Table Link")
-            query = (
-                frappe.qb.from_(Table)
-                .from_(TableLink)
-                .select(
-                    TableLink.foreign_table.as_("table"),
-                    TableLink.foreign_table_label.as_("label"),
-                )
-                .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
-            )
-            _tables = query.run(as_dict=True)
-            # add all selected tables to the list too
-            _tables = _tables + [
-                {"table": d.table, "label": d.label} for d in self.tables
-            ]
-
-        if self.data_source == "Query Store":
-            # remove the current query table from the table list
-            # you should not be querying self
-            _tables = [t for t in _tables if t.get("table") != self.name]
-
-        return _tables
 
     @frappe.whitelist()
     def fetch_columns(self):

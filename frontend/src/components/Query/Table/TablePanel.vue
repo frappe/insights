@@ -14,7 +14,7 @@
 					<Autocomplete
 						ref="tableSearch"
 						v-model="newTable"
-						:options="query.tables.options"
+						:options="query.tables.newTableOptions"
 						placeholder="Select a table..."
 						@selectOption="
 							(table) => {

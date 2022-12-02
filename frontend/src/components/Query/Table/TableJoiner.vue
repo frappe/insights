@@ -18,7 +18,7 @@
 					<div class="font-light">With</div>
 					<Autocomplete
 						v-model="join.with"
-						:options="query.tables.options"
+						:options="query.tables.joinOptions"
 						placeholder="Select a table..."
 					/>
 				</div>
