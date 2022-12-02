@@ -16,12 +16,7 @@
 						v-model="newTable"
 						:options="query.tables.newTableOptions"
 						placeholder="Select a table..."
-						@selectOption="
-							(table) => {
-								addingTable = false
-								table && query.addTable.submit({ table })
-							}
-						"
+						@selectOption="addNewTable"
 					/>
 				</div>
 				<Button icon="x" @click="addingTable = false"></Button>
@@ -103,6 +98,18 @@ watch(addingTable, (newValue) => {
 })
 
 const $notify = inject('$notify')
+
+function addNewTable(table) {
+	addingTable.value = false
+	if (table?.value) {
+		query.addTable.submit({
+			table: {
+				table: table.value,
+				label: table.label,
+			},
+		})
+	}
+}
 function removeTable(table) {
 	const validationError = query.tables.validateRemoveTable(table)
 	if (validationError) {
