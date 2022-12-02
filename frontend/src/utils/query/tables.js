@@ -45,7 +45,9 @@ export function useQueryTables(query) {
 		joinOptions,
 		validateRemoveTable({ table, label }) {
 			const columnsFromTable = query.doc.columns.filter((c) => c.table === table)
-			if (columnsFromTable.length > 0) {
+			// allow removing table if it has been selected twice
+			const tableCount = query.doc.tables.filter((t) => t.table === table).length
+			if (columnsFromTable.length > 0 && tableCount == 1) {
 				return {
 					title: 'Cannot remove table',
 					message: `Remove dimensions and metrics associated with ${label} table and try again`,
