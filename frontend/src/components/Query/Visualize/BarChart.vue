@@ -63,15 +63,15 @@ const series = ref(
 <template>
 	<Chart
 		ref="eChart"
-		:title="props.title"
-		:subtitle="props.subtitle"
+		:chartTitle="props.title"
+		:chartSubtitle="props.subtitle"
 		:color="props.options.colors"
 	>
 		<ChartGrid>
 			<ChartLegend type="scroll" bottom="bottom" />
 			<ChartAxis v-for="(axis, i) in XandY" v-bind="axis" :key="i" />
 			<ChartSeries v-for="(data, i) in series" v-bind="data" :key="i" />
-			<ChartTooltip trigger="item" :appendToBody="true" />
+			<ChartTooltip trigger="axis" :appendToBody="true" />
 		</ChartGrid>
 	</Chart>
 </template>

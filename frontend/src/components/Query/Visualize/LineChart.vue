@@ -37,8 +37,8 @@ const markLine = props.options.referenceLine?.value
 <template>
 	<Chart
 		ref="eChart"
-		:title="props.title"
-		:subtitle="props.subtitle"
+		:chartTitle="props.title"
+		:chartSubtitle="props.subtitle"
 		:color="props.options.colors"
 	>
 		<ChartGrid>
