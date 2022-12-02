@@ -101,7 +101,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     @property
     def results(self) -> str:
         try:
-            return self.store_results()
+            return frappe.cache().get_value(f"insights_query|{self.name}")
         except Exception:
             print("Error getting results")
 
@@ -122,19 +122,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             results = self.apply_cumulative_sum(results)
         return results
 
-    def store_results(self, force=False) -> str:
-        def _fetch_results():
-            return frappe.as_json(self.fetch_results())
-
-        cache_key = make_cache_key(self.name, self.modified)
-        return get_or_set_cache(cache_key, _fetch_results, force=force) or ""
-
     def build_and_execute(self):
         start = time.time()
-        self.store_results(force=True)
+        results = self.fetch_results()
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
         self.status = "Execution Successful"
+        frappe.cache().set_value(f"insights_query|{self.name}", frappe.as_json(results))
 
     def create_default_chart(self):
         charts = self.get_charts()

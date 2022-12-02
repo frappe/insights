@@ -135,7 +135,7 @@ def run_query(query_name, additional_filters=None):
     def get_result():
         query = frappe.get_cached_doc("Insights Query", query_name)
         if not additional_filters:
-            return query.results
+            return query.fetch_results()
 
         filters = frappe.parse_json(query.filters)
         filters.conditions.extend(additional_filters)
