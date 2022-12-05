@@ -45,3 +45,19 @@ def execute():
             "filter_links",
             frappe.as_json(filter_value),
         )
+
+    # update chart_title field in Insights Dashboard Item if chart is set
+    # set as title of Insights Query Chart with name = chart
+    frappe.db.sql(
+        """
+        UPDATE `tabInsights Dashboard Item`
+        SET chart_title = (
+            SELECT title
+            FROM `tabInsights Query Chart`
+            WHERE name = chart
+        )
+        WHERE item_type = 'Chart'
+        AND chart IS NOT NULL
+        AND chart != ''
+    """
+    )
