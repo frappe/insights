@@ -29,3 +29,4 @@ execute:frappe.db.sql("update `tabInsights Query Column` set `format_option`='{}
 execute:frappe.db.sql("""update `tabInsights Query Table` set `join`=replace(`join`, '"Right"', '"Inner"') where `join` like '%Right%'""")
 execute:frappe.db.sql("""update `tabInsights Query Table` set `join`=replace(`join`, '"right"', '"inner"') where `join` like '%right%'""")
 insights.patches.modify_join_condition
+insights.patches.make_filter_links

@@ -30,17 +30,21 @@ FUNCTION_OPERATORS = [
 ]
 
 
-def convert_to_expression(table, column, filter):
-    if filter.filter_operator in BINARY_OPERATORS:
-        return make_binary_expression(table, column, filter)
-    if filter.filter_operator in FUNCTION_OPERATORS:
-        return make_call_expression(table, column, filter)
+def convert_to_expression(table, column, filter_operator, filter_value, value_type):
+    if filter_operator in BINARY_OPERATORS:
+        return make_binary_expression(
+            table, column, filter_operator, filter_value, value_type
+        )
+    if filter_operator in FUNCTION_OPERATORS:
+        return make_call_expression(
+            table, column, filter_operator, filter_value, value_type
+        )
 
 
-def make_binary_expression(table, column, filter):
+def make_binary_expression(table, column, filter_operator, filter_value, value_type):
     return {
         "type": "BinaryExpression",
-        "operator": BINARY_OPERATORS[filter.filter_operator],
+        "operator": BINARY_OPERATORS[filter_operator],
         "left": {
             "type": "Column",
             "value": {
@@ -49,18 +53,16 @@ def make_binary_expression(table, column, filter):
             },
         },
         "right": {
-            "type": "Number"
-            if filter.filter_type in ("Integer", "Decimal")
-            else "String",
-            "value": filter.filter_value,
+            "type": "Number" if value_type in ("Integer", "Decimal") else "String",
+            "value": filter_value,
         },
     }
 
 
-def make_call_expression(table, column, filter):
-    operator_function = filter.filter_operator
-    if filter.filter_operator == "is":
-        operator_function = "is_set" if filter.filter_value == "set" else "is_not_set"
+def make_call_expression(table, column, filter_operator, filter_value, value_type):
+    operator_function = filter_operator
+    if filter_operator == "is":
+        operator_function = "is_set" if filter_value == "set" else "is_not_set"
 
     return {
         "type": "CallExpression",
@@ -73,32 +75,32 @@ def make_call_expression(table, column, filter):
                     "table": table,
                 },
             },
-            *make_args_for_call_expression(operator_function, filter),
+            *make_args_for_call_expression(operator_function, filter_value, value_type),
         ],
     }
 
 
-def make_args_for_call_expression(operator_function, filter):
+def make_args_for_call_expression(operator_function, filter_value, value_type):
     if operator_function == "is":
         return []
 
     if operator_function == "between":
-        values = [v.strip() for v in filter.filter_value.split(",")]
+        values = [v.strip() for v in filter_value.split(",")]
         return [
             {
-                "type": "Number" if filter.filter_type == "Number" else "String",
+                "type": "Number" if value_type == "Number" else "String",
                 "value": v,
             }
             for v in values
         ]
 
     if operator_function in ["in", "not_in"]:
-        return [{"type": "String", "value": v} for v in filter.filter_value]
+        return [{"type": "String", "value": v} for v in filter_value]
 
     return [
         {
-            "type": "Number" if filter.filter_type == "Number" else "String",
-            "value": filter.filter_value,
+            "type": "Number" if value_type == "Number" else "String",
+            "value": filter_value,
         }
     ]
 

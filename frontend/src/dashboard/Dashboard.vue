@@ -119,6 +119,7 @@ const newItem = ref({
 	filter_label: '',
 	filter_type: 'String', // default
 	filter_operator: 'equals', // default
+	filter_links: {},
 	markdown: '',
 })
 
@@ -176,6 +177,7 @@ function addItem() {
 			filter_label: newItem.value.filter_label,
 			filter_type: newItem.value.filter_type,
 			filter_operator: newItem.value.filter_operator,
+			filter_links: newItem.value.filter_links,
 		})
 	}
 	showAddDialog.value = false
@@ -185,6 +187,7 @@ function addItem() {
 		filter_label: '',
 		filter_type: 'String', // default
 		filter_operator: 'equals', // default
+		filter_links: {},
 	}
 	newChart.value = {}
 }

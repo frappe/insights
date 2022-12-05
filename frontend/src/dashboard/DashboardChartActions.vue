@@ -1,6 +1,5 @@
 <template>
 	<div class="flex space-x-1">
-		<DashboardChartFilterAction></DashboardChartFilterAction>
 		<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
 			<FeatherIcon
 				name="external-link"
@@ -21,6 +20,5 @@
 </template>
 
 <script setup>
-import DashboardChartFilterAction from './DashboardChartFilterAction.vue'
 defineEmits(['edit', 'remove'])
 </script>

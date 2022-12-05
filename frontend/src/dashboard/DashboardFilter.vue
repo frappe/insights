@@ -18,6 +18,7 @@ const filter = reactive({
 	filter_type: props.item.filter_type,
 	filter_operator: props.item.filter_operator,
 	filter_value: props.item.filter_value,
+	filter_links: props.item.filter_links,
 })
 
 watch(

@@ -11,9 +11,11 @@ export default function useDashboard(dashboardName) {
 	dashboard.items = computed(() =>
 		dashboard.doc?.items.map((v) => {
 			const layout = safeJSONParse(v.layout, {})
+			const filter_links = safeJSONParse(v.filter_links, {})
 			return {
 				...v,
 				...layout,
+				filter_links,
 			}
 		})
 	)
@@ -102,10 +104,8 @@ export default function useDashboard(dashboardName) {
 		})
 	)
 
-	dashboard.getAllColumns = (query) => {
-		// returns all columns from all the tables selected in the query
-		dashboard.get_all_columns.submit({ query })
-		return computed(() => dashboard.get_all_columns.data?.message || [])
+	dashboard.fetchAllColumns = (query) => {
+		return fetchData(dashboard.get_all_columns, { query })
 	}
 
 	return dashboard

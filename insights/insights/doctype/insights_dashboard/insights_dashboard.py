@@ -72,6 +72,7 @@ class InsightsDashboard(Document):
                 row.filter_type = filter.filter_type
                 row.filter_operator = filter.filter_operator
                 row.filter_value = filter.filter_value
+                row.filter_links = frappe.as_json(filter.filter_links)
                 self.save()
                 break
 
@@ -89,31 +90,51 @@ class InsightsDashboard(Document):
         # fetches all the columns for all the tables selected in the query
         return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
+    def get_chart_filters(self, chart_name):
+        _filters = []
+        for row in self.items:
+            if row.item_type != "Filter":
+                continue
+            filter_links = frappe.parse_json(row.filter_links) or {}
+            if str(chart_name) in filter_links:
+                _filters.append(
+                    frappe._dict(
+                        {
+                            "value": row.filter_value,
+                            "value_type": row.filter_type,
+                            "operator": row.filter_operator,
+                            "column": frappe._dict(filter_links[str(chart_name)]),
+                        }
+                    )
+                )
+        return _filters
+
     @frappe.whitelist()
     def get_chart_data(self, chart):
         row = next((row for row in self.items if row.chart == chart), None)
         if not row:
             return
 
-        chart_filters = frappe.parse_json(row.chart_filters)
+        chart_filters = self.get_chart_filters(row.chart)
         if not chart_filters:
-            return run_query(row.query)
-
-        filter_by_label = {
-            f.filter_label: f
-            for f in self.items
-            if f.item_type == "Filter" and f.filter_value
-        }
-        applied_filters = [cf.get("filter").get("label") for cf in chart_filters]
-
-        if not any(filter_by_label.get(f) for f in applied_filters):
             return run_query(row.query)
 
         filter_conditions = []
         for chart_filter in chart_filters:
-            filter = filter_by_label.get(chart_filter.get("filter").get("label"))
-            table, column = chart_filter.get("column").get("value").split(".")
-            filter_conditions.append(convert_to_expression(table, column, filter))
+            if not chart_filter.value:
+                continue
+            filter_conditions.append(
+                convert_to_expression(
+                    chart_filter.column.table,
+                    chart_filter.column.column,
+                    chart_filter.operator,
+                    chart_filter.value,
+                    chart_filter.value_type,
+                )
+            )
+
+        if not filter_conditions:
+            return run_query(row.query)
 
         return run_query(row.query, additional_filters=filter_conditions)
 
