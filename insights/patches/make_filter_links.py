@@ -31,11 +31,17 @@ def execute():
             filters_by_filter_name[filter_item_name].setdefault(
                 chart_item.chart,
                 {
-                    "column": {
-                        "label": chart_filter.column.get("label"),
-                        "table": chart_filter.column.get("value").split(".")[0],
-                        "column": chart_filter.column.get("value").split(".")[1],
-                        "value": chart_filter.column.get("value"),
-                    },
+                    "label": chart_filter.column.get("label"),
+                    "table": chart_filter.column.get("value").split(".")[0],
+                    "column": chart_filter.column.get("value").split(".")[1],
+                    "value": chart_filter.column.get("value"),
                 },
             )
+
+    for filter_name, filter_value in filters_by_filter_name.items():
+        frappe.db.set_value(
+            "Insights Dashboard Item",
+            filter_name,
+            "filter_links",
+            frappe.as_json(filter_value),
+        )
