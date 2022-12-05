@@ -75,24 +75,19 @@ const valueType = computed(() => {
 	<div class="h-full w-full rounded-md border px-3 py-2">
 		<div class="mb-2 flex items-center justify-between">
 			<div class="text-gray-600">{{ filter.filter_label }}</div>
-			<div v-if="dashboard.editingLayout" class="flex space-x-1">
-				<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
+			<teleport :to="`#dashboard-item-actions-${item.name}`">
+				<div
+					v-if="dashboard.editingLayout"
+					class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100"
+				>
 					<FeatherIcon
-						name="edit"
-						class="h-3.5 w-3.5"
+						name="settings"
+						class="h-4 w-4"
 						@mousedown.prevent.stop=""
 						@click="showEditFilterDialog = true"
 					/>
 				</div>
-				<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
-					<FeatherIcon
-						name="x"
-						class="h-3.5 w-3.5"
-						@mousedown.prevent.stop=""
-						@click="dashboard.removeItem(props.item.name)"
-					/>
-				</div>
-			</div>
+			</teleport>
 		</div>
 
 		<DateRangePicker

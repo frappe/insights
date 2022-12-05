@@ -62,16 +62,6 @@ export default function useDashboard(dashboardName) {
 			})
 	}
 
-	dashboard.editChart = (chartID) => {
-		call('frappe.client.get_value', {
-			doctype: 'Insights Query Chart',
-			filters: { name: chartID },
-			fieldname: 'query',
-		}).then((r) => {
-			window.open(`/insights/query/${r.query}`, '_blank')
-		})
-	}
-
 	dashboard.deletingDashboard = computed(() => dashboard.delete.loading)
 	dashboard.deleteDashboard = () => {
 		return dashboard.delete.submit()

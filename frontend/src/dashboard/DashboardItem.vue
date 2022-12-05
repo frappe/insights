@@ -1,5 +1,7 @@
 <template>
-	<div class="relative flex h-full w-full items-center justify-center rounded-md bg-gray-50">
+	<div
+		class="group relative flex h-full w-full items-center justify-center rounded-md bg-gray-50"
+	>
 		<div
 			v-if="show"
 			class="flex h-full w-full bg-white"
@@ -10,27 +12,20 @@
 				v-if="item.component && item.componentProps"
 				:is="item.component"
 				v-bind="item.componentProps"
-			></component>
+			>
+			</component>
 		</div>
 		<Spinner v-else class="mb-2 w-6 text-gray-300" />
 
-		<!-- actions -->
-		<div
-			v-if="dashboard.editingLayout"
-			class="absolute top-3 right-3 z-10 flex h-5 items-center"
-		>
-			<DashboardChartActions
-				v-if="props.item.item_type == 'Chart'"
-				@edit="dashboard.editChart(props.item.chart)"
-				@remove="dashboard.removeItem(props.item.name)"
-			/>
+		<div class="absolute top-3 right-3 z-10 flex h-5 items-center">
+			<DashboardItemActions />
 		</div>
 	</div>
 </template>
 
 <script setup>
 import { computed, inject, provide } from 'vue'
-import DashboardChartActions from './DashboardChartActions.vue'
+import DashboardItemActions from './DashboardItemActions.vue'
 import useDashboardItem from '@/dashboard/useDashboardItem'
 import { Spinner } from 'frappe-ui'
 

@@ -47,27 +47,19 @@ async function discardText() {
 			/>
 		</div>
 
-		<div
-			class="absolute top-0 right-0 flex cursor-pointer space-x-1 p-1"
-			v-if="dashboard.editingLayout"
-		>
-			<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
+		<teleport :to="`#dashboard-item-actions-${item.name}`">
+			<div
+				v-if="dashboard.editingLayout"
+				class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100"
+			>
 				<FeatherIcon
 					name="edit"
-					class="h-3.5 w-3.5"
+					class="h-4 w-4"
 					@mousedown.prevent.stop=""
 					@click="editMarkdown = !editMarkdown"
 				/>
 			</div>
-			<div class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100">
-				<FeatherIcon
-					name="x"
-					class="h-3.5 w-3.5"
-					@mousedown.prevent.stop=""
-					@click="dashboard.removeItem(props.item.name)"
-				/>
-			</div>
-		</div>
+		</teleport>
 
 		<Dialog
 			:options="{ title: 'Edit Text' }"
