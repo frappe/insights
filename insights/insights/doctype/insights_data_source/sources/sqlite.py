@@ -153,4 +153,23 @@ class SQLiteDB(BaseDatabase):
             index=False,
             if_exists="replace",
         )
-        self.sync_tables(tables=[table])
+        create_insights_table(
+            frappe._dict(
+                {
+                    "table": import_doc.table_name,
+                    "label": import_doc.table_label,
+                    "data_source": import_doc.data_source,
+                    "columns": [
+                        frappe._dict(
+                            {
+                                "column": column.column,
+                                "label": column.label,
+                                "type": column.type,
+                            }
+                        )
+                        for column in import_doc.columns
+                    ],
+                }
+            ),
+            force=True,
+        )

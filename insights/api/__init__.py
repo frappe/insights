@@ -280,9 +280,9 @@ def create_csv_file(file):
 
 
 @frappe.whitelist()
-def upload_csv(label, file, if_exists, columns):
+def upload_csv(data_source, label, file, if_exists, columns):
     table_import = frappe.new_doc("Insights Table Import")
-    table_import.data_source = "Site DB"
+    table_import.data_source = data_source
     table_import.table_name = frappe.scrub(label)
     table_import.table_label = label
     table_import.if_exists = if_exists
@@ -293,7 +293,7 @@ def upload_csv(label, file, if_exists, columns):
             {
                 "column": frappe.scrub(column.get("label")),
                 "label": column.get("label"),
-                "type": column.get("data_type"),
+                "type": column.get("type"),
             },
         )
     table_import.save()

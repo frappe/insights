@@ -5,7 +5,7 @@ import { reactive, watch, computed, ref } from 'vue'
 import { createResource } from 'frappe-ui'
 
 const emit = defineEmits(['close'])
-const props = defineProps({ show: Boolean })
+const props = defineProps({ show: Boolean, dataSource: String })
 const columnTypes = ['String', 'Integer', 'Decimal', 'Date', 'Datetime']
 
 const table = reactive({
@@ -13,18 +13,20 @@ const table = reactive({
 	file: null,
 	ifExists: 'Fail',
 })
+const columns = ref([])
 const getColumns = createResource({
 	method: 'insights.api.get_columns_from_csv',
 	initialData: [],
+	onSuccess: (data) => {
+		columns.value = data.map((column) => {
+			return {
+				label: column,
+				type: 'String',
+			}
+		})
+	},
 })
-const columns = computed(() =>
-	getColumns.data?.map((column) => {
-		return {
-			label: column,
-			type: 'String',
-		}
-	})
-)
+
 const importDisabled = computed(() => !table.label || !table.file || columns.length === 0)
 watch(
 	() => table.file,
@@ -41,6 +43,7 @@ const importingTable = ref(false)
 function submit() {
 	importingTable.value = true
 	const data = {
+		data_source: props.dataSource,
 		label: table.label,
 		file: table.file,
 		if_exists: table.ifExists,
@@ -98,7 +101,13 @@ function submit() {
 							>
 								{{ column.label }}
 							</span>
-							<Input class="!text-sm" type="select" :options="columnTypes"></Input>
+							<Input
+								class="!text-sm"
+								type="select"
+								:options="columnTypes"
+								:value="column.type"
+								@change="(type) => (column.type = type)"
+							/>
 						</div>
 					</template>
 				</Draggable>

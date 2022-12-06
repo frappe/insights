@@ -15,7 +15,7 @@
 						placement="left"
 						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 						:options="[
-							dataSource.doc.name == 'Site DB'
+							dataSource.doc.allow_imports
 								? {
 										label: 'Import CSV',
 										icon: 'upload',
@@ -96,7 +96,11 @@
 		</template>
 	</BasePage>
 
-	<ImportDialog :show="showImportDialog" @close="showImportDialog = false"></ImportDialog>
+	<ImportDialog
+		:data-source="props.name"
+		:show="showImportDialog"
+		@close="showImportDialog = false"
+	></ImportDialog>
 </template>
 
 <script setup>
