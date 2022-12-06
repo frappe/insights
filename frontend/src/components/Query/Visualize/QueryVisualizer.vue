@@ -141,17 +141,14 @@ watch(showDashboardDialog, async (val) => {
 })
 const addingToDashboard = computed(() => chart.addToDashboard?.loading)
 function addToDashboard() {
-	const onSuccess = () => {
+	const dashboardName = toDashboard.value.value
+	chart.addToDashboard(dashboardName).then(() => {
 		$notify({
 			title: 'Chart Added to Dashboard',
 			appearance: 'success',
 		})
 		showDashboardDialog.value = false
-	}
-	// TODO: move default dimensions to insights_dashboard.py
-	const defaultDimensions = chart.type == 'Number' ? { w: 4, h: 4 } : { w: 8, h: 8 }
-	const dashboardName = toDashboard.value.value
-	chart.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
+	})
 }
 
 const router = useRouter()

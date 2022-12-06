@@ -130,13 +130,12 @@ function useChart({ chartID, data }) {
 		)
 	})
 
-	function addToDashboard(dashboard, layout, { onSuccess }) {
-		const params = { dashboard }
-		const options = { onSuccess }
-		resource.addToDashboard.submit(params, options)
+	function addToDashboard(dashboard) {
+		const promise = resource.addToDashboard.submit({ dashboard })
 		if (!chart.addingToDashboard) {
 			chart.addingToDashboard = computed(() => resource.addToDashboard.loading)
 		}
+		return promise
 	}
 
 	return chart
