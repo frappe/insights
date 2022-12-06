@@ -32,4 +32,4 @@ def get_or_set_cache(key, func, force=False, expiry=EXPIRY):
 def reset_insights_cache():
     frappe.only_for("System Manager")
     cache = frappe.cache()
-    cache.delete_keys("insights|*")
+    cache.delete_keys("insights*")
