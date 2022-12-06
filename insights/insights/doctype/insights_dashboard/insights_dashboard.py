@@ -90,6 +90,7 @@ class InsightsDashboard(Document):
         # fetches all the columns for all the tables selected in the query
         return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
+    @frappe.whitelist()
     def get_chart_filters(self, chart_name):
         _filters = []
         for row in self.items:

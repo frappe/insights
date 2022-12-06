@@ -98,6 +98,10 @@ export default function useDashboard(dashboardName) {
 		return fetchData(dashboard.get_all_columns, { query })
 	}
 
+	dashboard.getChartFilters = (chart) => {
+		return fetchData(dashboard.get_chart_filters, { chart_name: chart })
+	}
+
 	return dashboard
 }
 
@@ -113,6 +117,7 @@ function fetchDashboard(name) {
 			update_layout: 'update_layout',
 			remove_item: 'remove_item',
 			get_chart_data: 'get_chart_data',
+			get_chart_filters: 'get_chart_filters',
 			update_filter: 'update_filter',
 			get_all_columns: 'get_all_columns',
 			get_columns: 'get_columns',
