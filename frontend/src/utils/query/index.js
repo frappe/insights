@@ -235,6 +235,11 @@ export const FUNCTIONS = {
 		description: 'Returns distinct values of the given column',
 		example: 'distinct(`customer`)',
 	},
+	distinct_count: {
+		syntax: 'distinct_count(column)',
+		description: 'Returns the number of distinct values of the given column',
+		example: 'distinct_count(`customer`)',
+	},
 	sum_if: {
 		syntax: 'sum_if(condition, column)',
 		description: 'Returns the sum of the values of the given column that satisfy the condition',

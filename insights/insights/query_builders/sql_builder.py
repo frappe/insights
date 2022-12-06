@@ -17,7 +17,7 @@ from frappe.utils.data import (
 )
 from sqlalchemy import Column, column, select, table
 from sqlalchemy.engine import Dialect
-from sqlalchemy.sql import and_, case, func, or_, text
+from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
 
 class Aggregations:
@@ -128,6 +128,12 @@ class Functions:
 
         if function == "count_if":
             return func.sum(case([(args[0], 1)], else_=0))
+
+        if function == "distinct":
+            return distinct(args[0])
+
+        if function == "distinct_count":
+            return func.count(distinct(args[0]))
 
         # two arg functions
 
