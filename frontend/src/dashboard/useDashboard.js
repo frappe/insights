@@ -44,6 +44,7 @@ export default function useDashboard(dashboardName) {
 			})
 			.then(() => {
 				dashboard.editingLayout = false
+				dashboard.refreshItems()
 			})
 	}
 	dashboard.addItem = (item) => {
