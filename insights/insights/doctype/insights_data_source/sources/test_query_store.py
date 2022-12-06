@@ -28,7 +28,6 @@ class TestQueryStoreDataSource(unittest.TestCase):
             },
         )
         db_query.is_stored = 1
-        db_query.save()
         db_query.run()
 
         store_query = create_insights_query("Test Store Query", "Query Store")

@@ -105,10 +105,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             cached_results = frappe.cache().get_value(f"insights_query|{self.name}")
             if cached_results:
                 return cached_results
-            self.build_and_execute()
-            return frappe.cache().get_value(f"insights_query|{self.name}")
-        except Exception:
-            print("Error getting results")
+            results = self.fetch_results()
+            frappe.cache().set_value(
+                f"insights_query|{self.name}", frappe.as_json(results)
+            )
+            return results
+        except Exception as e:
+            print("Error getting results", e)
 
     def update_query(self):
         query = self._data_source.build_query(query=self)
