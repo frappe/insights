@@ -101,6 +101,11 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     @property
     def results(self) -> str:
         try:
+            # fixme: find a better way to do this
+            cached_results = frappe.cache().get_value(f"insights_query|{self.name}")
+            if cached_results:
+                return cached_results
+            self.build_and_execute()
             return frappe.cache().get_value(f"insights_query|{self.name}")
         except Exception:
             print("Error getting results")
