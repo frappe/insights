@@ -55,8 +55,8 @@ class InsightsQueryValidation:
     def validate_limit(self):
         if self.limit and self.limit < 1:
             frappe.throw("Limit must be greater than 0")
-        if self.limit and self.limit > 1000:
-            frappe.throw("Limit must be less than 1000")
+        if self.limit and self.limit > 10000:
+            frappe.throw("Limit must be less than 10000")
 
     def validate_filters(self):
         if not self.filters:
