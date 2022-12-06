@@ -106,9 +106,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             if cached_results:
                 return cached_results
             results = self.fetch_results()
-            frappe.cache().set_value(
-                f"insights_query|{self.name}", frappe.as_json(results)
-            )
+            results = frappe.as_json(results)
+            frappe.cache().set_value(f"insights_query|{self.name}", results)
             return results
         except Exception as e:
             print("Error getting results", e)
