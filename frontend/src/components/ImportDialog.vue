@@ -11,7 +11,7 @@ const columnTypes = ['String', 'Integer', 'Decimal', 'Date', 'Datetime']
 const table = reactive({
 	label: '',
 	file: null,
-	ifExists: 'Fail',
+	ifExists: 'Overwrite',
 })
 const columns = ref([])
 const getColumns = createResource({
@@ -57,6 +57,10 @@ function submit() {
 		.submit(data)
 		.then(() => {
 			emit('close')
+			table.label = ''
+			table.file = null
+			table.ifExists = 'Overwrite'
+			columns.value = []
 			importingTable.value = false
 		})
 		.catch((err) => {

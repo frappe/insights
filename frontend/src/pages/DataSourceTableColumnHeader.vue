@@ -6,7 +6,7 @@
 	>
 		<div class="flex items-center">
 			<span class="mr-2 overflow-hidden text-ellipsis whitespace-nowrap">
-				{{ col.label }} - {{ col.type }}
+				{{ col.label }} : {{ col.type }}
 			</span>
 			<div class="h-6">
 				<Popover>

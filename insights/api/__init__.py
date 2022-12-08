@@ -299,6 +299,13 @@ def upload_csv(data_source, label, file, if_exists, columns):
             },
         )
     table_import.submit()
+    notify(
+        **{
+            "title": "Success",
+            "message": "Table Imported",
+            "type": "success",
+        }
+    )
 
 
 @frappe.whitelist()
