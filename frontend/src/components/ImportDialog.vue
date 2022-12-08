@@ -18,14 +18,18 @@ const getColumns = createResource({
 	method: 'insights.api.get_columns_from_csv',
 	initialData: [],
 	onSuccess: (data) => {
-		columns.value = data.map((column) => {
+		columns.value = data?.map((c) => {
 			return {
-				label: column,
+				column: c,
 				type: 'String',
 			}
 		})
 	},
 })
+
+function removeColumn(column) {
+	columns.value = columns.value.filter((c) => c.column !== column)
+}
 
 const importDisabled = computed(() => !table.label || !table.file || columns.length === 0)
 watch(
@@ -93,20 +97,25 @@ function submit() {
 				Columns to import
 			</span>
 			<div class="max-h-[15rem] overflow-y-auto">
-				<Draggable class="w-full" v-model="columns" group="columns" item-key="label">
+				<Draggable class="w-full" v-model="columns" group="columns" item-key="column">
 					<template #item="{ element: column }">
 						<div class="flex h-10 w-full cursor-pointer items-center text-gray-600">
 							<span
 								class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"
 							>
-								{{ column.label }}
+								{{ column.column }}
 							</span>
 							<Input
-								class="!text-sm"
+								class="mr-1 !text-sm"
 								type="select"
 								:options="columnTypes"
 								:value="column.type"
 								@change="(type) => (column.type = type)"
+							/>
+							<Button
+								icon="x"
+								appearance="minimal"
+								@click="removeColumn(column.column)"
 							/>
 						</div>
 					</template>

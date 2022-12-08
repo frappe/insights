@@ -287,16 +287,17 @@ def upload_csv(data_source, label, file, if_exists, columns):
     table_import.table_label = label
     table_import.if_exists = if_exists
     table_import.source = create_csv_file(file).file_url
+    table_import.save()
+    table_import.columns = []
     for column in columns:
         table_import.append(
             "columns",
             {
-                "column": frappe.scrub(column.get("label")),
-                "label": column.get("label"),
+                "column": frappe.scrub(column.get("column")),
+                "label": frappe.unscrub(column.get("column")),
                 "type": column.get("type"),
             },
         )
-    table_import.save()
     table_import.submit()
 
 

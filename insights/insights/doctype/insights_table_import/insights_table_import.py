@@ -38,6 +38,10 @@ class InsightsTableImport(Document):
         if not self._filepath or not os.path.exists(self._filepath):
             return
 
+        if self.is_new():
+            self.set_columns_and_no_of_rows()
+
+    def set_columns_and_no_of_rows(self):
         column_names = []
         with open(self._filepath, "r") as f:
             # read only the first line to get the column names

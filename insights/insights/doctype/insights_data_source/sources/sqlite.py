@@ -146,6 +146,9 @@ class SQLiteDB(BaseDatabase):
 
     def import_table(self, import_doc: InsightsTableImport):
         df = pd.read_csv(import_doc._filepath)
+        df.columns = [frappe.scrub(c) for c in df.columns]
+        columns_to_import = [c.column for c in import_doc.columns]
+        df = df[columns_to_import]
         table = import_doc.table_name
         df.to_sql(
             name=table,
