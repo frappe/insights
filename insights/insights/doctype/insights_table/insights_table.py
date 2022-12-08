@@ -44,6 +44,14 @@ class InsightsTable(Document):
                     },
                 )
 
+    @frappe.whitelist()
+    def update_column_type(self, column, newtype):
+        for col in self.columns:
+            if col.column == column and col.type != newtype:
+                col.type = newtype
+                break
+        self.save()
+
 
 def on_doctype_update():
     frappe.db.add_index(

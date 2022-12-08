@@ -33,6 +33,7 @@ export function useDataSourceTable(name) {
 			syncTable: 'sync_table',
 			updateVisibility: 'update_visibility',
 			getPreview: 'get_preview',
+			update_column_type: 'update_column_type',
 		},
 	})
 	dataSourceTable.get.fetch()
@@ -42,6 +43,12 @@ export function useDataSourceTable(name) {
 		dataSourceTable.syncing = true
 		dataSourceTable.syncTable.submit().then(() => {
 			dataSourceTable.syncing = false
+		})
+	}
+	dataSourceTable.updateColumnType = (column) => {
+		return dataSourceTable.update_column_type.submit({
+			column: column.column,
+			newtype: column.type,
 		})
 	}
 

@@ -49,11 +49,18 @@
 					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
 				</div>
 				<div class="h-[calc(100%-1.5rem)] w-full">
-					<Table
+					<Grid
 						v-if="!dataSourceTable.syncing"
-						:columns="doc.columns.map((c) => `${c.label} (${c.type})`)"
+						:header="true"
 						:rows="dataSourceTable.rows.data"
-					/>
+					>
+						<template #header>
+							<DataSourceTableColumnHeader
+								:columns="doc.columns"
+								@update-column-type="dataSourceTable.updateColumnType"
+							/>
+						</template>
+					</Grid>
 					<div
 						v-else
 						class="mt-2 flex h-full flex-col items-center justify-center rounded-md bg-gray-50"
@@ -114,7 +121,8 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import Table from '@/components/Query/Visualize/Table.vue'
+import Grid from '@/components/Grid.vue'
+import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/utils/datasource'
 import { Dropdown, Badge, createResource, Spinner } from 'frappe-ui'
