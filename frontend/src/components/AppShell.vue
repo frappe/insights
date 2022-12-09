@@ -1,5 +1,5 @@
 <template>
-	<div class="mx-auto flex h-full w-full max-w-[1440px] text-base">
+	<div class="mx-auto flex h-full w-full text-base">
 		<Sidebar v-if="!hideSidebar" />
 		<div
 			class="flex flex-1 flex-col pl-2"
