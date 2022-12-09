@@ -15,7 +15,9 @@ function useTableChart() {
 
 	function getRows(columns, data) {
 		const columnLabels = data[0]?.map((d) => d.split('::')[0])
-		const columnIndexes = columnLabels.map((label) => columns.indexOf(label))
+		const columnIndexes = columnLabels
+			.map((label) => columns.indexOf(label))
+			.filter((i) => i >= 0)
 		return data.slice(1).map((row) => columnIndexes.map((index) => row[index]))
 	}
 
@@ -26,7 +28,9 @@ function useTableChart() {
 		const columns = queryChart.config.columns.map((c) => c.label)
 		const rows = getRows(columns, queryChart.data)
 		const title = queryChart.title
-		return { title, columns, rows, options: queryChart.config.options }
+		const props = { title, columns, rows, options: queryChart.config.options }
+		console.log(props)
+		return props
 	}
 
 	return chart
