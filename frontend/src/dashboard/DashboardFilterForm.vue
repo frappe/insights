@@ -33,16 +33,18 @@ const columnOptions = reactive({})
 function setColumnOptions(chartItem) {
 	const request = dashboard.fetchAllColumns(chartItem.query)
 	columnOptions[chartItem.chart] = computed(() => {
-		return request.data?.map((column) => {
-			return {
-				label: column.label,
-				column: column.column,
-				table: column.table,
-				type: column.type,
-				table_label: column.table_label,
-				value: `${column.table}.${column.column}`,
-			}
-		})
+		return request.data
+			?.filter((c) => c.type === filter.value.filter_type)
+			.map((column) => {
+				return {
+					label: column.label,
+					column: column.column,
+					table: column.table,
+					type: column.type,
+					table_label: column.table_label,
+					value: `${column.table}.${column.column}`,
+				}
+			})
 	})
 }
 </script>
@@ -86,6 +88,7 @@ function setColumnOptions(chartItem) {
 						placeholder="Select Column"
 						:options="columnOptions[chartItem.chart]"
 						v-model="filter.filter_links[chartItem.chart]"
+						:empty-text="`No ${filter.filter_type} columns found`"
 					></Autocomplete>
 				</div>
 			</div>
