@@ -23,11 +23,7 @@
 							v-for="cell in row"
 							class="whitespace-nowrap bg-white px-2.5 py-2 font-light text-gray-600"
 						>
-							{{
-								typeof cell == 'number'
-									? cell.toLocaleString()
-									: ellipsis(cell, 100)
-							}}
+							{{ ellipsis(cell, 100) }}
 						</td>
 					</tr>
 				</tbody>
