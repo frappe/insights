@@ -254,7 +254,7 @@ def get_csv_from_base64(encoded_string):
 
     data = encoded_string.split(",")[1]  # remove data uri
     data = base64.b64decode(data)
-    data = StringIO(data.decode("utf-8"))
+    data = StringIO(data.decode("unicode_escape"))
     return data
 
 
