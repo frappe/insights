@@ -11,7 +11,7 @@
 				></div>
 			</div>
 			<div v-if="executionTime" class="text-sm font-light text-gray-500">
-				Executed in {{ executionTime }} seconds
+				{{ totalRows.toLocaleString() }} rows in {{ executionTime }}s
 			</div>
 		</div>
 		<!-- Result  -->
@@ -127,6 +127,10 @@ if (settings.doc?.auto_execute_query) {
 const executionTime = computed(() => {
 	const rounded = Math.round(query.doc.execution_time * 100) / 100
 	return query.doc.execution_time && rounded < 0.01 ? '< 0.01' : rounded
+})
+
+const totalRows = computed(() => {
+	return query.results.data.length - 1
 })
 
 const isResizing = ref(false)
