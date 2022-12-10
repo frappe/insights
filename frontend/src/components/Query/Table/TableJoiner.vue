@@ -69,7 +69,7 @@ const props = defineProps({
 })
 
 const query = inject('query')
-const join = ref({ with: {}, condition: {}, type: {} })
+const join = ref({ with: {}, condition: {}, type: { label: 'Left', value: 'left' } })
 const editTable = ref({ ...props.table }) // table that is being edited
 
 if (editTable.value.join) {
