@@ -181,7 +181,7 @@ const filteredOptions = computed(() => {
 		: $utils
 				.fuzzySearch(uniqueOptions.value, {
 					term: filterQuery.value,
-					keys: ['label', 'value'],
+					keys: ['label', 'value', 'description'],
 				})
 				.slice(0, 50)
 })
