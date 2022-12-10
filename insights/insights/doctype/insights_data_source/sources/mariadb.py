@@ -147,7 +147,7 @@ class MariaDB(BaseDatabase):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
-    def get_table_preview(self, table, limit=20):
+    def get_table_preview(self, table, limit=100):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
         length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
