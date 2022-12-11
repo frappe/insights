@@ -7,7 +7,11 @@
 		<div class="flex flex-col space-y-3">
 			<div class="flex flex-col space-y-3">
 				<div class="space-y-1 text-sm text-gray-600">
-					<div class="font-light">Type</div>
+					<div class="font-light">Left Table</div>
+					<Input v-model="editTable.label" disabled class="h-8 cursor-not-allowed" />
+				</div>
+				<div class="space-y-1 text-sm text-gray-600">
+					<div class="font-light">Join Type</div>
 					<Autocomplete
 						v-model="join.type"
 						:options="joinTypeOptions"
@@ -15,25 +19,26 @@
 					/>
 				</div>
 				<div class="space-y-1 text-sm text-gray-600">
-					<div class="font-light">With</div>
+					<div class="font-light">Right Table</div>
 					<Autocomplete
 						v-model="join.with"
 						:options="query.tables.joinOptions"
 						placeholder="Select a table..."
 					/>
 				</div>
-				<div class="space-y-1 text-sm text-gray-600">
-					<div class="font-light">On</div>
-					<div class="flex items-center space-x-1">
+				<div class="text-sm text-gray-600">
+					<div class="flex items-end space-x-1">
 						<div class="flex-1">
+							<div class="mb-1 font-light">Left Column</div>
 							<Autocomplete
 								v-model="join.condition.left"
 								:options="leftColumnOptions"
 								placeholder="Select a Column"
 							/>
 						</div>
-						<span class="px-1 text-lg"> = </span>
+						<span class="flex h-8 items-center px-1 text-lg"> = </span>
 						<div class="flex-1">
+							<div class="mb-1 font-light">Right Column</div>
 							<Autocomplete
 								v-model="join.condition.right"
 								:options="rightColumnOptions"
