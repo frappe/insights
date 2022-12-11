@@ -160,7 +160,6 @@ function selectDateFormat(option) {
 
 function onTypeSelect(option) {
 	simpleColumn.aggType = option ? option : {}
-	simpleColumn.column = {}
 	simpleColumn.label = simpleColumn.aggType.label
 }
 function onColumnSelect(option) {
