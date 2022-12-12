@@ -41,12 +41,5 @@
 <script setup>
 import { ellipsis } from '@/utils'
 
-const props = defineProps({
-	header: {
-		type: Array,
-	},
-	rows: {
-		type: Array,
-	},
-})
+const props = defineProps(['header', 'rows'])
 </script>
