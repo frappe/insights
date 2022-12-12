@@ -330,7 +330,7 @@ class FrappeDB(BaseDatabase):
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 
-    def get_column_options(self, table, column, search_text=None, limit=25):
+    def get_column_options(self, table, column, search_text=None, limit=50):
         t = Table(table, Column(column))
         query = t.select().distinct().limit(limit)
         if search_text:

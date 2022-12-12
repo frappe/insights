@@ -406,7 +406,7 @@ class SQLQueryBuilder:
         self._filters = []
         self._group_by_columns = []
         self._order_by_columns = []
-        self._limit = 10
+        self._limit = 500
 
     def build(self, query, dialect: Dialect = None):
         self.query = query

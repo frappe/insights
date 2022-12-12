@@ -7,10 +7,8 @@ from json import dumps
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cstr, flt
+from frappe.utils import flt
 from sqlparse import format as format_sql
-
-from insights.cache_utils import get_or_set_cache, make_cache_key
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_query_client import InsightsQueryClient
@@ -179,12 +177,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.columns = []
         self.filters = DEFAULT_FILTERS
         self.sql = None
-        self.limit = 10
+        self.limit = 500
         self.execution_time = 0
         self.last_execution = None
         self.transform_type = None
         self.transform_data = None
         self.transform_result = None
+        frappe.cache().delete_value(f"insights_query|{self.name}")
         self.status = "Execution Successful"
 
     def sync_query_store(self):

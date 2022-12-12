@@ -61,7 +61,7 @@
    "reqd": 1
   },
   {
-   "default": "10",
+   "default": "500",
    "fieldname": "limit",
    "fieldtype": "Int",
    "label": "Limit"
@@ -175,7 +175,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-01 20:48:46.940675",
+ "modified": "2022-12-12 12:06:50.938928",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",
