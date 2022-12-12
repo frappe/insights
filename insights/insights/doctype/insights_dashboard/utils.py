@@ -128,7 +128,6 @@ def convert_into_simple_filter(expression):
     if not is_simple_filter(expression):
         print("Not a simple filter")
         return
-
     if is_binary_operator(expression.get("operator")):
         column = expression.get("left").get("value")
         operator = expression.get("operator")
@@ -166,7 +165,7 @@ def get_operator_from_call_function(function_name):
 def is_binary_operator(operator):
     if not operator:
         return False
-    return bool(BINARY_OPERATORS.get(operator))
+    return operator in BINARY_OPERATORS.values()
 
 
 def is_call_function(function_name):
