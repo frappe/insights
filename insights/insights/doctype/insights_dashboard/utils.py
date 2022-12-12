@@ -105,6 +105,96 @@ def make_args_for_call_expression(operator_function, filter_value, value_type):
     ]
 
 
+def is_string_or_number(arg):
+    return arg.get("type") == "String" or arg.get("type") == "Number"
+
+
+def is_simple_filter(condition):
+    return (
+        condition.get("type") == "BinaryExpression"
+        and condition.get("left").get("type") == "Column"
+        and is_string_or_number(condition.get("right"))
+    ) or (
+        condition.get("type") == "CallExpression"
+        and condition.get("arguments")[0].get("type") == "Column"
+        and all(is_string_or_number(arg) for arg in condition.get("arguments")[1:])
+    )
+
+
+def convert_into_simple_filter(expression):
+    if not expression:
+        return
+
+    if not is_simple_filter(expression):
+        print("Not a simple filter")
+        return
+
+    if is_binary_operator(expression.get("operator")):
+        column = expression.get("left").get("value")
+        operator = expression.get("operator")
+        value = expression.get("right").get("value")
+        return {"column": column, "operator": operator, "value": value}
+
+    if is_call_function(expression.get("function")):
+        column = expression.get("arguments")[0].get("value")
+        operator = get_operator_from_call_function(expression.get("function"))
+        label, value = make_value_from_call_function(expression)
+        return {"column": column, "operator": operator, "value": value}
+
+
+FILTER_FUNCTIONS = {
+    "is": "is",
+    "in": "one of",
+    "not_in": "not one of",
+    "between": "between",
+    "timespan": "within",
+    "starts_with": "starts with",
+    "ends_with": "ends with",
+    "contains": "contains",
+    "not_contains": "not contains",
+}
+
+
+def get_operator_from_call_function(function_name):
+    if FILTER_FUNCTIONS.get(function_name):
+        return function_name
+    if "set" in function_name:
+        return "is"
+    return None
+
+
+def is_binary_operator(operator):
+    if not operator:
+        return False
+    return bool(BINARY_OPERATORS.get(operator))
+
+
+def is_call_function(function_name):
+    if not function_name:
+        return False
+    return bool(FILTER_FUNCTIONS.get(get_operator_from_call_function(function_name)))
+
+
+def make_value_from_call_function(expression):
+    if expression.get("function") == "is_set":
+        return ["Set", "Set"]
+    if expression.get("function") == "is_not_set":
+        return ["Not Set", "Not Set"]
+    if expression.get("function") == "between":
+        value = (
+            expression.get("arguments")[1].get("value")
+            + ", "
+            + expression.get("arguments")[2].get("value")
+        )
+        return [value, value]
+    if expression.get("function") in ["in", "not_in"]:
+        values = [a.get("value") for a in expression.get("arguments")[1:]]
+        label = str(len(values)) + " values" if len(values) > 1 else values[0]
+        return [label, values]
+    value = expression.get("arguments")[1].get("value")
+    return [value, value]
+
+
 """
 utitilies to set proper layout for dashboard items
 """

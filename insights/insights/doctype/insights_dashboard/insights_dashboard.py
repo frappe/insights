@@ -9,7 +9,7 @@ from frappe.model.document import Document
 
 from insights.cache_utils import get_or_set_cache, make_cache_key
 
-from .utils import convert_to_expression, get_item_position
+from .utils import convert_into_simple_filter, convert_to_expression, get_item_position
 
 
 class InsightsDashboard(Document):
@@ -160,8 +160,21 @@ def run_query(query_name, additional_filters=None):
             return query.fetch_results()
 
         filters = frappe.parse_json(query.filters)
-        filters.conditions.extend(additional_filters)
-        query.filters = dumps(filters, indent=2)
+
+        new_filters = frappe.parse_json(query.filters)
+        for new_filter in additional_filters:
+            # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
+            if new_simple_filter := convert_into_simple_filter(new_filter):
+                for index, exisiting_filter in enumerate(filters.conditions):
+                    existing_simple_filter = convert_into_simple_filter(
+                        exisiting_filter
+                    )
+                    if not existing_simple_filter:
+                        continue
+                    if existing_simple_filter["column"] == new_simple_filter["column"]:
+                        new_filters.conditions[index] = new_filter
+
+        query.filters = dumps(new_filters)
         return query.fetch_results()
 
     last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
