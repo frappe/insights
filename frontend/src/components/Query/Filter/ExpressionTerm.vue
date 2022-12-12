@@ -3,8 +3,8 @@
 	<CallExpression v-else-if="type == 'CallExpression'" :expression="props.term" />
 	<!-- Column -->
 	<p class="w-fit" v-else-if="type == 'Column'">
-		<!-- {{ value.table }} -->
-		<!-- <span class="text-gray-500">&#8226;</span> -->
+		{{ value.table }}
+		<span class="text-gray-500">&#8226;</span>
 		{{ value.column }}
 	</p>
 	<!-- Number or String -->
