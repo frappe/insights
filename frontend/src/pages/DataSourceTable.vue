@@ -79,6 +79,7 @@
 				<div>
 					<div class="mb-2 block text-sm leading-4 text-gray-700">Table</div>
 					<Autocomplete
+						ref="$autocomplete"
 						v-model="newLink.table"
 						:options="tableOptions"
 						placeholder="Select a table..."
@@ -126,7 +127,7 @@ import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/utils/datasource'
 import { Dropdown, Badge, createResource, Spinner } from 'frappe-ui'
-import { computed, ref, reactive, watch, inject } from 'vue'
+import { computed, ref, reactive, watch, inject, nextTick } from 'vue'
 
 const props = defineProps({
 	name: {
@@ -247,4 +248,15 @@ function createLink() {
 		foreign_key: newLink.foreignKey.value,
 	})
 }
+
+const $autocomplete = ref(null)
+watch(addLinkDialog, async (val) => {
+	if (val) {
+		await nextTick()
+		setTimeout(() => {
+			$autocomplete.value.input.$el.blur()
+			$autocomplete.value.input.$el.focus()
+		}, 500)
+	}
+})
 </script>
