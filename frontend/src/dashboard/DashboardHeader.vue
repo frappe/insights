@@ -92,7 +92,7 @@ function updateTitle(title) {
 
 	<Dialog
 		:options="{
-			title: 'Delete Query',
+			title: 'Delete Dashboard',
 			icon: { name: 'trash', appearance: 'danger' },
 		}"
 		v-model="showDeleteDialog"
@@ -102,6 +102,7 @@ function updateTitle(title) {
 			<p class="text-base text-gray-600">Are you sure you want to delete this dashboard?</p>
 		</template>
 		<template #actions>
+			<Button appearance="white" @click="showDeleteDialog = false">Cancel</Button>
 			<Button
 				appearance="danger"
 				@click="
