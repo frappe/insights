@@ -90,6 +90,28 @@ class ColumnFormatter:
             )
 
 
+def get_descendants(node, tree, include_self=False):
+    Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
+    lft_rgt = (
+        select([Tree.c.lft, Tree.c.rgt]).where(Tree.c.name == node).alias("lft_rgt")
+    )
+    return (
+        (
+            select([Tree.c.name])
+            .where(Tree.c.lft > lft_rgt.c.lft)
+            .where(Tree.c.rgt < lft_rgt.c.rgt)
+            .order_by(Tree.c.lft.asc())
+        )
+        if not include_self
+        else (
+            select([Tree.c.name])
+            .where(Tree.c.lft >= lft_rgt.c.lft)
+            .where(Tree.c.rgt <= lft_rgt.c.rgt)
+            .order_by(Tree.c.lft.asc())
+        )
+    )
+
+
 class Functions:
     @classmethod
     def apply(cls, function, *args):
@@ -224,23 +246,19 @@ class Functions:
                 )
             return func.timestampdiff(text(unit), args[1], args[2])
 
-        if function == "descendants_of":
+        if function == "descendants":
             node = args[0]  # "India"
             tree = args[1]  # "territory"
             field = args[2]  # salesorder.territory
+            query = get_descendants(node, tree, include_self=False)
+            return field.in_(query)
 
-            Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
-            lft_rgt = (
-                select([Tree.c.lft, Tree.c.rgt])
-                .where(Tree.c.name == node)
-                .alias("lft_rgt")
-            )
-            return field.in_(
-                select([Tree.c.name])
-                .where(Tree.c.lft > lft_rgt.c.lft)
-                .where(Tree.c.rgt < lft_rgt.c.rgt)
-                .order_by(Tree.c.lft.asc())
-            )
+        if function == "descendants_and_self":
+            node = args[0]  # "India"
+            tree = args[1]  # "territory"
+            field = args[2]  # salesorder.territory
+            query = get_descendants(node, tree, include_self=True)
+            return field.in_(query)
 
         raise NotImplementedError(f"Function {function} not implemented")
 

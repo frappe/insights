@@ -250,4 +250,14 @@ export const FUNCTIONS = {
 		description: 'Returns the time elapsed between two dates',
 		example: 'time_elapsed("day", `posting_date`, today())',
 	},
+	descendants: {
+		example: 'descendants("India", "tabTerritory", `territory)',
+		description: 'Returns all descendants of the given value',
+		syntax: 'descendants(value, doctype, fieldname)',
+	},
+	descendants_and_self: {
+		example: 'descendants_and_self("India", "tabTerritory", `territory`)',
+		description: 'Returns all descendants and self of the given value',
+		syntax: 'descendants_and_self(value, doctype, fieldname)',
+	},
 }
