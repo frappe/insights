@@ -163,6 +163,7 @@ def run_query(query_name, additional_filters=None):
 
         new_filters = frappe.parse_json(query.filters)
         for new_filter in additional_filters:
+            found = False
             # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
             if new_simple_filter := convert_into_simple_filter(new_filter):
                 for index, exisiting_filter in enumerate(filters.conditions):
@@ -173,6 +174,10 @@ def run_query(query_name, additional_filters=None):
                         continue
                     if existing_simple_filter["column"] == new_simple_filter["column"]:
                         new_filters.conditions[index] = new_filter
+                        found = True
+                        break
+            if not found:
+                new_filters.conditions.append(new_filter)
 
         query.filters = dumps(new_filters)
         return query.fetch_results()
