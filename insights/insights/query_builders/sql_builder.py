@@ -15,7 +15,9 @@ from frappe.utils.data import (
     get_year_start,
     nowdate,
 )
-from sqlalchemy import Column, column, select, table
+from sqlalchemy import Column
+from sqlalchemy import column as sa_column
+from sqlalchemy import select, table
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
@@ -222,6 +224,24 @@ class Functions:
                 )
             return func.timestampdiff(text(unit), args[1], args[2])
 
+        if function == "descendants_of":
+            node = args[0]  # "India"
+            tree = args[1]  # "territory"
+            field = args[2]  # salesorder.territory
+
+            Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
+            lft_rgt = (
+                select([Tree.c.lft, Tree.c.rgt])
+                .where(Tree.c.name == node)
+                .alias("lft_rgt")
+            )
+            return field.in_(
+                select([Tree.c.name])
+                .where(Tree.c.lft > lft_rgt.c.lft)
+                .where(Tree.c.rgt < lft_rgt.c.rgt)
+                .order_by(Tree.c.lft.asc())
+            )
+
         raise NotImplementedError(f"Function {function} not implemented")
 
 
@@ -425,7 +445,7 @@ class SQLQueryBuilder:
 
     def make_column(self, columnname, tablename):
         _table = self.make_table(tablename)
-        return column(columnname, _selectable=_table)
+        return sa_column(columnname, _selectable=_table)
 
     def process_tables_and_joins(self):
         self._joins = []
