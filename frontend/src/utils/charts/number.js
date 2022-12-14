@@ -25,7 +25,7 @@ function useNumberChart() {
 			return
 		}
 		const valueColumn = queryChart.config.valueColumn?.label
-		const value = getColumnValues(valueColumn, queryChart.data)[0]
+		const value = getColumnValues(valueColumn, queryChart.data).reduce((a, b) => a + b, 0)
 		return {
 			data: {
 				value,
