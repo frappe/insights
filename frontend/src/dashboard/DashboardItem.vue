@@ -15,7 +15,7 @@
 			>
 			</component>
 		</div>
-		<Spinner v-else class="mb-2 w-6 text-gray-300" />
+		<LoadingIndicator v-else class="mb-2 w-6 text-gray-300" />
 
 		<div class="absolute top-3 right-3 z-10 flex h-5 items-center">
 			<DashboardItemActions />
@@ -27,7 +27,7 @@
 import { computed, inject, provide } from 'vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import useDashboardItem from '@/dashboard/useDashboardItem'
-import { Spinner } from 'frappe-ui'
+import { LoadingIndicator } from 'frappe-ui'
 
 const props = defineProps({ item: Object })
 const dashboard = inject('dashboard')
