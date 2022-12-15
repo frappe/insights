@@ -135,19 +135,19 @@
 						type="select"
 						label="Pivot Column"
 						v-model="pivot.column"
-						:options="[''].concat(query.columns.indexOptions)"
+						:options="pivotOptions"
 					/>
 					<Input
 						type="select"
 						label="Index Column"
 						v-model="pivot.index"
-						:options="[''].concat(query.columns.indexOptions)"
+						:options="indexOptions"
 					/>
 					<Input
 						type="select"
 						label="Value Column"
 						v-model="pivot.value"
-						:options="[''].concat(query.columns.valueOptions)"
+						:options="valueOptions"
 					/>
 				</div>
 			</template>
@@ -223,6 +223,24 @@ function copySQL() {
 		})
 	}
 }
+
+const pivotOptions = computed(() =>
+	[''].concat(
+		query.columns.indexOptions
+			.map((option) => option.label)
+			.filter((option) => option !== pivot.index)
+	)
+)
+const indexOptions = computed(() =>
+	[''].concat(
+		query.columns.indexOptions
+			.map((option) => option.label)
+			.filter((option) => option !== pivot.column)
+	)
+)
+const valueOptions = computed(() =>
+	[''].concat(query.columns.valueOptions.map((option) => option.label))
+)
 
 function applyPivotTransform() {
 	query.addTransform

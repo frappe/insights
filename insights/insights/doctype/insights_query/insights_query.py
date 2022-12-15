@@ -200,15 +200,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             if row.type == "Pivot":
                 result = frappe.parse_json(results)
                 options = frappe.parse_json(row.options)
-
-                pivot_column = next(
-                    (c for c in self.columns if c.column == options.column), None
+                pivot_column = options.get("column")
+                index_column = options.get("index")
+                index_column_type = next(
+                    (c.type for c in self.columns if c.label == index_column),
+                    None,
                 )
-                index_column = next(
-                    (c for c in self.columns if c.column == options.index), None
-                )
-                value_column = next(
-                    (c for c in self.columns if c.column == options.value), None
+                value_column = options.get("value")
+                value_column_type = next(
+                    (c.type for c in self.columns if c.label == value_column),
+                    None,
                 )
 
                 if not (pivot_column and index_column and value_column):
@@ -220,16 +221,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     result[1:], columns=[d.split("::")[0] for d in result[0]]
                 )
 
-                pivot_column_values = results_df[pivot_column.label]
-                index_column_values = results_df[index_column.label]
-                value_column_values = results_df[value_column.label]
+                pivot_column_values = results_df[pivot_column]
+                index_column_values = results_df[index_column]
+                value_column_values = results_df[value_column]
 
                 # make a dataframe for pivot table
                 pivot_df = DataFrame(
                     {
-                        index_column.label: index_column_values,
-                        pivot_column.label: pivot_column_values,
-                        value_column.label: value_column_values,
+                        index_column: index_column_values,
+                        pivot_column: pivot_column_values,
+                        value_column: value_column_values,
                     }
                 )
 
@@ -246,8 +247,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 pivoted = pivoted.fillna(0)
 
                 cols = pivoted.columns.to_list()
-                cols = [f"{cols[0]}::{index_column.type}"] + [
-                    f"{c}::{value_column.type}" for c in cols[1:]
+                cols = [f"{cols[0]}::{index_column_type}"] + [
+                    f"{c}::{value_column_type}" for c in cols[1:]
                 ]
                 data = pivoted.values.tolist()
 
