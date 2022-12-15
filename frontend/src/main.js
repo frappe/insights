@@ -4,11 +4,25 @@ import router from './router'
 import { createApp } from 'vue'
 import { socketio_port } from '../../../../sites/common_site_config.json'
 import { setConfig, frappeRequest, initSocket } from 'frappe-ui'
+import { createToast } from './utils/toasts'
 
 import { registerGlobalComponents, registerControllers } from './globals'
 
 let app = createApp(App)
-setConfig('resourceFetcher', frappeRequest)
+setConfig('resourceFetcher', (options) => {
+	return frappeRequest({
+		...options,
+		onError(err) {
+			if (err.error.messages && err.error.messages[0]) {
+				createToast({
+					title: 'Error',
+					appearance: 'error',
+					message: err.error.messages[0],
+				})
+			}
+		},
+	})
+})
 
 app.use(router)
 app.config.unwrapInjectedRef = true
