@@ -351,5 +351,34 @@ def _sync_data_source(data_source):
 
 
 @frappe.whitelist()
+def delete_data_source(data_source):
+    try:
+        frappe.delete_doc("Insights Data Source", data_source)
+        notify(
+            **{
+                "title": "Success",
+                "message": "Data Source Deleted",
+                "type": "success",
+            }
+        )
+    except frappe.LinkExistsError:
+        notify(
+            **{
+                "type": "error",
+                "title": "Cannot delete Data Source",
+                "message": "Data Source is linked to a Query or Dashboard",
+            }
+        )
+    except Exception as e:
+        notify(
+            **{
+                "type": "error",
+                "title": "Error",
+                "message": e,
+            }
+        )
+
+
+@frappe.whitelist()
 def get_query_data(query):
     return frappe.db.get_value("Insights Query", query, "result")

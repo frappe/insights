@@ -9,6 +9,10 @@ const syncDataSourceResource = createResource({
 	url: 'insights.api.sync_data_source',
 	initalData: {},
 })
+const deleteDataSourceResource = createResource({
+	url: 'insights.api.delete_data_source',
+	initalData: {},
+})
 
 export function useDataSource(name) {
 	const dataSource = reactive({})
@@ -20,6 +24,9 @@ export function useDataSource(name) {
 	)
 	dataSource.syncTables = () => {
 		return syncDataSourceResource.submit({ data_source: name })
+	}
+	dataSource.delete = () => {
+		return deleteDataSourceResource.submit({ data_source: name })
 	}
 
 	return dataSource

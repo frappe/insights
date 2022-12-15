@@ -27,6 +27,11 @@
 								icon: 'refresh-cw',
 								handler: syncTables,
 							},
+							{
+								label: 'Delete',
+								icon: 'trash',
+								handler: () => dataSource.delete(),
+							},
 						]"
 					/>
 				</div>
