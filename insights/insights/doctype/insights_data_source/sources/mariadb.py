@@ -128,10 +128,7 @@ class MariaDB(BaseDatabase):
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
 
     def test_connection(self):
-        try:
-            return self.execute_query("select 1")
-        except Exception as e:
-            frappe.log_error(f"Error connecting to MariaDB: {e}")
+        return self.execute_query("select 1")
 
     def build_query(self, query):
         return self.query_builder.build(query, dialect=self.engine.dialect)

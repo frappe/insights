@@ -93,10 +93,7 @@ class SQLiteDB(BaseDatabase):
         self.query_builder = SQLiteQueryBuilder()
 
     def test_connection(self):
-        try:
-            return self.execute_query("SELECT 1")
-        except Exception as e:
-            frappe.log_error(f"Error connecting to SQLite: {e}")
+        return self.execute_query("SELECT 1")
 
     def build_query(self, query):
         return self.query_builder.build(query, dialect=self.engine.dialect)

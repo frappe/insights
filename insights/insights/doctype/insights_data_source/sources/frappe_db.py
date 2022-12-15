@@ -295,12 +295,7 @@ class FrappeDB(BaseDatabase):
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
     def test_connection(self):
-        try:
-            return self.execute_query(
-                "select name from `tabDocType` limit 1", pluck=True
-            )
-        except Exception as e:
-            frappe.log_error(f"Error connecting to FrappeDB: {e}")
+        return self.execute_query("select name from `tabDocType` limit 1", pluck=True)
 
     def build_query(self, query):
         return self.query_builder.build(query, dialect=self.engine.dialect)

@@ -91,12 +91,13 @@ class InsightsDataSource(Document):
             SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
         )
 
-    def test_connection(self):
+    def test_connection(self, raise_exception=False):
         try:
             return self.db.test_connection()
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
-            return False
+            if raise_exception:
+                raise e
 
     def build_query(self, query: InsightsQuery):
         return self.db.build_query(query)
