@@ -228,15 +228,6 @@ function apply() {
 	emit('filter-select', query.filters.convertIntoExpression(filter))
 }
 
-watch(
-	() => showListPicker.value || showValueOptions.value,
-	(show) => {
-		// if operator is changed, fetch values for the column
-		show && !valueOptions.value?.length && checkAndFetchColumnValues()
-	},
-	{ immediate: true }
-)
-
 const checkAndFetchColumnValues = debounce(function (search_text = '') {
 	if (
 		isEmptyObj(filter.column) ||
@@ -252,4 +243,13 @@ const checkAndFetchColumnValues = debounce(function (search_text = '') {
 		})
 	}
 }, 300)
+
+watch(
+	() => showListPicker.value || showValueOptions.value,
+	(show) => {
+		// if operator is changed, fetch values for the column
+		show && !valueOptions.value?.length && checkAndFetchColumnValues()
+	},
+	{ immediate: true }
+)
 </script>
