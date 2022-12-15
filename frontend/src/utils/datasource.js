@@ -2,11 +2,11 @@ import { createDocumentResource, createResource } from 'frappe-ui'
 import { reactive, watch, computed } from 'vue'
 
 const dataSourceResource = createResource({
-	method: 'insights.api.get_data_source',
+	url: 'insights.api.get_data_source',
 	initalData: {},
 })
 const syncDataSourceResource = createResource({
-	method: 'insights.api.sync_data_source',
+	url: 'insights.api.sync_data_source',
 	initalData: {},
 })
 

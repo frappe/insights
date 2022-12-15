@@ -106,10 +106,10 @@ import { computed, reactive, ref, inject } from 'vue'
 import { updateDocumentTitle } from '@/utils'
 
 const getDashboards = createResource({
-	method: 'insights.api.get_dashboard_list',
+	url: 'insights.api.get_dashboard_list',
 	initialData: [],
+	auto: true,
 })
-getDashboards.fetch()
 
 const dayjs = inject('$dayjs')
 const dashboards = computed(() => {
@@ -123,7 +123,7 @@ const showDialog = ref(false)
 const newDashboard = reactive({ title: '' })
 const router = useRouter()
 const createDashboardResource = createResource({
-	method: 'insights.api.create_dashboard',
+	url: 'insights.api.create_dashboard',
 	onSuccess({ name }) {
 		getDashboards.fetch()
 		showDialog.value = false

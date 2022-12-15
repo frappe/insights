@@ -98,10 +98,10 @@ import { computed, ref, inject } from 'vue'
 const new_dialog = ref(false)
 
 const getDataSources = createResource({
-	method: 'insights.api.get_data_sources',
+	url: 'insights.api.get_data_sources',
 	initialData: [],
+	auto: true,
 })
-getDataSources.fetch()
 
 const dayjs = inject('$dayjs')
 const dataSources = computed(() => {

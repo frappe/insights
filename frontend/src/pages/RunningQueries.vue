@@ -83,7 +83,8 @@ import { computed, ref, inject } from 'vue'
 
 const dataSource = ref('')
 const getDataSources = createResource({
-	method: 'insights.api.get_data_sources',
+	url: 'insights.api.get_data_sources',
+	auto: true,
 	initialData: [],
 	onSuccess(res) {
 		if (res.length) {
@@ -92,13 +93,12 @@ const getDataSources = createResource({
 		}
 	},
 })
-getDataSources.fetch()
 const dataSources = computed(() => {
 	return getDataSources.data?.map((d) => d['name']) || []
 })
 
 const getRunningQueries = createResource({
-	method: 'insights.api.get_running_jobs',
+	url: 'insights.api.get_running_jobs',
 	initialData: [],
 })
 
@@ -117,7 +117,7 @@ const runningQueries = computed(() => {
 })
 
 const killQueryResource = createResource({
-	method: 'insights.api.kill_running_job',
+	url: 'insights.api.kill_running_job',
 	onSuccess(res) {
 		getRunningQueries.submit({ data_source: dataSource.value })
 	},

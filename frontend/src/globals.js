@@ -30,16 +30,15 @@ export function registerGlobalComponents(app) {
 }
 
 export function registerControllers(app) {
-	app.provide('$utils', utils)
 	app.provide('$auth', auth)
-	app.provide('$notify', createToast)
-	app.provide('$socket', app.config.globalProperties.$socket)
+	app.provide('$utils', utils)
 	app.provide('$dayjs', dayjs)
+	app.provide('$notify', createToast)
 
 	if (import.meta.env.DEV) {
-		window.$utils = utils
 		window.$auth = auth
-		window.$notify = createToast
+		window.$utils = utils
 		window.$dayjs = dayjs
+		window.$notify = createToast
 	}
 }

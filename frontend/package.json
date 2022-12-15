@@ -21,7 +21,7 @@
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
 		"frappe-charts": "^1.6.2",
-		"frappe-ui": "0.0.89",
+		"frappe-ui": "0.0.95",
 		"gridstack": "^6.0.1",
 		"vue": "^3.2.25",
 		"vue-codemirror": "^6.0.1",

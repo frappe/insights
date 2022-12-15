@@ -15,7 +15,7 @@ const table = reactive({
 })
 const columns = ref([])
 const getColumns = createResource({
-	method: 'insights.api.get_columns_from_csv',
+	url: 'insights.api.get_columns_from_csv',
 	initialData: [],
 	onSuccess: (data) => {
 		columns.value = data?.map((c) => {
@@ -40,7 +40,7 @@ watch(
 )
 
 const upload = createResource({
-	method: 'insights.api.upload_csv',
+	url: 'insights.api.upload_csv',
 })
 
 const importingTable = ref(false)

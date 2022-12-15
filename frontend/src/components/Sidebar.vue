@@ -117,10 +117,10 @@ const currentRoute = computed(() => {
 })
 
 const getAppVersion = createResource({
-	method: 'insights.api.get_app_version',
+	url: 'insights.api.get_app_version',
 	initialData: '0.0.0',
+	auto: true,
 })
-getAppVersion.fetch()
 const appVersion = computed(() => {
 	return `v${getAppVersion.data}`
 })

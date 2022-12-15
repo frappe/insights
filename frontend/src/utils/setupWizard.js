@@ -17,11 +17,11 @@ const getSetupStatus = async () => {
 }
 
 const testDatabaseConnection = createResource({
-	method: 'insights.api.setup.test_database_connection',
+	url: 'insights.api.setup.test_database_connection',
 })
 
 const createDatabase = createResource({
-	method: 'insights.api.setup.add_database',
+	url: 'insights.api.setup.add_database',
 })
 
 export { setupComplete, getSetupStatus, createDatabase, testDatabaseConnection }

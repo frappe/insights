@@ -27,7 +27,7 @@ document.cookie
 	})
 
 const userInfo = createResource({
-	method: 'insights.api.get_user_info',
+	url: 'insights.api.get_user_info',
 	onSuccess(res) {
 		auth.user.permissions = res.permissions
 	},
