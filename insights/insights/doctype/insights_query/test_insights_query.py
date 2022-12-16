@@ -92,7 +92,7 @@ class TestInsightsQuery(FrappeTestCase):
         self.assertEqual(len(result[0]), 3)
 
         query.add_transform(
-            "Pivot", {"index": "status", "column": "reference_type", "value": "*"}
+            "Pivot", {"index": "Status", "column": "Reference Type", "value": "Count"}
         )
         result = json.loads(query.results)
         self.assertEqual(len(result), 3)
