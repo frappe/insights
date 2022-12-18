@@ -36,5 +36,3 @@ def execute():
             "options",
             frappe.as_json(new_options),
         )
-
-        break
