@@ -5,6 +5,9 @@ import frappe
 from pypika import CustomFunction
 
 from insights import notify
+from insights.insights.doctype.insights_team.insights_team import (
+    get_allowed_resources_for_user,
+)
 
 
 @frappe.whitelist()
@@ -14,9 +17,13 @@ def get_app_version():
 
 @frappe.whitelist()
 def get_data_sources():
+    allowed_sources = get_allowed_resources_for_user("Insights Data Source")
+    if not allowed_sources:
+        return []
+
     return frappe.get_list(
         "Insights Data Source",
-        filters={"status": "Active"},
+        filters={"status": "Active", "name": ["in", allowed_sources]},
         fields=["name", "title", "status", "database_type", "creation"],
         order_by="creation desc",
     )
@@ -24,6 +31,9 @@ def get_data_sources():
 
 @frappe.whitelist()
 def get_data_source(name):
+    if name not in get_allowed_resources_for_user("Insights Data Source"):
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     doc = frappe.get_doc("Insights Data Source", name)
     tables = get_all_tables(name)
     return {
@@ -36,10 +46,15 @@ def get_all_tables(data_source=None):
     if not data_source:
         return []
 
+    allowed_tables = get_allowed_resources_for_user("Insights Table")
+    if not allowed_tables:
+        return []
+
     return frappe.get_list(
         "Insights Table",
         filters={
             "data_source": data_source,
+            "name": ["in", allowed_tables],
         },
         fields=["name", "table", "label", "hidden"],
         order_by="hidden asc, label asc",
@@ -48,6 +63,9 @@ def get_all_tables(data_source=None):
 
 @frappe.whitelist()
 def get_table_columns(data_source, table):
+    if table not in get_allowed_resources_for_user("Insights Table"):
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     doc = frappe.get_doc(
         "Insights Table",
         {
@@ -55,11 +73,15 @@ def get_table_columns(data_source, table):
             "table": table,
         },
     )
+
     return {"columns": doc.columns}
 
 
 @frappe.whitelist()
 def update_data_source_table(name, table, hidden):
+    if table not in get_allowed_resources_for_user("Insights Table"):
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     table = frappe.get_doc(
         "Insights Table",
         {
@@ -76,11 +98,16 @@ def get_tables(data_source=None):
     if not data_source:
         return []
 
+    allowed_tables = get_allowed_resources_for_user("Insights Table")
+    if not allowed_tables:
+        return []
+
     return frappe.get_list(
         "Insights Table",
         filters={
             "hidden": 0,
             "data_source": data_source,
+            "name": ["in", allowed_tables],
         },
         fields=["name", "table", "label"],
         order_by="label asc",
@@ -89,17 +116,21 @@ def get_tables(data_source=None):
 
 @frappe.whitelist()
 def get_dashboard_list():
+    allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
+    if not allowed_dashboards:
+        return []
+
     return frappe.get_list(
         "Insights Dashboard",
+        filters={"name": ["in", allowed_dashboards]},
         fields=["name", "title", "modified"],
     )
 
 
 @frappe.whitelist()
 def create_dashboard(title):
-    dashboard = frappe.get_doc(
-        {"doctype": "Insights Dashboard", "title": title}
-    ).insert()
+    dashboard = frappe.get_doc({"doctype": "Insights Dashboard", "title": title})
+    dashboard.insert()
     return {
         "name": dashboard.name,
         "title": dashboard.title,
@@ -108,7 +139,10 @@ def create_dashboard(title):
 
 @frappe.whitelist()
 def get_queries():
-    frappe.has_permission("Insights Query", throw=True)
+    allowed_queries = get_allowed_resources_for_user("Insights Query")
+    if not allowed_queries:
+        return []
+
     Query = frappe.qb.DocType("Insights Query")
     QueryTable = frappe.qb.DocType("Insights Query Table")
     QueryChart = frappe.qb.DocType("Insights Query Chart")
@@ -127,6 +161,7 @@ def get_queries():
             Query.creation,
             QueryChart.type.as_("chart_type"),
         )
+        .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
         .orderby(Query.creation, order=frappe.qb.desc)
     ).run(as_dict=True)
@@ -275,7 +310,7 @@ def create_csv_file(file):
     file_doc = frappe.new_doc("File")
     file_doc.file_name = file.get("name")
     file_doc.content = get_csv_from_base64(file.get("data")).read()
-    file_doc.save()
+    file_doc.save(ignore_permissions=True)
     return file_doc
 
 
@@ -310,6 +345,9 @@ def upload_csv(data_source, label, file, if_exists, columns):
 
 @frappe.whitelist()
 def sync_data_source(data_source: str):
+    if not frappe.has_permission("Insights Data Source", "write"):
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     from frappe.utils.scheduler import is_scheduler_inactive
 
     if is_scheduler_inactive():
@@ -377,8 +415,3 @@ def delete_data_source(data_source):
                 "message": e,
             }
         )
-
-
-@frappe.whitelist()
-def get_query_data(query):
-    return frappe.db.get_value("Insights Query", query, "result")
