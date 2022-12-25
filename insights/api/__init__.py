@@ -78,22 +78,6 @@ def get_table_columns(data_source, table):
 
 
 @frappe.whitelist()
-def update_data_source_table(name, table, hidden):
-    if table not in get_allowed_resources_for_user("Insights Table"):
-        frappe.throw("Not allowed", frappe.PermissionError)
-
-    table = frappe.get_doc(
-        "Insights Table",
-        {
-            "data_source": name,
-            "table": table,
-        },
-    )
-    table.hidden = hidden
-    table.save()
-
-
-@frappe.whitelist()
 def get_tables(data_source=None):
     if not data_source:
         return []
@@ -169,6 +153,9 @@ def get_queries():
 
 @frappe.whitelist()
 def create_query(title, data_source, table):
+    if table not in get_allowed_resources_for_user("Insights Table"):
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     query = frappe.new_doc("Insights Query")
     query.title = title
     query.data_source = data_source
@@ -208,6 +195,11 @@ def get_user_info():
 def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
+
+    allowed_tables = get_allowed_resources_for_user("Insights Table")
+    if primary_table not in allowed_tables or foreign_table not in allowed_tables:
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     primary = frappe.get_doc(
         "Insights Table",
         {
