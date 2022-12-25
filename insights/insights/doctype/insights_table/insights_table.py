@@ -16,7 +16,7 @@ class InsightsTable(Document):
         source.sync_tables([self.table], force=True)
 
     @frappe.whitelist()
-    def update_visiblity(self, hidden):
+    def update_visibility(self, hidden):
         self.hidden = hidden
         self.save()
 
