@@ -3,9 +3,13 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.caching import site_cache
 
 
 class InsightsTeam(Document):
+    def on_change(self):
+        _get_user_teams.clear_cache()
+
     def get_members(self):
         return frappe.get_all(
             "User",
@@ -121,7 +125,11 @@ class InsightsTeam(Document):
 def get_user_teams(user=None):
     if not user:
         user = frappe.session.user
+    return _get_user_teams(user)
 
+
+@site_cache(ttl=60 * 60 * 24)
+def _get_user_teams(user):
     Team = frappe.qb.DocType("Insights Team")
     TeamMember = frappe.qb.DocType("Insights Team Member")
     return (
@@ -148,7 +156,7 @@ def get_allowed_resources_for_user(resource_type=None, user=None):
 
     resources = []
     for team in teams:
-        team = frappe.get_doc("Insights Team", team)
+        team = frappe.get_cached_doc("Insights Team", team)
         resources.extend(team.get_allowed_resources(resource_type))
 
     return resources
