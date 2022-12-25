@@ -111,7 +111,8 @@
    "in_standard_filter": 1,
    "label": "Data Source",
    "options": "Insights Data Source",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "transform_tab",
@@ -175,7 +176,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-12 12:06:50.938928",
+ "modified": "2022-12-25 19:13:55.459546",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",
