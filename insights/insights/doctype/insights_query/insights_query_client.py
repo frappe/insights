@@ -279,7 +279,7 @@ class InsightsQueryClient:
     def run(self):
         if self.data_source == "Query Store":
             tables = (t.table for t in self.tables)
-            subqueries = frappe.db.get_all(
+            subqueries = frappe.get_all(
                 "Insights Query", {"name": ["in", tables]}, pluck="name"
             )
             for subquery in subqueries:

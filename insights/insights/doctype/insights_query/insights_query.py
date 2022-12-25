@@ -146,7 +146,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     "query": self.name,
                     "title": self.title,
                 }
-            ).insert()
+            ).insert(ignore_permissions=True)
 
     def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
@@ -165,12 +165,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def delete_linked_charts(self):
         charts = self.get_charts()
         for chart in charts:
-            frappe.delete_doc("Insights Query Chart", chart)
-        frappe.db.delete("Insights Dashboard Item", {"chart": self.name})
+            frappe.delete_doc("Insights Query Chart", chart, ignore_permissions=True)
+            frappe.db.delete("Insights Dashboard Item", {"chart": chart})
 
     def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
-            frappe.delete_doc("Insights Table", table_name)
+            frappe.delete_doc("Insights Table", table_name, ignore_permissions=True)
 
     def clear(self):
         self.tables = []
