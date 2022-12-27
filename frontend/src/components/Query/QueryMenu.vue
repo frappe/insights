@@ -42,6 +42,11 @@
 					handler: duplicateQuery,
 				},
 				{
+					label: 'Download CSV',
+					icon: 'download',
+					handler: downloadCSV,
+				},
+				{
 					label: 'Delete',
 					icon: 'trash-2',
 					handler: () => (show_delete_dialog = true),
@@ -262,6 +267,21 @@ function applyPivotTransform() {
 
 function resetPivot() {
 	query.resetTransforms.submit()
+}
+
+function downloadCSV() {
+	let data = query.results.data
+	data[0] = data[0].map((d) => d.split('::')[0])
+	const csvString = data.map((row) => row.join(',')).join('\n')
+	const blob = new Blob([csvString], { type: 'text/csv' })
+	const url = window.URL.createObjectURL(blob)
+	const a = document.createElement('a')
+	a.setAttribute('hidden', '')
+	a.setAttribute('href', url)
+	a.setAttribute('download', `${query.doc.title || 'data'}.csv`)
+	document.body.appendChild(a)
+	a.click()
+	document.body.removeChild(a)
 }
 
 const pivotDisabled = computed(() => {
