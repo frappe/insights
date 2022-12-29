@@ -24,13 +24,6 @@ class InsightsTeam(Document):
             if d.resource_type == "Insights Data Source"
         ]
 
-    def get_table_sources(self):
-        return frappe.get_all(
-            "Insights Table",
-            filters={"name": ["in", self.get_tables()]},
-            pluck="data_source",
-        )
-
     def get_tables(self):
         return [
             d.resource_name
@@ -38,18 +31,19 @@ class InsightsTeam(Document):
             if d.resource_type == "Insights Table"
         ]
 
-    def get_allowed_sources(self):
-        unrestricted_sources = [
+    def get_queries(self):
+        return [
             d.resource_name
             for d in self.team_permissions
-            if d.resource_type == "Insights Data Source"
+            if d.resource_type == "Insights Query"
         ]
-        table_sources = frappe.get_all(
-            "Insights Table",
-            filters={"name": ["in", self.get_tables()]},
-            pluck="data_source",
-        )
-        return unrestricted_sources + table_sources
+
+    def get_dashboards(self):
+        return [
+            d.resource_name
+            for d in self.team_permissions
+            if d.resource_type == "Insights Dashboard"
+        ]
 
     def get_allowed_resources(self, resource_type):
         if not self.team_permissions:
@@ -65,6 +59,19 @@ class InsightsTeam(Document):
         else:
             return []
 
+    def get_allowed_sources(self):
+        unrestricted_sources = [
+            d.resource_name
+            for d in self.team_permissions
+            if d.resource_type == "Insights Data Source"
+        ]
+        table_sources = frappe.get_all(
+            "Insights Table",
+            filters={"name": ["in", self.get_tables()]},
+            pluck="data_source",
+        )
+        return unrestricted_sources + table_sources
+
     def get_allowed_tables(self):
         unrestricted_sources = self.get_sources()
         unrestricted_tables = frappe.get_all(
@@ -77,49 +84,20 @@ class InsightsTeam(Document):
         return unrestricted_tables + allowed_tables
 
     def get_allowed_queries(self):
-        from frappe.query_builder.functions import CustomFunction
-
-        allowed_tables = self.get_allowed_tables()
-        allowed_table_names = frappe.get_all(
-            "Insights Table",
-            filters={"name": ["in", allowed_tables]},
-            pluck="table",
+        user_queries = frappe.get_all(
+            "Insights Query",
+            filters={"owner": frappe.session.user},
+            pluck="name",
         )
-        InsightsQuery = frappe.qb.DocType("Insights Query")
-        InsightsQueryTable = frappe.qb.DocType("Insights Query Table")
-        JSONExtract = CustomFunction("JSON_EXTRACT", ["json", "path"])
-
-        conditions = InsightsQuery.data_source.isin(self.get_allowed_sources())
-        if allowed_table_names:
-            conditions &= InsightsQueryTable.table.isin(
-                allowed_table_names
-            ) | JSONExtract(InsightsQueryTable.join, "$.with.value").isin(
-                allowed_table_names
-            )
-
-        return (
-            frappe.qb.from_(InsightsQuery)
-            .join(InsightsQueryTable)
-            .on(InsightsQuery.name == InsightsQueryTable.parent)
-            .where(conditions)
-            .select(InsightsQuery.name)
-            .distinct()
-            .run(pluck=True)
-        ) or []
+        return user_queries + self.get_queries()
 
     def get_allowed_dashboards(self):
-        allowed_queries = self.get_allowed_queries()
-        InsightsDashboard = frappe.qb.DocType("Insights Dashboard")
-        InsightsDashboardItem = frappe.qb.DocType("Insights Dashboard Item")
-        return (
-            frappe.qb.from_(InsightsDashboard)
-            .select(InsightsDashboard.name)
-            .distinct()
-            .join(InsightsDashboardItem)
-            .on(InsightsDashboard.name == InsightsDashboardItem.parent)
-            .where(InsightsDashboardItem.query.isin(allowed_queries))
-            .run(pluck=True)
-        ) or []
+        user_dashboards = frappe.get_all(
+            "Insights Dashboard",
+            filters={"owner": frappe.session.user},
+            pluck="name",
+        )
+        return user_dashboards + self.get_dashboards()
 
 
 def get_user_teams(user=None):
@@ -138,7 +116,7 @@ def _get_user_teams(user):
         .distinct()
         .join(TeamMember)
         .on(Team.name == TeamMember.parent)
-        .where((Team.disabled == 0) & (TeamMember.user == user))
+        .where((TeamMember.user == user))
         .run(pluck=True)
     ) or []
 
@@ -159,4 +137,52 @@ def get_allowed_resources_for_user(resource_type=None, user=None):
         team = frappe.get_cached_doc("Insights Team", team)
         resources.extend(team.get_allowed_resources(resource_type))
 
-    return resources
+    if resource_type == "Insights Data Source":
+        return list(set(resources))
+
+    owned_resources = frappe.get_all(
+        resource_type, filters={"owner": user}, pluck="name"
+    )
+
+    return list(set(resources + owned_resources))
+
+
+def get_permission_filter(resource_type, user=None):
+    allowed_resource = get_allowed_resources_for_user(resource_type, user)
+    if not allowed_resource:
+        return {"name": "0000000"}
+    return {"name": ["in", allowed_resource]}
+
+
+def check_data_source_permission(source_name, user=None, raise_error=True):
+    if not user:
+        user = frappe.session.user
+    if user == "Administrator":
+        return True
+
+    allowed_sources = get_allowed_resources_for_user("Insights Data Source", user)
+
+    if source_name not in allowed_sources:
+        if raise_error:
+            frappe.throw("You do not have permission to access this data source")
+        else:
+            return False
+
+
+def check_table_permission(data_source, table, user=None, raise_error=True):
+    if not user:
+        user = frappe.session.user
+    if user == "Administrator":
+        return True
+
+    # since everywhere we use table name & data source as the primary key not the name
+    table_name = frappe.db.get_value(
+        "Insights Table", {"data_source": data_source, "table": table}, "name"
+    )
+    allowed_tables = get_allowed_resources_for_user("Insights Table", user)
+
+    if table_name not in allowed_tables:
+        if raise_error:
+            frappe.throw("You do not have permission to access this table")
+        else:
+            return False

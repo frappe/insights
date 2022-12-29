@@ -24,7 +24,6 @@ def has_permission(doc, ptype, user):
         return True
 
     allowed_resources = get_allowed_resources_for_user(doc.doctype, user)
-    print(allowed_resources)
     if doc.name in allowed_resources:
         return True
 

@@ -6,7 +6,10 @@ from pypika import CustomFunction
 
 from insights import notify
 from insights.insights.doctype.insights_team.insights_team import (
+    check_data_source_permission,
+    check_table_permission,
     get_allowed_resources_for_user,
+    get_permission_filter,
 )
 
 
@@ -17,13 +20,12 @@ def get_app_version():
 
 @frappe.whitelist()
 def get_data_sources():
-    allowed_sources = get_allowed_resources_for_user("Insights Data Source")
-    if not allowed_sources:
-        return []
-
     return frappe.get_list(
         "Insights Data Source",
-        filters={"status": "Active", "name": ["in", allowed_sources]},
+        filters={
+            "status": "Active",
+            **get_permission_filter("Insights Data Source"),
+        },
         fields=["name", "title", "status", "database_type", "creation"],
         order_by="creation desc",
     )
@@ -31,9 +33,7 @@ def get_data_sources():
 
 @frappe.whitelist()
 def get_data_source(name):
-    if name not in get_allowed_resources_for_user("Insights Data Source"):
-        frappe.throw("Not allowed", frappe.PermissionError)
-
+    check_data_source_permission(name)
     doc = frappe.get_doc("Insights Data Source", name)
     tables = get_all_tables(name)
     return {
@@ -46,15 +46,11 @@ def get_all_tables(data_source=None):
     if not data_source:
         return []
 
-    allowed_tables = get_allowed_resources_for_user("Insights Table")
-    if not allowed_tables:
-        return []
-
     return frappe.get_list(
         "Insights Table",
         filters={
             "data_source": data_source,
-            "name": ["in", allowed_tables],
+            **get_permission_filter("Insights Table"),
         },
         fields=["name", "table", "label", "hidden"],
         order_by="hidden asc, label asc",
@@ -63,8 +59,7 @@ def get_all_tables(data_source=None):
 
 @frappe.whitelist()
 def get_table_columns(data_source, table):
-    if table not in get_allowed_resources_for_user("Insights Table"):
-        frappe.throw("Not allowed", frappe.PermissionError)
+    check_table_permission(data_source, table)
 
     doc = frappe.get_doc(
         "Insights Table",
@@ -82,16 +77,14 @@ def get_tables(data_source=None):
     if not data_source:
         return []
 
-    allowed_tables = get_allowed_resources_for_user("Insights Table")
-    if not allowed_tables:
-        return []
+    check_data_source_permission(data_source)
 
     return frappe.get_list(
         "Insights Table",
         filters={
             "hidden": 0,
             "data_source": data_source,
-            "name": ["in", allowed_tables],
+            **get_permission_filter("Insights Table"),
         },
         fields=["name", "table", "label"],
         order_by="label asc",
@@ -100,13 +93,9 @@ def get_tables(data_source=None):
 
 @frappe.whitelist()
 def get_dashboard_list():
-    allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
-    if not allowed_dashboards:
-        return []
-
     return frappe.get_list(
         "Insights Dashboard",
-        filters={"name": ["in", allowed_dashboards]},
+        filters={**get_permission_filter("Insights Dashboard")},
         fields=["name", "title", "modified"],
     )
 
@@ -153,8 +142,7 @@ def get_queries():
 
 @frappe.whitelist()
 def create_query(title, data_source, table):
-    if table not in get_allowed_resources_for_user("Insights Table"):
-        frappe.throw("Not allowed", frappe.PermissionError)
+    check_table_permission(data_source, table.get("value"))
 
     query = frappe.new_doc("Insights Query")
     query.title = title
@@ -196,9 +184,8 @@ def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
 
-    allowed_tables = get_allowed_resources_for_user("Insights Table")
-    if primary_table not in allowed_tables or foreign_table not in allowed_tables:
-        frappe.throw("Not allowed", frappe.PermissionError)
+    check_table_permission(data_source, primary_table.get("value"))
+    check_table_permission(data_source, foreign_table.get("value"))
 
     primary = frappe.get_doc(
         "Insights Table",
@@ -259,19 +246,22 @@ def skip_onboarding():
 
 @frappe.whitelist()
 def get_dashboard_options(chart):
+    allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
+    if not allowed_dashboards:
+        return []
+
+    # find all dashboards that don't have the chart within the allowed dashboards
+    Dashboard = frappe.qb.DocType("Insights Dashboard")
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
 
-    exclude_dashboards = (
-        frappe.qb.from_(DashboardItem)
-        .select(DashboardItem.parent)
-        .distinct()
-        .where(DashboardItem.chart == chart)
-        .run(pluck="parent")
-    )
-    return frappe.get_list(
-        "Insights Dashboard",
-        filters={"name": ["not in", exclude_dashboards]},
-        fields=["name as value", "title as label"],
+    return (
+        frappe.qb.from_(Dashboard)
+        .left_join(DashboardItem)
+        .on(Dashboard.name == DashboardItem.parent)
+        .select(Dashboard.name.as_("value"), Dashboard.title.as_("label"))
+        .where(Dashboard.name.isin(allowed_dashboards) & (DashboardItem.chart != chart))
+        .groupby(Dashboard.name)
+        .run(as_dict=True)
     )
 
 
