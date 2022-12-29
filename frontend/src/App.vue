@@ -1,5 +1,5 @@
 <template>
-	<div class="h-screen min-h-[44rem] min-w-[80rem] bg-gray-50 font-sans">
+	<div class="h-screen min-h-[44rem] min-w-[40rem] bg-gray-50 font-sans">
 		<CommandPalette />
 		<AppShell />
 		<Toasts />
