@@ -1,23 +1,10 @@
 <template>
-	<div class="fixed inset-y-0 flex w-60 flex-col bg-gray-50" v-if="currentRoute">
+	<div class="flex w-60 flex-col bg-gray-50" v-if="currentRoute">
 		<div class="flex flex-grow flex-col overflow-y-auto p-4 pl-4 pr-2">
 			<div class="flex h-6 flex-shrink-0 items-end text-sm text-gray-500">
 				<FrappeInsightsLogo />
 				<span class="ml-1">{{ appVersion }}</span>
 			</div>
-			<!-- <div
-				class="relative mt-4 flex cursor-pointer items-center rounded-md border bg-white px-2 text-base text-gray-500"
-				@click="commandPalette.open()"
-			>
-				<FeatherIcon name="search" class="absolute h-4 w-4" />
-				<input
-					ref="searchInput"
-					class="ml-2 flex w-full cursor-pointer items-center rounded-t-md bg-white py-1 px-4 focus:outline-none"
-					placeholder="Search..."
-					disabled
-				/>
-				<span class="absolute right-2 text-sm">⌘K</span>
-			</div> -->
 			<div class="mt-4 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
 					<router-link
