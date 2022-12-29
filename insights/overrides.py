@@ -17,6 +17,10 @@ def has_permission(doc, ptype, user):
     ]:
         return
 
+    # only check if doc exists
+    if not doc.name:
+        return
+
     if not user:
         user = frappe.session.user
 
