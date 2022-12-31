@@ -5,8 +5,10 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
 
+from .insights_team_client import InsightsTeamClient
 
-class InsightsTeam(Document):
+
+class InsightsTeam(InsightsTeamClient, Document):
     def on_change(self):
         _get_user_teams.clear_cache()
 
@@ -70,7 +72,7 @@ class InsightsTeam(Document):
             filters={"name": ["in", self.get_tables()]},
             pluck="data_source",
         )
-        return unrestricted_sources + table_sources
+        return list(set(unrestricted_sources + table_sources))
 
     def get_allowed_tables(self):
         unrestricted_sources = self.get_sources()
@@ -81,23 +83,13 @@ class InsightsTeam(Document):
         )
 
         allowed_tables = self.get_tables()
-        return unrestricted_tables + allowed_tables
+        return list(set(unrestricted_tables + allowed_tables))
 
     def get_allowed_queries(self):
-        user_queries = frappe.get_all(
-            "Insights Query",
-            filters={"owner": frappe.session.user},
-            pluck="name",
-        )
-        return user_queries + self.get_queries()
+        return self.get_queries()
 
     def get_allowed_dashboards(self):
-        user_dashboards = frappe.get_all(
-            "Insights Dashboard",
-            filters={"owner": frappe.session.user},
-            pluck="name",
-        )
-        return user_dashboards + self.get_dashboards()
+        return self.get_dashboards()
 
 
 def get_user_teams(user=None):

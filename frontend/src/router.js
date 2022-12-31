@@ -70,14 +70,14 @@ const routes = [
 		component: () => import('@/pages/Query.vue'),
 	},
 	{
+		path: '/teams',
+		name: 'SettingsTeams',
+		component: () => import('@/pages/SettingsTeams.vue'),
+	},
+	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
-	},
-	{
-		path: '/settings/running-queries',
-		name: 'Running Queries',
-		component: () => import('@/pages/RunningQueries.vue'),
 	},
 	{
 		path: '/no-permission',

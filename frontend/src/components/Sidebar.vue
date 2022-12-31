@@ -74,6 +74,13 @@ const sidebarItems = ref([
 		current: false,
 	},
 	{
+		path: '/teams',
+		label: 'Teams',
+		icon: 'users',
+		name: 'Teams',
+		current: false,
+	},
+	{
 		path: '/settings',
 		label: 'Settings',
 		icon: 'settings',
