@@ -7,7 +7,6 @@
  "engine": "InnoDB",
  "field_order": [
   "team_name",
-  "disabled",
   "section_break_4",
   "team_members",
   "team_permissions"
@@ -33,19 +32,13 @@
    "options": "Insights Resource Permission"
   },
   {
-   "default": "0",
-   "fieldname": "disabled",
-   "fieldtype": "Check",
-   "label": "Disabled"
-  },
-  {
    "fieldname": "section_break_4",
    "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-25 13:09:54.537434",
+ "modified": "2022-12-31 19:46:49.436886",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Team",
