@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, inject, onMounted, nextTick } from 'vue'
 import {
 	Combobox,
 	ComboboxLabel,
@@ -88,9 +88,6 @@ import {
 } from '@headlessui/vue'
 
 const $utils = inject('$utils')
-
-const input = ref(null)
-defineExpose({ input })
 
 const emit = defineEmits([
 	'update:modelValue',
@@ -129,9 +126,24 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	autofocus: {
+		type: Boolean,
+		default: true,
+	},
 })
 
+const input = ref(null)
 const popover = ref(null)
+defineExpose({ input })
+onMounted(() => {
+	if (props.autofocus == false) {
+		setTimeout(() => {
+			input.value.$el.blur()
+			popover.value.close()
+		}, 0)
+	}
+})
+
 const filterQuery = ref('')
 const modelValueIsObject = computed(() => {
 	return typeof props.modelValue === 'object' || !props.modelValue

@@ -7,6 +7,7 @@
 					<Autocomplete
 						placeholder="Add a member"
 						v-model="selectedMember"
+						:autofocus="false"
 						:options="memberOptions"
 						@selectOption="(member) => member && addMember(member)"
 						@inputChange="(query) => team.searchMembers(query)"
