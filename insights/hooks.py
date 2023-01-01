@@ -71,7 +71,7 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # ------------
 
 # before_install = "insights.install.before_install"
-after_install = "insights.setup.after_install"
+# after_install = "insights.setup.after_install"
 
 fixtures = ["Insights Data Source"]
 
