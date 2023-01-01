@@ -1,5 +1,6 @@
 import { reactive, computed } from 'vue'
 import { createDocumentResource, createResource, debounce } from 'frappe-ui'
+import { showPrompt } from './prompt'
 
 const teamListResource = createResource(
 	'insights.insights.doctype.insights_team.insights_team_client.get_teams'
@@ -49,10 +50,20 @@ export function useTeam(teamname) {
 	}
 
 	team.removeMember = (member) => {
-		// TODO: Add confirmation
-		return team.remove_team_member
-			.submit({ user: member })
-			.then(() => team.get_members_and_resources.fetch())
+		showPrompt({
+			title: 'Remove Member',
+			message: `Are you sure you want to remove ${member} from this team?`,
+			icon: { name: 'trash', appearance: 'danger' },
+			primaryAction: {
+				label: 'Remove',
+				appearance: 'danger',
+				action: () => {
+					return team.remove_team_member
+						.submit({ user: member })
+						.then(() => team.get_members_and_resources.fetch())
+				},
+			},
+		})
 	}
 
 	team.searchResources = debounce((query) => {
