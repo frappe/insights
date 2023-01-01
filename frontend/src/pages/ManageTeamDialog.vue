@@ -12,7 +12,7 @@
 						@selectOption="(member) => member && addMember(member)"
 						@inputChange="(query) => team.searchMembers(query)"
 					></Autocomplete>
-					<div class="divide-y text-gray-800" v-if="team.members">
+					<div class="divide-y text-gray-800" v-if="team.members && team.members.length">
 						<div
 							class="flex h-12 justify-between px-1"
 							v-for="member in team.members"
@@ -34,6 +34,12 @@
 							</div>
 						</div>
 					</div>
+					<div
+						v-else
+						class="flex items-center justify-center rounded-md border border-dashed p-4 text-sm font-light text-gray-500"
+					>
+						This team has no members
+					</div>
 				</div>
 
 				<div class="flex flex-col space-y-3 text-base">
@@ -46,7 +52,7 @@
 							@inputChange="(query) => team.searchResources(query)"
 							@selectOption="(resource) => resource && addResource(resource)"
 						></Autocomplete>
-						<div class="divide-y" v-if="team.resources">
+						<div class="divide-y" v-if="team.resources && team.resources.length">
 							<div
 								class="flex h-10 cursor-pointer items-center justify-between rounded-md px-2 hover:bg-gray-50"
 								v-for="resource in team.resources"
@@ -69,13 +75,26 @@
 								</div>
 							</div>
 						</div>
+						<div
+							v-else
+							class="flex items-center justify-center rounded-md border border-dashed p-4 text-sm font-light text-gray-500"
+						>
+							This team has no data access
+						</div>
 					</div>
 				</div>
 			</div>
 		</template>
 		<template #actions>
 			<div class="flex justify-end space-x-2">
-				<Button appearance="secondary" @click="emit('close')">Close</Button>
+				<Button appearance="white" @click="emit('close')">Close</Button>
+				<Button
+					appearance="white"
+					class="!text-red-500"
+					@click="team.deleteTeam().then(() => emit('close'))"
+				>
+					Delete Team
+				</Button>
 			</div>
 		</template>
 	</Dialog>

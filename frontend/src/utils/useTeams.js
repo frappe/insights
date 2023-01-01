@@ -10,6 +10,7 @@ export function useTeams() {
 		list: computed(() => teamListResource.data),
 		loading: computed(() => teamListResource.loading),
 		error: computed(() => teamListResource.error),
+		refresh: () => teamListResource.fetch(),
 	})
 
 	return teams
@@ -27,6 +28,7 @@ export function useTeam(teamname) {
 			remove_team_member: 'remove_team_member',
 			add_team_resource: 'add_team_resource',
 			remove_team_resource: 'remove_team_resource',
+			delete_team: 'delete_team',
 		},
 	})
 	team.get_members_and_resources.fetch()
@@ -34,41 +36,47 @@ export function useTeam(teamname) {
 	team.resources = computed(() => team.get_members_and_resources.data?.message.resources)
 
 	team.searchMembers = debounce((query) => {
-		team.search_team_members.submit({ query }).then((data) => {
+		return team.search_team_members.submit({ query }).then((data) => {
 			team.memberOptions = data.message || []
 		})
 	}, 500)
 	team.searchMembers('')
 
 	team.addMember = (member) => {
-		team.add_team_member
+		return team.add_team_member
 			.submit({ user: member })
 			.then(() => team.get_members_and_resources.fetch())
 	}
 
 	team.removeMember = (member) => {
 		// TODO: Add confirmation
-		team.remove_team_member
+		return team.remove_team_member
 			.submit({ user: member })
 			.then(() => team.get_members_and_resources.fetch())
 	}
 
 	team.searchResources = debounce((query) => {
-		team.search_team_resources.submit({ query }).then((data) => {
+		return team.search_team_resources.submit({ query }).then((data) => {
 			team.resourceOptions = data.message || []
 		})
 	}, 500)
 
 	team.addResource = (resource) => {
-		team.add_team_resource
+		return team.add_team_resource
 			.submit({ resource })
 			.then(() => team.get_members_and_resources.fetch())
 	}
 
 	team.removeResource = (resource) => {
-		team.remove_team_resource
+		return team.remove_team_resource
 			.submit({ resource })
 			.then(() => team.get_members_and_resources.fetch())
+	}
+
+	team.deleteTeam = () => {
+		return team.delete_team.submit().then(() => {
+			teamListResource.fetch()
+		})
 	}
 
 	return team

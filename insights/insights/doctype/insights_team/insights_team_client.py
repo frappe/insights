@@ -52,7 +52,7 @@ class InsightsTeamClient:
             frappe.qb.from_(User)
             .select(User.name, User.full_name, User.email, User.user_image)
             .where(conditions)
-            .run(as_dict=True, debug=True)
+            .run(as_dict=True)
         )
 
     @frappe.whitelist()
@@ -217,6 +217,10 @@ class InsightsTeamClient:
                 break
         self.save()
 
+    @frappe.whitelist()
+    def delete_team(self):
+        frappe.delete_doc("Insights Team", self.name)
+
 
 @frappe.whitelist()
 def get_teams():
@@ -261,3 +265,10 @@ def get_teams():
         )
 
     return list(teams.values())
+
+
+@frappe.whitelist()
+def add_new_team(team_name):
+    doc = frappe.new_doc("Insights Team")
+    doc.team_name = team_name
+    doc.save()

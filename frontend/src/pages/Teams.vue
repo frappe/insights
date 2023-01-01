@@ -3,7 +3,8 @@
 		<template #header>
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Teams</h1>
-				<div>
+				<div class="space-x-4">
+					<Button iconLeft="plus" @click="showAddUserDialog = true">Add User</Button>
 					<Button iconLeft="plus" @click="showAddTeamDialog = true">Add Team</Button>
 				</div>
 			</div>
@@ -76,6 +77,9 @@
 		</template>
 	</BasePage>
 
+	<AddUserDialog v-if="showAddUserDialog" @close="showAddUserDialog = false"></AddUserDialog>
+	<AddTeamDialog v-if="showAddTeamDialog" @close="showAddTeamDialog = false"></AddTeamDialog>
+
 	<ManageTeamDialog
 		v-if="teamToEdit"
 		:teamname="teamToEdit"
@@ -88,10 +92,14 @@ import { ref } from 'vue'
 import BasePage from '@/components/BasePage.vue'
 import { useTeams } from '@/utils/useTeams.js'
 import ManageTeamDialog from './ManageTeamDialog.vue'
+import AddUserDialog from './AddUserDialog.vue'
+import AddTeamDialog from './AddTeamDialog.vue'
 import Avatars from './Avatars.vue'
 
 const teams = useTeams()
 const teamToEdit = ref(null)
+const showAddUserDialog = ref(false)
+const showAddTeamDialog = ref(false)
 
 function getAvatars(members) {
 	return members.map((member) => ({
