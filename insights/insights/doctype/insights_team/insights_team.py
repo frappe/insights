@@ -9,6 +9,14 @@ from .insights_team_client import InsightsTeamClient
 
 
 class InsightsTeam(InsightsTeamClient, Document):
+    def on_trash(self):
+        if self.name == "Admin":
+            frappe.throw(
+                "You cannot delete the Admin team. Please remove the team members instead."
+            )
+
+        _get_user_teams.clear_cache()
+
     def on_change(self):
         _get_user_teams.clear_cache()
 
