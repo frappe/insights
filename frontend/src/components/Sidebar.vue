@@ -54,7 +54,7 @@ import { getOnboardingStatus } from '@/utils/onboarding'
 
 const sidebarItems = ref([
 	{
-		path: '/dashboard',
+		path: '/dashboards',
 		label: 'Dashboards',
 		icon: 'bar-chart-2',
 		name: 'Dashboard',
@@ -105,7 +105,8 @@ getOnboardingStatus().then((onboardingComplete) => {
 const route = useRoute()
 const currentRoute = computed(() => {
 	sidebarItems.value.forEach((item) => {
-		item.current = route.path.includes(item.path)
+		// check if /<route> or /<route>/<id> is in sidebar item path
+		item.current = route.path.match(new RegExp(`^${item.path}(/|$)`))
 	})
 	return route.path
 })

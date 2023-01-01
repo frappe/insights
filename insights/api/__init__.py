@@ -93,11 +93,22 @@ def get_tables(data_source=None):
 
 @frappe.whitelist()
 def get_dashboard_list():
-    return frappe.get_list(
+    dashboards = frappe.get_list(
         "Insights Dashboard",
         filters={**get_permission_filter("Insights Dashboard")},
-        fields=["name", "title", "modified"],
+        fields=["name", "title", "modified", "_liked_by"],
     )
+    for dashboard in dashboards:
+        if dashboard._liked_by:
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
+                dashboard._liked_by
+            )
+        dashboard["charts"] = frappe.get_all(
+            "Insights Dashboard Item",
+            filters={"parent": dashboard.name, "item_type": "Chart"},
+            pluck="parent",
+        )
+    return dashboards
 
 
 @frappe.whitelist()
