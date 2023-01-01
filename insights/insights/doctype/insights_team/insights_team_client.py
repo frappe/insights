@@ -60,10 +60,7 @@ class InsightsTeamClient:
 
     @frappe.whitelist()
     def search_team_resources(self, query):
-        # search can be title of data source or table or query or dashboard
-        if not query:
-            return []
-
+        # query can be title of data source or table or query or dashboard
         # get all data sources
         InsightsDataSource = frappe.qb.DocType("Insights Data Source")
         exclude_sources = [
@@ -82,6 +79,7 @@ class InsightsTeamClient:
                 InsightsDataSource.database_type,
             )
             .where(conditions)
+            .limit(25)
             .run(as_dict=True)
         )
 
@@ -103,6 +101,7 @@ class InsightsTeamClient:
                 InsightsTable.data_source,
             )
             .where(conditions)
+            .limit(25)
             .run(as_dict=True)
         )
 
@@ -124,6 +123,7 @@ class InsightsTeamClient:
                 InsightsQuery.data_source,
             )
             .where(conditions)
+            .limit(25)
             .run(as_dict=True)
         )
 
@@ -141,6 +141,7 @@ class InsightsTeamClient:
             frappe.qb.from_(InsightsDashboard)
             .select(InsightsDashboard.name, InsightsDashboard.title)
             .where(conditions)
+            .limit(25)
             .run(as_dict=True)
         )
 

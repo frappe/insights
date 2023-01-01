@@ -71,6 +71,7 @@ export function useTeam(teamname) {
 			team.resourceOptions = data.message || []
 		})
 	}, 500)
+	team.searchResources('')
 
 	team.addResource = (resource) => {
 		return team.add_team_resource

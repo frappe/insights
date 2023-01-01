@@ -46,7 +46,7 @@
 					<div class="font-medium">Manage Data Access</div>
 					<div class="space-y-3">
 						<Autocomplete
-							placeholder="Add a data source or table"
+							placeholder="Search for a resource to grant access to"
 							:options="resourceOptions"
 							v-model="selectedResource"
 							@inputChange="(query) => team.searchResources(query)"
