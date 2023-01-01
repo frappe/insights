@@ -5,6 +5,7 @@ import frappe
 from frappe.utils.user import get_users_with_role
 
 from insights import notify
+from insights.decorators import check_permission, check_role
 
 
 class InsightsTeamClient:
@@ -229,8 +230,9 @@ class InsightsTeamClient:
 
 
 @frappe.whitelist()
+@check_role("Insights Admin")
+@check_permission("Insights Team")
 def get_teams():
-    # TODO: allow only for Insights Admin
     User = frappe.qb.DocType("User")
     Team = frappe.qb.DocType("Insights Team")
     TeamMember = frappe.qb.DocType("Insights Team Member")

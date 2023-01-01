@@ -8,19 +8,6 @@ from insights import notify
 
 
 @frappe.whitelist()
-def get_user_info():
-    users = frappe.db.get_all(
-        "User", fields=["name", "email", "user_image", "full_name", "user_type"]
-    )
-    out = {}
-    for user in users:
-        if frappe.session.user == user.name:
-            user.session_user = True
-        out[user.name] = user
-    return out
-
-
-@frappe.whitelist()
 def add_insights_user(user):
     email_strings = validate_email_address(user.get("email"), throw=True)
     email_strings = split_emails(email_strings)

@@ -7,12 +7,13 @@ const auth = reactive({
 		user_id: '',
 		full_name: '',
 		user_image: '',
-		permissions: undefined,
+		is_admin: undefined,
+		is_user: undefined,
 	},
 	login,
 	logout,
 	reset,
-	hasPermission,
+	isAuthorized,
 })
 
 // fetch inital state from cookies
@@ -29,7 +30,8 @@ document.cookie
 const userInfo = createResource({
 	url: 'insights.api.get_user_info',
 	onSuccess(res) {
-		auth.user.permissions = res.permissions
+		auth.user.is_admin = res.is_admin
+		auth.user.is_user = res.is_user
 	},
 })
 
@@ -70,15 +72,16 @@ function reset() {
 		user_id: '',
 		full_name: '',
 		user_image: '',
-		permissions: undefined,
+		is_admin: undefined,
+		is_user: undefined,
 	}
 }
 
-async function hasPermission(permission) {
-	if (!auth.user.permissions) {
+async function isAuthorized() {
+	if (auth.user.is_admin === undefined) {
 		await userInfo.fetch()
 	}
-	return auth.user.permissions[permission]
+	return auth.user.is_admin || auth.user.is_user
 }
 
 export default auth

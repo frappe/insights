@@ -73,6 +73,9 @@ const routes = [
 		path: '/teams',
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),
+		meta: {
+			isAllowed: () => auth.user.is_admin,
+		},
 	},
 	{
 		path: '/settings',
@@ -113,11 +116,14 @@ router.beforeEach(async (to, from, next) => {
 		return next(false)
 	}
 
-	const hasPermission = await auth.hasPermission('Query')
-	if (!hasPermission && to.name !== 'No Permission') {
+	const isAuthorized = await auth.isAuthorized()
+	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
-	if (hasPermission && to.name === 'No Permission') {
+	if (isAuthorized && to.name === 'No Permission') {
+		return next('/not-found')
+	}
+	if (to.meta.isAllowed && !to.meta.isAllowed()) {
 		return next('/not-found')
 	}
 

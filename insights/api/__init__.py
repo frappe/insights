@@ -181,12 +181,17 @@ def kill_running_job(data_source, query_id):
 
 @frappe.whitelist()
 def get_user_info():
+    is_admin = frappe.db.exists(
+        "Has Role", {"parent": frappe.session.user, "role": "Insights Admin"}
+    )
+    is_user = frappe.db.exists(
+        "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
+    )
+
     return {
         "user_id": frappe.session.user,
-        "permissions": {
-            "Query": frappe.has_permission("Insights Query", throw=False),
-            "Dashboard": frappe.has_permission("Insights Dashboard", throw=False),
-        },
+        "is_admin": is_admin or frappe.session.user == "Administrator",
+        "is_user": is_user,
     }
 
 
