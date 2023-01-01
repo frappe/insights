@@ -22,7 +22,7 @@
 								<Avatar :label="member.full_name" :imageURL="member.image_url" />
 								<div>
 									<div>{{ member.full_name }}</div>
-									<div>{{ member.email }}</div>
+									<div class="text-sm text-gray-500">{{ member.email }}</div>
 								</div>
 							</div>
 							<div class="flex items-center">
