@@ -71,8 +71,8 @@ const routes = [
 	},
 	{
 		path: '/teams',
-		name: 'SettingsTeams',
-		component: () => import('@/pages/SettingsTeams.vue'),
+		name: 'Teams',
+		component: () => import('@/pages/Teams.vue'),
 	},
 	{
 		path: '/settings',
