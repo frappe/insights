@@ -38,6 +38,7 @@ export function useTeam(teamname) {
 			team.memberOptions = data.message || []
 		})
 	}, 500)
+	team.searchMembers('')
 
 	team.addMember = (member) => {
 		team.add_team_member

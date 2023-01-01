@@ -32,9 +32,6 @@ class InsightsTeamClient:
 
     @frappe.whitelist()
     def search_team_members(self, query):
-        if not query:
-            return []
-
         # get all users who are not in the team
         members = [m.user for m in self.team_members]
         insights_users = get_users_with_role("Insights User")
@@ -44,18 +41,18 @@ class InsightsTeamClient:
             return []
 
         User = frappe.qb.DocType("User")
+
+        conditions = (User.name.isin(insights_users)) & (User.enabled == 1)
+        if query:
+            conditions &= (User.full_name.like(f"%{query}%")) | (
+                User.email.like(f"%{query}%")
+            )
+
         return (
             frappe.qb.from_(User)
             .select(User.name, User.full_name, User.email, User.user_image)
-            .where(
-                (User.name.isin(insights_users))
-                & (User.enabled == 1)
-                & (
-                    (User.full_name.like(f"%{query}%"))
-                    | (User.email.like(f"%{query}%"))
-                )
-            )
-            .run(as_dict=True)
+            .where(conditions)
+            .run(as_dict=True, debug=True)
         )
 
     @frappe.whitelist()
