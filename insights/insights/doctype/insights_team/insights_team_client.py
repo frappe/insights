@@ -4,6 +4,8 @@
 import frappe
 from frappe.utils.user import get_users_with_role
 
+from insights import notify
+
 
 class InsightsTeamClient:
     @frappe.whitelist()
@@ -220,6 +222,10 @@ class InsightsTeamClient:
     @frappe.whitelist()
     def delete_team(self):
         frappe.delete_doc("Insights Team", self.name)
+        notify(
+            type="success",
+            message=f"Team {self.team_name} deleted successfully",
+        )
 
 
 @frappe.whitelist()
@@ -272,3 +278,7 @@ def add_new_team(team_name):
     doc = frappe.new_doc("Insights Team")
     doc.team_name = team_name
     doc.save()
+    notify(
+        type="success",
+        message=f"Team {team_name} has been created",
+    )

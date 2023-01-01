@@ -4,6 +4,8 @@
 import frappe
 from frappe.utils import split_emails, validate_email_address
 
+from insights import notify
+
 
 @frappe.whitelist()
 def get_user_info():
@@ -39,6 +41,12 @@ def add_insights_user(user):
         "Insights User" if user.get("role") == "User" else "Insights Admin"
     )
     doc.insert()
+    frappe.db.commit()
+    notify(
+        type="success",
+        title="User Added",
+        message=f"{user.get('first_name')} {user.get('last_name')} has been added as an Insights {user.get('role')}",
+    )
 
     if user.get("team"):
         try:
@@ -46,4 +54,8 @@ def add_insights_user(user):
             team.append("team_members", {"user": doc.name})
             team.save()
         except frappe.DoesNotExistError:
-            frappe.throw("Team does not exist")
+            notify(
+                type="error",
+                title="Team Not Found",
+                message=f"Team {user.get('team')} does not exist. Please create a new team or add the user to an existing team.",
+            )

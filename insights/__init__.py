@@ -9,6 +9,7 @@ __version__ = "0.1.0-beta"
 def notify(**kwargs):
     frappe.publish_realtime(
         event="insights_notification",
+        user=frappe.session.user,
         message={
             "message": kwargs.get("message"),
             "title": kwargs.get("title"),
