@@ -19,10 +19,10 @@
 							<span
 								class="ml-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
 								:class="{
-									'text-yellow-500': dashboard.is_favourite,
+									'text-yellow-400': dashboard.is_favourite,
 									'text-gray-400': !dashboard.is_favourite,
 								}"
-								@click.prevent.stop="toggleFavourite"
+								@click.prevent.stop="toggleFavourite()"
 							>
 								{{ dashboard.is_favourite ? '★' : '☆' }}
 							</span>
@@ -66,6 +66,7 @@ const toggleFavourite = () => {
 		params: {
 			doctype: 'Insights Dashboard',
 			name: props.dashboard.name,
+			add: !props.dashboard.is_favourite ? 'Yes' : 'No',
 		},
 		onSuccess() {
 			refreshDashboards()
