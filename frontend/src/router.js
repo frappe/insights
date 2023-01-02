@@ -31,7 +31,7 @@ const routes = [
 		component: () => import('@/pages/GetStarted.vue'),
 	},
 	{
-		path: '/dashboards',
+		path: '/dashboard',
 		name: 'Dashboards',
 		component: () => import('@/dashboard/Dashboards.vue'),
 	},
@@ -139,7 +139,7 @@ router.beforeEach(async (to, from, next) => {
 	// redirect to /dashboard if onboarding is complete
 	const onboardingComplete = await getOnboardingStatus()
 	if (onboardingComplete && to.name == 'Get Started') {
-		return next('/dashboards')
+		return next('/dashboard')
 	}
 
 	if (to.path === '/login') {

@@ -54,7 +54,7 @@ import { getOnboardingStatus } from '@/utils/onboarding'
 
 const sidebarItems = ref([
 	{
-		path: '/dashboards',
+		path: '/dashboard',
 		label: 'Dashboards',
 		icon: 'bar-chart-2',
 		name: 'Dashboard',
