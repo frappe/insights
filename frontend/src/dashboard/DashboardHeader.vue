@@ -2,11 +2,14 @@
 import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import EditablePageTitle from '@/components/EditablePageTitle.vue'
+import { Dropdown } from 'frappe-ui'
+import ShareDialog from '@/components/ShareDialog.vue'
 
 const dashboard = inject('dashboard')
 
 const router = useRouter()
 const showDeleteDialog = ref(false)
+const showShareDialog = ref(false)
 
 defineEmits(['addChart', 'saveLayout', 'autoLayout'])
 
@@ -25,11 +28,30 @@ function updateTitle(title) {
 
 <template>
 	<div class="flex flex-1 items-center justify-between">
-		<EditablePageTitle
-			v-if="dashboard.doc"
-			:title="dashboard.doc.title"
-			@update="updateTitle"
-		/>
+		<div class="flex items-center space-x-2">
+			<EditablePageTitle
+				v-if="dashboard.doc"
+				:title="dashboard.doc.title"
+				@update="updateTitle"
+			/>
+			<Dropdown
+				v-if="dashboard.doc"
+				placement="left"
+				:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+				:options="[
+					{
+						label: 'Share',
+						icon: 'share-2',
+						handler: () => (showShareDialog = true),
+					},
+					{
+						label: 'Delete',
+						icon: 'trash-2',
+						handler: () => {},
+					},
+				]"
+			/>
+		</div>
 		<div class="flex items-start space-x-2">
 			<Button
 				appearance="white"
@@ -117,4 +139,11 @@ function updateTitle(title) {
 			</Button>
 		</template>
 	</Dialog>
+
+	<ShareDialog
+		v-if="dashboard.doc"
+		v-model:show="showShareDialog"
+		:resource-type="dashboard.doc.doctype"
+		:resource-name="dashboard.doc.name"
+	/>
 </template>

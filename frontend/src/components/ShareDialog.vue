@@ -4,6 +4,7 @@
 			<div class="space-y-4 text-base">
 				<Autocomplete
 					:options="unauthorizedTeams"
+					:autofocus="false"
 					placeholder="Search for a team..."
 					@selectOption="handleAccessGrant"
 					v-model="newUser"
@@ -24,6 +25,7 @@
 							<Button
 								icon="x"
 								class="ml-auto"
+								appearance="minimal"
 								@click="handleAccessRevoke(team.name)"
 							></Button>
 						</div>
@@ -97,12 +99,15 @@ const grantAccess = createResource({
 	url: 'insights.api.permissions.grant_access',
 })
 function handleAccessGrant(team) {
-	grantAccess.submit({
-		resource_type: props.resourceType,
-		resource_name: props.resourceName,
-		team: team.value,
-	})
-	getAccessInfo.fetch()
+	grantAccess
+		.submit({
+			resource_type: props.resourceType,
+			resource_name: props.resourceName,
+			team: team.value,
+		})
+		.then(() => {
+			getAccessInfo.fetch()
+		})
 	newUser.value = null
 }
 
@@ -110,11 +115,14 @@ const revokeAccess = createResource({
 	url: 'insights.api.permissions.revoke_access',
 })
 function handleAccessRevoke(team) {
-	revokeAccess.submit({
-		resource_type: props.resourceType,
-		resource_name: props.resourceName,
-		team: team,
-	})
-	getAccessInfo.fetch()
+	revokeAccess
+		.submit({
+			resource_type: props.resourceType,
+			resource_name: props.resourceName,
+			team: team,
+		})
+		.then(() => {
+			getAccessInfo.fetch()
+		})
 }
 </script>
