@@ -30,7 +30,7 @@ def get_resource_access_info(resource_type, resource_name):
 
     unauthorized_teams = (
         frappe.qb.from_(InsightsTeam)
-        .join(InsightsTeamMember)
+        .left_join(InsightsTeamMember)
         .on(InsightsTeam.name == InsightsTeamMember.parent)
         .where(
             ~(

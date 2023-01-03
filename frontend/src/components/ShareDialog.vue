@@ -1,16 +1,16 @@
 <template>
 	<Dialog :options="{ title: 'Share' }" v-model="show" :dismissable="true">
 		<template #body-content>
-			<div class="space-y-4 text-base">
+			<div class="space-y-3 text-base">
 				<Autocomplete
+					v-model="newTeam"
+					placeholder="Add a team to share with"
 					:options="unauthorizedTeams"
 					:autofocus="false"
-					placeholder="Search for a team..."
 					@selectOption="handleAccessGrant"
-					v-model="newUser"
 				/>
 				<div class="space-y-3">
-					<div class="text-gray-600">Teams with access</div>
+					<div class="font-medium text-gray-600">Teams with access</div>
 					<div class="space-y-3">
 						<div
 							class="flex items-center text-gray-600"
@@ -32,9 +32,6 @@
 					</div>
 				</div>
 			</div>
-		</template>
-		<template #actions>
-			<Button appearance="primary" @click="show = false"> Done </Button>
 		</template>
 	</Dialog>
 </template>
@@ -84,7 +81,7 @@ const authorizedTeams = computed(() => {
 	return getAccessInfo.data?.authorized_teams
 })
 
-const newUser = ref(null)
+const newTeam = ref(null)
 const unauthorizedTeams = computed(() => {
 	return getAccessInfo.data?.unauthorized_teams.map((team) => {
 		return {
@@ -108,7 +105,7 @@ function handleAccessGrant(team) {
 		.then(() => {
 			getAccessInfo.fetch()
 		})
-	newUser.value = null
+	newTeam.value = null
 }
 
 const revokeAccess = createResource({
