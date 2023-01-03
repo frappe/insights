@@ -5,9 +5,11 @@ import frappe
 from frappe.utils import split_emails, validate_email_address
 
 from insights import notify
+from insights.decorators import check_role
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def add_insights_user(user):
     email_strings = validate_email_address(user.get("email"), throw=True)
     email_strings = split_emails(email_strings)
