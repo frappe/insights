@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
+from frappe.utils.user import get_users_with_role
 
 from .insights_team_client import InsightsTeamClient
 
@@ -28,12 +29,14 @@ class InsightsTeam(InsightsTeamClient, Document):
             user.save()
 
         # remove Insights Admin role from all users who are not in Admin team
+        admin_users = get_users_with_role("Insights Admin")
         for user in frappe.get_all(
-            "Insights Team Member", filters={"parent": ["!=", "Admin"]}, pluck="user"
+            "Insights Team Member",
+            filters={"parent": ["!=", "Admin"], "user": ["in", admin_users]},
+            pluck="user",
         ):
             user = frappe.get_cached_doc("User", user)
-            user.remove_roles("Insights Admin")
-            user.save()
+            user.remove_roles("Insights Admin")  # remove roles saves the doc
 
     def on_change(self):
         _get_user_teams.clear_cache()
