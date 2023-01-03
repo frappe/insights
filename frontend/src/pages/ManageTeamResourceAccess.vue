@@ -53,7 +53,7 @@ function addResources(resources) {
 
 <template>
 	<div class="flex w-full flex-col space-y-3 text-base">
-		<div class="flex flex-col">
+		<div class="flex flex-shrink-0 flex-col">
 			<div class="text-lg font-medium leading-6">Manage {{ resourceTitle }} Access</div>
 			<div class="mb-4 text-sm text-gray-500">
 				{{ resourceDescription }}
@@ -67,7 +67,7 @@ function addResources(resources) {
 			></ListPicker>
 		</div>
 
-		<div class="flex-1 space-y-3 pl-1">
+		<div class="flex-1 space-y-3 overflow-y-scroll pl-1">
 			<div class="divide-y" v-if="accessibleResources && accessibleResources.length">
 				<div
 					class="flex h-10 items-center justify-between"

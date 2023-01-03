@@ -39,7 +39,7 @@ export function useTeam(teamname) {
 	team.resources = computed(() => team.get_members_and_resources.data?.message.resources)
 
 	team.searchMembers = debounce((query) => {
-		if (!query) {
+		if (!query && query !== '') {
 			team.memberOptions = []
 			return
 		}
@@ -78,7 +78,7 @@ export function useTeam(teamname) {
 	}
 
 	team.searchResources = debounce((resource_type, query) => {
-		if (!query) {
+		if (!query && query !== '') {
 			team.resourceOptions = []
 			return
 		}

@@ -21,15 +21,20 @@ function addMembers(members) {
 
 <template>
 	<div class="flex w-full flex-col space-y-3 text-base">
-		<div class="text-lg font-medium">Members</div>
-		<ListPicker
-			placeholder="Add a member"
-			v-model="selectedMembers"
-			:options="memberOptions"
-			@inputChange="(query) => team.searchMembers(query)"
-			@apply="(selected) => addMembers(selected)"
-		></ListPicker>
-		<div class="divide-y text-gray-800" v-if="team.members && team.members.length">
+		<div class="flex flex-shrink-0 flex-col space-y-2">
+			<div class="text-lg font-medium">Members</div>
+			<ListPicker
+				placeholder="Add a member"
+				v-model="selectedMembers"
+				:options="memberOptions"
+				@inputChange="(query) => team.searchMembers(query)"
+				@apply="(selected) => addMembers(selected)"
+			></ListPicker>
+		</div>
+		<div
+			class="flex-1 divide-y overflow-y-scroll text-gray-800"
+			v-if="team.members && team.members.length"
+		>
 			<div
 				class="flex h-12 justify-between px-1"
 				v-for="member in team.members"

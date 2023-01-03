@@ -22,12 +22,12 @@
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
-						<p class="flex-1">Team Name</p>
-						<p class="flex-1">Members</p>
-						<p class="flex-1">Data Sources</p>
-						<p class="flex-1">Tables</p>
-						<p class="flex-1">Queries</p>
-						<p class="flex-1">Dashboards</p>
+						<p class="flex-1 flex-shrink-0">Team Name</p>
+						<p class="flex-1 flex-shrink-0">Members</p>
+						<p class="flex-1 flex-shrink-0">Data Sources</p>
+						<p class="flex-1 flex-shrink-0">Tables</p>
+						<p class="flex-1 flex-shrink-0">Queries</p>
+						<p class="flex-1 flex-shrink-0">Dashboards</p>
 					</div>
 					<ul
 						role="list"
@@ -46,27 +46,37 @@
 									<Input type="checkbox" class="rounded-md border-gray-400" />
 								</p>
 								<p
-									class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
+									class="flex-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
 								>
 									{{ team.team_name }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+								>
 									<Avatars
 										v-if="team.members.length > 0"
 										:avatars="getAvatars(team.members)"
 									></Avatars>
 									<span v-else> - </span>
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+								>
 									{{ team.source_count }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+								>
 									{{ team.table_count }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+								>
 									{{ team.query_count }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+								>
 									{{ team.dashboard_count }}
 								</p>
 							</div>
@@ -102,9 +112,12 @@ const showAddUserDialog = ref(false)
 const showAddTeamDialog = ref(false)
 
 function getAvatars(members) {
-	return members.map((member) => ({
-		label: member.full_name,
-		imageURL: member.user_image,
-	}))
+	return members
+		.map((member) => ({
+			label: member.full_name,
+			imageURL: member.user_image,
+		}))
+		.slice(0, 3)
+		.concat(members.length > 3 ? [{ label: `${members.length - 3}` }] : [])
 }
 </script>
