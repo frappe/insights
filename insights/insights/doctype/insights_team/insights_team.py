@@ -17,6 +17,24 @@ class InsightsTeam(InsightsTeamClient, Document):
 
         _get_user_teams.clear_cache()
 
+    def on_update(self):
+        if self.name != "Admin":
+            return
+
+        # add Insights Admin role to all team members of Admin team
+        for member in self.team_members:
+            user = frappe.get_cached_doc("User", member.user)
+            user.append_roles("Insights Admin")
+            user.save()
+
+        # remove Insights Admin role from all users who are not in Admin team
+        for user in frappe.get_all(
+            "Insights Team Member", filters={"parent": ["!=", "Admin"]}, pluck="user"
+        ):
+            user = frappe.get_cached_doc("User", user)
+            user.remove_roles("Insights Admin")
+            user.save()
+
     def on_change(self):
         _get_user_teams.clear_cache()
 
