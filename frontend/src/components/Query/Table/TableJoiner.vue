@@ -68,6 +68,7 @@
 
 <script setup>
 import { ref, inject, watch } from 'vue'
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import LinkIcon from '@/components/Controls/LinkIcon.vue'
 
 const emits = defineEmits(['close'])

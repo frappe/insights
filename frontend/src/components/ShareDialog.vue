@@ -37,9 +37,9 @@
 </template>
 
 <script setup>
-import Autocomplete from '@/components/controls/Autocomplete.vue'
 import { computed, watch, ref } from 'vue'
 import { createResource } from 'frappe-ui'
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
 const emit = defineEmits(['update:show'])
 const props = defineProps({
