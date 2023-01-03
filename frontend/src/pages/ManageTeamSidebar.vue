@@ -71,6 +71,7 @@ function showDeletePrompt() {
 </script>
 <template>
 	<div class="w-1/4 bg-gray-50 p-3 text-gray-600">
+		<div class="mb-2 text-lg font-medium text-gray-800">{{ team.doc.team_name }} Team</div>
 		<nav class="flex-1 space-y-1 pb-4 text-base">
 			<div
 				v-for="item in sidebarItems"
