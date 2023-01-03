@@ -59,137 +59,153 @@ class InsightsTeamClient:
         )
 
     @frappe.whitelist()
-    def search_team_resources(self, query):
-        # query can be title of data source or table or query or dashboard
-        # get all data sources
-        InsightsDataSource = frappe.qb.DocType("Insights Data Source")
-        exclude_sources = [
-            r.resource_name
-            for r in self.team_permissions
-            if r.resource_type == "Insights Data Source"
-        ]
-        conditions = InsightsDataSource.title.like(f"%{query}%")
-        if exclude_sources:
-            conditions = conditions & (InsightsDataSource.name.notin(exclude_sources))
-        data_sources = (
-            frappe.qb.from_(InsightsDataSource)
-            .select(
-                InsightsDataSource.name,
-                InsightsDataSource.title,
-                InsightsDataSource.database_type,
-            )
-            .where(conditions)
-            .limit(25)
-            .run(as_dict=True)
-        )
-
-        # get all tables
-        InsightsTable = frappe.qb.DocType("Insights Table")
-        exclude_tables = [
-            r.resource_name
-            for r in self.team_permissions
-            if r.resource_type == "Insights Table"
-        ]
-        conditions = InsightsTable.label.like(f"%{query}%")
-        if exclude_tables:
-            conditions = conditions & (InsightsTable.name.notin(exclude_tables))
-        tables = (
-            frappe.qb.from_(InsightsTable)
-            .select(
-                InsightsTable.name,
-                InsightsTable.label,
-                InsightsTable.data_source,
-            )
-            .where(conditions)
-            .limit(25)
-            .run(as_dict=True)
-        )
-
-        # get all queries
-        InsightsQuery = frappe.qb.DocType("Insights Query")
-        exclude_queries = [
-            r.resource_name
-            for r in self.team_permissions
-            if r.resource_type == "Insights Query"
-        ]
-        conditions = InsightsQuery.title.like(f"%{query}%")
-        if exclude_queries:
-            conditions = conditions & (InsightsQuery.name.notin(exclude_queries))
-        queries = (
-            frappe.qb.from_(InsightsQuery)
-            .select(
-                InsightsQuery.name,
-                InsightsQuery.title,
-                InsightsQuery.data_source,
-            )
-            .where(conditions)
-            .limit(25)
-            .run(as_dict=True)
-        )
-
-        # get all dashboards
-        InsightsDashboard = frappe.qb.DocType("Insights Dashboard")
-        exclude_dashboards = [
-            r.resource_name
-            for r in self.team_permissions
-            if r.resource_type == "Insights Dashboard"
-        ]
-        conditions = InsightsDashboard.title.like(f"%{query}%")
-        if exclude_dashboards:
-            conditions = conditions & (InsightsDashboard.name.notin(exclude_dashboards))
-        dashboards = (
-            frappe.qb.from_(InsightsDashboard)
-            .select(InsightsDashboard.name, InsightsDashboard.title)
-            .where(conditions)
-            .limit(25)
-            .run(as_dict=True)
-        )
-
+    def search_team_resources(self, resource_type, query):
         resources = []
-        for source in data_sources:
-            resources.append(
-                {
-                    "name": source.name,
-                    "title": source.title,
-                    "database_type": source.database_type,
-                    "type": "Insights Data Source",
-                }
+
+        if resource_type == "Insights Data Source":
+            InsightsDataSource = frappe.qb.DocType("Insights Data Source")
+            exclude_sources = [
+                r.resource_name
+                for r in self.team_permissions
+                if r.resource_type == "Insights Data Source"
+            ]
+            conditions = InsightsDataSource.title.like(f"%{query}%") | (
+                InsightsDataSource.database_type.like(f"%{query}%")
+            )
+            if exclude_sources:
+                conditions = conditions & (
+                    InsightsDataSource.name.notin(exclude_sources)
+                )
+            data_sources = (
+                frappe.qb.from_(InsightsDataSource)
+                .select(
+                    InsightsDataSource.name,
+                    InsightsDataSource.title,
+                    InsightsDataSource.database_type,
+                )
+                .where(conditions)
+                .limit(25)
+                .run(as_dict=True)
             )
 
-        for table in tables:
-            resources.append(
-                {
-                    "name": table.name,
-                    "title": table.label,
-                    "type": "Insights Table",
-                    "data_source": table.data_source,
-                }
+            for source in data_sources:
+                resources.append(
+                    {
+                        "name": source.name,
+                        "title": source.title,
+                        "database_type": source.database_type,
+                        "type": "Insights Data Source",
+                    }
+                )
+
+        if resource_type == "Insights Table":
+            # get all tables
+            InsightsTable = frappe.qb.DocType("Insights Table")
+            exclude_tables = [
+                r.resource_name
+                for r in self.team_permissions
+                if r.resource_type == "Insights Table"
+            ]
+            conditions = InsightsTable.label.like(f"%{query}%") | (
+                InsightsTable.data_source.like(f"%{query}%")
+            )
+            if exclude_tables:
+                conditions = conditions & (InsightsTable.name.notin(exclude_tables))
+            tables = (
+                frappe.qb.from_(InsightsTable)
+                .select(
+                    InsightsTable.name,
+                    InsightsTable.label,
+                    InsightsTable.data_source,
+                )
+                .where(conditions)
+                .limit(25)
+                .run(as_dict=True)
+            )
+            for table in tables:
+                resources.append(
+                    {
+                        "name": table.name,
+                        "title": table.label,
+                        "type": "Insights Table",
+                        "data_source": table.data_source,
+                    }
+                )
+
+        if resource_type == "Insights Query":
+            InsightsQuery = frappe.qb.DocType("Insights Query")
+            exclude_queries = [
+                r.resource_name
+                for r in self.team_permissions
+                if r.resource_type == "Insights Query"
+            ]
+            conditions = InsightsQuery.title.like(f"%{query}%") | (
+                InsightsQuery.data_source.like(f"%{query}%")
+            )
+            if exclude_queries:
+                conditions = conditions & (InsightsQuery.name.notin(exclude_queries))
+            queries = (
+                frappe.qb.from_(InsightsQuery)
+                .select(
+                    InsightsQuery.name,
+                    InsightsQuery.title,
+                    InsightsQuery.data_source,
+                )
+                .where(conditions)
+                .limit(25)
+                .run(as_dict=True)
             )
 
-        for query in queries:
-            resources.append(
-                {
-                    "name": query.name,
-                    "title": query.title,
-                    "data_source": query.data_source,
-                    "type": "Insights Query",
-                }
+            for query in queries:
+                resources.append(
+                    {
+                        "name": query.name,
+                        "title": query.title,
+                        "data_source": query.data_source,
+                        "type": "Insights Query",
+                    }
+                )
+
+        if resource_type == "Insights Dashboard":
+            InsightsDashboard = frappe.qb.DocType("Insights Dashboard")
+            exclude_dashboards = [
+                r.resource_name
+                for r in self.team_permissions
+                if r.resource_type == "Insights Dashboard"
+            ]
+            conditions = InsightsDashboard.title.like(f"%{query}%")
+            if exclude_dashboards:
+                conditions = conditions & (
+                    InsightsDashboard.name.notin(exclude_dashboards)
+                )
+            dashboards = (
+                frappe.qb.from_(InsightsDashboard)
+                .select(InsightsDashboard.name, InsightsDashboard.title)
+                .where(conditions)
+                .limit(25)
+                .run(as_dict=True)
             )
 
-        for dashboard in dashboards:
-            resources.append(
-                {
-                    "name": dashboard.name,
-                    "title": dashboard.title,
-                    "type": "Insights Dashboard",
-                }
-            )
+            for dashboard in dashboards:
+                resources.append(
+                    {
+                        "name": dashboard.name,
+                        "title": dashboard.title,
+                        "type": "Insights Dashboard",
+                    }
+                )
 
         return resources
 
     @frappe.whitelist()
     def add_team_member(self, user):
         self.append("team_members", {"user": user})
+        self.save()
+
+    @frappe.whitelist()
+    def add_team_members(self, users):
+        for user in users:
+            self.append("team_members", {"user": user})
         self.save()
 
     @frappe.whitelist()
@@ -207,6 +223,16 @@ class InsightsTeamClient:
             "team_permissions",
             {"resource_type": resource.type, "resource_name": resource.name},
         )
+        self.save()
+
+    @frappe.whitelist()
+    def add_team_resources(self, resources):
+        for resource in resources:
+            resource = frappe._dict(resource)
+            self.append(
+                "team_permissions",
+                {"resource_type": resource.type, "resource_name": resource.name},
+            )
         self.save()
 
     @frappe.whitelist()

@@ -1,87 +1,22 @@
 <template>
-	<Dialog :options="{ title: `Manage ${team.doc?.team_name} Team` }" v-model="show">
-		<template #body-content>
-			<div class="max-h-[70vh] space-y-4 overflow-y-scroll">
-				<div class="space-y-3 py-2 text-base">
-					<div class="font-medium">Members</div>
-					<Autocomplete
-						placeholder="Add a member"
-						v-model="selectedMember"
-						:autofocus="false"
-						:options="memberOptions"
-						@selectOption="(member) => member && addMember(member)"
-						@inputChange="(query) => team.searchMembers(query)"
-					></Autocomplete>
-					<div class="divide-y text-gray-800" v-if="team.members && team.members.length">
-						<div
-							class="flex h-12 justify-between px-1"
-							v-for="member in team.members"
-							:key="member.name"
-						>
-							<div class="flex items-center space-x-2">
-								<Avatar :label="member.full_name" :imageURL="member.image_url" />
-								<div>
-									<div>{{ member.full_name }}</div>
-									<div class="text-sm text-gray-500">{{ member.email }}</div>
-								</div>
-							</div>
-							<div class="flex items-center">
-								<Button
-									icon="x"
-									appearance="minimal"
-									@click="team.removeMember(member.name)"
-								></Button>
-							</div>
-						</div>
-					</div>
-					<div
-						v-else
-						class="flex items-center justify-center rounded-md border border-dashed p-4 text-sm font-light text-gray-500"
-					>
-						This team has no members
-					</div>
-				</div>
-
-				<div class="flex flex-col space-y-3 text-base">
-					<div class="font-medium">Manage Data Access</div>
-					<div class="space-y-3">
-						<Autocomplete
-							placeholder="Search for a resource to grant access to"
-							:options="resourceOptions"
-							v-model="selectedResource"
-							@inputChange="(query) => team.searchResources(query)"
-							@selectOption="(resource) => resource && addResource(resource)"
-						></Autocomplete>
-						<div class="divide-y" v-if="team.resources && team.resources.length">
-							<div
-								class="flex h-10 cursor-pointer items-center justify-between rounded-md px-2 hover:bg-gray-50"
-								v-for="resource in team.resources"
-								:key="resource.name"
-							>
-								<span
-									class="w-[20rem] overflow-hidden text-ellipsis whitespace-nowrap"
-								>
-									{{ resource.title }}
-								</span>
-								<div class="flex items-center space-x-4">
-									<div class="text-gray-500">
-										{{ resource.type.replace('Insights ', '') }}
-									</div>
-									<Button
-										icon="x"
-										appearance="minimal"
-										@click="team.removeResource(resource)"
-									></Button>
-								</div>
-							</div>
-						</div>
-						<div
-							v-else
-							class="flex items-center justify-center rounded-md border border-dashed p-4 text-sm font-light text-gray-500"
-						>
-							This team has no data access
-						</div>
-					</div>
+	<Dialog :options="{ title: `Manage ${team.doc?.team_name} Team`, size: '3xl' }" v-model="show">
+		<template #body>
+			<div class="flex h-[70vh] text-base">
+				<ManageTeamSidebar @change="currentSidebarItem = $event"></ManageTeamSidebar>
+				<div class="flex w-3/4 space-y-4 overflow-y-scroll p-5">
+					<ManageTeamMembers v-if="currentSidebarItem == 'Members'" />
+					<ManageTeamResourceAccess
+						v-if="currentSidebarItem != 'Members'"
+						:key="currentSidebarItem"
+						:resourceType="
+							{
+								'Data Sources': 'Insights Data Source',
+								Tables: 'Insights Table',
+								Queries: 'Insights Query',
+								Dashboards: 'Insights Dashboard',
+							}[currentSidebarItem]
+						"
+					/>
 				</div>
 			</div>
 		</template>
@@ -101,9 +36,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, provide } from 'vue'
 import { useTeam } from '@/utils/useTeams.js'
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import ManageTeamSidebar from './ManageTeamSidebar.vue'
+import ManageTeamMembers from './ManageTeamMembers.vue'
+import ManageTeamResourceAccess from './ManageTeamResourceAccess.vue'
 
 const emit = defineEmits(['close'])
 const props = defineProps({
@@ -113,7 +50,9 @@ const props = defineProps({
 	},
 })
 
+const currentSidebarItem = ref('Members')
 const team = useTeam(props.teamname)
+provide('team', team)
 const show = computed({
 	get: () => Boolean(team.doc?.team_name),
 	set: (value) => {
@@ -122,42 +61,4 @@ const show = computed({
 		}
 	},
 })
-
-const selectedMember = ref(null)
-const memberOptions = computed(() => {
-	return team.memberOptions?.map((member) => {
-		return {
-			label: member.full_name,
-			description: member.email,
-			value: member.name,
-		}
-	})
-})
-function addMember(member) {
-	team.addMember(member.value)
-	selectedMember.value = null
-}
-
-const selectedResource = ref(null)
-const resourceOptions = computed(() => {
-	return team.resourceOptions?.map((resource) => {
-		const description_map = {
-			'Insights Data Source': `${resource.database_type} - Data Source`,
-			'Insights Table': `${resource.data_source} - Table`,
-			'Insights Query': `${resource.data_source} - Query`,
-			'Insights Dashboard': '',
-		}
-		return {
-			...resource,
-			value: resource.name,
-			label: resource.title,
-			description: description_map[resource.type],
-		}
-	})
-})
-
-function addResource(resource) {
-	team.addResource(resource)
-	selectedResource.value = null
-}
 </script>

@@ -26,8 +26,10 @@ export function useTeam(teamname) {
 			search_team_members: 'search_team_members',
 			search_team_resources: 'search_team_resources',
 			add_team_member: 'add_team_member',
+			add_team_members: 'add_team_members',
 			remove_team_member: 'remove_team_member',
 			add_team_resource: 'add_team_resource',
+			add_team_resources: 'add_team_resources',
 			remove_team_resource: 'remove_team_resource',
 			delete_team: 'delete_team',
 		},
@@ -37,6 +39,10 @@ export function useTeam(teamname) {
 	team.resources = computed(() => team.get_members_and_resources.data?.message.resources)
 
 	team.searchMembers = debounce((query) => {
+		if (!query) {
+			team.memberOptions = []
+			return
+		}
 		return team.search_team_members.submit({ query }).then((data) => {
 			team.memberOptions = data.message || []
 		})
@@ -46,6 +52,11 @@ export function useTeam(teamname) {
 	team.addMember = (member) => {
 		return team.add_team_member
 			.submit({ user: member })
+			.then(() => team.get_members_and_resources.fetch())
+	}
+	team.addMembers = (members) => {
+		return team.add_team_members
+			.submit({ users: members })
 			.then(() => team.get_members_and_resources.fetch())
 	}
 
@@ -66,16 +77,24 @@ export function useTeam(teamname) {
 		})
 	}
 
-	team.searchResources = debounce((query) => {
-		return team.search_team_resources.submit({ query }).then((data) => {
+	team.searchResources = debounce((resource_type, query) => {
+		if (!query) {
+			team.resourceOptions = []
+			return
+		}
+		return team.search_team_resources.submit({ resource_type, query }).then((data) => {
 			team.resourceOptions = data.message || []
 		})
 	}, 500)
-	team.searchResources('')
 
 	team.addResource = (resource) => {
 		return team.add_team_resource
 			.submit({ resource })
+			.then(() => team.get_members_and_resources.fetch())
+	}
+	team.addResources = (resources) => {
+		return team.add_team_resources
+			.submit({ resources })
 			.then(() => team.get_members_and_resources.fetch())
 	}
 
