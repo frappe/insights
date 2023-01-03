@@ -8,7 +8,9 @@
 			<div class="flex flex-col space-y-3">
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Left Table</div>
-					<Input v-model="editTable.label" disabled class="h-8 cursor-not-allowed" />
+					<LinkIcon :link="getQueryLink(editTable.table)" :show="editTable.label">
+						<Input v-model="editTable.label" disabled class="h-8 cursor-not-allowed" />
+					</LinkIcon>
 				</div>
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Join Type</div>
@@ -20,11 +22,13 @@
 				</div>
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Right Table</div>
-					<Autocomplete
-						v-model="join.with"
-						:options="query.tables.joinOptions"
-						placeholder="Select a table..."
-					/>
+					<LinkIcon :link="getQueryLink(editTable.table)" :show="editTable.label">
+						<Autocomplete
+							v-model="join.with"
+							:options="query.tables.joinOptions"
+							placeholder="Select a table..."
+						/>
+					</LinkIcon>
 				</div>
 				<div class="text-sm text-gray-600">
 					<div class="flex items-end space-x-1">
@@ -64,6 +68,7 @@
 
 <script setup>
 import { ref, inject, watch } from 'vue'
+import LinkIcon from '@/components/Controls/LinkIcon.vue'
 
 const emits = defineEmits(['close'])
 const props = defineProps({
@@ -136,5 +141,13 @@ function clear_join() {
 	editTable.value.join = ''
 	query.updateTable.submit({ table: editTable.value })
 	emits('close')
+}
+
+function getQueryLink(table) {
+	// returns a link to the query if the table is a query eg. Query Store queries
+	if (table.startsWith('QRY')) {
+		return `/query/${table}`
+	}
+	return ''
 }
 </script>
