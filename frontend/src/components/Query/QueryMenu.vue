@@ -47,6 +47,11 @@
 					handler: downloadCSV,
 				},
 				{
+					label: 'Share',
+					icon: 'share-2',
+					handler: () => (show_share_dialog = true),
+				},
+				{
 					label: 'Delete',
 					icon: 'trash-2',
 					handler: () => (show_delete_dialog = true),
@@ -168,9 +173,16 @@
 			</template>
 		</Dialog>
 	</div>
+
+	<ShareDialog
+		v-model:show="show_share_dialog"
+		:resource-type="query.doc.doctype"
+		:resource-name="query.doc.name"
+	/>
 </template>
 
 <script setup>
+import ShareDialog from '@/components/ShareDialog.vue'
 import { ref, inject, computed, nextTick, reactive } from 'vue'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { useRouter } from 'vue-router'
@@ -181,6 +193,7 @@ const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_pivot_dialog = ref(false)
+const show_share_dialog = ref(false)
 
 const pivot = reactive({
 	column: null,

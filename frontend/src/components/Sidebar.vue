@@ -46,7 +46,7 @@
 import { Avatar } from 'frappe-ui'
 import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
@@ -54,7 +54,7 @@ import { getOnboardingStatus } from '@/utils/onboarding'
 
 const sidebarItems = ref([
 	{
-		path: '/dashboards',
+		path: '/dashboard',
 		label: 'Dashboards',
 		icon: 'bar-chart-2',
 		name: 'Dashboard',
@@ -94,6 +94,25 @@ getOnboardingStatus().then((onboardingComplete) => {
 		})
 	}
 })
+watch(
+	() => auth.user.is_admin,
+	(isAdmin) => {
+		if (isAdmin) {
+			// add teams item after settings item
+			if (sidebarItems.value.find((item) => item.name === 'Teams')) {
+				return
+			}
+			const settingsIndex = sidebarItems.value.findIndex((item) => item.name === 'Settings')
+			sidebarItems.value.splice(settingsIndex, 0, {
+				path: '/teams',
+				label: 'Teams',
+				icon: 'users',
+				name: 'Teams',
+				current: false,
+			})
+		}
+	}
+)
 
 const route = useRoute()
 const currentRoute = computed(() => {

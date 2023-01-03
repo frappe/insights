@@ -71,7 +71,8 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # ------------
 
 # before_install = "insights.install.before_install"
-after_install = "insights.setup.after_install"
+# after_install = "insights.setup.after_install"
+after_migrate = ["insights.migrate.after_migrate"]
 
 fixtures = ["Insights Data Source"]
 
@@ -95,9 +96,12 @@ fixtures = ["Insights Data Source"]
 # 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 # }
 #
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+has_permission = {
+    "Insights Data Source": "insights.overrides.has_permission",
+    "Insights Table": "insights.overrides.has_permission",
+    "Insights Query": "insights.overrides.has_permission",
+    "Insights Dashboard": "insights.overrides.has_permission",
+}
 
 # DocType Class
 # ---------------

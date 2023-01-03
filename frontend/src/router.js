@@ -31,7 +31,7 @@ const routes = [
 		component: () => import('@/pages/GetStarted.vue'),
 	},
 	{
-		path: '/dashboards',
+		path: '/dashboard',
 		name: 'Dashboards',
 		component: () => import('@/dashboard/Dashboards.vue'),
 	},
@@ -70,14 +70,17 @@ const routes = [
 		component: () => import('@/pages/Query.vue'),
 	},
 	{
+		path: '/teams',
+		name: 'Teams',
+		component: () => import('@/pages/Teams.vue'),
+		meta: {
+			isAllowed: () => auth.user.is_admin,
+		},
+	},
+	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
-	},
-	{
-		path: '/settings/running-queries',
-		name: 'Running Queries',
-		component: () => import('@/pages/RunningQueries.vue'),
 	},
 	{
 		path: '/no-permission',
@@ -113,11 +116,14 @@ router.beforeEach(async (to, from, next) => {
 		return next(false)
 	}
 
-	const hasPermission = await auth.hasPermission('Query')
-	if (!hasPermission && to.name !== 'No Permission') {
+	const isAuthorized = await auth.isAuthorized()
+	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
-	if (hasPermission && to.name === 'No Permission') {
+	if (isAuthorized && to.name === 'No Permission') {
+		return next('/not-found')
+	}
+	if (to.meta.isAllowed && !to.meta.isAllowed()) {
 		return next('/not-found')
 	}
 
@@ -133,7 +139,7 @@ router.beforeEach(async (to, from, next) => {
 	// redirect to /dashboard if onboarding is complete
 	const onboardingComplete = await getOnboardingStatus()
 	if (onboardingComplete && to.name == 'Get Started') {
-		return next('/dashboards')
+		return next('/dashboard')
 	}
 
 	if (to.path === '/login') {

@@ -8,6 +8,9 @@ import frappe
 from frappe.model.document import Document
 
 from insights.cache_utils import get_or_set_cache, make_cache_key
+from insights.insights.doctype.insights_team.insights_team import (
+    get_allowed_resources_for_user,
+)
 
 from .utils import convert_into_simple_filter, convert_to_expression, get_item_position
 
@@ -18,9 +21,13 @@ class InsightsDashboard(Document):
         charts = [
             row.chart for row in self.items if row.item_type == "Chart" and row.chart
         ]
-        return frappe.get_all(
+        allowed_queries = get_allowed_resources_for_user("Insights Query")
+        return frappe.get_list(
             "Insights Query Chart",
-            filters={"name": ("not in", charts), "type": ["!=", "Pivot"]},
+            filters={
+                "name": ("not in", charts),
+                "query": ["in", allowed_queries],
+            },
             fields=["name", "title", "type"],
         )
 
@@ -115,6 +122,9 @@ class InsightsDashboard(Document):
         row = next((row for row in self.items if row.chart == chart), None)
         if not row:
             return
+
+        if row.query not in get_allowed_resources_for_user("Insights Query"):
+            frappe.throw("Not allowed", frappe.PermissionError)
 
         chart_filters = self.get_chart_filters(row.chart)
         if not chart_filters:

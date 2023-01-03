@@ -78,5 +78,7 @@ def create_insights_table(table, force=False):
         if column.column not in column_names:
             doc.remove(column)
 
-    doc.save()
+    # need to ignore permissions when creating/updating a table in query store
+    # a user may have access to create a query and store it, but not to create a table
+    doc.save(ignore_permissions=force)
     return doc.name

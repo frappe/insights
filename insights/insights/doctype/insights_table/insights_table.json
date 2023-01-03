@@ -73,7 +73,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-18 00:38:47.263363",
+ "modified": "2022-12-25 18:19:46.657677",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table",
@@ -104,6 +104,7 @@
    "write": 1
   }
  ],
+ "search_fields": "label, data_source",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

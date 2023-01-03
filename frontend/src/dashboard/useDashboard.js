@@ -1,8 +1,6 @@
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive } from 'vue'
 import { safeJSONParse } from '@/utils'
-import { createDocumentResource, call, debounce } from 'frappe-ui'
-import settings from '@/utils/settings'
-import dayjs from '@/utils/dayjs'
+import { createDocumentResource, debounce } from 'frappe-ui'
 
 export default function useDashboard(dashboardName) {
 	const dashboard = fetchDashboard(dashboardName)
