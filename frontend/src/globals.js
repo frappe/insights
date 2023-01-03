@@ -9,6 +9,7 @@ import {
 	Dropdown,
 	Badge,
 	Avatar,
+	LoadingIndicator,
 } from 'frappe-ui'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
@@ -20,13 +21,14 @@ import dayjs from './utils/dayjs'
 
 export function registerGlobalComponents(app) {
 	app.component('Input', Input)
+	app.component('Badge', Badge)
 	app.component('Button', Button)
 	app.component('Dialog', Dialog)
 	app.component('Avatar', Avatar)
 	app.component('Popover', Popover)
 	app.component('Checkbox', Checkbox)
 	app.component('Dropdown', Dropdown)
-	app.component('Badge', Badge)
+	app.component('LoadingIndicator', LoadingIndicator)
 	app.component('Autocomplete', Autocomplete)
 	app.component('ErrorMessage', ErrorMessage)
 	app.component('FeatherIcon', FeatherIcon)

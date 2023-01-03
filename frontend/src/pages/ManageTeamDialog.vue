@@ -2,7 +2,10 @@
 	<Dialog :options="{ title: `Manage ${team.doc?.team_name} Team`, size: '3xl' }" v-model="show">
 		<template #body>
 			<div class="flex h-[70vh] text-base">
-				<ManageTeamSidebar @change="currentSidebarItem = $event"></ManageTeamSidebar>
+				<ManageTeamSidebar
+					@change="currentSidebarItem = $event"
+					@delete-team="show = false"
+				></ManageTeamSidebar>
 				<div class="flex w-3/4 space-y-4 overflow-y-scroll p-5">
 					<ManageTeamMembers v-if="currentSidebarItem == 'Members'" />
 					<ManageTeamResourceAccess
@@ -18,18 +21,6 @@
 						"
 					/>
 				</div>
-			</div>
-		</template>
-		<template #actions>
-			<div class="flex justify-end space-x-2">
-				<Button appearance="white" @click="emit('close')">Close</Button>
-				<Button
-					appearance="white"
-					class="!text-red-500"
-					@click="team.deleteTeam().then(() => emit('close'))"
-				>
-					Delete Team
-				</Button>
 			</div>
 		</template>
 	</Dialog>

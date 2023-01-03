@@ -17,20 +17,14 @@ export function showPrompt(promptOptions) {
 		icon: promptOptions.icon,
 		actions: [
 			{
+				...promptOptions.primaryAction,
 				label: promptOptions.primaryAction.label,
-				appearance: promptOptions.primaryAction.appearance,
-				handler: () => {
-					prompt.show = false
-					promptOptions.primaryAction.action()
-				},
+				handler: promptOptions.primaryAction.action,
 			},
 			{
+				...promptOptions.secondaryAction,
 				label: promptOptions.secondaryAction?.label || 'Cancel',
-				appearance: promptOptions.secondaryAction?.appearance,
-				handler: () => {
-					prompt.show = false
-					promptOptions.secondaryAction?.action()
-				},
+				handler: promptOptions.secondaryAction?.action,
 			},
 		],
 	}

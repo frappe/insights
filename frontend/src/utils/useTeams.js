@@ -52,12 +52,12 @@ export function useTeam(teamname) {
 	team.addMember = (member) => {
 		return team.add_team_member
 			.submit({ user: member })
-			.then(() => team.get_members_and_resources.fetch())
+			.then(team.get_members_and_resources.fetch)
 	}
 	team.addMembers = (members) => {
 		return team.add_team_members
 			.submit({ users: members })
-			.then(() => team.get_members_and_resources.fetch())
+			.then(team.get_members_and_resources.fetch)
 	}
 
 	team.removeMember = (member) => {
@@ -68,10 +68,11 @@ export function useTeam(teamname) {
 			primaryAction: {
 				label: 'Remove',
 				appearance: 'danger',
-				action: () => {
+				action: ({ close }) => {
 					return team.remove_team_member
 						.submit({ user: member })
-						.then(() => team.get_members_and_resources.fetch())
+						.then(team.get_members_and_resources.fetch)
+						.then(close)
 				},
 			},
 		})
@@ -90,24 +91,22 @@ export function useTeam(teamname) {
 	team.addResource = (resource) => {
 		return team.add_team_resource
 			.submit({ resource })
-			.then(() => team.get_members_and_resources.fetch())
+			.then(team.get_members_and_resources.fetch)
 	}
 	team.addResources = (resources) => {
 		return team.add_team_resources
 			.submit({ resources })
-			.then(() => team.get_members_and_resources.fetch())
+			.then(team.get_members_and_resources.fetch)
 	}
 
 	team.removeResource = (resource) => {
 		return team.remove_team_resource
 			.submit({ resource })
-			.then(() => team.get_members_and_resources.fetch())
+			.then(team.get_members_and_resources.fetch)
 	}
 
 	team.deleteTeam = () => {
-		return team.delete_team.submit().then(() => {
-			teamListResource.fetch()
-		})
+		return team.delete_team.submit().then(teamListResource.fetch)
 	}
 
 	return team

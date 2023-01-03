@@ -13,8 +13,16 @@ const memberOptions = computed(() => {
 		}
 	})
 })
+const addingMember = ref(false)
 function addMembers(members) {
+	addingMember.value = true
 	team.addMembers(members.map((member) => member.value))
+		.then(() => {
+			addingMember.value = false
+		})
+		.catch(() => {
+			addingMember.value = false
+		})
 	selectedMembers.value = []
 }
 </script>
@@ -55,6 +63,9 @@ function addMembers(members) {
 					></Button>
 				</div>
 			</div>
+		</div>
+		<div v-else-if="addingMember" class="flex flex-1 items-center justify-center text-gray-400">
+			<LoadingIndicator class="h-6 w-6" />
 		</div>
 		<div
 			v-else
