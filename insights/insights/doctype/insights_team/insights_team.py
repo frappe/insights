@@ -164,7 +164,10 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
     if source_name not in allowed_sources:
         if raise_error:
-            frappe.throw("You do not have permission to access this data source")
+            frappe.throw(
+                "You do not have permission to access this data source",
+                exc=frappe.PermissionError,
+            )
         else:
             return False
 
@@ -183,6 +186,9 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
 
     if table_name not in allowed_tables:
         if raise_error:
-            frappe.throw("You do not have permission to access this table")
+            frappe.throw(
+                "You do not have permission to access this table",
+                exc=frappe.PermissionError,
+            )
         else:
             return False
