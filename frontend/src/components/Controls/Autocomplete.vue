@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import {
 	Combobox,
 	ComboboxLabel,
