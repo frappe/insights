@@ -22,14 +22,17 @@ class InsightsTeam(InsightsTeamClient, Document):
         if self.name != "Admin":
             return
 
+        admin_users = get_users_with_role("Insights Admin")
+
         # add Insights Admin role to all team members of Admin team
-        for member in self.team_members:
-            user = frappe.get_cached_doc("User", member.user)
+        members_user = [m.user for m in self.team_members]
+        members_minus_admin = list(set(members_user) - set(admin_users))
+        for user in members_minus_admin:
+            user = frappe.get_cached_doc("User", user)
             user.append_roles("Insights Admin")
             user.save()
 
         # remove Insights Admin role from all users who are not in Admin team
-        admin_users = get_users_with_role("Insights Admin")
         for user in frappe.get_all(
             "Insights Team Member",
             filters={"parent": ["!=", "Admin"], "user": ["in", admin_users]},
