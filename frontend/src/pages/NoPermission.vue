@@ -6,6 +6,7 @@
 				Permission Denied
 			</h1>
 			<div class="text-xl font-light">You don't have permission to access this page.</div>
+			<router-link to="/" class="mt-2 text-lg text-blue-600 underline"> Go Back </router-link>
 		</div>
 	</div>
 </template>

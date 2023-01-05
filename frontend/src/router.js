@@ -121,10 +121,10 @@ router.beforeEach(async (to, from, next) => {
 		return next('/no-permission')
 	}
 	if (isAuthorized && to.name === 'No Permission') {
-		return next('/not-found')
+		return next()
 	}
 	if (to.meta.isAllowed && !to.meta.isAllowed()) {
-		return next('/not-found')
+		return next('/no-permission')
 	}
 
 	// force redirect to Setup page if database not set up yet
