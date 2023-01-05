@@ -137,10 +137,10 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	// redirect to /dashboard if onboarding is complete
-	// const onboardingComplete = await getOnboardingStatus()
-	// if (onboardingComplete && to.name == 'Get Started') {
-	// 	return next('/dashboard')
-	// }
+	const onboardingComplete = await getOnboardingStatus()
+	if (onboardingComplete && to.name == 'Get Started') {
+		return next('/dashboard')
+	}
 
 	if (to.path === '/login') {
 		next('/')
