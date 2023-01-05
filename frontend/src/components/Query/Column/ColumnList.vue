@@ -14,6 +14,7 @@
 			v-model="columns"
 			group="columns"
 			item-key="name"
+			handle=".handle"
 			@sort="updateColumnOrder"
 		>
 			<template #item="{ element: column }">
@@ -28,7 +29,7 @@
 					"
 				>
 					<DragHandleIcon
-						class="mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400"
+						class="handle mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400"
 					/>
 					<span
 						class="overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"
