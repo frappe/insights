@@ -10,24 +10,24 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex flex-1 flex-col">
-				<div class="mb-4 flex space-x-4">
+			<div class="flex flex-1 flex-col overflow-hidden">
+				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="text" placeholder="Team Name" />
 				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
+				<div class="flex flex-1 flex-col rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
 						<p class="flex-1 flex-shrink-0">Team Name</p>
 						<p class="flex-1 flex-shrink-0">Members</p>
-						<p class="flex-1 flex-shrink-0">Data Sources</p>
-						<p class="flex-1 flex-shrink-0">Tables</p>
-						<p class="flex-1 flex-shrink-0">Queries</p>
-						<p class="flex-1 flex-shrink-0">Dashboards</p>
+						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Data Sources</p>
+						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Tables</p>
+						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Queries</p>
+						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Dashboards</p>
 					</div>
 					<ul
 						role="list"
@@ -60,22 +60,22 @@
 									<span v-else> - </span>
 								</p>
 								<p
-									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
 								>
 									{{ team.source_count }}
 								</p>
 								<p
-									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
 								>
 									{{ team.table_count }}
 								</p>
 								<p
-									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
 								>
 									{{ team.query_count }}
 								</p>
 								<p
-									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
 								>
 									{{ team.dashboard_count }}
 								</p>

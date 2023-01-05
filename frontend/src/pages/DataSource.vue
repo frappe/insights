@@ -38,8 +38,8 @@
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSource.tables" class="flex flex-1 flex-col pt-2">
-				<div class="mb-4 flex space-x-4">
+			<div v-if="dataSource.tables" class="flex flex-1 flex-col overflow-hidden pt-2">
+				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="text" placeholder="Label" v-model="labelFilter" />
 					<Input
 						type="select"
@@ -48,10 +48,10 @@
 						:options="['Disabled', 'Enabled', 'All']"
 					/>
 				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
+				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />

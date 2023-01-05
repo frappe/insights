@@ -1,12 +1,12 @@
 <template>
-	<div class="mx-auto flex h-full w-full flex-col space-y-4 px-6 py-4">
-		<div class="flex h-12 items-center justify-between">
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
+		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
 			<Button appearance="white" iconLeft="plus" class="shadow-sm" @click="showDialog = true">
 				Create New
 			</Button>
 		</div>
-		<div class="flex h-[calc(100%-3rem)] flex-col overflow-scroll">
+		<div class="flex flex-1 flex-col overflow-scroll">
 			<DashboardsGroup :dashboards="favorites" title="Favorites" />
 			<DashboardsGroup :dashboards="dashboards" title="All" />
 		</div>

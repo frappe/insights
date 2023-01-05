@@ -43,21 +43,19 @@
 		<template #main>
 			<div
 				v-if="doc && doc.columns && dataSourceTable.rows?.data && !dataSourceTable.syncing"
-				class="flex h-full w-full flex-col pt-1"
+				class="flex flex-col overflow-hidden pt-1"
 			>
-				<div class="flex h-6 space-x-1 text-sm font-light text-gray-600">
+				<div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
 					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
 				</div>
-				<div class="h-[calc(100%-1.5rem)] w-full">
-					<Grid :header="true" :rows="dataSourceTable.rows.data">
-						<template #header>
-							<DataSourceTableColumnHeader
-								:columns="doc.columns"
-								@update-column-type="dataSourceTable.updateColumnType"
-							/>
-						</template>
-					</Grid>
-				</div>
+				<Grid :header="true" :rows="dataSourceTable.rows.data">
+					<template #header>
+						<DataSourceTableColumnHeader
+							:columns="doc.columns"
+							@update-column-type="dataSourceTable.updateColumnType"
+						/>
+					</template>
+				</Grid>
 			</div>
 			<div
 				v-else

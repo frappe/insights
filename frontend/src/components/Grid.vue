@@ -1,8 +1,12 @@
 <template>
-	<div class="h-full w-full rounded-md border px-2 py-3">
+	<div class="relative flex flex-1 overflow-hidden rounded-md border px-2 py-3">
 		<div
-			class="relative flex h-[calc(100%-1rem)] w-full flex-col overflow-scroll text-base scrollbar-hide"
+			v-if="props.rows.length == 0"
+			class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-500"
 		>
+			<span>No Data</span>
+		</div>
+		<div class="flex flex-1 flex-col overflow-scroll text-base scrollbar-hide">
 			<table>
 				<thead class="sticky top-0" v-if="props.header">
 					<tr>
@@ -28,12 +32,6 @@
 					</tr>
 				</tbody>
 			</table>
-			<div
-				v-if="props.rows.length == 0"
-				class="mt-2 flex h-[calc(100%-1.5rem)] w-full items-center justify-center text-lg font-light text-gray-500"
-			>
-				No Data
-			</div>
 		</div>
 	</div>
 </template>

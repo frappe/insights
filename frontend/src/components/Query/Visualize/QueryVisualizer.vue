@@ -1,7 +1,11 @@
 <template>
-	<div class="flex h-full items-start pt-2">
-		<div class="flex h-full w-[18rem] flex-col pr-4">
-			<div class="mb-3">
+	<div
+		class="flex flex-1 flex-col items-start space-y-4 overflow-scroll pt-2 scrollbar-hide xl:flex-row xl:space-y-0 xl:overflow-hidden"
+	>
+		<div
+			class="flex w-full flex-shrink-0 flex-col overflow-hidden xl:h-full xl:w-[18rem] xl:pr-4"
+		>
+			<div class="mb-3 flex-shrink-0">
 				<div class="mb-2 text-sm tracking-wide text-gray-600">CHART TYPE</div>
 				<ChartSelector
 					v-if="types?.length > 0"
@@ -12,13 +16,17 @@
 				/>
 			</div>
 
-			<div class="flex-1 space-y-3 overflow-y-scroll">
+			<div class="flex flex-1 flex-col overflow-hidden">
 				<div class="mb-2 text-sm tracking-wide text-gray-600">CHART OPTIONS</div>
 				<ChartOptions :chartType="chart.type" />
 			</div>
 		</div>
-		<div class="flex h-full w-[calc(100%-18rem)] flex-col space-y-4">
-			<div class="flex space-x-2" v-if="chart.component && chart.componentProps">
+
+		<div
+			class="flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden xl:w-auto"
+			v-if="chart.component && chart.componentProps"
+		>
+			<div class="flex flex-shrink-0 space-x-2">
 				<Button
 					appearance="white"
 					@click="showDashboardDialog = true"
@@ -46,14 +54,16 @@
 					Save
 				</Button>
 			</div>
-			<div class="flex max-h-[30rem] flex-1 items-center justify-center">
+			<div class="flex flex-1 flex-col items-center justify-center overflow-hidden">
 				<component
-					v-if="chart.component && chart.componentProps"
 					ref="eChart"
 					:is="chart.component"
 					v-bind="chart.componentProps"
 				></component>
 			</div>
+		</div>
+		<div class="flex flex-1 flex-col items-center justify-center" v-else>
+			<div class="text-sm text-gray-500">No chart to display</div>
 		</div>
 	</div>
 

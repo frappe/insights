@@ -1,14 +1,10 @@
 <template>
-	<div class="flex h-[calc(100%)] min-h-[38rem] flex-col bg-white p-5">
-		<!-- 1.25rem -->
+	<div class="flex flex-1 flex-col overflow-hidden bg-white p-5">
 		<Breadcrumbs v-if="routes.length > 1" :routes="routes" />
 		<header class="flex h-10 flex-shrink-0 overflow-visible">
 			<slot name="header" />
 		</header>
-		<main
-			class="flex"
-			:class="[routes.length > 1 ? 'h-[calc(100%-3.75rem)]' : 'h-[calc(100%-2.5rem)]']"
-		>
+		<main class="flex flex-1 overflow-hidden">
 			<slot name="main" />
 		</main>
 	</div>

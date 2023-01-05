@@ -1,9 +1,12 @@
 <template>
-	<div class="flex w-60 flex-col bg-gray-50" v-if="currentRoute">
-		<div class="flex flex-grow flex-col overflow-y-auto p-4 pl-4 pr-2">
-			<div class="flex h-6 flex-shrink-0 items-end text-sm text-gray-500">
+	<div class="flex w-16 flex-shrink-0 flex-col bg-gray-50 xl:w-60" v-if="currentRoute">
+		<div class="flex flex-grow flex-col overflow-y-auto p-4">
+			<div class="hidden flex-shrink-0 items-end text-sm text-gray-500 xl:flex">
 				<FrappeInsightsLogo />
 				<span class="ml-1">{{ appVersion }}</span>
+			</div>
+			<div class="flex xl:hidden">
+				<img src="../assets/frappe-framework-logo.svg" />
 			</div>
 			<div class="mt-4 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
@@ -15,7 +18,7 @@
 							route.current
 								? 'bg-gray-200/70'
 								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-							'group flex items-center rounded-md px-2 py-2 font-medium',
+							'group -mx-1 flex items-center justify-center rounded-md p-2 font-medium xl:justify-start',
 						]"
 						aria-current="page"
 					>
@@ -25,18 +28,23 @@
 								route.current
 									? 'text-gray-600'
 									: 'text-gray-500 group-hover:text-gray-600',
-								'mr-3 h-4 w-4 flex-shrink-0',
+								'mr-0 h-5 w-5 flex-shrink-0 xl:mr-3 xl:h-4 xl:w-4',
 							]"
 						/>
-						{{ route.label }}
+						<span class="hidden xl:inline-block">{{ route.label }}</span>
 					</router-link>
 				</nav>
 			</div>
 
 			<div class="flex items-center text-base text-gray-600">
 				<Avatar :label="auth.user.full_name" :imageURL="auth.user.user_image" />
-				<span class="ml-2">{{ auth.user.full_name }}</span>
-				<Button icon="log-out" appearance="minimal" class="ml-auto" @click="auth.logout" />
+				<span class="ml-2 hidden xl:inline-block">{{ auth.user.full_name }}</span>
+				<Button
+					icon="log-out"
+					appearance="minimal"
+					class="ml-auto hidden xl:flex"
+					@click="auth.logout"
+				/>
 			</div>
 		</div>
 	</div>

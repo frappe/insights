@@ -1,10 +1,7 @@
 <template>
-	<div class="flex h-full w-full text-base">
+	<div class="flex flex-1 overflow-hidden text-base">
 		<Sidebar v-if="!hideSidebar" />
-		<div
-			class="flex flex-1 flex-col pl-2"
-			:class="[hideSidebar ? 'w-[calc(100%-1rem)]' : 'w-[calc(100%-15rem)]']"
-		>
+		<div class="flex flex-1 flex-col overflow-hidden">
 			<RouterView :key="$route.fullPath" />
 		</div>
 	</div>

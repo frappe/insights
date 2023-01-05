@@ -11,21 +11,21 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex flex-1 flex-col">
-				<div class="mb-4 flex space-x-4">
+			<div class="flex flex-1 flex-col overflow-hidden">
+				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="select" :options="['Active', 'Inactive']" />
 				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
+				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
 						<p class="flex-1">Title</p>
 						<p class="flex-1">Status</p>
-						<p class="flex-1">Database Type</p>
+						<p class="hidden flex-1 xl:inline-block">Database Type</p>
 						<p class="flex-1 text-right">Created</p>
 					</div>
 					<ul
@@ -57,7 +57,9 @@
 										{{ source.status }}
 									</Badge>
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+								>
 									{{ source.database_type }}
 								</p>
 								<p

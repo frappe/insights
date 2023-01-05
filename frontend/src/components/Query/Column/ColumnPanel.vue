@@ -1,5 +1,7 @@
 <template>
-	<div class="flex h-full w-1/3 flex-col overflow-scroll px-4 pb-2 scrollbar-hide">
+	<div
+		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide xl:w-1/3 xl:px-4 xl:pb-2"
+	>
 		<div v-if="!addingColumn && !editingColumn" class="flex h-full w-full flex-col">
 			<div class="pb-3 pt-1">
 				<div class="flex items-center justify-between bg-white">
