@@ -9,6 +9,7 @@
   "onboarding_section",
   "setup_complete",
   "onboarding_complete",
+  "use_cte",
   "auto_execute_query",
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry"
@@ -47,12 +48,18 @@
    "fieldname": "query_result_expiry",
    "fieldtype": "Int",
    "label": "Cache Query Results For (Minutes)"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_cte",
+   "fieldtype": "Check",
+   "label": "Use CTE"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-12-01 20:50:00.029125",
+ "modified": "2023-01-08 21:01:07.662147",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

@@ -116,7 +116,11 @@
 			</template>
 		</Dialog>
 
-		<Dialog :options="{ title: 'Generated SQL' }" v-model="show_sql_dialog" :dismissable="true">
+		<Dialog
+			:options="{ title: 'Generated SQL', size: '3xl' }"
+			v-model="show_sql_dialog"
+			:dismissable="true"
+		>
 			<template #body-content>
 				<div class="relative">
 					<p

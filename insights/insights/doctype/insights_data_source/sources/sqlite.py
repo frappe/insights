@@ -107,9 +107,10 @@ class SQLiteDB(BaseDatabase):
             return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def validate_query(self, query):
-        if not str(query).strip().lower().startswith("select"):
+        select_or_with = str(query).strip().lower().startswith(("select", "with"))
+        if not select_or_with:
             raise frappe.ValidationError(
-                "Only SELECT statements are allowed in Query Store"
+                "Only SELECT and WITH queries are allowed in SQLite data sources."
             )
 
     def sync_tables(self, tables=None, force=False):

@@ -105,6 +105,9 @@ class InsightsDataSource(Document):
     def run_query(self, query: InsightsQuery):
         return self.db.run_query(query)
 
+    def execute_query(self, query: str, **kwargs):
+        return self.db.execute_query(query, **kwargs)
+
     @task(queue="short")
     def sync_tables(self, *args, **kwargs):
         self.db.sync_tables(*args, **kwargs)
