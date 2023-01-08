@@ -84,7 +84,12 @@ class QueryStore(SQLiteDB):
             self.table_factory.sync_tables(connection, tables, force=force)
 
     def execute_query(self, query, pluck=False):
-        table_query_map, data_source = get_table_query_map(query)
+        try:
+            table_query_map, data_source = get_table_query_map(query)
+        except Exception:
+            frappe.log_error(title="Query Store: Invalid Query")
+            return super().execute_query(query, pluck=pluck)
+
         if not table_query_map or not frappe.db.get_single_value(
             "Insights Settings", "use_cte"
         ):
