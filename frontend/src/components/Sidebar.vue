@@ -10,29 +10,35 @@
 			</div>
 			<div class="mt-4 flex flex-grow flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
-					<router-link
+					<Tooltip
 						v-for="route in sidebarItems"
+						:text="route.label"
 						:key="route.path"
-						:to="route.path"
-						:class="[
-							route.current
-								? 'bg-gray-200/70'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-							'group -mx-1 flex items-center justify-center rounded-md p-2 font-medium xl:justify-start',
-						]"
-						aria-current="page"
+						placement="right"
+						:hoverDelay="0.1"
 					>
-						<FeatherIcon
-							:name="route.icon"
+						<router-link
+							:to="route.path"
 							:class="[
 								route.current
-									? 'text-gray-600'
-									: 'text-gray-500 group-hover:text-gray-600',
-								'mr-0 h-5 w-5 flex-shrink-0 xl:mr-3 xl:h-4 xl:w-4',
+									? 'bg-gray-200/70'
+									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
+								'group -mx-1 flex items-center justify-center rounded-md p-2 font-medium xl:justify-start',
 							]"
-						/>
-						<span class="hidden xl:inline-block">{{ route.label }}</span>
-					</router-link>
+							aria-current="page"
+						>
+							<FeatherIcon
+								:name="route.icon"
+								:class="[
+									route.current
+										? 'text-gray-600'
+										: 'text-gray-500 group-hover:text-gray-600',
+									'mr-0 h-5 w-5 flex-shrink-0 xl:mr-3 xl:h-4 xl:w-4',
+								]"
+							/>
+							<span class="hidden xl:inline-block">{{ route.label }}</span>
+						</router-link>
+					</Tooltip>
 				</nav>
 			</div>
 

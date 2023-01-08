@@ -25,7 +25,7 @@
 						</p>
 						<p class="flex-1">Title</p>
 						<p class="flex-1">Status</p>
-						<p class="hidden flex-1 xl:inline-block">Database Type</p>
+						<p class="hidden flex-1 lg:inline-block">Database Type</p>
 						<p class="flex-1 text-right">Created</p>
 					</div>
 					<ul
@@ -58,7 +58,7 @@
 									</Badge>
 								</p>
 								<p
-									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ source.database_type }}
 								</p>

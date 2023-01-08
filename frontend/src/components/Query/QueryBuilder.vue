@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-1 flex-col overflow-scroll scrollbar-hide">
-		<div class="flex flex-1 flex-shrink-0 flex-col xl:flex-row">
+		<div class="flex flex-1 flex-shrink-0 flex-col lg:flex-row">
 			<TablePanel />
 			<ColumnPanel />
 			<FilterPanel />

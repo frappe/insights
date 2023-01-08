@@ -1,9 +1,9 @@
 <template>
 	<div
-		class="flex flex-1 flex-col items-start space-y-4 overflow-scroll pt-2 scrollbar-hide xl:flex-row xl:space-y-0 xl:overflow-hidden"
+		class="flex flex-1 flex-col items-start space-y-4 overflow-scroll pt-2 scrollbar-hide lg:flex-row lg:space-y-0 lg:overflow-hidden"
 	>
 		<div
-			class="flex w-full flex-shrink-0 flex-col overflow-hidden xl:h-full xl:w-[18rem] xl:pr-4"
+			class="flex w-full flex-shrink-0 flex-col overflow-hidden lg:h-full lg:w-[18rem] lg:pr-4"
 		>
 			<div class="mb-3 flex-shrink-0">
 				<div class="mb-2 text-sm tracking-wide text-gray-600">CHART TYPE</div>
@@ -23,7 +23,7 @@
 		</div>
 
 		<div
-			class="flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden xl:w-auto"
+			class="flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 			v-if="chart.component && chart.componentProps"
 		>
 			<div class="flex flex-shrink-0 space-x-2">

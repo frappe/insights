@@ -9,6 +9,7 @@ import {
 	Dropdown,
 	Badge,
 	Avatar,
+	Tooltip,
 	LoadingIndicator,
 } from 'frappe-ui'
 import Checkbox from '@/components/Controls/Checkbox.vue'
@@ -26,6 +27,7 @@ export function registerGlobalComponents(app) {
 	app.component('Dialog', Dialog)
 	app.component('Avatar', Avatar)
 	app.component('Popover', Popover)
+	app.component('Tooltip', Tooltip)
 	app.component('Checkbox', Checkbox)
 	app.component('Dropdown', Dropdown)
 	app.component('LoadingIndicator', LoadingIndicator)

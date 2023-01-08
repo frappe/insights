@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide xl:w-1/3 xl:pb-2 xl:pr-4"
+		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide lg:w-1/3 lg:pb-2 lg:pr-4"
 	>
 		<!-- Picker -->
 		<div v-if="!selectedTable" class="flex flex-1 flex-col">

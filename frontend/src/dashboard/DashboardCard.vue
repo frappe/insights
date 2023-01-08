@@ -1,6 +1,6 @@
 <template>
 	<router-link
-		class="mb-4 flex w-full min-w-[16rem] cursor-pointer lg:w-1/3 xl:w-1/4"
+		class="mb-4 flex w-full min-w-[16rem] cursor-pointer md:w-1/3 lg:w-1/4"
 		:to="{
 			name: 'Dashboard',
 			params: { name: dashboard.name },

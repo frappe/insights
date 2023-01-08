@@ -10,7 +10,7 @@
 
 		<template #main>
 			<div
-				class="main flex flex-1 flex-col overflow-scroll rounded-md scrollbar-hide xl:overflow-hidden"
+				class="main flex flex-1 flex-col overflow-scroll rounded-md scrollbar-hide lg:overflow-hidden"
 			>
 				<QueryBuilder v-if="activeTab == 'Build'" />
 				<QueryVisualizer v-if="activeTab == 'Visualize'" />

@@ -6,7 +6,7 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex w-full flex-col space-y-6 xl:w-1/3" v-if="settings.doc">
+			<div class="flex w-full flex-col space-y-6 lg:w-1/3" v-if="settings.doc">
 				<div class="space-y-4">
 					<div class="text-sm tracking-wide text-gray-600">GENERAL</div>
 					<Input

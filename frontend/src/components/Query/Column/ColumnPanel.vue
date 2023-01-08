@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide xl:w-1/3 xl:px-4 xl:pb-2"
+		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide lg:w-1/3 lg:px-4 lg:pb-2"
 	>
 		<div v-if="!addingColumn && !editingColumn" class="flex h-full w-full flex-col">
 			<div class="pb-3 pt-1">

@@ -24,10 +24,10 @@
 						</p>
 						<p class="flex-1 flex-shrink-0">Team Name</p>
 						<p class="flex-1 flex-shrink-0">Members</p>
-						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Data Sources</p>
-						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Tables</p>
-						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Queries</p>
-						<p class="hidden flex-1 flex-shrink-0 xl:inline-block">Dashboards</p>
+						<p class="hidden flex-1 flex-shrink-0 lg:inline-block">Data Sources</p>
+						<p class="hidden flex-1 flex-shrink-0 lg:inline-block">Tables</p>
+						<p class="hidden flex-1 flex-shrink-0 lg:inline-block">Queries</p>
+						<p class="hidden flex-1 flex-shrink-0 lg:inline-block">Dashboards</p>
 					</div>
 					<ul
 						role="list"
@@ -60,22 +60,22 @@
 									<span v-else> - </span>
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ team.source_count }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ team.table_count }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ team.query_count }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ team.dashboard_count }}
 								</p>

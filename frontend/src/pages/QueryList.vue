@@ -31,10 +31,10 @@
 							<Input type="checkbox" class="rounded-md border-gray-400" />
 						</p>
 						<p class="flex-1 flex-grow-[2]">Title</p>
-						<p class="hidden flex-1 flex-grow-[2] xl:inline-block">Tables</p>
-						<p class="hidden flex-1 xl:inline-block">Chart Type</p>
+						<p class="hidden flex-1 flex-grow-[2] lg:inline-block">Tables</p>
+						<p class="hidden flex-1 lg:inline-block">Chart Type</p>
 						<p class="flex-1">Data Source</p>
-						<p class="hidden flex-1 xl:inline-block">ID</p>
+						<p class="hidden flex-1 lg:inline-block">ID</p>
 						<p class="flex-1 text-right">Created</p>
 					</div>
 					<ul
@@ -59,12 +59,12 @@
 									{{ query.title }}
 								</p>
 								<p
-									class="hidden flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ query.tables?.replace(/,/g, ', ') }}
 								</p>
 								<p
-									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ query.chart_type || '-' }}
 								</p>
@@ -72,7 +72,7 @@
 									{{ query.data_source }}
 								</p>
 								<p
-									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 xl:inline-block"
+									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ query.name }}
 								</p>
