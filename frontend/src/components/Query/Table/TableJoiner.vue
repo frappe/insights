@@ -22,7 +22,7 @@
 				</div>
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Right Table</div>
-					<LinkIcon :link="getQueryLink(editTable.table)" :show="editTable.label">
+					<LinkIcon :link="getQueryLink(join.with.value)" :show="join.with.label">
 						<Autocomplete
 							v-model="join.with"
 							:options="query.tables.joinOptions"
@@ -145,6 +145,7 @@ function clear_join() {
 }
 
 function getQueryLink(table) {
+	if (!table) return ''
 	// returns a link to the query if the table is a query eg. Query Store queries
 	if (table.startsWith('QRY')) {
 		return `/query/${table}`
