@@ -12,7 +12,7 @@
 					  }
 					: null,
 				{
-					label: 'Execute',
+					label: 'Execute (⌘+E)',
 					icon: 'play',
 					handler: query.execute,
 				},
@@ -187,9 +187,10 @@
 
 <script setup>
 import ShareDialog from '@/components/ShareDialog.vue'
-import { ref, inject, computed, nextTick, reactive } from 'vue'
+import { ref, inject, computed, nextTick, reactive, watch } from 'vue'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { useRouter } from 'vue-router'
+import { useMagicKeys } from '@vueuse/core'
 
 const query = inject('query')
 
@@ -198,6 +199,10 @@ const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_pivot_dialog = ref(false)
 const show_share_dialog = ref(false)
+
+const keys = useMagicKeys()
+const cmdE = keys['Meta+E']
+watch(cmdE, (value) => value && query.execute())
 
 const pivot = reactive({
 	column: null,
