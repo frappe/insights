@@ -21,7 +21,7 @@ class StoredQueryTableFactory:
         self.data_source = "Query Store"
 
     def import_query(self, query):
-        result = frappe.parse_json(query.results)
+        result = query.load_results(fetch_if_not_exists=True)
         if not result:
             return
         columns = [r.split("::")[0] for r in result[0]]

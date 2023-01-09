@@ -53,8 +53,12 @@ class InsightsQueryValidation:
     def validate_limit(self):
         if self.limit and self.limit < 1:
             frappe.throw("Limit must be greater than 0")
-        if self.limit and self.limit > 10000:
-            frappe.throw("Limit must be less than 10000")
+        limit = (
+            frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            or 10000
+        )
+        if self.limit and self.limit > limit:
+            frappe.throw(f"Limit must be less than {limit}")
 
     def validate_filters(self):
         if not self.filters:
@@ -98,17 +102,15 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     @property
     def results(self) -> str:
+        """Returns the 1000 rows of the query results"""
         try:
-            # fixme: find a better way to do this
-            cached_results = frappe.cache().get_value(f"insights_query|{self.name}")
+            cached_results = self.load_results()
             if cached_results:
-                return cached_results
+                return frappe.as_json(cached_results[:1000])
             if self.status != "Execution Successful":
-                return "[]"
+                return frappe.as_json([self._result_columns])
             results = self.fetch_results()
-            results = frappe.as_json(results)
-            frappe.cache().set_value(f"insights_query|{self.name}", results)
-            return results
+            return frappe.as_json(results[:1000])
         except Exception as e:
             print("Error getting results", e)
 
@@ -119,23 +121,40 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             self.sql = query
             self.status = "Pending Execution"
 
+    @property
+    def _result_columns(self):
+        return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
+
     def fetch_results(self):
         results = list(self._data_source.run_query(query=self))
-        columns = [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
-        results.insert(0, columns)
+        results.insert(0, self._result_columns)
         if self.transforms:
             results = self.apply_transform(results)
         if self.has_cumulative_columns():
             results = self.apply_cumulative_sum(results)
+        self.store_results(results)
         return results
 
     def build_and_execute(self):
         start = time.time()
-        results = self.fetch_results()
+        self.fetch_results()
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
         self.status = "Execution Successful"
-        frappe.cache().set_value(f"insights_query|{self.name}", frappe.as_json(results))
+
+    def store_results(self, results):
+        frappe.cache().set_value(
+            f"insights_query|{self.name}",
+            frappe.as_json(results),
+        )
+
+    def load_results(self, fetch_if_not_exists=False):
+        results = frappe.cache().get_value(f"insights_query|{self.name}")
+        if not results and fetch_if_not_exists:
+            results = self.fetch_results()
+        if not results:
+            return [self._result_columns]
+        return frappe.parse_json(results)
 
     def create_default_chart(self):
         charts = self.get_charts()

@@ -12,7 +12,8 @@
   "use_cte",
   "auto_execute_query",
   "auto_refresh_dashboard_in_minutes",
-  "query_result_expiry"
+  "query_result_expiry",
+  "query_result_limit"
  ],
  "fields": [
   {
@@ -54,12 +55,17 @@
    "fieldname": "use_cte",
    "fieldtype": "Check",
    "label": "Use CTE"
+  },
+  {
+   "fieldname": "query_result_limit",
+   "fieldtype": "Int",
+   "label": "Query Result Limit"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-01-08 21:01:07.662147",
+ "modified": "2023-01-09 12:34:33.142264",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

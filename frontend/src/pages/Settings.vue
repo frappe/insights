@@ -22,6 +22,13 @@
 						:value="settings.doc.query_result_expiry"
 						@change="(c) => settings.updateSettings({ query_result_expiry: c })"
 					/>
+					<Input
+						type="number"
+						min="0"
+						label="Max Query Results (Rows)"
+						:value="settings.doc.query_result_limit"
+						@change="(c) => settings.updateSettings({ query_result_limit: c })"
+					/>
 				</div>
 			</div>
 		</template>

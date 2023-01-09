@@ -13,4 +13,6 @@ class InsightsSettings(Document):
             self.auto_execute_query = settings.auto_execute_query
         if hasattr(settings, "query_result_expiry"):
             self.query_result_expiry = settings.query_result_expiry
+        if hasattr(settings, "query_result_limit"):
+            self.query_result_limit = settings.query_result_limit
         self.save()
