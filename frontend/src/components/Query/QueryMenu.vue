@@ -1,5 +1,9 @@
 <template>
-	<div class="h-fit">
+	<div class="flex space-x-2">
+		<Tooltip text="Only you have access to this query" :hoverDelay="0.1">
+			<Button icon="share-2" appearance="minimal" @click="() => (show_share_dialog = true)" />
+		</Tooltip>
+
 		<Dropdown
 			placement="left"
 			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
@@ -45,11 +49,6 @@
 					label: 'Download CSV',
 					icon: 'download',
 					handler: downloadCSV,
-				},
-				{
-					label: 'Share',
-					icon: 'share-2',
-					handler: () => (show_share_dialog = true),
 				},
 				{
 					label: 'Delete',

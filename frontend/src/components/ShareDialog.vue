@@ -11,7 +11,7 @@
 				/>
 				<div class="space-y-3">
 					<div class="font-medium text-gray-600">Teams with access</div>
-					<div class="space-y-3">
+					<div v-if="authorizedTeams.length > 0" class="space-y-3">
 						<div
 							class="flex items-center text-gray-600"
 							v-for="team in authorizedTeams"
@@ -29,6 +29,14 @@
 								@click="handleAccessRevoke(team.name)"
 							></Button>
 						</div>
+					</div>
+
+					<div
+						v-else
+						class="flex h-20 items-center justify-center rounded-md border-2 border-dashed text-sm font-light text-gray-400"
+					>
+						Only you have access to this
+						{{ resourceType.replace('Insights ', '').toLowerCase() }}
 					</div>
 				</div>
 			</div>
