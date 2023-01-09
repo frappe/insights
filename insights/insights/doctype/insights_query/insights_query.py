@@ -114,6 +114,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         except Exception as e:
             print("Error getting results", e)
 
+    @property
+    def results_row_count(self):
+        return len(self.load_results())
+
     def update_query(self):
         query = self._data_source.build_query(query=self)
         query = format_query(query)

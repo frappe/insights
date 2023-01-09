@@ -124,6 +124,6 @@ const executionTime = computed(() => {
 })
 
 const totalRows = computed(() => {
-	return query.results.data.length - 1
+	return query.doc.results_row_count - 1
 })
 </script>

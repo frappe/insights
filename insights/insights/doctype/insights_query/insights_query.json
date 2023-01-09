@@ -23,6 +23,7 @@
   "query_and_result_tab",
   "section_break_11",
   "sql",
+  "results_row_count",
   "results",
   "section_break_17",
   "execution_time",
@@ -172,11 +173,18 @@
    "is_virtual": 1,
    "label": "Results",
    "read_only": 1
+  },
+  {
+   "fieldname": "results_row_count",
+   "fieldtype": "Int",
+   "is_virtual": 1,
+   "label": "Row Count",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-25 19:13:55.459546",
+ "modified": "2023-01-09 13:23:12.048580",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",
