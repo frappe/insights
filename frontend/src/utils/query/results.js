@@ -4,13 +4,13 @@ import { FIELDTYPES } from '@/utils'
 import { getFormattedDate } from '../format'
 
 export function useQueryResults(query) {
-	const maxRows = 500
+	const MAX_ROWS = 500
 	const data = computed(() => {
 		return safeJSONParse(query.doc.results, [])
 	})
 	const columns = computed(() => query.columns.data)
 	const formattedResult = computed(() =>
-		getFormattedResult(unref(data.value.slice(0, maxRows)), unref(columns))
+		getFormattedResult(unref(data.value.slice(0, MAX_ROWS)), unref(columns))
 	)
 
 	const resultColumns = computed(() =>
@@ -50,6 +50,7 @@ export function useQueryResults(query) {
 	}
 
 	return {
+		MAX_ROWS,
 		data,
 		formattedResult,
 		allColumnOptions,

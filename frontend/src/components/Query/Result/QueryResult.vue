@@ -6,8 +6,19 @@
 		<!-- Result Header -->
 		<div class="relative flex h-8 flex-shrink-0 items-center justify-between">
 			<div class="text-sm tracking-wide text-gray-600">RESULT</div>
-			<div v-if="executionTime" class="text-sm font-light text-gray-500">
-				{{ totalRows.toLocaleString() }} rows in {{ executionTime }}s
+			<div
+				v-if="executionTime"
+				class="flex items-center space-x-1 text-sm font-light text-gray-500"
+			>
+				<Tooltip
+					v-if="totalRows > query.results.MAX_ROWS"
+					:text="`Showing first ${query.results.MAX_ROWS.toLocaleString()} rows`"
+					:hoverDelay="0.1"
+					class="flex"
+				>
+					<FeatherIcon name="info" class="h-3 w-3 cursor-pointer" />
+				</Tooltip>
+				<span>{{ totalRows.toLocaleString() }} rows in {{ executionTime }}s</span>
 			</div>
 		</div>
 		<!-- Result  -->
