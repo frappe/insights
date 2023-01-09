@@ -86,7 +86,7 @@ watch(show, (newVal, oldVal) => {
 })
 
 const authorizedTeams = computed(() => {
-	return getAccessInfo.data?.authorized_teams
+	return getAccessInfo.data?.authorized_teams || []
 })
 
 const newTeam = ref(null)

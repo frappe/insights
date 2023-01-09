@@ -79,6 +79,12 @@ def grant_access(resource_type, resource_name, team):
         )
         team_doc.save(ignore_permissions=True)
 
+    else:
+        frappe.throw(
+            "You are not authorized to grant access to this resource.",
+            frappe.PermissionError,
+        )
+
 
 @frappe.whitelist()
 @check_role("Insights User")

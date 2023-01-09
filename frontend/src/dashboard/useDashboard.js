@@ -1,10 +1,12 @@
 import { computed, reactive } from 'vue'
 import { safeJSONParse } from '@/utils'
 import { createDocumentResource, debounce } from 'frappe-ui'
+import auth from '@/utils/auth'
 
 export default function useDashboard(dashboardName) {
 	const dashboard = fetchDashboard(dashboardName)
 
+	dashboard.isOwner = computed(() => dashboard.doc?.owner == auth.user.user_id)
 	dashboard.editing = false
 	dashboard.items = computed(() =>
 		dashboard.doc?.items.map((v) => {

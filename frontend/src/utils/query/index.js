@@ -5,6 +5,7 @@ import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
 import { createToast } from '@/utils/toasts'
+import auth from '@/utils/auth'
 
 const API_METHODS = {
 	run: 'run',
@@ -40,6 +41,7 @@ const API_METHODS = {
 export function useQuery(name) {
 	const query = getQueryResource(name)
 
+	query.isOwner = computed(() => query.doc?.owner === auth.user.user_id)
 	query.tables = useQueryTables(query)
 	query.columns = useQueryColumns(query)
 	query.filters = useQueryFilters(query)

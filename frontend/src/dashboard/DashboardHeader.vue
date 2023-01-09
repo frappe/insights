@@ -34,16 +34,19 @@ function updateTitle(title) {
 				:title="dashboard.doc.title"
 				@update="updateTitle"
 			/>
+
+			<Button
+				v-if="dashboard.isOwner"
+				icon="share-2"
+				appearance="minimal"
+				@click="() => (showShareDialog = true)"
+			/>
+
 			<Dropdown
 				v-if="dashboard.doc"
 				placement="left"
 				:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 				:options="[
-					{
-						label: 'Share',
-						icon: 'share-2',
-						handler: () => (showShareDialog = true),
-					},
 					{
 						label: 'Delete',
 						icon: 'trash-2',

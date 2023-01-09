@@ -1,8 +1,11 @@
 <template>
-	<div class="flex space-x-2">
-		<Tooltip text="Only you have access to this query" :hoverDelay="0.1">
-			<Button icon="share-2" appearance="minimal" @click="() => (show_share_dialog = true)" />
-		</Tooltip>
+	<div class="flex flex-shrink-0 space-x-2">
+		<Button
+			v-if="query.isOwner"
+			icon="share-2"
+			appearance="minimal"
+			@click="() => (show_share_dialog = true)"
+		/>
 
 		<Dropdown
 			placement="left"

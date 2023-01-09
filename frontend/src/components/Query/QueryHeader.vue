@@ -19,7 +19,7 @@ const updateTitle = (title) => {
 </script>
 
 <template>
-	<div class="flex h-full items-center space-x-2">
+	<div class="mr-2 flex h-full items-center space-x-2">
 		<EditablePageTitle :title="query.doc.title" @update="updateTitle" />
 		<QueryMenu />
 	</div>
