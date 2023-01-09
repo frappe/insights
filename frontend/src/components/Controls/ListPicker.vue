@@ -52,7 +52,12 @@
 								class="form-input w-full placeholder-gray-500"
 								ref="input"
 								type="text"
-								@change="query = $event.target.value || emit('inputChange', query)"
+								@change="
+									(e) => {
+										query = e.target.value
+										emit('inputChange', e.target.value)
+									}
+								"
 								:value="query"
 								autocomplete="off"
 								placeholder="Search..."
