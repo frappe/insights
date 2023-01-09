@@ -8,7 +8,7 @@ from frappe import _
 
 def get_setup_stages(args=None):
     # to make setup wizard tasks run in a background job
-    frappe.local.conf["trigger_site_setup_in_background"] = 1
+    # frappe.local.conf["trigger_site_setup_in_background"] = 1
 
     if frappe.db.exists("Insights Data Source", "Demo Data"):
         stages = [
