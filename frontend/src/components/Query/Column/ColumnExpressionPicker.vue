@@ -148,7 +148,7 @@ const expression = reactive({
 	raw: input.value,
 	label: column.label,
 	groupBy: column.aggregation == 'Group By',
-	valueType: column.type,
+	valueType: column.type || 'String',
 	ast: null,
 	error: null,
 	tokens: [],
