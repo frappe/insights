@@ -62,7 +62,8 @@
 				></component>
 			</div>
 		</div>
-		<div class="flex flex-1 flex-col items-center justify-center" v-else>
+
+		<div v-else class="flex h-full w-full flex-1 flex-col items-center justify-center">
 			<div class="text-sm text-gray-500">No chart to display</div>
 		</div>
 	</div>
