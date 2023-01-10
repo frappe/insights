@@ -9,7 +9,7 @@ from insights.decorators import check_role
 
 
 @frappe.whitelist()
-@check_role("Insights User")
+@check_role("Insights Admin")
 def add_insights_user(user):
     email_strings = validate_email_address(user.get("email"), throw=True)
     email_strings = split_emails(email_strings)
