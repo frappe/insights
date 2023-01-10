@@ -4,6 +4,7 @@
 
 import frappe
 from frappe import _
+from frappe.utils.user import add_role
 
 
 def get_setup_stages(args=None):
@@ -116,11 +117,16 @@ def create_datasource(args):
 
 def wrap_up(args):
     frappe.local.message_log = []
+    set_user_as_insights_admin(args)
     login_as_first_user(args)
 
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1
     settings.save()
+
+
+def set_user_as_insights_admin(args):
+    add_role(args.get("email"), "Insights Admin")
 
 
 def login_as_first_user(args):
