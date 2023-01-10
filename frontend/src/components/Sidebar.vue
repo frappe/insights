@@ -12,11 +12,19 @@
 				<nav class="flex-1 space-y-1 pb-4 text-base">
 					<Tooltip
 						v-for="route in sidebarItems"
-						:text="route.label"
 						:key="route.path"
 						placement="right"
 						:hoverDelay="0.1"
+						class="w-full"
 					>
+						<template #body>
+							<div
+								class="w-fit rounded-lg border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
+							>
+								{{ route.label }}
+							</div>
+						</template>
+
 						<router-link
 							:to="route.path"
 							:class="[
