@@ -1,7 +1,7 @@
 <template>
 	<div class="flex -space-x-2">
 		<Avatar
-			class="border-2 border-white"
+			class="ring-2 ring-white"
 			v-for="avatar in avatars"
 			:key="avatar.label"
 			:label="avatar.label"
