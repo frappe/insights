@@ -129,6 +129,9 @@ def is_insights_admin(user=None):
 
 def get_allowed_resources_for_user(resource_type=None, user=None):
     user = user or frappe.session.user
+    if is_insights_admin(user):
+        return frappe.get_all(resource_type, pluck="name")
+
     teams = get_user_teams(user)
     if not teams:
         return []

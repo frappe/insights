@@ -5,6 +5,7 @@ import frappe
 
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
+    is_insights_admin,
 )
 
 
@@ -24,7 +25,7 @@ def has_permission(doc, ptype, user):
     if not user:
         user = frappe.session.user
 
-    if user == "Administrator":
+    if is_insights_admin(user):
         return True
 
     allowed_resources = get_allowed_resources_for_user(doc.doctype, user)
