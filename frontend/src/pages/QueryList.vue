@@ -4,7 +4,9 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Queries</h1>
 				<div>
-					<Button appearance="primary" @click="openDialog = true"> + New Query </Button>
+					<Button appearance="white" @click="openDialog = true" class="shadow-sm">
+						+ New Query
+					</Button>
 				</div>
 			</div>
 		</template>

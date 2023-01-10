@@ -4,8 +4,20 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Teams</h1>
 				<div class="space-x-4">
-					<Button iconLeft="plus" @click="showAddUserDialog = true">Add User</Button>
-					<Button iconLeft="plus" @click="showAddTeamDialog = true">Add Team</Button>
+					<Button
+						appearance="white"
+						class="shadow-sm"
+						iconLeft="plus"
+						@click="showAddUserDialog = true"
+						>Add User</Button
+					>
+					<Button
+						appearance="white"
+						class="shadow-sm"
+						iconLeft="plus"
+						@click="showAddTeamDialog = true"
+						>Add Team</Button
+					>
 				</div>
 			</div>
 		</template>

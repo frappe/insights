@@ -8,7 +8,8 @@
 			<div class="flex xl:hidden">
 				<img src="../assets/frappe-framework-logo.svg" />
 			</div>
-			<div class="mt-4 flex flex-grow flex-col">
+
+			<div class="mt-4 flex flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
 					<Tooltip
 						v-for="route in sidebarItems"
@@ -50,15 +51,48 @@
 				</nav>
 			</div>
 
-			<div class="flex items-center text-base text-gray-600">
-				<Avatar :label="auth.user.full_name" :imageURL="auth.user.user_image" />
-				<span class="ml-2 hidden xl:inline-block">{{ auth.user.full_name }}</span>
-				<Button
-					icon="log-out"
-					appearance="minimal"
-					class="ml-auto hidden xl:flex"
-					@click="auth.logout"
-				/>
+			<div class="-mx-2 mt-auto flex items-center text-base text-gray-600 xl:mx-0">
+				<Dropdown
+					placement="left"
+					:options="[
+						{
+							label: 'Documentation',
+							icon: 'help-circle',
+							handler: () => open('https://frappeinsights.com/docs'),
+						},
+						auth.user.is_admin
+							? {
+									label: 'Switch to Desk',
+									icon: 'grid',
+									handler: () => open('/app'),
+							  }
+							: null,
+						{
+							label: 'Logout',
+							icon: 'log-out',
+							handler: () => auth.logout(),
+						},
+					]"
+				>
+					<template v-slot="{ open }">
+						<button
+							class="flex w-full items-center space-x-2 rounded-md p-2 text-left text-base font-medium"
+							:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
+						>
+							<Avatar
+								:label="auth.user.full_name"
+								:imageURL="auth.user.user_image"
+								size="md"
+							/>
+							<span
+								class="ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap xl:inline"
+							>
+								{{ auth.user.full_name }}
+							</span>
+							<FeatherIcon name="chevron-down" class="hidden h-4 w-4 xl:inline" />
+						</button>
+					</template>
+				</Dropdown>
 			</div>
 		</div>
 	</div>
@@ -153,4 +187,5 @@ const getAppVersion = createResource({
 const appVersion = computed(() => {
 	return `v${getAppVersion.data}`
 })
+const open = (url) => window.open(url, '_blank')
 </script>

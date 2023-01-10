@@ -4,7 +4,7 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Data Sources</h1>
 				<div>
-					<Button appearance="primary" @click="new_dialog = true">
+					<Button appearance="white" @click="new_dialog = true" class="shadow-sm">
 						+ New Data Source
 					</Button>
 				</div>
