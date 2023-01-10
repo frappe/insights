@@ -26,9 +26,9 @@ def add_insights_user(user):
             "send_welcome_email": 1,
         }
     )
-    doc.append_roles(
-        "Insights User" if user.get("role") == "User" else "Insights Admin"
-    )
+    doc.append_roles("Insights User")
+    if user.get("role") == "Admin":
+        doc.append_roles("Insights Admin")
     doc.insert()
     frappe.db.commit()
     notify(

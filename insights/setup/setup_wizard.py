@@ -4,7 +4,6 @@
 
 import frappe
 from frappe import _
-from frappe.utils.user import add_role
 
 
 def get_setup_stages(args=None):
@@ -126,7 +125,8 @@ def wrap_up(args):
 
 
 def set_user_as_insights_admin(args):
-    add_role(args.get("email"), "Insights Admin")
+    user = frappe.get_doc("User", args.get("email"))
+    user.add_roles("Insights Admin", "Insights User")
 
 
 def login_as_first_user(args):
