@@ -11,35 +11,7 @@ from .insights_team_client import InsightsTeamClient
 
 class InsightsTeam(InsightsTeamClient, Document):
     def on_trash(self):
-        if self.name == "Admin":
-            frappe.throw(
-                "You cannot delete the Admin team. Please remove the team members instead."
-            )
-
         _get_user_teams.clear_cache()
-
-    def on_update(self):
-        if self.name != "Admin":
-            return
-
-        admin_users = get_users_with_role("Insights Admin")
-
-        # add Insights Admin role to all team members of Admin team
-        members_user = [m.user for m in self.team_members]
-        members_minus_admin = list(set(members_user) - set(admin_users))
-        for user in members_minus_admin:
-            user = frappe.get_cached_doc("User", user)
-            user.append_roles("Insights Admin")
-            user.save()
-
-        # remove Insights Admin role from all users who are not in Admin team
-        for user in frappe.get_all(
-            "Insights Team Member",
-            filters={"parent": ["!=", "Admin"], "user": ["in", admin_users]},
-            pluck="user",
-        ):
-            user = frappe.get_cached_doc("User", user)
-            user.remove_roles("Insights Admin")  # remove roles saves the doc
 
     def on_change(self):
         _get_user_teams.clear_cache()
@@ -145,13 +117,18 @@ def _get_user_teams(user):
     ) or []
 
 
+def has_role(user: str, role: str):
+    return frappe.db.exists("Has Role", {"parent": user, "role": role})
+
+
+def is_insights_admin(user=None):
+    user = user or frappe.session.user
+    if user == "Administrator" or has_role(user, "Insights Admin"):
+        return True
+
+
 def get_allowed_resources_for_user(resource_type=None, user=None):
-    if not user:
-        user = frappe.session.user
-
-    if user == "Administrator":
-        return frappe.get_all(resource_type, pluck="name")
-
+    user = user or frappe.session.user
     teams = get_user_teams(user)
     if not teams:
         return []
@@ -172,6 +149,9 @@ def get_allowed_resources_for_user(resource_type=None, user=None):
 
 
 def get_permission_filter(resource_type, user=None):
+    if is_insights_admin(user):
+        return {}
+
     allowed_resource = get_allowed_resources_for_user(resource_type, user)
     if not allowed_resource:
         return {"name": "0000000"}
@@ -179,9 +159,7 @@ def get_permission_filter(resource_type, user=None):
 
 
 def check_data_source_permission(source_name, user=None, raise_error=True):
-    if not user:
-        user = frappe.session.user
-    if user == "Administrator":
+    if is_insights_admin(user):
         return True
 
     allowed_sources = get_allowed_resources_for_user("Insights Data Source", user)
@@ -197,9 +175,7 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
 
 def check_table_permission(data_source, table, user=None, raise_error=True):
-    if not user:
-        user = frappe.session.user
-    if user == "Administrator":
+    if is_insights_admin(user):
         return True
 
     # since everywhere we use table name & data source as the primary key not the name
