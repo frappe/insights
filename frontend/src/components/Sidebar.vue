@@ -154,12 +154,19 @@ watch(
 	() => auth.user.is_admin,
 	(isAdmin) => {
 		if (isAdmin) {
-			// add teams item after settings item
+			// add users & teams item after settings item
 			if (sidebarItems.value.find((item) => item.name === 'Teams')) {
 				return
 			}
 			const settingsIndex = sidebarItems.value.findIndex((item) => item.name === 'Settings')
 			sidebarItems.value.splice(settingsIndex, 0, {
+				path: '/users',
+				label: 'Users',
+				icon: 'user',
+				name: 'Users',
+				current: false,
+			})
+			sidebarItems.value.splice(settingsIndex + 1, 0, {
 				path: '/teams',
 				label: 'Teams',
 				icon: 'users',

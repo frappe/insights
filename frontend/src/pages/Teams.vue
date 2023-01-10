@@ -8,13 +8,6 @@
 						appearance="white"
 						class="shadow-sm"
 						iconLeft="plus"
-						@click="showAddUserDialog = true"
-						>Add User</Button
-					>
-					<Button
-						appearance="white"
-						class="shadow-sm"
-						iconLeft="plus"
 						@click="showAddTeamDialog = true"
 						>Add Team</Button
 					>
@@ -99,7 +92,6 @@
 		</template>
 	</BasePage>
 
-	<AddUserDialog v-if="showAddUserDialog" @close="showAddUserDialog = false"></AddUserDialog>
 	<AddTeamDialog v-if="showAddTeamDialog" @close="showAddTeamDialog = false"></AddTeamDialog>
 
 	<ManageTeamDialog
@@ -114,13 +106,11 @@ import { ref } from 'vue'
 import BasePage from '@/components/BasePage.vue'
 import { useTeams } from '@/utils/useTeams.js'
 import ManageTeamDialog from './ManageTeamDialog.vue'
-import AddUserDialog from './AddUserDialog.vue'
 import AddTeamDialog from './AddTeamDialog.vue'
 import Avatars from './Avatars.vue'
 
 const teams = useTeams()
 const teamToEdit = ref(null)
-const showAddUserDialog = ref(false)
 const showAddTeamDialog = ref(false)
 
 function getAvatars(members) {

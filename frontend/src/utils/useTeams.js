@@ -1,7 +1,9 @@
 import { reactive, computed } from 'vue'
 import { createDocumentResource, createResource, debounce } from 'frappe-ui'
 import { showPrompt } from './prompt'
+import { useUsers } from './useUsers'
 
+const users = useUsers()
 const teamListResource = createResource(
 	'insights.insights.doctype.insights_team.insights_team_client.get_teams'
 )
@@ -53,11 +55,13 @@ export function useTeam(teamname) {
 		return team.add_team_member
 			.submit({ user: member })
 			.then(team.get_members_and_resources.fetch)
+			.then(users.refresh)
 	}
 	team.addMembers = (members) => {
 		return team.add_team_members
 			.submit({ users: members })
 			.then(team.get_members_and_resources.fetch)
+			.then(users.refresh)
 	}
 
 	team.removeMember = (member) => {
@@ -72,6 +76,7 @@ export function useTeam(teamname) {
 					return team.remove_team_member
 						.submit({ user: member })
 						.then(team.get_members_and_resources.fetch)
+						.then(users.refresh)
 						.then(close)
 				},
 			},
@@ -106,7 +111,7 @@ export function useTeam(teamname) {
 	}
 
 	team.deleteTeam = () => {
-		return team.delete_team.submit().then(teamListResource.fetch)
+		return team.delete_team.submit().then(teamListResource.fetch).then(users.refresh)
 	}
 
 	return team

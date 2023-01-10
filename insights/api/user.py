@@ -3,9 +3,44 @@
 
 import frappe
 from frappe.utils import split_emails, validate_email_address
+from frappe.utils.user import get_users_with_role
 
 from insights import notify
 from insights.decorators import check_role
+from insights.insights.doctype.insights_team.insights_team import get_user_teams
+
+
+@frappe.whitelist()
+@check_role("Insights Admin")
+def get_users():
+    """Returns full_name, email, type, teams, last_active"""
+    insights_users = get_users_with_role("Insights User")
+    insights_admins = get_users_with_role("Insights Admin")
+
+    users = []
+    for user in list(set(insights_users + insights_admins)):
+        data = frappe.db.get_values(
+            "User",
+            user,
+            ["name", "full_name", "email", "last_active"],
+            as_dict=True,
+        )
+        teams = frappe.get_all(
+            "Insights Team",
+            filters={"name": ["in", get_user_teams(user)]},
+            pluck="team_name",
+        )
+        users.append(
+            {
+                "full_name": data[0].full_name,
+                "email": data[0].email,
+                "type": "Admin" if user in insights_admins else "User",
+                "teams": teams,
+                "last_active": data[0].last_active,
+            }
+        )
+
+    return users
 
 
 @frappe.whitelist()

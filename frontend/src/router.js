@@ -70,6 +70,14 @@ const routes = [
 		component: () => import('@/pages/Query.vue'),
 	},
 	{
+		path: '/users',
+		name: 'Users',
+		component: () => import('@/pages/Users.vue'),
+		meta: {
+			isAllowed: () => auth.user.is_admin,
+		},
+	},
+	{
 		path: '/teams',
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),

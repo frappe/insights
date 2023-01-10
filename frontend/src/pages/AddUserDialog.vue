@@ -56,8 +56,8 @@
 
 <script setup>
 import { reactive, computed } from 'vue'
-import { createResource } from 'frappe-ui'
 import { useTeams } from '@/utils/useTeams'
+import { useUsers } from '@/utils/useUsers'
 import Form from './Form.vue'
 
 const emit = defineEmits(['close'])
@@ -89,13 +89,9 @@ const teamOptions = computed(() =>
 	)
 )
 
-const addUserResource = createResource({
-	url: 'insights.api.user.add_insights_user',
-})
-
+const users = useUsers()
 function addUser() {
-	addUserResource.submit({ user: newUser }).then(() => {
-		teams.refresh()
+	users.add(newUser).then(() => {
 		emit('close')
 	})
 }
