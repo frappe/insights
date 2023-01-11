@@ -27,16 +27,16 @@ const suffix = computed(() => {
 </script>
 
 <template>
-	<div class="h-full w-full rounded-md border px-2 py-3">
-		<div class="flex h-full w-full min-w-40 flex-col items-center justify-center px-2">
-			<div class="text-[38px] leading-tight">
-				{{ prefix }}{{ formattedValue }}{{ suffix }}
-			</div>
+	<div class="h-full w-full rounded-md border py-5">
+		<div class="mx-auto flex h-full w-fit min-w-40 flex-col justify-center">
 			<div
 				:title="props.data.title"
-				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-base text-gray-600"
+				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-base text-gray-600"
 			>
 				{{ props.data.title }}
+			</div>
+			<div class="text-[38px] leading-tight">
+				{{ prefix }}{{ formattedValue }}{{ suffix }}
 			</div>
 		</div>
 	</div>

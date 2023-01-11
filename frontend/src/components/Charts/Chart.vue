@@ -77,20 +77,24 @@ function downloadChart() {
 
 <template>
 	<div class="h-full w-full rounded-md border px-2 py-3">
-		<div v-bind="$attrs" :class="['mx-3', $attrs.chartSubtitle ? 'h-11' : 'h-6']">
-			<div class="text-lg font-normal leading-6 text-gray-800">{{ $attrs.chartTitle }}</div>
-			<div v-if="$attrs.chartSubtitle" class="text-base font-light">
-				{{ $attrs.chartSubtitle }}
+		<div class="h-full max-h-[26rem] w-full">
+			<div v-bind="$attrs" :class="['mx-3', $attrs.chartSubtitle ? 'h-11' : 'h-6']">
+				<div class="text-lg font-normal leading-6 text-gray-800">
+					{{ $attrs.chartTitle }}
+				</div>
+				<div v-if="$attrs.chartSubtitle" class="text-base font-light">
+					{{ $attrs.chartSubtitle }}
+				</div>
 			</div>
-		</div>
-		<div
-			ref="chartRef"
-			:class="[
-				'w-full',
-				$attrs.chartSubtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]',
-			]"
-		>
-			<slot></slot>
+			<div
+				ref="chartRef"
+				:class="[
+					'w-full',
+					$attrs.chartSubtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]',
+				]"
+			>
+				<slot></slot>
+			</div>
 		</div>
 	</div>
 </template>

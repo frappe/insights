@@ -10,7 +10,7 @@
 		<template #main>
 			<div
 				v-if="dashboard.items && dashboard.items.length > 0"
-				class="-mx-1 h-full w-full overflow-scroll pt-1"
+				class="-mx-1 h-full w-full overflow-scroll pt-1 scrollbar-hide"
 				:class="{
 					'rounded-md bg-gray-50 shadow-inner': dashboard.editingLayout,
 				}"

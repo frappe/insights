@@ -3,7 +3,10 @@
 		<div class="flex flex-grow flex-col overflow-y-auto p-4">
 			<div class="hidden flex-shrink-0 items-end text-sm text-gray-500 xl:flex">
 				<FrappeInsightsLogo />
-				<span class="ml-1">{{ appVersion }}</span>
+				<!-- <span class="ml-1">{{ appVersion }}</span> -->
+				<div class="ml-1 mb-0.5 rounded-full bg-gray-200 px-2 text-xs text-gray-900">
+					beta
+				</div>
 			</div>
 			<div class="flex xl:hidden">
 				<img src="../assets/frappe-framework-logo.svg" />

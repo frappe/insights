@@ -17,12 +17,12 @@ const refLineOptions = ref([
 
 <template>
 	<div class="space-y-2 text-gray-600">
-		<div class="text-gray-500">Select Dimension</div>
+		<div class="text-gray-500">Select X Axis</div>
 		<Autocomplete v-model="chart.config.labelColumn" :options="query.results.indexOptions" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
-		<div class="text-gray-500">Select Measure</div>
+		<div class="text-gray-500">Select Y Axis</div>
 		<ListPicker
 			:value="chart.config.valueColumn"
 			:options="query.results.valueOptions"

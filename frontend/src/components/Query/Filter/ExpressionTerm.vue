@@ -8,7 +8,7 @@
 		{{ value.column }}
 	</p>
 	<!-- Number or String -->
-	<p class="w-fit" v-else-if="type == 'String'">"{{ value }}"</p>
+	<p class="w-fit" v-else-if="type == 'String'">{{ value }}</p>
 	<p class="w-fit" v-else-if="type == 'Number'">
 		{{ value }}
 	</p>

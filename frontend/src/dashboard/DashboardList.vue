@@ -21,7 +21,7 @@
 						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-400" />
+							<Input type="checkbox" class="rounded-md border-gray-300" />
 						</p>
 						<p class="flex-1">Title</p>
 						<p class="flex-1 text-right">Last Modified</p>
@@ -40,7 +40,7 @@
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-400" />
+									<Input type="checkbox" class="rounded-md border-gray-300" />
 								</p>
 								<p
 									class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900"

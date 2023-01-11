@@ -9,12 +9,12 @@ const chart = inject('chart')
 
 <template>
 	<div class="space-y-2 text-gray-600">
-		<div class="text-base font-light text-gray-500">Select Dimension</div>
+		<div class="text-base font-light text-gray-500">Select X Axis</div>
 		<Autocomplete v-model="chart.config.labelColumn" :options="query.results.indexOptions" />
 	</div>
 
 	<div class="space-y-2 text-gray-600">
-		<div class="text-base font-light text-gray-500">Select Column</div>
+		<div class="text-base font-light text-gray-500">Select Y Axis</div>
 		<Autocomplete v-model="chart.config.valueColumn" :options="query.results.valueOptions" />
 	</div>
 
