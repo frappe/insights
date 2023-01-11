@@ -47,7 +47,7 @@
 						<JoinLeftIcon v-if="table.join.type.value == 'left'" />
 						<JoinRightIcon v-if="table.join.type.value == 'right'" />
 						<JoinInnerIcon v-if="table.join.type.value == 'inner'" />
-						<JoinFullIcon v-if="table.join.type.value == 'full_outer'" />
+						<JoinFullIcon v-if="table.join.type.value == 'full'" />
 					</span>
 					<span
 						v-if="table.join"

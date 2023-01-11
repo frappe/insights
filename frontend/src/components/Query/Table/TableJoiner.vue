@@ -88,8 +88,9 @@ if (editTable.value.join) {
 }
 
 const joinTypeOptions = ref([
-	{ label: 'Inner', value: 'inner' },
-	{ label: 'Left', value: 'left' },
+	{ label: 'Inner Join', value: 'inner' },
+	{ label: 'Left Join', value: 'left' },
+	{ label: 'Full Outer Join', value: 'full' },
 ])
 
 watch(

@@ -562,12 +562,19 @@ class SQLQueryBuilder:
         # TODO: add right and full joins
 
         for join in self._joins:
+            isouter, full = False, False
+            if join.type == "left":
+                isouter = True
+            elif join.type == "full":
+                isouter = True
+                full = True
 
             sql = sql.join_from(
                 join.left,
                 join.right,
                 join.left_key == join.right_key,
-                isouter=join.type == "left",
+                isouter=isouter,
+                full=full,
             )
 
         return sql
