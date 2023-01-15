@@ -100,21 +100,23 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def _data_source(self):
         return frappe.get_doc("Insights Data Source", self.data_source)
 
-    @property
+    @cached_property
     def results(self) -> str:
         """Returns the 1000 rows of the query results"""
         try:
-            cached_results = self.load_results()
-            if cached_results:
-                return frappe.as_json(cached_results[:1000])
             if self.status != "Execution Successful":
                 return frappe.as_json([self._result_columns])
-            results = self.fetch_results()
-            return frappe.as_json(results[:1000])
+
+            cached_results = self.load_results()
+            if not cached_results or len(cached_results) == 1:  # only columns
+                results = self.fetch_results()
+                return frappe.as_json(results[:1000])
+
+            return frappe.as_json(cached_results[:1000])
         except Exception as e:
             print("Error getting results", e)
 
-    @property
+    @cached_property
     def results_row_count(self):
         return len(self.load_results())
 
