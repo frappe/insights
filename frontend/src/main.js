@@ -5,6 +5,8 @@ import { createApp } from 'vue'
 import { socketio_port } from '../../../../sites/common_site_config.json'
 import { setConfig, frappeRequest, initSocket } from 'frappe-ui'
 import { createToast } from './utils/toasts'
+import VueGridLayout from 'vue3-drr-grid-layout'
+import 'vue3-drr-grid-layout/dist/style.css'
 
 import { registerGlobalComponents, registerControllers } from './globals'
 
@@ -25,6 +27,7 @@ setConfig('resourceFetcher', (options) => {
 })
 
 app.use(router)
+app.use(VueGridLayout)
 app.config.unwrapInjectedRef = true
 app.provide(
 	'$socket',

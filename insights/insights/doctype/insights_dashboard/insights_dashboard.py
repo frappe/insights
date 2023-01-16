@@ -137,7 +137,6 @@ class InsightsDashboard(Document):
         for chart_filter in chart_filters:
             if not chart_filter.value:
                 continue
-            print(chart_filter)
             filter_conditions.append(
                 convert_to_expression(
                     chart_filter.column.table,

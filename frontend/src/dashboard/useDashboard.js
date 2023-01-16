@@ -16,7 +16,11 @@ export default function useDashboard(dashboardName) {
 			const filter_states = safeJSONParse(v.filter_states, {})
 			return {
 				...v,
-				...layout,
+				i: v.name,
+				x: layout.x || 0,
+				y: layout.y || 0,
+				w: layout.w || 1,
+				h: layout.h || 1,
 				filter_column,
 				filter_links,
 				filter_state: filter_states[auth.user.user_id] || {},
@@ -42,13 +46,12 @@ export default function useDashboard(dashboardName) {
 		dashboard.update_layout
 			.submit({
 				updated_layout: layouts.reduce((acc, v) => {
-					acc[v.id] = { x: v.x, y: v.y, w: v.w, h: v.h }
+					acc[v.i] = { x: v.x, y: v.y, w: v.w, h: v.h }
 					return acc
 				}, {}),
 			})
 			.then(() => {
 				dashboard.editingLayout = false
-				dashboard.refreshItems()
 			})
 	}
 	dashboard.addItem = (item) => {

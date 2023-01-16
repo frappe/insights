@@ -1,37 +1,25 @@
 <template>
 	<BasePage>
 		<template #header>
-			<DashboardHeader
-				@addChart="() => (showAddDialog = true)"
-				@saveLayout="saveLayout"
-				@autoLayout="autoLayout"
-			/>
+			<DashboardHeader @addChart="() => (showAddDialog = true)" @saveLayout="saveLayout" />
 		</template>
 		<template #main>
 			<div
 				v-if="dashboard.items && dashboard.items.length > 0"
-				class="-mx-1 h-full w-full overflow-scroll pt-1 scrollbar-hide"
+				class="-mx-1 h-full w-full overflow-y-scroll pt-1"
 				:class="{
 					'rounded-md bg-gray-50 shadow-inner': dashboard.editingLayout,
 				}"
 			>
-				<GridLayout
+				<VueGridLayout
 					ref="gridLayout"
-					itemKey="name"
 					:items="dashboard.items"
-					@layoutChange="dashboard.updateLayout"
 					:disabled="!dashboard.editingLayout"
-					:options="{
-						float: true,
-						margin: 4,
-						column: 20,
-						cellHeight: 30,
-					}"
 				>
 					<template #item="{ item }">
 						<DashboardItem :item="item" />
 					</template>
-				</GridLayout>
+				</VueGridLayout>
 			</div>
 			<div
 				v-if="dashboard.items && dashboard.items.length == 0"
@@ -94,7 +82,7 @@ import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Tabs from '@/components/Tabs.vue'
 import DashboardHeader from '@/dashboard/DashboardHeader.vue'
 import DashboardItem from '@/dashboard/DashboardItem.vue'
-import GridLayout from '@/dashboard/GridLayout.vue'
+import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import { TextEditor } from 'frappe-ui'
 import DashboardFilterForm from './DashboardFilterForm.vue'
 
@@ -191,10 +179,7 @@ function addItem() {
 
 const gridLayout = ref(null)
 function saveLayout() {
-	dashboard.saveLayout(gridLayout.value.grid.save(false))
-}
-async function autoLayout() {
-	gridLayout.value.grid.compact()
+	dashboard.saveLayout(gridLayout.value.layouts)
 }
 
 const pageMeta = computed(() => {

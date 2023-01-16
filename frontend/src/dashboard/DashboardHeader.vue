@@ -11,7 +11,7 @@ const router = useRouter()
 const showDeleteDialog = ref(false)
 const showShareDialog = ref(false)
 
-defineEmits(['addChart', 'saveLayout', 'autoLayout'])
+defineEmits(['addChart', 'saveLayout'])
 
 const $notify = inject('$notify')
 function updateTitle(title) {
@@ -55,7 +55,7 @@ function updateTitle(title) {
 				]"
 			/>
 		</div>
-		<div class="flex items-start space-x-2">
+		<div class="flex items-center space-x-2">
 			<Button
 				appearance="white"
 				v-if="!dashboard.editingLayout"
@@ -79,14 +79,6 @@ function updateTitle(title) {
 				@click="$emit('addChart')"
 			>
 				Add
-			</Button>
-			<Button
-				appearance="white"
-				v-if="dashboard.editingLayout"
-				iconLeft="grid"
-				@click="$emit('autoLayout')"
-			>
-				Auto Layout
 			</Button>
 			<Button
 				appearance="white"
