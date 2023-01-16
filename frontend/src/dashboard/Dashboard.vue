@@ -91,16 +91,16 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import Tabs from '@/components/Tabs.vue'
 import DashboardHeader from '@/dashboard/DashboardHeader.vue'
 import DashboardItem from '@/dashboard/DashboardItem.vue'
 import GridLayout from '@/dashboard/GridLayout.vue'
-import Tabs from '@/components/Tabs.vue'
-import DashboardFilterForm from './DashboardFilterForm.vue'
 import { TextEditor } from 'frappe-ui'
+import DashboardFilterForm from './DashboardFilterForm.vue'
 
-import { computed, ref, provide, watch } from 'vue'
-import { updateDocumentTitle } from '@/utils'
 import useDashboard from '@/dashboard/useDashboard'
+import { updateDocumentTitle } from '@/utils'
+import { computed, provide, ref, watch } from 'vue'
 
 const props = defineProps({
 	name: {
@@ -113,16 +113,6 @@ const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
 const showAddDialog = ref(false)
-const newItem = ref({
-	item_type: 'Chart',
-	chart: null,
-	filter_label: '',
-	filter_type: 'String', // default
-	filter_operator: 'equals', // default
-	filter_links: {},
-	markdown: '',
-})
-
 const autocomplete = ref(null)
 watch(showAddDialog, (show) => {
 	if (show) {
@@ -147,6 +137,15 @@ const addItemTabs = ref([
 		active: false,
 	},
 ])
+
+const newItem = ref({
+	item_type: 'Chart',
+	chart: null,
+	filter_label: '',
+	filter_column: {},
+	filter_links: {},
+	markdown: '',
+})
 watch(
 	() => newItem.value.item_type,
 	(type) => {
@@ -175,8 +174,7 @@ function addItem() {
 		dashboard.addItem({
 			item_type: 'Filter',
 			filter_label: newItem.value.filter_label,
-			filter_type: newItem.value.filter_type,
-			filter_operator: newItem.value.filter_operator,
+			filter_column: newItem.value.filter_column,
 			filter_links: newItem.value.filter_links,
 		})
 	}
@@ -185,8 +183,7 @@ function addItem() {
 		item_type: 'Chart',
 		chart: null,
 		filter_label: '',
-		filter_type: 'String', // default
-		filter_operator: 'equals', // default
+		filter_column: {},
 		filter_links: {},
 	}
 	newChart.value = {}

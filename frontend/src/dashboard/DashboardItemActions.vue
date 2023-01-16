@@ -15,11 +15,20 @@
 			/>
 		</div>
 		<div
-			v-if="!dashboard.editingLayout && dashboardItem.item_type == 'Chart' && filtersCount"
-			class="flex items-center space-x-1 rounded-full bg-gray-100 px-3 text-sm leading-3 text-gray-700"
+			v-if="
+				!dashboard.editingLayout &&
+				dashboardItem.item_type == 'Chart' &&
+				appliedFilters.length
+			"
 		>
-			<span>{{ filtersCount }}</span>
-			<FeatherIcon name="filter" class="h-3 w-3" @mousedown.prevent.stop="" />
+			<Tooltip :text="appliedFilters.join(', ')">
+				<div
+					class="flex items-center space-x-1 rounded-full bg-gray-100 px-2 py-1 text-sm leading-3 text-gray-600"
+				>
+					<span>{{ appliedFilters.length }}</span>
+					<FeatherIcon name="filter" class="h-3 w-3" @mousedown.prevent.stop="" />
+				</div>
+			</Tooltip>
 		</div>
 		<div
 			v-if="dashboard.editingLayout"
@@ -40,14 +49,14 @@ import { inject, ref } from 'vue'
 const dashboard = inject('dashboard')
 const dashboardItem = inject('item')
 
-const filtersCount = ref(0)
+const appliedFilters = ref([])
 if (dashboardItem.item_type == 'Chart') {
 	dashboard.get_chart_filters
 		.submit({
 			chart_name: dashboardItem.chart,
 		})
 		.then((res) => {
-			filtersCount.value = res.message.length
+			appliedFilters.value = res.message.map((filter) => filter.label)
 		})
 }
 

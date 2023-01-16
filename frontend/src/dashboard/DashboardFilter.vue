@@ -1,42 +1,37 @@
 <script setup>
 import { Dialog } from 'frappe-ui'
 import DashboardFilterForm from './DashboardFilterForm.vue'
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
-import ListPicker from '@/components/Controls/ListPicker.vue'
-import DatePicker from '@/components/Controls/DatePicker.vue'
-import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
 
-import { computed, reactive, watch, inject, ref } from 'vue'
-import { formatDate } from '@/utils'
+import { inject, reactive, ref } from 'vue'
+import SimpleFilter from '../components/SimpleFilter.vue'
 
-const dashboard = inject('dashboard')
 const props = defineProps({ item: Object })
 
 const filter = reactive({
-	filter_label: props.item.filter_label,
-	filter_type: props.item.filter_type,
-	filter_operator: props.item.filter_operator,
-	filter_value: props.item.filter_value,
-	filter_links: props.item.filter_links,
+	filter_label: props.item.filter_label || '',
+	filter_column: props.item.filter_column || {},
+	filter_links: props.item.filter_links || {},
+	filter_state: props.item.filter_state || {},
 })
 
-watch(
-	() => filter.filter_value,
-	() => {
-		dashboard.update_filter
-			.submit({
-				filter: {
-					name: props.item.name,
-					...filter,
-				},
-			})
-			.then(dashboard.refreshItems)
-			.catch((e) => {
-				console.error(e)
-			})
-	}
-)
+const dashboard = inject('dashboard')
+function saveFilterState(state) {
+	dashboard.update_filter_state
+		.submit({
+			filter_name: props.item.name,
+			filter_state: state
+				? {
+						column: state.column,
+						operator: state.operator,
+						value: state.value,
+				  }
+				: {},
+		})
+		.then(dashboard.refreshItems)
+		.catch((e) => {
+			console.error(e)
+		})
+}
 
 const showEditFilterDialog = ref(false)
 function editFilter() {
@@ -53,28 +48,11 @@ function editFilter() {
 		})
 	showEditFilterDialog.value = false
 }
-
-const valueType = computed(() => {
-	if (
-		['Date', 'Datetime'].includes(filter.filter_type) &&
-		['=', '!=', '>', '>=', '<', '<=', 'between'].includes(filter.filter_operator)
-	) {
-		return 'datePicker'
-	}
-
-	if (
-		['Date', 'Datetime'].includes(filter.filter_type) &&
-		filter.filter_operator === 'timespan'
-	) {
-		return 'timespanPicker'
-	}
-})
 </script>
 
 <template>
-	<div class="h-full w-full rounded-md border px-3 py-2">
-		<div class="mb-2 flex items-center justify-between">
-			<div class="text-gray-600">{{ filter.filter_label }}</div>
+	<div class="flex h-full w-full items-center">
+		<div class="flex items-center justify-between">
 			<teleport :to="`#dashboard-item-actions-${item.name}`">
 				<div
 					v-if="dashboard.editingLayout"
@@ -90,30 +68,15 @@ const valueType = computed(() => {
 			</teleport>
 		</div>
 
-		<DateRangePicker
-			v-if="valueType == 'datePicker' && filter.filter_operator == 'between'"
-			id="value"
-			:value="filter.filter_value"
-			:formatter="formatDate"
-			placeholder="Select Date"
-			@change="(date) => (filter.filter_value = date)"
-		/>
-		<DatePicker
-			v-else-if="valueType == 'datePicker'"
-			id="value"
-			:value="filter.filter_value"
-			placeholder="Select Date"
-			:formatter="formatDate"
-			@change="(date) => (filter.filter_value = date)"
-		/>
-		<TimespanPicker
-			v-else-if="valueType == 'timespanPicker'"
-			id="value"
-			:value="filter.filter_value"
-			placeholder="Select Timespan"
-			@change="(timespan) => (filter.filter_value = timespan)"
-		/>
-		<Input v-else type="text" class="h-8" v-model="filter.filter_value"></Input>
+		<SimpleFilter
+			:disable-columns="true"
+			:label="filter.filter_label"
+			:column="filter.filter_column"
+			:operator="filter.filter_state.operator"
+			:value="filter.filter_state.value"
+			@apply="saveFilterState"
+			@reset="saveFilterState"
+		></SimpleFilter>
 	</div>
 
 	<Dialog :options="{ title: 'Edit Filter' }" v-model="showEditFilterDialog" :dismissable="true">

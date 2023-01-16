@@ -1,7 +1,7 @@
-import { computed, reactive } from 'vue'
 import { safeJSONParse } from '@/utils'
-import { createDocumentResource, debounce } from 'frappe-ui'
 import auth from '@/utils/auth'
+import { createDocumentResource, debounce } from 'frappe-ui'
+import { computed, reactive } from 'vue'
 
 export default function useDashboard(dashboardName) {
 	const dashboard = fetchDashboard(dashboardName)
@@ -11,11 +11,15 @@ export default function useDashboard(dashboardName) {
 	dashboard.items = computed(() =>
 		dashboard.doc?.items.map((v) => {
 			const layout = safeJSONParse(v.layout, {})
+			const filter_column = safeJSONParse(v.filter_column, {})
 			const filter_links = safeJSONParse(v.filter_links, {})
+			const filter_states = safeJSONParse(v.filter_states, {})
 			return {
 				...v,
 				...layout,
+				filter_column,
 				filter_links,
+				filter_state: filter_states[auth.user.user_id] || {},
 			}
 		})
 	)
@@ -103,6 +107,12 @@ export default function useDashboard(dashboardName) {
 		return fetchData(dashboard.get_chart_filters, { chart_name: chart })
 	}
 
+	dashboard.getFilterColumns = () => {
+		return fetchData(dashboard.get_filter_columns)
+	}
+
+	dashboard.updateLinkedCharts = (links, condition) => {}
+
 	return dashboard
 }
 
@@ -122,8 +132,10 @@ function fetchDashboard(name) {
 			update_filter: 'update_filter',
 			get_all_columns: 'get_all_columns',
 			get_columns: 'get_columns',
-			update_chart_filters: 'update_chart_filters',
 			update_markdown: 'update_markdown',
+			get_filter_columns: 'get_filter_columns',
+			fetch_column_values: 'fetch_column_values',
+			update_filter_state: 'update_filter_state',
 		},
 	})
 	resource.get.fetch()

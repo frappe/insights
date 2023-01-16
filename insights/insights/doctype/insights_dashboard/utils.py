@@ -8,14 +8,14 @@ import frappe
 	utitilies to help convert filters to expressions
 """
 
-BINARY_OPERATORS = {
-    "equals": "=",
-    "not equals": "!=",
-    "smaller than": "<",
-    "greater than": ">",
-    "smaller than equal to": "<=",
-    "greater than equal to": ">=",
-}
+BINARY_OPERATORS = [
+    "=",
+    "!=",
+    "<",
+    ">",
+    "<=",
+    ">=",
+]
 
 FUNCTION_OPERATORS = [
     "is",
@@ -44,7 +44,7 @@ def convert_to_expression(table, column, filter_operator, filter_value, value_ty
 def make_binary_expression(table, column, filter_operator, filter_value, value_type):
     return {
         "type": "BinaryExpression",
-        "operator": BINARY_OPERATORS[filter_operator],
+        "operator": filter_operator,
         "left": {
             "type": "Column",
             "value": {
@@ -165,7 +165,7 @@ def get_operator_from_call_function(function_name):
 def is_binary_operator(operator):
     if not operator:
         return False
-    return operator in BINARY_OPERATORS.values()
+    return operator in BINARY_OPERATORS
 
 
 def is_call_function(function_name):
@@ -204,7 +204,7 @@ def get_item_size(item):
     if item.item_type == "Text":
         return {"w": 20, "h": 3, "x": 0, "y": 0}
     if item.item_type == "Filter":
-        return {"w": 4, "h": 3, "x": 0, "y": 0}
+        return {"w": 4, "h": 2, "x": 0, "y": 0}
     if item.item_type == "Chart":
         chart_type = frappe.db.get_value("Insights Query Chart", item.chart, "type")
         if chart_type == "Number":

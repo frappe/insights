@@ -203,6 +203,7 @@ class InsightsQueryClient:
                         "column": c.get("column"),
                         "label": c.get("label"),
                         "type": c.get("type"),
+                        "data_source": self.data_source,
                     }
                 )
                 for c in _columns
@@ -234,7 +235,7 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text=None) -> "list[str]":
+    def fetch_column_values(self, column, search_text=None):
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
         return data_source.get_column_options(
             column.get("table"), column.get("column"), search_text
