@@ -96,11 +96,11 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.delete_linked_charts()
         self.delete_insights_table()
 
-    @cached_property
+    @property
     def _data_source(self):
         return frappe.get_doc("Insights Data Source", self.data_source)
 
-    @cached_property
+    @property
     def results(self) -> str:
         """Returns the 1000 rows of the query results"""
         try:
@@ -116,7 +116,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         except Exception as e:
             print("Error getting results", e)
 
-    @cached_property
+    @property
     def results_row_count(self):
         return len(self.load_results())
 
