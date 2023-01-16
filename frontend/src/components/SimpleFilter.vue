@@ -142,7 +142,7 @@ function resetFilter() {
 						<div class="ml-auto flex items-center pl-2">
 							<div
 								v-if="isOpen && !applyDisabled"
-								class="-my-1 -mr-2 rounded-md p-1 hover:bg-blue-50 hover:text-blue-600"
+								class="-my-1 -mr-2 rounded-md bg-blue-400 p-1 text-white shadow"
 								@click.prevent.stop="applyFilter() | togglePopover(false)"
 							>
 								<FeatherIcon name="check" class="h-3.5 w-3.5" />
@@ -164,7 +164,7 @@ function resetFilter() {
 					</button>
 				</div>
 			</template>
-			<template #body>
+			<template #body="{ togglePopover }">
 				<!-- Column Selector -->
 				<div
 					v-if="selecting === 'column'"
@@ -244,14 +244,15 @@ function resetFilter() {
 						v-else-if="showDatePicker && filter.operator?.value == 'between'"
 						:value="filter.value?.value"
 						@change="
-							(dates) =>
-								(filter.value = {
+							(dates) => {
+								filter.value = {
 									value: dates,
 									label: dates
 										.split(',')
 										.map((date) => formatDate(date))
 										.join(' to '),
-								})
+								}
+							}
 						"
 					/>
 
@@ -259,11 +260,12 @@ function resetFilter() {
 						v-else-if="showDatePicker"
 						:value="filter.value?.value"
 						@change="
-							(date) =>
-								(filter.value = {
+							(date) => {
+								filter.value = {
 									value: date,
 									label: formatDate(date),
-								})
+								}
+							}
 						"
 					/>
 
@@ -273,11 +275,12 @@ function resetFilter() {
 						placeholder="Enter a value"
 						:value="filter.value?.value"
 						@input="
-							(event) =>
-								(filter.value = {
+							(event) => {
+								filter.value = {
 									value: event.target.value,
 									label: event.target.value,
-								})
+								}
+							}
 						"
 						class="form-input block h-7 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
 					/>
