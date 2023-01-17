@@ -11,7 +11,7 @@ const router = useRouter()
 const showDeleteDialog = ref(false)
 const showShareDialog = ref(false)
 
-defineEmits(['addChart', 'saveLayout'])
+defineEmits(['addChart', 'saveLayout', 'autoLayout'])
 
 const $notify = inject('$notify')
 function updateTitle(title) {
@@ -71,6 +71,14 @@ function updateTitle(title) {
 				@click="() => (dashboard.editingLayout = true)"
 			>
 				Edit
+			</Button>
+			<Button
+				appearance="white"
+				v-if="dashboard.editingLayout"
+				iconLeft="grid"
+				@click="$emit('autoLayout')"
+			>
+				Fill Empty Space
 			</Button>
 			<Button
 				appearance="white"

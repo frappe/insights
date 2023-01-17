@@ -1,15 +1,16 @@
 <template>
 	<BasePage>
 		<template #header>
-			<DashboardHeader @addChart="() => (showAddDialog = true)" @saveLayout="saveLayout" />
+			<DashboardHeader
+				@addChart="() => (showAddDialog = true)"
+				@saveLayout="saveLayout"
+				@autoLayout="autoLayout"
+			/>
 		</template>
 		<template #main>
 			<div
 				v-if="dashboard.items && dashboard.items.length > 0"
 				class="-mx-1 h-full w-full overflow-y-scroll pt-1"
-				:class="{
-					'rounded-md bg-gray-50 shadow-inner': dashboard.editingLayout,
-				}"
 			>
 				<VueGridLayout
 					ref="gridLayout"
@@ -17,7 +18,15 @@
 					:disabled="!dashboard.editingLayout"
 				>
 					<template #item="{ item }">
-						<DashboardItem :item="item" />
+						<DashboardItem v-if="!dashboard.editingLayout" :item="item" />
+						<div
+							v-else
+							class="flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-100/60"
+						>
+							<div class="font-light text-gray-500">
+								{{ item.chart_title }}
+							</div>
+						</div>
 					</template>
 				</VueGridLayout>
 			</div>
@@ -180,6 +189,9 @@ function addItem() {
 const gridLayout = ref(null)
 function saveLayout() {
 	dashboard.saveLayout(gridLayout.value.layouts)
+}
+function autoLayout() {
+	gridLayout.value.compact()
 }
 
 const pageMeta = computed(() => {

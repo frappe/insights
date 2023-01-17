@@ -19,7 +19,7 @@
 
 <script setup>
 import { debounce } from 'frappe-ui'
-import { computed, defineExpose, reactive, ref, watch } from 'vue'
+import { computed, defineExpose, reactive, ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
 	items: { type: Array, required: true },
@@ -33,7 +33,7 @@ const options = reactive({
 	isResizable: false,
 	responsive: true,
 	verticalCompact: false,
-	preventCollision: true,
+	preventCollision: false,
 	useCssTransforms: true,
 	cols: { lg: 20, md: 20, sm: 12, xs: 1, xxs: 1 },
 })
@@ -54,7 +54,6 @@ const layouts = computed(() => {
 		}
 	})
 })
-defineExpose({ layouts, refresh })
 
 const refreshID = ref(0)
 async function toggleEnable(disable) {
@@ -66,9 +65,19 @@ async function toggleEnable(disable) {
 }
 watch(() => props.disabled, debounce(toggleEnable, 200))
 
-function refresh() {
-	refreshID.value++
+async function compact() {
+	options.verticalCompact = true
+	await refresh()
+	options.verticalCompact = false
+	await refresh()
 }
+
+async function refresh() {
+	refreshID.value++
+	return nextTick()
+}
+
+defineExpose({ layouts, refresh, compact })
 
 window.gridOptions = options
 window.refreshGrid = refresh
@@ -101,7 +110,7 @@ window.refreshGrid = refresh
 	background-position: bottom right;
 	background-size: 8px;
 	background-repeat: no-repeat;
-	padding: 0 3px 3px 0;
+	padding: 0 8px 8px 0;
 	background-origin: content-box;
 	box-sizing: border-box;
 	cursor: se-resize;
