@@ -6,6 +6,7 @@ import { onMounted, ref, reactive, onBeforeUnmount, provide, watch, useAttrs } f
 const options = reactive({
 	fontFamily: 'Inter',
 	color: getColors(),
+	animation: false,
 })
 provide('options', options)
 
