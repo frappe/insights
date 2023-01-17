@@ -55,7 +55,7 @@ class ColumnFormatter:
     @classmethod
     def format_date(cls, format, column: Column):
         if format == "Minute":
-            return func.date_format(column, "%Y-%m-%d %H:%M")
+            return func.date_format(column, "%Y-%m-%d %H:%i")
         if format == "Hour":
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":

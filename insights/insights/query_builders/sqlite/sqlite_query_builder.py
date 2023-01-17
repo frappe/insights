@@ -11,7 +11,7 @@ class SQLiteColumnFormatter(ColumnFormatter):
     @classmethod
     def format_date(cls, format, column: Column):
         if format == "Minute":
-            return func.strftime("%Y-%m-%d %H:%M", column)
+            return func.strftime("%Y-%m-%d %H:%M:00", column)
         if format == "Hour":
             return func.strftime("%Y-%m-%d %H:00", column)
         if format == "Day" or format == "Day Short":
