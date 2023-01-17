@@ -35,7 +35,7 @@ const options = reactive({
 	verticalCompact: false,
 	preventCollision: true,
 	useCssTransforms: true,
-	cols: { lg: 20, md: 16, sm: 8, xs: 4, xxs: 2 },
+	cols: { lg: 20, md: 20, sm: 8, xs: 1, xxs: 1 },
 })
 const items = ref(props.items)
 watch(

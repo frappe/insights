@@ -27,8 +27,8 @@ const suffix = computed(() => {
 </script>
 
 <template>
-	<div class="h-full w-full rounded-md border py-5">
-		<div class="mx-auto flex h-full w-fit min-w-40 flex-col justify-center">
+	<div class="h-full w-full overflow-hidden rounded-md border py-5 px-8">
+		<div class="mx-auto flex h-full w-full min-w-40 flex-col justify-center overflow-hidden">
 			<div
 				:title="props.data.title"
 				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-base text-gray-600"
