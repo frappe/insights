@@ -32,7 +32,7 @@
 			<div class="font-light">Date Format</div>
 			<Autocomplete
 				v-model="simpleColumn.dateFormat"
-				:options="dateFormats"
+				:options="dateFormats.map((f) => ({ ...f, description: f.value }))"
 				placeholder="Select a date format..."
 				@selectOption="selectDateFormat"
 			/>
@@ -58,7 +58,7 @@ import { isEmptyObj, FIELDTYPES } from '@/utils'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { dateFormats } from '@/utils/format'
 
-import { computed, inject, reactive, ref, watch } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 
 const query = inject('query')
 
