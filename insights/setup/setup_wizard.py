@@ -125,6 +125,9 @@ def wrap_up(args):
 
 
 def set_user_as_insights_admin(args):
+    # if developer mode is enabled, first user step is skipped, hence no user is created
+    if not args.get("email") or not frappe.db.exists("User", args.get("email")):
+        return
     user = frappe.get_doc("User", args.get("email"))
     user.add_roles("Insights Admin", "Insights User")
 
