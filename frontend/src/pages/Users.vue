@@ -18,9 +18,9 @@
 		<template #main>
 			<div class="flex flex-1 flex-col overflow-hidden">
 				<div class="mb-4 flex flex-shrink-0 space-x-4">
-					<Input type="text" placeholder="Full Name" />
+					<Input type="text" placeholder="Full Name" v-model="search.full_name" />
 				</div>
-				<div class="flex flex-1 flex-col rounded-md border">
+				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
 						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
@@ -36,10 +36,10 @@
 					<ul
 						role="list"
 						v-if="users.list?.length > 0"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
+						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-scroll scrollbar-hide"
 					>
 						<li
-							v-for="user in users.list"
+							v-for="user in filteredUsers"
 							:key="user.name"
 							@click="userToEdit = user.name"
 						>
@@ -86,9 +86,9 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
 import BasePage from '@/components/BasePage.vue'
 import { useUsers } from '@/utils/useUsers.js'
+import { computed, inject, reactive, ref } from 'vue'
 import AddUserDialog from './AddUserDialog.vue'
 
 const users = useUsers()
@@ -96,4 +96,13 @@ const userToEdit = ref(null)
 const showAddUserDialog = ref(false)
 const dayjs = inject('$dayjs')
 const fromNow = (date) => date && dayjs(date).fromNow()
+
+const search = reactive({
+	full_name: '',
+})
+const filteredUsers = computed(() => {
+	return users.list.filter((user) => {
+		return user.full_name.toLowerCase().includes(search.full_name.toLowerCase())
+	})
+})
 </script>

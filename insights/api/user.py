@@ -17,28 +17,20 @@ def get_users():
     insights_users = get_users_with_role("Insights User")
     insights_admins = get_users_with_role("Insights Admin")
 
-    users = []
-    for user in list(set(insights_users + insights_admins)):
-        data = frappe.db.get_values(
-            "User",
-            user,
-            ["name", "full_name", "email", "last_active"],
-            as_dict=True,
-        )
+    users = frappe.get_all(
+        "User",
+        fields=["name", "full_name", "email", "last_active"],
+        filters={"name": ["in", list(set(insights_users + insights_admins))]},
+        order_by="last_active desc",
+    )
+    for user in users:
         teams = frappe.get_all(
             "Insights Team",
-            filters={"name": ["in", get_user_teams(user)]},
+            filters={"name": ["in", get_user_teams(user.name)]},
             pluck="team_name",
         )
-        users.append(
-            {
-                "full_name": data[0].full_name,
-                "email": data[0].email,
-                "type": "Admin" if user in insights_admins else "User",
-                "teams": teams,
-                "last_active": data[0].last_active,
-            }
-        )
+        user["type"] = "Admin" if user.name in insights_admins else "User"
+        user["teams"] = teams
 
     return users
 
