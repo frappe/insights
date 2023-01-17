@@ -18,15 +18,7 @@
 					:disabled="!dashboard.editingLayout"
 				>
 					<template #item="{ item }">
-						<DashboardItem v-if="!dashboard.editingLayout" :item="item" />
-						<div
-							v-else
-							class="flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-100/60"
-						>
-							<div class="font-light text-gray-500">
-								{{ item.chart_title }}
-							</div>
-						</div>
+						<DashboardItem :item="item" />
 					</template>
 				</VueGridLayout>
 			</div>
