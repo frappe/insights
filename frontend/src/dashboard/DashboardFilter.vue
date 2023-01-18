@@ -52,21 +52,17 @@ function editFilter() {
 
 <template>
 	<div class="flex h-full w-full items-center">
-		<div class="flex items-center justify-between">
-			<teleport :to="`#dashboard-item-actions-${item.name}`">
-				<div
-					v-if="dashboard.editingLayout"
-					class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100"
-				>
-					<FeatherIcon
-						name="settings"
-						class="h-4 w-4"
-						@mousedown.prevent.stop=""
-						@click="showEditFilterDialog = true"
-					/>
-				</div>
-			</teleport>
-		</div>
+		<teleport :to="`#dashboard-item-actions-${item.name}`">
+			<Button
+				v-if="dashboard.editingLayout"
+				appearance="minimal"
+				@click.prevent.stop="showEditFilterDialog = true"
+				iconLeft="settings"
+				class="!text-sm"
+			>
+				Edit
+			</Button>
+		</teleport>
 
 		<SimpleFilter
 			:disable-columns="true"

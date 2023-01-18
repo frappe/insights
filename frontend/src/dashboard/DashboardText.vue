@@ -48,17 +48,15 @@ async function discardText() {
 		</div>
 
 		<teleport :to="`#dashboard-item-actions-${item.name}`">
-			<div
+			<Button
 				v-if="dashboard.editingLayout"
-				class="cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100"
+				appearance="minimal"
+				iconLeft="name"
+				class="!text-sm"
+				@click.prevent.stop="editMarkdown = !editMarkdown"
 			>
-				<FeatherIcon
-					name="edit"
-					class="h-4 w-4"
-					@mousedown.prevent.stop=""
-					@click="editMarkdown = !editMarkdown"
-				/>
-			</div>
+				Edit
+			</Button>
 		</teleport>
 
 		<Dialog
