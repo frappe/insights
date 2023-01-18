@@ -7,6 +7,13 @@ from json import dumps
 import frappe
 from frappe.model.document import Document
 
+from insights.cache_utils import get_or_set_cache, make_cache_key
+from insights.insights.doctype.insights_team.insights_team import (
+    get_allowed_resources_for_user,
+)
+
+from .utils import convert_into_simple_filter, convert_to_expression, get_item_position
+
 
 class InsightsDashboard(Document):
     @frappe.whitelist()
@@ -14,9 +21,13 @@ class InsightsDashboard(Document):
         charts = [
             row.chart for row in self.items if row.item_type == "Chart" and row.chart
         ]
-        return frappe.get_all(
+        allowed_queries = get_allowed_resources_for_user("Insights Query")
+        return frappe.get_list(
             "Insights Query Chart",
-            filters={"name": ("not in", charts), "type": ["!=", "Pivot"]},
+            filters={
+                "name": ("not in", charts),
+                "query": ["in", allowed_queries],
+            },
             fields=["name", "title", "type"],
         )
 
@@ -33,16 +44,6 @@ class InsightsDashboard(Document):
             },
         )
         self.save()
-
-    @frappe.whitelist()
-    def refresh_items(self):
-        for item in self.items:
-            try:
-                frappe.get_doc("Insights Query", item.query).run()
-            except BaseException:
-                frappe.log_error(title="Error while refreshing dashboard item")
-
-        self.db_set("last_updated_on", frappe.utils.now())
 
     @frappe.whitelist()
     def remove_item(self, item):
@@ -75,185 +76,171 @@ class InsightsDashboard(Document):
         for row in self.items:
             if row.name == filter.name:
                 row.filter_label = filter.filter_label
-                row.filter_type = filter.filter_type
-                row.filter_operator = filter.filter_operator
-                row.filter_value = filter.filter_value
+                row.filter_column = frappe.as_json(filter.filter_column)
+                row.filter_links = frappe.as_json(filter.filter_links)
                 self.save()
                 break
 
     @frappe.whitelist()
-    def update_chart_filters(self, chart, filters):
-        filters = frappe.parse_json(filters)
+    def update_filter_state(self, filter_name, filter_state):
+        filter_state = frappe._dict(filter_state)
         for row in self.items:
-            if row.name == chart:
-                row.chart_filters = dumps(filters, indent=2)
+            if row.name == filter_name:
+                filter_states = frappe.parse_json(row.filter_states) or {}
+                filter_states[frappe.session.user] = filter_state
+                row.filter_states = frappe.as_json(filter_states)
                 self.save()
                 break
+
+    @frappe.whitelist()
+    def get_chart_filters(self, chart_name):
+        _filters = []
+        for row in self.items:
+            if row.item_type != "Filter":
+                continue
+            filter_links = frappe.parse_json(row.filter_links) or {}
+            filter_states = frappe.parse_json(row.filter_states) or {}
+            if (
+                str(chart_name) not in filter_links
+                or frappe.session.user not in filter_states
+                or not filter_states[frappe.session.user]
+            ):
+                continue
+            filter_state = filter_states[frappe.session.user]
+            _filters.append(
+                frappe._dict(
+                    {
+                        "label": row.filter_label,
+                        "value": filter_state.get("value").get("value"),
+                        "column_type": filter_state.get("column").get("type"),
+                        "operator": filter_state.get("operator").get("value"),
+                        "column": frappe._dict(filter_links[str(chart_name)]),
+                    }
+                )
+            )
+        return _filters
+
+    @frappe.whitelist()
+    def get_chart_data(self, chart):
+        row = next((row for row in self.items if row.chart == chart), None)
+        if not row:
+            return
+
+        if row.query not in get_allowed_resources_for_user("Insights Query"):
+            frappe.throw("Not allowed", frappe.PermissionError)
+
+        chart_filters = self.get_chart_filters(row.chart)
+        if not chart_filters:
+            return run_query(row.query)
+
+        filter_conditions = []
+        for chart_filter in chart_filters:
+            if not chart_filter.value:
+                continue
+            filter_conditions.append(
+                convert_to_expression(
+                    chart_filter.column.table,
+                    chart_filter.column.column,
+                    chart_filter.operator,
+                    chart_filter.value,
+                    chart_filter.column_type,
+                )
+            )
+
+        if not filter_conditions:
+            return run_query(row.query)
+
+        return run_query(row.query, additional_filters=filter_conditions)
 
     @frappe.whitelist()
     def get_all_columns(self, query):
         # fetches all the columns for all the tables selected in the query
+        # to select a dashboard filter
         return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
     @frappe.whitelist()
-    def get_chart_data(self, chart):
-        row = self.get("items", {"chart": chart})
-        if not row:
-            return
-        row = row[0]
-        if chart_filters := frappe.parse_json(row.chart_filters):
-            query = frappe.get_doc("Insights Query", row.query)
-            filter_conditions = []
-            for chart_filter in chart_filters:
-                filter = self.get(
-                    "items",
-                    {
-                        "item_type": "Filter",
-                        "filter_label": chart_filter.get("filter").get("label"),
-                    },
-                )[0]
-                if not filter.filter_value:
-                    continue
-                table, column = chart_filter.get("column").get("value").split(".")
-                filter_conditions.append(convert_to_expression(table, column, filter))
-            return query.run_with_filters(filter_conditions)
-        else:
-            return frappe.db.get_value("Insights Query", row.query, "result")
-
-    @frappe.whitelist()
     def get_columns(self, query):
+        # fetches the columns of a query to get the column format option
         return frappe.get_cached_doc("Insights Query", query).get_columns()
 
+    @frappe.whitelist()
+    def update_markdown(self, item):
+        item = frappe._dict(item)
+        for row in self.items:
+            if row.name == item.name:
+                row.markdown = item.markdown
+                self.save()
+                break
 
-BINARY_OPERATORS = {
-    "equals": "=",
-    "not equals": "!=",
-    "smaller than": "<",
-    "greater than": ">",
-    "smaller than equal to": "<=",
-    "greater than equal to": ">=",
-}
+    @frappe.whitelist()
+    def get_filter_columns(self):
+        tables = []
+        for row in self.items:
+            if row.item_type == "Chart" and row.query:
+                doc = frappe.get_doc("Insights Query", row.query)
+                tables.extend(doc.get_selected_tables())
 
-FUNCTION_OPERATORS = [
-    "is",
-    "in",
-    "not_in",
-    "between",
-    "timespan",
-    "starts_with",
-    "ends_with",
-    "contains",
-    "not_contains",
-]
+        columns = []
+        for table in tables:
+            doc = frappe.get_doc("Insights Table", {"table": table.table})
+            _columns = doc.get_columns()
+            for column in _columns:
+                column.table_label = table.label
+                columns.append(
+                    {
+                        "column": column.column,
+                        "label": column.label,
+                        "table": table.table,
+                        "table_label": table.label,
+                        "type": column.type,
+                        "data_source": doc.data_source,
+                    }
+                )
 
+        return columns
 
-def convert_to_expression(table, column, filter):
-    if filter.filter_operator in BINARY_OPERATORS:
-        return make_binary_expression(table, column, filter)
-    if filter.filter_operator in FUNCTION_OPERATORS:
-        return make_call_expression(table, column, filter)
-
-
-def make_binary_expression(table, column, filter):
-    return {
-        "type": "BinaryExpression",
-        "operator": BINARY_OPERATORS[filter.filter_operator],
-        "left": {
-            "type": "Column",
-            "value": {
-                "column": column,
-                "table": table,
-            },
-        },
-        "right": {
-            "type": "Number"
-            if filter.filter_type in ("Integer", "Decimal")
-            else "String",
-            "value": filter.filter_value,
-        },
-    }
+    @frappe.whitelist()
+    def fetch_column_values(self, column, search_text=None):
+        data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
+        return data_source.get_column_options(
+            column.get("table"), column.get("column"), search_text
+        )
 
 
-def make_call_expression(table, column, filter):
-    operator_function = filter.filter_operator
-    if filter.filter_operator == "is":
-        operator_function = "is_set" if filter.filter_value == "set" else "is_not_set"
+def run_query(query_name, additional_filters=None):
+    def get_result():
+        query = frappe.get_cached_doc("Insights Query", query_name)
+        if not additional_filters:
+            return query.fetch_results()
 
-    return {
-        "type": "CallExpression",
-        "function": operator_function,
-        "arguments": [
-            {
-                "type": "Column",
-                "value": {
-                    "column": column,
-                    "table": table,
-                },
-            },
-            *make_args_for_call_expression(operator_function, filter),
-        ],
-    }
+        filters = frappe.parse_json(query.filters)
 
+        new_filters = frappe.parse_json(query.filters)
+        for new_filter in additional_filters:
+            found = False
+            # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
+            if new_simple_filter := convert_into_simple_filter(new_filter):
+                for index, exisiting_filter in enumerate(filters.conditions):
+                    existing_simple_filter = convert_into_simple_filter(
+                        exisiting_filter
+                    )
+                    if not existing_simple_filter:
+                        continue
+                    if existing_simple_filter["column"] == new_simple_filter["column"]:
+                        new_filters.conditions[index] = new_filter
+                        found = True
+                        break
+            if not found:
+                new_filters.conditions.append(new_filter)
 
-def make_args_for_call_expression(operator_function, filter):
-    if operator_function == "is":
-        return []
+        query.filters = dumps(new_filters)
+        return query.fetch_results()
 
-    if operator_function == "between":
-        values = [v.strip() for v in filter.filter_value.split(",")]
-        return [
-            {
-                "type": "Number" if filter.filter_type == "Number" else "String",
-                "value": v,
-            }
-            for v in values
-        ]
+    last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
+    key = make_cache_key(query_name, last_modified, additional_filters)
 
-    if operator_function in ["in", "not_in"]:
-        return [{"type": "String", "value": v} for v in filter.filter_value]
-
-    return [
-        {
-            "type": "Number" if filter.filter_type == "Number" else "String",
-            "value": filter.filter_value,
-        }
-    ]
-
-
-def get_item_size(item):
-    item = frappe._dict(item)
-    if item.item_type == "Filter":
-        return {"w": 4, "h": 3, "x": 0, "y": 0}
-    if item.item_type == "Chart":
-        chart_type = frappe.db.get_value("Insights Query Chart", item.chart, "type")
-        if chart_type == "Number":
-            return {"w": 4, "h": 4, "x": 0, "y": 0}
-        if chart_type == "Progress":
-            return {"w": 6, "h": 5, "x": 0, "y": 0}
-        return {"w": 12, "h": 9, "x": 0, "y": 0}
-    return {"w": 6, "h": 6, "x": 0, "y": 0}
-
-
-def get_item_position(item, existing_layouts):
-    new_layout = frappe.parse_json(item.get("layout")) or get_item_size(item)
-    # find the first available position
-    for y in range(0, 100_000):
-        for x in range(0, 20):
-            new_layout["x"] = x
-            new_layout["y"] = y
-            if not any(
-                [
-                    layout_overlap(new_layout, existing_layout)
-                    for existing_layout in existing_layouts
-                ]
-            ):
-                return new_layout
-
-
-def layout_overlap(new_layout, existing_layout):
-    return (
-        new_layout.get("x") < existing_layout.get("x") + existing_layout.get("w")
-        and new_layout.get("x") + new_layout.get("w") > existing_layout.get("x")
-        and new_layout.get("y") < existing_layout.get("y") + existing_layout.get("h")
-        and new_layout.get("y") + new_layout.get("h") > existing_layout.get("y")
+    query_result_expiry = frappe.db.get_single_value(
+        "Insights Settings", "query_result_expiry"
     )
+    query_result_expiry_in_seconds = query_result_expiry * 60
+    return get_or_set_cache(key, get_result, expiry=query_result_expiry_in_seconds)

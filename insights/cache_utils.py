@@ -1,0 +1,35 @@
+# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+# For license information, please see license.txt
+
+import hashlib
+
+import frappe
+
+EXPIRY = 60 * 10
+
+
+def make_cache_key(*args):
+    key = ""
+    for arg in args:
+        if isinstance(arg, dict):
+            key += frappe.as_json(arg)
+        key += frappe.cstr(arg)
+    key = hashlib.md5(key.encode("utf-8")).hexdigest()
+    return f"insights|{key}"
+
+
+def get_or_set_cache(key, func, force=False, expiry=EXPIRY):
+    cached_value = frappe.cache().get_value(key)
+    if cached_value and not force:
+        return cached_value
+
+    value = func()
+    frappe.cache().set_value(key, value, expires_in_sec=expiry)
+    return value
+
+
+@frappe.whitelist()
+def reset_insights_cache():
+    frappe.only_for("System Manager")
+    cache = frappe.cache()
+    cache.delete_keys("insights*")

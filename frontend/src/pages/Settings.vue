@@ -6,23 +6,28 @@
 			</div>
 		</template>
 		<template #main>
-			<div class="flex w-1/3 flex-col space-y-6" v-if="settings.doc">
+			<div class="flex w-full flex-col space-y-6 lg:w-1/3" v-if="settings.doc">
 				<div class="space-y-4">
 					<div class="text-sm tracking-wide text-gray-600">GENERAL</div>
 					<Input
 						type="checkbox"
 						label="Auto Execute Query"
 						:value="settings.doc.auto_execute_query"
-						@input="(c) => settings.updateSettings({ auto_execute_query: c })"
+						@change="(c) => settings.updateSettings({ auto_execute_query: c })"
 					/>
 					<Input
 						type="number"
 						min="0"
-						label="Auto Refresh Dashboard In (Minutes)"
-						:value="settings.doc.auto_refresh_dashboard_in_minutes"
-						@input="
-							(c) => settings.updateSettings({ auto_refresh_dashboard_in_minutes: c })
-						"
+						label="Cache Query Results For (Minutes)"
+						:value="settings.doc.query_result_expiry"
+						@change="(c) => settings.updateSettings({ query_result_expiry: c })"
+					/>
+					<Input
+						type="number"
+						min="0"
+						label="Max Query Results (Rows)"
+						:value="settings.doc.query_result_limit"
+						@change="(c) => settings.updateSettings({ query_result_limit: c })"
 					/>
 				</div>
 			</div>

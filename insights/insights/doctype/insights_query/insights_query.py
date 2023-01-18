@@ -7,7 +7,7 @@ from json import dumps
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cstr, flt
+from frappe.utils import flt
 from sqlparse import format as format_sql
 
 from ..insights_data_source.sources.query_store import sync_query_store
@@ -53,8 +53,12 @@ class InsightsQueryValidation:
     def validate_limit(self):
         if self.limit and self.limit < 1:
             frappe.throw("Limit must be greater than 0")
-        if self.limit and self.limit > 1000:
-            frappe.throw("Limit must be less than 1000")
+        limit = (
+            frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            or 10000
+        )
+        if self.limit and self.limit > limit:
+            frappe.throw(f"Limit must be less than {limit}")
 
     def validate_filters(self):
         if not self.filters:
@@ -92,9 +96,29 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.delete_linked_charts()
         self.delete_insights_table()
 
-    @cached_property
+    @property
     def _data_source(self):
         return frappe.get_doc("Insights Data Source", self.data_source)
+
+    @property
+    def results(self) -> str:
+        """Returns the 1000 rows of the query results"""
+        try:
+            if self.status != "Execution Successful":
+                return frappe.as_json([self._result_columns])
+
+            cached_results = self.load_results()
+            if not cached_results or len(cached_results) == 1:  # only columns
+                results = self.fetch_results()
+                return frappe.as_json(results[:1000])
+
+            return frappe.as_json(cached_results[:1000])
+        except Exception as e:
+            print("Error getting results", e)
+
+    @property
+    def results_row_count(self):
+        return len(self.load_results())
 
     def update_query(self):
         query = self._data_source.build_query(query=self)
@@ -103,30 +127,40 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             self.sql = query
             self.status = "Pending Execution"
 
+    @property
+    def _result_columns(self):
+        return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
+
     def fetch_results(self):
         results = list(self._data_source.run_query(query=self))
-        columns = [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
-        results.insert(0, columns)
+        results.insert(0, self._result_columns)
         if self.transforms:
             results = self.apply_transform(results)
         if self.has_cumulative_columns():
             results = self.apply_cumulative_sum(results)
+        self.store_results(results)
         return results
 
     def build_and_execute(self):
         start = time.time()
-        results = self.fetch_results()
+        self.fetch_results()
         self.execution_time = flt(time.time() - start, 3)
         self.last_execution = frappe.utils.now()
-        self.result = dumps(results, default=cstr)
         self.status = "Execution Successful"
 
-    def run_with_filters(self, filter_conditions):
-        filters = frappe.parse_json(self.filters)
-        filters.conditions.extend(filter_conditions)
-        self.filters = dumps(filters, indent=2)
-        results = self.fetch_results()
-        return results
+    def store_results(self, results):
+        frappe.cache().set_value(
+            f"insights_query|{self.name}",
+            frappe.as_json(results),
+        )
+
+    def load_results(self, fetch_if_not_exists=False):
+        results = frappe.cache().get_value(f"insights_query|{self.name}")
+        if not results and fetch_if_not_exists:
+            results = self.fetch_results()
+        if not results:
+            return [self._result_columns]
+        return frappe.parse_json(results)
 
     def create_default_chart(self):
         charts = self.get_charts()
@@ -137,7 +171,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     "query": self.name,
                     "title": self.title,
                 }
-            ).insert()
+            ).insert(ignore_permissions=True)
 
     def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
@@ -156,25 +190,25 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def delete_linked_charts(self):
         charts = self.get_charts()
         for chart in charts:
-            frappe.delete_doc("Insights Query Chart", chart)
-        frappe.db.delete("Insights Dashboard Item", {"chart": self.name})
+            frappe.delete_doc("Insights Query Chart", chart, ignore_permissions=True)
+            frappe.db.delete("Insights Dashboard Item", {"chart": chart})
 
     def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
-            frappe.delete_doc("Insights Table", table_name)
+            frappe.delete_doc("Insights Table", table_name, ignore_permissions=True)
 
     def clear(self):
         self.tables = []
         self.columns = []
         self.filters = DEFAULT_FILTERS
         self.sql = None
-        self.result = None
-        self.limit = 10
+        self.limit = 500
         self.execution_time = 0
         self.last_execution = None
         self.transform_type = None
         self.transform_data = None
         self.transform_result = None
+        frappe.cache().delete_value(f"insights_query|{self.name}")
         self.status = "Execution Successful"
 
     def sync_query_store(self):
@@ -184,9 +218,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def get_columns(self):
         return self.columns or self.fetch_columns()
 
-    def load_result(self):
-        return frappe.parse_json(self.result)
-
     def apply_transform(self, results):
         from pandas import DataFrame
 
@@ -194,15 +225,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             if row.type == "Pivot":
                 result = frappe.parse_json(results)
                 options = frappe.parse_json(row.options)
-
-                pivot_column = next(
-                    (c for c in self.columns if c.column == options.column), None
+                pivot_column = options.get("column")
+                index_column = options.get("index")
+                index_column_type = next(
+                    (c.type for c in self.columns if c.label == index_column),
+                    None,
                 )
-                index_column = next(
-                    (c for c in self.columns if c.column == options.index), None
-                )
-                value_column = next(
-                    (c for c in self.columns if c.column == options.value), None
+                value_column = options.get("value")
+                value_column_type = next(
+                    (c.type for c in self.columns if c.label == value_column),
+                    None,
                 )
 
                 if not (pivot_column and index_column and value_column):
@@ -214,16 +246,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     result[1:], columns=[d.split("::")[0] for d in result[0]]
                 )
 
-                pivot_column_values = results_df[pivot_column.label]
-                index_column_values = results_df[index_column.label]
-                value_column_values = results_df[value_column.label]
+                pivot_column_values = results_df[pivot_column]
+                index_column_values = results_df[index_column]
+                value_column_values = results_df[value_column]
 
                 # make a dataframe for pivot table
                 pivot_df = DataFrame(
                     {
-                        index_column.label: index_column_values,
-                        pivot_column.label: pivot_column_values,
-                        value_column.label: value_column_values,
+                        index_column: index_column_values,
+                        pivot_column: pivot_column_values,
+                        value_column: value_column_values,
                     }
                 )
 
@@ -240,8 +272,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 pivoted = pivoted.fillna(0)
 
                 cols = pivoted.columns.to_list()
-                cols = [f"{cols[0]}::{index_column.type}"] + [
-                    f"{c}::{value_column.type}" for c in cols[1:]
+                cols = [f"{cols[0]}::{index_column_type}"] + [
+                    f"{c}::{value_column_type}" for c in cols[1:]
                 ]
                 data = pivoted.values.tolist()
 

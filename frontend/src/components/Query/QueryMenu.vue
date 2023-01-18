@@ -1,5 +1,12 @@
 <template>
-	<div class="h-fit">
+	<div class="flex flex-shrink-0 space-x-2">
+		<Button
+			v-if="query.isOwner"
+			icon="share-2"
+			appearance="minimal"
+			@click="() => (show_share_dialog = true)"
+		/>
+
 		<Dropdown
 			placement="left"
 			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
@@ -12,7 +19,7 @@
 					  }
 					: null,
 				{
-					label: 'Execute',
+					label: 'Execute (⌘+E)',
 					icon: 'play',
 					handler: query.execute,
 				},
@@ -40,6 +47,11 @@
 					label: 'Duplicate',
 					icon: 'copy',
 					handler: duplicateQuery,
+				},
+				{
+					label: 'Download CSV',
+					icon: 'download',
+					handler: downloadCSV,
 				},
 				{
 					label: 'Delete',
@@ -106,7 +118,11 @@
 			</template>
 		</Dialog>
 
-		<Dialog :options="{ title: 'Generated SQL' }" v-model="show_sql_dialog" :dismissable="true">
+		<Dialog
+			:options="{ title: 'Generated SQL', size: '3xl' }"
+			v-model="show_sql_dialog"
+			:dismissable="true"
+		>
 			<template #body-content>
 				<div class="relative">
 					<p
@@ -135,19 +151,19 @@
 						type="select"
 						label="Pivot Column"
 						v-model="pivot.column"
-						:options="[''].concat(query.columns.indexOptions)"
+						:options="pivotOptions"
 					/>
 					<Input
 						type="select"
 						label="Index Column"
 						v-model="pivot.index"
-						:options="[''].concat(query.columns.indexOptions)"
+						:options="indexOptions"
 					/>
 					<Input
 						type="select"
 						label="Value Column"
 						v-model="pivot.value"
-						:options="[''].concat(query.columns.valueOptions)"
+						:options="valueOptions"
 					/>
 				</div>
 			</template>
@@ -163,12 +179,20 @@
 			</template>
 		</Dialog>
 	</div>
+
+	<ShareDialog
+		v-model:show="show_share_dialog"
+		:resource-type="query.doc.doctype"
+		:resource-name="query.doc.name"
+	/>
 </template>
 
 <script setup>
-import { ref, inject, computed, nextTick, reactive } from 'vue'
+import ShareDialog from '@/components/ShareDialog.vue'
+import { ref, inject, computed, nextTick, reactive, watch } from 'vue'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { useRouter } from 'vue-router'
+import { useMagicKeys } from '@vueuse/core'
 
 const query = inject('query')
 
@@ -176,6 +200,11 @@ const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_pivot_dialog = ref(false)
+const show_share_dialog = ref(false)
+
+const keys = useMagicKeys()
+const cmdE = keys['Meta+E']
+watch(cmdE, (value) => value && query.execute())
 
 const pivot = reactive({
 	column: null,
@@ -224,6 +253,24 @@ function copySQL() {
 	}
 }
 
+const pivotOptions = computed(() =>
+	[''].concat(
+		query.columns.indexOptions
+			.map((option) => option.label)
+			.filter((option) => option !== pivot.index)
+	)
+)
+const indexOptions = computed(() =>
+	[''].concat(
+		query.columns.indexOptions
+			.map((option) => option.label)
+			.filter((option) => option !== pivot.column)
+	)
+)
+const valueOptions = computed(() =>
+	[''].concat(query.columns.valueOptions.map((option) => option.label))
+)
+
 function applyPivotTransform() {
 	query.addTransform
 		.submit({
@@ -244,6 +291,21 @@ function applyPivotTransform() {
 
 function resetPivot() {
 	query.resetTransforms.submit()
+}
+
+function downloadCSV() {
+	let data = query.results.data
+	data[0] = data[0].map((d) => d.split('::')[0])
+	const csvString = data.map((row) => row.join(',')).join('\n')
+	const blob = new Blob([csvString], { type: 'text/csv' })
+	const url = window.URL.createObjectURL(blob)
+	const a = document.createElement('a')
+	a.setAttribute('hidden', '')
+	a.setAttribute('href', url)
+	a.setAttribute('download', `${query.doc.title || 'data'}.csv`)
+	document.body.appendChild(a)
+	a.click()
+	document.body.removeChild(a)
 }
 
 const pivotDisabled = computed(() => {

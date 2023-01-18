@@ -8,7 +8,7 @@
 				:value="formatter ? formatDates(value) : value"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
-					'form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500',
+					'form-input block h-8 w-full cursor-pointer select-none rounded-md text-sm placeholder-gray-500',
 					inputClass,
 				]"
 			/>
@@ -61,18 +61,7 @@
 									'rounded-r-md bg-blue-100':
 										toDate && toValue(date) === toValue(toDate),
 								}"
-								@click="
-									() => {
-										if (fromDate && toDate) {
-											fromDate = toValue(date)
-											toDate = ''
-										} else if (fromDate && !toDate) {
-											toDate = toValue(date)
-										} else {
-											fromDate = toValue(date)
-										}
-									}
-								"
+								@click="() => handleDateClick(date)"
 							>
 								{{ date.getDate() }}
 							</div>
@@ -81,9 +70,9 @@
 				</div>
 
 				<div class="mt-1 flex w-full justify-end space-x-2">
-					<Button @click="$emit('change', '')" :disabled="!value"> Clear </Button>
+					<Button @click="() => clearDates()" :disabled="!value"> Clear </Button>
 					<Button
-						@click="selectDates() || togglePopover()"
+						@click="() => selectDates() | togglePopover()"
 						:disabled="!fromDate || !toDate"
 						appearance="primary"
 					>
@@ -159,8 +148,37 @@ export default {
 		},
 	},
 	methods: {
+		handleDateClick(date) {
+			if (this.fromDate && this.toDate) {
+				this.fromDate = this.toValue(date)
+				this.toDate = ''
+			} else if (this.fromDate && !this.toDate) {
+				this.toDate = this.toValue(date)
+			} else {
+				this.fromDate = this.toValue(date)
+			}
+			this.swapDatesIfNecessary()
+		},
 		selectDates() {
+			if (!this.fromDate && !this.toDate) {
+				return this.$emit('change', '')
+			}
 			this.$emit('change', `${this.fromDate},${this.toDate}`)
+		},
+		swapDatesIfNecessary() {
+			if (!this.fromDate || !this.toDate) {
+				return
+			}
+			// if fromDate is greater than toDate, swap them
+			let fromDate = this.getDate(this.fromDate)
+			let toDate = this.getDate(this.toDate)
+			if (fromDate > toDate) {
+				let temp = fromDate
+				fromDate = toDate
+				toDate = temp
+			}
+			this.fromDate = this.toValue(fromDate)
+			this.toDate = this.toValue(toDate)
 		},
 		selectCurrentMonthYear() {
 			let date = this.toDate ? this.getDate(this.toDate) : this.today
@@ -258,6 +276,11 @@ export default {
 			}
 			const values = value.split(',')
 			return this.formatter(values[0]) + ' to ' + this.formatter(values[1])
+		},
+		clearDates() {
+			this.fromDate = ''
+			this.toDate = ''
+			this.selectDates()
 		},
 	},
 }

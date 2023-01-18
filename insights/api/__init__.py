@@ -5,24 +5,39 @@ import frappe
 from pypika import CustomFunction
 
 from insights import notify
+from insights.decorators import check_role
+from insights.insights.doctype.insights_team.insights_team import (
+    check_data_source_permission,
+    check_table_permission,
+    get_allowed_resources_for_user,
+    get_permission_filter,
+)
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_data_sources():
     return frappe.get_list(
         "Insights Data Source",
-        filters={"status": "Active"},
-        fields=["name", "title", "status", "database_type", "modified"],
+        filters={
+            "status": "Active",
+            **get_permission_filter("Insights Data Source"),
+        },
+        fields=["name", "title", "status", "database_type", "creation"],
+        order_by="creation desc",
     )
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_data_source(name):
+    check_data_source_permission(name)
     doc = frappe.get_doc("Insights Data Source", name)
     tables = get_all_tables(name)
     return {
@@ -39,6 +54,7 @@ def get_all_tables(data_source=None):
         "Insights Table",
         filters={
             "data_source": data_source,
+            **get_permission_filter("Insights Table"),
         },
         fields=["name", "table", "label", "hidden"],
         order_by="hidden asc, label asc",
@@ -46,7 +62,10 @@ def get_all_tables(data_source=None):
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_table_columns(data_source, table):
+    check_table_permission(data_source, table)
+
     doc = frappe.get_doc(
         "Insights Table",
         {
@@ -54,32 +73,24 @@ def get_table_columns(data_source, table):
             "table": table,
         },
     )
+
     return {"columns": doc.columns}
 
 
 @frappe.whitelist()
-def update_data_source_table(name, table, hidden):
-    table = frappe.get_doc(
-        "Insights Table",
-        {
-            "data_source": name,
-            "table": table,
-        },
-    )
-    table.hidden = hidden
-    table.save()
-
-
-@frappe.whitelist()
+@check_role("Insights User")
 def get_tables(data_source=None):
     if not data_source:
         return []
+
+    check_data_source_permission(data_source)
 
     return frappe.get_list(
         "Insights Table",
         filters={
             "hidden": 0,
             "data_source": data_source,
+            **get_permission_filter("Insights Table"),
         },
         fields=["name", "table", "label"],
         order_by="label asc",
@@ -87,18 +98,31 @@ def get_tables(data_source=None):
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_dashboard_list():
-    return frappe.get_list(
+    dashboards = frappe.get_list(
         "Insights Dashboard",
-        fields=["name", "title", "modified"],
+        filters={**get_permission_filter("Insights Dashboard")},
+        fields=["name", "title", "modified", "_liked_by"],
     )
+    for dashboard in dashboards:
+        if dashboard._liked_by:
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
+                dashboard._liked_by
+            )
+        dashboard["charts"] = frappe.get_all(
+            "Insights Dashboard Item",
+            filters={"parent": dashboard.name, "item_type": "Chart"},
+            pluck="parent",
+        )
+    return dashboards
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def create_dashboard(title):
-    dashboard = frappe.get_doc(
-        {"doctype": "Insights Dashboard", "title": title}
-    ).insert()
+    dashboard = frappe.get_doc({"doctype": "Insights Dashboard", "title": title})
+    dashboard.insert()
     return {
         "name": dashboard.name,
         "title": dashboard.title,
@@ -106,8 +130,12 @@ def create_dashboard(title):
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_queries():
-    frappe.has_permission("Insights Query", throw=True)
+    allowed_queries = get_allowed_resources_for_user("Insights Query")
+    if not allowed_queries:
+        return []
+
     Query = frappe.qb.DocType("Insights Query")
     QueryTable = frappe.qb.DocType("Insights Query Table")
     QueryChart = frappe.qb.DocType("Insights Query Chart")
@@ -123,16 +151,20 @@ def get_queries():
             Query.title,
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
-            Query.modified,
+            Query.creation,
             QueryChart.type.as_("chart_type"),
         )
+        .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
-        .orderby(Query.modified, order=frappe.qb.desc)
+        .orderby(Query.creation, order=frappe.qb.desc)
     ).run(as_dict=True)
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def create_query(title, data_source, table):
+    check_table_permission(data_source, table.get("value"))
+
     query = frappe.new_doc("Insights Query")
     query.title = title
     query.data_source = data_source
@@ -148,30 +180,43 @@ def create_query(title, data_source, table):
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_running_jobs(data_source):
     return []
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def kill_running_job(data_source, query_id):
     return
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_user_info():
+    is_admin = frappe.db.exists(
+        "Has Role", {"parent": frappe.session.user, "role": "Insights Admin"}
+    )
+    is_user = frappe.db.exists(
+        "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
+    )
+
     return {
         "user_id": frappe.session.user,
-        "permissions": {
-            "Query": frappe.has_permission("Insights Query", throw=False),
-            "Dashboard": frappe.has_permission("Insights Dashboard", throw=False),
-        },
+        "is_admin": is_admin or frappe.session.user == "Administrator",
+        "is_user": is_user,
     }
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
+
+    check_table_permission(data_source, primary_table.get("value"))
+    check_table_permission(data_source, foreign_table.get("value"))
+
     primary = frappe.get_doc(
         "Insights Table",
         {
@@ -208,6 +253,7 @@ def create_table_link(
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_onboarding_status():
     return {
         "is_onboarded": frappe.db.get_single_value(
@@ -225,25 +271,30 @@ def get_onboarding_status():
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def skip_onboarding():
     frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_dashboard_options(chart):
+    allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
+    if not allowed_dashboards:
+        return []
+
+    # find all dashboards that don't have the chart within the allowed dashboards
+    Dashboard = frappe.qb.DocType("Insights Dashboard")
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
 
-    exclude_dashboards = (
-        frappe.qb.from_(DashboardItem)
-        .select(DashboardItem.parent)
-        .distinct()
-        .where(DashboardItem.chart == chart)
-        .run(pluck="parent")
-    )
-    return frappe.get_list(
-        "Insights Dashboard",
-        filters={"name": ["not in", exclude_dashboards]},
-        fields=["name as value", "title as label"],
+    return (
+        frappe.qb.from_(Dashboard)
+        .left_join(DashboardItem)
+        .on(Dashboard.name == DashboardItem.parent)
+        .select(Dashboard.name.as_("value"), Dashboard.title.as_("label"))
+        .where(Dashboard.name.isin(allowed_dashboards) & (DashboardItem.chart != chart))
+        .groupby(Dashboard.name)
+        .run(as_dict=True)
     )
 
 
@@ -253,11 +304,12 @@ def get_csv_from_base64(encoded_string):
 
     data = encoded_string.split(",")[1]  # remove data uri
     data = base64.b64decode(data)
-    data = StringIO(data.decode("utf-8"))
+    data = StringIO(data.decode("unicode_escape"))
     return data
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def get_columns_from_csv(file):
     import csv
 
@@ -274,33 +326,46 @@ def create_csv_file(file):
     file_doc = frappe.new_doc("File")
     file_doc.file_name = file.get("name")
     file_doc.content = get_csv_from_base64(file.get("data")).read()
-    file_doc.save()
+    file_doc.save(ignore_permissions=True)
     return file_doc
 
 
 @frappe.whitelist()
-def upload_csv(label, file, if_exists, columns):
+@check_role("Insights User")
+def upload_csv(data_source, label, file, if_exists, columns):
     table_import = frappe.new_doc("Insights Table Import")
-    table_import.data_source = "Site DB"
+    table_import.data_source = data_source
     table_import.table_name = frappe.scrub(label)
     table_import.table_label = label
     table_import.if_exists = if_exists
     table_import.source = create_csv_file(file).file_url
+    table_import.save()
+    table_import.columns = []
     for column in columns:
         table_import.append(
             "columns",
             {
-                "column": frappe.scrub(column.get("label")),
-                "label": column.get("label"),
-                "type": column.get("data_type"),
+                "column": frappe.scrub(column.get("column")),
+                "label": frappe.unscrub(column.get("column")),
+                "type": column.get("type"),
             },
         )
-    table_import.save()
     table_import.submit()
+    notify(
+        **{
+            "title": "Success",
+            "message": "Table Imported",
+            "type": "success",
+        }
+    )
 
 
 @frappe.whitelist()
+@check_role("Insights User")
 def sync_data_source(data_source: str):
+    if not frappe.has_permission("Insights Data Source", "write"):
+        frappe.throw("Not allowed", frappe.PermissionError)
+
     from frappe.utils.scheduler import is_scheduler_inactive
 
     if is_scheduler_inactive():
@@ -330,7 +395,8 @@ def _sync_data_source(data_source):
             "type": "info",
         }
     )
-    frappe.get_doc("Insights Data Source", data_source).sync_tables()
+    source = frappe.get_doc("Insights Data Source", data_source)
+    source.sync_tables()
     notify(
         **{
             "title": "Success",
@@ -341,5 +407,30 @@ def _sync_data_source(data_source):
 
 
 @frappe.whitelist()
-def get_query_data(query):
-    return frappe.db.get_value("Insights Query", query, "result")
+@check_role("Insights User")
+def delete_data_source(data_source):
+    try:
+        frappe.delete_doc("Insights Data Source", data_source)
+        notify(
+            **{
+                "title": "Success",
+                "message": "Data Source Deleted",
+                "type": "success",
+            }
+        )
+    except frappe.LinkExistsError:
+        notify(
+            **{
+                "type": "error",
+                "title": "Cannot delete Data Source",
+                "message": "Data Source is linked to a Query or Dashboard",
+            }
+        )
+    except Exception as e:
+        notify(
+            **{
+                "type": "error",
+                "title": "Error",
+                "message": e,
+            }
+        )

@@ -28,7 +28,7 @@
 						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-400" />
+							<Input type="checkbox" class="rounded-md border-gray-300" />
 						</p>
 						<p class="flex-1">Query</p>
 						<p class="w-28 text-right">Time</p>
@@ -43,7 +43,7 @@
 							class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 						>
 							<p class="mr-4">
-								<Input type="checkbox" class="rounded-md border-gray-400" />
+								<Input type="checkbox" class="rounded-md border-gray-300" />
 							</p>
 							<p class="flex-1 text-sm text-gray-900">
 								{{ query.info }}
@@ -83,7 +83,8 @@ import { computed, ref, inject } from 'vue'
 
 const dataSource = ref('')
 const getDataSources = createResource({
-	method: 'insights.api.get_data_sources',
+	url: 'insights.api.get_data_sources',
+	auto: true,
 	initialData: [],
 	onSuccess(res) {
 		if (res.length) {
@@ -92,13 +93,12 @@ const getDataSources = createResource({
 		}
 	},
 })
-getDataSources.fetch()
 const dataSources = computed(() => {
 	return getDataSources.data?.map((d) => d['name']) || []
 })
 
 const getRunningQueries = createResource({
-	method: 'insights.api.get_running_jobs',
+	url: 'insights.api.get_running_jobs',
 	initialData: [],
 })
 
@@ -117,7 +117,7 @@ const runningQueries = computed(() => {
 })
 
 const killQueryResource = createResource({
-	method: 'insights.api.kill_running_job',
+	url: 'insights.api.kill_running_job',
 	onSuccess(res) {
 		getRunningQueries.submit({ data_source: dataSource.value })
 	},

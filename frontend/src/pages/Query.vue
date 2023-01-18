@@ -9,7 +9,9 @@
 		</template>
 
 		<template #main>
-			<div class="flex h-full w-full flex-col rounded-md">
+			<div
+				class="main flex flex-1 flex-col overflow-scroll rounded-md scrollbar-hide lg:overflow-hidden"
+			>
 				<QueryBuilder v-if="activeTab == 'Build'" />
 				<QueryVisualizer v-if="activeTab == 'Visualize'" />
 			</div>
@@ -40,29 +42,7 @@ const tabs = ref([
 	{ label: 'Visualize', active: false },
 ])
 const activeTab = computed(() => tabs.value.find((t) => t.active).label)
-const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
-const noColumns = computed(() => query.doc?.columns.length === 0)
-watchEffect(() => {
-	tabs.value.find((t) => t.label === 'Visualize').disabled =
-		needsExecution.value || noColumns.value
-})
 const switchTab = (tab) => {
-	if (tab.label === 'Visualize') {
-		let warnMessage = ''
-		if (needsExecution.value) {
-			warnMessage = 'You need to execute the query first.'
-		} else if (noColumns.value) {
-			warnMessage = 'You need to add columns first.'
-		}
-		if (warnMessage) {
-			$notify({
-				title: 'Cannot Visualize',
-				message: warnMessage,
-				appearance: 'warning',
-			})
-			return
-		}
-	}
 	tabs.value.forEach((t) => {
 		t.active = t.label === tab.label
 	})

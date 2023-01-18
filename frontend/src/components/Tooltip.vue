@@ -6,7 +6,7 @@
 		<template #body>
 			<slot name="body">
 				<div
-					class="rounded-lg border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
+					class="w-fit rounded-lg border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
 				>
 					{{ text }}
 				</div>

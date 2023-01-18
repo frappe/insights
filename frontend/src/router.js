@@ -32,8 +32,8 @@ const routes = [
 	},
 	{
 		path: '/dashboard',
-		name: 'DashboardList',
-		component: () => import('@/dashboard/DashboardList.vue'),
+		name: 'Dashboards',
+		component: () => import('@/dashboard/Dashboards.vue'),
 	},
 	{
 		props: true,
@@ -70,14 +70,25 @@ const routes = [
 		component: () => import('@/pages/Query.vue'),
 	},
 	{
+		path: '/users',
+		name: 'Users',
+		component: () => import('@/pages/Users.vue'),
+		meta: {
+			isAllowed: () => auth.user.is_admin,
+		},
+	},
+	{
+		path: '/teams',
+		name: 'Teams',
+		component: () => import('@/pages/Teams.vue'),
+		meta: {
+			isAllowed: () => auth.user.is_admin,
+		},
+	},
+	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
-	},
-	{
-		path: '/settings/running-queries',
-		name: 'Running Queries',
-		component: () => import('@/pages/RunningQueries.vue'),
 	},
 	{
 		path: '/no-permission',
@@ -113,12 +124,15 @@ router.beforeEach(async (to, from, next) => {
 		return next(false)
 	}
 
-	const hasPermission = await auth.hasPermission('Query')
-	if (!hasPermission && to.name !== 'No Permission') {
+	const isAuthorized = await auth.isAuthorized()
+	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
-	if (hasPermission && to.name === 'No Permission') {
-		return next('/not-found')
+	if (isAuthorized && to.name === 'No Permission') {
+		return next()
+	}
+	if (to.meta.isAllowed && !to.meta.isAllowed()) {
+		return next('/no-permission')
 	}
 
 	// force redirect to Setup page if database not set up yet

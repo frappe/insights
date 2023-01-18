@@ -1,25 +1,20 @@
 <template>
-	<Combobox as="div" v-model="selectedOption" v-slot="{ open }" nullable>
+	<Combobox as="div" v-model="selectedOption" v-slot="{ open: isComboBoxOpen }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover class="flex w-full [&>div:first-child]:w-full">
+		<Popover ref="popover" class="flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
 					autocomplete="off"
 					:placeholder="placeholder"
-					@focus="togglePopover"
-					@change="
-						(e) => {
-							filterQuery = e.target.value
-							togglePopover(true)
-						}
-					"
+					@focus="togglePopover(true)"
+					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
 					class="form-input block h-8 w-full placeholder-gray-500"
 				>
 				</ComboboxInput>
 			</template>
-			<template #body>
+			<template #body="{ isOpen: isPopoverOpen }">
 				<transition
 					enter-active-class="transition duration-100 ease-out"
 					enter-from-class="transform scale-95 opacity-0"
@@ -28,9 +23,7 @@
 					leave-from-class="transform scale-100 opacity-100"
 					leave-to-class="transform scale-95 opacity-0"
 				>
-					<!-- `open` is `true` only when first input even is fired on ComboboxInput -->
-					<!-- So, before input event is fired on the input, filterQuery is empty, so we can display the options  -->
-					<div v-show="!filterQuery || open">
+					<div v-show="isComboBoxOpen || isPopoverOpen">
 						<ComboboxOptions
 							static
 							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
@@ -85,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import {
 	Combobox,
 	ComboboxLabel,
@@ -95,9 +88,6 @@ import {
 } from '@headlessui/vue'
 
 const $utils = inject('$utils')
-
-const input = ref(null)
-defineExpose({ input })
 
 const emit = defineEmits([
 	'update:modelValue',
@@ -136,6 +126,22 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	autofocus: {
+		type: Boolean,
+		default: true,
+	},
+})
+
+const input = ref(null)
+const popover = ref(null)
+defineExpose({ input })
+onMounted(() => {
+	if (props.autofocus == false) {
+		setTimeout(() => {
+			input.value.$el.blur()
+			popover.value.close()
+		}, 0)
+	}
 })
 
 const filterQuery = ref('')
@@ -160,6 +166,10 @@ const selectedOption = computed({
 			: options.value.find((option) => option.value === props.modelValue)
 	},
 	set(value) {
+		if (value) {
+			popover.value.close()
+			input.value.$el.blur()
+		}
 		const _value = modelValueIsObject.value ? value : value.value
 		emit('update:modelValue', _value)
 		emit('selectOption', _value)
@@ -183,17 +193,13 @@ const filteredOptions = computed(() => {
 		: $utils
 				.fuzzySearch(uniqueOptions.value, {
 					term: filterQuery.value,
-					keys: ['label', 'value'],
+					keys: ['label', 'value', 'description'],
 				})
 				.slice(0, 50)
 })
 
 watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
-
-	if (newValue === '') {
-		selectedOption.value = undefined
-	}
 	emit('inputChange', newValue)
 })
 </script>

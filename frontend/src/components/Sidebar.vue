@@ -1,55 +1,101 @@
 <template>
-	<div class="fixed inset-y-0 flex w-60 flex-col bg-gray-50" v-if="currentRoute">
-		<div class="flex flex-grow flex-col overflow-y-auto p-4 pl-4 pr-2">
-			<div class="flex h-6 flex-shrink-0 items-end text-sm text-gray-500">
+	<div class="flex w-16 flex-shrink-0 flex-col bg-gray-50 xl:w-60" v-if="currentRoute">
+		<div class="flex flex-grow flex-col overflow-y-auto p-4">
+			<div class="hidden flex-shrink-0 items-end text-sm text-gray-500 xl:flex">
 				<FrappeInsightsLogo />
-				<span class="ml-1">{{ appVersion }}</span>
+				<!-- <span class="ml-1">{{ appVersion }}</span> -->
+				<div class="ml-1 mb-0.5 rounded-full bg-gray-200 px-2 text-xs text-gray-900">
+					beta
+				</div>
 			</div>
-			<!-- <div
-				class="relative mt-4 flex cursor-pointer items-center rounded-md border bg-white px-2 text-base text-gray-500"
-				@click="commandPalette.open()"
-			>
-				<FeatherIcon name="search" class="absolute h-4 w-4" />
-				<input
-					ref="searchInput"
-					class="ml-2 flex w-full cursor-pointer items-center rounded-t-md bg-white py-1 px-4 focus:outline-none"
-					placeholder="Search..."
-					disabled
-				/>
-				<span class="absolute right-2 text-sm">⌘K</span>
-			</div> -->
-			<div class="mt-4 flex flex-grow flex-col">
+			<div class="flex xl:hidden">
+				<img src="../assets/frappe-framework-logo.svg" />
+			</div>
+
+			<div class="mt-4 flex flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">
-					<router-link
+					<Tooltip
 						v-for="route in sidebarItems"
 						:key="route.path"
-						:to="route.path"
-						:class="[
-							route.current
-								? 'bg-gray-200/70'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-							'group flex items-center rounded-md px-2 py-2 font-medium',
-						]"
-						aria-current="page"
+						placement="right"
+						:hoverDelay="0.1"
+						class="w-full"
 					>
-						<FeatherIcon
-							:name="route.icon"
+						<template #body>
+							<div
+								class="w-fit rounded-lg border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
+							>
+								{{ route.label }}
+							</div>
+						</template>
+
+						<router-link
+							:to="route.path"
 							:class="[
 								route.current
-									? 'text-gray-600'
-									: 'text-gray-500 group-hover:text-gray-600',
-								'mr-3 h-4 w-4 flex-shrink-0',
+									? 'bg-gray-200/70'
+									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
+								'group -mx-1 flex items-center justify-center rounded-md p-2 font-medium xl:justify-start',
 							]"
-						/>
-						{{ route.label }}
-					</router-link>
+							aria-current="page"
+						>
+							<FeatherIcon
+								:name="route.icon"
+								:class="[
+									route.current
+										? 'text-gray-600'
+										: 'text-gray-500 group-hover:text-gray-600',
+									'mr-0 h-5 w-5 flex-shrink-0 xl:mr-3 xl:h-4 xl:w-4',
+								]"
+							/>
+							<span class="hidden xl:inline-block">{{ route.label }}</span>
+						</router-link>
+					</Tooltip>
 				</nav>
 			</div>
 
-			<div class="flex items-center text-base text-gray-600">
-				<Avatar :label="auth.user.full_name" :imageURL="auth.user.user_image" />
-				<span class="ml-2">{{ auth.user.full_name }}</span>
-				<Button icon="log-out" appearance="minimal" class="ml-auto" @click="auth.logout" />
+			<div class="-mx-2 mt-auto flex items-center text-base text-gray-600 xl:mx-0">
+				<Dropdown
+					placement="left"
+					:options="[
+						{
+							label: 'Documentation',
+							icon: 'help-circle',
+							handler: () => open('https://frappeinsights.com/docs'),
+						},
+						auth.user.is_admin
+							? {
+									label: 'Switch to Desk',
+									icon: 'grid',
+									handler: () => open('/app'),
+							  }
+							: null,
+						{
+							label: 'Logout',
+							icon: 'log-out',
+							handler: () => auth.logout(),
+						},
+					]"
+				>
+					<template v-slot="{ open }">
+						<button
+							class="flex w-full items-center space-x-2 rounded-md p-2 text-left text-base font-medium"
+							:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
+						>
+							<Avatar
+								:label="auth.user.full_name"
+								:imageURL="auth.user.user_image"
+								size="md"
+							/>
+							<span
+								class="ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap xl:inline"
+							>
+								{{ auth.user.full_name }}
+							</span>
+							<FeatherIcon name="chevron-down" class="hidden h-4 w-4 xl:inline" />
+						</button>
+					</template>
+				</Dropdown>
 			</div>
 		</div>
 	</div>
@@ -59,7 +105,7 @@
 import { Avatar } from 'frappe-ui'
 import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
@@ -107,21 +153,49 @@ getOnboardingStatus().then((onboardingComplete) => {
 		})
 	}
 })
+watch(
+	() => auth.user.is_admin,
+	(isAdmin) => {
+		if (isAdmin) {
+			// add users & teams item after settings item
+			if (sidebarItems.value.find((item) => item.name === 'Teams')) {
+				return
+			}
+			const settingsIndex = sidebarItems.value.findIndex((item) => item.name === 'Settings')
+			sidebarItems.value.splice(settingsIndex, 0, {
+				path: '/users',
+				label: 'Users',
+				icon: 'user',
+				name: 'Users',
+				current: false,
+			})
+			sidebarItems.value.splice(settingsIndex + 1, 0, {
+				path: '/teams',
+				label: 'Teams',
+				icon: 'users',
+				name: 'Teams',
+				current: false,
+			})
+		}
+	}
+)
 
 const route = useRoute()
 const currentRoute = computed(() => {
 	sidebarItems.value.forEach((item) => {
-		item.current = route.path.includes(item.path)
+		// check if /<route> or /<route>/<id> is in sidebar item path
+		item.current = route.path.match(new RegExp(`^${item.path}(/|$)`))
 	})
 	return route.path
 })
 
 const getAppVersion = createResource({
-	method: 'insights.api.get_app_version',
+	url: 'insights.api.get_app_version',
 	initialData: '0.0.0',
+	auto: true,
 })
-getAppVersion.fetch()
 const appVersion = computed(() => {
 	return `v${getAppVersion.data}`
 })
+const open = (url) => window.open(url, '_blank')
 </script>

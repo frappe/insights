@@ -38,6 +38,10 @@ class InsightsTableImport(Document):
         if not self._filepath or not os.path.exists(self._filepath):
             return
 
+        if self.is_new():
+            self.set_columns_and_no_of_rows()
+
+    def set_columns_and_no_of_rows(self):
         column_names = []
         with open(self._filepath, "r") as f:
             # read only the first line to get the column names
@@ -66,23 +70,28 @@ class InsightsTableImport(Document):
 
         self.db_set("status", "Queued")
         self.start_import.enqueue(
-            self=self,
+            name=self.name,
+            filepath=self._filepath,
             now=frappe.flags.in_test
             or frappe.flags.in_setup_wizard
             or frappe.flags.in_migrate,
         )
 
+    @staticmethod
     @task(queue="long")
-    def start_import(self, filepath=None):
-        self._filepath = filepath or self._filepath
-        self.db_set("status", "Started")
+    def start_import(name, filepath=None):
+        table_import = frappe.get_doc("Insights Table Import", name)
+        table_import._filepath = filepath or table_import._filepath
+        table_import.db_set("status", "Started")
         try:
-            self._data_source.db.import_table(self)
-            self.db_set("status", "Success")
+            table_import._data_source.db.import_table(table_import)
+            table_import.db_set("status", "Success")
         except BaseException as e:
-            print(f"Error importing table {self.table_name}", e)
+            print(f"Error importing table {table_import.table_name}", e)
             frappe.log_error(
-                title=f"Insights: Failed to import table - {self.table_name}"
+                title=f"Insights: Failed to import table - {table_import.table_name}"
             )
-            self.db_set("status", "Failed")
-            self.db_set("error", "Failed to import table. Check error log for details")
+            table_import.db_set("status", "Failed")
+            table_import.db_set(
+                "error", "Failed to import table. Check error log for details"
+            )

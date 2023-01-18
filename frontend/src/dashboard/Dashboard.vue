@@ -10,29 +10,17 @@
 		<template #main>
 			<div
 				v-if="dashboard.items && dashboard.items.length > 0"
-				class="-mx-1 h-full w-full overflow-scroll pt-1"
-				:class="{
-					'blur-[4px]': dashboard.refreshing,
-					'rounded-md bg-slate-50 shadow-inner': dashboard.editingLayout,
-				}"
+				class="-mx-1 h-full w-full overflow-y-scroll pt-1"
 			>
-				<GridLayout
+				<VueGridLayout
 					ref="gridLayout"
-					itemKey="name"
 					:items="dashboard.items"
-					@layoutChange="dashboard.updateLayout"
 					:disabled="!dashboard.editingLayout"
-					:options="{
-						float: true,
-						margin: 4,
-						column: 20,
-						cellHeight: 30,
-					}"
 				>
 					<template #item="{ item }">
 						<DashboardItem :item="item" />
 					</template>
-				</GridLayout>
+				</VueGridLayout>
 			</div>
 			<div
 				v-if="dashboard.items && dashboard.items.length == 0"
@@ -69,6 +57,16 @@
 				/>
 
 				<DashboardFilterForm v-if="newItem.item_type == 'Filter'" v-model="newItem" />
+
+				<TextEditor
+					v-if="newItem.item_type == 'Text'"
+					ref="textEditor"
+					:content="newItem.markdown"
+					placeholder="# Heading"
+					:editable="newItem.item_type == 'Text'"
+					editor-class="min-h-[4rem] prose-sm cursor-text bg-gray-100 rounded-md p-4"
+					@change="(val) => (newItem.markdown = val)"
+				/>
 			</div>
 		</template>
 		<template #actions>
@@ -82,15 +80,16 @@
 <script setup>
 import BasePage from '@/components/BasePage.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import Tabs from '@/components/Tabs.vue'
 import DashboardHeader from '@/dashboard/DashboardHeader.vue'
 import DashboardItem from '@/dashboard/DashboardItem.vue'
-import GridLayout from '@/dashboard/GridLayout.vue'
-import Tabs from '@/components/Tabs.vue'
+import VueGridLayout from '@/dashboard/VueGridLayout.vue'
+import { TextEditor } from 'frappe-ui'
 import DashboardFilterForm from './DashboardFilterForm.vue'
 
-import { computed, ref, provide, watch } from 'vue'
-import { updateDocumentTitle } from '@/utils'
 import useDashboard from '@/dashboard/useDashboard'
+import { updateDocumentTitle } from '@/utils'
+import { computed, provide, ref, watch } from 'vue'
 
 const props = defineProps({
 	name: {
@@ -103,14 +102,6 @@ const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
 const showAddDialog = ref(false)
-const newItem = ref({
-	item_type: 'Chart',
-	chart: null,
-	filter_label: '',
-	filter_type: 'String', // default
-	filter_operator: 'equals', // default
-})
-
 const autocomplete = ref(null)
 watch(showAddDialog, (show) => {
 	if (show) {
@@ -130,7 +121,20 @@ const addItemTabs = ref([
 		label: 'Filter',
 		active: false,
 	},
+	{
+		label: 'Text',
+		active: false,
+	},
 ])
+
+const newItem = ref({
+	item_type: 'Chart',
+	chart: null,
+	filter_label: '',
+	filter_column: {},
+	filter_links: {},
+	markdown: '',
+})
 watch(
 	() => newItem.value.item_type,
 	(type) => {
@@ -150,12 +154,17 @@ function addItem() {
 			item_type: 'Chart',
 			chart: newItem.value.chart,
 		})
+	} else if (newItem.value.item_type == 'Text') {
+		dashboard.addItem({
+			item_type: 'Text',
+			markdown: newItem.value.markdown,
+		})
 	} else {
 		dashboard.addItem({
 			item_type: 'Filter',
 			filter_label: newItem.value.filter_label,
-			filter_type: newItem.value.filter_type,
-			filter_operator: newItem.value.filter_operator,
+			filter_column: newItem.value.filter_column,
+			filter_links: newItem.value.filter_links,
 		})
 	}
 	showAddDialog.value = false
@@ -163,19 +172,18 @@ function addItem() {
 		item_type: 'Chart',
 		chart: null,
 		filter_label: '',
-		filter_type: 'String', // default
-		filter_operator: 'equals', // default
+		filter_column: {},
+		filter_links: {},
 	}
 	newChart.value = {}
 }
 
 const gridLayout = ref(null)
 function saveLayout() {
-	dashboard.saveLayout(gridLayout.value.grid.save(false))
+	dashboard.saveLayout(gridLayout.value.layouts)
 }
-async function autoLayout() {
-	gridLayout.value.grid.compact()
-	console.log(gridLayout.value.grid.getGridItems())
+function autoLayout() {
+	gridLayout.value.compact()
 }
 
 const pageMeta = computed(() => {

@@ -5,6 +5,7 @@ import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
 import { createToast } from '@/utils/toasts'
+import auth from '@/utils/auth'
 
 const API_METHODS = {
 	run: 'run',
@@ -40,6 +41,7 @@ const API_METHODS = {
 export function useQuery(name) {
 	const query = getQueryResource(name)
 
+	query.isOwner = computed(() => query.doc?.owner === auth.user.user_id)
 	query.tables = useQueryTables(query)
 	query.columns = useQueryColumns(query)
 	query.filters = useQueryFilters(query)
@@ -235,6 +237,11 @@ export const FUNCTIONS = {
 		description: 'Returns distinct values of the given column',
 		example: 'distinct(`customer`)',
 	},
+	distinct_count: {
+		syntax: 'distinct_count(column)',
+		description: 'Returns the number of distinct values of the given column',
+		example: 'distinct_count(`customer`)',
+	},
 	sum_if: {
 		syntax: 'sum_if(condition, column)',
 		description: 'Returns the sum of the values of the given column that satisfy the condition',
@@ -244,5 +251,15 @@ export const FUNCTIONS = {
 		syntax: 'time_elapsed(unit, date1, date2)',
 		description: 'Returns the time elapsed between two dates',
 		example: 'time_elapsed("day", `posting_date`, today())',
+	},
+	descendants: {
+		example: 'descendants("India", "tabTerritory", `territory)',
+		description: 'Returns all descendants of the given value',
+		syntax: 'descendants(value, doctype, fieldname)',
+	},
+	descendants_and_self: {
+		example: 'descendants_and_self("India", "tabTerritory", `territory`)',
+		description: 'Returns all descendants and self of the given value',
+		syntax: 'descendants_and_self(value, doctype, fieldname)',
 	},
 }

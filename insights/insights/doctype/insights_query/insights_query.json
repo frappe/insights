@@ -23,7 +23,8 @@
   "query_and_result_tab",
   "section_break_11",
   "sql",
-  "result",
+  "results_row_count",
+  "results",
   "section_break_17",
   "execution_time",
   "column_break_19",
@@ -61,7 +62,7 @@
    "reqd": 1
   },
   {
-   "default": "10",
+   "default": "500",
    "fieldname": "limit",
    "fieldtype": "Int",
    "label": "Limit"
@@ -69,13 +70,6 @@
   {
    "fieldname": "section_break_11",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "result",
-   "fieldtype": "Code",
-   "label": "Result",
-   "options": "JSON",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_3",
@@ -118,7 +112,8 @@
    "in_standard_filter": 1,
    "label": "Data Source",
    "options": "Insights Data Source",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "transform_tab",
@@ -171,11 +166,25 @@
    "fieldtype": "Table",
    "label": "Transforms",
    "options": "Insights Query Transform"
+  },
+  {
+   "fieldname": "results",
+   "fieldtype": "Long Text",
+   "is_virtual": 1,
+   "label": "Results",
+   "read_only": 1
+  },
+  {
+   "fieldname": "results_row_count",
+   "fieldtype": "Int",
+   "is_virtual": 1,
+   "label": "Row Count",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-18 16:34:41.260340",
+ "modified": "2023-01-09 13:23:12.048580",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

@@ -93,10 +93,7 @@ class SQLiteDB(BaseDatabase):
         self.query_builder = SQLiteQueryBuilder()
 
     def test_connection(self):
-        try:
-            return self.execute_query("SELECT 1")
-        except Exception as e:
-            frappe.log_error(f"Error connecting to SQLite: {e}")
+        return self.execute_query("SELECT 1")
 
     def build_query(self, query):
         return self.query_builder.build(query, dialect=self.engine.dialect)
@@ -110,16 +107,17 @@ class SQLiteDB(BaseDatabase):
             return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def validate_query(self, query):
-        if not str(query).strip().lower().startswith("select"):
+        select_or_with = str(query).strip().lower().startswith(("select", "with"))
+        if not select_or_with:
             raise frappe.ValidationError(
-                "Only SELECT statements are allowed in Query Store"
+                "Only SELECT and WITH queries are allowed in SQLite data sources."
             )
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
-    def get_table_preview(self, table, limit=20):
+    def get_table_preview(self, table, limit=100):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
         length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
@@ -132,7 +130,7 @@ class SQLiteDB(BaseDatabase):
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 
-    def get_column_options(self, table, column, search_text=None, limit=25):
+    def get_column_options(self, table, column, search_text=None, limit=50):
         t = Table(table, Column(column))
         query = t.select().distinct().limit(limit)
         if search_text:
@@ -146,6 +144,9 @@ class SQLiteDB(BaseDatabase):
 
     def import_table(self, import_doc: InsightsTableImport):
         df = pd.read_csv(import_doc._filepath)
+        df.columns = [frappe.scrub(c) for c in df.columns]
+        columns_to_import = [c.column for c in import_doc.columns]
+        df = df[columns_to_import]
         table = import_doc.table_name
         df.to_sql(
             name=table,
@@ -153,4 +154,23 @@ class SQLiteDB(BaseDatabase):
             index=False,
             if_exists="replace",
         )
-        self.sync_tables(tables=[table])
+        create_insights_table(
+            frappe._dict(
+                {
+                    "table": import_doc.table_name,
+                    "label": import_doc.table_label,
+                    "data_source": import_doc.data_source,
+                    "columns": [
+                        frappe._dict(
+                            {
+                                "column": column.column,
+                                "label": column.label,
+                                "type": column.type,
+                            }
+                        )
+                        for column in import_doc.columns
+                    ],
+                }
+            ),
+            force=True,
+        )

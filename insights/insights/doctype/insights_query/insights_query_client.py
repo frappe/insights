@@ -183,35 +183,7 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
-        _tables = []
-        if not self.tables or self.data_source == "Query Store":
-            _tables = get_tables(self.data_source)
-
-        else:
-            tables = [d.table for d in self.tables]
-            Table = frappe.qb.DocType("Insights Table")
-            TableLink = frappe.qb.DocType("Insights Table Link")
-            query = (
-                frappe.qb.from_(Table)
-                .from_(TableLink)
-                .select(
-                    TableLink.foreign_table.as_("table"),
-                    TableLink.foreign_table_label.as_("label"),
-                )
-                .where((TableLink.parent == Table.name) & (Table.table.isin(tables)))
-            )
-            _tables = query.run(as_dict=True)
-            # add all selected tables to the list too
-            _tables = _tables + [
-                {"table": d.table, "label": d.label} for d in self.tables
-            ]
-
-        if self.data_source == "Query Store":
-            # remove the current query table from the table list
-            # you should not be querying self
-            _tables = [t for t in _tables if t.get("table") != self.name]
-
-        return _tables
+        return get_tables(self.data_source)
 
     @frappe.whitelist()
     def fetch_columns(self):
@@ -231,6 +203,7 @@ class InsightsQueryClient:
                         "column": c.get("column"),
                         "label": c.get("label"),
                         "type": c.get("type"),
+                        "data_source": self.data_source,
                     }
                 )
                 for c in _columns
@@ -262,37 +235,52 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text=None) -> "list[str]":
+    def fetch_column_values(self, column, search_text=None):
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
         return data_source.get_column_options(
             column.get("table"), column.get("column"), search_text
         )
 
     @frappe.whitelist()
-    def fetch_join_options(self, table):
-        doc = frappe.get_cached_doc(
+    def fetch_join_options(self, left_table, right_table):
+        left_doc = frappe.get_cached_doc(
             "Insights Table",
             {
-                "table": table.get("table"),
+                "table": left_table,
+                "data_source": self.data_source,
+            },
+        )
+        right_doc = frappe.get_cached_doc(
+            "Insights Table",
+            {
+                "table": right_table,
                 "data_source": self.data_source,
             },
         )
 
-        return [
-            {
-                "primary_key": d.primary_key,
-                "foreign_key": d.foreign_key,
-                "table": d.foreign_table,
-                "label": d.foreign_table_label,
-            }
-            for d in doc.get("table_links")
-        ]
+        links = []
+        for link in left_doc.table_links:
+            if link.foreign_table == right_table:
+                links.append(
+                    frappe._dict(
+                        {
+                            "left": link.primary_key,
+                            "right": link.foreign_key,
+                        }
+                    )
+                )
+
+        return {
+            "left_columns": left_doc.get_columns(),
+            "right_columns": right_doc.get_columns(),
+            "saved_links": links,
+        }
 
     @frappe.whitelist()
     def run(self):
         if self.data_source == "Query Store":
             tables = (t.table for t in self.tables)
-            subqueries = frappe.db.get_all(
+            subqueries = frappe.get_all(
                 "Insights Query", {"name": ["in", tables]}, pluck="name"
             )
             for subquery in subqueries:

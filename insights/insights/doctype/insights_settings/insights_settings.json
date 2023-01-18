@@ -9,8 +9,11 @@
   "onboarding_section",
   "setup_complete",
   "onboarding_complete",
+  "use_cte",
   "auto_execute_query",
-  "auto_refresh_dashboard_in_minutes"
+  "auto_refresh_dashboard_in_minutes",
+  "query_result_expiry",
+  "query_result_limit"
  ],
  "fields": [
   {
@@ -40,12 +43,29 @@
    "fieldname": "auto_execute_query",
    "fieldtype": "Check",
    "label": "Auto Execute Query"
+  },
+  {
+   "default": "10",
+   "fieldname": "query_result_expiry",
+   "fieldtype": "Int",
+   "label": "Cache Query Results For (Minutes)"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_cte",
+   "fieldtype": "Check",
+   "label": "Use CTE"
+  },
+  {
+   "fieldname": "query_result_limit",
+   "fieldtype": "Int",
+   "label": "Query Result Limit"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-11-21 13:58:21.557046",
+ "modified": "2023-01-09 12:34:33.142264",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

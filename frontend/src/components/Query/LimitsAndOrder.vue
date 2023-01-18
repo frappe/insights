@@ -11,7 +11,7 @@
 			</span>
 		</div>
 		<div class="ml-auto">
-			<span>Limited to</span>
+			<span>Limit to</span>
 			<input
 				type="text"
 				ref="limitInput"

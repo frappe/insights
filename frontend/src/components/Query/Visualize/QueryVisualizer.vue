@@ -1,7 +1,11 @@
 <template>
-	<div class="flex h-full items-start pt-2">
-		<div class="flex h-full w-[18rem] flex-col pr-4">
-			<div class="mb-3">
+	<div
+		class="flex flex-1 flex-col items-start space-y-4 overflow-scroll pt-2 scrollbar-hide lg:flex-row lg:space-y-0 lg:overflow-hidden"
+	>
+		<div
+			class="flex w-full flex-shrink-0 flex-col overflow-hidden lg:h-full lg:w-[18rem] lg:pr-4"
+		>
+			<div class="mb-3 flex-shrink-0">
 				<div class="mb-2 text-sm tracking-wide text-gray-600">CHART TYPE</div>
 				<ChartSelector
 					v-if="types?.length > 0"
@@ -12,13 +16,17 @@
 				/>
 			</div>
 
-			<div class="flex-1 space-y-3 overflow-y-scroll">
+			<div class="flex flex-1 flex-col overflow-hidden">
 				<div class="mb-2 text-sm tracking-wide text-gray-600">CHART OPTIONS</div>
 				<ChartOptions :chartType="chart.type" />
 			</div>
 		</div>
-		<div class="flex h-full w-[calc(100%-18rem)] flex-col space-y-4">
-			<div class="flex space-x-2">
+
+		<div
+			class="flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
+			v-if="chart.component && chart.componentProps"
+		>
+			<div class="flex flex-shrink-0 space-x-2">
 				<Button
 					appearance="white"
 					@click="showDashboardDialog = true"
@@ -46,14 +54,17 @@
 					Save
 				</Button>
 			</div>
-			<div class="flex max-h-[30rem] flex-1 items-center justify-center">
+			<div class="flex flex-1 flex-col items-center justify-center overflow-hidden">
 				<component
-					v-if="chart.component && chart.componentProps"
 					ref="eChart"
 					:is="chart.component"
 					v-bind="chart.componentProps"
 				></component>
 			</div>
+		</div>
+
+		<div v-else class="flex h-full w-full flex-1 flex-col items-center justify-center">
+			<div class="text-sm text-gray-500">No chart to display</div>
 		</div>
 	</div>
 
@@ -141,17 +152,14 @@ watch(showDashboardDialog, async (val) => {
 })
 const addingToDashboard = computed(() => chart.addToDashboard?.loading)
 function addToDashboard() {
-	const onSuccess = () => {
+	const dashboardName = toDashboard.value.value
+	chart.addToDashboard(dashboardName).then(() => {
 		$notify({
 			title: 'Chart Added to Dashboard',
 			appearance: 'success',
 		})
 		showDashboardDialog.value = false
-	}
-	// TODO: move default dimensions to insights_dashboard.py
-	const defaultDimensions = chart.type == 'Number' ? { w: 4, h: 4 } : { w: 8, h: 8 }
-	const dashboardName = toDashboard.value.value
-	chart.addToDashboard(dashboardName, defaultDimensions, { onSuccess })
+	})
 }
 
 const router = useRouter()
@@ -175,29 +183,11 @@ function _createDashboard(newDashboardName) {
 
 const eChart = ref(null)
 const canDownload = computed(() => {
-	return eChart.value?.$refs?.eChart?.downloadChart || chart.type == 'Table'
+	return eChart.value?.$refs?.eChart?.downloadChart
 })
 function downloadChart() {
 	if (canDownload.value) {
-		if (chart.type == 'Table') {
-			downloadCSV(chart.data)
-		} else {
-			eChart.value.$refs.eChart.downloadChart()
-		}
+		eChart.value.$refs.eChart.downloadChart()
 	}
-}
-
-function downloadCSV(data) {
-	data[0] = data[0].map((d) => d.split('::')[0])
-	const csvString = data.map((row) => row.join(',')).join('\n')
-	const blob = new Blob([csvString], { type: 'text/csv' })
-	const url = window.URL.createObjectURL(blob)
-	const a = document.createElement('a')
-	a.setAttribute('hidden', '')
-	a.setAttribute('href', url)
-	a.setAttribute('download', `${chart.title || 'data'}.csv`)
-	document.body.appendChild(a)
-	a.click()
-	document.body.removeChild(a)
 }
 </script>

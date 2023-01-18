@@ -10,7 +10,7 @@ from frappe.model.document import Document
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
-from .sources.frappe_db import SiteDB, is_frappe_db
+from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
 from .sources.models import BaseDatabase
 from .sources.query_store import QueryStore
@@ -58,8 +58,8 @@ class InsightsDataSource(Document):
             "database_name": self.database_name,
         }
 
-        if db := is_frappe_db(conn_args):
-            return db
+        if is_frappe_db(conn_args):
+            return FrappeDB(**conn_args)
 
         if self.database_type == "MariaDB":
             return MariaDB(**conn_args)
@@ -91,18 +91,22 @@ class InsightsDataSource(Document):
             SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
         )
 
-    def test_connection(self):
+    def test_connection(self, raise_exception=False):
         try:
             return self.db.test_connection()
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
-            return False
+            if raise_exception:
+                raise e
 
     def build_query(self, query: InsightsQuery):
         return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
         return self.db.run_query(query)
+
+    def execute_query(self, query: str, **kwargs):
+        return self.db.execute_query(query, **kwargs)
 
     @task(queue="short")
     def sync_tables(self, *args, **kwargs):
@@ -111,8 +115,8 @@ class InsightsDataSource(Document):
     def get_table_columns(self, table):
         return self.db.get_table_columns(table)
 
-    def get_column_options(self, table, column, search_text=None, limit=25):
+    def get_column_options(self, table, column, search_text=None, limit=50):
         return self.db.get_column_options(table, column, search_text, limit)
 
-    def get_table_preview(self, table, limit=20):
+    def get_table_preview(self, table, limit=100):
         return self.db.get_table_preview(table, limit)

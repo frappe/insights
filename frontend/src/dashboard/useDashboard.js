@@ -1,26 +1,33 @@
-import { computed, ref, watch } from 'vue'
 import { safeJSONParse } from '@/utils'
-import { createDocumentResource, call, debounce } from 'frappe-ui'
-import settings from '@/utils/settings'
-import dayjs from '@/utils/dayjs'
+import auth from '@/utils/auth'
+import { createDocumentResource, debounce } from 'frappe-ui'
+import { computed, reactive } from 'vue'
 
 export default function useDashboard(dashboardName) {
-	const dashboard = makeDashboardResource(dashboardName)
+	const dashboard = fetchDashboard(dashboardName)
 
-	// reactive properties
+	dashboard.isOwner = computed(() => dashboard.doc?.owner == auth.user.user_id)
 	dashboard.editing = false
-	dashboard.updatedLayout = {}
 	dashboard.items = computed(() =>
 		dashboard.doc?.items.map((v) => {
 			const layout = safeJSONParse(v.layout, {})
+			const filter_column = safeJSONParse(v.filter_column, {})
+			const filter_links = safeJSONParse(v.filter_links, {})
+			const filter_states = safeJSONParse(v.filter_states, {})
 			return {
 				...v,
-				...layout,
+				i: v.name,
+				x: layout.x || 0,
+				y: layout.y || 0,
+				w: layout.w || 1,
+				h: layout.h || 1,
+				filter_column,
+				filter_links,
+				filter_state: filter_states[auth.user.user_id] || {},
 			}
 		})
 	)
 
-	// methods
 	dashboard.updateNewChartOptions = () => {
 		return dashboard.get_chart_options.submit()
 	}
@@ -33,11 +40,13 @@ export default function useDashboard(dashboardName) {
 			}
 		})
 	)
+	dashboard.updateNewChartOptions()
+
 	dashboard.saveLayout = (layouts) => {
 		dashboard.update_layout
 			.submit({
 				updated_layout: layouts.reduce((acc, v) => {
-					acc[v.id] = { x: v.x, y: v.y, w: v.w, h: v.h }
+					acc[v.i] = { x: v.x, y: v.y, w: v.w, h: v.h }
 					return acc
 				}, {}),
 			})
@@ -61,76 +70,56 @@ export default function useDashboard(dashboardName) {
 			})
 	}
 
-	dashboard.editChart = (chartID) => {
-		call('frappe.client.get_value', {
-			doctype: 'Insights Query Chart',
-			filters: { name: chartID },
-			fieldname: 'query',
-		}).then((r) => {
-			window.open(`/insights/query/${r.query}`, '_blank')
-		})
-	}
-
 	dashboard.deletingDashboard = computed(() => dashboard.delete.loading)
 	dashboard.deleteDashboard = () => {
 		return dashboard.delete.submit()
 	}
 
-	dashboard.refreshItems = debounce(async () => {
+	dashboard.refreshItems = debounce(() => {
 		dashboard.editingLayout = false
-		dashboard.refreshing = true
-		// hack: update the charts
-		await dashboard.refresh_items.submit()
-		// then reload the dashboard doc
+		// reload the dashboard doc
 		// to re-render the charts with new data
 		dashboard.doc.items = []
-		await dashboard.reload()
-		dashboard.refreshing = false
+		dashboard.reload()
 	}, 500)
 
-	dashboard.getChartData = (chartID) => {
-		const data = ref([])
-		dashboard.get_chart_data.submit({ chart: chartID }).then((r) => {
-			data.value = r.message
+	dashboard.fetchChartData = (chartID) => {
+		const request = fetchData(dashboard.get_chart_data, { chart: chartID })
+		const parsedData = computed(() => safeJSONParse(request.data, []))
+		return reactive({
+			data: parsedData,
+			loading: computed(() => request.loading),
 		})
-		return computed(() => safeJSONParse(data.value, []))
 	}
 
-	dashboard.filters = computed(() => dashboard.doc?.items.filter((v) => v.item_type == 'Filter'))
-
-	dashboard.getAllColumns = (query) => {
-		dashboard.get_all_columns.submit({ query })
-		return computed(() => dashboard.get_all_columns.data?.message || [])
+	dashboard.fetchQueryColumns = (query) => {
+		return fetchData(dashboard.get_columns, { query })
 	}
 
-	dashboard.getColumns = (query) => {
-		dashboard.get_columns.submit({ query })
-		return computed(() => dashboard.get_columns.data?.message || [])
+	dashboard.filters = computed(() =>
+		dashboard.doc?.items.filter((item) => {
+			return item.item_type == 'Filter'
+		})
+	)
+
+	dashboard.fetchAllColumns = (query) => {
+		return fetchData(dashboard.get_all_columns, { query })
 	}
 
-	dashboard.updateNewChartOptions()
-
-	if (settings.doc?.auto_refresh_dashboard_in_minutes) {
-		watch(
-			() => dashboard.doc?.last_updated_on,
-			() => {
-				const last_updated_on = dayjs(dashboard.doc.last_updated_on)
-				const minute_diff = dayjs().diff(last_updated_on, 'minute')
-
-				if (
-					!dashboard.doc.last_updated_on ||
-					minute_diff > settings.doc.auto_refresh_dashboard_in_minutes
-				) {
-					dashboard.refreshItems()
-				}
-			}
-		)
+	dashboard.getChartFilters = (chart) => {
+		return fetchData(dashboard.get_chart_filters, { chart_name: chart })
 	}
+
+	dashboard.getFilterColumns = () => {
+		return fetchData(dashboard.get_filter_columns)
+	}
+
+	dashboard.updateLinkedCharts = (links, condition) => {}
 
 	return dashboard
 }
 
-function makeDashboardResource(name) {
+function fetchDashboard(name) {
 	const resource = createDocumentResource({
 		doctype: 'Insights Dashboard',
 		name: name,
@@ -138,15 +127,41 @@ function makeDashboardResource(name) {
 			add_item: 'add_item',
 			get_chart_options: 'get_charts',
 			refresh_items: 'refresh_items',
+			refresh_item: 'refresh_item',
 			update_layout: 'update_layout',
 			remove_item: 'remove_item',
 			get_chart_data: 'get_chart_data',
+			get_chart_filters: 'get_chart_filters',
 			update_filter: 'update_filter',
 			get_all_columns: 'get_all_columns',
 			get_columns: 'get_columns',
-			update_chart_filters: 'update_chart_filters',
+			update_markdown: 'update_markdown',
+			get_filter_columns: 'get_filter_columns',
+			fetch_column_values: 'fetch_column_values',
+			update_filter_state: 'update_filter_state',
 		},
 	})
 	resource.get.fetch()
 	return resource
+}
+
+function fetchData(documentRequest, args) {
+	// a generic function to fetch data from the a whitelisted method of a document
+	// and return a reactive object
+	const state = reactive({
+		data: [],
+		error: null,
+		loading: true,
+	})
+	documentRequest
+		.submit(args)
+		.then((res) => {
+			state.data = res.message
+			state.loading = false
+		})
+		.catch((err) => {
+			state.error = err
+			state.loading = false
+		})
+	return state
 }

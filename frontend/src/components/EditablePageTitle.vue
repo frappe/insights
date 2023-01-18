@@ -15,8 +15,8 @@ const editing = ref(false)
 </script>
 
 <template>
-	<div class="flex h-full items-center space-x-2">
-		<div v-if="!editing" class="mr-2 py-1 text-3xl font-medium">
+	<div v-if="!editing" class="flex h-full overflow-hidden">
+		<div class="mr-2 whitespace-nowrap py-1 text-3xl font-medium">
 			{{ title }}
 		</div>
 		<Button
@@ -31,8 +31,9 @@ const editing = ref(false)
 				}
 			"
 		></Button>
+	</div>
+	<div v-else class="flex space-x-2">
 		<Input
-			v-if="editing"
 			ref="titleInput"
 			type="text"
 			:value="title"

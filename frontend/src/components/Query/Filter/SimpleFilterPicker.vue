@@ -91,7 +91,7 @@ import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
 
 import { debounce } from 'frappe-ui'
 import { isEmptyObj, formatDate } from '@/utils'
-import { computed, inject, onMounted, reactive, watch } from 'vue'
+import { computed, inject, reactive, watch } from 'vue'
 
 const query = inject('query')
 
@@ -135,12 +135,6 @@ const showTimespanPicker = computed(
 const showListPicker = computed(
 	() => ['in', 'not_in'].includes(filter.operator?.value) && filter.column?.type == 'String'
 )
-onMounted(() => {
-	if (showListPicker.value) {
-		// if filter is being edited, fetch values for the column
-		checkAndFetchColumnValues()
-	}
-})
 
 const showValueOptions = computed(
 	() => ['=', '!=', 'is'].includes(filter.operator?.value) && filter.column?.type == 'String'
@@ -234,13 +228,6 @@ function apply() {
 	emit('filter-select', query.filters.convertIntoExpression(filter))
 }
 
-watch(showListPicker, (show) => {
-	if (show) {
-		// if operator is changed, fetch values for the column
-		checkAndFetchColumnValues()
-	}
-})
-
 const checkAndFetchColumnValues = debounce(function (search_text = '') {
 	if (
 		isEmptyObj(filter.column) ||
@@ -256,4 +243,13 @@ const checkAndFetchColumnValues = debounce(function (search_text = '') {
 		})
 	}
 }, 300)
+
+watch(
+	() => showListPicker.value || showValueOptions.value,
+	(show) => {
+		// if operator is changed, fetch values for the column
+		show && !valueOptions.value?.length && checkAndFetchColumnValues()
+	},
+	{ immediate: true }
+)
 </script>

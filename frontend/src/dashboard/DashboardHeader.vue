@@ -2,11 +2,14 @@
 import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import EditablePageTitle from '@/components/EditablePageTitle.vue'
+import { Dropdown } from 'frappe-ui'
+import ShareDialog from '@/components/ShareDialog.vue'
 
 const dashboard = inject('dashboard')
 
 const router = useRouter()
 const showDeleteDialog = ref(false)
+const showShareDialog = ref(false)
 
 defineEmits(['addChart', 'saveLayout', 'autoLayout'])
 
@@ -25,64 +28,85 @@ function updateTitle(title) {
 
 <template>
 	<div class="flex flex-1 items-center justify-between">
-		<EditablePageTitle
-			v-if="dashboard.doc"
-			:title="dashboard.doc.title"
-			@update="updateTitle"
-		/>
-		<div class="flex items-start space-x-2">
+		<div class="flex items-center space-x-2">
+			<EditablePageTitle
+				v-if="dashboard.doc"
+				:title="dashboard.doc.title"
+				@update="updateTitle"
+			/>
+
 			<Button
-				v-if="!dashboard.editingLayout"
+				v-if="dashboard.isOwner"
+				icon="share-2"
+				appearance="minimal"
+				@click="() => (showShareDialog = true)"
+			/>
+
+			<Dropdown
+				v-if="dashboard.doc"
+				placement="left"
+				:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+				:options="[
+					{
+						label: 'Delete',
+						icon: 'trash-2',
+						handler: () => {},
+					},
+				]"
+			/>
+		</div>
+		<div class="flex items-center space-x-2">
+			<Button
 				appearance="white"
+				v-if="!dashboard.editingLayout"
 				iconLeft="refresh-ccw"
 				@click="dashboard.refreshItems"
 			>
 				Refresh
 			</Button>
 			<Button
-				v-if="!dashboard.editingLayout"
 				appearance="white"
+				v-if="!dashboard.editingLayout"
 				iconLeft="edit"
 				@click="() => (dashboard.editingLayout = true)"
 			>
 				Edit
 			</Button>
 			<Button
-				v-if="dashboard.editingLayout"
 				appearance="white"
+				v-if="dashboard.editingLayout"
+				iconLeft="grid"
+				@click="$emit('autoLayout')"
+			>
+				Fill Empty Space
+			</Button>
+			<Button
+				appearance="white"
+				v-if="dashboard.editingLayout"
 				iconLeft="plus"
 				@click="$emit('addChart')"
 			>
 				Add
 			</Button>
 			<Button
-				v-if="dashboard.editingLayout"
 				appearance="white"
-				iconLeft="grid"
-				@click="$emit('autoLayout')"
-			>
-				Auto Layout
-			</Button>
-			<Button
 				v-if="!dashboard.editingLayout"
-				appearance="white"
-				class="!text-red-600"
 				iconLeft="trash-2"
 				@click="() => (showDeleteDialog = true)"
 			>
 				Delete
 			</Button>
 			<Button
+				appearance="white"
 				v-if="dashboard.editingLayout"
-				appearance="danger"
 				iconLeft="x"
 				@click="dashboard.editingLayout = false"
 			>
 				Cancel
 			</Button>
 			<Button
+				appearance="white"
 				v-if="dashboard.editingLayout"
-				appearance="primary"
 				iconLeft="check"
 				@click="$emit('saveLayout')"
 			>
@@ -93,7 +117,7 @@ function updateTitle(title) {
 
 	<Dialog
 		:options="{
-			title: 'Delete Query',
+			title: 'Delete Dashboard',
 			icon: { name: 'trash', appearance: 'danger' },
 		}"
 		v-model="showDeleteDialog"
@@ -103,6 +127,7 @@ function updateTitle(title) {
 			<p class="text-base text-gray-600">Are you sure you want to delete this dashboard?</p>
 		</template>
 		<template #actions>
+			<Button appearance="white" @click="showDeleteDialog = false">Cancel</Button>
 			<Button
 				appearance="danger"
 				@click="
@@ -117,4 +142,11 @@ function updateTitle(title) {
 			</Button>
 		</template>
 	</Dialog>
+
+	<ShareDialog
+		v-if="dashboard.doc"
+		v-model:show="showShareDialog"
+		:resource-type="dashboard.doc.doctype"
+		:resource-name="dashboard.doc.name"
+	/>
 </template>

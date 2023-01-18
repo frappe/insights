@@ -1,21 +1,28 @@
 <template>
-	<div ref="resultContainer" class="h-1/2">
+	<div
+		ref="resultContainer"
+		class="flex min-h-[20rem] flex-1 flex-shrink-0 flex-col overflow-hidden"
+	>
 		<!-- Result Header -->
-		<div class="relative flex h-8 items-center">
+		<div class="relative flex h-8 flex-shrink-0 items-center justify-between">
 			<div class="text-sm tracking-wide text-gray-600">RESULT</div>
-			<div class="flex flex-1 items-center justify-center">
-				<div
-					ref="resizerHandle"
-					class="transition-al h-1.5 w-16 cursor-s-resize rounded-full bg-gray-100"
-					:class="[isResizing ? 'bg-gray-200' : '']"
-				></div>
-			</div>
-			<div v-if="executionTime" class="text-sm font-light text-gray-500">
-				Executed in {{ executionTime }} seconds
+			<div
+				v-if="executionTime"
+				class="flex items-center space-x-1 text-sm font-light text-gray-500"
+			>
+				<Tooltip
+					v-if="totalRows > query.results.MAX_ROWS"
+					:text="`Showing first ${query.results.MAX_ROWS.toLocaleString()} rows`"
+					:hoverDelay="0.1"
+					class="flex"
+				>
+					<FeatherIcon name="info" class="h-3 w-3 cursor-pointer" />
+				</Tooltip>
+				<span>{{ totalRows.toLocaleString() }} rows in {{ executionTime }}s</span>
 			</div>
 		</div>
 		<!-- Result  -->
-		<div class="relative h-[calc(100%-2rem)] w-full">
+		<div class="relative flex flex-1 overflow-hidden">
 			<!-- Empty State -->
 			<div
 				v-if="!needsExecution && formattedResult?.length === 0"
@@ -26,7 +33,7 @@
 			<!-- Table & Limits -->
 			<div
 				v-else
-				class="flex h-full w-full select-text flex-col-reverse"
+				class="flex flex-1 select-text flex-col-reverse overflow-hidden"
 				:class="{ 'blur-[2px]': needsExecution }"
 			>
 				<!-- Limits -->
@@ -35,7 +42,7 @@
 				</div>
 				<!-- Table -->
 				<div
-					class="relative h-[calc(100%-2.25rem)] w-full overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide"
+					class="relative flex-1 overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide"
 				>
 					<table class="border-separate border-spacing-0 text-sm">
 						<thead class="sticky top-0 text-gray-600">
@@ -100,12 +107,10 @@
 <script setup>
 import ColumnHeader from '@/components/Query/Result/ColumnHeader.vue'
 import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
-import { FIELDTYPES, isEmptyObj, ellipsis } from '@/utils'
+import { FIELDTYPES, ellipsis } from '@/utils'
 import settings from '@/utils/settings'
 
-import { computed, inject, watch, onMounted, ref } from 'vue'
-
-import useResizer from '@/utils/resizer'
+import { computed, inject, watch } from 'vue'
 
 const query = inject('query')
 
@@ -129,22 +134,7 @@ const executionTime = computed(() => {
 	return query.doc.execution_time && rounded < 0.01 ? '< 0.01' : rounded
 })
 
-const isResizing = ref(false)
-const resizerHandle = ref(null)
-const resultContainer = ref(null)
-
-onMounted(() => {
-	useResizer({
-		handle: resizerHandle,
-		target: resultContainer,
-		direction: 'y',
-		inverse: true,
-		limits: {
-			minHeight: 200,
-			maxHeight: resultContainer.value.clientHeight,
-		},
-		start: () => (isResizing.value = true),
-		stop: () => (isResizing.value = false),
-	})
+const totalRows = computed(() => {
+	return query.doc.results_row_count - 1
 })
 </script>

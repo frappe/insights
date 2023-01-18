@@ -2,7 +2,7 @@
 	<div class="inline-flex w-full flex-wrap items-baseline">
 		<ExpressionTerm :term="props.expression.left" />
 		<span class="w-2"></span>
-		<p class="whitespace-nowrap font-mono text-sm font-medium text-green-600">
+		<p class="whitespace-nowrap text-sm font-medium text-green-600">
 			{{ props.expression.operator }}
 		</p>
 		<span class="w-2"></span>

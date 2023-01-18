@@ -9,9 +9,10 @@ class InsightsSettings(Document):
     @frappe.whitelist()
     def update_settings(self, settings):
         settings = frappe.parse_json(settings)
-        self.auto_execute_query = settings.auto_execute_query or self.auto_execute_query
-        self.auto_refresh_dashboard_in_minutes = (
-            settings.auto_refresh_dashboard_in_minutes
-            or self.auto_refresh_dashboard_in_minutes
-        )
+        if hasattr(settings, "auto_execute_query"):
+            self.auto_execute_query = settings.auto_execute_query
+        if hasattr(settings, "query_result_expiry"):
+            self.query_result_expiry = settings.query_result_expiry
+        if hasattr(settings, "query_result_limit"):
+            self.query_result_limit = settings.query_result_limit
         self.save()

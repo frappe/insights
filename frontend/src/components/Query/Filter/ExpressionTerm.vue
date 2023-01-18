@@ -2,9 +2,13 @@
 	<BinaryExpression v-if="type == 'BinaryExpression'" :expression="props.term" />
 	<CallExpression v-else-if="type == 'CallExpression'" :expression="props.term" />
 	<!-- Column -->
-	<p class="w-fit" v-else-if="type == 'Column'">{{ value.table }} &#8594; {{ value.column }}</p>
+	<p class="w-fit" v-else-if="type == 'Column'">
+		{{ value.table }}
+		<span class="text-gray-500">&#8226;</span>
+		{{ value.column }}
+	</p>
 	<!-- Number or String -->
-	<p class="w-fit" v-else-if="type == 'String'">"{{ value }}"</p>
+	<p class="w-fit" v-else-if="type == 'String'">{{ value }}</p>
 	<p class="w-fit" v-else-if="type == 'Number'">
 		{{ value }}
 	</p>

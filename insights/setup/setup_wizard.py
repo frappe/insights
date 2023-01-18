@@ -8,7 +8,7 @@ from frappe import _
 
 def get_setup_stages(args=None):
     # to make setup wizard tasks run in a background job
-    frappe.local.conf["trigger_site_setup_in_background"] = 1
+    # frappe.local.conf["trigger_site_setup_in_background"] = 1
 
     if frappe.db.exists("Insights Data Source", "Demo Data"):
         stages = [
@@ -116,11 +116,20 @@ def create_datasource(args):
 
 def wrap_up(args):
     frappe.local.message_log = []
+    set_user_as_insights_admin(args)
     login_as_first_user(args)
 
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1
     settings.save()
+
+
+def set_user_as_insights_admin(args):
+    # if developer mode is enabled, first user step is skipped, hence no user is created
+    if not args.get("email") or not frappe.db.exists("User", args.get("email")):
+        return
+    user = frappe.get_doc("User", args.get("email"))
+    user.add_roles("Insights Admin", "Insights User")
 
 
 def login_as_first_user(args):

@@ -4,13 +4,15 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Queries</h1>
 				<div>
-					<Button appearance="primary" @click="openDialog = true"> + New Query </Button>
+					<Button appearance="white" @click="openDialog = true" class="shadow-sm">
+						+ New Query
+					</Button>
 				</div>
 			</div>
 		</template>
 		<template #main>
-			<div class="flex flex-1 flex-col">
-				<div class="mb-4 flex space-x-4">
+			<div class="flex flex-1 flex-col overflow-hidden">
+				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="text" placeholder="ID" v-model="filter.name" />
 					<Input type="text" placeholder="Title" v-model="filter.title" />
 					<Input
@@ -21,25 +23,26 @@
 						class="w-40"
 					/>
 				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
+
+				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-400" />
+							<Input type="checkbox" class="rounded-md border-gray-300" />
 						</p>
 						<p class="flex-1 flex-grow-[2]">Title</p>
-						<p class="flex-1 flex-grow-[2]">Tables</p>
-						<p class="flex-1">Chart Type</p>
+						<p class="hidden flex-1 flex-grow-[2] lg:inline-block">Tables</p>
+						<p class="hidden flex-1 lg:inline-block">Chart Type</p>
 						<p class="flex-1">Data Source</p>
-						<p class="flex-1">ID</p>
-						<p class="flex-1 text-right">Last Modified</p>
+						<p class="hidden flex-1 lg:inline-block">ID</p>
+						<p class="flex-1 text-right">Created</p>
 					</div>
 					<ul
 						role="list"
 						v-if="queries.length > 0"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
+						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-scroll"
 					>
 						<li v-for="query in queries" :key="query.name">
 							<router-link
@@ -50,7 +53,7 @@
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-400" />
+									<Input type="checkbox" class="rounded-md border-gray-300" />
 								</p>
 								<p
 									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
@@ -58,24 +61,28 @@
 									{{ query.title }}
 								</p>
 								<p
-									class="flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
+									class="hidden flex-1 flex-grow-[2] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500 lg:inline-block"
 								>
 									{{ query.tables?.replace(/,/g, ', ') }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+								>
 									{{ query.chart_type || '-' }}
 								</p>
 								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
 									{{ query.data_source }}
 								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
+								<p
+									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+								>
 									{{ query.name }}
 								</p>
 								<p
 									class="flex-1 text-right text-sm text-gray-500"
-									:title="query.modified"
+									:title="query.creation"
 								>
-									{{ query.modified_from_now }}
+									{{ query.creation_from_now }}
 								</p>
 							</router-link>
 						</li>
@@ -162,7 +169,7 @@ watch(
 	(data) => {
 		if (data && data.length) {
 			getQueries.data.forEach((query) => {
-				query.modified_from_now = dayjs(query.modified).fromNow()
+				query.creation_from_now = dayjs(query.creation).fromNow()
 			})
 		}
 	}
@@ -188,7 +195,8 @@ const queries = computed(() => {
 })
 
 const getDataSources = createResource({
-	method: 'insights.api.get_data_sources',
+	url: 'insights.api.get_data_sources',
+	auto: true,
 	onSuccess(res) {
 		if (res.length) {
 			newQuery.dataSource = res[0].name
@@ -198,7 +206,16 @@ const getDataSources = createResource({
 const dataSources = computed(() => {
 	return getDataSources.data?.map((d) => d['name']) || []
 })
-getDataSources.fetch()
+const getTableOptions = createResource({
+	url: 'insights.api.get_tables',
+	initialData: [],
+})
+const tableOptions = computed(() =>
+	getTableOptions.data.map((table) => ({
+		...table,
+		value: table.table,
+	}))
+)
 watch(
 	() => newQuery.dataSource,
 	(data_source, old) => {
@@ -208,20 +225,9 @@ watch(
 	}
 )
 
-const getTableOptions = createResource({
-	method: 'insights.api.get_tables',
-	initialData: [],
-})
-const tableOptions = computed(() =>
-	getTableOptions.data.map((table) => ({
-		...table,
-		value: table.table,
-	}))
-)
-
 const router = useRouter()
 const createQuery = createResource({
-	method: 'insights.api.create_query',
+	url: 'insights.api.create_query',
 	onSuccess(name) {
 		newQuery.title = ''
 		newQuery.dataSource = ''

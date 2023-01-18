@@ -14,29 +14,15 @@
 			<div
 				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded-md border bg-white p-3 text-base shadow-md"
 			>
-				<div
-					class="flex h-8 items-center space-x-2 rounded-md border bg-gray-50 p-0.5 text-sm"
-				>
-					<div
-						class="flex h-full flex-1 items-center justify-center rounded-md border border-transparent font-light"
-						:class="{
-							'border border-gray-200 bg-white font-normal shadow-sm': span == 'Last',
-						}"
-						@click.prevent.stop="span = 'Last'"
-					>
-						Last
-					</div>
-					<div
-						class="flex h-full flex-1 items-center justify-center rounded-md border border-transparent"
-						:class="{
-							'border border-gray-200 bg-white font-normal shadow-sm':
-								span == 'Current',
-						}"
-						@click.prevent.stop="span = 'Current'"
-					>
-						Current
-					</div>
-				</div>
+				<Tabs
+					:tabs="[
+						{ label: 'Last', active: span == 'Last' },
+						{ label: 'Current', active: span == 'Current' },
+						{ label: 'Next', active: span == 'Next' },
+					]"
+					@switch="(tab) => (span = tab.label)"
+				></Tabs>
+
 				<div class="flex space-x-2">
 					<Input
 						v-if="span !== 'Current'"
@@ -46,13 +32,9 @@
 					/>
 					<Input
 						type="select"
-						v-model="interval_type"
+						v-model="intervalType"
 						class="h-8 w-full text-sm"
-						:options="
-							span === 'Current'
-								? ['Day', 'Week', 'Month', 'Quarter', 'Year']
-								: ['Days', 'Weeks', 'Months', 'Quarters', 'Years']
-						"
+						:options="['Day', 'Week', 'Month', 'Quarter', 'Year']"
 					>
 					</Input>
 				</div>
@@ -75,37 +57,34 @@
 </template>
 
 <script>
+import Tabs from '@/components/Tabs.vue'
+
 export default {
 	name: 'TimespanPicker',
+	components: { Tabs },
 	emits: ['update:modelValue', 'change'],
 	props: ['value', 'modelValue', 'placeholder'],
 	data() {
 		const initalValue = (this.valuePropPassed() ? this.value : this.modelValue?.value) || ''
-		if (initalValue.includes('Current')) {
-			return {
-				span: 'Current',
-				interval: '1',
-				interval_type: initalValue.split(' ')[1] || 'Day',
-			}
-		} else {
-			return {
-				span: 'Last',
-				interval: initalValue.split(' ')[1] || '1',
-				interval_type: initalValue.split(' ')[2] || 'Months',
-			}
+		let [span, interval, intervalType] = initalValue.split(' ')
+
+		if (span == 'Current') intervalType = interval // eg. Current Day
+		if (intervalType?.at(-1) == 's') intervalType = intervalType.slice(0, -1) // eg. Days
+
+		return {
+			span: span || 'Last',
+			interval: interval || '1',
+			intervalType: intervalType || 'Day',
 		}
 	},
 	computed: {
 		_value() {
 			return this.span === 'Current'
-				? `${this.span} ${this.interval_type}`
-				: `${this.span} ${this.interval} ${this.interval_type}`
+				? `${this.span} ${this.intervalType}`
+				: `${this.span} ${this.interval} ${this.intervalType}`
 		},
 	},
 	watch: {
-		span(new_val) {
-			this.interval_type = new_val === 'Current' ? 'Day' : 'Days'
-		},
 		interval(new_val) {
 			if (new_val < 1) {
 				this.interval = 1

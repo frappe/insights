@@ -15,9 +15,11 @@ from frappe.utils.data import (
     get_year_start,
     nowdate,
 )
-from sqlalchemy import Column, column, select, table
+from sqlalchemy import Column
+from sqlalchemy import column as sa_column
+from sqlalchemy import select, table
 from sqlalchemy.engine import Dialect
-from sqlalchemy.sql import and_, case, func, or_, text
+from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
 
 class Aggregations:
@@ -53,7 +55,7 @@ class ColumnFormatter:
     @classmethod
     def format_date(cls, format, column: Column):
         if format == "Minute":
-            return func.date_format(column, "%Y-%m-%d %H:%M")
+            return func.date_format(column, "%Y-%m-%d %H:%i")
         if format == "Hour":
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":
@@ -86,6 +88,28 @@ class ColumnFormatter:
                 ),
                 "%Y-%m-%d",
             )
+
+
+def get_descendants(node, tree, include_self=False):
+    Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
+    lft_rgt = (
+        select([Tree.c.lft, Tree.c.rgt]).where(Tree.c.name == node).alias("lft_rgt")
+    )
+    return (
+        (
+            select([Tree.c.name])
+            .where(Tree.c.lft > lft_rgt.c.lft)
+            .where(Tree.c.rgt < lft_rgt.c.rgt)
+            .order_by(Tree.c.lft.asc())
+        )
+        if not include_self
+        else (
+            select([Tree.c.name])
+            .where(Tree.c.lft >= lft_rgt.c.lft)
+            .where(Tree.c.rgt <= lft_rgt.c.rgt)
+            .order_by(Tree.c.lft.asc())
+        )
+    )
 
 
 class Functions:
@@ -128,6 +152,12 @@ class Functions:
 
         if function == "count_if":
             return func.sum(case([(args[0], 1)], else_=0))
+
+        if function == "distinct":
+            return distinct(args[0])
+
+        if function == "distinct_count":
+            return func.count(distinct(args[0]))
 
         # two arg functions
 
@@ -182,20 +212,20 @@ class Functions:
             return case(conditions, else_=default)
 
         if function == "timespan":
-            timespan = args[1].lower().strip()
-            if "current" not in timespan and "last" not in timespan:
-                raise Exception(f"Invalid timespan: {timespan}")
+            column = args[0]
+            timespan = args[1].lower()
+            timespan = timespan[:-1] if timespan.endswith("s") else timespan
 
-            if "current" in timespan:
-                date_range = get_date_range(timespan)
-            elif "last" in timespan:
-                [span, interval, interval_type] = timespan.split(" ")
-                timespan = span + " n " + interval_type
-                date_range = get_date_range(timespan, n=int(interval))
-            return args[0].between(
-                get_date_str(date_range[0]),
-                get_date_str(date_range[1]),
-            )
+            units = ["day", "week", "month", "quarter", "year"]
+            unit = timespan.split(" ")[-1]
+            if unit not in units:
+                raise Exception(f"Invalid timespan unit {unit}")
+
+            dates = get_date_range(timespan)
+            if not dates:
+                raise Exception(f"Invalid timespan {args[1]}")
+
+            return column.between(get_date_str(dates[0]), get_date_str(dates[1]))
 
         if function == "time_elapsed":
             VALID_UNITS = [
@@ -216,60 +246,96 @@ class Functions:
                 )
             return func.timestampdiff(text(unit), args[1], args[2])
 
+        if function == "descendants":
+            node = args[0]  # "India"
+            tree = args[1]  # "territory"
+            field = args[2]  # salesorder.territory
+            query = get_descendants(node, tree, include_self=False)
+            return field.in_(query)
+
+        if function == "descendants_and_self":
+            node = args[0]  # "India"
+            tree = args[1]  # "territory"
+            field = args[2]  # salesorder.territory
+            query = get_descendants(node, tree, include_self=True)
+            return field.in_(query)
+
         raise NotImplementedError(f"Function {function} not implemented")
 
 
-def get_date_range(timespan: str, n: int = 1):
+def get_current_date_range(unit):
     today = nowdate()
-    date_range_map = {
-        "current day": lambda: (
-            today,
-            today,
-        ),
-        "current week": lambda: (
-            get_first_day_of_week(today),
-            get_last_day_of_week(today),
-        ),
-        "current month": lambda: (
-            get_first_day(today),
-            get_last_day(today),
-        ),
-        "current quarter": lambda: (
-            get_quarter_start(today),
-            get_quarter_ending(today),
-        ),
-        "current year": lambda: (
-            get_year_start(today),
-            get_year_ending(today),
-        ),
-        "last n days": lambda n: (
-            add_to_date(today, days=-1 * n),
-            add_to_date(today, days=-1),
-        ),
-        "last n weeks": lambda n: (
-            get_first_day_of_week(add_to_date(today, days=-7 * n)),
-            get_last_day_of_week(add_to_date(today, days=-7)),
-        ),
-        "last n months": lambda n: (
-            get_first_day(add_to_date(today, months=-1 * n)),
-            get_last_day(add_to_date(today, months=-1)),
-        ),
-        "last n quarters": lambda n: (
-            get_quarter_start(add_to_date(today, months=-3 * n)),
-            get_quarter_ending(add_to_date(today, months=-3)),
-        ),
-        "last n years": lambda n: (
-            get_year_start(add_to_date(today, years=-1 * n)),
-            get_year_ending(add_to_date(today, years=-1)),
-        ),
-    }
+    if unit == "day":
+        return [today, today]
+    if unit == "week":
+        return [get_first_day_of_week(today), get_last_day_of_week(today)]
+    if unit == "month":
+        return [get_first_day(today), get_last_day(today)]
+    if unit == "quarter":
+        return [get_quarter_start(today), get_quarter_ending(today)]
+    if unit == "year":
+        return [get_year_start(today), get_year_ending(today)]
 
-    if timespan in date_range_map:
-        return (
-            date_range_map[timespan]()
-            if "current" in timespan
-            else date_range_map[timespan](n)
-        )
+
+def get_directional_date_range(direction, unit, number_of_unit):
+    dates = []
+    today = nowdate()
+    if unit == "day":
+        dates = [
+            add_to_date(today, days=direction * number_of_unit),
+            add_to_date(today, days=direction),
+        ]
+    if unit == "week":
+        dates = [
+            get_first_day_of_week(
+                add_to_date(today, days=direction * 7 * number_of_unit)
+            ),
+            get_last_day_of_week(add_to_date(today, days=direction * 7)),
+        ]
+    if unit == "month":
+        dates = [
+            get_first_day(add_to_date(today, months=direction * number_of_unit)),
+            get_last_day(add_to_date(today, months=direction)),
+        ]
+    if unit == "quarter":
+        dates = [
+            get_quarter_start(
+                add_to_date(today, months=direction * 3 * number_of_unit)
+            ),
+            get_quarter_ending(add_to_date(today, months=direction * 3)),
+        ]
+    if unit == "year":
+        dates = [
+            get_year_start(add_to_date(today, years=direction * number_of_unit)),
+            get_year_ending(add_to_date(today, years=direction)),
+        ]
+
+    if dates[0] > dates[1]:
+        dates.reverse()
+    return dates
+
+
+def get_date_range(timespan, include_current=False):
+    # timespan = "last 7 days" or "next 3 months"
+    direction = timespan.lower().split(" ")[0]  # "last" or "next" or "current"
+    unit = timespan.lower().split(" ")[-1]  # "day", "week", "month", "quarter", "year"
+
+    if direction == "current":
+        return get_current_date_range(unit)
+
+    number_of_unit = int(timespan.split(" ")[1])  # 7, 3, etc
+
+    if direction == "last" or direction == "next":
+        direction = -1 if direction == "last" else 1
+
+        dates = get_directional_date_range(direction, unit, number_of_unit)
+
+        if include_current:
+            current_dates = get_current_date_range(unit)
+            dates[0] = min(dates[0], current_dates[0])
+            dates[1] = max(dates[1], current_dates[1])
+
+        return dates
 
 
 class BinaryOperations:
@@ -325,7 +391,7 @@ class ExpressionProcessor:
         if expression.type == "Column":
             column = expression.value.get("column")
             table = expression.value.get("table")
-            return self.builder.find_or_add_column(column, table)
+            return self.builder.make_column(column, table)
 
         if expression.type == "String":
             return expression.value
@@ -372,41 +438,34 @@ class SQLQueryBuilder:
         self.column_formatter = ColumnFormatter
         self.expression_processor = ExpressionProcessor(self)
 
-        self._tables = []
+        self._tables = {}
         self._joins = []
         self._columns = []
         self._filters = []
         self._group_by_columns = []
         self._order_by_columns = []
-        self._limit = 10
+        self._limit = 500
 
     def build(self, query, dialect: Dialect = None):
         self.query = query
         self.dialect = dialect
-        self.process_tables()
-        self.process_joins()
+        self.process_tables_and_joins()
         self.process_columns()
         self.process_filters()
         return self.make_query()
 
-    def process_tables(self):
-        self._tables = []
-        for row in self.query.tables:
-            self.find_or_add_table(row.table)
+    def make_table(self, name):
+        if not hasattr(self, "_tables"):
+            self._tables = {}
+        if name not in self._tables:
+            self._tables[name] = table(name).alias(f"t{len(self._tables)}")
+        return self._tables[name]
 
-    def find_or_add_table(self, name):
-        _table = next((t for t in self._tables if t.name == name), table(name))
-        if _table not in self._tables:
-            self._tables.append(_table)
-        return _table
+    def make_column(self, columnname, tablename):
+        _table = self.make_table(tablename)
+        return sa_column(columnname, _selectable=_table)
 
-    def find_or_add_column(self, name, table):
-        _table = self.find_or_add_table(table)
-        if name not in _table.c:
-            _table.append_column(column(name))
-        return _table.c[name]
-
-    def process_joins(self):
+    def process_tables_and_joins(self):
         self._joins = []
         for row in self.query.tables:
             if not row.join:
@@ -415,17 +474,15 @@ class SQLQueryBuilder:
             _join = parse_json(row.join)
             join_type = _join.get("type").get("value")
 
-            left_table = self.find_or_add_table(row.table)
-            right_table = self.find_or_add_table(_join.get("with").get("value"))
+            left_table = self.make_table(row.table)
+            right_table = self.make_table(_join.get("with").get("value"))
 
-            condition = _join.get("condition").get("value")
-            left_key = condition.split("=")[0].strip()
-            right_key = condition.split("=")[1].strip()
+            condition = _join.get("condition")
+            left_key = condition.get("left").get("value")
+            right_key = condition.get("right").get("value")
 
-            left_key = self.find_or_add_column(left_key, row.table)
-            right_key = self.find_or_add_column(
-                right_key, _join.get("with").get("value")
-            )
+            left_key = self.make_column(left_key, row.table)
+            right_key = self.make_column(right_key, _join.get("with").get("value"))
 
             self._joins.append(
                 _dict(
@@ -446,7 +503,7 @@ class SQLQueryBuilder:
 
         for row in self.query.columns:
             if not row.is_expression:
-                _column = self.find_or_add_column(row.column, row.table)
+                _column = self.make_column(row.column, row.table)
                 _column = self.column_formatter.format(
                     parse_json(row.format_option), row.type, _column
                 )
@@ -475,7 +532,7 @@ class SQLQueryBuilder:
         self._filters = self.expression_processor.process(filters)
 
     def make_query(self):
-        if not self._tables:
+        if not self.query.tables:
             return
 
         sql = None
@@ -485,7 +542,8 @@ class SQLQueryBuilder:
         else:
             sql = select(*self._columns)
 
-        sql = sql.select_from(*self._tables)
+        main_table = self.query.tables[0].table
+        sql = sql.select_from(self.make_table(main_table))
 
         if self._joins:
             sql = self.do_join(sql)
@@ -501,15 +559,23 @@ class SQLQueryBuilder:
         return self.compile(sql)
 
     def do_join(self, sql):
-        inner_joins = [j for j in self._joins if j.type == "inner"]
-        left_joins = [j for j in self._joins if j.type == "left"]
         # TODO: add right and full joins
-        # right_joins = [j for j in self._joins if j.type == "right"]
 
-        for join in inner_joins:
-            sql = sql.join(join.right, join.left_key == join.right_key)
-        for join in left_joins:
-            sql = sql.join(join.right, join.left_key == join.right_key, isouter=True)
+        for join in self._joins:
+            isouter, full = False, False
+            if join.type == "left":
+                isouter = True
+            elif join.type == "full":
+                isouter = True
+                full = True
+
+            sql = sql.join_from(
+                join.left,
+                join.right,
+                join.left_key == join.right_key,
+                isouter=isouter,
+                full=full,
+            )
 
         return sql
 

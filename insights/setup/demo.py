@@ -323,7 +323,7 @@ class DemoDataFactory:
                     {
                         "primary_key": link[0],
                         "foreign_key": link[2],
-                        "foreign_table": link[1],
+                        "foreign_table": frappe.scrub(link[1]),
                         "foreign_table_label": link[1],
                     },
                 )

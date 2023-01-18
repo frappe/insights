@@ -2,11 +2,15 @@ import { createDocumentResource, createResource } from 'frappe-ui'
 import { reactive, watch, computed } from 'vue'
 
 const dataSourceResource = createResource({
-	method: 'insights.api.get_data_source',
+	url: 'insights.api.get_data_source',
 	initalData: {},
 })
 const syncDataSourceResource = createResource({
-	method: 'insights.api.sync_data_source',
+	url: 'insights.api.sync_data_source',
+	initalData: {},
+})
+const deleteDataSourceResource = createResource({
+	url: 'insights.api.delete_data_source',
 	initalData: {},
 })
 
@@ -21,6 +25,9 @@ export function useDataSource(name) {
 	dataSource.syncTables = () => {
 		return syncDataSourceResource.submit({ data_source: name })
 	}
+	dataSource.delete = () => {
+		return deleteDataSourceResource.submit({ data_source: name })
+	}
 
 	return dataSource
 }
@@ -33,6 +40,7 @@ export function useDataSourceTable(name) {
 			syncTable: 'sync_table',
 			updateVisibility: 'update_visibility',
 			getPreview: 'get_preview',
+			update_column_type: 'update_column_type',
 		},
 	})
 	dataSourceTable.get.fetch()
@@ -42,6 +50,12 @@ export function useDataSourceTable(name) {
 		dataSourceTable.syncing = true
 		dataSourceTable.syncTable.submit().then(() => {
 			dataSourceTable.syncing = false
+		})
+	}
+	dataSourceTable.updateColumnType = (column) => {
+		return dataSourceTable.update_column_type.submit({
+			column: column.column,
+			newtype: column.type,
 		})
 	}
 

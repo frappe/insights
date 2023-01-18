@@ -30,6 +30,6 @@ export default defineConfig({
 		target: 'es2015',
 	},
 	optimizeDeps: {
-		include: ['feather-icons', 'showdown'],
+		include: ['feather-icons', 'showdown', 'engine.io-client'],
 	},
 })

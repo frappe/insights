@@ -128,10 +128,7 @@ class MariaDB(BaseDatabase):
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
 
     def test_connection(self):
-        try:
-            return self.execute_query("select 1")
-        except Exception as e:
-            frappe.log_error(f"Error connecting to MariaDB: {e}")
+        return self.execute_query("select 1")
 
     def build_query(self, query):
         return self.query_builder.build(query, dialect=self.engine.dialect)
@@ -147,7 +144,7 @@ class MariaDB(BaseDatabase):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
-    def get_table_preview(self, table, limit=20):
+    def get_table_preview(self, table, limit=100):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
         length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
@@ -160,7 +157,7 @@ class MariaDB(BaseDatabase):
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 
-    def get_column_options(self, table, column, search_text=None, limit=25):
+    def get_column_options(self, table, column, search_text=None, limit=50):
         query = Select(Column(column)).select_from(Table(table)).distinct().limit(limit)
         if search_text:
             query = query.where(Column(column).like(f"%{search_text}%"))

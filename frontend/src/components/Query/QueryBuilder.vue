@@ -1,10 +1,12 @@
 <template>
-	<div class="relative flex min-h-[50%] flex-1">
-		<TablePanel />
-		<ColumnPanel />
-		<FilterPanel />
+	<div class="flex flex-1 flex-col overflow-scroll scrollbar-hide">
+		<div class="flex flex-1 flex-shrink-0 flex-col lg:flex-row">
+			<TablePanel />
+			<ColumnPanel />
+			<FilterPanel />
+		</div>
+		<QueryResult />
 	</div>
-	<QueryResult />
 </template>
 
 <script setup>

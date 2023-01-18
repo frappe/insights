@@ -39,12 +39,12 @@ const props = defineProps({
 
 const queryColumn = computed(() => query.columns.data.find((c) => c.label == props.column))
 const orderByColumn = () => {
-	if (queryColumn.value.order_by == 'asc') {
-		queryColumn.value.order_by = 'desc'
-	} else if (queryColumn.value.order_by == 'desc') {
+	if (queryColumn.value.order_by == 'desc') {
+		queryColumn.value.order_by = 'asc'
+	} else if (queryColumn.value.order_by == 'asc') {
 		queryColumn.value.order_by = null
 	} else {
-		queryColumn.value.order_by = 'asc'
+		queryColumn.value.order_by = 'desc'
 	}
 	query.updateColumn.submit({ column: queryColumn.value })
 }

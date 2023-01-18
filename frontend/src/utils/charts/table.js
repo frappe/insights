@@ -13,10 +13,17 @@ function useTableChart() {
 		return defineAsyncComponent(() => import('@/components/Query/Visualize/Table.vue'))
 	}
 
-	function getRows(columns, data) {
-		const columnLabels = data[0]?.map((d) => d.split('::')[0])
-		const columnIndexes = columnLabels.map((label) => columns.indexOf(label))
-		return data.slice(1).map((row) => columnIndexes.map((index) => row[index]))
+	function getRows(columnLabels, data) {
+		const resultHeader = data[0]?.map((d) => d.split('::')[0])
+		const resultData = data.slice(1)
+		return resultData.map((row) => {
+			const newRow = []
+			columnLabels.forEach((label) => {
+				const index = resultHeader.indexOf(label)
+				newRow.push(row[index])
+			})
+			return newRow
+		})
 	}
 
 	function buildComponentProps(queryChart) {
@@ -26,7 +33,9 @@ function useTableChart() {
 		const columns = queryChart.config.columns.map((c) => c.label)
 		const rows = getRows(columns, queryChart.data)
 		const title = queryChart.title
-		return { title, columns, rows, options: queryChart.config.options }
+		const props = { title, columns, rows, options: queryChart.config.options }
+		console.log(props)
+		return props
 	}
 
 	return chart

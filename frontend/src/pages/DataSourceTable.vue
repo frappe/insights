@@ -42,26 +42,27 @@
 		</template>
 		<template #main>
 			<div
-				v-if="doc && doc.columns && dataSourceTable.rows?.data"
-				class="flex h-full w-full flex-col pt-1"
+				v-if="doc && doc.columns && dataSourceTable.rows?.data && !dataSourceTable.syncing"
+				class="flex flex-col overflow-hidden pt-1"
 			>
-				<div class="flex h-6 space-x-1 text-sm font-light text-gray-600">
+				<div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
 					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
 				</div>
-				<div class="h-[calc(100%-1.5rem)] w-full">
-					<Table
-						v-if="!dataSourceTable.syncing"
-						:columns="doc.columns.map((c) => `${c.label} (${c.type})`)"
-						:rows="dataSourceTable.rows.data"
-					/>
-					<div
-						v-else
-						class="mt-2 flex h-full flex-col items-center justify-center rounded-md bg-gray-50"
-					>
-						<Spinner class="mb-2 w-8 text-gray-400" />
-						<div class="text-lg text-gray-500">Syncing columns from database...</div>
-					</div>
-				</div>
+				<Grid :header="true" :rows="dataSourceTable.rows.data">
+					<template #header>
+						<DataSourceTableColumnHeader
+							:columns="doc.columns"
+							@update-column-type="dataSourceTable.updateColumnType"
+						/>
+					</template>
+				</Grid>
+			</div>
+			<div
+				v-else
+				class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-50"
+			>
+				<LoadingIndicator class="mb-2 w-8 text-gray-400" />
+				<div class="text-lg text-gray-500">Syncing columns from database...</div>
 			</div>
 		</template>
 	</BasePage>
@@ -72,6 +73,7 @@
 				<div>
 					<div class="mb-2 block text-sm leading-4 text-gray-700">Table</div>
 					<Autocomplete
+						ref="$autocomplete"
 						v-model="newLink.table"
 						:options="tableOptions"
 						placeholder="Select a table..."
@@ -114,11 +116,12 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import Table from '@/components/Query/Visualize/Table.vue'
+import Grid from '@/components/Grid.vue'
+import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/utils/datasource'
-import { Dropdown, Badge, createResource, Spinner } from 'frappe-ui'
-import { computed, ref, reactive, watch, inject } from 'vue'
+import { Dropdown, Badge, createResource, LoadingIndicator } from 'frappe-ui'
+import { computed, ref, reactive, watch, inject, nextTick } from 'vue'
 
 const props = defineProps({
 	name: {
@@ -148,14 +151,20 @@ const hidden = computed({
 	},
 	set(value) {
 		if (value !== doc.value.hidden) {
-			dataSourceTable.updateVisibility(value)
+			dataSourceTable.updateVisibility.submit({
+				hidden: value,
+			})
 		}
 	},
 })
 
 const getTableOptions = createResource({
-	method: 'insights.api.get_tables',
+	url: 'insights.api.get_tables',
+	params: {
+		data_source: props.name,
+	},
 	initialData: [],
+	auto: true,
 })
 const tableOptions = computed(() =>
 	getTableOptions.data.map((table) => ({
@@ -163,10 +172,9 @@ const tableOptions = computed(() =>
 		value: table.table,
 	}))
 )
-getTableOptions.submit({ data_source: props.name })
 
 const getForeignKeyOptions = createResource({
-	method: 'insights.api.get_table_columns',
+	url: 'insights.api.get_table_columns',
 	initialData: [],
 })
 watch(
@@ -208,7 +216,7 @@ const createLinkDisabled = computed(() => {
 
 const $notify = inject('$notify')
 const createLinkResource = createResource({
-	method: 'insights.api.create_table_link',
+	url: 'insights.api.create_table_link',
 	onSuccess() {
 		newLink.table = ''
 		newLink.primaryKey = ''
@@ -239,4 +247,15 @@ function createLink() {
 		foreign_key: newLink.foreignKey.value,
 	})
 }
+
+const $autocomplete = ref(null)
+watch(addLinkDialog, async (val) => {
+	if (val) {
+		await nextTick()
+		setTimeout(() => {
+			$autocomplete.value.input.$el.blur()
+			$autocomplete.value.input.$el.focus()
+		}, 500)
+	}
+})
 </script>

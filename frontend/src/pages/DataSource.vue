@@ -15,7 +15,7 @@
 						placement="left"
 						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 						:options="[
-							dataSource.doc.name == 'Site DB'
+							dataSource.doc.allow_imports
 								? {
 										label: 'Import CSV',
 										icon: 'upload',
@@ -27,14 +27,19 @@
 								icon: 'refresh-cw',
 								handler: syncTables,
 							},
+							{
+								label: 'Delete',
+								icon: 'trash',
+								handler: () => dataSource.delete(),
+							},
 						]"
 					/>
 				</div>
 			</div>
 		</template>
 		<template #main>
-			<div v-if="dataSource.tables" class="flex flex-1 flex-col pt-2">
-				<div class="mb-4 flex space-x-4">
+			<div v-if="dataSource.tables" class="flex flex-1 flex-col overflow-hidden pt-2">
+				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="text" placeholder="Label" v-model="labelFilter" />
 					<Input
 						type="select"
@@ -43,13 +48,13 @@
 						:options="['Disabled', 'Enabled', 'All']"
 					/>
 				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
+				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
 					>
 						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-400" />
+							<Input type="checkbox" class="rounded-md border-gray-300" />
 						</p>
 						<p class="flex-1">Table</p>
 						<p class="flex-1">Status</p>
@@ -70,7 +75,7 @@
 								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-400" />
+									<Input type="checkbox" class="rounded-md border-gray-300" />
 								</p>
 								<p
 									class="flex flex-1 flex-col whitespace-nowrap text-sm font-medium text-gray-900"
@@ -96,7 +101,11 @@
 		</template>
 	</BasePage>
 
-	<ImportDialog :show="showImportDialog" @close="showImportDialog = false"></ImportDialog>
+	<ImportDialog
+		:data-source="props.name"
+		:show="showImportDialog"
+		@close="showImportDialog = false"
+	></ImportDialog>
 </template>
 
 <script setup>

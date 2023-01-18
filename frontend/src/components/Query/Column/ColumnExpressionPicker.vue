@@ -82,7 +82,7 @@
 		</div>
 		<div class="mt-4 text-sm text-gray-600">
 			<Input
-				v-if="!showDateFormatOptions"
+				v-if="expression.valueType == 'String'"
 				type="checkbox"
 				label="Group By"
 				v-model="expression.groupBy"
@@ -98,7 +98,7 @@
 			>
 				Remove
 			</Button>
-			<Button appearance="primary" @click="addExpressionColumn" :disabled="addDisabled">
+			<Button appearance="primary" @click="addOrEditColumn" :disabled="addDisabled">
 				{{ editing ? 'Update' : 'Add ' }}
 			</Button>
 		</div>
@@ -141,14 +141,14 @@ const input = reactive({
 	caretPosition: column.expression.raw?.length || 0,
 })
 
-const columnTypes = ['Time', 'Date', 'String', 'Integer', 'Decimal', 'Datetime', 'Text']
+const columnTypes = ['String', 'Integer', 'Decimal', 'Text', 'Datetime', 'Date', 'Time']
 
 // parse the expression when input changes
 const expression = reactive({
 	raw: input.value,
 	label: column.label,
 	groupBy: column.aggregation == 'Group By',
-	valueType: column.type,
+	valueType: column.type || 'String',
 	ast: null,
 	error: null,
 	tokens: [],
@@ -166,7 +166,7 @@ watchEffect(() => {
 })
 const showDateFormatOptions = computed(() => ['Date', 'Datetime'].includes(expression.valueType))
 watchEffect(() => {
-	if (showDateFormatOptions.value) {
+	if (showDateFormatOptions.value || expression.valueType !== 'String') {
 		// Currently group by date field is not supported on expressions due to.
 		// pymysql.err.OperationalError: (1056, "Can't group on '{AGGREGATE} of {DATE_FIELD}'")
 		expression.groupBy = false
@@ -214,7 +214,7 @@ const addDisabled = computed(() => {
 	)
 })
 
-const addExpressionColumn = () => {
+const addOrEditColumn = () => {
 	const newColumn = {
 		name: props.column.name,
 		is_expression: 1,
@@ -233,7 +233,12 @@ const addExpressionColumn = () => {
 			date_format: expression.dateFormat.value,
 		}
 	}
-	query.addColumn.submit({ column: newColumn })
+
+	if (props.column.name) {
+		query.updateColumn.submit({ column: newColumn })
+	} else {
+		query.addColumn.submit({ column: newColumn })
+	}
 	emit('close')
 }
 

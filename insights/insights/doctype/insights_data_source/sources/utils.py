@@ -67,13 +67,18 @@ def create_insights_table(table, force=False):
             doc.append("table_links", table_link)
 
     for column in table.columns or []:
-        if not doc.get("columns", column):
-            doc.append("columns", column)
+        # do not overwrite existing columns, since type or label might have been changed
+        if any([doc_column.column == column.column for doc_column in doc.columns]):
+            print("skipping", column.column)
+            continue
+        doc.append("columns", column)
 
     column_names = [c.column for c in table.columns]
     for column in doc.columns:
         if column.column not in column_names:
             doc.remove(column)
 
-    doc.save()
+    # need to ignore permissions when creating/updating a table in query store
+    # a user may have access to create a query and store it, but not to create a table
+    doc.save(ignore_permissions=force)
     return doc.name

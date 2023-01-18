@@ -295,12 +295,7 @@ class FrappeDB(BaseDatabase):
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
     def test_connection(self):
-        try:
-            return self.execute_query(
-                "select name from `tabDocType` limit 1", pluck=True
-            )
-        except Exception as e:
-            frappe.log_error(f"Error connecting to FrappeDB: {e}")
+        return self.execute_query("select name from `tabDocType` limit 1", pluck=True)
 
     def build_query(self, query):
         return self.query_builder.build(query, dialect=self.engine.dialect)
@@ -317,7 +312,7 @@ class FrappeDB(BaseDatabase):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
-    def get_table_preview(self, table, limit=20):
+    def get_table_preview(self, table, limit=100):
         data = self.execute_query(f"""select * from `{table}` limit {limit}""")
         length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
@@ -330,7 +325,7 @@ class FrappeDB(BaseDatabase):
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 
-    def get_column_options(self, table, column, search_text=None, limit=25):
+    def get_column_options(self, table, column, search_text=None, limit=50):
         t = Table(table, Column(column))
         query = t.select().distinct().limit(limit)
         if search_text:
@@ -366,9 +361,16 @@ class SiteDB(FrappeDB):
         return super().sync_tables(_tables, force)
 
 
+from insights.cache_utils import get_or_set_cache, make_cache_key
+
+
 def is_frappe_db(db_params):
-    try:
-        db = FrappeDB(**db_params)
-        return db if db.test_connection() else None
-    except BaseException:
-        return False
+    def _is_frappe_db():
+        try:
+            db = FrappeDB(**db_params)
+            return db.test_connection()
+        except BaseException:
+            return False
+
+    key = make_cache_key("is_frappe_db", db_params)
+    return get_or_set_cache(key, _is_frappe_db, expiry=None)
