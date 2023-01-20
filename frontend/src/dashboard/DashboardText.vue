@@ -47,9 +47,8 @@ async function discardText() {
 			/>
 		</div>
 
-		<teleport :to="`#dashboard-item-actions-${item.name}`">
+		<teleport :to="`#dashboard-edit-item-actions-${item.name}`">
 			<Button
-				v-if="dashboard.editingLayout"
 				appearance="minimal"
 				iconLeft="name"
 				class="!text-sm"

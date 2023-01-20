@@ -1,9 +1,9 @@
 <script setup>
 import Chart from '@/components/Charts/Chart.vue'
-import ChartGrid from '@/components/Charts/ChartGrid.vue'
 import ChartAxis from '@/components/Charts/ChartAxis.vue'
-import ChartSeries from '@/components/Charts/ChartSeries.vue'
+import ChartGrid from '@/components/Charts/ChartGrid.vue'
 import ChartLegend from '@/components/Charts/ChartLegend.vue'
+import ChartSeries from '@/components/Charts/ChartSeries.vue'
 import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
 import { ref } from 'vue'
 
@@ -58,6 +58,10 @@ const series = ref(
 		stack: props.options.stack ? 'stack' : null,
 	}))
 )
+
+function valueFormatter(value) {
+	return isNaN(value) ? value : value.toLocaleString()
+}
 </script>
 
 <template>
@@ -71,7 +75,7 @@ const series = ref(
 			<ChartLegend type="scroll" bottom="bottom" />
 			<ChartAxis v-for="(axis, i) in XandY" v-bind="axis" :key="i" />
 			<ChartSeries v-for="(data, i) in series" v-bind="data" :key="i" />
-			<ChartTooltip trigger="axis" :appendToBody="true" />
+			<ChartTooltip trigger="axis" :appendToBody="true" :valueFormatter="valueFormatter" />
 		</ChartGrid>
 	</Chart>
 </template>

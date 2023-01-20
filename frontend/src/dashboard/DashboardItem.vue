@@ -42,8 +42,11 @@
 			</div>
 		</div>
 
-		<div class="absolute top-0 right-0 z-10 flex h-full w-full items-center justify-center">
-			<DashboardItemActions />
+		<div
+			v-if="dashboard.editingLayout"
+			class="absolute top-0 right-0 z-10 flex h-full w-full items-center justify-center"
+		>
+			<DashboardEditItemActions />
 		</div>
 	</div>
 </template>
@@ -52,7 +55,7 @@
 import useDashboardItem from '@/dashboard/useDashboardItem'
 import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject, provide, ref } from 'vue'
-import DashboardItemActions from './DashboardItemActions.vue'
+import DashboardEditItemActions from './DashboardEditItemActions.vue'
 
 const props = defineProps({ item: Object })
 const dashboard = inject('dashboard')
