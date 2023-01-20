@@ -52,9 +52,8 @@ function editFilter() {
 
 <template>
 	<div class="flex h-full w-full items-center">
-		<teleport :to="`#dashboard-item-actions-${item.name}`">
+		<teleport :to="`#dashboard-edit-item-actions-${item.name}`">
 			<Button
-				v-if="dashboard.editingLayout"
 				appearance="minimal"
 				@click.prevent.stop="showEditFilterDialog = true"
 				iconLeft="settings"
