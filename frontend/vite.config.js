@@ -28,6 +28,7 @@ export default defineConfig({
 		outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
 		emptyOutDir: true,
 		target: 'es2015',
+		sourcemap: true,
 	},
 	optimizeDeps: {
 		include: ['feather-icons', 'showdown', 'engine.io-client'],
