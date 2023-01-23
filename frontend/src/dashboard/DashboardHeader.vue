@@ -1,9 +1,9 @@
 <script setup>
+import EditablePageTitle from '@/components/EditablePageTitle.vue'
+import ShareDialog from '@/components/ShareDialog.vue'
+import { Badge, Dropdown } from 'frappe-ui'
 import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import EditablePageTitle from '@/components/EditablePageTitle.vue'
-import { Dropdown } from 'frappe-ui'
-import ShareDialog from '@/components/ShareDialog.vue'
 
 const dashboard = inject('dashboard')
 
@@ -54,6 +54,10 @@ function updateTitle(title) {
 					},
 				]"
 			/>
+
+			<Badge v-if="dashboard.editingLayout" color="yellow" class="!text-sm">
+				Editing Layout
+			</Badge>
 		</div>
 		<div class="flex items-center space-x-2">
 			<Button
