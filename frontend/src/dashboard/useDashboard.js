@@ -80,6 +80,7 @@ export default function useDashboard(dashboardName) {
 		// reload the dashboard doc
 		// to re-render the charts with new data
 		dashboard.doc.items = []
+		dashboard.clear_charts_cache.submit()
 		dashboard.reload()
 	}, 500)
 
@@ -139,6 +140,7 @@ function fetchDashboard(name) {
 			get_filter_columns: 'get_filter_columns',
 			fetch_column_values: 'fetch_column_values',
 			update_filter_state: 'update_filter_state',
+			clear_charts_cache: 'clear_charts_cache',
 		},
 	})
 	resource.get.fetch()

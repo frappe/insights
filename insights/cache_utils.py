@@ -8,17 +8,17 @@ import frappe
 EXPIRY = 60 * 10
 
 
-def make_cache_key(*args):
+def make_digest(*args):
     key = ""
     for arg in args:
         if isinstance(arg, dict):
             key += frappe.as_json(arg)
         key += frappe.cstr(arg)
-    key = hashlib.md5(key.encode("utf-8")).hexdigest()
-    return f"insights|{key}"
+    return hashlib.md5(key.encode("utf-8")).hexdigest()
 
 
 def get_or_set_cache(key, func, force=False, expiry=EXPIRY):
+    key = f"insights|{key}"
     cached_value = frappe.cache().get_value(key)
     if cached_value and not force:
         return cached_value
