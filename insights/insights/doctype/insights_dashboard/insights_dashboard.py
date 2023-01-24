@@ -7,12 +7,15 @@ from json import dumps
 import frappe
 from frappe.model.document import Document
 
-from insights.cache_utils import get_or_set_cache, make_cache_key
+from insights import notify
+from insights.cache_utils import get_or_set_cache, make_digest
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
 )
 
 from .utils import convert_into_simple_filter, convert_to_expression, get_item_position
+
+CACHE_NAMESPACE = "insights_dashboard"
 
 
 class InsightsDashboard(Document):
@@ -30,6 +33,10 @@ class InsightsDashboard(Document):
             },
             fields=["name", "title", "type"],
         )
+
+    @property
+    def cache_namespace(self):
+        return f"{CACHE_NAMESPACE}|{self.name}"
 
     @frappe.whitelist()
     def add_item(self, item):
@@ -131,7 +138,7 @@ class InsightsDashboard(Document):
 
         chart_filters = self.get_chart_filters(row.chart)
         if not chart_filters:
-            return run_query(row.query)
+            return self.run_query(row.query)
 
         filter_conditions = []
         for chart_filter in chart_filters:
@@ -148,9 +155,9 @@ class InsightsDashboard(Document):
             )
 
         if not filter_conditions:
-            return run_query(row.query)
+            return self.run_query(row.query)
 
-        return run_query(row.query, additional_filters=filter_conditions)
+        return self.run_query(row.query, additional_filters=filter_conditions)
 
     @frappe.whitelist()
     def get_all_columns(self, query):
@@ -206,41 +213,49 @@ class InsightsDashboard(Document):
             column.get("table"), column.get("column"), search_text
         )
 
+    @frappe.whitelist()
+    def clear_charts_cache(self):
+        frappe.cache().delete_keys(f"*{self.cache_namespace}:*")
+        notify(**{"type": "success", "title": "Cache Cleared"})
 
-def run_query(query_name, additional_filters=None):
-    def get_result():
-        query = frappe.get_cached_doc("Insights Query", query_name)
-        if not additional_filters:
+    def run_query(self, query_name, additional_filters=None):
+        def get_result():
+            query = frappe.get_cached_doc("Insights Query", query_name)
+            if not additional_filters:
+                return query.fetch_results()
+
+            filters = frappe.parse_json(query.filters)
+
+            new_filters = frappe.parse_json(query.filters)
+            for new_filter in additional_filters:
+                found = False
+                # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
+                if new_simple_filter := convert_into_simple_filter(new_filter):
+                    for index, exisiting_filter in enumerate(filters.conditions):
+                        existing_simple_filter = convert_into_simple_filter(
+                            exisiting_filter
+                        )
+                        if not existing_simple_filter:
+                            continue
+                        if (
+                            existing_simple_filter["column"]
+                            == new_simple_filter["column"]
+                        ):
+                            new_filters.conditions[index] = new_filter
+                            found = True
+                            break
+                if not found:
+                    new_filters.conditions.append(new_filter)
+
+            query.filters = dumps(new_filters)
             return query.fetch_results()
 
-        filters = frappe.parse_json(query.filters)
+        last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
+        key = make_digest(query_name, last_modified, additional_filters)
+        key = f"{self.cache_namespace}:{key}"
 
-        new_filters = frappe.parse_json(query.filters)
-        for new_filter in additional_filters:
-            found = False
-            # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
-            if new_simple_filter := convert_into_simple_filter(new_filter):
-                for index, exisiting_filter in enumerate(filters.conditions):
-                    existing_simple_filter = convert_into_simple_filter(
-                        exisiting_filter
-                    )
-                    if not existing_simple_filter:
-                        continue
-                    if existing_simple_filter["column"] == new_simple_filter["column"]:
-                        new_filters.conditions[index] = new_filter
-                        found = True
-                        break
-            if not found:
-                new_filters.conditions.append(new_filter)
-
-        query.filters = dumps(new_filters)
-        return query.fetch_results()
-
-    last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
-    key = make_cache_key(query_name, last_modified, additional_filters)
-
-    query_result_expiry = frappe.db.get_single_value(
-        "Insights Settings", "query_result_expiry"
-    )
-    query_result_expiry_in_seconds = query_result_expiry * 60
-    return get_or_set_cache(key, get_result, expiry=query_result_expiry_in_seconds)
+        query_result_expiry = frappe.db.get_single_value(
+            "Insights Settings", "query_result_expiry"
+        )
+        query_result_expiry_in_seconds = query_result_expiry * 60
+        return get_or_set_cache(key, get_result, expiry=query_result_expiry_in_seconds)

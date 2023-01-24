@@ -43,7 +43,7 @@
 		</div>
 
 		<div
-			v-if="dashboard.editingLayout"
+			v-show="dashboard.editingLayout"
 			class="absolute top-0 right-0 z-10 flex h-full w-full items-center justify-center"
 		>
 			<DashboardEditItemActions />
