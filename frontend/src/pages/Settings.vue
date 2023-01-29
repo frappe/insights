@@ -80,8 +80,8 @@
 						<div class="flex-1">
 							<p class="font-medium leading-6 text-gray-900">Subscription ID</p>
 							<span class="text-gray-500">
-								This is used for managing your subscription and billing. This is
-								also used to authenticate with the support portal.
+								This is used for authentication with the support portal and managing
+								support tickets.
 							</span>
 						</div>
 						<div class="flex flex-1 items-center pl-20">
@@ -90,6 +90,29 @@
 								v-model="settingsDoc.subscription_id"
 								placeholder="eg. 1234567890"
 							/>
+						</div>
+					</div>
+
+					<div class="flex">
+						<div class="flex-1">
+							<p class="font-medium leading-6 text-gray-900">Support Login</p>
+							<span class="text-gray-500">
+								Send a login link to the support portal. You can login to the
+								support portal to manage support tickets.
+							</span>
+						</div>
+						<div class="flex flex-1 items-center pl-20">
+							<Button
+								appearance="white"
+								@click="settings.send_support_login_link.submit()"
+								:loading="settings.send_support_login_link.loading"
+								:disabled="
+									!settingsDoc.subscription_id ||
+									settings.send_support_login_link.loading
+								"
+							>
+								Send Login Link
+							</Button>
 						</div>
 					</div>
 				</div>
@@ -101,15 +124,20 @@
 <script setup>
 import { updateDocumentTitle } from '@/utils'
 import settings from '@/utils/settings'
-import { ref, watchEffect, computed } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
-const settingsDoc = ref({ ...settings.doc })
+const settingsDoc = ref({})
 watchEffect(() => {
-	settingsDoc.value = { ...settings.doc }
+	if (settings.doc) {
+		settingsDoc.value = { ...settings.doc }
+	} else {
+		settingsDoc.value = {}
+	}
 })
 const updateDisabled = computed(() => {
 	const local = settingsDoc.value
 	const remote = settings.doc
+	if (!local || !remote) return true
 	return (
 		local.query_result_limit === remote.query_result_limit &&
 		local.query_result_expiry === remote.query_result_expiry &&

@@ -13,7 +13,7 @@ def notify(**kwargs):
         message={
             "message": kwargs.get("message"),
             "title": kwargs.get("title"),
-            "type": kwargs.get("type"),
+            "type": kwargs.get("type", "success"),
             "user": frappe.session.user,
         },
     )
