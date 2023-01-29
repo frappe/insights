@@ -2,14 +2,11 @@
 	<div class="flex w-16 flex-shrink-0 flex-col bg-gray-50 xl:w-60" v-if="currentRoute">
 		<div class="flex flex-grow flex-col overflow-y-auto p-4">
 			<div class="hidden flex-shrink-0 items-end text-sm text-gray-500 xl:flex">
-				<FrappeInsightsLogo />
-				<!-- <span class="ml-1">{{ appVersion }}</span> -->
-				<div class="ml-1 mb-0.5 rounded-full bg-gray-200 px-2 text-xs text-gray-900">
-					beta
-				</div>
+				<img src="../assets/insights-logo.svg" class="h-7" />
+				<span class="ml-1 mb-0.5 font-mono">{{ appVersion }}</span>
 			</div>
 			<div class="flex xl:hidden">
-				<img src="../assets/frappe-framework-logo.svg" />
+				<img src="../assets/insights-icon.svg" class="rounded-md" />
 			</div>
 
 			<div class="mt-4 flex flex-col">
@@ -103,7 +100,6 @@
 
 <script setup>
 import { Avatar } from 'frappe-ui'
-import FrappeInsightsLogo from '@/components/Icons/FrappeInsights.vue'
 
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
