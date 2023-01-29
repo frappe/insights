@@ -50,7 +50,7 @@ class InsightsSettings(Document):
             if res and res["message"]:
                 notify(
                     title="Login link sent",
-                    message="Login link sent to your email",
+                    message=f"Login link sent to - {email}",
                 )
             else:
                 notify(
