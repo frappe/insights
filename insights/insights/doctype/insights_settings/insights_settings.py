@@ -15,4 +15,6 @@ class InsightsSettings(Document):
             self.query_result_expiry = settings.query_result_expiry
         if hasattr(settings, "query_result_limit"):
             self.query_result_limit = settings.query_result_limit
+        if hasattr(settings, "subscription_id"):
+            self.subscription_id = settings.subscription_id
         self.save()

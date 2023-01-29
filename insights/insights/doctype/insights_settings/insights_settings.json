@@ -13,7 +13,8 @@
   "auto_execute_query",
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
-  "query_result_limit"
+  "query_result_limit",
+  "subscription_id"
  ],
  "fields": [
   {
@@ -60,12 +61,17 @@
    "fieldname": "query_result_limit",
    "fieldtype": "Int",
    "label": "Query Result Limit"
+  },
+  {
+   "fieldname": "subscription_id",
+   "fieldtype": "Password",
+   "label": "Subscription ID"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-01-09 12:34:33.142264",
+ "modified": "2023-01-29 15:42:03.625860",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
