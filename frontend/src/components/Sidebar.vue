@@ -60,11 +60,6 @@
 							icon: 'help-circle',
 							handler: () => open('https://frappeinsights.com/docs'),
 						},
-						{
-							label: 'Support',
-							icon: 'message-circle',
-							handler: () => open('https://frappeinsights.com/support'),
-						},
 						auth.user.is_admin
 							? {
 									label: 'Switch to Desk',

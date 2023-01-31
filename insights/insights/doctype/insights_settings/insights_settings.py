@@ -47,7 +47,7 @@ class InsightsSettings(Document):
             res = frappe.integrations.utils.make_post_request(
                 url, data={"subscription_id": subscription_id, "email": email}
             )
-            if res and res["message"]:
+            if res.status_code == 200:
                 notify(
                     title="Login link sent",
                     message=f"Login link sent to - {email}",
@@ -60,9 +60,9 @@ class InsightsSettings(Document):
                 )
 
         except Exception:
-            frappe.log_error(title="Error sending login link for support portal")
+            frappe.log_error(title="Error sending login link to your email")
             notify(
-                title="Error sending login link",
+                title="Something went wrong",
                 message="Error sending login link to your email",
                 type="error",
             )
