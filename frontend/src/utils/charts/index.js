@@ -97,6 +97,8 @@ function useChart({ chartID, data }) {
 
 	function setType(type) {
 		chart.type = type
+		chart.config = {}
+		chart.options = {}
 	}
 
 	function updateDoc({ onSuccess }) {

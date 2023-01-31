@@ -1,10 +1,13 @@
-import { createDocumentResource } from 'frappe-ui'
 import { createToast } from '@/utils/toasts'
+import { createDocumentResource } from 'frappe-ui'
 
 const resource = createDocumentResource({
 	doctype: 'Insights Settings',
 	name: 'Insights Settings',
-	whitelistedMethods: { update_settings: 'update_settings' },
+	whitelistedMethods: {
+		update_settings: 'update_settings',
+		send_support_login_link: 'send_support_login_link',
+	},
 })
 resource.get.fetch()
 resource.updateSettings = (settings) => {

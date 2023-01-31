@@ -2,7 +2,7 @@
 	<div class="h-full pt-4 sm:pt-16">
 		<div>
 			<div class="flex">
-				<FrappeInsights class="mx-auto h-6 w-auto" />
+				<img src="../assets/insights-logo.svg" class="mx-auto h-8" />
 			</div>
 			<div
 				class="sm:w-0112 mx-auto bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-10 sm:shadow-xl"
@@ -17,7 +17,5 @@
 </template>
 
 <script setup>
-import FrappeInsights from '@/components/Icons/FrappeInsights.vue'
-
 const props = defineProps(['title'])
 </script>
