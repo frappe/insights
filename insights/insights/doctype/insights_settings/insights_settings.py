@@ -44,21 +44,13 @@ class InsightsSettings(Document):
         email = frappe.session.user
 
         try:
-            res = frappe.integrations.utils.make_post_request(
+            frappe.integrations.utils.make_post_request(
                 url, data={"subscription_id": subscription_id, "email": email}
             )
-            if res.status_code == 200:
-                notify(
-                    title="Login link sent",
-                    message=f"Login link sent to - {email}",
-                )
-            else:
-                notify(
-                    title="Error sending login link",
-                    message="Error sending login link to your email",
-                    type="error",
-                )
-
+            notify(
+                title="Login link sent",
+                message=f"Login link sent to - {email}",
+            )
         except Exception:
             frappe.log_error(title="Error sending login link to your email")
             notify(
