@@ -25,13 +25,13 @@ class SQLiteColumnFormatter(ColumnFormatter):
         if format == "Hour of Day":
             return func.strftime("%H:00", column)
         if format == "Day of Week":
-            return func.strftime("%w", column)
+            return func.strftime("%A", column)
         if format == "Day of Month":
             return func.strftime("%d", column)
         if format == "Day of Year":
             return func.strftime("%j", column)
         if format == "Month of Year":
-            return func.strftime("%m", column)
+            return func.strftime("%B", column)
 
         if format == "Quarter of Year":
             month = func.strftime("%m", column)

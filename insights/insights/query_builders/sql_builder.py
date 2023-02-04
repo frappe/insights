@@ -69,13 +69,13 @@ class ColumnFormatter:
         if format == "Hour of Day":
             return func.date_format(column, "%H:00")
         if format == "Day of Week":
-            return func.date_format(column, "%w")
+            return func.date_format(column, "%W")
         if format == "Day of Month":
             return func.date_format(column, "%d")
         if format == "Day of Year":
             return func.date_format(column, "%j")
         if format == "Month of Year":
-            return func.date_format(column, "%m")
+            return func.date_format(column, "%M")
         if format == "Quarter of Year":
             return func.quarter(column)
         if format == "Quarter":
