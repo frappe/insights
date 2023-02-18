@@ -23,13 +23,16 @@ window.dashboard = dashboard
 
 const draggingWidget = ref(false)
 function addWidget(event, position) {
-	console.log('add widget', position)
+	draggingWidget.value = false
 	const widgetType = event.dataTransfer.getData('text/plain')
-	if (widgetType)
+	if (widgetType) {
+		const itemID = Math.floor(Math.random() * 1000000)
 		dashboard.addItem({
-			item_id: Math.floor(Math.random() * 1000000),
+			item_id: itemID,
 			item_type: widgetType,
 		})
+		dashboard.setCurrentItem(itemID)
+	}
 }
 
 const pageMeta = computed(() => {
@@ -113,7 +116,7 @@ updateDocumentTitle(pageMeta)
 			>
 				<div v-if="!dashboard.currentItem">
 					<div class="mb-3 font-semibold text-gray-800">Charts</div>
-					<DashboardSidebarWidgets @drag-change="draggingWidget = $event" />
+					<DashboardSidebarWidgets @dragChange="draggingWidget = $event" />
 				</div>
 
 				<div v-else>

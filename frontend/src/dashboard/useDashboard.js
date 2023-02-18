@@ -79,9 +79,9 @@ export default function useDashboard(name) {
 		state.currentItem = undefined
 	}
 
-	function setCurrentItem(item) {
+	function setCurrentItem(item_id) {
 		if (!state.editing) return
-		state.currentItem = state.doc.items.find((i) => i.item_id === item.item_id)
+		state.currentItem = state.doc.items.find((i) => i.item_id === item_id)
 	}
 
 	function loadQuery(queryName) {

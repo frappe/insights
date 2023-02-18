@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, watchEffect, onMounted } from 'vue'
+import { reactive, ref, watch, watchEffect } from 'vue'
 
 const emit = defineEmits(['update:layouts'])
 const props = defineProps({
@@ -72,10 +72,8 @@ function updateLayout(i, x, y, w, h) {
 
 async function toggleEnable(disable) {
 	if (options.isDraggable === !disable && options.isResizable === !disable) return
-	// refreshID.value++
 	options.isDraggable = !disable
 	options.isResizable = !disable
-	// await nextTick()
 }
 watch(() => props.disabled, toggleEnable, 200)
 </script>

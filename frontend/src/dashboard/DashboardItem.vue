@@ -11,7 +11,7 @@ const actions = [
 	{
 		icon: 'settings',
 		label: 'Edit',
-		onClick: (item) => dashboard.setCurrentItem(item),
+		onClick: (item) => dashboard.setCurrentItem(item.item_id),
 	},
 	{
 		icon: 'trash',
@@ -46,7 +46,7 @@ function makeRefreshKey(item) {
 			'ring-2 ring-blue-300 ring-offset-1': item.item_id === dashboard.currentItem?.item_id,
 			'cursor-grab': dashboard.editing,
 		}"
-		@click.prevent.stop="dashboard.setCurrentItem(item)"
+		@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
 	>
 		<div
 			v-if="item.refreshing"

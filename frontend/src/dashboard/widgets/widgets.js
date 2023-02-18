@@ -1,11 +1,11 @@
-import { defineAsyncComponent, markRaw } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
 const WIDGETS = {
 	Number: {
 		type: 'Number',
 		icon: 'hash',
-		component: markRaw(defineAsyncComponent(() => import('./Number/Number.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Number/NumberOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Number/Number.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
 		options: {},
 		defaultWidth: 5,
 		defaultHeight: 4,
@@ -13,8 +13,8 @@ const WIDGETS = {
 	Line: {
 		type: 'Line',
 		icon: 'trending-up',
-		component: markRaw(defineAsyncComponent(() => import('./Line/Line.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Line/LineOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Line/Line.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Line/LineOptions.vue')),
 		options: {},
 		defaultWidth: 10,
 		defaultHeight: 8,
@@ -22,8 +22,8 @@ const WIDGETS = {
 	Bar: {
 		type: 'Bar',
 		icon: 'bar-chart',
-		component: markRaw(defineAsyncComponent(() => import('./Bar/Bar.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Bar/BarOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Bar/Bar.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Bar/BarOptions.vue')),
 		options: {},
 		defaultWidth: 10,
 		defaultHeight: 8,
@@ -31,8 +31,8 @@ const WIDGETS = {
 	Pie: {
 		type: 'Pie',
 		icon: 'pie-chart',
-		component: markRaw(defineAsyncComponent(() => import('./Pie/Pie.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Pie/PieOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Pie/Pie.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Pie/PieOptions.vue')),
 		options: {},
 		defaultWidth: 10,
 		defaultHeight: 8,
@@ -40,8 +40,8 @@ const WIDGETS = {
 	Table: {
 		type: 'Table',
 		icon: 'grid',
-		component: markRaw(defineAsyncComponent(() => import('./Table/Table.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Table/TableOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Table/Table.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Table/TableOptions.vue')),
 		options: {},
 		defaultWidth: 12,
 		defaultHeight: 8,
@@ -49,10 +49,8 @@ const WIDGETS = {
 	Progress: {
 		type: 'Progress',
 		icon: 'percent',
-		component: markRaw(defineAsyncComponent(() => import('./Progress/Progress.vue'))),
-		optionsComponent: markRaw(
-			defineAsyncComponent(() => import('./Progress/ProgressOptions.vue'))
-		),
+		component: defineAsyncComponent(() => import('./Progress/Progress.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Progress/ProgressOptions.vue')),
 		options: {},
 		defaultWidth: 5,
 		defaultHeight: 4,
@@ -60,8 +58,8 @@ const WIDGETS = {
 	Filter: {
 		type: 'Filter',
 		icon: 'filter',
-		component: markRaw(defineAsyncComponent(() => import('./Filter/Filter.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Filter/FilterOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Filter/Filter.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Filter/FilterOptions.vue')),
 		options: {},
 		defaultWidth: 5,
 		defaultHeight: 1,
@@ -69,8 +67,8 @@ const WIDGETS = {
 	Text: {
 		type: 'Text',
 		icon: 'align-left',
-		component: markRaw(defineAsyncComponent(() => import('./Text/Text.vue'))),
-		optionsComponent: markRaw(defineAsyncComponent(() => import('./Text/TextOptions.vue'))),
+		component: defineAsyncComponent(() => import('./Text/Text.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Text/TextOptions.vue')),
 		options: {},
 		defaultWidth: 10,
 		defaultHeight: 1,
@@ -80,8 +78,8 @@ const WIDGETS = {
 const UnknownWidget = {
 	type: 'Unknown',
 	icon: 'question',
-	component: markRaw(defineAsyncComponent(() => import('./UnknownWidget.vue'))),
-	optionsComponent: markRaw(defineAsyncComponent(() => import('./UnknownWidget.vue'))),
+	component: defineAsyncComponent(() => import('./UnknownWidget.vue')),
+	optionsComponent: defineAsyncComponent(() => import('./UnknownWidget.vue')),
 	options: {},
 	defaultWidth: 5,
 	defaultHeight: 4,

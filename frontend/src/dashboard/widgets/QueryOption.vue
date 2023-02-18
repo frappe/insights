@@ -1,6 +1,6 @@
 <script setup>
 import LinkIcon from '@/components/Controls/LinkIcon.vue'
-import useQueries from '@/store/query/useQueries'
+import useQueries from '@/query/useQueries'
 import { getQueryLink } from '@/utils'
 import { whenever } from '@vueuse/shared'
 import { computed, inject } from 'vue'
@@ -24,6 +24,7 @@ whenever(queryName, (query) => dashboard.loadQuery(query), { immediate: true })
 		<LinkIcon :link="getQueryLink(queryName)">
 			<Autocomplete
 				v-model="queryName"
+				placeholder="Select a query"
 				:options="
 					queries.list.map((query) => ({
 						label: query.title,
