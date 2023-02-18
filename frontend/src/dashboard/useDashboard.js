@@ -187,7 +187,7 @@ export default function useDashboard(name) {
 		const defaultHeight = widgets[item.item_type].defaultHeight
 		return {
 			i: parseInt(item.item_id),
-			x: 15,
+			x: 0,
 			y: 0,
 			w: defaultWidth,
 			h: defaultHeight,
