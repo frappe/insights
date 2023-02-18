@@ -1,16 +1,19 @@
-import './index.css'
-import App from './App.vue'
-import router from './router'
+import { frappeRequest, initSocket, setConfig } from 'frappe-ui'
+import { createPinia } from 'pinia'
 import { createApp } from 'vue'
-import { socketio_port } from '../../../../sites/common_site_config.json'
-import { setConfig, frappeRequest, initSocket } from 'frappe-ui'
-import { createToast } from './utils/toasts'
 import VueGridLayout from 'vue3-drr-grid-layout'
 import 'vue3-drr-grid-layout/dist/style.css'
+import { socketio_port } from '../../../../sites/common_site_config.json'
+import App from './App.vue'
+import './index.css'
+import router from './router'
+import { createToast } from './utils/toasts'
 
-import { registerGlobalComponents, registerControllers } from './globals'
+import { registerControllers, registerGlobalComponents } from './globals'
 
-let app = createApp(App)
+const app = createApp(App)
+const pinia = createPinia()
+app.use(pinia)
 setConfig('resourceFetcher', (options) => {
 	return frappeRequest({
 		...options,

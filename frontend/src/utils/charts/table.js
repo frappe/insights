@@ -34,7 +34,6 @@ function useTableChart() {
 		const rows = getRows(columns, queryChart.data)
 		const title = queryChart.title
 		const props = { title, columns, rows, options: queryChart.config.options }
-		console.log(props)
 		return props
 	}
 

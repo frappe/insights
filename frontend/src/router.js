@@ -33,7 +33,7 @@ const routes = [
 	{
 		path: '/dashboard',
 		name: 'Dashboards',
-		component: () => import('@/dashboard/Dashboards.vue'),
+		component: () => import('@/dashboard/DashboardList.vue'),
 	},
 	{
 		props: true,

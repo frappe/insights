@@ -32,3 +32,4 @@ insights.patches.modify_join_condition
 insights.patches.make_filter_links #v3
 insights.patches.replace_pivot_column_with_label #2
 insights.patches.refactor_dashboard_filter
+insights.patches.refactor_dashboard_item #17

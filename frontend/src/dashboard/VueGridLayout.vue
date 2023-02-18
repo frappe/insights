@@ -1,28 +1,38 @@
 <template>
-	<grid-layout v-model:layout="items" v-bind="options" :key="refreshID">
+	<grid-layout ref="grid" :layout="layouts" v-bind="options">
 		<template #default="{ gridItemProps }">
 			<grid-item
-				v-for="item in items"
+				v-for="(layout, index) in layouts"
 				v-bind="gridItemProps"
-				:key="item.i"
-				:i="item.i"
-				:x="item.x"
-				:y="item.y"
-				:w="item.w"
-				:h="item.h"
+				:key="layout.i"
+				:i="layout.i"
+				:x="layout.x"
+				:y="layout.y"
+				:w="layout.w"
+				:h="layout.h"
+				@resize="updateSize"
+				@move="updatePosition"
 			>
-				<slot name="item" v-bind="{ item }"> {{ item.i }}</slot>
+				<slot name="item" :item="props.items[index]">
+					<pre class="h-full w-full rounded-md bg-white p-4 shadow">
+
+						{{ { i: layout.i, x: layout.x, y: layout.y, w: layout.w, h: layout.h } }}
+
+					</pre
+					>
+				</slot>
 			</grid-item>
 		</template>
 	</grid-layout>
 </template>
 
 <script setup>
-import { debounce } from 'frappe-ui'
-import { computed, defineExpose, reactive, ref, watch, nextTick } from 'vue'
+import { reactive, ref, watch, watchEffect, onMounted } from 'vue'
 
+const emit = defineEmits(['update:layouts'])
 const props = defineProps({
 	items: { type: Array, required: true },
+	layouts: { type: Array, required: true },
 	disabled: { type: Boolean, default: false },
 })
 const options = reactive({
@@ -33,54 +43,41 @@ const options = reactive({
 	isResizable: false,
 	responsive: true,
 	verticalCompact: false,
-	preventCollision: false,
+	preventCollision: true,
 	useCssTransforms: true,
-	cols: { lg: 20, md: 20, sm: 12, xs: 1, xxs: 1 },
+	cols: { lg: 20, md: 20, sm: 20, xs: 1, xxs: 1 },
 })
-const items = ref(props.items)
-watch(
-	() => props.items,
-	(val) => (items.value = val),
-	{ deep: true }
-)
-const layouts = computed(() => {
-	return items.value.map((item) => {
-		return {
-			i: item.i,
-			x: item.x,
-			y: item.y,
-			w: item.w,
-			h: item.h,
+const layouts = ref([])
+watchEffect(() => {
+	layouts.value = [...props.layouts]
+})
+function updatePosition(i, x, y) {
+	updateLayout(i, x, y, undefined, undefined)
+}
+function updateSize(i, w, h) {
+	updateLayout(i, undefined, undefined, w, h)
+}
+function updateLayout(i, x, y, w, h) {
+	layouts.value = layouts.value.map((l) => {
+		if (l.i === i) {
+			if (x !== undefined) l.x = x
+			if (y !== undefined) l.y = y
+			if (w !== undefined) l.w = w
+			if (h !== undefined) l.h = h
 		}
+		return l
 	})
-})
+	emit('update:layouts', layouts.value)
+}
 
-const refreshID = ref(0)
 async function toggleEnable(disable) {
 	if (options.isDraggable === !disable && options.isResizable === !disable) return
-	refreshID.value++
+	// refreshID.value++
 	options.isDraggable = !disable
 	options.isResizable = !disable
-	await nextTick()
+	// await nextTick()
 }
-watch(() => props.disabled, debounce(toggleEnable, 200))
-
-async function compact() {
-	options.verticalCompact = true
-	await refresh()
-	options.verticalCompact = false
-	await refresh()
-}
-
-async function refresh() {
-	refreshID.value++
-	return nextTick()
-}
-
-defineExpose({ layouts, refresh, compact })
-
-window.gridOptions = options
-window.refreshGrid = refresh
+watch(() => props.disabled, toggleEnable, 200)
 </script>
 
 <style>

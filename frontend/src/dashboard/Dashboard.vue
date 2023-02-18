@@ -1,189 +1,35 @@
-<template>
-	<BasePage>
-		<template #header>
-			<DashboardHeader
-				@addChart="() => (showAddDialog = true)"
-				@saveLayout="saveLayout"
-				@autoLayout="autoLayout"
-			/>
-		</template>
-		<template #main>
-			<div
-				v-if="dashboard.items && dashboard.items.length > 0"
-				class="-mx-1 h-full w-full overflow-y-scroll pt-1"
-			>
-				<VueGridLayout
-					ref="gridLayout"
-					:items="dashboard.items"
-					:disabled="!dashboard.editingLayout"
-				>
-					<template #item="{ item }">
-						<DashboardItem :item="item" />
-					</template>
-				</VueGridLayout>
-			</div>
-			<div
-				v-if="dashboard.items && dashboard.items.length == 0"
-				class="flex flex-1 flex-col items-center justify-center space-y-1"
-			>
-				<div class="text-base font-light text-gray-500">You haven't added any charts.</div>
-				<div
-					class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
-					@click="showAddDialog = true"
-				>
-					Add one?
-				</div>
-			</div>
-		</template>
-	</BasePage>
-
-	<Dialog :options="{ title: 'Add an item' }" v-model="showAddDialog" :dismissable="true">
-		<template #body-content>
-			<div class="space-y-4">
-				<Tabs
-					:tabs="addItemTabs"
-					@switch="
-						(tab) => {
-							newItem.item_type = tab.label
-						}
-					"
-				/>
-				<Autocomplete
-					v-if="newItem.item_type == 'Chart'"
-					ref="autocomplete"
-					placeholder="Select a chart"
-					v-model="newChart"
-					:options="dashboard.newChartOptions"
-				/>
-
-				<DashboardFilterForm v-if="newItem.item_type == 'Filter'" v-model="newItem" />
-
-				<TextEditor
-					v-if="newItem.item_type == 'Text'"
-					ref="textEditor"
-					:content="newItem.markdown"
-					placeholder="# Heading"
-					:editable="newItem.item_type == 'Text'"
-					editor-class="min-h-[4rem] prose-sm cursor-text bg-gray-100 rounded-md p-4"
-					@change="(val) => (newItem.markdown = val)"
-				/>
-			</div>
-		</template>
-		<template #actions>
-			<Button appearance="primary" @click="addItem" :loading="dashboard.add_item.loading">
-				Add
-			</Button>
-		</template>
-	</Dialog>
-</template>
-
 <script setup>
-import BasePage from '@/components/BasePage.vue'
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import Tabs from '@/components/Tabs.vue'
-import DashboardHeader from '@/dashboard/DashboardHeader.vue'
-import DashboardItem from '@/dashboard/DashboardItem.vue'
+import DashboardTitle from '@/dashboard/DashboardTitle.vue'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
-import { TextEditor } from 'frappe-ui'
-import DashboardFilterForm from './DashboardFilterForm.vue'
-
 import useDashboard from '@/dashboard/useDashboard'
 import { updateDocumentTitle } from '@/utils'
-import { computed, provide, ref, watch } from 'vue'
+import { provide, ref, computed } from 'vue'
+import DashboardEmptyState from './DashboardEmptyState.vue'
+import DashboardItem from './DashboardItem.vue'
+import DashboardMenuButton from './DashboardMenuButton.vue'
+import DashboardShareButton from './DashboardShareButton.vue'
+import DashboardSidebarWidgets from './DashboardSidebarWidgets.vue'
+import UseDropZone from './UseDropZone.vue'
+import widgets from './widgets/widgets'
 
 const props = defineProps({
-	name: {
-		type: String,
-		required: true,
-	},
+	name: { type: String, required: true },
 })
 
 const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
-const showAddDialog = ref(false)
-const autocomplete = ref(null)
-watch(showAddDialog, (show) => {
-	if (show) {
-		setTimeout(() => {
-			autocomplete.value?.input.$el.blur()
-			autocomplete.value?.input.$el.focus()
-		}, 400)
-	}
-})
+window.dashboard = dashboard
 
-const addItemTabs = ref([
-	{
-		label: 'Chart',
-		active: true,
-	},
-	{
-		label: 'Filter',
-		active: false,
-	},
-	{
-		label: 'Text',
-		active: false,
-	},
-])
-
-const newItem = ref({
-	item_type: 'Chart',
-	chart: null,
-	filter_label: '',
-	filter_column: {},
-	filter_links: {},
-	markdown: '',
-})
-watch(
-	() => newItem.value.item_type,
-	(type) => {
-		addItemTabs.value.forEach((tab) => {
-			tab.active = tab.label == type
-		})
-	},
-	{ immediate: true }
-)
-
-const newChart = ref({})
-watch(newChart, (chart) => chart && (newItem.value.chart = chart.value))
-
-function addItem() {
-	if (newItem.value.item_type == 'Chart') {
+const draggingWidget = ref(false)
+function addWidget(event, position) {
+	console.log('add widget', position)
+	const widgetType = event.dataTransfer.getData('text/plain')
+	if (widgetType)
 		dashboard.addItem({
-			item_type: 'Chart',
-			chart: newItem.value.chart,
+			item_id: Math.floor(Math.random() * 1000000),
+			item_type: widgetType,
 		})
-	} else if (newItem.value.item_type == 'Text') {
-		dashboard.addItem({
-			item_type: 'Text',
-			markdown: newItem.value.markdown,
-		})
-	} else {
-		dashboard.addItem({
-			item_type: 'Filter',
-			filter_label: newItem.value.filter_label,
-			filter_column: newItem.value.filter_column,
-			filter_links: newItem.value.filter_links,
-		})
-	}
-	showAddDialog.value = false
-	newItem.value = {
-		item_type: 'Chart',
-		chart: null,
-		filter_label: '',
-		filter_column: {},
-		filter_links: {},
-	}
-	newChart.value = {}
-}
-
-const gridLayout = ref(null)
-function saveLayout() {
-	dashboard.saveLayout(gridLayout.value.layouts)
-}
-function autoLayout() {
-	gridLayout.value.compact()
 }
 
 const pageMeta = computed(() => {
@@ -194,3 +40,99 @@ const pageMeta = computed(() => {
 })
 updateDocumentTitle(pageMeta)
 </script>
+
+<template>
+	<div v-if="dashboard.doc.name" class="flex h-full w-full flex-col bg-gray-100">
+		<!-- Dashboard Navbar -->
+		<div class="flex h-14 items-center justify-between border-b bg-white px-3 shadow-sm">
+			<div class="flex flex-shrink-0 items-center space-x-4">
+				<DashboardTitle
+					:title="dashboard.doc.title"
+					:disabled="!dashboard.editing"
+					@update="dashboard.updateTitle"
+				/>
+			</div>
+			<div class="flex flex-shrink-0 justify-end space-x-2">
+				<DashboardMenuButton />
+				<DashboardShareButton v-if="!dashboard.editing && dashboard.canShare" />
+				<Button
+					v-else-if="dashboard.editing"
+					appearance="white"
+					class="border-red-500 text-red-500"
+					@click="dashboard.cancelEdit"
+				>
+					Discard
+				</Button>
+
+				<Button
+					v-if="!dashboard.editing"
+					appearance="white"
+					class="border-blue-600 !font-medium text-blue-600"
+					@click="dashboard.edit"
+				>
+					Edit
+				</Button>
+				<Button v-else appearance="primary" @click="dashboard.save"> Save </Button>
+			</div>
+		</div>
+
+		<div class="flex flex-1 overflow-hidden">
+			<div class="h-full w-full overflow-y-scroll p-4">
+				<div class="relative flex h-fit min-h-screen w-full flex-1 flex-col">
+					<UseDropZone
+						v-if="dashboard.editing && draggingWidget"
+						class="absolute top-0 left-0 z-10 h-full w-full"
+						:onDrop="addWidget"
+					>
+					</UseDropZone>
+
+					<VueGridLayout
+						v-if="dashboard.doc.items.length"
+						ref="gridLayout"
+						class="h-fit w-full"
+						:class="[dashboard.editing ? 'mb-[20rem] ' : '']"
+						:items="dashboard.doc.items"
+						:disabled="!dashboard.editing"
+						v-model:layouts="dashboard.itemLayouts"
+					>
+						<template #item="{ item }">
+							<DashboardItem :item="item" :key="item.item_id" />
+						</template>
+					</VueGridLayout>
+
+					<DashboardEmptyState
+						v-if="!dashboard.doc.items.length"
+						class="absolute top-1/2 left-1/2 mx-auto -translate-x-1/2 -translate-y-1/2 transform"
+					/>
+				</div>
+			</div>
+
+			<div
+				v-if="dashboard.editing && dashboard.sidebar.open"
+				class="w-[21rem] flex-shrink-0 border-l bg-white p-3 px-4 shadow-sm"
+			>
+				<div v-if="!dashboard.currentItem">
+					<div class="mb-3 font-semibold text-gray-800">Charts</div>
+					<DashboardSidebarWidgets @drag-change="draggingWidget = $event" />
+				</div>
+
+				<div v-else>
+					<!-- Widget Options -->
+					<div class="mb-4 flex items-center text-lg font-medium text-gray-400">
+						<Button
+							appearance="white"
+							icon="arrow-left"
+							@click="dashboard.currentItem = undefined"
+						></Button>
+						<div class="ml-2 text-gray-800">Back</div>
+					</div>
+
+					<component
+						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
+						v-model="dashboard.currentItem.options"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+</template>

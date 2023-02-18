@@ -1,8 +1,8 @@
 <script setup>
 import { formatDate, isEmptyObj } from '@/utils'
 import { getOperatorOptions } from '@/utils/query/columns'
-import { debounce } from 'frappe-ui'
-import { computed, inject, reactive, ref, watch } from 'vue'
+import { debounce, call } from 'frappe-ui'
+import { computed, reactive, ref, watch } from 'vue'
 
 import DatePickerFlat from '@/components/Controls/DatePickerFlat.vue'
 import DateRangePickerFlat from '@/components/Controls/DateRangePickerFlat.vue'
@@ -28,6 +28,17 @@ const filter = reactive({
 	operator: props.operator,
 	value: props.value,
 })
+
+watch(
+	() => props,
+	() => {
+		filter.label = props.label
+		filter.column = props.column
+		filter.operator = props.operator
+		filter.value = props.value
+	},
+	{ immediate: true, deep: true }
+)
 
 const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
@@ -60,8 +71,8 @@ const showValuePicker = computed(
 		filter.column?.type == 'String'
 )
 
-const dashboard = inject('dashboard')
-const checkAndFetchColumnValues = debounce(function (search_text = '') {
+const columnValues = ref([])
+const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (
 		isEmptyObj(filter.column) ||
 		!['=', '!=', 'in', 'not_in'].includes(filter.operator?.value)
@@ -70,12 +81,14 @@ const checkAndFetchColumnValues = debounce(function (search_text = '') {
 	}
 
 	if (filter.column?.type == 'String') {
-		dashboard.fetch_column_values.submit({
+		// prettier-ignore
+		columnValues.value = await call('insights.insights.doctype.insights_dashboard.insights_dashboard.fetch_column_values', {
 			column: filter.column,
 			search_text,
 		})
 	}
 }, 300)
+
 const values = computed(() => {
 	if (filter.operator?.value == 'is') {
 		return [
@@ -83,9 +96,7 @@ const values = computed(() => {
 			{ label: 'Not Set', value: 'not set' },
 		]
 	}
-	return dashboard.fetch_column_values.data?.message.map((value) => {
-		return { label: value, value }
-	})
+	return columnValues.value.map((value) => ({ label: value, value }))
 })
 
 watch(

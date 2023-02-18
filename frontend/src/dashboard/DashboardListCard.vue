@@ -1,3 +1,14 @@
+<script setup>
+import useDashboards from '@/dashboard/useDashboards'
+const props = defineProps({
+	dashboard: { type: Object, required: true },
+})
+const dashboards = useDashboards()
+function toggleFavourite() {
+	dashboards.toggleLike(props.dashboard)
+}
+</script>
+
 <template>
 	<router-link
 		class="mb-4 flex w-full min-w-[16rem] cursor-pointer md:w-1/3 lg:w-1/4"
@@ -46,32 +57,3 @@
 		</div>
 	</router-link>
 </template>
-
-<script setup>
-import { FeatherIcon } from 'frappe-ui'
-import { createResource } from 'frappe-ui'
-import { inject } from 'vue'
-
-const props = defineProps({
-	dashboard: {
-		type: Object,
-		required: true,
-	},
-})
-
-const refreshDashboards = inject('refreshDashboards')
-const toggleFavourite = () => {
-	const toggleFavouriteResource = createResource({
-		url: 'frappe.desk.like.toggle_like',
-		params: {
-			doctype: 'Insights Dashboard',
-			name: props.dashboard.name,
-			add: !props.dashboard.is_favourite ? 'Yes' : 'No',
-		},
-		onSuccess() {
-			refreshDashboards()
-		},
-	})
-	toggleFavouriteResource.submit()
-}
-</script>

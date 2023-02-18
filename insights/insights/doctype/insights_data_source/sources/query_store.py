@@ -84,6 +84,7 @@ class QueryStore(SQLiteDB):
             self.table_factory.sync_tables(connection, tables, force=force)
 
     def execute_query(self, query, pluck=False):
+        table_query_map = None
         try:
             table_query_map, data_source = get_table_query_map(query)
         except Exception:
