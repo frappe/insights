@@ -10,7 +10,7 @@
 					@focus="togglePopover(true)"
 					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
-					class="form-input block h-8 w-full placeholder-gray-500"
+					class="form-input block w-full placeholder-gray-500"
 				>
 				</ComboboxInput>
 			</template>
@@ -78,24 +78,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted } from 'vue'
 import {
 	Combobox,
-	ComboboxLabel,
 	ComboboxInput,
-	ComboboxOptions,
+	ComboboxLabel,
 	ComboboxOption,
+	ComboboxOptions,
 } from '@headlessui/vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 
 const $utils = inject('$utils')
 
-const emit = defineEmits([
-	'update:modelValue',
-	'inputChange',
-	'selectOption',
-	'blur',
-	'createOption',
-])
+const emit = defineEmits(['update:modelValue', 'inputChange', 'change', 'blur', 'createOption'])
 const props = defineProps({
 	label: {
 		type: String,
@@ -109,9 +103,8 @@ const props = defineProps({
 		type: String,
 		default: 'No results found',
 	},
-	modelValue: {
-		required: true,
-	},
+	value: {},
+	modelValue: {},
 	options: {
 		type: Array,
 		default: () => [],
@@ -145,8 +138,9 @@ onMounted(() => {
 })
 
 const filterQuery = ref('')
+const valueProp = props.modelValue ? 'modelValue' : 'value'
 const modelValueIsObject = computed(() => {
-	return typeof props.modelValue === 'object' || !props.modelValue
+	return typeof props[valueProp] === 'object' && props[valueProp] !== null
 })
 const options = computed(() => {
 	if (typeof props.options[0] !== 'object') {
@@ -162,17 +156,17 @@ const options = computed(() => {
 const selectedOption = computed({
 	get() {
 		return modelValueIsObject.value
-			? props.modelValue
-			: options.value.find((option) => option.value === props.modelValue)
+			? props[valueProp]
+			: options.value.find((option) => option.value === props[valueProp])
 	},
 	set(value) {
 		if (value) {
 			popover.value.close()
 			input.value.$el.blur()
 		}
-		const _value = modelValueIsObject.value ? value : value.value
+		const _value = modelValueIsObject.value ? value : value?.value
 		emit('update:modelValue', _value)
-		emit('selectOption', _value)
+		emit('change', _value)
 	},
 })
 const uniqueOptions = computed(() => {

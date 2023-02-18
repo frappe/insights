@@ -6,7 +6,7 @@
 				v-model="simpleColumn.aggType"
 				:options="aggregations"
 				placeholder="Select aggregation type"
-				@selectOption="onTypeSelect"
+				@change="onTypeSelect"
 			/>
 		</div>
 		<div v-if="columnNeeded" class="space-y-1 text-sm text-gray-600">
@@ -16,7 +16,7 @@
 				:options="filteredColumns"
 				placeholder="Select a column..."
 				:emptyText="requiresNumberColumn ? 'No number columns' : 'No columns'"
-				@selectOption="onColumnSelect"
+				@change="onColumnSelect"
 			/>
 		</div>
 		<div class="space-y-1 text-sm text-gray-600">
@@ -34,7 +34,7 @@
 				v-model="simpleColumn.dateFormat"
 				:options="dateFormats.map((f) => ({ ...f, description: f.value }))"
 				placeholder="Select a date format..."
-				@selectOption="selectDateFormat"
+				@change="selectDateFormat"
 			/>
 		</div>
 		<div class="flex justify-end space-x-2">
