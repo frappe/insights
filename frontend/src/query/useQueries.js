@@ -1,4 +1,5 @@
 import { safeJSONParse } from '@/utils'
+import { API_METHODS } from '@/utils/query'
 import { createDocumentResource, createResource } from 'frappe-ui'
 import { defineStore } from 'pinia'
 
@@ -29,6 +30,7 @@ export function useQuery(name) {
 	const query = createDocumentResource({
 		doctype: 'Insights Query',
 		name: name,
+		whitelistedMethods: API_METHODS,
 		transform(doc) {
 			doc.columns = doc.columns.map((c) => {
 				c.format_option = safeJSONParse(c.format_option, {})

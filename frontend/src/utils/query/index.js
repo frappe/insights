@@ -7,7 +7,7 @@ import { useQueryResults } from '@/utils/query/results'
 import { createToast } from '@/utils/toasts'
 import auth from '@/utils/auth'
 
-const API_METHODS = {
+export const API_METHODS = {
 	run: 'run',
 	reset: 'reset',
 	store: 'store',
