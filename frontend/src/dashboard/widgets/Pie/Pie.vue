@@ -167,4 +167,7 @@ function appendPercentage(value) {
 			:formatter="formatLegend"
 		/>
 	</Chart>
+	<div v-else>
+		<slot name="placeholder"></slot>
+	</div>
 </template>

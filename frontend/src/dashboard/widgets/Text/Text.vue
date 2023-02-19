@@ -10,6 +10,7 @@ const dashboard = inject('dashboard')
 
 <template>
 	<div
+		v-if="options.markdown"
 		class="relative flex h-full w-full items-center px-2"
 		:class="[dashboard.editing ? 'rounded-md border-2 border-dashed border-gray-300' : '']"
 	>
@@ -18,6 +19,9 @@ const dashboard = inject('dashboard')
 			:content="options.markdown"
 			:editable="false"
 		/>
+	</div>
+	<div v-else>
+		<slot name="placeholder"></slot>
 	</div>
 </template>
 

@@ -31,7 +31,7 @@ const formattedValue = computed(() => {
 </script>
 
 <template>
-	<div class="h-full w-full overflow-hidden py-5 px-8">
+	<div v-if="props.options.title" class="h-full w-full overflow-hidden py-5 px-8">
 		<div class="mx-auto flex h-full w-full min-w-40 flex-col justify-center overflow-hidden">
 			<div
 				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-base text-gray-600"
@@ -42,5 +42,8 @@ const formattedValue = computed(() => {
 				{{ props.options.prefix }}{{ formattedValue }}{{ props.options.suffix }}
 			</div>
 		</div>
+	</div>
+	<div v-else>
+		<slot name="placeholder"></slot>
 	</div>
 </template>

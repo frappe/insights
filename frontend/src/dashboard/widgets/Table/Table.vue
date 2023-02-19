@@ -121,4 +121,8 @@ function total(column) {
 			</table>
 		</div>
 	</div>
+
+	<div v-else>
+		<slot name="placeholder"></slot>
+	</div>
 </template>
