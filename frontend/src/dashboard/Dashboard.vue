@@ -1,9 +1,9 @@
 <script setup>
 import DashboardTitle from '@/dashboard/DashboardTitle.vue'
-import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import useDashboard from '@/dashboard/useDashboard'
+import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import { updateDocumentTitle } from '@/utils'
-import { provide, ref, computed } from 'vue'
+import { computed, provide, ref } from 'vue'
 import DashboardEmptyState from './DashboardEmptyState.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardNavbarButtons from './DashboardNavbarButtons.vue'
@@ -21,16 +21,30 @@ provide('dashboard', dashboard)
 window.dashboard = dashboard
 
 const draggingWidget = ref(false)
-function addWidget(event, position) {
+function addWidget(dropEvent) {
+	const initialXandY = calcInitialXY(dropEvent)
 	draggingWidget.value = false
-	const widgetType = event.dataTransfer.getData('text/plain')
+	const widgetType = dashboard.draggingWidget?.type
 	if (widgetType) {
 		const itemID = Math.floor(Math.random() * 1000000)
 		dashboard.addItem({
 			item_id: itemID,
 			item_type: widgetType,
+			initialX: initialXandY.x,
+			initialY: initialXandY.y,
 		})
 		dashboard.setCurrentItem(itemID)
+		dashboard.draggingWidget = null
+	}
+}
+
+const gridLayout = ref(null)
+function calcInitialXY({ x, y }) {
+	const colWidth = gridLayout.value.getBoundingClientRect().width / 20
+	const rowHeight = 30
+	return {
+		x: Math.round(x / colWidth),
+		y: Math.round(y / rowHeight),
 	}
 }
 
@@ -59,17 +73,23 @@ updateDocumentTitle(pageMeta)
 
 		<div class="flex flex-1 overflow-hidden">
 			<div class="h-full w-full overflow-y-scroll p-4">
-				<div class="relative flex h-fit min-h-screen w-full flex-1 flex-col">
+				<div
+					ref="gridLayout"
+					class="relative flex h-fit min-h-screen w-full flex-1 flex-col"
+				>
 					<UseDropZone
 						v-if="dashboard.editing && draggingWidget"
 						class="absolute top-0 left-0 z-10 h-full w-full"
 						:onDrop="addWidget"
+						:showCollision="true"
+						colliderClass=".dashboard-item"
+						:ghostWidth="(dashboard.draggingWidget?.defaultWidth || 4) * 50.8"
+						:ghostHeight="(dashboard.draggingWidget?.defaultHeight || 2) * 30"
 					>
 					</UseDropZone>
 
 					<VueGridLayout
 						v-if="dashboard.doc.items.length"
-						ref="gridLayout"
 						class="h-fit w-full"
 						:class="[dashboard.editing ? 'mb-[20rem] ' : '']"
 						:items="dashboard.doc.items"

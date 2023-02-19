@@ -1,27 +1,31 @@
 <script setup>
-import { onMounted, onUnmounted, reactive, ref, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watchEffect } from 'vue'
 
 const props = defineProps({
 	onDrop: { type: Function },
+	showCollision: { type: Boolean, default: false },
+	colliderClass: { type: String, default: '.collider' },
+	ghostWidth: { type: Number, default: 128 },
+	ghostHeight: { type: Number, default: 48 },
 })
 const state = reactive({
 	isDragging: false,
-	ghostElement: { x: 0, y: 0 },
+	collides: false,
+	ghost: { x: 0, y: 0 },
 	minLeft: 0,
 	maxLeft: 0,
 	minTop: 0,
 	maxTop: 0,
+	ghostWidth: computed(() => props.ghostWidth),
+	ghostHeight: computed(() => props.ghostHeight),
 })
-
-const WIDTH = 128
-const HEIGHT = 48
 
 function updateBoundary() {
 	const rect = dropZone.value.getBoundingClientRect()
-	state.minLeft = rect.left + WIDTH / 2
-	state.minTop = rect.top + HEIGHT / 2
-	state.maxLeft = rect.right - WIDTH / 2
-	state.maxTop = rect.bottom - HEIGHT / 2
+	state.minLeft = rect.left + state.ghostWidth / 2
+	state.minTop = rect.top + state.ghostHeight / 2
+	state.maxLeft = rect.right - state.ghostWidth / 2
+	state.maxTop = rect.bottom - state.ghostHeight / 2
 }
 
 function updateGhostElement(event) {
@@ -32,14 +36,35 @@ function updateGhostElement(event) {
 
 	if (x < state.minLeft) x = 0
 	else if (x > state.maxLeft) x = state.maxLeft - state.minLeft
-	else x = x - WIDTH / 2 - (state.minLeft - WIDTH / 2)
+	else x = x - state.ghostWidth / 2 - (state.minLeft - state.ghostWidth / 2)
 
 	if (y < state.minTop) y = 0
 	else if (y > state.maxTop) y = state.maxTop - state.minTop
-	else y = y - HEIGHT / 2 - (state.minTop - HEIGHT / 2)
+	else y = y - state.ghostHeight / 2 - (state.minTop - state.ghostHeight / 2)
 
-	state.ghostElement.x = x
-	state.ghostElement.y = y
+	state.ghost.x = x
+	state.ghost.y = y
+
+	if (props.showCollision) checkCollision()
+}
+
+const checkCollision = function () {
+	requestAnimationFrame(() => {
+		const ghostElement = document.querySelector('.ghost-element')
+		if (!ghostElement) return
+		const ghostRect = ghostElement.getBoundingClientRect()
+		// check if the ghost element intersects with any element with collider class
+		const intersects = Array.from(document.querySelectorAll(props.colliderClass)).some((el) => {
+			const rect = el.getBoundingClientRect()
+			return (
+				ghostRect.left < rect.right &&
+				ghostRect.right > rect.left &&
+				ghostRect.top < rect.bottom &&
+				ghostRect.bottom > rect.top
+			)
+		})
+		state.collides = intersects
+	})
 }
 
 const dropZone = ref(null)
@@ -64,15 +89,16 @@ onUnmounted(() => {
 const drop = (event) => {
 	state.isDragging = false
 	// consider rect scroll
-	const x = event.clientX - (state.minLeft - WIDTH / 2)
-	const y = event.clientY - (state.minTop - HEIGHT / 2)
-	props.onDrop && props.onDrop(event, { x, y })
+	const x = event.clientX - state.minLeft
+	const y = event.clientY - state.minTop
+	const collides = state.collides
+	props.onDrop && props.onDrop({ x, y, collides })
 }
 
 watchEffect(() => !state.isDragging && resetPosition())
 function resetPosition() {
-	state.ghostElement.x = state.maxLeft - state.minLeft
-	state.ghostElement.y = 0
+	state.ghost.x = state.maxLeft - state.minLeft
+	state.ghost.y = 0
 }
 </script>
 
@@ -84,13 +110,16 @@ function resetPosition() {
 		@drop.prevent="drop"
 	>
 		<div
-			class="absolute min-h-[48px] min-w-[128px] rounded-md bg-gray-200/60 transition-all duration-75 ease-out"
+			class="ghost-element absolute rounded-md bg-gray-200/60 transition-all duration-75 ease-out"
+			:class="[props.showCollision && state.collides ? 'bg-red-200/60' : '']"
 			:style="{
 				opacity: state.isDragging ? 1 : 0,
-				transform: `translate(${state.ghostElement.x}px, ${state.ghostElement.y}px)`,
+				transform: `translate(${state.ghost.x}px, ${state.ghost.y}px)`,
+				width: `${state.ghostWidth}px`,
+				height: `${state.ghostHeight}px`,
 			}"
 		>
-			<slot name="ghostElement"> </slot>
+			{{ state.ghostHeight }}, {{ state.ghostWidth }}
 		</div>
 	</div>
 </template>

@@ -23,6 +23,7 @@ export default function useDashboard(name) {
 		loading: false,
 		deleting: false,
 		currentItem: undefined,
+		draggingWidget: undefined,
 		sidebar: {
 			open: true,
 			position: 'right',
@@ -185,10 +186,14 @@ export default function useDashboard(name) {
 		// consider the height and width of the item
 		const defaultWidth = widgets[item.item_type].defaultWidth
 		const defaultHeight = widgets[item.item_type].defaultHeight
+		const initialX = item.initialX
+		const initialY = item.initialY
+		delete item.initialX
+		delete item.initialY
 		return {
 			i: parseInt(item.item_id),
-			x: 0,
-			y: 0,
+			x: initialX || 0,
+			y: initialY || 0,
 			w: defaultWidth,
 			h: defaultHeight,
 		}
