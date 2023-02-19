@@ -6,8 +6,7 @@ import { updateDocumentTitle } from '@/utils'
 import { provide, ref, computed } from 'vue'
 import DashboardEmptyState from './DashboardEmptyState.vue'
 import DashboardItem from './DashboardItem.vue'
-import DashboardMenuButton from './DashboardMenuButton.vue'
-import DashboardShareButton from './DashboardShareButton.vue'
+import DashboardNavbarButtons from './DashboardNavbarButtons.vue'
 import DashboardSidebarWidgets from './DashboardSidebarWidgets.vue'
 import UseDropZone from './UseDropZone.vue'
 import widgets from './widgets/widgets'
@@ -55,28 +54,7 @@ updateDocumentTitle(pageMeta)
 					@update="dashboard.updateTitle"
 				/>
 			</div>
-			<div class="flex flex-shrink-0 justify-end space-x-2">
-				<DashboardMenuButton />
-				<DashboardShareButton v-if="!dashboard.editing && dashboard.canShare" />
-				<Button
-					v-else-if="dashboard.editing"
-					appearance="white"
-					class="border-red-500 text-red-500"
-					@click="dashboard.cancelEdit"
-				>
-					Discard
-				</Button>
-
-				<Button
-					v-if="!dashboard.editing"
-					appearance="white"
-					class="border-blue-600 !font-medium text-blue-600"
-					@click="dashboard.edit"
-				>
-					Edit
-				</Button>
-				<Button v-else appearance="primary" @click="dashboard.save"> Save </Button>
-			</div>
+			<DashboardNavbarButtons />
 		</div>
 
 		<div class="flex flex-1 overflow-hidden">

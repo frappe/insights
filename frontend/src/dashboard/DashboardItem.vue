@@ -1,6 +1,7 @@
 <script setup>
-import { inject, ref } from 'vue'
+import { inject, ref, nextTick } from 'vue'
 import widgets from './widgets/widgets'
+import InvalidWidget from './widgets/InvalidWidget.vue'
 
 const dashboard = inject('dashboard')
 const props = defineProps({
@@ -24,6 +25,8 @@ dashboard.getChartFilters(props.item.item_id).then((filters) => {
 	chartFilters.value = filters
 })
 
+const $widget = ref(null)
+const showInvalidWidget = ref(false)
 function makeRefreshKey(item) {
 	// This is a hack to force the component to refresh when the options change
 	// Returns a hash code from a string
@@ -34,6 +37,12 @@ function makeRefreshKey(item) {
 		hash = (hash << 5) - hash + chr
 		hash |= 0 // Convert to 32bit integer
 	}
+	nextTick(() => {
+		if (widgets.get(item.item_type) == 'UnknownWidget') return
+		// after refreshing the widget with the new options if the widget is empty
+		// show the InvalidWidget
+		showInvalidWidget.value = $widget.value?.$el?.textContent?.length === 0
+	})
 	return hash
 }
 </script>
@@ -56,11 +65,22 @@ function makeRefreshKey(item) {
 		</div>
 
 		<component
+			ref="$widget"
+			v-show="!showInvalidWidget"
 			:class="[dashboard.editing ? 'pointer-events-none' : '']"
 			:is="widgets.getComponent(item.item_type)"
 			:item_id="item.item_id"
 			:options="item.options"
 			:key="makeRefreshKey(item)"
+		></component>
+
+		<!-- show this when options are not set yet -->
+		<InvalidWidget
+			v-if="showInvalidWidget"
+			message="Set the options to see the widget"
+			title="Options not set"
+			icon="settings"
+			icon-class="text-gray-400"
 		/>
 
 		<div class="absolute top-3 right-3 z-10 flex items-center">

@@ -78,8 +78,8 @@ const WIDGETS = {
 const UnknownWidget = {
 	type: 'Unknown',
 	icon: 'question',
-	component: defineAsyncComponent(() => import('./UnknownWidget.vue')),
-	optionsComponent: defineAsyncComponent(() => import('./UnknownWidget.vue')),
+	component: defineAsyncComponent(() => import('./InvalidWidget.vue')),
+	optionsComponent: defineAsyncComponent(() => import('./InvalidWidget.vue')),
 	options: {},
 	defaultWidth: 5,
 	defaultHeight: 4,
