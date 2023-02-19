@@ -23,7 +23,7 @@ whenever(queryName, (query) => dashboard.loadQuery(query), { immediate: true })
 		<span class="mb-2 block text-sm leading-4 text-gray-700">Query</span>
 		<LinkIcon :link="getQueryLink(queryName)">
 			<Autocomplete
-				v-model="queryName"
+				v-model.value="queryName"
 				placeholder="Select a query"
 				:options="
 					queries.list.map((query) => ({

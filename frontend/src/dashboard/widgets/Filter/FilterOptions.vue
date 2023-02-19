@@ -133,8 +133,8 @@ function changeColumn(column) {
 						{{ chartItem.options.title }}
 					</span>
 					<Autocomplete
-						class="w-28 flex-shrink-0"
 						v-if="options.links[chartItem.item_id]"
+						class="w-28 flex-shrink-0"
 						placeholder="Select Column"
 						:options="chartColumnOptions[chartItem.options.query]"
 						v-model="options.links[chartItem.item_id]"

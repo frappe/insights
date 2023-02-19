@@ -37,11 +37,12 @@
 							<ComboboxOption
 								v-if="$props.allowCreate"
 								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
-								@click.prevent="$emit('createOption', filterQuery)"
+								@click="createOption"
 							>
 								<FeatherIcon name="plus" class="mr-1 h-3.5 w-3.5" />
 								Create New
 							</ComboboxOption>
+
 							<ComboboxOption
 								v-for="(option, idx) in filteredOptions"
 								:key="idx"
@@ -104,7 +105,15 @@ const props = defineProps({
 		default: 'No results found',
 	},
 	value: {},
+	valueModifiers: {
+		type: Object,
+		default: () => ({}),
+	},
 	modelValue: {},
+	modelModifiers: {
+		type: Object,
+		default: () => ({}),
+	},
 	options: {
 		type: Array,
 		default: () => [],
@@ -128,20 +137,16 @@ const props = defineProps({
 const input = ref(null)
 const popover = ref(null)
 defineExpose({ input })
+
+const blur = () => (input.value.$el.blur(), popover.value.close())
 onMounted(() => {
 	if (props.autofocus == false) {
-		setTimeout(() => {
-			input.value.$el.blur()
-			popover.value.close()
-		}, 0)
+		setTimeout(blur, 0)
 	}
 })
 
 const filterQuery = ref('')
 const valueProp = props.modelValue ? 'modelValue' : 'value'
-const modelValueIsObject = computed(() => {
-	return typeof props[valueProp] === 'object' && props[valueProp] !== null
-})
 const options = computed(() => {
 	if (typeof props.options[0] !== 'object') {
 		return props.options.map((option) => {
@@ -153,18 +158,20 @@ const options = computed(() => {
 	}
 	return props.options
 })
+
+const returnValues = computed(() => {
+	// if v-model.value is set, then return the value of the option
+	return props.valueModifiers?.value || props.modelModifiers?.value
+})
 const selectedOption = computed({
 	get() {
-		return modelValueIsObject.value
-			? props[valueProp]
-			: options.value.find((option) => option.value === props[valueProp])
+		return returnValues.value
+			? options.value.find((option) => option.value === props[valueProp])
+			: props[valueProp]
 	},
-	set(value) {
-		if (value) {
-			popover.value.close()
-			input.value.$el.blur()
-		}
-		const _value = modelValueIsObject.value ? value : value?.value
+	set(newOption) {
+		if (newOption) blur()
+		const _value = returnValues.value ? newOption?.value : newOption
 		emit('update:modelValue', _value)
 		emit('change', _value)
 	},
@@ -196,4 +203,10 @@ watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 	emit('inputChange', newValue)
 })
+
+function createOption() {
+	emit('createOption', filterQuery.value)
+	filterQuery.value = ''
+	blur()
+}
 </script>

@@ -57,7 +57,7 @@ const valueOptions = computed(() => {
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
-			<Autocomplete v-model="options.xAxis" :options="indexOptions" />
+			<Autocomplete v-model.value="options.xAxis" :options="indexOptions" />
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
@@ -71,7 +71,7 @@ const valueOptions = computed(() => {
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
 			<Autocomplete
-				v-model="options.referenceLine"
+				v-model.value="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
 			/>
 		</div>
