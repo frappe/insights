@@ -89,7 +89,6 @@ updateDocumentTitle(pageMeta)
 					</UseDropZone>
 
 					<VueGridLayout
-						v-if="dashboard.doc.items.length"
 						class="h-fit w-full"
 						:class="[dashboard.editing ? 'mb-[20rem] ' : '']"
 						:items="dashboard.doc.items"

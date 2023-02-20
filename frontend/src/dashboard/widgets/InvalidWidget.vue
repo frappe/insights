@@ -16,6 +16,6 @@ const props = defineProps({
 		<!-- Invalid Widget -->
 		<FeatherIcon :name="icon" class="h-6 w-6" :class="iconClass" />
 		<span class="mt-2 text-gray-600">{{ title }}</span>
-		<span class="font-light text-gray-400">{{ message }}</span>
+		<span class="text-center font-light text-gray-400">{{ message }}</span>
 	</div>
 </template>
