@@ -19,7 +19,17 @@ const actions = [
 		label: 'Delete',
 		onClick: (item) => dashboard.removeItem(item),
 	},
+	{
+		icon: 'download',
+		label: 'Download',
+		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
+		onClick: downloadChart,
+	},
 ]
+const widget = ref(null)
+function downloadChart() {
+	widget.value?.$refs?.eChart?.downloadChart?.()
+}
 const chartFilters = ref([])
 dashboard.getChartFilters(props.item.item_id).then((filters) => {
 	chartFilters.value = filters
@@ -59,6 +69,7 @@ function makeRefreshKey(item) {
 			</div>
 
 			<component
+				ref="widget"
 				:class="[dashboard.editing ? 'pointer-events-none' : '']"
 				:is="widgets.getComponent(item.item_type)"
 				:item_id="item.item_id"
@@ -98,6 +109,7 @@ function makeRefreshKey(item) {
 					:key="action.label"
 					:name="action.icon"
 					class="h-3.5 w-3.5 text-white"
+					:class="{ hidden: action.hidden && action.hidden(item) }"
 					@click="action.onClick(item)"
 				/>
 			</div>
