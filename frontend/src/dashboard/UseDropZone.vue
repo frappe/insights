@@ -118,8 +118,6 @@ function resetPosition() {
 				width: `${state.ghostWidth}px`,
 				height: `${state.ghostHeight}px`,
 			}"
-		>
-			{{ state.ghostHeight }}, {{ state.ghostWidth }}
-		</div>
+		></div>
 	</div>
 </template>
