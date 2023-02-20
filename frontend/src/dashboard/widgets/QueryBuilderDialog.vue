@@ -45,7 +45,7 @@ const show = computed({
 					leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
 				>
 					<div
-						class="flex h-full w-full max-w-7xl transform gap-2 overflow-hidden transition-all"
+						class="flex h-full w-full max-w-7xl transform gap-2 overflow-hidden text-base transition-all"
 					>
 						<div
 							v-if="show"
