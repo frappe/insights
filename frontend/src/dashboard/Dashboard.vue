@@ -109,7 +109,7 @@ updateDocumentTitle(pageMeta)
 
 			<div
 				v-if="dashboard.editing && dashboard.sidebar.open"
-				class="w-[21rem] flex-shrink-0 border-l bg-white p-3 px-4 shadow-sm"
+				class="w-[21rem] flex-shrink-0 overflow-scroll border-l bg-white p-3 px-4 shadow-sm"
 			>
 				<div v-if="!dashboard.currentItem">
 					<div class="mb-3 font-semibold text-gray-800">Charts</div>
@@ -138,6 +138,7 @@ updateDocumentTitle(pageMeta)
 					<component
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
+						:key="JSON.stringify(dashboard.currentItem.options)"
 					/>
 				</div>
 			</div>

@@ -34,19 +34,6 @@ const chartFilters = ref([])
 dashboard.getChartFilters(props.item.item_id).then((filters) => {
 	chartFilters.value = filters
 })
-
-function makeRefreshKey(item) {
-	// This is a hack to force the component to refresh when the options change
-	// Returns a hash code from a string
-	const str = JSON.stringify(item.options)
-	let hash = 0
-	for (let i = 0, len = str.length; i < len; i++) {
-		let chr = str.charCodeAt(i)
-		hash = (hash << 5) - hash + chr
-		hash |= 0 // Convert to 32bit integer
-	}
-	return hash
-}
 </script>
 
 <template>
@@ -74,7 +61,7 @@ function makeRefreshKey(item) {
 				:is="widgets.getComponent(item.item_type)"
 				:item_id="item.item_id"
 				:options="item.options"
-				:key="makeRefreshKey(item)"
+				:key="JSON.stringify(item.options)"
 			>
 				<template #placeholder>
 					<InvalidWidget
