@@ -134,6 +134,15 @@ export async function convertFileToDataURL(file, type) {
 	return await getDataURL(type, array)
 }
 
+export function getQueryLink(table) {
+	if (!table) return ''
+	// returns a link to the query if the table is a query eg. Query Store queries
+	if (table.startsWith('QRY')) {
+		return `/insights/query/${table}`
+	}
+	return ''
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,

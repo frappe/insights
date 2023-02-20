@@ -7,10 +7,11 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
 
 
 class BaseDatabase:
-    data_source = None
-    connection = None
-    query_builder = None
-    table_factory = None
+    def __init__(self):
+        self.data_source = None
+        self.connection = None
+        self.query_builder = None
+        self.table_factory = None
 
     def test_connection(self):
         raise NotImplementedError

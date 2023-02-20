@@ -1,6 +1,6 @@
 <script setup>
 import * as echarts from 'echarts'
-import { getColors } from '@/utils/charts/colors'
+import { getColors } from '@/utils/colors'
 import { onMounted, ref, reactive, onBeforeUnmount, provide, watch, useAttrs } from 'vue'
 
 const options = reactive({

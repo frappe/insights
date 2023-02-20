@@ -6,7 +6,7 @@
 				v-model="dimension.column"
 				:options="columnOptions"
 				placeholder="Select a column..."
-				@selectOption="onColumnSelect"
+				@change="onColumnSelect"
 			/>
 		</div>
 		<div v-if="dimension.label" class="space-y-1 text-sm text-gray-600">
@@ -24,7 +24,7 @@
 				v-model="dimension.dateFormat"
 				:options="dateFormats"
 				placeholder="Select a date format..."
-				@selectOption="selectDateFormat"
+				@change="selectDateFormat"
 			/>
 		</div>
 		<div class="flex justify-end space-x-2">

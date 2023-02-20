@@ -10,7 +10,7 @@
 					@focus="togglePopover(true)"
 					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
-					class="form-input block h-8 w-full placeholder-gray-500"
+					class="form-input block w-full placeholder-gray-500"
 				>
 				</ComboboxInput>
 			</template>
@@ -37,11 +37,12 @@
 							<ComboboxOption
 								v-if="$props.allowCreate"
 								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
-								@click.prevent="$emit('createOption', filterQuery)"
+								@click="createOption"
 							>
 								<FeatherIcon name="plus" class="mr-1 h-3.5 w-3.5" />
 								Create New
 							</ComboboxOption>
+
 							<ComboboxOption
 								v-for="(option, idx) in filteredOptions"
 								:key="idx"
@@ -78,24 +79,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, onMounted } from 'vue'
 import {
 	Combobox,
-	ComboboxLabel,
 	ComboboxInput,
-	ComboboxOptions,
+	ComboboxLabel,
 	ComboboxOption,
+	ComboboxOptions,
 } from '@headlessui/vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 
 const $utils = inject('$utils')
 
-const emit = defineEmits([
-	'update:modelValue',
-	'inputChange',
-	'selectOption',
-	'blur',
-	'createOption',
-])
+const emit = defineEmits(['update:modelValue', 'inputChange', 'change', 'blur', 'createOption'])
 const props = defineProps({
 	label: {
 		type: String,
@@ -109,8 +104,15 @@ const props = defineProps({
 		type: String,
 		default: 'No results found',
 	},
-	modelValue: {
-		required: true,
+	value: {},
+	valueModifiers: {
+		type: Object,
+		default: () => ({}),
+	},
+	modelValue: {},
+	modelModifiers: {
+		type: Object,
+		default: () => ({}),
 	},
 	options: {
 		type: Array,
@@ -135,19 +137,16 @@ const props = defineProps({
 const input = ref(null)
 const popover = ref(null)
 defineExpose({ input })
+
+const blur = () => (input.value.$el.blur(), popover.value.close())
 onMounted(() => {
 	if (props.autofocus == false) {
-		setTimeout(() => {
-			input.value.$el.blur()
-			popover.value.close()
-		}, 0)
+		setTimeout(blur, 0)
 	}
 })
 
 const filterQuery = ref('')
-const modelValueIsObject = computed(() => {
-	return typeof props.modelValue === 'object' || !props.modelValue
-})
+const valueProp = props.modelValue ? 'modelValue' : 'value'
 const options = computed(() => {
 	if (typeof props.options[0] !== 'object') {
 		return props.options.map((option) => {
@@ -159,20 +158,22 @@ const options = computed(() => {
 	}
 	return props.options
 })
+
+const returnValues = computed(() => {
+	// if v-model.value is set, then return the value of the option
+	return props.valueModifiers?.value || props.modelModifiers?.value
+})
 const selectedOption = computed({
 	get() {
-		return modelValueIsObject.value
-			? props.modelValue
-			: options.value.find((option) => option.value === props.modelValue)
+		return returnValues.value
+			? options.value.find((option) => option.value === props[valueProp])
+			: props[valueProp]
 	},
-	set(value) {
-		if (value) {
-			popover.value.close()
-			input.value.$el.blur()
-		}
-		const _value = modelValueIsObject.value ? value : value.value
+	set(newOption) {
+		if (newOption) blur()
+		const _value = returnValues.value ? newOption?.value : newOption
 		emit('update:modelValue', _value)
-		emit('selectOption', _value)
+		emit('change', _value)
 	},
 })
 const uniqueOptions = computed(() => {
@@ -202,4 +203,10 @@ watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 	emit('inputChange', newValue)
 })
+
+function createOption() {
+	emit('createOption', filterQuery.value)
+	filterQuery.value = ''
+	blur()
+}
 </script>

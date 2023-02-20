@@ -1,169 +1,256 @@
+import widgets from '@/dashboard/widgets/widgets'
+import { useQuery } from '@/query/useQueries'
 import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
-import { createDocumentResource, debounce } from 'frappe-ui'
+import { getFormattedResult } from '@/utils/query/results'
+import { createDocumentResource } from 'frappe-ui'
+import { getLocal } from 'frappe-ui/src/resources/local'
 import { computed, reactive } from 'vue'
 
-export default function useDashboard(dashboardName) {
-	const dashboard = fetchDashboard(dashboardName)
+export default function useDashboard(name) {
+	const resource = getDashboardResource(name)
+	const state = reactive({
+		doc: {
+			doctype: 'Insights Dashboard',
+			name: undefined,
+			owner: undefined,
+			title: undefined,
+			items: [],
+		},
+		isOwner: false,
+		canShare: false,
+		editing: false,
+		loading: false,
+		deleting: false,
+		currentItem: undefined,
+		draggingWidget: undefined,
+		sidebar: {
+			open: true,
+			position: 'right',
+		},
+		queries: {},
+		queryResults: {},
+		itemLayouts: [],
+	})
 
-	dashboard.isOwner = computed(() => dashboard.doc?.owner == auth.user.user_id)
-	dashboard.editing = false
-	dashboard.items = computed(() =>
-		dashboard.doc?.items.map((v) => {
-			const layout = safeJSONParse(v.layout, {})
-			const filter_column = safeJSONParse(v.filter_column, {})
-			const filter_links = safeJSONParse(v.filter_links, {})
-			const filter_states = safeJSONParse(v.filter_states, {})
-			return {
-				...v,
-				i: v.name,
-				x: layout.x || 0,
-				y: layout.y || 0,
-				w: layout.w || 1,
-				h: layout.h || 1,
-				filter_column,
-				filter_links,
-				filter_state: filter_states[auth.user.user_id] || {},
+	async function reload() {
+		state.loading = true
+		await resource.get.fetch()
+		state.doc = resource.doc
+		state.itemLayouts = state.doc.items.map(makeLayoutObject)
+		state.isOwner = state.doc.owner == auth.user.user_id
+		state.canShare = state.isOwner || auth.user.is_admin
+		state.loading = false
+	}
+	reload()
+
+	async function save() {
+		if (!state.editing) return
+		state.loading = true
+		state.doc.items.forEach((item, idx) => (item.idx = idx))
+		state.doc.items.forEach(updateItemLayout)
+		await resource.setValue.submit(state.doc)
+		state.loading = false
+		state.editing = false
+		reload()
+	}
+
+	async function deleteDashboard() {
+		state.deleting = true
+		await resource.delete.submit()
+		state.deleting = false
+	}
+
+	function addItem(item) {
+		if (!state.editing) return
+		state.doc.items.push(transformItem(item))
+		state.itemLayouts.push(getNewLayout(item))
+	}
+
+	function updateItemLayout(item) {
+		const layout = state.itemLayouts.find((layout) => layout.i === parseInt(item.item_id))
+		item.layout = layout || item.layout
+	}
+
+	function removeItem(item) {
+		if (!state.editing) return
+		const item_index = state.doc.items.findIndex((i) => i.item_id === item.item_id)
+		state.doc.items.splice(item_index, 1)
+		state.itemLayouts.splice(item_index, 1)
+		state.currentItem = undefined
+	}
+
+	function setCurrentItem(item_id) {
+		if (!state.editing) return
+		state.currentItem = state.doc.items.find((i) => i.item_id === item_id)
+	}
+
+	function loadQuery(queryName) {
+		if (!state.queries[queryName]) {
+			state.queries = Object.assign(state.queries, {
+				[queryName]: useQuery(queryName),
+			})
+		}
+		return state.queries[queryName]
+	}
+
+	async function loadQueryResult(itemId, queryName) {
+		if (!queryName)
+			state.doc.items.some((item) => {
+				if (item.item_id === itemId) {
+					queryName = item.options.query
+					return true
+				}
+			})
+		if (!queryName) return
+		if (state.queryResults[`${itemId}-${queryName}`]) return
+
+		setItemLoading(itemId, true)
+		const query = state.loadQuery(queryName)
+		const columns = computed(() => query.doc?.columns)
+		const filters = await getChartFilters(itemId)
+		const res = await resource.fetch_chart_data.submit({
+			item_id: itemId,
+			query_name: queryName,
+			filters,
+		})
+		const results = getFormattedResult(res.message || [], columns.value)
+		state.queryResults = Object.assign(state.queryResults, {
+			[`${itemId}-${queryName}`]: results,
+		})
+		setItemLoading(itemId, false)
+	}
+
+	async function getChartFilters(chart_id) {
+		const promises = state.doc.items
+			.filter((item) => item.item_type === 'Filter')
+			.map(async (item) => {
+				const chart_column = item.options.links?.[chart_id]
+				if (!chart_column) return
+
+				const filter_state = await getLocal(`filterState-${state.doc.name}-${item.item_id}`)
+				if (!filter_state || !filter_state.value?.value) return
+				return {
+					label: item.options.label,
+					column: chart_column,
+					value: filter_state.value.value,
+					operator: filter_state.operator.value,
+					column_type: chart_column.type,
+				}
+			})
+		const filters = await Promise.all(promises)
+		return filters.filter(Boolean)
+	}
+
+	function refreshFilter(filter_id) {
+		const filter = state.doc.items.find((item) => item.item_id === filter_id)
+		Object.keys(filter.options.links).forEach((item_id) => {
+			Object.keys(state.queryResults).forEach((key) => {
+				if (key.startsWith(`${item_id}-`)) {
+					delete state.queryResults[key]
+					loadQueryResult(item_id)
+				}
+			})
+		})
+	}
+
+	async function refresh() {
+		state.queryResults = {}
+		await resource.clear_charts_cache.submit()
+		state.doc.items.forEach((item) => loadQueryResult(item.item_id))
+	}
+
+	async function updateTitle(title) {
+		if (!title || !state.editing) return
+		resource.setValue.submit({ title }).then(() => {
+			$notify({
+				title: 'Dashboard title updated',
+				appearance: 'success',
+			})
+			state.doc.title = title
+		})
+	}
+
+	function makeLayoutObject(item) {
+		return {
+			i: parseInt(item.item_id),
+			x: item.layout.x || 0,
+			y: item.layout.y || 0,
+			w: item.layout.w || widgets[item.item_type].defaultWidth,
+			h: item.layout.h || widgets[item.item_type].defaultHeight,
+		}
+	}
+
+	function getNewLayout(item) {
+		// get the next available position
+		// consider the height and width of the item
+		const defaultWidth = widgets[item.item_type].defaultWidth
+		const defaultHeight = widgets[item.item_type].defaultHeight
+		const initialX = item.initialX
+		const initialY = item.initialY
+		delete item.initialX
+		delete item.initialY
+		return {
+			i: parseInt(item.item_id),
+			x: initialX || 0,
+			y: initialY || 0,
+			w: defaultWidth,
+			h: defaultHeight,
+		}
+	}
+
+	const edit = () => ((state.editing = true), (state.currentItem = undefined))
+	const cancelEdit = () => ((state.editing = false), reload(), (state.currentItem = undefined))
+	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
+	const setSidebarPosition = (position) => (state.sidebar.position = position)
+
+	const setItemLoading = (item_id, loading) => {
+		state.doc.items.some((item) => {
+			if (item.item_id === item_id) {
+				item.refreshing = loading
+				return true
 			}
 		})
-	)
-
-	dashboard.updateNewChartOptions = () => {
-		return dashboard.get_chart_options.submit()
-	}
-	dashboard.newChartOptions = computed(() =>
-		dashboard.get_chart_options.data?.message?.map((v) => {
-			return {
-				value: v.name,
-				label: v.title,
-				description: v.type,
-			}
-		})
-	)
-	dashboard.updateNewChartOptions()
-
-	dashboard.saveLayout = (layouts) => {
-		dashboard.update_layout
-			.submit({
-				updated_layout: layouts.reduce((acc, v) => {
-					acc[v.i] = { x: v.x, y: v.y, w: v.w, h: v.h }
-					return acc
-				}, {}),
-			})
-			.then(() => {
-				dashboard.editingLayout = false
-			})
-	}
-	dashboard.addItem = (item) => {
-		return dashboard.add_item.submit({ item }).then(() => {
-			dashboard.updateNewChartOptions()
-		})
 	}
 
-	dashboard.removeItem = (name) => {
-		dashboard.remove_item
-			.submit({
-				item: name,
-			})
-			.then(() => {
-				dashboard.updateNewChartOptions()
-			})
-	}
-
-	dashboard.deletingDashboard = computed(() => dashboard.delete.loading)
-	dashboard.deleteDashboard = () => {
-		return dashboard.delete.submit()
-	}
-
-	dashboard.refreshItems = debounce(() => {
-		dashboard.editingLayout = false
-		// reload the dashboard doc
-		// to re-render the charts with new data
-		dashboard.doc.items = []
-		dashboard.clear_charts_cache.submit()
-		dashboard.reload()
-	}, 500)
-
-	dashboard.fetchChartData = (chartID) => {
-		const request = fetchData(dashboard.get_chart_data, { chart: chartID })
-		const parsedData = computed(() => safeJSONParse(request.data, []))
-		return reactive({
-			data: parsedData,
-			loading: computed(() => request.loading),
-		})
-	}
-
-	dashboard.fetchQueryColumns = (query) => {
-		return fetchData(dashboard.get_columns, { query })
-	}
-
-	dashboard.filters = computed(() =>
-		dashboard.doc?.items.filter((item) => {
-			return item.item_type == 'Filter'
-		})
-	)
-
-	dashboard.fetchAllColumns = (query) => {
-		return fetchData(dashboard.get_all_columns, { query })
-	}
-
-	dashboard.getChartFilters = (chart) => {
-		return fetchData(dashboard.get_chart_filters, { chart_name: chart })
-	}
-
-	dashboard.getFilterColumns = () => {
-		return fetchData(dashboard.get_filter_columns)
-	}
-
-	dashboard.updateLinkedCharts = (links, condition) => {}
-
-	return dashboard
+	return Object.assign(state, {
+		reload,
+		save,
+		addItem,
+		removeItem,
+		setCurrentItem,
+		loadQuery,
+		loadQueryResult,
+		refreshFilter,
+		getChartFilters,
+		edit,
+		cancelEdit,
+		toggleSidebar,
+		setSidebarPosition,
+		updateTitle,
+		deleteDashboard,
+		refresh,
+	})
 }
 
-function fetchDashboard(name) {
-	const resource = createDocumentResource({
+function getDashboardResource(name) {
+	return createDocumentResource({
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
-			add_item: 'add_item',
-			get_chart_options: 'get_charts',
-			refresh_items: 'refresh_items',
-			refresh_item: 'refresh_item',
-			update_layout: 'update_layout',
-			remove_item: 'remove_item',
-			get_chart_data: 'get_chart_data',
-			get_chart_filters: 'get_chart_filters',
-			update_filter: 'update_filter',
-			get_all_columns: 'get_all_columns',
-			get_columns: 'get_columns',
-			update_markdown: 'update_markdown',
-			get_filter_columns: 'get_filter_columns',
-			fetch_column_values: 'fetch_column_values',
-			update_filter_state: 'update_filter_state',
+			savestate: 'savestate',
+			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
 		},
+		transform(doc) {
+			doc.items = doc.items.map(transformItem)
+			return doc
+		},
 	})
-	resource.get.fetch()
-	return resource
 }
 
-function fetchData(documentRequest, args) {
-	// a generic function to fetch data from the a whitelisted method of a document
-	// and return a reactive object
-	const state = reactive({
-		data: [],
-		error: null,
-		loading: true,
-	})
-	documentRequest
-		.submit(args)
-		.then((res) => {
-			state.data = res.message
-			state.loading = false
-		})
-		.catch((err) => {
-			state.error = err
-			state.loading = false
-		})
-	return state
+function transformItem(item) {
+	item.options = safeJSONParse(item.options, {})
+	item.layout = safeJSONParse(item.layout, {})
+	return item
 }

@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import { COLOR_MAP } from '@/utils/charts/colors'
+import { COLOR_MAP } from '@/utils/colors'
 
 export default {
 	name: 'Color',

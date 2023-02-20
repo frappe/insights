@@ -70,6 +70,7 @@
 import { ref, inject, watch } from 'vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import LinkIcon from '@/components/Controls/LinkIcon.vue'
+import { getQueryLink } from '@/utils'
 
 const emits = defineEmits(['close'])
 const props = defineProps({
@@ -143,14 +144,5 @@ function clear_join() {
 	editTable.value.join = ''
 	query.updateTable.submit({ table: editTable.value })
 	emits('close')
-}
-
-function getQueryLink(table) {
-	if (!table) return ''
-	// returns a link to the query if the table is a query eg. Query Store queries
-	if (table.startsWith('QRY')) {
-		return `/query/${table}`
-	}
-	return ''
 }
 </script>

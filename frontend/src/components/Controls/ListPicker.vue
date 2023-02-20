@@ -127,14 +127,14 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, useAttrs } from 'vue'
 import {
 	Combobox,
 	ComboboxButton,
 	ComboboxInput,
-	ComboboxOptions,
 	ComboboxOption,
+	ComboboxOptions,
 } from '@headlessui/vue'
+import { computed, inject, ref } from 'vue'
 
 const emit = defineEmits(['inputChange', 'change', 'update:modelValue', 'apply'])
 const props = defineProps({
@@ -146,9 +146,11 @@ const props = defineProps({
 		type: String,
 		default: '',
 	},
+	value: {
+		type: Array,
+	},
 	modelValue: {
 		type: Array,
-		default: [],
 	},
 	options: {
 		type: Array,
@@ -167,7 +169,7 @@ function makeOptions(options) {
 	}
 
 	if (options[0].hasOwnProperty('label') && options[0].hasOwnProperty('value')) {
-		options = options
+		// pass through
 	}
 
 	if (typeof options[0] === 'string') {
@@ -186,14 +188,14 @@ function makeOptions(options) {
 	return options
 }
 
-const attrs = useAttrs()
-const valuePassed = attrs.hasOwnProperty('value')
+const valueProp = props.modelValue ? 'modelValue' : 'value'
 const selectedOptions = computed({
 	get() {
-		return makeOptions(valuePassed ? attrs.value?.slice() : props.modelValue.slice())
+		return makeOptions(props[valueProp]?.slice())
 	},
 	set(val) {
-		emit(valuePassed ? 'change' : 'update:modelValue', val)
+		emit('change', val)
+		emit('update:modelValue', val)
 	},
 })
 

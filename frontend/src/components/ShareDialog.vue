@@ -7,7 +7,7 @@
 					placeholder="Add a team to share with"
 					:options="unauthorizedTeams"
 					:autofocus="false"
-					@selectOption="handleAccessGrant"
+					@change="handleAccessGrant"
 				/>
 				<div class="space-y-3">
 					<div class="font-medium text-gray-600">Teams with access</div>

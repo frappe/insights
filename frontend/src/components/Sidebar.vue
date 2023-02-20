@@ -1,11 +1,11 @@
 <template>
-	<div class="flex w-16 flex-shrink-0 flex-col bg-gray-50 xl:w-60" v-if="currentRoute">
-		<div class="flex flex-grow flex-col overflow-y-auto p-4">
-			<div class="hidden flex-shrink-0 items-end text-sm text-gray-500 xl:flex">
+	<div class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r bg-white" v-if="currentRoute">
+		<div class="flex flex-grow flex-col overflow-y-auto p-3">
+			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-500">
 				<img src="../assets/insights-logo.svg" class="h-7" />
 				<span class="ml-1 mb-0.5 font-mono">{{ appVersion }}</span>
 			</div>
-			<div class="flex xl:hidden">
+			<div class="rg:hidden flex">
 				<img src="../assets/insights-icon.svg" class="rounded-md" />
 			</div>
 
@@ -32,7 +32,7 @@
 								route.current
 									? 'bg-gray-200/70'
 									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-								'group -mx-1 flex items-center justify-center rounded-md p-2 font-medium xl:justify-start',
+								'rg:justify-start group -mx-1 flex items-center justify-center rounded-md p-2 font-medium',
 							]"
 							aria-current="page"
 						>
@@ -42,16 +42,16 @@
 									route.current
 										? 'text-gray-600'
 										: 'text-gray-500 group-hover:text-gray-600',
-									'mr-0 h-5 w-5 flex-shrink-0 xl:mr-3 xl:h-4 xl:w-4',
+									'rg:mr-3 rg:h-4 rg:w-4 mr-0 h-5 w-5 flex-shrink-0',
 								]"
 							/>
-							<span class="hidden xl:inline-block">{{ route.label }}</span>
+							<span class="rg:inline-block hidden">{{ route.label }}</span>
 						</router-link>
 					</Tooltip>
 				</nav>
 			</div>
 
-			<div class="-mx-2 mt-auto flex items-center text-base text-gray-600 xl:mx-0">
+			<div class="rg:mx-0 -mx-2 mt-auto flex items-center text-base text-gray-600">
 				<Dropdown
 					placement="left"
 					:options="[
@@ -85,11 +85,11 @@
 								size="md"
 							/>
 							<span
-								class="ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap xl:inline"
+								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"
 							>
 								{{ auth.user.full_name }}
 							</span>
-							<FeatherIcon name="chevron-down" class="hidden h-4 w-4 xl:inline" />
+							<FeatherIcon name="chevron-down" class="rg:inline hidden h-4 w-4" />
 						</button>
 					</template>
 				</Dropdown>

@@ -19,204 +19,42 @@ CACHE_NAMESPACE = "insights_dashboard"
 
 
 class InsightsDashboard(Document):
-    @frappe.whitelist()
-    def get_charts(self):
-        charts = [
-            row.chart for row in self.items if row.item_type == "Chart" and row.chart
-        ]
-        allowed_queries = get_allowed_resources_for_user("Insights Query")
-        return frappe.get_list(
-            "Insights Query Chart",
-            filters={
-                "name": ("not in", charts),
-                "query": ["in", allowed_queries],
-            },
-            fields=["name", "title", "type"],
-        )
-
     @property
     def cache_namespace(self):
         return f"{CACHE_NAMESPACE}|{self.name}"
 
     @frappe.whitelist()
-    def add_item(self, item):
-        layout = get_item_position(
-            item, [frappe.parse_json(item.layout) for item in self.items]
-        )
-        self.append(
-            "items",
-            {
-                **item,
-                "layout": dumps(layout, indent=2),
-            },
-        )
-        self.save()
+    def clear_charts_cache(self):
+        frappe.cache().delete_keys(f"*{self.cache_namespace}:*")
+        notify(**{"type": "success", "title": "Cache Cleared"})
 
     @frappe.whitelist()
-    def remove_item(self, item):
-        for row in self.items:
-            if row.name == item:
-                self.remove(row)
-                self.save()
-                break
+    def fetch_chart_data(self, item_id, query_name=None, filters=None):
+        row = next((row for row in self.items if row.item_id == item_id), None)
+        if not row and not query_name:
+            return frappe.throw("Item not found")
 
-    @frappe.whitelist()
-    def update_layout(self, updated_layout):
-        updated_layout = frappe._dict(updated_layout)
-        if not updated_layout:
-            return
+        query_name = query_name or frappe.parse_json(row.options).query
+        if not query_name:
+            return frappe.throw("Query not found")
 
-        for row in self.items:
-            # row.name can be an interger which could get converted to a string
-            if str(row.name) in updated_layout or row.name in updated_layout:
-                new_layout = (
-                    updated_layout.get(str(row.name))
-                    or updated_layout.get(row.name)
-                    or {}
-                )
-                row.layout = dumps(new_layout, indent=2)
-        self.save()
-
-    @frappe.whitelist()
-    def update_filter(self, filter):
-        filter = frappe._dict(filter)
-        for row in self.items:
-            if row.name == filter.name:
-                row.filter_label = filter.filter_label
-                row.filter_column = frappe.as_json(filter.filter_column)
-                row.filter_links = frappe.as_json(filter.filter_links)
-                self.save()
-                break
-
-    @frappe.whitelist()
-    def update_filter_state(self, filter_name, filter_state):
-        filter_state = frappe._dict(filter_state)
-        for row in self.items:
-            if row.name == filter_name:
-                filter_states = frappe.parse_json(row.filter_states) or {}
-                filter_states[frappe.session.user] = filter_state
-                row.filter_states = frappe.as_json(filter_states)
-                self.save()
-                break
-
-    @frappe.whitelist()
-    def get_chart_filters(self, chart_name):
-        _filters = []
-        for row in self.items:
-            if row.item_type != "Filter":
-                continue
-            filter_links = frappe.parse_json(row.filter_links) or {}
-            filter_states = frappe.parse_json(row.filter_states) or {}
-            if (
-                str(chart_name) not in filter_links
-                or frappe.session.user not in filter_states
-                or not filter_states[frappe.session.user]
-            ):
-                continue
-            filter_state = filter_states[frappe.session.user]
-            _filters.append(
-                frappe._dict(
-                    {
-                        "label": row.filter_label,
-                        "value": filter_state.get("value").get("value"),
-                        "column_type": filter_state.get("column").get("type"),
-                        "operator": filter_state.get("operator").get("value"),
-                        "column": frappe._dict(filter_links[str(chart_name)]),
-                    }
-                )
-            )
-        return _filters
-
-    @frappe.whitelist()
-    def get_chart_data(self, chart):
-        row = next((row for row in self.items if row.chart == chart), None)
-        if not row:
-            return
-
-        if row.query not in get_allowed_resources_for_user("Insights Query"):
+        if query_name not in get_allowed_resources_for_user("Insights Query"):
             frappe.throw("Not allowed", frappe.PermissionError)
 
-        chart_filters = self.get_chart_filters(row.chart)
-        if not chart_filters:
-            return self.run_query(row.query)
-
         filter_conditions = []
-        for chart_filter in chart_filters:
-            if not chart_filter.value:
-                continue
+        for chart_filter in filters:
+            chart_filter = frappe._dict(chart_filter)
             filter_conditions.append(
                 convert_to_expression(
-                    chart_filter.column.table,
-                    chart_filter.column.column,
+                    chart_filter.column.get("table"),
+                    chart_filter.column.get("column"),
                     chart_filter.operator,
                     chart_filter.value,
                     chart_filter.column_type,
                 )
             )
 
-        if not filter_conditions:
-            return self.run_query(row.query)
-
-        return self.run_query(row.query, additional_filters=filter_conditions)
-
-    @frappe.whitelist()
-    def get_all_columns(self, query):
-        # fetches all the columns for all the tables selected in the query
-        # to select a dashboard filter
-        return frappe.get_cached_doc("Insights Query", query).fetch_columns()
-
-    @frappe.whitelist()
-    def get_columns(self, query):
-        # fetches the columns of a query to get the column format option
-        return frappe.get_cached_doc("Insights Query", query).get_columns()
-
-    @frappe.whitelist()
-    def update_markdown(self, item):
-        item = frappe._dict(item)
-        for row in self.items:
-            if row.name == item.name:
-                row.markdown = item.markdown
-                self.save()
-                break
-
-    @frappe.whitelist()
-    def get_filter_columns(self):
-        tables = []
-        for row in self.items:
-            if row.item_type == "Chart" and row.query:
-                doc = frappe.get_doc("Insights Query", row.query)
-                tables.extend(doc.get_selected_tables())
-
-        columns = []
-        for table in tables:
-            doc = frappe.get_doc("Insights Table", {"table": table.table})
-            _columns = doc.get_columns()
-            for column in _columns:
-                column.table_label = table.label
-                columns.append(
-                    {
-                        "column": column.column,
-                        "label": column.label,
-                        "table": table.table,
-                        "table_label": table.label,
-                        "type": column.type,
-                        "data_source": doc.data_source,
-                    }
-                )
-
-        return columns
-
-    @frappe.whitelist()
-    def fetch_column_values(self, column, search_text=None):
-        data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
-        return data_source.get_column_options(
-            column.get("table"), column.get("column"), search_text
-        )
-
-    @frappe.whitelist()
-    def clear_charts_cache(self):
-        frappe.cache().delete_keys(f"*{self.cache_namespace}:*")
-        notify(**{"type": "success", "title": "Cache Cleared"})
+        return self.run_query(query_name, additional_filters=filter_conditions)
 
     def run_query(self, query_name, additional_filters=None):
         def get_result():
@@ -259,3 +97,46 @@ class InsightsDashboard(Document):
         )
         query_result_expiry_in_seconds = query_result_expiry * 60
         return get_or_set_cache(key, get_result, expiry=query_result_expiry_in_seconds)
+
+
+@frappe.whitelist()
+def get_queries_column(query_names):
+    # TODO: handle permissions
+    tables = []
+    for query in list(set(query_names)):
+        # TODO: to further optimize, store the used tables in the query on save
+        doc = frappe.get_cached_doc("Insights Query", query)
+        tables.extend(doc.get_selected_tables())
+
+    columns = []
+    for table in tables:
+        doc = frappe.get_cached_doc("Insights Table", {"table": table.table})
+        _columns = doc.get_columns()
+        for column in _columns:
+            column.table_label = table.label
+            columns.append(
+                {
+                    "column": column.column,
+                    "label": column.label,
+                    "table": table.table,
+                    "table_label": table.label,
+                    "type": column.type,
+                    "data_source": doc.data_source,
+                }
+            )
+
+    return columns
+
+
+@frappe.whitelist()
+def get_query_columns(query):
+    # TODO: handle permissions
+    return frappe.get_cached_doc("Insights Query", query).fetch_columns()
+
+
+@frappe.whitelist()
+def fetch_column_values(column, search_text=None):
+    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
+    return data_source.get_column_options(
+        column.get("table"), column.get("column"), search_text
+    )

@@ -1,83 +1,105 @@
-<template>
-	<div class="group relative flex h-full w-full items-center justify-center rounded-md">
-		<div
-			v-if="show"
-			class="flex h-full w-full rounded-md bg-white"
-			:class="{ 'pointer-events-none opacity-50': dashboard.editingLayout }"
-		>
-			<!-- dynamically rendered component based on item type (Text, Filter, Chart)-->
-			<component
-				v-if="item.component && item.componentProps"
-				:is="item.component"
-				v-bind="item.componentProps"
-			>
-			</component>
-		</div>
-		<LoadingIndicator v-else class="mb-2 w-6 text-gray-300" />
+<script setup>
+import { inject, ref } from 'vue'
+import InvalidWidget from './widgets/InvalidWidget.vue'
+import widgets from './widgets/widgets'
 
+const dashboard = inject('dashboard')
+const props = defineProps({
+	item: { type: Object, required: true },
+})
+
+const actions = [
+	{
+		icon: 'settings',
+		label: 'Edit',
+		onClick: (item) => dashboard.setCurrentItem(item.item_id),
+	},
+	{
+		icon: 'trash',
+		label: 'Delete',
+		onClick: (item) => dashboard.removeItem(item),
+	},
+	{
+		icon: 'download',
+		label: 'Download',
+		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
+		onClick: downloadChart,
+	},
+]
+const widget = ref(null)
+function downloadChart() {
+	widget.value?.$refs?.eChart?.downloadChart?.()
+}
+const chartFilters = ref([])
+dashboard.getChartFilters(props.item.item_id).then((filters) => {
+	chartFilters.value = filters
+})
+</script>
+
+<template>
+	<div class="dashboard-item h-full min-h-[3rem] w-full min-w-[8rem] p-1.5">
 		<div
-			v-if="!dashboard.editingLayout && props.item.item_type == 'Chart'"
-			class="absolute top-3 right-3 z-10 flex items-center space-x-1"
+			class="group relative flex h-full rounded-md"
+			:class="{
+				'bg-white shadow-sm': item.item_type !== 'Filter' && item.item_type !== 'Text',
+				'ring-2 ring-blue-300 ring-offset-1':
+					item.item_id === dashboard.currentItem?.item_id,
+				'cursor-grab': dashboard.editing,
+			}"
+			@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
 		>
 			<div
-				class="invisible cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
+				v-if="item.refreshing"
+				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center bg-white"
+			>
+				<LoadingIndicator class="w-6 text-gray-300" />
+			</div>
+
+			<component
+				ref="widget"
+				:class="[dashboard.editing ? 'pointer-events-none' : '']"
+				:is="widgets.getComponent(item.item_type)"
+				:item_id="item.item_id"
+				:options="item.options"
+				:key="JSON.stringify(item.options)"
+			>
+				<template #placeholder>
+					<InvalidWidget
+						class="absolute"
+						title="Insufficient options"
+						message="Please check the options for this widget"
+						icon="settings"
+						icon-class="text-gray-400"
+					/>
+				</template>
+			</component>
+
+			<div class="absolute top-3 right-3 z-10 flex items-center">
+				<div v-if="chartFilters.length">
+					<Tooltip :text="chartFilters.map((c) => c.label).join(', ')">
+						<div
+							class="flex items-center space-x-1 rounded-full bg-gray-100 px-2 py-1 text-sm leading-3 text-gray-600"
+						>
+							<span>{{ chartFilters.length }}</span>
+							<FeatherIcon name="filter" class="h-3 w-3" @mousedown.prevent.stop="" />
+						</div>
+					</Tooltip>
+				</div>
+			</div>
+
+			<div
+				v-if="dashboard.editing"
+				class="absolute -top-7 right-0 z-20 flex cursor-pointer space-x-2.5 rounded-md bg-gray-700 px-2 py-1.5 opacity-0 shadow-sm transition-opacity duration-200 ease-in-out group-hover:opacity-100"
 			>
 				<FeatherIcon
-					name="external-link"
-					class="h-4 w-4"
-					@mousedown.prevent.stop=""
-					@click.prevent.stop="openQuery"
+					v-for="action in actions"
+					:key="action.label"
+					:name="action.icon"
+					class="h-3.5 w-3.5 text-white"
+					:class="{ hidden: action.hidden && action.hidden(item) }"
+					@click="action.onClick(item)"
 				/>
 			</div>
-
-			<div v-if="appliedFilters.length">
-				<Tooltip :text="appliedFilters.join(', ')">
-					<div
-						class="flex items-center space-x-1 rounded-full bg-gray-100 px-2 py-1 text-sm leading-3 text-gray-600"
-					>
-						<span>{{ appliedFilters.length }}</span>
-						<FeatherIcon name="filter" class="h-3 w-3" @mousedown.prevent.stop="" />
-					</div>
-				</Tooltip>
-			</div>
-		</div>
-
-		<div
-			v-show="dashboard.editingLayout"
-			class="absolute top-0 right-0 z-10 flex h-full w-full items-center justify-center"
-		>
-			<DashboardEditItemActions />
 		</div>
 	</div>
 </template>
-
-<script setup>
-import useDashboardItem from '@/dashboard/useDashboardItem'
-import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, provide, ref } from 'vue'
-import DashboardEditItemActions from './DashboardEditItemActions.vue'
-
-const props = defineProps({ item: Object })
-const dashboard = inject('dashboard')
-const item = useDashboardItem(dashboard, props.item)
-provide('item', props.item)
-
-const show = computed(() => {
-	return Boolean(item && item.component && item.componentProps && !item.loading)
-})
-
-const appliedFilters = ref([])
-if (props.item.item_type == 'Chart') {
-	dashboard.get_chart_filters
-		.submit({
-			chart_name: props.item.chart,
-		})
-		.then((res) => {
-			appliedFilters.value = res.message.map((filter) => filter.label)
-		})
-}
-
-function openQuery() {
-	window.open(`/insights/query/${props.item.query}`, '_blank')
-}
-</script>
