@@ -116,9 +116,9 @@ updateDocumentTitle(pageMeta)
 					<DashboardSidebarWidgets @dragChange="draggingWidget = $event" />
 				</div>
 
-				<div v-else>
+				<div v-else class="space-y-4">
 					<!-- Widget Options -->
-					<div class="mb-4 flex items-center text-lg font-medium text-gray-400">
+					<div class="flex items-center text-lg font-medium text-gray-400">
 						<Button
 							appearance="white"
 							icon="arrow-left"
@@ -126,6 +126,14 @@ updateDocumentTitle(pageMeta)
 						></Button>
 						<div class="ml-2 text-gray-800">Back</div>
 					</div>
+
+					<Input
+						type="select"
+						label="Widget Type"
+						class="w-full"
+						:options="widgets.list.map((widget) => widget.type)"
+						v-model="dashboard.currentItem.item_type"
+					/>
 
 					<component
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
