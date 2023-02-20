@@ -1,5 +1,5 @@
 <script setup>
-import widgets from '@/dashboard/widgets/widgets'
+import widgets from './widgets/widgets'
 const emit = defineEmits(['dragChange'])
 function onDragStart(widget) {
 	emit('dragChange', widget)
