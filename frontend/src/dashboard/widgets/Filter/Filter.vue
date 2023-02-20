@@ -18,8 +18,8 @@ getLocal(filterStateKey).then((state) => {
 function saveFilterState(state) {
 	filterState.value = state
 		? {
-				operator: { ...state.operator },
-				value: { ...state.value },
+				operator: state.operator,
+				value: state.value,
 		  }
 		: undefined
 	saveLocal(filterStateKey, filterState.value).then(() => {
@@ -29,7 +29,7 @@ function saveFilterState(state) {
 </script>
 
 <template>
-	<div class="flex w-full items-center">
+	<div class="flex w-full items-center" :class="[!filterState?.operator ? '!text-gray-500' : '']">
 		<SimpleFilter
 			:disable-columns="true"
 			:label="props.options.label"

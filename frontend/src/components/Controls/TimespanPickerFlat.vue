@@ -77,6 +77,10 @@ export default {
 					value: this._value,
 					label: this._value,
 				})
+				this.$emit('change', {
+					value: this._value,
+					label: this._value,
+				})
 			}
 		},
 	},

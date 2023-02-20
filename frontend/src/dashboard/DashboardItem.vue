@@ -68,8 +68,8 @@ function makeRefreshKey(item) {
 				<template #placeholder>
 					<InvalidWidget
 						class="absolute"
-						message="Set the options to see the widget"
-						title="Options not set"
+						title="Insufficient options"
+						message="Please check the options for this widget"
 						icon="settings"
 						icon-class="text-gray-400"
 					/>

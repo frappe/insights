@@ -1,7 +1,7 @@
 <script setup>
 import { formatDate, isEmptyObj } from '@/utils'
 import { getOperatorOptions } from '@/utils/query/columns'
-import { debounce, call } from 'frappe-ui'
+import { call, debounce } from 'frappe-ui'
 import { computed, reactive, ref, watch } from 'vue'
 
 import DatePickerFlat from '@/components/Controls/DatePickerFlat.vue'
@@ -38,6 +38,16 @@ watch(
 		filter.value = props.value
 	},
 	{ immediate: true, deep: true }
+)
+
+watch(
+	() => filter.operator,
+	(operator) => {
+		if (operator && ['in', 'not_in'].includes(operator.value) && !filter.value) {
+			filter.value = []
+		}
+	},
+	{ immediate: true }
 )
 
 const applyDisabled = computed(() => {
@@ -128,22 +138,22 @@ function resetFilter() {
 
 <template>
 	<div class="w-full [&:first-child]:w-full">
-		<Popover class="w-full">
+		<Popover class="w-full" @close="applyFilter">
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex">
 					<button
 						class="flex w-full items-center rounded-md border bg-white px-3 py-1 text-base leading-5 text-gray-900"
 						@click="togglePopover"
 					>
-						<span v-if="!filter.column" class="text-gray-500">
-							Select a filter...
-						</span>
-						<span v-else class="overflow-hidden text-ellipsis whitespace-nowrap">
+						<span v-if="!filter.column" class="text-gray-500">Select a filter...</span>
+						<span
+							v-else
+							class="overflow-hidden text-ellipsis whitespace-nowrap"
+							:class="{ 'text-gray-500': !filter.operator }"
+						>
 							{{ filter.label || filter.column.label }}
 						</span>
-						<span v-if="filter.operator" class="ml-1">
-							{{ operatorLabel }}
-						</span>
+						<span v-if="filter.operator" class="ml-1">{{ operatorLabel }}</span>
 						<span
 							v-if="filter.value"
 							class="ml-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap"
@@ -152,14 +162,7 @@ function resetFilter() {
 						</span>
 						<div class="ml-auto flex items-center pl-2">
 							<div
-								v-if="isOpen && !applyDisabled"
-								class="-my-1 -mr-2 rounded-md bg-blue-400 p-1 text-white shadow"
-								@click.prevent.stop="applyFilter() | togglePopover(false)"
-							>
-								<FeatherIcon name="check" class="h-3.5 w-3.5" />
-							</div>
-							<div
-								v-else-if="!isOpen && !applyDisabled"
+								v-if="!isOpen && !applyDisabled"
 								class="-my-1 -mr-2 rounded-md p-1 hover:bg-blue-50 hover:text-blue-600"
 								@click.prevent.stop="!isOpen && resetFilter()"
 							>
@@ -213,9 +216,13 @@ function resetFilter() {
 				>
 					<Combobox
 						v-if="showValuePicker"
+						as="div"
 						v-model="filter.value"
 						nullable
-						:multiple="['in', 'not in'].includes(filter.operator?.value)"
+						:multiple="['in', 'not_in'].includes(filter.operator?.value)"
+						@update:model-value="
+							!filter.operator?.value.includes('in') && togglePopover(false)
+						"
 					>
 						<ComboboxInput
 							v-if="filter.operator?.value != 'is'"
@@ -249,7 +256,11 @@ function resetFilter() {
 						</ComboboxOptions>
 					</Combobox>
 
-					<TimespanPickerFlat v-else-if="showTimespanPicker" v-model="filter.value" />
+					<TimespanPickerFlat
+						v-else-if="showTimespanPicker"
+						v-model="filter.value"
+						@change="togglePopover(false)"
+					/>
 
 					<DateRangePickerFlat
 						v-else-if="showDatePicker && filter.operator?.value == 'between'"
@@ -263,6 +274,7 @@ function resetFilter() {
 										.map((date) => formatDate(date))
 										.join(' to '),
 								}
+								togglePopover(false)
 							}
 						"
 					/>
@@ -276,6 +288,7 @@ function resetFilter() {
 									value: date,
 									label: formatDate(date),
 								}
+								togglePopover(false)
 							}
 						"
 					/>
