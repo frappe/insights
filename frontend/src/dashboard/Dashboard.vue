@@ -1,15 +1,15 @@
 <script setup>
+import DashboardEmptyState from '@/dashboard/DashboardEmptyState.vue'
+import DashboardItem from '@/dashboard/DashboardItem.vue'
+import DashboardNavbarButtons from '@/dashboard/DashboardNavbarButtons.vue'
+import DashboardSidebarWidgets from '@/dashboard/DashboardSidebarWidgets.vue'
 import DashboardTitle from '@/dashboard/DashboardTitle.vue'
 import useDashboard from '@/dashboard/useDashboard'
+import UseDropZone from '@/dashboard/UseDropZone.vue'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
+import widgets from '@/dashboard/widgets/widgets'
 import { updateDocumentTitle } from '@/utils'
 import { computed, provide, ref } from 'vue'
-import DashboardEmptyState from './DashboardEmptyState.vue'
-import DashboardItem from './DashboardItem.vue'
-import DashboardNavbarButtons from './DashboardNavbarButtons.vue'
-import DashboardSidebarWidgets from './DashboardSidebarWidgets.vue'
-import UseDropZone from './UseDropZone.vue'
-import widgets from './widgets/widgets'
 
 const props = defineProps({
 	name: { type: String, required: true },
