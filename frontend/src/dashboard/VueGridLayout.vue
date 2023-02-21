@@ -1,5 +1,10 @@
 <template>
-	<grid-layout ref="grid" :layout="layouts" v-bind="options">
+	<grid-layout
+		ref="grid"
+		:layout="layouts"
+		v-bind="options"
+		@update:layout="emit('update:layouts', layouts)"
+	>
 		<template #default="{ gridItemProps }">
 			<grid-item
 				v-for="(layout, index) in layouts"
@@ -10,8 +15,6 @@
 				:y="layout.y"
 				:w="layout.w"
 				:h="layout.h"
-				@resize="updateSize"
-				@move="updatePosition"
 			>
 				<slot name="item" :item="props.items[index]">
 					<pre class="h-full w-full rounded-md bg-white p-4 shadow">
@@ -51,24 +54,6 @@ const layouts = ref([])
 watchEffect(() => {
 	layouts.value = [...props.layouts]
 })
-function updatePosition(i, x, y) {
-	updateLayout(i, x, y, undefined, undefined)
-}
-function updateSize(i, w, h) {
-	updateLayout(i, undefined, undefined, w, h)
-}
-function updateLayout(i, x, y, w, h) {
-	layouts.value = layouts.value.map((l) => {
-		if (l.i === i) {
-			if (x !== undefined) l.x = x
-			if (y !== undefined) l.y = y
-			if (w !== undefined) l.w = w
-			if (h !== undefined) l.h = h
-		}
-		return l
-	})
-	emit('update:layouts', layouts.value)
-}
 
 async function toggleEnable(disable) {
 	if (options.isDraggable === !disable && options.isResizable === !disable) return
