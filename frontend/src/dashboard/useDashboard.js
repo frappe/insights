@@ -50,6 +50,7 @@ export default function useDashboard(name) {
 		state.doc.items.forEach((item, idx) => (item.idx = idx))
 		state.doc.items.forEach(updateItemLayout)
 		await resource.setValue.submit(state.doc)
+		state.currentItem = undefined
 		state.loading = false
 		state.editing = false
 		reload()
