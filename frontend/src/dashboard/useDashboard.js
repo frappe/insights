@@ -201,7 +201,9 @@ export default function useDashboard(name) {
 	}
 
 	const edit = () => ((state.editing = true), (state.currentItem = undefined))
-	const cancelEdit = () => ((state.editing = false), reload(), (state.currentItem = undefined))
+	const discardChanges = () => (
+		(state.editing = false), reload(), (state.currentItem = undefined)
+	)
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
 
@@ -225,7 +227,7 @@ export default function useDashboard(name) {
 		refreshFilter,
 		getChartFilters,
 		edit,
-		cancelEdit,
+		discardChanges,
 		toggleSidebar,
 		setSidebarPosition,
 		updateTitle,

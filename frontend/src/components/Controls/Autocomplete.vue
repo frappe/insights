@@ -158,7 +158,6 @@ const options = computed(() => {
 	}
 	return props.options
 })
-
 const returnValues = computed(() => {
 	// if v-model.value is set, then return the value of the option
 	return props.valueModifiers?.value || props.modelModifiers?.value

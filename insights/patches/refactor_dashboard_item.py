@@ -119,6 +119,7 @@ def execute():
             click.secho(f"Error at {item_name}: {e}", fg="red")
             frappe.log_error(title="Error in Insights Patch: Refactor Dashboard Item")
         finally:
+            item.db_set("item_type", "")
             frappe.db.commit()
 
     item_id_by_chart_name = {

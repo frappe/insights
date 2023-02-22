@@ -102,18 +102,18 @@ class InsightsDashboard(Document):
 @frappe.whitelist()
 def get_queries_column(query_names):
     # TODO: handle permissions
-    tables = []
+    tables = {}
     for query in list(set(query_names)):
         # TODO: to further optimize, store the used tables in the query on save
         doc = frappe.get_cached_doc("Insights Query", query)
-        tables.extend(doc.get_selected_tables())
+        for table in doc.get_selected_tables():
+            tables[table.table] = table
 
     columns = []
-    for table in tables:
+    for table in tables.values():
         doc = frappe.get_cached_doc("Insights Table", {"table": table.table})
         _columns = doc.get_columns()
         for column in _columns:
-            column.table_label = table.label
             columns.append(
                 {
                     "column": column.column,

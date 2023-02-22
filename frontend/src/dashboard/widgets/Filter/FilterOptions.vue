@@ -22,10 +22,10 @@ function updateOptions(key, value) {
 }
 
 const dashboard = inject('dashboard')
-const chartItems = dashboard.doc.items.filter((item) => {
-	return item.item_type !== 'Filter' && item.item_type !== 'Text'
+const charts = dashboard.doc.items.filter((item) => {
+	return item.item_type !== 'Filter' && item.item_type !== 'Text' && item.options.query
 })
-const queries = chartItems.map((i) => i.options.query).filter((q) => q)
+const queries = charts.map((i) => i.options.query)
 
 const columnOptions = ref([])
 getQueriesColumn(queries).then((columns) => {
@@ -42,6 +42,12 @@ getQueriesColumn(queries).then((columns) => {
 	})
 })
 
+charts.forEach((chart) => {
+	if (options.value.links[chart.item_id]) {
+		setColumnOptions(chart)
+	}
+})
+
 function handleCheck(checked, chartItem) {
 	const links = options.value.links
 	if (checked) {
@@ -56,37 +62,30 @@ function handleCheck(checked, chartItem) {
 }
 
 const chartColumnOptions = reactive({})
-function setColumnOptions(chartItem) {
+async function setColumnOptions(chartItem) {
 	const filter_column = options.value.column
 	if (!filter_column?.column) return
-	getQueryColumns(chartItem.options.query).then((columns) => {
-		chartColumnOptions[chartItem.options.query] = columns
-			.filter((c) => {
-				return (
-					c.type === filter_column.type &&
-					c.table === filter_column.table &&
-					c.column === filter_column.column &&
-					c.data_source === filter_column.data_source
-				)
-			})
-			.map((column) => {
-				return {
-					label: column.label,
-					column: column.column,
-					table: column.table,
-					type: column.type,
-					table_label: column.table_label,
-					data_source: column.data_source,
-					value: `${column.table}.${column.column}`,
-				}
-			})
-	})
-}
-
-function changeColumn(column) {
-	console.log(column)
-	updateOptions('column', column)
-	updateOptions('links', {})
+	const columns = await getQueryColumns(chartItem.options.query)
+	chartColumnOptions[chartItem.options.query] = columns
+		.filter((c) => {
+			return (
+				c.type === filter_column.type &&
+				c.table === filter_column.table &&
+				c.column === filter_column.column &&
+				c.data_source === filter_column.data_source
+			)
+		})
+		.map((column) => {
+			return {
+				label: column.label,
+				column: column.column,
+				table: column.table,
+				type: column.type,
+				table_label: column.table_label,
+				data_source: column.data_source,
+				value: `${column.table}.${column.column}`,
+			}
+		})
 }
 </script>
 
@@ -113,7 +112,7 @@ function changeColumn(column) {
 			<div class="max-h-[20rem] space-y-2">
 				<div
 					class="flex h-8 w-full items-center text-gray-600"
-					v-for="chartItem in chartItems"
+					v-for="chartItem in charts"
 					:key="chartItem.item_id"
 				>
 					<Input
