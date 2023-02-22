@@ -34,8 +34,8 @@ const valueOptions = computed(() => {
 		}))
 })
 
-if (!options.targetType) {
-	options.targetType = 'Column'
+if (!options.value.targetType) {
+	options.value.targetType = 'Column'
 }
 </script>
 

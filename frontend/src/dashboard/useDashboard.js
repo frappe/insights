@@ -170,6 +170,7 @@ export default function useDashboard(name) {
 			})
 			state.doc.title = title
 		})
+		reload()
 	}
 
 	function makeLayoutObject(item) {

@@ -138,7 +138,7 @@ updateDocumentTitle(pageMeta)
 					<component
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
-						:key="JSON.stringify(dashboard.currentItem.options)"
+						:key="dashboard.currentItem.item_id"
 					/>
 				</div>
 			</div>
