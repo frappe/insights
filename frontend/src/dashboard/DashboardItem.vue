@@ -10,20 +10,15 @@ const props = defineProps({
 
 const actions = [
 	{
-		icon: 'settings',
-		label: 'Edit',
-		onClick: (item) => dashboard.setCurrentItem(item.item_id),
+		icon: 'download',
+		label: 'Download',
+		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
+		onClick: downloadChart,
 	},
 	{
 		icon: 'trash',
 		label: 'Delete',
 		onClick: (item) => dashboard.removeItem(item),
-	},
-	{
-		icon: 'download',
-		label: 'Download',
-		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
-		onClick: downloadChart,
 	},
 ]
 const widget = ref(null)
@@ -39,7 +34,7 @@ dashboard.getChartFilters(props.item.item_id).then((filters) => {
 <template>
 	<div class="dashboard-item h-full min-h-[3rem] w-full min-w-[8rem] p-1.5">
 		<div
-			class="group relative flex h-full rounded-md"
+			class="relative flex h-full rounded-md"
 			:class="{
 				'bg-white shadow-sm': item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':
@@ -88,8 +83,8 @@ dashboard.getChartFilters(props.item.item_id).then((filters) => {
 			</div>
 
 			<div
-				v-if="dashboard.editing"
-				class="absolute -top-7 right-0 z-20 flex cursor-pointer space-x-2.5 rounded-md bg-gray-700 px-2 py-1.5 opacity-0 shadow-sm transition-opacity duration-200 ease-in-out group-hover:opacity-100"
+				v-if="dashboard.editing && item.item_id === dashboard.currentItem?.item_id"
+				class="absolute -top-7 right-0 z-20 flex cursor-pointer space-x-2.5 rounded-md bg-gray-700 px-2 py-1.5 shadow-sm transition-opacity duration-200 ease-in-out"
 			>
 				<FeatherIcon
 					v-for="action in actions"

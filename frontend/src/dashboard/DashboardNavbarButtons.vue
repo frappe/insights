@@ -2,7 +2,16 @@
 import { inject } from 'vue'
 import DashboardMenuButton from './DashboardMenuButton.vue'
 import DashboardShareButton from './DashboardShareButton.vue'
+import { useMagicKeys, whenever } from '@vueuse/core'
 const dashboard = inject('dashboard')
+
+const keys = useMagicKeys()
+const cmdE = keys['Meta+E']
+whenever(cmdE, dashboard.edit)
+const cmdS = keys['Meta+S']
+whenever(cmdS, dashboard.save)
+const cmdD = keys['Meta+D']
+whenever(cmdD, dashboard.discardChanges)
 </script>
 
 <template>
