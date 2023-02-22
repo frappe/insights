@@ -13,7 +13,7 @@ const dashboard = inject('dashboard')
 			v-else-if="dashboard.editing"
 			appearance="white"
 			class="border-red-500 text-red-500"
-			@click="dashboard.cancelEdit"
+			@click="dashboard.discardChanges"
 		>
 			Discard
 		</Button>
