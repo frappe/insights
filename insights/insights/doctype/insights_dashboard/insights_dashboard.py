@@ -38,9 +38,6 @@ class InsightsDashboard(Document):
         if not query_name:
             return frappe.throw("Query not found")
 
-        if query_name not in get_allowed_resources_for_user("Insights Query"):
-            frappe.throw("Not allowed", frappe.PermissionError)
-
         filter_conditions = []
         for chart_filter in filters:
             chart_filter = frappe._dict(chart_filter)
