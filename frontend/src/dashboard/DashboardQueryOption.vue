@@ -1,13 +1,11 @@
 <script setup>
+import QueryBuilderDialog from '@/dashboard/DashboardQueryDialog.vue'
+import CreateQueryDialog from '@/pages/CreateQueryDialog.vue'
 import useQueries from '@/query/useQueries'
-import { whenever } from '@vueuse/shared'
-import { computed, inject, ref } from 'vue'
-import CreateQueryDialog from '../../pages/CreateQueryDialog.vue'
-import QueryBuilderDialog from './QueryBuilderDialog.vue'
+import { computed, ref } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps(['modelValue'])
-const dashboard = inject('dashboard')
 
 const queryName = computed({
 	get: () => props.modelValue,
@@ -15,7 +13,6 @@ const queryName = computed({
 })
 const queries = useQueries()
 queries.reload()
-whenever(queryName, (query) => dashboard.loadQuery(query), { immediate: true })
 
 const showCreateQueryDialog = ref(false)
 const showQueryBuilder = ref(false)

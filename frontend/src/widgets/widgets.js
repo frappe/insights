@@ -1,5 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 
+const VALID_CHARTS = ['Number', 'Line', 'Bar', 'Pie', 'Table', 'Progress']
+
 const WIDGETS = {
 	Number: {
 		type: 'Number',
@@ -78,8 +80,8 @@ const WIDGETS = {
 const UnknownWidget = {
 	type: 'Unknown',
 	icon: 'question',
-	component: defineAsyncComponent(() => import('./InvalidWidget.vue')),
-	optionsComponent: defineAsyncComponent(() => import('./InvalidWidget.vue')),
+	component: defineAsyncComponent(() => import('@/widgets/InvalidWidget.vue')),
+	optionsComponent: defineAsyncComponent(() => import('@/widgets/InvalidWidget.vue')),
 	options: {},
 	defaultWidth: 5,
 	defaultHeight: 4,
@@ -97,10 +99,18 @@ function getOptionComponent(itemType) {
 	return get(itemType).optionsComponent
 }
 
+function getChartOptions() {
+	return VALID_CHARTS.map((chart) => ({
+		value: chart,
+		label: chart,
+	}))
+}
+
 export default {
 	...WIDGETS,
 	list: Object.values(WIDGETS),
 	get,
 	getComponent,
 	getOptionComponent,
+	getChartOptions,
 }

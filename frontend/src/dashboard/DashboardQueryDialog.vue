@@ -1,7 +1,7 @@
 <script setup>
 import { Dialog as HDialog, DialogOverlay, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { computed } from 'vue'
-import Query from './Query.vue'
+import Query from './DashboardQueryEditor.vue'
 
 const emit = defineEmits(['update:show', 'close'])
 const props = defineProps({
@@ -15,6 +15,9 @@ const show = computed({
 		if (!value) emit('close')
 	},
 })
+function openQueryInNewTab() {
+	window.open(`/insights/query/${props.query}`, '_blank')
+}
 </script>
 
 <template>
@@ -53,8 +56,19 @@ const show = computed({
 						>
 							<Query :name="props.query" class="h-full" />
 						</div>
-						<div v-if="show" class="flex-shrink-0">
-							<Button apperance="white" icon="x" class="shadow-xl"></Button>
+						<div v-if="show" class="flex flex-shrink-0 flex-col space-y-2">
+							<Button
+								apperance="white"
+								icon="x"
+								class="shadow-xl"
+								@click="show = false"
+							></Button>
+							<Button
+								apperance="white"
+								icon="maximize-2"
+								class="shadow-xl"
+								@click="openQueryInNewTab"
+							></Button>
 						</div>
 					</div>
 				</TransitionChild>

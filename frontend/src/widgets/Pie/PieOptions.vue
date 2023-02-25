@@ -1,10 +1,9 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
-import ListPicker from '@/components/Controls/ListPicker.vue'
+import { useQuery } from '@/query/useQueries'
 import { FIELDTYPES } from '@/utils'
-import { computed, inject } from 'vue'
-import QueryOption from '../QueryOption.vue'
+import { computed, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -20,13 +19,14 @@ const options = computed({
 	},
 })
 
-const dashboard = inject('dashboard')
-const queryResource = computed(() => {
-	if (!options.value.query) return []
-	return dashboard.queries[options.value.query]
+const query = ref(useQuery(options.value.query))
+// prettier-ignore
+watch(() => options.value.query, (queryName) => {
+	query.value = useQuery(queryName)
 })
+
 const indexOptions = computed(() => {
-	return queryResource.value?.resultColumns
+	return query.value?.resultColumns
 		?.filter((column) => !FIELDTYPES.NUMBER.includes(column.type))
 		.map((column) => ({
 			label: column.column,
@@ -35,7 +35,7 @@ const indexOptions = computed(() => {
 		}))
 })
 const valueOptions = computed(() => {
-	return queryResource.value?.resultColumns
+	return query.value?.resultColumns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
 		.map((column) => ({
 			label: column.column,
@@ -47,7 +47,6 @@ const valueOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<QueryOption v-model="options.query" />
 		<Input
 			type="text"
 			label="Title"
@@ -61,29 +60,30 @@ const valueOptions = computed(() => {
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<ListPicker
-				:value="options.yAxis"
-				:options="valueOptions"
-				@change="options.yAxis = $event.map((item) => item.value)"
-			/>
+			<Autocomplete v-model.value="options.yAxis" :options="valueOptions" />
 		</div>
 
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
+			<span class="mb-2 block text-sm leading-4 text-gray-700">Maximum Slices</span>
+			<Input v-model="options.maxSlices" type="number" min="1" />
+		</div>
+
+		<Color
+			label="Colors"
+			v-model="options.colors"
+			:max="parseInt(options.maxSlices) + 1"
+			multiple
+		/>
+
+		<div v-show="!options.inlineLabels">
+			<span class="mb-2 block text-sm leading-4 text-gray-700">Label Position</span>
 			<Autocomplete
-				v-model.value="options.referenceLine"
-				:options="['Average', 'Median', 'Min', 'Max']"
+				v-model.value="options.labelPosition"
+				:options="['Top', 'Left', 'Bottom', 'Right']"
 			/>
 		</div>
 
-		<Color label="Colors" v-model="options.colors" :max="options.yAxis?.length || 1" multiple />
-
-		<div class="space-y-2 text-gray-600">
-			<Checkbox v-model="options.smoothLines" label="Enable Curved Lines" />
-		</div>
-
-		<div class="space-y-2 text-gray-600">
-			<Checkbox v-model="options.showPoints" label="Show Data Points" />
-		</div>
+		<Checkbox v-model="options.inlineLabels" label="Inline Labels" />
+		<Checkbox v-model="options.scrollLabels" label="Paginate Labels" />
 	</div>
 </template>

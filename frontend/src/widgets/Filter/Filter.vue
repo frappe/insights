@@ -1,7 +1,6 @@
 <script setup>
 import SimpleFilter from '@/dashboard/SimpleFilter.vue'
-import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
-import { inject, ref } from 'vue'
+import { inject, computed } from 'vue'
 
 const props = defineProps({
 	item_id: { required: true },
@@ -9,22 +8,9 @@ const props = defineProps({
 })
 
 const dashboard = inject('dashboard')
-const filterStateKey = `filterState-${dashboard.doc.name}-${props.item_id}`
-
-const filterState = ref(undefined)
-getLocal(filterStateKey).then((state) => {
-	if (state) filterState.value = state
-})
+const filterState = computed(() => dashboard.filterStates[props.item_id])
 function saveFilterState(state) {
-	filterState.value = state
-		? {
-				operator: state.operator,
-				value: state.value,
-		  }
-		: undefined
-	saveLocal(filterStateKey, filterState.value).then(() => {
-		dashboard.refreshFilter(props.item_id)
-	})
+	dashboard.setFilterState(props.item_id, state)
 }
 </script>
 

@@ -1,9 +1,9 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import InputWithTabs from '@/components/Controls/InputWithTabs.vue'
+import { useQuery } from '@/query/useQueries'
 import { FIELDTYPES } from '@/utils'
-import { computed, inject } from 'vue'
-import QueryOption from '../QueryOption.vue'
+import { computed, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -19,13 +19,14 @@ const options = computed({
 	},
 })
 
-const dashboard = inject('dashboard')
-const queryResource = computed(() => {
-	if (!options.value.query) return []
-	return dashboard.queries[options.value.query]
+const query = ref(useQuery(options.value.query))
+// prettier-ignore
+watch(() => options.value.query, (queryName) => {
+	query.value = useQuery(queryName)
 })
+
 const valueOptions = computed(() => {
-	return queryResource.value?.resultColumns
+	return query.value?.resultColumns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
 		.map((column) => ({
 			label: column.column,
@@ -41,7 +42,6 @@ if (!options.value.targetType) {
 
 <template>
 	<div class="space-y-4">
-		<QueryOption v-model="options.query" />
 		<Input
 			type="text"
 			label="Title"

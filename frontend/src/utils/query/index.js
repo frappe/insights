@@ -1,11 +1,12 @@
-import { computed } from 'vue'
-import { createDocumentResource, debounce } from 'frappe-ui'
-import { useQueryTables } from '@/utils/query/tables'
+import { safeJSONParse } from '@/utils'
+import auth from '@/utils/auth'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
+import { useQueryTables } from '@/utils/query/tables'
 import { createToast } from '@/utils/toasts'
-import auth from '@/utils/auth'
+import { createDocumentResource, debounce } from 'frappe-ui'
+import { computed } from 'vue'
 
 export const API_METHODS = {
 	run: 'run',
@@ -77,6 +78,20 @@ function getQueryResource(name) {
 		doctype: 'Insights Query',
 		name: name,
 		whitelistedMethods: API_METHODS,
+		transform(doc) {
+			doc.columns = doc.columns.map((c) => {
+				c.format_option = safeJSONParse(c.format_option, {})
+				return c
+			})
+			doc.results = safeJSONParse(doc.results, [])
+			resource.resultColumns = doc.results[0].map((c) => {
+				return {
+					column: c.split('::')[0],
+					type: c.split('::')[1],
+				}
+			})
+			return doc
+		},
 	})
 	resource.get.fetch()
 	return resource

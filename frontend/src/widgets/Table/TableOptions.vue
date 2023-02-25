@@ -1,9 +1,8 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
-import { computedEager } from '@vueuse/core'
-import { computed, inject } from 'vue'
-import QueryOption from '../QueryOption.vue'
+import { useQuery } from '@/query/useQueries'
+import { computed, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -19,13 +18,14 @@ const options = computed({
 	},
 })
 
-const dashboard = inject('dashboard')
-const queryResource = computed(() => {
-	if (!options.value.query) return []
-	return dashboard.queries[options.value.query]
+const query = ref(useQuery(options.value.query))
+// prettier-ignore
+watch(() => options.value.query, (queryName) => {
+	query.value = useQuery(queryName)
 })
+
 const columnOptions = computed(() => {
-	return queryResource.value?.resultColumns?.map((column) => ({
+	return query.value?.resultColumns?.map((column) => ({
 		label: column.column,
 		value: column.column,
 		description: column.type,
@@ -35,7 +35,6 @@ const columnOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<QueryOption v-model="options.query" />
 		<Input
 			type="text"
 			label="Title"

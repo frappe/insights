@@ -1,22 +1,13 @@
 <script setup>
 import { computed, inject } from 'vue'
-import { whenever } from '@vueuse/core'
 
 const $utils = inject('$utils')
 const props = defineProps({
-	item_id: { required: true },
+	chartData: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const dashboard = inject('dashboard')
-whenever(
-	() => props.options.query,
-	() => dashboard.loadQueryResult(props.item_id, props.options.query),
-	{ immediate: true }
-)
-const results = computed(() => {
-	return dashboard.queryResults[`${props.item_id}-${props.options.query}`]
-})
+const results = computed(() => props.chartData.data)
 const formattedValue = computed(() => {
 	if (!results.value?.length) return
 	if (!props.options.column) return

@@ -1,11 +1,9 @@
-import widgets from '@/dashboard/widgets/widgets'
-import { useQuery } from '@/query/useQueries'
 import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
-import { getFormattedResult } from '@/utils/query/results'
+import widgets from '@/widgets/widgets'
 import { createDocumentResource } from 'frappe-ui'
-import { getLocal } from 'frappe-ui/src/resources/local'
-import { computed, reactive } from 'vue'
+import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
+import { reactive } from 'vue'
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -28,9 +26,10 @@ export default function useDashboard(name) {
 			open: true,
 			position: 'right',
 		},
-		queries: {},
-		queryResults: {},
 		itemLayouts: [],
+		filterStates: {},
+		filtersByChart: {},
+		refreshCallbacks: [],
 	})
 
 	async function reload() {
@@ -50,10 +49,10 @@ export default function useDashboard(name) {
 		state.doc.items.forEach((item, idx) => (item.idx = idx))
 		state.doc.items.forEach(updateItemLayout)
 		await resource.setValue.submit(state.doc)
+		await reload()
 		state.currentItem = undefined
 		state.loading = false
 		state.editing = false
-		reload()
 	}
 
 	async function deleteDashboard() {
@@ -86,53 +85,55 @@ export default function useDashboard(name) {
 		state.currentItem = state.doc.items.find((i) => i.item_id === item_id)
 	}
 
-	function loadQuery(queryName) {
-		if (!state.queries[queryName]) {
-			state.queries = Object.assign(state.queries, {
-				[queryName]: useQuery(queryName),
+	function getFilterStateKey(item_id) {
+		return `filterState-${state.doc.name}-${item_id}`
+	}
+
+	async function getFilterState(item_id) {
+		if (!state.filterStates[item_id]) {
+			getLocal(getFilterStateKey(item_id)).then((filterState) => {
+				state.filterStates[item_id] = filterState
 			})
 		}
-		return state.queries[queryName]
+		return state.filterStates[item_id]
 	}
 
-	async function loadQueryResult(itemId, queryName) {
-		if (!queryName)
-			state.doc.items.some((item) => {
-				if (item.item_id === itemId) {
-					queryName = item.options.query
-					return true
-				}
-			})
-		if (!queryName) return
-		if (state.queryResults[`${itemId}-${queryName}`]) return
-
-		setItemLoading(itemId, true)
-		const query = state.loadQuery(queryName)
-		const columns = computed(() => query.doc?.columns)
-		const filters = await getChartFilters(itemId)
-		const res = await resource.fetch_chart_data.submit({
-			item_id: itemId,
-			query_name: queryName,
-			filters,
+	async function setFilterState(item_id, value) {
+		const filterState = value
+			? {
+					operator: value.operator,
+					value: value.value,
+			  }
+			: undefined
+		saveLocal(getFilterStateKey(item_id), filterState).then(() => {
+			state.filterStates[item_id] = filterState
+			refreshLinkedCharts(item_id)
 		})
-		const results = getFormattedResult(res.message || [], columns.value)
-		state.queryResults = Object.assign(state.queryResults, {
-			[`${itemId}-${queryName}`]: results,
-		})
-		setItemLoading(itemId, false)
 	}
 
-	async function getChartFilters(chart_id) {
+	function refreshLinkedCharts(filter_id) {
+		state.doc.items.some((item) => {
+			if (item.item_id === filter_id) {
+				const charts = Object.keys(item.options.links) || []
+				charts.forEach((chart) => {
+					updateChartFilters(chart)
+				})
+				return true
+			}
+		})
+	}
+
+	async function updateChartFilters(chart_id) {
 		const promises = state.doc.items
 			.filter((item) => item.item_type === 'Filter')
-			.map(async (item) => {
-				const chart_column = item.options.links?.[chart_id]
+			.map(async (filter) => {
+				const chart_column = filter.options.links?.[chart_id]
 				if (!chart_column) return
 
-				const filter_state = await getLocal(`filterState-${state.doc.name}-${item.item_id}`)
+				const filter_state = await getFilterState(filter.item_id)
 				if (!filter_state || !filter_state.value?.value) return
 				return {
-					label: item.options.label,
+					label: filter.options.label,
 					column: chart_column,
 					value: filter_state.value.value,
 					operator: filter_state.operator.value,
@@ -140,7 +141,34 @@ export default function useDashboard(name) {
 				}
 			})
 		const filters = await Promise.all(promises)
-		return filters.filter(Boolean)
+		state.filtersByChart[chart_id] = filters.filter(Boolean)
+	}
+
+	async function getChartFilters(chart_id) {
+		if (!state.filtersByChart[chart_id]) {
+			await updateChartFilters(chart_id)
+		}
+		return state.filtersByChart[chart_id]
+	}
+
+	async function getChartResults(itemId, queryName) {
+		if (!queryName)
+			state.doc.items.some((item) => {
+				if (item.item_id === itemId) {
+					queryName = item.options.query
+					return true
+				}
+			})
+		if (!queryName) {
+			throw new Error(`Query not found for item ${itemId}`)
+		}
+		const filters = await getChartFilters(itemId)
+		const { message: results } = await resource.fetch_chart_data.submit({
+			item_id: itemId,
+			query_name: queryName,
+			filters,
+		})
+		return results
 	}
 
 	function refreshFilter(filter_id) {
@@ -149,16 +177,20 @@ export default function useDashboard(name) {
 			Object.keys(state.queryResults).forEach((key) => {
 				if (key.startsWith(`${item_id}-`)) {
 					delete state.queryResults[key]
-					loadQueryResult(item_id)
+					getChartResults(item_id)
 				}
 			})
 		})
 	}
 
 	async function refresh() {
-		state.queryResults = {}
 		await resource.clear_charts_cache.submit()
-		state.doc.items.forEach((item) => loadQueryResult(item.item_id))
+		await reload()
+		state.refreshCallbacks.forEach((fn) => fn())
+	}
+
+	function onRefresh(fn) {
+		state.refreshCallbacks.push(fn)
 	}
 
 	async function updateTitle(title) {
@@ -208,25 +240,18 @@ export default function useDashboard(name) {
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
 
-	const setItemLoading = (item_id, loading) => {
-		state.doc.items.some((item) => {
-			if (item.item_id === item_id) {
-				item.refreshing = loading
-				return true
-			}
-		})
-	}
-
 	return Object.assign(state, {
 		reload,
 		save,
 		addItem,
 		removeItem,
 		setCurrentItem,
-		loadQuery,
-		loadQueryResult,
+		getChartResults,
+		getFilterStateKey,
+		getFilterState,
+		setFilterState,
 		refreshFilter,
-		getChartFilters,
+		updateChartFilters,
 		edit,
 		discardChanges,
 		toggleSidebar,
@@ -234,6 +259,7 @@ export default function useDashboard(name) {
 		updateTitle,
 		deleteDashboard,
 		refresh,
+		onRefresh,
 	})
 }
 

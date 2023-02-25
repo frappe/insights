@@ -1,7 +1,8 @@
 <script setup>
-import { inject, ref } from 'vue'
-import InvalidWidget from './widgets/InvalidWidget.vue'
-import widgets from './widgets/widgets'
+import InvalidWidget from '@/widgets/InvalidWidget.vue'
+import useChartData from '@/widgets/useChartData'
+import widgets from '@/widgets/widgets'
+import { computed, inject, ref, watch } from 'vue'
 
 const dashboard = inject('dashboard')
 const props = defineProps({
@@ -21,14 +22,29 @@ const actions = [
 		onClick: (item) => dashboard.removeItem(item),
 	},
 ]
+
+let chartData = null
+let chartFilters = null
+if (props.item.options.query) {
+	chartData = useChartData({
+		query: props.item.options.query,
+		resultsFetcher() {
+			return dashboard.getChartResults(props.item.item_id)
+		},
+	})
+	dashboard.onRefresh(() => chartData.reload())
+
+	chartFilters = computed(() => dashboard.filtersByChart[props.item.item_id])
+	dashboard.updateChartFilters(props.item.item_id)
+	watch(chartFilters, () => {
+		chartData.reload()
+	})
+}
+
 const widget = ref(null)
 function downloadChart() {
 	widget.value?.$refs?.eChart?.downloadChart?.()
 }
-const chartFilters = ref([])
-dashboard.getChartFilters(props.item.item_id).then((filters) => {
-	chartFilters.value = filters
-})
 </script>
 
 <template>
@@ -44,7 +60,7 @@ dashboard.getChartFilters(props.item.item_id).then((filters) => {
 			@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
 		>
 			<div
-				v-if="item.refreshing"
+				v-if="chartData?.loading"
 				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center bg-white"
 			>
 				<LoadingIndicator class="w-6 text-gray-300" />
@@ -54,6 +70,7 @@ dashboard.getChartFilters(props.item.item_id).then((filters) => {
 				ref="widget"
 				:class="[dashboard.editing ? 'pointer-events-none' : '']"
 				:is="widgets.getComponent(item.item_type)"
+				:chartData="chartData"
 				:item_id="item.item_id"
 				:options="item.options"
 				:key="JSON.stringify(item.options)"
@@ -70,7 +87,7 @@ dashboard.getChartFilters(props.item.item_id).then((filters) => {
 			</component>
 
 			<div class="absolute top-3 right-3 z-10 flex items-center">
-				<div v-if="chartFilters.length">
+				<div v-if="chartFilters?.length">
 					<Tooltip :text="chartFilters.map((c) => c.label).join(', ')">
 						<div
 							class="flex items-center space-x-1 rounded-full bg-gray-100 px-2 py-1 text-sm leading-3 text-gray-600"

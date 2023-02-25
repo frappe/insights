@@ -9,19 +9,11 @@ import { whenever } from '@vueuse/core'
 import { computed, inject } from 'vue'
 
 const props = defineProps({
-	item_id: { required: true },
+	chartData: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const dashboard = inject('dashboard')
-whenever(
-	() => props.options.query,
-	() => dashboard.loadQueryResult(props.item_id, props.options.query),
-	{ immediate: true }
-)
-const results = computed(() => {
-	return dashboard.queryResults[`${props.item_id}-${props.options.query}`]
-})
+const results = computed(() => props.chartData.data)
 const labels = computed(() => {
 	if (!results.value?.length || !props.options.xAxis) return []
 	const columns = results.value[0].map((d) => d.split('::')[0])

@@ -2,9 +2,9 @@
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
+import { useQuery } from '@/query/useQueries'
 import { FIELDTYPES } from '@/utils'
-import { computed, inject } from 'vue'
-import QueryOption from '../QueryOption.vue'
+import { computed, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -20,13 +20,14 @@ const options = computed({
 	},
 })
 
-const dashboard = inject('dashboard')
-const queryResource = computed(() => {
-	if (!options.value.query) return []
-	return dashboard.queries[options.value.query]
+const query = ref(useQuery(options.value.query))
+// prettier-ignore
+watch(() => options.value.query, (queryName) => {
+	query.value = useQuery(queryName)
 })
+
 const indexOptions = computed(() => {
-	return queryResource.value?.resultColumns
+	return query.value?.resultColumns
 		?.filter((column) => !FIELDTYPES.NUMBER.includes(column.type))
 		.map((column) => ({
 			label: column.column,
@@ -35,7 +36,7 @@ const indexOptions = computed(() => {
 		}))
 })
 const valueOptions = computed(() => {
-	return queryResource.value?.resultColumns
+	return query.value?.resultColumns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
 		.map((column) => ({
 			label: column.column,
@@ -47,7 +48,6 @@ const valueOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<QueryOption v-model="options.query" />
 		<Input
 			type="text"
 			label="Title"
@@ -78,15 +78,12 @@ const valueOptions = computed(() => {
 
 		<Color label="Colors" v-model="options.colors" :max="options.yAxis?.length || 1" multiple />
 
-		<Input
-			type="select"
-			label="Rotate Labels"
-			v-model="options.rotateLabels"
-			:options="['0', '45', '90']"
-		/>
+		<div class="space-y-2 text-gray-600">
+			<Checkbox v-model="options.smoothLines" label="Enable Curved Lines" />
+		</div>
 
-		<Checkbox v-model="options.stack" label="Stack Values" />
-
-		<Checkbox v-model="options.invertAxis" label="Switch X and Y Axis" />
+		<div class="space-y-2 text-gray-600">
+			<Checkbox v-model="options.showPoints" label="Show Data Points" />
+		</div>
 	</div>
 </template>

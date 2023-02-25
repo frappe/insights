@@ -112,7 +112,10 @@ def get_dashboard_list():
             )
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
-            filters={"parent": dashboard.name, "item_type": "Chart"},
+            filters={
+                "parent": dashboard.name,
+                "item_type": ["not in", ["Text", "Filter"]],
+            },
             pluck="parent",
         )
     return dashboards

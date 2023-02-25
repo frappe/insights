@@ -162,9 +162,9 @@ function resetFilter() {
 						</span>
 						<div class="ml-auto flex items-center pl-2">
 							<div
-								v-if="!isOpen && !applyDisabled"
+								v-if="isOpen || !applyDisabled"
 								class="-my-1 -mr-2 rounded-md p-1 hover:bg-blue-50 hover:text-blue-600"
-								@click.prevent.stop="!isOpen && resetFilter()"
+								@click.prevent.stop="resetFilter()"
 							>
 								<FeatherIcon name="x" class="h-3.5 w-3.5" />
 							</div>

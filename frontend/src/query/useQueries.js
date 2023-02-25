@@ -15,7 +15,6 @@ export default defineStore('queries', {
 		loading: false,
 		creating: false,
 		deleting: false,
-		currentQuery: undefined,
 	}),
 	actions: {
 		async reload() {
@@ -27,6 +26,7 @@ export default defineStore('queries', {
 })
 
 export function useQuery(name) {
+	if (!name) return
 	const query = createDocumentResource({
 		doctype: 'Insights Query',
 		name: name,

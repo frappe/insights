@@ -3,13 +3,14 @@ import DashboardTitle from '@/dashboard/DashboardTitle.vue'
 import useDashboard from '@/dashboard/useDashboard'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import { updateDocumentTitle } from '@/utils'
+import widgets from '@/widgets/widgets'
 import { computed, provide, ref } from 'vue'
 import DashboardEmptyState from './DashboardEmptyState.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardNavbarButtons from './DashboardNavbarButtons.vue'
+import DashboardQueryOption from './DashboardQueryOption.vue'
 import DashboardSidebarWidgets from './DashboardWidgetsOptions.vue'
 import UseDropZone from './UseDropZone.vue'
-import widgets from './widgets/widgets'
 
 const props = defineProps({
 	name: { type: String, required: true },
@@ -134,6 +135,8 @@ updateDocumentTitle(pageMeta)
 						:options="widgets.list.map((widget) => widget.type)"
 						v-model="dashboard.currentItem.item_type"
 					/>
+
+					<DashboardQueryOption v-model="dashboard.currentItem.query" />
 
 					<component
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
