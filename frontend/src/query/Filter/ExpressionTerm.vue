@@ -15,8 +15,8 @@
 </template>
 
 <script setup>
-import BinaryExpression from '@/components/Query/Filter/BinaryExpression.vue'
-import CallExpression from '@/components/Query/Filter/CallExpression.vue'
+import BinaryExpression from '@/query/Filter/BinaryExpression.vue'
+import CallExpression from '@/query/Filter/CallExpression.vue'
 
 const props = defineProps({
 	term: {

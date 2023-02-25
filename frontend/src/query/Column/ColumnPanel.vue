@@ -21,9 +21,9 @@
 </template>
 
 <script setup>
-import ColumnList from '@/components/Query/Column/ColumnList.vue'
-import ColumnPicker from '@/components/Query/Column/ColumnPicker.vue'
-import ColumnEditor from '@/components/Query/Column/ColumnEditor.vue'
+import ColumnList from '@/query/Column/ColumnList.vue'
+import ColumnPicker from '@/query/Column/ColumnPicker.vue'
+import ColumnEditor from '@/query/Column/ColumnEditor.vue'
 
 import { ref } from 'vue'
 

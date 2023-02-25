@@ -10,8 +10,8 @@
 </template>
 
 <script setup>
-import TablePanel from '@/components/Query/Table/TablePanel.vue'
-import ColumnPanel from '@/components/Query/Column/ColumnPanel.vue'
-import FilterPanel from '@/components/Query/Filter/FilterPanel.vue'
-import QueryResult from '@/components/Query/Result/QueryResult.vue'
+import TablePanel from '@/query/Table/TablePanel.vue'
+import ColumnPanel from '@/query/Column/ColumnPanel.vue'
+import FilterPanel from '@/query/Filter/FilterPanel.vue'
+import QueryResult from '@/query/Result/QueryResult.vue'
 </script>

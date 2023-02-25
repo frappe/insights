@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import ExpressionTerm from '@/components/Query/Filter/ExpressionTerm.vue'
+import ExpressionTerm from '@/query/Filter/ExpressionTerm.vue'
 
 const props = defineProps({
 	expression: {

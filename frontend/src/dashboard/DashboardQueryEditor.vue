@@ -1,6 +1,6 @@
 <script setup>
-import QueryBuilder from '@/components/Query/QueryBuilder.vue'
-import QueryHeader from '@/components/Query/QueryHeader.vue'
+import QueryBuilder from '@/query/QueryBuilder.vue'
+import QueryHeader from '@/query/QueryHeader.vue'
 import { useQuery } from '@/utils/query'
 import { provide } from 'vue'
 const props = defineProps(['name'])

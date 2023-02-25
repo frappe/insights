@@ -21,10 +21,10 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
-import QueryBuilder from '@/components/Query/QueryBuilder.vue'
-import QueryHeader from '@/components/Query/QueryHeader.vue'
-import QueryVisualizer from '@/components/Query/QueryVisualizer.vue'
 import Tabs from '@/components/Tabs.vue'
+import QueryBuilder from '@/query/QueryBuilder.vue'
+import QueryHeader from '@/query/QueryHeader.vue'
+import QueryVisualizer from '@/query/QueryVisualizer.vue'
 import { updateDocumentTitle } from '@/utils'
 import { useQuery } from '@/utils/query'
 import { computed, provide, ref } from 'vue'

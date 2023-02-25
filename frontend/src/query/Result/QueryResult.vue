@@ -105,8 +105,8 @@
 </template>
 
 <script setup>
-import ColumnHeader from '@/components/Query/Result/ColumnHeader.vue'
-import LimitsAndOrder from '@/components/Query/LimitsAndOrder.vue'
+import ColumnHeader from '@/query/Result/ColumnHeader.vue'
+import LimitsAndOrder from '@/query/LimitsAndOrder.vue'
 import { FIELDTYPES, ellipsis } from '@/utils'
 import settings from '@/utils/settings'
 

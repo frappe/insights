@@ -51,7 +51,7 @@
 
 <script setup>
 import { computed, nextTick, watch, ref, onMounted } from 'vue'
-import Expression from '@/components/Query/Filter/Expression.vue'
+import Expression from '@/query/Filter/Expression.vue'
 
 defineEmits(['add-filter', 'edit-filter', 'remove-filter', 'toggle-operator'])
 const props = defineProps({

@@ -32,8 +32,8 @@
 </template>
 
 <script setup>
-import LogicalExpression from '@/components/Query/Filter/LogicalExpression.vue'
-import FilterPicker from '@/components/Query/Filter/FilterPicker.vue'
+import LogicalExpression from '@/query/Filter/LogicalExpression.vue'
+import FilterPicker from '@/query/Filter/FilterPicker.vue'
 
 import { ref, inject, computed } from 'vue'
 

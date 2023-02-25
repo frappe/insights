@@ -1,6 +1,6 @@
 <script setup>
 import { inject } from 'vue'
-import QueryMenu from '@/components/Query/QueryMenu.vue'
+import QueryMenu from '@/query/QueryMenu.vue'
 import EditablePageTitle from '@/components/EditablePageTitle.vue'
 
 const $notify = inject('$notify')

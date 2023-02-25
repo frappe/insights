@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { getSetupStatus } from '@/utils/setupWizard'
-import { getOnboardingStatus } from '@/utils/onboarding'
 import auth from '@/utils/auth'
+import { getOnboardingStatus } from '@/utils/onboarding'
+import { getSetupStatus } from '@/utils/setupWizard'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
 	{
@@ -61,13 +61,13 @@ const routes = [
 	{
 		path: '/query',
 		name: 'QueryList',
-		component: () => import('@/pages/QueryList.vue'),
+		component: () => import('@/query/QueryList.vue'),
 	},
 	{
 		props: true,
 		name: 'Query',
 		path: '/query/:name',
-		component: () => import('@/pages/Query.vue'),
+		component: () => import('@/query/Query.vue'),
 	},
 	{
 		path: '/users',

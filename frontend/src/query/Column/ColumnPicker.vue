@@ -24,8 +24,8 @@
 </template>
 
 <script setup>
-import SimpleColumnPicker from '@/components/Query/Column/SimpleColumnPicker.vue'
-import ColumnExpressionPicker from '@/components/Query/Column/ColumnExpressionPicker.vue'
+import SimpleColumnPicker from '@/query/Column/SimpleColumnPicker.vue'
+import ColumnExpressionPicker from '@/query/Column/ColumnExpressionPicker.vue'
 
 import { ref } from 'vue'
 defineEmits(['close'])

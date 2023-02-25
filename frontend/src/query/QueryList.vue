@@ -114,10 +114,10 @@
 
 <script setup>
 import BasePage from '@/components/BasePage.vue'
+import CreateQueryDialog from '@/query/CreateQueryDialog.vue'
 import { updateDocumentTitle } from '@/utils'
 import { createResource } from 'frappe-ui'
 import { computed, inject, reactive, ref, watch } from 'vue'
-import CreateQueryDialog from './CreateQueryDialog.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()

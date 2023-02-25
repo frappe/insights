@@ -1,6 +1,6 @@
 <script setup>
 import QueryBuilderDialog from '@/dashboard/DashboardQueryDialog.vue'
-import CreateQueryDialog from '@/pages/CreateQueryDialog.vue'
+import CreateQueryDialog from '@/query/CreateQueryDialog.vue'
 import useQueries from '@/query/useQueries'
 import { computed, ref } from 'vue'
 
