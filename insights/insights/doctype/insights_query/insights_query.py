@@ -87,7 +87,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.update_query()
 
     def on_update(self):
-        self.create_default_chart()
         self.sync_query_store()
         self.update_link_docs_title()
         # TODO: update result columns on update
@@ -168,17 +167,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if not results:
             return [self._result_columns]
         return frappe.parse_json(results)
-
-    def create_default_chart(self):
-        charts = self.get_charts()
-        if not charts:
-            frappe.get_doc(
-                {
-                    "doctype": "Insights Query Chart",
-                    "query": self.name,
-                    "title": self.title,
-                }
-            ).insert(ignore_permissions=True)
 
     def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
