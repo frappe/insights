@@ -12,7 +12,8 @@
 			<div
 				class="main flex flex-1 flex-col overflow-scroll rounded-md scrollbar-hide lg:overflow-hidden"
 			>
-				<QueryBuilder v-if="activeTab == 'Build'" />
+				<!-- <QueryBuilder v-if="activeTab == 'Build'" /> -->
+				<QueryBuilderNative v-if="activeTab == 'Build'" />
 				<QueryVisualizer v-if="activeTab == 'Visualize'" />
 			</div>
 		</template>
@@ -23,6 +24,8 @@
 import BasePage from '@/components/BasePage.vue'
 import Tabs from '@/components/Tabs.vue'
 import QueryBuilder from '@/query/QueryBuilder.vue'
+import QueryBuilderNative from '@/query/QueryBuilderNative.vue'
+
 import QueryHeader from '@/query/QueryHeader.vue'
 import QueryVisualizer from '@/query/QueryVisualizer.vue'
 import { updateDocumentTitle } from '@/utils'

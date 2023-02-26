@@ -2,13 +2,12 @@
 # For license information, please see license.txt
 
 import time
-from functools import cached_property
 from json import dumps
 
 import frappe
+import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
-from sqlparse import format as format_sql
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_query_client import InsightsQueryClient
@@ -80,11 +79,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if self.get("skip_before_save"):
             return
 
-        if not self.tables:
-            self.clear()
-            return
+        if not self.tables and not self.is_native_query:
+            return self.clear()
 
         self.update_query()
+
+        if self.is_native_query:
+            self.parse_tables_and_columns()
 
     def on_update(self):
         self.sync_query_store()
@@ -211,7 +212,92 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             sync_query_store(tables=[self.name], force=True)
 
     def get_columns(self):
-        return self.columns or self.fetch_columns()
+        return (
+            self.columns
+            or self.get("_parsed_columns")
+            or self.parse_tables_and_columns()[1]
+            or self.fetch_columns()
+        )
+
+    def get_tables(self):
+        return (
+            self.tables
+            or self.get("_parsed_tables")
+            or self.parse_tables_and_columns()[0]
+        )
+
+    def parse_tables_and_columns(self):
+        if not self.is_native_query:
+            return []
+
+        if self.get("_parsed_tables") and self.get("_parsed_columns"):
+            return [self._parsed_tables, self._parsed_columns]
+
+        tokens = get_identifier_tokens(self.sql)
+        tables = []
+        columns = []
+        for token in tokens:
+            if token.get("identifier") in ["from", "join"]:
+                insights_table = get_insights_table(token.get("name"))
+                tables.append(
+                    frappe._dict(
+                        {
+                            "table": insights_table.table,
+                            "label": insights_table.label,
+                        }
+                    )
+                )
+
+        for token in tokens:
+            if token.get("identifier") == "select":
+                if token.get("name") == "*":
+                    # in this case all columns are fetched by fetch_columns
+                    continue
+
+                if token.get("parent"):
+                    table = next(
+                        (
+                            t
+                            for t in tokens
+                            if t.get("name") == token.get("parent")
+                            or t.get("alias") == token.get("parent")
+                        ),
+                        None,
+                    )
+                else:
+                    table = tables[0]
+
+                if not table:
+                    continue
+                insights_table = get_insights_table(table.get("table"))
+                insights_column = next(
+                    (
+                        c
+                        for c in insights_table.columns
+                        if c.column == token.get("name")
+                    ),
+                    None,
+                )
+                if not insights_column:
+                    # frappe.throw("Column not found: {0}".format(token.get("name")))
+                    continue
+
+                columns.append(
+                    frappe._dict(
+                        {
+                            "table": insights_table.table,
+                            "table_label": insights_table.label,
+                            "column": insights_column.column,
+                            "label": token.get("alias") or insights_column.label,
+                            "type": insights_column.type,
+                        }
+                    )
+                )
+
+        self._parsed_tables = tables
+        self._parsed_columns = columns
+
+        return [tables, columns]
 
     def apply_transform(self, results):
         from pandas import DataFrame
@@ -296,8 +382,54 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
 
 def format_query(query):
-    return format_sql(
+    return sqlparse.format(
         query,
         keyword_case="upper",
         reindent_aligned=True,
     )
+
+
+def get_identifier_tokens(query):
+    formatted = sqlparse.format(query, reindent=True, keyword_case="upper")
+    parsed = sqlparse.parse(formatted)
+    tokens = []
+    identifier = None
+    for statement in parsed:
+        for token in statement.tokens:
+            if (
+                token.ttype is sqlparse.tokens.Keyword
+                and token.value.lower() in ["from", "join"]
+            ) or (
+                token.ttype is sqlparse.tokens.DML and token.value.lower() == "select"
+            ):
+                identifier = token.value.lower()
+
+            if identifier and isinstance(token, sqlparse.sql.Identifier):
+                tokens.append(
+                    {
+                        "name": token.get_real_name(),
+                        "alias": token.get_alias(),
+                        "parent": token.get_parent_name(),
+                        "identifier": identifier,
+                    }
+                )
+                identifier = None
+            if identifier and isinstance(token, sqlparse.sql.IdentifierList):
+                for item in token.get_identifiers():
+                    tokens.append(
+                        {
+                            "name": item.get_real_name(),
+                            "alias": item.get_alias(),
+                            "parent": token.get_parent_name(),
+                            "identifier": identifier,
+                        }
+                    )
+                identifier = None
+
+    return tokens
+
+
+def get_insights_table(table_name):
+    if not frappe.db.exists("Insights Table", {"table": table_name}):
+        frappe.throw(f"Table {table_name} does not exist")
+    return frappe.get_cached_doc("Insights Table", {"table": table_name})

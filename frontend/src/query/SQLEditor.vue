@@ -5,20 +5,19 @@
 		:autofocus="true"
 		:indent-with-tab="true"
 		:extensions="extensions"
-		placeholder="Enter an expression..."
+		placeholder="Write your custom SQL query here..."
 		@update="onUpdate"
 	/>
 </template>
 
 <script setup>
-import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
-import { javascript } from '@codemirror/lang-javascript'
-import { sql } from '@codemirror/lang-sql'
-import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
-import { EditorView } from '@codemirror/view'
-import { tags } from '@lezer/highlight'
 import { computed, watch } from 'vue'
+import { tags } from '@lezer/highlight'
 import { Codemirror } from 'vue-codemirror'
+import { EditorView } from '@codemirror/view'
+import { sql } from '@codemirror/lang-sql'
+import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
+import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
 
 const props = defineProps({
 	modelValue: {
@@ -27,10 +26,6 @@ const props = defineProps({
 	completions: {
 		type: Function,
 		default: null,
-	},
-	language: {
-		type: String,
-		default: 'javascript',
 	},
 })
 const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate'])
@@ -51,8 +46,7 @@ watch(code, (value, oldValue) => {
 	}
 })
 
-const language = props.language === 'javascript' ? javascript() : sql()
-const extensions = [language, closeBrackets(), EditorView.lineWrapping]
+const extensions = [sql(), closeBrackets(), EditorView.lineWrapping]
 const autocompletionOptions = {
 	activateOnTyping: true,
 	closeOnBlur: false,

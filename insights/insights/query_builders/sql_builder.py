@@ -449,6 +449,8 @@ class SQLQueryBuilder:
     def build(self, query, dialect: Dialect = None):
         self.query = query
         self.dialect = dialect
+        if query.is_native_query:
+            return self.compile(text(query.sql))
         self.process_tables_and_joins()
         self.process_columns()
         self.process_filters()

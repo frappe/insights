@@ -43,6 +43,13 @@
 					icon: 'help-circle',
 					handler: () => (show_sql_dialog = true),
 				},
+				!query.doc.is_native_query
+					? {
+							label: 'Write SQL',
+							icon: 'codesandbox',
+							handler: () => (show_convert_query_dialog = true),
+					  }
+					: null,
 				{
 					label: 'Duplicate',
 					icon: 'copy',
@@ -81,6 +88,37 @@
 							query.delete.submit().then(() => {
 								$router.push('/query')
 								show_delete_dialog = false
+							})
+						}
+					"
+				>
+					Yes
+				</Button>
+			</template>
+		</Dialog>
+
+		<Dialog
+			:options="{
+				title: 'Convert to Native Query',
+				icon: { name: 'info', appearance: 'warning' },
+			}"
+			v-model="show_convert_query_dialog"
+			:dismissable="true"
+		>
+			<template #body-content>
+				<p class="text-base text-gray-600">
+					Are you sure you want to convert this query to a native query? This will
+					overwrite the existing query.
+				</p>
+			</template>
+			<template #actions>
+				<Button
+					appearance="warning"
+					:loading="query.convert.loading"
+					@click="
+						() => {
+							query.convert.submit().then(() => {
+								show_convert_query_dialog = false
 							})
 						}
 					"
@@ -189,10 +227,10 @@
 
 <script setup>
 import ShareDialog from '@/components/ShareDialog.vue'
-import { ref, inject, computed, nextTick, reactive, watch } from 'vue'
-import { Dialog, Dropdown } from 'frappe-ui'
-import { useRouter } from 'vue-router'
 import { useMagicKeys } from '@vueuse/core'
+import { Dialog, Dropdown } from 'frappe-ui'
+import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 const query = inject('query')
 
@@ -201,6 +239,7 @@ const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_pivot_dialog = ref(false)
 const show_share_dialog = ref(false)
+const show_convert_query_dialog = ref(false)
 
 const keys = useMagicKeys()
 const cmdE = keys['Meta+E']
