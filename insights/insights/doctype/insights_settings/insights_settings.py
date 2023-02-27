@@ -36,7 +36,7 @@ class InsightsSettings(Document):
             )
             return
 
-        portal_url = "https://frappeinsights.com"
+        portal_url = "https://insightsbi.co"
         remote_method = "/api/method/send-remote-login-link"
         url = f"{portal_url}{remote_method}"
 
