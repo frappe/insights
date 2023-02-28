@@ -102,7 +102,7 @@ class SQLiteDB(BaseDatabase):
         if query is None:
             return []
         self.validate_query(query)
-        with self.engine.connect() as connection:
+        with self.connect() as connection:
             result = connection.execute(query).fetchall()
             return [r[0] for r in result] if pluck else [list(r) for r in result]
 
@@ -126,7 +126,7 @@ class SQLiteDB(BaseDatabase):
         }
 
     def get_table_columns(self, table):
-        with self.engine.connect() as connection:
+        with self.connect() as connection:
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 

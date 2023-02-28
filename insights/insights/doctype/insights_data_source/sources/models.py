@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import frappe
+
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
 )
@@ -16,6 +18,13 @@ class BaseDatabase:
     def test_connection(self):
         raise NotImplementedError
 
+    def connect(self):
+        try:
+            return self.engine.connect()
+        except Exception as e:
+            frappe.log_error(title="Error connecting to database", message=e)
+            frappe.throw("Error connecting to database")
+
     def build_query(self, query):
         raise NotImplementedError
 
@@ -25,6 +34,9 @@ class BaseDatabase:
     def execute_query(self, query: str):
         """
         Handles the execution of the query, while also handling closing the connection
+        eg:
+        with self.connect() as connection:
+            connection.execute(query)
         """
         raise NotImplementedError
 

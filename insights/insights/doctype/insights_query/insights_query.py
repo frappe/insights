@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import time
-from functools import cached_property
 from json import dumps
 
 import frappe
@@ -131,8 +130,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
 
     def fetch_results(self):
-        if self.data_source == "Query Store":
-            self.sync_child_stored_queries()
+        self.sync_child_stored_queries()
         results = list(self._data_source.run_query(query=self))
         results.insert(0, self._result_columns)
         if self.transforms:
@@ -143,9 +141,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return results
 
     def sync_child_stored_queries(self):
-        sync_query_store(
-            [row.table for row in self.tables if row.table != self.name], force=True
-        )
+        if self.data_source == "Query Store":
+            sync_query_store(
+                [row.table for row in self.tables if row.table != self.name], force=True
+            )
 
     def build_and_execute(self):
         start = time.time()

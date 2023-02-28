@@ -7,6 +7,7 @@ import frappe
 from frappe import task
 from frappe.model.document import Document
 
+from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
@@ -103,7 +104,12 @@ class InsightsDataSource(Document):
         return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        return self.db.run_query(query)
+        results = []
+        try:
+            results = self.db.run_query(query)
+        except Exception as e:
+            notify(type="Error", message=f"Error executing query {query.name}: {e}")
+        return results
 
     def execute_query(self, query: str, **kwargs):
         return self.db.execute_query(query, **kwargs)
