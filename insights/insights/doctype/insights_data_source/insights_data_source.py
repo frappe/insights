@@ -108,7 +108,13 @@ class InsightsDataSource(Document):
         try:
             results = self.db.run_query(query)
         except Exception as e:
-            notify(type="Error", message=f"Error executing query {query.name}: {e}")
+            notify(
+                **{
+                    "type": "error",
+                    "title": "Failed to run query",
+                    "message": str(e),
+                }
+            )
         return results
 
     def execute_query(self, query: str, **kwargs):
