@@ -1,7 +1,6 @@
 <script setup>
 import { ellipsis } from '@/utils'
-import { whenever } from '@vueuse/core'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },
@@ -45,7 +44,7 @@ function total(column) {
 <template>
 	<div
 		v-if="results"
-		class="flex w-full flex-1 flex-col space-y-2 overflow-hidden rounded-md border p-3"
+		class="flex w-full flex-1 flex-col space-y-2 overflow-hidden rounded-md p-3"
 	>
 		<div
 			v-if="props.options.title"

@@ -54,7 +54,8 @@ function downloadChart() {
 		<div
 			class="relative flex h-full rounded-md"
 			:class="{
-				'bg-white shadow-sm': item.item_type !== 'Filter' && item.item_type !== 'Text',
+				'border bg-white shadow-sm':
+					item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':
 					item.item_id === dashboard.currentItem?.item_id,
 				'cursor-grab': dashboard.editing,
@@ -62,7 +63,7 @@ function downloadChart() {
 			@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
 		>
 			<div
-				v-if="chartData?.loading"
+				v-if="chartData.loading"
 				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-md bg-white"
 			>
 				<LoadingIndicator class="w-6 text-gray-300" />

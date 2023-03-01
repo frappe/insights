@@ -11,7 +11,6 @@ const results = computed(() => {
 	return props.chartData.data
 })
 const formattedValue = computed(() => {
-	console.log('results.value', results.value)
 	if (!results.value?.length) return
 	if (!props.options.column) return
 	const columnIndex = results.value[0].findIndex((header) => {

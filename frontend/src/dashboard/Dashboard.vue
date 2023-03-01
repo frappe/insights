@@ -59,7 +59,7 @@ updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<div v-if="dashboard.doc.name" class="flex h-full w-full flex-col bg-gray-100">
+	<div v-if="dashboard.doc.name" class="flex h-full w-full flex-col bg-gray-50">
 		<!-- Dashboard Navbar -->
 		<div class="flex h-14 items-center justify-between border-b bg-white px-3 shadow-sm">
 			<div class="flex flex-shrink-0 items-center space-x-4">
