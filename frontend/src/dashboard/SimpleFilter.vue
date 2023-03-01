@@ -54,6 +54,7 @@ const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
 })
 function applyFilter() {
+	if (filter.value?.value == props.value?.value) return
 	if (applyDisabled.value) return
 	emit('apply', filter)
 }
