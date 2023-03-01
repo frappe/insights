@@ -239,6 +239,7 @@ export default function useDashboard(name) {
 	)
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
+	const isChart = (item) => !['Filter', 'Text'].includes(item.item_type)
 
 	return Object.assign(state, {
 		reload,
@@ -260,6 +261,7 @@ export default function useDashboard(name) {
 		deleteDashboard,
 		refresh,
 		onRefresh,
+		isChart,
 	})
 }
 

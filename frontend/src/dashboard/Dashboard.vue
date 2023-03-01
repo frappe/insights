@@ -136,7 +136,10 @@ updateDocumentTitle(pageMeta)
 						v-model="dashboard.currentItem.item_type"
 					/>
 
-					<DashboardQueryOption v-model="dashboard.currentItem.query" />
+					<DashboardQueryOption
+						v-if="dashboard.isChart(dashboard.currentItem)"
+						v-model="dashboard.currentItem.options.query"
+					/>
 
 					<component
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"

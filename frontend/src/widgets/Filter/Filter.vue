@@ -15,7 +15,7 @@ function saveFilterState(state) {
 </script>
 
 <template>
-	<div class="flex w-full items-center" :class="[!filterState?.operator ? '!text-gray-500' : '']">
+	<div class="flex w-full items-end" :class="[!filterState?.operator ? '!text-gray-500' : '']">
 		<SimpleFilter
 			:disable-columns="true"
 			:label="props.options.label"

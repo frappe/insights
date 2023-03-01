@@ -59,7 +59,8 @@ import widgets from '@/widgets/widgets'
 import { inject, reactive } from 'vue'
 
 const query = inject('query')
-const chartData = useChartData({ query: query.name })
+const chartData = useChartData()
+chartData.load(query.name)
 const chart = reactive({
 	chart_type: undefined,
 	options: {

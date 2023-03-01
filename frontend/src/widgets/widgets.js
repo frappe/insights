@@ -64,7 +64,7 @@ const WIDGETS = {
 		optionsComponent: defineAsyncComponent(() => import('./Filter/FilterOptions.vue')),
 		options: {},
 		defaultWidth: 5,
-		defaultHeight: 1,
+		defaultHeight: 2,
 	},
 	Text: {
 		type: 'Text',
@@ -73,7 +73,7 @@ const WIDGETS = {
 		optionsComponent: defineAsyncComponent(() => import('./Text/TextOptions.vue')),
 		options: {},
 		defaultWidth: 10,
-		defaultHeight: 1,
+		defaultHeight: 2,
 	},
 }
 
