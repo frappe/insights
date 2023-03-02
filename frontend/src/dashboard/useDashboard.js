@@ -91,9 +91,7 @@ export default function useDashboard(name) {
 
 	async function getFilterState(item_id) {
 		if (!state.filterStates[item_id]) {
-			getLocal(getFilterStateKey(item_id)).then((filterState) => {
-				state.filterStates[item_id] = filterState
-			})
+			state.filterStates[item_id] = await getLocal(getFilterStateKey(item_id))
 		}
 		return state.filterStates[item_id]
 	}
