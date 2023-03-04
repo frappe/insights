@@ -1,12 +1,5 @@
 <template>
 	<div class="flex flex-shrink-0 space-x-2">
-		<Button
-			v-if="query.isOwner"
-			icon="share-2"
-			appearance="minimal"
-			@click="() => (show_share_dialog = true)"
-		/>
-
 		<Dropdown
 			placement="left"
 			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
@@ -23,6 +16,13 @@
 					icon: 'play',
 					handler: query.execute,
 				},
+				query.isOwner
+					? {
+							label: 'Share',
+							icon: 'share-2',
+							handler: () => (show_share_dialog = true),
+					  }
+					: null,
 				{
 					label: 'Pivot',
 					icon: 'git-branch',
@@ -79,7 +79,7 @@
 					@click="
 						() => {
 							query.delete.submit().then(() => {
-								$router.push('/query')
+								builder?.closeQuery(query.name)
 								show_delete_dialog = false
 							})
 						}
@@ -189,12 +189,14 @@
 
 <script setup>
 import ShareDialog from '@/components/ShareDialog.vue'
-import { ref, inject, computed, nextTick, reactive, watch } from 'vue'
-import { Dialog, Dropdown } from 'frappe-ui'
-import { useRouter } from 'vue-router'
 import { useMagicKeys } from '@vueuse/core'
+import { Dialog, Dropdown } from 'frappe-ui'
+import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-const query = inject('query')
+const props = defineProps(['query'])
+const query = props.query || inject('query')
+const builder = inject('queryBuilder')
 
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
@@ -221,7 +223,7 @@ const $notify = inject('$notify')
 function duplicateQuery() {
 	query.duplicate.submit().then(async (res) => {
 		await nextTick()
-		$router.push('/query/' + res.message)
+		builder?.openQuery(res.message)
 		$notify({
 			appearance: 'success',
 			title: 'Query Duplicated',

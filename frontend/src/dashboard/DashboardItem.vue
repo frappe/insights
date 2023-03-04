@@ -3,7 +3,7 @@ import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { whenever } from '@vueuse/shared'
-import { computed, inject, ref, watch, reactive } from 'vue'
+import { computed, inject, reactive, ref, watch } from 'vue'
 
 const dashboard = inject('dashboard')
 const props = defineProps({

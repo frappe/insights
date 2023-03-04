@@ -9,7 +9,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Number/Number.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
 		options: {},
-		defaultWidth: 5,
+		defaultWidth: 4,
 		defaultHeight: 4,
 	},
 	Line: {

@@ -70,6 +70,12 @@ const routes = [
 		component: () => import('@/query/Query.vue'),
 	},
 	{
+		props: true,
+		name: 'QueryBuilder',
+		path: '/query-builder',
+		component: () => import('@/query/QueryBuilder.vue'),
+	},
+	{
 		path: '/users',
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),

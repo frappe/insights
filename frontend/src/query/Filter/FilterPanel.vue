@@ -1,8 +1,8 @@
 <template>
 	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide lg:w-1/3 lg:pb-2 lg:pl-4"
+		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll rounded-md bg-white p-2 scrollbar-hide lg:w-1/3 lg:pb-2"
 	>
-		<div v-if="!pickingFilter" class="flex items-center justify-between bg-white pb-3 pt-1">
+		<div v-if="!pickingFilter" class="flex items-center justify-between bg-white pb-3">
 			<div class="text-sm tracking-wide text-gray-600">FILTERS</div>
 			<Button icon="plus" @click="pickingFilter = true"></Button>
 		</div>

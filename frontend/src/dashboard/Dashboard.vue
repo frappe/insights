@@ -2,6 +2,7 @@
 import DashboardTitle from '@/dashboard/DashboardTitle.vue'
 import useDashboard from '@/dashboard/useDashboard'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
+import BaseLayout from '@/layouts/BaseLayout.vue'
 import { updateDocumentTitle } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { computed, provide, ref } from 'vue'
@@ -59,9 +60,8 @@ updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<div v-if="dashboard.doc.name" class="flex h-full w-full flex-col bg-gray-50">
-		<!-- Dashboard Navbar -->
-		<div class="flex h-14 items-center justify-between border-b bg-white px-3 shadow-sm">
+	<BaseLayout v-if="dashboard.doc.name">
+		<template #navbar>
 			<div class="flex flex-shrink-0 items-center space-x-4">
 				<DashboardTitle
 					:title="dashboard.doc.title"
@@ -70,10 +70,10 @@ updateDocumentTitle(pageMeta)
 				/>
 			</div>
 			<DashboardNavbarButtons />
-		</div>
+		</template>
 
-		<div class="flex flex-1 overflow-hidden">
-			<div class="h-full w-full overflow-y-scroll p-4">
+		<template #content>
+			<div class="h-full w-full overflow-y-scroll p-2">
 				<div
 					ref="gridLayout"
 					class="relative flex h-fit min-h-screen w-full flex-1 flex-col"
@@ -107,11 +107,10 @@ updateDocumentTitle(pageMeta)
 					/>
 				</div>
 			</div>
+		</template>
 
-			<div
-				v-if="dashboard.editing && dashboard.sidebar.open"
-				class="w-[21rem] flex-shrink-0 overflow-scroll border-l bg-white p-3 px-4 shadow-sm"
-			>
+		<template #sidebar v-if="dashboard.editing && dashboard.sidebar.open">
+			<div class="w-[21rem] overflow-scroll border-l bg-white p-3 px-4 shadow-sm">
 				<div v-if="!dashboard.currentItem">
 					<div class="mb-3 font-semibold text-gray-800">Charts</div>
 					<DashboardSidebarWidgets @dragChange="draggingWidget = $event" />
@@ -148,6 +147,6 @@ updateDocumentTitle(pageMeta)
 					/>
 				</div>
 			</div>
-		</div>
-	</div>
+		</template>
+	</BaseLayout>
 </template>

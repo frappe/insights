@@ -1,12 +1,12 @@
 <template>
 	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide lg:w-1/3 lg:pb-2 lg:pr-4"
+		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll rounded-md bg-white p-2 scrollbar-hide lg:w-1/3 lg:pb-2"
 	>
 		<!-- Picker -->
 		<div v-if="!selectedTable" class="flex flex-1 flex-col">
 			<div
 				v-if="!addingTable"
-				class="sticky top-0 flex items-center justify-between bg-white pb-3 pt-1"
+				class="sticky top-0 flex items-center justify-between bg-white pb-3"
 			>
 				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
 				<Button icon="plus" @click="addingTable = true"></Button>

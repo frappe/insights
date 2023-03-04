@@ -1,7 +1,7 @@
 <script setup>
 import { inject } from 'vue'
 import QueryMenu from '@/query/QueryMenu.vue'
-import EditablePageTitle from '@/components/EditablePageTitle.vue'
+import EditableTitle from '@/query/EditableTitle.vue'
 
 const $notify = inject('$notify')
 const query = inject('query')
@@ -20,7 +20,7 @@ const updateTitle = (title) => {
 
 <template>
 	<div class="mr-2 flex h-full items-center space-x-2">
-		<EditablePageTitle :title="query.doc.title" @update="updateTitle" />
+		<EditableTitle :title="query.doc.title" @update="updateTitle" />
 		<QueryMenu />
 	</div>
 </template>
