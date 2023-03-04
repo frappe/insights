@@ -11,9 +11,9 @@ from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
+from .sources.base_database import BaseDatabase
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
-from .sources.models import BaseDatabase
 from .sources.query_store import QueryStore
 from .sources.sqlite import SQLiteDB
 

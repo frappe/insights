@@ -14,7 +14,7 @@ from insights.insights.query_builders.sqlite.sqlite_query_builder import (
 )
 
 from ...insights_table_import.insights_table_import import InsightsTableImport
-from .models import BaseDatabase
+from .base_database import BaseDatabase
 from .utils import create_insights_table
 
 
@@ -91,27 +91,6 @@ class SQLiteDB(BaseDatabase):
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)
         self.query_builder = SQLiteQueryBuilder()
-
-    def test_connection(self):
-        return self.execute_query("SELECT 1")
-
-    def build_query(self, query):
-        return self.query_builder.build(query, dialect=self.engine.dialect)
-
-    def execute_query(self, query, pluck=False):
-        if query is None:
-            return []
-        self.validate_query(query)
-        with self.connect() as connection:
-            result = connection.execute(query).fetchall()
-            return [r[0] for r in result] if pluck else [list(r) for r in result]
-
-    def validate_query(self, query):
-        select_or_with = str(query).strip().lower().startswith(("select", "with"))
-        if not select_or_with:
-            raise frappe.ValidationError(
-                "Only SELECT and WITH queries are allowed in SQLite data sources."
-            )
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:

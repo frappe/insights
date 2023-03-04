@@ -7,16 +7,19 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
     InsightsTableImport,
 )
 
+from .utils import process_cte
+
 
 class BaseDatabase:
     def __init__(self):
+        self.engine = None
         self.data_source = None
         self.connection = None
         self.query_builder = None
         self.table_factory = None
 
     def test_connection(self):
-        raise NotImplementedError
+        return self.execute_query("SELECT 1")
 
     def connect(self):
         try:
@@ -26,19 +29,31 @@ class BaseDatabase:
             frappe.throw("Error connecting to database")
 
     def build_query(self, query):
-        raise NotImplementedError
+        query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
+            query_with_cte = None
+            try:
+                query_with_cte = process_cte(query_str)
+            except Exception:
+                frappe.log_error(title=f"Failed to process CTE: {query_str}")
+                frappe.throw("Failed to process stored query as CTE.")
+        return query_with_cte or query_str
 
     def run_query(self, query):
         return self.execute_query(self.build_query(query))
 
-    def execute_query(self, query: str):
-        """
-        Handles the execution of the query, while also handling closing the connection
-        eg:
+    def validate_query(self, query):
+        select_or_with = str(query).strip().lower().startswith(("select", "with"))
+        if not select_or_with:
+            frappe.throw("Only SELECT and WITH queries are allowed")
+
+    def execute_query(self, query, pluck=False):
+        if query is None:
+            return []
+        self.validate_query(query)
         with self.connect() as connection:
-            connection.execute(query)
-        """
-        raise NotImplementedError
+            result = connection.execute(query).fetchall()
+            return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def table_exists(self, table: str):
         """

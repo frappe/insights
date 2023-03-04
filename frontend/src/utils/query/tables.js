@@ -1,5 +1,9 @@
-import { computed } from 'vue'
+import useQueries from '@/query/useQueries'
 import { safeJSONParse } from '@/utils'
+import { computed } from 'vue'
+
+const queries = useQueries()
+queries.reload()
 
 export function useQueryTables(query) {
 	query.fetchTables.submit()
@@ -13,13 +17,26 @@ export function useQueryTables(query) {
 			}
 		})
 	)
-	const joinOptions = computed(() => {
-		// any two table can be joined from the same data source
-		// so, return all tables as join options
-		return query.fetchTables.data?.message.map((table) => ({
+	const sourceTables = computed(() =>
+		query.fetchTables.data?.message.map((table) => ({
 			...table,
 			value: table.table,
 		}))
+	)
+	const storedQueries = computed(() =>
+		queries.list
+			.filter((q) => q.is_stored)
+			.map((query) => ({
+				table: query.name,
+				value: query.name,
+				label: query.title,
+				description: 'Stored Query',
+			}))
+	)
+
+	const joinOptions = computed(() => {
+		// any two table/query can be joined from the same data source
+		return [...sourceTables.value, ...storedQueries.value]
 	})
 
 	const newTableOptions = computed(() => {
