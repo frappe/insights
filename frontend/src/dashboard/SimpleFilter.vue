@@ -54,6 +54,7 @@ const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
 })
 function applyFilter() {
+	if (filter.value?.value == props.value?.value) return
 	if (applyDisabled.value) return
 	emit('apply', filter)
 }
@@ -142,7 +143,7 @@ function resetFilter() {
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex">
 					<button
-						class="flex w-full items-center rounded-md border bg-white px-3 py-1 text-base leading-5 text-gray-900"
+						class="flex w-full items-center rounded-md border bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow-sm"
 						@click="togglePopover"
 					>
 						<span v-if="!filter.column" class="text-gray-500">Select a filter...</span>

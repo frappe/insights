@@ -1,10 +1,10 @@
 <template>
-	<div>
-		<div class="sticky top-0 flex items-center bg-white pb-3 pt-1">
+	<div class="flex w-full flex-col overflow-hidden">
+		<div class="flex flex-shrink-0 items-center bg-white pb-3 pt-1">
 			<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
 			<div class="text-sm tracking-wide text-gray-600">JOIN</div>
 		</div>
-		<div class="flex flex-col space-y-3">
+		<div class="flex flex-1 flex-col space-y-3 overflow-y-scroll">
 			<div class="flex flex-col space-y-3">
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Left Table</div>

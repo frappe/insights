@@ -1,17 +1,14 @@
 <template>
-	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide lg:w-1/3 lg:pb-2 lg:pr-4"
-	>
-		<!-- Picker -->
-		<div v-if="!selectedTable" class="flex flex-1 flex-col">
+	<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden">
+		<template v-if="!selectedTable">
 			<div
 				v-if="!addingTable"
-				class="sticky top-0 flex items-center justify-between bg-white pb-3 pt-1"
+				class="flex flex-shrink-0 items-center justify-between bg-white pb-2"
 			>
 				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
 				<Button icon="plus" @click="addingTable = true"></Button>
 			</div>
-			<div v-if="addingTable" class="flex w-full space-x-2 pt-1 pb-3">
+			<div v-if="addingTable" class="flex w-full flex-shrink-0 space-x-2 pt-1 pb-3">
 				<div class="flex-1">
 					<Autocomplete
 						ref="tableSearch"
@@ -30,7 +27,7 @@
 				<p>No tables selected</p>
 			</div>
 
-			<div v-else class="flex w-full flex-1 select-none flex-col divide-y">
+			<div v-else class="flex w-full flex-1 select-none flex-col divide-y overflow-y-scroll">
 				<div
 					v-for="(table, idx) in query.tables.data"
 					:key="idx"
@@ -68,7 +65,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
+		</template>
 		<!-- Editor -->
 		<TableJoiner v-else :table="selectedTable" @close="selectedTable = null"></TableJoiner>
 	</div>

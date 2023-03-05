@@ -1,6 +1,6 @@
 <script setup>
-import QueryBuilderDialog from '@/dashboard/DashboardQueryDialog.vue'
-import CreateQueryDialog from '@/query/CreateQueryDialog.vue'
+import DashboardQueryDialog from '@/dashboard/DashboardQueryDialog.vue'
+import CreateQueryDialog from '@/dashboard/CreateQueryDialog.vue'
 import useQueries from '@/query/useQueries'
 import { computed, ref } from 'vue'
 
@@ -54,7 +54,7 @@ function openQuery(name) {
 	</div>
 
 	<CreateQueryDialog v-model:show="showCreateQueryDialog" @create="openQuery" />
-	<QueryBuilderDialog
+	<DashboardQueryDialog
 		v-if="queryName"
 		v-model:show="showQueryBuilder"
 		:query="queryName"

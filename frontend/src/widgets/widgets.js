@@ -9,7 +9,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Number/Number.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
 		options: {},
-		defaultWidth: 5,
+		defaultWidth: 4,
 		defaultHeight: 4,
 	},
 	Line: {
@@ -64,7 +64,7 @@ const WIDGETS = {
 		optionsComponent: defineAsyncComponent(() => import('./Filter/FilterOptions.vue')),
 		options: {},
 		defaultWidth: 5,
-		defaultHeight: 1,
+		defaultHeight: 2,
 	},
 	Text: {
 		type: 'Text',
@@ -73,7 +73,7 @@ const WIDGETS = {
 		optionsComponent: defineAsyncComponent(() => import('./Text/TextOptions.vue')),
 		options: {},
 		defaultWidth: 10,
-		defaultHeight: 1,
+		defaultHeight: 2,
 	},
 }
 

@@ -7,7 +7,9 @@ const props = defineProps({
 	options: { type: Object, required: true },
 })
 
-const results = computed(() => props.chartData.data)
+const results = computed(() => {
+	return props.chartData.data
+})
 const formattedValue = computed(() => {
 	if (!results.value?.length) return
 	if (!props.options.column) return
@@ -22,7 +24,7 @@ const formattedValue = computed(() => {
 </script>
 
 <template>
-	<div v-if="props.options.title" class="h-full w-full overflow-hidden py-5 px-8">
+	<div v-if="formattedValue" class="h-full w-full overflow-hidden py-5 px-8">
 		<div class="mx-auto flex h-full w-full min-w-40 flex-col justify-center overflow-hidden">
 			<div
 				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-base text-gray-600"

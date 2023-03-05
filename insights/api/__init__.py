@@ -79,7 +79,7 @@ def get_table_columns(data_source, table):
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_tables(data_source=None):
+def get_tables(data_source=None, with_query_tables=False):
     if not data_source:
         return []
 
@@ -90,9 +90,10 @@ def get_tables(data_source=None):
         filters={
             "hidden": 0,
             "data_source": data_source,
+            "is_query_based": with_query_tables,
             **get_permission_filter("Insights Table"),
         },
-        fields=["name", "table", "label"],
+        fields=["name", "table", "label", "is_query_based"],
         order_by="label asc",
     )
 
@@ -140,22 +141,10 @@ def get_queries():
         return []
 
     Query = frappe.qb.DocType("Insights Query")
-    QueryTable = frappe.qb.DocType("Insights Query Table")
-    QueryChart = frappe.qb.DocType("Insights Query Chart")
-    GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
-        .left_join(QueryTable)
-        .on(Query.name == QueryTable.parent)
-        .left_join(QueryChart)
-        .on(QueryChart.query == Query.name)
         .select(
-            Query.name,
-            Query.title,
-            GroupConcat(QueryTable.label).as_("tables"),
-            Query.data_source,
-            Query.creation,
-            QueryChart.type.as_("chart_type"),
+            Query.name, Query.title, Query.data_source, Query.creation, Query.is_stored
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
@@ -165,19 +154,10 @@ def get_queries():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_query(title, data_source, table):
-    check_table_permission(data_source, table.get("value"))
-
+def create_query(data_source):
     query = frappe.new_doc("Insights Query")
-    query.title = title
+    query.title = "Untitled Query"
     query.data_source = data_source
-    query.append(
-        "tables",
-        {
-            "table": table.get("value"),
-            "label": table.get("label"),
-        },
-    )
     query.save()
     return query.name
 

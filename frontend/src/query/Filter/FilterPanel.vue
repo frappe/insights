@@ -1,33 +1,36 @@
 <template>
-	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll scrollbar-hide lg:w-1/3 lg:pb-2 lg:pl-4"
-	>
-		<div v-if="!pickingFilter" class="flex items-center justify-between bg-white pb-3 pt-1">
+	<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden">
+		<div
+			v-if="!pickingFilter"
+			class="flex w-full flex-shrink-0 items-center justify-between bg-white pb-2"
+		>
 			<div class="text-sm tracking-wide text-gray-600">FILTERS</div>
 			<Button icon="plus" @click="pickingFilter = true"></Button>
 		</div>
-		<div class="h-full">
-			<div
-				v-if="!pickingFilter && (!filters.conditions || filters.conditions.length == 0)"
-				class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
-			>
-				<p>No filters added</p>
-			</div>
+		<div
+			v-if="!pickingFilter && (!filters.conditions || filters.conditions.length == 0)"
+			class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+		>
+			<p>No filters added</p>
+		</div>
+		<div
+			v-else-if="!pickingFilter && filters.conditions?.length > 0"
+			class="h-full w-full overflow-scroll scrollbar-hide"
+		>
 			<LogicalExpression
-				v-if="!pickingFilter && filters.conditions?.length > 0"
 				:expression="filters"
 				@add-filter="showFilterPicker"
 				@edit-filter="showFilterPicker"
 				@remove-filter="removeFilter"
 				@toggle-operator="toggleOperator"
 			/>
-			<FilterPicker
-				v-if="pickingFilter"
-				@close="pickingFilter = false"
-				@filter-select="onFilterSelect"
-				:filter="editFilter"
-			/>
 		</div>
+		<FilterPicker
+			v-else-if="pickingFilter"
+			@close="pickingFilter = false"
+			@filter-select="onFilterSelect"
+			:filter="editFilter"
+		/>
 	</div>
 </template>
 

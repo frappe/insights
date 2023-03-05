@@ -36,8 +36,8 @@
 							]"
 							aria-current="page"
 						>
-							<FeatherIcon
-								:name="route.icon"
+							<component
+								:is="route.icon"
 								:class="[
 									route.current
 										? 'text-gray-600'
@@ -45,6 +45,7 @@
 									'rg:mr-3 rg:h-4 rg:w-4 mr-0 h-5 w-5 flex-shrink-0',
 								]"
 							/>
+
 							<span class="rg:inline-block hidden">{{ route.label }}</span>
 						</router-link>
 					</Tooltip>
@@ -106,32 +107,33 @@ import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
+import { Wrench, LayoutDashboard, Database, Settings, User, Users } from 'lucide-vue-next'
 
 const sidebarItems = ref([
 	{
 		path: '/dashboard',
 		label: 'Dashboards',
-		icon: 'bar-chart-2',
+		icon: LayoutDashboard,
 		name: 'Dashboard',
 		current: false,
 	},
 	{
 		path: '/data-source',
 		label: 'Data Sources',
-		icon: 'database',
+		icon: Database,
 		name: 'Data Source',
 	},
 	{
-		path: '/query',
-		label: 'Queries',
-		icon: 'columns',
+		path: '/query-builder',
+		label: 'Query Builder',
+		icon: Wrench,
 		name: 'QueryBuilder',
 		current: false,
 	},
 	{
 		path: '/settings',
 		label: 'Settings',
-		icon: 'settings',
+		icon: Settings,
 		name: 'Settings',
 		current: false,
 	},
@@ -161,14 +163,14 @@ watch(
 			sidebarItems.value.splice(settingsIndex, 0, {
 				path: '/users',
 				label: 'Users',
-				icon: 'user',
+				icon: User,
 				name: 'Users',
 				current: false,
 			})
 			sidebarItems.value.splice(settingsIndex + 1, 0, {
 				path: '/teams',
 				label: 'Teams',
-				icon: 'users',
+				icon: Users,
 				name: 'Teams',
 				current: false,
 			})

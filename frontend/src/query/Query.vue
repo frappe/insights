@@ -1,39 +1,38 @@
 <template>
-	<BasePage v-if="query.doc">
-		<template #header>
-			<!-- Height 2.5 rem -->
-			<div class="flex flex-1 items-center justify-between">
-				<QueryHeader />
-				<Tabs class="w-40" :tabs="tabs" @switch="switchTab" />
+	<div v-if="query.doc" class="flex w-full flex-col overflow-hidden">
+		<div class="flex flex-shrink-0 items-center justify-between py-1 px-2">
+			<QueryHeader />
+			<Tabs v-if="!hideTabs" class="w-40" :tabs="tabs" @switch="switchTab" />
+		</div>
+
+		<template v-if="activeTab == 'Build'">
+			<div class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1">
+				<TablePanel />
+				<ColumnPanel />
+				<FilterPanel />
 			</div>
+			<QueryResult />
 		</template>
 
-		<template #main>
-			<div
-				class="main flex flex-1 flex-col overflow-scroll rounded-md scrollbar-hide lg:overflow-hidden"
-			>
-				<!-- <QueryBuilder v-if="activeTab == 'Build'" /> -->
-				<QueryBuilderNative v-if="activeTab == 'Build'" />
-				<QueryVisualizer v-if="activeTab == 'Visualize'" />
-			</div>
+		<template v-if="activeTab == 'Visualize'">
+			<QueryVisualizer />
 		</template>
-	</BasePage>
+	</div>
 </template>
 
 <script setup>
-import BasePage from '@/components/BasePage.vue'
 import Tabs from '@/components/Tabs.vue'
-import QueryBuilder from '@/query/QueryBuilder.vue'
-import QueryBuilderNative from '@/query/QueryBuilderNative.vue'
-
+import ColumnPanel from '@/query/Column/ColumnPanel.vue'
+import FilterPanel from '@/query/Filter/FilterPanel.vue'
 import QueryHeader from '@/query/QueryHeader.vue'
 import QueryVisualizer from '@/query/QueryVisualizer.vue'
-import { updateDocumentTitle } from '@/utils'
+import QueryResult from '@/query/Result/QueryResult.vue'
+import TablePanel from '@/query/Table/TablePanel.vue'
 import { useQuery } from '@/utils/query'
-import { computed, provide, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 
-const props = defineProps(['name'])
-const query = useQuery(props.name)
+const props = defineProps(['name', 'hideTabs'])
+const query = props.name ? useQuery(props.name) : inject('queryBuilder').currentQuery
 provide('query', query)
 
 const tabs = ref([
@@ -46,12 +45,4 @@ const switchTab = (tab) => {
 		t.active = t.label === tab.label
 	})
 }
-
-const pageMeta = computed(() => {
-	return {
-		title: props.name,
-		subtitle: 'Query',
-	}
-})
-updateDocumentTitle(pageMeta)
 </script>

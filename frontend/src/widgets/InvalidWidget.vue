@@ -5,7 +5,6 @@ const props = defineProps({
 	title: { type: String, required: true, default: 'Invalid Widget' },
 	message: {
 		type: String,
-		required: true,
 		default: 'Remove this widget and try adding a new one.',
 	},
 })

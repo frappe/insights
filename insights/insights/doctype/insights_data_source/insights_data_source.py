@@ -7,12 +7,13 @@ import frappe
 from frappe import task
 from frappe.model.document import Document
 
+from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
+from .sources.base_database import BaseDatabase
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
-from .sources.models import BaseDatabase
 from .sources.query_store import QueryStore
 from .sources.sqlite import SQLiteDB
 
@@ -103,7 +104,18 @@ class InsightsDataSource(Document):
         return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        return self.db.run_query(query)
+        results = []
+        try:
+            results = self.db.run_query(query)
+        except Exception as e:
+            notify(
+                **{
+                    "type": "error",
+                    "title": "Failed to run query",
+                    "message": str(e),
+                }
+            )
+        return results
 
     def execute_query(self, query: str, **kwargs):
         return self.db.execute_query(query, **kwargs)

@@ -13,8 +13,8 @@ const editing = ref(false)
 </script>
 
 <template>
-	<div v-if="!editing" class="flex overflow-hidden">
-		<div class="mr-2 whitespace-nowrap py-1 px-1.5 text-2xl font-medium">
+	<div v-if="!editing" class="flex overflow-hidden py-1">
+		<div class="mr-2 whitespace-nowrap px-1.5 text-2xl font-medium">
 			{{ title }}
 		</div>
 		<Button

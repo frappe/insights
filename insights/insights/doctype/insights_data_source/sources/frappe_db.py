@@ -11,7 +11,7 @@ from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
-from .models import BaseDatabase
+from .base_database import BaseDatabase
 from .utils import (
     MARIADB_TO_GENERIC_TYPES,
     create_insights_table,
@@ -297,16 +297,6 @@ class FrappeDB(BaseDatabase):
     def test_connection(self):
         return self.execute_query("select name from `tabDocType` limit 1", pluck=True)
 
-    def build_query(self, query):
-        return self.query_builder.build(query, dialect=self.engine.dialect)
-
-    def execute_query(self, query, pluck=False):
-        if query is None:
-            return []
-        with self.engine.connect() as connection:
-            result = connection.execute(query).fetchall()
-            return [r[0] for r in result] if pluck else [list(r) for r in result]
-
     def sync_tables(self, tables=None, force=False):
         # "begin" ensures that the connection is committed and closed
         with self.engine.begin() as connection:
@@ -321,7 +311,7 @@ class FrappeDB(BaseDatabase):
         }
 
     def get_table_columns(self, table):
-        with self.engine.connect() as connection:
+        with self.connect() as connection:
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 

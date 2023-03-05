@@ -68,6 +68,24 @@
 							/>
 						</div>
 					</div>
+
+					<div class="flex">
+						<div class="flex-1">
+							<p class="font-medium leading-6 text-gray-900">Use Query as Tables</p>
+							<span class="text-gray-500">
+								Allow selecting query as a table in another query. Any query
+								selected as a table will be appended as a sub query using CTE
+								(Common Table Expression).
+							</span>
+						</div>
+						<div class="flex flex-1 items-center pl-20">
+							<Input
+								type="checkbox"
+								v-model="settingsDoc.allow_subquery"
+								:label="settingsDoc.allow_subquery ? 'Enabled' : 'Disabled'"
+							/>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -142,6 +160,7 @@ const updateDisabled = computed(() => {
 		local.query_result_limit === remote.query_result_limit &&
 		local.query_result_expiry === remote.query_result_expiry &&
 		local.auto_execute_query === remote.auto_execute_query &&
+		local.allow_subquery === remote.allow_subquery &&
 		local.subscription_id === remote.subscription_id
 	)
 })

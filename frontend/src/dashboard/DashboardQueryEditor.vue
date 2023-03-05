@@ -1,24 +1,11 @@
 <script setup>
-import QueryBuilder from '@/query/QueryBuilder.vue'
+import Query from '@/query/Query.vue'
 import QueryHeader from '@/query/QueryHeader.vue'
-import { useQuery } from '@/utils/query'
-import { provide } from 'vue'
 const props = defineProps(['name'])
-const query = useQuery(props.name)
-provide('query', query)
 </script>
 
 <template>
-	<div v-if="query.doc" class="flex w-full flex-col px-5 py-3">
-		<div class="h-fit flex-shrink-0">
-			<QueryHeader />
-		</div>
-		<div class="flex flex-1 overflow-hidden">
-			<div
-				class="flex flex-1 flex-col overflow-scroll rounded-md scrollbar-hide lg:overflow-hidden"
-			>
-				<QueryBuilder />
-			</div>
-		</div>
+	<div class="flex w-full flex-col p-2">
+		<Query :name="props.name" :hideTabs="true" />
 	</div>
 </template>

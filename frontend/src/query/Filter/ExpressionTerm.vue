@@ -3,9 +3,9 @@
 	<CallExpression v-else-if="type == 'CallExpression'" :expression="props.term" />
 	<!-- Column -->
 	<p class="w-fit" v-else-if="type == 'Column'">
-		{{ value.table }}
-		<span class="text-gray-500">&#8226;</span>
-		{{ value.column }}
+		<Tooltip :text="value.table">
+			<span>{{ value.column }}</span>
+		</Tooltip>
 	</p>
 	<!-- Number or String -->
 	<p class="w-fit" v-else-if="type == 'String'">{{ value }}</p>

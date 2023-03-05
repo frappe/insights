@@ -1,7 +1,7 @@
 <script setup>
 import { Dialog as HDialog, DialogOverlay, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { computed } from 'vue'
-import Query from './DashboardQueryEditor.vue'
+import DashboardQueryEditor from './DashboardQueryEditor.vue'
 
 const emit = defineEmits(['update:show', 'close'])
 const props = defineProps({
@@ -54,7 +54,7 @@ function openQueryInNewTab() {
 							v-if="show"
 							class="flex-1 overflow-hidden rounded-lg bg-white shadow-xl"
 						>
-							<Query :name="props.query" class="h-full" />
+							<DashboardQueryEditor :name="props.query" class="h-full" />
 						</div>
 						<div v-if="show" class="flex flex-shrink-0 flex-col space-y-2">
 							<Button

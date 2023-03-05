@@ -24,6 +24,7 @@
 		"frappe-charts": "^1.6.2",
 		"frappe-ui": "0.0.97",
 		"gridstack": "^6.0.1",
+		"lucide-vue-next": "^0.121.0",
 		"pinia": "^2.0.30",
 		"vue": "^3.2.25",
 		"vue-codemirror": "^6.0.1",

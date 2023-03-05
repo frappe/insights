@@ -91,9 +91,7 @@ export default function useDashboard(name) {
 
 	async function getFilterState(item_id) {
 		if (!state.filterStates[item_id]) {
-			getLocal(getFilterStateKey(item_id)).then((filterState) => {
-				state.filterStates[item_id] = filterState
-			})
+			state.filterStates[item_id] = await getLocal(getFilterStateKey(item_id))
 		}
 		return state.filterStates[item_id]
 	}
@@ -239,6 +237,7 @@ export default function useDashboard(name) {
 	)
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
+	const isChart = (item) => !['Filter', 'Text'].includes(item.item_type)
 
 	return Object.assign(state, {
 		reload,
@@ -260,6 +259,7 @@ export default function useDashboard(name) {
 		deleteDashboard,
 		refresh,
 		onRefresh,
+		isChart,
 	})
 }
 

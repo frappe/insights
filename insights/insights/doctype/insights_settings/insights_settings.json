@@ -9,7 +9,7 @@
   "onboarding_section",
   "setup_complete",
   "onboarding_complete",
-  "use_cte",
+  "allow_subquery",
   "auto_execute_query",
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
@@ -53,9 +53,9 @@
   },
   {
    "default": "0",
-   "fieldname": "use_cte",
+   "fieldname": "allow_subquery",
    "fieldtype": "Check",
-   "label": "Use CTE"
+   "label": "Allow Subquery"
   },
   {
    "fieldname": "query_result_limit",
@@ -71,7 +71,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-01-29 15:42:03.625860",
+ "modified": "2023-03-04 22:26:17.114627",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

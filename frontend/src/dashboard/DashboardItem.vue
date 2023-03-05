@@ -2,7 +2,8 @@
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { computed, inject, ref, watch } from 'vue'
+import { whenever } from '@vueuse/shared'
+import { computed, inject, reactive, ref, watch } from 'vue'
 
 const dashboard = inject('dashboard')
 const props = defineProps({
@@ -23,21 +24,22 @@ const actions = [
 	},
 ]
 
-let chartData = null
+let isChart = dashboard.isChart(props.item)
 let chartFilters = null
-if (props.item.options.query) {
+let chartData = reactive({})
+if (isChart) {
+	const query = computed(() => props.item.options.query)
 	chartData = useChartData({
-		query: props.item.options.query,
 		resultsFetcher() {
 			return dashboard.getChartResults(props.item.item_id)
 		},
 	})
-	dashboard.onRefresh(() => chartData.reload())
-
+	whenever(query, () => chartData.load(query.value), { immediate: true })
+	dashboard.onRefresh(() => chartData.load(query.value))
 	chartFilters = computed(() => dashboard.filtersByChart[props.item.item_id])
 	dashboard.updateChartFilters(props.item.item_id)
 	watch(chartFilters, () => {
-		chartData.reload()
+		chartData.load(props.item.options.query)
 	})
 }
 
@@ -48,11 +50,12 @@ function downloadChart() {
 </script>
 
 <template>
-	<div class="dashboard-item h-full min-h-[3rem] w-full min-w-[8rem] p-1.5">
+	<div class="dashboard-item h-full min-h-[60px] w-full p-1.5">
 		<div
 			class="relative flex h-full rounded-md"
 			:class="{
-				'bg-white shadow-sm': item.item_type !== 'Filter' && item.item_type !== 'Text',
+				'border bg-white shadow-sm':
+					item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':
 					item.item_id === dashboard.currentItem?.item_id,
 				'cursor-grab': dashboard.editing,
@@ -60,8 +63,8 @@ function downloadChart() {
 			@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
 		>
 			<div
-				v-if="chartData?.loading"
-				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center bg-white"
+				v-if="chartData.loading"
+				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-md bg-white"
 			>
 				<LoadingIndicator class="w-6 text-gray-300" />
 			</div>
@@ -79,8 +82,8 @@ function downloadChart() {
 					<InvalidWidget
 						class="absolute"
 						title="Insufficient options"
-						message="Please check the options for this widget"
 						icon="settings"
+						:message="null"
 						icon-class="text-gray-400"
 					/>
 				</template>

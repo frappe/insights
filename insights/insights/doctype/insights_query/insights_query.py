@@ -9,6 +9,10 @@ import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
 
+from insights.insights.doctype.insights_data_source.sources.utils import (
+    create_insights_table,
+)
+
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_query_client import InsightsQueryClient
 
@@ -33,10 +37,6 @@ class InsightsQueryValidation:
         self.validate_columns()
 
     def validate_tables(self):
-        for row in self.tables:
-            if not row.table:
-                frappe.throw(f"Row #{row.idx}: Table is required")
-
         tables = [row.table for row in self.tables]
         tables = frappe.get_all(
             "Insights Table",
@@ -76,11 +76,11 @@ class InsightsQueryValidation:
 
 class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def before_save(self):
-        if self.get("skip_before_save"):
-            return
-
         if not self.tables and not self.is_native_query:
             return self.clear()
+
+        if self.get("skip_before_save"):
+            return
 
         self.update_query()
 
@@ -88,12 +88,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             self.parse_tables_and_columns()
 
     def on_update(self):
+        self.update_insights_table()
         self.sync_query_store()
         self.update_link_docs_title()
         # TODO: update result columns on update
 
     def on_trash(self):
-        self.delete_linked_charts()
         self.delete_insights_table()
 
     @property
@@ -132,8 +132,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
 
     def fetch_results(self):
-        if self.data_source == "Query Store":
-            self.sync_child_stored_queries()
+        self.sync_child_stored_queries()
         results = list(self._data_source.run_query(query=self))
         results.insert(0, self._result_columns)
         if self.transforms:
@@ -144,9 +143,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return results
 
     def sync_child_stored_queries(self):
-        sync_query_store(
-            [row.table for row in self.tables if row.table != self.name], force=True
-        )
+        if self.data_source == "Query Store":
+            sync_query_store(
+                [row.table for row in self.tables if row.table != self.name], force=True
+            )
 
     def build_and_execute(self):
         start = time.time()
@@ -172,22 +172,11 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
         if old_title and old_title != self.title:
-            Chart = frappe.qb.DocType("Insights Query Chart")
-            frappe.qb.update(Chart).set(Chart.title, self.title).where(
-                Chart.query == self.name
-            ).run()
-
             # this still doesn't updates the old title stored the query column
             Table = frappe.qb.DocType("Insights Table")
             frappe.qb.update(Table).set(Table.label, self.title).where(
                 Table.table == self.name
             ).run()
-
-    def delete_linked_charts(self):
-        charts = self.get_charts()
-        for chart in charts:
-            frappe.delete_doc("Insights Query Chart", chart, ignore_permissions=True)
-            frappe.db.delete("Insights Dashboard Item", {"chart": chart})
 
     def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
@@ -201,15 +190,34 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.limit = 500
         self.execution_time = 0
         self.last_execution = None
-        self.transform_type = None
-        self.transform_data = None
-        self.transform_result = None
         frappe.cache().delete_value(f"insights_query|{self.name}")
         self.status = "Execution Successful"
 
     def sync_query_store(self):
         if self.is_stored:
             sync_query_store(tables=[self.name], force=True)
+
+    def update_insights_table(self):
+        create_insights_table(
+            frappe._dict(
+                {
+                    "table": self.name,
+                    "label": self.title,
+                    "data_source": self.data_source,
+                    "is_query_based": 1,
+                    "columns": [
+                        frappe._dict(
+                            {
+                                "column": column.label,  # use label as column name
+                                "label": column.label,
+                                "type": column.type,
+                            }
+                        )
+                        for column in self.get_columns()
+                    ],
+                }
+            )
+        )
 
     def get_columns(self):
         return (

@@ -1,6 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { API_METHODS } from '@/utils/query'
-import { createDocumentResource, createResource } from 'frappe-ui'
+import { call, createDocumentResource, createResource } from 'frappe-ui'
 import { defineStore } from 'pinia'
 
 const queries = createResource({
@@ -21,6 +21,22 @@ export default defineStore('queries', {
 			this.loading = true
 			this.list = await queries.fetch()
 			this.loading = false
+		},
+		async create(data_source) {
+			this.creating = true
+			const queryName = await call('insights.api.create_query', { data_source })
+			this.creating = false
+			return queryName
+		},
+		filterByText(text) {
+			if (!text) return this.list
+			return this.list.filter((q) => {
+				return (
+					q.title.toLowerCase().includes(text.toLowerCase()) ||
+					q.name.toLowerCase().includes(text.toLowerCase()) ||
+					q.data_source.toLowerCase().includes(text.toLowerCase())
+				)
+			})
 		},
 	},
 })
