@@ -1,9 +1,5 @@
-import useQueries from '@/query/useQueries'
 import { safeJSONParse } from '@/utils'
 import { computed } from 'vue'
-
-const queries = useQueries()
-queries.reload()
 
 export function useQueryTables(query) {
 	query.fetchTables.submit()
