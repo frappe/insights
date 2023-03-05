@@ -7,6 +7,7 @@
  "field_order": [
   "table",
   "label",
+  "is_query_based",
   "column_break_3",
   "data_source",
   "hidden",
@@ -69,11 +70,17 @@
   {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_query_based",
+   "fieldtype": "Check",
+   "label": "Is Query Based"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-25 18:19:46.657677",
+ "modified": "2023-03-05 14:33:25.604960",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table",

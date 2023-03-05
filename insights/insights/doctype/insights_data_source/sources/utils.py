@@ -43,6 +43,7 @@ def create_insights_table(table, force=False):
         {
             "data_source": table.data_source,
             "table": table.table,
+            "is_query_based": table.is_query_based,
         },
     )
 
@@ -55,6 +56,7 @@ def create_insights_table(table, force=False):
                 "data_source": table.data_source,
                 "table": table.table,
                 "label": table.label,
+                "is_query_based": table.is_query_based,
             }
         )
 
@@ -85,31 +87,35 @@ def create_insights_table(table, force=False):
     return doc.name
 
 
-def get_tables_from_sql(sql: str):
-    """
-    Takes a native sql query and returns a list of tables used in the query
+def parse_sql_tables(sql):
+    def strip_quotes(table):
+        if (
+            (table.startswith("`") and table.endswith("`"))
+            or (table.startswith('"') and table.endswith('"'))
+            or (table.startswith("'") and table.endswith("'"))
+        ):
+            return table[1:-1]
+        return table
 
-    For example, if the query is
-    SELECT * FROM `QRY-001`
-    LEFT JOIN `QRY-002` ON `QRY-001`.`name` = `QRY-002`.`name`
-    LEFT JOIN `QRY-003` ON `QRY-001`.`name` = `QRY-003`.`name`
-
-    returns ['QRY-001', 'QRY-002', 'QRY-003']
-
-    Also, if the query is
-    SELECT * FROM `QRY-001` as t0
-    LEFT JOIN `QRY-002` as t1 ON t0.`name` = t1.`name`
-    LEFT JOIN `QRY-003` as t2 ON t0.`name` = t2.`name`
-
-    returns ['QRY-001', 'QRY-002', 'QRY-003']
-    """
-
-    parsed = sqlparse.parse(sql)
+    parsed = sqlparse.parse(sqlparse.format(sql, reindent=True, keyword_case="upper"))
     tables = []
-    for token in parsed[0].tokens:
-        if isinstance(token, sqlparse.sql.Identifier):
-            tables.append(token.get_real_name())
-    return tables
+    identifier = None
+    for statement in parsed:
+        for token in statement.tokens:
+            if token.ttype is sqlparse.tokens.Keyword and token.value.lower() in [
+                "from",
+                "join",
+            ]:
+                identifier = token.value.lower()
+            if identifier and isinstance(token, sqlparse.sql.Identifier):
+                tables.append(token.get_real_name())
+                identifier = None
+            if identifier and isinstance(token, sqlparse.sql.IdentifierList):
+                for item in token.get_identifiers():
+                    tables.append(item.get_real_name())
+                identifier = None
+
+    return [strip_quotes(table) for table in tables]
 
 
 def get_stored_query_sql(query, data_source=None, verbose=False):
@@ -137,10 +143,10 @@ def get_stored_query_sql(query, data_source=None, verbose=False):
     then stop and return None
     """
 
-    tables = get_tables_from_sql(query)
+    tables = parse_sql_tables(query)
     queries = frappe.get_all(
         "Insights Query",
-        filters={"name": ("in", tables), "is_stored": 1},
+        filters={"name": ("in", tables)},
         fields=["name", "sql", "data_source"],
     )
     if not queries:

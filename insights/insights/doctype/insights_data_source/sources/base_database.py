@@ -30,8 +30,11 @@ class BaseDatabase:
 
     def build_query(self, query):
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        if not query_str:
+            return None
+
+        query_with_cte = None
         if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
-            query_with_cte = None
             try:
                 query_with_cte = process_cte(query_str)
             except Exception:

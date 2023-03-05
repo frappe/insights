@@ -79,7 +79,7 @@ def get_table_columns(data_source, table):
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_tables(data_source=None):
+def get_tables(data_source=None, with_query_tables=False):
     if not data_source:
         return []
 
@@ -90,9 +90,10 @@ def get_tables(data_source=None):
         filters={
             "hidden": 0,
             "data_source": data_source,
+            "is_query_based": with_query_tables,
             **get_permission_filter("Insights Table"),
         },
-        fields=["name", "table", "label"],
+        fields=["name", "table", "label", "is_query_based"],
         order_by="label asc",
     )
 

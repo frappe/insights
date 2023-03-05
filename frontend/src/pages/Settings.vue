@@ -71,10 +71,10 @@
 
 					<div class="flex">
 						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">Enable Sub Query</p>
+							<p class="font-medium leading-6 text-gray-900">Use Query as Tables</p>
 							<span class="text-gray-500">
-								Allow selecting stored query as a table in another query. Any stored
-								query selected as a table will be appended as a sub query using CTE
+								Allow selecting query as a table in another query. Any query
+								selected as a table will be appended as a sub query using CTE
 								(Common Table Expression).
 							</span>
 						</div>

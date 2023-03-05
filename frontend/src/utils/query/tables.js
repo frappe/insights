@@ -21,22 +21,13 @@ export function useQueryTables(query) {
 		query.fetchTables.data?.message.map((table) => ({
 			...table,
 			value: table.table,
+			description: table.is_query_based ? 'Query' : '',
 		}))
-	)
-	const storedQueries = computed(() =>
-		queries.list
-			.filter((q) => q.is_stored)
-			.map((query) => ({
-				table: query.name,
-				value: query.name,
-				label: query.title,
-				description: 'Stored Query',
-			}))
 	)
 
 	const joinOptions = computed(() => {
 		// any two table/query can be joined from the same data source
-		return [...sourceTables.value, ...storedQueries.value]
+		return sourceTables
 	})
 
 	const newTableOptions = computed(() => {

@@ -183,7 +183,10 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
-        return get_tables(self.data_source)
+        with_query_tables = frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        )
+        return get_tables(self.data_source, with_query_tables)
 
     @frappe.whitelist()
     def fetch_columns(self):
