@@ -4,9 +4,7 @@
 			<slot name="navbar"></slot>
 		</div>
 		<div class="flex flex-1 overflow-hidden">
-			<div class="flex flex-1">
-				<slot name="content"></slot>
-			</div>
+			<slot name="content"></slot>
 			<div v-if="$slots.sidebar" class="flex flex-shrink-0 overflow-hidden">
 				<slot name="sidebar"></slot>
 			</div>

@@ -15,10 +15,12 @@ const openQuery = (name) => {
 const sources = useSources()
 sources.reload()
 
-const creatingNew = ref(false)
+const createStep = ref(false)
+const newSource = ref('')
 const createNewQuery = async (source) => {
+	newSource.value = source
 	const name = await queries.create(source)
-	creatingNew.value = false
+	newSource.value = ''
 	emit('select', name)
 }
 
@@ -27,8 +29,8 @@ onMounted(() => searchInput.value.focus())
 </script>
 
 <template>
-	<div class="min-w-[26rem] overflow-hidden rounded-md border bg-white text-base">
-		<template v-if="!creatingNew">
+	<div class="min-w-[29rem] overflow-hidden rounded-md border bg-white text-base">
+		<template v-if="!createStep">
 			<div class="flex items-center border-b px-4">
 				<FeatherIcon name="search" class="absolute h-4 w-4 text-gray-500" />
 				<input
@@ -38,16 +40,15 @@ onMounted(() => searchInput.value.focus())
 					placeholder="Search by query title, source, name..."
 				/>
 			</div>
-			<div class="flex w-full flex-col py-2">
+			<div class="flex h-[15rem] w-full flex-col overflow-y-scroll">
 				<div
-					v-if="queries.filterByText(searchText).length"
-					class="px-3 pb-1 text-sm text-gray-500"
+					class="sticky top-0 flex-shrink-0 bg-white px-3 pt-2 pb-1 text-sm text-gray-500"
 				>
 					{{ searchText ? 'Search Results' : 'Recent Queries' }}
 				</div>
 				<div
-					v-for="query in queries.filterByText(searchText).slice(0, 5)"
-					class="flex h-10 cursor-pointer items-center space-x-2 px-3 hover:bg-gray-100"
+					v-for="query in queries.filterByText(searchText).slice(0, 50)"
+					class="flex h-10 flex-shrink-0 cursor-pointer items-center space-x-2 px-3 hover:bg-gray-100"
 					@click="openQuery(query.name)"
 				>
 					<FeatherIcon name="file" class="h-4 w-4 text-gray-500" />
@@ -74,7 +75,7 @@ onMounted(() => searchInput.value.focus())
 			<div class="border-t">
 				<div
 					class="flex h-10 cursor-pointer items-center space-x-2 px-3 text-blue-600 hover:bg-gray-100"
-					@click="creatingNew = true"
+					@click="createStep = true"
 				>
 					<FeatherIcon name="plus" class="h-4 w-4" />
 					<div class="flex w-full items-baseline justify-between">
@@ -100,6 +101,10 @@ onMounted(() => searchInput.value.focus())
 				<div class="flex w-full items-baseline justify-between">
 					<span>{{ source.name }}</span>
 				</div>
+				<LoadingIndicator
+					v-if="newSource == source.name && queries.creating"
+					class="mr-2 -ml-1 h-3 w-3"
+				/>
 			</div>
 		</div>
 	</div>

@@ -1,7 +1,7 @@
 <template>
 	<div
 		ref="resultContainer"
-		class="flex flex-1 flex-shrink-0 flex-col overflow-hidden bg-white p-2"
+		class="flex w-full flex-1 flex-shrink-0 flex-col overflow-hidden bg-white p-2"
 	>
 		<!-- Result Header -->
 		<div class="relative flex h-8 flex-shrink-0 items-center justify-between">

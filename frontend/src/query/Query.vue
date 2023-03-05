@@ -1,5 +1,5 @@
 <template>
-	<div v-if="query.doc" class="flex h-full w-full flex-col overflow-scroll scrollbar-hide">
+	<div v-if="query.doc" class="flex w-full flex-col overflow-hidden">
 		<div class="flex flex-shrink-0 items-center justify-between py-1 px-2">
 			<QueryHeader />
 			<Tabs v-if="!hideTabs" class="w-40" :tabs="tabs" @switch="switchTab" />
