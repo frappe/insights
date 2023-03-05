@@ -7,7 +7,7 @@
 	</div>
 	<div
 		v-else-if="columns.length > 0"
-		class="flex h-full w-full flex-col overflow-x-scroll overflow-y-scroll scrollbar-hide"
+		class="flex h-full w-full flex-col overflow-y-scroll scrollbar-hide"
 	>
 		<Draggable
 			class="w-full"

@@ -6,7 +6,7 @@
 		</div>
 
 		<template v-if="activeTab == 'Build'">
-			<div class="flex flex-1 flex-shrink-0 gap-2 overflow-hidden">
+			<div class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1">
 				<TablePanel />
 				<ColumnPanel />
 				<FilterPanel />

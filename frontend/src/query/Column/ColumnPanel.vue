@@ -1,20 +1,16 @@
 <template>
-	<div
-		class="flex min-h-[20rem] flex-1 flex-col overflow-scroll rounded-md bg-white p-2 scrollbar-hide lg:w-1/3 lg:pb-2"
-	>
-		<div v-if="!addingColumn && !editingColumn" class="flex h-full w-full flex-col">
-			<div class="pb-3">
-				<div class="flex items-center justify-between bg-white">
-					<div class="text-sm tracking-wide text-gray-600">COLUMNS</div>
-					<Button icon="plus" @click="addingColumn = true"></Button>
-				</div>
+	<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden">
+		<template v-if="!addingColumn && !editingColumn">
+			<div class="flex w-full flex-shrink-0 items-center justify-between bg-white pb-2">
+				<div class="text-sm tracking-wide text-gray-600">COLUMNS</div>
+				<Button icon="plus" @click="addingColumn = true"></Button>
 			</div>
-			<div class="h-[calc(100%-3rem)] w-full">
+			<div class="w-full flex-1 overflow-hidden">
 				<ColumnList
 					@edit-column="(column) => ([editColumn, editingColumn] = [column, true])"
 				></ColumnList>
 			</div>
-		</div>
+		</template>
 		<ColumnPicker v-if="addingColumn" @close="addingColumn = false" />
 		<ColumnEditor v-if="editingColumn" @close="editingColumn = false" :column="editColumn" />
 	</div>
