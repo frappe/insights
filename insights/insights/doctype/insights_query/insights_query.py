@@ -192,9 +192,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if not results:
             return results
 
+        columns = results[0]
+        if not any(c.split("::")[1] == "None" for c in columns):
+            return results
+
         from pandas import DataFrame
 
-        columns = results[0]
         rows_df = DataFrame(results[1:], columns=[c.split("::")[0] for c in columns])
 
         # create a row that contains values in each column

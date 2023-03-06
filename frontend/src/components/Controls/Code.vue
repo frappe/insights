@@ -59,7 +59,6 @@ watch(code, (value, oldValue) => {
 	}
 })
 
-console.log(props)
 const language =
 	props.language === 'javascript'
 		? javascript()
