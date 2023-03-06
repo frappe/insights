@@ -14,6 +14,7 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.0.2",
+		"@codemirror/lang-sql": "^6.4.0",
 		"@vueuse/core": "^9.1.0",
 		"chart.js": "^3.8.0",
 		"codemirror": "^6.0.1",

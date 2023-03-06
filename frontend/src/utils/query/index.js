@@ -12,6 +12,7 @@ export const API_METHODS = {
 	run: 'run',
 	reset: 'reset',
 	store: 'store',
+	convert: 'convert',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
 	fetchTables: 'fetch_tables',
@@ -35,6 +36,7 @@ export const API_METHODS = {
 
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
+	getSourceSchema: 'get_source_schema',
 }
 
 export function useQuery(name) {
@@ -46,6 +48,7 @@ export function useQuery(name) {
 	query.filters = useQueryFilters(query)
 	query.results = useQueryResults(query)
 
+	query.sourceSchema = computed(() => query.getSourceSchema.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
 	query.execute = () => {
 		return query.debouncedRun(null, {
@@ -80,7 +83,7 @@ function getQueryResource(name) {
 				return c
 			})
 			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0].map((c) => {
+			resource.resultColumns = doc.results[0]?.map((c) => {
 				return {
 					column: c.split('::')[0],
 					type: c.split('::')[1],

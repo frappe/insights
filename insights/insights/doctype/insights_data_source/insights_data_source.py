@@ -1,7 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
+from functools import cached_property, lru_cache
 
 import frappe
 from frappe import task
@@ -132,3 +132,45 @@ class InsightsDataSource(Document):
 
     def get_table_preview(self, table, limit=100):
         return self.db.get_table_preview(table, limit)
+
+    def get_schema(self):
+        return get_data_source_schema(self.name)
+
+
+@lru_cache(maxsize=32)
+def get_data_source_schema(data_source):
+    Table = frappe.qb.DocType("Insights Table")
+    TableColumn = frappe.qb.DocType("Insights Table Column")
+    schema_list = (
+        frappe.qb.from_(Table)
+        .select(
+            Table.table,
+            Table.label,
+            Table.is_query_based,
+            TableColumn.column,
+            TableColumn.label,
+            TableColumn.type,
+        )
+        .left_join(TableColumn)
+        .on(Table.name == TableColumn.parent)
+        .where((Table.data_source == data_source) & (Table.hidden == 0))
+        .run(as_dict=True)
+    )
+    schema = {}
+    for table in schema_list:
+        schema.setdefault(
+            table.table,
+            {
+                "label": table.label,
+                "is_query_based": table.is_query_based,
+                "columns": [],
+            },
+        )
+        schema[table.table]["columns"].append(
+            {
+                "column": table.column,
+                "label": table.label,
+                "type": table.type,
+            }
+        )
+    return schema

@@ -7,7 +7,7 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
     InsightsTableImport,
 )
 
-from .utils import process_cte
+from .utils import add_limit_to_sql, process_cte
 
 
 class BaseDatabase:
@@ -28,35 +28,43 @@ class BaseDatabase:
             frappe.log_error(title="Error connecting to database", message=e)
             frappe.throw("Error connecting to database")
 
-    def build_query(self, query):
+    def build_query(self, query) -> str:
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
-        if not query_str:
-            return None
-
-        query_with_cte = None
-        if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
-            try:
-                query_with_cte = process_cte(query_str)
-            except Exception:
-                frappe.log_error(title=f"Failed to process CTE: {query_str}")
-                frappe.throw("Failed to process stored query as CTE.")
-        return query_with_cte or query_str
+        return query_str or ""
 
     def run_query(self, query):
-        return self.execute_query(self.build_query(query))
+        sql = self.build_query(query)
+        if not sql:
+            return []
+
+        sql_with_cte = ""
+        if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
+            try:
+                sql_with_cte = process_cte(sql)
+            except Exception:
+                frappe.log_error(title=f"Failed to process CTE: {sql}")
+                frappe.throw("Failed to process stored query as CTE.")
+
+        if query.is_native_query:
+            sql = add_limit_to_sql(sql, query.limit)
+
+        return self.execute_query(sql_with_cte or sql, with_columns=True)
 
     def validate_query(self, query):
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
         if not select_or_with:
             frappe.throw("Only SELECT and WITH queries are allowed")
 
-    def execute_query(self, query, pluck=False):
+    def execute_query(self, query, pluck=False, with_columns=False):
         if query is None:
             return []
         self.validate_query(query)
         with self.connect() as connection:
-            result = connection.execute(query).fetchall()
-            return [r[0] for r in result] if pluck else [list(r) for r in result]
+            res = connection.execute(query)
+            columns = [f"{d[0]}::{d[1]}" for d in res.cursor.description]
+            rows = [list(r) for r in res.fetchall()]
+            rows = [r[0] for r in rows] if pluck else rows
+            return [columns] + rows if with_columns else rows
 
     def table_exists(self, table: str):
         """

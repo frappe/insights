@@ -4,7 +4,7 @@
 			placement="left"
 			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 			:options="[
-				!query.doc.is_stored
+				!query.doc.is_stored && !query.doc.is_native_query
 					? {
 							label: 'Store Query',
 							icon: 'bookmark',
@@ -38,10 +38,17 @@
 					icon: 'refresh-ccw',
 					handler: () => (show_reset_dialog = true),
 				},
+				!query.doc.is_native_query
+					? {
+							label: 'View SQL',
+							icon: 'help-circle',
+							handler: () => (show_sql_dialog = true),
+					  }
+					: null,
 				{
-					label: 'View SQL',
-					icon: 'help-circle',
-					handler: () => (show_sql_dialog = true),
+					label: !query.doc.is_native_query ? 'Write SQL' : 'Build SQL',
+					icon: 'codesandbox',
+					handler: () => (show_convert_query_dialog = true),
 				},
 				{
 					label: 'Duplicate',
@@ -81,6 +88,38 @@
 							query.delete.submit().then(() => {
 								builder?.closeQuery(query.name)
 								show_delete_dialog = false
+							})
+						}
+					"
+				>
+					Yes
+				</Button>
+			</template>
+		</Dialog>
+
+		<Dialog
+			:options="{
+				title: `Convert to ${!query.doc.is_native_query ? 'Native' : 'Builder'} Query`,
+				icon: { name: 'info', appearance: 'warning' },
+			}"
+			v-model="show_convert_query_dialog"
+			:dismissable="true"
+		>
+			<template #body-content>
+				<p class="text-base text-gray-600">
+					Are you sure you want to convert this query to a
+					{{ !query.doc.is_native_query ? 'native' : 'builder' }}
+					query? This will overwrite the existing query.
+				</p>
+			</template>
+			<template #actions>
+				<Button
+					appearance="warning"
+					:loading="query.convert.loading"
+					@click="
+						() => {
+							query.convert.submit().then(() => {
+								show_convert_query_dialog = false
 							})
 						}
 					"
@@ -203,6 +242,7 @@ const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_pivot_dialog = ref(false)
 const show_share_dialog = ref(false)
+const show_convert_query_dialog = ref(false)
 
 const keys = useMagicKeys()
 const cmdE = keys['Meta+E']
@@ -297,6 +337,7 @@ function resetPivot() {
 
 function downloadCSV() {
 	let data = query.results.data
+	if (data.length === 0) return
 	data[0] = data[0].map((d) => d.split('::')[0])
 	const csvString = data.map((row) => row.join(',')).join('\n')
 	const blob = new Blob([csvString], { type: 'text/csv' })

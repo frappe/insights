@@ -40,3 +40,17 @@ def check_permission(doctype, permission_type="read"):
         return wrapper
 
     return decorator
+
+
+def log_error():
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            try:
+                return function(*args, **kwargs)
+            except BaseException:
+                frappe.log_error("Insights Error")
+
+        return wrapper
+
+    return decorator

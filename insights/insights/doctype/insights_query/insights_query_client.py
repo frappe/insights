@@ -182,7 +182,7 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def fetch_columns(self):
-        if not self.tables:
+        if self.is_native_query:
             return []
 
         columns = []
@@ -294,3 +294,13 @@ class InsightsQueryClient:
     def store(self):
         self.is_stored = 1
         self.save()
+
+    @frappe.whitelist()
+    def convert(self):
+        if not self.is_native_query:
+            self.is_native_query = 1
+            self.save()
+
+    @frappe.whitelist()
+    def get_source_schema(self):
+        return self._data_source.get_schema()

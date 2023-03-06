@@ -14,7 +14,7 @@ export function useQueryResults(query) {
 	)
 
 	const resultColumns = computed(() =>
-		data.value?.[0].map((c) => {
+		data.value[0]?.map((c) => {
 			return {
 				column: c.split('::')[0],
 				type: c.split('::')[1],

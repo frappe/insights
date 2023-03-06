@@ -5,10 +5,13 @@ import time
 from json import dumps
 
 import frappe
+import pandas as pd
+import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
-from sqlparse import format as format_sql
 
+from insights.constants import COLUMN_TYPES
+from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
@@ -76,9 +79,8 @@ class InsightsQueryValidation:
 
 class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def before_save(self):
-        if not self.tables:
-            self.clear()
-            return
+        if not self.tables and not self.is_native_query:
+            return self.clear()
 
         if self.get("skip_before_save"):
             return
@@ -103,7 +105,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         """Returns the 1000 rows of the query results"""
         try:
             if self.status != "Execution Successful":
-                return frappe.as_json([self._result_columns])
+                return frappe.as_json([])
 
             cached_results = self.load_results()
             if not cached_results or len(cached_results) == 1:  # only columns
@@ -121,22 +123,15 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def update_query(self):
         query = self._data_source.build_query(query=self)
         query = format_query(query)
-        if self.sql != query:
+        if self.sql != query or self.limit != self.get_doc_before_save().limit:
             self.sql = query
             self.status = "Pending Execution"
 
-    @property
-    def _result_columns(self):
-        return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
-
     def fetch_results(self):
         self.sync_child_stored_queries()
-        results = list(self._data_source.run_query(query=self))
-        results.insert(0, self._result_columns)
-        if self.transforms:
-            results = self.apply_transform(results)
-        if self.has_cumulative_columns():
-            results = self.apply_cumulative_sum(results)
+        results = self._data_source.run_query(query=self)
+        results = self.process_column_types(results)
+        results = self.apply_transformations(results)
         self.store_results(results)
         return results
 
@@ -164,7 +159,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if not results and fetch_if_not_exists:
             results = self.fetch_results()
         if not results:
-            return [self._result_columns]
+            return []
         return frappe.parse_json(results)
 
     def update_link_docs_title(self):
@@ -195,7 +190,58 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if self.is_stored:
             sync_query_store(tables=[self.name], force=True)
 
+    @log_error()
+    def process_column_types(self, results):
+        if not results:
+            return results
+
+        columns = results[0]
+        if not self.is_native_query:
+            results[0] = [f"{c.label}::{c.type}" for c in self.get_columns()]
+            return results
+
+        rows_df = pd.DataFrame(results[1:], columns=[c.split("::")[0] for c in columns])
+        # create a row that contains values in each column
+        values_row = []
+        for column in rows_df.columns:
+            # find the first non-null value in the column
+            value = rows_df[column].dropna().iloc[0]
+            values_row.append(value)
+
+        # infer the type of each column
+        inferred_types = self.guess_types(values_row)
+        # update the column types
+        for i, column in enumerate(columns):
+            column_name = column.split("::")[0]
+            columns[i] = f"{column_name}::{inferred_types[i]}"
+        results[0] = columns
+        return results
+
+    def guess_types(self, values):
+
+        # try converting each value to a number, float, date, datetime
+        # if it fails, it's a string
+        types = []
+        for value in values:
+            try:
+                pd.to_numeric(value)
+                types.append("Integer")
+            except ValueError:
+                try:
+                    pd.to_numeric(value, downcast="float")
+                    types.append("Decimal")
+                except ValueError:
+                    try:
+                        pd.to_datetime(value)
+                        types.append("Datetime")
+                    except ValueError:
+                        types.append("String")
+
+        return types
+
     def update_insights_table(self):
+        if self.is_native_query:
+            return
         create_insights_table(
             frappe._dict(
                 {
@@ -220,8 +266,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def get_columns(self):
         return self.columns or self.fetch_columns()
 
+    def apply_transformations(self, results):
+        if self.is_native_query:
+            return results
+        if self.transforms:
+            results = self.apply_transform(results)
+        if self.has_cumulative_columns():
+            results = self.apply_cumulative_sum(results)
+        return results
+
     def apply_transform(self, results):
-        from pandas import DataFrame
 
         for row in self.transforms:
             if row.type == "Pivot":
@@ -244,7 +298,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 if pivot_column == index_column:
                     frappe.throw("Pivot Column and Index Column cannot be same")
 
-                results_df = DataFrame(
+                results_df = pd.DataFrame(
                     result[1:], columns=[d.split("::")[0] for d in result[0]]
                 )
 
@@ -253,7 +307,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 value_column_values = results_df[value_column]
 
                 # make a dataframe for pivot table
-                pivot_df = DataFrame(
+                pivot_df = pd.DataFrame(
                     {
                         index_column: index_column_values,
                         pivot_column: pivot_column_values,
@@ -288,10 +342,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         )
 
     def apply_cumulative_sum(self, results):
-        from pandas import DataFrame
-
         result = frappe.parse_json(results)
-        results_df = DataFrame(
+        results_df = pd.DataFrame(
             result[1:], columns=[d.split("::")[0] for d in result[0]]
         )
 
@@ -303,7 +355,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
 
 def format_query(query):
-    return format_sql(
+    return sqlparse.format(
         query,
         keyword_case="upper",
         reindent_aligned=True,
