@@ -5,11 +5,13 @@ import time
 from json import dumps
 
 import frappe
+import pandas as pd
 import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
 
 from insights.constants import COLUMN_TYPES
+from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
@@ -188,18 +190,17 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if self.is_stored:
             sync_query_store(tables=[self.name], force=True)
 
+    @log_error()
     def process_column_types(self, results):
         if not results:
             return results
 
         columns = results[0]
-        if not any(c.split("::")[1] == "None" for c in columns):
+        if not self.is_native_query:
+            results[0] = [f"{c.label}::{c.type}" for c in self.get_columns()]
             return results
 
-        from pandas import DataFrame
-
-        rows_df = DataFrame(results[1:], columns=[c.split("::")[0] for c in columns])
-
+        rows_df = pd.DataFrame(results[1:], columns=[c.split("::")[0] for c in columns])
         # create a row that contains values in each column
         values_row = []
         for column in rows_df.columns:
@@ -209,17 +210,14 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
         # infer the type of each column
         inferred_types = self.guess_types(values_row)
-
         # update the column types
         for i, column in enumerate(columns):
-            column_name, column_type = column.split("::")
-            if column_type == "None":
-                columns[i] = f"{column_name}::{inferred_types[i]}"
+            column_name = column.split("::")[0]
+            columns[i] = f"{column_name}::{inferred_types[i]}"
         results[0] = columns
         return results
 
     def guess_types(self, values):
-        import pandas as pd
 
         # try converting each value to a number, float, date, datetime
         # if it fails, it's a string
@@ -278,7 +276,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return results
 
     def apply_transform(self, results):
-        from pandas import DataFrame
 
         for row in self.transforms:
             if row.type == "Pivot":
@@ -301,7 +298,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 if pivot_column == index_column:
                     frappe.throw("Pivot Column and Index Column cannot be same")
 
-                results_df = DataFrame(
+                results_df = pd.DataFrame(
                     result[1:], columns=[d.split("::")[0] for d in result[0]]
                 )
 
@@ -310,7 +307,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 value_column_values = results_df[value_column]
 
                 # make a dataframe for pivot table
-                pivot_df = DataFrame(
+                pivot_df = pd.DataFrame(
                     {
                         index_column: index_column_values,
                         pivot_column: pivot_column_values,
@@ -345,10 +342,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         )
 
     def apply_cumulative_sum(self, results):
-        from pandas import DataFrame
-
         result = frappe.parse_json(results)
-        results_df = DataFrame(
+        results_df = pd.DataFrame(
             result[1:], columns=[d.split("::")[0] for d in result[0]]
         )
 
