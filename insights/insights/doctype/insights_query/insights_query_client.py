@@ -18,14 +18,6 @@ class InsightsQueryClient:
         return new_query.name
 
     @frappe.whitelist()
-    def get_charts(self):
-        return frappe.get_list(
-            "Insights Query Chart",
-            filters={"query": self.name},
-            pluck="name",
-        )
-
-    @frappe.whitelist()
     def add_table(self, table):
         new_table = {
             "label": table.get("label"),

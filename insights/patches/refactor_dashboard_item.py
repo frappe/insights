@@ -5,6 +5,9 @@ import frappe
 
 
 def execute():
+    if not frappe.db.exists("DocType", "Insights Query Chart"):
+        return
+
     """
     Each Dashboard Item had a link to Chart record, which stores the query and chart config.
     This patch moves the query and chart config to the Dashboard Item record.
