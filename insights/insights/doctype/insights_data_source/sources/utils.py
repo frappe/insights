@@ -88,16 +88,7 @@ def create_insights_table(table, force=False):
 
 
 def parse_sql_tables(sql):
-    def strip_quotes(table):
-        if (
-            (table.startswith("`") and table.endswith("`"))
-            or (table.startswith('"') and table.endswith('"'))
-            or (table.startswith("'") and table.endswith("'"))
-        ):
-            return table[1:-1]
-        return table
-
-    parsed = sqlparse.parse(sqlparse.format(sql, reindent=True, keyword_case="upper"))
+    parsed = sqlparse.parse(sql)
     tables = []
     identifier = None
     for statement in parsed:
@@ -221,3 +212,18 @@ def process_cte(main_query):
         cte += f" `{query_name}` AS ({sql}),"
     cte = cte[:-1]
     return cte + " " + main_query
+
+
+def strip_quotes(table):
+    if (
+        (table.startswith("`") and table.endswith("`"))
+        or (table.startswith('"') and table.endswith('"'))
+        or (table.startswith("'") and table.endswith("'"))
+    ):
+        return table[1:-1]
+    return table
+
+
+def add_limit_to_sql(sql, limit):
+    stripped_sql = sql.strip().rstrip(";")
+    return f"WITH limited AS ({stripped_sql}) SELECT * FROM limited LIMIT {limit};"

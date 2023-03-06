@@ -5,12 +5,19 @@
 			<Tabs v-if="!hideTabs" class="w-40" :tabs="tabs" @switch="switchTab" />
 		</div>
 
-		<template v-if="activeTab == 'Build'">
-			<div class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1">
-				<TablePanel />
-				<ColumnPanel />
-				<FilterPanel />
-			</div>
+		<template v-if="activeTab == buildTabLabel">
+			<template v-if="query.doc.is_native_query">
+				<div class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1">
+					<NativeQueryEditor />
+				</div>
+			</template>
+			<template v-else>
+				<div class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1">
+					<TablePanel />
+					<ColumnPanel />
+					<FilterPanel />
+				</div>
+			</template>
 			<QueryResult />
 		</template>
 
@@ -28,6 +35,7 @@ import QueryHeader from '@/query/QueryHeader.vue'
 import QueryVisualizer from '@/query/QueryVisualizer.vue'
 import QueryResult from '@/query/Result/QueryResult.vue'
 import TablePanel from '@/query/Table/TablePanel.vue'
+import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
 import { useQuery } from '@/utils/query'
 import { computed, inject, provide, ref } from 'vue'
 
@@ -35,8 +43,9 @@ const props = defineProps(['name', 'hideTabs'])
 const query = props.name ? useQuery(props.name) : inject('queryBuilder').currentQuery
 provide('query', query)
 
+const buildTabLabel = computed(() => (query.doc?.is_native_query ? 'Write' : 'Build'))
 const tabs = ref([
-	{ label: 'Build', active: true },
+	{ label: buildTabLabel, active: true },
 	{ label: 'Visualize', active: false },
 ])
 const activeTab = computed(() => tabs.value.find((t) => t.active).label)

@@ -182,11 +182,11 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def fetch_columns(self):
-        if not self.get_tables():
+        if self.is_native_query:
             return []
 
         columns = []
-        selected_tables = self.get_selected_tables() or self.get_tables()
+        selected_tables = self.get_selected_tables()
         for table in selected_tables:
             table_doc = frappe.get_doc("Insights Table", {"table": table.get("table")})
             _columns = table_doc.get_columns()
@@ -300,3 +300,7 @@ class InsightsQueryClient:
         if not self.is_native_query:
             self.is_native_query = 1
             self.save()
+
+    @frappe.whitelist()
+    def get_source_schema(self):
+        return self._data_source.get_schema()

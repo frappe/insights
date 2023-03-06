@@ -9,6 +9,7 @@ import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
 
+from insights.constants import COLUMN_TYPES
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
@@ -84,9 +85,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
         self.update_query()
 
-        if self.is_native_query:
-            self.parse_tables_and_columns()
-
     def on_update(self):
         self.update_insights_table()
         self.sync_query_store()
@@ -105,7 +103,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         """Returns the 1000 rows of the query results"""
         try:
             if self.status != "Execution Successful":
-                return frappe.as_json([self._result_columns])
+                return frappe.as_json([])
 
             cached_results = self.load_results()
             if not cached_results or len(cached_results) == 1:  # only columns
@@ -123,22 +121,15 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def update_query(self):
         query = self._data_source.build_query(query=self)
         query = format_query(query)
-        if self.sql != query:
+        if self.sql != query or self.limit != self.get_doc_before_save().limit:
             self.sql = query
             self.status = "Pending Execution"
 
-    @property
-    def _result_columns(self):
-        return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
-
     def fetch_results(self):
         self.sync_child_stored_queries()
-        results = list(self._data_source.run_query(query=self))
-        results.insert(0, self._result_columns)
-        if self.transforms:
-            results = self.apply_transform(results)
-        if self.has_cumulative_columns():
-            results = self.apply_cumulative_sum(results)
+        results = self._data_source.run_query(query=self)
+        results = self.process_column_types(results)
+        results = self.apply_transformations(results)
         self.store_results(results)
         return results
 
@@ -166,7 +157,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if not results and fetch_if_not_exists:
             results = self.fetch_results()
         if not results:
-            return [self._result_columns]
+            return []
         return frappe.parse_json(results)
 
     def update_link_docs_title(self):
@@ -197,7 +188,59 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if self.is_stored:
             sync_query_store(tables=[self.name], force=True)
 
+    def process_column_types(self, results):
+        if not results:
+            return results
+
+        from pandas import DataFrame
+
+        columns = results[0]
+        rows_df = DataFrame(results[1:], columns=[c.split("::")[0] for c in columns])
+
+        # create a row that contains values in each column
+        values_row = []
+        for column in rows_df.columns:
+            # find the first non-null value in the column
+            value = rows_df[column].dropna().iloc[0]
+            values_row.append(value)
+
+        # infer the type of each column
+        inferred_types = self.guess_types(values_row)
+
+        # update the column types
+        for i, column in enumerate(columns):
+            column_name, column_type = column.split("::")
+            if column_type == "None":
+                columns[i] = f"{column_name}::{inferred_types[i]}"
+        results[0] = columns
+        return results
+
+    def guess_types(self, values):
+        import pandas as pd
+
+        # try converting each value to a number, float, date, datetime
+        # if it fails, it's a string
+        types = []
+        for value in values:
+            try:
+                pd.to_numeric(value)
+                types.append("Integer")
+            except ValueError:
+                try:
+                    pd.to_numeric(value, downcast="float")
+                    types.append("Decimal")
+                except ValueError:
+                    try:
+                        pd.to_datetime(value)
+                        types.append("Datetime")
+                    except ValueError:
+                        types.append("String")
+
+        return types
+
     def update_insights_table(self):
+        if self.is_native_query:
+            return
         create_insights_table(
             frappe._dict(
                 {
@@ -220,92 +263,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         )
 
     def get_columns(self):
-        return (
-            self.columns
-            or self.get("_parsed_columns")
-            or self.parse_tables_and_columns()[1]
-            or self.fetch_columns()
-        )
+        return self.columns or self.fetch_columns()
 
-    def get_tables(self):
-        return (
-            self.tables
-            or self.get("_parsed_tables")
-            or self.parse_tables_and_columns()[0]
-        )
-
-    def parse_tables_and_columns(self):
-        if not self.is_native_query:
-            return []
-
-        if self.get("_parsed_tables") and self.get("_parsed_columns"):
-            return [self._parsed_tables, self._parsed_columns]
-
-        tokens = get_identifier_tokens(self.sql)
-        tables = []
-        columns = []
-        for token in tokens:
-            if token.get("identifier") in ["from", "join"]:
-                insights_table = get_insights_table(token.get("name"))
-                tables.append(
-                    frappe._dict(
-                        {
-                            "table": insights_table.table,
-                            "label": insights_table.label,
-                        }
-                    )
-                )
-
-        for token in tokens:
-            if token.get("identifier") == "select":
-                if token.get("name") == "*":
-                    # in this case all columns are fetched by fetch_columns
-                    continue
-
-                if token.get("parent"):
-                    table = next(
-                        (
-                            t
-                            for t in tokens
-                            if t.get("name") == token.get("parent")
-                            or t.get("alias") == token.get("parent")
-                        ),
-                        None,
-                    )
-                else:
-                    table = tables[0]
-
-                if not table:
-                    continue
-                insights_table = get_insights_table(table.get("table"))
-                insights_column = next(
-                    (
-                        c
-                        for c in insights_table.columns
-                        if c.column == token.get("name")
-                    ),
-                    None,
-                )
-                if not insights_column:
-                    # frappe.throw("Column not found: {0}".format(token.get("name")))
-                    continue
-
-                columns.append(
-                    frappe._dict(
-                        {
-                            "table": insights_table.table,
-                            "table_label": insights_table.label,
-                            "column": insights_column.column,
-                            "label": token.get("alias") or insights_column.label,
-                            "type": insights_column.type,
-                        }
-                    )
-                )
-
-        self._parsed_tables = tables
-        self._parsed_columns = columns
-
-        return [tables, columns]
+    def apply_transformations(self, results):
+        if self.is_native_query:
+            return results
+        if self.transforms:
+            results = self.apply_transform(results)
+        if self.has_cumulative_columns():
+            results = self.apply_cumulative_sum(results)
+        return results
 
     def apply_transform(self, results):
         from pandas import DataFrame
@@ -395,49 +362,3 @@ def format_query(query):
         keyword_case="upper",
         reindent_aligned=True,
     )
-
-
-def get_identifier_tokens(query):
-    formatted = sqlparse.format(query, reindent=True, keyword_case="upper")
-    parsed = sqlparse.parse(formatted)
-    tokens = []
-    identifier = None
-    for statement in parsed:
-        for token in statement.tokens:
-            if (
-                token.ttype is sqlparse.tokens.Keyword
-                and token.value.lower() in ["from", "join"]
-            ) or (
-                token.ttype is sqlparse.tokens.DML and token.value.lower() == "select"
-            ):
-                identifier = token.value.lower()
-
-            if identifier and isinstance(token, sqlparse.sql.Identifier):
-                tokens.append(
-                    {
-                        "name": token.get_real_name(),
-                        "alias": token.get_alias(),
-                        "parent": token.get_parent_name(),
-                        "identifier": identifier,
-                    }
-                )
-                identifier = None
-            if identifier and isinstance(token, sqlparse.sql.IdentifierList):
-                for item in token.get_identifiers():
-                    tokens.append(
-                        {
-                            "name": item.get_real_name(),
-                            "alias": item.get_alias(),
-                            "parent": token.get_parent_name(),
-                            "identifier": identifier,
-                        }
-                    )
-                identifier = None
-
-    return tokens
-
-
-def get_insights_table(table_name):
-    if not frappe.db.exists("Insights Table", {"table": table_name}):
-        frappe.throw(f"Table {table_name} does not exist")
-    return frappe.get_cached_doc("Insights Table", {"table": table_name})
