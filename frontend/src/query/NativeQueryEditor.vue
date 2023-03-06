@@ -38,9 +38,6 @@ function runQuery() {
 		query.run.submit()
 	})
 }
-function formatQuery() {
-	query.setValue.submit({ sql: nativeQuery.value })
-}
 </script>
 
 <template>
@@ -56,9 +53,6 @@ function formatQuery() {
 		<div class="mt-4 h-10 space-x-2">
 			<Button iconLeft="play" appearance="white" class="shadow-sm" @click="runQuery">
 				Run
-			</Button>
-			<Button iconLeft="loader" appearance="white" class="shadow-sm" @click="formatQuery">
-				Format
 			</Button>
 		</div>
 	</div>
