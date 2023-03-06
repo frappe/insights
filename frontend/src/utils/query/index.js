@@ -34,8 +34,6 @@ export const API_METHODS = {
 	// filter methods
 	updateFilters: 'update_filters',
 
-	// chart methods
-	getCharts: 'get_charts',
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
 }
@@ -49,8 +47,6 @@ export function useQuery(name) {
 	query.filters = useQueryFilters(query)
 	query.results = useQueryResults(query)
 
-	query.getCharts.submit()
-	query.charts = computed(() => query.getCharts.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
 	query.execute = () => {
 		return query.debouncedRun(null, {

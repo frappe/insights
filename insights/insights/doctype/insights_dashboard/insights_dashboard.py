@@ -13,7 +13,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
 )
 
-from .utils import convert_into_simple_filter, convert_to_expression, get_item_position
+from .utils import convert_into_simple_filter, convert_to_expression
 
 CACHE_NAMESPACE = "insights_dashboard"
 

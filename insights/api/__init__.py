@@ -244,11 +244,7 @@ def get_onboarding_status():
         ),
         "query_created": bool(frappe.db.a_row_exists("Insights Query")),
         "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "chart_created": bool(
-            frappe.db.exists(
-                "Insights Query Chart", {"data": ["is", "set"], "type": ["is", "set"]}
-            )
-        ),
+        "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
         "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
     }
 
