@@ -84,17 +84,19 @@ def get_tables(data_source=None, with_query_tables=False):
         return []
 
     check_data_source_permission(data_source)
+    filters = {
+        "hidden": 0,
+        "data_source": data_source,
+        **get_permission_filter("Insights Table"),
+    }
+    if not with_query_tables:
+        filters["is_query_based"] = 0
 
     return frappe.get_list(
         "Insights Table",
-        filters={
-            "hidden": 0,
-            "data_source": data_source,
-            "is_query_based": with_query_tables,
-            **get_permission_filter("Insights Table"),
-        },
+        filters=filters,
         fields=["name", "table", "label", "is_query_based"],
-        order_by="label asc",
+        order_by="is_query_based asc, label asc",
     )
 
 

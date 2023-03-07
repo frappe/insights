@@ -23,12 +23,12 @@ export function useQueryTables(query) {
 
 	const joinOptions = computed(() => {
 		// any two table/query can be joined from the same data source
-		return sourceTables
+		return sourceTables.value
 	})
 
 	const newTableOptions = computed(() => {
 		if (query.doc?.tables?.length == 0) {
-			return joinOptions.value
+			return sourceTables.value
 		}
 		// only return tables that are already selected in the query
 		// to ensure correct chaining of joins

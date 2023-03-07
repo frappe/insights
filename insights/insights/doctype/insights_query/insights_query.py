@@ -218,7 +218,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return results
 
     def guess_types(self, values):
-
         # try converting each value to a number, float, date, datetime
         # if it fails, it's a string
         types = []
@@ -240,8 +239,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return types
 
     def update_insights_table(self):
-        if self.is_native_query:
-            return
         create_insights_table(
             frappe._dict(
                 {
@@ -264,7 +261,22 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         )
 
     def get_columns(self):
-        return self.columns or self.fetch_columns()
+        if not self.is_native_query:
+            return self.columns or self.fetch_columns()
+
+        # make column from results first row
+        results = self.load_results(fetch_if_not_exists=True)
+        if not results:
+            return []
+        return [
+            frappe._dict(
+                {
+                    "label": c.split("::")[0],
+                    "type": c.split("::")[1],
+                }
+            )
+            for c in results[0]
+        ]
 
     def apply_transformations(self, results):
         if self.is_native_query:
