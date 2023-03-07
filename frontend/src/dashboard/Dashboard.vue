@@ -112,7 +112,7 @@ updateDocumentTitle(pageMeta)
 		<template #sidebar v-if="dashboard.editing && dashboard.sidebar.open">
 			<div class="w-[21rem] overflow-scroll border-l bg-white p-3 px-4 shadow-sm">
 				<div v-if="!dashboard.currentItem">
-					<div class="mb-3 font-semibold text-gray-800">Charts</div>
+					<div class="mb-3 font-semibold text-gray-800">Widgets</div>
 					<DashboardSidebarWidgets @dragChange="draggingWidget = $event" />
 				</div>
 
