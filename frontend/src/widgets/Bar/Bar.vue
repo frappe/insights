@@ -5,8 +5,7 @@ import ChartGrid from '@/components/Charts/ChartGrid.vue'
 import ChartLegend from '@/components/Charts/ChartLegend.vue'
 import ChartSeries from '@/components/Charts/ChartSeries.vue'
 import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
-import { whenever } from '@vueuse/core'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },

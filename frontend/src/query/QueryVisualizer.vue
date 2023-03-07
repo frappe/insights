@@ -49,7 +49,8 @@
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { inject, reactive } from 'vue'
+import { watchOnce } from '@vueuse/shared'
+import { inject, reactive, nextTick } from 'vue'
 
 const query = inject('query')
 const chartData = useChartData()
@@ -66,4 +67,16 @@ const chartOptions = [
 		value: undefined,
 	},
 ].concat(widgets.getChartOptions())
+
+watchOnce(
+	() => chartData.recommendedChart,
+	async () => {
+		await nextTick()
+		chart.chart_type = chartData.recommendedChart.type
+		chart.options = {
+			...chart.options,
+			...chartData.recommendedChart.options,
+		}
+	}
+)
 </script>

@@ -2,7 +2,7 @@
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { whenever } from '@vueuse/shared'
+import { watchOnce, whenever } from '@vueuse/shared'
 import { computed, inject, reactive, ref, watch } from 'vue'
 
 const dashboard = inject('dashboard')
@@ -41,6 +41,16 @@ if (isChart) {
 	watch(chartFilters, () => {
 		chartData.load(props.item.options.query)
 	})
+	watchOnce(
+		() => chartData.recommendedChart,
+		() => {
+			if (props.item.item_type !== chartData.recommendedChart.type) return
+			props.item.options = {
+				...props.item.options,
+				...chartData.recommendedChart.options,
+			}
+		}
+	)
 }
 
 const widget = ref(null)
