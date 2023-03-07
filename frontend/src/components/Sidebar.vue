@@ -38,6 +38,7 @@
 						>
 							<component
 								:is="route.icon"
+								:stroke-width="1.5"
 								:class="[
 									route.current
 										? 'text-gray-600'
