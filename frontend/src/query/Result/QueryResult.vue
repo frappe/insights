@@ -31,11 +31,7 @@
 				<p>No results found</p>
 			</div>
 			<!-- Table & Limits -->
-			<div
-				v-else
-				class="flex flex-1 select-text flex-col-reverse overflow-hidden"
-				:class="{ 'blur-[2px]': needsExecution }"
-			>
+			<div v-else class="flex flex-1 select-text flex-col-reverse overflow-hidden">
 				<!-- Limits -->
 				<div class="mt-3 flex h-6 w-full flex-shrink-0">
 					<LimitsAndOrder />
@@ -62,7 +58,10 @@
 								></th>
 							</tr>
 						</thead>
-						<tbody class="pointer-events-none">
+						<tbody
+							class="pointer-events-none"
+							:class="{ 'blur-[2px]': needsExecution }"
+						>
 							<tr v-for="(row, i) in formattedResult" :key="i">
 								<td
 									v-for="(cell, j) in row"
@@ -83,22 +82,23 @@
 							</tr>
 						</tbody>
 					</table>
+
+					<!-- If Pending Execution -->
+					<div
+						v-if="query.run.loading || needsExecution"
+						class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
+					>
+						<Button
+							appearance="primary"
+							class="!shadow-md"
+							@click="query.debouncedRun()"
+							:loading="query.run.loading"
+							loadingText="Executing..."
+						>
+							{{ query.run.loading ? '' : 'Execute' }}
+						</Button>
+					</div>
 				</div>
-			</div>
-			<!-- If Pending Execution -->
-			<div
-				v-if="query.run.loading || needsExecution"
-				class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
-			>
-				<Button
-					appearance="primary"
-					class="!shadow-md"
-					@click="query.debouncedRun()"
-					:loading="query.run.loading"
-					loadingText="Executing..."
-				>
-					{{ query.run.loading ? '' : 'Execute' }}
-				</Button>
 			</div>
 		</div>
 	</div>

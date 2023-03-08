@@ -104,11 +104,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def results(self) -> str:
         """Returns the 1000 rows of the query results"""
         try:
-            if self.status != "Execution Successful":
-                return frappe.as_json([])
-
             cached_results = self.load_results()
-            if not cached_results or len(cached_results) == 1:  # only columns
+            if not cached_results and self.status == "Execution Successful":
                 results = self.fetch_results()
                 return frappe.as_json(results[:1000])
 
