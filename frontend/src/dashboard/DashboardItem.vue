@@ -44,6 +44,7 @@ if (isChart) {
 	watchOnce(
 		() => chartData.recommendedChart,
 		() => {
+			if (props.item.options.query) return
 			if (props.item.item_type !== chartData.recommendedChart.type) return
 			props.item.options = {
 				...props.item.options,
