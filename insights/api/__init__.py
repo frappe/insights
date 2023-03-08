@@ -156,10 +156,18 @@ def get_queries():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_query(data_source):
+def create_query(data_source, table=None, title=None):
     query = frappe.new_doc("Insights Query")
-    query.title = "Untitled Query"
+    query.title = title or "Untitled Query"
     query.data_source = data_source
+    if table:
+        query.append(
+            "tables",
+            {
+                "table": table.get("value"),
+                "label": table.get("label"),
+            },
+        )
     query.save()
     return query.name
 
