@@ -66,13 +66,12 @@ const routes = [
 	{
 		props: true,
 		name: 'Query',
-		path: '/query/:name',
-		component: () => import('@/query/Query.vue'),
+		redirect: '/query/build/:name',
 	},
 	{
 		props: true,
 		name: 'QueryBuilder',
-		path: '/query-builder',
+		path: '/query/build/:name?',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
 	{

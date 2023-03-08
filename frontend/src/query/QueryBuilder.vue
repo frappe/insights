@@ -7,8 +7,9 @@ import useQueryBuilder from '@/query/useQueryBuilder'
 import { updateDocumentTitle } from '@/utils'
 import { provide, ref } from 'vue'
 
+const props = defineProps({ name: { type: String } })
 const queryBuilder = useQueryBuilder()
-queryBuilder.openQuery()
+if (props.name) queryBuilder.openQuery(props.name)
 provide('queryBuilder', queryBuilder)
 
 const pageMeta = ref({ title: 'Query Builder' })

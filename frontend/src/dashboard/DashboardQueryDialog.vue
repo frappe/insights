@@ -16,7 +16,7 @@ const show = computed({
 	},
 })
 function openQueryInNewTab() {
-	window.open(`/insights/query/${props.query}`, '_blank')
+	window.open(`/insights/query/build/${props.query}`, '_blank')
 }
 </script>
 

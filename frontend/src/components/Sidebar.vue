@@ -125,7 +125,7 @@ const sidebarItems = ref([
 		name: 'Data Source',
 	},
 	{
-		path: '/query-builder',
+		path: '/query/build',
 		label: 'Query Builder',
 		icon: Wrench,
 		name: 'QueryBuilder',

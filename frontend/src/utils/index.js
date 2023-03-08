@@ -138,7 +138,7 @@ export function getQueryLink(table) {
 	if (!table) return ''
 	// returns a link to the query if the table is a query eg. Query Store queries
 	if (table.startsWith('QRY')) {
-		return `/insights/query/${table}`
+		return `/insights/query/build/${table}`
 	}
 	return ''
 }
