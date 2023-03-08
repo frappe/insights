@@ -66,6 +66,7 @@ const routes = [
 	{
 		props: true,
 		name: 'Query',
+		path: '/query/:name?',
 		redirect: '/query/build/:name',
 	},
 	{
