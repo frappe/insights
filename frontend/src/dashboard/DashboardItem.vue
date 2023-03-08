@@ -58,6 +58,10 @@ const widget = ref(null)
 function downloadChart() {
 	widget.value?.$refs?.eChart?.downloadChart?.()
 }
+
+const refreshKey = computed(() => {
+	return JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value])
+})
 </script>
 
 <template>
@@ -87,7 +91,7 @@ function downloadChart() {
 				:chartData="chartData"
 				:item_id="item.item_id"
 				:options="item.options"
-				:key="JSON.stringify(item.options)"
+				:key="refreshKey"
 			>
 				<template #placeholder>
 					<InvalidWidget
