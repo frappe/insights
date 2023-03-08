@@ -109,7 +109,7 @@ def parse_sql_tables(sql):
     return [strip_quotes(table) for table in tables]
 
 
-def get_stored_query_sql(query, data_source=None, verbose=False):
+def get_stored_query_sql(sql, data_source=None, verbose=False):
     """
     Takes a native sql query and returns a map of table name to the query along with the subqueries
 
@@ -134,10 +134,24 @@ def get_stored_query_sql(query, data_source=None, verbose=False):
     then stop and return None
     """
 
-    tables = parse_sql_tables(query)
+    # parse the sql to get the tables
+    sql_tables = parse_sql_tables(sql)
+
+    # get the list of queries that are saved as tables
+    query_tables = frappe.get_all(
+        "Insights Table",
+        filters={
+            "name": ("in", sql_tables),
+            "data_source": data_source,
+            "is_query_based": 1,
+        },
+        pluck="name",
+    )
+
+    # get the sql for the queries
     queries = frappe.get_all(
         "Insights Query",
-        filters={"name": ("in", tables)},
+        filters={"name": ("in", query_tables)},
         fields=["name", "sql", "data_source"],
     )
     if not queries:
@@ -149,16 +163,16 @@ def get_stored_query_sql(query, data_source=None, verbose=False):
     #     { "name": "QRY-003","sql": "SELECT name FROM `Supplier`","data_source": "Demo" },
     # ]
     stored_query_sql = {}
-    for query in queries:
+    for sql in queries:
         if data_source is None:
-            data_source = query.data_source
-        if data_source and query.data_source != data_source:
+            data_source = sql.data_source
+        if data_source and sql.data_source != data_source:
             frappe.throw(
                 "Cannot use queries from different data sources in a single query"
             )
 
-        stored_query_sql[query.name] = query.sql
-        sub_stored_query_sql = get_stored_query_sql(query.sql, data_source)
+        stored_query_sql[sql.name] = sql.sql
+        sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source)
         # sub_stored_query_sql = { 'QRY-004': 'SELECT name FROM `Item`' }
         if not sub_stored_query_sql:
             continue
@@ -167,17 +181,17 @@ def get_stored_query_sql(query, data_source=None, verbose=False):
         for table, sub_query in sub_stored_query_sql.items():
             cte += f" `{table}` AS ({sub_query}),"
         cte = cte[:-1]
-        stored_query_sql[query.name] = f"{cte} {query.sql}"
+        stored_query_sql[sql.name] = f"{cte} {sql.sql}"
 
     return stored_query_sql
 
 
-def process_cte(main_query):
+def process_cte(main_query, data_source=None):
     """
     Replaces stored queries in the main query with the actual query using CTE
     """
 
-    stored_query_sql = get_stored_query_sql(main_query)
+    stored_query_sql = get_stored_query_sql(main_query, data_source)
     if not stored_query_sql:
         return None
 

@@ -72,6 +72,7 @@ class StoredQueryTableFactory:
 
 class QueryStore(SQLiteDB):
     def __init__(self) -> None:
+        self.data_source = "Query Store"
         database_path = frappe.get_site_path(
             "private", "files", "insights_query_store.sqlite"
         )

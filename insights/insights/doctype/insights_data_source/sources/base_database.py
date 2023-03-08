@@ -40,9 +40,9 @@ class BaseDatabase:
         sql_with_cte = ""
         if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
             try:
-                sql_with_cte = process_cte(sql)
+                sql_with_cte = process_cte(sql, data_source=self.data_source)
             except Exception:
-                frappe.log_error(title=f"Failed to process CTE: {sql}")
+                frappe.log_error(title="Failed to process CTE")
                 frappe.throw("Failed to process stored query as CTE.")
 
         if query.is_native_query:
