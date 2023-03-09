@@ -76,6 +76,7 @@ const refreshKey = computed(() => {
 				'cursor-grab': dashboard.editing,
 			}"
 			@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
+			@dblclick.prevent.stop="dashboard.edit() || dashboard.setCurrentItem(item.item_id)"
 		>
 			<div
 				v-if="chartData.loading"
