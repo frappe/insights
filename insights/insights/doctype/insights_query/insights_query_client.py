@@ -297,9 +297,8 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def convert(self):
-        if not self.is_native_query:
-            self.is_native_query = 1
-            self.save()
+        self.is_native_query = not self.is_native_query
+        self.save()
 
     @frappe.whitelist()
     def get_source_schema(self):
