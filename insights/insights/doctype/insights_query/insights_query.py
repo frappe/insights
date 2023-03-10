@@ -120,7 +120,14 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def update_query(self):
         query = self._data_source.build_query(query=self)
         query = format_query(query)
-        if self.sql != query or self.limit != self.get_doc_before_save().limit:
+        # in case of native query, the query doesn't get updated if the limit is changed
+        # so we need to check if the limit is changed
+        # because the native query is limited by the limit field
+        limit_changed = (
+            self.get_doc_before_save()
+            and self.limit != self.get_doc_before_save().limit
+        )
+        if self.sql != query or limit_changed:
             self.sql = query
             self.status = "Pending Execution"
 
