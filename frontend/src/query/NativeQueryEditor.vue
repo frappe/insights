@@ -42,15 +42,19 @@ function runQuery() {
 
 <template>
 	<div class="flex w-full flex-1 flex-shrink-0 flex-col">
-		<div class="h-8 text-sm uppercase tracking-wide text-gray-600">Native Query</div>
-		<Code
-			:key="completions.tables.length"
-			language="sql"
-			v-model="nativeQuery"
-			:schema="completions.schema"
-			:tables="completions.tables"
-		></Code>
-		<div class="mt-4 h-10 space-x-2">
+		<div class="h-8 flex-shrink-0 text-sm uppercase tracking-wide text-gray-600">
+			Native Query
+		</div>
+		<div class="flex flex-1 overflow-scroll scrollbar-hide">
+			<Code
+				:key="completions.tables.length"
+				language="sql"
+				v-model="nativeQuery"
+				:schema="completions.schema"
+				:tables="completions.tables"
+			></Code>
+		</div>
+		<div class="mt-4 h-10 flex-shrink-0 space-x-2">
 			<Button iconLeft="play" appearance="white" class="shadow-sm" @click="runQuery">
 				Run
 			</Button>
