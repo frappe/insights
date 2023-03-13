@@ -35,8 +35,9 @@ class StoredQueryTableFactory:
 
     def get_tables(self, tables=None):
         _tables = []
+        to_sync = self.get_stored_queries() if tables is None else tables
         # create table object from the stored queries
-        for docname in tables or self.get_stored_queries():
+        for docname in to_sync:
             doc = frappe.get_doc("Insights Query", docname)
             # since we already have doc here, we can use it to import query result
             self.import_query(doc)

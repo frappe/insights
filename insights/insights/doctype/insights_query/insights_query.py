@@ -140,7 +140,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return results
 
     def sync_child_stored_queries(self):
-        if self.data_source == "Query Store":
+        if self.data_source == "Query Store" and self.tables:
             sync_query_store(
                 [row.table for row in self.tables if row.table != self.name], force=True
             )
