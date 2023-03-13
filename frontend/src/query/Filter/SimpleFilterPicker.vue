@@ -84,13 +84,13 @@
 
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
-import ListPicker from '@/components/Controls/ListPicker.vue'
 import DatePicker from '@/components/Controls/DatePicker.vue'
 import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
+import ListPicker from '@/components/Controls/ListPicker.vue'
+import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
 
+import { formatDate, isEmptyObj } from '@/utils'
 import { debounce } from 'frappe-ui'
-import { isEmptyObj, formatDate } from '@/utils'
 import { computed, inject, reactive, watch } from 'vue'
 
 const query = inject('query')
@@ -183,31 +183,15 @@ watch(
 		filter.value = {}
 	}
 )
-watch(
-	() => filter.value,
-	(newValue) => {
-		if (newValue.value == filter.value.value) {
-			return
-		}
-		if (
-			newValue &&
-			!showListPicker.value &&
-			!showDatePicker.value &&
-			!showValueOptions.value &&
-			!showTimespanPicker.value
-		) {
-			filter.value = {
-				label: newValue.value,
-				value: newValue.value,
-			}
-		} else {
-			filter.value = newValue
-		}
-	}
-)
 
 function processListPickerOption(options) {
-	filter.value = {
+	if (!Array.isArray(options)) {
+		return {
+			value: [],
+			label: '',
+		}
+	}
+	return {
 		value: options.map((option) => (option.hasOwnProperty('value') ? option.value : option)),
 		label:
 			options.length > 1
@@ -223,7 +207,13 @@ function apply() {
 		return
 	}
 	if (showListPicker.value) {
-		processListPickerOption(filter.value.value)
+		filter.value = processListPickerOption(filter.value.value)
+	}
+	if (showDatePicker.value) {
+		filter.value = {
+			value: filter.value.value,
+			label: formatDate(filter.value.value),
+		}
 	}
 	emit('filter-select', query.filters.convertIntoExpression(filter))
 }
