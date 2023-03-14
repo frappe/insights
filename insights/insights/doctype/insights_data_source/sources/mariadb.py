@@ -149,5 +149,4 @@ class MariaDB(BaseDatabase):
         query = Select(Column(column)).select_from(Table(table)).distinct().limit(limit)
         if search_text:
             query = query.where(Column(column).like(f"%{search_text}%"))
-
-        return self.execute_query(query, pluck=True)
+        return self.execute_query(query, pluck=True, replace_query_tables=True)

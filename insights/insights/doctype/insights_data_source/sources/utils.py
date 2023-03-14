@@ -243,5 +243,22 @@ def strip_quotes(table):
 
 
 def add_limit_to_sql(sql, limit):
-    stripped_sql = sql.strip().rstrip(";")
+    stripped_sql = str(sql).strip().rstrip(";")
     return f"WITH limited AS ({stripped_sql}) SELECT * FROM limited LIMIT {limit};"
+
+
+def replace_query_tables_with_cte(sql, data_source):
+    sql_with_cte = str(sql).strip().rstrip(";")
+    if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
+        try:
+            sql_with_cte = process_cte(sql_with_cte, data_source=data_source)
+        except Exception:
+            frappe.log_error(title="Failed to process CTE")
+            frappe.throw("Failed to replace query tables with CTE")
+    return sql_with_cte or sql
+
+
+def compile_query(query, dialect=None):
+    compile_args = {"compile_kwargs": {"literal_binds": True}, "dialect": dialect}
+    compiled = query.compile(**compile_args)
+    return str(compiled)

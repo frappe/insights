@@ -11,7 +11,7 @@ from insights.insights.query_builders.sqlite.sqlite_query_builder import (
     SQLiteQueryBuilder,
 )
 
-from .utils import create_insights_table, process_cte
+from .utils import create_insights_table
 
 
 class StoredQueryTableFactory:

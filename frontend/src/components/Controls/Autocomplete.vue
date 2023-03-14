@@ -1,7 +1,7 @@
 <template>
 	<Combobox as="div" v-model="selectedOption" v-slot="{ open: isComboBoxOpen }" nullable>
 		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover ref="popover" class="flex w-full [&>div:first-child]:w-full">
+		<Popover ref="popover" class="relative flex w-full [&>div:first-child]:w-full">
 			<template #target="{ togglePopover }">
 				<ComboboxInput
 					ref="input"
@@ -13,6 +13,9 @@
 					class="form-input block w-full placeholder-gray-500"
 				>
 				</ComboboxInput>
+				<div v-if="loading" class="absolute right-2 flex h-full items-center">
+					<LoadingIndicator class="h-3 w-3" />
+				</div>
 			</template>
 			<template #body="{ isOpen: isPopoverOpen }">
 				<transition
@@ -23,10 +26,10 @@
 					leave-from-class="transform scale-100 opacity-100"
 					leave-to-class="transform scale-95 opacity-0"
 				>
-					<div v-show="isComboBoxOpen || isPopoverOpen">
+					<div v-show="!loading && (isComboBoxOpen || isPopoverOpen)">
 						<ComboboxOptions
 							static
-							class="my-1 max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
+							class="max-h-48 w-full origin-top overflow-y-scroll rounded-md border bg-white p-1 shadow"
 						>
 							<div
 								v-if="filteredOptions.length === 0 && !$props.allowCreate"
@@ -86,6 +89,7 @@ import {
 	ComboboxOption,
 	ComboboxOptions,
 } from '@headlessui/vue'
+import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 
 const $utils = inject('$utils')
@@ -131,6 +135,10 @@ const props = defineProps({
 	autofocus: {
 		type: Boolean,
 		default: true,
+	},
+	loading: {
+		type: Boolean,
+		default: false,
 	},
 })
 

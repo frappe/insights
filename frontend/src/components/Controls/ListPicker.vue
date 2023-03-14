@@ -42,26 +42,34 @@
 			<template #body="{ close: closePopover }">
 				<div
 					v-show="isComboboxOpen"
-					class="rounded-md rounded-t-none bg-white px-1.5 pb-1.5 shadow-md"
+					class="rounded-md rounded-t-none bg-white px-1.5 shadow-md"
 				>
-					<ComboboxOptions class="max-h-[20rem] overflow-y-auto scrollbar-hide" static>
+					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto scrollbar-hide">
 						<div
 							class="sticky top-0 mb-1.5 flex items-stretch space-x-1.5 bg-white pt-1.5"
 						>
-							<ComboboxInput
-								class="form-input w-full placeholder-gray-500"
-								ref="input"
-								type="text"
-								@change="
-									(e) => {
-										query = e.target.value
-										emit('inputChange', e.target.value)
-									}
-								"
-								:value="query"
-								autocomplete="off"
-								placeholder="Search..."
-							/>
+							<div class="relative flex flex-1 overflow-hidden">
+								<ComboboxInput
+									class="form-input w-full placeholder-gray-500"
+									ref="input"
+									type="text"
+									@change="
+										(e) => {
+											query = e.target.value
+											emit('inputChange', e.target.value)
+										}
+									"
+									:value="query"
+									autocomplete="off"
+									placeholder="Search..."
+								/>
+								<div
+									v-if="loading"
+									class="absolute right-2 flex h-full items-center"
+								>
+									<LoadingIndicator class="h-3 w-3" />
+								</div>
+							</div>
 							<Button icon="x" @click="selectedOptions = []" />
 						</div>
 						<div
@@ -108,7 +116,7 @@
 								/>
 							</div>
 						</ComboboxOption>
-						<div class="sticky bottom-0 flex justify-end space-x-2 bg-white pt-2">
+						<div class="sticky bottom-0 flex justify-end space-x-2 bg-white py-2">
 							<Button appearance="secondary" @click.prevent.stop="selectOrClearAll()">
 								{{ selectedOptions.length > 0 ? 'Clear' : 'Select All' }}
 							</Button>
@@ -134,6 +142,7 @@ import {
 	ComboboxOption,
 	ComboboxOptions,
 } from '@headlessui/vue'
+import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
 
 const emit = defineEmits(['inputChange', 'change', 'update:modelValue', 'apply'])
@@ -155,6 +164,10 @@ const props = defineProps({
 	options: {
 		type: Array,
 		default: [],
+	},
+	loading: {
+		type: Boolean,
+		default: false,
 	},
 })
 

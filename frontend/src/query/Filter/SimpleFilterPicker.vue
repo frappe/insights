@@ -24,6 +24,7 @@
 				:options="valueOptions"
 				:placeholder="valuePlaceholder"
 				@inputChange="checkAndFetchColumnValues"
+				:loading="query.fetchColumnValues.loading"
 			/>
 			<TimespanPicker
 				v-else-if="showTimespanPicker"
@@ -37,6 +38,7 @@
 				:options="valueOptions"
 				:placeholder="valuePlaceholder"
 				@inputChange="checkAndFetchColumnValues"
+				:loading="query.fetchColumnValues.loading"
 			/>
 			<DateRangePicker
 				v-else-if="showDatePicker && filter.operator.value === 'between'"

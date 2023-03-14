@@ -7,7 +7,7 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
     InsightsTableImport,
 )
 
-from .utils import add_limit_to_sql, process_cte
+from .utils import add_limit_to_sql, compile_query, replace_query_tables_with_cte
 
 
 class BaseDatabase:
@@ -36,28 +36,24 @@ class BaseDatabase:
         sql = self.build_query(query)
         if not sql:
             return []
-
-        sql_with_cte = ""
-        if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
-            try:
-                sql_with_cte = process_cte(sql, data_source=self.data_source)
-            except Exception:
-                frappe.log_error(title="Failed to process CTE")
-                frappe.throw("Failed to process stored query as CTE.")
-
         if query.is_native_query:
             sql = add_limit_to_sql(sql, query.limit)
-
-        return self.execute_query(sql_with_cte or sql, with_columns=True)
+        return self.execute_query(sql, with_columns=True, replace_query_tables=True)
 
     def validate_query(self, query):
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
         if not select_or_with:
             frappe.throw("Only SELECT and WITH queries are allowed")
 
-    def execute_query(self, query, pluck=False, with_columns=False):
+    def execute_query(
+        self, query, pluck=False, with_columns=False, replace_query_tables=False
+    ):
         if query is None:
             return []
+        if not isinstance(query, str):
+            query = compile_query(query, self.engine.dialect)
+        if replace_query_tables:
+            query = replace_query_tables_with_cte(query, self.data_source)
         self.validate_query(query)
         with self.connect() as connection:
             res = connection.execute(query)
