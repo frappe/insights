@@ -72,7 +72,6 @@ def create_insights_table(table, force=False):
     for column in table.columns or []:
         # do not overwrite existing columns, since type or label might have been changed
         if any([doc_column.column == column.column for doc_column in doc.columns]):
-            print("skipping", column.column)
             continue
         doc.append("columns", column)
 
@@ -197,7 +196,7 @@ def process_cte(main_query, data_source=None):
 
     stored_query_sql = get_stored_query_sql(main_query, data_source)
     if not stored_query_sql:
-        return None
+        return main_query
 
     # stored_query_sql is a dict of table name and query
     # for example, if the query is
@@ -248,14 +247,11 @@ def add_limit_to_sql(sql, limit):
 
 
 def replace_query_tables_with_cte(sql, data_source):
-    sql_with_cte = str(sql).strip().rstrip(";")
-    if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
-        try:
-            sql_with_cte = process_cte(sql_with_cte, data_source=data_source)
-        except Exception:
-            frappe.log_error(title="Failed to process CTE")
-            frappe.throw("Failed to replace query tables with CTE")
-    return sql_with_cte or sql
+    try:
+        return process_cte(str(sql).strip().rstrip(";"), data_source=data_source)
+    except Exception:
+        frappe.log_error(title="Failed to process CTE")
+        frappe.throw("Failed to replace query tables with CTE")
 
 
 def compile_query(query, dialect=None):

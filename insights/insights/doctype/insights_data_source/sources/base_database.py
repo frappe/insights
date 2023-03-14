@@ -52,8 +52,11 @@ class BaseDatabase:
             return []
         if not isinstance(query, str):
             query = compile_query(query, self.engine.dialect)
-        if replace_query_tables:
+        if replace_query_tables and frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        ):
             query = replace_query_tables_with_cte(query, self.data_source)
+
         self.validate_query(query)
         with self.connect() as connection:
             res = connection.execute(query)
