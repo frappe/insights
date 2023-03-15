@@ -34,7 +34,18 @@
 			/>
 			<ListPicker
 				v-else-if="showListPicker"
-				v-model="filter.value.value"
+				:value="filter.value.value"
+				@change="
+					(event) => {
+						if (!filter.value.value) {
+							filter.value = {
+								value: null,
+								label: null,
+							}
+						}
+						filter.value.value = event
+					}
+				"
 				:options="valueOptions"
 				:placeholder="valuePlaceholder"
 				@inputChange="checkAndFetchColumnValues"
@@ -210,8 +221,7 @@ function apply() {
 	}
 	if (showListPicker.value) {
 		filter.value = processListPickerOption(filter.value.value)
-	}
-	if (showDatePicker.value) {
+	} else if (showDatePicker.value) {
 		filter.value = {
 			value: filter.value.value,
 			label: formatDate(filter.value.value),

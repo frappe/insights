@@ -155,12 +155,8 @@ const props = defineProps({
 		type: String,
 		default: '',
 	},
-	value: {
-		type: Array,
-	},
-	modelValue: {
-		type: Array,
-	},
+	value: Array,
+	modelValue: Array,
 	options: {
 		type: Array,
 		default: [],
