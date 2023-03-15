@@ -1,16 +1,21 @@
 import { useQuery } from '@/utils/query'
 import { useStorage } from '@vueuse/core'
 import { reactive, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
+const state = reactive({
+	queries: [],
+	currentQuery: null,
+	showNewDialog: false,
+})
+const openQueries = useStorage('insights:openQueries', [])
 
 export default function useQueryBuilder() {
-	const state = reactive({
-		queries: [],
-		currentQuery: null,
-		showNewDialog: false,
-	})
+	const router = useRouter()
 
 	function openQuery(name) {
 		if (!name) return
+		router.push({ name: 'QueryBuilder', params: { name } })
 		const existingQuery = state.queries.find((q) => q.name === name)
 		if (existingQuery) {
 			state.currentQuery = existingQuery
@@ -35,7 +40,6 @@ export default function useQueryBuilder() {
 		return state.currentQuery.name === query
 	}
 
-	const openQueries = useStorage('insights:openQueries', [])
 	watch(
 		() => state.queries.length,
 		() => {
