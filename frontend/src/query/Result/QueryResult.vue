@@ -5,21 +5,26 @@
 	>
 		<!-- Result Header -->
 		<div class="relative flex h-8 flex-shrink-0 items-center justify-between">
-			<div class="text-sm tracking-wide text-gray-600">RESULT</div>
-			<div
-				v-if="executionTime"
-				class="flex items-center space-x-1 text-sm font-light text-gray-500"
-			>
-				<Tooltip
-					v-if="totalRows > query.results.MAX_ROWS"
-					:text="`Showing first ${query.results.MAX_ROWS.toLocaleString()} rows`"
-					:hoverDelay="0.1"
-					class="flex"
+			<div class="flex space-x-1">
+				<div class="text-sm tracking-wide text-gray-600">RESULT</div>
+				<div
+					v-if="executionTime"
+					class="flex items-center space-x-1 text-sm font-light text-gray-500"
 				>
-					<FeatherIcon name="info" class="h-3 w-3 cursor-pointer" />
-				</Tooltip>
-				<span>{{ totalRows.toLocaleString() }} rows in {{ executionTime }}s</span>
+					<span class="text-sm text-gray-500">
+						({{ totalRows.toLocaleString() }} rows in {{ executionTime }}s)
+					</span>
+					<Tooltip
+						v-if="totalRows > query.results.MAX_ROWS"
+						:text="`Showing first ${query.results.MAX_ROWS.toLocaleString()} rows`"
+						:hoverDelay="0.1"
+						class="flex"
+					>
+						<FeatherIcon name="info" class="h-3 w-3 cursor-pointer" />
+					</Tooltip>
+				</div>
 			</div>
+			<LimitsAndOrder class="-mt-1" />
 		</div>
 		<!-- Result  -->
 		<div class="relative flex flex-1 overflow-hidden">
@@ -33,9 +38,9 @@
 			<!-- Table & Limits -->
 			<div v-else class="flex flex-1 select-text flex-col-reverse overflow-hidden">
 				<!-- Limits -->
-				<div class="mt-3 flex h-6 w-full flex-shrink-0">
-					<LimitsAndOrder />
-				</div>
+				<!-- <div class="mt-3 flex h-6 w-full flex-shrink-0">
+					
+				</div> -->
 				<!-- Table -->
 				<div
 					class="relative flex-1 overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide"
