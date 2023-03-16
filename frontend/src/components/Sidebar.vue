@@ -108,7 +108,7 @@ import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
-import { Wrench, LayoutDashboard, Database, Settings, User, Users } from 'lucide-vue-next'
+import { Wrench, LayoutDashboard, Database, Settings, User, Users, Star } from 'lucide-vue-next'
 
 const sidebarItems = ref([
 	{
@@ -146,7 +146,7 @@ getOnboardingStatus().then((onboardingComplete) => {
 		sidebarItems.value.unshift({
 			path: '/get-started',
 			label: 'Get Started',
-			icon: 'star',
+			icon: Star,
 			name: 'GetStarted',
 			current: false,
 		})
