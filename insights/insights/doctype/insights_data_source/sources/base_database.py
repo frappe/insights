@@ -36,9 +36,11 @@ class BaseDatabase:
         sql = self.build_query(query)
         if not sql:
             return []
+        if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
+            sql = replace_query_tables_with_cte(sql, self.data_source)
         if query.is_native_query:
             sql = add_limit_to_sql(sql, query.limit)
-        return self.execute_query(sql, with_columns=True, replace_query_tables=True)
+        return self.execute_query(sql, with_columns=True)
 
     def validate_query(self, query):
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
