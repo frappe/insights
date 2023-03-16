@@ -1,4 +1,5 @@
 <script setup>
+import { Edit } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 defineEmits(['update'])
@@ -19,10 +20,9 @@ const editing = ref(false)
 		<div class="mr-2 whitespace-nowrap text-xl">
 			{{ title }}
 		</div>
-		<Button
+		<div
 			v-if="!editing"
-			icon="edit"
-			appearance="minimal"
+			class="flex cursor-pointer items-center rounded-md p-2 transition-all hover:bg-gray-200"
 			@click="
 				() => {
 					editing = true
@@ -30,7 +30,9 @@ const editing = ref(false)
 					$nextTick(() => $refs.titleInput.$el.focus())
 				}
 			"
-		></Button>
+		>
+			<Edit class="h-3.5 w-3.5" stroke-width="1.5" />
+		</div>
 	</div>
 	<div v-else class="flex space-x-2">
 		<Input
