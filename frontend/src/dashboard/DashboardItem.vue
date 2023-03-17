@@ -83,7 +83,7 @@ const refreshKey = computed(() => {
 		>
 			<template #target>
 				<div
-					class="relative flex h-full rounded-md"
+					class="group relative flex h-full rounded-md"
 					:class="{
 						'border bg-white shadow-sm':
 							item.item_type !== 'Filter' && item.item_type !== 'Text',
@@ -137,6 +137,16 @@ const refreshKey = computed(() => {
 									/>
 								</div>
 							</Tooltip>
+						</div>
+						<div
+							v-if="!dashboard.editing && item.options.query"
+							class="invisible -mt-1 -mb-1 flex cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
+						>
+							<FeatherIcon
+								name="external-link"
+								class="h-4 w-4"
+								@click="openQueryInNewTab(item)"
+							/>
 						</div>
 					</div>
 				</div>

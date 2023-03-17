@@ -35,16 +35,8 @@
 			>
 				<p>No results found</p>
 			</div>
-			<!-- Table & Limits -->
-			<div v-else class="flex flex-1 select-text flex-col-reverse overflow-hidden">
-				<!-- Limits -->
-				<!-- <div class="mt-3 flex h-6 w-full flex-shrink-0">
-					
-				</div> -->
-				<!-- Table -->
-				<div
-					class="relative flex-1 overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide"
-				>
+			<div v-else class="relative flex flex-1 select-text flex-col-reverse overflow-hidden">
+				<div class="flex-1 overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide">
 					<table class="border-separate border-spacing-0 text-sm">
 						<thead class="sticky top-0 text-gray-600">
 							<tr>
