@@ -34,6 +34,9 @@ export default function useQueryBuilder() {
 		if (state.currentQuery.name === name) {
 			state.currentQuery = state.queries[index - 1] || state.queries[0]
 		}
+		if (state.currentQuery) {
+			router.push({ name: 'QueryBuilder', params: { name: state.currentQuery.name } })
+		}
 	}
 
 	function isActive(query) {
