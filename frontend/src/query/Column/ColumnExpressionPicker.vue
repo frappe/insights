@@ -80,6 +80,29 @@
 				placeholder="Select a date format..."
 			/>
 		</div>
+		<div class="mt-2 space-y-1 text-sm text-gray-600">
+			<div class="font-light">Sort</div>
+			<Input
+				type="select"
+				v-model="expression.order_by"
+				:options="[
+					{
+						label: '',
+						value: '',
+					},
+					{
+						label: 'Ascending',
+						value: 'asc',
+					},
+					{
+						label: 'Descending',
+						value: 'desc',
+					},
+				]"
+				class="h-8 placeholder:text-sm"
+				placeholder="Enter a label..."
+			/>
+		</div>
 		<div class="mt-4 text-sm text-gray-600">
 			<Input
 				v-if="expression.valueType == 'String'"
@@ -147,6 +170,7 @@ const columnTypes = ['String', 'Integer', 'Decimal', 'Text', 'Datetime', 'Date',
 const expression = reactive({
 	raw: input.value,
 	label: column.label,
+	order_by: column.order_by,
 	groupBy: column.aggregation == 'Group By',
 	valueType: column.type || 'String',
 	ast: null,
@@ -224,6 +248,7 @@ const addOrEditColumn = () => {
 		},
 		type: expression.valueType,
 		label: expression.label,
+		order_by: expression.order_by,
 		column: expression.label.replace(/\s/g, '_'),
 		aggregation: expression.groupBy ? 'Group By' : '',
 	}

@@ -28,6 +28,29 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
+		<div class="space-y-1 text-sm text-gray-600">
+			<div class="font-light">Sort</div>
+			<Input
+				type="select"
+				v-model="simpleColumn.order_by"
+				:options="[
+					{
+						label: '',
+						value: '',
+					},
+					{
+						label: 'Ascending',
+						value: 'asc',
+					},
+					{
+						label: 'Descending',
+						value: 'desc',
+					},
+				]"
+				class="h-8 placeholder:text-sm"
+				placeholder="Enter a label..."
+			/>
+		</div>
 		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Date Format</div>
 			<Autocomplete
@@ -114,6 +137,7 @@ const simpleColumn = reactive({
 	// value is needed to show the selected column in the autocomplete
 	column: { ...props.column, value: props.column.column },
 	label: props.column.label,
+	order_by: props.column.order_by,
 	aggType: aggregations.value.find((t) => {
 		return t.value == props.column.aggregation
 	}),
@@ -180,6 +204,7 @@ function addOrEditColumn() {
 		...simpleColumn.column,
 		aggregation: simpleColumn.aggType.value,
 		label: simpleColumn.label,
+		order_by: simpleColumn.order_by,
 		format_option: showDateFormatOptions.value
 			? { date_format: simpleColumn.dateFormat.value }
 			: {},
