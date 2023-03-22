@@ -48,7 +48,9 @@ class BaseDatabase:
             sql = add_limit_to_sql(sql, query.limit)
         # set a hard max limit to prevent long running queries
         sql = add_limit_to_sql(
-            sql, frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            sql,
+            frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            or 1000,
         )
         return self.execute_query(sql, with_columns=True)
 

@@ -5,6 +5,7 @@ import json
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import random_string
 
 test_dependencies = ("Insights Data Source", "Insights Table")
 test_records = frappe.get_test_records("Insights Query")
@@ -31,7 +32,7 @@ class TestInsightsQuery(FrappeTestCase):
         query = frappe.get_doc(test_records[0])
         query.data_source = self.data_source
         query.save()
-        query.build_and_execute()
+        query.fetch_results()
         query.save()
 
         self.assertTrue("count(*)" in query.sql.lower())
@@ -63,7 +64,7 @@ class TestInsightsQuery(FrappeTestCase):
         query = frappe.get_doc(test_records[1])
         query.data_source = self.data_source
         query.save()
-        query.build_and_execute()
+        query.fetch_results()
         query.save()
 
         self.assertEqual(len(json.loads(query.results)), 11)
@@ -86,7 +87,7 @@ class TestInsightsQuery(FrappeTestCase):
         query = frappe.get_doc(test_records[3])
         query.data_source = self.data_source
         query.save()
-        query.build_and_execute()
+        query.fetch_results()
         result = json.loads(query.results)
         self.assertEqual(len(result), 5)
         self.assertEqual(len(result[0]), 3)
@@ -127,8 +128,9 @@ class TestInsightsQuery(FrappeTestCase):
             },
         )
         query.save()
-        query.build_and_execute()
+        query.fetch_results()
         query.save()
+        print(query.status)
         result = json.loads(query.results)
         self.assertEqual(len(result), 11)
         self.assertEqual(result[-1][2], 10)
@@ -145,7 +147,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
         for func in ["now", "today"]:
             expression = make_call_expression(func)
             query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_single_arg_function(self):
         query = frappe.get_doc(test_records[2])
@@ -167,7 +169,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
         ]:
             expression = make_call_expression(func, make_todo_column("docstatus"))
             query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_conditional_arg_function(self):
         query = frappe.get_doc(test_records[2])
@@ -181,7 +183,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
                 make_todo_column("docstatus"),
             )
             query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_two_arg_function(self):
         query = frappe.get_doc(test_records[2])
@@ -205,7 +207,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
                 func, make_todo_column("docstatus"), make_string("0"), make_string("1")
             )
             query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_in_operator(self):
         query = frappe.get_doc(test_records[2])
@@ -219,7 +221,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
                 make_string("2"),
             )
             query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_case_when(self):
         query = frappe.get_doc(test_records[2])
@@ -231,7 +233,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
             make_string("Closed"),
         )
         query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_timespan_function(self):
         query = frappe.get_doc(test_records[2])
@@ -242,7 +244,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
             make_string("Last 1 Years"),
         )
         query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
     def test_time_elapsed_function(self):
         query = frappe.get_doc(test_records[2])
@@ -254,12 +256,12 @@ class TestInsightsQueryBuilder(FrappeTestCase):
             make_string("2021-01-01"),
         )
         query.append("columns", make_query_column_expression(expression))
-        query.save().build_and_execute()
+        query.save().fetch_results()
 
 
 def make_query_column_expression(expression):
     return {
-        "label": "Test",
+        "label": random_string(5),
         "column": "Test",
         "is_expression": 1,
         "expression": expression,

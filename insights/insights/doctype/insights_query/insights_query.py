@@ -10,7 +10,6 @@ import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
 
-from insights.constants import COLUMN_TYPES
 from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,

@@ -326,6 +326,7 @@ class FrappeDB(BaseDatabase):
 
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
+        self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
             driver="pymysql",
