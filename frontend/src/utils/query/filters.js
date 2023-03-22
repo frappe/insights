@@ -1,8 +1,7 @@
-import { safeJSONParse } from '@/utils'
-import { reactive, ref, watch, computed } from 'vue'
-import { FIELDTYPES } from '@/utils'
-import { getColumn } from '@/utils/query/columns'
+import { FIELDTYPES, safeJSONParse } from '@/utils'
 import { convertIntoQueryFilters } from '@/utils/expressions/filter'
+import { getColumn } from '@/utils/query/columns'
+import { computed, reactive } from 'vue'
 
 const DEFAULT_FILTERS = {
 	type: 'LogicalExpression',
@@ -94,6 +93,7 @@ export function useQueryFilters(query) {
 		toggleOperator,
 		convertIntoExpression,
 		convertIntoSimpleFilter,
+		isSimpleFilter,
 	}
 }
 
@@ -241,6 +241,10 @@ function makeValueFromCallFunction(expression) {
 	}
 	const value = expression.arguments[1].value
 	return [value, value]
+}
+
+export function isSimpleFilter(expression) {
+	return isBinaryOperator(expression.operator) || isCallFunction(expression.function)
 }
 
 export function convertIntoSimpleFilter(expression) {

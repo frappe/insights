@@ -11,12 +11,15 @@
 		</div>
 		<Popover class="h-36 w-full text-sm" placement="left-start">
 			<template #target="{ open }">
-				<Code
-					v-model="input.value"
-					:completions="getCompletions"
-					@inputChange="open"
-					@viewUpdate="codeViewUpdate"
-				></Code>
+				<div class="relative h-full">
+					<Code
+						v-model="input.value"
+						:completions="getCompletions"
+						@inputChange="open"
+						@viewUpdate="codeViewUpdate"
+					></Code>
+					<ExpressionHelpDialog />
+				</div>
 			</template>
 			<template #body>
 				<div class="w-full pr-3 text-base">
@@ -131,6 +134,7 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Code from '@/components/Controls/Code.vue'
+import ExpressionHelpDialog from '../ExpressionHelpDialog.vue'
 import Tooltip from '@/components/Tooltip.vue'
 import { debounce } from 'frappe-ui'
 
