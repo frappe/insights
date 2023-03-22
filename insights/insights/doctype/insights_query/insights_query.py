@@ -96,13 +96,17 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     @property
     def results(self) -> str:
+        LIMIT = (
+            frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            or 1000
+        )
         try:
             cached_results = self.load_results()
             if not cached_results and self.status == "Execution Successful":
                 results = self.fetch_results()
-                return frappe.as_json(results[:1000])
+                return frappe.as_json(results[:LIMIT])
 
-            return frappe.as_json(cached_results[:1000])
+            return frappe.as_json(cached_results[:LIMIT])
         except Exception as e:
             print("Error getting results", e)
 
