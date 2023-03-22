@@ -228,6 +228,7 @@ function apply() {
 		}
 	}
 	emit('filter-select', query.filters.convertIntoExpression(filter))
+	Object.assign(filter, initalData)
 }
 
 const checkAndFetchColumnValues = debounce(function (search_text = '') {
