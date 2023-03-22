@@ -18,6 +18,7 @@
 			class="h-full w-full overflow-scroll scrollbar-hide"
 		>
 			<LogicalExpression
+				:key="JSON.stringify(filters)"
 				:expression="filters"
 				@add-filter="showFilterPicker"
 				@edit-filter="showFilterPicker"
