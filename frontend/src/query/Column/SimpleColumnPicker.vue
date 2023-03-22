@@ -28,6 +28,16 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
+
+		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
+			<div class="font-light">Date Format</div>
+			<Autocomplete
+				v-model="simpleColumn.dateFormat"
+				:options="dateFormats.map((f) => ({ ...f, description: f.value }))"
+				placeholder="Select a date format..."
+				@change="selectDateFormat"
+			/>
+		</div>
 		<div class="space-y-1 text-sm text-gray-600">
 			<div class="font-light">Sort</div>
 			<Input
@@ -49,15 +59,6 @@
 				]"
 				class="h-8 placeholder:text-sm"
 				placeholder="Enter a label..."
-			/>
-		</div>
-		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Date Format</div>
-			<Autocomplete
-				v-model="simpleColumn.dateFormat"
-				:options="dateFormats.map((f) => ({ ...f, description: f.value }))"
-				placeholder="Select a date format..."
-				@change="selectDateFormat"
 			/>
 		</div>
 		<div class="flex justify-end space-x-2">
