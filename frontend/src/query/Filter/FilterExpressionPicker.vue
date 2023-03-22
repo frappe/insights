@@ -13,7 +13,7 @@
 			<template #target="{ open }">
 				<div class="relative h-full">
 					<Code
-						v-model="input.value"
+						v-model="input"
 						:completions="getCompletions"
 						@inputChange="open"
 						@viewUpdate="codeViewUpdate"
@@ -75,7 +75,7 @@ import { debounce } from 'frappe-ui'
 
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
-import { inject, watchEffect, reactive } from 'vue'
+import { inject, watchEffect, reactive, ref, computed } from 'vue'
 
 const query = inject('query')
 
@@ -86,11 +86,8 @@ const props = defineProps({
 		default: {},
 	},
 })
-const editing = false
-const input = reactive({
-	value: '',
-	caretPosition: 0,
-})
+const editing = computed(() => query.filters.editFilterAt.idx !== -1)
+const input = ref(props.filter?.raw || '')
 
 // parse the expression when input changes
 const expression = reactive({
@@ -144,6 +141,10 @@ const codeViewUpdate = debounce(function ({ cursorPos }) {
 }, 300)
 
 const addExpressionFilter = () => {
-	emit('filter-select', expression.ast)
+	emit('filter-select', {
+		...expression.ast,
+		raw: expression.raw,
+		is_expression: true,
+	})
 }
 </script>

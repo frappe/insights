@@ -12,18 +12,7 @@ const DEFAULT_FILTERS = {
 }
 
 export function useQueryFilters(query) {
-	const data = computed(() => {
-		const filters = safeJSONParse(query.doc.filters, DEFAULT_FILTERS)
-		if (filters.conditions.length === 0) {
-			return filters
-		}
-		if (!query.columns.options || query.columns.options.length === 0) {
-			// if column options are not yet fetched, then return empty filters
-			// column options are needed to format binary expressions
-			return DEFAULT_FILTERS
-		}
-		return filters
-	})
+	const data = computed(() => safeJSONParse(query.doc.filters, DEFAULT_FILTERS))
 
 	const addNextFilterAt = reactive({
 		level: 1,
@@ -49,6 +38,11 @@ export function useQueryFilters(query) {
 			filters: data.value,
 		})
 		expression.conditions[editFilterAt.idx] = filter
+		Object.assign(editFilterAt, {
+			level: 1,
+			position: 1,
+			idx: -1,
+		})
 		updateFilters()
 	}
 	const remove = (level, position, idx) => {
@@ -227,7 +221,12 @@ export function convertIntoExpression(simpleFilter) {
 	}
 }
 
+function areLiterals(args) {
+	return args.every((arg) => arg.type == 'String' || arg.type == 'Number')
+}
+
 function makeValueFromCallFunction(expression) {
+	if (!areLiterals(expression.arguments)) return []
 	if (expression.function == 'is_set') return ['Set', 'Set']
 	if (expression.function == 'is_not_set') return ['Not Set', 'Not Set']
 	if (expression.function == 'between') {
@@ -244,7 +243,14 @@ function makeValueFromCallFunction(expression) {
 }
 
 export function isSimpleFilter(expression) {
-	return isBinaryOperator(expression.operator) || isCallFunction(expression.function)
+	// an expression is a simple filter if it can be converted into a simple filter
+	// with proper column, operator and value
+	const simpleFilter = convertIntoSimpleFilter(expression)
+	if (!simpleFilter) return false
+	const { column, operator, value } = simpleFilter
+	if (!column || !operator || !value) return false
+	if (!column.value || !operator.value || !value.value) return false
+	return true
 }
 
 export function convertIntoSimpleFilter(expression) {

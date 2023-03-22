@@ -43,14 +43,10 @@
 import FilterExpressionPicker from '@/query/Filter/FilterExpressionPicker.vue'
 import SimpleFilterPicker from '@/query/Filter/SimpleFilterPicker.vue'
 
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
 
-const query = inject('query')
 const props = defineProps(['filter'])
 defineEmits(['filter-select', 'close'])
 const editing = ref(Boolean(props.filter))
-const filterType = ref('simple')
-if (props.filter && props.filter.type) {
-	filterType.value = query.filters.isSimpleFilter(props.filter) ? 'simple' : 'expression'
-}
+const filterType = ref(props.filter?.is_expression ? 'expression' : 'simple')
 </script>
