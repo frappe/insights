@@ -280,7 +280,7 @@ class InsightsQueryClient:
             )
             for subquery in subqueries:
                 frappe.get_doc("Insights Query", subquery).run()
-        self.build_and_execute()
+        self.fetch_results()
         self.skip_before_save = True
         self.save()
 

@@ -130,9 +130,18 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def fetch_results(self):
         self.sync_child_stored_queries()
-        results = self._data_source.run_query(query=self)
-        results = self.process_column_types(results)
-        results = self.apply_transformations(results)
+        start = time.monotonic()
+        results = []
+        try:
+            results = self._data_source.run_query(query=self)
+            results = self.process_column_types(results)
+            results = self.apply_transformations(results)
+            self.execution_time = flt(time.monotonic() - start, 3)
+            self.last_execution = frappe.utils.now()
+            self.status = "Execution Successful"
+        except Exception:
+            self.status = "Pending Execution"
+
         self.store_results(results)
         return results
 
@@ -141,13 +150,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             sync_query_store(
                 [row.table for row in self.tables if row.table != self.name], force=True
             )
-
-    def build_and_execute(self):
-        start = time.monotonic()
-        self.fetch_results()
-        self.execution_time = flt(time.monotonic() - start, 3)
-        self.last_execution = frappe.utils.now()
-        self.status = "Execution Successful"
 
     def store_results(self, results):
         frappe.cache().set_value(

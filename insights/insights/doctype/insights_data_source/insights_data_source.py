@@ -104,9 +104,8 @@ class InsightsDataSource(Document):
         return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        results = []
         try:
-            results = self.db.run_query(query)
+            return self.db.run_query(query)
         except Exception as e:
             notify(
                 **{
@@ -115,7 +114,7 @@ class InsightsDataSource(Document):
                     "message": str(e),
                 }
             )
-        return results
+            raise
 
     def execute_query(self, query: str, **kwargs):
         return self.db.execute_query(query, **kwargs)
