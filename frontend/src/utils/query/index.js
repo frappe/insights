@@ -228,7 +228,11 @@ export const FUNCTIONS = {
 		description: 'Replaces all occurrences of search with replace in column',
 		example: 'replace(`category`, "_", "-")',
 	},
-	now: 'now',
+	now: {
+		syntax: 'now()',
+		description: 'Returns the current date and time',
+		example: '`posting_date` = now()',
+	},
 	today: {
 		syntax: 'today()',
 		description: 'Returns the current date',
