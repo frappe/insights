@@ -7,7 +7,13 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
     InsightsTableImport,
 )
 
-from .utils import add_limit_to_sql, compile_query, replace_query_tables_with_cte
+from .utils import (
+    Timer,
+    add_limit_to_sql,
+    compile_query,
+    create_execution_log,
+    replace_query_tables_with_cte,
+)
 
 
 class BaseDatabase:
@@ -40,6 +46,10 @@ class BaseDatabase:
             sql = replace_query_tables_with_cte(sql, self.data_source)
         if query.is_native_query:
             sql = add_limit_to_sql(sql, query.limit)
+        # set a hard max limit to prevent long running queries
+        sql = add_limit_to_sql(
+            sql, frappe.db.get_single_value("Insights Settings", "query_result_limit")
+        )
         return self.execute_query(sql, with_columns=True)
 
     def validate_query(self, query):
@@ -61,7 +71,9 @@ class BaseDatabase:
 
         self.validate_query(query)
         with self.connect() as connection:
-            res = connection.execute(query)
+            with Timer() as t:
+                res = connection.execute(query)
+            create_execution_log(query, self.data_source, t.elapsed)
             columns = [f"{d[0]}::{d[1]}" for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows

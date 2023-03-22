@@ -58,6 +58,7 @@
    "label": "Allow Subquery"
   },
   {
+   "default": "1000",
    "fieldname": "query_result_limit",
    "fieldtype": "Int",
    "label": "Query Result Limit"
@@ -71,7 +72,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-03-04 22:26:17.114627",
+ "modified": "2023-03-22 12:00:06.732065",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

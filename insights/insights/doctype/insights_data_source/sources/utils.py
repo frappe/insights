@@ -1,8 +1,11 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import time
+
 import frappe
 import sqlparse
+from frappe.utils.data import flt
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.pool import NullPool
@@ -258,3 +261,33 @@ def compile_query(query, dialect=None):
     compile_args = {"compile_kwargs": {"literal_binds": True}, "dialect": dialect}
     compiled = query.compile(**compile_args)
     return str(compiled)
+
+
+def create_execution_log(sql, data_source, time_taken=0):
+    frappe.get_doc(
+        {
+            "doctype": "Insights Query Execution Log",
+            "data_source": data_source,
+            "sql": sqlparse.format(sql, reindent=True, keyword_case="upper"),
+            "time_taken": time_taken,
+        }
+    ).insert(ignore_permissions=True)
+
+
+class Timer:
+    # a class to find the time taken to execute a line of code
+    # usage:
+    # with Timer() as t:
+    #     # do something
+    # print(t.elapsed)
+
+    def __init__(self):
+        self.elapsed = None
+
+    def __enter__(self):
+        self.start = time.monotonic()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.monotonic()
+        self.elapsed = flt(self.end - self.start, 3)

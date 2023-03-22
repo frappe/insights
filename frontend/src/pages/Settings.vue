@@ -24,7 +24,7 @@
 							</p>
 							<span class="text-gray-500">
 								Maximum number of rows to be returned by a query. This is to prevent
-								accidental queries from returning too many rows.
+								long running queries and memory issues.
 							</span>
 						</div>
 						<div class="flex flex-1 items-center pl-20">
@@ -40,7 +40,7 @@
 							</p>
 							<span class="text-gray-500">
 								Number of minutes to cache query results. This is to prevent
-								accidental queries from running too many times.
+								accidental running of the same query multiple times.
 							</span>
 						</div>
 						<div class="flex flex-1 items-center pl-20">

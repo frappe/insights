@@ -55,12 +55,6 @@ class InsightsQueryValidation:
     def validate_limit(self):
         if self.limit and self.limit < 1:
             frappe.throw("Limit must be greater than 0")
-        limit = (
-            frappe.db.get_single_value("Insights Settings", "query_result_limit")
-            or 10000
-        )
-        if self.limit and self.limit > limit:
-            frappe.throw(f"Limit must be less than {limit}")
 
     def validate_filters(self):
         if not self.filters:
@@ -102,7 +96,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     @property
     def results(self) -> str:
-        """Returns the 1000 rows of the query results"""
         try:
             cached_results = self.load_results()
             if not cached_results and self.status == "Execution Successful":
@@ -146,9 +139,9 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             )
 
     def build_and_execute(self):
-        start = time.time()
+        start = time.monotonic()
         self.fetch_results()
-        self.execution_time = flt(time.time() - start, 3)
+        self.execution_time = flt(time.monotonic() - start, 3)
         self.last_execution = frappe.utils.now()
         self.status = "Execution Successful"
 

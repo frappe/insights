@@ -16,7 +16,7 @@
 					</span>
 					<Tooltip
 						v-if="totalRows > query.results.MAX_ROWS"
-						:text="`Showing first ${query.results.MAX_ROWS.toLocaleString()} rows`"
+						:text="`Results are limited to ${query_result_limit} rows. You can change this in the settings.`"
 						:hoverDelay="0.1"
 						class="flex"
 					>
@@ -102,15 +102,18 @@
 </template>
 
 <script setup>
-import ColumnHeader from '@/query/Result/ColumnHeader.vue'
 import LimitsAndOrder from '@/query/LimitsAndOrder.vue'
-import { FIELDTYPES, ellipsis } from '@/utils'
+import ColumnHeader from '@/query/Result/ColumnHeader.vue'
+import { ellipsis, FIELDTYPES } from '@/utils'
 import settings from '@/utils/settings'
 
 import { computed, inject, watch } from 'vue'
 
 const query = inject('query')
 
+const query_result_limit = computed(() =>
+	parseInt(settings.doc?.query_result_limit).toLocaleString()
+)
 const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
