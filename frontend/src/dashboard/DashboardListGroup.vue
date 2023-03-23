@@ -39,7 +39,10 @@ const filteredDashboards = computed(() => {
 			:key="dashboard.id"
 			:dashboard="dashboard"
 		/>
-		<div v-if="filteredDashboards.length === 0" class="w-full text-center text-gray-500">
+		<div
+			v-if="searchTerm && filteredDashboards.length === 0"
+			class="w-full text-center text-gray-500"
+		>
 			No dashboards found.
 		</div>
 	</div>
