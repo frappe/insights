@@ -62,6 +62,7 @@ function addResources(resources) {
 				:placeholder="`Add a ${resourceTitle}`"
 				v-model="selectedResources"
 				:options="resourceOptions"
+				:loading="team.search_team_resources.loading"
 				@apply="(resources) => addResources(resources)"
 				@inputChange="(query) => team.searchResources(props.resourceType, query)"
 			></ListPicker>

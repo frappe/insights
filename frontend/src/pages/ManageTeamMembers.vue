@@ -35,6 +35,7 @@ function addMembers(members) {
 				placeholder="Add a member"
 				v-model="selectedMembers"
 				:options="memberOptions"
+				:loading="team.search_team_members.loading"
 				@inputChange="(query) => team.searchMembers(query)"
 				@apply="(selected) => addMembers(selected)"
 			></ListPicker>
