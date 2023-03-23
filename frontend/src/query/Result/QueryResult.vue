@@ -36,7 +36,7 @@
 				<p>No results found</p>
 			</div>
 			<div v-else class="relative flex flex-1 select-text flex-col-reverse overflow-hidden">
-				<div class="flex-1 overflow-scroll rounded-md bg-gray-50 pt-0 scrollbar-hide">
+				<div class="flex-1 overflow-scroll rounded-md bg-gray-50 pt-0">
 					<table class="border-separate border-spacing-0 text-sm">
 						<thead class="sticky top-0 text-gray-600">
 							<tr>

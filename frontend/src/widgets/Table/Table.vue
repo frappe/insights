@@ -52,7 +52,7 @@ function total(column) {
 		>
 			{{ props.options.title }}
 		</div>
-		<div class="relative flex flex-1 flex-col overflow-scroll text-base scrollbar-hide">
+		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
 			<div
 				v-if="rows.length == 0"
 				class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-500"

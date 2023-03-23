@@ -14,7 +14,7 @@
 					>
 						<span
 							v-if="selectedOptions.length > 0"
-							class="flex w-[calc(100%-1rem)] space-x-1.5 overflow-x-scroll p-0.5 text-gray-800 scrollbar-hide"
+							class="flex w-[calc(100%-1rem)] space-x-1.5 overflow-x-scroll p-0.5 text-gray-800"
 						>
 							<span
 								class="flex h-6 items-center rounded-md bg-white px-2 text-sm shadow"
@@ -44,7 +44,7 @@
 					v-show="isComboboxOpen"
 					class="rounded-md rounded-t-none bg-white px-1.5 shadow-md"
 				>
-					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto scrollbar-hide">
+					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto">
 						<div
 							class="sticky top-0 mb-1.5 flex items-stretch space-x-1.5 bg-white pt-1.5"
 						>

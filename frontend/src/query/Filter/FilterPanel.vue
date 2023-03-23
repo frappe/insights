@@ -15,7 +15,7 @@
 		</div>
 		<div
 			v-else-if="!pickingFilter && filters.conditions?.length > 0"
-			class="h-full w-full overflow-scroll scrollbar-hide"
+			class="h-full w-full overflow-scroll"
 		>
 			<LogicalExpression
 				:key="JSON.stringify(filters)"
