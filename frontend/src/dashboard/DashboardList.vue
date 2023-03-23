@@ -9,7 +9,7 @@
 		<div class="flex flex-1 flex-col overflow-scroll">
 			<DashboardsGroup :dashboards="favorites" title="Favorites" />
 			<DashboardsGroup :dashboards="privates" title="Private" />
-			<DashboardsGroup :dashboards="dashboards.list" title="All" />
+			<DashboardsGroup :dashboards="dashboards.list" title="All" :enableSearch="true" />
 		</div>
 	</div>
 
