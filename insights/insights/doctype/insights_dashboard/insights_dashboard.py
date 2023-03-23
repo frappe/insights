@@ -8,10 +8,8 @@ import frappe
 from frappe.model.document import Document
 
 from insights import notify
+from insights.api.permissions import get_resource_access_info
 from insights.cache_utils import get_or_set_cache, make_digest
-from insights.insights.doctype.insights_team.insights_team import (
-    get_allowed_resources_for_user,
-)
 
 from .utils import convert_into_simple_filter, convert_to_expression
 
@@ -19,6 +17,10 @@ CACHE_NAMESPACE = "insights_dashboard"
 
 
 class InsightsDashboard(Document):
+    @frappe.whitelist()
+    def get_access_info(self):
+        return get_resource_access_info("Insights Dashboard", self.name)
+
     @property
     def cache_namespace(self):
         return f"{CACHE_NAMESPACE}|{self.name}"

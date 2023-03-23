@@ -17,6 +17,7 @@ export default function useDashboard(name) {
 		},
 		isOwner: false,
 		canShare: false,
+		sharedWith: [],
 		editing: false,
 		loading: false,
 		deleting: false,
@@ -39,6 +40,9 @@ export default function useDashboard(name) {
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
 		state.isOwner = state.doc.owner == auth.user.user_id
 		state.canShare = state.isOwner || auth.user.is_admin
+		resource.get_access_info.fetch().then((res) => {
+			state.sharedWith = res.message.authorized_teams
+		})
 		state.loading = false
 	}
 	reload()
@@ -271,6 +275,7 @@ function getDashboardResource(name) {
 			savestate: 'savestate',
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
+			get_access_info: 'get_access_info',
 		},
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)

@@ -8,6 +8,7 @@
 		</div>
 		<div class="flex flex-1 flex-col overflow-scroll">
 			<DashboardsGroup :dashboards="favorites" title="Favorites" />
+			<DashboardsGroup :dashboards="privates" title="Private" />
 			<DashboardsGroup :dashboards="dashboards.list" title="All" />
 		</div>
 	</div>
@@ -42,6 +43,9 @@ const dashboards = useDashboards()
 dashboards.reload()
 const favorites = computed(() => {
 	return dashboards.list.filter((dashboard) => dashboard.is_favourite)
+})
+const privates = computed(() => {
+	return dashboards.list.filter((dashboard) => dashboard.shared_with.length === 0)
 })
 
 const showDialog = ref(false)

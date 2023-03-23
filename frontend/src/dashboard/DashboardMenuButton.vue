@@ -13,12 +13,6 @@ async function handleDelete() {
 </script>
 
 <template>
-	<Button
-		appearance="white"
-		v-if="!dashboard.editing"
-		icon="refresh-ccw"
-		@click="dashboard.refresh"
-	/>
 	<Dropdown
 		v-if="dashboard.doc"
 		placement="left"
