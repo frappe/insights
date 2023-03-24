@@ -4,16 +4,19 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
-from frappe.utils.user import get_users_with_role
+
+from insights.api.permissions import clear_resource_access_info_cache
 
 from .insights_team_client import InsightsTeamClient
 
 
 class InsightsTeam(InsightsTeamClient, Document):
     def on_trash(self):
+        clear_resource_access_info_cache()
         _get_user_teams.clear_cache()
 
     def on_change(self):
+        clear_resource_access_info_cache()
         _get_user_teams.clear_cache()
 
     def get_members(self):

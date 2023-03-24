@@ -1,11 +1,13 @@
 import frappe
 from frappe.query_builder.functions import Count
+from frappe.utils.caching import redis_cache
 
 from insights.decorators import check_role
 
 
 @frappe.whitelist()
 @check_role("Insights User")
+@redis_cache(ttl=60 * 60)
 def get_resource_access_info(resource_type, resource_name):
     # returns a list of authorized and unauthorized teams for a resource
     InsightsTeam = frappe.qb.DocType("Insights Team")
@@ -60,6 +62,10 @@ def get_resource_access_info(resource_type, resource_name):
         "authorized_teams": authorized_teams,
         "unauthorized_teams": unauthorized_teams,
     }
+
+
+def clear_resource_access_info_cache():
+    get_resource_access_info.clear_cache()
 
 
 @frappe.whitelist()
