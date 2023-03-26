@@ -29,7 +29,7 @@ def get_data_sources():
             "status": "Active",
             **get_permission_filter("Insights Data Source"),
         },
-        fields=["name", "title", "status", "database_type", "creation"],
+        fields=["name", "title", "status", "database_type", "creation", "is_site_db"],
         order_by="creation desc",
     )
 

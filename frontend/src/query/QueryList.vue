@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import useQueries from './useQueries'
-import useSources from './useSources'
+import useSources from '@/datasource/useSources'
 
 const emit = defineEmits(['select'])
 const searchText = ref('')

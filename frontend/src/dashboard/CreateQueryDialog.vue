@@ -1,5 +1,6 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import useSources from '@/datasource/useSources'
 import { createResource } from 'frappe-ui'
 import { computed, reactive, watch } from 'vue'
 
@@ -22,18 +23,14 @@ const newQuery = reactive({
 	title: 'Untitled',
 	table: null,
 })
-const getDataSources = createResource({
-	url: 'insights.api.get_data_sources',
-	auto: true,
-	onSuccess(res) {
-		if (res.length) {
-			newQuery.dataSource = res[0].name
-		}
-	},
+
+const sources = useSources()
+sources.reload().then(() => {
+	if (sources.list.length) {
+		newQuery.dataSource = sources.list[0].name
+	}
 })
-const dataSources = computed(() => {
-	return getDataSources.data?.map((d) => d['name']) || []
-})
+const dataSources = computed(() => sources.list.map((d) => d['title']))
 const getTableOptions = createResource({
 	url: 'insights.api.get_tables',
 	initialData: [],
