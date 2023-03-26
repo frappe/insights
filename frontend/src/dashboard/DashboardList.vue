@@ -8,7 +8,11 @@
 		</div>
 		<div class="flex flex-1 flex-col overflow-scroll">
 			<DashboardsGroup :dashboards="favorites" title="Favorites" />
-			<DashboardsGroup :dashboards="privates" title="Private" />
+			<DashboardsGroup
+				v-if="settings.doc?.enable_permissions"
+				:dashboards="privates"
+				title="Private"
+			/>
 			<DashboardsGroup :dashboards="dashboards.list" title="All" :enableSearch="true" />
 		</div>
 	</div>
@@ -37,6 +41,7 @@ import useDashboards from '@/dashboard/useDashboards'
 import { updateDocumentTitle } from '@/utils'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import settings from '@/utils/settings'
 import DashboardsGroup from './DashboardListGroup.vue'
 
 const dashboards = useDashboards()
@@ -45,7 +50,7 @@ const favorites = computed(() => {
 	return dashboards.list.filter((dashboard) => dashboard.is_favourite)
 })
 const privates = computed(() => {
-	return dashboards.list.filter((dashboard) => dashboard.shared_with.length === 0)
+	return dashboards.list.filter((dashboard) => dashboard.is_private)
 })
 
 const showDialog = ref(false)

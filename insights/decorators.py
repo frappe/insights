@@ -13,6 +13,12 @@ def check_role(role):
             if frappe.session.user == "Administrator":
                 return function(*args, **kwargs)
 
+            perm_disabled = not frappe.db.get_single_value(
+                "Insights Settings", "enable_permissions"
+            )
+            if perm_disabled and role in ["Insights Admin", "Insights User"]:
+                return function(*args, **kwargs)
+
             if not frappe.db.get_value(
                 "Has Role",
                 {"parent": frappe.session.user, "role": role},

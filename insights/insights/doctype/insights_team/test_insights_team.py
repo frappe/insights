@@ -17,6 +17,12 @@ from .insights_team_client import get_teams
 
 
 class TestInsightsTeam(FrappeTestCase):
+    def setUp(self):
+        frappe.db.set_single_value("Insights Settings", "enable_permissions", 1)
+
+    def tearDown(self):
+        frappe.db.set_single_value("Insights Settings", "enable_permissions", 0)
+
     def test_get_teams(self):
         # case 0: check error if not allowed to read insights team
         user = self.make_new_user("abc@example.com")

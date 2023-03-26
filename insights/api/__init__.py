@@ -4,7 +4,7 @@
 import frappe
 
 from insights import notify
-from insights.api.permissions import get_resource_access_info
+from insights.api.permissions import is_private
 from insights.decorators import check_role
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
@@ -122,8 +122,7 @@ def get_dashboard_list():
             pluck="parent",
         )
 
-        access_info = get_resource_access_info("Insights Dashboard", dashboard.name)
-        dashboard["shared_with"] = access_info.get("authorized_teams")
+        dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
 
     return dashboards
 

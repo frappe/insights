@@ -1,14 +1,13 @@
 <script setup>
 import ShareDialog from '@/components/ShareDialog.vue'
-import { inject, ref, computed } from 'vue'
+import { inject, ref } from 'vue'
 
 const dashboard = inject('dashboard')
 const showShareDialog = ref(false)
-const sharedWithCount = computed(() => dashboard.sharedWith?.length || 0)
 </script>
 
 <template>
-	<Badge v-if="sharedWithCount == 0" class="flex items-center text-xs" color="yellow">
+	<Badge v-if="dashboard.isPrivate" class="flex items-center text-xs" color="yellow">
 		Private
 	</Badge>
 

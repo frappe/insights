@@ -108,6 +108,7 @@ import { useRoute } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
+import settings from '@/utils/settings'
 import { Wrench, LayoutDashboard, Database, Settings, User, Users, Star } from 'lucide-vue-next'
 
 const sidebarItems = ref([
@@ -153,7 +154,7 @@ getOnboardingStatus().then((onboardingComplete) => {
 	}
 })
 watch(
-	() => auth.user.is_admin,
+	() => auth.user.is_admin && settings.doc?.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item

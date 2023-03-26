@@ -1,5 +1,6 @@
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
+import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -74,7 +75,7 @@ const routes = [
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin,
+			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
 		},
 	},
 	{
@@ -82,7 +83,7 @@ const routes = [
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin,
+			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
 		},
 	},
 	{
