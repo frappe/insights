@@ -136,11 +136,8 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
     then stop and return None
     """
 
-    print("------------------")
-
     # parse the sql to get the tables
     sql_tables = parse_sql_tables(sql)
-    print(sql_tables)
 
     # get the list of query name that are saved as tables
     query_tables = frappe.get_all(
@@ -152,7 +149,6 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
         },
         pluck="table",
     )
-    print(query_tables)
 
     # get the sql for the queries
     queries = frappe.get_all(
