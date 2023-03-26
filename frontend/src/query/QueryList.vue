@@ -99,7 +99,7 @@ onMounted(() => searchInput.value.focus())
 			>
 				<FeatherIcon name="database" class="h-4 w-4 text-gray-500" />
 				<div class="flex w-full items-baseline justify-between">
-					<span>{{ source.name }}</span>
+					<span>{{ source.title }}</span>
 				</div>
 				<LoadingIndicator
 					v-if="newSource == source.name && queries.creating"
