@@ -2,8 +2,10 @@
 # See license.txt
 
 from functools import wraps
+from typing import Callable
 
 import frappe
+from frappe.utils.caching import __generate_request_cache_key
 
 
 def check_role(role):

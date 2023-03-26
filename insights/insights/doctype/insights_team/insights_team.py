@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils.caching import redis_cache, site_cache
+from frappe.utils.caching import site_cache
 
 from insights.api.permissions import clear_resource_access_info_cache
 
@@ -130,7 +130,6 @@ def is_insights_admin(user=None):
         return True
 
 
-@redis_cache(ttl=60 * 60)
 def get_allowed_resources_for_user(resource_type=None, user=None):
     user = user or frappe.session.user
     permsisions_disabled = not frappe.db.get_single_value(
