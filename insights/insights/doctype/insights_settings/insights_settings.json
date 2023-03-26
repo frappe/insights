@@ -9,6 +9,7 @@
   "onboarding_section",
   "setup_complete",
   "onboarding_complete",
+  "enable_permissions",
   "allow_subquery",
   "auto_execute_query",
   "auto_refresh_dashboard_in_minutes",
@@ -67,12 +68,18 @@
    "fieldname": "subscription_id",
    "fieldtype": "Password",
    "label": "Subscription ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_permissions",
+   "fieldtype": "Check",
+   "label": "Enable Permissions"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-03-22 12:00:06.732065",
+ "modified": "2023-03-26 11:56:22.866853",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

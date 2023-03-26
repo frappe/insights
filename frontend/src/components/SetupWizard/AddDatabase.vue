@@ -87,8 +87,16 @@
 </template>
 
 <script setup>
+import { createResource } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import { createDatabase, testDatabaseConnection } from '@/utils/setupWizard'
+
+const testDatabaseConnection = createResource({
+	url: 'insights.api.setup.test_database_connection',
+})
+
+const createDatabase = createResource({
+	url: 'insights.api.setup.add_database',
+})
 
 const emit = defineEmits(['success', 'discard'])
 

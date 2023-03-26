@@ -1,16 +1,11 @@
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
-import { getSetupStatus } from '@/utils/setupWizard'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
 	{
 		path: '/setup',
-		name: 'Setup',
-		component: () => import('@/pages/SetupWizard.vue'),
-		meta: {
-			hideSidebar: true,
-		},
+		redirect: '/',
 	},
 	{
 		path: '/login',
@@ -139,15 +134,6 @@ router.beforeEach(async (to, from, next) => {
 	}
 	if (to.meta.isAllowed && !to.meta.isAllowed()) {
 		return next('/no-permission')
-	}
-
-	// force redirect to Setup page if database not set up yet
-	const setupComplete = await getSetupStatus()
-	if (!setupComplete && to.name !== 'Setup') {
-		return next('/setup')
-	}
-	if (setupComplete && to.name === 'Setup') {
-		return next('/')
 	}
 
 	// redirect to /dashboard if onboarding is complete
