@@ -62,10 +62,6 @@ def get_resource_access_info(resource_type, resource_name):
     }
 
 
-def clear_resource_access_info_cache():
-    get_resource_access_info.clear_cache()
-
-
 @frappe.whitelist()
 @check_role("Insights User")
 def grant_access(resource_type, resource_name, team):
