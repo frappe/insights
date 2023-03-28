@@ -1,10 +1,6 @@
-import { reactive, computed, watch } from 'vue'
-import { isEqual, safeJSONParse } from '@/utils'
-import { FIELDTYPES } from '@/utils'
-
-const cache = reactive({
-	columns: {},
-})
+import { FIELDTYPES, isEqual, safeJSONParse } from '@/utils'
+import { useStorage } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 export function useQueryColumns(query) {
 	const data = computed(() =>
@@ -71,21 +67,20 @@ export function useQueryColumns(query) {
 	return { data, options, indexOptions, valueOptions, getOperatorOptions }
 }
 
+const cachedColumns = useStorage('insights:columns', {})
+
 function updateColumnOptionsCache(columns) {
-	cache.columns = columns.reduce((acc, column) => {
+	cachedColumns.value = columns.reduce((acc, column) => {
 		const key = `${column.table}_${column.column}`
 		if (!acc[key]) {
 			acc[key] = column
 		}
 		return acc
-	}, cache.columns)
+	}, cachedColumns.value)
 }
 
 export function getColumn(column) {
-	const cachedColumn = cache.columns[`${column.table}_${column.column}`]
-	if (cachedColumn) {
-		return cachedColumn
-	}
+	return cachedColumns.value[`${column.table}_${column.column}`]
 }
 
 export function getOperatorOptions(columnType) {

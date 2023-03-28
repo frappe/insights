@@ -2,9 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-from pypika import CustomFunction
 
 from insights import notify
+from insights.api.permissions import is_private
 from insights.decorators import check_role
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
@@ -29,7 +29,7 @@ def get_data_sources():
             "status": "Active",
             **get_permission_filter("Insights Data Source"),
         },
-        fields=["name", "title", "status", "database_type", "creation"],
+        fields=["name", "title", "status", "database_type", "creation", "is_site_db"],
         order_by="creation desc",
     )
 
@@ -79,21 +79,24 @@ def get_table_columns(data_source, table):
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_tables(data_source=None):
+def get_tables(data_source=None, with_query_tables=False):
     if not data_source:
         return []
 
     check_data_source_permission(data_source)
+    filters = {
+        "hidden": 0,
+        "data_source": data_source,
+        **get_permission_filter("Insights Table"),
+    }
+    if not with_query_tables:
+        filters["is_query_based"] = 0
 
     return frappe.get_list(
         "Insights Table",
-        filters={
-            "hidden": 0,
-            "data_source": data_source,
-            **get_permission_filter("Insights Table"),
-        },
-        fields=["name", "table", "label"],
-        order_by="label asc",
+        filters=filters,
+        fields=["name", "table", "label", "is_query_based"],
+        order_by="is_query_based asc, label asc",
     )
 
 
@@ -112,9 +115,15 @@ def get_dashboard_list():
             )
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
-            filters={"parent": dashboard.name, "item_type": "Chart"},
+            filters={
+                "parent": dashboard.name,
+                "item_type": ["not in", ["Text", "Filter"]],
+            },
             pluck="parent",
         )
+
+        dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
+
     return dashboards
 
 
@@ -137,22 +146,10 @@ def get_queries():
         return []
 
     Query = frappe.qb.DocType("Insights Query")
-    QueryTable = frappe.qb.DocType("Insights Query Table")
-    QueryChart = frappe.qb.DocType("Insights Query Chart")
-    GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
-        .left_join(QueryTable)
-        .on(Query.name == QueryTable.parent)
-        .left_join(QueryChart)
-        .on(QueryChart.query == Query.name)
         .select(
-            Query.name,
-            Query.title,
-            GroupConcat(QueryTable.label).as_("tables"),
-            Query.data_source,
-            Query.creation,
-            QueryChart.type.as_("chart_type"),
+            Query.name, Query.title, Query.data_source, Query.creation, Query.is_stored
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
@@ -162,19 +159,18 @@ def get_queries():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_query(title, data_source, table):
-    check_table_permission(data_source, table.get("value"))
-
+def create_query(data_source, table=None, title=None):
     query = frappe.new_doc("Insights Query")
-    query.title = title
+    query.title = title or "Untitled Query"
     query.data_source = data_source
-    query.append(
-        "tables",
-        {
-            "table": table.get("value"),
-            "label": table.get("label"),
-        },
-    )
+    if table:
+        query.append(
+            "tables",
+            {
+                "table": table.get("value"),
+                "label": table.get("label"),
+            },
+        )
     query.save()
     return query.name
 
@@ -261,11 +257,7 @@ def get_onboarding_status():
         ),
         "query_created": bool(frappe.db.a_row_exists("Insights Query")),
         "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "chart_created": bool(
-            frappe.db.exists(
-                "Insights Query Chart", {"data": ["is", "set"], "type": ["is", "set"]}
-            )
-        ),
+        "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
         "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
     }
 

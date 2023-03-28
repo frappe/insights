@@ -31,6 +31,8 @@ class InsightsTable(Document):
         return self.columns
 
     def update_columns(self):
+        if self.is_query_based:
+            return
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
         if columns := data_source.get_table_columns(self.table):
             self.columns = []

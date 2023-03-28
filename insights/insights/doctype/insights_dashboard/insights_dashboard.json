@@ -7,8 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "items",
-  "last_updated_on"
+  "items"
  ],
  "fields": [
   {
@@ -23,17 +22,11 @@
    "fieldtype": "Table",
    "label": "Items",
    "options": "Insights Dashboard Item"
-  },
-  {
-   "fieldname": "last_updated_on",
-   "fieldtype": "Datetime",
-   "label": "Last Updated On",
-   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-18 15:03:39.536771",
+ "modified": "2023-02-02 17:17:39.509087",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard",

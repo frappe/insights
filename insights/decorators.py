@@ -13,6 +13,12 @@ def check_role(role):
             if frappe.session.user == "Administrator":
                 return function(*args, **kwargs)
 
+            perm_disabled = not frappe.db.get_single_value(
+                "Insights Settings", "enable_permissions"
+            )
+            if perm_disabled and role in ["Insights Admin", "Insights User"]:
+                return function(*args, **kwargs)
+
             if not frappe.db.get_value(
                 "Has Role",
                 {"parent": frappe.session.user, "role": role},
@@ -36,6 +42,20 @@ def check_permission(doctype, permission_type="read"):
         def wrapper(*args, **kwargs):
             frappe.has_permission(doctype, permission_type, throw=True)
             return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def log_error():
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            try:
+                return function(*args, **kwargs)
+            except BaseException:
+                frappe.log_error("Insights Error")
 
         return wrapper
 

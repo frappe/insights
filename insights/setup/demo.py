@@ -327,4 +327,4 @@ class DemoDataFactory:
                         "foreign_table_label": link[1],
                     },
                 )
-            doc.save()
+            doc.save(ignore_permissions=True)

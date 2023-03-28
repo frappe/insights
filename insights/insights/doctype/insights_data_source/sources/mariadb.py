@@ -11,7 +11,7 @@ from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
-from .models import BaseDatabase
+from .base_database import BaseDatabase
 from .utils import (
     MARIADB_TO_GENERIC_TYPES,
     create_insights_table,
@@ -111,6 +111,7 @@ class MariaDB(BaseDatabase):
     def __init__(
         self, data_source, host, port, username, password, database_name, use_ssl
     ):
+        self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
             driver="pymysql",
@@ -120,25 +121,12 @@ class MariaDB(BaseDatabase):
             host=host,
             port=port,
             ssl=use_ssl,
-            ssl_verify_cert=True,
+            ssl_verify_cert=use_ssl,
             charset="utf8mb4",
             use_unicode=True,
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
-
-    def test_connection(self):
-        return self.execute_query("select 1")
-
-    def build_query(self, query):
-        return self.query_builder.build(query, dialect=self.engine.dialect)
-
-    def execute_query(self, query, pluck=False):
-        if query is None:
-            return []
-        with self.engine.connect() as connection:
-            result = connection.execute(query).fetchall()
-            return [r[0] for r in result] if pluck else [list(r) for r in result]
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
@@ -153,7 +141,7 @@ class MariaDB(BaseDatabase):
         }
 
     def get_table_columns(self, table):
-        with self.engine.connect() as connection:
+        with self.connect() as connection:
             self.table_factory.db_conn = connection
             return self.table_factory.get_table_columns(table)
 
@@ -161,5 +149,4 @@ class MariaDB(BaseDatabase):
         query = Select(Column(column)).select_from(Table(table)).distinct().limit(limit)
         if search_text:
             query = query.where(Column(column).like(f"%{search_text}%"))
-
-        return self.execute_query(query, pluck=True)
+        return self.execute_query(query, pluck=True, replace_query_tables=True)

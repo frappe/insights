@@ -101,3 +101,11 @@ def revoke_access(resource_type, resource_name, team):
             ):
                 team_doc.remove(permission)
         team_doc.save(ignore_permissions=True)
+
+
+def is_private(resource_type, resource_name):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return False
+    return bool(
+        get_resource_access_info(resource_type, resource_name).get("authorized_teams")
+    )

@@ -4,7 +4,6 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
-from frappe.utils.user import get_users_with_role
 
 from .insights_team_client import InsightsTeamClient
 
@@ -129,7 +128,10 @@ def is_insights_admin(user=None):
 
 def get_allowed_resources_for_user(resource_type=None, user=None):
     user = user or frappe.session.user
-    if is_insights_admin(user):
+    permsisions_disabled = not frappe.db.get_single_value(
+        "Insights Settings", "enable_permissions"
+    )
+    if permsisions_disabled or is_insights_admin(user):
         return frappe.get_all(resource_type, pluck="name")
 
     teams = get_user_teams(user)
@@ -152,6 +154,9 @@ def get_allowed_resources_for_user(resource_type=None, user=None):
 
 
 def get_permission_filter(resource_type, user=None):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return {}
+
     if is_insights_admin(user):
         return {}
 
@@ -162,6 +167,9 @@ def get_permission_filter(resource_type, user=None):
 
 
 def check_data_source_permission(source_name, user=None, raise_error=True):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return {}
+
     if is_insights_admin(user):
         return True
 
@@ -178,6 +186,9 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
 
 def check_table_permission(data_source, table, user=None, raise_error=True):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return {}
+
     if is_insights_admin(user):
         return True
 

@@ -1,82 +1,21 @@
 <template>
-	<BasePage>
-		<template #header>
-			<div class="flex flex-1 justify-between">
-				<h1 class="text-3xl font-medium text-gray-900">Dashboards</h1>
-				<div>
-					<Button appearance="primary" @click="showDialog = true">
-						+ New Dashboard
-					</Button>
-				</div>
-			</div>
-		</template>
-		<template #main>
-			<div class="flex flex-1 flex-col">
-				<div class="mb-4 flex space-x-4">
-					<Input type="text" placeholder="Title" />
-				</div>
-				<div class="flex h-[calc(100%-3rem)] flex-col rounded-md border">
-					<!-- List Header -->
-					<div
-						class="flex items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
-					>
-						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-300" />
-						</p>
-						<p class="flex-1">Title</p>
-						<p class="flex-1 text-right">Last Modified</p>
-					</div>
-					<ul
-						role="list"
-						v-if="dashboards.length > 0"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
-					>
-						<li v-for="dashboard in dashboards" :key="dashboard.name">
-							<router-link
-								:to="{
-									name: 'Dashboard',
-									params: { name: dashboard.name },
-								}"
-								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
-							>
-								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-300" />
-								</p>
-								<p
-									class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900"
-								>
-									{{ dashboard.title }}
-								</p>
-								<p
-									class="flex-1 text-right text-sm text-gray-500"
-									:title="dashboard.modified"
-								>
-									{{ dashboard.modified_from_now }}
-								</p>
-							</router-link>
-						</li>
-					</ul>
-					<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
-						<div class="text-base font-light text-gray-500">
-							You haven't created any dashboards yet.
-						</div>
-						<div
-							class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
-							@click="showDialog = true"
-						>
-							Create new?
-						</div>
-					</div>
-					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
-						<p class="ml-auto">
-							Showing {{ dashboards.length }} of
-							{{ dashboards.length }}
-						</p>
-					</div>
-				</div>
-			</div>
-		</template>
-	</BasePage>
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
+		<div class="flex h-12 flex-shrink-0 items-center justify-between">
+			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
+			<Button appearance="white" iconLeft="plus" class="shadow-sm" @click="showDialog = true">
+				Create New
+			</Button>
+		</div>
+		<div class="flex flex-1 flex-col overflow-scroll">
+			<DashboardsGroup :dashboards="favorites" title="Favorites" />
+			<DashboardsGroup
+				v-if="settings.doc?.enable_permissions"
+				:dashboards="privates"
+				title="Private"
+			/>
+			<DashboardsGroup :dashboards="dashboards.list" title="All" :enableSearch="true" />
+		</div>
+	</div>
 
 	<Dialog :options="{ title: 'New Dashboard' }" v-model="showDialog">
 		<template #body-content>
@@ -85,12 +24,12 @@
 					type="text"
 					label="Title"
 					placeholder="Enter a suitable title..."
-					v-model="newDashboard.title"
+					v-model="newDashboardTitle"
 				/>
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="createDashboard" :loading="creatingDashboard">
+			<Button appearance="primary" @click="createDashboard" :loading="dashboards.creating">
 				Create
 			</Button>
 		</template>
@@ -98,52 +37,33 @@
 </template>
 
 <script setup>
-import BasePage from '@/components/BasePage.vue'
-
-import { useRouter } from 'vue-router'
-import { createResource } from 'frappe-ui'
-import { computed, reactive, ref, inject } from 'vue'
+import useDashboards from '@/dashboard/useDashboards'
 import { updateDocumentTitle } from '@/utils'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import settings from '@/utils/settings'
+import DashboardsGroup from './DashboardListGroup.vue'
 
-const getDashboards = createResource({
-	url: 'insights.api.get_dashboard_list',
-	initialData: [],
-	auto: true,
+const dashboards = useDashboards()
+dashboards.reload()
+const favorites = computed(() => {
+	return dashboards.list.filter((dashboard) => dashboard.is_favourite)
 })
-
-const dayjs = inject('$dayjs')
-const dashboards = computed(() => {
-	return getDashboards.data.map((dashboard) => {
-		dashboard.modified_from_now = dayjs(dashboard.modified).fromNow()
-		return dashboard
-	})
+const privates = computed(() => {
+	return dashboards.list.filter((dashboard) => dashboard.is_private)
 })
 
 const showDialog = ref(false)
-const newDashboard = reactive({ title: '' })
+const newDashboardTitle = ref('')
 const router = useRouter()
-const createDashboardResource = createResource({
-	url: 'insights.api.create_dashboard',
-	onSuccess({ name }) {
-		getDashboards.fetch()
-		showDialog.value = false
-		newDashboard.title = ''
-		router.push(`/dashboard/${name}`)
-	},
-})
-const creatingDashboard = computed(() => {
-	return createDashboardResource.loading
-})
-const createDashboard = () => {
-	if (newDashboard.title) {
-		createDashboardResource.submit({
-			title: newDashboard.title,
-		})
-	}
+
+async function createDashboard() {
+	const name = await dashboards.create(newDashboardTitle.value)
+	showDialog.value = false
+	newDashboardTitle.value = ''
+	router.push(`/dashboard/${name}`)
 }
 
-const pageMeta = ref({
-	title: 'Dashboards',
-})
+const pageMeta = ref({ title: 'Dashboards' })
 updateDocumentTitle(pageMeta)
 </script>

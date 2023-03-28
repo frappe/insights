@@ -23,6 +23,7 @@ const getOnboardingStatus = async () => {
 async function updateOnboardingStatus() {
 	const onboarding_status = await call('insights.api.get_onboarding_status')
 	onboardingComplete.value = onboarding_status.is_onboarded
+	localStorage.setItem('onboardingComplete', Boolean(onboardingComplete.value))
 	updateSteps(onboarding_status)
 }
 

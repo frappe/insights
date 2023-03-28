@@ -32,7 +32,7 @@
 						role="list"
 						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
-						<li v-for="source in dataSources" :key="source.name">
+						<li v-for="source in sources.list" :key="source.name">
 							<router-link
 								:to="{
 									name: 'DataSource',
@@ -73,8 +73,8 @@
 					</ul>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">
-							Showing {{ dataSources.length }} of
-							{{ dataSources.length }}
+							Showing {{ sources.list.length }} of
+							{{ sources.list.length }}
 						</p>
 					</div>
 				</div>
@@ -90,32 +90,20 @@
 </template>
 
 <script setup>
-import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
 import BasePage from '@/components/BasePage.vue'
-import { Badge, createResource } from 'frappe-ui'
+import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
 import { updateDocumentTitle } from '@/utils'
-
-import { computed, ref, inject } from 'vue'
+import useSources from '@/datasource/useSources'
+import { ref } from 'vue'
 
 const new_dialog = ref(false)
 
-const getDataSources = createResource({
-	url: 'insights.api.get_data_sources',
-	initialData: [],
-	auto: true,
-})
-
-const dayjs = inject('$dayjs')
-const dataSources = computed(() => {
-	return getDataSources.data.map((source) => {
-		source.created_from_now = dayjs(source.creation).fromNow()
-		return source
-	})
-})
+const sources = useSources()
+sources.reload()
 
 const onNewDatasource = () => {
 	new_dialog.value = false
-	getDataSources.fetch()
+	sources.reload()
 }
 
 const pageMeta = ref({

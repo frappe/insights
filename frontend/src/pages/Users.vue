@@ -36,7 +36,7 @@
 					<ul
 						role="list"
 						v-if="users.list?.length > 0"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-scroll scrollbar-hide"
+						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
 						<li
 							v-for="user in filteredUsers"

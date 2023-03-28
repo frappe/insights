@@ -18,14 +18,6 @@ class InsightsQueryClient:
         return new_query.name
 
     @frappe.whitelist()
-    def get_charts(self):
-        return frappe.get_list(
-            "Insights Query Chart",
-            filters={"query": self.name},
-            pluck="name",
-        )
-
-    @frappe.whitelist()
     def add_table(self, table):
         new_table = {
             "label": table.get("label"),
@@ -183,11 +175,14 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
-        return get_tables(self.data_source)
+        with_query_tables = frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        )
+        return get_tables(self.data_source, with_query_tables)
 
     @frappe.whitelist()
     def fetch_columns(self):
-        if not self.tables:
+        if self.is_native_query:
             return []
 
         columns = []
@@ -285,7 +280,7 @@ class InsightsQueryClient:
             )
             for subquery in subqueries:
                 frappe.get_doc("Insights Query", subquery).run()
-        self.build_and_execute()
+        self.fetch_results()
         self.skip_before_save = True
         self.save()
 
@@ -299,3 +294,12 @@ class InsightsQueryClient:
     def store(self):
         self.is_stored = 1
         self.save()
+
+    @frappe.whitelist()
+    def convert(self):
+        self.is_native_query = not self.is_native_query
+        self.save()
+
+    @frappe.whitelist()
+    def get_source_schema(self):
+        return self._data_source.get_schema()

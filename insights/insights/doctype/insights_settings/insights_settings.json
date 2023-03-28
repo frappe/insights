@@ -9,7 +9,8 @@
   "onboarding_section",
   "setup_complete",
   "onboarding_complete",
-  "use_cte",
+  "enable_permissions",
+  "allow_subquery",
   "auto_execute_query",
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
@@ -53,11 +54,12 @@
   },
   {
    "default": "0",
-   "fieldname": "use_cte",
+   "fieldname": "allow_subquery",
    "fieldtype": "Check",
-   "label": "Use CTE"
+   "label": "Allow Subquery"
   },
   {
+   "default": "1000",
    "fieldname": "query_result_limit",
    "fieldtype": "Int",
    "label": "Query Result Limit"
@@ -66,12 +68,18 @@
    "fieldname": "subscription_id",
    "fieldtype": "Password",
    "label": "Subscription ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_permissions",
+   "fieldtype": "Check",
+   "label": "Enable Permissions"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-01-29 15:42:03.625860",
+ "modified": "2023-03-26 11:56:22.866853",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

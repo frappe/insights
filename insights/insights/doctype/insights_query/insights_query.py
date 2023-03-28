@@ -2,13 +2,18 @@
 # For license information, please see license.txt
 
 import time
-from functools import cached_property
 from json import dumps
 
 import frappe
+import pandas as pd
+import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
-from sqlparse import format as format_sql
+
+from insights.decorators import log_error
+from insights.insights.doctype.insights_data_source.sources.utils import (
+    create_insights_table,
+)
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_query_client import InsightsQueryClient
@@ -34,10 +39,6 @@ class InsightsQueryValidation:
         self.validate_columns()
 
     def validate_tables(self):
-        for row in self.tables:
-            if not row.table:
-                frappe.throw(f"Row #{row.idx}: Table is required")
-
         tables = [row.table for row in self.tables]
         tables = frappe.get_all(
             "Insights Table",
@@ -53,12 +54,6 @@ class InsightsQueryValidation:
     def validate_limit(self):
         if self.limit and self.limit < 1:
             frappe.throw("Limit must be greater than 0")
-        limit = (
-            frappe.db.get_single_value("Insights Settings", "query_result_limit")
-            or 10000
-        )
-        if self.limit and self.limit > limit:
-            frappe.throw(f"Limit must be less than {limit}")
 
     def validate_filters(self):
         if not self.filters:
@@ -77,23 +72,21 @@ class InsightsQueryValidation:
 
 class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def before_save(self):
-        if self.get("skip_before_save"):
-            return
+        if not self.tables and not self.is_native_query:
+            return self.clear()
 
-        if not self.tables:
-            self.clear()
+        if self.get("skip_before_save"):
             return
 
         self.update_query()
 
     def on_update(self):
-        self.create_default_chart()
+        self.update_insights_table()
         self.sync_query_store()
         self.update_link_docs_title()
         # TODO: update result columns on update
 
     def on_trash(self):
-        self.delete_linked_charts()
         self.delete_insights_table()
 
     @property
@@ -102,17 +95,17 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     @property
     def results(self) -> str:
-        """Returns the 1000 rows of the query results"""
+        LIMIT = (
+            frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            or 1000
+        )
         try:
-            if self.status != "Execution Successful":
-                return frappe.as_json([self._result_columns])
-
             cached_results = self.load_results()
-            if not cached_results or len(cached_results) == 1:  # only columns
+            if not cached_results and self.status == "Execution Successful":
                 results = self.fetch_results()
-                return frappe.as_json(results[:1000])
+                return frappe.as_json(results[:LIMIT])
 
-            return frappe.as_json(cached_results[:1000])
+            return frappe.as_json(cached_results[:LIMIT])
         except Exception as e:
             print("Error getting results", e)
 
@@ -123,30 +116,39 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def update_query(self):
         query = self._data_source.build_query(query=self)
         query = format_query(query)
-        if self.sql != query:
+        # in case of native query, the query doesn't get updated if the limit is changed
+        # so we need to check if the limit is changed
+        # because the native query is limited by the limit field
+        limit_changed = (
+            self.get_doc_before_save()
+            and self.limit != self.get_doc_before_save().limit
+        )
+        if self.sql != query or limit_changed:
             self.sql = query
             self.status = "Pending Execution"
 
-    @property
-    def _result_columns(self):
-        return [f"{c.label or c.column}::{c.type}" for c in self.get_columns()]
-
     def fetch_results(self):
-        results = list(self._data_source.run_query(query=self))
-        results.insert(0, self._result_columns)
-        if self.transforms:
-            results = self.apply_transform(results)
-        if self.has_cumulative_columns():
-            results = self.apply_cumulative_sum(results)
+        self.sync_child_stored_queries()
+        start = time.monotonic()
+        results = []
+        try:
+            results = self._data_source.run_query(query=self)
+            results = self.process_column_types(results)
+            results = self.apply_transformations(results)
+            self.execution_time = flt(time.monotonic() - start, 3)
+            self.last_execution = frappe.utils.now()
+            self.status = "Execution Successful"
+        except Exception:
+            self.status = "Pending Execution"
+
         self.store_results(results)
         return results
 
-    def build_and_execute(self):
-        start = time.time()
-        self.fetch_results()
-        self.execution_time = flt(time.time() - start, 3)
-        self.last_execution = frappe.utils.now()
-        self.status = "Execution Successful"
+    def sync_child_stored_queries(self):
+        if self.data_source == "Query Store" and self.tables:
+            sync_query_store(
+                [row.table for row in self.tables if row.table != self.name], force=True
+            )
 
     def store_results(self, results):
         frappe.cache().set_value(
@@ -159,39 +161,17 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if not results and fetch_if_not_exists:
             results = self.fetch_results()
         if not results:
-            return [self._result_columns]
+            return []
         return frappe.parse_json(results)
-
-    def create_default_chart(self):
-        charts = self.get_charts()
-        if not charts:
-            frappe.get_doc(
-                {
-                    "doctype": "Insights Query Chart",
-                    "query": self.name,
-                    "title": self.title,
-                }
-            ).insert(ignore_permissions=True)
 
     def update_link_docs_title(self):
         old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
         if old_title and old_title != self.title:
-            Chart = frappe.qb.DocType("Insights Query Chart")
-            frappe.qb.update(Chart).set(Chart.title, self.title).where(
-                Chart.query == self.name
-            ).run()
-
             # this still doesn't updates the old title stored the query column
             Table = frappe.qb.DocType("Insights Table")
             frappe.qb.update(Table).set(Table.label, self.title).where(
                 Table.table == self.name
             ).run()
-
-    def delete_linked_charts(self):
-        charts = self.get_charts()
-        for chart in charts:
-            frappe.delete_doc("Insights Query Chart", chart, ignore_permissions=True)
-            frappe.db.delete("Insights Dashboard Item", {"chart": chart})
 
     def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
@@ -205,9 +185,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.limit = 500
         self.execution_time = 0
         self.last_execution = None
-        self.transform_type = None
-        self.transform_data = None
-        self.transform_result = None
         frappe.cache().delete_value(f"insights_query|{self.name}")
         self.status = "Execution Successful"
 
@@ -215,11 +192,104 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if self.is_stored:
             sync_query_store(tables=[self.name], force=True)
 
+    @log_error()
+    def process_column_types(self, results):
+        if not results:
+            return results
+
+        columns = results[0]
+        if not self.is_native_query:
+            results[0] = [f"{c.label}::{c.type}" for c in self.get_columns()]
+            return results
+
+        rows_df = pd.DataFrame(results[1:], columns=[c.split("::")[0] for c in columns])
+        # create a row that contains values in each column
+        values_row = []
+        for column in rows_df.columns:
+            # find the first non-null value in the column
+            value = rows_df[column].dropna().iloc[0]
+            values_row.append(value)
+
+        # infer the type of each column
+        inferred_types = self.guess_types(values_row)
+        # update the column types
+        for i, column in enumerate(columns):
+            column_name = column.split("::")[0]
+            columns[i] = f"{column_name}::{inferred_types[i]}"
+        results[0] = columns
+        return results
+
+    def guess_types(self, values):
+        # try converting each value to a number, float, date, datetime
+        # if it fails, it's a string
+        types = []
+        for value in values:
+            try:
+                pd.to_numeric(value)
+                types.append("Integer")
+            except ValueError:
+                try:
+                    pd.to_numeric(value, downcast="float")
+                    types.append("Decimal")
+                except ValueError:
+                    try:
+                        pd.to_datetime(value)
+                        types.append("Datetime")
+                    except ValueError:
+                        types.append("String")
+
+        return types
+
+    def update_insights_table(self):
+        create_insights_table(
+            frappe._dict(
+                {
+                    "table": self.name,
+                    "label": self.title,
+                    "data_source": self.data_source,
+                    "is_query_based": 1,
+                    "columns": [
+                        frappe._dict(
+                            {
+                                "column": column.label,  # use label as column name
+                                "label": column.label,
+                                "type": column.type,
+                            }
+                        )
+                        for column in self.get_columns()
+                    ],
+                }
+            )
+        )
+
     def get_columns(self):
-        return self.columns or self.fetch_columns()
+        if not self.is_native_query:
+            return self.columns or self.fetch_columns()
+
+        # make column from results first row
+        results = self.load_results(fetch_if_not_exists=True)
+        if not results:
+            return []
+        return [
+            frappe._dict(
+                {
+                    "label": c.split("::")[0],
+                    "type": c.split("::")[1],
+                }
+            )
+            for c in results[0]
+        ]
+
+    def apply_transformations(self, results):
+        if self.is_native_query:
+            return results
+        if self.transforms:
+            results = self.apply_transform(results)
+        if self.has_cumulative_columns():
+            results = self.apply_cumulative_sum(results)
+        return results
 
     def apply_transform(self, results):
-        from pandas import DataFrame
 
         for row in self.transforms:
             if row.type == "Pivot":
@@ -242,7 +312,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 if pivot_column == index_column:
                     frappe.throw("Pivot Column and Index Column cannot be same")
 
-                results_df = DataFrame(
+                results_df = pd.DataFrame(
                     result[1:], columns=[d.split("::")[0] for d in result[0]]
                 )
 
@@ -251,7 +321,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 value_column_values = results_df[value_column]
 
                 # make a dataframe for pivot table
-                pivot_df = DataFrame(
+                pivot_df = pd.DataFrame(
                     {
                         index_column: index_column_values,
                         pivot_column: pivot_column_values,
@@ -286,10 +356,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         )
 
     def apply_cumulative_sum(self, results):
-        from pandas import DataFrame
-
         result = frappe.parse_json(results)
-        results_df = DataFrame(
+        results_df = pd.DataFrame(
             result[1:], columns=[d.split("::")[0] for d in result[0]]
         )
 
@@ -301,7 +369,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
 
 def format_query(query):
-    return format_sql(
+    return sqlparse.format(
         query,
         keyword_case="upper",
         reindent_aligned=True,

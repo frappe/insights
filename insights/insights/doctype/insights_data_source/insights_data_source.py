@@ -1,18 +1,19 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
+from functools import cached_property, lru_cache
 
 import frappe
 from frappe import task
 from frappe.model.document import Document
 
+from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
+from .sources.base_database import BaseDatabase
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
-from .sources.models import BaseDatabase
 from .sources.query_store import QueryStore
 from .sources.sqlite import SQLiteDB
 
@@ -103,7 +104,17 @@ class InsightsDataSource(Document):
         return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        return self.db.run_query(query)
+        try:
+            return self.db.run_query(query)
+        except Exception as e:
+            notify(
+                **{
+                    "type": "error",
+                    "title": "Failed to run query",
+                    "message": str(e),
+                }
+            )
+            raise
 
     def execute_query(self, query: str, **kwargs):
         return self.db.execute_query(query, **kwargs)
@@ -120,3 +131,45 @@ class InsightsDataSource(Document):
 
     def get_table_preview(self, table, limit=100):
         return self.db.get_table_preview(table, limit)
+
+    def get_schema(self):
+        return get_data_source_schema(self.name)
+
+
+@lru_cache(maxsize=32)
+def get_data_source_schema(data_source):
+    Table = frappe.qb.DocType("Insights Table")
+    TableColumn = frappe.qb.DocType("Insights Table Column")
+    schema_list = (
+        frappe.qb.from_(Table)
+        .select(
+            Table.table,
+            Table.label,
+            Table.is_query_based,
+            TableColumn.column,
+            TableColumn.label,
+            TableColumn.type,
+        )
+        .left_join(TableColumn)
+        .on(Table.name == TableColumn.parent)
+        .where((Table.data_source == data_source) & (Table.hidden == 0))
+        .run(as_dict=True)
+    )
+    schema = {}
+    for table in schema_list:
+        schema.setdefault(
+            table.table,
+            {
+                "label": table.label,
+                "is_query_based": table.is_query_based,
+                "columns": [],
+            },
+        )
+        schema[table.table]["columns"].append(
+            {
+                "column": table.column,
+                "label": table.label,
+                "type": table.type,
+            }
+        )
+    return schema

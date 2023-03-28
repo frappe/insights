@@ -1,16 +1,18 @@
-import { computed } from 'vue'
-import { createDocumentResource, debounce } from 'frappe-ui'
-import { useQueryTables } from '@/utils/query/tables'
+import { safeJSONParse } from '@/utils'
+import auth from '@/utils/auth'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
+import { useQueryTables } from '@/utils/query/tables'
 import { createToast } from '@/utils/toasts'
-import auth from '@/utils/auth'
+import { createDocumentResource, debounce } from 'frappe-ui'
+import { computed } from 'vue'
 
-const API_METHODS = {
+export const API_METHODS = {
 	run: 'run',
 	reset: 'reset',
 	store: 'store',
+	convert: 'convert',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
 	fetchTables: 'fetch_tables',
@@ -32,10 +34,9 @@ const API_METHODS = {
 	// filter methods
 	updateFilters: 'update_filters',
 
-	// chart methods
-	getCharts: 'get_charts',
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
+	getSourceSchema: 'get_source_schema',
 }
 
 export function useQuery(name) {
@@ -47,8 +48,7 @@ export function useQuery(name) {
 	query.filters = useQueryFilters(query)
 	query.results = useQueryResults(query)
 
-	query.getCharts.submit()
-	query.charts = computed(() => query.getCharts.data?.message)
+	query.sourceSchema = computed(() => query.getSourceSchema.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
 	query.execute = () => {
 		return query.debouncedRun(null, {
@@ -77,6 +77,20 @@ function getQueryResource(name) {
 		doctype: 'Insights Query',
 		name: name,
 		whitelistedMethods: API_METHODS,
+		transform(doc) {
+			doc.columns = doc.columns.map((c) => {
+				c.format_option = safeJSONParse(c.format_option, {})
+				return c
+			})
+			doc.results = safeJSONParse(doc.results, [])
+			resource.resultColumns = doc.results[0]?.map((c) => {
+				return {
+					column: c.split('::')[0],
+					type: c.split('::')[1],
+				}
+			})
+			return doc
+		},
 	})
 	resource.get.fetch()
 	return resource
@@ -214,7 +228,11 @@ export const FUNCTIONS = {
 		description: 'Replaces all occurrences of search with replace in column',
 		example: 'replace(`category`, "_", "-")',
 	},
-	now: 'now',
+	now: {
+		syntax: 'now()',
+		description: 'Returns the current date and time',
+		example: '`posting_date` = now()',
+	},
 	today: {
 		syntax: 'today()',
 		description: 'Returns the current date',

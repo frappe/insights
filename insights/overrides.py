@@ -22,6 +22,9 @@ def has_permission(doc, ptype, user):
     if not doc.name:
         return
 
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return True
+
     if not user:
         user = frappe.session.user
 

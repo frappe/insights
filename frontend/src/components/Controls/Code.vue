@@ -11,13 +11,14 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue'
-import { tags } from '@lezer/highlight'
-import { Codemirror } from 'vue-codemirror'
-import { EditorView } from '@codemirror/view'
-import { javascript } from '@codemirror/lang-javascript'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
+import { javascript } from '@codemirror/lang-javascript'
+import { MySQL, sql } from '@codemirror/lang-sql'
 import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
+import { EditorView } from '@codemirror/view'
+import { tags } from '@lezer/highlight'
+import { computed, watch } from 'vue'
+import { Codemirror } from 'vue-codemirror'
 
 const props = defineProps({
 	modelValue: {
@@ -26,6 +27,18 @@ const props = defineProps({
 	completions: {
 		type: Function,
 		default: null,
+	},
+	language: {
+		type: String,
+		default: 'javascript',
+	},
+	tables: {
+		type: Array,
+		default: () => [],
+	},
+	schema: {
+		type: Object,
+		default: () => ({}),
 	},
 })
 const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate'])
@@ -46,7 +59,17 @@ watch(code, (value, oldValue) => {
 	}
 })
 
-const extensions = [javascript(), closeBrackets(), EditorView.lineWrapping]
+const language =
+	props.language === 'javascript'
+		? javascript()
+		: sql({
+				dialect: MySQL,
+				upperCaseKeywords: true,
+				schema: props.schema,
+				tables: props.tables,
+		  })
+
+const extensions = [language, closeBrackets(), EditorView.lineWrapping]
 const autocompletionOptions = {
 	activateOnTyping: true,
 	closeOnBlur: false,

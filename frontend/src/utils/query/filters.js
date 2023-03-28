@@ -1,8 +1,7 @@
-import { safeJSONParse } from '@/utils'
-import { reactive, ref, watch, computed } from 'vue'
-import { FIELDTYPES } from '@/utils'
-import { getColumn } from '@/utils/query/columns'
+import { FIELDTYPES, safeJSONParse } from '@/utils'
 import { convertIntoQueryFilters } from '@/utils/expressions/filter'
+import { getColumn } from '@/utils/query/columns'
+import { computed, reactive } from 'vue'
 
 const DEFAULT_FILTERS = {
 	type: 'LogicalExpression',
@@ -13,18 +12,7 @@ const DEFAULT_FILTERS = {
 }
 
 export function useQueryFilters(query) {
-	const data = computed(() => {
-		const filters = safeJSONParse(query.doc.filters, DEFAULT_FILTERS)
-		if (filters.conditions.length === 0) {
-			return filters
-		}
-		if (!query.columns.options || query.columns.options.length === 0) {
-			// if column options are not yet fetched, then return empty filters
-			// column options are needed to format binary expressions
-			return DEFAULT_FILTERS
-		}
-		return filters
-	})
+	const data = computed(() => safeJSONParse(query.doc.filters, DEFAULT_FILTERS))
 
 	const addNextFilterAt = reactive({
 		level: 1,
@@ -50,6 +38,11 @@ export function useQueryFilters(query) {
 			filters: data.value,
 		})
 		expression.conditions[editFilterAt.idx] = filter
+		Object.assign(editFilterAt, {
+			level: 1,
+			position: 1,
+			idx: -1,
+		})
 		updateFilters()
 	}
 	const remove = (level, position, idx) => {
@@ -94,6 +87,7 @@ export function useQueryFilters(query) {
 		toggleOperator,
 		convertIntoExpression,
 		convertIntoSimpleFilter,
+		isSimpleFilter,
 	}
 }
 
@@ -227,7 +221,12 @@ export function convertIntoExpression(simpleFilter) {
 	}
 }
 
+function areLiterals(args) {
+	return args.every((arg) => arg.type == 'String' || arg.type == 'Number')
+}
+
 function makeValueFromCallFunction(expression) {
+	if (!areLiterals(expression.arguments.slice(1))) return []
 	if (expression.function == 'is_set') return ['Set', 'Set']
 	if (expression.function == 'is_not_set') return ['Not Set', 'Not Set']
 	if (expression.function == 'between') {
@@ -241,6 +240,17 @@ function makeValueFromCallFunction(expression) {
 	}
 	const value = expression.arguments[1].value
 	return [value, value]
+}
+
+export function isSimpleFilter(expression) {
+	// an expression is a simple filter if it can be converted into a simple filter
+	// with proper column, operator and value
+	const simpleFilter = convertIntoSimpleFilter(expression)
+	if (!simpleFilter) return false
+	const { column, operator, value } = simpleFilter
+	if (!column || !operator || !value) return false
+	if (!column.value || !operator.value || !value.value) return false
+	return true
 }
 
 export function convertIntoSimpleFilter(expression) {

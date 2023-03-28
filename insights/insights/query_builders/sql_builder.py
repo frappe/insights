@@ -69,13 +69,13 @@ class ColumnFormatter:
         if format == "Hour of Day":
             return func.date_format(column, "%H:00")
         if format == "Day of Week":
-            return func.date_format(column, "%w")
+            return func.date_format(column, "%W")
         if format == "Day of Month":
             return func.date_format(column, "%d")
         if format == "Day of Year":
             return func.date_format(column, "%j")
         if format == "Month of Year":
-            return func.date_format(column, "%m")
+            return func.date_format(column, "%M")
         if format == "Quarter of Year":
             return func.quarter(column)
         if format == "Quarter":
@@ -446,13 +446,19 @@ class SQLQueryBuilder:
         self._order_by_columns = []
         self._limit = 500
 
-    def build(self, query, dialect: Dialect = None):
+    def build(self, query, dialect: Dialect = None) -> str:
         self.query = query
         self.dialect = dialect
-        self.process_tables_and_joins()
-        self.process_columns()
-        self.process_filters()
-        return self.make_query()
+
+        if query.is_native_query:
+            return (
+                self.compile(text(query.sql.strip().rstrip(";"))) if query.sql else ""
+            )
+        else:
+            self.process_tables_and_joins()
+            self.process_columns()
+            self.process_filters()
+            return self.make_query()
 
     def make_table(self, name):
         if not hasattr(self, "_tables"):

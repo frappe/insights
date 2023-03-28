@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { safeJSONParse } from '@/utils'
+import { computed } from 'vue'
 
 export function useQueryTables(query) {
 	query.fetchTables.submit()
@@ -13,18 +13,22 @@ export function useQueryTables(query) {
 			}
 		})
 	)
-	const joinOptions = computed(() => {
-		// any two table can be joined from the same data source
-		// so, return all tables as join options
-		return query.fetchTables.data?.message.map((table) => ({
+	const sourceTables = computed(() =>
+		query.fetchTables.data?.message.map((table) => ({
 			...table,
 			value: table.table,
+			description: table.is_query_based ? 'Query' : '',
 		}))
+	)
+
+	const joinOptions = computed(() => {
+		// any two table/query can be joined from the same data source
+		return sourceTables.value
 	})
 
 	const newTableOptions = computed(() => {
 		if (query.doc?.tables?.length == 0) {
-			return joinOptions.value
+			return sourceTables.value
 		}
 		// only return tables that are already selected in the query
 		// to ensure correct chaining of joins

@@ -1,16 +1,12 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { getSetupStatus } from '@/utils/setupWizard'
-import { getOnboardingStatus } from '@/utils/onboarding'
 import auth from '@/utils/auth'
+import { getOnboardingStatus } from '@/utils/onboarding'
+import settings from '@/utils/settings'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
 	{
 		path: '/setup',
-		name: 'Setup',
-		component: () => import('@/pages/SetupWizard.vue'),
-		meta: {
-			hideSidebar: true,
-		},
+		redirect: '/',
 	},
 	{
 		path: '/login',
@@ -33,7 +29,7 @@ const routes = [
 	{
 		path: '/dashboard',
 		name: 'Dashboards',
-		component: () => import('@/dashboard/Dashboards.vue'),
+		component: () => import('@/dashboard/DashboardList.vue'),
 	},
 	{
 		props: true,
@@ -60,21 +56,26 @@ const routes = [
 	},
 	{
 		path: '/query',
-		name: 'QueryList',
-		component: () => import('@/pages/QueryList.vue'),
+		redirect: '/query/build',
 	},
 	{
 		props: true,
 		name: 'Query',
-		path: '/query/:name',
-		component: () => import('@/pages/Query.vue'),
+		path: '/query/:name?',
+		redirect: '/query/build',
+	},
+	{
+		props: true,
+		name: 'QueryBuilder',
+		path: '/query/build/:name?',
+		component: () => import('@/query/QueryBuilder.vue'),
 	},
 	{
 		path: '/users',
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin,
+			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
 		},
 	},
 	{
@@ -82,7 +83,7 @@ const routes = [
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin,
+			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
 		},
 	},
 	{
@@ -133,15 +134,6 @@ router.beforeEach(async (to, from, next) => {
 	}
 	if (to.meta.isAllowed && !to.meta.isAllowed()) {
 		return next('/no-permission')
-	}
-
-	// force redirect to Setup page if database not set up yet
-	const setupComplete = await getSetupStatus()
-	if (!setupComplete && to.name !== 'Setup') {
-		return next('/setup')
-	}
-	if (setupComplete && to.name === 'Setup') {
-		return next('/')
 	}
 
 	// redirect to /dashboard if onboarding is complete

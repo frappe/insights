@@ -1,6 +1,6 @@
 <script setup>
 import * as echarts from 'echarts'
-import { getColors } from '@/utils/charts/colors'
+import { getColors } from '@/utils/colors'
 import { onMounted, ref, reactive, onBeforeUnmount, provide, watch, useAttrs } from 'vue'
 
 const options = reactive({
@@ -77,8 +77,8 @@ function downloadChart() {
 </script>
 
 <template>
-	<div class="h-full w-full rounded-md border px-2 py-3">
-		<div class="h-full max-h-[26rem] w-full">
+	<div class="h-full w-full rounded-md px-2 py-3">
+		<div class="h-full w-full">
 			<div v-bind="$attrs" :class="['mx-3', $attrs.chartSubtitle ? 'h-11' : 'h-6']">
 				<div class="text-lg font-normal leading-6 text-gray-800">
 					{{ $attrs.chartTitle }}

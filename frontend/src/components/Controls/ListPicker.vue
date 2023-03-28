@@ -14,7 +14,7 @@
 					>
 						<span
 							v-if="selectedOptions.length > 0"
-							class="flex w-[calc(100%-1rem)] space-x-1.5 overflow-x-scroll p-0.5 text-gray-800 scrollbar-hide"
+							class="flex w-[calc(100%-1rem)] space-x-1.5 overflow-x-scroll p-0.5 text-gray-800"
 						>
 							<span
 								class="flex h-6 items-center rounded-md bg-white px-2 text-sm shadow"
@@ -42,26 +42,34 @@
 			<template #body="{ close: closePopover }">
 				<div
 					v-show="isComboboxOpen"
-					class="rounded-md rounded-t-none bg-white px-1.5 pb-1.5 shadow-md"
+					class="rounded-md rounded-t-none bg-white px-1.5 shadow-md"
 				>
-					<ComboboxOptions class="max-h-[20rem] overflow-y-auto scrollbar-hide" static>
+					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto">
 						<div
 							class="sticky top-0 mb-1.5 flex items-stretch space-x-1.5 bg-white pt-1.5"
 						>
-							<ComboboxInput
-								class="form-input w-full placeholder-gray-500"
-								ref="input"
-								type="text"
-								@change="
-									(e) => {
-										query = e.target.value
-										emit('inputChange', e.target.value)
-									}
-								"
-								:value="query"
-								autocomplete="off"
-								placeholder="Search..."
-							/>
+							<div class="relative flex flex-1 overflow-hidden">
+								<ComboboxInput
+									class="form-input w-full placeholder-gray-500"
+									ref="input"
+									type="text"
+									@change="
+										(e) => {
+											query = e.target.value
+											emit('inputChange', e.target.value)
+										}
+									"
+									:value="query"
+									autocomplete="off"
+									placeholder="Search..."
+								/>
+								<div
+									v-if="loading"
+									class="absolute right-2 flex h-full items-center"
+								>
+									<LoadingIndicator class="h-3 w-3" />
+								</div>
+							</div>
 							<Button icon="x" @click="selectedOptions = []" />
 						</div>
 						<div
@@ -108,7 +116,7 @@
 								/>
 							</div>
 						</ComboboxOption>
-						<div class="sticky bottom-0 flex justify-end space-x-2 bg-white pt-2">
+						<div class="sticky bottom-0 flex justify-end space-x-2 bg-white py-2">
 							<Button appearance="secondary" @click.prevent.stop="selectOrClearAll()">
 								{{ selectedOptions.length > 0 ? 'Clear' : 'Select All' }}
 							</Button>
@@ -127,14 +135,15 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, useAttrs } from 'vue'
 import {
 	Combobox,
 	ComboboxButton,
 	ComboboxInput,
-	ComboboxOptions,
 	ComboboxOption,
+	ComboboxOptions,
 } from '@headlessui/vue'
+import { LoadingIndicator } from 'frappe-ui'
+import { computed, inject, ref } from 'vue'
 
 const emit = defineEmits(['inputChange', 'change', 'update:modelValue', 'apply'])
 const props = defineProps({
@@ -146,13 +155,15 @@ const props = defineProps({
 		type: String,
 		default: '',
 	},
-	modelValue: {
-		type: Array,
-		default: [],
-	},
+	value: Array,
+	modelValue: Array,
 	options: {
 		type: Array,
 		default: [],
+	},
+	loading: {
+		type: Boolean,
+		default: false,
 	},
 })
 
@@ -167,7 +178,7 @@ function makeOptions(options) {
 	}
 
 	if (options[0].hasOwnProperty('label') && options[0].hasOwnProperty('value')) {
-		options = options
+		// pass through
 	}
 
 	if (typeof options[0] === 'string') {
@@ -186,14 +197,14 @@ function makeOptions(options) {
 	return options
 }
 
-const attrs = useAttrs()
-const valuePassed = attrs.hasOwnProperty('value')
+const valueProp = props.modelValue ? 'modelValue' : 'value'
 const selectedOptions = computed({
 	get() {
-		return makeOptions(valuePassed ? attrs.value?.slice() : props.modelValue.slice())
+		return makeOptions(props[valueProp]?.slice())
 	},
 	set(val) {
-		emit(valuePassed ? 'change' : 'update:modelValue', val)
+		emit('change', val)
+		emit('update:modelValue', val)
 	},
 })
 

@@ -18,6 +18,14 @@ export const dateFormats = [
 export function getFormattedDate(date, dateFormat) {
 	if (!date) return ''
 
+	if (dateFormat === 'Day of Week') {
+		return date
+	}
+
+	if (dateFormat === 'Month of Year') {
+		return date
+	}
+
 	if (dateFormat === 'Quarter of Year') {
 		return `Q${date}`
 	}
@@ -35,8 +43,6 @@ export function getFormattedDate(date, dateFormat) {
 		Year: 'YYYY',
 		Quarter: '[Q]Q, YYYY',
 		'Day Short': 'Do MMM, YY',
-		'Day of Week': 'dddd',
-		'Month of Year': 'MMMM',
 	}[dateFormat]
 
 	if (!dayjsFormat) return date
