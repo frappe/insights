@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import frappe
-from sqlalchemy.sql import text
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -75,7 +74,7 @@ class BaseDatabase:
         self.validate_query(query)
         with self.connect() as connection:
             with Timer() as t:
-                res = connection.execute(text(query))
+                res = connection.execute(query)
             create_execution_log(query, self.data_source, t.elapsed)
             columns = [f"{d[0]}::{d[1]}" for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
