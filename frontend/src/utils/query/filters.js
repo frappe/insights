@@ -226,7 +226,7 @@ function areLiterals(args) {
 }
 
 function makeValueFromCallFunction(expression) {
-	if (!areLiterals(expression.arguments)) return []
+	if (!areLiterals(expression.arguments.slice(1))) return []
 	if (expression.function == 'is_set') return ['Set', 'Set']
 	if (expression.function == 'is_not_set') return ['Not Set', 'Not Set']
 	if (expression.function == 'between') {

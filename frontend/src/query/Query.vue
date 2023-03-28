@@ -13,7 +13,7 @@
 			</template>
 			<template v-else>
 				<div
-					class="flex min-h-[24rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
+					class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
 				>
 					<TablePanel />
 					<ColumnPanel />
