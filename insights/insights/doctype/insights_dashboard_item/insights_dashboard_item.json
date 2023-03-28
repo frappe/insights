@@ -44,8 +44,10 @@
    "columns": 2,
    "depends_on": "eval: doc.item_type == 'Chart'",
    "fieldname": "chart",
-   "fieldtype": "Data",
-   "label": "Chart"
+   "fieldtype": "Link",
+   "label": "Chart",
+   "options": "Insights Query Chart",
+   "hidden": 1
   },
   {
    "depends_on": "eval: doc.item_type == 'Filter'",
@@ -103,7 +105,7 @@
   {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break",
-   "read_only": 1
+   "hidden": 1
   },
   {
    "fieldname": "options",
@@ -119,7 +121,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-05 20:17:55.151346",
+ "modified": "2023-03-28 11:17:55.151346",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard Item",
