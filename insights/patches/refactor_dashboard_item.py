@@ -116,13 +116,13 @@ def execute():
             # remove falsy values from options
             new_options = {k: v for k, v in new_options.items() if v}
             item.options = new_options
+            item.item_type = item.item_type or "Bar"
             item.db_update()
 
         except Exception as e:
             click.secho(f"Error at {item_name}: {e}", fg="red")
             frappe.log_error(title="Error in Insights Patch: Refactor Dashboard Item")
         finally:
-            item.db_set("item_type", "")
             frappe.db.commit()
 
     item_id_by_chart_name = {
