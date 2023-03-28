@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import time
+from urllib import parse
 
 import frappe
 import sqlparse
@@ -28,7 +29,7 @@ def get_sqlalchemy_engine(**kwargs) -> Engine:
     dialect = kwargs.pop("dialect")
     driver = kwargs.pop("driver")
     user = kwargs.pop("username")
-    password = kwargs.pop("password")
+    password = parse.quote(kwargs.pop("password"))
     database = kwargs.pop("database")
     host = kwargs.pop("host", "localhost")
     port = kwargs.pop("port") or 3306
