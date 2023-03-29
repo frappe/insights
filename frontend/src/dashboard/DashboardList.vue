@@ -13,7 +13,7 @@
 				:dashboards="privates"
 				title="Private"
 			/>
-			<DashboardsGroup :dashboards="dashboards.list" title="All" :enableSearch="true" />
+			<DashboardsGroup :dashboards="sortedDashboards" title="All" :enableSearch="true" />
 		</div>
 	</div>
 
@@ -39,13 +39,19 @@
 <script setup>
 import useDashboards from '@/dashboard/useDashboards'
 import { updateDocumentTitle } from '@/utils'
+import settings from '@/utils/settings'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import settings from '@/utils/settings'
 import DashboardsGroup from './DashboardListGroup.vue'
 
 const dashboards = useDashboards()
 dashboards.reload()
+const sortedDashboards = computed(() => {
+	// sort alphabetically
+	return dashboards.list.sort((a, b) => {
+		return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
+	})
+})
 const favorites = computed(() => {
 	return dashboards.list.filter((dashboard) => dashboard.is_favourite)
 })
