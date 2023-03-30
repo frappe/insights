@@ -451,14 +451,12 @@ class SQLQueryBuilder:
         self.dialect = dialect
 
         if query.is_native_query:
-            return (
-                self.compile(text(query.sql.strip().rstrip(";"))) if query.sql else ""
-            )
+            return query.sql.strip().rstrip(";")
         else:
             self.process_tables_and_joins()
             self.process_columns()
             self.process_filters()
-            return self.make_query()
+            return str(self.make_query())
 
     def make_table(self, name):
         if not hasattr(self, "_tables"):
@@ -590,4 +588,4 @@ class SQLQueryBuilder:
         if self.dialect:
             compile_args["dialect"] = self.dialect
         compiled = query.compile(**compile_args)
-        return str(compiled)
+        return compiled

@@ -241,7 +241,7 @@ def strip_quotes(table):
     return table
 
 
-def add_limit_to_sql(sql, limit):
+def add_limit_to_sql(sql, limit=1000):
     stripped_sql = str(sql).strip().rstrip(";")
     return f"WITH limited AS ({stripped_sql}) SELECT * FROM limited LIMIT {limit};"
 
@@ -257,7 +257,7 @@ def replace_query_tables_with_cte(sql, data_source):
 def compile_query(query, dialect=None):
     compile_args = {"compile_kwargs": {"literal_binds": True}, "dialect": dialect}
     compiled = query.compile(**compile_args)
-    return str(compiled)
+    return compiled
 
 
 def create_execution_log(sql, data_source, time_taken=0):
@@ -265,7 +265,7 @@ def create_execution_log(sql, data_source, time_taken=0):
         {
             "doctype": "Insights Query Execution Log",
             "data_source": data_source,
-            "sql": sqlparse.format(sql, reindent=True, keyword_case="upper"),
+            "sql": sqlparse.format(str(sql), reindent=True, keyword_case="upper"),
             "time_taken": time_taken,
         }
     ).insert(ignore_permissions=True)

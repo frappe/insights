@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
+from sqlalchemy.sql import text
+from sqlalchemy.sql.elements import TextClause
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -35,43 +37,46 @@ class BaseDatabase:
             frappe.throw("Error connecting to database")
 
     def build_query(self, query) -> str:
+        """Build insights query and return the sql"""
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
         return query_str or ""
 
     def run_query(self, query):
+        """Run insights query and return the result"""
         sql = self.build_query(query)
         if not sql:
             return []
         if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
             sql = replace_query_tables_with_cte(sql, self.data_source)
-        if query.is_native_query:
-            sql = add_limit_to_sql(sql, query.limit)
-        # set a hard max limit to prevent long running queries
-        sql = add_limit_to_sql(
-            sql,
-            frappe.db.get_single_value("Insights Settings", "query_result_limit")
-            or 1000,
-        )
-        return self.execute_query(sql, with_columns=True)
 
-    def validate_query(self, query):
-        select_or_with = str(query).strip().lower().startswith(("select", "with"))
-        if not select_or_with:
-            frappe.throw("Only SELECT and WITH queries are allowed")
+        # set a hard max limit to prevent long running queries
+        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit")
+        sql = add_limit_to_sql(sql, max_rows if query.limit > max_rows else query.limit)
+        return self.execute_query(
+            sql, with_columns=True, is_native_query=query.is_native_query
+        )
 
     def execute_query(
-        self, query, pluck=False, with_columns=False, replace_query_tables=False
+        self,
+        query,
+        pluck=False,
+        with_columns=False,
+        replace_query_tables=False,
+        is_native_query=False,
     ):
-        if query is None:
+        if not query:
             return []
-        if not isinstance(query, str):
-            query = compile_query(query, self.engine.dialect)
+        if not isinstance(query, str) and not is_native_query:
+            # since db.execute() is also being used with Query objects i.e non-compiled queries
+            query = str(compile_query(query, self.engine.dialect))
         if replace_query_tables and frappe.db.get_single_value(
             "Insights Settings", "allow_subquery"
         ):
             query = replace_query_tables_with_cte(query, self.data_source)
 
         self.validate_query(query)
+        # to fix: special characters in query like %
+        query = text(query) if is_native_query else query
         with self.connect() as connection:
             with Timer() as t:
                 res = connection.execute(query)
@@ -80,6 +85,11 @@ class BaseDatabase:
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
             return [columns] + rows if with_columns else rows
+
+    def validate_query(self, query):
+        select_or_with = str(query).strip().lower().startswith(("select", "with"))
+        if not select_or_with:
+            frappe.throw("Only SELECT and WITH queries are allowed")
 
     def table_exists(self, table: str):
         """
