@@ -15,7 +15,9 @@
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
   "query_result_limit",
-  "subscription_id"
+  "subscription_id",
+  "integrations_section",
+  "telegram_api_token"
  ],
  "fields": [
   {
@@ -74,12 +76,22 @@
    "fieldname": "enable_permissions",
    "fieldtype": "Check",
    "label": "Enable Permissions"
+  },
+  {
+   "fieldname": "integrations_section",
+   "fieldtype": "Section Break",
+   "label": "Integrations"
+  },
+  {
+   "fieldname": "telegram_api_token",
+   "fieldtype": "Password",
+   "label": "Telegram API Token"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-03-26 11:56:22.866853",
+ "modified": "2023-03-30 23:54:17.713547",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

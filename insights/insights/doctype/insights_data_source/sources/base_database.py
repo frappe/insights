@@ -66,6 +66,9 @@ class BaseDatabase:
         replace_query_tables=False,
         is_native_query=False,
     ):
+        if sql is None:
+            return []
+
         if not isinstance(sql, str) and not is_native_query:
             # since db.execute() is also being used with Query objects i.e non-compiled queries
             sql = str(compile_query(sql, self.engine.dialect))
