@@ -5,6 +5,7 @@ import ChartGrid from '@/components/Charts/ChartGrid.vue'
 import ChartLegend from '@/components/Charts/ChartLegend.vue'
 import ChartSeries from '@/components/Charts/ChartSeries.vue'
 import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
+import { graphic } from 'echarts'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -71,6 +72,7 @@ const markLine = computed(() =>
 				:smooth="props.options.smoothLines"
 				:showSymbol="props.options.showPoints"
 				:markLine="markLine"
+				:areaStyle="{ opacity: props.options.showArea ? 0.1 : 0 }"
 			/>
 			<ChartTooltip />
 		</ChartGrid>
