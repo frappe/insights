@@ -48,43 +48,45 @@ class BaseDatabase:
             return []
         if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
             sql = replace_query_tables_with_cte(sql, self.data_source)
-
         # set a hard max limit to prevent long running queries
-        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit")
-        sql = add_limit_to_sql(sql, max_rows if query.limit > max_rows else query.limit)
+        max_rows = (
+            frappe.db.get_single_value("Insights Settings", "query_result_limit")
+            or 1000
+        )
+        sql = add_limit_to_sql(sql, max_rows)
         return self.execute_query(
-            sql, with_columns=True, is_native_query=query.is_native_query
+            sql, return_columns=True, is_native_query=query.is_native_query
         )
 
     def execute_query(
         self,
-        query,
+        sql,
         pluck=False,
-        with_columns=False,
+        return_columns=False,
         replace_query_tables=False,
         is_native_query=False,
     ):
-        if not query:
-            return []
-        if not isinstance(query, str) and not is_native_query:
+        if not isinstance(sql, str) and not is_native_query:
             # since db.execute() is also being used with Query objects i.e non-compiled queries
-            query = str(compile_query(query, self.engine.dialect))
-        if replace_query_tables and frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        ):
-            query = replace_query_tables_with_cte(query, self.data_source)
+            sql = str(compile_query(sql, self.engine.dialect))
 
-        self.validate_query(query)
-        # to fix: special characters in query like %
-        query = text(query) if is_native_query else query
+        allow_subquery = frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        )
+        if replace_query_tables and allow_subquery:
+            sql = replace_query_tables_with_cte(sql, self.data_source)
+
+        self.validate_query(sql)
+        # to fix special characters in query like %
+        sql = text(sql) if is_native_query else sql
         with self.connect() as connection:
             with Timer() as t:
-                res = connection.execute(query)
-            create_execution_log(query, self.data_source, t.elapsed)
+                res = connection.execute(sql)
+            create_execution_log(sql, self.data_source, t.elapsed)
             columns = [f"{d[0]}::{d[1]}" for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
-            return [columns] + rows if with_columns else rows
+            return [columns] + rows if return_columns else rows
 
     def validate_query(self, query):
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
