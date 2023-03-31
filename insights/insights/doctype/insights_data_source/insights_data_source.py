@@ -107,6 +107,7 @@ class InsightsDataSource(Document):
         try:
             return self.db.run_query(query)
         except Exception as e:
+            frappe.log_error("Running query failed")
             notify(
                 **{
                     "type": "error",

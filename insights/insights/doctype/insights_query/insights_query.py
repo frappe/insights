@@ -181,7 +181,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.tables = []
         self.columns = []
         self.filters = DEFAULT_FILTERS
-        self.sql = None
+        self.sql = ""
         self.limit = 500
         self.execution_time = 0
         self.last_execution = None

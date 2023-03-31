@@ -446,7 +446,7 @@ class SQLQueryBuilder:
         self._order_by_columns = []
         self._limit = 500
 
-    def build(self, query, dialect: Dialect = None) -> str:
+    def build(self, query, dialect: Dialect = None):
         self.query = query
         self.dialect = dialect
 
@@ -456,7 +456,8 @@ class SQLQueryBuilder:
             self.process_tables_and_joins()
             self.process_columns()
             self.process_filters()
-            return str(self.make_query())
+            compiled = self.make_query()
+            return str(compiled) if compiled else ""
 
     def make_table(self, name):
         if not hasattr(self, "_tables"):

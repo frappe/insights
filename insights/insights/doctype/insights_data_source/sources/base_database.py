@@ -36,15 +36,15 @@ class BaseDatabase:
             frappe.log_error(title="Error connecting to database", message=e)
             frappe.throw("Error connecting to database")
 
-    def build_query(self, query) -> str:
+    def build_query(self, query):
         """Build insights query and return the sql"""
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
-        return query_str or ""
+        return query_str if query_str else None
 
     def run_query(self, query):
         """Run insights query and return the result"""
         sql = self.build_query(query)
-        if not sql:
+        if sql is None:
             return []
         if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
             sql = replace_query_tables_with_cte(sql, self.data_source)
@@ -66,12 +66,13 @@ class BaseDatabase:
         replace_query_tables=False,
         is_native_query=False,
     ):
-        if sql is None:
-            return []
-
         if not isinstance(sql, str) and not is_native_query:
             # since db.execute() is also being used with Query objects i.e non-compiled queries
-            sql = str(compile_query(sql, self.engine.dialect))
+            compiled = compile_query(sql, self.engine.dialect)
+            sql = str(compiled) if compiled else None
+
+        if sql is None:
+            return []
 
         allow_subquery = frappe.db.get_single_value(
             "Insights Settings", "allow_subquery"
