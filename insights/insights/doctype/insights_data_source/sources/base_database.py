@@ -82,7 +82,7 @@ class BaseDatabase:
 
         self.validate_query(sql)
         # to fix special characters in query like %
-        sql = sql.replace("%%", "%")
+        sql = sql.replace("%%", "%") if is_native_query else sql
         sql = text(sql) if is_native_query else sql
         with self.connect() as connection:
             with Timer() as t:
