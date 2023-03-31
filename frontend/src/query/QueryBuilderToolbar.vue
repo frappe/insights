@@ -18,6 +18,7 @@ const builder = inject('queryBuilder')
 		>
 			<span
 				class="ml-3 max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap text-gray-600"
+				:title="query.name"
 			>
 				{{ query.doc?.title || query.name }}
 			</span>
