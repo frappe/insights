@@ -451,7 +451,7 @@ class SQLQueryBuilder:
         self.dialect = dialect
 
         if query.is_native_query:
-            return query.sql.strip().rstrip(";")
+            return query.sql.strip().rstrip(";") if query.sql else ""
         else:
             self.process_tables_and_joins()
             self.process_columns()

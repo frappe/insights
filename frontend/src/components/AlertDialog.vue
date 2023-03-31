@@ -28,7 +28,7 @@ const alert = reactive({
 	telegram_chat_id: null,
 	condition: {
 		isAdvanced: false,
-		left: query.results?.allColumnOptions[0],
+		left: query.results.allColumnOptions[0],
 		operator: '=',
 		right: null,
 		advanceCondition: null,

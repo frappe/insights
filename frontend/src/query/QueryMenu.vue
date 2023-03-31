@@ -231,7 +231,11 @@
 		:resource-name="query.doc.name"
 	/>
 
-	<AlertDialog v-model:show="show_alert_dialog" :queryName="query.doc.name" />
+	<AlertDialog
+		v-if="query.doc.name"
+		v-model:show="show_alert_dialog"
+		:queryName="query.doc.name"
+	/>
 </template>
 
 <script setup>
