@@ -115,7 +115,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def update_query(self):
         query = self._data_source.build_query(query=self)
-        query = format_query(query)
+        query = format_query(query) if query else None
         # in case of native query, the query doesn't get updated if the limit is changed
         # so we need to check if the limit is changed
         # because the native query is limited by the limit field
@@ -181,7 +181,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.tables = []
         self.columns = []
         self.filters = DEFAULT_FILTERS
-        self.sql = None
+        self.sql = ""
         self.limit = 500
         self.execution_time = 0
         self.last_execution = None
@@ -370,7 +370,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
 def format_query(query):
     return sqlparse.format(
-        query,
+        str(query),
         keyword_case="upper",
         reindent_aligned=True,
     )

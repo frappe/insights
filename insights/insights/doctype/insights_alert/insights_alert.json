@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-03-30 16:39:47.081742",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "channel",
+  "query",
+  "frequency",
+  "custom_cron",
+  "repeat",
+  "column_break_ktop",
+  "telegram_bot_id",
+  "telegram_chat_id",
+  "recipients",
+  "condition"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Query",
+   "options": "Insights Query",
+   "reqd": 1
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Condition",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "repeat",
+   "fieldtype": "Check",
+   "label": "Repeat"
+  },
+  {
+   "default": "Hourly",
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Hourly\nDaily\nWeekly\nMonthly\nCustom"
+  },
+  {
+   "depends_on": "eval: doc.frequency == \"Custom\"",
+   "fieldname": "custom_cron",
+   "fieldtype": "Data",
+   "label": "Custom Cron"
+  },
+  {
+   "fieldname": "column_break_ktop",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Email",
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "Email\nTelegram"
+  },
+  {
+   "fieldname": "recipients",
+   "fieldtype": "Small Text",
+   "label": "Recipients"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "telegram_bot_id",
+   "fieldtype": "Data",
+   "label": "Telegram Bot ID"
+  },
+  {
+   "fieldname": "telegram_chat_id",
+   "fieldtype": "Data",
+   "label": "Telegram Chat ID"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-03-30 18:40:53.883607",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Alert",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

@@ -24,6 +24,11 @@
 					  }
 					: null,
 				{
+					label: 'Setup Alert',
+					icon: 'bell',
+					handler: () => (show_alert_dialog = true),
+				},
+				{
 					label: 'Pivot',
 					icon: 'git-branch',
 					handler: () => (show_pivot_dialog = true),
@@ -225,15 +230,22 @@
 		:resource-type="query.doc.doctype"
 		:resource-name="query.doc.name"
 	/>
+
+	<AlertDialog
+		v-if="query.doc.name"
+		v-model:show="show_alert_dialog"
+		:queryName="query.doc.name"
+	/>
 </template>
 
 <script setup>
 import ShareDialog from '@/components/ShareDialog.vue'
+import AlertDialog from '@/components/AlertDialog.vue'
+import settings from '@/utils/settings'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import settings from '@/utils/settings'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
@@ -245,6 +257,7 @@ const show_sql_dialog = ref(false)
 const show_pivot_dialog = ref(false)
 const show_share_dialog = ref(false)
 const show_convert_query_dialog = ref(false)
+const show_alert_dialog = ref(false)
 
 const keys = useMagicKeys()
 const cmdE = keys['Meta+E']

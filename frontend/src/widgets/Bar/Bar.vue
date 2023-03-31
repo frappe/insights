@@ -66,10 +66,16 @@ const series = computed(() =>
 	datasets.value.map((dataset) => ({
 		type: 'bar',
 		name: dataset.label,
+		barMaxWidth: 50,
 		data: props.options.invertAxis ? dataset.data.reverse() : dataset.data,
 		'itemStyle-borderRadius': '[4, 4, 0, 0]',
 		markLine: markLine,
 		stack: props.options.stack ? 'stack' : null,
+		itemStyle: {
+			normal: {
+				barBorderRadius: props.options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
+			},
+		},
 	}))
 )
 

@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import time
+from urllib import parse
 
 import frappe
 import sqlparse
@@ -28,7 +29,7 @@ def get_sqlalchemy_engine(**kwargs) -> Engine:
     dialect = kwargs.pop("dialect")
     driver = kwargs.pop("driver")
     user = kwargs.pop("username")
-    password = kwargs.pop("password")
+    password = parse.quote(kwargs.pop("password"))
     database = kwargs.pop("database")
     host = kwargs.pop("host", "localhost")
     port = kwargs.pop("port") or 3306
@@ -240,7 +241,7 @@ def strip_quotes(table):
     return table
 
 
-def add_limit_to_sql(sql, limit):
+def add_limit_to_sql(sql, limit=1000):
     stripped_sql = str(sql).strip().rstrip(";")
     return f"WITH limited AS ({stripped_sql}) SELECT * FROM limited LIMIT {limit};"
 
@@ -256,7 +257,7 @@ def replace_query_tables_with_cte(sql, data_source):
 def compile_query(query, dialect=None):
     compile_args = {"compile_kwargs": {"literal_binds": True}, "dialect": dialect}
     compiled = query.compile(**compile_args)
-    return str(compiled)
+    return compiled
 
 
 def create_execution_log(sql, data_source, time_taken=0):
@@ -264,7 +265,7 @@ def create_execution_log(sql, data_source, time_taken=0):
         {
             "doctype": "Insights Query Execution Log",
             "data_source": data_source,
-            "sql": sqlparse.format(sql, reindent=True, keyword_case="upper"),
+            "sql": sqlparse.format(str(sql), reindent=True, keyword_case="upper"),
             "time_taken": time_taken,
         }
     ).insert(ignore_permissions=True)

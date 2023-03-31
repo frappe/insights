@@ -85,5 +85,9 @@ const valueOptions = computed(() => {
 		<div class="space-y-2 text-gray-600">
 			<Checkbox v-model="options.showPoints" label="Show Data Points" />
 		</div>
+
+		<div class="space-y-2 text-gray-600">
+			<Checkbox v-model="options.showArea" label="Show Area" />
+		</div>
 	</div>
 </template>
