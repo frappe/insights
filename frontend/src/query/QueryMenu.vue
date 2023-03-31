@@ -24,7 +24,7 @@
 					  }
 					: null,
 				{
-					label: 'Setup Alert',
+					label: 'Set Alert',
 					icon: 'bell',
 					handler: () => (show_alert_dialog = true),
 				},
@@ -36,6 +36,16 @@
 				{
 					label: 'Unpivot',
 					icon: 'git-merge',
+					handler: () => (show_unpivot_dialog = true),
+				},
+				{
+					label: 'Transpose',
+					icon: 'rotate-ccw',
+					handler: () => (show_transpose_dialog = true),
+				},
+				{
+					label: 'Reset Transforms',
+					icon: 'refresh-ccw',
 					handler: resetPivot,
 				},
 				{
@@ -214,8 +224,80 @@
 			<template #actions>
 				<Button
 					appearance="primary"
-					@click="applyPivotTransform"
+					@click="() => applyTransform('Pivot', pivot)"
 					:disabled="pivotDisabled"
+					:loading="query.addTransform?.loading"
+				>
+					Apply
+				</Button>
+			</template>
+		</Dialog>
+
+		<Dialog
+			:options="{ title: 'Unpivot Transform' }"
+			v-model="show_unpivot_dialog"
+			:dismissable="true"
+		>
+			<template #body-content>
+				<div class="space-y-4">
+					<Input
+						type="select"
+						label="Index Column"
+						v-model="unpivot.index_column"
+						:options="indexOptions"
+					/>
+					<Input
+						type="text"
+						label="Column Label"
+						placeholder="eg. Region"
+						v-model="unpivot.column_label"
+					/>
+					<Input
+						type="text"
+						label="Value Label"
+						placeholder="eg. Sales"
+						v-model="unpivot.value_label"
+					/>
+				</div>
+			</template>
+			<template #actions>
+				<Button
+					appearance="primary"
+					@click="() => applyTransform('Unpivot', unpivot)"
+					:disabled="unpivotDisabled"
+					:loading="query.addTransform?.loading"
+				>
+					Apply
+				</Button>
+			</template>
+		</Dialog>
+
+		<Dialog
+			:options="{ title: 'Transpose' }"
+			v-model="show_transpose_dialog"
+			:dismissable="true"
+		>
+			<template #body-content>
+				<div class="space-y-4">
+					<Input
+						type="select"
+						label="Index Column"
+						v-model="transpose.index_column"
+						:options="indexOptions"
+					/>
+					<Input
+						type="text"
+						label="Column Label"
+						placeholder="eg. Region"
+						v-model="transpose.column_label"
+					/>
+				</div>
+			</template>
+			<template #actions>
+				<Button
+					appearance="primary"
+					@click="() => applyTransform('Transpose', transpose)"
+					:disabled="transposeDisabled"
 					:loading="query.addTransform?.loading"
 				>
 					Apply
@@ -239,13 +321,12 @@
 </template>
 
 <script setup>
-import ShareDialog from '@/components/ShareDialog.vue'
 import AlertDialog from '@/components/AlertDialog.vue'
+import ShareDialog from '@/components/ShareDialog.vue'
 import settings from '@/utils/settings'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
@@ -258,6 +339,8 @@ const show_pivot_dialog = ref(false)
 const show_share_dialog = ref(false)
 const show_convert_query_dialog = ref(false)
 const show_alert_dialog = ref(false)
+const show_unpivot_dialog = ref(false)
+const show_transpose_dialog = ref(false)
 
 const keys = useMagicKeys()
 const cmdE = keys['Meta+E']
@@ -268,12 +351,20 @@ const pivot = reactive({
 	index: null,
 	value: null,
 })
+const unpivot = reactive({
+	index_column: null,
+	column_label: null,
+	value_label: null,
+})
+const transpose = reactive({
+	index_column: null,
+	column_label: null,
+})
 
 const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
 })
 
-const $router = useRouter()
 const $notify = inject('$notify')
 function duplicateQuery() {
 	query.duplicate.submit().then(async (res) => {
@@ -328,21 +419,19 @@ const valueOptions = computed(() =>
 	[''].concat(query.columns.valueOptions.map((option) => option.label))
 )
 
-function applyPivotTransform() {
+function applyTransform(type, options) {
 	query.addTransform
 		.submit({
-			type: 'Pivot',
-			options: {
-				column: pivot.column,
-				index: pivot.index,
-				value: pivot.value,
-			},
+			type,
+			options,
 		})
 		.then(() => {
 			show_pivot_dialog.value = false
-			pivot.column = null
-			pivot.index = null
-			pivot.value = null
+			show_unpivot_dialog.value = false
+			show_transpose_dialog.value = false
+			Object.keys(pivot).forEach((key) => (pivot[key] = null))
+			Object.keys(unpivot).forEach((key) => (unpivot[key] = null))
+			Object.keys(transpose).forEach((key) => (transpose[key] = null))
 		})
 }
 
@@ -368,5 +457,11 @@ function downloadCSV() {
 
 const pivotDisabled = computed(() => {
 	return !pivot.column || !pivot.index || !pivot.value
+})
+const unpivotDisabled = computed(() => {
+	return !unpivot.index_column || !unpivot.column_label || !unpivot.value_label
+})
+const transposeDisabled = computed(() => {
+	return !transpose.index_column || !transpose.column_label
 })
 </script>

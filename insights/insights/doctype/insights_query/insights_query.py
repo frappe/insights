@@ -224,20 +224,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         # if it fails, it's a string
         types = []
         for value in values:
-            try:
-                pd.to_numeric(value)
-                types.append("Integer")
-            except ValueError:
-                try:
-                    pd.to_numeric(value, downcast="float")
-                    types.append("Decimal")
-                except ValueError:
-                    try:
-                        pd.to_datetime(value)
-                        types.append("Datetime")
-                    except ValueError:
-                        types.append("String")
-
+            types.append(guess_type(value))
         return types
 
     def update_insights_table(self):
@@ -290,6 +277,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return results
 
     def apply_transform(self, results):
+        self.validate_transforms()
 
         for row in self.transforms:
             if row.type == "Pivot":
@@ -349,6 +337,86 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
                 return [cols] + data
 
+            if row.type == "Unpivot":
+                options = frappe.parse_json(row.options)
+                index_column = options.get("index_column")
+                new_column_name = options.get("column_label")
+                value_name = options.get("value_label")
+
+                if not (index_column and new_column_name and value_name):
+                    frappe.throw("Invalid Unpivot Options")
+
+                result = frappe.parse_json(results)
+                columns = [c.split("::")[0] for c in result[0]]
+                results_df = pd.DataFrame(result[1:], columns=columns)
+
+                unpivoted = pd.melt(
+                    results_df,
+                    id_vars=[index_column],
+                    var_name=new_column_name,
+                    value_name=value_name,
+                )
+
+                index_column_type = next(
+                    (c.type for c in self.columns if c.label == index_column),
+                    None,
+                )
+                new_column_type = "String"
+                value_column_type = "Decimal"
+
+                cols = unpivoted.columns.to_list()
+                cols = [
+                    f"{cols[0]}::{index_column_type}",
+                    f"{cols[1]}::{new_column_type}",
+                    f"{cols[2]}::{value_column_type}",
+                ]
+                data = unpivoted.values.tolist()
+
+                return [cols] + data
+
+            if row.type == "Transpose":
+
+                options = frappe.parse_json(row.options)
+                index_column = options.get("index_column")
+                new_column_label = options.get("column_label")
+
+                if not index_column:
+                    frappe.throw("Invalid Transpose Options")
+
+                result = frappe.parse_json(results)
+                columns = [c.split("::")[0] for c in result[0]]
+                results_df = pd.DataFrame(result[1:], columns=columns)
+                results_df = results_df.set_index(index_column)
+                results_df_transposed = results_df.transpose()
+                results_df_transposed = results_df_transposed.reset_index()
+                results_df_transposed.columns.name = None
+
+                cols = results_df_transposed.columns.to_list()
+                cols = [f"{new_column_label}::String"] + [
+                    f"{c}::Decimal" for c in cols[1:]
+                ]
+                data = results_df_transposed.values.tolist()
+
+                return [cols] + data
+
+    def validate_transforms(self):
+        pivot_transforms = [t for t in self.transforms if t.type == "Pivot"]
+        unpivot_transforms = [t for t in self.transforms if t.type == "Unpivot"]
+        transpose_transforms = [t for t in self.transforms if t.type == "Transpose"]
+
+        if len(pivot_transforms) > 1:
+            frappe.throw("Only one Pivot transform is allowed")
+        if len(unpivot_transforms) > 1:
+            frappe.throw("Only one Unpivot transform is allowed")
+        if len(transpose_transforms) > 1:
+            frappe.throw("Only one Transpose transform is allowed")
+        if pivot_transforms and unpivot_transforms:
+            frappe.throw("Pivot and Unpivot transforms cannot be used together")
+        if pivot_transforms and transpose_transforms:
+            frappe.throw("Pivot and Transpose transforms cannot be used together")
+        if unpivot_transforms and transpose_transforms:
+            frappe.throw("Unpivot and Transpose transforms cannot be used together")
+
     def has_cumulative_columns(self):
         return any(
             col.aggregation and "Cumulative" in col.aggregation
@@ -374,3 +442,19 @@ def format_query(query):
         keyword_case="upper",
         reindent_aligned=True,
     )
+
+
+def guess_type(value):
+    try:
+        pd.to_numeric(value)
+        return "Integer"
+    except ValueError:
+        try:
+            pd.to_numeric(value, downcast="float")
+            return "Decimal"
+        except ValueError:
+            try:
+                pd.to_datetime(value)
+                return "Datetime"
+            except ValueError:
+                return "String"

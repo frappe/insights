@@ -145,15 +145,6 @@ class InsightsQueryClient:
         return conditions
 
     @frappe.whitelist()
-    def apply_transform(self, type, data):
-        self.transform_type = type
-        self.transform_data = dumps(data, indent=2, default=cstr)
-        if type == "Pivot":
-            self.pivot(data)
-
-        self.save()
-
-    @frappe.whitelist()
     def add_transform(self, type, options):
         existing = self.get("transforms", {"type": type})
         if existing:
