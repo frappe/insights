@@ -11,7 +11,7 @@
     "mail_password": "frappe",
     "admin_password": "frappe",
     "root_login": "root",
-    "root_password": "frappe",
+    "root_password": "root",
     "host_name": "http://frappe-insights:8000",
     "monitor": 1,
     "server_script_enabled": true
