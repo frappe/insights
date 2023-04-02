@@ -63,12 +63,35 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-yarn-ui-
 
-    - name: Setup Frappe Bench
+    - name: Install Dependencies
       run: |
         bash ${GITHUB_WORKSPACE}/.github/helpers/install_dependencies.sh
-        bash ${GITHUB_WORKSPACE}/.github/helpers/install.sh
+
+    - name: Setup Frappe Bench
+      run: |
+        pip install frappe-bench
+        bench init --skip-assets --python "$(which python)" ~/frappe-bench
+        mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
+        mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+
+    - name: Install
+      working-directory: /home/runner/frappe-bench
+      run: |
+        bench get-app insights $GITHUB_WORKSPACE --skip-assets
+        bench setup requirements
+        bench new-site --db-root-password root --admin-password admin frappe-insights
+        bench --site frappe-insights add-to-hosts
+        bench --site frappe-insights install-app insights
+        bench build
       env:
         CI: "Yes"
+
+    - name: Start Bench
+      working-directory: /home/runner/frappe-bench
+      run: |
+        sed -i 's/^watch:/# watch:/g' Procfile
+        sed -i 's/^schedule:/# schedule:/g' Procfile
+        bench start &> bench_start.log &
 
     - name: Install Playwright Browsers
       run: cd ~/frappe-bench/apps/insights/frontend && yarn playwright install --with-deps
