@@ -5,7 +5,7 @@ cd ~ || exit
 echo "Setting Up Bench..."
 
 pip install frappe-bench
-bench -v init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}"
+bench -v init frappe-bench --skip-assets --python "$(which python)"
 mariadb --host 127.0.0.1 --port 3306 -u root -pfrappe -e "SET GLOBAL character_set_server = 'utf8mb4'";
 mariadb --host 127.0.0.1 --port 3306 -u root -pfrappe -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'";
 bench get-app insights "${GITHUB_WORKSPACE}" --skip-assets

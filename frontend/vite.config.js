@@ -19,7 +19,7 @@ export default defineConfig({
 		outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
 		emptyOutDir: true,
 		target: 'es2015',
-		sourcemap: true,
+		sourcemap: import.meta?.env?.CI ? false : 'inline',
 	},
 	optimizeDeps: {
 		include: ['feather-icons', 'showdown', 'engine.io-client'],
