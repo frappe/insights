@@ -3,6 +3,7 @@
 
 
 import json
+import time
 
 import click
 import frappe
@@ -18,7 +19,11 @@ def after_install():
 def import_demo_data():
     try:
         click.secho("Creating demo data...", fg="green")
+        start = time.monotonic()
         DemoDataFactory().run()
+        click.secho(
+            f"Created demo data in {time.monotonic() - start} seconds", fg="green"
+        )
     except Exception as e:
         frappe.log_error("Failed to create Demo Data")
         click.secho(f"Error while creating demo data: {e}", fg="red")

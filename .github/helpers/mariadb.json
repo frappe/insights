@@ -1,0 +1,18 @@
+{
+    "db_host": "127.0.0.1",
+    "db_port": 3306,
+    "db_name": "frappe-insights",
+    "db_password": "frappe",
+    "allow_tests": true,
+    "db_type": "mariadb",
+    "auto_email_id": "test@example.com",
+    "mail_server": "smtp.example.com",
+    "mail_login": "test@example.com",
+    "mail_password": "frappe",
+    "admin_password": "frappe",
+    "root_login": "root",
+    "root_password": "frappe",
+    "host_name": "http://frappe-insights:8000",
+    "monitor": 1,
+    "server_script_enabled": true
+}
