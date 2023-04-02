@@ -65,8 +65,8 @@ jobs:
 
     - name: Setup Frappe Bench
       run: |
-        bash ${GITHUB_WORKSPACE}/.github/helper/install_dependencies.sh
-        bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+        bash ${GITHUB_WORKSPACE}/.github/helpers/install_dependencies.sh
+        bash ${GITHUB_WORKSPACE}/.github/helpers/install.sh
       env:
         CI: "Yes"
 
