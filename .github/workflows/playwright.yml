@@ -79,7 +79,7 @@ jobs:
       run: |
         bench get-app insights $GITHUB_WORKSPACE --skip-assets
         bench setup requirements
-        bench new-site --db-root-password root --admin-password admin frappe-insights
+        bench new-site --db-root-password root --admin-password frappe frappe-insights
         bench --site frappe-insights add-to-hosts
         bench --site frappe-insights install-app insights
         bench build
