@@ -15,11 +15,16 @@ bench -v setup requirements
 
 echo "Setting Up Site..."
 
-bench new-site --db-root-password frappe --admin-password frappe frappe-insights
+mariadb --host 127.0.0.1 --port 3306 -u root -ptravis -e "CREATE DATABASE frappe-insights";
+mariadb --host 127.0.0.1 --port 3306 -u root -ptravis -e "CREATE USER 'frappe-insights'@'localhost' IDENTIFIED BY 'frappe-insights'";
+mariadb --host 127.0.0.1 --port 3306 -u root -ptravis -e "GRANT ALL PRIVILEGES ON \`frappe-insights\`.* TO 'frappe-insights'@'localhost'";
+mariadb --host 127.0.0.1 --port 3306 -u root -ptravis -e "FLUSH PRIVILEGES";
+cp "${GITHUB_WORKSPACE}/.github/helpers/mariadb.json" ~/frappe-bench/sites/frappe-insights/site_config.json
+bench --site frappe-insights reinstall --yes
 bench --site frappe-insights add-to-hosts
 bench --site frappe-insights install-app insights
 bench build
-cp "${GITHUB_WORKSPACE}/.github/helpers/mariadb.json" ~/frappe-bench/sites/frappe-insights/site_config.json
+
 
 echo "Setting Up Procfile..."
 
