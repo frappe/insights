@@ -17,7 +17,8 @@
   "query_result_limit",
   "subscription_id",
   "integrations_section",
-  "telegram_api_token"
+  "telegram_api_token",
+  "enable_openai_integration"
  ],
  "fields": [
   {
@@ -86,12 +87,20 @@
    "fieldname": "telegram_api_token",
    "fieldtype": "Password",
    "label": "Telegram API Token"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_openai_integration",
+   "fieldtype": "Check",
+   "is_virtual": 1,
+   "label": "Enable OpenAI Integration",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-03-30 23:54:17.713547",
+ "modified": "2023-04-02 12:20:22.756215",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

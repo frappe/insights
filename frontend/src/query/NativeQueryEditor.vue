@@ -1,6 +1,7 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
 import { computed, inject, ref, watch } from 'vue'
+import TextToSQLDialog from '@/components/TextToSQLDialog.vue'
 
 const query = inject('query')
 query.getSourceSchema.submit()
@@ -38,6 +39,8 @@ function runQuery() {
 		query.run.submit()
 	})
 }
+
+const openAIDialog = ref(false)
 </script>
 
 <template>
@@ -55,9 +58,12 @@ function runQuery() {
 			></Code>
 		</div>
 		<div class="mt-4 h-10 flex-shrink-0 space-x-2">
-			<Button iconLeft="play" appearance="white" class="shadow-sm" @click="runQuery">
-				Run
+			<Button appearance="white" class="shadow-sm" @click="runQuery"> Execute </Button>
+			<Button appearance="white" class="shadow-sm" @click="openAIDialog = true">
+				OpenAI
 			</Button>
 		</div>
 	</div>
+
+	<TextToSQLDialog v-model:show="openAIDialog" :dataSource="query.doc.data_source" />
 </template>

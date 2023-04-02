@@ -22,7 +22,13 @@ class InsightsSettings(Document):
             self.allow_subquery = settings.allow_subquery
         if hasattr(settings, "subscription_id"):
             self.subscription_id = settings.subscription_id
+        if hasattr(settings, "telegram_api_token"):
+            self.telegram_api_token = settings.telegram_api_token
         self.save()
+
+    @property
+    def enable_openai_integration(self):
+        return 1 if frappe.conf.get("openai_api_key") else 0
 
     @frappe.whitelist()
     @check_role("Insights User")
@@ -38,7 +44,7 @@ class InsightsSettings(Document):
             )
             return
 
-        portal_url = "https://insightsbi.co"
+        portal_url = "https://frappeinsights.com"
         remote_method = "/api/method/send-remote-login-link"
         url = f"{portal_url}{remote_method}"
 

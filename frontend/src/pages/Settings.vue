@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 pt-4">
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Settings</div>
 			<Button
@@ -135,6 +135,28 @@
 					</div>
 				</div>
 			</div>
+			<div class="rounded-lg border bg-white p-6 shadow-sm">
+				<div class="flex items-baseline">
+					<div class="text-xl font-medium text-gray-700">Integrations</div>
+				</div>
+				<div class="mt-4 flex flex-col space-y-8">
+					<div class="flex">
+						<div class="flex-1">
+							<p class="font-medium leading-6 text-gray-900">Telegram Bot Token</p>
+							<span class="text-gray-500">
+								Telegram bot token to send notifications to Telegram.
+							</span>
+						</div>
+						<div class="flex flex-1 items-center pl-20">
+							<Input
+								type="password"
+								v-model="settingsDoc.telegram_api_token"
+								placeholder="eg. 1234567890:ABCDEF1234567890"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -161,7 +183,8 @@ const updateDisabled = computed(() => {
 		local.query_result_expiry === remote.query_result_expiry &&
 		local.auto_execute_query === remote.auto_execute_query &&
 		local.allow_subquery === remote.allow_subquery &&
-		local.subscription_id === remote.subscription_id
+		local.subscription_id === remote.subscription_id &&
+		local.telegram_api_token === remote.telegram_api_token
 	)
 })
 
