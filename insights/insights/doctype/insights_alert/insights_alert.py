@@ -20,6 +20,8 @@ class InsightsAlert(Document):
 
     @frappe.whitelist()
     def send_alert(self):
+        if not self.evaluate_condition():
+            return
         if self.channel == "Email":
             self.send_email_alert()
         if self.channel == "Telegram":
@@ -49,9 +51,6 @@ class InsightsAlert(Document):
             raise
 
     def send_email_alert(self):
-        if not self.evaluate_condition():
-            return
-
         subject = f"Insights Alert: {self.title}"
         recievers = self.get_recipients()
         frappe.sendmail(
