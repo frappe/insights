@@ -140,7 +140,7 @@ function testSendAlert() {
 				<div class="flex gap-4" v-if="!alert.condition.isAdvanced">
 					<Input
 						type="select"
-						class="flex-2"
+						class="flex-1"
 						v-model="alert.condition.left"
 						:options="query.results.allColumnOptions"
 					/>
@@ -152,13 +152,16 @@ function testSendAlert() {
 					/>
 					<Input
 						type="text"
-						class="flex-2"
+						class="flex-1"
 						v-model="alert.condition.right"
 						placeholder="e.g. 100"
 					/>
 				</div>
 				<div v-else>
 					<Code v-model="alert.condition.advanceCondition" />
+					<p class="font-code mt-1 text-sm text-gray-500">
+						Example: result["Count of Records"][0] > 100
+					</p>
 				</div>
 				<Input
 					type="checkbox"

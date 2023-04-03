@@ -1,8 +1,8 @@
 <template>
 	<div v-if="query.doc" class="flex h-full w-full flex-col overflow-hidden">
-		<div class="flex flex-shrink-0 items-center justify-between py-1 px-2">
+		<div class="flex flex-shrink-0 items-center justify-between px-2 py-1">
 			<QueryHeader />
-			<Tabs v-if="!hideTabs" class="w-40" :tabs="tabs" @switch="switchTab" />
+			<Tabs v-if="!hideTabs" class="!w-40" :tabs="tabs" @switch="switchTab" />
 		</div>
 
 		<template v-if="activeTab == buildTabLabel">
