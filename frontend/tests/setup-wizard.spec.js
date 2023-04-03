@@ -28,6 +28,5 @@ test('setup-wizard', async ({ page }) => {
 	await page.locator('input[type="password"]').click()
 	await page.locator('input[type="password"]').fill('test')
 	await page.getByRole('button', { name: 'Complete Setup' }).click()
-	await page.waitForFunction(() => window.location.pathname.includes('/insights'))
 	expect(page.url()).toContain('/insights')
 })
