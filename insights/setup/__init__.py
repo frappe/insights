@@ -25,19 +25,23 @@ def import_demo_data():
 
 
 def import_demo_queries_and_dashboards():
-    current_path = frappe.get_app_path("insights", "setup")
-    with open(current_path + "/demo_queries.json", "r") as f:
-        queries = json.load(f)
+    try:
+        current_path = frappe.get_app_path("insights", "setup")
+        with open(current_path + "/demo_queries.json", "r") as f:
+            queries = json.load(f)
 
-    for query in queries:
-        query_doc = frappe.new_doc("Insights Query")
-        query_doc.update(query)
-        query_doc.save()
+        for query in queries:
+            query_doc = frappe.new_doc("Insights Query")
+            query_doc.update(query)
+            query_doc.save()
 
-    with open(current_path + "/demo_dashboards.json", "r") as f:
-        dashboards = json.load(f)
+        with open(current_path + "/demo_dashboards.json", "r") as f:
+            dashboards = json.load(f)
 
-    for dashboard in dashboards:
-        dashboard_doc = frappe.new_doc("Insights Dashboard")
-        dashboard_doc.update(dashboard)
-        dashboard_doc.save()
+        for dashboard in dashboards:
+            dashboard_doc = frappe.new_doc("Insights Dashboard")
+            dashboard_doc.update(dashboard)
+            dashboard_doc.save()
+    except Exception as e:
+        frappe.log_error("Failed to create Demo Queries and Dashboards")
+        click.secho(f"Error while creating demo queries and dashboards: {e}", fg="red")
