@@ -13,7 +13,8 @@ import Toasts from '@/utils/toasts'
 import usePrompt from '@/utils/prompt'
 import AppShell from '@/components/AppShell.vue'
 import CommandPalette from '@/components/CommandPalette.vue'
-import { inject, onBeforeUnmount } from 'vue'
+import { inject, onBeforeUnmount, onMounted } from 'vue'
+import settings from '@/utils/settings'
 
 const prompt = usePrompt()
 const $socket = inject('$socket')
@@ -31,4 +32,5 @@ $socket.on('insights_notification', (data) => {
 onBeforeUnmount(() => {
 	$socket.off('insights_notification')
 })
+onMounted(settings.get.fetch)
 </script>

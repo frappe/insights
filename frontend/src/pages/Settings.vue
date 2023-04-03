@@ -89,28 +89,11 @@
 				</div>
 			</div>
 
-			<div class="rounded-lg border bg-white p-6 shadow-sm">
+			<div v-if="settingsDoc.is_subscribed" class="rounded-lg border bg-white p-6 shadow-sm">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Subscription</div>
 				</div>
 				<div class="mt-4 flex flex-col space-y-8">
-					<div class="flex">
-						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">Subscription ID</p>
-							<span class="text-gray-500">
-								This is used for authentication with the support portal and managing
-								support tickets.
-							</span>
-						</div>
-						<div class="flex flex-1 items-center pl-20">
-							<Input
-								type="password"
-								v-model="settingsDoc.subscription_id"
-								placeholder="eg. 1234567890"
-							/>
-						</div>
-					</div>
-
 					<div class="flex">
 						<div class="flex-1">
 							<p class="font-medium leading-6 text-gray-900">Support Login</p>
@@ -125,7 +108,7 @@
 								@click="settings.send_support_login_link.submit()"
 								:loading="settings.send_support_login_link.loading"
 								:disabled="
-									!settingsDoc.subscription_id ||
+									!settingsDoc.is_subscribed ||
 									settings.send_support_login_link.loading
 								"
 							>
@@ -160,8 +143,7 @@ const updateDisabled = computed(() => {
 		local.query_result_limit === remote.query_result_limit &&
 		local.query_result_expiry === remote.query_result_expiry &&
 		local.auto_execute_query === remote.auto_execute_query &&
-		local.allow_subquery === remote.allow_subquery &&
-		local.subscription_id === remote.subscription_id
+		local.allow_subquery === remote.allow_subquery
 	)
 })
 
