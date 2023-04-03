@@ -20,9 +20,14 @@ class InsightsSettings(Document):
             self.query_result_limit = settings.query_result_limit
         if hasattr(settings, "allow_subquery"):
             self.allow_subquery = settings.allow_subquery
-        if hasattr(settings, "subscription_id"):
-            self.subscription_id = settings.subscription_id
         self.save()
+
+    @property
+    def is_subscribed(self):
+        try:
+            return 1 if frappe.conf.sk_insights else 0
+        except BaseException:
+            return None
 
     @frappe.whitelist()
     @check_role("Insights User")
@@ -30,24 +35,19 @@ class InsightsSettings(Document):
         if frappe.session.user == "Administrator":
             frappe.throw("Administrator cannot access support portal")
 
-        if not self.subscription_id:
-            notify(
-                type="error",
-                title="Subscription ID not found",
-                message="Please set your subscription ID in Insights Settings",
-            )
+        subscription_key = get_insights_subscription_key()
+        if not subscription_key:
+            notify(type="error", title="Subscription Key not found")
             return
 
-        portal_url = "https://insightsbi.co"
+        portal_url = "https://frappeinsights.com"
         remote_method = "/api/method/send-remote-login-link"
         url = f"{portal_url}{remote_method}"
-
-        subscription_id = self.get_password("subscription_id")
         email = frappe.session.user
 
         try:
             frappe.integrations.utils.make_post_request(
-                url, data={"subscription_id": subscription_id, "email": email}
+                url, data={"subscription_key": subscription_key, "email": email}
             )
             notify(
                 title="Login link sent",
@@ -60,3 +60,10 @@ class InsightsSettings(Document):
                 message="Error sending login link to your email",
                 type="error",
             )
+
+
+def get_insights_subscription_key():
+    try:
+        return frappe.conf.sk_insights
+    except BaseException:
+        return None

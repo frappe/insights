@@ -9,7 +9,6 @@ const resource = createDocumentResource({
 		send_support_login_link: 'send_support_login_link',
 	},
 })
-resource.get.fetch()
 resource.updateSettings = (settings) => {
 	resource.update_settings.submit({ settings }).then(() => {
 		createToast({

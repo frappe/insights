@@ -15,7 +15,7 @@
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
   "query_result_limit",
-  "subscription_id",
+  "is_subscribed",
   "integrations_section",
   "telegram_api_token"
  ],
@@ -67,11 +67,6 @@
    "label": "Query Result Limit"
   },
   {
-   "fieldname": "subscription_id",
-   "fieldtype": "Password",
-   "label": "Subscription ID"
-  },
-  {
    "default": "0",
    "fieldname": "enable_permissions",
    "fieldtype": "Check",
@@ -86,12 +81,19 @@
    "fieldname": "telegram_api_token",
    "fieldtype": "Password",
    "label": "Telegram API Token"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_subscribed",
+   "fieldtype": "Check",
+   "is_virtual": 1,
+   "label": "Is Subscribed"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-03-30 23:54:17.713547",
+ "modified": "2023-04-03 21:23:20.986577",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
