@@ -74,7 +74,7 @@ jobs:
         mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
         mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
-    - name: Install
+    - name: Install Insights
       working-directory: /home/runner/frappe-bench
       run: |
         bench get-app insights $GITHUB_WORKSPACE --skip-assets
@@ -85,6 +85,12 @@ jobs:
         bench build
       env:
         CI: "Yes"
+
+    - name: Complete Setup Wizard
+      run: |
+        cd ~/frappe-bench/
+        bench --site test_site execute frappe.utils.install.complete_setup_wizard
+        bench --site test_site execute frappe.tests.ui_test_helpers.create_test_user
 
     - name: Start Bench
       working-directory: /home/runner/frappe-bench
