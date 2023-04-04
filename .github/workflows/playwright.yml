@@ -89,8 +89,8 @@ jobs:
     - name: Complete Setup Wizard
       run: |
         cd ~/frappe-bench/
-        bench --site test_site execute frappe.utils.install.complete_setup_wizard
-        bench --site test_site execute frappe.tests.ui_test_helpers.create_test_user
+        bench --site frappe-insights execute frappe.utils.install.complete_setup_wizard
+        bench --site frappe-insights execute frappe.tests.ui_test_helpers.create_test_user
 
     - name: Start Bench
       working-directory: /home/runner/frappe-bench
