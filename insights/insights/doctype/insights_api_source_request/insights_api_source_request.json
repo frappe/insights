@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-04-04 20:03:43.717787",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "url",
+  "headers",
+  "column_break_f520",
+  "method",
+  "refresh_interval",
+  "body",
+  "section_break_iswl",
+  "post_process"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "headers",
+   "fieldtype": "Code",
+   "label": "Headers",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "column_break_f520",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "GET",
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Method",
+   "options": "GET\nPOST",
+   "reqd": 1
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Code",
+   "label": "Body",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "section_break_iswl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "post_process",
+   "fieldtype": "Code",
+   "label": "Post Process",
+   "options": "Python"
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "URL",
+   "reqd": 1
+  },
+  {
+   "default": "Manual",
+   "fieldname": "refresh_interval",
+   "fieldtype": "Select",
+   "label": "Refresh Interval",
+   "options": "On Execute\nManual"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-04-04 21:03:37.016493",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights API Source Request",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

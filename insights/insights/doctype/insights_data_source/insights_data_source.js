@@ -3,8 +3,12 @@
 
 frappe.ui.form.on("Insights Data Source", {
 	refresh: function (frm) {
-		if (frm.name == "Query Store") {
-			frm.set_read_only();
+		if (frm.doc.status === "Active") {
+			frm.add_custom_button(__("Sync Tables"), async function () {
+				frappe.dom.freeze(__("Syncing Tables"));
+				await frm.call("sync_tables");
+				frappe.dom.unfreeze();
+			});
 		}
 	},
 });

@@ -8,6 +8,7 @@
  "field_order": [
   "title",
   "status",
+  "source_type",
   "database_type",
   "is_site_db",
   "host",
@@ -17,7 +18,10 @@
   "column_break_5",
   "database_name",
   "username",
-  "password"
+  "password",
+  "section_break_ejfk",
+  "requests",
+  "api_config_tab"
  ],
  "fields": [
   {
@@ -29,32 +33,32 @@
    "unique": 1
   },
   {
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "port",
    "fieldtype": "Data",
    "label": "Port"
   },
   {
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "database_name",
    "fieldtype": "Data",
    "label": "Database Name"
   },
   {
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "username",
    "fieldtype": "Data",
    "label": "Username"
   },
   {
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "password",
    "fieldtype": "Password",
    "label": "Password"
   },
   {
    "default": "0",
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "use_ssl",
    "fieldtype": "Check",
    "label": "Use SSL"
@@ -64,7 +68,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "host",
    "fieldtype": "Data",
    "label": "Host"
@@ -80,7 +84,7 @@
   },
   {
    "default": "MariaDB",
-   "depends_on": "eval: !doc.is_site_db",
+   "depends_on": "eval: !doc.is_site_db && doc.source_type == \"Database\"",
    "fieldname": "database_type",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -97,14 +101,40 @@
   },
   {
    "default": "0",
+   "depends_on": "doc.source_type == \"Database\"",
    "fieldname": "allow_imports",
    "fieldtype": "Check",
    "label": "Allow Table Import"
+  },
+  {
+   "default": "Database",
+   "fieldname": "source_type",
+   "fieldtype": "Select",
+   "label": "Source Type",
+   "options": "Database\nAPI",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval: doc.source_type == \"API\"",
+   "fieldname": "api_config_tab",
+   "fieldtype": "Tab Break",
+   "label": "API Config"
+  },
+  {
+   "depends_on": "eval: doc.source_type == \"API\"",
+   "fieldname": "requests",
+   "fieldtype": "Table",
+   "label": "Requests",
+   "options": "Insights API Source Request"
+  },
+  {
+   "fieldname": "section_break_ejfk",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-07 21:15:17.441717",
+ "modified": "2023-04-04 20:39:14.460216",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",

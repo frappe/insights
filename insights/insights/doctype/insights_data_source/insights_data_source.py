@@ -11,6 +11,7 @@ from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
+from .sources.api_db import API_DB
 from .sources.base_database import BaseDatabase
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
@@ -49,6 +50,9 @@ class InsightsDataSource(Document):
         return self.get_database()
 
     def get_database(self):
+        if self.source_type == "API":
+            return API_DB(data_source=self.name, database_name=self.title)
+
         conn_args = {
             "data_source": self.name,
             "host": self.host,
@@ -68,6 +72,10 @@ class InsightsDataSource(Document):
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
     def validate(self):
+        if self.source_type == "Database":
+            self.validate_database_fields()
+
+    def validate_database_fields(self):
         if self.is_site_db or self.name == "Query Store":
             return
         if self.database_type == "SQLite":
@@ -120,7 +128,7 @@ class InsightsDataSource(Document):
     def execute_query(self, query: str, **kwargs):
         return self.db.execute_query(query, **kwargs)
 
-    @task(queue="short")
+    @frappe.whitelist()
     def sync_tables(self, *args, **kwargs):
         self.db.sync_tables(*args, **kwargs)
 
