@@ -11,11 +11,11 @@ from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
-from .sources.api_db import API_DB
 from .sources.base_database import BaseDatabase
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
 from .sources.query_store import QueryStore
+from .sources.rest_api_db import RestAPIDB
 from .sources.sqlite import SQLiteDB
 
 
@@ -50,8 +50,8 @@ class InsightsDataSource(Document):
         return self.get_database()
 
     def get_database(self):
-        if self.source_type == "API":
-            return API_DB(data_source=self.name, database_name=self.title)
+        if self.source_type == "Rest API":
+            return RestAPIDB(data_source=self.name, database_name=self.title)
 
         conn_args = {
             "data_source": self.name,
@@ -128,7 +128,7 @@ class InsightsDataSource(Document):
     def execute_query(self, query: str, **kwargs):
         return self.db.execute_query(query, **kwargs)
 
-    @frappe.whitelist()
+    @task(queue="short")
     def sync_tables(self, *args, **kwargs):
         self.db.sync_tables(*args, **kwargs)
 

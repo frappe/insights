@@ -20,8 +20,7 @@
   "username",
   "password",
   "section_break_ejfk",
-  "requests",
-  "api_config_tab"
+  "requests"
  ],
  "fields": [
   {
@@ -111,17 +110,17 @@
    "fieldname": "source_type",
    "fieldtype": "Select",
    "label": "Source Type",
-   "options": "Database\nAPI",
+   "options": "Database\nRest API",
    "reqd": 1
   },
   {
-   "depends_on": "eval: doc.source_type == \"API\"",
+   "depends_on": "eval: doc.source_type == \"Rest API\"",
    "fieldname": "api_config_tab",
    "fieldtype": "Tab Break",
    "label": "API Config"
   },
   {
-   "depends_on": "eval: doc.source_type == \"API\"",
+   "depends_on": "eval: doc.source_type == \"Rest API\"",
    "fieldname": "requests",
    "fieldtype": "Table",
    "label": "Requests",
@@ -134,7 +133,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-04 20:39:14.460216",
+ "modified": "2023-04-04 22:14:14.460216",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",

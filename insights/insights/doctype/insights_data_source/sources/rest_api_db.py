@@ -10,7 +10,7 @@ from frappe.utils.safe_exec import safe_exec
 from .sqlite import SQLiteDB
 
 
-class API_DB(SQLiteDB):
+class RestAPIDB(SQLiteDB):
     def import_table(self, import_doc):
         raise NotImplementedError
 
