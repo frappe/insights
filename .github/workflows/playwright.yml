@@ -90,6 +90,7 @@ jobs:
       run: |
         cd ~/frappe-bench/
         bench --site frappe-insights execute frappe.utils.install.complete_setup_wizard
+        bench --site frappe-insights set-config admin_password frappe
         bench --site frappe-insights execute frappe.tests.ui_test_helpers.create_test_user
 
     - name: Start Bench
