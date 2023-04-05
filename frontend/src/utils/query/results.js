@@ -17,8 +17,8 @@ export function useQueryResults(query) {
 		() =>
 			data.value[0]?.map((c) => {
 				return {
-					column: c.split('::')[0],
-					type: c.split('::')[1],
+					column: c.label,
+					type: c.type,
 				}
 			}) || []
 	)
@@ -79,7 +79,7 @@ function applyColumnFormatOption(formatOption, cell) {
 export function getFormattedResult(data, columns) {
 	if (!data || !data.length) return []
 
-	const columnTypes = data[0].map((c) => c.split('::')[1])
+	const columnTypes = data[0].map((c) => c.type)
 
 	return data.map((row, index) => {
 		if (index == 0) return row // header row

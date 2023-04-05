@@ -59,8 +59,8 @@ export default function useChartData(options = {}) {
 
 function guessChart(dataset) {
 	const [headers, ...rows] = dataset
-	const columnNames = headers.map((header) => header.split('::')[0])
-	const columnTypes = headers.map((header) => header.split('::')[1])
+	const columnNames = headers.map((header) => header.label)
+	const columnTypes = headers.map((header) => header.type)
 	const numberColIndex = columnTypes.findIndex((type) => FIELDTYPES.NUMBER.includes(type))
 	const dateColIndex = columnTypes.findIndex((type) => FIELDTYPES.DATE.includes(type))
 	const stringColIndex = columnTypes.findIndex((type) => FIELDTYPES.TEXT.includes(type))

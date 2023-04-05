@@ -73,7 +73,7 @@ class InsightsAlert(Document):
         result_dict = {}
         result_df = DataFrame(result[1:], columns=result[0])
         for col in result_df.columns:
-            col_name = col.split("::")[0]
+            col_name = col["label"]
             result_dict[col_name] = result_df[col].tolist()
 
         return frappe.safe_eval(
