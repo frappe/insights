@@ -1,6 +1,5 @@
+import { FIELDTYPES, safeJSONParse } from '@/utils'
 import { computed, unref } from 'vue'
-import { safeJSONParse } from '@/utils'
-import { FIELDTYPES } from '@/utils'
 import { getFormattedDate } from '../format'
 
 export function useQueryResults(query) {
@@ -8,10 +7,7 @@ export function useQueryResults(query) {
 	const data = computed(() => {
 		return safeJSONParse(query.doc.results, [])
 	})
-	const columns = computed(() => query.columns.data)
-	const formattedResult = computed(() =>
-		getFormattedResult(unref(data.value.slice(0, MAX_ROWS)), unref(columns))
-	)
+	const formattedResult = computed(() => getFormattedResult(unref(data.value.slice(0, MAX_ROWS))))
 
 	const resultColumns = computed(
 		() =>
@@ -76,9 +72,10 @@ function applyColumnFormatOption(formatOption, cell) {
 	return cell
 }
 
-export function getFormattedResult(data, columns) {
+export function getFormattedResult(data) {
 	if (!data || !data.length) return []
 
+	const columns = data[0]
 	const columnTypes = data[0].map((c) => c.type)
 
 	return data.map((row, index) => {
@@ -97,7 +94,7 @@ export function getFormattedResult(data, columns) {
 			}
 			if (FIELDTYPES.DATE.includes(columnType)) {
 				// only use format options for dates
-				const formatOption = columns[idx]?.format_option
+				const formatOption = columns[idx]?.options
 				if (formatOption) {
 					cell = applyColumnFormatOption(safeJSONParse(formatOption), cell)
 				}

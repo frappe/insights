@@ -33,19 +33,27 @@ export default function useChartData(options = {}) {
 
 		let rawResults = []
 		state.loading = true
-		const _query = useQuery(query)
-		watchOnce(
-			() => _query.doc,
-			async () => {
-				if (!_query.doc) return
-				rawResults = options.resultsFetcher
-					? await options.resultsFetcher()
-					: _query.doc.results
+
+		if (options.resultsFetcher) {
+			options.resultsFetcher().then((results) => {
+				rawResults = results
 				state.loading = false
-				state.data = getFormattedResult(rawResults || [], _query.doc.columns || [])
+				state.data = getFormattedResult(rawResults)
 				state.recommendedChart = guessChart(state.data)
-			}
-		)
+			})
+		} else {
+			const _query = useQuery(query)
+			watchOnce(
+				() => _query.doc,
+				() => {
+					if (!_query.doc) return
+					rawResults = _query.doc.results
+					state.loading = false
+					state.data = getFormattedResult(rawResults)
+					state.recommendedChart = guessChart(state.data)
+				}
+			)
+		}
 	}
 
 	if (options.query) {

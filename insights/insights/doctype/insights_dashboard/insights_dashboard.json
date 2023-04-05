@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "items"
+  "items",
+  "is_public",
+  "public_key"
  ],
  "fields": [
   {
@@ -22,11 +24,23 @@
    "fieldtype": "Table",
    "label": "Items",
    "options": "Insights Dashboard Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "label": "Is Public"
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Data",
+   "label": "Public Key",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-02-02 17:17:39.509087",
+ "modified": "2023-04-05 14:40:40.013814",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard",

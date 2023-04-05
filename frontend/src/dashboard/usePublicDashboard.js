@@ -1,12 +1,11 @@
 import { safeJSONParse } from '@/utils'
-import auth from '@/utils/auth'
 import widgets from '@/widgets/widgets'
-import { createDocumentResource } from 'frappe-ui'
+import { createResource } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
 
-export default function useDashboard(name) {
-	const resource = getDashboardResource(name)
+export default function usePublicDashboard(public_key) {
+	const resource = getPublicDashboard(public_key)
 	const state = reactive({
 		doc: {
 			doctype: 'Insights Dashboard',
@@ -15,18 +14,7 @@ export default function useDashboard(name) {
 			title: undefined,
 			items: [],
 		},
-		isOwner: false,
-		canShare: false,
-		isPrivate: false,
-		editing: false,
 		loading: false,
-		deleting: false,
-		currentItem: undefined,
-		draggingWidget: undefined,
-		sidebar: {
-			open: true,
-			position: 'right',
-		},
 		itemLayouts: [],
 		filterStates: {},
 		filtersByChart: {},
@@ -35,59 +23,12 @@ export default function useDashboard(name) {
 
 	async function reload() {
 		state.loading = true
-		await resource.get.fetch()
-		state.doc = resource.doc
+		await resource.fetch()
+		state.doc = resource.data
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
-		state.isOwner = state.doc.owner == auth.user.user_id
-		state.canShare = state.isOwner || auth.user.is_admin
-		resource.is_private.fetch().then((res) => {
-			state.isPrivate = res.message
-		})
 		state.loading = false
 	}
 	reload()
-
-	async function save() {
-		if (!state.editing) return
-		state.loading = true
-		state.doc.items.forEach((item, idx) => (item.idx = idx))
-		state.doc.items.forEach(updateItemLayout)
-		await resource.setValue.submit(state.doc)
-		await reload()
-		state.currentItem = undefined
-		state.loading = false
-		state.editing = false
-	}
-
-	async function deleteDashboard() {
-		state.deleting = true
-		await resource.delete.submit()
-		state.deleting = false
-	}
-
-	function addItem(item) {
-		if (!state.editing) return
-		state.doc.items.push(transformItem(item))
-		state.itemLayouts.push(getNewLayout(item))
-	}
-
-	function updateItemLayout(item) {
-		const layout = state.itemLayouts.find((layout) => layout.i === parseInt(item.item_id))
-		item.layout = layout || item.layout
-	}
-
-	function removeItem(item) {
-		if (!state.editing) return
-		const item_index = state.doc.items.findIndex((i) => i.item_id === item.item_id)
-		state.doc.items.splice(item_index, 1)
-		state.itemLayouts.splice(item_index, 1)
-		state.currentItem = undefined
-	}
-
-	function setCurrentItem(item_id) {
-		if (!state.editing) return
-		state.currentItem = state.doc.items.find((i) => i.item_id === item_id)
-	}
 
 	function getFilterStateKey(item_id) {
 		return `filterState-${state.doc.name}-${item_id}`
@@ -165,12 +106,12 @@ export default function useDashboard(name) {
 			throw new Error(`Query not found for item ${itemId}`)
 		}
 		const filters = await getChartFilters(itemId)
-		const { message: results } = await resource.fetch_chart_data.submit({
+		return await resource.fetch_chart_data.submit({
+			public_key,
 			item_id: itemId,
 			query_name: queryName,
 			filters,
 		})
-		return results
 	}
 
 	function refreshFilter(filter_id) {
@@ -186,25 +127,12 @@ export default function useDashboard(name) {
 	}
 
 	async function refresh() {
-		await resource.clear_charts_cache.submit()
 		await reload()
 		state.refreshCallbacks.forEach((fn) => fn())
 	}
 
 	function onRefresh(fn) {
 		state.refreshCallbacks.push(fn)
-	}
-
-	async function updateTitle(title) {
-		if (!title || !state.editing) return
-		resource.setValue.submit({ title }).then(() => {
-			$notify({
-				title: 'Dashboard title updated',
-				appearance: 'success',
-			})
-			state.doc.title = title
-		})
-		reload()
 	}
 
 	function makeLayoutObject(item) {
@@ -217,83 +145,35 @@ export default function useDashboard(name) {
 		}
 	}
 
-	function getNewLayout(item) {
-		// get the next available position
-		// consider the height and width of the item
-		const defaultWidth = widgets[item.item_type].defaultWidth
-		const defaultHeight = widgets[item.item_type].defaultHeight
-		const initialX = item.initialX
-		const initialY = item.initialY
-		delete item.initialX
-		delete item.initialY
-		return {
-			i: parseInt(item.item_id),
-			x: initialX || 0,
-			y: initialY || 0,
-			w: defaultWidth,
-			h: defaultHeight,
-		}
-	}
-
-	function togglePublicAccess(isPublic) {
-		if (state.doc.is_public === isPublic) return
-		resource.setValue.submit({ is_public: isPublic }).then(() => {
-			$notify({
-				title: 'Dashboard access updated',
-				appearance: 'success',
-			})
-			state.doc.is_public = isPublic
-		})
-	}
-
-	const edit = () => ((state.editing = true), (state.currentItem = undefined))
-	const discardChanges = () => (
-		(state.editing = false), reload(), (state.currentItem = undefined)
-	)
-	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
-	const setSidebarPosition = (position) => (state.sidebar.position = position)
 	const isChart = (item) => !['Filter', 'Text'].includes(item.item_type)
 
 	return Object.assign(state, {
 		reload,
-		save,
-		addItem,
-		removeItem,
-		setCurrentItem,
 		getChartResults,
 		getFilterStateKey,
 		getFilterState,
 		setFilterState,
 		refreshFilter,
 		updateChartFilters,
-		edit,
-		discardChanges,
-		toggleSidebar,
-		setSidebarPosition,
-		updateTitle,
-		deleteDashboard,
 		refresh,
 		onRefresh,
 		isChart,
-		togglePublicAccess,
 	})
 }
 
-function getDashboardResource(name) {
-	return createDocumentResource({
-		doctype: 'Insights Dashboard',
-		name: name,
-		whitelistedMethods: {
-			savestate: 'savestate',
-			fetch_chart_data: 'fetch_chart_data',
-			clear_charts_cache: 'clear_charts_cache',
-			is_private: 'is_private',
-		},
+function getPublicDashboard(public_key) {
+	const resource = createResource({
+		url: 'insights.api.get_public_dashboard',
+		params: { public_key },
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)
 			return doc
 		},
 	})
+	resource.fetch_chart_data = createResource({
+		url: 'insights.api.get_public_dashboard_chart_data',
+	})
+	return resource
 }
 
 function transformItem(item) {

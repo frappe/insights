@@ -139,3 +139,15 @@ def fetch_column_values(column, search_text=None):
     return data_source.get_column_options(
         column.get("table"), column.get("column"), search_text
     )
+
+
+def get_dashboard_public_key(name):
+    existing_key = frappe.db.get_value(
+        "Insights Dashboard", name, "public_key", cache=True
+    )
+    if existing_key:
+        return existing_key
+
+    public_key = frappe.generate_hash()
+    frappe.db.set_value("Insights Dashboard", name, "public_key", public_key)
+    return public_key

@@ -188,7 +188,7 @@
 						icon="copy"
 						appearance="white"
 						class="absolute bottom-2 right-2"
-						@click="copySQL"
+						@click="copyToClipboard(formattedSQL)"
 					></Button>
 				</div>
 			</template>
@@ -327,6 +327,7 @@ import settings from '@/utils/settings'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { copyToClipboard } from '@/utils'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
@@ -384,21 +385,6 @@ function storeQuery() {
 			title: 'Query Stored',
 		})
 	})
-}
-
-function copySQL() {
-	if (navigator.clipboard) {
-		navigator.clipboard.writeText(query.doc.sql)
-		$notify({
-			appearance: 'success',
-			title: 'SQL Copied',
-		})
-	} else {
-		$notify({
-			appearance: 'warning',
-			title: 'Copy to clipboard not supported',
-		})
-	}
 }
 
 const pivotOptions = computed(() =>
