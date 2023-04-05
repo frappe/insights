@@ -36,10 +36,11 @@ const alert = reactive({
 })
 
 const frequencyOptions = [
-	{ label: 'Daily', value: 'Daily' },
-	{ label: 'Weekly', value: 'Weekly' },
-	{ label: 'Monthly', value: 'Monthly' },
-	{ label: 'Custom', value: 'Custom' },
+	{ value: 'Hourly', label: 'Check once an hour' },
+	{ value: 'Daily', label: 'Check once a day' },
+	{ value: 'Weekly', label: 'Check once a week' },
+	{ value: 'Monthly', label: 'Check once a month' },
+	{ value: 'Custom', label: 'Custom' },
 ]
 const channelOptions = [
 	{ label: 'Email', value: 'Email' },
