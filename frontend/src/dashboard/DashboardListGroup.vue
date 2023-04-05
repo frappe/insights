@@ -23,11 +23,11 @@ const filteredDashboards = computed(() => {
 		</div>
 		<div v-if="enableSearch" class="ml-auto flex items-center pr-4">
 			<div class="flex items-center rounded-md border border-gray-100 bg-white px-3">
-				<FeatherIcon name="search" class="absolute h-4 w-4 text-gray-500" />
+				<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 				<input
 					ref="searchInput"
 					v-model="searchTerm"
-					class="ml-2 flex w-64 items-center bg-white py-1.5 px-4 focus:outline-none"
+					class="flex w-64 items-center bg-white px-2 py-1.5 focus:outline-none"
 					placeholder="Search..."
 				/>
 			</div>
