@@ -7,15 +7,15 @@
 					type="select"
 					label="Chart Type"
 					class="w-full"
-					v-model="chart.chart_type"
+					v-model="chart.doc.chart_type"
 					:options="chartOptions"
 				/>
 
 				<component
-					v-if="chart.chart_type"
-					:is="widgets.getOptionComponent(chart.chart_type)"
-					:key="chart.chart_type"
-					v-model="chart.options"
+					v-if="chart.doc.chart_type"
+					:is="widgets.getOptionComponent(chart.doc.chart_type)"
+					:key="chart.doc.chart_type"
+					v-model="chart.doc.options"
 				/>
 			</div>
 		</div>
@@ -23,13 +23,19 @@
 		<div
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
+			<div class="ml-4 flex space-x-2">
+				<Button appearance="white" class="shadow-sm" @click="chart.save()"> Save </Button>
+				<Button appearance="white" class="shadow-sm" @click="showShareDialog = true">
+					Share
+				</Button>
+			</div>
 			<component
-				v-if="chart.chart_type"
+				v-if="chart.doc.chart_type"
 				ref="widget"
-				:is="widgets.getComponent(chart.chart_type)"
-				:chartData="chartData"
-				:options="chart.options"
-				:key="JSON.stringify(chart.options)"
+				:is="widgets.getComponent(chart.doc.chart_type)"
+				:chartData="{ data: chart.data }"
+				:options="chart.doc.options"
+				:key="JSON.stringify(chart.doc.options)"
 			>
 				<template #placeholder>
 					<InvalidWidget
@@ -43,24 +49,28 @@
 			</component>
 		</div>
 	</div>
+
+	<PublicShareDialog
+		v-if="chart.doc.doctype && chart.doc.name"
+		v-model:show="showShareDialog"
+		:resource-type="chart.doc.doctype"
+		:resource-name="chart.doc.name"
+		:allow-public-access="true"
+		:isPublic="Boolean(chart.doc.is_public)"
+		@togglePublicAccess="chart.togglePublicAccess"
+	/>
 </template>
 
 <script setup>
+import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
-import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { watchOnce } from '@vueuse/shared'
-import { inject, reactive, nextTick } from 'vue'
+import { call } from 'frappe-ui'
+import { inject, ref } from 'vue'
+import useChart from './useChart'
 
 const query = inject('query')
-const chartData = useChartData()
-chartData.load(query.name)
-const chart = reactive({
-	chart_type: undefined,
-	options: {
-		query: query.name,
-	},
-})
+const showShareDialog = ref(false)
 const chartOptions = [
 	{
 		label: 'Select a chart type',
@@ -68,15 +78,9 @@ const chartOptions = [
 	},
 ].concat(widgets.getChartOptions())
 
-watchOnce(
-	() => chartData.recommendedChart,
-	async () => {
-		await nextTick()
-		chart.chart_type = chartData.recommendedChart.type
-		chart.options = {
-			...chart.options,
-			...chartData.recommendedChart.options,
-		}
-	}
-)
+let chart = ref(null)
+
+call('insights.api.get_chart_name', { query: query.name }).then((res) => {
+	chart.value = useChart(res)
+})
 </script>

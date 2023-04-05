@@ -1,7 +1,5 @@
-import { useQuery } from '@/query/useQueries'
 import { FIELDTYPES } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
-import { watchOnce } from '@vueuse/core'
 import { reactive } from 'vue'
 
 /**
@@ -30,30 +28,12 @@ export default function useChartData(options = {}) {
 
 	function load(query) {
 		if (!query) return
-
-		let rawResults = []
 		state.loading = true
-
-		if (options.resultsFetcher) {
-			options.resultsFetcher().then((results) => {
-				rawResults = results
-				state.loading = false
-				state.data = getFormattedResult(rawResults)
-				state.recommendedChart = guessChart(state.data)
-			})
-		} else {
-			const _query = useQuery(query)
-			watchOnce(
-				() => _query.doc,
-				() => {
-					if (!_query.doc) return
-					rawResults = _query.doc.results
-					state.loading = false
-					state.data = getFormattedResult(rawResults)
-					state.recommendedChart = guessChart(state.data)
-				}
-			)
-		}
+		options.resultsFetcher().then((results) => {
+			state.loading = false
+			state.data = getFormattedResult(results)
+			state.recommendedChart = guessChart(state.data)
+		})
 	}
 
 	if (options.query) {
@@ -65,7 +45,7 @@ export default function useChartData(options = {}) {
 	})
 }
 
-function guessChart(dataset) {
+export function guessChart(dataset) {
 	const [headers, ...rows] = dataset
 	const columnNames = headers.map((header) => header.label)
 	const columnTypes = headers.map((header) => header.type)

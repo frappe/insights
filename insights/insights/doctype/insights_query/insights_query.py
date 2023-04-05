@@ -89,6 +89,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def on_trash(self):
         self.delete_insights_table()
+        self.delete_insights_charts()
 
     @property
     def _data_source(self):
@@ -177,6 +178,15 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
     def delete_insights_table(self):
         if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
             frappe.delete_doc("Insights Table", table_name, ignore_permissions=True)
+
+    def delete_insights_charts(self):
+        charts = frappe.get_all(
+            "Insights Chart",
+            filters={"query": self.name},
+            fields=["name"],
+        )
+        for chart in charts:
+            frappe.delete_doc("Insights Chart", chart.name, ignore_permissions=True)
 
     def clear(self):
         self.tables = []

@@ -48,6 +48,16 @@ const routes = [
 		},
 	},
 	{
+		props: true,
+		name: 'PublicChart',
+		path: '/public/chart/:public_key',
+		component: () => import('@/query/PublicChart.vue'),
+		meta: {
+			hideSidebar: true,
+			allowGuest: true,
+		},
+	},
+	{
 		path: '/data-source',
 		name: 'DataSourceList',
 		component: () => import('@/pages/DataSourceList.vue'),
