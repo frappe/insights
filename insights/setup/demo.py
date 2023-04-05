@@ -80,7 +80,7 @@ class DemoDataFactory:
             data_source.save()
 
         self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
-        if frappe.flags.in_test:
+        if frappe.flags.in_test or os.environ.get("CI"):
             self.local_filename = os.path.join(
                 os.path.dirname(__file__), "test_demo_data.tar"
             )
