@@ -292,6 +292,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     (c.type for c in self.columns if c.label == index_column),
                     None,
                 )
+                index_column_options = next(
+                    (c.format_options for c in self.columns if c.label == index_column),
+                    None,
+                )
                 value_column = options.get("value")
                 value_column_type = next(
                     (c.type for c in self.columns if c.label == value_column),
@@ -333,7 +337,9 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 pivoted = pivoted.fillna(0)
 
                 cols = pivoted.columns.to_list()
-                index_result_column = ResultColumn.make(cols[0], index_column_type)
+                index_result_column = ResultColumn.make(
+                    cols[0], index_column_type, index_column_options
+                )
                 other_columns = [
                     ResultColumn.make(c, value_column_type) for c in cols[1:]
                 ]
@@ -366,12 +372,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     (c.type for c in self.columns if c.label == index_column),
                     None,
                 )
+                index_column_options = next(
+                    (c.format_options for c in self.columns if c.label == index_column),
+                    None,
+                )
                 new_column_type = "String"
                 value_column_type = "Decimal"
 
                 cols = unpivoted.columns.to_list()
                 cols = [
-                    ResultColumn.make(cols[0], index_column_type),
+                    ResultColumn.make(cols[0], index_column_type, index_column_options),
                     ResultColumn.make(cols[1], new_column_type),
                     ResultColumn.make(cols[2], value_column_type),
                 ]
