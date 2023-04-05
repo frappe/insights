@@ -10,7 +10,7 @@ const resource = createDocumentResource({
 	},
 })
 resource.updateSettings = (settings) => {
-	resource.update_settings.submit({ settings }).then(() => {
+	resource.setValue.submit({ ...settings }).then(() => {
 		createToast({
 			title: 'Settings Updated',
 			message: 'Your settings have been updated successfully',
