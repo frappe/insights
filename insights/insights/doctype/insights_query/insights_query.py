@@ -142,6 +142,8 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             self.status = "Execution Successful"
         except Exception:
             self.status = "Pending Execution"
+            print("Error fetching results")
+            raise
 
         self.store_results(results)
         return results
@@ -303,9 +305,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     None,
                 )
                 index_column_options = next(
-                    (c.format_options for c in self.columns if c.label == index_column),
+                    (c.format_option for c in self.columns if c.label == index_column),
                     None,
                 )
+                index_column_options = frappe.parse_json(index_column_options)
                 value_column = options.get("value")
                 value_column_type = next(
                     (c.type for c in self.columns if c.label == value_column),
@@ -383,9 +386,10 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     None,
                 )
                 index_column_options = next(
-                    (c.format_options for c in self.columns if c.label == index_column),
+                    (c.format_option for c in self.columns if c.label == index_column),
                     None,
                 )
+                index_column_options = frappe.parse_json(index_column_options)
                 new_column_type = "String"
                 value_column_type = "Decimal"
 
