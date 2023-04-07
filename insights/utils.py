@@ -54,6 +54,6 @@ def get_data_source_schema_for_prompt(data_source):
         )
         tablename = query[0].table
         columns = [f"{col.column}({col.type})" for col in query]
-        schema.append(f"Table {tablename} has these columns: {', '.join(columns)}")
+        schema.append(f"Table '{tablename}' has these columns: {', '.join(columns)}")
 
     return schema

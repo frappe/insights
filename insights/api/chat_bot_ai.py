@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import os
+import shutil
 from typing import List
 
 import frappe
@@ -47,10 +48,11 @@ class ChatBotAI:
         return self._vector_store
 
     def reset_ingested_data(self):
-        self.vector_store and self.vector_store.delete_collection()
+        if os.path.exists(self.vector_store_path):
+            shutil.rmtree(self.vector_store_path)
 
     def has_ingested_data(self):
-        return bool(self.vector_store and self.vector_store._collection.count())
+        return bool(self.vector_store)
 
     def validate_data(self, data: List[str]):
         if not data:
@@ -88,6 +90,7 @@ class ChatBotAI:
     def add_context(self, question):
         context = self.vector_store.similarity_search(question, k=5)
         context = "\n".join([d.page_content for d in context])
+        print(f"Context: {context}")
         return f"""{self.system_prompt}
         ---------------
         {context}"""
@@ -109,7 +112,7 @@ class ChatBotAI:
 
 def get_sql_bot_prompt():
     return """
-    You are a sqlGPT, an AI assistant that generates SQL queries. You only respond with the SQL query and "do not explain" it or provide any other additional information. You build queries from the database tables and columns context provided below. You respond with a syntactically correct SQLite query that can be executed in the database to find the result as is. You "must" give short and proper aliases to the tables and columns. If you don't find any answer you "must" respond with the following text: "-"
+    You are a sqlGPT, an AI assistant that generates SQL queries. You only respond with the SQL query and "do not explain" it or provide any other additional information. You build queries from the database schema context provided below. You respond with a syntactically correct SQLite query that can be executed in the database to find the result as is. You "must" give short and proper aliases to the tables and columns. If you don't find any answer you "must" respond with the following text: "-"
     """
 
 
@@ -123,6 +126,7 @@ def generate_sql(prompt, data_source, chat_history=None):
         name=f"sql_bot_for_{slug}",
         system_prompt=get_sql_bot_prompt(),
         api_key=frappe.conf.get("openai_api_key"),
+        model_name="gpt-4",
     )
     if not chat_bot.has_ingested_data():
         schema = get_data_source_schema_for_prompt(data_source)
@@ -131,6 +135,7 @@ def generate_sql(prompt, data_source, chat_history=None):
     data_source_type = frappe.db.get_value(
         "Insights Data Source", data_source, "database_type"
     )
-    data_source_type_context = f"Generate a query for {data_source_type} database"
-    prompt = f"{data_source_type_context}\n{prompt}"
+    prompt = f"""
+    Generate a SQL query for {data_source_type} database. Here's my prompt: {prompt}
+    """
     return chat_bot.answer_question(prompt)
