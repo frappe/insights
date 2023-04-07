@@ -64,11 +64,6 @@ const generate_sql = createResource({ url: 'insights.api.chat_bot_ai.generate_sq
 function reply() {
 	if (!newPrompt.value) return
 	if (generate_sql.loading) return
-	chat.value.push({
-		role: 'user',
-		content: newPrompt.value,
-	})
-	newPrompt.value = ''
 
 	generate_sql
 		.submit({
@@ -82,6 +77,12 @@ function reply() {
 				content: response,
 			})
 		})
+
+	chat.value.push({
+		role: 'user',
+		content: newPrompt.value,
+	})
+	newPrompt.value = ''
 }
 
 function setSQL(sql) {
