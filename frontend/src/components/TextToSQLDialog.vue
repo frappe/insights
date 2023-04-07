@@ -22,7 +22,7 @@
 				</Button>
 			</div>
 
-			<div v-if="chatGPT.loading" class="mb-4 flex text-sm">Generating query...</div>
+			<div v-if="generate_sql.loading" class="mb-4 flex text-sm">Generating query...</div>
 
 			<textarea
 				class="form-input my-2 w-full p-2.5 pl-3 text-base placeholder:text-gray-500"
@@ -32,7 +32,7 @@
 
 			<div class="flex justify-end space-x-2">
 				<Button @click="chat = []"> Clear </Button>
-				<Button appearance="primary" @click="reply" :loading="chatGPT.loading">
+				<Button appearance="primary" @click="reply" :loading="generate_sql.loading">
 					Send
 				</Button>
 			</div>
@@ -60,21 +60,21 @@ const query = inject('query')
 const chat = ref([])
 const newPrompt = ref('')
 
-const chatGPT = createResource({ url: 'insights.api.openai.generate_query' })
+const generate_sql = createResource({ url: 'insights.api.chat_bot_ai.generate_sql' })
 function reply() {
 	if (!newPrompt.value) return
-	if (chatGPT.loading) return
+	if (generate_sql.loading) return
 	chat.value.push({
 		role: 'user',
 		content: newPrompt.value,
 	})
 	newPrompt.value = ''
 
-	chatGPT
+	generate_sql
 		.submit({
+			prompt: newPrompt.value,
 			data_source: props.dataSource,
 			chat_history: chat.value,
-			prompt: newPrompt.value,
 		})
 		.then((response) => {
 			chat.value.push({
