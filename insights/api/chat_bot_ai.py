@@ -126,7 +126,6 @@ def generate_sql(prompt, data_source, chat_history=None):
         name=f"sql_bot_for_{slug}",
         system_prompt=get_sql_bot_prompt(),
         api_key=frappe.conf.get("openai_api_key"),
-        model_name="gpt-4",
     )
     if not chat_bot.has_ingested_data():
         schema = get_data_source_schema_for_prompt(data_source)
