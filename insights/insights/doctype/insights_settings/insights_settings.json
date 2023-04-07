@@ -15,10 +15,12 @@
   "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
   "query_result_limit",
-  "subscription_id",
+  "is_subscribed",
   "integrations_section",
   "telegram_api_token",
-  "enable_openai_integration"
+  "enable_openai_integration",
+  "query_section",
+  "fiscal_year_start"
  ],
  "fields": [
   {
@@ -68,11 +70,6 @@
    "label": "Query Result Limit"
   },
   {
-   "fieldname": "subscription_id",
-   "fieldtype": "Password",
-   "label": "Subscription ID"
-  },
-  {
    "default": "0",
    "fieldname": "enable_permissions",
    "fieldtype": "Check",
@@ -95,12 +92,28 @@
    "is_virtual": 1,
    "label": "Enable OpenAI Integration",
    "read_only": 1
+  },
+  {
+   "fieldname": "is_subscribed",
+   "fieldtype": "Check",
+   "is_virtual": 1,
+   "label": "Is Subscribed"
+  },
+  {
+   "fieldname": "query_section",
+   "fieldtype": "Section Break",
+   "label": "Query"
+  },
+  {
+   "fieldname": "fiscal_year_start",
+   "fieldtype": "Date",
+   "label": "Fiscal Year Start"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-04-02 12:20:22.756215",
+ "modified": "2023-04-05 12:14:48.233859",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

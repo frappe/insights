@@ -141,7 +141,7 @@ function resetFilter() {
 	<div class="w-full [&:first-child]:w-full">
 		<Popover class="w-full" @close="applyFilter">
 			<template #target="{ togglePopover, isOpen }">
-				<div class="flex">
+				<div class="flex w-full">
 					<button
 						class="flex w-full items-center rounded-md border bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow-sm"
 						@click="togglePopover"

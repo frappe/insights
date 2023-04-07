@@ -8,7 +8,7 @@
 				:value="value && formatter ? formatter(value) : value"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
-					'form-input block h-8 w-full cursor-pointer select-none rounded-md text-sm placeholder-gray-500',
+					'form-input block h-7 w-full cursor-pointer select-none rounded-md text-sm placeholder-gray-500',
 					inputClass,
 				]"
 			/>

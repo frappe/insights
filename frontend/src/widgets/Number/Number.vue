@@ -14,7 +14,7 @@ const formattedValue = computed(() => {
 	if (!results.value?.length) return
 	if (!props.options.column) return
 	const columnIndex = results.value[0].findIndex((header) => {
-		return header.split('::')[0] === props.options.column
+		return header.label === props.options.column
 	})
 	const _value = results.value.slice(1).reduce((acc, row) => {
 		return acc + row[columnIndex]
@@ -24,7 +24,7 @@ const formattedValue = computed(() => {
 </script>
 
 <template>
-	<div v-if="formattedValue" class="h-full w-full overflow-hidden py-5 px-8">
+	<div v-if="formattedValue" class="h-full w-full overflow-hidden px-8 py-5">
 		<div class="mx-auto flex h-full w-full min-w-40 flex-col justify-center overflow-hidden">
 			<div
 				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-base text-gray-600"

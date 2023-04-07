@@ -3,11 +3,11 @@
 
 import frappe
 from sqlalchemy.sql import text
-from sqlalchemy.sql.elements import TextClause
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
 )
+from insights.utils import ResultColumn
 
 from .utils import (
     Timer,
@@ -88,7 +88,7 @@ class BaseDatabase:
             with Timer() as t:
                 res = connection.execute(sql)
             create_execution_log(sql, self.data_source, t.elapsed)
-            columns = [f"{d[0]}::{d[1]}" for d in res.cursor.description]
+            columns = [ResultColumn.make(d[0], d[1]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
             return [columns] + rows if return_columns else rows

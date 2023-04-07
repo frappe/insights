@@ -13,8 +13,8 @@ const routes = [
 		name: 'Login',
 		component: () => import('@/pages/Login.vue'),
 		meta: {
-			isLoginPage: true,
 			hideSidebar: true,
+			allowGuest: true,
 		},
 	},
 	{
@@ -36,6 +36,26 @@ const routes = [
 		name: 'Dashboard',
 		path: '/dashboard/:name',
 		component: () => import('@/dashboard/Dashboard.vue'),
+	},
+	{
+		props: true,
+		name: 'PublicDashboard',
+		path: '/public/dashboard/:public_key',
+		component: () => import('@/dashboard/PublicDashboard.vue'),
+		meta: {
+			hideSidebar: true,
+			allowGuest: true,
+		},
+	},
+	{
+		props: true,
+		name: 'PublicChart',
+		path: '/public/chart/:public_key',
+		component: () => import('@/query/PublicChart.vue'),
+		meta: {
+			hideSidebar: true,
+			allowGuest: true,
+		},
 	},
 	{
 		path: '/data-source',
@@ -115,6 +135,11 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
+	if (!auth.isLoggedIn && to.name !== 'Login' && to.meta.allowGuest) {
+		// if page is allowed for guest, and is not login page, allow
+		return next()
+	}
+
 	if (!auth.isLoggedIn) {
 		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
@@ -154,7 +179,7 @@ window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
 		auth.reset()
-		router.push('/login')
+		// router.push('/login')
 	}
 	return res
 }

@@ -83,7 +83,7 @@
 					<!-- If Pending Execution -->
 					<div
 						v-if="query.run.loading || needsExecution"
-						class="absolute top-0 left-0 flex h-full w-full items-center justify-center"
+						class="absolute left-0 top-0 flex h-full w-full items-center justify-center"
 					>
 						<Button
 							appearance="primary"
@@ -117,7 +117,7 @@ const query_result_limit = computed(() =>
 const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
-	return query.results.formattedResult[0]?.map((c) => c.split('::')[0])
+	return query.results.formattedResult[0]?.map((c) => c.label)
 })
 const isNumberColumn = computed(() => {
 	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))

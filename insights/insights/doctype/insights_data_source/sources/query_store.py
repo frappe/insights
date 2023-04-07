@@ -24,7 +24,7 @@ class StoredQueryTableFactory:
         result = query.load_results(fetch_if_not_exists=True)
         if not result:
             return
-        columns = [r.split("::")[0] for r in result[0]]
+        columns = [col["label"] for col in result[0]]
         df = pd.DataFrame(result[1:], columns=columns)
         df.to_sql(query.name, self.connection, if_exists="replace", index=False)
 

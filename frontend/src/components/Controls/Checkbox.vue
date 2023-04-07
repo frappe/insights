@@ -17,14 +17,14 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from 'vue'
+import { ref, watch } from 'vue'
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 
 const props = defineProps(['modelValue', 'label'])
 const emits = defineEmits(['input', 'change', 'update:modelValue'])
 
 const enabled = ref(Boolean(props.modelValue))
-watchEffect(() => {
+watch(enabled, () => {
 	emits('input', enabled.value)
 	emits('change', enabled.value)
 	emits('update:modelValue', enabled.value)

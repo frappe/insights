@@ -143,6 +143,21 @@ export function getQueryLink(table) {
 	return ''
 }
 
+export function copyToClipboard(text) {
+	if (navigator.clipboard) {
+		navigator.clipboard.writeText(text)
+		$notify({
+			appearance: 'success',
+			title: 'Copied to clipboard',
+		})
+	} else {
+		$notify({
+			appearance: 'error',
+			title: 'Copy to clipboard not supported',
+		})
+	}
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,
@@ -151,4 +166,5 @@ export default {
 	updateDocumentTitle,
 	fuzzySearch,
 	getShortNumber,
+	copyToClipboard,
 }

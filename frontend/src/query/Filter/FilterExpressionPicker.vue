@@ -11,7 +11,7 @@
 		</div>
 		<Popover class="h-36 w-full text-sm" placement="left-start">
 			<template #target="{ open }">
-				<div class="relative h-full">
+				<div class="relative h-full w-full">
 					<Code
 						v-model="input"
 						:completions="getCompletions"

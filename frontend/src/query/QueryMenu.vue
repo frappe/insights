@@ -188,7 +188,7 @@
 						icon="copy"
 						appearance="white"
 						class="absolute bottom-2 right-2"
-						@click="copySQL"
+						@click="copyToClipboard(formattedSQL)"
 					></Button>
 				</div>
 			</template>
@@ -327,6 +327,7 @@ import settings from '@/utils/settings'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { copyToClipboard } from '@/utils'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
@@ -386,21 +387,6 @@ function storeQuery() {
 	})
 }
 
-function copySQL() {
-	if (navigator.clipboard) {
-		navigator.clipboard.writeText(query.doc.sql)
-		$notify({
-			appearance: 'success',
-			title: 'SQL Copied',
-		})
-	} else {
-		$notify({
-			appearance: 'warning',
-			title: 'Copy to clipboard not supported',
-		})
-	}
-}
-
 const pivotOptions = computed(() =>
 	[''].concat(
 		query.columns.indexOptions
@@ -442,7 +428,7 @@ function resetPivot() {
 function downloadCSV() {
 	let data = query.results.data
 	if (data.length === 0) return
-	data[0] = data[0].map((d) => d.split('::')[0])
+	data[0] = data[0].map((d) => d.label)
 	const csvString = data.map((row) => row.join(',')).join('\n')
 	const blob = new Blob([csvString], { type: 'text/csv' })
 	const url = window.URL.createObjectURL(blob)

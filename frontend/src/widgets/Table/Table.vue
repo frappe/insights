@@ -11,7 +11,7 @@ const results = computed(() => props.chartData.data)
 const MAX_ROWS = 500
 const rows = computed(() => {
 	if (!results.value?.length || !props.options.columns?.length) return []
-	const resultHeader = results.value[0].map((d) => d.split('::')[0])
+	const resultHeader = results.value[0].map((d) => d.label)
 	const resultData = results.value.slice(1, MAX_ROWS)
 	return resultData.map((row) => {
 		const newRow = []

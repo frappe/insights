@@ -7,14 +7,17 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "disabled",
+  "section_break_cmx9",
   "title",
   "channel",
   "query",
   "frequency",
-  "custom_cron",
+  "cron_format",
+  "last_execution",
+  "next_execution",
   "repeat",
   "column_break_ktop",
-  "telegram_bot_id",
   "telegram_chat_id",
   "recipients",
   "condition"
@@ -46,13 +49,7 @@
    "fieldname": "frequency",
    "fieldtype": "Select",
    "label": "Frequency",
-   "options": "Hourly\nDaily\nWeekly\nMonthly\nCustom"
-  },
-  {
-   "depends_on": "eval: doc.frequency == \"Custom\"",
-   "fieldname": "custom_cron",
-   "fieldtype": "Data",
-   "label": "Custom Cron"
+   "options": "Hourly\nDaily\nWeekly\nMonthly\nCron"
   },
   {
    "fieldname": "column_break_ktop",
@@ -77,19 +74,44 @@
    "reqd": 1
   },
   {
-   "fieldname": "telegram_bot_id",
-   "fieldtype": "Data",
-   "label": "Telegram Bot ID"
-  },
-  {
    "fieldname": "telegram_chat_id",
    "fieldtype": "Data",
    "label": "Telegram Chat ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "section_break_cmx9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.frequency == \"Cron\"",
+   "fieldname": "cron_format",
+   "fieldtype": "Data",
+   "label": "Cron Format"
+  },
+  {
+   "fieldname": "last_execution",
+   "fieldtype": "Datetime",
+   "label": "Last Execution",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_execution",
+   "fieldtype": "Datetime",
+   "is_virtual": 1,
+   "label": "Next Execution",
+   "no_copy": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-30 18:40:53.883607",
+ "modified": "2023-04-03 16:02:23.898866",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",

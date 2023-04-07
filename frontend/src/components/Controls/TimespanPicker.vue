@@ -34,7 +34,7 @@
 						type="select"
 						v-model="intervalType"
 						class="h-8 w-full text-sm"
-						:options="['Day', 'Week', 'Month', 'Quarter', 'Year']"
+						:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
 					>
 					</Input>
 				</div>
