@@ -101,7 +101,7 @@ class ChatBotAI:
             system_prompt = self.add_context(question)
 
         self.count_tokens(system_prompt + question)
-        chat = ChatOpenAI(openai_api_key=self.api_key)
+        chat = ChatOpenAI(openai_api_key=self.api_key, temperature=0)
         system_message = SystemMessage(content=system_prompt)
         human_message = HumanMessage(content=question)
 
