@@ -107,6 +107,11 @@ const routes = [
 		},
 	},
 	{
+		path: '/notebook',
+		name: 'Notebook',
+		component: () => import('@/notebook/Notebook.vue'),
+	},
+	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
