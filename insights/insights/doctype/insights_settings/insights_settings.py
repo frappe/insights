@@ -61,10 +61,3 @@ class InsightsSettings(Document):
                 message="Error sending login link to your email",
                 type="error",
             )
-
-
-def get_insights_subscription_key():
-    try:
-        return frappe.conf.sk_insights
-    except BaseException:
-        return None
