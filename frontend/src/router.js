@@ -1,6 +1,7 @@
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
+import { getTrialStatus } from '@/subscription'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -127,6 +128,14 @@ const routes = [
 			hideSidebar: true,
 		},
 	},
+	{
+		path: '/trial-expired',
+		name: 'Trial Expired',
+		component: () => import('@/pages/TrialExpired.vue'),
+		meta: {
+			hideSidebar: true,
+		},
+	},
 ]
 
 let router = createRouter({
@@ -151,6 +160,10 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
+	const trialExpired = await getTrialStatus()
+	if (trialExpired && to.name !== 'Trial Expired') {
+		return next('/trial-expired')
+	}
 	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
@@ -179,7 +192,7 @@ window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
 		auth.reset()
-		// router.push('/login')
+		router.push('/login')
 	}
 	return res
 }
