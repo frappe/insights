@@ -1,7 +1,5 @@
-import { useQuery } from '@/query/useQueries'
 import { FIELDTYPES } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
-import { watchOnce } from '@vueuse/core'
 import { reactive } from 'vue'
 
 /**
@@ -30,22 +28,12 @@ export default function useChartData(options = {}) {
 
 	function load(query) {
 		if (!query) return
-
-		let rawResults = []
 		state.loading = true
-		const _query = useQuery(query)
-		watchOnce(
-			() => _query.doc,
-			async () => {
-				if (!_query.doc) return
-				rawResults = options.resultsFetcher
-					? await options.resultsFetcher()
-					: _query.doc.results
-				state.loading = false
-				state.data = getFormattedResult(rawResults || [], _query.doc.columns || [])
-				state.recommendedChart = guessChart(state.data)
-			}
-		)
+		options.resultsFetcher().then((results) => {
+			state.loading = false
+			state.data = getFormattedResult(results)
+			state.recommendedChart = guessChart(state.data)
+		})
 	}
 
 	if (options.query) {
@@ -57,10 +45,10 @@ export default function useChartData(options = {}) {
 	})
 }
 
-function guessChart(dataset) {
+export function guessChart(dataset) {
 	const [headers, ...rows] = dataset
-	const columnNames = headers.map((header) => header.split('::')[0])
-	const columnTypes = headers.map((header) => header.split('::')[1])
+	const columnNames = headers.map((header) => header.label)
+	const columnTypes = headers.map((header) => header.type)
 	const numberColIndex = columnTypes.findIndex((type) => FIELDTYPES.NUMBER.includes(type))
 	const dateColIndex = columnTypes.findIndex((type) => FIELDTYPES.DATE.includes(type))
 	const stringColIndex = columnTypes.findIndex((type) => FIELDTYPES.TEXT.includes(type))

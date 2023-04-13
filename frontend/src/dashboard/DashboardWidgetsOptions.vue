@@ -10,6 +10,9 @@ import {
 	AlignLeft,
 } from 'lucide-vue-next'
 import widgets from '@/widgets/widgets'
+import { inject } from 'vue'
+
+const dashboard = inject('dashboard')
 const emit = defineEmits(['dragChange'])
 function onDragStart(widget) {
 	emit('dragChange', widget)
@@ -32,7 +35,7 @@ const icons = {
 		<template v-for="widget in widgets.list" :key="widget.type">
 			<div
 				:draggable="true"
-				class="cursor-grab rounded-md border border-gray-100 bg-gray-50 pt-1 pb-2 text-center text-gray-600"
+				class="cursor-grab rounded-md border border-gray-100 bg-gray-50 pb-2 pt-1 text-center text-gray-600"
 				@dragend="emit('dragChange', false)"
 				@dragstart="onDragStart(widget)"
 			>

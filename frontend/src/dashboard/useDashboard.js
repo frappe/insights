@@ -235,6 +235,17 @@ export default function useDashboard(name) {
 		}
 	}
 
+	function togglePublicAccess(isPublic) {
+		if (state.doc.is_public === isPublic) return
+		resource.setValue.submit({ is_public: isPublic }).then(() => {
+			$notify({
+				title: 'Dashboard access updated',
+				appearance: 'success',
+			})
+			state.doc.is_public = isPublic
+		})
+	}
+
 	const edit = () => ((state.editing = true), (state.currentItem = undefined))
 	const discardChanges = () => (
 		(state.editing = false), reload(), (state.currentItem = undefined)
@@ -264,6 +275,7 @@ export default function useDashboard(name) {
 		refresh,
 		onRefresh,
 		isChart,
+		togglePublicAccess,
 	})
 }
 

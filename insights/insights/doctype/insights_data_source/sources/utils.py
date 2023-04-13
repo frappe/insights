@@ -47,7 +47,7 @@ def create_insights_table(table, force=False):
         {
             "data_source": table.data_source,
             "table": table.table,
-            "is_query_based": table.is_query_based,
+            "is_query_based": table.is_query_based or 0,
         },
     )
 
@@ -60,7 +60,7 @@ def create_insights_table(table, force=False):
                 "data_source": table.data_source,
                 "table": table.table,
                 "label": table.label,
-                "is_query_based": table.is_query_based,
+                "is_query_based": table.is_query_based or 0,
             }
         )
 

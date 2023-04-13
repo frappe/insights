@@ -1,6 +1,7 @@
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
+import { getTrialStatus } from '@/subscription'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -13,8 +14,8 @@ const routes = [
 		name: 'Login',
 		component: () => import('@/pages/Login.vue'),
 		meta: {
-			isLoginPage: true,
 			hideSidebar: true,
+			allowGuest: true,
 		},
 	},
 	{
@@ -36,6 +37,26 @@ const routes = [
 		name: 'Dashboard',
 		path: '/dashboard/:name',
 		component: () => import('@/dashboard/Dashboard.vue'),
+	},
+	{
+		props: true,
+		name: 'PublicDashboard',
+		path: '/public/dashboard/:public_key',
+		component: () => import('@/dashboard/PublicDashboard.vue'),
+		meta: {
+			hideSidebar: true,
+			allowGuest: true,
+		},
+	},
+	{
+		props: true,
+		name: 'PublicChart',
+		path: '/public/chart/:public_key',
+		component: () => import('@/query/PublicChart.vue'),
+		meta: {
+			hideSidebar: true,
+			allowGuest: true,
+		},
 	},
 	{
 		path: '/data-source',
@@ -107,6 +128,14 @@ const routes = [
 			hideSidebar: true,
 		},
 	},
+	{
+		path: '/trial-expired',
+		name: 'Trial Expired',
+		component: () => import('@/pages/TrialExpired.vue'),
+		meta: {
+			hideSidebar: true,
+		},
+	},
 ]
 
 let router = createRouter({
@@ -115,6 +144,11 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
+	if (!auth.isLoggedIn && to.name !== 'Login' && to.meta.allowGuest) {
+		// if page is allowed for guest, and is not login page, allow
+		return next()
+	}
+
 	if (!auth.isLoggedIn) {
 		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
@@ -126,6 +160,10 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
+	const trialExpired = await getTrialStatus()
+	if (trialExpired && to.name !== 'Trial Expired') {
+		return next('/trial-expired')
+	}
 	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}

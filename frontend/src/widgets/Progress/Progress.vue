@@ -10,7 +10,7 @@ const props = defineProps({
 const results = computed(() => props.chartData.data)
 const resultMap = computed(() => {
 	if (!results.value?.length) return []
-	const columns = results.value[0].map((d) => d.split('::')[0])
+	const columns = results.value[0].map((d) => d.label)
 	return results.value.slice(1).map((row) => {
 		const result = {}
 		row.forEach((value, index) => {

@@ -5,7 +5,6 @@ import ChartGrid from '@/components/Charts/ChartGrid.vue'
 import ChartLegend from '@/components/Charts/ChartLegend.vue'
 import ChartSeries from '@/components/Charts/ChartSeries.vue'
 import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
-import { graphic } from 'echarts'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -16,7 +15,7 @@ const props = defineProps({
 const results = computed(() => props.chartData.data)
 const labels = computed(() => {
 	if (!results.value?.length || !props.options.xAxis) return []
-	const columns = results.value[0].map((d) => d.split('::')[0])
+	const columns = results.value[0].map((d) => d.label)
 	const columnIndex = columns.indexOf(props.options.xAxis)
 	return results.value.slice(1).map((d) => d[columnIndex])
 })
@@ -24,7 +23,7 @@ const labels = computed(() => {
 const datasets = computed(() => {
 	if (!results.value?.length || !props.options.yAxis) return []
 	return props.options.yAxis.map((column) => {
-		const columns = results.value[0].map((d) => d.split('::')[0])
+		const columns = results.value[0].map((d) => d.label)
 		const columnIndex = columns.indexOf(column)
 		return {
 			label: column,

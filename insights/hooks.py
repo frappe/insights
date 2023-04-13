@@ -126,23 +126,9 @@ has_permission = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"insights.tasks.all"
-# 	],
-# 	"daily": [
-# 		"insights.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"insights.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"insights.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"insights.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "all": ["insights.insights.doctype.insights_alert.insights_alert.send_alerts"]
+}
 
 # Testing
 # -------

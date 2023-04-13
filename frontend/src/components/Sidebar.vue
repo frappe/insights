@@ -3,11 +3,11 @@
 		<div class="flex flex-grow flex-col overflow-y-auto p-3">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-500">
 				<img src="../assets/insights-logo.svg" class="h-7" />
-				<span class="ml-1 mb-0.5 font-mono">{{ appVersion }}</span>
+				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
 			</div>
-			<div class="rg:hidden flex">
+			<router-link to="/" class="rg:hidden flex cursor-pointer">
 				<img src="../assets/insights-icon.svg" class="rounded-md" />
-			</div>
+			</router-link>
 
 			<div class="mt-4 flex flex-col">
 				<nav class="flex-1 space-y-1 pb-4 text-base">

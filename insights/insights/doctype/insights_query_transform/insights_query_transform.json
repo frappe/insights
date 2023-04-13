@@ -15,7 +15,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Pivot",
+   "options": "Pivot\nUnpivot\nTranspose",
    "reqd": 1
   },
   {
@@ -31,7 +31,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-11-18 16:35:13.635703",
+ "modified": "2023-03-31 16:15:07.705273",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Transform",

@@ -17,7 +17,9 @@
   "query_result_limit",
   "is_subscribed",
   "integrations_section",
-  "telegram_api_token"
+  "telegram_api_token",
+  "query_section",
+  "fiscal_year_start"
  ],
  "fields": [
   {
@@ -88,12 +90,22 @@
    "fieldtype": "Check",
    "is_virtual": 1,
    "label": "Is Subscribed"
+  },
+  {
+   "fieldname": "query_section",
+   "fieldtype": "Section Break",
+   "label": "Query"
+  },
+  {
+   "fieldname": "fiscal_year_start",
+   "fieldtype": "Date",
+   "label": "Fiscal Year Start"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-04-03 21:23:20.986577",
+ "modified": "2023-04-05 12:14:48.233859",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

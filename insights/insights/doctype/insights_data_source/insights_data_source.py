@@ -6,6 +6,7 @@ from functools import cached_property, lru_cache
 import frappe
 from frappe import task
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.constants import SOURCE_STATUS
@@ -137,7 +138,7 @@ class InsightsDataSource(Document):
         return get_data_source_schema(self.name)
 
 
-@lru_cache(maxsize=32)
+@redis_cache(ttl=60 * 60 * 24)
 def get_data_source_schema(data_source):
     Table = frappe.qb.DocType("Insights Table")
     TableColumn = frappe.qb.DocType("Insights Table Column")

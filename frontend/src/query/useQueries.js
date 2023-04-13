@@ -55,8 +55,8 @@ export function useQuery(name) {
 			doc.results = safeJSONParse(doc.results, [])
 			query.resultColumns = doc.results[0]?.map((c) => {
 				return {
-					column: c.split('::')[0],
-					type: c.split('::')[1],
+					column: c.label,
+					type: c.type,
 				}
 			})
 			return doc

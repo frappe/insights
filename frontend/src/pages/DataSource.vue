@@ -51,7 +51,7 @@
 				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b px-4 py-3 text-sm text-gray-500"
 					>
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-300" />
@@ -60,6 +60,7 @@
 						<p class="flex-1">Status</p>
 					</div>
 					<ul
+						v-if="tables.length > 0"
 						role="list"
 						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
 					>
@@ -72,7 +73,7 @@
 										table: table.name,
 									},
 								}"
-								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
+								class="flex cursor-pointer items-center rounded-md px-4 py-3 hover:bg-gray-50"
 							>
 								<p class="mr-4">
 									<Input type="checkbox" class="rounded-md border-gray-300" />
@@ -90,6 +91,20 @@
 							</router-link>
 						</li>
 					</ul>
+					<div
+						v-if="tables.length == 0"
+						class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md text-base font-light text-gray-500"
+					>
+						<div class="text-base font-light text-gray-500">
+							Tables are not synced yet.
+						</div>
+						<div
+							class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
+							@click="syncTables"
+						>
+							Sync Tables?
+						</div>
+					</div>
 					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
 						<p class="ml-auto">
 							Showing {{ tables.length }} of

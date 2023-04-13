@@ -1,7 +1,6 @@
 <script setup>
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { inject } from 'vue'
-import settings from '@/utils/settings'
 import DashboardMenuButton from './DashboardMenuButton.vue'
 import DashboardShareButton from './DashboardShareButton.vue'
 const dashboard = inject('dashboard')
@@ -17,9 +16,7 @@ whenever(cmdD, dashboard.discardChanges)
 
 <template>
 	<div class="flex flex-shrink-0 justify-end space-x-2">
-		<DashboardShareButton
-			v-if="settings.doc?.enable_permissions && !dashboard.editing && dashboard.canShare"
-		/>
+		<DashboardShareButton v-if="!dashboard.editing && dashboard.canShare" />
 		<Button
 			appearance="white"
 			v-if="!dashboard.editing"

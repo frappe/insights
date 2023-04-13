@@ -20,8 +20,6 @@ const props = defineProps({
 const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 
-window.dashboard = dashboard
-
 const draggingWidget = ref(false)
 function addWidget(dropEvent) {
 	const initialXandY = calcInitialXY(dropEvent)
@@ -80,7 +78,7 @@ updateDocumentTitle(pageMeta)
 				>
 					<UseDropZone
 						v-if="dashboard.editing && draggingWidget"
-						class="absolute top-0 left-0 z-10 h-full w-full"
+						class="absolute left-0 top-0 z-10 h-full w-full"
 						:onDrop="addWidget"
 						:showCollision="true"
 						colliderClass=".dashboard-item"
@@ -103,7 +101,7 @@ updateDocumentTitle(pageMeta)
 
 					<DashboardEmptyState
 						v-if="!dashboard.doc.items.length"
-						class="absolute top-1/2 left-1/2 mx-auto -translate-x-1/2 -translate-y-1/2 transform"
+						class="absolute left-1/2 top-1/2 mx-auto -translate-x-1/2 -translate-y-1/2 transform"
 					/>
 				</div>
 			</div>
@@ -141,10 +139,20 @@ updateDocumentTitle(pageMeta)
 					/>
 
 					<component
+						v-if="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
 						:key="dashboard.currentItem.item_id"
 					/>
+
+					<Button
+						iconLeft="trash"
+						appearance="white"
+						class="ml-auto text-red-500"
+						@click="dashboard.removeItem(dashboard.currentItem)"
+					>
+						Delete Widget
+					</Button>
 				</div>
 			</div>
 		</template>
