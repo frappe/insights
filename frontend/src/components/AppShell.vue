@@ -18,5 +18,5 @@ const route = useRoute()
 const hideSidebar = computed(() => {
 	return route.meta.hideSidebar || !auth.isLoggedIn
 })
-onMounted(() => auth.isLoggedIn && settings.get.fetch)
+onMounted(() => auth.isLoggedIn && settings.get.fetch())
 </script>

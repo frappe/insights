@@ -103,7 +103,6 @@ import Setting from '@/components/Setting.vue'
 import DatePicker from '@/components/Controls/DatePicker.vue'
 
 const settingsDoc = ref({})
-settings.get.fetch()
 watchEffect(() => {
 	if (settings.doc) {
 		settingsDoc.value = { ...settings.doc }
