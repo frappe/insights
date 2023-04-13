@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 overflow-scroll p-2 pt-3">
+	<div v-if="chart.doc" class="flex flex-1 overflow-scroll p-2 pt-3">
 		<div class="flex w-full flex-shrink-0 flex-col lg:h-full lg:w-[18rem] lg:pr-4">
 			<div class="space-y-4">
 				<!-- Widget Options -->
@@ -48,17 +48,17 @@
 				</template>
 			</component>
 		</div>
-	</div>
 
-	<PublicShareDialog
-		v-if="chart.doc.doctype && chart.doc.name"
-		v-model:show="showShareDialog"
-		:resource-type="chart.doc.doctype"
-		:resource-name="chart.doc.name"
-		:allow-public-access="true"
-		:isPublic="Boolean(chart.doc.is_public)"
-		@togglePublicAccess="chart.togglePublicAccess"
-	/>
+		<PublicShareDialog
+			v-if="chart.doc.doctype && chart.doc.name"
+			v-model:show="showShareDialog"
+			:resource-type="chart.doc.doctype"
+			:resource-name="chart.doc.name"
+			:allow-public-access="true"
+			:isPublic="Boolean(chart.doc.is_public)"
+			@togglePublicAccess="chart.togglePublicAccess"
+		/>
+	</div>
 </template>
 
 <script setup>
@@ -78,7 +78,7 @@ const chartOptions = [
 	},
 ].concat(widgets.getChartOptions())
 
-let chart = ref(null)
+let chart = ref({})
 
 call('insights.api.get_chart_name', { query: query.name }).then((res) => {
 	chart.value = useChart(res)

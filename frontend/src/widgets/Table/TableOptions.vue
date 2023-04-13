@@ -10,12 +10,8 @@ const props = defineProps({
 })
 
 const options = computed({
-	get() {
-		return props.modelValue
-	},
-	set(value) {
-		emit('update:modelValue', value)
-	},
+	get: () => props.modelValue,
+	set: (value) => emit('update:modelValue', value),
 })
 
 const query = ref(useQuery(options.value.query))

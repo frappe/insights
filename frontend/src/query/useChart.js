@@ -7,12 +7,13 @@ import { reactive } from 'vue'
 import { guessChart } from '@/widgets/useChartData'
 
 export default function useChart(chartName) {
-	const resource = getChartResource(chartName)
+	const chartDocResource = getChartResource(chartName)
 	const state = reactive({
 		query: null,
 		data: [],
 		loading: false,
 		error: null,
+		options: {},
 		doc: {
 			doctype: 'Insights Chart',
 			name: undefined,
@@ -24,8 +25,9 @@ export default function useChart(chartName) {
 
 	async function load() {
 		state.loading = true
-		await resource.get.fetch()
-		state.doc = resource.doc
+		await chartDocResource.get.fetch()
+		state.doc = chartDocResource.doc
+		state.doc.query = chartDocResource.doc.query
 		const _query = useQuery(state.doc.query)
 		watchOnce(
 			() => _query.doc,
@@ -33,6 +35,7 @@ export default function useChart(chartName) {
 				if (!_query.doc) return
 				state.data = getFormattedResult(_query.doc.results)
 				if (!state.doc.chart_type) state.doc.options = guessChart(state.data)
+				state.doc.options.query = state.doc.query
 				state.loading = false
 			}
 		)
@@ -40,7 +43,7 @@ export default function useChart(chartName) {
 	load()
 
 	function save() {
-		resource.setValue
+		chartDocResource.setValue
 			.submit({
 				chart_type: state.doc.chart_type,
 				options: state.doc.options,
@@ -50,7 +53,7 @@ export default function useChart(chartName) {
 
 	function togglePublicAccess(isPublic) {
 		if (state.doc.is_public === isPublic) return
-		resource.setValue.submit({ is_public: isPublic }).then(() => {
+		chartDocResource.setValue.submit({ is_public: isPublic }).then(() => {
 			$notify({
 				title: 'Chart access updated',
 				appearance: 'success',
@@ -72,6 +75,9 @@ function getChartResource(chartName) {
 		name: chartName,
 		transform: (doc) => {
 			doc.options = safeJSONParse(doc.options)
+			Object.assign(doc.options, {
+				query: doc.query,
+			})
 			return doc
 		},
 	})
