@@ -24,7 +24,6 @@
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
-				<Button appearance="white" class="shadow-sm" @click="chart.save()"> Save </Button>
 				<Button appearance="white" class="shadow-sm" @click="showShareDialog = true">
 					Share
 				</Button>
@@ -65,7 +64,6 @@
 import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
-import { call } from 'frappe-ui'
 import { inject, ref } from 'vue'
 import useChart from './useChart'
 
@@ -79,5 +77,8 @@ const chartOptions = [
 ].concat(widgets.getChartOptions())
 
 let chart = ref({})
-query.get_chart_name.submit().then((res) => (chart.value = useChart(res)))
+query.get_chart_name.submit().then((res) => {
+	chart.value = useChart(res.message)
+	chart.value.autosave = true
+})
 </script>
