@@ -84,12 +84,7 @@ function getQueryResource(name) {
 				return c
 			})
 			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0]?.map((c) => {
-				return {
-					column: c.label,
-					type: c.type,
-				}
-			})
+			resource.resultColumns = doc.results[0]
 			return doc
 		},
 	})

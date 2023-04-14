@@ -16,6 +16,7 @@
 					:is="widgets.getOptionComponent(chart.doc.chart_type)"
 					:key="chart.doc.chart_type"
 					v-model="chart.doc.options"
+					:columns="query.resultColumns"
 				/>
 			</div>
 		</div>
