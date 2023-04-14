@@ -103,7 +103,7 @@ const shouldRender = computed(() => {
 			<ChartTooltip trigger="axis" :appendToBody="true" :valueFormatter="valueFormatter" />
 		</ChartGrid>
 	</Chart>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>

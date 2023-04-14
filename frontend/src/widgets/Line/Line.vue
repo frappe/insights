@@ -68,7 +68,8 @@ const markLine = computed(() =>
 				:name="dataset.label"
 				:data="dataset.data"
 				type="line"
-				:smooth="props.options.smoothLines"
+				:smooth="props.options.smoothLines ? 0.4 : false"
+				:smoothMonotone="'x'"
 				:showSymbol="props.options.showPoints"
 				:markLine="markLine"
 				:areaStyle="{ opacity: props.options.showArea ? 0.1 : 0 }"
@@ -76,7 +77,7 @@ const markLine = computed(() =>
 			<ChartTooltip />
 		</ChartGrid>
 	</Chart>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>

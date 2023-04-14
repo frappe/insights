@@ -43,13 +43,13 @@
 								<th
 									v-for="column in columns"
 									:key="column.name"
-									class="whitespace-nowrap border-b border-r bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
+									class="whitespace-nowrap border-b border-r bg-gray-100 py-1.5 pl-3 pr-20 font-medium text-gray-700"
 									scope="col"
 								>
 									<ColumnHeader :column="column" :query="query" />
 								</th>
 								<th
-									class="border-b bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
+									class="border-b bg-gray-100 py-1.5 pl-3 pr-20 font-medium text-gray-700"
 									scope="col"
 									width="99%"
 								></th>
@@ -63,7 +63,7 @@
 								<td
 									v-for="(cell, j) in row"
 									:key="j"
-									class="whitespace-nowrap border-b border-r bg-gray-50 px-3 py-2 text-gray-600"
+									class="whitespace-nowrap border-b border-r bg-gray-50 py-2 pl-3 pr-20 text-gray-600"
 									:class="{ 'text-right': isNumberColumn[j] }"
 								>
 									{{
@@ -73,7 +73,7 @@
 									}}
 								</td>
 								<td
-									class="border-b bg-gray-50 px-3 py-2 text-gray-600"
+									class="border-b bg-gray-50 py-2 pl-3 pr-20 text-gray-600"
 									width="99%"
 								></td>
 							</tr>

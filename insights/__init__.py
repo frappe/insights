@@ -3,7 +3,7 @@
 
 import frappe
 
-__version__ = "0.3.0"
+__version__ = "0.6.2"
 
 
 def notify(**kwargs):

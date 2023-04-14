@@ -35,3 +35,4 @@ insights.patches.refactor_dashboard_filter
 insights.patches.refactor_dashboard_item #17
 insights.patches.make_query_tables
 insights.patches.show_support_login_message
+insights.insights.doctype.insights_table.patches.delete_duplicate_records

@@ -136,12 +136,14 @@ updateDocumentTitle(pageMeta)
 					<DashboardQueryOption
 						v-if="dashboard.isChart(dashboard.currentItem)"
 						v-model="dashboard.currentItem.options.query"
+						@update:model-value="dashboard.loadCurrentItemQuery"
 					/>
 
 					<component
 						v-if="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
+						:columns="dashboard.currentItem.query?.resultColumns"
 						:key="dashboard.currentItem.item_id"
 					/>
 

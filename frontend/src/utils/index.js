@@ -158,6 +158,13 @@ export function copyToClipboard(text) {
 	}
 }
 
+export function setOrGet(obj, key, generator, generatorArgs) {
+	if (!obj.hasOwnProperty(key)) {
+		obj[key] = generator(...generatorArgs)
+	}
+	return obj[key]
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,

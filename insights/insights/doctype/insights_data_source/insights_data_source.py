@@ -11,6 +11,7 @@ from frappe.utils.caching import redis_cache
 from insights import notify
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
+from insights.insights.doctype.insights_team.insights_team import get_permission_filter
 
 from .sources.base_database import BaseDatabase
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
@@ -25,6 +26,18 @@ class InsightsDataSource(Document):
             "Insights Data Source", {"is_site_db": 1}
         ):
             frappe.throw("Only one site database can be configured")
+
+    @frappe.whitelist()
+    def get_tables(self):
+        return frappe.get_list(
+            "Insights Table",
+            filters={
+                "data_source": self.name,
+                **get_permission_filter("Insights Table"),
+            },
+            fields=["name", "table", "label", "hidden"],
+            order_by="hidden asc, label asc",
+        )
 
     def on_trash(self):
         if self.is_site_db:
@@ -123,7 +136,29 @@ class InsightsDataSource(Document):
 
     @task(queue="short")
     def sync_tables(self, *args, **kwargs):
-        self.db.sync_tables(*args, **kwargs)
+        return self.db.sync_tables(*args, **kwargs)
+
+    @frappe.whitelist()
+    def enqueue_sync_tables(self):
+        from frappe.utils.scheduler import is_scheduler_inactive
+
+        if is_scheduler_inactive():
+            notify(
+                **{
+                    "title": "Error",
+                    "message": "Scheduler is inactive",
+                    "type": "error",
+                }
+            )
+
+        frappe.enqueue(
+            _sync_data_source,
+            data_source=self.name,
+            job_name="sync_data_source",
+            queue="long",
+            timeout=3600,
+            now=True,
+        )
 
     def get_table_columns(self, table):
         return self.db.get_table_columns(table)
@@ -175,3 +210,22 @@ def get_data_source_schema(data_source):
             }
         )
     return schema
+
+
+def _sync_data_source(data_source):
+    notify(
+        **{
+            "title": "Info",
+            "message": "Syncing Data Source",
+            "type": "info",
+        }
+    )
+    source = frappe.get_doc("Insights Data Source", data_source)
+    source.sync_tables()
+    notify(
+        **{
+            "title": "Success",
+            "message": "Data Source Synced",
+            "type": "success",
+        }
+    )

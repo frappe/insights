@@ -1,5 +1,5 @@
 <template>
-	<div class="h-full pt-4 sm:pt-16">
+	<div class="h-full w-full pt-4 sm:pt-16">
 		<div>
 			<div class="flex">
 				<img src="../assets/insights-logo.svg" class="mx-auto h-8" />
