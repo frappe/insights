@@ -76,7 +76,7 @@ const markLine = computed(() =>
 			<ChartTooltip />
 		</ChartGrid>
 	</Chart>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>

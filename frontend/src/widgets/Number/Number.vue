@@ -36,7 +36,7 @@ const formattedValue = computed(() => {
 			</div>
 		</div>
 	</div>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>
