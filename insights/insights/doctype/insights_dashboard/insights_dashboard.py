@@ -133,14 +133,6 @@ def get_query_columns(query):
     return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
 
-@frappe.whitelist()
-def fetch_column_values(column, search_text=None):
-    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
-    return data_source.get_column_options(
-        column.get("table"), column.get("column"), search_text
-    )
-
-
 def get_dashboard_public_key(name):
     existing_key = frappe.db.get_value(
         "Insights Dashboard", name, "public_key", cache=True

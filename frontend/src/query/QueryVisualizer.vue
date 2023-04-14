@@ -79,8 +79,5 @@ const chartOptions = [
 ].concat(widgets.getChartOptions())
 
 let chart = ref({})
-
-call('insights.api.get_chart_name', { query: query.name }).then((res) => {
-	chart.value = useChart(res)
-})
+query.get_chart_name.submit().then((res) => (chart.value = useChart(res)))
 </script>

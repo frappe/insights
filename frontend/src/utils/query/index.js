@@ -37,6 +37,7 @@ export const API_METHODS = {
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
 	getSourceSchema: 'get_source_schema',
+	get_chart_name: 'get_chart_name',
 }
 
 export function useQuery(name) {

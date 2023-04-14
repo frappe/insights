@@ -452,15 +452,10 @@ def get_public_dashboard_chart_data(public_key, *args, **kwargs):
 
 
 @frappe.whitelist()
-def get_chart_name(query):
-    if not isinstance(query, str):
-        frappe.throw("Query is required")
-
-    existing_chart = frappe.db.exists("Insights Chart", {"query": query})
-    if not existing_chart:
-        chart = frappe.new_doc("Insights Chart")
-        chart.query = query
-        chart.save()
-        return chart.name
-
-    return existing_chart
+def fetch_column_values(column, search_text=None):
+    if not column.get("data_source"):
+        frappe.throw("Data Source is required")
+    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
+    return data_source.get_column_options(
+        column.get("table"), column.get("column"), search_text
+    )

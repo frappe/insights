@@ -295,3 +295,7 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def get_source_schema(self):
         return self._data_source.get_schema()
+
+    @frappe.whitelist()
+    def get_chart_name(self):
+        return frappe.db.exists("Insights Chart", {"query": self.name})
