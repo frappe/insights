@@ -82,10 +82,17 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.update_query()
 
     def on_update(self):
+        self.create_chart()
         self.update_insights_table()
         self.sync_query_store()
         self.update_link_docs_title()
         # TODO: update result columns on update
+
+    def create_chart(self):
+        if not frappe.db.exists("Insights Chart", {"query": self.name}):
+            chart = frappe.new_doc("Insights Chart")
+            chart.query = self.name
+            chart.save(ignore_permissions=True)
 
     def on_trash(self):
         self.delete_insights_table()
