@@ -126,7 +126,7 @@
 <script setup>
 import { Badge, Dropdown } from 'frappe-ui'
 import BasePage from '@/components/BasePage.vue'
-import { useDataSource } from '@/utils/datasource'
+import { useDataSource } from '@/datasource/useDataSource'
 import { ref, computed, inject } from 'vue'
 import ImportDialog from '@/components/ImportDialog.vue'
 
@@ -138,6 +138,7 @@ const props = defineProps({
 })
 
 const dataSource = useDataSource(props.name)
+dataSource.fetch_tables()
 
 const statusFilter = ref('Enabled')
 const labelFilter = ref('')
@@ -161,7 +162,7 @@ const showImportDialog = ref(false)
 const $notify = inject('$notify')
 function syncTables() {
 	dataSource
-		.syncTables()
+		.sync_tables()
 		.catch((err) => $notify({ title: 'Error Syncing Tables', appearance: 'error' }))
 }
 </script>

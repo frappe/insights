@@ -36,33 +36,6 @@ def get_data_sources():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_data_source(name):
-    check_data_source_permission(name)
-    doc = frappe.get_doc("Insights Data Source", name)
-    tables = get_all_tables(name)
-    return {
-        "doc": doc.as_dict(),
-        "tables": tables,
-    }
-
-
-def get_all_tables(data_source=None):
-    if not data_source:
-        return []
-
-    return frappe.get_list(
-        "Insights Table",
-        filters={
-            "data_source": data_source,
-            **get_permission_filter("Insights Table"),
-        },
-        fields=["name", "table", "label", "hidden"],
-        order_by="hidden asc, label asc",
-    )
-
-
-@frappe.whitelist()
-@check_role("Insights User")
 def get_table_columns(data_source, table):
     check_table_permission(data_source, table)
 
@@ -75,6 +48,15 @@ def get_table_columns(data_source, table):
     )
 
     return {"columns": doc.columns}
+
+
+@frappe.whitelist()
+@check_role("Insights User")
+def get_table_name(data_source, table):
+    check_table_permission(data_source, table)
+    return frappe.get_value(
+        "Insights Table", {"data_source": data_source, "table": table}, "name"
+    )
 
 
 @frappe.whitelist()
@@ -347,52 +329,6 @@ def upload_csv(data_source, label, file, if_exists, columns):
         **{
             "title": "Success",
             "message": "Table Imported",
-            "type": "success",
-        }
-    )
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def sync_data_source(data_source: str):
-    if not frappe.has_permission("Insights Data Source", "write"):
-        frappe.throw("Not allowed", frappe.PermissionError)
-
-    from frappe.utils.scheduler import is_scheduler_inactive
-
-    if is_scheduler_inactive():
-        notify(
-            **{
-                "title": "Error",
-                "message": "Scheduler is inactive",
-                "type": "error",
-            }
-        )
-
-    frappe.enqueue(
-        _sync_data_source,
-        data_source=data_source,
-        job_name="sync_data_source",
-        queue="long",
-        timeout=3600,
-        now=True,
-    )
-
-
-def _sync_data_source(data_source):
-    notify(
-        **{
-            "title": "Info",
-            "message": "Syncing Data Source",
-            "type": "info",
-        }
-    )
-    source = frappe.get_doc("Insights Data Source", data_source)
-    source.sync_tables()
-    notify(
-        **{
-            "title": "Success",
-            "message": "Data Source Synced",
             "type": "success",
         }
     )

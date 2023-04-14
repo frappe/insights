@@ -1,6 +1,6 @@
-import dayjs from '@/utils/dayjs'
 import { createResource } from 'frappe-ui'
 import { defineStore } from 'pinia'
+import dayjs from '@/utils/dayjs'
 
 const sources = createResource({
 	url: 'insights.api.get_data_sources',

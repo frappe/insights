@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import useQueries from './useQueries'
-import useSources from '@/datasource/useSources'
+import useDataSources from '@/datasource/useDataSources'
 
 const emit = defineEmits(['select'])
 const searchText = ref('')
@@ -12,7 +12,7 @@ const openQuery = (name) => {
 	emit('select', name)
 }
 
-const sources = useSources()
+const sources = useDataSources()
 sources.reload()
 
 const createStep = ref(false)
@@ -42,7 +42,7 @@ onMounted(() => searchInput.value.focus())
 			</div>
 			<div class="flex h-[15rem] w-full flex-col overflow-y-scroll">
 				<div
-					class="sticky top-0 flex-shrink-0 bg-white px-3 pt-2 pb-1 text-sm text-gray-500"
+					class="sticky top-0 flex-shrink-0 bg-white px-3 pb-1 pt-2 text-sm text-gray-500"
 				>
 					{{ searchText ? 'Search Results' : 'Recent Queries' }}
 				</div>
@@ -103,7 +103,7 @@ onMounted(() => searchInput.value.focus())
 				</div>
 				<LoadingIndicator
 					v-if="newSource == source.name && queries.creating"
-					class="mr-2 -ml-1 h-3 w-3"
+					class="-ml-1 mr-2 h-3 w-3"
 				/>
 			</div>
 		</div>

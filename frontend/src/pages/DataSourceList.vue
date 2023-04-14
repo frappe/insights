@@ -18,7 +18,7 @@
 				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
 					<!-- List Header -->
 					<div
-						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b px-4 py-3 text-sm text-gray-500"
 					>
 						<p class="mr-4">
 							<Input type="checkbox" class="rounded-md border-gray-300" />
@@ -40,7 +40,7 @@
 										name: source.name,
 									},
 								}"
-								class="flex cursor-pointer items-center rounded-md py-3 px-4 hover:bg-gray-50"
+								class="flex cursor-pointer items-center rounded-md px-4 py-3 hover:bg-gray-50"
 							>
 								<p class="mr-4">
 									<Input type="checkbox" class="rounded-md border-gray-300" />
@@ -93,12 +93,12 @@
 import BasePage from '@/components/BasePage.vue'
 import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
 import { updateDocumentTitle } from '@/utils'
-import useSources from '@/datasource/useSources'
+import useDataSources from '@/datasource/useDataSources'
 import { ref } from 'vue'
 
 const new_dialog = ref(false)
 
-const sources = useSources()
+const sources = useDataSources()
 sources.reload()
 
 const onNewDatasource = () => {

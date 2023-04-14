@@ -1,6 +1,6 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import useSources from '@/datasource/useSources'
+import useDataSources from '@/datasource/useDataSources'
 import { createResource } from 'frappe-ui'
 import { computed, reactive, watch } from 'vue'
 
@@ -24,7 +24,7 @@ const newQuery = reactive({
 	table: null,
 })
 
-const sources = useSources()
+const sources = useDataSources()
 sources.reload().then(() => {
 	if (sources.list.length) {
 		newQuery.dataSource = sources.list[0].name
