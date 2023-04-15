@@ -44,10 +44,13 @@ function makeChart(chartName) {
 			() => {
 				if (!_query.doc) return
 				state.data = getFormattedResult(_query.doc.results)
-				if (!state.doc.chart_type) state.doc.options = guessChart(state.data)
+				if (!state.doc.chart_type) {
+					const recommendedChart = guessChart(state.data)
+					state.doc.chart_type = recommendedChart?.type
+					state.doc.options = recommendedChart?.options
+				}
 				state.doc.options.query = state.doc.query
 				state.loading = false
-				state.doc.options.query = state.doc.query
 			}
 		)
 	}

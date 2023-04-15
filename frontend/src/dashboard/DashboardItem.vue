@@ -55,7 +55,7 @@ if (isChart) {
 		() => chartData.recommendedChart,
 		() => {
 			if (props.item.options.query) return
-			if (props.item.item_type !== chartData.recommendedChart.type) return
+			if (props.item.item_type !== chartData.recommendedChart.chart_type) return
 			props.item.options = {
 				...props.item.options,
 				...chartData.recommendedChart.options,
@@ -123,7 +123,7 @@ const refreshKey = computed(() => {
 						</template>
 					</component>
 
-					<div class="absolute top-3 right-3 z-10 flex items-center">
+					<div class="absolute right-3 top-3 z-10 flex items-center">
 						<div v-if="chartFilters?.length">
 							<Tooltip :text="chartFilters.map((c) => c.label).join(', ')">
 								<div
@@ -140,7 +140,7 @@ const refreshKey = computed(() => {
 						</div>
 						<div
 							v-if="!dashboard.editing && item.options.query"
-							class="invisible -mt-1 -mb-1 flex cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
+							class="invisible -mb-1 -mt-1 flex cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
 						>
 							<FeatherIcon
 								name="external-link"
