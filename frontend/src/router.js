@@ -160,7 +160,7 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
-	const trialExpired = await getTrialStatus()
+	const trialExpired = import.meta.env.DEV ? false : await getTrialStatus()
 	if (trialExpired && to.name !== 'Trial Expired') {
 		return next('/trial-expired')
 	}
