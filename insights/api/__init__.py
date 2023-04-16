@@ -103,6 +103,7 @@ def get_dashboard_list():
             },
             pluck="parent",
         )
+        dashboard["charts_count"] = len(dashboard["charts"])
 
         dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
 

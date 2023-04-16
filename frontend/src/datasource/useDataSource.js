@@ -22,7 +22,7 @@ function makeDataSource(name) {
 
 	state.fetch_tables = async () => {
 		const response = await resource.get_tables.submit()
-		state.tables = response.message.map((t) => ({ ...t, data_source: name }))
+		state.tables = response.message
 		return state.tables
 	}
 	state.sync_tables = () => {
