@@ -116,10 +116,7 @@ const focusNextBlock = (index, event) => {
 </script>
 
 <template>
-	<div
-		v-if="page.doc.name"
-		class="h-full w-full overflow-y-scroll border bg-white py-24 text-base"
-	>
+	<div v-if="page.doc.name" class="h-full w-full overflow-y-scroll bg-white py-24 text-base">
 		<div class="mx-auto w-[45rem]">
 			<ContentEditable
 				class="focusable text-[36px] font-bold"
