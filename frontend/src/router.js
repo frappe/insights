@@ -109,8 +109,20 @@ const routes = [
 	},
 	{
 		path: '/notebook',
+		name: 'NotebookList',
+		component: () => import('@/notebook/NotebookList.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:name',
 		name: 'Notebook',
 		component: () => import('@/notebook/Notebook.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:name/:page',
+		name: 'NotebookPage',
+		component: () => import('@/notebook/NotebookPage.vue'),
 	},
 	{
 		path: '/settings',

@@ -1,137 +1,113 @@
 <script setup lang="jsx">
-import { moveCaretToEnd } from '@/utils'
-import { nextTick, ref, watch } from 'vue'
-import ContentEditable from './ContentEditable.vue'
-import TableBlock from './blocks/TableBlock.vue'
-import TextBlock from './blocks/TextBlock.vue'
-import AsyncQueryBlock from './blocks/query/AsyncQueryBlock.vue'
+import List from '@/components/List.vue'
+import useNotebooks from '@/notebook/useNotebooks'
+import useNotebook from '@/notebook/useNotebook'
+import { updateDocumentTitle } from '@/utils'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const title = ref('')
-const page = ref([])
+const props = defineProps({ name: String })
+const router = useRouter()
+const notebook = useNotebook(props.name)
+notebook.reload()
 
-const blockTypeToComponent = {
-	h1: TextBlock,
-	h2: TextBlock,
-	h3: TextBlock,
-	p: TextBlock,
-	blockquote: TextBlock,
-	query: AsyncQueryBlock,
-	table: TableBlock,
-}
+const TitleWithIcon = (props) => (
+	<div class="flex items-center">
+		<FeatherIcon name="file-text" class="h-4 w-4 text-gray-600" />
+		<span class="ml-3">{props.row.title}</span>
+	</div>
+)
+const columns = [
+	{ label: 'Title', key: 'title', cellComponent: TitleWithIcon },
+	{ label: 'Created', key: 'created_from_now' },
+	{ label: 'Modified', key: 'modified_from_now' },
+]
 
-const textBlockKeyboardEvents = {
-	enter: (index, event) => addNewBlock(index, event),
-	backspace: (index, event) => removeBlock(index, event),
-	up: (index, event) => focusPreviousBlock(index, event),
-	down: (index, event) => focusNextBlock(index, event),
-}
-const keyboardEvents = {
-	h1: textBlockKeyboardEvents,
-	h2: textBlockKeyboardEvents,
-	h3: textBlockKeyboardEvents,
-	p: textBlockKeyboardEvents,
-	blockquote: textBlockKeyboardEvents,
-	table: textBlockKeyboardEvents,
-}
-
-const onBlockChange = async (block) => {
-	const tagToRegex = {
-		h1: /^#\s+/,
-		h2: /^##\s+/,
-		h3: /^###\s+/,
-		blockquote: /^>\s+/,
-		query: /^\/query\s+/,
-		table: /^\/table\s+/,
-	}
-	for (const [tag, regex] of Object.entries(tagToRegex)) {
-		if (regex.test(block.content)) {
-			block.type = tag
-			block.content = block.content.replace(regex, '')
-			await nextTick()
-			focus(page.value.indexOf(block))
-			return
-		}
-	}
-}
-
-watch(page, (newPage) => newPage.forEach(onBlockChange), { deep: true })
-
-const currentBlockIndex = ref(null)
-const blocks = ref()
-const focus = (index, event) => {
-	// if an input is focused, don't focus on the block as it will move the caret to the end of the input
-	if (event?.target?.closest('.focusable')) return
-	// when adding a new block, vue adds the block at the end of the DOM, but the index in the page array is correct
-	// eg. if page contains 5 blocks, and we add a new block after the 3rd block,
-	// the new block index in the page array is 3, but the block is added at the end of the DOM i.e index 5
-	const blockRef = blocks.value.find(
-		(block) => block.$el.getAttribute('block-id') === page.value[index].id.toString()
-	)
-	const element = blockRef?.$el
-	if (!element) return (currentBlockIndex.value = index)
-
-	const focusable = element.closest('.focusable') || element.querySelector('.focusable')
-	if (!focusable) return (currentBlockIndex.value = index)
-
-	focusable.focus()
-	moveCaretToEnd(focusable)
-	return (currentBlockIndex.value = index)
-}
-const addNewBlock = async (index, event) => {
-	event.preventDefault()
-	page.value.splice(index + 1, 0, {
-		id: Math.random().toString(16).slice(2),
-		type: 'p',
-		content: '',
+async function createNotebookPage() {
+	const page_name = await notebook.createPage(props.name)
+	router.push({
+		name: 'NotebookPage',
+		params: {
+			name: props.name,
+			page: page_name,
+		},
 	})
-	nextTick(() => focusNextBlock(index, event))
 }
 
-const removeBlock = (index, event) => {
-	if (page.value[index].content === '') {
-		event.preventDefault()
-		page.value.splice(index, 1)
-		nextTick(() => focusPreviousBlock(index, event))
-	}
+const showDeleteDialog = ref(false)
+async function handleDelete() {
+	await notebook.deleteNotebook()
+	showDeleteDialog.value = false
+	await useNotebooks().reload()
+	router.push({ name: 'NotebookList' })
 }
 
-const focusPreviousBlock = (index, event) => {
-	event.preventDefault()
-	if (index > 0) focus(index - 1)
-	if (index === 0) focus(0)
-}
-const focusNextBlock = (index, event) => {
-	event.preventDefault()
-	if (index < page.value.length - 1) focus(index + 1)
-	if (index === page.value.length - 1) focus(page.value.length - 1)
-}
+const pageMeta = ref({ title: 'Notebook' })
+updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<div class="h-full w-full overflow-y-scroll border bg-white py-24 text-base">
-		<div class="mx-auto w-[45rem]">
-			<ContentEditable
-				class="focusable text-[36px] font-bold"
-				v-model="title"
-				placeholder="Page Title"
-			></ContentEditable>
+	<div class="h-full w-full bg-white px-8 py-4">
+		<List
+			title="Pages"
+			:actions="[
+				{
+					label: 'New Page',
+					appearance: 'white',
+					iconLeft: 'plus',
+					handler: () => createNotebookPage(),
+				},
+			]"
+			:columns="columns"
+			:data="notebook.pages"
+			:rowClick="
+				({ name }) =>
+					router.push({
+						name: 'NotebookPage',
+						params: {
+							name,
+							page: name,
+						},
+					})
+			"
+		>
+			<template #title>
+				<div class="flex items-center space-x-4">
+					<div class="text-3xl font-medium text-gray-900">{{ notebook.doc.title }}</div>
+					<Dropdown
+						placement="left"
+						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+						:options="[
+							{
+								label: 'Delete',
+								icon: 'trash-2',
+								handler: () => (showDeleteDialog = true),
+							},
+						]"
+					/>
+				</div>
+			</template>
+		</List>
 
-			<component
-				ref="blocks"
-				v-for="(block, index) in page"
-				:key="block.id"
-				:block="block"
-				:is="blockTypeToComponent[block.type]"
-				:block-id="block.id"
-				@click="focus(index, $event)"
-				@keydown.enter.exact="keyboardEvents[block.type]?.enter(index, $event)"
-				@keydown.backspace.exact="keyboardEvents[block.type]?.backspace(index, $event)"
-				@keydown.up.exact="keyboardEvents[block.type]?.up(index, $event)"
-				@keydown.down.exact="keyboardEvents[block.type]?.down(index, $event)"
-				@remove="page.splice(index, 1)"
-			></component>
-
-			<div class="h-24" @click="addNewBlock(page.length - 1, $event)"></div>
-		</div>
+		<Dialog
+			:options="{
+				title: 'Delete Notebook',
+				icon: { name: 'trash', appearance: 'danger' },
+			}"
+			v-model="showDeleteDialog"
+			:dismissable="true"
+		>
+			<template #body-content>
+				<p class="text-base text-gray-600">
+					Are you sure you want to delete this notebook?
+				</p>
+			</template>
+			<template #actions>
+				<Button appearance="white" @click="showDeleteDialog = false">Cancel</Button>
+				<Button appearance="danger" @click="handleDelete" :loading="notebook.deleting">
+					Yes
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
