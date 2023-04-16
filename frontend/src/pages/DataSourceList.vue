@@ -1,86 +1,21 @@
 <template>
-	<BasePage>
-		<template #header>
-			<div class="flex flex-1 justify-between">
-				<h1 class="text-3xl font-medium text-gray-900">Data Sources</h1>
-				<div>
-					<Button appearance="white" @click="new_dialog = true" class="shadow-sm">
-						+ New Data Source
-					</Button>
-				</div>
-			</div>
-		</template>
-		<template #main>
-			<div class="flex flex-1 flex-col overflow-hidden">
-				<div class="mb-4 flex flex-shrink-0 space-x-4">
-					<Input type="select" :options="['Active', 'Inactive']" />
-				</div>
-				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
-					<!-- List Header -->
-					<div
-						class="flex flex-shrink-0 items-center justify-between border-b px-4 py-3 text-sm text-gray-500"
-					>
-						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-300" />
-						</p>
-						<p class="flex-1">Title</p>
-						<p class="flex-1">Status</p>
-						<p class="hidden flex-1 lg:inline-block">Database Type</p>
-						<p class="flex-1 text-right">Created</p>
-					</div>
-					<ul
-						role="list"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
-					>
-						<li v-for="source in sources.list" :key="source.name">
-							<router-link
-								:to="{
-									name: 'DataSource',
-									params: {
-										name: source.name,
-									},
-								}"
-								class="flex cursor-pointer items-center rounded-md px-4 py-3 hover:bg-gray-50"
-							>
-								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-300" />
-								</p>
-								<p
-									class="flex-1 whitespace-nowrap text-sm font-medium text-gray-900"
-								>
-									{{ source.title }}
-								</p>
-								<p class="flex-1 whitespace-nowrap text-sm text-gray-500">
-									<Badge
-										:color="source.status == 'Inactive' ? 'yellow' : 'green'"
-									>
-										{{ source.status }}
-									</Badge>
-								</p>
-								<p
-									class="hidden flex-1 whitespace-nowrap text-sm text-gray-500 lg:inline-block"
-								>
-									{{ source.database_type }}
-								</p>
-								<p
-									class="flex-1 text-right text-sm text-gray-500"
-									:title="source.creation"
-								>
-									{{ source.created_from_now }}
-								</p>
-							</router-link>
-						</li>
-					</ul>
-					<div class="flex w-full border-t px-4 py-2 text-sm text-gray-500">
-						<p class="ml-auto">
-							Showing {{ sources.list.length }} of
-							{{ sources.list.length }}
-						</p>
-					</div>
-				</div>
-			</div>
-		</template>
-	</BasePage>
+	<div class="h-full w-full bg-white px-8 py-4">
+		<List
+			title="Data Sources"
+			:actions="[
+				{
+					label: 'New Data Source',
+					appearance: 'white',
+					iconLeft: 'plus',
+					handler: () => (new_dialog = true),
+				},
+			]"
+			:columns="columns"
+			:data="sources.list"
+			:rowClick="({ name }) => router.push({ name: 'DataSource', params: { name } })"
+		>
+		</List>
+	</div>
 
 	<Dialog :options="{ title: 'New Data Source' }" v-model="new_dialog">
 		<template #body-content>
@@ -89,17 +24,28 @@
 	</Dialog>
 </template>
 
-<script setup>
-import BasePage from '@/components/BasePage.vue'
+<script setup lang="jsx">
+import List from '@/components/List.vue'
 import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
-import { updateDocumentTitle } from '@/utils'
 import useDataSources from '@/datasource/useDataSources'
+import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const new_dialog = ref(false)
-
+const router = useRouter()
 const sources = useDataSources()
 sources.reload()
+
+const StatusCell = (props) => (
+	<Badge color={props.row.status == 'Inactive' ? 'yellow' : 'green'}>{props.row.status}</Badge>
+)
+const columns = [
+	{ label: 'Title', key: 'title' },
+	{ label: 'Status', key: 'status', cellComponent: StatusCell },
+	{ label: 'Database Type', key: 'database_type' },
+	{ label: 'Created', key: 'created_from_now' },
+]
 
 const onNewDatasource = () => {
 	new_dialog.value = false

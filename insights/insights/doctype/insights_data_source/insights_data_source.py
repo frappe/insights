@@ -35,7 +35,7 @@ class InsightsDataSource(Document):
                 "data_source": self.name,
                 **get_permission_filter("Insights Table"),
             },
-            fields=["name", "table", "label", "hidden"],
+            fields=["name", "table", "label", "hidden", "data_source"],
             order_by="hidden asc, label asc",
         )
 
