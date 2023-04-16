@@ -14,9 +14,11 @@ const emit = defineEmits(['remove'])
 const props = defineProps({ block: Object })
 let queryName = props.block.query
 if (!queryName) {
-	const sources = await useDataSources().reload()
+	const sources = await useDataSources()
+	await sources.reload()
 	const source = sources.list[0]
 	queryName = await useQueries().create(source.name)
+	props.block.query = queryName
 }
 const query = useQuery(queryName)
 provide('query', query)
