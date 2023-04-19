@@ -123,6 +123,7 @@ const dashboardOptions = computed(() => {
 		})
 		.map((d) => ({ label: d.title, value: d.name }))
 })
+const $notify = inject('$notify')
 const addChartToDashboard = async () => {
 	if (!toDashboard.value) {
 		return
@@ -135,6 +136,11 @@ const addChartToDashboard = async () => {
 	})
 	addingToDashboard.value = false
 	showDashboardDialog.value = false
+	$notify({
+		appearance: 'success',
+		title: 'Success',
+		message: 'Chart added to dashboard',
+	})
 }
 
 const dashboardInput = ref(null)
