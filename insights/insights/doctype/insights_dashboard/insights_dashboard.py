@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import random
 from json import dumps
 
 import frappe
@@ -11,7 +12,11 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.cache_utils import get_or_set_cache, make_digest
 
-from .utils import convert_into_simple_filter, convert_to_expression
+from .utils import (
+    convert_into_simple_filter,
+    convert_to_expression,
+    guess_layout_for_chart,
+)
 
 CACHE_NAMESPACE = "insights_dashboard"
 
@@ -24,6 +29,20 @@ class InsightsDashboard(Document):
     @property
     def cache_namespace(self):
         return f"{CACHE_NAMESPACE}|{self.name}"
+
+    def add_chart(self, chart):
+        chart_doc = frappe.get_doc("Insights Chart", chart)
+        new_layout = guess_layout_for_chart(chart_doc.chart_type, self)
+        self.append(
+            "items",
+            {
+                "item_id": frappe.utils.cint(random.random() * 1000000),
+                "item_type": chart_doc.chart_type,
+                "options": chart_doc.options,
+                "layout": new_layout,
+            },
+        )
+        self.save()
 
     @frappe.whitelist()
     def clear_charts_cache(self):

@@ -20,13 +20,13 @@ export default defineStore('dashboards', {
 		async create(title) {
 			if (!title) return
 			this.creating = true
-			const { name } = await createDashboard.submit({ title })
+			const { name } = await call('insights.api.create_dashboard', { title })
 			this.creating = false
 			this.reload()
 			return name
 		},
 		async toggleLike(dashboard) {
-			await toggleLike.submit({
+			await call('frappe.desk.like.toggle_like', {
 				doctype: 'Insights Dashboard',
 				name: dashboard.name,
 				add: !dashboard.is_favourite ? 'Yes' : 'No',
@@ -35,7 +35,7 @@ export default defineStore('dashboards', {
 		},
 		async delete(dashboard) {
 			this.deleting = true
-			await deleteDoc.submit({
+			await call('frappe.client.delete', {
 				doctype: 'Insights Dashboard',
 				name: dashboard.name,
 			})
@@ -61,15 +61,6 @@ const dashboards = createResource({
 			return dashboard
 		})
 	},
-})
-const createDashboard = createResource({
-	url: 'insights.api.create_dashboard',
-})
-const toggleLike = createResource({
-	url: 'frappe.desk.like.toggle_like',
-})
-const deleteDoc = createResource({
-	url: 'frappe.client.delete',
 })
 
 export function getQueriesColumn(query_names) {

@@ -475,3 +475,10 @@ def fetch_column_values(column, search_text=None):
     return data_source.get_column_options(
         column.get("table"), column.get("column"), search_text
     )
+
+
+@frappe.whitelist()
+def add_chart_to_dashboard(dashboard, chart):
+    dashboard = frappe.get_doc("Insights Dashboard", dashboard)
+    dashboard.add_chart(chart)
+    dashboard.save()

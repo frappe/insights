@@ -25,6 +25,9 @@
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
+				<Button appearance="white" class="shadow-sm" @click="showDashboardDialog = true">
+					Add to Dashboard
+				</Button>
 				<Button appearance="white" class="shadow-sm" @click="showShareDialog = true">
 					Share
 				</Button>
@@ -58,14 +61,38 @@
 			:isPublic="Boolean(chart.doc.is_public)"
 			@togglePublicAccess="chart.togglePublicAccess"
 		/>
+
+		<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">
+			<template #body-content>
+				<div class="text-base">
+					<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
+					<Autocomplete
+						ref="dashboardInput"
+						:options="dashboardOptions"
+						v-model="toDashboard"
+					/>
+				</div>
+			</template>
+			<template #actions>
+				<Button
+					appearance="primary"
+					@click="addChartToDashboard"
+					:loading="addingToDashboard"
+				>
+					Add
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
 import PublicShareDialog from '@/components/PublicShareDialog.vue'
+import useDashboards from '@/dashboard/useDashboards'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
-import { inject, ref } from 'vue'
+import { call } from 'frappe-ui'
+import { computed, inject, ref, watch } from 'vue'
 import useChart from './useChart'
 
 const query = inject('query')
@@ -82,4 +109,45 @@ query.get_chart_name.submit().then((res) => {
 	chart.value = useChart(res.message)
 	chart.value.autosave = true
 })
+
+const showDashboardDialog = ref(false)
+const dashboards = useDashboards()
+dashboards.reload()
+const toDashboard = ref(null)
+const addingToDashboard = ref(false)
+const dashboardOptions = computed(() => {
+	// sort alphabetically
+	return dashboards.list
+		.sort((a, b) => {
+			return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
+		})
+		.map((d) => ({ label: d.title, value: d.name }))
+})
+const addChartToDashboard = async () => {
+	if (!toDashboard.value) {
+		return
+	}
+
+	addingToDashboard.value = true
+	await call('insights.api.add_chart_to_dashboard', {
+		dashboard: toDashboard.value.value,
+		chart: chart.value.doc.name,
+	})
+	addingToDashboard.value = false
+	showDashboardDialog.value = false
+}
+
+const dashboardInput = ref(null)
+watch(
+	() => showDashboardDialog.value,
+	(val) => {
+		if (val) {
+			setTimeout(() => {
+				dashboardInput.value.input?.$el?.blur()
+				dashboardInput.value.input?.$el?.focus()
+			}, 500)
+		}
+	},
+	{ immediate: true }
+)
 </script>
