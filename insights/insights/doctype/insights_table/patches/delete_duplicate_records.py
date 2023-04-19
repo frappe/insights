@@ -1,6 +1,10 @@
 import frappe
 
 
+def execute():
+    delete_duplicate_records()
+
+
 def delete_duplicate_records():
     """
     Delete records in Insights Table with duplicate
