@@ -114,8 +114,8 @@ class InsightsDataSource(Document):
             if raise_exception:
                 raise e
 
-    def build_query(self, query: InsightsQuery):
-        return self.db.build_query(query)
+    def build_query(self, query: InsightsQuery, with_cte=False):
+        return self.db.build_query(query, with_cte)
 
     def run_query(self, query: InsightsQuery):
         try:

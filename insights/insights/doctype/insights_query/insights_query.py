@@ -123,16 +123,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return len(self.load_results() or [])
 
     def update_query(self):
-        query = self._data_source.build_query(query=self)
+        if not self.is_native_query:
+            query = self._data_source.build_query(query=self, with_cte=True)
+        else:
+            query = self.sql
         query = format_query(query) if query else None
-        # in case of native query, the query doesn't get updated if the limit is changed
-        # so we need to check if the limit is changed
-        # because the native query is limited by the limit field
-        limit_changed = (
-            self.get_doc_before_save()
-            and self.limit != self.get_doc_before_save().limit
-        )
-        if self.sql != query or limit_changed:
+        if self.sql != query:
             self.sql = query
             self.status = "Pending Execution"
 
