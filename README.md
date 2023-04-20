@@ -16,7 +16,7 @@
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
 	<a href=".github/preview.gif">Preview</a>
 	-
-	<a href="https://frappeinsights.frappe.cloud/docs">Documentation</a>
+	<a href="https://docs.frappeinsights.com">Documentation</a>
 </div>
 
 ## Features
