@@ -7,7 +7,7 @@
 					ref="input"
 					autocomplete="off"
 					:placeholder="placeholder"
-					@focus="togglePopover(true)"
+					@click="togglePopover(true)"
 					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
 					class="form-input block w-full placeholder-gray-500"
