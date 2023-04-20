@@ -10,17 +10,7 @@
   "section_break_2",
   "options",
   "column_break_3",
-  "layout",
-  "section_break_6",
-  "chart",
-  "chart_title",
-  "query",
-  "chart_filters",
-  "filter_label",
-  "filter_column",
-  "filter_links",
-  "filter_states",
-  "markdown"
+  "layout"
  ],
  "fields": [
   {
@@ -41,71 +31,8 @@
    "options": "\nBar\nLine\nPie\nNumber\nProgress\nTable\nFilter\nText"
   },
   {
-   "columns": 2,
-   "depends_on": "eval: doc.item_type == 'Chart'",
-   "fieldname": "chart",
-   "fieldtype": "Link",
-   "label": "Chart",
-   "options": "Insights Query Chart",
-   "hidden": 1
-  },
-  {
-   "depends_on": "eval: doc.item_type == 'Filter'",
-   "fieldname": "filter_label",
-   "fieldtype": "Data",
-   "label": "Filter Label"
-  },
-  {
-   "depends_on": "eval: doc.item_type == 'Chart'",
-   "fetch_from": "chart.query",
-   "fieldname": "query",
-   "fieldtype": "Link",
-   "label": "Query",
-   "options": "Insights Query",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval: doc.item_type == 'Chart'",
-   "fieldname": "chart_filters",
-   "fieldtype": "JSON",
-   "label": "Chart Filters"
-  },
-  {
-   "fieldname": "markdown",
-   "fieldtype": "Markdown Editor",
-   "label": "Markdown"
-  },
-  {
-   "fetch_from": "chart.title",
-   "fieldname": "chart_title",
-   "fieldtype": "Data",
-   "label": "Chart Title",
-   "read_only": 1
-  },
-  {
-   "fieldname": "filter_links",
-   "fieldtype": "JSON",
-   "label": "Filter Links"
-  },
-  {
-   "depends_on": "eval: doc.item_type == 'Filter'",
-   "fieldname": "filter_column",
-   "fieldtype": "JSON",
-   "label": "Filter Column"
-  },
-  {
-   "fieldname": "filter_states",
-   "fieldtype": "JSON",
-   "label": "Filter States"
-  },
-  {
    "fieldname": "section_break_2",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "section_break_6",
-   "fieldtype": "Section Break",
-   "hidden": 1
   },
   {
    "fieldname": "options",
@@ -121,7 +48,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-28 11:17:55.151346",
+ "modified": "2023-04-20 14:05:53.999312",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard Item",
