@@ -103,7 +103,7 @@ function toggleSelected(row) {
 								<Input
 									type="checkbox"
 									class="rounded-md border-gray-300"
-									@click="selectAll"
+									@click.prevent.stop="selectAll"
 								/>
 							</th>
 							<th
@@ -133,7 +133,7 @@ function toggleSelected(row) {
 									type="checkbox"
 									class="rounded-md border-gray-300"
 									:checked="isSelected(row)"
-									@click="toggleSelected(row)"
+									@click.stop="toggleSelected(row)"
 								/>
 							</td>
 							<td
