@@ -1,6 +1,6 @@
 <script setup>
-import { computed, inject } from 'vue'
-import { whenever } from '@vueuse/core'
+import { computed } from 'vue'
+import { getShortNumber } from '@/utils'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },
@@ -33,7 +33,7 @@ const target = computed(() => {
 
 function formatValue(value) {
 	if (props.options.shorten) {
-		return $utils.getShortNumber(value, props.options.decimals)
+		return getShortNumber(value, props.options.decimals)
 	}
 	return Number(value).toLocaleString(undefined, {
 		maximumFractionDigits: props.options.decimals,
