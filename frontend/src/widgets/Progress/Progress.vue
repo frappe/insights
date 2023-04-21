@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue'
 import { getShortNumber } from '@/utils'
+import { computed } from 'vue'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },
@@ -41,7 +41,8 @@ function formatValue(value) {
 }
 
 const progressPercent = computed(() => {
-	return ((progress.value * 100) / target.value).toFixed(2)
+	const percent = ((progress.value * 100) / target.value).toFixed(2)
+	return percent > 100 ? 100 : percent < 0 ? 0 : percent
 })
 </script>
 
