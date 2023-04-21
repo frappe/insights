@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { ellipsis } from '@/utils'
 
 const emit = defineEmits(['row-select'])
 const props = defineProps({
@@ -92,78 +93,71 @@ function toggleSelected(row) {
 			</div>
 
 			<!-- Data -->
-			<div
+			<ul
 				v-if="props.data.length > 0"
 				class="relative flex flex-1 flex-col overflow-y-scroll text-lg"
 			>
-				<table class="w-full flex-1">
-					<thead>
-						<tr class="sticky top-0 z-10 border-b bg-white text-gray-400">
-							<th scope="col" width="1%" class="pr-3">
-								<Input
-									type="checkbox"
-									class="rounded-md border-gray-300"
-									@click.prevent.stop="selectAll"
-								/>
-							</th>
-							<th
-								v-for="(column, idx) in columns"
-								:key="column.label"
-								class="whitespace-nowrap py-4 text-left font-normal"
-								:class="column.class || ''"
-								scope="col"
-								:width="column.width || idx === 0 ? '20%' : '10%'"
-							>
-								<component :is="column.headerComponent || 'div'">
-									{{ column.label }}
-								</component>
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr
-							v-for="row in filteredData"
-							:key="row[columns[0].key]"
-							class="border-b text-gray-500"
-							:class="props.rowClick ? 'cursor-pointer hover:bg-gray-50' : ''"
-							@click="props.rowClick && props.rowClick(row)"
+				<li
+					class="sticky top-0 z-10 flex items-center gap-4 border-b bg-white text-gray-400"
+				>
+					<div>
+						<Input
+							type="checkbox"
+							class="rounded-md border-gray-300"
+							@click.prevent.stop="selectAll"
+						/>
+					</div>
+					<div
+						v-for="(column, idx) in columns"
+						:key="column.label"
+						class="py-4 text-left font-normal"
+						:class="[column.class, idx === 0 ? 'w-[30%]' : 'flex-1']"
+						scope="col"
+					>
+						<component :is="column.headerComponent || 'span'">
+							{{ column.label }}
+						</component>
+					</div>
+				</li>
+				<li
+					v-for="row in filteredData"
+					:key="row[columns[0].key]"
+					class="flex items-center gap-4 border-b text-gray-500"
+					:class="props.rowClick ? 'cursor-pointer hover:bg-gray-50' : ''"
+					@click="props.rowClick && props.rowClick(row)"
+				>
+					<div>
+						<Input
+							type="checkbox"
+							class="rounded-md border-gray-300"
+							:checked="isSelected(row)"
+							@click.stop="toggleSelected(row)"
+						/>
+					</div>
+					<div
+						v-for="(column, idx) in columns"
+						:key="column.label"
+						class="overflow-hidden text-ellipsis whitespace-nowrap py-4"
+						:class="[idx === 0 ? 'w-[30%]' : 'flex-1']"
+					>
+						<component
+							:is="column.cellComponent || 'span'"
+							:row="row"
+							:class="[idx === 0 ? 'font-medium text-gray-700' : '']"
 						>
-							<td width="1%" class="pr-3">
-								<Input
-									type="checkbox"
-									class="rounded-md border-gray-300"
-									:checked="isSelected(row)"
-									@click.stop="toggleSelected(row)"
-								/>
-							</td>
-							<td
-								v-for="(column, idx) in columns"
-								:key="column.label"
-								class="py-4"
-								:width="column.width || idx === 0 ? '20%' : '10%'"
-							>
-								<component
-									:is="column.cellComponent || 'div'"
-									:row="row"
-									class="whitespace-nowrap"
-									:class="[idx === 0 ? 'font-medium text-gray-700' : '']"
-								>
-									{{ row[column.key] }}
-								</component>
-							</td>
-						</tr>
-						<tr height="99%"></tr>
-					</tbody>
-				</table>
+							{{ ellipsis(row[column.key], 80) }}
+						</component>
+					</div>
+				</li>
 
-				<div
+				<li
 					class="sticky bottom-0 right-0 flex w-full border-t bg-white py-3 text-lg text-gray-500"
 				>
 					<p class="ml-auto">
 						Showing {{ filteredData.length }} of {{ props.data.length }} results
 					</p>
-				</div>
-			</div>
+				</li>
+			</ul>
 
 			<div v-else class="flex-1 overflow-hidden">
 				<slot name="empty-state"> </slot>

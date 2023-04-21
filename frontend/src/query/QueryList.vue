@@ -38,7 +38,6 @@ const StatusCell = (props) => (
 const columns = [
 	{ label: 'Title', key: 'title' },
 	{ label: 'Status', key: 'status', cellComponent: StatusCell },
-	{ label: 'Tables', key: 'tables' },
 	{ label: 'Chart Type', key: 'chart_type' },
 	{ label: 'Data Source', key: 'data_source' },
 	{ label: 'ID', key: 'name' },
