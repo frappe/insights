@@ -60,7 +60,7 @@
 						{
 							label: 'Documentation',
 							icon: 'help-circle',
-							handler: () => open('https://frappeinsights.com/docs'),
+							handler: () => open('https://docs.frappeinsights.com'),
 						},
 						auth.user.is_admin
 							? {
