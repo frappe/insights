@@ -2,21 +2,31 @@
 	<nav>
 		<ol
 			role="list"
-			class="flex h-5 flex-shrink-0 items-start space-x-1 text-sm font-light text-gray-500"
+			class="flex h-5 flex-shrink-0 items-center space-x-1 font-light text-gray-800"
 		>
-			<li v-for="(page, idx) in props.routes" :key="page.name">
+			<li class="flex items-center">
+				<router-link to="/" class="mr-1">
+					<HomeIcon class="h-4 w-4" />
+				</router-link>
+				<FeatherIcon
+					name="chevron-right"
+					class="h-4 w-4 flex-shrink-0"
+					aria-hidden="true"
+				/>
+			</li>
+			<li v-for="(page, idx) in items" :key="page.label">
 				<div class="flex items-center">
 					<router-link
-						:to="idx === routes.length - 1 ? '#' : `/${page.path}`"
-						class="mr-1 text-gray-600 hover:underline"
+						:to="idx === items.length - 1 ? '#' : page.href"
+						class="mr-1 hover:underline"
 						:class="{
-							'cursor-default hover:no-underline': idx === routes.length - 1,
+							'cursor-default  hover:no-underline': idx === items.length - 1,
 						}"
 					>
-						{{ page.name }}
+						{{ page.label }}
 					</router-link>
 					<FeatherIcon
-						v-if="idx !== routes.length - 1"
+						v-if="idx !== items.length - 1"
 						name="chevron-right"
 						class="h-4 w-4 flex-shrink-0"
 						aria-hidden="true"
@@ -28,10 +38,7 @@
 </template>
 
 <script setup>
-const props = defineProps({
-	routes: {
-		type: Array,
-		required: true,
-	},
-})
+import HomeIcon from '@/components/icons/HomeIcon.vue'
+
+const props = defineProps({ items: Array })
 </script>

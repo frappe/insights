@@ -1,14 +1,15 @@
 <script setup lang="jsx">
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import List from '@/components/List.vue'
-import useNotebooks from '@/notebook/useNotebooks'
 import useNotebook from '@/notebook/useNotebook'
+import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const props = defineProps({ name: String })
+const props = defineProps({ notebook: String })
 const router = useRouter()
-const notebook = useNotebook(props.name)
+const notebook = useNotebook(props.notebook)
 notebook.reload()
 
 const TitleWithIcon = (props) => (
@@ -24,11 +25,11 @@ const columns = [
 ]
 
 async function createNotebookPage() {
-	const page_name = await notebook.createPage(props.name)
+	const page_name = await notebook.createPage(props.notebook)
 	router.push({
 		name: 'NotebookPage',
 		params: {
-			name: props.name,
+			name: props.notebook,
 			page: page_name,
 		},
 	})
@@ -48,6 +49,9 @@ updateDocumentTitle(pageMeta)
 
 <template>
 	<div class="h-full w-full bg-white px-8 py-4">
+		<Breadcrumbs
+			:items="[{ label: 'Notebooks', href: '/notebook' }, { label: notebook.doc.title }]"
+		></Breadcrumbs>
 		<List
 			title="Pages"
 			:actions="[

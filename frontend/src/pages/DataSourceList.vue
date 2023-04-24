@@ -1,5 +1,6 @@
 <template>
 	<div class="h-full w-full bg-white px-8 py-4">
+		<Breadcrumbs :items="[{ label: 'Data Sources', href: '/datasource' }]"></Breadcrumbs>
 		<List
 			title="Data Sources"
 			:actions="[
@@ -25,6 +26,7 @@
 </template>
 
 <script setup lang="jsx">
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import List from '@/components/List.vue'
 import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
 import useDataSources from '@/datasource/useDataSources'

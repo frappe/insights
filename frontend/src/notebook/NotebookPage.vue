@@ -1,4 +1,5 @@
 <script setup lang="jsx">
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import useNotebookPage from '@/notebook/useNotebookPage'
 import { moveCaretToEnd } from '@/utils'
 import { nextTick, ref, watch } from 'vue'
@@ -6,12 +7,14 @@ import ContentEditable from './ContentEditable.vue'
 import TableBlock from './blocks/TableBlock.vue'
 import TextBlock from './blocks/TextBlock.vue'
 import AsyncQueryBlock from './blocks/query/AsyncQueryBlock.vue'
+import useNotebook from '@/notebook/useNotebook'
 
 const props = defineProps({
 	notebook: String,
 	page: String,
 })
 const page = useNotebookPage(props.page)
+const notebook = useNotebook(props.notebook)
 
 const blockTypeToComponent = {
 	h1: TextBlock,
@@ -116,33 +119,52 @@ const focusNextBlock = (index, event) => {
 </script>
 
 <template>
-	<div v-if="page.doc.name" class="h-full w-full overflow-y-scroll bg-white py-24 text-base">
-		<div class="mx-auto w-[45rem]">
-			<ContentEditable
-				class="focusable text-[36px] font-bold"
-				v-model="page.doc.title"
-				placeholder="Page Title"
-			></ContentEditable>
+	<div class="h-full w-full bg-white px-8 py-4">
+		<Breadcrumbs
+			:items="[
+				{
+					label: 'Notebooks',
+					href: '/notebook',
+				},
+				{
+					label: notebook.doc.title,
+					href: `/notebooks/${page.doc.notebook}`,
+				},
+				{
+					label: page.doc.title,
+					href: `/notebooks/${page.doc.notebook}/${page.doc.name}`,
+				},
+			]"
+		>
+		</Breadcrumbs>
+		<div v-if="page.doc.name" class="h-full w-full overflow-y-scroll bg-white py-24 text-base">
+			<div class="mx-auto w-[45rem]">
+				<ContentEditable
+					class="focusable text-[36px] font-bold"
+					v-model="page.doc.title"
+					placeholder="Page Title"
+				></ContentEditable>
 
-			<component
-				ref="blocks"
-				v-for="(block, index) in page.doc.items"
-				:key="block.id"
-				:block="block"
-				:is="blockTypeToComponent[block.type]"
-				:block-id="block.id"
-				@click="focus(index, $event)"
-				@keydown.enter.exact="keyboardEvents[block.type]?.enter(index, $event)"
-				@keydown.backspace.exact="keyboardEvents[block.type]?.backspace(index, $event)"
-				@keydown.up.exact="keyboardEvents[block.type]?.up(index, $event)"
-				@keydown.down.exact="keyboardEvents[block.type]?.down(index, $event)"
-				@remove="page.doc.items.splice(index, 1)"
-			></component>
+				<component
+					ref="blocks"
+					v-for="(block, index) in page.doc.items"
+					:key="block.id"
+					:block="block"
+					:is="blockTypeToComponent[block.type]"
+					:block-id="block.id"
+					@click="focus(index, $event)"
+					@keydown.enter.exact="keyboardEvents[block.type]?.enter(index, $event)"
+					@keydown.backspace.exact="keyboardEvents[block.type]?.backspace(index, $event)"
+					@keydown.up.exact="keyboardEvents[block.type]?.up(index, $event)"
+					@keydown.down.exact="keyboardEvents[block.type]?.down(index, $event)"
+					@remove="page.doc.items.splice(index, 1)"
+				></component>
 
-			<div
-				class="h-24 cursor-text"
-				@click="addNewBlock(page.doc.items.length - 1, $event)"
-			></div>
+				<div
+					class="h-24 cursor-text"
+					@click="addNewBlock(page.doc.items.length - 1, $event)"
+				></div>
+			</div>
 		</div>
 	</div>
 </template>

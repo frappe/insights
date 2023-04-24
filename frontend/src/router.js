@@ -114,13 +114,13 @@ const routes = [
 	},
 	{
 		props: true,
-		path: '/notebook/:name',
+		path: '/notebook/:notebook',
 		name: 'Notebook',
 		component: () => import('@/notebook/Notebook.vue'),
 	},
 	{
 		props: true,
-		path: '/notebook/:name/:page',
+		path: '/notebook/:notebook/:page',
 		name: 'NotebookPage',
 		component: () => import('@/notebook/NotebookPage.vue'),
 	},

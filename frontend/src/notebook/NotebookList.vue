@@ -1,9 +1,10 @@
 <script setup lang="jsx">
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import List from '@/components/List.vue'
-import { updateDocumentTitle } from '@/utils'
-import { useRouter } from 'vue-router'
 import useNotebooks from '@/notebook/useNotebooks'
+import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const notebooks = useNotebooks()
@@ -47,6 +48,7 @@ updateDocumentTitle(pageMeta)
 
 <template>
 	<div class="h-full w-full bg-white px-8 py-4">
+		<Breadcrumbs :items="[{ label: 'Notebooks', href: '/notebook' }]"></Breadcrumbs>
 		<List
 			title="Notebooks"
 			:actions="[
@@ -65,7 +67,7 @@ updateDocumentTitle(pageMeta)
 			]"
 			:columns="columns"
 			:data="notebooks.list"
-			:rowClick="({ name }) => router.push({ name: 'Notebook', params: { name } })"
+			:rowClick="({ name }) => router.push({ name: 'Notebook', params: { notebook: name } })"
 		>
 		</List>
 	</div>
