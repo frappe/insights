@@ -9,6 +9,12 @@
 
 </div>
 
+<div align="center" style="max-height: 40px;">
+	<a href="https://frappecloud.com/insights/signup">
+		<img src="https://github.com/frappe/hrms/blob/develop/.github/try-on-f-cloud-button.svg" height="40">
+	</a>
+</div>
+
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
 	<img src=".github/hero-image.png" alt="Hero Image" width="72%" />
 </div>
