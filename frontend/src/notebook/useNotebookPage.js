@@ -26,7 +26,6 @@ export default function useNotebookPage(page_name) {
 			title: state.doc.title,
 			content: beautifyHTML(state.doc.content),
 		})
-		await state.reload()
 		state.loading = false
 	}
 
