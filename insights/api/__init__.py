@@ -128,11 +128,26 @@ def get_queries():
     if not allowed_queries:
         return []
 
+    from frappe.query_builder.functions import CustomFunction
+
     Query = frappe.qb.DocType("Insights Query")
+    QueryTable = frappe.qb.DocType("Insights Query Table")
+    QueryChart = frappe.qb.DocType("Insights Query Chart")
+    GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
+        .left_join(QueryTable)
+        .on(Query.name == QueryTable.parent)
+        .left_join(QueryChart)
+        .on(QueryChart.query == Query.name)
         .select(
-            Query.name, Query.title, Query.data_source, Query.creation, Query.is_stored
+            Query.name,
+            Query.title,
+            Query.status,
+            GroupConcat(QueryTable.label).as_("tables"),
+            Query.data_source,
+            Query.creation,
+            QueryChart.type.as_("chart_type"),
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
@@ -497,3 +512,10 @@ def get_notebook_pages(notebook):
         fields=["name", "title", "creation", "modified"],
         order_by="creation desc",
     )
+
+
+@frappe.whitelist()
+def add_chart_to_dashboard(dashboard, chart):
+    dashboard = frappe.get_doc("Insights Dashboard", dashboard)
+    dashboard.add_chart(chart)
+    dashboard.save()

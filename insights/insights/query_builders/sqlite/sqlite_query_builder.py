@@ -16,6 +16,9 @@ class SQLiteColumnFormatter(ColumnFormatter):
             return func.strftime("%Y-%m-%d %H:00", column)
         if format == "Day" or format == "Day Short":
             return func.strftime("%Y-%m-%d", column)
+        if format == "Week":
+            date = func.strftime("%Y-%m-%d", column)
+            return func.date(date, "-1 day", "weekday 0")
         if format == "Month" or format == "Mon":
             return func.strftime("%Y-%m-01", column)
         if format == "Year":

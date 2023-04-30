@@ -1,12 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+
 from functools import cached_property, lru_cache
 
 import frappe
 from frappe import task
 from frappe.model.document import Document
-from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.constants import SOURCE_STATUS
@@ -114,8 +114,8 @@ class InsightsDataSource(Document):
             if raise_exception:
                 raise e
 
-    def build_query(self, query: InsightsQuery):
-        return self.db.build_query(query)
+    def build_query(self, query: InsightsQuery, with_cte=False):
+        return self.db.build_query(query, with_cte)
 
     def run_query(self, query: InsightsQuery):
         try:
@@ -173,7 +173,7 @@ class InsightsDataSource(Document):
         return get_data_source_schema(self.name)
 
 
-@redis_cache(ttl=60 * 60 * 24)
+@lru_cache(maxsize=128)
 def get_data_source_schema(data_source):
     Table = frappe.qb.DocType("Insights Table")
     TableColumn = frappe.qb.DocType("Insights Table Column")

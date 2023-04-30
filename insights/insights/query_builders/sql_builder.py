@@ -1,6 +1,5 @@
 import operator
 from contextlib import suppress
-from datetime import datetime
 
 import frappe
 from frappe import _dict, parse_json
@@ -63,6 +62,10 @@ class ColumnFormatter:
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":
             return func.date_format(column, "%Y-%m-%d")
+        if format == "Week":
+            # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
+            date = func.date_format(column, "%Y-%m-%d")
+            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({column}) - 1) DAY"))
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":

@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import random
 from json import dumps
 
 import frappe
@@ -11,7 +12,11 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.cache_utils import get_or_set_cache, make_digest
 
-from .utils import convert_into_simple_filter, convert_to_expression
+from .utils import (
+    convert_into_simple_filter,
+    convert_to_expression,
+    guess_layout_for_chart,
+)
 
 CACHE_NAMESPACE = "insights_dashboard"
 
@@ -24,6 +29,20 @@ class InsightsDashboard(Document):
     @property
     def cache_namespace(self):
         return f"{CACHE_NAMESPACE}|{self.name}"
+
+    def add_chart(self, chart):
+        chart_doc = frappe.get_doc("Insights Chart", chart)
+        new_layout = guess_layout_for_chart(chart_doc.chart_type, self)
+        self.append(
+            "items",
+            {
+                "item_id": frappe.utils.cint(random.random() * 1000000),
+                "item_type": chart_doc.chart_type,
+                "options": chart_doc.options,
+                "layout": new_layout,
+            },
+        )
+        self.save()
 
     @frappe.whitelist()
     def clear_charts_cache(self):
@@ -101,28 +120,33 @@ class InsightsDashboard(Document):
 @frappe.whitelist()
 def get_queries_column(query_names):
     # TODO: handle permissions
-    tables = {}
+    table_by_datasource = {}
     for query in list(set(query_names)):
         # TODO: to further optimize, store the used tables in the query on save
         doc = frappe.get_cached_doc("Insights Query", query)
         for table in doc.get_selected_tables():
-            tables[table.table] = table
+            if doc.data_source not in table_by_datasource:
+                table_by_datasource[doc.data_source] = {}
+            table_by_datasource[doc.data_source][table.table] = table
 
     columns = []
-    for table in tables.values():
-        doc = frappe.get_cached_doc("Insights Table", {"table": table.table})
-        _columns = doc.get_columns()
-        for column in _columns:
-            columns.append(
-                {
-                    "column": column.column,
-                    "label": column.label,
-                    "table": table.table,
-                    "table_label": table.label,
-                    "type": column.type,
-                    "data_source": doc.data_source,
-                }
+    for data_source in table_by_datasource.values():
+        for table in data_source.values():
+            doc = frappe.get_cached_doc(
+                "Insights Table", {"table": table.table, "data_source": doc.data_source}
             )
+            _columns = doc.get_columns()
+            for column in _columns:
+                columns.append(
+                    {
+                        "column": column.column,
+                        "label": column.label,
+                        "table": table.table,
+                        "table_label": table.label,
+                        "type": column.type,
+                        "data_source": doc.data_source,
+                    }
+                )
 
     return columns
 

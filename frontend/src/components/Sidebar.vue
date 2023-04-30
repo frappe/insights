@@ -60,7 +60,7 @@
 						{
 							label: 'Documentation',
 							icon: 'help-circle',
-							handler: () => open('https://frappeinsights.com/docs'),
+							handler: () => open('https://docs.frappeinsights.com'),
 						},
 						auth.user.is_admin
 							? {
@@ -135,10 +135,10 @@ const sidebarItems = ref([
 		name: 'Data Source',
 	},
 	{
-		path: '/query/build',
-		label: 'Query Builder',
+		path: '/query',
+		label: 'Query',
 		icon: Wrench,
-		name: 'QueryBuilder',
+		name: 'QueryList',
 		current: false,
 	},
 	{

@@ -3,7 +3,6 @@
 
 import frappe
 
-from insights.api import sync_data_source
 from insights.setup.demo import setup
 
 
@@ -39,7 +38,7 @@ def test_database_connection(db):
 def add_database(db):
     data_source = get_new_datasource(db)
     data_source.save()
-    sync_data_source(data_source.name)
+    data_source.enqueue_sync_tables()
     update_setup_status()
 
 

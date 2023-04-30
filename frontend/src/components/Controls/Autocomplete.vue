@@ -7,7 +7,8 @@
 					ref="input"
 					autocomplete="off"
 					:placeholder="placeholder"
-					@focus="togglePopover(true)"
+					@click="togglePopover(true)"
+					@blur="handleBlur($event, togglePopover)"
 					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
 					class="form-input block w-full placeholder-gray-500"
@@ -215,5 +216,15 @@ function createOption() {
 	emit('createOption', filterQuery.value)
 	filterQuery.value = ''
 	blur()
+}
+
+function handleBlur(event, close) {
+	// on clicking the list item, the blur event is fired,
+	// and the popover is closed before the list item is selected
+	// so, we need to check if the click was on the list item and prevent closing
+	// closing will be handled by the list item click event
+	if (event.relatedTarget.classList.contains('form-input')) {
+		close()
+	}
 }
 </script>

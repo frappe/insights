@@ -77,13 +77,8 @@ const routes = [
 	},
 	{
 		path: '/query',
-		redirect: '/query/build',
-	},
-	{
-		props: true,
-		name: 'Query',
-		path: '/query/:name?',
-		redirect: '/query/build',
+		name: 'QueryList',
+		component: () => import('@/query/QueryList.vue'),
 	},
 	{
 		props: true,

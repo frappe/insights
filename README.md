@@ -5,8 +5,14 @@
 **Free and Open Source Data Analytics Tool for your Frappe Apps**
 
 [![codecov](https://codecov.io/github/frappe/insights/branch/develop/graph/badge.svg?token=8ZXHCY4G9U)](https://codecov.io/github/frappe/insights)
-[![unittest](https://github.com/frappe/insights/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/frappe/insights/actions/workflows/ci.yml)
+[![unittests](https://github.com/frappe/insights/actions/workflows/server-tests.yml/badge.svg)](https://github.com/frappe/insights/actions/workflows/server-tests.yml)
 
+</div>
+
+<div align="center" style="max-height: 40px;">
+	<a href="https://frappecloud.com/insights/signup">
+		<img src="https://github.com/frappe/hrms/blob/develop/.github/try-on-f-cloud-button.svg" height="40">
+	</a>
 </div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
@@ -16,7 +22,7 @@
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
 	<a href=".github/preview.gif">Preview</a>
 	-
-	<a href="https://frappeinsights.frappe.cloud/docs">Documentation</a>
+	<a href="https://docs.frappeinsights.com">Documentation</a>
 </div>
 
 ## Features
