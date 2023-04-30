@@ -1,16 +1,16 @@
 import { VueRenderer } from '@tiptap/vue-3'
 import {
+	ChevronRightSquare,
 	Heading1,
 	Heading2,
 	Heading3,
-	Table,
 	ParkingSquare,
-	ChevronRightSquare,
+	Table,
 } from 'lucide-vue-next'
 import tippy from 'tippy.js'
 
-import CommandsList from './CommandsList.vue'
 import { markRaw } from 'vue'
+import CommandsList from './CommandsList.vue'
 
 export default {
 	items: ({ query }) => {
@@ -21,6 +21,7 @@ export default {
 				command: ({ editor, range }) => {
 					editor.chain().focus().deleteRange(range).setNode('paragraph').run()
 				},
+				disabled: (editor) => editor.isActive('table'),
 			},
 			{
 				title: 'Heading 1',
@@ -28,6 +29,7 @@ export default {
 				command: ({ editor, range }) => {
 					editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run()
 				},
+				disabled: (editor) => editor.isActive('table'),
 			},
 			{
 				title: 'Heading 2',
@@ -35,6 +37,7 @@ export default {
 				command: ({ editor, range }) => {
 					editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run()
 				},
+				disabled: (editor) => editor.isActive('table'),
 			},
 			{
 				title: 'Heading 3',
@@ -42,6 +45,7 @@ export default {
 				command: ({ editor, range }) => {
 					editor.chain().focus().deleteRange(range).setNode('heading', { level: 4 }).run()
 				},
+				disabled: (editor) => editor.isActive('table'),
 			},
 			{
 				title: 'Table',
@@ -54,6 +58,35 @@ export default {
 						.insertTable({ rows: 3, cols: 3, withHeaderRow: true })
 						.run()
 				},
+				disabled: (editor) => editor.isActive('table'),
+			},
+			{
+				title: 'Add Column',
+				command: ({ editor, range }) => {
+					editor.chain().focus().deleteRange(range).addColumnAfter().run()
+				},
+				disabled: (editor) => !editor.isActive('table'),
+			},
+			{
+				title: 'Add Row',
+				command: ({ editor, range }) => {
+					editor.chain().focus().deleteRange(range).addRowAfter().run()
+				},
+				disabled: (editor) => !editor.isActive('table'),
+			},
+			{
+				title: 'Delete Column',
+				command: ({ editor, range }) => {
+					editor.chain().focus().deleteRange(range).deleteColumn().run()
+				},
+				disabled: (editor) => !editor.isActive('table'),
+			},
+			{
+				title: 'Delete Row',
+				command: ({ editor, range }) => {
+					editor.chain().focus().deleteRange(range).deleteRow().run()
+				},
+				disabled: (editor) => !editor.isActive('table'),
 			},
 			{
 				title: 'SQL',
@@ -62,10 +95,9 @@ export default {
 					const element = '<query-wrapper></query-wrapper>'
 					editor.chain().focus().deleteRange(range).insertContent(element).run()
 				},
+				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
 			},
-		]
-			.filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
-			.slice(0, 5)
+		].filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
 	},
 
 	render: () => {

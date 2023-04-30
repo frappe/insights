@@ -1,10 +1,10 @@
 <template>
 	<div class="flex w-40 flex-col rounded-md border bg-white p-1 text-base shadow">
-		<template v-if="items.length">
+		<template v-if="enabledItems.length">
 			<button
 				class="flex h-8 w-full cursor-pointer items-center rounded px-1 text-base"
 				:class="{ 'bg-gray-100': index === selectedIndex }"
-				v-for="(item, index) in items"
+				v-for="(item, index) in enabledItems"
 				:key="index"
 				@click="selectItem(index)"
 				@mouseenter="selectedIndex = index"
@@ -23,6 +23,11 @@ export default {
 	props: {
 		items: {
 			type: Array,
+			required: true,
+		},
+
+		editor: {
+			type: Object,
 			required: true,
 		},
 
@@ -48,6 +53,12 @@ export default {
 		},
 	},
 
+	computed: {
+		enabledItems() {
+			return this.items.filter((item) => (item.disabled ? !item.disabled(this.editor) : true))
+		},
+	},
+
 	methods: {
 		onKeyDown({ event }) {
 			if (event.key === 'ArrowUp') {
@@ -69,11 +80,12 @@ export default {
 		},
 
 		upHandler() {
-			this.selectedIndex = (this.selectedIndex + this.items.length - 1) % this.items.length
+			this.selectedIndex =
+				(this.selectedIndex + this.enabledItems.length - 1) % this.enabledItems.length
 		},
 
 		downHandler() {
-			this.selectedIndex = (this.selectedIndex + 1) % this.items.length
+			this.selectedIndex = (this.selectedIndex + 1) % this.enabledItems.length
 		},
 
 		enterHandler() {
@@ -81,7 +93,7 @@ export default {
 		},
 
 		selectItem(index) {
-			const item = this.items[index]
+			const item = this.enabledItems[index]
 
 			if (item) {
 				this.command(item)

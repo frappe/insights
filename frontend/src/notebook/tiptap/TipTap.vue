@@ -1,5 +1,6 @@
 <template>
 	<TextEditor
+		ref="editor"
 		:content="$props.content"
 		editorClass="text-base max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-lg prose-code:before:content-[''] prose-code:after:content-['']"
 		@change="$emit('update:content', $event)"
@@ -34,8 +35,8 @@
 </template>
 
 <script setup>
-import { Code, Strikethrough, RemoveFormatting } from 'lucide-vue-next'
 import { TextEditor } from 'frappe-ui'
+import { Code, RemoveFormatting, Strikethrough } from 'lucide-vue-next'
 import QueryExtension from './extensions/query/QueryExtension'
 import SlashCommand from './slash-command/commands'
 import suggestion from './slash-command/suggestion'
