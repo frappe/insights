@@ -10,15 +10,15 @@ import QueryResult from './QueryResult.vue'
 import ResultChartSwitcher from './ResultChartSwitcher.vue'
 import useQuery from './useQuery'
 
-const emit = defineEmits(['remove'])
-const props = defineProps({ block: Object })
-let queryName = props.block.query
+const emit = defineEmits(['setQuery', 'remove'])
+const props = defineProps({ query: String })
+let queryName = props.query
 if (!queryName) {
 	const sources = await useDataSources()
 	await sources.reload()
 	const source = sources.list[0]
 	queryName = await useQueries().create(source.name)
-	props.block.query = queryName
+	emit('setQuery', queryName)
 }
 const query = useQuery(queryName)
 provide('query', query)

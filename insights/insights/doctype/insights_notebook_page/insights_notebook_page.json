@@ -11,7 +11,7 @@
   "column_break_d4av",
   "notebook",
   "section_break_vsmj",
-  "dev_items"
+  "content"
  ],
  "fields": [
   {
@@ -38,16 +38,15 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "[]",
-   "fieldname": "dev_items",
-   "fieldtype": "JSON",
-   "label": "Items (dev)",
-   "options": "JSON"
+   "fieldname": "content",
+   "fieldtype": "Code",
+   "label": "Content",
+   "options": "HTML"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-16 22:42:45.970407",
+ "modified": "2023-04-30 13:58:51.687582",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Notebook Page",

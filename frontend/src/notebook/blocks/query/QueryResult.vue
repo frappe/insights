@@ -75,6 +75,9 @@ const query_result_limit = computed(() =>
 					</td>
 					<td class="border-b py-2 pl-3 pr-20 text-gray-600" width="99%"></td>
 				</tr>
+				<tr height="99%">
+					<td></td>
+				</tr>
 			</tbody>
 		</table>
 

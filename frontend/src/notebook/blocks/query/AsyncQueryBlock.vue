@@ -10,7 +10,7 @@ export default {
 
 <template>
 	<Suspense>
-		<QueryBlock v-bind="{ ...$attrs, ...$props }" />
+		<QueryBlock v-bind="{ ...$attrs, ...$props }" v-on="$listeners" />
 		<template #fallback>
 			<div class="flex h-20 w-full flex-col items-center justify-center">
 				<LoadingIndicator class="mb-2 w-6 text-gray-300" />
