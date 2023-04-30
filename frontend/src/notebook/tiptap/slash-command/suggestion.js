@@ -89,6 +89,13 @@ export default {
 				disabled: (editor) => !editor.isActive('table'),
 			},
 			{
+				title: 'Delete Table',
+				command: ({ editor, range }) => {
+					editor.chain().focus().deleteRange(range).deleteTable().run()
+				},
+				disabled: (editor) => !editor.isActive('table'),
+			},
+			{
 				title: 'SQL',
 				icon: markRaw(ChevronRightSquare),
 				command: ({ editor, range }) => {
