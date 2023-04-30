@@ -32,8 +32,8 @@ const notebook = useNotebook(props.notebook)
 			]"
 		>
 		</Breadcrumbs>
-		<div v-if="page.doc.name" class="h-full w-full overflow-y-scroll bg-white py-24 text-base">
-			<div class="mx-auto w-[45rem]">
+		<div v-if="page.doc.name" class="h-full w-full overflow-y-scroll bg-white py-16 text-base">
+			<div class="mx-auto w-[52rem]">
 				<ContentEditable
 					class="focusable text-[36px] font-bold"
 					v-model="page.doc.title"

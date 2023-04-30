@@ -1,7 +1,7 @@
 <template>
 	<TextEditor
 		:content="$props.content"
-		editorClass="text-base prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-lg prose-code:before:content-[''] prose-code:after:content-['']"
+		editorClass="text-base max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-lg prose-code:before:content-[''] prose-code:after:content-['']"
 		@change="$emit('update:content', $event)"
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="[
@@ -44,7 +44,7 @@ function placeholderByNode({ node }) {
 	if (node.type.name === 'heading') {
 		return `Heading ${node.attrs.level}`
 	}
-	return 'Type / to insert a command'
+	return 'Type / to insert a block'
 }
 </script>
 
