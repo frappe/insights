@@ -106,14 +106,12 @@ def get_descendants(node, tree, include_self=False):
             select([Tree.c.name])
             .where(Tree.c.lft > lft_rgt.c.lft)
             .where(Tree.c.rgt < lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
         if not include_self
         else (
             select([Tree.c.name])
             .where(Tree.c.lft >= lft_rgt.c.lft)
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
     )
 
