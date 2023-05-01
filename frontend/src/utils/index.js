@@ -1,4 +1,5 @@
-import { watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
@@ -179,6 +180,25 @@ export function setOrGet(obj, key, generator, generatorArgs) {
 		obj[key] = generator(...generatorArgs)
 	}
 	return obj[key]
+}
+
+export function useAutoSave(watchedFields, options = {}) {
+	if (!options.saveFn) throw new Error('saveFn is required')
+
+	const fields = computed(() => {
+		if (!watchedFields.value) return
+		return JSON.parse(JSON.stringify(watchedFields.value))
+	})
+
+	function saveIfChanged(newFields, oldFields) {
+		if (!oldFields) return
+		if (JSON.stringify(newFields) == JSON.stringify(oldFields)) return
+		options.saveFn()
+	}
+	watchDebounced(fields, saveIfChanged, {
+		debounce: options.interval || 1000,
+		deep: true,
+	})
 }
 
 export default {

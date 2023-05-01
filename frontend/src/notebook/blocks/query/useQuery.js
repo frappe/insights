@@ -1,7 +1,9 @@
+import { useAutoSave } from '@/utils'
 import useChart from '@/query/useChart'
 import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
+import { watchOnce } from '@vueuse/core'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
@@ -17,6 +19,7 @@ export default function useQuery(name) {
 function makeQuery(name) {
 	const resource = getQueryResource(name)
 	const state = reactive({
+		autosave: false,
 		loading: true,
 		executing: false,
 		error: null,
@@ -47,8 +50,6 @@ function makeQuery(name) {
 
 	state.execute = debounce(async () => {
 		state.executing = true
-		// if (state.doc.is_native_query) {
-		// }
 		await resource.setValue.submit({
 			is_native_query: 1,
 			sql: state.doc.sql,
@@ -58,6 +59,34 @@ function makeQuery(name) {
 		await refresh()
 		state.executing = false
 	}, 300)
+
+	state.save = async () => {
+		state.loading = true
+		await resource.setValue.submit({
+			is_native_query: 1,
+			sql: state.doc.sql,
+			data_source: state.doc.data_source,
+		})
+		state.loading = false
+	}
+
+	watchOnce(
+		() => state.autosave,
+		() => {
+			const fieldsToWatch = computed(() => {
+				// if doc is not loaded, don't watch
+				if (state.loading) return
+				return {
+					sql: state.doc.sql,
+					data_source: state.doc.data_source,
+				}
+			})
+			useAutoSave(fieldsToWatch, {
+				saveFn: state.save,
+				interval: 1500,
+			})
+		}
+	)
 
 	state.fetchSourceSchema = async () => {
 		const response = await resource.get_source_schema.fetch()

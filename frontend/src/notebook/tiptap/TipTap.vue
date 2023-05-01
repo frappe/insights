@@ -2,7 +2,7 @@
 	<TextEditor
 		ref="editor"
 		:content="$props.content"
-		editorClass="text-base max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-lg prose-code:before:content-[''] prose-code:after:content-['']"
+		editorClass="max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-lg prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-1 prose-ol:my-1"
 		@change="$emit('update:content', $event)"
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="[

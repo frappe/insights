@@ -21,6 +21,7 @@ if (!queryName) {
 	emit('setQuery', queryName)
 }
 const query = useQuery(queryName)
+query.autosave = true
 provide('query', query)
 const state = reactive({
 	dataSource: '',

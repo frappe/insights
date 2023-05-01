@@ -1,7 +1,7 @@
-import { watchDebounced } from '@vueuse/core'
+import { useAutoSave } from '@/utils'
 import { createDocumentResource } from 'frappe-ui'
-import { computed, reactive } from 'vue'
 import jsBeautify from 'js-beautify'
+import { computed, reactive } from 'vue'
 
 export default function useNotebookPage(page_name) {
 	const resource = createDocumentResource({
@@ -29,24 +29,18 @@ export default function useNotebookPage(page_name) {
 		state.loading = false
 	}
 
-	const docChanged = computed(() =>
-		JSON.parse(
-			JSON.stringify({
-				title: state.doc.title,
-				content: state.doc.content,
-			})
-		)
-	)
-	watchDebounced(
-		docChanged,
-		(newState, oldState) => {
-			if (!oldState.title) return
-			if (JSON.stringify(newState) !== JSON.stringify(oldState)) {
-				state.save()
-			}
-		},
-		{ deep: true, debounce: 2000 }
-	)
+	const fieldsToWatch = computed(() => {
+		// if doc is not loaded, don't watch
+		if (!state.doc.title) return
+		return {
+			title: state.doc.title,
+			content: state.doc.content,
+		}
+	})
+	useAutoSave(fieldsToWatch, {
+		saveFn: state.save,
+		interval: 1500,
+	})
 
 	return state
 }
