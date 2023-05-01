@@ -1,8 +1,8 @@
 <template>
 	<node-view-wrapper class="not-prose text-base">
 		<AsyncQueryBlock
-			:query="props.node.attrs.query"
-			@setQuery="props.updateAttributes({ query: $event })"
+			:query="props.node.attrs.name"
+			@setQuery="props.updateAttributes({ name: $event })"
 			@remove="props.deleteNode()"
 		/>
 	</node-view-wrapper>

@@ -99,7 +99,7 @@ export default {
 				title: 'SQL',
 				icon: markRaw(ChevronRightSquare),
 				command: ({ editor, range }) => {
-					const element = '<query-wrapper></query-wrapper>'
+					const element = '<query></query>'
 					editor.chain().focus().deleteRange(range).insertContent(element).run()
 				},
 				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),

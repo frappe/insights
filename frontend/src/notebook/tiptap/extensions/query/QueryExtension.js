@@ -10,20 +10,20 @@ export default Node.create({
 
 	addAttributes() {
 		return {
-			query: undefined,
+			name: undefined,
 		}
 	},
 
 	parseHTML() {
 		return [
 			{
-				tag: 'query-wrapper',
+				tag: 'query',
 			},
 		]
 	},
 
 	renderHTML({ HTMLAttributes }) {
-		return ['query-wrapper', mergeAttributes(HTMLAttributes)]
+		return ['query', mergeAttributes(HTMLAttributes)]
 	},
 
 	addNodeView() {
