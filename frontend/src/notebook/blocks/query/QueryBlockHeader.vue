@@ -47,7 +47,7 @@ sources.reload()
 				@click="state.minimizeQuery = !state.minimizeQuery"
 			>
 				<FeatherIcon
-					:name="state.minimizeQuery ? 'chevron-down' : 'chevron-up'"
+					:name="state.minimizeQuery ? 'maximize-2' : 'minimize-2'"
 					class="h-3.5 w-3.5"
 				></FeatherIcon>
 			</div>

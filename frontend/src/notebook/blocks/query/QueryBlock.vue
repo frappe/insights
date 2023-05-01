@@ -27,6 +27,7 @@ const state = reactive({
 	dataSource: '',
 	resultOrChart: 'Result',
 	minimizeQuery: false,
+	minimizeResult: false,
 	showQueryActions: false,
 	query: query,
 })
@@ -52,13 +53,22 @@ state.removeQuery = () => {
 		</transition>
 
 		<div
-			v-if="state.query.doc?.results?.length > 1"
-			class="relative flex h-[20rem] max-h-80 flex-col overflow-hidden border-t bg-white"
+			v-if="state.query.doc?.results?.length > 1 && !state.minimizeResult"
+			class="group relative flex h-[20rem] max-h-80 flex-col overflow-hidden border-t bg-white"
 		>
 			<QueryResult v-if="state.resultOrChart == 'Result'" />
 			<QueryChart v-if="state.resultOrChart == 'Visualize'" />
 
 			<div class="absolute right-1.5 top-1.5 flex items-center space-x-2">
+				<Button
+					class="flex h-7 cursor-pointer items-center rounded-md !border !border-gray-200 bg-white !px-2 !text-sm !text-gray-600 opacity-0 transition-opacity hover:bg-gray-50 hover:text-gray-800 group-hover:opacity-100"
+					@click="state.minimizeResult = !state.minimizeResult"
+				>
+					<FeatherIcon
+						:name="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
+						class="h-3.5 w-3.5"
+					></FeatherIcon>
+				</Button>
 				<ChartOptionsDropdown />
 				<ResultChartSwitcher />
 			</div>
