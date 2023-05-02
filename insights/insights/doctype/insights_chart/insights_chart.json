@@ -60,7 +60,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-05 21:25:01.131103",
+ "modified": "2023-05-02 16:59:15.903932",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart",
@@ -75,6 +75,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
    "share": 1,
    "write": 1
   }
