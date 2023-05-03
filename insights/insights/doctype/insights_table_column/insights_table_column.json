@@ -6,9 +6,12 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "is_custom",
   "column",
   "label",
-  "type"
+  "type",
+  "column_break_l5mj",
+  "custom_definition"
  ],
  "fields": [
   {
@@ -33,12 +36,28 @@
    "label": "Type",
    "options": "Integer\nLong Int\nDecimal\nText\nLong Text\nDate\nDatetime\nTime\nString",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_l5mj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_custom",
+   "fieldtype": "Check",
+   "label": "Is Custom"
+  },
+  {
+   "fieldname": "custom_definition",
+   "fieldtype": "Code",
+   "label": "Custom Definition",
+   "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-10-18 10:03:54.280471",
+ "modified": "2023-05-01 19:43:52.406881",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Column",

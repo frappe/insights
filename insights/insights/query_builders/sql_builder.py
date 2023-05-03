@@ -17,10 +17,12 @@ from frappe.utils.data import (
     getdate,
     nowdate,
 )
-from sqlalchemy import Column
+from sqlalchemy import Column, Integer
 from sqlalchemy import column as sa_column
-from sqlalchemy import select, table
+from sqlalchemy import literal_column, select, table
 from sqlalchemy.engine import Dialect
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import column_property
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
 
@@ -435,7 +437,7 @@ class ExpressionProcessor:
         if expression.type == "Column":
             column = expression.value.get("column")
             table = expression.value.get("table")
-            return self.builder.make_column(column, table)
+            return self.builder.get_or_set_column(column, table)
 
         if expression.type == "String":
             return expression.value
@@ -481,13 +483,8 @@ class SQLQueryBuilder:
         self.aggregations = Aggregations
         self.column_formatter = ColumnFormatter
         self.expression_processor = ExpressionProcessor(self)
-
+        self._query = None
         self._tables = {}
-        self._joins = []
-        self._columns = []
-        self._filters = []
-        self._group_by_columns = []
-        self._order_by_columns = []
         self._limit = 500
 
     def build(self, query, dialect: Dialect = None):
@@ -496,137 +493,164 @@ class SQLQueryBuilder:
 
         if query.is_native_query:
             return query.sql.strip().rstrip(";") if query.sql else ""
-        else:
-            self.process_tables_and_joins()
-            self.process_columns()
-            self.process_filters()
-            compiled = self.make_query()
-            return str(compiled) if compiled else ""
 
-    def make_table(self, name):
+        if not query.tables:
+            return ""
+
+        self.process_table_schema()
+        self.process_tables_and_joins()
+        self.process_columns()
+        self.process_filters()
+        self._query = self._query.limit(self.query.limit or self._limit)
+        self._query = self.compile(self._query)
+        return str(self._query) if self._query else ""
+
+    def get_or_set_table(self, name):
         if not hasattr(self, "_tables"):
             self._tables = {}
-        if name not in self._tables:
-            self._tables[name] = table(name).alias(f"t{len(self._tables)}")
+
+        if name in self._tables:
+            return self._tables[name]
+
+        _table = table(name)
+        self._tables[name] = _table
         return self._tables[name]
 
-    def make_column(self, columnname, tablename):
-        _table = self.make_table(tablename)
-        return sa_column(columnname, _selectable=_table)
+    def get_or_set_column(self, columnname, tablename):
+        if columnname == "count":
+            return func.count(literal_column("*")).label("count")
+
+        _table = self.get_or_set_table(tablename)
+        if hasattr(_table.c, columnname):
+            return _table.c[columnname]
+
+        _column = Column(columnname)
+        if custom_column := self.get_custom_column(columnname, tablename):
+            _column = custom_column[0]
+            _table._columns.add(_column)
+        else:
+            _table.append_column(_column)
+        return _table.c[columnname]
+
+    def get_custom_column(self, columnname, tablename):
+        _tablename = frappe.db.get_value(
+            "Insights Table", {"table": tablename}, "name"
+        )  # add data source filter
+
+        custom_column = frappe.db.get_value(
+            "Insights Table Column",
+            {
+                "column": columnname,
+                "parent": _tablename,
+                "is_custom": 1,
+            },
+            ["custom_definition", "column"],
+            as_dict=True,
+        )
+        if not custom_column:
+            return None
+
+        sql = parse_json(custom_column.custom_definition).get("sql")
+        if not sql:
+            return None
+        return [literal_column(sql).label(custom_column.column)]
+
+    def process_table_schema(self):
+        """
+        Finds all tables and columns in the query
+        and creates SQLAlchemy models for them under self._tables
+        """
+        self.Base = declarative_base()
+        for row in self.query.tables:
+            self.get_or_set_table(row.table)
+            if not row.join:
+                continue
+            _join = parse_json(row.join)
+            right_table = _join.get("with").get("value")
+            condition = _join.get("condition")
+            left_column = condition.get("left").get("value")
+            right_column = condition.get("right").get("value")
+            self.get_or_set_table(right_table)
+            self.get_or_set_column(left_column, row.table)
+            self.get_or_set_column(right_column, _join.get("with").get("value"))
+
+        for column in self.query.columns:
+            if not column.is_expression:
+                self.get_or_set_column(column.column, column.table)
+            else:
+                expression = parse_json(column.expression)
+                # processing expression to get columns
+                self.expression_processor.process(expression.get("ast"))
+
+        # processing filters to get columns
+        self.expression_processor.process(parse_json(self.query.filters))
 
     def process_tables_and_joins(self):
-        self._joins = []
+        main_table = self.query.tables[0].table
+        self._query = select(self._tables[main_table])
+
         for row in self.query.tables:
             if not row.join:
                 continue
 
             _join = parse_json(row.join)
             join_type = _join.get("type").get("value")
-
-            left_table = self.make_table(row.table)
-            right_table = self.make_table(_join.get("with").get("value"))
+            left_table = self.get_or_set_table(row.table)
+            right_table = self.get_or_set_table(_join.get("with").get("value"))
 
             condition = _join.get("condition")
             left_key = condition.get("left").get("value")
             right_key = condition.get("right").get("value")
 
-            left_key = self.make_column(left_key, row.table)
-            right_key = self.make_column(right_key, _join.get("with").get("value"))
+            left_key = self.get_or_set_column(left_key, row.table)
+            right_key = self.get_or_set_column(
+                right_key, _join.get("with").get("value")
+            )
 
-            self._joins.append(
-                _dict(
-                    {
-                        "left": left_table,
-                        "right": right_table,
-                        "type": join_type,
-                        "left_key": left_key,
-                        "right_key": right_key,
-                    }
-                )
+            self._query = self._query.join_from(
+                left_table,
+                right_table,
+                left_key == right_key,
+                full=join_type == "full",
+                isouter=join_type != "inner",
             )
 
     def process_columns(self):
-        self._columns = []
-        self._group_by_columns = []
-        self._order_by_columns = []
-
-        for row in self.query.columns:
-            if not row.is_expression:
-                _column = self.make_column(row.column, row.table)
+        self._query = self._query.with_only_columns([])
+        if not self.query.columns:
+            self._query = select([literal_column("*")]).select_from(self._query)
+            return
+        for column in self.query.columns:
+            if not column.is_expression:
+                _column = self.get_or_set_column(column.column, column.table)
                 _column = self.column_formatter.format(
-                    parse_json(row.format_option), row.type, _column
+                    parse_json(column.format_option), column.type, _column
                 )
-                _column = self.aggregations.apply(row.aggregation, _column)
+                _column = self.aggregations.apply(column.aggregation, _column)
             else:
-                expression = parse_json(row.expression)
+                expression = parse_json(column.expression)
                 _column = self.expression_processor.process(expression.get("ast"))
                 _column = self.column_formatter.format(
-                    parse_json(row.format_option), row.type, _column
+                    parse_json(column.format_option), column.type, _column
                 )
 
-            if row.order_by:
-                self._order_by_columns.append(
-                    _column.asc() if row.order_by == "asc" else _column.desc()
+            labelled_column = _column.label(column.label) if column.label else _column
+            self._query = self._query.add_columns(labelled_column)
+
+            if column.order_by:
+                self._query = self._query.order_by(
+                    labelled_column.asc()
+                    if column.order_by == "asc"
+                    else labelled_column.desc()
                 )
 
-            _column = _column.label(row.label) if row.label else _column
-
-            if row.aggregation == "Group By":
-                self._group_by_columns.append(_column)
-
-            self._columns.append(_column)
+            if column.aggregation == "Group By":
+                self._query = self._query.group_by(labelled_column)
 
     def process_filters(self):
         filters = parse_json(self.query.filters)
-        self._filters = self.expression_processor.process(filters)
-
-    def make_query(self):
-        if not self.query.tables:
-            return
-
-        sql = None
-        if not self._columns:
-            # if no columns, then select * from table
-            sql = select(text("*"))
-        else:
-            sql = select(*self._columns)
-
-        main_table = self.query.tables[0].table
-        sql = sql.select_from(self.make_table(main_table))
-
-        if self._joins:
-            sql = self.do_join(sql)
-        if self._group_by_columns:
-            sql = sql.group_by(*self._group_by_columns)
-        if self._order_by_columns:
-            sql = sql.order_by(*self._order_by_columns)
-        if self._filters is not None:
-            sql = sql.filter(self._filters)
-
-        sql = sql.limit(self.query.limit or self._limit)
-
-        return self.compile(sql)
-
-    def do_join(self, sql):
-        # TODO: add right and full joins
-
-        for join in self._joins:
-            isouter, full = False, False
-            if join.type == "left":
-                isouter = True
-            elif join.type == "full":
-                isouter = True
-                full = True
-
-            sql = sql.join_from(
-                join.left,
-                join.right,
-                join.left_key == join.right_key,
-                isouter=isouter,
-                full=full,
-            )
-
-        return sql
+        filters = self.expression_processor.process(filters)
+        self._query = self._query.filter(filters) if filters else self._query
 
     def compile(self, query):
         compile_args = {"compile_kwargs": {"literal_binds": True}}
