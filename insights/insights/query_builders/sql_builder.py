@@ -17,12 +17,10 @@ from frappe.utils.data import (
     getdate,
     nowdate,
 )
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column
 from sqlalchemy import column as sa_column
 from sqlalchemy import literal_column, select, table
 from sqlalchemy.engine import Dialect
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import column_property
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
 
@@ -498,8 +496,8 @@ class SQLQueryBuilder:
             return ""
 
         self.process_table_schema()
-        self.process_tables_and_joins()
         self.process_columns()
+        self.process_tables_and_joins()
         self.process_filters()
         self._query = self._query.limit(self.query.limit or self._limit)
         self._query = self.compile(self._query)
@@ -517,8 +515,8 @@ class SQLQueryBuilder:
         return self._tables[name]
 
     def get_or_set_column(self, columnname, tablename):
-        if columnname == "count":
-            return func.count(literal_column("*")).label("count")
+        if columnname == "count" or columnname == "*":
+            return literal_column("*").label("count")
 
         _table = self.get_or_set_table(tablename)
         if hasattr(_table.c, columnname):
@@ -560,7 +558,6 @@ class SQLQueryBuilder:
         Finds all tables and columns in the query
         and creates SQLAlchemy models for them under self._tables
         """
-        self.Base = declarative_base()
         for row in self.query.tables:
             self.get_or_set_table(row.table)
             if not row.join:
@@ -587,7 +584,7 @@ class SQLQueryBuilder:
 
     def process_tables_and_joins(self):
         main_table = self.query.tables[0].table
-        self._query = select(self._tables[main_table])
+        self._query = self._query.select_from(self.get_or_set_table(main_table))
 
         for row in self.query.tables:
             if not row.join:
@@ -616,9 +613,11 @@ class SQLQueryBuilder:
             )
 
     def process_columns(self):
-        self._query = self._query.with_only_columns([])
+        _columns = []
+        _order_by = []
+        _group_by = []
         if not self.query.columns:
-            self._query = select([literal_column("*")]).select_from(self._query)
+            self._query = select(literal_column("*"))
             return
         for column in self.query.columns:
             if not column.is_expression:
@@ -635,22 +634,28 @@ class SQLQueryBuilder:
                 )
 
             labelled_column = _column.label(column.label) if column.label else _column
-            self._query = self._query.add_columns(labelled_column)
+            _columns.append(labelled_column)
 
             if column.order_by:
-                self._query = self._query.order_by(
+                _order_by.append(
                     labelled_column.asc()
                     if column.order_by == "asc"
                     else labelled_column.desc()
                 )
 
             if column.aggregation == "Group By":
-                self._query = self._query.group_by(labelled_column)
+                _group_by.append(labelled_column)
+
+        self._query = select(*_columns)
+        if _order_by:
+            self._query = self._query.order_by(*_order_by)
+        if _group_by:
+            self._query = self._query.group_by(*_group_by)
 
     def process_filters(self):
         filters = parse_json(self.query.filters)
         filters = self.expression_processor.process(filters)
-        self._query = self._query.filter(filters) if filters else self._query
+        self._query = self._query.where(filters) if filters is not None else self._query
 
     def compile(self, query):
         compile_args = {"compile_kwargs": {"literal_binds": True}}
