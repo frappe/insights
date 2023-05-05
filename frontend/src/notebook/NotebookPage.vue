@@ -23,11 +23,11 @@ const notebook = useNotebook(props.notebook)
 				},
 				{
 					label: notebook.doc.title,
-					href: `/notebooks/${page.doc.notebook}`,
+					href: `/notebook/${page.doc.notebook}`,
 				},
 				{
 					label: page.doc.title,
-					href: `/notebooks/${page.doc.notebook}/${page.doc.name}`,
+					href: `/notebook/${page.doc.notebook}/${page.doc.name}`,
 				},
 			]"
 		>
