@@ -1,0 +1,44 @@
+<div>
+  <style>
+    .alert-container {
+      max-width: 38rem;
+      margin: 0 auto;
+      padding: 0.5rem 2rem;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-weight: 600;
+    }
+    .alert-container table {
+      border-collapse: collapse;
+      border: 1px solid #e2e2e2;
+      width: 100%;
+      table-layout: fixed;
+      position: relative;
+    }
+    .alert-container table th,
+    .alert-container table td {
+      border: 1px solid #e2e2e2;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    .alert-container table th {
+      background-color: #f2f2f2;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .results {
+      margin-top: 1rem;
+      max-height: 20rem;
+      overflow: scroll;
+      position: relative;
+      padding: 0.25rem 0rem;
+    }
+  </style>
+  <div class="alert-container">{{ message }}</div>
+</div>

@@ -53,31 +53,41 @@ class InsightsAlert(Document):
     def send_email_alert(self):
         subject = f"Insights Alert: {self.title}"
         recievers = self.get_recipients()
+        message = self.evaluate_message()
         frappe.sendmail(
             recipients=recievers,
             subject=subject,
+            message=message,
             now=True,
         )
 
     def evaluate_condition(self, for_validate=False):
         query = frappe.get_doc("Insights Query", self.query)
-        result = (
+        results = (
             query.fetch_results()
             if not for_validate
             else frappe.parse_json(query.results)
         )
 
-        if not result:
+        if not results:
             return False
 
         result_dict = {}
-        result_df = DataFrame(result[1:], columns=result[0])
-        for col in result_df.columns:
-            col_name = col["label"]
-            result_dict[col_name] = result_df[col].tolist()
+        result_df = query.get_results_df(results)
+        for column in result_df.columns:
+            result_dict[column] = result_df[column].tolist()
 
         return frappe.safe_eval(
-            self.condition, eval_locals=frappe._dict(result=result_dict)
+            self.condition, eval_locals=frappe._dict(results=result_dict)
+        )
+
+    def evaluate_message(self):
+        query = frappe.get_doc("Insights Query", self.query)
+        query_dict = query.as_dict()
+        query_dict.results = f"""<div class="results">{query.get_formatted_results(as_html=True)}</div>"""
+        message = frappe.render_template(self.message, context=query_dict)
+        return frappe.render_template(
+            "insights/templates/alert.html", context=frappe._dict(message=message)
         )
 
     def get_recipients(self):
