@@ -13,6 +13,10 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
+if (!options.hasOwnProperty('shorten')) {
+	options.value.shorten = true
+}
+
 const columnOptions = computed(() => {
 	return props.columns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
@@ -49,5 +53,6 @@ const columnOptions = computed(() => {
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Decimals</span>
 			<Input type="number" v-model="options.decimals" placeholder="Enter a number..." />
 		</div>
+		<Checkbox v-model="options.shorten" label="Shorten Numbers" />
 	</div>
 </template>

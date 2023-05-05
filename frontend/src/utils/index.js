@@ -115,6 +115,13 @@ export function getShortNumber(number, precision = 0) {
 	return formatted
 }
 
+export function formatNumber(number, precision = 0) {
+	const locale = 'en-IN' // TODO: get locale from user settings
+	return new Intl.NumberFormat(locale, {
+		maximumFractionDigits: precision,
+	}).format(number)
+}
+
 export async function getDataURL(type, data) {
 	const blob = new Blob([data], { type })
 
@@ -172,6 +179,7 @@ export default {
 	isEqual,
 	updateDocumentTitle,
 	fuzzySearch,
+	formatNumber,
 	getShortNumber,
 	copyToClipboard,
 }
