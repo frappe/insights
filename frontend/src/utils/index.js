@@ -1,4 +1,5 @@
 import { watch } from 'vue'
+import { createToast } from '@/utils/toasts'
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
@@ -153,15 +154,32 @@ export function getQueryLink(table) {
 export function copyToClipboard(text) {
 	if (navigator.clipboard) {
 		navigator.clipboard.writeText(text)
-		$notify({
+		createToast({
 			appearance: 'success',
 			title: 'Copied to clipboard',
 		})
 	} else {
-		$notify({
-			appearance: 'error',
-			title: 'Copy to clipboard not supported',
-		})
+		// try to use execCommand
+		const textArea = document.createElement('textarea')
+		textArea.value = text
+		textArea.style.position = 'fixed'
+		document.body.appendChild(textArea)
+		textArea.focus()
+		textArea.select()
+		try {
+			document.execCommand('copy')
+			createToast({
+				appearance: 'success',
+				title: 'Copied to clipboard',
+			})
+		} catch (err) {
+			createToast({
+				appearance: 'error',
+				title: 'Copy to clipboard not supported',
+			})
+		} finally {
+			document.body.removeChild(textArea)
+		}
 	}
 }
 
