@@ -148,6 +148,7 @@ const popover = ref(null)
 defineExpose({ input })
 
 const blur = () => (input.value.$el.blur(), popover.value.close(), emit('blur'))
+const focus = () => (input.value.$el.focus(), popover.value.open())
 onMounted(() => {
 	if (props.autofocus == false) {
 		setTimeout(blur, 0)
@@ -210,6 +211,7 @@ const filteredOptions = computed(() => {
 watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 	emit('inputChange', newValue)
+	focus()
 })
 
 function createOption() {
