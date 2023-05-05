@@ -36,33 +36,6 @@ def get_data_sources():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_data_source(name):
-    check_data_source_permission(name)
-    doc = frappe.get_doc("Insights Data Source", name)
-    tables = get_all_tables(name)
-    return {
-        "doc": doc.as_dict(),
-        "tables": tables,
-    }
-
-
-def get_all_tables(data_source=None):
-    if not data_source:
-        return []
-
-    return frappe.get_list(
-        "Insights Table",
-        filters={
-            "data_source": data_source,
-            **get_permission_filter("Insights Table"),
-        },
-        fields=["name", "table", "label", "hidden"],
-        order_by="hidden asc, label asc",
-    )
-
-
-@frappe.whitelist()
-@check_role("Insights User")
 def get_table_columns(data_source, table):
     check_table_permission(data_source, table)
 
@@ -75,6 +48,15 @@ def get_table_columns(data_source, table):
     )
 
     return {"columns": doc.columns}
+
+
+@frappe.whitelist()
+@check_role("Insights User")
+def get_table_name(data_source, table):
+    check_table_permission(data_source, table)
+    return frappe.get_value(
+        "Insights Table", {"data_source": data_source, "table": table}, "name"
+    )
 
 
 @frappe.whitelist()
@@ -121,6 +103,7 @@ def get_dashboard_list():
             },
             pluck="parent",
         )
+        dashboard["charts_count"] = len(dashboard["charts"])
 
         dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
 
@@ -145,11 +128,26 @@ def get_queries():
     if not allowed_queries:
         return []
 
+    from frappe.query_builder.functions import CustomFunction
+
     Query = frappe.qb.DocType("Insights Query")
+    QueryTable = frappe.qb.DocType("Insights Query Table")
+    QueryChart = frappe.qb.DocType("Insights Query Chart")
+    GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
+        .left_join(QueryTable)
+        .on(Query.name == QueryTable.parent)
+        .left_join(QueryChart)
+        .on(QueryChart.query == Query.name)
         .select(
-            Query.name, Query.title, Query.data_source, Query.creation, Query.is_stored
+            Query.name,
+            Query.title,
+            Query.status,
+            GroupConcat(QueryTable.label).as_("tables"),
+            Query.data_source,
+            Query.creation,
+            QueryChart.type.as_("chart_type"),
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
@@ -354,52 +352,6 @@ def upload_csv(data_source, label, file, if_exists, columns):
 
 @frappe.whitelist()
 @check_role("Insights User")
-def sync_data_source(data_source: str):
-    if not frappe.has_permission("Insights Data Source", "write"):
-        frappe.throw("Not allowed", frappe.PermissionError)
-
-    from frappe.utils.scheduler import is_scheduler_inactive
-
-    if is_scheduler_inactive():
-        notify(
-            **{
-                "title": "Error",
-                "message": "Scheduler is inactive",
-                "type": "error",
-            }
-        )
-
-    frappe.enqueue(
-        _sync_data_source,
-        data_source=data_source,
-        job_name="sync_data_source",
-        queue="long",
-        timeout=3600,
-        now=True,
-    )
-
-
-def _sync_data_source(data_source):
-    notify(
-        **{
-            "title": "Info",
-            "message": "Syncing Data Source",
-            "type": "info",
-        }
-    )
-    source = frappe.get_doc("Insights Data Source", data_source)
-    source.sync_tables()
-    notify(
-        **{
-            "title": "Success",
-            "message": "Data Source Synced",
-            "type": "success",
-        }
-    )
-
-
-@frappe.whitelist()
-@check_role("Insights User")
 def delete_data_source(data_source):
     try:
         frappe.delete_doc("Insights Data Source", data_source)
@@ -516,15 +468,17 @@ def get_public_dashboard_chart_data(public_key, *args, **kwargs):
 
 
 @frappe.whitelist()
-def get_chart_name(query):
-    if not isinstance(query, str):
-        frappe.throw("Query is required")
+def fetch_column_values(column, search_text=None):
+    if not column.get("data_source"):
+        frappe.throw("Data Source is required")
+    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
+    return data_source.get_column_options(
+        column.get("table"), column.get("column"), search_text
+    )
 
-    existing_chart = frappe.db.exists("Insights Chart", {"query": query})
-    if not existing_chart:
-        chart = frappe.new_doc("Insights Chart")
-        chart.query = query
-        chart.save()
-        return chart.name
 
-    return existing_chart
+@frappe.whitelist()
+def add_chart_to_dashboard(dashboard, chart):
+    dashboard = frappe.get_doc("Insights Dashboard", dashboard)
+    dashboard.add_chart(chart)
+    dashboard.save()

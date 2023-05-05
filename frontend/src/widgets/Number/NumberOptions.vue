@@ -1,34 +1,28 @@
 <script setup>
-import { useQuery } from '@/query/useQueries'
 import { FIELDTYPES } from '@/utils'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
 	modelValue: { type: Object, required: true },
+	columns: { type: Array, required: true },
 })
 
 const options = computed({
-	get() {
-		return props.modelValue
-	},
-	set(value) {
-		emit('update:modelValue', value)
-	},
+	get: () => props.modelValue,
+	set: (value) => emit('update:modelValue', value),
 })
 
-const query = ref(useQuery(options.value.query))
-// prettier-ignore
-watch(() => options.value.query, (queryName) => {
-	query.value = useQuery(queryName)
-})
+if (!options.hasOwnProperty('shorten')) {
+	options.value.shorten = true
+}
 
 const columnOptions = computed(() => {
-	return query.value?.resultColumns
+	return props.columns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
 		.map((column) => ({
-			label: column.column,
-			value: column.column,
+			label: column.label,
+			value: column.label,
 			description: column.type,
 		}))
 })
@@ -59,5 +53,6 @@ const columnOptions = computed(() => {
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Decimals</span>
 			<Input type="number" v-model="options.decimals" placeholder="Enter a number..." />
 		</div>
+		<Checkbox v-model="options.shorten" label="Shorten Numbers" />
 	</div>
 </template>

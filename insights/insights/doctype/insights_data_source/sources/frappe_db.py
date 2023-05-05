@@ -343,15 +343,6 @@ class SiteDB(FrappeDB):
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
-    def sync_tables(self, tables=None, force=False):
-        # only import tables that are not related to insights
-        _tables = tables or [
-            table
-            for table in frappe.db.get_tables()
-            if not table.startswith("tabInsights")
-        ]
-        return super().sync_tables(_tables, force)
-
 
 from insights.cache_utils import get_or_set_cache, make_digest
 

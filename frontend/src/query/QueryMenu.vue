@@ -188,7 +188,7 @@
 						icon="copy"
 						appearance="white"
 						class="absolute bottom-2 right-2"
-						@click="copyToClipboard(formattedSQL)"
+						@click="copyToClipboard(query.doc.sql)"
 					></Button>
 				</div>
 			</template>

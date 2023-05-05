@@ -37,7 +37,7 @@ export default function useQueryBuilder() {
 		if (state.currentQuery) {
 			router.push({ name: 'QueryBuilder', params: { name: state.currentQuery.name } })
 		} else {
-			router.push({ name: 'QueryBuilder' })
+			router.push({ name: 'QueryList' })
 		}
 	}
 

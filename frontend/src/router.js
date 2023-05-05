@@ -77,13 +77,8 @@ const routes = [
 	},
 	{
 		path: '/query',
-		redirect: '/query/build',
-	},
-	{
-		props: true,
-		name: 'Query',
-		path: '/query/:name?',
-		redirect: '/query/build',
+		name: 'QueryList',
+		component: () => import('@/query/QueryList.vue'),
 	},
 	{
 		props: true,
@@ -160,7 +155,7 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
-	const trialExpired = await getTrialStatus()
+	const trialExpired = import.meta.env.DEV ? false : await getTrialStatus()
 	if (trialExpired && to.name !== 'Trial Expired') {
 		return next('/trial-expired')
 	}

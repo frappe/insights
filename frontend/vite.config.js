@@ -1,11 +1,13 @@
+import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+import { getProxyOptions } from 'frappe-ui/src/utils/vite-dev-server'
 import path from 'path'
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { getProxyOptions } from 'frappe-ui/src/utils/vite-dev-server'
 import { webserver_port } from '../../../sites/common_site_config.json'
 
 export default defineConfig({
-	plugins: [vue()],
+	plugins: [vue(), vueJsx()],
+	esbuild: { loader: 'jsx' },
 	server: {
 		port: 8080,
 		proxy: getProxyOptions({ port: webserver_port }),
@@ -19,7 +21,13 @@ export default defineConfig({
 		outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
 		emptyOutDir: true,
 		target: 'es2015',
-		sourcemap: import.meta?.env?.CI ? false : 'inline',
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					'frappe-ui': ['frappe-ui'],
+				},
+			},
+		},
 	},
 	optimizeDeps: {
 		include: ['feather-icons', 'showdown', 'engine.io-client'],

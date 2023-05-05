@@ -1,12 +1,12 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
-import { useQuery } from '@/query/useQueries'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
 	modelValue: { type: Object, required: true },
+	columns: { type: Array, required: true },
 })
 
 const options = computed({
@@ -14,16 +14,10 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-const query = ref(useQuery(options.value.query))
-// prettier-ignore
-watch(() => options.value.query, (queryName) => {
-	query.value = useQuery(queryName)
-})
-
 const columnOptions = computed(() => {
-	return query.value?.resultColumns?.map((column) => ({
-		label: column.column,
-		value: column.column,
+	return props.columns?.map((column) => ({
+		label: column.label,
+		value: column.label,
 		description: column.type,
 	}))
 })

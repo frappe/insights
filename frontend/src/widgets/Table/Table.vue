@@ -44,7 +44,7 @@ function total(column) {
 <template>
 	<div
 		v-if="results"
-		class="flex w-full flex-1 flex-col space-y-2 overflow-hidden rounded-md p-3"
+		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded-md p-3"
 	>
 		<div
 			v-if="props.options.title"
@@ -113,7 +113,7 @@ function total(column) {
 		</div>
 	</div>
 
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>

@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import time
+from functools import partial
 from json import dumps
 
 import frappe
@@ -10,6 +11,7 @@ import sqlparse
 from frappe.model.document import Document
 from frappe.utils import flt
 
+from insights.constants import DATE_TYPES
 from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
@@ -82,10 +84,17 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         self.update_query()
 
     def on_update(self):
+        self.create_chart()
         self.update_insights_table()
         self.sync_query_store()
         self.update_link_docs_title()
         # TODO: update result columns on update
+
+    def create_chart(self):
+        if not frappe.db.exists("Insights Chart", {"query": self.name}):
+            chart = frappe.new_doc("Insights Chart")
+            chart.query = self.name
+            chart.save(ignore_permissions=True)
 
     def on_trash(self):
         self.delete_insights_table()
@@ -116,16 +125,12 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         return len(self.load_results() or [])
 
     def update_query(self):
-        query = self._data_source.build_query(query=self)
+        if not self.is_native_query:
+            query = self._data_source.build_query(query=self, with_cte=True)
+        else:
+            query = self.sql
         query = format_query(query) if query else None
-        # in case of native query, the query doesn't get updated if the limit is changed
-        # so we need to check if the limit is changed
-        # because the native query is limited by the limit field
-        limit_changed = (
-            self.get_doc_before_save()
-            and self.limit != self.get_doc_before_save().limit
-        )
-        if self.sql != query or limit_changed:
+        if self.sql != query:
             self.sql = query
             self.status = "Pending Execution"
 
@@ -205,6 +210,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if self.is_stored:
             sync_query_store(tables=[self.name], force=True)
 
+    def get_results_df(self, results=None):
+        if not results:
+            results = self.load_results(fetch_if_not_exists=True)
+        columns = [column["label"] for column in results[0]]
+        rows = results[1:]
+        return pd.DataFrame(rows, columns=columns)
+
     @log_error()
     def process_column_types(self, results):
         if not results:
@@ -214,13 +226,13 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
             results[0] = [ResultColumn.make(query_column=c) for c in self.get_columns()]
             return results
 
+        results_df = self.get_results_df(results)
         columns = results[0]
-        rows_df = pd.DataFrame(results[1:], columns=[c["label"] for c in columns])
         # create a row that contains values in each column
         values_row = []
-        for column in rows_df.columns:
+        for column in results_df.columns:
             # find the first non-null value in the column
-            value = rows_df[column].dropna().iloc[0]
+            value = results_df[column].dropna().iloc[0]
             values_row.append(value)
 
         # infer the type of each column
@@ -320,9 +332,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                 if pivot_column == index_column:
                     frappe.throw("Pivot Column and Index Column cannot be same")
 
-                results_df = pd.DataFrame(
-                    result[1:], columns=[d["label"] for d in result[0]]
-                )
+                results_df = self.get_results_df(result)
 
                 pivot_column_values = results_df[pivot_column]
                 index_column_values = results_df[index_column]
@@ -371,8 +381,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     frappe.throw("Invalid Unpivot Options")
 
                 result = frappe.parse_json(results)
-                columns = [c["label"] for c in result[0]]
-                results_df = pd.DataFrame(result[1:], columns=columns)
+                results_df = self.get_results_df(result)
 
                 unpivoted = pd.melt(
                     results_df,
@@ -414,8 +423,7 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
                     frappe.throw("Invalid Transpose Options")
 
                 result = frappe.parse_json(results)
-                columns = [c["label"] for c in result[0]]
-                results_df = pd.DataFrame(result[1:], columns=columns)
+                results_df = self.get_results_df(result)
                 results_df = results_df.set_index(index_column)
                 results_df_transposed = results_df.transpose()
                 results_df_transposed = results_df_transposed.reset_index()
@@ -455,13 +463,16 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
 
     def apply_cumulative_sum(self, results):
         result = frappe.parse_json(results)
-        results_df = pd.DataFrame(result[1:], columns=[d["label"] for d in result[0]])
+        results_df = self.get_results_df(result)
 
         for column in self.columns:
             if "Cumulative" in column.aggregation:
                 results_df[column.label] = results_df[column.label].cumsum()
 
         return [result[0]] + results_df.values.tolist()
+
+    def get_formatted_results(self, as_html=False):
+        return format_results(self, as_html=as_html)
 
 
 def format_query(query):
@@ -470,6 +481,76 @@ def format_query(query):
         keyword_case="upper",
         reindent_aligned=True,
     )
+
+
+def format_results(query, as_html=False):
+    # above js function can be used as reference
+    # check results.columns.type and query.columns.format_option to format results
+    results = query.get_results_df()
+
+    columns_with_format_option = []
+    for column in query.columns:
+        if format_option := frappe.parse_json(column.format_option):
+            column.format_option = format_option
+            columns_with_format_option.append(column)
+
+    if not columns_with_format_option:
+        return results.to_html(index=False) if as_html else results.values.tolist()
+
+    for column in columns_with_format_option:
+        results[column.label] = results[column.label].apply(
+            partial(format_column_value, column=column)
+        )
+
+    if as_html:
+        return results.to_html(index=False)
+
+    return results.values.tolist()
+
+
+def format_column_value(value, column):
+    format_option = frappe.parse_json(column.format_option)
+    if format_option.get("date_format") and column.type in DATE_TYPES:
+        return format_date(value, format_option.get("date_format"))
+    else:
+        return value
+
+
+def format_date(value, date_format):
+    if not value:
+        return ""
+
+    if date_format == "Day of Week":
+        return value
+
+    if date_format == "Month of Year":
+        return value
+
+    if date_format == "Quarter of Year":
+        return f"Q{value}"
+
+    if date_format == "Hour of Day":
+        return pd.to_datetime(value).strftime("%I:%M %p")
+
+    strftime_format = {
+        "Minute": "%B %d, %Y %I:%M %p",
+        "Hour": "%B %d, %Y %I:00 %p",
+        "Day": "%B %d, %Y",
+        "Week": "%b %d, %Y",
+        "Mon": "%b %y",
+        "Month": "%B, %Y",
+        "Year": "%Y",
+        "Day Short": "%b %d, %y",
+    }.get(date_format)
+
+    if date_format == "Quarter":
+        quarter = pd.to_datetime(value).quarter
+        strftime_format = f"Q{quarter}, %Y"
+
+    if not strftime_format:
+        return value
+
+    return pd.to_datetime(value).strftime(strftime_format)
 
 
 def guess_type(value):

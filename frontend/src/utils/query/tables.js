@@ -14,11 +14,13 @@ export function useQueryTables(query) {
 		})
 	)
 	const sourceTables = computed(() =>
-		query.fetchTables.data?.message.map((table) => ({
-			...table,
-			value: table.table,
-			description: table.is_query_based ? 'Query' : '',
-		}))
+		query.fetchTables.data?.message
+			.filter((t) => t.table != query.doc.name)
+			.map((table) => ({
+				...table,
+				value: table.table,
+				description: table.is_query_based ? 'Query' : '',
+			}))
 	)
 
 	const joinOptions = computed(() => {

@@ -1,6 +1,5 @@
 import operator
 from contextlib import suppress
-from datetime import datetime
 
 import frappe
 from frappe import _dict, parse_json
@@ -63,6 +62,10 @@ class ColumnFormatter:
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":
             return func.date_format(column, "%Y-%m-%d")
+        if format == "Week":
+            # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
+            date = func.date_format(column, "%Y-%m-%d")
+            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({column}) - 1) DAY"))
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":
@@ -103,14 +106,12 @@ def get_descendants(node, tree, include_self=False):
             select([Tree.c.name])
             .where(Tree.c.lft > lft_rgt.c.lft)
             .where(Tree.c.rgt < lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
         if not include_self
         else (
             select([Tree.c.name])
             .where(Tree.c.lft >= lft_rgt.c.lft)
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
     )
 

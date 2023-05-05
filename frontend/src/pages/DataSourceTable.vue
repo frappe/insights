@@ -119,16 +119,18 @@ import BasePage from '@/components/BasePage.vue'
 import Grid from '@/components/Grid.vue'
 import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import { useDataSourceTable } from '@/utils/datasource'
+import { useDataSourceTable } from '@/datasource/useDataSource'
 import { Dropdown, Badge, createResource, LoadingIndicator } from 'frappe-ui'
 import { computed, ref, reactive, watch, inject, nextTick } from 'vue'
 
 const props = defineProps({
 	name: {
+		// data source name
 		type: String,
 		required: true,
 	},
 	table: {
+		// table name
 		type: String,
 		required: true,
 	},
@@ -141,7 +143,7 @@ const newLink = reactive({
 	foreignKey: {},
 })
 
-const dataSourceTable = useDataSourceTable(props.table)
+const dataSourceTable = useDataSourceTable({ name: props.table })
 const doc = computed(() => {
 	return dataSourceTable.doc
 })
