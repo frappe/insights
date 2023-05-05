@@ -1,5 +1,5 @@
 <template>
-	<div class="relative flex flex-1 overflow-hidden rounded-md border px-2 py-3">
+	<div class="relative flex flex-1 overflow-hidden rounded-md py-3">
 		<div
 			v-if="props.rows.length == 0"
 			class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-500"
