@@ -47,6 +47,8 @@ class BaseDatabase:
 
     def run_query(self, query):
         """Run insights query and return the result"""
+        self.before_run_query(query)
+
         sql = self.build_query(query)
         if sql is None:
             return []
@@ -61,6 +63,9 @@ class BaseDatabase:
         return self.execute_query(
             sql, return_columns=True, is_native_query=query.is_native_query
         )
+
+    def before_run_query(self, query):
+        pass
 
     def execute_query(
         self,

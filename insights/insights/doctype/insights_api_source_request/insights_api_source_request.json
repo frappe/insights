@@ -8,12 +8,13 @@
  "field_order": [
   "title",
   "url",
-  "headers",
+  "auth",
   "column_break_f520",
   "method",
   "refresh_interval",
-  "body",
+  "headers",
   "section_break_iswl",
+  "body",
   "post_process"
  ],
  "fields": [
@@ -72,12 +73,18 @@
    "fieldtype": "Select",
    "label": "Refresh Interval",
    "options": "On Execute\nManual"
+  },
+  {
+   "fieldname": "auth",
+   "fieldtype": "Code",
+   "label": "Auth",
+   "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-04-04 21:03:37.016493",
+ "modified": "2023-05-05 20:03:23.276619",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights API Source Request",
