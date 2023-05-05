@@ -20,9 +20,9 @@ const dashboard = inject('dashboard')
 			:editable="false"
 		/>
 	</div>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>
 
 <style lang="scss">

@@ -2,11 +2,21 @@ import { safeJSONParse } from '@/utils'
 import { API_METHODS } from '@/utils/query'
 import { call, createDocumentResource, createResource } from 'frappe-ui'
 import { defineStore } from 'pinia'
+import dayjs from '@/utils/dayjs'
 
 const queries = createResource({
 	url: 'insights.api.get_queries',
 	initialData: [],
 	cache: 'queriesList',
+	transform(data) {
+		return data.map((source) => {
+			source.created_from_now = dayjs(source.creation).fromNow()
+			Object.keys(source).forEach((key) => {
+				if (!source[key]) source[key] = '-'
+			})
+			return source
+		})
+	},
 })
 
 export default defineStore('queries', {
@@ -22,9 +32,9 @@ export default defineStore('queries', {
 			this.list = await queries.fetch()
 			this.loading = false
 		},
-		async create(data_source) {
+		async create(data_source, title) {
 			this.creating = true
-			const queryName = await call('insights.api.create_query', { data_source })
+			const queryName = await call('insights.api.create_query', { data_source, title })
 			this.creating = false
 			return queryName
 		},
@@ -53,12 +63,7 @@ export function useQuery(name) {
 				return c
 			})
 			doc.results = safeJSONParse(doc.results, [])
-			query.resultColumns = doc.results[0]?.map((c) => {
-				return {
-					column: c.split('::')[0],
-					type: c.split('::')[1],
-				}
-			})
+			query.resultColumns = doc.results[0]
 			return doc
 		},
 	})

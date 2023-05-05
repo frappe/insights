@@ -20,7 +20,9 @@
   "column_break_ktop",
   "telegram_chat_id",
   "recipients",
-  "condition"
+  "condition",
+  "section_break_ikjw",
+  "message"
  ],
  "fields": [
   {
@@ -107,11 +109,20 @@
    "is_virtual": 1,
    "label": "Next Execution",
    "no_copy": 1
+  },
+  {
+   "fieldname": "section_break_ikjw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "label": "Message"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-03 16:02:23.898866",
+ "modified": "2023-05-05 12:51:09.804815",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",
@@ -126,6 +137,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
    "share": 1,
    "write": 1
   }

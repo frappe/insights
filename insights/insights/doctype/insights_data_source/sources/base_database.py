@@ -3,11 +3,11 @@
 
 import frappe
 from sqlalchemy.sql import text
-from sqlalchemy.sql.elements import TextClause
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
 )
+from insights.utils import ResultColumn
 
 from .utils import (
     Timer,
@@ -36,9 +36,13 @@ class BaseDatabase:
             frappe.log_error(title="Error connecting to database", message=e)
             frappe.throw("Error connecting to database")
 
-    def build_query(self, query):
+    def build_query(self, query, with_cte=False):
         """Build insights query and return the sql"""
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        if with_cte and frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        ):
+            query_str = replace_query_tables_with_cte(query_str, self.data_source)
         return query_str if query_str else None
 
     def run_query(self, query):
@@ -88,7 +92,7 @@ class BaseDatabase:
             with Timer() as t:
                 res = connection.execute(sql)
             create_execution_log(sql, self.data_source, t.elapsed)
-            columns = [f"{d[0]}::{d[1]}" for d in res.cursor.description]
+            columns = [ResultColumn.make(d[0], d[1]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
             return [columns] + rows if return_columns else rows

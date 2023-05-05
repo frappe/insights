@@ -6,7 +6,6 @@ from frappe.tests.utils import FrappeTestCase
 
 from insights.api import (
     get_dashboard_list,
-    get_data_source,
     get_data_sources,
     get_queries,
     get_table_columns,
@@ -104,7 +103,6 @@ class TestInsightsTeam(FrappeTestCase):
         user.remove_roles("Insights User")
 
         self.assertRaises(frappe.PermissionError, get_data_sources)
-        self.assertRaises(frappe.PermissionError, get_data_source)
         self.assertRaises(frappe.PermissionError, get_table_columns)
         self.assertRaises(frappe.PermissionError, get_tables)
         self.assertRaises(frappe.PermissionError, get_queries)
@@ -112,7 +110,6 @@ class TestInsightsTeam(FrappeTestCase):
 
         user.add_roles("Insights User")
         self.assertEqual(get_data_sources(), [])
-        self.assertRaises(frappe.PermissionError, get_data_source, "Test Get Teams")
         self.assertRaises(
             frappe.PermissionError, get_table_columns, "Test Get Teams", "Demo Table"
         )

@@ -1,6 +1,7 @@
 import operator
 from contextlib import suppress
 
+import frappe
 from frappe import _dict, parse_json
 from frappe.utils.data import (
     add_to_date,
@@ -13,6 +14,7 @@ from frappe.utils.data import (
     get_quarter_start,
     get_year_ending,
     get_year_start,
+    getdate,
     nowdate,
 )
 from sqlalchemy import Column
@@ -60,6 +62,10 @@ class ColumnFormatter:
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":
             return func.date_format(column, "%Y-%m-%d")
+        if format == "Week":
+            # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
+            date = func.date_format(column, "%Y-%m-%d")
+            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({column}) - 1) DAY"))
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":
@@ -100,14 +106,12 @@ def get_descendants(node, tree, include_self=False):
             select([Tree.c.name])
             .where(Tree.c.lft > lft_rgt.c.lft)
             .where(Tree.c.rgt < lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
         if not include_self
         else (
             select([Tree.c.name])
             .where(Tree.c.lft >= lft_rgt.c.lft)
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
     )
 
@@ -213,13 +217,21 @@ class Functions:
 
         if function == "timespan":
             column = args[0]
-            timespan = args[1].lower()
-            timespan = timespan[:-1] if timespan.endswith("s") else timespan
+            timespan = args[1].lower()  # "last 7 days"
+            timespan = (
+                timespan[:-1] if timespan.endswith("s") else timespan
+            )  # "last 7 day"
 
-            units = ["day", "week", "month", "quarter", "year"]
-            unit = timespan.split(" ")[-1]
-            if unit not in units:
-                raise Exception(f"Invalid timespan unit {unit}")
+            units = [
+                "day",
+                "week",
+                "month",
+                "quarter",
+                "year",
+                "fiscal year",
+            ]
+            if not any(timespan.endswith(unit) for unit in units):
+                raise Exception(f"Invalid timespan unit - {timespan}")
 
             dates = get_date_range(timespan)
             if not dates:
@@ -275,6 +287,34 @@ def get_current_date_range(unit):
         return [get_quarter_start(today), get_quarter_ending(today)]
     if unit == "year":
         return [get_year_start(today), get_year_ending(today)]
+    if unit == "fiscal year":
+        return [get_fy_start(today), get_fiscal_year_ending(today)]
+
+
+def get_fiscal_year_start_date():
+    return getdate(
+        frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+        or "1995-04-01"
+    )
+
+
+def get_fy_start(date):
+    fy_start = get_fiscal_year_start_date()
+    dt = getdate(date)  # eg. 2019-01-01
+    if dt.month < fy_start.month:
+        return getdate(
+            f"{dt.year - 1}-{fy_start.month}-{fy_start.day}"
+        )  # eg. 2018-04-01
+    return getdate(f"{dt.year}-{fy_start.month}-{fy_start.day}")  # eg. 2019-04-01
+
+
+def get_fiscal_year_ending(date):
+    fy_start = get_fiscal_year_start_date()
+    fy_end = add_to_date(fy_start, years=1, days=-1)
+    dt = getdate(date)  # eg. 2019-04-01
+    if dt.month < fy_start.month:
+        return getdate(f"{dt.year}-{fy_end.month}-{fy_end.day}")  # eg. 2018-03-31
+    return getdate(f"{dt.year + 1}-{fy_end.month}-{fy_end.day}")  # eg. 2019-03-31
 
 
 def get_directional_date_range(direction, unit, number_of_unit):
@@ -317,18 +357,22 @@ def get_directional_date_range(direction, unit, number_of_unit):
 
 def get_date_range(timespan, include_current=False):
     # timespan = "last 7 days" or "next 3 months"
-    direction = timespan.lower().split(" ")[0]  # "last" or "next" or "current"
-    unit = timespan.lower().split(" ")[-1]  # "day", "week", "month", "quarter", "year"
+    time_direction = timespan.lower().split(" ")[0]  # "last" or "next" or "current"
+    # "day", "week", "month", "quarter", "year", "fiscal year"
+    if "fiscal year" in timespan.lower():
+        unit = "fiscal year"
+    else:
+        unit = timespan.lower().split(" ")[-1]
 
-    if direction == "current":
+    if time_direction == "current":
         return get_current_date_range(unit)
 
     number_of_unit = int(timespan.split(" ")[1])  # 7, 3, etc
 
-    if direction == "last" or direction == "next":
-        direction = -1 if direction == "last" else 1
+    if time_direction == "last" or time_direction == "next":
+        time_direction = -1 if time_direction == "last" else 1
 
-        dates = get_directional_date_range(direction, unit, number_of_unit)
+        dates = get_directional_date_range(time_direction, unit, number_of_unit)
 
         if include_current:
             current_dates = get_current_date_range(unit)

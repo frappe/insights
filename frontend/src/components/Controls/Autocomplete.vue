@@ -7,7 +7,8 @@
 					ref="input"
 					autocomplete="off"
 					:placeholder="placeholder"
-					@focus="togglePopover(true)"
+					@click="togglePopover(true)"
+					@blur="handleBlur($event, togglePopover)"
 					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
 					class="form-input block w-full placeholder-gray-500"
@@ -146,7 +147,8 @@ const input = ref(null)
 const popover = ref(null)
 defineExpose({ input })
 
-const blur = () => (input.value.$el.blur(), popover.value.close())
+const blur = () => (input.value.$el.blur(), popover.value.close(), emit('blur'))
+const focus = () => (input.value.$el.focus(), popover.value.open())
 onMounted(() => {
 	if (props.autofocus == false) {
 		setTimeout(blur, 0)
@@ -209,11 +211,23 @@ const filteredOptions = computed(() => {
 watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 	emit('inputChange', newValue)
+	focus()
 })
 
 function createOption() {
 	emit('createOption', filterQuery.value)
 	filterQuery.value = ''
 	blur()
+}
+
+function handleBlur(event, close) {
+	// on clicking the list item, the blur event is fired,
+	// and the popover is closed before the list item is selected
+	// so, we need to check if the click was on the list item and prevent closing
+	// closing will be handled by the list item click event
+	const shouldClose = event.relatedTarget?.classList.contains('form-input')
+	if (shouldClose) {
+		setTimeout(blur, 0)
+	}
 }
 </script>

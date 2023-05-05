@@ -30,7 +30,7 @@ repos:
         types_or: [javascript, vue, html]
 
   - repo: https://github.com/timothycrosley/isort
-    rev: 5.9.1
+    rev: 5.12.0
     hooks:
       - id: isort
         args: [--profile, black]

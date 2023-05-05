@@ -2,7 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.vue'
 import Query from '@/query/Query.vue'
 import QueryBuilderToolbar from '@/query/QueryBuilderToolbar.vue'
-import QueryList from '@/query/QueryList.vue'
+import QueryListCompact from '@/query/QueryListCompact.vue'
 import useQueryBuilder from '@/query/useQueryBuilder'
 import { updateDocumentTitle } from '@/utils'
 import { provide, ref } from 'vue'
@@ -29,7 +29,7 @@ updateDocumentTitle(pageMeta)
 				v-if="!queryBuilder.queries.length"
 				class="flex w-full flex-1 items-center justify-center"
 			>
-				<QueryList @select="(name) => queryBuilder.openQuery(name)" />
+				<QueryListCompact @select="(name) => queryBuilder.openQuery(name)" />
 			</div>
 
 			<div v-else class="flex w-full flex-1 flex-col overflow-hidden p-3">
@@ -45,7 +45,7 @@ updateDocumentTitle(pageMeta)
 
 	<Dialog v-model="queryBuilder.showNewDialog">
 		<template #body>
-			<QueryList @select="(name) => queryBuilder.openQuery(name)" />
+			<QueryListCompact @select="(name) => queryBuilder.openQuery(name)" />
 		</template>
 	</Dialog>
 </template>

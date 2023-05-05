@@ -271,6 +271,7 @@ class InsightsQueryClient:
             )
             for subquery in subqueries:
                 frappe.get_doc("Insights Query", subquery).run()
+        self.update_query()
         self.fetch_results()
         self.skip_before_save = True
         self.save()
@@ -294,3 +295,7 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def get_source_schema(self):
         return self._data_source.get_schema()
+
+    @frappe.whitelist()
+    def get_chart_name(self):
+        return frappe.db.exists("Insights Chart", {"query": self.name})

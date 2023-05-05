@@ -37,6 +37,7 @@ export const API_METHODS = {
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
 	getSourceSchema: 'get_source_schema',
+	get_chart_name: 'get_chart_name',
 }
 
 export function useQuery(name) {
@@ -83,12 +84,7 @@ function getQueryResource(name) {
 				return c
 			})
 			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0]?.map((c) => {
-				return {
-					column: c.split('::')[0],
-					type: c.split('::')[1],
-				}
-			})
+			resource.resultColumns = doc.results[0]
 			return doc
 		},
 	})

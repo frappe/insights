@@ -1,36 +1,41 @@
 <template>
-	<div class="flex h-screen w-screen bg-gray-50 font-sans">
-		<CommandPalette />
-		<AppShell />
-		<Toasts />
-		<!-- Prompt -->
-		<Dialog v-model="prompt.show" :options="prompt.options" />
+	<div class="flex h-screen w-screen bg-white font-sans">
+		<template v-if="route.meta.allowGuest">
+			<router-view></router-view>
+		</template>
+		<template v-else>
+			<AppShell />
+			<Toasts />
+			<Dialog v-model="prompt.show" :options="prompt.options" />
+		</template>
 	</div>
 </template>
 
 <script setup>
-import Toasts from '@/utils/toasts'
-import usePrompt from '@/utils/prompt'
 import AppShell from '@/components/AppShell.vue'
-import CommandPalette from '@/components/CommandPalette.vue'
-import { inject, onBeforeUnmount, onMounted } from 'vue'
-import settings from '@/utils/settings'
+import usePrompt from '@/utils/prompt'
+import Toasts from '@/utils/toasts'
+import { inject, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const prompt = usePrompt()
-const $socket = inject('$socket')
-const $notify = inject('$notify')
-const $auth = inject('$auth')
-$socket.on('insights_notification', (data) => {
-	if (data.user == $auth.user.user_id) {
-		$notify({
-			title: data.title || data.message,
-			message: data.title ? data.message : '',
-			appearance: data.type,
-		})
-	}
-})
-onBeforeUnmount(() => {
-	$socket.off('insights_notification')
-})
-onMounted(settings.get.fetch)
+
+if (!route.meta.allowGuest) {
+	const $socket = inject('$socket')
+	const $notify = inject('$notify')
+	const $auth = inject('$auth')
+	$socket.on('insights_notification', (data) => {
+		if (data.user == $auth.user.user_id) {
+			$notify({
+				title: data.title || data.message,
+				message: data.title ? data.message : '',
+				appearance: data.type,
+			})
+		}
+	})
+	onBeforeUnmount(() => {
+		$socket.off('insights_notification')
+	})
+}
 </script>

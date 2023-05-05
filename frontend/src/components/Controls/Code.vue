@@ -5,7 +5,7 @@
 		:autofocus="true"
 		:indent-with-tab="true"
 		:extensions="extensions"
-		placeholder="Enter an expression..."
+		:placeholder="placeholder"
 		@update="onUpdate"
 	/>
 </template>
@@ -21,8 +21,11 @@ import { computed, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 
 const props = defineProps({
-	modelValue: {
-		required: true,
+	modelValue: String,
+	value: String,
+	placeholder: {
+		type: String,
+		default: 'Enter an expression...',
 	},
 	completions: {
 		type: Function,
@@ -50,7 +53,7 @@ const onUpdate = (viewUpdate) => {
 }
 
 const code = computed({
-	get: () => props.modelValue || '',
+	get: () => (props.modelValue ? props.modelValue || '' : props.value || ''),
 	set: (value) => emit('update:modelValue', value),
 })
 watch(code, (value, oldValue) => {

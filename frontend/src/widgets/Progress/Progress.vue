@@ -1,6 +1,6 @@
 <script setup>
-import { computed, inject } from 'vue'
-import { whenever } from '@vueuse/core'
+import { getShortNumber } from '@/utils'
+import { computed } from 'vue'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },
@@ -10,7 +10,7 @@ const props = defineProps({
 const results = computed(() => props.chartData.data)
 const resultMap = computed(() => {
 	if (!results.value?.length) return []
-	const columns = results.value[0].map((d) => d.split('::')[0])
+	const columns = results.value[0].map((d) => d.label)
 	return results.value.slice(1).map((row) => {
 		const result = {}
 		row.forEach((value, index) => {
@@ -33,7 +33,7 @@ const target = computed(() => {
 
 function formatValue(value) {
 	if (props.options.shorten) {
-		return $utils.getShortNumber(value, props.options.decimals)
+		return getShortNumber(value, props.options.decimals)
 	}
 	return Number(value).toLocaleString(undefined, {
 		maximumFractionDigits: props.options.decimals,
@@ -41,7 +41,8 @@ function formatValue(value) {
 }
 
 const progressPercent = computed(() => {
-	return ((progress.value * 100) / target.value).toFixed(2)
+	const percent = ((progress.value * 100) / target.value).toFixed(2)
+	return percent > 100 ? 100 : percent < 0 ? 0 : percent
 })
 </script>
 
@@ -74,7 +75,7 @@ const progressPercent = computed(() => {
 			</div>
 		</div>
 	</div>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>

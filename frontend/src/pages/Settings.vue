@@ -17,75 +17,54 @@
 					<div class="text-xl font-medium text-gray-700">General</div>
 				</div>
 				<div class="mt-4 flex flex-col space-y-8">
-					<div class="flex">
-						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">
-								Max Query Result Limit
-							</p>
-							<span class="text-gray-500">
-								Maximum number of rows to be returned by a query. This is to prevent
-								long running queries and memory issues.
-							</span>
-						</div>
-						<div class="flex flex-1 items-center pl-20">
-							<Input type="number" min="0" v-model="settingsDoc.query_result_limit" />
-							<div class="ml-2 text-gray-500">Rows</div>
-						</div>
-					</div>
+					<Setting
+						label="Max Query Result Limit"
+						description="Maximum number of rows to be returned by a query. This is to prevent long running queries and memory issues."
+					>
+						<Input type="number" min="0" v-model="settingsDoc.query_result_limit" />
+						<div class="ml-2 text-gray-500">Rows</div>
+					</Setting>
 
-					<div class="flex">
-						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">
-								Cache Query Results For
-							</p>
-							<span class="text-gray-500">
-								Number of minutes to cache query results. This is to prevent
-								accidental running of the same query multiple times.
-							</span>
-						</div>
-						<div class="flex flex-1 items-center pl-20">
-							<Input
-								type="number"
-								min="0"
-								v-model="settingsDoc.query_result_expiry"
-							/>
-							<div class="ml-2 text-gray-500">Minutes</div>
-						</div>
-					</div>
+					<Setting
+						label="Cache Query Results For"
+						description="Number of minutes to cache query results. This is to prevent accidental running of the same query multiple times."
+					>
+						<Input type="number" min="0" v-model="settingsDoc.query_result_expiry" />
+						<div class="ml-2 text-gray-500">Minutes</div>
+					</Setting>
 
-					<div class="flex">
-						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">Auto Execute Query</p>
-							<span class="text-gray-500">
-								Automatically execute when tables, columns, or filters are changed.
-							</span>
-						</div>
-						<div class="flex flex-1 items-center pl-20">
-							<Input
-								type="checkbox"
-								v-model="settingsDoc.auto_execute_query"
-								:label="settingsDoc.auto_execute_query ? 'Enabled' : 'Disabled'"
-							/>
-						</div>
-					</div>
+					<Setting
+						label="Fiscal Year Start"
+						description="Start of the fiscal year. This is used to calculate fiscal year for date columns."
+					>
+						<DatePicker
+							placeholder="Select Date"
+							:value="settingsDoc.fiscal_year_start"
+							@change="settingsDoc.fiscal_year_start = $event"
+						/>
+					</Setting>
 
-					<div class="flex">
-						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">Use Query as Tables</p>
-							<span class="text-gray-500">
-								Allow selecting query as a table in another query. Any query
-								selected as a table will be appended as a sub query using CTE
-								(Common Table Expression).
-							</span>
-						</div>
-						<div class="flex flex-1 items-center pl-20">
-							<Input
-								type="checkbox"
-								v-model="settingsDoc.allow_subquery"
-								:label="settingsDoc.allow_subquery ? 'Enabled' : 'Disabled'"
-							/>
-						</div>
-					</div>
+					<Setting
+						label="Auto Execute Query"
+						description="Automatically execute when tables, columns, or filters are changed."
+					>
+						<Input
+							type="checkbox"
+							v-model="settingsDoc.auto_execute_query"
+							:label="settingsDoc.auto_execute_query ? 'Enabled' : 'Disabled'"
+						/>
+					</Setting>
+
+					<Setting
+						label="Enable Query Reusability"
+						description="Allow selecting query as a table in another query. Any query selected as a table will be appended as a sub query using CTE (Common Table Expression)."
+					>
+						<Input
+							type="checkbox"
+							v-model="settingsDoc.allow_subquery"
+							:label="settingsDoc.allow_subquery ? 'Enabled' : 'Disabled'"
+						/>
+					</Setting>
 				</div>
 			</div>
 
@@ -94,28 +73,22 @@
 					<div class="text-xl font-medium text-gray-700">Subscription</div>
 				</div>
 				<div class="mt-4 flex flex-col space-y-8">
-					<div class="flex">
-						<div class="flex-1">
-							<p class="font-medium leading-6 text-gray-900">Support Login</p>
-							<span class="text-gray-500">
-								Send a login link to the support portal. You can login to the
-								support portal to manage support tickets.
-							</span>
-						</div>
-						<div class="flex flex-1 items-center pl-20">
-							<Button
-								appearance="white"
-								@click="settings.send_support_login_link.submit()"
-								:loading="settings.send_support_login_link.loading"
-								:disabled="
-									!settingsDoc.is_subscribed ||
-									settings.send_support_login_link.loading
-								"
-							>
-								Send Login Link
-							</Button>
-						</div>
-					</div>
+					<Setting
+						label="Support Login Link"
+						description="Send a login link to the support portal. You can login to the support portal to manage support tickets."
+					>
+						<Button
+							appearance="white"
+							@click="settings.send_support_login_link.submit()"
+							:loading="settings.send_support_login_link.loading"
+							:disabled="
+								!settingsDoc.is_subscribed ||
+								settings.send_support_login_link.loading
+							"
+						>
+							Send Login Link
+						</Button>
+					</Setting>
 				</div>
 			</div>
 		</div>
@@ -126,6 +99,8 @@
 import { updateDocumentTitle } from '@/utils'
 import settings from '@/utils/settings'
 import { computed, ref, watchEffect } from 'vue'
+import Setting from '@/components/Setting.vue'
+import DatePicker from '@/components/Controls/DatePicker.vue'
 
 const settingsDoc = ref({})
 watchEffect(() => {
@@ -143,7 +118,8 @@ const updateDisabled = computed(() => {
 		local.query_result_limit === remote.query_result_limit &&
 		local.query_result_expiry === remote.query_result_expiry &&
 		local.auto_execute_query === remote.auto_execute_query &&
-		local.allow_subquery === remote.allow_subquery
+		local.allow_subquery === remote.allow_subquery &&
+		local.fiscal_year_start === remote.fiscal_year_start
 	)
 })
 

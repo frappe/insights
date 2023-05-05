@@ -19,3 +19,7 @@ COLUMN_TYPES = {
     "Time": ("time", "6"),
     "String": ("varchar", "255"),
 }
+
+DATE_TYPES = ["Date", "Datetime", "Time"]
+NUMERIC_TYPES = ["Integer", "Long Int", "Decimal"]
+TEXT_TYPES = ["Text", "Long Text", "String"]

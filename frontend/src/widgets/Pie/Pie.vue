@@ -14,13 +14,13 @@ const props = defineProps({
 const results = computed(() => props.chartData.data)
 const labels = computed(() => {
 	if (!results.value?.length || !props.options.xAxis) return []
-	const columns = results.value[0].map((d) => d.split('::')[0])
+	const columns = results.value[0].map((d) => d.label)
 	const columnIndex = columns.indexOf(props.options.xAxis)
 	return results.value.slice(1).map((d) => d[columnIndex])
 })
 const dataset = computed(() => {
 	if (!results.value?.length || !props.options.yAxis) return {}
-	const columns = results.value[0].map((d) => d.split('::')[0])
+	const columns = results.value[0].map((d) => d.label)
 	const columnIndex = columns.indexOf(props.options.yAxis)
 	return {
 		label: props.options.yAxis,
@@ -159,7 +159,7 @@ function appendPercentage(value) {
 			:formatter="formatLegend"
 		/>
 	</Chart>
-	<div v-else>
+	<template v-else>
 		<slot name="placeholder"></slot>
-	</div>
+	</template>
 </template>

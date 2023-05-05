@@ -4,6 +4,7 @@ import widgets from '@/widgets/widgets'
 import { createDocumentResource } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
+import { useQuery } from '@/query/useQueries'
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -87,6 +88,7 @@ export default function useDashboard(name) {
 	function setCurrentItem(item_id) {
 		if (!state.editing) return
 		state.currentItem = state.doc.items.find((i) => i.item_id === item_id)
+		state.loadCurrentItemQuery(state.currentItem.options.query)
 	}
 
 	function getFilterStateKey(item_id) {
@@ -235,6 +237,22 @@ export default function useDashboard(name) {
 		}
 	}
 
+	function togglePublicAccess(isPublic) {
+		if (state.doc.is_public === isPublic) return
+		resource.setValue.submit({ is_public: isPublic }).then(() => {
+			$notify({
+				title: 'Dashboard access updated',
+				appearance: 'success',
+			})
+			state.doc.is_public = isPublic
+		})
+	}
+
+	function loadCurrentItemQuery(query) {
+		if (!query || !state.currentItem) return
+		state.currentItem.query = useQuery(query)
+	}
+
 	const edit = () => ((state.editing = true), (state.currentItem = undefined))
 	const discardChanges = () => (
 		(state.editing = false), reload(), (state.currentItem = undefined)
@@ -264,6 +282,8 @@ export default function useDashboard(name) {
 		refresh,
 		onRefresh,
 		isChart,
+		togglePublicAccess,
+		loadCurrentItemQuery,
 	})
 }
 

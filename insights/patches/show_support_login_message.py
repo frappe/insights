@@ -1,12 +1,10 @@
 import frappe
 
-from insights.insights.doctype.insights_settings.insights_settings import (
-    get_insights_subscription_key,
-)
+from insights.api.subscription import get_subscription_key
 
 
 def execute():
-    if get_insights_subscription_key():
+    if get_subscription_key():
         notify_users()
 
 

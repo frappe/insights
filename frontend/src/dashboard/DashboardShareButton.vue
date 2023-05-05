@@ -18,5 +18,8 @@ const showShareDialog = ref(false)
 		v-model:show="showShareDialog"
 		:resource-type="dashboard.doc.doctype"
 		:resource-name="dashboard.doc.name"
+		:allow-public-access="true"
+		:isPublic="Boolean(dashboard.doc.is_public)"
+		@togglePublicAccess="dashboard.togglePublicAccess"
 	/>
 </template>
