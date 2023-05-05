@@ -39,7 +39,7 @@ state.removeQuery = () => {
 </script>
 
 <template>
-	<div class="relative my-6 overflow-hidden rounded border bg-white">
+	<div v-if="!query.loading" class="relative my-6 overflow-hidden rounded border bg-white">
 		<QueryBlockHeader />
 		<transition name="fade" mode="out-in">
 			<div
@@ -73,5 +73,8 @@ state.removeQuery = () => {
 				<ResultChartSwitcher />
 			</div>
 		</div>
+	</div>
+	<div v-else class="flex h-20 w-full flex-col items-center justify-center">
+		<LoadingIndicator class="mb-2 w-6 text-gray-300" />
 	</div>
 </template>

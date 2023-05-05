@@ -14,7 +14,7 @@ const notebook = useNotebook(props.notebook)
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-8 py-4">
+	<div class="h-full w-full bg-white px-6 py-4">
 		<Breadcrumbs
 			:items="[
 				{

@@ -5,30 +5,7 @@
 		editorClass="max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-[15px] prose-p:leading-7 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-1 prose-ol:my-1 prose-th:py-1 prose-td:py-1"
 		@change="$emit('update:content', $event)"
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
-		:bubble-menu="[
-			'Bold',
-			'Italic',
-			{
-				label: 'Strikethrough',
-				icon: Strikethrough,
-				action: (editor) => editor.chain().focus().toggleStrike().run(),
-				isActive: (editor) => editor.isActive('strike'),
-			},
-			'Blockquote',
-			{
-				label: 'Code',
-				icon: Code,
-				action: (editor) => editor.chain().focus().toggleCode().run(),
-				isActive: (editor) => editor.isActive('code'),
-			},
-			'Link',
-			{
-				label: 'Remove Formatting',
-				icon: RemoveFormatting,
-				action: (editor) => editor.chain().focus().unsetAllMarks().run(),
-				isActive: () => false,
-			},
-		]"
+		:bubble-menu="bubbleMenu"
 		:placeholder="placeholderByNode"
 		:extensions="[SlashCommand.configure({ suggestion }), QueryExtension]"
 	></TextEditor>
@@ -47,6 +24,31 @@ function placeholderByNode({ node }) {
 	}
 	return 'Type / to insert a block'
 }
+
+const bubbleMenu = [
+	'Bold',
+	'Italic',
+	{
+		label: 'Strikethrough',
+		icon: Strikethrough,
+		action: (editor) => editor.chain().focus().toggleStrike().run(),
+		isActive: (editor) => editor.isActive('strike'),
+	},
+	'Blockquote',
+	{
+		label: 'Code',
+		icon: Code,
+		action: (editor) => editor.chain().focus().toggleCode().run(),
+		isActive: (editor) => editor.isActive('code'),
+	},
+	'Link',
+	{
+		label: 'Remove Formatting',
+		icon: RemoveFormatting,
+		action: (editor) => editor.chain().focus().unsetAllMarks().run(),
+		isActive: () => false,
+	},
+]
 </script>
 
 <style lang="scss">
