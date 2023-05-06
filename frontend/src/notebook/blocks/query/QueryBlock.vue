@@ -11,18 +11,24 @@ import ResultChartSwitcher from './ResultChartSwitcher.vue'
 import useQuery from './useQuery'
 
 const emit = defineEmits(['setQuery', 'remove'])
-const props = defineProps({ query: String })
-let queryName = props.query
-if (!queryName) {
+const props = defineProps({ query: String, is_native: Boolean })
+
+let query = null
+if (!props.query) {
 	const sources = await useDataSources()
 	await sources.reload()
 	const source = sources.list[0]
-	queryName = await useQueries().create(source.name)
-	emit('setQuery', queryName)
+	const query_name = await useQueries().create(source.name)
+	emit('setQuery', query_name)
+	query = useQuery(query_name)
+	if (props.is_native) query.convertToNative()
+} else {
+	query = useQuery(props.query)
 }
-const query = useQuery(queryName)
+
 query.autosave = true
 provide('query', query)
+
 const state = reactive({
 	dataSource: '',
 	resultOrChart: 'Result',
@@ -39,7 +45,7 @@ state.removeQuery = () => {
 </script>
 
 <template>
-	<div v-if="!query.loading" class="relative my-6 overflow-hidden rounded border bg-white">
+	<div v-if="query.doc.name" class="relative my-6 overflow-hidden rounded border bg-white">
 		<QueryBlockHeader />
 		<transition name="fade" mode="out-in">
 			<div
@@ -48,7 +54,8 @@ state.removeQuery = () => {
 				@mouseover="state.showQueryActions = true"
 				@mouseleave="state.showQueryActions = false"
 			>
-				<QueryEditorNative />
+				<QueryEditorNative v-if="props.is_native" />
+				<div v-else></div>
 			</div>
 		</transition>
 

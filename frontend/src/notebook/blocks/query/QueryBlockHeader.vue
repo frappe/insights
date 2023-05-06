@@ -13,8 +13,9 @@ sources.reload()
 		@mouseover="state.showQueryActions = true"
 		@mouseleave="state.showQueryActions = false"
 	>
-		<div class="font-code text-gray-500">
-			{{ state.query.doc.name }}
+		<div class="flex items-center space-x-2">
+			<p class="font-code text-gray-500">{{ state.query.doc.name }}</p>
+			<LoadingIndicator v-if="state.query.loading" class="w-3.5 text-gray-300" />
 		</div>
 		<!-- Actions -->
 		<div

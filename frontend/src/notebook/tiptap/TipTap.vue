@@ -7,14 +7,14 @@
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="bubbleMenu"
 		:placeholder="placeholderByNode"
-		:extensions="[SlashCommand.configure({ suggestion }), QueryExtension]"
+		:extensions="[SlashCommand.configure({ suggestion }), QueryBuilder]"
 	></TextEditor>
 </template>
 
 <script setup>
 import { TextEditor } from 'frappe-ui'
 import { Code, RemoveFormatting, Strikethrough } from 'lucide-vue-next'
-import QueryExtension from './extensions/query/QueryExtension'
+import QueryBuilder from './extensions/query/QueryBuilder'
 import SlashCommand from './slash-command/commands'
 import suggestion from './slash-command/suggestion'
 

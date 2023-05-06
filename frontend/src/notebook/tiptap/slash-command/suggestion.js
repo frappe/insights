@@ -99,7 +99,16 @@ export default {
 				title: 'SQL',
 				icon: markRaw(ChevronRightSquare),
 				command: ({ editor, range }) => {
-					const element = '<query></query>'
+					const element = '<query is_native="true"></query>'
+					editor.chain().focus().deleteRange(range).insertContent(element).run()
+				},
+				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
+			},
+			{
+				title: 'Visual SQL',
+				icon: markRaw(ChevronRightSquare),
+				command: ({ editor, range }) => {
+					const element = '<query is_native="false"></query>'
 					editor.chain().focus().deleteRange(range).insertContent(element).run()
 				},
 				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),

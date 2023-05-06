@@ -1,6 +1,5 @@
-import { useAutoSave } from '@/utils'
 import useChart from '@/query/useChart'
-import { safeJSONParse } from '@/utils'
+import { safeJSONParse, useAutoSave } from '@/utils'
 import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchOnce } from '@vueuse/core'
@@ -24,11 +23,7 @@ function makeQuery(name) {
 		executing: false,
 		error: null,
 		isOwner: false,
-		doc: {
-			data_source: '',
-			name,
-			sql: '',
-		},
+		doc: {},
 		chart: {},
 		sourceSchema: [],
 		formattedResults: [],
@@ -43,6 +38,13 @@ function makeQuery(name) {
 	}
 	refresh()
 
+	state.convertToNative = async function () {
+		state.loading = true
+		await resource.convert_to_native.submit()
+		await refresh()
+		state.loading = false
+	}
+
 	// Results
 	state.MAX_ROWS = 500
 	state.formattedResults = computed(() => getFormattedResult(state.doc.results))
@@ -50,23 +52,21 @@ function makeQuery(name) {
 
 	state.execute = debounce(async () => {
 		state.executing = true
-		await resource.setValue.submit({
-			is_native_query: 1,
-			sql: state.doc.sql,
-			data_source: state.doc.data_source,
-		})
-		await resource.run.submit()
-		await refresh()
+		await state.save()
+		await resource.run
+			.submit()
+			.then(() => refresh())
+			.catch((e) => {
+				console.error(e)
+				state.executing = false
+			})
 		state.executing = false
 	}, 300)
 
 	state.save = async () => {
 		state.loading = true
-		await resource.setValue.submit({
-			is_native_query: 1,
-			sql: state.doc.sql,
-			data_source: state.doc.data_source,
-		})
+		delete state.doc.modified
+		await resource.setValue.submit({ ...state.doc })
 		state.loading = false
 	}
 
@@ -76,14 +76,18 @@ function makeQuery(name) {
 			const fieldsToWatch = computed(() => {
 				// if doc is not loaded, don't watch
 				if (state.loading) return
-				return {
-					sql: state.doc.sql,
-					data_source: state.doc.data_source,
-				}
+
+				const is_native_query = state.doc.is_native_query
+				return is_native_query
+					? {
+							sql: state.doc.sql,
+							data_source: state.doc.data_source,
+					  }
+					: {}
 			})
 			useAutoSave(fieldsToWatch, {
 				saveFn: state.save,
-				interval: 1500,
+				interval: 2000,
 			})
 		}
 	)
@@ -116,6 +120,7 @@ function getQueryResource(name) {
 			run: 'run',
 			get_source_schema: 'get_source_schema',
 			get_chart_name: 'get_chart_name',
+			convert_to_native: 'convert_to_native',
 		},
 		transform(doc) {
 			doc.columns = doc.columns.map((c) => {
