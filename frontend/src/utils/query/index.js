@@ -10,11 +10,11 @@ import { computed } from 'vue'
 
 export const API_METHODS = {
 	run: 'run',
-	reset: 'reset',
 	store: 'store',
 	convert: 'convert',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
+	reset: 'reset_and_save',
 	fetchTables: 'fetch_tables',
 	fetchColumns: 'fetch_columns',
 	fetchColumnValues: 'fetch_column_values',
