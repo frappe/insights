@@ -10,6 +10,7 @@
   "status",
   "title",
   "is_native_query",
+  "is_visual_query",
   "column_break_3",
   "data_source",
   "is_stored",
@@ -21,6 +22,8 @@
   "filters",
   "section_break_2",
   "limit",
+  "section_break_cnma",
+  "json",
   "query_and_result_tab",
   "section_break_11",
   "sql",
@@ -190,11 +193,28 @@
    "fieldname": "is_native_query",
    "fieldtype": "Check",
    "label": "Is Native Query"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_visual_query",
+   "fieldtype": "Check",
+   "label": "Is Visual Query"
+  },
+  {
+   "fieldname": "section_break_cnma",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: doc.is_visual_query",
+   "fieldname": "json",
+   "fieldtype": "Code",
+   "label": "JSON",
+   "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-02-25 16:17:26.136460",
+ "modified": "2023-05-06 18:28:42.788731",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

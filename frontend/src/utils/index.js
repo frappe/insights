@@ -7,6 +7,10 @@ export const FIELDTYPES = {
 	DATE: ['Date', 'Datetime', 'Time'],
 }
 
+export function isDimensionColumn(column) {
+	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)
+}
+
 export function moveCaretToEnd(el) {
 	if (typeof window.getSelection != 'undefined' && typeof document.createRange != 'undefined') {
 		var range = document.createRange()

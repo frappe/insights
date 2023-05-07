@@ -2,7 +2,7 @@
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebookPage from '@/notebook/useNotebookPage'
-import ContentEditable from './ContentEditable.vue'
+import ContentEditable from '@/notebook/ContentEditable.vue'
 import TipTap from './tiptap/TipTap.vue'
 
 const props = defineProps({

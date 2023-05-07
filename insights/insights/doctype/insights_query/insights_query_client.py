@@ -300,6 +300,13 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
+    def convert_to_visual(self):
+        if self.is_visual_query:
+            return
+        self.is_visual_query = 1
+        self.save()
+
+    @frappe.whitelist()
     def get_source_schema(self):
         return self._data_source.get_schema()
 

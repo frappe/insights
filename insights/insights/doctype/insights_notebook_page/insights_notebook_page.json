@@ -46,7 +46,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-30 13:58:51.687582",
+ "modified": "2023-05-06 17:38:19.829508",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Notebook Page",
@@ -70,5 +70,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }

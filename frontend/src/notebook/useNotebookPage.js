@@ -46,7 +46,7 @@ export default function useNotebookPage(page_name) {
 }
 
 function beautifyHTML(html) {
-	return jsBeautify.html(html, {
+	const formatted = jsBeautify.html(html, {
 		indent_size: 2,
 		indent_char: ' ',
 		max_preserve_newlines: 1,
@@ -65,4 +65,12 @@ function beautifyHTML(html) {
 		e4x: false,
 		indent_empty_lines: false,
 	})
+
+	// add empty paragraph at the end, if not present
+	const regex = /<p><\/p>$/
+	if (!regex.test(formatted)) {
+		return formatted + '\n<p></p>'
+	}
+
+	return formatted
 }

@@ -5,10 +5,11 @@ import { provide, reactive } from 'vue'
 import ChartOptionsDropdown from './ChartOptionsDropdown.vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
 import QueryChart from './QueryChart.vue'
-import QueryEditorNative from './QueryEditorNative.vue'
+import QueryEditor from './QueryEditor.vue'
 import QueryResult from './QueryResult.vue'
 import ResultChartSwitcher from './ResultChartSwitcher.vue'
 import useQuery from './useQuery'
+import QueryBuilder from './builder/QueryBuilder.vue'
 
 const emit = defineEmits(['setQuery', 'remove'])
 const props = defineProps({ query: String, is_native: Boolean })
@@ -21,7 +22,7 @@ if (!props.query) {
 	const query_name = await useQueries().create(source.name)
 	emit('setQuery', query_name)
 	query = useQuery(query_name)
-	if (props.is_native) query.convertToNative()
+	props.is_native ? query.convertToNative() : query.convertToVisual()
 } else {
 	query = useQuery(props.query)
 }
@@ -54,8 +55,8 @@ state.removeQuery = () => {
 				@mouseover="state.showQueryActions = true"
 				@mouseleave="state.showQueryActions = false"
 			>
-				<QueryEditorNative v-if="props.is_native" />
-				<div v-else></div>
+				<QueryEditor v-if="props.is_native" />
+				<QueryBuilder v-else />
 			</div>
 		</transition>
 

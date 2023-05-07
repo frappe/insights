@@ -99,7 +99,7 @@ export default {
 				title: 'SQL',
 				icon: markRaw(ChevronRightSquare),
 				command: ({ editor, range }) => {
-					const element = '<query is_native="true"></query>'
+					const element = '<query-editor></query-editor>'
 					editor.chain().focus().deleteRange(range).insertContent(element).run()
 				},
 				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
@@ -108,7 +108,7 @@ export default {
 				title: 'Visual SQL',
 				icon: markRaw(ChevronRightSquare),
 				command: ({ editor, range }) => {
-					const element = '<query is_native="false"></query>'
+					const element = '<query-builder></query-builder>'
 					editor.chain().focus().deleteRange(range).insertContent(element).run()
 				},
 				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
