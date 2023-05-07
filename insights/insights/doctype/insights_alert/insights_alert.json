@@ -20,7 +20,9 @@
   "column_break_ktop",
   "telegram_chat_id",
   "recipients",
-  "condition"
+  "condition",
+  "section_break_ikjw",
+  "message"
  ],
  "fields": [
   {
@@ -107,11 +109,20 @@
    "is_virtual": 1,
    "label": "Next Execution",
    "no_copy": 1
+  },
+  {
+   "fieldname": "section_break_ikjw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "label": "Message"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-02 16:59:36.125913",
+ "modified": "2023-05-05 12:51:09.804815",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",

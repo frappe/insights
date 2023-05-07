@@ -2,6 +2,7 @@
 import Code from '@/components/Controls/Code.vue'
 import { useQuery } from '@/utils/query'
 import { createResource } from 'frappe-ui'
+import { TextEditor } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
 const emit = defineEmits(['update:show'])
@@ -33,6 +34,7 @@ const alert = reactive({
 		right: null,
 		advanceCondition: null,
 	},
+	message: null,
 })
 
 const frequencyOptions = [
@@ -64,7 +66,7 @@ const createAlertResource = createResource({ url: 'insights.api.create_alert' })
 function makeCondition() {
 	return alert.condition.isAdvanced
 		? alert.condition.advanceCondition
-		: `result['${alert.condition.left}'][0] ${alert.condition.operator} ${alert.condition.right}`
+		: `results['${alert.condition.left}'][0] ${alert.condition.operator} ${alert.condition.right}`
 }
 function createAlert() {
 	if (createAlertDisabled.value) return
@@ -98,77 +100,114 @@ function testSendAlert() {
 	<Dialog :options="{ title: 'Create Alert' }" v-model="show" :dismissable="true">
 		<template #body-content>
 			<div class="space-y-4 text-base">
-				<Input
-					type="text"
-					label="Alert Name"
-					v-model="alert.title"
-					placeholder="e.g. Low Inventory"
-				/>
-				<Input
-					type="select"
-					label="Frequency"
-					v-model="alert.frequency"
-					:options="frequencyOptions"
-				/>
-				<Input
-					v-if="alert.frequency === 'Custom'"
-					type="text"
-					label="Cron"
-					v-model="alert.cron"
-					placeholder="e.g. 0 0 12 * * ?"
-				/>
-				<Input
-					type="select"
-					label="Channel"
-					v-model="alert.channel"
-					:options="channelOptions"
-				/>
-				<Input
-					v-if="alert.channel === 'Email'"
-					type="text"
-					label="Recipients"
-					v-model="alert.recipients"
-					placeholder="e.g. john@example.com, henry@example.com"
-				/>
-				<Input
-					v-if="alert.channel === 'Telegram'"
-					type="text"
-					label="Telegram Chat ID"
-					v-model="alert.telegram_chat_id"
-					placeholder="e.g. 123456789"
-				/>
-				<p class="text-lg font-medium text-gray-800">Send alert when</p>
-				<div class="flex gap-4" v-if="!alert.condition.isAdvanced">
+				<div class="flex gap-4">
+					<div class="flex flex-1 flex-col space-y-4">
+						<Input
+							type="text"
+							label="Alert Name"
+							v-model="alert.title"
+							placeholder="e.g. Low Inventory"
+						/>
+						<Input
+							type="select"
+							label="Frequency"
+							v-model="alert.frequency"
+							:options="frequencyOptions"
+						/>
+						<Input
+							v-if="alert.frequency === 'Custom'"
+							type="text"
+							label="Cron"
+							v-model="alert.cron"
+							placeholder="e.g. 0 0 12 * * ?"
+						/>
+					</div>
+					<div class="flex flex-1 flex-col space-y-4">
+						<Input
+							type="select"
+							label="Channel"
+							v-model="alert.channel"
+							:options="channelOptions"
+						/>
+						<Input
+							v-if="alert.channel === 'Email'"
+							type="text"
+							label="Recipients"
+							v-model="alert.recipients"
+							placeholder="e.g. john@example.com, henry@example.com"
+						/>
+						<Input
+							v-if="alert.channel === 'Telegram'"
+							type="text"
+							label="Telegram Chat ID"
+							v-model="alert.telegram_chat_id"
+							placeholder="e.g. 123456789"
+						/>
+					</div>
+				</div>
+
+				<div class="space-y-4">
+					<p class="text-lg font-medium text-gray-800">Send alert when</p>
+					<div class="!mt-2 flex gap-4" v-if="!alert.condition.isAdvanced">
+						<Input
+							type="select"
+							class="flex-1"
+							v-model="alert.condition.left"
+							:options="query.results.allColumnOptions"
+						/>
+						<Input
+							type="select"
+							class="flex-1"
+							v-model="alert.condition.operator"
+							:options="operatorOptions"
+						/>
+						<Input
+							type="text"
+							class="flex-1"
+							v-model="alert.condition.right"
+							placeholder="e.g. 100"
+						/>
+					</div>
+					<div v-else class="!mt-2">
+						<Code
+							v-model="alert.condition.advanceCondition"
+							placeholder="Write a python expression..."
+						/>
+						<p class="font-code mt-1 text-sm text-gray-500">
+							Example: results["Count of Records"][0] > 100
+						</p>
+					</div>
 					<Input
-						type="select"
-						class="flex-1"
-						v-model="alert.condition.left"
-						:options="query.results.allColumnOptions"
-					/>
-					<Input
-						type="select"
-						class="flex-1"
-						v-model="alert.condition.operator"
-						:options="operatorOptions"
-					/>
-					<Input
-						type="text"
-						class="flex-1"
-						v-model="alert.condition.right"
-						placeholder="e.g. 100"
+						type="checkbox"
+						label="Use Advanced Condition"
+						v-model="alert.condition.isAdvanced"
 					/>
 				</div>
-				<div v-else>
-					<Code v-model="alert.condition.advanceCondition" />
-					<p class="font-code mt-1 text-sm text-gray-500">
-						Example: result["Count of Records"][0] > 100
+
+				<div>
+					<p class="text-lg font-medium text-gray-800">
+						Message <span class="text-sm font-normal">(Optional)</span>
+					</p>
+					<TextEditor
+						ref="textEditor"
+						:editable="true"
+						:content="alert.message"
+						editor-class="mt-1 h-40 prose-sm cursor-text bg-gray-100 rounded-md p-2 prose-p:my-1"
+						:placeholder="`e.g. 
+
+### Low inventory for {{ title }}
+**Summary**:
+{{ results[:10] }}
+						`"
+						@change="(val) => (alert.message = val)"
+					/>
+					<p class="mt-2 text-sm text-gray-500">
+						You can use all the fields from the query like
+						<span class="font-code px-1"> title, data_source, results </span>
+						etc. like this
+						<span class="font-code px-1" v-html="'{{ title }}'"></span>
 					</p>
 				</div>
-				<Input
-					type="checkbox"
-					label="Use Advanced Condition"
-					v-model="alert.condition.isAdvanced"
-				/>
 			</div>
 		</template>
 		<template #actions>

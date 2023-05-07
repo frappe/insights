@@ -19,6 +19,10 @@ const formattedValue = computed(() => {
 	const _value = results.value.slice(1).reduce((acc, row) => {
 		return acc + row[columnIndex]
 	}, 0)
+
+	if (props.options.hasOwnProperty('shorten') && !props.options.shorten) {
+		return $utils.formatNumber(_value, props.options.decimals)
+	}
 	return $utils.getShortNumber(_value, props.options.decimals)
 })
 </script>

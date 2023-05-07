@@ -147,7 +147,8 @@ const input = ref(null)
 const popover = ref(null)
 defineExpose({ input })
 
-const blur = () => (input.value.$el.blur(), popover.value.close())
+const blur = () => (input.value.$el.blur(), popover.value.close(), emit('blur'))
+const focus = () => (input.value.$el.focus(), popover.value.open())
 onMounted(() => {
 	if (props.autofocus == false) {
 		setTimeout(blur, 0)
@@ -210,6 +211,7 @@ const filteredOptions = computed(() => {
 watch(filterQuery, (newValue, oldValue) => {
 	if (newValue === oldValue) return
 	emit('inputChange', newValue)
+	focus()
 })
 
 function createOption() {
@@ -223,8 +225,9 @@ function handleBlur(event, close) {
 	// and the popover is closed before the list item is selected
 	// so, we need to check if the click was on the list item and prevent closing
 	// closing will be handled by the list item click event
-	if (event.relatedTarget.classList.contains('form-input')) {
-		close()
+	const shouldClose = event.relatedTarget?.classList.contains('form-input')
+	if (shouldClose) {
+		setTimeout(blur, 0)
 	}
 }
 </script>

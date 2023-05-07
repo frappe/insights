@@ -1,3 +1,4 @@
+import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
@@ -136,6 +137,13 @@ export function getShortNumber(number, precision = 0) {
 	return formatted
 }
 
+export function formatNumber(number, precision = 0) {
+	const locale = 'en-IN' // TODO: get locale from user settings
+	return new Intl.NumberFormat(locale, {
+		maximumFractionDigits: precision,
+	}).format(number)
+}
+
 export async function getDataURL(type, data) {
 	const blob = new Blob([data], { type })
 
@@ -167,15 +175,32 @@ export function getQueryLink(table) {
 export function copyToClipboard(text) {
 	if (navigator.clipboard) {
 		navigator.clipboard.writeText(text)
-		$notify({
+		createToast({
 			appearance: 'success',
 			title: 'Copied to clipboard',
 		})
 	} else {
-		$notify({
-			appearance: 'error',
-			title: 'Copy to clipboard not supported',
-		})
+		// try to use execCommand
+		const textArea = document.createElement('textarea')
+		textArea.value = text
+		textArea.style.position = 'fixed'
+		document.body.appendChild(textArea)
+		textArea.focus()
+		textArea.select()
+		try {
+			document.execCommand('copy')
+			createToast({
+				appearance: 'success',
+				title: 'Copied to clipboard',
+			})
+		} catch (err) {
+			createToast({
+				appearance: 'error',
+				title: 'Copy to clipboard not supported',
+			})
+		} finally {
+			document.body.removeChild(textArea)
+		}
 	}
 }
 
@@ -212,6 +237,7 @@ export default {
 	isEqual,
 	updateDocumentTitle,
 	fuzzySearch,
+	formatNumber,
 	getShortNumber,
 	copyToClipboard,
 }

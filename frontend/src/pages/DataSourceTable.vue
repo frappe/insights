@@ -169,7 +169,7 @@ const hidden = computed({
 		return dataSourceTable.value.doc.hidden
 	},
 	set(value) {
-		if (value !== dataSourceTable.value.doc.hidden) {
+		if (value !== dataSourceTable.value.hidden) {
 			dataSourceTable.value.updateVisibility.submit({
 				hidden: value,
 			})
