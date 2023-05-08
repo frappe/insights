@@ -647,10 +647,14 @@ class SQLQueryBuilder:
         self._limit = 100
 
         assisted_query = self.query.variant_controller.query_json
+        if not assisted_query or not assisted_query.table:
+            return ""
         main_table = assisted_query.table.table
         main_table = self.make_table(main_table)
 
         for join in assisted_query.joins:
+            if not join.left_table or not join.right_table:
+                continue
             self._joins.append(
                 {
                     "left": self.make_table(join.left_table.table),
@@ -719,12 +723,13 @@ class SQLQueryBuilder:
                     _column.label(dimension.label) if dimension.label else _column
                 )
 
-        for order_by in assisted_query.order_by:
-            order = order_by.order.value
-            _column = self.make_column(order_by.column, order_by.table)
-            self._order_by_columns.append(
-                _column.asc() if order == "asc" else _column.desc()
-            )
+        if assisted_query.order_by:
+            for order_by in assisted_query.order_by:
+                order = order_by.order.value
+                _column = self.make_column(order_by.column, order_by.table)
+                self._order_by_columns.append(
+                    _column.asc() if order == "asc" else _column.desc()
+                )
 
         self._limit = assisted_query.limit or 100
 

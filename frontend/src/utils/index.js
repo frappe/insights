@@ -220,13 +220,15 @@ export function useAutoSave(watchedFields, options = {}) {
 	})
 
 	function saveIfChanged(newFields, oldFields) {
-		if (!oldFields) return
+		if (!oldFields || !newFields) return
 		if (JSON.stringify(newFields) == JSON.stringify(oldFields)) return
 		options.saveFn()
 	}
+
+	const interval = options.interval || 1000
 	watchDebounced(fields, saveIfChanged, {
-		debounce: options.interval || 1000,
 		deep: true,
+		debounce: interval,
 	})
 }
 

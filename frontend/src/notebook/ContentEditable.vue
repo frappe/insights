@@ -31,8 +31,8 @@ const props = defineProps({
 		type: [Boolean, String],
 		default: true,
 	},
-	modelValue: String,
-	value: String,
+	modelValue: String | Number,
+	value: String | Number,
 	placeholder: String,
 	noHtml: {
 		type: Boolean,

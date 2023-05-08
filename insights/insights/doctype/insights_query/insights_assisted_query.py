@@ -8,10 +8,23 @@ import frappe
 
 from .utils import AssistedQuery, InsightsTable
 
+DEFAULT_JSON = {
+    "table": {},
+    "joins": [],
+    "columns": [],
+    "calculations": [],
+    "filters": [],
+    "summarise": {},
+    "order_by": [],
+    "limit": None,
+}
+
 
 class InsightsAssistedQueryController:
     def __init__(self, doc):
         self.doc = doc
+        if not frappe.parse_json(self.doc.json):
+            self.doc.json = frappe.as_json(DEFAULT_JSON)
 
     def validate(self):
         pass
@@ -79,9 +92,11 @@ class InsightsAssistedQueryController:
         return columns
 
     def get_selected_tables(self):
-        main_table = self.query_json.get("table")
-        join_tables = [join.get("right_table") for join in self.query_json.get("joins")]
-        return [main_table] + join_tables
+        if not self.query_json.table:
+            return []
+        tables = [self.query_json.table]
+        join_tables = [join.right_table for join in self.query_json.joins]
+        return tables + join_tables
 
     def before_fetch(self):
         if self.doc.data_source != "Query Store":

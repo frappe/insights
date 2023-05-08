@@ -3,6 +3,8 @@
 
 import pandas as pd
 
+from insights.utils import ResultColumn
+
 from .utils import infer_type_from_list
 
 
@@ -27,7 +29,7 @@ class InsightsRawQueryController:
 
         if not results:
             return []
-        columns = results[0]
+        columns = ResultColumn.from_dicts(results[0])
         column_names = [column.label for column in columns]
         results_df = pd.DataFrame(results[1:], columns=column_names)
         for column in columns:

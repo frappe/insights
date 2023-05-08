@@ -205,6 +205,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "{}",
    "depends_on": "eval: doc.is_assisted_query",
    "fieldname": "json",
    "fieldtype": "Code",
@@ -214,7 +215,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-06 18:28:42.788731",
+ "modified": "2023-05-08 18:16:45.516185",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

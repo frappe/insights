@@ -71,7 +71,7 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def convert_to_visual(self):
+    def convert_to_assisted(self):
         if self.is_assisted_query:
             return
         self.is_assisted_query = 1

@@ -44,9 +44,9 @@ function makeQuery(name) {
 		await refresh()
 		state.loading = false
 	}
-	state.convertToVisual = async function () {
+	state.convertToAssisted = async function () {
 		state.loading = true
-		await resource.convert_to_visual.submit()
+		await resource.convert_to_assisted.submit()
 		await refresh()
 		state.loading = false
 	}
@@ -64,22 +64,28 @@ function makeQuery(name) {
 			.then(() => refresh())
 			.catch((e) => {
 				console.error(e)
-				state.executing = false
 			})
 		state.executing = false
 	}, 300)
 
 	state.save = async () => {
 		state.loading = true
-		const values = { data_source: state.doc.data_source }
-		if (state.doc.is_native_query) {
-			values.sql = state.doc.sql
-		} else {
-			let json = safeJSONParse(state.doc.json)
-			values.json = JSON.stringify(json, null, '  ')
-		}
-		await resource.setValue.submit(values)
+		await resource.setValue.submit(getFieldsToUpdate())
 		state.loading = false
+	}
+
+	function getFieldsToUpdate() {
+		if (state.doc.is_native_query) {
+			return {
+				sql: state.doc.sql,
+				data_source: state.doc.data_source,
+			}
+		} else {
+			return {
+				json: JSON.stringify(safeJSONParse(state.doc.json), null, 2),
+				data_source: state.doc.data_source,
+			}
+		}
 	}
 
 	watchOnce(
@@ -87,7 +93,7 @@ function makeQuery(name) {
 		() => {
 			const fieldsToWatch = computed(() => {
 				// if doc is not loaded, don't watch
-				if (state.loading) return
+				if (!state.doc.name) return
 				return state.doc.is_native_query
 					? {
 							sql: state.doc.sql,
@@ -134,7 +140,7 @@ function getQueryResource(name) {
 			get_source_schema: 'get_source_schema',
 			get_chart_name: 'get_chart_name',
 			convert_to_native: 'convert_to_native',
-			convert_to_visual: 'convert_to_visual',
+			convert_to_assisted: 'convert_to_assisted',
 		},
 		transform(doc) {
 			doc.columns = doc.columns.map((c) => {
@@ -142,8 +148,7 @@ function getQueryResource(name) {
 				return c
 			})
 			doc.results = safeJSONParse(doc.results)
-			doc.json = safeJSONParse(doc.json)
-			doc.json = doc.json || defaultQueryJSON
+			doc.json = safeJSONParse(doc.json, defaultQueryJSON)
 			return doc
 		},
 	})

@@ -1,21 +1,20 @@
 <script setup>
 import { isDimensionColumn } from '@/utils'
-import { safeJSONParse } from '@/utils'
 import { computed, inject } from 'vue'
 import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
 import ColumnSelector from './ColumnSelector.vue'
 import InputWithPopover from './InputWithPopover.vue'
 import MultipleColumnSelector from './MultipleColumnSelector.vue'
 import OperatorSelector from './OperatorSelector.vue'
+import QueryBuilderRow from './QueryBuilderRow.vue'
 import ResizeableInput from './ResizeableInput.vue'
 import TableSelector from './TableSelector.vue'
 import ValueSelector from './ValueSelector.vue'
-import QueryBuilderRow from './QueryBuilderRow.vue'
 
 const query = inject('query')
 
 const state = computed({
-	get: () => safeJSONParse(query.doc.json),
+	get: () => (typeof query.doc.json == 'string' ? JSON.parse(query.doc.json) : query.doc.json),
 	set: (value) => (query.doc.json = value),
 })
 
@@ -32,7 +31,7 @@ function addBlock(type) {
 		state.value.joins.push({
 			left_table: {},
 			right_table: {},
-			join_type: 'inner',
+			join_type: { label: 'Inner', value: 'inner' },
 			left_column: {},
 			right_column: {},
 		})
@@ -70,17 +69,8 @@ function addBlock(type) {
 	if (type == 'Summarise') {
 		if (state.value.summarise.metrics) return
 		state.value.summarise = {
-			metrics: [
-				{
-					aggregation: {},
-					column: {},
-				},
-			],
-			dimensions: [
-				{
-					column: {},
-				},
-			],
+			metrics: [{ aggregation: {}, column: {} }],
+			dimensions: [{ column: {} }],
 		}
 	}
 }
@@ -95,7 +85,11 @@ function isDimensionSelected(column) {
 
 <template>
 	<div class="flex flex-1 flex-col justify-between px-3 py-1 text-base">
-		<div v-if="query.doc.data_source" class="space-y-3 overflow-scroll scrollbar-hide">
+		<div
+			v-if="query.doc.data_source"
+			class="space-y-3 overflow-scroll scrollbar-hide"
+			:key="query.doc.data_source"
+		>
 			<QueryBuilderRow label="Start with">
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -112,12 +106,12 @@ function isDimensionSelected(column) {
 				label="Join"
 				:onRemove="() => state.joins.splice(index, 1)"
 			>
-				<TableSelector
+				<InputWithPopover
 					class="flex rounded-lg border border-gray-300 text-gray-800"
-					:data_source="query.doc.data_source"
+					placeholder="Pick a table"
 					v-model="join.left_table"
-					:tableOptions="selectedTables"
-				/>
+					:items="selectedTables"
+				></InputWithPopover>
 				<div class="text-sm uppercase text-gray-500">with</div>
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"

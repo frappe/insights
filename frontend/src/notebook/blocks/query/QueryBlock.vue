@@ -8,8 +8,8 @@ import QueryChart from './QueryChart.vue'
 import QueryEditor from './QueryEditor.vue'
 import QueryResult from './QueryResult.vue'
 import ResultChartSwitcher from './ResultChartSwitcher.vue'
-import useQuery from './useQuery'
 import QueryBuilder from './builder/QueryBuilder.vue'
+import useQuery from './useQuery'
 
 const emit = defineEmits(['setQuery', 'remove'])
 const props = defineProps({ query: String, is_native: Boolean })
@@ -22,7 +22,7 @@ if (!props.query) {
 	const query_name = await useQueries().create(source.name)
 	emit('setQuery', query_name)
 	query = useQuery(query_name)
-	props.is_native ? query.convertToNative() : query.convertToVisual()
+	props.is_native ? await query.convertToNative() : await query.convertToAssisted()
 } else {
 	query = useQuery(props.query)
 }
@@ -34,7 +34,7 @@ const state = reactive({
 	dataSource: '',
 	resultOrChart: 'Result',
 	minimizeQuery: false,
-	minimizeResult: false,
+	minimizeResult: true,
 	showQueryActions: false,
 	query: query,
 })

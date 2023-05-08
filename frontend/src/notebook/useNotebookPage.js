@@ -31,7 +31,7 @@ export default function useNotebookPage(page_name) {
 
 	const fieldsToWatch = computed(() => {
 		// if doc is not loaded, don't watch
-		if (!state.doc.title) return
+		if (!state.doc.name) return
 		return {
 			title: state.doc.title,
 			content: state.doc.content,
