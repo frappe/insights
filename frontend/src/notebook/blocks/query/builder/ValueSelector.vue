@@ -3,6 +3,7 @@ import DatePickerFlat from '@/components/Controls/DatePickerFlat.vue'
 import DateRangePickerFlat from '@/components/Controls/DateRangePickerFlat.vue'
 import TimespanPickerFlat from '@/components/Controls/TimespanPickerFlat.vue'
 import { FIELDTYPES, formatDate } from '@/utils'
+import { whenever } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import Combobox from './Combobox.vue'
@@ -58,13 +59,20 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 		columnValues.value = values.map((value) => ({ label: value, value }))
 	}
 }, 300)
-if (selectorType.value === 'combobox') checkAndFetchColumnValues()
+whenever(
+	() => selectorType.value == 'combobox',
+	() => checkAndFetchColumnValues(),
+	{ immediate: true }
+)
 const ColumnValueCombobox = (props) => (
 	<Combobox
 		v-model={props.value}
 		values={columnValues.value}
 		allowMultiple={isMultiValue.value}
-		onUpdate:modelValue={(value) => props.setValue(value)}
+		onUpdate:modelValue={(value) => {
+			props.setValue(value)
+			props.togglePopover(false)
+		}}
 	/>
 )
 
@@ -119,7 +127,6 @@ const selectorComponentMap = {
 	<InputWithPopover
 		v-else
 		v-model="value"
-		:class="$attrs.class"
 		:disableInput="isMultiValue"
 		placeholder="Pick a value"
 	>

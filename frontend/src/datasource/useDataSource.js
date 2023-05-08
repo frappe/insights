@@ -61,7 +61,12 @@ function makeDataSourceTable(name) {
 			update_column_type: 'update_column_type',
 		},
 		transform: (doc) => {
-			doc.columns = doc.columns.map((c) => ({ ...c, data_source: doc.data_source }))
+			doc.columns = doc.columns.map((c) => {
+				c.data_source = doc.data_source
+				c.table_label = doc.label
+				c.table = doc.table
+				return c
+			})
 			return doc
 		},
 	})

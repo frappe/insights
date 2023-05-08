@@ -49,6 +49,7 @@ const columns = computed(() => {
 		})
 		.map((column) => {
 			return {
+				data_source: column.data_source,
 				column: column.column,
 				type: column.type,
 				table: column.table,
