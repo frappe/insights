@@ -17,6 +17,7 @@ from insights.insights.doctype.insights_data_source.sources.utils import (
 from insights.utils import ResultColumn
 
 from ..insights_data_source.sources.query_store import sync_query_store
+from .insights_assisted_query import InsightsAssistedQueryController
 from .insights_legacy_query import (
     InsightsLegacyQueryClient,
     InsightsLegacyQueryController,
@@ -71,6 +72,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def variant_controller(self):
         if self.is_native_query:
             return InsightsRawQueryController(self)
+        if self.is_assisted_query:
+            return InsightsAssistedQueryController(self)
         return InsightsLegacyQueryController(self)
 
     def validate(self):

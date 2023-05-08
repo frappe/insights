@@ -496,6 +496,8 @@ class SQLQueryBuilder:
 
         if query.is_native_query:
             return query.sql.strip().rstrip(";") if query.sql else ""
+        elif query.is_assisted_query:
+            return self.build_assisted_query()
         else:
             self.process_tables_and_joins()
             self.process_columns()
@@ -634,3 +636,119 @@ class SQLQueryBuilder:
             compile_args["dialect"] = self.dialect
         compiled = query.compile(**compile_args)
         return compiled
+
+    def build_assisted_query(self):
+        self._joins = []
+        self._filters = None
+        self._columns = []
+        self._metrics = []
+        self._dimensions = []
+        self._order_by_columns = []
+        self._limit = 100
+
+        assisted_query = self.query.variant_controller.query_json
+        main_table = assisted_query.table.table
+        main_table = self.make_table(main_table)
+
+        for join in assisted_query.joins:
+            self._joins.append(
+                {
+                    "left": self.make_table(join.left_table.table),
+                    "right": self.make_table(join.right_table.table),
+                    "type": join.join_type.value,
+                    "left_key": self.make_column(
+                        join.left_column.column, join.left_table.table
+                    ),
+                    "right_key": self.make_column(
+                        join.right_column.column, join.right_table.table
+                    ),
+                }
+            )
+
+        self._filters = self.expression_processor.process(
+            {
+                "type": "LogicalExpression",
+                "operator": "&&",
+                "conditions": [
+                    {
+                        "type": "BinaryExpression",
+                        "operator": filter.operator.value,
+                        "left": {
+                            "type": "Column",
+                            "value": filter.column,
+                        },
+                        "right": {
+                            "type": "String",
+                            "value": filter.value.value,
+                        },
+                    }
+                    for filter in assisted_query.filters
+                ],
+            }
+        )
+
+        for column in assisted_query.columns:
+            _column = self.make_column(column.column, column.table)
+            self._columns.append(
+                _column.label(column.label) if column.label else _column
+            )
+
+        # TODO: Add support for calculations
+
+        if (
+            assisted_query.summarise
+            and assisted_query.summarise.metrics
+            and assisted_query.summarise.dimensions
+        ):
+            for metric in assisted_query.summarise.metrics:
+                aggregation = metric.aggregation.value
+                if aggregation == "count":
+                    _column = func.count().label(metric.label)
+                    self._metrics.append(_column)
+                    continue
+
+                _column = self.make_column(metric.column, metric.table)
+                _column = self.aggregations.apply(aggregation, _column)
+                self._metrics.append(
+                    _column.label(metric.label) if metric.label else _column
+                )
+
+            for dimension in assisted_query.summarise.dimensions:
+                _column = self.make_column(dimension.column, dimension.table)
+                self._dimensions.append(
+                    _column.label(dimension.label) if dimension.label else _column
+                )
+
+        for order_by in assisted_query.order_by:
+            order = order_by.order.value
+            _column = self.make_column(order_by.column, order_by.table)
+            self._order_by_columns.append(
+                _column.asc() if order == "asc" else _column.desc()
+            )
+
+        self._limit = assisted_query.limit or 100
+
+        columns = self._columns + self._metrics + self._dimensions
+        if not columns:
+            columns = [text("*")]
+
+        query = select(*columns).select_from(main_table)
+        for join in self._joins:
+            query = query.join_from(
+                join["left"],
+                join["right"],
+                join["type"],
+                join["left_key"] == join["right_key"],
+                isouter=join["type"] != "inner",
+                full=join["type"] == "full",
+            )
+
+        if self._filters is not None:
+            query = query.where(self._filters)
+        if self._dimensions:
+            query = query.group_by(*self._dimensions)
+        if self._order_by_columns:
+            query = query.order_by(*self._order_by_columns)
+        query = query.limit(self._limit)
+
+        return self.compile(query)

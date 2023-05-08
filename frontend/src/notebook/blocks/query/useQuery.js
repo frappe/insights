@@ -71,12 +71,14 @@ function makeQuery(name) {
 
 	state.save = async () => {
 		state.loading = true
-		await resource.setValue.submit({
-			data_source: state.doc.data_source,
-			...(state.doc.is_native_query
-				? { sql: state.doc.sql }
-				: { json: JSON.stringify(state.doc.json, null, '  ') }),
-		})
+		const values = { data_source: state.doc.data_source }
+		if (state.doc.is_native_query) {
+			values.sql = state.doc.sql
+		} else {
+			let json = safeJSONParse(state.doc.json)
+			values.json = JSON.stringify(json, null, '  ')
+		}
+		await resource.setValue.submit(values)
 		state.loading = false
 	}
 

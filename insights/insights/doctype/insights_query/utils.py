@@ -1,7 +1,9 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 import frappe
 import pandas as pd
@@ -224,3 +226,179 @@ def infer_type_from_list(values):
         return "Decimal"
     if "Integer" in inferred_types:
         return "Integer"
+
+
+# assisted query utils
+
+
+class GetMixin:
+    def get(self, key):
+        return self.__dict__.get(key)
+
+
+@dataclass
+class LabelValue(GetMixin):
+    label: str
+    value: str
+
+    @staticmethod
+    def from_dict(d):
+        return LabelValue(d["label"], d["value"])
+
+
+@dataclass
+class QueryTable(GetMixin):
+    table: str
+    label: str
+    data_source: Optional[str]
+
+    @staticmethod
+    def from_dict(d):
+        return QueryTable(
+            d["table"],
+            d["label"],
+            d.get("data_source"),
+        )
+
+
+@dataclass
+class QueryColumn(GetMixin):
+    table: str
+    column: str
+    label: str
+    type: str
+
+    @staticmethod
+    def from_dict(d):
+        return QueryColumn(d["table"], d["column"], d["label"], d["type"])
+
+
+@dataclass
+class Join(GetMixin):
+    left_table: QueryTable
+    right_table: QueryTable
+    join_type: LabelValue
+    left_column: QueryColumn
+    right_column: QueryColumn
+
+    @staticmethod
+    def from_dict(d):
+        return Join(
+            QueryTable.from_dict(d["left_table"]),
+            QueryTable.from_dict(d["right_table"]),
+            LabelValue.from_dict(d["join_type"]),
+            QueryColumn.from_dict(d["left_column"]),
+            QueryColumn.from_dict(d["right_column"]),
+        )
+
+
+@dataclass
+class Filter(GetMixin):
+    column: QueryColumn
+    operator: LabelValue
+    value: LabelValue
+
+    @staticmethod
+    def from_dict(d):
+        return Filter(
+            QueryColumn.from_dict(d["column"]),
+            LabelValue.from_dict(d["operator"]),
+            LabelValue.from_dict(d["value"]),
+        )
+
+
+@dataclass
+class Metric(GetMixin):
+    column: QueryColumn
+    aggregation: LabelValue
+    label: Optional[str]
+
+    @staticmethod
+    def from_dict(d):
+        return Metric(
+            QueryColumn.from_dict(d["column"]),
+            LabelValue.from_dict(d["aggregation"]),
+            d.get("label", d["column"]["label"]),
+        )
+
+
+@dataclass
+class Dimension(GetMixin):
+    column: QueryColumn
+    label: Optional[str]
+
+    @staticmethod
+    def from_dict(d):
+        return Dimension(
+            QueryColumn.from_dict(d["column"]),
+            d.get("label", d["column"]["label"]),
+        )
+
+
+@dataclass
+class Summarise(GetMixin):
+    metrics: list[Metric]
+    dimensions: list[Dimension]
+
+    @staticmethod
+    def from_dict(d):
+        return Summarise(
+            [Metric.from_dict(m) for m in d["metrics"]],
+            [Dimension.from_dict(m) for m in d["dimensions"]],
+        )
+
+
+@dataclass
+class Column(GetMixin):
+    column: QueryColumn
+    label: Optional[str]
+
+    @staticmethod
+    def from_dict(d):
+        return Column(
+            QueryColumn.from_dict(d["column"]),
+            d.get("label", d["column"]["label"]),
+        )
+
+
+@dataclass
+class OrderBy(GetMixin):
+    column: QueryColumn
+    order: LabelValue
+
+    @staticmethod
+    def from_dict(d):
+        return OrderBy(
+            QueryColumn.from_dict(d["column"]), LabelValue.from_dict(d["order"])
+        )
+
+
+@dataclass
+class AssistedQuery(GetMixin):
+    table: QueryTable
+    joins: list[Join]
+    filters: list[Filter]
+    summarise: Summarise
+    columns: list[Column]
+    order_by: list[OrderBy]
+    limit: int
+
+    @staticmethod
+    def from_dict(d):
+        table = d.get("table")
+        joins = d.get("joins")
+        filters = d.get("filters")
+        summarise = d.get("summarise")
+        columns = d.get("columns")
+        order_by = d.get("order_by")
+        limit = d.get("limit")
+
+        table = QueryTable.from_dict(table) if table else None
+        joins = [Join.from_dict(j) for j in joins] if joins else []
+        filters = [Filter.from_dict(f) for f in filters] if filters else []
+        summarise = Summarise.from_dict(summarise) if summarise else None
+        columns = [Column.from_dict(c) for c in columns] if columns else []
+        orderby = [OrderBy.from_dict(o) for o in order_by] if order_by else []
+        limit = int(limit) if limit else None
+
+        return AssistedQuery(table, joins, filters, summarise, columns, orderby, limit)
