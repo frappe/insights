@@ -10,6 +10,9 @@ class InsightsRawQueryController:
     def __init__(self, doc):
         self.doc = doc
 
+    def validate(self):
+        pass
+
     def after_reset(self):
         self.doc.is_native_query = 1
 
@@ -35,4 +38,4 @@ class InsightsRawQueryController:
         pass
 
     def after_fetch_results(self, results):
-        pass
+        return results
