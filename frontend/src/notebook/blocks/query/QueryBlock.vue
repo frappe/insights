@@ -36,7 +36,6 @@ provide('query', query)
 const state = reactive({
 	dataSource: '',
 	resultOrChart: 'Result',
-	minimizeQuery: false,
 	minimizeResult: true,
 	showQueryActions: false,
 	query: query,
@@ -48,16 +47,6 @@ state.removeQuery = () => {
 }
 
 const blockRef = ref(null)
-// if clicked anywhere within the block, show query actions
-const showQueryActions = (e) => {
-	state.showQueryActions = blockRef.value?.contains(e.target)
-}
-onMounted(() => {
-	document.addEventListener('click', showQueryActions)
-})
-onBeforeUnmount(() => {
-	document.removeEventListener('click', showQueryActions)
-})
 </script>
 
 <template>
@@ -85,15 +74,6 @@ onBeforeUnmount(() => {
 			<QueryChart v-if="state.resultOrChart == 'Visualize'" />
 
 			<div class="absolute right-1.5 top-1.5 flex items-center space-x-2">
-				<Button
-					class="flex h-7 cursor-pointer items-center rounded-md !border !border-gray-200 bg-white !px-2 !text-sm !text-gray-600 opacity-0 transition-opacity hover:bg-gray-50 hover:text-gray-800 group-hover:opacity-100"
-					@click="state.minimizeResult = !state.minimizeResult"
-				>
-					<FeatherIcon
-						:name="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
-						class="h-3.5 w-3.5"
-					></FeatherIcon>
-				</Button>
 				<ChartOptionsDropdown />
 				<ResultChartSwitcher />
 			</div>
@@ -102,7 +82,6 @@ onBeforeUnmount(() => {
 
 	<UsePopover
 		v-if="blockRef"
-		:show="state.showQueryActions"
 		:targetElement="blockRef"
 		placement="right-start"
 		:transition="slideRightTransition"

@@ -8,7 +8,7 @@ sources.reload()
 </script>
 
 <template>
-	<div class="flex w-28 flex-col space-y-1.5 text-sm transition-all">
+	<div class="flex w-[8rem] flex-col space-y-1.5 text-sm transition-all">
 		<select
 			class="flex h-[30px] cursor-pointer items-center rounded-md border !border-gray-200 bg-white px-2 py-0 text-sm text-gray-600 shadow-sm !outline-none !ring-0 transition-all hover:bg-gray-50 hover:text-gray-800"
 			@change="state.query.doc.data_source = $event.target.value"
@@ -33,10 +33,10 @@ sources.reload()
 		</Button>
 		<Button
 			class="flex cursor-pointer items-center rounded-md !border !border-gray-200 bg-white px-2 !text-left !text-sm !text-gray-600 shadow-sm transition-all hover:bg-gray-50 hover:text-gray-800"
-			:iconLeft="state.minimizeQuery ? 'maximize-2' : 'minimize-2'"
-			@click="state.minimizeQuery = !state.minimizeQuery"
+			:iconLeft="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
+			@click="state.minimizeResult = !state.minimizeResult"
 		>
-			{{ state.minimizeQuery ? 'Maximize' : 'Minimize' }}
+			{{ state.minimizeResult ? 'Show Results' : 'Hide Results' }}
 		</Button>
 		<Button
 			class="flex cursor-pointer items-center rounded-md !border !border-gray-200 bg-white !px-2 !text-sm !text-gray-600 shadow-sm transition-all hover:bg-gray-50 hover:text-gray-800"

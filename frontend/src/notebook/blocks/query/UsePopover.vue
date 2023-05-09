@@ -6,15 +6,17 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const emit = defineEmits(['update:show'])
 const props = defineProps({
-	show: Boolean,
+	show: { type: Boolean, default: undefined },
 	placement: { type: String, default: 'bottom-start' },
 	targetElement: { type: Object, required: true },
 	transition: { type: Object, default: slideDownTransition },
 })
 
+const showPropPassed = props.show !== undefined
+const _show = ref(false)
 const show = computed({
-	get: () => props.show,
-	set: (value) => emit('update:show', value),
+	get: () => (showPropPassed ? props.show : _show.value),
+	set: (value) => (showPropPassed ? emit('update:show', value) : (_show.value = value)),
 })
 
 if (!document.getElementById('frappeui-popper-root')) {
@@ -25,6 +27,11 @@ if (!document.getElementById('frappeui-popper-root')) {
 
 let popper = null
 const popover = ref(null)
+
+const toggle = () => (show.value = !show.value)
+const open = () => (show.value = true)
+const close = () => (show.value = false)
+
 onMounted(() => {
 	if (!props.targetElement) {
 		console.warn('Popover: targetElement is required')
@@ -45,22 +52,28 @@ onMounted(() => {
 	window.addEventListener('resize', updatePosition)
 	window.addEventListener('scroll', updatePosition)
 
-	if (props.targetElement) {
-		props.targetElement.addEventListener('click', () => {
-			toggle()
-		})
-	}
+	props.targetElement.addEventListener('click', open)
+	props.targetElement.addEventListener('focus', open)
+
+	document.addEventListener('click', handleClickOutside)
 })
+
+const handleClickOutside = (e) => {
+	const insidePopover = popover.value.contains(e.target)
+	const insideTarget = props.targetElement.contains(e.target)
+	!insidePopover && !insideTarget && close()
+}
+
 const updatePosition = () => show.value && popper?.update()
-const toggle = () => (show.value = !show.value)
 whenever(show, updatePosition)
+
 onBeforeUnmount(() => {
 	popper?.destroy()
 	window.removeEventListener('resize', updatePosition)
 	window.removeEventListener('scroll', updatePosition)
-	if (props.targetElement) {
-		props.targetElement.removeEventListener('click', toggle)
-	}
+	props.targetElement.removeEventListener('click', toggle)
+	props.targetElement.removeEventListener('focus', open)
+	document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
