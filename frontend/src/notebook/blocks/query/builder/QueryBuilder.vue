@@ -76,10 +76,14 @@ function addBlock(type) {
 }
 
 function isColumnSelected(column) {
-	return state.value.columns.some((c) => c.column.column == column.column)
+	return state.value.columns.some(
+		(c) => c.column.column == column.column && c.column.table == column.table
+	)
 }
 function isDimensionSelected(column) {
-	return state.value.summarise.dimensions.some((d) => d.column.column == column.column)
+	return state.value.summarise.dimensions.some(
+		(d) => d.column.column == column.column && d.column.table == column.table
+	)
 }
 </script>
 
