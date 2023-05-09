@@ -1,13 +1,16 @@
 <script setup>
 import useDataSources from '@/datasource/useDataSources'
 import useQueries from '@/query/useQueries'
-import { provide, reactive } from 'vue'
+import { slideRightTransition } from '@/utils/transitions'
+import { onBeforeUnmount, onMounted, provide, reactive, ref } from 'vue'
 import ChartOptionsDropdown from './ChartOptionsDropdown.vue'
+import QueryBlockActions from './QueryBlockActions.vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
 import QueryChart from './QueryChart.vue'
 import QueryEditor from './QueryEditor.vue'
 import QueryResult from './QueryResult.vue'
 import ResultChartSwitcher from './ResultChartSwitcher.vue'
+import UsePopover from './UsePopover.vue'
 import QueryBuilder from './builder/QueryBuilder.vue'
 import useQuery from './useQuery'
 
@@ -43,17 +46,31 @@ provide('state', state)
 state.removeQuery = () => {
 	query.delete().then(() => emit('remove'))
 }
+
+const blockRef = ref(null)
+// if clicked anywhere within the block, show query actions
+const showQueryActions = (e) => {
+	state.showQueryActions = blockRef.value?.contains(e.target)
+}
+onMounted(() => {
+	document.addEventListener('click', showQueryActions)
+})
+onBeforeUnmount(() => {
+	document.removeEventListener('click', showQueryActions)
+})
 </script>
 
 <template>
-	<div v-if="query.doc.name" class="relative my-6 overflow-hidden rounded border bg-white">
+	<div
+		ref="blockRef"
+		v-if="query.doc.name"
+		class="relative my-6 overflow-hidden rounded border bg-white"
+	>
 		<QueryBlockHeader />
 		<transition name="fade" mode="out-in">
 			<div
 				v-show="state.query.doc.name && !state.minimizeQuery"
 				class="mb-2 w-full flex-1 overflow-hidden"
-				@mouseover="state.showQueryActions = true"
-				@mouseleave="state.showQueryActions = false"
 			>
 				<QueryEditor v-if="props.is_native" />
 				<QueryBuilder v-else />
@@ -82,6 +99,16 @@ state.removeQuery = () => {
 			</div>
 		</div>
 	</div>
+
+	<UsePopover
+		v-if="blockRef"
+		:show="state.showQueryActions"
+		:targetElement="blockRef"
+		placement="right-start"
+		:transition="slideRightTransition"
+	>
+		<QueryBlockActions />
+	</UsePopover>
 	<div v-else class="flex h-20 w-full flex-col items-center justify-center">
 		<LoadingIndicator class="mb-2 w-6 text-gray-300" />
 	</div>
