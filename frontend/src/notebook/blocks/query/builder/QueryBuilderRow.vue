@@ -5,7 +5,7 @@
 		<div
 			v-if="onRemove"
 			class="!ml-2 cursor-pointer rounded-lg p-1.5 text-gray-400 opacity-0 transition-opacity hover:text-gray-800 group-hover:opacity-100"
-			@click="onRemove()"
+			@click.prevent.stop="onRemove()"
 		>
 			<FeatherIcon name="x" class="h-4 w-4" />
 		</div>
