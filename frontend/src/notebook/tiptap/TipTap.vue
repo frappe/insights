@@ -6,6 +6,10 @@
 		@change="$emit('update:content', $event)"
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="bubbleMenu"
+		:bubble-menu-options="{
+			shouldShow: ({ editor }) =>
+				!editor.isActive('query-builder') && !editor.isActive('query-editor'),
+		}"
 		:placeholder="placeholderByNode"
 		:extensions="[SlashCommand.configure({ suggestion }), QueryBuilder, QueryEditor]"
 	></TextEditor>
