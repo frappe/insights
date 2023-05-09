@@ -742,7 +742,6 @@ class SQLQueryBuilder:
             query = query.join_from(
                 join["left"],
                 join["right"],
-                join["type"],
                 join["left_key"] == join["right_key"],
                 isouter=join["type"] != "inner",
                 full=join["type"] == "full",
