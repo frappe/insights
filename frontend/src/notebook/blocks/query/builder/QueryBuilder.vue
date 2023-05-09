@@ -149,7 +149,7 @@ function isDimensionSelected(column) {
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					v-model="calc.alias"
-					placeholder="Alias"
+					placeholder="Label"
 				/>
 				<div class="text-sm uppercase text-gray-500">as</div>
 				<ColumnExpressionSelector
@@ -200,6 +200,7 @@ function isDimensionSelected(column) {
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
 						v-model="column.column"
+						@update:model-value="(c) => (column.alias = c.label)"
 						:columnFilter="(c) => !isColumnSelected(c)"
 					/>
 				</Suspense>
@@ -207,7 +208,7 @@ function isDimensionSelected(column) {
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					v-model="column.alias"
-					placeholder="Alias"
+					placeholder="Label"
 				/>
 			</QueryBuilderRow>
 

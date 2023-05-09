@@ -692,9 +692,10 @@ class SQLQueryBuilder:
         )
 
         for column in assisted_query.columns:
-            _column = self.make_column(column.column, column.table)
+            _column = column.column
+            _column = self.make_column(_column.column, _column.table)
             self._columns.append(
-                _column.label(column.label) if column.label else _column
+                _column.label(column.alias) if column.alias else _column
             )
 
         # TODO: Add support for calculations
@@ -707,20 +708,20 @@ class SQLQueryBuilder:
             for metric in assisted_query.summarise.metrics:
                 aggregation = metric.aggregation.value
                 if aggregation == "count":
-                    _column = func.count().label(metric.label)
+                    _column = func.count().label(metric.alias)
                     self._metrics.append(_column)
                     continue
 
                 _column = self.make_column(metric.column, metric.table)
                 _column = self.aggregations.apply(aggregation, _column)
                 self._metrics.append(
-                    _column.label(metric.label) if metric.label else _column
+                    _column.label(metric.alias) if metric.alias else _column
                 )
 
             for dimension in assisted_query.summarise.dimensions:
                 _column = self.make_column(dimension.column, dimension.table)
                 self._dimensions.append(
-                    _column.label(dimension.label) if dimension.label else _column
+                    _column.label(dimension.alias) if dimension.alias else _column
                 )
 
         if assisted_query.order_by:

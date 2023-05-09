@@ -45,7 +45,9 @@ class InsightsAssistedQueryController:
         dimensions = []
 
         for column in self.query_json.columns:
-            columns.append(column)
+            _column = column.column
+            _column.label = column.alias or column.column.label
+            columns.append(_column)
 
         if (
             not self.query_json.summarise
@@ -56,14 +58,18 @@ class InsightsAssistedQueryController:
 
         for metric in self.query_json.summarise.metrics:
             if metric.aggregation.value != "count":
-                metrics.append(metric.column)
+                _metric = metric.column
+                _metric.label = metric.alias or _metric.label
+                metrics.append(_metric)
                 continue
             metrics.append(
                 frappe._dict(label="Count of Records", column="count", type="Integer")
             )
 
         for dimension in self.query_json.summarise.dimensions:
-            dimensions.append(dimension.column)
+            _dimension = dimension.column
+            _dimension.label = dimension.alias or _dimension.label
+            dimensions.append(_dimension)
 
         return columns + metrics + dimensions
 

@@ -377,15 +377,15 @@ class Summarise(GetMixin, RequiredFieldsMixin):
 @dataclass
 class Column(GetMixin, RequiredFieldsMixin):
     column: QueryColumn = QueryColumn()
-    label: Optional[str] = None
-    OPTIONAL_FIELDS = ["label"]
+    alias: Optional[str] = None
+    OPTIONAL_FIELDS = ["alias"]
 
     @staticmethod
     def from_dict(d):
         d = d or {}
         column = QueryColumn.from_dict(d.get("column"))
-        label = d.get("label")
-        return Column(column, label or column.label)
+        alias = d.get("alias")
+        return Column(column, alias or column.label)
 
 
 @dataclass
