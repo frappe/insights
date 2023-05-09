@@ -36,17 +36,14 @@ function makeDataSource(name) {
 }
 
 const datasource_tables = {}
-const datasource_tablenames = {}
+const cached_tablenames = {}
 
 export async function useDataSourceTable({ name, data_source, table }) {
-	const _name = name || datasource_tablenames[data_source + table]
+	const _name = name || cached_tablenames[data_source + table]
 	if (_name) {
 		return setOrGet(datasource_tables, _name, makeDataSourceTable, [_name])
 	}
-	const tablename = await call('insights.api.get_table_name', {
-		data_source: data_source,
-		table: table,
-	})
+	const tablename = await getTableName(data_source, table)
 	return setOrGet(datasource_tables, tablename, makeDataSourceTable, [tablename])
 }
 
@@ -98,4 +95,14 @@ function getDataSourceResource(name) {
 			get_tables: 'get_tables',
 		},
 	})
+}
+
+async function getTableName(data_source, table) {
+	const name = await call('insights.api.get_table_name', {
+		data_source: data_source,
+		table: table,
+	})
+	// cache the name
+	cached_tablenames[data_source + table] = name
+	return name
 }
