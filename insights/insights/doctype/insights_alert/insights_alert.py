@@ -73,7 +73,8 @@ class InsightsAlert(Document):
             return False
 
         result_dict = {}
-        result_df = query.get_results_df(results)
+        column_names = [d.get("label") for d in results[0]]
+        result_df = DataFrame(results[1:], columns=column_names)
         for column in result_df.columns:
             result_dict[column] = result_df[column].tolist()
 
