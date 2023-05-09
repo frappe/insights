@@ -1,8 +1,8 @@
 import useChart from '@/query/useChart'
-import { safeJSONParse, useAutoSave } from '@/utils'
+import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
-import { watchOnce } from '@vueuse/core'
+import { watchDebounced, watchOnce } from '@vueuse/core'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
@@ -70,11 +70,13 @@ function makeQuery(name) {
 
 	state.save = async () => {
 		state.loading = true
-		await resource.setValue.submit(getFieldsToUpdate())
+		const updatedFields = getUpdatedFields()
+		await resource.setValue.submit(updatedFields)
+		await refresh()
 		state.loading = false
 	}
 
-	function getFieldsToUpdate() {
+	function getUpdatedFields() {
 		if (state.doc.is_native_query) {
 			return {
 				sql: state.doc.sql,
@@ -91,23 +93,12 @@ function makeQuery(name) {
 	watchOnce(
 		() => state.autosave,
 		() => {
-			const fieldsToWatch = computed(() => {
-				// if doc is not loaded, don't watch
-				if (!state.doc.name) return
-				return state.doc.is_native_query
-					? {
-							sql: state.doc.sql,
-							data_source: state.doc.data_source,
-					  }
-					: {
-							json: state.doc.json,
-							data_source: state.doc.data_source,
-					  }
-			})
-			useAutoSave(fieldsToWatch, {
-				saveFn: state.save,
-				interval: 2000,
-			})
+			function saveIfChanged(newVal, oldVal) {
+				if (!newVal) return
+				if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
+				state.save()
+			}
+			watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
 		}
 	)
 
