@@ -6,14 +6,16 @@ import Combobox from './Combobox.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
+	value: { type: Object, default: undefined },
 	modelValue: Object,
 	placeholder: String,
 	items: Array,
 	disableFilter: Boolean,
 	disableInput: Boolean,
 })
+const valuePropPassed = props.value !== undefined
 const selectedItem = computed({
-	get: () => props.modelValue,
+	get: () => (valuePropPassed ? props.value : props.modelValue),
 	set: (value) => emit('update:modelValue', value),
 })
 const searchText = ref(selectedItem.value?.label)
