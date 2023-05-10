@@ -94,7 +94,8 @@ function makeQuery(name) {
 		() => state.autosave,
 		() => {
 			function saveIfChanged(newVal, oldVal) {
-				if (!newVal) return
+				if (!oldVal || !newVal) return
+				if (state.loading) return
 				if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
 				state.save()
 			}
