@@ -333,30 +333,30 @@ class Filter(GetMixin, RequiredFieldsMixin):
 class Metric(GetMixin, RequiredFieldsMixin):
     column: QueryColumn = QueryColumn()
     aggregation: LabelValue = LabelValue()
-    label: Optional[str] = None
-    OPTIONAL_FIELDS = ["label"]
+    alias: Optional[str] = None
+    OPTIONAL_FIELDS = ["alias"]
 
     @staticmethod
     def from_dict(d):
         d = d or {}
         column = QueryColumn.from_dict(d.get("column"))
         aggregation = LabelValue.from_dict(d.get("aggregation"))
-        label = d.get("label", column.label)
-        return Metric(column, aggregation, label)
+        alias = d.get("alias", column.label)
+        return Metric(column, aggregation, alias)
 
 
 @dataclass
 class Dimension(GetMixin, RequiredFieldsMixin):
     column: QueryColumn = QueryColumn()
-    label: Optional[str] = None
-    OPTIONAL_FIELDS = ["label"]
+    alias: Optional[str] = None
+    OPTIONAL_FIELDS = ["alias"]
 
     @staticmethod
     def from_dict(d):
         d = d or {}
         column = QueryColumn.from_dict(d.get("column"))
-        label = d.get("label")
-        return Dimension(column, label or column.label)
+        alias = d.get("alias")
+        return Dimension(column, alias or column.label)
 
 
 @dataclass

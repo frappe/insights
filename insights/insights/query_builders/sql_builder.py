@@ -712,14 +712,16 @@ class SQLQueryBuilder:
                     self._metrics.append(_column)
                     continue
 
-                _column = self.make_column(metric.column, metric.table)
+                _column = self.make_column(metric.column.column, metric.column.table)
                 _column = self.aggregations.apply(aggregation, _column)
                 self._metrics.append(
                     _column.label(metric.alias) if metric.alias else _column
                 )
 
             for dimension in assisted_query.summarise.dimensions:
-                _column = self.make_column(dimension.column, dimension.table)
+                _column = self.make_column(
+                    dimension.column.column, dimension.column.table
+                )
                 self._dimensions.append(
                     _column.label(dimension.alias) if dimension.alias else _column
                 )
