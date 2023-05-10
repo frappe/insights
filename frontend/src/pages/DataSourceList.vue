@@ -43,7 +43,7 @@ const StatusCell = (props) => (
 const columns = [
 	{ label: 'Title', key: 'title' },
 	{ label: 'Status', key: 'status', cellComponent: StatusCell },
-	{ label: 'Type', key: 'source_type' },
+	{ label: 'Database Type', key: 'database_type' },
 	{ label: 'Created', key: 'created_from_now' },
 ]
 

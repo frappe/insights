@@ -35,8 +35,7 @@ def get_data_sources():
             "status",
             "database_type",
             "creation",
-            "is_site_db",
-            "source_type",
+            "is_site_db"
         ],
         order_by="creation desc",
     )
