@@ -74,17 +74,6 @@ function addBlock(type) {
 		}
 	}
 }
-
-function isColumnSelected(column) {
-	return state.value.columns.some(
-		(c) => c.column.column == column.column && c.column.table == column.table
-	)
-}
-function isDimensionSelected(column) {
-	return state.value.summarise.dimensions.some(
-		(d) => d.column.column == column.column && d.column.table == column.table
-	)
-}
 </script>
 
 <template>
@@ -205,7 +194,6 @@ function isDimensionSelected(column) {
 						:tables="selectedTables"
 						v-model="column.column"
 						@update:model-value="(c) => (column.alias = c.label)"
-						:columnFilter="(c) => !isColumnSelected(c)"
 					/>
 				</Suspense>
 				<div class="text-sm uppercase text-gray-500">as</div>
@@ -265,7 +253,7 @@ function isDimensionSelected(column) {
 						v-model="state.summarise.dimensions"
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
-						:columnFilter="(c) => isDimensionColumn(c) && !isDimensionSelected(c)"
+						:columnFilter="(c) => isDimensionColumn(c)"
 					/>
 					<div
 						class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
