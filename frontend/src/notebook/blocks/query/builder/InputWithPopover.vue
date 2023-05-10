@@ -37,6 +37,7 @@ const filteredItems = computed(() => {
 				tag="div"
 				:contenteditable="!props.disableInput"
 				v-model="searchText"
+				@update:model-value="!isOpen && togglePopover(true)"
 				@click="togglePopover"
 				:placeholder="placeholder || 'Pick a value'"
 				class="cursor-pointer px-2.5 py-0.5 outline-none ring-0 transition-all focus:outline-none"
