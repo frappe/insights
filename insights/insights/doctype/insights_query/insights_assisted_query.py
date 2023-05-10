@@ -45,9 +45,12 @@ class InsightsAssistedQueryController:
         dimensions = []
 
         for column in self.query_json.columns:
-            _column = column.column
-            _column.label = column.alias or column.column.label
-            columns.append(_column)
+            columns.append(
+                {
+                    **column.column.__dict__,
+                    "label": column.alias or column.column.label,
+                }
+            )
 
         if (
             not self.query_json.summarise
@@ -58,20 +61,27 @@ class InsightsAssistedQueryController:
 
         for metric in self.query_json.summarise.metrics:
             if metric.aggregation.value != "count":
-                _metric = metric.column
-                _metric.label = metric.alias or _metric.label
-                metrics.append(_metric)
+                metrics.append(
+                    {
+                        **metric.column.__dict__,
+                        "label": metric.alias or metric.column.label,
+                    }
+                )
                 continue
             metrics.append(
                 frappe._dict(label="Count of Records", column="count", type="Integer")
             )
 
         for dimension in self.query_json.summarise.dimensions:
-            _dimension = dimension.column
-            _dimension.label = dimension.alias or _dimension.label
-            dimensions.append(_dimension)
+            dimensions.append(
+                {
+                    **dimension.column.__dict__,
+                    "label": dimension.alias or dimension.column.label,
+                    "format_options": dimension.format_options,
+                }
+            )
 
-        return columns + metrics + dimensions
+        return columns + dimensions + metrics
 
     def get_tables_columns(self):
         columns = []

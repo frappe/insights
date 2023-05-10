@@ -349,14 +349,16 @@ class Metric(GetMixin, RequiredFieldsMixin):
 class Dimension(GetMixin, RequiredFieldsMixin):
     column: QueryColumn = QueryColumn()
     alias: Optional[str] = None
-    OPTIONAL_FIELDS = ["alias"]
+    format_options: Optional[dict] = None
+    OPTIONAL_FIELDS = ["alias", "format_options"]
 
     @staticmethod
     def from_dict(d):
         d = d or {}
-        column = QueryColumn.from_dict(d.get("column"))
         alias = d.get("alias")
-        return Dimension(column, alias or column.label)
+        column = QueryColumn.from_dict(d.get("column"))
+        format_options = _dict(d.get("format_options"))
+        return Dimension(column, alias or column.label, format_options)
 
 
 @dataclass

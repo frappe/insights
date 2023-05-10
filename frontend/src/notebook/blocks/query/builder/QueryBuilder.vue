@@ -1,10 +1,10 @@
 <script setup>
-import { isDimensionColumn } from '@/utils'
+import { FIELDTYPES, isDimensionColumn } from '@/utils'
+import { dateFormats } from '@/utils/format'
 import { computed, inject } from 'vue'
 import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
 import ColumnSelector from './ColumnSelector.vue'
 import InputWithPopover from './InputWithPopover.vue'
-import MultipleColumnSelector from './MultipleColumnSelector.vue'
 import OperatorSelector from './OperatorSelector.vue'
 import QueryBuilderRow from './QueryBuilderRow.vue'
 import ResizeableInput from './ResizeableInput.vue'
@@ -70,9 +70,26 @@ function addBlock(type) {
 		if (state.value.summarise.metrics) return
 		state.value.summarise = {
 			metrics: [{ aggregation: {}, column: {} }],
-			dimensions: [{ column: {} }],
+			dimensions: [{ column: {}, format_options: { date_format: {} } }],
 		}
 	}
+}
+
+function setDummyColumnIfCount(aggregation, metric) {
+	if (aggregation.value == 'count') {
+		metric.column = {
+			label: 'Count',
+			column: 'count',
+			table: 'count',
+			value: 'count',
+			type: 'Integer',
+		}
+	}
+}
+
+const dateFormatOptions = dateFormats.map((f) => ({ label: f.value, value: f.value }))
+function findByValue(array, value) {
+	return array.find((item) => item.value == value) || {}
 }
 </script>
 
@@ -209,16 +226,17 @@ function addBlock(type) {
 				<QueryBuilderRow label="Summarise" :onRemove="() => (state.summarise = {})">
 					<div
 						class="flex items-center"
-						v-for="(column, index) in state.summarise.metrics"
+						v-for="(metric, index) in state.summarise.metrics"
 						:key="index"
 					>
 						<div
 							class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 						>
 							<InputWithPopover
-								v-model="column.aggregation"
+								v-model="metric.aggregation"
 								placeholder="Count"
 								:disable-filter="true"
+								@update:model-value="(v) => setDummyColumnIfCount(v, metric)"
 								:items="[
 									{ label: 'Count of Records', value: 'count' },
 									{ label: 'Sum', value: 'sum' },
@@ -231,12 +249,12 @@ function addBlock(type) {
 							<Suspense>
 								<ColumnSelector
 									v-if="
-										column.aggregation?.value &&
-										column.aggregation.value !== 'count'
+										metric.aggregation?.value &&
+										metric.aggregation.value !== 'count'
 									"
 									:data_source="query.doc.data_source"
 									:tables="selectedTables"
-									v-model="column.column"
+									v-model="metric.column"
 								/>
 							</Suspense>
 						</div>
@@ -249,15 +267,36 @@ function addBlock(type) {
 					</div>
 				</QueryBuilderRow>
 				<QueryBuilderRow label="By">
-					<MultipleColumnSelector
-						v-model="state.summarise.dimensions"
-						:data_source="query.doc.data_source"
-						:tables="selectedTables"
-						:columnFilter="(c) => isDimensionColumn(c)"
-					/>
+					<Suspense v-for="(dimension, index) in state.summarise.dimensions" :key="index">
+						<div
+							class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+						>
+							<ColumnSelector
+								v-model="dimension.column"
+								:tables="selectedTables"
+								:data_source="query.doc.data_source"
+								:columnFilter="(c) => isDimensionColumn(c)"
+							/>
+							<InputWithPopover
+								v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
+								:value="
+									findByValue(
+										dateFormatOptions,
+										dimension.format_options.date_format
+									)
+								"
+								@update:modelValue="
+									(v) => (dimension.format_options.date_format = v.value)
+								"
+								placeholder="Format"
+								:disable-filter="true"
+								:items="dateFormatOptions"
+							/>
+						</div>
+					</Suspense>
 					<div
 						class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
-						@click="state.summarise.dimensions.push({ column: {} })"
+						@click="state.summarise.dimensions.push({ column: {}, format_options: {} })"
 					>
 						<FeatherIcon name="plus" class="h-4 w-4" />
 					</div>

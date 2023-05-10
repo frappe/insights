@@ -49,9 +49,17 @@ class Aggregations:
 
 class ColumnFormatter:
     @classmethod
-    def format(cls, format_option: dict, column_type: str, column: Column) -> Column:
-        if format_option and column_type in ("Date", "Datetime"):
-            return cls.format_date(format_option.date_format, column)
+    def format(cls, format_options: dict, column_type: str, column: Column) -> Column:
+        if (
+            format_options
+            and format_options.date_format
+            and column_type in ("Date", "Datetime")
+        ):
+            date_format = format_options.date_format
+            date_format = (
+                date_format if type(date_format) == str else date_format.get("value")
+            )
+            return cls.format_date(date_format, column)
         return column
 
     @classmethod
@@ -722,6 +730,9 @@ class SQLQueryBuilder:
                 _column = self.make_column(
                     dimension.column.column, dimension.column.table
                 )
+                _column = self.column_formatter.format(
+                    dimension.format_options, dimension.column.type, _column
+                )
                 self._dimensions.append(
                     _column.label(dimension.alias) if dimension.alias else _column
                 )
@@ -736,7 +747,7 @@ class SQLQueryBuilder:
 
         self._limit = assisted_query.limit or 100
 
-        columns = self._columns + self._metrics + self._dimensions
+        columns = self._columns + self._dimensions + self._metrics
         if not columns:
             columns = [text("*")]
 

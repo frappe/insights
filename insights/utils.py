@@ -26,7 +26,10 @@ class ResultColumn:
         return frappe._dict(
             label=data.get("label") or "Unnamed",
             type=data.get("type") or "String",
-            options=data.get("format_option") or data.get("options") or {},
+            options=data.get("format_option")
+            or data.get("options")
+            or data.get("format_options")
+            or {},
         )
 
     @classmethod
