@@ -9,6 +9,7 @@ from frappe import task
 from frappe.model.document import Document
 
 from insights import notify
+from insights.api.telemetry import track
 from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_team.insights_team import get_permission_filter
@@ -51,6 +52,8 @@ class InsightsDataSource(Document):
                 doctype, {"data_source": self.name}, pluck="name"
             ):
                 frappe.delete_doc(doctype, name)
+
+        track("delete_data_source")
 
     @cached_property
     def db(self) -> BaseDatabase:
