@@ -6,8 +6,13 @@
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="bubbleMenu"
 		:bubble-menu-options="{
-			shouldShow: ({ editor }) =>
-				!editor.isActive('query-builder') && !editor.isActive('query-editor'),
+			shouldShow: (opts) => {
+				// Don't show when the selection is empty
+				if (opts.from === opts.to) return false
+				return (
+					!opts.editor.isActive('query-builder') && !opts.editor.isActive('query-editor')
+				)
+			},
 		}"
 		:placeholder="placeholderByNode"
 		:extensions="[SlashCommand.configure({ suggestion }), QueryBuilder, QueryEditor]"
