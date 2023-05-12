@@ -14,6 +14,5 @@ const value = computed({
 		v-model="value"
 		:placeholder="props.placeholder"
 		class="cursor-pointer px-2.5 py-0.5 outline-none ring-0 transition-all focus:outline-none"
-		:class="[!value.length ? 'min-w-[3rem]' : '']"
 	/>
 </template>

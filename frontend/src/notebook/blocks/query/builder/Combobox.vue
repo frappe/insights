@@ -89,10 +89,10 @@ function isSelected(value) {
 							</span>
 						</div>
 						<span
-							v-if="value.label && value.label !== value.value"
+							v-if="value.description"
 							class="ml-4 w-fit overflow-hidden text-ellipsis whitespace-nowrap text-right text-gray-400"
 						>
-							{{ value.value }}
+							{{ value.description }}
 						</span>
 					</div>
 				</ComboboxOption>

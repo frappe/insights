@@ -30,7 +30,7 @@ class InsightsTable:
         return frappe.get_doc("Insights Table", kwargs)
 
 
-class InsightsColumn:
+class InsightsTableColumn:
     @classmethod
     def from_dict(cls, obj):
         column = _dict(
@@ -46,7 +46,7 @@ class InsightsColumn:
 
     @classmethod
     def from_dicts(cls, objs):
-        return [InsightsColumn.from_dict(obj) for obj in objs]
+        return [InsightsTableColumn.from_dict(obj) for obj in objs]
 
 
 class InsightsDataSource:
@@ -231,204 +231,151 @@ def infer_type_from_list(values):
 # assisted query utils
 
 
-class GetMixin:
-    def get(self, key):
-        # to make obj.get("key") work
-        return self.__dict__.get(key)
+@dataclass
+class Column(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.table = self.get("table")
+        self.column = self.get("column")
+        self.type = self.get("type") or "String"
+        self.expression = self.get("expression")
+        self.aggregation = self.get("aggregation")
+        self.label = self.get("label")
+        self.order = self.get("order")
+        self.alias = self.get("alias") or self.get("label") or self.get("column")
+        self.format = self.get("format")
+        self.meta = self.get("meta")
+        self.granularity = self.get("granularity")
 
-
-class RequiredFieldsMixin:
     def __bool__(self):
-        if not hasattr(self, "OPTIONAL_FIELDS"):
-            return all(self.__dict__.values())
+        return bool(self.table and self.column)
 
-        # check if NON_OPTIONAL_FIELDS are not None
-        NON_OPTIONAL_FIELDS = (
-            f for f in self.__dict__.keys() if f not in self.OPTIONAL_FIELDS
+    @staticmethod
+    def from_dicts(dicts):
+        columns = (Column(**d) for d in dicts)
+        return [c for c in columns if c]
+
+    def is_measure(self):
+        return self.aggregation
+
+    def is_dimension(self):
+        return not self.is_measure()
+
+    def is_expression(self):
+        return self.expression
+
+    def is_formatted(self):
+        return self.format
+
+    def has_granularity(self):
+        return self.is_date_type() and self.granularity
+
+    def is_date_type(self):
+        return self.type in ["Date", "Datetime"]
+
+    def is_numeric_type(self):
+        return self.type in ["Integer", "Decimal"]
+
+    def is_string_type(self):
+        return self.type in ["String", "Text"]
+
+
+@dataclass
+class LabelValue(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.value = self.get("value")
+        self.label = self.get("label") or self.get("value")
+
+    def __bool__(self):
+        return bool(self.value)
+
+
+@dataclass
+class Table(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.table = self.get("table")
+        self.label = self.get("label") or self.get("table")
+
+    def __bool__(self):
+        return bool(self.table)
+
+
+@dataclass
+class Join(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.left_table = Table(**self.get("left_table"))
+        self.right_table = Table(**self.get("right_table"))
+        self.join_type = LabelValue(**self.get("join_type"))
+        self.left_column = Column(**self.get("left_column"))
+        self.right_column = Column(**self.get("right_column"))
+
+    def __bool__(self):
+        return bool(
+            self.left_table
+            and self.right_table
+            and self.left_column
+            and self.right_column
         )
-        return all(self.get(f) for f in NON_OPTIONAL_FIELDS)
-
-
-@dataclass
-class LabelValue(GetMixin, RequiredFieldsMixin):
-    value: str = None
-    label: Optional[str] = None
-    OPTIONAL_FIELDS = ["label"]
 
     @staticmethod
-    def from_dict(d):
-        d = d or {}
-        value, label = d.get("value"), d.get("label")
-        return LabelValue(value, label or value)
+    def from_dicts(dicts):
+        joins = [Join(**d) for d in dicts]
+        return [j for j in joins if j]
 
 
 @dataclass
-class QueryTable(GetMixin, RequiredFieldsMixin):
-    table: str = None
-    label: Optional[str] = None
-    OPTIONAL_FIELDS = ["label"]
+class Filter(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.column = Column(**self.get("column"))
+        self.operator = LabelValue(**self.get("operator"))
+        self.value = LabelValue(**self.get("value"))
 
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        table, label = d.get("table"), d.get("label")
-        return QueryTable(table, label or table)
-
-
-@dataclass
-class QueryColumn(GetMixin, RequiredFieldsMixin):
-    table: str = None
-    column: str = None
-    type: str = None
-    label: Optional[str] = None
-    OPTIONAL_FIELDS = ["label"]
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        table, column, label, type = (
-            d.get("table"),
-            d.get("column"),
-            d.get("label"),
-            d.get("type", "String"),
-        )
-        return QueryColumn(table, column, type, label or column)
-
-
-@dataclass
-class Join(GetMixin, RequiredFieldsMixin):
-    left_table: QueryTable = QueryTable()
-    right_table: QueryTable = QueryTable()
-    join_type: LabelValue = LabelValue()
-    left_column: QueryColumn = QueryColumn()
-    right_column: QueryColumn = QueryColumn()
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        left_table = QueryTable.from_dict(d.get("left_table"))
-        right_table = QueryTable.from_dict(d.get("right_table"))
-        left_column = QueryColumn.from_dict(d.get("left_column"))
-        right_column = QueryColumn.from_dict(d.get("right_column"))
-        join_type = LabelValue.from_dict(d.get("join_type"))
-        return Join(left_table, right_table, join_type, left_column, right_column)
-
-
-@dataclass
-class Filter(GetMixin, RequiredFieldsMixin):
-    column: QueryColumn = QueryColumn()
-    operator: LabelValue = LabelValue()
-    value: LabelValue = LabelValue()
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        column = QueryColumn.from_dict(d.get("column"))
-        operator = LabelValue.from_dict(d.get("operator"))
-        value = LabelValue.from_dict(d.get("value"))
-        return Filter(column, operator, value)
-
-
-@dataclass
-class Metric(GetMixin, RequiredFieldsMixin):
-    column: QueryColumn = QueryColumn()
-    aggregation: LabelValue = LabelValue()
-    alias: Optional[str] = None
-    OPTIONAL_FIELDS = ["alias"]
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        column = QueryColumn.from_dict(d.get("column"))
-        aggregation = LabelValue.from_dict(d.get("aggregation"))
-        alias = d.get("alias", column.label)
-        return Metric(column, aggregation, alias)
-
-
-@dataclass
-class Dimension(GetMixin, RequiredFieldsMixin):
-    column: QueryColumn = QueryColumn()
-    alias: Optional[str] = None
-    format_options: Optional[dict] = None
-    OPTIONAL_FIELDS = ["alias", "format_options"]
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        alias = d.get("alias")
-        column = QueryColumn.from_dict(d.get("column"))
-        format_options = _dict(d.get("format_options"))
-        return Dimension(column, alias or column.label, format_options)
-
-
-@dataclass
-class Summarise(GetMixin, RequiredFieldsMixin):
-    metrics: list[Metric] = field(default_factory=list)
-    dimensions: list[Dimension] = field(default_factory=list)
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        metrics = [Metric.from_dict(m) for m in d.get("metrics", [])]
-        dimensions = [Dimension.from_dict(m) for m in d.get("dimensions", [])]
-        metrics = [m for m in metrics if m]
-        dimensions = [d for d in dimensions if d]
-        return Summarise(metrics, dimensions)
-
-
-@dataclass
-class Column(GetMixin, RequiredFieldsMixin):
-    column: QueryColumn = QueryColumn()
-    alias: Optional[str] = None
-    OPTIONAL_FIELDS = ["alias"]
-
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        column = QueryColumn.from_dict(d.get("column"))
-        alias = d.get("alias")
-        return Column(column, alias or column.label)
-
-
-@dataclass
-class OrderBy(GetMixin, RequiredFieldsMixin):
-    column: QueryColumn = QueryColumn()
-    order: LabelValue = LabelValue()
-    DEFAULT_ORDER = "asc"
+    def __bool__(self):
+        return bool(self.column and self.operator and self.value)
 
     @classmethod
-    def from_dict(cls, d):
-        d = d or {}
-        column = QueryColumn.from_dict(d.get("column"))
-        order = LabelValue(d.get("order", cls.DEFAULT_ORDER))
-        return OrderBy(column, order)
+    def from_dicts(cls, dicts):
+        filters = [cls(**d) for d in dicts]
+        return [f for f in filters if f]
 
 
 @dataclass
-class AssistedQuery(GetMixin, RequiredFieldsMixin):
-    table: QueryTable = QueryTable()
-    joins: list[Join] = field(default_factory=list)
-    filters: list[Filter] = field(default_factory=list)
-    summarise: Summarise = Summarise()
-    columns: list[Column] = field(default_factory=list)
-    order_by: list[OrderBy] = field(default_factory=list)
-    limit: int = None
-    OPTIONAL_FIELDS = ["joins", "filters", "summarise", "columns", "order_by", "limit"]
+class Query(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.table = Table(**kwargs.get("table"))
+        self.joins = Join.from_dicts(kwargs.get("joins"))
+        self.filters = Filter.from_dicts(kwargs.get("filters"))
+        self.columns = Column.from_dicts(kwargs.get("columns"))
+        self.calculations = Column.from_dicts(kwargs.get("calculations"))
+        self.measures = Column.from_dicts(kwargs.get("measures"))
+        self.dimensions = Column.from_dicts(kwargs.get("dimensions"))
+        self.orders = Column.from_dicts(kwargs.get("orders"))
+        self.limit = kwargs.get("limit")
 
-    @staticmethod
-    def from_dict(d):
-        d = d or {}
-        table = QueryTable.from_dict(d.get("table"))
-        joins = [Join.from_dict(j) for j in d.get("joins")]
-        filters = [Filter.from_dict(f) for f in d.get("filters")]
-        summarise = Summarise.from_dict(d.get("summarise"))
-        columns = [Column.from_dict(c) for c in d.get("columns")]
-        order_by = [OrderBy.from_dict(o) for o in d.get("order_by")]
-        limit = d.get("limit")
+    def __bool__(self):
+        return bool(self.table)
 
-        joins = [j for j in joins if j]
-        filters = [f for f in filters if f]
-        columns = [c for c in columns if c]
-        order_by = [o for o in order_by if o]
+    def get_columns(self):
+        return self._extract_columns()
 
-        return AssistedQuery(table, joins, filters, summarise, columns, order_by, limit)
+    def _extract_columns(self):
+        """
+        Extract columns from columns, calculations, measures, dimensions
+        A column has the following format: { table, column, type, label, alias, format }
+        """
+        columns = []
+        for c in self.columns:
+            columns.append(Column(**c))
+        for c in self.calculations:
+            columns.append(Column(**c))
+        for c in self.measures:
+            columns.append(Column(**c))
+        for c in self.dimensions:
+            columns.append(Column(**c))
+
+        return [c for c in columns if c]

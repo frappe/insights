@@ -21,11 +21,9 @@ class InsightsRawQueryController:
     def get_sql(self):
         return self.doc.sql
 
-    def get_columns(self):
-        if not hasattr(self.doc, "_results"):
+    def get_columns(self, results=None):
+        if not results:
             results = self.doc.retrieve_results()
-        else:
-            results = self.doc._results
 
         if not results:
             return []
@@ -35,6 +33,9 @@ class InsightsRawQueryController:
         for column in columns:
             column.type = infer_type_from_list(results_df[column.label])
         return columns
+
+    def get_column_from_results(self, results):
+        return self.get_columns(results)
 
     def before_fetch(self):
         pass

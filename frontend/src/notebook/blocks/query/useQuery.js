@@ -19,6 +19,7 @@ function makeQuery(name) {
 	const resource = getQueryResource(name)
 	const state = reactive({
 		autosave: false,
+		unsaved: false,
 		loading: true,
 		executing: false,
 		error: null,
@@ -34,6 +35,7 @@ function makeQuery(name) {
 			state.doc = doc
 			state.isOwner = state.doc.owner == auth.user.user_id
 			state.loading = false
+			state.unsaved = false
 		})
 	}
 	refresh()
@@ -77,6 +79,7 @@ function makeQuery(name) {
 	}
 
 	function getUpdatedFields() {
+		if (!state.doc.data_source) return
 		if (state.doc.is_native_query) {
 			return {
 				sql: state.doc.sql,
@@ -99,9 +102,19 @@ function makeQuery(name) {
 				if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
 				state.save()
 			}
-			watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+			// TODO: fix the weird bug where the inputs are not selected when auto-saving
+			// watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
 		}
 	)
+
+	const setUnsaved = (newVal, oldVal) => {
+		if (state.unsaved) return
+		if (!oldVal || !newVal) return
+		if (state.loading) return
+		if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
+		state.unsaved = true
+	}
+	watchDebounced(getUpdatedFields, setUnsaved, { deep: true, debounce: 500 })
 
 	state.fetchSourceSchema = async () => {
 		const response = await resource.get_source_schema.fetch()
@@ -153,7 +166,8 @@ const defaultQueryJSON = {
 	filters: [],
 	columns: [],
 	calculations: [],
-	summarise: {},
-	order_by: [],
-	limit: undefined,
+	measures: [],
+	dimensions: [],
+	orders: [],
+	limit: null,
 }

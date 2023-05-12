@@ -7,10 +7,14 @@ const props = defineProps({
 	tables: Array,
 	modelValue: Object,
 	columnFilter: Function,
+	value: { type: Object, default: undefined },
+	columnOptions: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:modelValue'])
+
+const valuePropPassed = props.value !== undefined
 const column = computed({
-	get: () => props.modelValue,
+	get: () => (valuePropPassed ? props.value : props.modelValue),
 	set: (value) => emit('update:modelValue', value),
 })
 
@@ -40,6 +44,8 @@ const columns = computed(() => {
 		.map((d) => d.doc?.columns)
 		.flat()
 		.slice(0, 50)
+		.concat(props.columnOptions)
+		.reverse() // to show the passed column options first
 		.filter((column, index, self) => {
 			return (
 				column &&
@@ -47,14 +53,16 @@ const columns = computed(() => {
 				(!props.columnFilter || props.columnFilter(column))
 			)
 		})
-		.map((column) => {
+		.map((c) => {
 			return {
-				data_source: column.data_source,
-				column: column.column,
-				type: column.type,
-				table: column.table,
-				value: column.column,
-				label: column.label,
+				...column.value, // to preserve the keys of the column object like aggregate, alias, etc.
+				data_source: c.data_source, // used to fetch column values from datasource
+				column: c.column,
+				table: c.table,
+				type: c.type,
+				label: c.label,
+				description: c.description || c.table,
+				value: `${c.table}.${c.column}`,
 			}
 		})
 })

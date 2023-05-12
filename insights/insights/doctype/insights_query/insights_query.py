@@ -27,10 +27,10 @@ from .insights_raw_query import InsightsRawQueryController
 from .utils import (
     CachedResults,
     InsightsChart,
-    InsightsColumn,
     InsightsDataSource,
     InsightsSettings,
     InsightsTable,
+    InsightsTableColumn,
     Status,
     apply_pivot_transform,
     apply_transpose_transform,
@@ -116,7 +116,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             label=self.title,
             is_query_based=1,
             data_source=self.data_source,
-            columns=InsightsColumn.from_dicts(
+            columns=InsightsTableColumn.from_dicts(
                 self.get_columns(),
             ),
         )
@@ -183,8 +183,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @log_error()
     def process_results_columns(self, results):
-        results[0] = ResultColumn.from_dicts(self.get_columns())
+        results[0] = ResultColumn.from_dicts(self.get_columns_from_results(results))
         return results
+
+    def get_columns_from_results(self, results):
+        return self.variant_controller.get_columns_from_results(results)
 
     def after_fetch_results(self, results):
         if self.transforms:

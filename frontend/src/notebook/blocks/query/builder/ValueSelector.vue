@@ -50,7 +50,7 @@ const isMultiValue = computed(() => ['in', 'not_in'].includes(props.operator?.va
 const columnValues = ref([])
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (!isEqualityCheck.value) return
-	if (props.column?.type == 'String') {
+	if (props.column?.type == 'String' && props.column?.data_source) {
 		const URL = 'insights.api.fetch_column_values'
 		const values = await call(URL, {
 			column: props.column,

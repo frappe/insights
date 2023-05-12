@@ -26,71 +26,114 @@ const selectedTables = computed(() => {
 	return tables
 })
 
+const GET_EMPTY_JOIN = () => ({
+	left_table: {},
+	right_table: {},
+	join_type: { label: 'Inner', value: 'inner' },
+	left_column: {},
+	right_column: {},
+})
+const GET_EMPTY_FILTER = () => ({
+	column: {},
+	operator: {},
+	value: {},
+})
+const COLUMN = {
+	table: '',
+	column: '',
+	label: '',
+	type: '',
+	alias: '',
+	expression: {},
+	aggregation: {},
+	order: {},
+	format: {},
+	granularity: '',
+}
+const GET_EMPTY_COLUMN = () => ({
+	column: { ...COLUMN },
+})
+
 function addBlock(type) {
-	if (type == 'Join') {
-		state.value.joins.push({
-			left_table: {},
-			right_table: {},
-			join_type: { label: 'Inner', value: 'inner' },
-			left_column: {},
-			right_column: {},
-		})
-	}
-	if (type == 'Filter') {
-		state.value.filters.push({
-			column: {},
-			operator: {},
-			value: {},
-		})
-	}
-	if (type == 'Column') {
-		state.value.columns.push({
-			column: {},
-		})
-	}
-	if (type == 'Sort') {
-		state.value.order_by.push({
-			column: {},
-			order: {
-				label: 'Ascending',
-				value: 'asc',
-			},
-		})
-	}
-	if (type == 'Limit') {
-		state.value.limit = 10
-	}
-	if (type == 'Calculate') {
-		state.value.calculations.push({
-			alias: '',
-			expression: {},
-		})
-	}
 	if (type == 'Summarise') {
-		if (state.value.summarise.metrics) return
-		state.value.summarise = {
-			metrics: [{ aggregation: {}, column: {} }],
-			dimensions: [{ column: {}, format_options: { date_format: {} } }],
-		}
+		if (state.value.measures.length) return
+		state.value.measures = [{ ...GET_EMPTY_COLUMN() }]
+		state.value.dimensions = [{ ...GET_EMPTY_COLUMN() }]
+		return
+	}
+	const typeToEmptyValue = {
+		Join: { ...GET_EMPTY_JOIN() },
+		Filter: { ...GET_EMPTY_FILTER() },
+		Column: { ...GET_EMPTY_COLUMN() },
+		Sort: { ...GET_EMPTY_COLUMN() },
+		Calculate: { ...GET_EMPTY_COLUMN() },
+		Limit: 10,
+	}
+	const typeToKey = {
+		Join: 'joins',
+		Filter: 'filters',
+		Column: 'columns',
+		Sort: 'orders',
+		Calculate: 'calculations',
+		Limit: 'limit',
+	}
+	const block = typeToEmptyValue[type]
+	const key = typeToKey[type]
+	if (Array.isArray(state.value[key])) {
+		state.value[key].push(block)
+	} else {
+		state.value[key] = block
 	}
 }
 
-function setDummyColumnIfCount(aggregation, metric) {
+const AGGREGATIONS = [
+	{ label: 'Count of Records', value: 'count' },
+	{ label: 'Sum', value: 'sum' },
+	{ label: 'Average', value: 'avg' },
+	{ label: 'Minimum', value: 'min' },
+	{ label: 'Maximum', value: 'max' },
+]
+function setAggregation(aggregation, measure) {
 	if (aggregation.value == 'count') {
-		metric.column = {
+		Object.assign(measure.column, {
 			label: 'Count',
 			column: 'count',
 			table: 'count',
 			value: 'count',
 			type: 'Integer',
-		}
+			aggregation: aggregation.value,
+		})
+	} else {
+		Object.assign(measure.column, {
+			...GET_EMPTY_COLUMN().column,
+			aggregation: aggregation.value,
+		})
 	}
 }
 
 const dateFormatOptions = dateFormats.map((f) => ({ label: f.value, value: f.value }))
-function findByValue(array, value) {
-	return array.find((item) => item.value == value) || {}
+function findByValue(array, value, defaultValue = {}) {
+	return array.find((item) => item.value == value) || defaultValue
 }
+
+const ORDER = [
+	{ value: 'asc', label: 'Ascending' },
+	{ value: 'desc', label: 'Descending' },
+]
+
+function isValidColumn(column) {
+	return column.column && column.table && column.type && column.label
+}
+
+const selectedColumns = computed(() => {
+	const columns = []
+	const addIfValid = (column) => isValidColumn(column) && columns.push(column)
+	state.value.columns.forEach((c) => addIfValid(c.column))
+	state.value.calculations.forEach((c) => addIfValid(c.column))
+	state.value.measures.forEach((c) => addIfValid(c.column))
+	state.value.dimensions.forEach((c) => addIfValid(c.column))
+	return columns.map((c) => ({ ...c, description: 'local' }))
+})
 </script>
 
 <template>
@@ -100,7 +143,7 @@ function findByValue(array, value) {
 			class="space-y-3 overflow-scroll scrollbar-hide"
 			:key="query.doc.data_source"
 		>
-			<QueryBuilderRow label="Start with">
+			<QueryBuilderRow label="Start with" :onRemove="() => (state.table = {})">
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:data_source="query.doc.data_source"
@@ -158,13 +201,13 @@ function findByValue(array, value) {
 			>
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="calc.alias"
+					v-model="calc.column.alias"
 					placeholder="Label"
 				/>
 				<div class="text-sm uppercase text-gray-500">as</div>
 				<ColumnExpressionSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="calc.expression"
+					v-model="calc.column.expression"
 				/>
 			</QueryBuilderRow>
 
@@ -210,124 +253,117 @@ function findByValue(array, value) {
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
 						v-model="column.column"
-						@update:model-value="(c) => (column.alias = c.label)"
+						@update:model-value="(c) => (column.column.alias = c.label)"
 					/>
 				</Suspense>
 				<div class="text-sm uppercase text-gray-500">as</div>
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="column.alias"
+					v-model="column.column.alias"
 					placeholder="Label"
 				/>
 			</QueryBuilderRow>
 
 			<!-- Summarise -->
-			<div v-if="state.summarise.metrics?.length" class="flex flex-col space-y-2.5 text-base">
-				<QueryBuilderRow label="Summarise" :onRemove="() => (state.summarise = {})">
+			<QueryBuilderRow
+				v-if="state.measures.length"
+				label="Summarise"
+				:onRemove="() => (state.measures = [{ ...GET_EMPTY_COLUMN() }])"
+			>
+				<div
+					class="flex items-center"
+					v-for="(measure, index) in state.measures"
+					:key="index"
+				>
 					<div
-						class="flex items-center"
-						v-for="(metric, index) in state.summarise.metrics"
-						:key="index"
+						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 					>
-						<div
-							class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
-						>
-							<InputWithPopover
-								v-model="metric.aggregation"
-								placeholder="Count"
-								:disable-filter="true"
-								@update:model-value="(v) => setDummyColumnIfCount(v, metric)"
-								:items="[
-									{ label: 'Count of Records', value: 'count' },
-									{ label: 'Sum', value: 'sum' },
-									{ label: 'Average', value: 'avg' },
-									{ label: 'Minimum', value: 'min' },
-									{ label: 'Maximum', value: 'max' },
-								]"
-							/>
+						<InputWithPopover
+							:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
+							placeholder="Count"
+							:disable-filter="true"
+							@update:modelValue="(v) => setAggregation(v, measure)"
+							:items="AGGREGATIONS"
+						/>
 
-							<Suspense>
-								<ColumnSelector
-									v-if="
-										metric.aggregation?.value &&
-										metric.aggregation.value !== 'count'
-									"
-									:data_source="query.doc.data_source"
-									:tables="selectedTables"
-									v-model="metric.column"
-								/>
-							</Suspense>
-						</div>
-					</div>
-					<div
-						class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
-						@click="state.summarise.metrics.push({ aggregation: {}, column: {} })"
-					>
-						<FeatherIcon name="plus" class="h-4 w-4" />
-					</div>
-				</QueryBuilderRow>
-				<QueryBuilderRow label="By">
-					<Suspense v-for="(dimension, index) in state.summarise.dimensions" :key="index">
-						<div
-							class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
-						>
+						<Suspense>
 							<ColumnSelector
-								v-model="dimension.column"
-								:tables="selectedTables"
+								v-if="
+									measure.column.aggregation &&
+									measure.column.aggregation !== 'count'
+								"
 								:data_source="query.doc.data_source"
-								:columnFilter="(c) => isDimensionColumn(c)"
+								:tables="selectedTables"
+								v-model="measure.column"
 							/>
-							<InputWithPopover
-								v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
-								:value="
-									findByValue(
-										dateFormatOptions,
-										dimension.format_options.date_format
-									)
-								"
-								@update:modelValue="
-									(v) => (dimension.format_options.date_format = v.value)
-								"
-								placeholder="Format"
-								:disable-filter="true"
-								:items="dateFormatOptions"
-							/>
-						</div>
-					</Suspense>
-					<div
-						class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
-						@click="state.summarise.dimensions.push({ column: {}, format_options: {} })"
-					>
-						<FeatherIcon name="plus" class="h-4 w-4" />
+						</Suspense>
 					</div>
-				</QueryBuilderRow>
-			</div>
+				</div>
+				<div
+					class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+					@click="state.measures.push({ ...GET_EMPTY_COLUMN() })"
+				>
+					<FeatherIcon name="plus" class="h-4 w-4" />
+				</div>
+			</QueryBuilderRow>
+			<QueryBuilderRow
+				v-if="state.dimensions.length"
+				label="By"
+				:onRemove="() => (state.dimensions = [{ ...GET_EMPTY_COLUMN() }])"
+			>
+				<Suspense v-for="(dimension, index) in state.dimensions" :key="index">
+					<div
+						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+					>
+						<ColumnSelector
+							v-model="dimension.column"
+							:tables="selectedTables"
+							:data_source="query.doc.data_source"
+							:columnFilter="(c) => isDimensionColumn(c)"
+						/>
+						<InputWithPopover
+							v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
+							:value="findByValue(dateFormatOptions, dimension.column.granularity)"
+							@update:modelValue="(v) => (dimension.column.granularity = v.value)"
+							placeholder="Format"
+							:disable-filter="true"
+							:items="dateFormatOptions"
+						/>
+					</div>
+				</Suspense>
+				<div
+					class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+					@click="state.dimensions.push({ ...GET_EMPTY_COLUMN() })"
+				>
+					<FeatherIcon name="plus" class="h-4 w-4" />
+				</div>
+			</QueryBuilderRow>
 
 			<!-- Order By -->
 			<QueryBuilderRow
-				v-if="state.order_by.length"
-				v-for="(column, index) in state.order_by"
+				v-if="state.orders.length"
+				v-for="(order, index) in state.orders"
 				:key="index"
 				label="Sort by"
-				:onRemove="() => state.order_by.splice(index, 1)"
+				:onRemove="() => state.orders.splice(index, 1)"
 			>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
-						v-model="column.column"
+						:columnOptions="selectedColumns"
+						v-model="order.column"
 					/>
 				</Suspense>
 				<div class="text-sm uppercase text-gray-500">in</div>
 				<InputWithPopover
 					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="column.order"
+					:value="findByValue(ORDER, order.column.order)"
+					placeholder="Ascending"
 					:disable-filter="true"
-					:items="[
-						{ value: 'asc', label: 'Ascending' },
-						{ value: 'desc', label: 'Descending' },
-					]"
+					:items="ORDER"
+					@update:modelValue="(v) => (order.column.order = v.value)"
 				/>
 				<div class="text-sm uppercase text-gray-500">order</div>
 			</QueryBuilderRow>
@@ -354,7 +390,7 @@ function findByValue(array, value) {
 					'Join',
 					'Filter',
 					'Column',
-					'Calculate',
+					// 'Calculate', // FIX: the suggestions popover is not placed correctly
 					'Summarise',
 					'Sort',
 					'Limit',

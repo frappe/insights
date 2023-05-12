@@ -649,7 +649,7 @@ class SQLQueryBuilder:
         self._joins = []
         self._filters = None
         self._columns = []
-        self._metrics = []
+        self._measures = []
         self._dimensions = []
         self._order_by_columns = []
         self._limit = 100
@@ -700,54 +700,38 @@ class SQLQueryBuilder:
         )
 
         for column in assisted_query.columns:
-            _column = column.column
-            _column = self.make_column(_column.column, _column.table)
-            self._columns.append(
-                _column.label(column.alias) if column.alias else _column
-            )
+            _column = self.make_column(column.column, column.table)
+            self._columns.append(_column.label(column.alias))
 
         # TODO: Add support for calculations
 
-        if (
-            assisted_query.summarise
-            and assisted_query.summarise.metrics
-            and assisted_query.summarise.dimensions
-        ):
-            for metric in assisted_query.summarise.metrics:
-                aggregation = metric.aggregation.value
-                if aggregation == "count":
-                    _column = func.count().label(metric.alias)
-                    self._metrics.append(_column)
-                    continue
+        for measure in assisted_query.measures:
+            _column = self.make_column(measure.column, measure.table)
+            _column = self.aggregations.apply(measure.aggregation, _column)
+            self._measures.append(_column.label(measure.alias))
 
-                _column = self.make_column(metric.column.column, metric.column.table)
-                _column = self.aggregations.apply(aggregation, _column)
-                self._metrics.append(
-                    _column.label(metric.alias) if metric.alias else _column
+        for dimension in assisted_query.dimensions:
+            _column = self.make_column(dimension.column, dimension.table)
+            if dimension.has_granularity():
+                _column = self.column_formatter.format_date(
+                    dimension.granularity, _column
                 )
+            self._dimensions.append(_column.label(dimension.alias))
 
-            for dimension in assisted_query.summarise.dimensions:
-                _column = self.make_column(
-                    dimension.column.column, dimension.column.table
-                )
-                _column = self.column_formatter.format(
-                    dimension.format_options, dimension.column.type, _column
-                )
-                self._dimensions.append(
-                    _column.label(dimension.alias) if dimension.alias else _column
-                )
-
-        if assisted_query.order_by:
-            for order_by in assisted_query.order_by:
-                order = order_by.order.value
-                _column = self.make_column(order_by.column, order_by.table)
-                self._order_by_columns.append(
-                    _column.asc() if order == "asc" else _column.desc()
-                )
+        for order in assisted_query.orders:
+            _column = self.make_column(order.column, order.table)
+            if order.is_measure():
+                _column = self.aggregations.apply(order.aggregation, _column)
+            if order.has_granularity():
+                _column = self.column_formatter.format_date(order.granularity, _column)
+            _column = _column.label(order.alias)
+            self._order_by_columns.append(
+                _column.asc() if order.order == "asc" else _column.desc()
+            )
 
         self._limit = assisted_query.limit or 100
 
-        columns = self._columns + self._dimensions + self._metrics
+        columns = self._columns + self._dimensions + self._measures
         if not columns:
             columns = [text("*")]
 

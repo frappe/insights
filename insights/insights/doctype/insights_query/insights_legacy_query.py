@@ -259,6 +259,20 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def get_columns(self):
         return self.doc.columns or self.get_tables_columns()
 
+    def get_columns_from_results(self, results):
+        if not results:
+            return []
+        result_columns = results[0]
+        query_columns = self.get_columns()
+
+        def find_by_label(label):
+            for rc in result_columns:
+                if rc.label == label:
+                    return rc
+
+        result_columns = [c for c in query_columns if find_by_label(c.label)]
+        return result_columns
+
     def get_tables_columns(self):
         columns = []
         selected_tables = self.get_selected_tables()

@@ -26,6 +26,7 @@ if (!props.tableOptions) {
 					table: table.table,
 					value: table.table,
 					label: table.label,
+					description: table.table,
 				}
 			})
 	})

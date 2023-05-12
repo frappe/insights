@@ -6,7 +6,7 @@ from functools import cached_property
 
 import frappe
 
-from .utils import AssistedQuery, InsightsTable
+from .utils import Column, InsightsTable, Query
 
 DEFAULT_JSON = {
     "table": {},
@@ -14,8 +14,9 @@ DEFAULT_JSON = {
     "columns": [],
     "calculations": [],
     "filters": [],
-    "summarise": {},
-    "order_by": [],
+    "measures": [],
+    "dimensions": [],
+    "orders": [],
     "limit": None,
 }
 
@@ -23,65 +24,39 @@ DEFAULT_JSON = {
 class InsightsAssistedQueryController:
     def __init__(self, doc):
         self.doc = doc
+
+    def validate(self):
         if not frappe.parse_json(self.doc.json):
             self.doc.json = frappe.as_json(DEFAULT_JSON)
 
-    def validate(self):
-        pass
-
     @cached_property
     def query_json(self):
-        return AssistedQuery.from_dict(frappe.parse_json(self.doc.json))
+        query = frappe.parse_json(self.doc.json)
+        query.columns = (c.get("column") for c in query.columns or [])
+        query.calculations = (c.get("column") for c in query.calculations or [])
+        query.measures = (c.get("column") for c in query.measures or [])
+        query.dimensions = (c.get("column") for c in query.dimensions or [])
+        query.orders = (c.get("column") for c in query.orders or [])
+        return Query(**query)
 
     def get_sql(self):
         return self.doc._data_source.build_query(self.doc, with_cte=True)
 
     def get_columns(self):
-        return self.get_query_columns() or self.get_tables_columns()
+        return self.query_json.get_columns() or self.get_tables_columns()
 
-    def get_query_columns(self):
-        columns = []
-        metrics = []
-        dimensions = []
+    def get_columns_from_results(self, results):
+        if not results:
+            return []
+        result_columns = results[0]
+        query_columns = self.get_columns()
 
-        for column in self.query_json.columns:
-            columns.append(
-                {
-                    **column.column.__dict__,
-                    "label": column.alias or column.column.label,
-                }
-            )
+        def find_query_column(label):
+            for qc in query_columns:
+                if qc.alias == label:
+                    return qc
 
-        if (
-            not self.query_json.summarise
-            or not self.query_json.summarise.metrics
-            or not self.query_json.summarise.dimensions
-        ):
-            return columns
-
-        for metric in self.query_json.summarise.metrics:
-            if metric.aggregation.value != "count":
-                metrics.append(
-                    {
-                        **metric.column.__dict__,
-                        "label": metric.alias or metric.column.label,
-                    }
-                )
-                continue
-            metrics.append(
-                frappe._dict(label="Count of Records", column="count", type="Integer")
-            )
-
-        for dimension in self.query_json.summarise.dimensions:
-            dimensions.append(
-                {
-                    **dimension.column.__dict__,
-                    "label": dimension.alias or dimension.column.label,
-                    "format_options": dimension.format_options,
-                }
-            )
-
-        return columns + dimensions + metrics
+        return [find_query_column(rc["label"]) for rc in result_columns]
 
     def get_tables_columns(self):
         columns = []
@@ -95,12 +70,10 @@ class InsightsAssistedQueryController:
             columns += [
                 frappe._dict(
                     {
+                        **Column(**c.as_dict()),
                         "data_source": self.doc.data_source,
                         "table_label": table_doc.label,
                         "table": table_doc.table,
-                        "column": c.get("column"),
-                        "label": c.get("label"),
-                        "type": c.get("type"),
                     }
                 )
                 for c in table_columns

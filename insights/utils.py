@@ -24,12 +24,17 @@ class ResultColumn:
     @classmethod
     def from_dict(cls, data: dict) -> "ResultColumn":
         return frappe._dict(
-            label=data.get("label") or "Unnamed",
+            label=data.get("alias") or data.get("label") or "Unnamed",
             type=data.get("type") or "String",
             options=data.get("format_option")
             or data.get("options")
             or data.get("format_options")
-            or {},
+            # temporary fix until we change format_option from dict to str
+            or (
+                {"date_format": data.get("granularity")}
+                if data.get("granularity")
+                else {}
+            ),
         )
 
     @classmethod
