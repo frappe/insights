@@ -41,12 +41,12 @@
    "fieldname": "content",
    "fieldtype": "Code",
    "label": "Content",
-   "options": "HTML"
+   "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-06 17:38:19.829508",
+ "modified": "2023-05-12 12:08:27.514468",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Notebook Page",

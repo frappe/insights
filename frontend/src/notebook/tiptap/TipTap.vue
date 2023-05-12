@@ -1,9 +1,8 @@
 <template>
 	<TextEditor
-		ref="editor"
-		:content="$props.content"
+		ref="tiptap"
 		editorClass="max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-[15px] prose-p:leading-7 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-1 prose-ol:my-1 prose-th:py-1 prose-td:py-1"
-		@change="$emit('update:content', $event)"
+		@change="updateContent"
 		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="bubbleMenu"
 		:bubble-menu-options="{
@@ -18,10 +17,28 @@
 <script setup>
 import { TextEditor } from 'frappe-ui'
 import { Code, RemoveFormatting, Strikethrough } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
 import QueryBuilder from './extensions/QueryBuilder'
 import QueryEditor from './extensions/QueryEditor'
 import SlashCommand from './slash-command/commands'
 import suggestion from './slash-command/suggestion'
+
+const emit = defineEmits(['update:content'])
+const props = defineProps({
+	content: {
+		type: String,
+		required: true,
+	},
+})
+const content = computed(() => JSON.parse(props.content || '{}'))
+const tiptap = ref(null)
+const updateContent = () => {
+	const contentJSON = tiptap.value.editor.getJSON()
+	emit('update:content', JSON.stringify(contentJSON, null, 2))
+}
+onMounted(() => {
+	tiptap.value.editor.commands.setContent(content.value)
+})
 
 function placeholderByNode({ node }) {
 	if (node.type.name === 'heading') {
