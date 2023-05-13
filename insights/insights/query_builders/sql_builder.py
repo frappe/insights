@@ -677,62 +677,41 @@ class SQLQueryBuilder:
                 }
             )
 
-        self._filters = self.expression_processor.process(
-            {
-                "type": "LogicalExpression",
-                "operator": "&&",
-                "conditions": [
-                    {
-                        "type": "BinaryExpression",
-                        "operator": filter.operator.value,
-                        "left": {
-                            "type": "Column",
-                            "value": filter.column,
-                        },
-                        "right": {
-                            "type": "String",
-                            "value": filter.value.value,
-                        },
-                    }
-                    for filter in assisted_query.filters
-                ],
-            }
-        )
+        def make_sql_column(column):
+            _column = self.make_column(column.column, column.table)
+            if column.is_expression():
+                _column = self.expression_processor.process(column.expression.ast)
+
+            if column.is_aggregate():
+                _column = self.aggregations.apply(column.aggregation, _column)
+
+            if column.has_granularity():
+                _column = self.column_formatter.format_date(column.granularity, _column)
+            return _column.label(column.alias)
+
+        if assisted_query.filters:
+            filters = []
+            for fltr in assisted_query.filters:
+                operation = BinaryOperations.get_operation(fltr.operator.value)
+                _column = make_sql_column(fltr.column)
+                _filter = operation(_column, fltr.value.value)
+                filters.append(_filter)
+            self._filters = and_(*filters)
 
         for column in assisted_query.columns:
-            _column = self.make_column(column.column, column.table)
-            self._columns.append(_column.label(column.alias))
+            self._columns.append(make_sql_column(column))
 
-        # TODO: Add support for calculations
         for column in assisted_query.calculations:
-            if column.is_expression():
-                _column = self.expression_processor.process(column.expression.ast)
-                self._columns.append(_column.label(column.alias))
+            self._columns.append(make_sql_column(column))
 
         for measure in assisted_query.measures:
-            _column = self.make_column(measure.column, measure.table)
-            if measure.is_aggregate():
-                _column = self.aggregations.apply(measure.aggregation, _column)
-            self._measures.append(_column.label(measure.alias))
+            self._measures.append(make_sql_column(measure))
 
         for dimension in assisted_query.dimensions:
-            _column = self.make_column(dimension.column, dimension.table)
-            if dimension.has_granularity():
-                _column = self.column_formatter.format_date(
-                    dimension.granularity, _column
-                )
-            self._dimensions.append(_column.label(dimension.alias))
+            self._dimensions.append(make_sql_column(dimension))
 
         for order in assisted_query.orders:
-            if column.is_expression():
-                _column = self.expression_processor.process(column.expression.ast)
-            else:
-                _column = self.make_column(order.column, order.table)
-            if order.is_aggregate():
-                _column = self.aggregations.apply(order.aggregation, _column)
-            if order.has_granularity():
-                _column = self.column_formatter.format_date(order.granularity, _column)
-            _column = _column.label(order.alias)
+            _column = make_sql_column(order)
             self._order_by_columns.append(
                 _column.asc() if order.order == "asc" else _column.desc()
             )

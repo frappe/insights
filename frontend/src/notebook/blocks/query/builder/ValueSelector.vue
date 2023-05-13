@@ -22,6 +22,7 @@ const value = computed({
 })
 
 const operator = computed(() => props.operator?.value)
+const isExpression = computed(() => props.column?.expression?.raw)
 const isString = computed(() => props.column?.type === 'String')
 const isDate = computed(() => FIELDTYPES.DATE.includes(props.column?.type))
 const isEqualityCheck = computed(() => ['=', '!=', 'in', 'not_in'].includes(operator.value))
@@ -33,7 +34,7 @@ const selectorType = computed(() => {
 	if (isDate.value) return 'datepicker'
 
 	if (isString.value && isNullCheck.value) return 'none'
-	if (isString.value && isEqualityCheck.value) return 'combobox'
+	if (!isExpression.value && isString.value && isEqualityCheck.value) return 'combobox'
 	return 'text'
 })
 

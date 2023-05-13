@@ -38,7 +38,9 @@ const getCompletions = (context, syntaxTree) => {
 </script>
 
 <template>
-	<div class="flex max-w-[20rem] rounded-lg border border-gray-300 px-1 py-0.5 text-gray-800">
+	<div
+		class="flex max-w-[20rem] rounded-lg border border-gray-300 py-0.5 pl-1 pr-2 text-gray-800"
+	>
 		<Code
 			:value="expression.raw"
 			:completions="getCompletions"
