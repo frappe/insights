@@ -34,7 +34,7 @@ class InsightsRawQueryController:
             column.type = infer_type_from_list(results_df[column.label])
         return columns
 
-    def get_column_from_results(self, results):
+    def get_columns_from_results(self, results):
         return self.get_columns(results)
 
     def before_fetch(self):
@@ -42,3 +42,6 @@ class InsightsRawQueryController:
 
     def after_fetch_results(self, results):
         return results
+
+    def get_tables_columns(self):
+        return []

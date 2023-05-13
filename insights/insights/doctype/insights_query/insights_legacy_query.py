@@ -9,9 +9,10 @@ import pandas as pd
 from frappe.utils.data import cstr
 
 from insights.api import get_tables
+from insights.utils import ResultColumn
 
 from ..insights_data_source.sources.query_store import sync_query_store
-from .utils import InsightsTable
+from .utils import InsightsTable, infer_type_from_list
 
 DEFAULT_FILTERS = dumps(
     {
@@ -263,7 +264,14 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         if not results:
             return []
         result_columns = results[0]
-        query_columns = self.get_columns()
+        query_columns = self.doc.columns
+        if not query_columns:
+            columns = ResultColumn.from_dicts(results[0])
+            column_names = [column.label for column in columns]
+            results_df = pd.DataFrame(results[1:], columns=column_names)
+            for column in columns:
+                column.type = infer_type_from_list(results_df[column.label])
+            return columns
 
         def find_by_label(label):
             for rc in result_columns:
