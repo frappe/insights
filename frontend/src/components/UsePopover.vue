@@ -10,6 +10,7 @@ const props = defineProps({
 	placement: { type: String, default: 'bottom-start' },
 	targetElement: { type: Object, required: true },
 	transition: { type: Object, default: slideDownTransition },
+	autoClose: { type: Boolean, default: true },
 })
 
 const showPropPassed = props.show !== undefined
@@ -55,13 +56,15 @@ onMounted(() => {
 	props.targetElement.addEventListener('click', open)
 	props.targetElement.addEventListener('focus', open)
 
-	document.addEventListener('click', handleClickOutside)
+	if (props.autoClose) document.addEventListener('click', handleClickOutside)
 })
 
 const handleClickOutside = (e) => {
 	const insidePopover = popover.value.contains(e.target)
 	const insideTarget = props.targetElement.contains(e.target)
-	!insidePopover && !insideTarget && close()
+	const popoverRoot = document.getElementById('frappeui-popper-root')
+	const insidePopoverRoot = popoverRoot.contains(e.target)
+	!insidePopover && !insideTarget && !insidePopoverRoot && close()
 }
 
 const updatePosition = () => show.value && popper?.update()
@@ -73,8 +76,10 @@ onBeforeUnmount(() => {
 	window.removeEventListener('scroll', updatePosition)
 	props.targetElement.removeEventListener('click', toggle)
 	props.targetElement.removeEventListener('focus', open)
-	document.removeEventListener('click', handleClickOutside)
+	if (props.autoClose) document.removeEventListener('click', handleClickOutside)
 })
+
+defineExpose({ toggle, open, close })
 </script>
 
 <template>
@@ -82,7 +87,7 @@ onBeforeUnmount(() => {
 		<div ref="popover">
 			<transition v-bind="transition">
 				<div v-show="show">
-					<slot></slot>
+					<slot v-bind="{ toggle }"> </slot>
 				</div>
 			</transition>
 		</div>

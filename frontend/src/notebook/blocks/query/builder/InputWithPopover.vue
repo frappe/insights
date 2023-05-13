@@ -1,7 +1,7 @@
 <script setup>
+import ContentEditable from '@/notebook/ContentEditable.vue'
 import { Popover } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
-import ContentEditable from '@/notebook/ContentEditable.vue'
 import Combobox from './Combobox.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -13,9 +13,9 @@ const props = defineProps({
 	disableFilter: Boolean,
 	disableInput: Boolean,
 })
-const valuePropPassed = props.value !== undefined
+const valuePropPassed = computed(() => props.value !== undefined)
 const selectedItem = computed({
-	get: () => (valuePropPassed ? props.value : props.modelValue),
+	get: () => (valuePropPassed.value ? props.value : props.modelValue),
 	set: (value) => emit('update:modelValue', value),
 })
 const searchText = ref(selectedItem.value?.label)
@@ -30,6 +30,12 @@ const filteredItems = computed(() => {
 			item.value.toLowerCase().includes(searchText.value.toLowerCase())
 	)
 })
+
+function handleOptionSelect(value, togglePopover) {
+	selectedItem.value = value
+	searchText.value = value?.label
+	togglePopover(false)
+}
 </script>
 
 <template>
@@ -65,7 +71,7 @@ const filteredItems = computed(() => {
 					<Combobox
 						v-model="selectedItem"
 						:values="filteredItems"
-						@update:modelValue="togglePopover()"
+						@update:modelValue="handleOptionSelect($event, togglePopover)"
 					/>
 				</slot>
 			</div>

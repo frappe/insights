@@ -21,8 +21,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Query",
-   "options": "Insights Query",
-   "reqd": 1
+   "options": "Insights Query"
   },
   {
    "default": "{}",
@@ -60,7 +59,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-02 16:59:15.903932",
+ "modified": "2023-05-13 12:11:47.615480",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart",

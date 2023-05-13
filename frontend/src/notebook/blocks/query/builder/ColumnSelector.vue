@@ -12,9 +12,9 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue'])
 
-const valuePropPassed = props.value !== undefined
+const valuePropPassed = computed(() => props.value !== undefined)
 const column = computed({
-	get: () => (valuePropPassed ? props.value : props.modelValue),
+	get: () => (valuePropPassed.value ? props.value : props.modelValue),
 	set: (value) => emit('update:modelValue', value),
 })
 

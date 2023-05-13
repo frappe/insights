@@ -527,3 +527,10 @@ def add_chart_to_dashboard(dashboard, chart):
     dashboard = frappe.get_doc("Insights Dashboard", dashboard)
     dashboard.add_chart(chart)
     dashboard.save()
+
+
+@frappe.whitelist()
+def create_chart():
+    chart = frappe.new_doc("Insights Chart")
+    chart.save()
+    return chart.name

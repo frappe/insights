@@ -36,7 +36,7 @@ onMounted(() =>
 		chartRef.value && resizeObserver.observe(chartRef.value)
 	}, 1000)
 )
-onBeforeUnmount(() => resizeObserver.unobserve(chartRef.value))
+onBeforeUnmount(() => chartRef.value && resizeObserver.unobserve(chartRef.value))
 
 function convertAttributesToOptions(attributes) {
 	return Object.keys(attributes).reduce((acc, key) => {

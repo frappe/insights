@@ -107,7 +107,7 @@ const chartOptions = [
 let chart = ref({})
 query.get_chart_name.submit().then((res) => {
 	chart.value = useChart(res.message)
-	chart.value.autosave = true
+	state.chart.enableAutoSave()
 })
 
 const showDashboardDialog = ref(false)

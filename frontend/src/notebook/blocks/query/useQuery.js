@@ -124,7 +124,7 @@ function makeQuery(name) {
 	state.loadChart = async () => {
 		const response = await resource.get_chart_name.fetch()
 		state.chart = useChart(response.message)
-		state.chart.autosave = true
+		state.chart.enableAutoSave()
 	}
 
 	state.delete = async () => {

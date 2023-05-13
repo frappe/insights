@@ -1,4 +1,4 @@
-import { useAutoSave, safeJSONParse } from '@/utils'
+import { safeJSONParse, useAutoSave } from '@/utils'
 import { createDocumentResource } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
@@ -52,7 +52,9 @@ export default function useNotebookPage(page_name) {
 
 function appendLastParagraph(content) {
 	if (!content) return {}
-	if (content.content.at(-1).type != 'paragraph') {
+	if (typeof content == 'string') content = safeJSONParse(content)
+	const lastBlock = content.content?.at(-1)
+	if (lastBlock?.type != 'paragraph') {
 		content.content.push({
 			type: 'paragraph',
 			attrs: { textAlign: 'left' },

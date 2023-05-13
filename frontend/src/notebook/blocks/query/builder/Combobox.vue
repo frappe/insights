@@ -10,12 +10,8 @@ const props = defineProps({
 })
 
 const selectedValue = computed({
-	get: () => {
-		return props.modelValue
-	},
-	set: (value) => {
-		emit('update:modelValue', value)
-	},
+	get: () => props.modelValue,
+	set: (value) => emit('update:modelValue', value),
 })
 
 const multipleValues = computed(() => {

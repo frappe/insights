@@ -3,23 +3,28 @@ import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { guessChart } from '@/widgets/useChartData'
 import { watchDebounced, watchOnce } from '@vueuse/core'
-import { createDocumentResource } from 'frappe-ui'
-import { reactive, watch } from 'vue'
+import { call, createDocumentResource, debounce } from 'frappe-ui'
+import { reactive } from 'vue'
 
 const charts = {}
 
+export async function createChart() {
+	return call('insights.api.create_chart')
+}
+
 export default function useChart(name) {
 	if (!charts[name]) {
-		charts[name] = makeChart(name)
+		charts[name] = getChart(name)
 	}
 	return charts[name]
 }
 
-function makeChart(chartName) {
+function getChart(chartName) {
 	const chartDocResource = getChartResource(chartName)
 	const state = reactive({
 		query: null,
 		data: [],
+		columns: [],
 		loading: false,
 		error: null,
 		options: {},
@@ -37,13 +42,24 @@ function makeChart(chartName) {
 		state.loading = true
 		await chartDocResource.get.fetch()
 		state.doc = chartDocResource.doc
+		if (!state.doc.query) {
+			state.loading = false
+			return
+		}
 		state.doc.query = chartDocResource.doc.query
+		updateChartData()
+	}
+	load()
+
+	function updateChartData() {
+		state.loading = true
 		const _query = useQuery(state.doc.query)
 		watchOnce(
 			() => _query.doc,
 			() => {
 				if (!_query.doc) return
 				state.data = getFormattedResult(_query.doc.results)
+				state.columns = state.data[0]
 				if (!state.doc.chart_type) {
 					const recommendedChart = guessChart(state.data)
 					state.doc.chart_type = recommendedChart?.type
@@ -54,7 +70,6 @@ function makeChart(chartName) {
 			}
 		)
 	}
-	load()
 
 	function save() {
 		chartDocResource.setValue.submit({
@@ -74,27 +89,40 @@ function makeChart(chartName) {
 		})
 	}
 
+	function updateQuery(query) {
+		if (!query) return
+		if (state.doc.query === query) return
+		state.doc.query = query
+		chartDocResource.setValue.submit({ query }).then(() => {
+			updateChartData()
+		})
+	}
+	updateQuery = debounce(updateQuery, 500)
+
 	let autosaveWatcher = undefined
-	watch(
-		() => state.autosave,
-		(val) => {
-			if (val) {
-				autosaveWatcher = watchDebounced(() => state.doc, save, {
-					deep: true,
-					debounce: 500,
-				})
-			}
-			if (!val && autosaveWatcher) {
-				autosaveWatcher()
-				autosaveWatcher = undefined
-			}
+	function enableAutoSave() {
+		state.autosave = true
+		autosaveWatcher = watchDebounced(() => state.doc, save, {
+			deep: true,
+			debounce: 500,
+		})
+	}
+	function disableAutoSave() {
+		state.autosave = false
+		if (autosaveWatcher) {
+			autosaveWatcher()
+			autosaveWatcher = undefined
 		}
-	)
+	}
 
 	return Object.assign(state, {
 		load,
 		save,
 		togglePublicAccess,
+		updateQuery,
+		enableAutoSave,
+		disableAutoSave,
+		delete: chartDocResource.delete.submit,
 	})
 }
 

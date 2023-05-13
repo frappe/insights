@@ -1,16 +1,13 @@
 <script setup>
+import UsePopover from '@/components/UsePopover.vue'
 import useDataSources from '@/datasource/useDataSources'
 import useQueries from '@/query/useQueries'
 import { slideRightTransition } from '@/utils/transitions'
-import { onBeforeUnmount, onMounted, provide, reactive, ref } from 'vue'
-import ChartOptionsDropdown from './ChartOptionsDropdown.vue'
+import { provide, reactive, ref } from 'vue'
 import QueryBlockActions from './QueryBlockActions.vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
-import QueryChart from './QueryChart.vue'
 import QueryEditor from './QueryEditor.vue'
 import QueryResult from './QueryResult.vue'
-import ResultChartSwitcher from './ResultChartSwitcher.vue'
-import UsePopover from './UsePopover.vue'
 import QueryBuilder from './builder/QueryBuilder.vue'
 import useQuery from './useQuery'
 
@@ -35,7 +32,6 @@ provide('query', query)
 
 const state = reactive({
 	dataSource: '',
-	resultOrChart: 'Result',
 	minimizeResult: true,
 	showQueryActions: false,
 	query: query,
@@ -70,14 +66,11 @@ const blockRef = ref(null)
 			v-if="state.query.doc?.results?.length > 1 && !state.minimizeResult"
 			class="group relative flex h-[20rem] max-h-80 flex-col overflow-hidden border-t bg-white"
 		>
-			<QueryResult v-if="state.resultOrChart == 'Result'" />
-			<QueryChart v-if="state.resultOrChart == 'Visualize'" />
-
-			<div class="absolute right-1.5 top-1.5 flex items-center space-x-2">
-				<ChartOptionsDropdown />
-				<ResultChartSwitcher />
-			</div>
+			<QueryResult />
 		</div>
+	</div>
+	<div v-else class="flex h-20 w-full flex-col items-center justify-center">
+		<LoadingIndicator class="mb-2 w-6 text-gray-300" />
 	</div>
 
 	<UsePopover
@@ -88,7 +81,4 @@ const blockRef = ref(null)
 	>
 		<QueryBlockActions />
 	</UsePopover>
-	<div v-else class="flex h-20 w-full flex-col items-center justify-center">
-		<LoadingIndicator class="mb-2 w-6 text-gray-300" />
-	</div>
 </template>

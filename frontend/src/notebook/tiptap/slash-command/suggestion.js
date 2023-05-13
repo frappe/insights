@@ -4,6 +4,7 @@ import {
 	Heading1,
 	Heading2,
 	Heading3,
+	LineChart,
 	ParkingSquare,
 	Table,
 } from 'lucide-vue-next'
@@ -94,6 +95,15 @@ export default {
 					editor.chain().focus().deleteRange(range).deleteTable().run()
 				},
 				disabled: (editor) => !editor.isActive('table'),
+			},
+			{
+				title: 'Chart',
+				icon: markRaw(LineChart),
+				command: ({ editor, range }) => {
+					const element = '<chart></chart>'
+					editor.chain().focus().deleteRange(range).insertContent(element).run()
+				},
+				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
 			},
 			{
 				title: 'SQL',
