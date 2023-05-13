@@ -35,11 +35,11 @@ const props = defineProps({
 		required: true,
 	},
 })
-const content = computed(() => JSON.parse(props.content || '{}'))
+const content = computed(() => props.content)
 const tiptap = ref(null)
 const updateContent = () => {
 	const contentJSON = tiptap.value.editor.getJSON()
-	emit('update:content', JSON.stringify(contentJSON, null, 2))
+	emit('update:content', contentJSON)
 }
 onMounted(() => {
 	tiptap.value.editor.commands.setContent(content.value)
