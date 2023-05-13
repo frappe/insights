@@ -86,8 +86,8 @@ const selectedQuery = computed(() => {
 	</div>
 
 	<BlockActions :blockRef="blockRef">
-		<BlockAction class="px-0">
-			<div class="relative flex items-center text-gray-800 [&>div]:w-full">
+		<BlockAction class="!px-0">
+			<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
 				<InputWithPopover
 					placeholder="Query"
 					:items="queryOptions"
@@ -101,7 +101,7 @@ const selectedQuery = computed(() => {
 			</div>
 		</BlockAction>
 
-		<BlockAction class="px-0">
+		<BlockAction class="!px-0" v-if="chart.doc.query">
 			<ChartOptionsDropdown />
 		</BlockAction>
 

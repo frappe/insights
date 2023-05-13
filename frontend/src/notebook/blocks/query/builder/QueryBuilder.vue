@@ -44,11 +44,11 @@ const COLUMN = {
 	label: '',
 	type: '',
 	alias: '',
-	expression: {},
-	aggregation: {},
-	order: {},
-	format: {},
+	order: '',
 	granularity: '',
+	aggregation: '',
+	format: {},
+	expression: {},
 }
 const GET_EMPTY_COLUMN = () => ({
 	column: { ...COLUMN },
@@ -87,6 +87,7 @@ function addBlock(type) {
 }
 
 const AGGREGATIONS = [
+	{ label: 'None', value: 'none' },
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum', value: 'sum' },
 	{ label: 'Average', value: 'avg' },
@@ -122,7 +123,8 @@ const ORDER = [
 ]
 
 function isValidColumn(column) {
-	return column.column && column.table && column.type && column.label
+	const is_expression = column.expression && column.expression.raw && column.expression.ast
+	return ((column.column && column.table) || is_expression) && column.type && column.label
 }
 
 const selectedColumns = computed(() => {
@@ -134,6 +136,16 @@ const selectedColumns = computed(() => {
 	state.value.dimensions.forEach((c) => addIfValid(c.column))
 	return columns.map((c) => ({ ...c, description: 'local' }))
 })
+
+const COLUMN_TYPES = [
+	{ label: 'String', value: 'String' },
+	{ label: 'Integer', value: 'Integer' },
+	{ label: 'Decimal', value: 'Decimal' },
+	{ label: 'Text', value: 'Text' },
+	{ label: 'Datetime', value: 'Datetime' },
+	{ label: 'Date', value: 'Date' },
+	{ label: 'Time', value: 'Time' },
+]
 </script>
 
 <template>
@@ -165,13 +177,13 @@ const selectedColumns = computed(() => {
 					v-model="join.left_table"
 					:items="selectedTables"
 				></InputWithPopover>
-				<div class="text-sm uppercase text-gray-500">with</div>
+				<div class="py-1 text-sm uppercase text-gray-500">with</div>
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:data_source="query.doc.data_source"
 					v-model="join.right_table"
 				/>
-				<div class="text-sm uppercase text-gray-500">where</div>
+				<div class="py-1 text-sm uppercase text-gray-500">where</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -180,7 +192,7 @@ const selectedColumns = computed(() => {
 						v-model="join.left_column"
 					/>
 				</Suspense>
-				<div class="text-sm uppercase text-gray-500">=</div>
+				<div class="py-1 text-sm uppercase text-gray-500">=</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -199,16 +211,26 @@ const selectedColumns = computed(() => {
 				label="Calculate"
 				:onRemove="() => state.calculations.splice(index, 1)"
 			>
-				<ResizeableInput
-					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="calc.column.alias"
-					placeholder="Label"
-				/>
-				<div class="text-sm uppercase text-gray-500">as</div>
-				<ColumnExpressionSelector
-					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="calc.column.expression"
-				/>
+				<Suspense>
+					<ColumnExpressionSelector v-model="calc.column.expression" />
+				</Suspense>
+				<div class="py-1 text-sm uppercase text-gray-500">as</div>
+				<div
+					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+				>
+					<InputWithPopover
+						:items="COLUMN_TYPES"
+						placeholder="Type"
+						:disable-filter="true"
+						:value="findByValue(COLUMN_TYPES, calc.column.type)"
+						@update:modelValue="(v) => (calc.column.type = v.value)"
+					/>
+					<ResizeableInput
+						placeholder="Label"
+						v-model="calc.column.alias"
+						@update:modelValue="calc.column.label = $event"
+					/>
+				</div>
 			</QueryBuilderRow>
 
 			<!-- Filters -->
@@ -224,6 +246,7 @@ const selectedColumns = computed(() => {
 				>
 					<Suspense>
 						<ColumnSelector
+							:columnOptions="selectedColumns"
 							:data_source="query.doc.data_source"
 							:tables="selectedTables"
 							v-model="filter.column"
@@ -250,13 +273,14 @@ const selectedColumns = computed(() => {
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
+						:columnOptions="selectedColumns"
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
 						v-model="column.column"
 						@update:model-value="(c) => (column.column.alias = c.label)"
 					/>
 				</Suspense>
-				<div class="text-sm uppercase text-gray-500">as</div>
+				<div class="py-1 text-sm uppercase text-gray-500">as</div>
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					v-model="column.column.alias"
@@ -268,7 +292,7 @@ const selectedColumns = computed(() => {
 			<QueryBuilderRow
 				v-if="state.measures.length"
 				label="Summarise"
-				:onRemove="() => (state.measures = [{ ...GET_EMPTY_COLUMN() }])"
+				:onRemove="() => (state.measures = [])"
 			>
 				<div
 					class="flex items-center"
@@ -279,6 +303,7 @@ const selectedColumns = computed(() => {
 						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 					>
 						<InputWithPopover
+							v-if="measure.column.aggregation !== 'none'"
 							:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
 							placeholder="Count"
 							:disable-filter="true"
@@ -292,6 +317,7 @@ const selectedColumns = computed(() => {
 									measure.column.aggregation &&
 									measure.column.aggregation !== 'count'
 								"
+								:columnOptions="selectedColumns"
 								:data_source="query.doc.data_source"
 								:tables="selectedTables"
 								v-model="measure.column"
@@ -309,7 +335,7 @@ const selectedColumns = computed(() => {
 			<QueryBuilderRow
 				v-if="state.dimensions.length"
 				label="By"
-				:onRemove="() => (state.dimensions = [{ ...GET_EMPTY_COLUMN() }])"
+				:onRemove="() => (state.dimensions = [])"
 			>
 				<Suspense v-for="(dimension, index) in state.dimensions" :key="index">
 					<div
@@ -319,6 +345,7 @@ const selectedColumns = computed(() => {
 							v-model="dimension.column"
 							:tables="selectedTables"
 							:data_source="query.doc.data_source"
+							:columnOptions="selectedColumns"
 							:columnFilter="(c) => isDimensionColumn(c)"
 						/>
 						<InputWithPopover
@@ -356,7 +383,7 @@ const selectedColumns = computed(() => {
 						v-model="order.column"
 					/>
 				</Suspense>
-				<div class="text-sm uppercase text-gray-500">in</div>
+				<div class="py-1 text-sm uppercase text-gray-500">in</div>
 				<InputWithPopover
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:value="findByValue(ORDER, order.column.order)"
@@ -365,7 +392,7 @@ const selectedColumns = computed(() => {
 					:items="ORDER"
 					@update:modelValue="(v) => (order.column.order = v.value)"
 				/>
-				<div class="text-sm uppercase text-gray-500">order</div>
+				<div class="py-1 text-sm uppercase text-gray-500">order</div>
 			</QueryBuilderRow>
 
 			<!-- Limit -->
@@ -379,7 +406,7 @@ const selectedColumns = computed(() => {
 					v-model="state.limit"
 					placeholder="100"
 				/>
-				<div class="text-sm uppercase text-gray-500">rows</div>
+				<div class="py-1 text-sm uppercase text-gray-500">rows</div>
 			</QueryBuilderRow>
 		</div>
 
@@ -390,7 +417,7 @@ const selectedColumns = computed(() => {
 					'Join',
 					'Filter',
 					'Column',
-					// 'Calculate', // FIX: the suggestions popover is not placed correctly
+					'Calculate',
 					'Summarise',
 					'Sort',
 					'Limit',

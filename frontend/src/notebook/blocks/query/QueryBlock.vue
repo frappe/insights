@@ -86,13 +86,14 @@ const selectedSource = computed(() => {
 	</div>
 
 	<BlockActions :blockRef="blockRef">
-		<BlockAction class="px-0">
+		<BlockAction class="!px-0">
 			<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
 				<InputWithPopover
 					placeholder="Data Source"
 					:items="sourceOptions"
 					:value="selectedSource"
 					placement="bottom-end"
+					:disableFilter="true"
 					@update:modelValue="state.query.doc.data_source = $event.value"
 				></InputWithPopover>
 				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">

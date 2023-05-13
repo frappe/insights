@@ -15,8 +15,16 @@ const emit = defineEmits(['update:modelValue'])
 const valuePropPassed = computed(() => props.value !== undefined)
 const column = computed({
 	get: () => (valuePropPassed.value ? props.value : props.modelValue),
-	set: (value) => emit('update:modelValue', value),
+	set: (option) => {
+		// since combobox resets any object to empty object, we need to find the original object
+		const column = findByValue(columns.value, option.value)
+		emit('update:modelValue', { ...column, ...option })
+	},
 })
+
+function findByValue(columns, value) {
+	return columns.find((c) => value == c.expression?.raw || value == `${c.table}.${c.column}`)
+}
 
 const dataSourceTables = ref([])
 watch(
@@ -46,25 +54,23 @@ const columns = computed(() => {
 		.slice(0, 50)
 		.concat(props.columnOptions)
 		.reverse() // to show the passed column options first
-		.filter((column, index, self) => {
-			return (
-				column &&
-				self.findIndex((c) => c && c.column === column.column) === index &&
-				(!props.columnFilter || props.columnFilter(column))
+		.filter((col, currIndex, self) => {
+			if (!col) return false
+			const otherIndex = self.findIndex(
+				(c) => c && c.column === col.column && c.table === col.table
 			)
+			return otherIndex === currIndex && (!props.columnFilter || props.columnFilter(col))
 		})
-		.map((c) => {
-			return {
-				...column.value, // to preserve the keys of the column object like aggregate, alias, etc.
-				data_source: c.data_source, // used to fetch column values from datasource
-				column: c.column,
-				table: c.table,
-				type: c.type,
-				label: c.label,
-				description: c.description || c.table,
-				value: `${c.table}.${c.column}`,
-			}
-		})
+})
+const columnOptions = computed(() => {
+	if (!columns.value?.length) return []
+	return columns.value.map((c) => {
+		return {
+			label: c.label,
+			description: c.description || c.table,
+			value: c.expression?.raw || `${c.table}.${c.column}`,
+		}
+	})
 })
 </script>
 
@@ -72,7 +78,7 @@ const columns = computed(() => {
 	<div>
 		<InputWithPopover
 			v-model="column"
-			:items="columns"
+			:items="columnOptions"
 			placeholder="Pick a column"
 		></InputWithPopover>
 	</div>

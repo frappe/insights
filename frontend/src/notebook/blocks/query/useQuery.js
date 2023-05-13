@@ -133,6 +133,11 @@ function makeQuery(name) {
 		state.deleting = false
 	}
 
+	state.getTablesColumns = async () => {
+		const response = await resource.get_tables_columns.fetch()
+		return response.message
+	}
+
 	return state
 }
 
@@ -146,6 +151,7 @@ function getQueryResource(name) {
 			get_chart_name: 'get_chart_name',
 			convert_to_native: 'convert_to_native',
 			convert_to_assisted: 'convert_to_assisted',
+			get_tables_columns: 'get_tables_columns',
 		},
 		transform(doc) {
 			doc.columns = doc.columns.map((c) => {

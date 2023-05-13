@@ -238,31 +238,28 @@ class Column(frappe._dict):
         self.table = self.get("table")
         self.column = self.get("column")
         self.type = self.get("type") or "String"
-        self.expression = self.get("expression")
-        self.aggregation = self.get("aggregation")
-        self.label = self.get("label")
         self.order = self.get("order")
+        self.aggregation = self.get("aggregation")
+        self.expression = frappe.parse_json(self.get("expression", {}))
+        self.label = self.get("label") or self.get("alias") or self.get("column")
         self.alias = self.get("alias") or self.get("label") or self.get("column")
         self.format = self.get("format")
         self.meta = self.get("meta")
         self.granularity = self.get("granularity")
 
     def __bool__(self):
-        return bool(self.table and self.column)
+        return bool(self.table and self.column) or bool(self.is_expression())
 
     @staticmethod
     def from_dicts(dicts):
         columns = (Column(**d) for d in dicts)
         return [c for c in columns if c]
 
-    def is_measure(self):
-        return self.aggregation
-
-    def is_dimension(self):
-        return not self.is_measure()
+    def is_aggregate(self):
+        return self.aggregation and self.aggregation != "none"
 
     def is_expression(self):
-        return self.expression
+        return self.expression.get("raw") and self.expression.get("ast") and self.alias
 
     def is_formatted(self):
         return self.format

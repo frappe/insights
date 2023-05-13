@@ -704,10 +704,15 @@ class SQLQueryBuilder:
             self._columns.append(_column.label(column.alias))
 
         # TODO: Add support for calculations
+        for column in assisted_query.calculations:
+            if column.is_expression():
+                _column = self.expression_processor.process(column.expression.ast)
+                self._columns.append(_column.label(column.alias))
 
         for measure in assisted_query.measures:
             _column = self.make_column(measure.column, measure.table)
-            _column = self.aggregations.apply(measure.aggregation, _column)
+            if measure.is_aggregate():
+                _column = self.aggregations.apply(measure.aggregation, _column)
             self._measures.append(_column.label(measure.alias))
 
         for dimension in assisted_query.dimensions:
@@ -719,8 +724,11 @@ class SQLQueryBuilder:
             self._dimensions.append(_column.label(dimension.alias))
 
         for order in assisted_query.orders:
-            _column = self.make_column(order.column, order.table)
-            if order.is_measure():
+            if column.is_expression():
+                _column = self.expression_processor.process(column.expression.ast)
+            else:
+                _column = self.make_column(order.column, order.table)
+            if order.is_aggregate():
                 _column = self.aggregations.apply(order.aggregation, _column)
             if order.has_granularity():
                 _column = self.column_formatter.format_date(order.granularity, _column)

@@ -14,7 +14,7 @@ const state = inject('state')
 				class="h-1.5 w-1.5 rounded-full"
 				:class="[
 					!state.query.unsaved && state.query.doc.status == 'Execution Successful'
-						? 'bg-green-500'
+						? 'hidden'
 						: 'bg-orange-500',
 				]"
 			></p>

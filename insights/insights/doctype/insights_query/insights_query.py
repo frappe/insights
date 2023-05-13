@@ -222,3 +222,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             frappe.throw("Pivot and Transpose transforms cannot be used together")
         if unpivot_transforms and transpose_transforms:
             frappe.throw("Unpivot and Transpose transforms cannot be used together")
+
+    @frappe.whitelist()
+    def get_tables_columns(self):
+        return self.variant_controller.get_tables_columns()

@@ -69,7 +69,7 @@ function isSelected(value) {
 					@click.prevent.stop="select(value)"
 				>
 					<div
-						class="flex w-full cursor-pointer items-center justify-between rounded-md px-1.5 py-2 hover:bg-gray-100"
+						class="flex w-full cursor-pointer items-center justify-between rounded-md p-2 hover:bg-gray-100"
 						:class="{
 							'bg-gray-100': active,
 						}"
