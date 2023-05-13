@@ -6,6 +6,8 @@ import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
 import { computed, provide, ref } from 'vue'
 import BlockActions from '../BlockActions.vue'
+import BlockAction from '../BlockAction.vue'
+
 import ChartOptionsDropdown from './ChartOptionsDropdown.vue'
 
 const emit = defineEmits(['setChartName', 'remove'])
@@ -38,21 +40,6 @@ const queryOptions = queries.list.map((query) => ({
 const selectedQuery = computed(() => {
 	return queryOptions.find((op) => op.value === chart.doc.query)
 })
-const ChartQuerySelector = (props) => {
-	return (
-		<div class="relative flex h-8 items-center rounded-lg border border-gray-200 text-gray-800 [&>div]:w-full">
-			<InputWithPopover
-				placeholder="Query"
-				items={queryOptions}
-				value={selectedQuery.value}
-				onUpdate:modelValue={(op) => chart.updateQuery(op.value)}
-			></InputWithPopover>
-			<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
-				<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
-			</p>
-		</div>
-	)
-}
 </script>
 
 <template>
@@ -98,17 +85,26 @@ const ChartQuerySelector = (props) => {
 		</div>
 	</div>
 
-	<BlockActions
-		:blockRef="blockRef"
-		:actions="[
-			{ component: ChartQuerySelector },
-			{ component: ChartOptionsDropdown },
-			{
-				label: 'Remove',
-				icon: 'trash-2',
-				action: removeChart,
-			},
-		]"
-	>
+	<BlockActions :blockRef="blockRef">
+		<BlockAction class="px-0">
+			<div class="relative flex items-center text-gray-800 [&>div]:w-full">
+				<InputWithPopover
+					placeholder="Query"
+					:items="queryOptions"
+					:value="selectedQuery"
+					placement="bottom-end"
+					@update:modelValue="(op) => chart.updateQuery(op.value)"
+				></InputWithPopover>
+				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
+					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
+				</p>
+			</div>
+		</BlockAction>
+
+		<BlockAction class="px-0">
+			<ChartOptionsDropdown />
+		</BlockAction>
+
+		<BlockAction icon="trash" label="Delete" :action="removeChart"> </BlockAction>
 	</BlockActions>
 </template>

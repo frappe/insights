@@ -12,6 +12,7 @@ const props = defineProps({
 	items: Array,
 	disableFilter: Boolean,
 	disableInput: Boolean,
+	placement: { type: String, default: 'bottom-start' },
 })
 const valuePropPassed = computed(() => props.value !== undefined)
 const selectedItem = computed({
@@ -39,7 +40,7 @@ function handleOptionSelect(value, togglePopover) {
 </script>
 
 <template>
-	<Popover placement="bottom-start">
+	<Popover :placement="placement">
 		<template #target="{ togglePopover, isOpen }">
 			<ContentEditable
 				tag="div"
@@ -58,7 +59,7 @@ function handleOptionSelect(value, togglePopover) {
 		<template #body="{ togglePopover, isOpen }">
 			<div
 				v-show="isOpen"
-				class="mt-1.5 w-fit rounded-lg border bg-white text-base shadow transition-[width]"
+				class="mt-1.5 w-fit rounded-md border bg-white text-base shadow-sm transition-[width]"
 			>
 				<slot
 					name="popover"

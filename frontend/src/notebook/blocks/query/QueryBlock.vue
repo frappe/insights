@@ -1,10 +1,10 @@
 <script setup>
-import UsePopover from '@/components/UsePopover.vue'
 import useDataSources from '@/datasource/useDataSources'
+import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import useQueries from '@/query/useQueries'
-import { slideRightTransition } from '@/utils/transitions'
-import { provide, reactive, ref } from 'vue'
-import QueryBlockActions from './QueryBlockActions.vue'
+import { computed, provide, reactive, ref } from 'vue'
+import BlockAction from '../BlockAction.vue'
+import BlockActions from '../BlockActions.vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
 import QueryEditor from './QueryEditor.vue'
 import QueryResult from './QueryResult.vue'
@@ -43,6 +43,18 @@ state.removeQuery = () => {
 }
 
 const blockRef = ref(null)
+const sources = useDataSources()
+sources.reload()
+const sourceOptions = computed(() =>
+	sources.list.map((source) => ({
+		label: source.title,
+		value: source.name,
+		description: source.name,
+	}))
+)
+const selectedSource = computed(() => {
+	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
+})
 </script>
 
 <template>
@@ -73,12 +85,29 @@ const blockRef = ref(null)
 		<LoadingIndicator class="mb-2 w-6 text-gray-300" />
 	</div>
 
-	<UsePopover
-		v-if="blockRef"
-		:targetElement="blockRef"
-		placement="right-start"
-		:transition="slideRightTransition"
-	>
-		<QueryBlockActions />
-	</UsePopover>
+	<BlockActions :blockRef="blockRef">
+		<BlockAction class="px-0">
+			<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
+				<InputWithPopover
+					placeholder="Data Source"
+					:items="sourceOptions"
+					:value="selectedSource"
+					placement="bottom-end"
+					@update:modelValue="state.query.doc.data_source = $event.value"
+				></InputWithPopover>
+				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
+					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
+				</p>
+			</div>
+		</BlockAction>
+
+		<BlockAction icon="play" label="Execute" :action="state.query.execute"> </BlockAction>
+		<BlockAction
+			:icon="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
+			:label="state.minimizeResult ? 'Show Results' : 'Hide Results'"
+			:action="() => (state.minimizeResult = !state.minimizeResult)"
+		>
+		</BlockAction>
+		<BlockAction icon="trash" label="Delete" :action="state.removeQuery"> </BlockAction>
+	</BlockActions>
 </template>

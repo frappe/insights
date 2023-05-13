@@ -45,7 +45,7 @@ function isSelected(value) {
 <template>
 	<Combobox
 		as="div"
-		class="p-1.5"
+		class="p-0.5"
 		:nullable="!props.allowMultiple"
 		:multiple="Boolean(props.allowMultiple)"
 		:value="props.allowMultiple ? multipleValues : selectedValue"
