@@ -33,6 +33,7 @@ provide('query', query)
 const state = reactive({
 	dataSource: '',
 	minimizeResult: true,
+	minimizeQuery: false,
 	showQueryActions: false,
 	query: query,
 })
@@ -107,6 +108,12 @@ const selectedSource = computed(() => {
 			:icon="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
 			:label="state.minimizeResult ? 'Show Results' : 'Hide Results'"
 			:action="() => (state.minimizeResult = !state.minimizeResult)"
+		>
+		</BlockAction>
+		<BlockAction
+			:icon="state.minimizeQuery ? 'maximize-2' : 'minimize-2'"
+			:label="state.minimizeQuery ? 'Show Query' : 'Hide Query'"
+			:action="() => (state.minimizeQuery = !state.minimizeQuery)"
 		>
 		</BlockAction>
 		<BlockAction icon="trash" label="Delete" :action="state.removeQuery"> </BlockAction>
