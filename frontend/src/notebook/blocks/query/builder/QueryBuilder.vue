@@ -1,7 +1,8 @@
 <script setup>
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
-import { computed, inject } from 'vue'
+import { computed, provide } from 'vue'
+import useQuery from '../useQuery'
 import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
 import ColumnSelector from './ColumnSelector.vue'
 import InputWithPopover from './InputWithPopover.vue'
@@ -11,7 +12,10 @@ import ResizeableInput from './ResizeableInput.vue'
 import TableSelector from './TableSelector.vue'
 import ValueSelector from './ValueSelector.vue'
 
-const query = inject('query')
+const props = defineProps({ name: String })
+const query = useQuery(props.name)
+await query.refresh()
+provide('query', query)
 
 const state = computed({
 	get: () => (typeof query.doc.json == 'string' ? JSON.parse(query.doc.json) : query.doc.json),
@@ -430,3 +434,11 @@ const COLUMN_TYPES = [
 		</div>
 	</div>
 </template>
+
+<style lang="scss">
+.cm-editor {
+	user-select: text;
+	padding: 0px !important;
+	background-color: white !important;
+}
+</style>

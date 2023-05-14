@@ -24,7 +24,7 @@
 					</Tooltip>
 				</div>
 			</div>
-			<LimitsAndOrder class="-mt-1" />
+			<LimitsAndOrder v-if="!query.doc.is_assisted_query" class="-mt-1" />
 		</div>
 		<!-- Result  -->
 		<div class="relative flex flex-1 overflow-hidden">

@@ -151,6 +151,8 @@ def get_queries():
             Query.name,
             Query.title,
             Query.status,
+            Query.is_assisted_query,
+            Query.is_native_query,
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
@@ -164,20 +166,21 @@ def get_queries():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_query(data_source, table=None, title=None):
-    query = frappe.new_doc("Insights Query")
-    query.title = title or "Untitled Query"
-    query.data_source = data_source
-    if table:
-        query.append(
+def create_query(**query):
+    doc = frappe.new_doc("Insights Query")
+    doc.title = query.get("title") or "Untitled Query"
+    doc.data_source = query.get("data_source") or "Demo Data"
+    doc.is_assisted_query = query.get("is_assisted_query")
+    if table := query.get("table") and not doc.is_assisted_query:
+        doc.append(
             "tables",
             {
                 "table": table.get("value"),
                 "label": table.get("label"),
             },
         )
-    query.save()
-    return query.name
+    doc.save()
+    return doc.as_dict()
 
 
 @frappe.whitelist()

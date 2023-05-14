@@ -1,11 +1,11 @@
-import { safeJSONParse } from '@/utils'
+import { useQueryResource } from '@/query/useQueryResource'
 import auth from '@/utils/auth'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
 import { useQueryTables } from '@/utils/query/tables'
 import { createToast } from '@/utils/toasts'
-import { createDocumentResource, debounce } from 'frappe-ui'
+import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
 
 export const API_METHODS = {
@@ -41,7 +41,7 @@ export const API_METHODS = {
 }
 
 export function useQuery(name) {
-	const query = getQueryResource(name)
+	const query = useQueryResource(name)
 
 	query.isOwner = computed(() => query.doc?.owner === auth.user.user_id)
 	query.tables = useQueryTables(query)
@@ -71,25 +71,6 @@ export function useQuery(name) {
 	}
 
 	return query
-}
-
-function getQueryResource(name) {
-	const resource = createDocumentResource({
-		doctype: 'Insights Query',
-		name: name,
-		whitelistedMethods: API_METHODS,
-		transform(doc) {
-			doc.columns = doc.columns.map((c) => {
-				c.format_option = safeJSONParse(c.format_option, {})
-				return c
-			})
-			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0]
-			return doc
-		},
-	})
-	resource.get.fetch()
-	return resource
 }
 
 export const FUNCTIONS = {

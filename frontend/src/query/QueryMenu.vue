@@ -101,7 +101,7 @@
 					@click="
 						() => {
 							query.delete.submit().then(() => {
-								builder?.closeQuery(query.name)
+								$router.push('/query')
 								show_delete_dialog = false
 							})
 						}

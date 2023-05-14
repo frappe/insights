@@ -1,4 +1,4 @@
-import { useQuery } from '@/query/useQueries'
+import { useQueryResource } from '@/query/useQueryResource'
 import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { guessChart } from '@/widgets/useChartData'
@@ -53,7 +53,8 @@ function getChart(chartName) {
 
 	function updateChartData() {
 		state.loading = true
-		const _query = useQuery(state.doc.query)
+		const _query = useQueryResource(state.doc.query)
+		_query.get.fetch()
 		watchOnce(
 			() => _query.doc,
 			() => {

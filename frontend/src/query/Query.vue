@@ -15,9 +15,18 @@
 				<div
 					class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
 				>
-					<TablePanel />
-					<ColumnPanel />
-					<FilterPanel />
+					<template v-if="!query.doc.is_assisted_query">
+						<TablePanel />
+						<ColumnPanel />
+						<FilterPanel />
+					</template>
+					<template v-else>
+						<div class="-mx-3 flex pt-2">
+							<Suspense>
+								<VisualQuery :name="query.doc.name" />
+							</Suspense>
+						</div>
+					</template>
 				</div>
 			</template>
 			<QueryResult />
@@ -31,18 +40,20 @@
 
 <script setup>
 import Tabs from '@/components/Tabs.vue'
+import { default as VisualQuery } from '@/notebook/blocks/query/builder/QueryBuilder.vue'
 import ColumnPanel from '@/query/Column/ColumnPanel.vue'
 import FilterPanel from '@/query/Filter/FilterPanel.vue'
+import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
 import QueryHeader from '@/query/QueryHeader.vue'
 import QueryVisualizer from '@/query/QueryVisualizer.vue'
 import QueryResult from '@/query/Result/QueryResult.vue'
 import TablePanel from '@/query/Table/TablePanel.vue'
-import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
+import { updateDocumentTitle } from '@/utils'
 import { useQuery } from '@/utils/query'
-import { computed, inject, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 
 const props = defineProps(['name', 'hideTabs'])
-const query = props.name ? useQuery(props.name) : inject('queryBuilder').currentQuery
+const query = useQuery(props.name)
 provide('query', query)
 
 const buildTabLabel = computed(() => (query.doc?.is_native_query ? 'Write' : 'Build'))
@@ -56,4 +67,10 @@ const switchTab = (tab) => {
 		t.active = t.label === tab.label
 	})
 }
+
+const pageMeta = computed(() => ({
+	title: query.doc?.title,
+	subtitle: query.doc?.name,
+}))
+updateDocumentTitle(pageMeta)
 </script>

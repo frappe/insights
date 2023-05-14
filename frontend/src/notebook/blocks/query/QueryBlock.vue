@@ -71,7 +71,7 @@ const selectedSource = computed(() => {
 				class="mb-2 w-full flex-1 overflow-hidden"
 			>
 				<QueryEditor v-if="props.is_native" />
-				<QueryBuilder v-else />
+				<QueryBuilder v-else :name="state.query.doc.name" />
 			</div>
 		</transition>
 

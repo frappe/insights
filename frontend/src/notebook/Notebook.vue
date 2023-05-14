@@ -29,7 +29,7 @@ async function createNotebookPage() {
 	router.push({
 		name: 'NotebookPage',
 		params: {
-			name: props.notebook,
+			notebook: props.notebook,
 			page: page_name,
 		},
 	})
@@ -69,7 +69,7 @@ updateDocumentTitle(pageMeta)
 					router.push({
 						name: 'NotebookPage',
 						params: {
-							name,
+							notebook: props.notebook,
 							page: name,
 						},
 					})

@@ -4,7 +4,7 @@ import widgets from '@/widgets/widgets'
 import { createDocumentResource } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
-import { useQuery } from '@/query/useQueries'
+import { useQueryResource } from '@/query/useQueryResource'
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -250,7 +250,8 @@ export default function useDashboard(name) {
 
 	function loadCurrentItemQuery(query) {
 		if (!query || !state.currentItem) return
-		state.currentItem.query = useQuery(query)
+		state.currentItem.query = useQueryResource(query)
+		state.currentItem.query.get.fetch()
 	}
 
 	const edit = () => ((state.editing = true), (state.currentItem = undefined))

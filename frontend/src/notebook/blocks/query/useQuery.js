@@ -1,9 +1,10 @@
 import useChart from '@/query/useChart'
+import { useQueryResource } from '@/query/useQueryResource'
 import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
-import { createDocumentResource, debounce } from 'frappe-ui'
+import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
 const queries = {}
@@ -16,7 +17,7 @@ export default function useQuery(name) {
 }
 
 function makeQuery(name) {
-	const resource = getQueryResource(name)
+	const resource = useQueryResource(name)
 	const state = reactive({
 		autosave: false,
 		unsaved: false,
@@ -30,7 +31,7 @@ function makeQuery(name) {
 		formattedResults: [],
 	})
 
-	async function refresh() {
+	state.refresh = async function () {
 		return resource.get.fetch().then((doc) => {
 			state.doc = doc
 			state.isOwner = state.doc.owner == auth.user.user_id
@@ -38,7 +39,7 @@ function makeQuery(name) {
 			state.unsaved = false
 		})
 	}
-	refresh()
+	state.refresh()
 
 	state.convertToNative = async function () {
 		state.loading = true
@@ -139,41 +140,4 @@ function makeQuery(name) {
 	}
 
 	return state
-}
-
-function getQueryResource(name) {
-	const resource = createDocumentResource({
-		doctype: 'Insights Query',
-		name,
-		whitelistedMethods: {
-			run: 'run',
-			get_source_schema: 'get_source_schema',
-			get_chart_name: 'get_chart_name',
-			convert_to_native: 'convert_to_native',
-			convert_to_assisted: 'convert_to_assisted',
-			get_tables_columns: 'get_tables_columns',
-		},
-		transform(doc) {
-			doc.columns = doc.columns.map((c) => {
-				c.format_option = safeJSONParse(c.format_option, {})
-				return c
-			})
-			doc.results = safeJSONParse(doc.results)
-			doc.json = safeJSONParse(doc.json, defaultQueryJSON)
-			return doc
-		},
-	})
-	return resource
-}
-
-const defaultQueryJSON = {
-	table: {},
-	joins: [],
-	filters: [],
-	columns: [],
-	calculations: [],
-	measures: [],
-	dimensions: [],
-	orders: [],
-	limit: null,
 }

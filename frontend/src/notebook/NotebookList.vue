@@ -36,7 +36,7 @@ async function createNotebookPage() {
 	router.push({
 		name: 'NotebookPage',
 		params: {
-			name: uncategorized.name,
+			notebook: uncategorized.name,
 			page: page_name,
 		},
 	})
