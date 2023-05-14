@@ -21,7 +21,7 @@
 						<FilterPanel />
 					</template>
 					<template v-else>
-						<div class="-mx-3 flex pt-2">
+						<div class="mt-2 flex w-full rounded-md border py-2">
 							<Suspense>
 								<VisualQuery :name="query.doc.name" />
 							</Suspense>
