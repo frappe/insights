@@ -3,7 +3,6 @@
 		ref="tiptap"
 		editorClass="max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-[15px] prose-p:leading-7 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-1 prose-ol:my-1 prose-th:py-1 prose-td:py-1"
 		@change="updateContent"
-		:starterkit-options="{ heading: { levels: [1, 2, 3] } }"
 		:bubble-menu="bubbleMenu"
 		:bubble-menu-options="{
 			shouldShow: (opts) => {
