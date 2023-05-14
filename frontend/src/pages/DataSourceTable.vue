@@ -43,7 +43,7 @@
 		<template #main>
 			<div
 				v-if="doc && doc.columns && dataSourceTable.rows?.data && !dataSourceTable.syncing"
-				class="flex flex-col overflow-hidden pt-1"
+				class="flex w-full flex-col overflow-hidden pt-1"
 			>
 				<div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
 					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
@@ -143,9 +143,12 @@ const newLink = reactive({
 	foreignKey: {},
 })
 
-const dataSourceTable = useDataSourceTable({ name: props.table })
+const dataSourceTable = ref({})
+useDataSourceTable({ name: props.table }).then((table) => {
+	dataSourceTable.value = table
+})
 const doc = computed(() => {
-	return dataSourceTable.doc
+	return dataSourceTable.value.doc
 })
 const hidden = computed({
 	get() {
@@ -153,7 +156,7 @@ const hidden = computed({
 	},
 	set(value) {
 		if (value !== doc.value.hidden) {
-			dataSourceTable.updateVisibility.submit({
+			dataSourceTable.value.updateVisibility.submit({
 				hidden: value,
 			})
 		}
