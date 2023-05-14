@@ -69,7 +69,7 @@ class ColumnFormatter:
         if format == "Hour":
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":
-            return func.date_format(column, "%Y-%m-%d")
+            return func.date_format(column, "%Y-%m-%d 00:00")
         if format == "Week":
             # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
             date = func.date_format(column, "%Y-%m-%d")
@@ -93,6 +93,8 @@ class ColumnFormatter:
         if format == "Quarter of Year":
             return func.quarter(column)
         if format == "Quarter":
+            # 2022-02-12 -> 2022-01-01
+            # STR_TO_DATE(CONCAT(YEAR(CURRENT_DATE), '-', (QUARTER(CURRENT_DATE) * 3) - 2, '-01'), '%Y-%m-%d')
             return func.str_to_date(
                 func.concat(
                     func.year(column),  # 2018
@@ -279,6 +281,18 @@ class Functions:
             field = args[2]  # salesorder.territory
             query = get_descendants(node, tree, include_self=True)
             return field.in_(query)
+
+        if function == "date_format":
+            return ColumnFormatter.format_date(args[1], args[0])
+
+        if function == "start_of":
+            valid_units = ["day", "week", "month", "quarter", "year"]
+            unit = args[0].lower()
+            if unit not in valid_units:
+                raise Exception(
+                    f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}"
+                )
+            return ColumnFormatter.format_date(args[0].title(), args[1])
 
         raise NotImplementedError(f"Function {function} not implemented")
 

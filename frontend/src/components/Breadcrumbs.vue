@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import HomeIcon from '@/components/icons/HomeIcon.vue'
+import HomeIcon from '@/components/Icons/HomeIcon.vue'
 
 const props = defineProps({ items: Array })
 </script>
