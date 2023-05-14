@@ -44,13 +44,13 @@ function makeQuery(name) {
 	state.convertToNative = async function () {
 		state.loading = true
 		await resource.convert_to_native.submit()
-		await refresh()
+		await state.refresh()
 		state.loading = false
 	}
 	state.convertToAssisted = async function () {
 		state.loading = true
 		await resource.convert_to_assisted.submit()
-		await refresh()
+		await state.refresh()
 		state.loading = false
 	}
 
@@ -64,7 +64,7 @@ function makeQuery(name) {
 		await state.save()
 		await resource.run
 			.submit()
-			.then(() => refresh())
+			.then(() => state.refresh())
 			.catch((e) => {
 				console.error(e)
 			})
@@ -75,7 +75,7 @@ function makeQuery(name) {
 		state.loading = true
 		const updatedFields = getUpdatedFields()
 		await resource.setValue.submit(updatedFields)
-		await refresh()
+		await state.refresh()
 		state.loading = false
 	}
 

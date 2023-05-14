@@ -42,6 +42,7 @@ export const API_METHODS = {
 
 export function useQuery(name) {
 	const query = useQueryResource(name)
+	query.beforeExecuteFns = []
 
 	query.isOwner = computed(() => query.doc?.owner === auth.user.user_id)
 	query.tables = useQueryTables(query)
@@ -51,7 +52,17 @@ export function useQuery(name) {
 
 	query.sourceSchema = computed(() => query.getSourceSchema.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
-	query.execute = () => {
+	query.beforeExecute = (fn) => {
+		// since there are two query types,
+		// and this one is used to execute the query for other
+		query.beforeExecuteFns.push(fn)
+	}
+	query.execute = async () => {
+		if (query.beforeExecuteFns.length) {
+			for (const fn of query.beforeExecuteFns) {
+				await fn()
+			}
+		}
 		return query.debouncedRun(null, {
 			onSuccess() {
 				createToast({

@@ -1,7 +1,7 @@
 <script setup>
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
-import { computed, provide } from 'vue'
+import { computed, inject, provide } from 'vue'
 import useQuery from '../useQuery'
 import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
 import ColumnSelector from './ColumnSelector.vue'
@@ -16,6 +16,9 @@ const props = defineProps({ name: String })
 const query = useQuery(props.name)
 await query.refresh()
 provide('query', query)
+
+const legacyQuery = inject('query')
+legacyQuery.beforeExecute?.(async () => await query.save())
 
 const state = computed({
 	get: () => (typeof query.doc.json == 'string' ? JSON.parse(query.doc.json) : query.doc.json),
