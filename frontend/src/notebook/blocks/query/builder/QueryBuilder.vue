@@ -184,13 +184,13 @@ const COLUMN_TYPES = [
 					v-model="join.left_table"
 					:items="selectedTables"
 				></InputWithPopover>
-				<div class="py-1 text-sm uppercase text-gray-500">with</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">with</div>
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:data_source="query.doc.data_source"
 					v-model="join.right_table"
 				/>
-				<div class="py-1 text-sm uppercase text-gray-500">where</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">where</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -199,7 +199,7 @@ const COLUMN_TYPES = [
 						v-model="join.left_column"
 					/>
 				</Suspense>
-				<div class="py-1 text-sm uppercase text-gray-500">=</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">=</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -221,7 +221,7 @@ const COLUMN_TYPES = [
 				<Suspense>
 					<ColumnExpressionSelector v-model="calc.column.expression" />
 				</Suspense>
-				<div class="py-1 text-sm uppercase text-gray-500">as</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
 				<div
 					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 				>
@@ -287,7 +287,7 @@ const COLUMN_TYPES = [
 						@update:model-value="(c) => (column.column.alias = c.label)"
 					/>
 				</Suspense>
-				<div class="py-1 text-sm uppercase text-gray-500">as</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					v-model="column.column.alias"
@@ -390,7 +390,7 @@ const COLUMN_TYPES = [
 						v-model="order.column"
 					/>
 				</Suspense>
-				<div class="py-1 text-sm uppercase text-gray-500">in</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">in</div>
 				<InputWithPopover
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:value="findByValue(ORDER, order.column.order)"
@@ -399,7 +399,7 @@ const COLUMN_TYPES = [
 					:items="ORDER"
 					@update:modelValue="(v) => (order.column.order = v.value)"
 				/>
-				<div class="py-1 text-sm uppercase text-gray-500">order</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">order</div>
 			</QueryBuilderRow>
 
 			<!-- Limit -->
@@ -413,7 +413,7 @@ const COLUMN_TYPES = [
 					v-model="state.limit"
 					placeholder="100"
 				/>
-				<div class="py-1 text-sm uppercase text-gray-500">rows</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">rows</div>
 			</QueryBuilderRow>
 		</div>
 

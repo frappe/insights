@@ -38,18 +38,18 @@ const getCompletions = (context, syntaxTree) => {
 </script>
 
 <template>
-	<div
-		class="flex max-w-[20rem] rounded-lg border border-gray-300 py-0.5 pl-1 pr-2 text-gray-800"
-	>
-		<Code
-			:value="expression.raw"
-			:completions="getCompletions"
-			@update:modelValue="
-				expression = {
-					raw: $event,
-					ast: parse($event).ast,
-				}
-			"
-		></Code>
+	<div class="max-w-[20rem] rounded-lg border border-gray-300 pl-1 pr-2 text-gray-800">
+		<div class="h-7 py-0.5">
+			<Code
+				:value="expression.raw"
+				:completions="getCompletions"
+				@update:modelValue="
+					expression = {
+						raw: $event,
+						ast: parse($event).ast,
+					}
+				"
+			></Code>
+		</div>
 	</div>
 </template>
