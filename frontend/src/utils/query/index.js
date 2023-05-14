@@ -276,4 +276,9 @@ export const FUNCTIONS = {
 		description: 'Returns all descendants and self of the given value',
 		syntax: 'descendants_and_self(value, doctype, fieldname)',
 	},
+	start_of: {
+		example: 'start_of("Month", today())',
+		description: 'Returns the start of the given unit eg. Month, Year, etc.',
+		syntax: 'start_of(unit, date)',
+	},
 }
