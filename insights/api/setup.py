@@ -3,6 +3,7 @@
 
 import frappe
 
+from insights.api.telemetry import track
 from insights.setup.demo import setup
 
 
@@ -36,6 +37,7 @@ def test_database_connection(db):
 
 @frappe.whitelist()
 def add_database(db):
+    track("add_data_source")
     data_source = get_new_datasource(db)
     data_source.save()
     data_source.enqueue_sync_tables()

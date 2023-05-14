@@ -5,6 +5,7 @@ import frappe
 
 from insights import notify
 from insights.api.permissions import is_private
+from insights.api.telemetry import track
 from insights.decorators import check_role
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
@@ -120,6 +121,7 @@ def get_dashboard_list():
 @frappe.whitelist()
 @check_role("Insights User")
 def create_dashboard(title):
+    track("create_dashboard")
     dashboard = frappe.get_doc({"doctype": "Insights Dashboard", "title": title})
     dashboard.insert()
     return {
@@ -167,6 +169,7 @@ def get_queries():
 @frappe.whitelist()
 @check_role("Insights User")
 def create_query(**query):
+    track("create_query")
     doc = frappe.new_doc("Insights Query")
     doc.title = query.get("title") or "Untitled Query"
     doc.data_source = query.get("data_source") or "Demo Data"
@@ -363,6 +366,7 @@ def upload_csv(data_source, label, file, if_exists, columns):
 @frappe.whitelist()
 @check_role("Insights User")
 def delete_data_source(data_source):
+    track("delete_data_source")
     try:
         frappe.delete_doc("Insights Data Source", data_source)
         notify(
@@ -392,6 +396,7 @@ def delete_data_source(data_source):
 
 @frappe.whitelist()
 def create_alert(alert):
+    track("create_alert")
     alert = frappe._dict(alert)
     alert_doc = frappe.new_doc("Insights Alert")
     alert_doc.update(alert)
