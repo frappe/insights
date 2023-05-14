@@ -68,10 +68,6 @@ const widget = ref(null)
 function downloadChart() {
 	widget.value?.$refs?.eChart?.downloadChart?.()
 }
-
-const refreshKey = computed(() => {
-	return JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value])
-})
 </script>
 
 <template>
@@ -108,9 +104,14 @@ const refreshKey = computed(() => {
 						:class="[dashboard.editing ? 'pointer-events-none' : '']"
 						:is="widgets.getComponent(item.item_type)"
 						:chartData="chartData"
-						:item_id="item.item_id"
 						:options="item.options"
-						:key="refreshKey"
+						:key="
+							JSON.stringify([
+								props.item.item_id,
+								props.item.options,
+								chartFilters?.value,
+							])
+						"
 					>
 						<template #placeholder>
 							<InvalidWidget
@@ -123,7 +124,7 @@ const refreshKey = computed(() => {
 						</template>
 					</component>
 
-					<div class="absolute top-3 right-3 z-10 flex items-center">
+					<div class="absolute right-3 top-3 z-10 flex items-center">
 						<div v-if="chartFilters?.length">
 							<Tooltip :text="chartFilters.map((c) => c.label).join(', ')">
 								<div
@@ -140,7 +141,7 @@ const refreshKey = computed(() => {
 						</div>
 						<div
 							v-if="!dashboard.editing && item.options.query"
-							class="invisible -mt-1 -mb-1 flex cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
+							class="invisible -mb-1 -mt-1 flex cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
 						>
 							<FeatherIcon
 								name="external-link"
