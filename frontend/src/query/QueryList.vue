@@ -26,7 +26,10 @@ const createDisabled = computed(
 )
 const createQuery = async () => {
 	const { dataSource, title } = newQuery.value
-	const name = await queries.create(dataSource, title)
+	const name = await queries.create({
+		data_source: dataSource,
+		title,
+	})
 	newQuery.value = { dataSource: '', title: '' }
 	await nextTick()
 	router.push({ name: 'QueryBuilder', params: { name } })

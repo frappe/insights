@@ -19,7 +19,9 @@ if (!props.query) {
 	const sources = await useDataSources()
 	await sources.reload()
 	const source = sources.list[0]
-	const query_name = await useQueries().create(source.name)
+	const query_name = await useQueries().create({
+		data_source: source.name,
+	})
 	emit('setQuery', query_name)
 	query = useQuery(query_name)
 	props.is_native ? await query.convertToNative() : await query.convertToAssisted()
