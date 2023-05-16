@@ -47,6 +47,12 @@ export default function useNotebookPage(page_name) {
 		interval: 1500,
 	})
 
+	state.delete = async () => {
+		state.loading = true
+		await resource.delete.submit()
+		state.loading = false
+	}
+
 	return state
 }
 

@@ -33,7 +33,7 @@ import suggestion from './slash-command/suggestion'
 const emit = defineEmits(['update:content'])
 const props = defineProps({
 	content: {
-		type: String,
+		type: Object,
 		required: true,
 	},
 })
