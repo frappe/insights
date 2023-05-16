@@ -49,7 +49,7 @@ function handleOptionSelect(value, togglePopover) {
 				@update:model-value="!isOpen && togglePopover(true)"
 				@click="togglePopover"
 				:placeholder="placeholder || 'Pick a value'"
-				class="flex h-7 cursor-pointer items-center px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
+				class="flex h-7 w-full cursor-pointer items-center px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
 				:class="[
 					!searchText?.length ? 'min-w-[3rem]' : '',
 					!selectedItem?.label && !isOpen ? '' : '',

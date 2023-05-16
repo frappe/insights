@@ -5,8 +5,8 @@ import useQueries from '@/query/useQueries'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
 import { computed, provide, ref } from 'vue'
-import BlockActions from '../BlockActions.vue'
 import BlockAction from '../BlockAction.vue'
+import BlockActions from '../BlockActions.vue'
 
 import ChartOptionsDropdown from './ChartOptionsDropdown.vue'
 
@@ -40,6 +40,23 @@ const queryOptions = queries.list.map((query) => ({
 const selectedQuery = computed(() => {
 	return queryOptions.find((op) => op.value === chart.doc.query)
 })
+
+const QuerySelector = (props) => {
+	return (
+		<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
+			<InputWithPopover
+				placeholder="Query"
+				items={queryOptions}
+				value={selectedQuery.value}
+				placement="bottom"
+				onUpdate:modelValue={(op) => chart.updateQuery(op.value)}
+			></InputWithPopover>
+			<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
+				<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
+			</p>
+		</div>
+	)
+}
 </script>
 
 <template>
@@ -72,33 +89,19 @@ const selectedQuery = computed(() => {
 			<!-- else -->
 			<div
 				v-else
-				class="absolute right-0 top-0 flex h-full w-full items-center justify-center"
+				class="absolute right-0 top-0 flex h-full w-full flex-col items-center justify-center"
 			>
-				<InvalidWidget
-					class="absolute"
-					title="Query not selected"
-					message="Please select a query for this chart"
-					icon="settings"
-					icon-class="text-gray-400"
-				/>
+				<div class="mb-1 w-[10rem] text-gray-400">Select a query</div>
+				<div class="w-[10rem] rounded-md border border-dashed border-gray-300">
+					<QuerySelector />
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<BlockActions :blockRef="blockRef">
 		<BlockAction class="!px-0">
-			<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
-				<InputWithPopover
-					placeholder="Query"
-					:items="queryOptions"
-					:value="selectedQuery"
-					placement="bottom-end"
-					@update:modelValue="(op) => chart.updateQuery(op.value)"
-				></InputWithPopover>
-				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
-					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
-				</p>
-			</div>
+			<QuerySelector />
 		</BlockAction>
 
 		<BlockAction class="!px-0" v-if="chart.doc.query">
