@@ -4,11 +4,15 @@
 			:items="[
 				{
 					label: 'Data Sources',
-					href: '/data-sources',
+					href: '/data-source',
 				},
 				{
-					label: dataSourceTable.doc.label,
-					href: `/data-sources/${dataSourceTable.doc.name}`,
+					label: props.name,
+					href: `/data-source/${props.name}`,
+				},
+				{
+					label: dataSourceTable.doc?.label || props.table,
+					href: `/data-source/${props.name}/${props.table}`,
 				},
 			]"
 		/>
