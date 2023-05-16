@@ -331,7 +331,6 @@ import { copyToClipboard } from '@/utils'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
-const builder = inject('queryBuilder')
 
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)

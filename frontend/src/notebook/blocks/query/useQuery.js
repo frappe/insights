@@ -139,5 +139,12 @@ function makeQuery(name) {
 		return response.message
 	}
 
+	state.updateDoc = async (doc) => {
+		state.loading = true
+		await resource.setValue.submit(doc)
+		await state.refresh()
+		state.loading = false
+	}
+
 	return state
 }

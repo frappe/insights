@@ -80,6 +80,9 @@ export function useQuery(name) {
 			},
 		})
 	}
+	query.updateDoc = async (doc) => {
+		await query.setValue.submit(doc)
+	}
 
 	return query
 }

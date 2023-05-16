@@ -429,7 +429,7 @@ const COLUMN_TYPES = [
 					'Sort',
 					'Limit',
 				]"
-				class="cursor-pointer rounded-lg border border-gray-300 px-2 py-0.5 transition-all hover:bg-gray-50"
+				class="h-7 cursor-pointer rounded-lg border border-gray-300 px-2 text-sm leading-7 transition-all hover:bg-gray-50"
 				@click="addBlock(item)"
 			>
 				{{ item }}

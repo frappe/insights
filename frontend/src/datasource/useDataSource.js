@@ -9,16 +9,20 @@ export function useDataSource(name) {
 }
 
 function makeDataSource(name) {
-	const resource = getDataSourceResource(name)
+	let resource = getDataSourceResource(name)
 	const state = reactive({
 		doc: {},
 		tables: [],
 		loading: true,
 	})
-	resource.get.fetch().then((doc) => {
-		state.loading = false
-		state.doc = doc
-	})
+
+	state.reload = () => {
+		return resource.get.fetch().then((doc) => {
+			state.loading = false
+			state.doc = doc
+		})
+	}
+	state.reload()
 
 	state.fetch_tables = async () => {
 		const response = await resource.get_tables.submit()
@@ -30,6 +34,10 @@ function makeDataSource(name) {
 	}
 	state.delete = () => {
 		return resource.delete.submit()
+	}
+	state.change_data_source = (data_source) => {
+		resource = getDataSourceResource(data_source)
+		state.reload()
 	}
 
 	return state
