@@ -65,7 +65,7 @@
 		<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">
 			<template #body-content>
 				<div class="text-base">
-					<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
+					<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard</span>
 					<Autocomplete
 						ref="dashboardInput"
 						:options="dashboardOptions"
