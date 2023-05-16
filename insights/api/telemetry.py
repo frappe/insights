@@ -2,12 +2,22 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils.telemetry import capture
+
+try:
+    from frappe.utils.telemetry import capture
+except ImportError:
+
+    def capture(*args, **kwargs):
+        pass
 
 
 @frappe.whitelist()
 def is_enabled():
-    return frappe.get_system_settings().enable_telemetry
+    return (
+        frappe.get_system_settings("enable_telemetry")
+        and frappe.conf.get("posthog_project_id")
+        and frappe.conf.get("posthog_host")
+    )
 
 
 @frappe.whitelist()
