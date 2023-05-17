@@ -277,16 +277,27 @@ const COLUMN_TYPES = [
 				label="Pick"
 				:onRemove="() => state.columns.splice(index, 1)"
 			>
-				<Suspense>
-					<ColumnSelector
-						class="flex rounded-lg border border-gray-300 text-gray-800"
-						:columnOptions="selectedColumns"
-						:data_source="query.doc.data_source"
-						:tables="selectedTables"
-						v-model="column.column"
-						@update:model-value="(c) => (column.column.alias = c.label)"
+				<div
+					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+				>
+					<Suspense>
+						<ColumnSelector
+							:columnOptions="selectedColumns"
+							:data_source="query.doc.data_source"
+							:tables="selectedTables"
+							v-model="column.column"
+							@update:model-value="(c) => (column.column.alias = c.label)"
+						/>
+					</Suspense>
+					<InputWithPopover
+						v-if="FIELDTYPES.DATE.includes(column.column?.type)"
+						:value="findByValue(dateFormatOptions, column.column.granularity)"
+						@update:modelValue="(v) => (column.column.granularity = v.value)"
+						placeholder="Format"
+						:disable-filter="true"
+						:items="dateFormatOptions"
 					/>
-				</Suspense>
+				</div>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
 				<ResizeableInput
 					class="flex rounded-lg border border-gray-300 text-gray-800"
