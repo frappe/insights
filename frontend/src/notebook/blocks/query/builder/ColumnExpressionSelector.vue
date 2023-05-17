@@ -12,6 +12,7 @@ const expression = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
+const focused = ref(false)
 const columnOptions = ref([])
 query.getTablesColumns().then((columns) => {
 	columnOptions.value = columns.map((c) => {
@@ -39,10 +40,16 @@ const getCompletions = (context, syntaxTree) => {
 
 <template>
 	<div class="max-w-[20rem] rounded-lg border border-gray-300 pl-1 pr-2 text-gray-800">
-		<div class="h-7 py-0.5">
+		<div
+			class="max-h-7 overflow-hidden py-0.5 transition-all"
+			:class="focused && '!max-h-[30rem]'"
+		>
 			<Code
 				:value="expression.raw"
 				:completions="getCompletions"
+				:autofocus="false"
+				@focus="focused = true"
+				@blur="focused = false"
 				@update:modelValue="
 					expression = {
 						raw: $event,
