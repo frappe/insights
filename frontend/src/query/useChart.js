@@ -122,6 +122,16 @@ function getChart(chartName) {
 		state.deleting = false
 	}
 
+	async function addToDashboard(dashboardName) {
+		if (!dashboardName || !state.doc.name || state.addingToDashboard) return
+		state.addingToDashboard = true
+		await call('insights.api.add_chart_to_dashboard', {
+			dashboard: dashboardName,
+			chart: state.doc.name,
+		})
+		state.addingToDashboard = false
+	}
+
 	return Object.assign(state, {
 		load,
 		save,
@@ -129,6 +139,7 @@ function getChart(chartName) {
 		updateQuery,
 		enableAutoSave,
 		disableAutoSave,
+		addToDashboard,
 		delete: deleteChart,
 	})
 }

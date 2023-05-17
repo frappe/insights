@@ -91,7 +91,6 @@ import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import useDashboards from '@/dashboard/useDashboards'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
-import { call } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import useChart from './useChart'
 
@@ -107,7 +106,7 @@ const chartOptions = [
 let chart = ref({})
 query.get_chart_name.submit().then((res) => {
 	chart.value = useChart(res.message)
-	state.chart.enableAutoSave()
+	chart.value.enableAutoSave()
 })
 
 const showDashboardDialog = ref(false)
@@ -125,16 +124,8 @@ const dashboardOptions = computed(() => {
 })
 const $notify = inject('$notify')
 const addChartToDashboard = async () => {
-	if (!toDashboard.value) {
-		return
-	}
-
-	addingToDashboard.value = true
-	await call('insights.api.add_chart_to_dashboard', {
-		dashboard: toDashboard.value.value,
-		chart: chart.value.doc.name,
-	})
-	addingToDashboard.value = false
+	if (!toDashboard.value) return
+	await chart.value.addToDashboard(toDashboard.value.value)
 	showDashboardDialog.value = false
 	$notify({
 		appearance: 'success',

@@ -1,10 +1,11 @@
 <script setup lang="jsx">
+import useDashboards from '@/dashboard/useDashboards'
 import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import { createChart, default as useChart } from '@/query/useChart'
 import useQueries from '@/query/useQueries'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
-import { computed, provide, ref } from 'vue'
+import { computed, inject, provide, ref, watch } from 'vue'
 import BlockAction from '../BlockAction.vue'
 import BlockActions from '../BlockActions.vue'
 
@@ -57,6 +58,45 @@ const QuerySelector = (props) => {
 		</div>
 	)
 }
+
+const showDashboardDialog = ref(false)
+const dashboards = useDashboards()
+dashboards.reload()
+const toDashboard = ref(null)
+const addingToDashboard = ref(false)
+const dashboardOptions = computed(() => {
+	// sort alphabetically
+	return dashboards.list
+		.sort((a, b) => {
+			return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
+		})
+		.map((d) => ({ label: d.title, value: d.name }))
+})
+const $notify = inject('$notify')
+const addToDashboard = async () => {
+	if (!toDashboard.value) return
+	await chart.addToDashboard(toDashboard.value.value)
+	showDashboardDialog.value = false
+	$notify({
+		appearance: 'success',
+		title: 'Success',
+		message: 'Chart added to dashboard',
+	})
+}
+
+const dashboardInput = ref(null)
+watch(
+	() => showDashboardDialog.value,
+	(val) => {
+		if (val) {
+			setTimeout(() => {
+				dashboardInput.value.input?.$el?.blur()
+				dashboardInput.value.input?.$el?.focus()
+			}, 500)
+		}
+	},
+	{ immediate: true }
+)
 </script>
 
 <template>
@@ -106,7 +146,29 @@ const QuerySelector = (props) => {
 			<ChartOptionsDropdown />
 		</BlockAction>
 
-		<BlockAction icon="trash" label="Delete" :action="removeChart" :loading="chart.deleting">
-		</BlockAction>
+		<BlockAction
+			label="Add to dashboard"
+			icon="plus"
+			:action="() => (showDashboardDialog = true)"
+		/>
+		<BlockAction icon="trash" label="Delete" :action="removeChart" :loading="chart.deleting" />
 	</BlockActions>
+
+	<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">
+		<template #body-content>
+			<div class="text-base">
+				<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard</span>
+				<Autocomplete
+					ref="dashboardInput"
+					:options="dashboardOptions"
+					v-model="toDashboard"
+				/>
+			</div>
+		</template>
+		<template #actions>
+			<Button appearance="primary" @click="addToDashboard" :loading="addingToDashboard">
+				Add
+			</Button>
+		</template>
+	</Dialog>
 </template>

@@ -1,7 +1,6 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
 import { slideRightTransition } from '@/utils/transitions'
-import BlockAction from './BlockAction.vue'
 const props = defineProps({
 	blockRef: Object,
 	actions: {
@@ -18,7 +17,7 @@ const props = defineProps({
 		placement="right-start"
 		:transition="slideRightTransition"
 	>
-		<div class="flex w-[8rem] flex-col space-y-1.5 text-sm transition-all">
+		<div class="flex w-[10rem] flex-col space-y-1.5 text-sm transition-all">
 			<slot />
 		</div>
 	</UsePopover>
