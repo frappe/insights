@@ -146,5 +146,12 @@ function makeQuery(name) {
 		state.loading = false
 	}
 
+	state.duplicate = async () => {
+		state.duplicating = true
+		const { message } = await resource.duplicate.submit()
+		state.duplicating = false
+		return message
+	}
+
 	return state
 }

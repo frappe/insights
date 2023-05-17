@@ -4,8 +4,9 @@ import ContentEditable from '@/notebook/ContentEditable.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebookPage from '@/notebook/useNotebookPage'
 import TipTap from './tiptap/TipTap.vue'
-import { ref } from 'vue'
+import { provide, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { updateDocumentTitle } from '@/utils'
 
 const props = defineProps({
 	notebook: String,
@@ -13,6 +14,7 @@ const props = defineProps({
 })
 const page = useNotebookPage(props.page)
 const notebook = useNotebook(props.notebook)
+provide('page', page)
 
 const show_delete_dialog = ref(false)
 const router = useRouter()
@@ -21,6 +23,12 @@ function deletePage() {
 		router.push(`/notebook/${notebook.doc.name}`)
 	})
 }
+
+const pageMeta = computed(() => ({
+	title: page.doc?.title,
+	subtitle: page.doc?.notebook,
+}))
+updateDocumentTitle(pageMeta)
 </script>
 
 <template>

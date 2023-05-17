@@ -21,15 +21,15 @@
 </template>
 
 <script setup>
+import { safeJSONParse } from '@/utils'
 import { TextEditor } from 'frappe-ui'
 import { Code, RemoveFormatting, Strikethrough } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import Chart from './extensions/Chart'
 import QueryBuilder from './extensions/QueryBuilder'
 import QueryEditor from './extensions/QueryEditor'
 import SlashCommand from './slash-command/commands'
 import suggestion from './slash-command/suggestion'
-import { safeJSONParse } from '@/utils'
 
 const emit = defineEmits(['update:content'])
 const props = defineProps(['content'])
@@ -39,10 +39,22 @@ const updateContent = () => {
 	const contentJSON = tiptap.value.editor.getJSON()
 	emit('update:content', contentJSON)
 }
+
 onMounted(() => {
 	const content = safeJSONParse(props.content)
 	tiptap.value.editor.commands.setContent(content)
 })
+watch(
+	() => props.content,
+	(newContent) => {
+		const _newContent = safeJSONParse(newContent)
+		if (!_newContent) return
+		const editorContent = tiptap.value.editor.getJSON()
+		if (JSON.stringify(_newContent) !== JSON.stringify(editorContent)) {
+			tiptap.value.editor.commands.setContent(_newContent)
+		}
+	}
+)
 
 function placeholderByNode({ node }) {
 	if (node.type.name === 'heading') {

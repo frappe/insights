@@ -2,7 +2,9 @@
 import useDataSources from '@/datasource/useDataSources'
 import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import useQueries from '@/query/useQueries'
-import { computed, provide, reactive, ref } from 'vue'
+import { copyToClipboard } from '@/utils'
+import { computed, inject, provide, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import BlockAction from '../BlockAction.vue'
 import BlockActions from '../BlockActions.vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
@@ -58,6 +60,23 @@ const sourceOptions = computed(() =>
 const selectedSource = computed(() => {
 	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
 })
+
+const page = inject('page')
+const router = useRouter()
+function duplicateQuery() {
+	query.duplicate().then((name) => {
+		if (page?.addQuery) {
+			page.addQuery(props.is_native ? 'query-editor' : 'query-builder', name)
+		} else {
+			router.push(`/query/${name}`)
+		}
+	})
+}
+
+const show_sql_dialog = ref(false)
+const formattedSQL = computed(() => {
+	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
+})
 </script>
 
 <template>
@@ -110,26 +129,56 @@ const selectedSource = computed(() => {
 			label="Execute"
 			:action="state.query.execute"
 			:loading="state.query.executing"
-		>
-		</BlockAction>
+		/>
 		<BlockAction
 			:icon="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
 			:label="state.minimizeResult ? 'Show Results' : 'Hide Results'"
 			:action="() => (state.minimizeResult = !state.minimizeResult)"
-		>
-		</BlockAction>
+		/>
 		<BlockAction
 			:icon="state.minimizeQuery ? 'maximize-2' : 'minimize-2'"
 			:label="state.minimizeQuery ? 'Show Query' : 'Hide Query'"
 			:action="() => (state.minimizeQuery = !state.minimizeQuery)"
-		>
-		</BlockAction>
+		/>
+		<BlockAction
+			label="Duplicate"
+			icon="copy"
+			:action="duplicateQuery"
+			:loading="state.query.duplicating"
+		/>
+		<BlockAction
+			v-if="!props.is_native && query.doc.sql"
+			label="View SQL"
+			icon="code"
+			:action="() => (show_sql_dialog = true)"
+		/>
 		<BlockAction
 			icon="trash"
 			label="Delete"
 			:action="state.removeQuery"
 			:loading="state.query.deleting"
-		>
-		</BlockAction>
+		/>
 	</BlockActions>
+
+	<Dialog
+		:options="{ title: 'Generated SQL', size: '3xl' }"
+		v-model="show_sql_dialog"
+		:dismissable="true"
+	>
+		<template #body-content>
+			<div class="relative">
+				<p
+					class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
+					style="font-family: 'Fira Code'"
+					v-html="formattedSQL"
+				></p>
+				<Button
+					icon="copy"
+					appearance="white"
+					class="absolute bottom-2 right-2"
+					@click="copyToClipboard(query.doc.sql)"
+				></Button>
+			</div>
+		</template>
+	</Dialog>
 </template>

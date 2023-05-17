@@ -53,6 +53,23 @@ export default function useNotebookPage(page_name) {
 		state.loading = false
 	}
 
+	state.addQuery = async (queryType, queryName) => {
+		const validTypes = ['query-builder', 'query-editor']
+		if (!validTypes.includes(queryType)) {
+			throw new Error(`Invalid query type: ${queryType}`)
+		}
+		state.loading = true
+		const content = safeJSONParse(state.doc.content)
+		content.content.push({
+			type: queryType,
+			attrs: { query: queryName },
+		})
+		state.doc.content = content
+		await state.save()
+		await state.reload()
+		state.loading = false
+	}
+
 	return state
 }
 
