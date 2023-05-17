@@ -202,22 +202,22 @@ def infer_type(value):
         # test if decimal
         pd.to_numeric(value, downcast="float")
         return "Decimal"
-    except ValueError:
+    except BaseException:
         try:
             # test if integer
             pd.to_numeric(value)
             return "Integer"
-        except ValueError:
+        except BaseException:
             try:
                 # test if datetime
                 pd.to_datetime(value)
                 return "Datetime"
-            except ValueError:
+            except BaseException:
                 return "String"
 
 
 def infer_type_from_list(values):
-    inferred_types = [infer_type(v) for v in values]
+    inferred_types = (infer_type(v) for v in values)
     if "String" in inferred_types:
         return "String"
     if "Datetime" in inferred_types:
@@ -376,3 +376,15 @@ class Query(frappe._dict):
             columns.append(Column(**c))
 
         return [c for c in columns if c]
+
+
+def get_columns_with_inferred_types(results):
+    columns = ResultColumn.from_dicts(results[0])
+    column_names = [column.label for column in columns]
+    results_df = pd.DataFrame(results[1:], columns=column_names)
+    column_types = (
+        infer_type_from_list(results_df[column.label]) for column in columns
+    )
+    for column, column_type in zip(columns, column_types):
+        column.type = column_type
+    return columns

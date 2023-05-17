@@ -5,7 +5,7 @@ import pandas as pd
 
 from insights.utils import ResultColumn
 
-from .utils import infer_type_from_list
+from .utils import get_columns_with_inferred_types, infer_type_from_list
 
 
 class InsightsRawQueryController:
@@ -24,15 +24,9 @@ class InsightsRawQueryController:
     def get_columns(self, results=None):
         if not results:
             results = self.doc.retrieve_results()
-
         if not results:
             return []
-        columns = ResultColumn.from_dicts(results[0])
-        column_names = [column.label for column in columns]
-        results_df = pd.DataFrame(results[1:], columns=column_names)
-        for column in columns:
-            column.type = infer_type_from_list(results_df[column.label])
-        return columns
+        return get_columns_with_inferred_types(results)
 
     def get_columns_from_results(self, results):
         return self.get_columns(results)

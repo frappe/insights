@@ -48,7 +48,7 @@ def check_permission(doctype, permission_type="read"):
     return decorator
 
 
-def log_error():
+def log_error(raise_exc=False):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
@@ -57,6 +57,8 @@ def log_error():
             except BaseException as e:
                 frappe.log_error("Insights Error")
                 print(f"Error in {function.__name__}", e)
+                if raise_exc:
+                    raise e
 
         return wrapper
 

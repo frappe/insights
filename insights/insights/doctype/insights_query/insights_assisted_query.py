@@ -6,7 +6,7 @@ from functools import cached_property
 
 import frappe
 
-from .utils import Column, InsightsTable, Query
+from .utils import Column, InsightsTable, Query, get_columns_with_inferred_types
 
 DEFAULT_JSON = {
     "table": {},
@@ -48,14 +48,19 @@ class InsightsAssistedQueryController:
     def get_columns_from_results(self, results):
         if not results:
             return []
-        result_columns = results[0]
-        query_columns = self.get_columns()
+
+        query_columns = self.query_json.get_columns()
+        if not query_columns:
+            # then its a select * query
+            return get_columns_with_inferred_types(results)
 
         def find_query_column(label):
             for qc in query_columns:
                 if qc.alias == label:
                     return qc
 
+        result_columns = results[0]
+        # find the query column to get the formatting options
         return [find_query_column(rc["label"]) for rc in result_columns]
 
     def get_tables_columns(self):

@@ -181,7 +181,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def before_fetch(self):
         self.variant_controller.before_fetch()
 
-    @log_error()
+    @log_error(raise_exc=True)
     def process_results_columns(self, results):
         results[0] = ResultColumn.from_dicts(self.get_columns_from_results(results))
         return results
