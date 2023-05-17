@@ -14,7 +14,7 @@ const props = defineProps({
 const searchTerm = ref('')
 const filteredData = computed(() => {
 	if (searchTerm.value === '') {
-		return props.data
+		return props.data.slice(0, 100)
 	}
 	return props.data
 		.filter((row) => {
