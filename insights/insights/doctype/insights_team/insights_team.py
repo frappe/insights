@@ -132,7 +132,7 @@ def get_allowed_resources_for_user(resource_type=None, user=None):
         "Insights Settings", "enable_permissions"
     )
     if permsisions_disabled or is_insights_admin(user):
-        return frappe.get_all(resource_type, pluck="name")
+        return frappe.get_list(resource_type, pluck="name")
 
     teams = get_user_teams(user)
     if not teams:
