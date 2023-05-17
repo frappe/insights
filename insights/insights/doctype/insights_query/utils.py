@@ -256,7 +256,7 @@ class Column(frappe._dict):
         return [c for c in columns if c]
 
     def is_aggregate(self):
-        return self.aggregation and self.aggregation != "none"
+        return self.aggregation and self.aggregation != "custom"
 
     def is_expression(self):
         return self.expression.get("raw") and self.expression.get("ast") and self.alias

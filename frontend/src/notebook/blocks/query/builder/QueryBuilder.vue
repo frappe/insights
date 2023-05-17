@@ -94,12 +94,12 @@ function addBlock(type) {
 }
 
 const AGGREGATIONS = [
-	{ label: 'None', value: 'none' },
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum', value: 'sum' },
 	{ label: 'Average', value: 'avg' },
 	{ label: 'Minimum', value: 'min' },
 	{ label: 'Maximum', value: 'max' },
+	{ label: 'Custom', value: 'custom' },
 ]
 function setAggregation(aggregation, measure) {
 	if (aggregation.value == 'count') {
@@ -219,7 +219,10 @@ const COLUMN_TYPES = [
 				:onRemove="() => state.calculations.splice(index, 1)"
 			>
 				<Suspense>
-					<ColumnExpressionSelector v-model="calc.column.expression" />
+					<ColumnExpressionSelector
+						v-model="calc.column.expression"
+						@update:model-value="() => (calc.column.aggregation = 'custom')"
+					/>
 				</Suspense>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
 				<div
@@ -321,7 +324,6 @@ const COLUMN_TYPES = [
 						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 					>
 						<InputWithPopover
-							v-if="measure.column.aggregation !== 'none'"
 							:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
 							placeholder="Count"
 							:disable-filter="true"
