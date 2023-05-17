@@ -4,7 +4,7 @@ import { Popover } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
 import Combobox from './Combobox.vue'
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'input'])
 const props = defineProps({
 	value: { type: Object, default: undefined },
 	modelValue: Object,
@@ -46,7 +46,12 @@ function handleOptionSelect(value, togglePopover) {
 				tag="div"
 				:contenteditable="!props.disableInput"
 				v-model="searchText"
-				@update:model-value="!isOpen && togglePopover(true)"
+				@update:model-value="
+					() => {
+						!isOpen && togglePopover(true)
+						emit('input', searchText)
+					}
+				"
 				@click="togglePopover"
 				:placeholder="placeholder || 'Pick a value'"
 				class="flex h-7 w-full cursor-pointer items-center px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"

@@ -134,6 +134,7 @@ const selectorComponentMap = {
 		v-model="value"
 		:disableInput="isMultiValue"
 		placeholder="Pick a value"
+		@input="selectorType === 'combobox' && checkAndFetchColumnValues($event)"
 	>
 		<template #popover="{ value, togglePopover, setValue }">
 			<component
