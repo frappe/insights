@@ -49,15 +49,18 @@ const TimespanPicker = (props) => (
 
 const isMultiValue = computed(() => ['in', 'not_in'].includes(props.operator?.value))
 const columnValues = ref([])
+const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (!isEqualityCheck.value) return
 	if (props.column?.type == 'String' && props.column?.data_source) {
 		const URL = 'insights.api.fetch_column_values'
+		fetchingColumnValues.value = true
 		const values = await call(URL, {
 			column: props.column,
 			search_text,
 		})
 		columnValues.value = values.map((value) => ({ label: value, value }))
+		fetchingColumnValues.value = false
 	}
 }, 300)
 whenever(
@@ -70,6 +73,7 @@ const ColumnValueCombobox = (props) => (
 		v-model={props.value}
 		values={columnValues.value}
 		allowMultiple={isMultiValue.value}
+		loading={fetchingColumnValues.value}
 		onUpdate:modelValue={(value) => {
 			props.setValue(value)
 			props.togglePopover(false)

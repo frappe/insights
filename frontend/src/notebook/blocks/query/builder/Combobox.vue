@@ -1,5 +1,6 @@
 <script setup>
 import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/vue'
+import { LoadingIndicator } from 'frappe-ui'
 import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue', 'filterInput'])
@@ -7,6 +8,7 @@ const props = defineProps({
 	modelValue: Object,
 	allowMultiple: Boolean,
 	values: Array,
+	loading: Boolean,
 })
 
 const selectedValue = computed({
@@ -93,7 +95,14 @@ function isSelected(value) {
 					</div>
 				</ComboboxOption>
 				<ComboboxOption
-					v-if="props.values?.length === 0"
+					v-if="props.loading"
+					class="flex items-center px-1.5 py-1 text-sm text-gray-400"
+				>
+					<LoadingIndicator class="h-4 w-4" />
+					<span class="ml-2">Loading...</span>
+				</ComboboxOption>
+				<ComboboxOption
+					v-else-if="props.values?.length === 0"
 					class="px-1.5 pb-0 text-sm text-gray-400"
 				>
 					No results found
