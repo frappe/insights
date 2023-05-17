@@ -715,8 +715,8 @@ class SQLQueryBuilder:
         for column in assisted_query.columns:
             self._columns.append(make_sql_column(column))
 
-        for column in assisted_query.calculations:
-            self._columns.append(make_sql_column(column))
+        # don't select calculated columns
+        # since they are used as variables in measures, dimensions, filters, etc
 
         for measure in assisted_query.measures:
             self._measures.append(make_sql_column(measure))

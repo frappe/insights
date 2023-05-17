@@ -362,13 +362,11 @@ class Query(frappe._dict):
 
     def _extract_columns(self):
         """
-        Extract columns from columns, calculations, measures, dimensions
+        Extract columns from columns, measures, dimensions
         A column has the following format: { table, column, type, label, alias, format }
         """
         columns = []
         for c in self.columns:
-            columns.append(Column(**c))
-        for c in self.calculations:
             columns.append(Column(**c))
         for c in self.measures:
             columns.append(Column(**c))
