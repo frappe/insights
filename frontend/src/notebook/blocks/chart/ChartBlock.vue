@@ -63,38 +63,36 @@ const QuerySelector = (props) => {
 	<div
 		ref="blockRef"
 		v-if="chart.doc.name"
-		class="relative my-6 min-h-[5rem] overflow-hidden rounded border bg-white"
+		class="group relative my-6 h-[20rem] overflow-hidden rounded border bg-white"
 	>
-		<div class="group relative flex h-[20rem] max-h-80 flex-col overflow-hidden bg-white">
-			<component
-				v-if="chart.doc?.chart_type"
-				ref="widget"
-				:is="widgets.getComponent(chart.doc.chart_type)"
-				:chartData="{ data: chart.data }"
-				:options="chart.doc.options"
-				:key="JSON.stringify(chart.doc.options)"
-			>
-				<template #placeholder>
-					<div class="relative h-full w-full">
-						<InvalidWidget
-							class="absolute"
-							title="Insufficient options"
-							message="Please check the options for this chart"
-							icon="settings"
-							icon-class="text-gray-400"
-						/>
-					</div>
-				</template>
-			</component>
-			<!-- else -->
-			<div
-				v-else
-				class="absolute right-0 top-0 flex h-full w-full flex-col items-center justify-center"
-			>
-				<div class="mb-1 w-[10rem] text-gray-400">Select a query</div>
-				<div class="w-[10rem] rounded-md border border-dashed border-gray-300">
-					<QuerySelector />
+		<component
+			v-if="chart.doc?.chart_type"
+			ref="widget"
+			:is="widgets.getComponent(chart.doc.chart_type)"
+			:chartData="{ data: chart.data }"
+			:options="chart.doc.options"
+			:key="JSON.stringify([chart.data, chart.doc.options])"
+		>
+			<template #placeholder>
+				<div class="relative h-full w-full">
+					<InvalidWidget
+						class="absolute"
+						title="Insufficient options"
+						message="Please check the options for this chart"
+						icon="settings"
+						icon-class="text-gray-400"
+					/>
 				</div>
+			</template>
+		</component>
+		<!-- else -->
+		<div
+			v-else
+			class="absolute right-0 top-0 flex h-full w-full flex-col items-center justify-center"
+		>
+			<div class="mb-1 w-[10rem] text-gray-400">Select a query</div>
+			<div class="w-[10rem] rounded-md border border-dashed border-gray-300">
+				<QuerySelector />
 			</div>
 		</div>
 	</div>
