@@ -25,7 +25,8 @@
 									{{ title }}
 								</p>
 								<p v-if="message" class="mt-1 text-base text-gray-600">
-									{{ message }}
+									<span v-if="containsHTML" v-html="message"></span>
+									<span v-else>{{ message }}</span>
 								</p>
 							</slot>
 						</div>
@@ -114,6 +115,9 @@ export default {
 		}
 	},
 	computed: {
+		containsHTML() {
+			return this.message?.includes('<')
+		},
 		transitionProps() {
 			let props = {
 				enterActiveClass: 'transition duration-200 ease-out',
