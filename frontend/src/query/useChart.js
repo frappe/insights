@@ -116,6 +116,12 @@ function getChart(chartName) {
 		}
 	}
 
+	async function deleteChart() {
+		state.deleting = true
+		await chartDocResource.delete.submit()
+		state.deleting = false
+	}
+
 	return Object.assign(state, {
 		load,
 		save,
@@ -123,7 +129,7 @@ function getChart(chartName) {
 		updateQuery,
 		enableAutoSave,
 		disableAutoSave,
-		delete: chartDocResource.delete.submit,
+		delete: deleteChart,
 	})
 }
 

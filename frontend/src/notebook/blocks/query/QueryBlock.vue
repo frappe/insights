@@ -105,7 +105,13 @@ const selectedSource = computed(() => {
 			</div>
 		</BlockAction>
 
-		<BlockAction icon="play" label="Execute" :action="state.query.execute"> </BlockAction>
+		<BlockAction
+			icon="play"
+			label="Execute"
+			:action="state.query.execute"
+			:loading="state.query.executing"
+		>
+		</BlockAction>
 		<BlockAction
 			:icon="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
 			:label="state.minimizeResult ? 'Show Results' : 'Hide Results'"
@@ -118,6 +124,12 @@ const selectedSource = computed(() => {
 			:action="() => (state.minimizeQuery = !state.minimizeQuery)"
 		>
 		</BlockAction>
-		<BlockAction icon="trash" label="Delete" :action="state.removeQuery"> </BlockAction>
+		<BlockAction
+			icon="trash"
+			label="Delete"
+			:action="state.removeQuery"
+			:loading="state.query.deleting"
+		>
+		</BlockAction>
 	</BlockActions>
 </template>

@@ -108,6 +108,7 @@ const QuerySelector = (props) => {
 			<ChartOptionsDropdown />
 		</BlockAction>
 
-		<BlockAction icon="trash" label="Delete" :action="removeChart"> </BlockAction>
+		<BlockAction icon="trash" label="Delete" :action="removeChart" :loading="chart.deleting">
+		</BlockAction>
 	</BlockActions>
 </template>
