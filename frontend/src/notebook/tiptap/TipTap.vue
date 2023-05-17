@@ -29,22 +29,19 @@ import QueryBuilder from './extensions/QueryBuilder'
 import QueryEditor from './extensions/QueryEditor'
 import SlashCommand from './slash-command/commands'
 import suggestion from './slash-command/suggestion'
+import { safeJSONParse } from '@/utils'
 
 const emit = defineEmits(['update:content'])
-const props = defineProps({
-	content: {
-		type: Object,
-		required: true,
-	},
-})
-const content = computed(() => props.content)
+const props = defineProps(['content'])
+
 const tiptap = ref(null)
 const updateContent = () => {
 	const contentJSON = tiptap.value.editor.getJSON()
 	emit('update:content', contentJSON)
 }
 onMounted(() => {
-	tiptap.value.editor.commands.setContent(content.value)
+	const content = safeJSONParse(props.content)
+	tiptap.value.editor.commands.setContent(content)
 })
 
 function placeholderByNode({ node }) {
