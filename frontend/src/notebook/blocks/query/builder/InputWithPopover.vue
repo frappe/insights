@@ -71,7 +71,7 @@ function handleOptionSelect(value, togglePopover) {
 				>
 					<Combobox
 						v-model="selectedItem"
-						:values="filteredItems"
+						:values="filteredItems.slice(0, 50)"
 						@update:modelValue="handleOptionSelect($event, togglePopover)"
 					/>
 				</slot>

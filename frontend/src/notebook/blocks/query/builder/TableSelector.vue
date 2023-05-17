@@ -28,7 +28,6 @@ if (!props.tableOptions) {
 	)
 	tables = computed(() => {
 		return dataSource.tables
-			.slice(0, 50)
 			.filter((t) => !t.hidden)
 			.map((table) => {
 				return {

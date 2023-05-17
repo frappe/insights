@@ -51,7 +51,6 @@ const columns = computed(() => {
 	return dataSourceTables.value
 		.map((d) => d.doc?.columns)
 		.flat()
-		.slice(0, 50)
 		.concat(props.columnOptions)
 		.reverse() // to show the passed column options first
 		.filter((col, currIndex, self) => {
