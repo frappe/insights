@@ -13,6 +13,6 @@ const value = computed({
 	<ContentEditable
 		v-model="value"
 		:placeholder="props.placeholder"
-		class="cursor-pointer px-2.5 py-0.5 outline-none ring-0 transition-all focus:outline-none"
+		class="h-7 cursor-pointer px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
 	/>
 </template>
