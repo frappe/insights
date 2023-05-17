@@ -55,8 +55,10 @@ const columns = computed(() => {
 		.reverse() // to show the passed column options first
 		.filter((col, currIndex, self) => {
 			if (!col) return false
-			const otherIndex = self.findIndex(
-				(c) => c && c.column === col.column && c.table === col.table
+			const otherIndex = self.findIndex((c) =>
+				c.expression
+					? c.expression.raw === col.expression?.raw
+					: c && c.column === col.column && c.table === col.table
 			)
 			return otherIndex === currIndex && (!props.columnFilter || props.columnFilter(col))
 		})
