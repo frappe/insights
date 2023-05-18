@@ -164,17 +164,15 @@ const newLink = reactive({
 	foreignKey: {},
 })
 
-const dataSourceTable = ref({})
-useDataSourceTable({ name: props.table }).then((table) => {
-	dataSourceTable.value = table
-})
+const dataSourceTable = await useDataSourceTable({ name: props.table })
+dataSourceTable.fetchPreview()
 const hidden = computed({
 	get() {
-		return dataSourceTable.value.doc.hidden
+		return dataSourceTable.doc.hidden
 	},
 	set(value) {
-		if (value !== dataSourceTable.value.hidden) {
-			dataSourceTable.value.updateVisibility.submit({
+		if (value !== dataSourceTable.hidden) {
+			dataSourceTable.updateVisibility.submit({
 				hidden: value,
 			})
 		}
@@ -259,8 +257,8 @@ function createLink() {
 	createLinkResource.submit({
 		data_source: props.name,
 		primary_table: {
-			label: dataSourceTable.value.doc.label,
-			table: dataSourceTable.value.doc.table,
+			label: dataSourceTable.doc.label,
+			table: dataSourceTable.doc.table,
 		},
 		foreign_table: {
 			label: newLink.table.label,

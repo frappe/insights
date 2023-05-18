@@ -76,8 +76,10 @@ function makeDataSourceTable(name) {
 		},
 	})
 	dataSourceTable.get.fetch()
-	dataSourceTable.getPreview.submit()
 	dataSourceTable.rows = computed(() => dataSourceTable.getPreview.data?.message || {})
+	dataSourceTable.fetchPreview = () => {
+		return dataSourceTable.getPreview.submit()
+	}
 	dataSourceTable.sync = () => {
 		dataSourceTable.syncing = true
 		dataSourceTable.syncTable.submit().then(() => {
