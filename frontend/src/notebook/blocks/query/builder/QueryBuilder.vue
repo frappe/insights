@@ -69,17 +69,17 @@ function addBlock(type) {
 		return
 	}
 	const typeToEmptyValue = {
-		Join: { ...GET_EMPTY_JOIN() },
+		Combine: { ...GET_EMPTY_JOIN() },
 		Filter: { ...GET_EMPTY_FILTER() },
-		Column: { ...GET_EMPTY_COLUMN() },
+		Select: { ...GET_EMPTY_COLUMN() },
 		Sort: { ...GET_EMPTY_COLUMN() },
 		Calculate: { ...GET_EMPTY_COLUMN() },
 		Limit: 10,
 	}
 	const typeToKey = {
-		Join: 'joins',
+		Combine: 'joins',
 		Filter: 'filters',
-		Column: 'columns',
+		Select: 'columns',
 		Sort: 'orders',
 		Calculate: 'calculations',
 		Limit: 'limit',
