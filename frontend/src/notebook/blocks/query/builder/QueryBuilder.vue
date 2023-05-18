@@ -347,7 +347,24 @@ const COLUMN_TYPES = [
 					<div
 						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 					>
-						<Suspense>
+						<InputWithPopover
+							:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
+							placeholder="Aggregate"
+							:disable-filter="true"
+							@update:modelValue="(v) => setAggregation(v, measure)"
+							:items="AGGREGATIONS"
+						/>
+
+						<Suspense v-if="measure.column.aggregation != 'custom'">
+							<ColumnSelector
+								v-if="measure.column.aggregation !== 'count'"
+								:columnOptions="selectedColumns"
+								:data_source="query.doc.data_source"
+								:tables="selectedTables"
+								v-model="measure.column"
+							/>
+						</Suspense>
+						<Suspense v-else>
 							<ColumnSelector
 								:columnOptions="selectedColumns"
 								v-model="measure.column"
