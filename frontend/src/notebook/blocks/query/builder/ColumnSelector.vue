@@ -46,22 +46,25 @@ watch(
 	{ immediate: true }
 )
 
+function filterFn(col, currIndex, self) {
+	if (!col) return false
+	const otherIndex = self.findIndex((c) =>
+		c?.expression
+			? c.expression.raw === col.expression?.raw
+			: c && c.column === col.column && c.table === col.table
+	)
+	return otherIndex === currIndex && (!props.columnFilter || props.columnFilter(col))
+}
+
 const columns = computed(() => {
-	if (!dataSourceTables.value?.length) return []
+	const columnOptions = props.columnOptions.filter(filterFn)
+	if (!dataSourceTables.value?.length) return columnOptions
 	return dataSourceTables.value
 		.map((d) => d.doc?.columns)
 		.flat()
-		.concat(props.columnOptions)
-		.reverse() // to show the passed column options first
-		.filter((col, currIndex, self) => {
-			if (!col) return false
-			const otherIndex = self.findIndex((c) =>
-				c.expression
-					? c.expression.raw === col.expression?.raw
-					: c && c.column === col.column && c.table === col.table
-			)
-			return otherIndex === currIndex && (!props.columnFilter || props.columnFilter(col))
-		})
+		.filter(filterFn)
+		.concat(columnOptions)
+		.reverse() // reverse to show the local columns first
 })
 const columnOptions = computed(() => {
 	if (!columns.value?.length) return []
@@ -80,7 +83,7 @@ const columnOptions = computed(() => {
 		<InputWithPopover
 			v-model="column"
 			:items="columnOptions"
-			placeholder="Pick a column"
+			placeholder="Column"
 		></InputWithPopover>
 	</div>
 </template>

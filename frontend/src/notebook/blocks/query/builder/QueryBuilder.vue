@@ -95,10 +95,10 @@ function addBlock(type) {
 
 const AGGREGATIONS = [
 	{ label: 'Count of Records', value: 'count' },
-	{ label: 'Sum', value: 'sum' },
-	{ label: 'Average', value: 'avg' },
-	{ label: 'Minimum', value: 'min' },
-	{ label: 'Maximum', value: 'max' },
+	{ label: 'Sum of', value: 'sum' },
+	{ label: 'Average of', value: 'avg' },
+	{ label: 'Minimum of', value: 'min' },
+	{ label: 'Maximum of', value: 'max' },
 	{ label: 'Custom', value: 'custom' },
 ]
 function setAggregation(aggregation, measure) {
@@ -175,7 +175,7 @@ const COLUMN_TYPES = [
 				v-if="state.joins.length"
 				v-for="(join, index) in state.joins"
 				:key="index"
-				label="Join"
+				label="Combine"
 				:onRemove="() => state.joins.splice(index, 1)"
 			>
 				<InputWithPopover
@@ -184,13 +184,13 @@ const COLUMN_TYPES = [
 					v-model="join.left_table"
 					:items="selectedTables"
 				></InputWithPopover>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-500">with</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">and</div>
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:data_source="query.doc.data_source"
 					v-model="join.right_table"
 				/>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-500">where</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">if</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -199,7 +199,7 @@ const COLUMN_TYPES = [
 						v-model="join.left_column"
 					/>
 				</Suspense>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-500">=</div>
+				<div class="h-8 text-sm uppercase leading-8 text-gray-500">matches</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -218,27 +218,49 @@ const COLUMN_TYPES = [
 				label="Calculate"
 				:onRemove="() => state.calculations.splice(index, 1)"
 			>
-				<Suspense>
-					<ColumnExpressionSelector
-						v-model="calc.column.expression"
-						@update:model-value="() => (calc.column.aggregation = 'custom')"
+				<div
+					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+				>
+					<InputWithPopover
+						:value="findByValue(AGGREGATIONS, calc.column.aggregation)"
+						placeholder="Aggregate"
+						:disable-filter="true"
+						@update:modelValue="(v) => setAggregation(v, calc)"
+						:items="AGGREGATIONS"
 					/>
-				</Suspense>
+
+					<Suspense v-if="calc.column.aggregation != 'custom'">
+						<ColumnSelector
+							v-if="calc.column.aggregation !== 'count'"
+							:columnOptions="selectedColumns"
+							:data_source="query.doc.data_source"
+							:tables="selectedTables"
+							v-model="calc.column"
+						/>
+					</Suspense>
+					<Suspense v-else>
+						<ColumnExpressionSelector
+							v-model="calc.column.expression"
+							@update:model-value="() => (calc.column.aggregation = 'custom')"
+						/>
+					</Suspense>
+				</div>
+
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
 				<div
 					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 				>
+					<ResizeableInput
+						placeholder="Label"
+						v-model="calc.column.alias"
+						@update:modelValue="calc.column.label = $event"
+					/>
 					<InputWithPopover
 						:items="COLUMN_TYPES"
 						placeholder="Type"
 						:disable-filter="true"
 						:value="findByValue(COLUMN_TYPES, calc.column.type)"
 						@update:modelValue="(v) => (calc.column.type = v.value)"
-					/>
-					<ResizeableInput
-						placeholder="Label"
-						v-model="calc.column.alias"
-						@update:modelValue="calc.column.label = $event"
 					/>
 				</div>
 			</QueryBuilderRow>
@@ -302,11 +324,9 @@ const COLUMN_TYPES = [
 					/>
 				</div>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
-				<ResizeableInput
-					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="column.column.alias"
-					placeholder="Label"
-				/>
+				<div class="flex rounded-lg border border-gray-300 text-gray-800">
+					<ResizeableInput v-model="column.column.alias" placeholder="Label" />
+				</div>
 			</QueryBuilderRow>
 
 			<!-- Summarise -->
@@ -323,23 +343,9 @@ const COLUMN_TYPES = [
 					<div
 						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 					>
-						<InputWithPopover
-							:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
-							placeholder="Count"
-							:disable-filter="true"
-							@update:modelValue="(v) => setAggregation(v, measure)"
-							:items="AGGREGATIONS"
-						/>
-
 						<Suspense>
 							<ColumnSelector
-								v-if="
-									measure.column.aggregation &&
-									measure.column.aggregation !== 'count'
-								"
 								:columnOptions="selectedColumns"
-								:data_source="query.doc.data_source"
-								:tables="selectedTables"
 								v-model="measure.column"
 							/>
 						</Suspense>
@@ -421,11 +427,9 @@ const COLUMN_TYPES = [
 				label="Limit to"
 				:onRemove="() => (state.limit = undefined)"
 			>
-				<ResizeableInput
-					class="flex rounded-lg border border-gray-300 text-gray-800"
-					v-model="state.limit"
-					placeholder="100"
-				/>
+				<div class="flex rounded-lg border border-gray-300 text-gray-800">
+					<ResizeableInput v-model="state.limit" placeholder="100" />
+				</div>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">rows</div>
 			</QueryBuilderRow>
 		</div>
@@ -434,9 +438,9 @@ const COLUMN_TYPES = [
 			<FeatherIcon name="plus" class="mr-1 h-4 w-4" />
 			<div
 				v-for="item in [
-					'Join',
+					'Combine',
 					'Filter',
-					'Column',
+					'Select',
 					'Calculate',
 					'Summarise',
 					'Sort',

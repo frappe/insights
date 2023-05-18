@@ -39,7 +39,7 @@ const getCompletions = (context, syntaxTree) => {
 </script>
 
 <template>
-	<div class="max-w-[20rem] rounded-lg border border-gray-300 pl-1 pr-2 text-gray-800">
+	<div class="max-w-[20rem] pl-1 pr-2 text-gray-800">
 		<div
 			class="max-h-7 overflow-hidden py-0.5 transition-all"
 			:class="focused && '!max-h-[30rem]'"
