@@ -23,6 +23,12 @@ from sqlalchemy import select, table
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
+from insights.insights.doctype.insights_dashboard.utils import (
+    get_operator_from_call_function,
+    is_binary_operator,
+    is_call_function,
+)
+
 
 class Aggregations:
     @classmethod
@@ -706,9 +712,19 @@ class SQLQueryBuilder:
         if assisted_query.filters:
             filters = []
             for fltr in assisted_query.filters:
-                operation = BinaryOperations.get_operation(fltr.operator.value)
                 _column = make_sql_column(fltr.column)
-                _filter = operation(_column, fltr.value.value)
+                filter_value = fltr.value.value
+                if is_call_function(fltr.operator.value):
+                    operator = get_operator_from_call_function(fltr.operator.value)
+                    extra_args = []
+                    if operator == "between":
+                        extra_args = filter_value.split(",")
+                    elif operator == "in" or operator == "not_in":
+                        extra_args = [val["value"] for val in filter_value]
+                    _filter = Functions.apply(operator, _column, *extra_args)
+                elif is_binary_operator(fltr.operator.value):
+                    operation = BinaryOperations.get_operation(fltr.operator.value)
+                    _filter = operation(_column, filter_value)
                 filters.append(_filter)
             self._filters = and_(*filters)
 

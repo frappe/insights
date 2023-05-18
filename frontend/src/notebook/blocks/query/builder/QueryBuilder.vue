@@ -284,7 +284,11 @@ const COLUMN_TYPES = [
 							v-model="filter.column"
 						/>
 					</Suspense>
-					<OperatorSelector :column_type="filter.column.type" v-model="filter.operator" />
+					<OperatorSelector
+						v-model="filter.operator"
+						:column_type="filter.column.type"
+						@update:model-value="() => (filter.value = {})"
+					/>
 					<ValueSelector
 						v-if="!filter.operator.value?.includes('is')"
 						:column="filter.column"
