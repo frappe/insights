@@ -76,7 +76,7 @@ const ColumnValueCombobox = (props) => (
 		loading={fetchingColumnValues.value}
 		onUpdate:modelValue={(value) => {
 			props.setValue(value)
-			props.togglePopover(false)
+			!isMultiValue.value && props.togglePopover(false)
 		}}
 	/>
 )
