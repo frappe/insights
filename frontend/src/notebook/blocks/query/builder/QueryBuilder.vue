@@ -14,7 +14,7 @@ import ValueSelector from './ValueSelector.vue'
 
 const props = defineProps({ name: String })
 const query = useQuery(props.name)
-await query.refresh()
+await query.reload()
 provide('query', query)
 
 const legacyQuery = inject('query')

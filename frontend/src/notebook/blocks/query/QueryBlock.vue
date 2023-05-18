@@ -60,6 +60,11 @@ const sourceOptions = computed(() =>
 const selectedSource = computed(() => {
 	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
 })
+async function changeDataSource(source) {
+	if (source.value === query.doc.data_source) return
+	query.doc.data_source = source.value
+	await query.updateDoc({ data_source: source.value })
+}
 
 const page = inject('page')
 const router = useRouter()
@@ -116,7 +121,7 @@ const formattedSQL = computed(() => {
 					:value="selectedSource"
 					placement="bottom-end"
 					:disableFilter="true"
-					@update:modelValue="state.query.doc.data_source = $event.value"
+					@update:modelValue="changeDataSource"
 				></InputWithPopover>
 				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
 					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />

@@ -31,7 +31,7 @@ function makeQuery(name) {
 		formattedResults: [],
 	})
 
-	state.refresh = async function () {
+	state.reload = async function () {
 		return resource.get.fetch().then((doc) => {
 			state.doc = doc
 			state.isOwner = state.doc.owner == auth.user.user_id
@@ -39,18 +39,18 @@ function makeQuery(name) {
 			state.unsaved = false
 		})
 	}
-	state.refresh()
+	state.reload()
 
 	state.convertToNative = async function () {
 		state.loading = true
 		await resource.convert_to_native.submit()
-		await state.refresh()
+		await state.reload()
 		state.loading = false
 	}
 	state.convertToAssisted = async function () {
 		state.loading = true
 		await resource.convert_to_assisted.submit()
-		await state.refresh()
+		await state.reload()
 		state.loading = false
 	}
 
@@ -64,7 +64,7 @@ function makeQuery(name) {
 		await state.save()
 		await resource.run
 			.submit()
-			.then(() => state.refresh())
+			.then(() => state.reload())
 			.catch((e) => {
 				console.error(e)
 			})
@@ -75,7 +75,7 @@ function makeQuery(name) {
 		state.loading = true
 		const updatedFields = getUpdatedFields()
 		await resource.setValue.submit(updatedFields)
-		await state.refresh()
+		await state.reload()
 		state.loading = false
 	}
 
@@ -142,7 +142,7 @@ function makeQuery(name) {
 	state.updateDoc = async (doc) => {
 		state.loading = true
 		await resource.setValue.submit(doc)
-		await state.refresh()
+		await state.reload()
 		state.loading = false
 	}
 
