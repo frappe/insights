@@ -103,7 +103,7 @@ const formattedSQL = computed(() => {
 
 		<div
 			v-if="state.query.doc?.results?.length > 1 && !state.minimizeResult"
-			class="group relative flex h-[20rem] max-h-80 flex-col overflow-hidden border-t bg-white"
+			class="group relative flex max-h-80 flex-col overflow-hidden border-t bg-white"
 		>
 			<QueryResult />
 		</div>
