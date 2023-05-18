@@ -8,7 +8,7 @@ import frappe
 import pandas as pd
 from frappe.utils.data import cstr
 
-from insights.api import get_tables
+from insights.api import fetch_column_values, get_tables
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .utils import InsightsTable, get_columns_with_inferred_types
@@ -166,9 +166,11 @@ class InsightsLegacyQueryClient:
 
     @frappe.whitelist()
     def fetch_column_values(self, column, search_text=None):
-        data_source = frappe.get_doc("Insights Data Source", self.data_source)
-        return data_source.get_column_options(
-            column.get("table"), column.get("column"), search_text
+        return fetch_column_values(
+            column.get("data_source") or self.data_source,
+            column.get("table"),
+            column.get("column"),
+            search_text,
         )
 
     @frappe.whitelist()

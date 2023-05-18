@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.api.permissions import is_private
@@ -483,13 +484,16 @@ def get_public_dashboard_chart_data(public_key, *args, **kwargs):
 
 
 @frappe.whitelist()
-def fetch_column_values(column, search_text=None):
-    if not column.get("data_source"):
+@redis_cache()
+def fetch_column_values(data_source, table, column, search_text=None):
+    if not data_source:
         frappe.throw("Data Source is required")
-    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
-    return data_source.get_column_options(
-        column.get("table"), column.get("column"), search_text
-    )
+    if not table:
+        frappe.throw("Table is required")
+    if not column:
+        frappe.throw("Column is required")
+    doc = frappe.get_doc("Insights Data Source", data_source)
+    return doc.get_column_options(table, column, search_text)
 
 
 @frappe.whitelist()

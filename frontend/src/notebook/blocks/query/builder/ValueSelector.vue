@@ -56,7 +56,9 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 		const URL = 'insights.api.fetch_column_values'
 		fetchingColumnValues.value = true
 		const values = await call(URL, {
-			column: props.column,
+			data_source: props.column.data_source,
+			table: props.column.table,
+			column: props.column.column,
 			search_text,
 		})
 		columnValues.value = values.map((value) => ({ label: value, value }))
@@ -65,8 +67,7 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 }, 300)
 whenever(
 	() => selectorType.value == 'combobox',
-	() => checkAndFetchColumnValues(),
-	{ immediate: true }
+	() => checkAndFetchColumnValues()
 )
 const ColumnValueCombobox = (props) => (
 	<Combobox
