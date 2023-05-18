@@ -130,6 +130,12 @@ const formattedSQL = computed(() => {
 		</BlockAction>
 
 		<BlockAction
+			label="Save"
+			icon="save"
+			:action="state.query.save"
+			:loading="state.query.loading"
+		/>
+		<BlockAction
 			icon="play"
 			label="Execute"
 			:action="state.query.execute"
