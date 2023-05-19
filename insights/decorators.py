@@ -71,6 +71,7 @@ def debounce(wait):
     `wait` seconds have passed since the last call.
     - The method will be called if the arguments are different from the
     last call.
+    - Returns the result of the last call if the method is called again
 
     Parameters
     ----------
@@ -96,15 +97,17 @@ def debounce(wait):
                 function.last_call.is_set()
                 and function.last_args == args
                 and function.last_kwargs == kwargs
+                and hasattr(function, "last_result")
             ):
-                return
+                return function.last_result
 
             # set the arguments and call the method
             function.last_args = args
             function.last_kwargs = kwargs
             function.last_call.set()
             try:
-                return function(*args, **kwargs)
+                function.last_result = function(*args, **kwargs)
+                return function.last_result
             finally:
                 # reset the event after `wait` seconds
                 threading.Timer(wait, function.last_call.clear).start()
