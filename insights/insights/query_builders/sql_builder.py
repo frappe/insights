@@ -600,8 +600,8 @@ class SQLQueryBuilder:
 
         sql = None
         if not self._columns:
-            # if no columns, then select * from table
-            sql = select(text("*"))
+            # hack: to avoid duplicate columns error if tables have same column names
+            sql = select(text("t0.*"))
         else:
             sql = select(*self._columns)
 
