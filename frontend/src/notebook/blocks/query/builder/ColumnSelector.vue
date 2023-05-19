@@ -14,9 +14,17 @@ const emit = defineEmits(['update:modelValue'])
 
 const valuePropPassed = computed(() => props.value !== undefined)
 const column = computed({
-	get: () => (valuePropPassed.value ? props.value : props.modelValue),
+	get: () =>
+		// hacky: because unless the exact matching object is passed
+		// the combobox doesn't select the value
+		// so, we find the matching object from the columnOptions using the value
+		// this way, as long actual value is passed, it will select the correct option
+		findOptionByValue(
+			columns.value,
+			valuePropPassed.value ? getColumnValue(props.value) : getColumnValue(props.modelValue)
+		),
 	set: (option) => {
-		const column = findByValue(columns.value, option.value)
+		const column = findOptionByValue(columns.value, option.value)
 		emit('update:modelValue', {
 			...column,
 			...option,
@@ -30,7 +38,7 @@ const column = computed({
 	},
 })
 
-function findByValue(columns, value) {
+function findOptionByValue(columns, value) {
 	return columns.find((c) => value == c.expression?.raw || value == `${c.table}.${c.column}`)
 }
 
@@ -54,13 +62,12 @@ watch(
 	{ immediate: true }
 )
 
+function getColumnValue(column) {
+	return column.expression?.raw || `${column.table}.${column.column}`
+}
 function filterFn(col, currIndex, self) {
 	if (!col) return false
-	const otherIndex = self.findIndex((c) =>
-		c?.expression
-			? c.expression.raw === col.expression?.raw
-			: c && c.column === col.column && c.table === col.table
-	)
+	const otherIndex = self.findIndex((c) => getColumnValue(c) === getColumnValue(col))
 	return otherIndex === currIndex && (!props.columnFilter || props.columnFilter(col))
 }
 
@@ -80,7 +87,7 @@ const columnOptions = computed(() => {
 		return {
 			label: c.alias || c.label,
 			description: c.description || c.table,
-			value: c.expression?.raw || `${c.table}.${c.column}`,
+			value: getColumnValue(c),
 		}
 	})
 })

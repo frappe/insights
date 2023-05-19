@@ -1,4 +1,5 @@
 <script setup>
+import { useDataSourceTable } from '@/datasource/useDataSource'
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
 import { computed, inject, provide } from 'vue'
@@ -159,6 +160,31 @@ const COLUMN_TYPES = [
 	{ label: 'Date', value: 'Date' },
 	{ label: 'Time', value: 'Time' },
 ]
+
+async function autoSelectJoinColumns(join) {
+	if (!join.left_table?.table || !join.right_table?.table) return
+	if (join.left_column?.table || join.right_column?.table) return
+	const left_table = await useDataSourceTable({
+		data_source: query.doc.data_source,
+		table: join.left_table.table,
+	})
+	const left_table_links = left_table.doc.table_links
+	const left_right_link = left_table_links.find((l) => l.foreign_table == join.right_table.table)
+	if (!left_right_link) return
+
+	const left_column = left_right_link.primary_key
+	const right_column = left_right_link.foreign_key
+	join.left_column = {
+		table: join.left_table.table,
+		column: left_column,
+		value: `${join.left_table.table}.${left_column}`,
+	}
+	join.right_column = {
+		table: join.right_table.table,
+		column: right_column,
+		value: `${join.right_table.table}.${right_column}`,
+	}
+}
 </script>
 
 <template>
@@ -195,6 +221,7 @@ const COLUMN_TYPES = [
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:data_source="query.doc.data_source"
 					v-model="join.right_table"
+					@update:model-value="() => autoSelectJoinColumns(join)"
 				/>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">if</div>
 				<Suspense>
