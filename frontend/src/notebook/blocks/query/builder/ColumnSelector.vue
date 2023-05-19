@@ -16,10 +16,17 @@ const valuePropPassed = computed(() => props.value !== undefined)
 const column = computed({
 	get: () => (valuePropPassed.value ? props.value : props.modelValue),
 	set: (option) => {
-		// since combobox resets any key that has object value to an empty object
-		// we need to find the original object and restore those key's value
 		const column = findByValue(columns.value, option.value)
-		emit('update:modelValue', { ...props.modelValue, ...column, ...option })
+		emit('update:modelValue', {
+			...column,
+			...option,
+			alias: column.alias || props.modelValue.alias,
+			order: column.order || props.modelValue.order,
+			granularity: column.granularity || props.modelValue.granularity,
+			aggregation: column.aggregation || props.modelValue.aggregation,
+			format: column.format || props.modelValue.format,
+			expression: column.expression || props.modelValue.expression,
+		})
 	},
 })
 
@@ -71,7 +78,7 @@ const columnOptions = computed(() => {
 	if (!columns.value?.length) return []
 	return columns.value.map((c) => {
 		return {
-			label: c.label,
+			label: c.alias || c.label,
 			description: c.description || c.table,
 			value: c.expression?.raw || `${c.table}.${c.column}`,
 		}
