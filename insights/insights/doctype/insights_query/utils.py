@@ -34,8 +34,8 @@ class InsightsTableColumn:
     @classmethod
     def from_dict(cls, obj):
         column = _dict(
-            label=obj.get("label") or obj.get("column"),
-            column=obj.get("column") or obj.get("label"),
+            label=obj.get("alias") or obj.get("label") or obj.get("column"),
+            column=obj.get("alias") or obj.get("label") or obj.get("column"),
             type=obj.get("type") or "String",
         )
         if not column.label:
@@ -246,6 +246,9 @@ class Column(frappe._dict):
         self.format = self.get("format")
         self.meta = self.get("meta")
         self.granularity = self.get("granularity")
+
+    def __repr__(self) -> str:
+        return f"""Column(table={self.table}, column={self.column}, type={self.type}, label={self.label}, alias={self.alias}, aggregation={self.aggregation}, expression={self.is_expression()})"""
 
     def __bool__(self):
         return bool(self.table and self.column) or bool(self.is_expression())

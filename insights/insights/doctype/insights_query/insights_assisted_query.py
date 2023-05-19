@@ -43,7 +43,7 @@ class InsightsAssistedQueryController:
         return self.doc._data_source.build_query(self.doc, with_cte=True)
 
     def get_columns(self):
-        return self.query_json.get_columns() or self.get_tables_columns()
+        return self.get_columns_from_results(self.doc.retrieve_results())
 
     def get_columns_from_results(self, results):
         if not results:

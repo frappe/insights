@@ -1,11 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import pandas as pd
 
-from insights.utils import ResultColumn
-
-from .utils import get_columns_with_inferred_types, infer_type_from_list
+from .utils import get_columns_with_inferred_types
 
 
 class InsightsRawQueryController:

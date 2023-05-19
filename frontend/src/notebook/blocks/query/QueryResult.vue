@@ -21,7 +21,7 @@ const query_result_limit = computed(() =>
 <template>
 	<div
 		v-show="query.formattedResults.length"
-		class="flex h-10 w-full items-center space-x-2 px-3 text-base"
+		class="flex h-9 w-full flex-shrink-0 items-center space-x-2 px-3 text-base"
 	>
 		<span class="font-code uppercase text-gray-500"> Results </span>
 		<div

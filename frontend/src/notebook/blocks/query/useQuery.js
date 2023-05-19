@@ -85,11 +85,13 @@ function makeQuery(name) {
 			return {
 				sql: state.doc.sql,
 				data_source: state.doc.data_source,
+				title: state.doc.title,
 			}
 		} else {
 			return {
 				json: JSON.stringify(safeJSONParse(state.doc.json), null, 2),
 				data_source: state.doc.data_source,
+				title: state.doc.title,
 			}
 		}
 	}

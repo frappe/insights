@@ -23,12 +23,6 @@ from sqlalchemy import select, table
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
-from insights.insights.doctype.insights_dashboard.utils import (
-    get_operator_from_call_function,
-    is_binary_operator,
-    is_call_function,
-)
-
 
 class Aggregations:
     @classmethod
@@ -49,6 +43,10 @@ class Aggregations:
             return func.avg(column)
         if agg_lower == "count" or agg_lower == "cumulative count":
             return func.count(text("*"))
+        if agg_lower == "distinct":
+            return distinct(column)
+        if agg_lower == "distinct_count":
+            return func.count(distinct(column))
 
         raise NotImplementedError(f"Aggregation {aggregation} not implemented")
 
@@ -443,6 +441,14 @@ class BinaryOperations:
 
         raise NotImplementedError(f"Operation {operator} not implemented")
 
+    @classmethod
+    def is_binary_operator(cls, operator):
+        return (
+            operator in cls.ARITHMETIC_OPERATIONS
+            or operator in cls.COMPARE_OPERATIONS
+            or operator in cls.LOGICAL_OPERATIONS
+        )
+
 
 class ExpressionProcessor:
     def __init__(self, builder: "SQLQueryBuilder"):
@@ -714,17 +720,21 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 _column = make_sql_column(fltr.column)
                 filter_value = fltr.value.value
-                if is_call_function(fltr.operator.value):
-                    operator = get_operator_from_call_function(fltr.operator.value)
-                    extra_args = []
-                    if operator == "between":
-                        extra_args = filter_value.split(",")
-                    elif operator == "in" or operator == "not_in":
-                        extra_args = [val["value"] for val in filter_value]
-                    _filter = Functions.apply(operator, _column, *extra_args)
-                elif is_binary_operator(fltr.operator.value):
-                    operation = BinaryOperations.get_operation(fltr.operator.value)
+                operator = fltr.operator.value
+
+                if BinaryOperations.is_binary_operator(operator):
+                    operation = BinaryOperations.get_operation(operator)
                     _filter = operation(_column, filter_value)
+                elif "set" in operator:  # is set, is not set
+                    _filter = Functions.apply(operator, _column)
+                else:
+                    args = [filter_value]
+                    if operator == "between":
+                        args = filter_value.split(",")
+                    elif operator == "in" or operator == "not_in":
+                        args = [val["value"] for val in filter_value]
+                    _filter = Functions.apply(operator, _column, *args)
+
                 filters.append(_filter)
             self._filters = and_(*filters)
 

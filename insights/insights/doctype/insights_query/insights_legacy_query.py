@@ -259,7 +259,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         return self.doc._data_source.build_query(self.doc, with_cte=True)
 
     def get_columns(self):
-        return self.doc.columns or self.get_tables_columns()
+        return self.get_columns_from_results(self.doc.retrieve_results())
 
     def get_columns_from_results(self, results):
         if not results:
@@ -275,8 +275,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
                     return rc
 
         result_columns = results[0]
-        result_columns = [c for c in query_columns if find_by_label(c.label)]
-        return result_columns
+        return [find_by_label(c["label"]) for c in query_columns]
 
     def get_tables_columns(self):
         columns = []

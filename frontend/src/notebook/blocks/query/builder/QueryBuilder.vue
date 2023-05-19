@@ -36,7 +36,7 @@ const selectedTables = computed(() => {
 const GET_EMPTY_JOIN = () => ({
 	left_table: {},
 	right_table: {},
-	join_type: { label: 'Inner', value: 'inner' },
+	join_type: { label: 'Left', value: 'left' },
 	left_column: {},
 	right_column: {},
 })
@@ -97,6 +97,8 @@ const AGGREGATIONS = [
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum of', value: 'sum' },
 	{ label: 'Average of', value: 'avg' },
+	{ label: 'Unique values of', value: 'distinct' },
+	{ label: 'Unique count of', value: 'distinct_count' },
 	{ label: 'Minimum of', value: 'min' },
 	{ label: 'Maximum of', value: 'max' },
 	{ label: 'Custom', value: 'custom' },
@@ -119,7 +121,9 @@ function setAggregation(aggregation, measure) {
 	}
 }
 
-const dateFormatOptions = dateFormats.map((f) => ({ label: f.value, value: f.value }))
+const dateFormatOptions = [{ label: 'None', value: '' }].concat(
+	dateFormats.map((f) => ({ label: f.value, value: f.value }))
+)
 function findByValue(array, value, defaultValue = {}) {
 	return array.find((item) => item.value == value) || defaultValue
 }
@@ -131,7 +135,9 @@ const ORDER = [
 
 function isValidColumn(column) {
 	const is_expression = column.expression && column.expression.raw && column.expression.ast
-	return ((column.column && column.table) || is_expression) && column.type && column.label
+	const is_table_column = column.column && column.table
+	const has_label = column.label || column.alias
+	return (is_table_column || is_expression) && column.type && has_label
 }
 
 const selectedColumns = computed(() => {
@@ -303,7 +309,7 @@ const COLUMN_TYPES = [
 				v-if="state.columns.length"
 				v-for="(column, index) in state.columns"
 				:key="index"
-				label="Pick"
+				label="Select"
 				:onRemove="() => state.columns.splice(index, 1)"
 			>
 				<div
@@ -334,82 +340,103 @@ const COLUMN_TYPES = [
 			</QueryBuilderRow>
 
 			<!-- Summarise -->
-			<QueryBuilderRow
-				v-if="state.measures.length"
-				label="Summarise"
-				:onRemove="() => (state.measures = [])"
-			>
-				<div
-					class="flex items-center"
-					v-for="(measure, index) in state.measures"
-					:key="index"
-				>
-					<div
-						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+			<QueryBuilderRow v-if="state.measures.length" label="Summarise">
+				<div class="flex flex-col space-y-2.5">
+					<QueryBuilderRow
+						v-for="(measure, index) in state.measures"
+						:key="index"
+						:onRemove="() => state.measures.splice(index, 1)"
 					>
-						<InputWithPopover
-							:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
-							placeholder="Aggregate"
-							:disable-filter="true"
-							@update:modelValue="(v) => setAggregation(v, measure)"
-							:items="AGGREGATIONS"
-						/>
+						<div
+							class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+						>
+							<InputWithPopover
+								:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
+								placeholder="Aggregate"
+								:disable-filter="true"
+								@update:modelValue="(v) => setAggregation(v, measure)"
+								:items="AGGREGATIONS"
+							/>
 
-						<Suspense v-if="measure.column.aggregation != 'custom'">
-							<ColumnSelector
-								v-if="measure.column.aggregation !== 'count'"
-								:columnOptions="selectedColumns"
-								:data_source="query.doc.data_source"
-								:tables="selectedTables"
-								v-model="measure.column"
-							/>
-						</Suspense>
-						<Suspense v-else>
-							<ColumnSelector
-								:columnOptions="selectedColumns"
-								v-model="measure.column"
-							/>
-						</Suspense>
-					</div>
-				</div>
-				<div
-					class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
-					@click="state.measures.push({ ...GET_EMPTY_COLUMN() })"
-				>
-					<FeatherIcon name="plus" class="h-4 w-4" />
+							<Suspense v-if="measure.column.aggregation != 'custom'">
+								<ColumnSelector
+									v-if="measure.column.aggregation !== 'count'"
+									:columnOptions="selectedColumns"
+									:data_source="query.doc.data_source"
+									:tables="selectedTables"
+									v-model="measure.column"
+									@update:model-value="(c) => (measure.column.alias = c.label)"
+								/>
+							</Suspense>
+							<Suspense v-else>
+								<ColumnSelector
+									:columnOptions="selectedColumns"
+									v-model="measure.column"
+									@update:model-value="(c) => (measure.column.alias = c.label)"
+								/>
+							</Suspense>
+						</div>
+						<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
+						<div class="flex rounded-lg border border-gray-300 text-gray-800">
+							<ResizeableInput v-model="measure.column.alias" placeholder="Label" />
+						</div>
+						<div
+							class="!ml-1 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+							@click="state.measures.push({ ...GET_EMPTY_COLUMN() })"
+						>
+							<FeatherIcon name="plus" class="h-4 w-4" />
+						</div>
+					</QueryBuilderRow>
 				</div>
 			</QueryBuilderRow>
 			<QueryBuilderRow
 				v-if="state.dimensions.length"
-				label="By"
+				:label="state.measures.length ? 'By' : 'Group by'"
 				:onRemove="() => (state.dimensions = [])"
 			>
-				<Suspense v-for="(dimension, index) in state.dimensions" :key="index">
-					<div
-						class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+				<div class="flex flex-col space-y-2.5">
+					<QueryBuilderRow
+						v-for="(dimension, index) in state.dimensions"
+						:key="index"
+						:onRemove="() => state.dimensions.splice(index, 1)"
 					>
-						<ColumnSelector
-							v-model="dimension.column"
-							:tables="selectedTables"
-							:data_source="query.doc.data_source"
-							:columnOptions="selectedColumns"
-							:columnFilter="(c) => isDimensionColumn(c)"
-						/>
-						<InputWithPopover
-							v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
-							:value="findByValue(dateFormatOptions, dimension.column.granularity)"
-							@update:modelValue="(v) => (dimension.column.granularity = v.value)"
-							placeholder="Format"
-							:disable-filter="true"
-							:items="dateFormatOptions"
-						/>
-					</div>
-				</Suspense>
-				<div
-					class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
-					@click="state.dimensions.push({ ...GET_EMPTY_COLUMN() })"
-				>
-					<FeatherIcon name="plus" class="h-4 w-4" />
+						<Suspense>
+							<div
+								class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+							>
+								<ColumnSelector
+									v-model="dimension.column"
+									:tables="selectedTables"
+									:data_source="query.doc.data_source"
+									:columnOptions="selectedColumns"
+									:columnFilter="(c) => isDimensionColumn(c)"
+									@update:model-value="(c) => (dimension.column.alias = c.label)"
+								/>
+								<InputWithPopover
+									v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
+									:value="
+										findByValue(dateFormatOptions, dimension.column.granularity)
+									"
+									@update:modelValue="
+										(v) => (dimension.column.granularity = v.value)
+									"
+									placeholder="Format"
+									:disable-filter="true"
+									:items="dateFormatOptions"
+								/>
+							</div>
+						</Suspense>
+						<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
+						<div class="flex rounded-lg border border-gray-300 text-gray-800">
+							<ResizeableInput v-model="dimension.column.alias" placeholder="Label" />
+						</div>
+						<div
+							class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+							@click="state.dimensions.push({ ...GET_EMPTY_COLUMN() })"
+						>
+							<FeatherIcon name="plus" class="h-4 w-4" />
+						</div>
+					</QueryBuilderRow>
 				</div>
 			</QueryBuilderRow>
 

@@ -45,7 +45,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def on_update(self):
         self.create_default_chart()
-        self.update_insights_table()
         self.update_query_store()
         self.update_linked_docs()
 
@@ -120,7 +119,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 self.get_columns(),
             ),
         )
-        create_insights_table(query_table)
+        create_insights_table(query_table, force=True)
 
     def get_columns(self):
         return self.variant_controller.get_columns()
@@ -176,6 +175,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             raise
         finally:
             CachedResults.set(self.name, self._results)
+            self.update_insights_table()
         return self._results
 
     def before_fetch(self):

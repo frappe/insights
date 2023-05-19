@@ -4,7 +4,7 @@
 		class="flex w-full flex-1 flex-shrink-0 flex-col overflow-hidden bg-white p-2"
 	>
 		<!-- Result Header -->
-		<div class="relative flex h-8 flex-shrink-0 items-center justify-between">
+		<div class="relative flex h-9 flex-shrink-0 items-center justify-between">
 			<div class="flex space-x-1">
 				<div class="text-sm tracking-wide text-gray-600">RESULT</div>
 				<div

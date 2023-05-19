@@ -1,6 +1,9 @@
 <template>
 	<div class="group flex items-start space-x-2.5 text-base">
-		<div class="h-7 w-[10ch] text-right text-sm uppercase leading-7 text-gray-500">
+		<div
+			v-if="$props.label"
+			class="h-7 w-[10ch] text-right text-sm uppercase leading-7 text-gray-500"
+		>
 			{{ $props.label }}
 		</div>
 		<slot></slot>
