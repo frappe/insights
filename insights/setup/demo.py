@@ -77,7 +77,7 @@ class DemoDataFactory:
             data_source.database_type = "SQLite"
             data_source.database_name = "insights_demo_data"
             data_source.allow_imports = 1
-            data_source.save()
+            data_source.save(ignore_permissions=True)
 
         self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
         if frappe.flags.in_test or os.environ.get("CI"):
