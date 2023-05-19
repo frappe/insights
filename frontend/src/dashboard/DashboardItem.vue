@@ -3,7 +3,8 @@ import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { watchOnce, whenever } from '@vueuse/shared'
-import { computed, inject, reactive, ref, watch } from 'vue'
+import { debounce } from 'frappe-ui'
+import { computed, inject, reactive, ref, watch, watchEffect } from 'vue'
 
 const dashboard = inject('dashboard')
 const props = defineProps({
@@ -35,7 +36,7 @@ const actions = [
 ]
 
 let isChart = dashboard.isChart(props.item)
-let chartFilters = null
+let chartFilters = isChart ? computed(() => dashboard.filtersByChart[props.item.item_id]) : null
 let chartData = reactive({})
 if (isChart) {
 	const query = computed(() => props.item.options.query)
@@ -46,7 +47,6 @@ if (isChart) {
 	})
 	whenever(query, () => chartData.load(query.value), { immediate: true })
 	dashboard.onRefresh(() => chartData.load(query.value))
-	chartFilters = computed(() => dashboard.filtersByChart[props.item.item_id])
 	dashboard.updateChartFilters(props.item.item_id)
 	watch(chartFilters, () => {
 		chartData.load(props.item.options.query)
@@ -68,6 +68,14 @@ const widget = ref(null)
 function downloadChart() {
 	widget.value?.$refs?.eChart?.downloadChart?.()
 }
+
+const refreshKey = ref(0)
+const updateKey = debounce(() => refreshKey.value++, 1000)
+watchEffect(() => {
+	// update key when item changes
+	JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value])
+	updateKey()
+})
 </script>
 
 <template>
@@ -103,15 +111,10 @@ function downloadChart() {
 						ref="widget"
 						:class="[dashboard.editing ? 'pointer-events-none' : '']"
 						:is="widgets.getComponent(item.item_type)"
+						:item_id="item.item_id"
 						:chartData="chartData"
 						:options="item.options"
-						:key="
-							JSON.stringify([
-								props.item.item_id,
-								props.item.options,
-								chartFilters?.value,
-							])
-						"
+						:key="refreshKey"
 					>
 						<template #placeholder>
 							<InvalidWidget
