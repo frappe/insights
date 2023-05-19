@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
+import threading
 from functools import wraps
 
 import frappe
@@ -59,6 +60,56 @@ def log_error(raise_exc=False):
                 print(f"Error in {function.__name__}", e)
                 if raise_exc:
                     raise e
+
+        return wrapper
+
+    return decorator
+
+
+def debounce(wait):
+    """Debounce decorator to be used on methods.
+
+    - This decorator will ensure that the method is called only after
+    `wait` seconds have passed since the last call.
+    - The method will be called if the arguments are different from the
+    last call.
+
+    Parameters
+    ----------
+    wait : int
+        Number of seconds to wait before calling the method again.
+
+    Returns
+    -------
+    function
+        The decorated function.
+
+    """
+
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            # check if the method is called for the first time
+            if not hasattr(function, "last_call"):
+                function.last_call = threading.Event()
+
+            # check if the arguments are different from the last call
+            if (
+                function.last_call.is_set()
+                and function.last_args == args
+                and function.last_kwargs == kwargs
+            ):
+                return
+
+            # set the arguments and call the method
+            function.last_args = args
+            function.last_kwargs = kwargs
+            function.last_call.set()
+            try:
+                return function(*args, **kwargs)
+            finally:
+                # reset the event after `wait` seconds
+                threading.Timer(wait, function.last_call.clear).start()
 
         return wrapper
 
