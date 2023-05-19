@@ -18,8 +18,8 @@
 		"dayjs": "^1.11.6",
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "0.0.105",
-		"lucide-vue-next": "^0.121.0",
+		"frappe-ui": "0.0.109",
+		"lucide-vue-next": "^0.188.0",
 		"pinia": "^2.0.30",
 		"vite": "^2.9.12",
 		"vue": "^3.2.25",
@@ -36,7 +36,6 @@
 		"postcss": "^8.4.14",
 		"prettier": "^2.6.2",
 		"prettier-plugin-tailwindcss": "^0.1.11",
-		"sass": "^1.54.9",
-		"tailwindcss": "^3.1.2"
+		"sass": "^1.54.9"
 	}
 }

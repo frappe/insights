@@ -92,7 +92,9 @@ class BaseDatabase:
             with Timer() as t:
                 res = connection.execute(sql)
             create_execution_log(sql, self.data_source, t.elapsed)
-            columns = [ResultColumn.make(d[0], d[1]) for d in res.cursor.description]
+            columns = [
+                ResultColumn.from_args(d[0], d[1]) for d in res.cursor.description
+            ]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
             return [columns] + rows if return_columns else rows

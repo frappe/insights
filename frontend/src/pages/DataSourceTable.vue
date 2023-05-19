@@ -1,71 +1,92 @@
 <template>
-	<BasePage>
-		<template #header>
-			<div v-if="doc" class="flex flex-1 items-center space-x-4">
-				<div class="flex items-start space-x-4">
-					<h1 class="text-3xl font-medium text-gray-900">
-						{{ doc.label }}
-					</h1>
-					<div class="flex h-8 items-center">
-						<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
-							{{ hidden ? 'Disabled' : 'Enabled' }}
-						</Badge>
-					</div>
-				</div>
-				<div class="space-x-2">
-					<Dropdown
-						placement="left"
-						:button="{
-							icon: 'more-horizontal',
-							appearance: 'minimal',
-						}"
-						:options="[
-							{
-								label: hidden ? 'Enable' : 'Disable',
-								icon: hidden ? 'eye' : 'eye-off',
-								handler: () => (hidden = !hidden),
-							},
-							{
-								label: 'Sync Table',
-								icon: 'refresh-cw',
-								handler: () => dataSourceTable.sync(),
-							},
-							{
-								label: 'Add Link',
-								icon: 'link',
-								handler: () => (addLinkDialog = true),
-							},
-						]"
-					/>
+	<div class="flex h-full w-full flex-col bg-white px-8 py-4">
+		<Breadcrumbs
+			:items="[
+				{
+					label: 'Data Sources',
+					href: '/data-source',
+				},
+				{
+					label: props.name,
+					href: `/data-source/${props.name}`,
+				},
+				{
+					label: dataSourceTable.doc?.label || props.table,
+					href: `/data-source/${props.name}/${props.table}`,
+				},
+			]"
+		/>
+
+		<div v-if="dataSourceTable.doc" class="mt-2 flex items-center space-x-4">
+			<div class="flex items-start space-x-4">
+				<h1 class="text-3xl font-medium text-gray-900">
+					{{ dataSourceTable.doc.label }}
+				</h1>
+				<div class="flex h-8 items-center">
+					<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
+						{{ hidden ? 'Disabled' : 'Enabled' }}
+					</Badge>
 				</div>
 			</div>
-		</template>
-		<template #main>
-			<div
-				v-if="doc && doc.columns && dataSourceTable.rows?.data && !dataSourceTable.syncing"
-				class="flex w-full flex-col overflow-hidden pt-1"
-			>
-				<div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
-					{{ doc.columns.length }} Columns - {{ dataSourceTable.rows.length }} Rows
-				</div>
+			<div class="space-x-2">
+				<Dropdown
+					placement="left"
+					:button="{
+						icon: 'more-horizontal',
+						appearance: 'minimal',
+					}"
+					:options="[
+						{
+							label: hidden ? 'Enable' : 'Disable',
+							icon: hidden ? 'eye' : 'eye-off',
+							handler: () => (hidden = !hidden),
+						},
+						{
+							label: 'Sync Table',
+							icon: 'refresh-cw',
+							handler: () => dataSourceTable.sync(),
+						},
+						{
+							label: 'Add Link',
+							icon: 'link',
+							handler: () => (addLinkDialog = true),
+						},
+					]"
+				/>
+			</div>
+		</div>
+		<div
+			v-if="
+				dataSourceTable.doc &&
+				dataSourceTable.doc.columns &&
+				dataSourceTable.rows?.data &&
+				!dataSourceTable.syncing
+			"
+			class="flex flex-1 flex-col overflow-hidden pt-3"
+		>
+			<div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
+				{{ dataSourceTable.doc.columns.length }} Columns -
+				{{ dataSourceTable.rows.length }} Rows
+			</div>
+			<div class="flex flex-1 overflow-scroll">
 				<Grid :header="true" :rows="dataSourceTable.rows.data">
 					<template #header>
 						<DataSourceTableColumnHeader
-							:columns="doc.columns"
+							:columns="dataSourceTable.doc.columns"
 							@update-column-type="dataSourceTable.updateColumnType"
 						/>
 					</template>
 				</Grid>
 			</div>
-			<div
-				v-else
-				class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-50"
-			>
-				<LoadingIndicator class="mb-2 w-8 text-gray-400" />
-				<div class="text-lg text-gray-500">Syncing columns from database...</div>
-			</div>
-		</template>
-	</BasePage>
+		</div>
+		<div
+			v-else
+			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-50"
+		>
+			<LoadingIndicator class="mb-2 w-8 text-gray-400" />
+			<div class="text-lg text-gray-500">Syncing columns from database...</div>
+		</div>
+	</div>
 
 	<Dialog :options="{ title: 'Create a Link' }" v-model="addLinkDialog">
 		<template #body-content>
@@ -81,12 +102,12 @@
 				</div>
 				<div>
 					<div class="mb-2 block text-sm leading-4 text-gray-700">
-						Select a column from {{ doc.label }}
+						Select a column from {{ dataSourceTable.doc.label }}
 					</div>
 					<Autocomplete
 						v-model="newLink.primaryKey"
 						:options="
-							doc.columns.map((c) => ({
+							dataSourceTable.doc.columns.map((c) => ({
 								label: `${c.label} (${c.type})`,
 								value: c.column,
 							}))
@@ -115,13 +136,13 @@
 </template>
 
 <script setup>
-import BasePage from '@/components/BasePage.vue'
 import Grid from '@/components/Grid.vue'
 import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import { useDataSourceTable } from '@/datasource/useDataSource'
 import { Dropdown, Badge, createResource, LoadingIndicator } from 'frappe-ui'
 import { computed, ref, reactive, watch, inject, nextTick } from 'vue'
+import Breadcrumbs from '../components/Breadcrumbs.vue'
 
 const props = defineProps({
 	name: {
@@ -143,20 +164,15 @@ const newLink = reactive({
 	foreignKey: {},
 })
 
-const dataSourceTable = ref({})
-useDataSourceTable({ name: props.table }).then((table) => {
-	dataSourceTable.value = table
-})
-const doc = computed(() => {
-	return dataSourceTable.value.doc
-})
+const dataSourceTable = await useDataSourceTable({ name: props.table })
+dataSourceTable.fetchPreview()
 const hidden = computed({
 	get() {
-		return doc.value.hidden
+		return dataSourceTable.doc.hidden
 	},
 	set(value) {
-		if (value !== doc.value.hidden) {
-			dataSourceTable.value.updateVisibility.submit({
+		if (value !== dataSourceTable.hidden) {
+			dataSourceTable.updateVisibility.submit({
 				hidden: value,
 			})
 		}
@@ -241,8 +257,8 @@ function createLink() {
 	createLinkResource.submit({
 		data_source: props.name,
 		primary_table: {
-			label: doc.value.label,
-			table: doc.value.table,
+			label: dataSourceTable.doc.label,
+			table: dataSourceTable.doc.table,
 		},
 		foreign_table: {
 			label: newLink.table.label,

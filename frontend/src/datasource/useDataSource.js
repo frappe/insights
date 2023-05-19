@@ -9,16 +9,20 @@ export function useDataSource(name) {
 }
 
 function makeDataSource(name) {
-	const resource = getDataSourceResource(name)
+	let resource = getDataSourceResource(name)
 	const state = reactive({
 		doc: {},
 		tables: [],
 		loading: true,
 	})
-	resource.get.fetch().then((doc) => {
-		state.loading = false
-		state.doc = doc
-	})
+
+	state.reload = () => {
+		return resource.get.fetch().then((doc) => {
+			state.loading = false
+			state.doc = doc
+		})
+	}
+	state.reload()
 
 	state.fetch_tables = async () => {
 		const response = await resource.get_tables.submit()
@@ -31,22 +35,23 @@ function makeDataSource(name) {
 	state.delete = () => {
 		return resource.delete.submit()
 	}
+	state.change_data_source = (data_source) => {
+		resource = getDataSourceResource(data_source)
+		state.reload()
+	}
 
 	return state
 }
 
 const datasource_tables = {}
-const datasource_tablenames = {}
+const cached_tablenames = {}
 
 export async function useDataSourceTable({ name, data_source, table }) {
-	const _name = name || datasource_tablenames[data_source + table]
+	const _name = name || cached_tablenames[data_source + table]
 	if (_name) {
 		return setOrGet(datasource_tables, _name, makeDataSourceTable, [_name])
 	}
-	const tablename = await call('insights.api.get_table_name', {
-		data_source: data_source,
-		table: table,
-	})
+	const tablename = await getTableName(data_source, table)
 	return setOrGet(datasource_tables, tablename, makeDataSourceTable, [tablename])
 }
 
@@ -61,13 +66,20 @@ function makeDataSourceTable(name) {
 			update_column_type: 'update_column_type',
 		},
 		transform: (doc) => {
-			doc.columns = doc.columns.map((c) => ({ ...c, data_source: doc.data_source }))
+			doc.columns = doc.columns.map((c) => {
+				c.data_source = doc.data_source
+				c.table_label = doc.label
+				c.table = doc.table
+				return c
+			})
 			return doc
 		},
 	})
 	dataSourceTable.get.fetch()
-	dataSourceTable.getPreview.submit()
 	dataSourceTable.rows = computed(() => dataSourceTable.getPreview.data?.message || {})
+	dataSourceTable.fetchPreview = () => {
+		return dataSourceTable.getPreview.submit()
+	}
 	dataSourceTable.sync = () => {
 		dataSourceTable.syncing = true
 		dataSourceTable.syncTable.submit().then(() => {
@@ -93,4 +105,14 @@ function getDataSourceResource(name) {
 			get_tables: 'get_tables',
 		},
 	})
+}
+
+async function getTableName(data_source, table) {
+	const name = await call('insights.api.get_table_name', {
+		data_source: data_source,
+		table: table,
+	})
+	// cache the name
+	cached_tablenames[data_source + table] = name
+	return name
 }

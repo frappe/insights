@@ -1,20 +1,20 @@
-import { safeJSONParse } from '@/utils'
+import { useQueryResource } from '@/query/useQueryResource'
 import auth from '@/utils/auth'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
 import { useQueryTables } from '@/utils/query/tables'
 import { createToast } from '@/utils/toasts'
-import { createDocumentResource, debounce } from 'frappe-ui'
+import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
 
 export const API_METHODS = {
 	run: 'run',
-	reset: 'reset',
 	store: 'store',
 	convert: 'convert',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
+	reset: 'reset_and_save',
 	fetchTables: 'fetch_tables',
 	fetchColumns: 'fetch_columns',
 	fetchColumnValues: 'fetch_column_values',
@@ -41,7 +41,8 @@ export const API_METHODS = {
 }
 
 export function useQuery(name) {
-	const query = getQueryResource(name)
+	const query = useQueryResource(name)
+	query.beforeExecuteFns = []
 
 	query.isOwner = computed(() => query.doc?.owner === auth.user.user_id)
 	query.tables = useQueryTables(query)
@@ -51,7 +52,17 @@ export function useQuery(name) {
 
 	query.sourceSchema = computed(() => query.getSourceSchema.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
-	query.execute = () => {
+	query.beforeExecute = (fn) => {
+		// since there are two query types,
+		// and this one is used to execute the query for other
+		query.beforeExecuteFns.push(fn)
+	}
+	query.execute = async () => {
+		if (query.beforeExecuteFns.length) {
+			for (const fn of query.beforeExecuteFns) {
+				await fn()
+			}
+		}
 		return query.debouncedRun(null, {
 			onSuccess() {
 				createToast({
@@ -69,27 +80,11 @@ export function useQuery(name) {
 			},
 		})
 	}
+	query.updateDoc = async (doc) => {
+		await query.setValue.submit(doc)
+	}
 
 	return query
-}
-
-function getQueryResource(name) {
-	const resource = createDocumentResource({
-		doctype: 'Insights Query',
-		name: name,
-		whitelistedMethods: API_METHODS,
-		transform(doc) {
-			doc.columns = doc.columns.map((c) => {
-				c.format_option = safeJSONParse(c.format_option, {})
-				return c
-			})
-			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0]
-			return doc
-		},
-	})
-	resource.get.fetch()
-	return resource
 }
 
 export const FUNCTIONS = {

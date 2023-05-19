@@ -43,8 +43,7 @@ watch(
 			userInfo.fetch()
 			subscription.fetchTrialStatus()
 		}
-	},
-	{ immediate: true }
+	}
 )
 
 async function login(email, password) {

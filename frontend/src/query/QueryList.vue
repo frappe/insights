@@ -1,10 +1,12 @@
 <script setup lang="jsx">
 import List from '@/components/List.vue'
 import useDataSources from '@/datasource/useDataSources'
+import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import useQueries from './useQueries'
+import { Badge } from 'frappe-ui'
 
 const queries = useQueries()
 queries.reload()
@@ -24,7 +26,10 @@ const createDisabled = computed(
 )
 const createQuery = async () => {
 	const { dataSource, title } = newQuery.value
-	const name = await queries.create(dataSource, title)
+	const name = await queries.create({
+		data_source: dataSource,
+		title,
+	})
 	newQuery.value = { dataSource: '', title: '' }
 	await nextTick()
 	router.push({ name: 'QueryBuilder', params: { name } })
@@ -46,10 +51,57 @@ const columns = [
 
 const pageMeta = ref({ title: 'Queries' })
 updateDocumentTitle(pageMeta)
+
+const notebooks = useNotebooks()
+notebooks.reload()
+async function openQueryEditor(type) {
+	if (type === 'notebook') {
+		const uncategorized = notebooks.list.find((notebook) => notebook.title === 'Uncategorized')
+		const page_name = await notebooks.createPage(uncategorized.name)
+		return router.push({
+			name: 'NotebookPage',
+			params: {
+				notebook: uncategorized.name,
+				page: page_name,
+			},
+		})
+	}
+	const new_query = {}
+	if (type === 'visual') new_query.is_assisted_query = 1
+	if (type === 'classic') new_query.is_assisted_query = 0
+	const query = await queries.create(new_query)
+	router.push({
+		name: 'QueryBuilder',
+		params: { name: query.name },
+	})
+}
+
+const queryBuilderTypes = ref([
+	{
+		label: 'Notebook',
+		description: 'Create a query using the notebook interface',
+		icon: 'book',
+		tag: 'beta',
+		handler: () => openQueryEditor('notebook'),
+	},
+	{
+		label: 'Visual',
+		description: 'Create a query using the visual interface',
+		icon: 'box',
+		tag: 'beta',
+		handler: () => openQueryEditor('visual'),
+	},
+	{
+		label: 'Classic',
+		description: 'Create a query using the classic interface',
+		icon: 'layout',
+		handler: () => openQueryEditor('classic'),
+	},
+])
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-8 py-4">
+	<div class="h-full w-full bg-white px-6 py-4">
 		<List
 			title="Queries"
 			:actions="[
@@ -67,32 +119,45 @@ updateDocumentTitle(pageMeta)
 		</List>
 	</div>
 
-	<Dialog :options="{ title: 'New Query' }" v-model="new_dialog">
-		<template #body-content>
-			<div class="space-y-4">
-				<Input
-					type="select"
-					label="Data Source"
-					v-model="newQuery.dataSource"
-					:options="dataSourceOptions"
-				/>
-				<Input
-					type="text"
-					label="Title"
-					v-model="newQuery.title"
-					placeholder="Enter a suitable title..."
-				/>
+	<Dialog v-model="new_dialog">
+		<template #body>
+			<div class="bg-white px-4 py-5 text-base sm:p-6">
+				<h3 class="text-lg font-medium leading-6 text-gray-900">Select Interface Type</h3>
+				<!-- There are three types of query builder -->
+				<div class="mt-4 grid grid-cols-1 gap-6">
+					<div
+						v-for="(type, index) in queryBuilderTypes"
+						:key="index"
+						class="group flex cursor-pointer items-center space-x-4"
+						@click="type.handler()"
+					>
+						<div
+							class="rounded-md border p-4 text-gray-400 shadow-sm transition-all group-hover:scale-105"
+						>
+							<FeatherIcon :name="type.icon" class="h-6 w-6 text-gray-400" />
+						</div>
+						<div>
+							<div class="flex items-center space-x-2">
+								<p
+									class="text-lg font-medium leading-6 text-gray-900 transition-colors group-hover:text-blue-500"
+								>
+									{{ type.label }}
+								</p>
+								<Badge
+									v-if="type.tag"
+									color="green"
+									class="!rounded-full !px-2 !py-0.5"
+								>
+									{{ type.tag }}
+								</Badge>
+							</div>
+							<p class="text-sm leading-5 text-gray-500">
+								{{ type.description }}
+							</p>
+						</div>
+					</div>
+				</div>
 			</div>
-		</template>
-		<template #actions>
-			<Button
-				appearance="primary"
-				@click="createQuery"
-				:disabled="createDisabled"
-				:loading="queries.creating"
-			>
-				Create
-			</Button>
 		</template>
 	</Dialog>
 </template>

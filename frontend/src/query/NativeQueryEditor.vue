@@ -45,7 +45,7 @@ function runQuery() {
 		<div class="h-8 flex-shrink-0 text-sm uppercase tracking-wide text-gray-600">
 			Native Query
 		</div>
-		<div class="flex flex-1 overflow-scroll">
+		<div class="flex flex-1 overflow-scroll rounded-md border p-1">
 			<Code
 				:key="completions.tables.length"
 				language="sql"

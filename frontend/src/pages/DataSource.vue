@@ -1,5 +1,11 @@
 <template>
-	<div class="h-full w-full bg-white px-8 py-4">
+	<div class="h-full w-full bg-white px-6 py-4">
+		<Breadcrumbs
+			:items="[
+				{ label: 'Data Sources', href: '/data-source' },
+				{ label: dataSource.doc.title },
+			]"
+		></Breadcrumbs>
 		<List
 			v-if="dataSource.doc && dataSource.tables.length"
 			:columns="columns"
@@ -48,6 +54,7 @@
 </template>
 
 <script setup lang="jsx">
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ImportDialog from '@/components/ImportDialog.vue'
 import List from '@/components/List.vue'
 import { useDataSource } from '@/datasource/useDataSource'

@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-screen w-screen bg-white font-sans">
+	<div class="flex h-screen w-screen bg-white font-sans antialiased">
 		<template v-if="route.meta.allowGuest">
 			<router-view></router-view>
 		</template>

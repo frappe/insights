@@ -36,8 +36,15 @@ class InsightsDataSource(Document):
                 "data_source": self.name,
                 **get_permission_filter("Insights Table"),
             },
-            fields=["name", "table", "label", "hidden", "data_source"],
-            order_by="hidden asc, label asc",
+            fields=[
+                "name",
+                "table",
+                "label",
+                "hidden",
+                "data_source",
+                "is_query_based",
+            ],
+            order_by="is_query_based asc, hidden asc, label asc",
         )
 
     def on_trash(self):

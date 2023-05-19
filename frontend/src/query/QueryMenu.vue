@@ -101,7 +101,7 @@
 					@click="
 						() => {
 							query.delete.submit().then(() => {
-								builder?.closeQuery(query.name)
+								$router.push('/query')
 								show_delete_dialog = false
 							})
 						}
@@ -328,10 +328,10 @@ import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
 import { copyToClipboard } from '@/utils'
+import { useRouter } from 'vue-router'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
-const builder = inject('queryBuilder')
 
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
@@ -366,11 +366,12 @@ const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
 })
 
+const router = useRouter()
 const $notify = inject('$notify')
 function duplicateQuery() {
 	query.duplicate.submit().then(async (res) => {
 		await nextTick()
-		builder?.openQuery(res.message)
+		router.push(`/query/${res.message}`)
 		$notify({
 			appearance: 'success',
 			title: 'Query Duplicated',

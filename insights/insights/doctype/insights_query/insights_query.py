@@ -1,17 +1,15 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+
 import time
-from functools import partial
-from json import dumps
+from functools import cached_property
 
 import frappe
-import pandas as pd
-import sqlparse
+from frappe import _dict
 from frappe.model.document import Document
 from frappe.utils import flt
 
-from insights.constants import DATE_TYPES
 from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
@@ -19,423 +17,193 @@ from insights.insights.doctype.insights_data_source.sources.utils import (
 from insights.utils import ResultColumn
 
 from ..insights_data_source.sources.query_store import sync_query_store
+from .insights_assisted_query import InsightsAssistedQueryController
+from .insights_legacy_query import (
+    InsightsLegacyQueryClient,
+    InsightsLegacyQueryController,
+)
 from .insights_query_client import InsightsQueryClient
-
-DEFAULT_FILTERS = dumps(
-    {
-        "type": "LogicalExpression",
-        "operator": "&&",
-        "level": 1,
-        "position": 1,
-        "conditions": [],
-    },
-    indent=2,
+from .insights_raw_query import InsightsRawQueryController
+from .utils import (
+    CachedResults,
+    InsightsChart,
+    InsightsDataSource,
+    InsightsSettings,
+    InsightsTable,
+    InsightsTableColumn,
+    Status,
+    apply_pivot_transform,
+    apply_transpose_transform,
+    apply_unpivot_transform,
+    format_query,
 )
 
 
-class InsightsQueryValidation:
-    def validate(self):
-        # TODO: validate if a column is an expression and aggregation is "group by"
-        self.validate_tables()
-        self.validate_limit()
-        self.validate_filters()
-        self.validate_columns()
-
-    def validate_tables(self):
-        tables = [row.table for row in self.tables]
-        tables = frappe.get_all(
-            "Insights Table",
-            filters={"name": ("in", tables)},
-            fields=["table", "data_source", "hidden"],
-        )
-        for table in tables:
-            if table.hidden:
-                frappe.throw(f"Table {table.table} is hidden. You cannot query it")
-            if table.data_source != self.data_source:
-                frappe.throw(f"Table {table.table} is not in the same data source")
-
-    def validate_limit(self):
-        if self.limit and self.limit < 1:
-            frappe.throw("Limit must be greater than 0")
-
-    def validate_filters(self):
-        if not self.filters:
-            self.filters = DEFAULT_FILTERS
-
-    def validate_columns(self):
-        if frappe.flags.in_test:
-            return
-        # check if no duplicate labelled columns
-        labels = []
-        for row in self.columns:
-            if row.label and row.label in labels:
-                frappe.throw(f"Duplicate Column {row.label}")
-            labels.append(row.label)
-
-
-class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
+class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def before_save(self):
-        if not self.tables and not self.is_native_query:
-            return self.clear()
-
-        if self.get("skip_before_save"):
-            return
-
-        self.update_query()
+        self.update_sql_query()
 
     def on_update(self):
-        self.create_chart()
-        self.update_insights_table()
-        self.sync_query_store()
-        self.update_link_docs_title()
-        # TODO: update result columns on update
-
-    def create_chart(self):
-        if not frappe.db.exists("Insights Chart", {"query": self.name}):
-            chart = frappe.new_doc("Insights Chart")
-            chart.query = self.name
-            chart.save(ignore_permissions=True)
+        self.create_default_chart()
+        self.update_query_store()
+        self.update_linked_docs()
 
     def on_trash(self):
         self.delete_insights_table()
-        self.delete_insights_charts()
+        self.delete_default_chart()
 
     @property
     def _data_source(self):
-        return frappe.get_doc("Insights Data Source", self.data_source)
+        return InsightsDataSource.get_doc(self.data_source)
 
     @property
-    def results(self) -> str:
-        LIMIT = (
-            frappe.db.get_single_value("Insights Settings", "query_result_limit")
-            or 1000
-        )
-        try:
-            cached_results = self.load_results()
-            if not cached_results and self.status == "Execution Successful":
-                results = self.fetch_results()
-                return frappe.as_json(results[:LIMIT])
-
-            return frappe.as_json(cached_results[:LIMIT])
-        except Exception as e:
-            print("Error getting results", e)
+    def results(self):
+        fetch_if_not_cached = self.status == Status.SUCCESS.value
+        limit = InsightsSettings.get("query_result_limit") or 1000
+        results = self.retrieve_results(fetch_if_not_cached)
+        return frappe.as_json(results[:limit])
 
     @property
     def results_row_count(self):
-        return len(self.load_results() or [])
+        return len(CachedResults.get(self.name))
 
-    def update_query(self):
-        if not self.is_native_query:
-            query = self._data_source.build_query(query=self, with_cte=True)
-        else:
-            query = self.sql
+    @cached_property
+    def variant_controller(self):
+        if self.is_native_query:
+            return InsightsRawQueryController(self)
+        if self.is_assisted_query:
+            return InsightsAssistedQueryController(self)
+        return InsightsLegacyQueryController(self)
+
+    def validate(self):
+        self.variant_controller.validate()
+
+    def reset(self):
+        new_query = frappe.new_doc("Insights Query")
+        new_query.name = self.name
+        new_query.data_source = self.data_source
+        new_query_dict = new_query.as_dict(no_default_fields=True)
+        self.update(new_query_dict)
+        self.status = Status.SUCCESS.value
+        CachedResults.set(self.name, [])
+        self.after_reset()
+
+    def after_reset(self):
+        self.variant_controller.after_reset()
+
+    def update_sql_query(self):
+        query = self.get_sql()
         query = format_query(query) if query else None
-        if self.sql != query:
-            self.sql = query
-            self.status = "Pending Execution"
+        if self.sql == query:
+            return
+        self.sql = query
+        self.status = Status.PENDING.value
 
-    def fetch_results(self):
-        self.sync_child_stored_queries()
-        start = time.monotonic()
-        results = []
-        try:
-            results = self._data_source.run_query(query=self)
-            results = self.process_column_types(results)
-            results = self.apply_transformations(results)
-            self.execution_time = flt(time.monotonic() - start, 3)
-            self.last_execution = frappe.utils.now()
-            self.status = "Execution Successful"
-        except Exception:
-            self.status = "Pending Execution"
-            print("Error fetching results")
-            raise
+    def get_sql(self):
+        return self.variant_controller.get_sql()
 
-        self.store_results(results)
-        return results
-
-    def sync_child_stored_queries(self):
-        if self.data_source == "Query Store" and self.tables:
-            sync_query_store(
-                [row.table for row in self.tables if row.table != self.name], force=True
-            )
-
-    def store_results(self, results):
-        frappe.cache().set_value(
-            f"insights_query|{self.name}",
-            frappe.as_json(results),
-        )
-
-    def load_results(self, fetch_if_not_exists=False):
-        results = frappe.cache().get_value(f"insights_query|{self.name}")
-        if not results and fetch_if_not_exists:
-            results = self.fetch_results()
-        if not results:
-            return []
-        return frappe.parse_json(results)
-
-    def update_link_docs_title(self):
-        old_title = self.get("_doc_before_save") and self.get("_doc_before_save").title
-        if old_title and old_title != self.title:
-            # this still doesn't updates the old title stored the query column
-            Table = frappe.qb.DocType("Insights Table")
-            frappe.qb.update(Table).set(Table.label, self.title).where(
-                Table.table == self.name
-            ).run()
-
-    def delete_insights_table(self):
-        if table_name := frappe.db.exists("Insights Table", {"table": self.name}):
-            frappe.delete_doc("Insights Table", table_name, ignore_permissions=True)
-
-    def delete_insights_charts(self):
-        charts = frappe.get_all(
-            "Insights Chart",
-            filters={"query": self.name},
-            fields=["name"],
-        )
-        for chart in charts:
-            frappe.delete_doc("Insights Chart", chart.name, ignore_permissions=True)
-
-    def clear(self):
-        self.tables = []
-        self.columns = []
-        self.filters = DEFAULT_FILTERS
-        self.sql = ""
-        self.limit = 500
-        self.execution_time = 0
-        self.last_execution = None
-        frappe.cache().delete_value(f"insights_query|{self.name}")
-        self.status = "Execution Successful"
-
-    def sync_query_store(self):
-        if self.is_stored:
-            sync_query_store(tables=[self.name], force=True)
-
-    def get_results_df(self, results=None):
-        if not results:
-            results = self.load_results(fetch_if_not_exists=True)
-        columns = [column["label"] for column in results[0]]
-        rows = results[1:]
-        return pd.DataFrame(rows, columns=columns)
-
-    @log_error()
-    def process_column_types(self, results):
-        if not results:
-            return results
-
-        if not self.is_native_query:
-            results[0] = [ResultColumn.make(query_column=c) for c in self.get_columns()]
-            return results
-
-        results_df = self.get_results_df(results)
-        columns = results[0]
-        # create a row that contains values in each column
-        values_row = []
-        for column in results_df.columns:
-            # find the first non-null value in the column
-            value = results_df[column].dropna().iloc[0]
-            values_row.append(value)
-
-        # infer the type of each column
-        inferred_types = self.guess_types(values_row)
-        # update the column types
-        for i, column in enumerate(columns):
-            columns[i] = ResultColumn.make(
-                label=column["label"],
-                type=inferred_types[i],
-            )
-        results[0] = columns
-        return results
-
-    def guess_types(self, values):
-        # try converting each value to a number, float, date, datetime
-        # if it fails, it's a string
-        types = []
-        for value in values:
-            types.append(guess_type(value))
-        return types
+    def create_default_chart(self):
+        if frappe.db.exists("Insights Chart", {"query": self.name}):
+            return
+        chart = frappe.new_doc("Insights Chart")
+        chart.query = self.name
+        chart.save(ignore_permissions=True)
 
     def update_insights_table(self):
-        create_insights_table(
-            frappe._dict(
-                {
-                    "table": self.name,
-                    "label": self.title,
-                    "data_source": self.data_source,
-                    "is_query_based": 1,
-                    "columns": [
-                        frappe._dict(
-                            {
-                                "column": column.label,  # use label as column name
-                                "label": column.label,
-                                "type": column.type,
-                            }
-                        )
-                        for column in self.get_columns()
-                    ],
-                }
-            )
+        query_table = _dict(
+            table=self.name,
+            label=self.title,
+            is_query_based=1,
+            data_source=self.data_source,
+            columns=InsightsTableColumn.from_dicts(
+                self.get_columns(),
+            ),
         )
+        create_insights_table(query_table, force=True)
 
     def get_columns(self):
-        if not self.is_native_query:
-            return self.columns or self.fetch_columns()
+        return self.variant_controller.get_columns()
 
-        # make column from results first row
-        results = self.load_results(fetch_if_not_exists=True)
-        if not results:
-            return []
-        return [
-            frappe._dict(
-                {
-                    "label": col["label"],
-                    "type": col["type"],
-                }
-            )
-            for col in results[0]
-        ]
+    def update_query_store(self):
+        if not self.is_stored:
+            return
+        sync_query_store([self.name], force=True)
 
-    def apply_transformations(self, results):
-        if self.is_native_query:
-            return results
-        if self.transforms:
-            results = self.apply_transform(results)
-        if self.has_cumulative_columns():
-            results = self.apply_cumulative_sum(results)
+    def update_linked_docs(self):
+        old_self = self.get("_doc_before_save")
+        old_title = old_self.title if old_self else None
+        if not old_title or old_title == self.title:
+            return
+
+        table = frappe.qb.DocType("Insights Table")
+        _ = (
+            frappe.qb.update(table)
+            .set(table.label, self.title)
+            .where(table.table == self.name)
+            .run()
+        )
+
+    def delete_insights_table(self):
+        table_name = InsightsTable.get_name(table=self.name)
+        frappe.delete_doc_if_exists("Insights Table", table_name)
+
+    def delete_default_chart(self):
+        chart_name = InsightsChart.get_name(query=self.name)
+        frappe.delete_doc_if_exists("Insights Chart", chart_name)
+
+    def retrieve_results(self, fetch_if_not_cached=False):
+        results = CachedResults.get(self.name)
+        if not results and fetch_if_not_cached:
+            results = self.fetch_results()
+        return results or []
+
+    def fetch_results(self):
+        self.before_fetch()
+
+        self._results = []
+        start = time.monotonic()
+        try:
+            self._results = self._data_source.run_query(self)
+            self._results = self.after_fetch_results(self._results)
+            self._results = self.process_results_columns(self._results)
+            self.execution_time = flt(time.monotonic() - start, 3)
+            self.last_execution = frappe.utils.now()
+            self.status = Status.SUCCESS.value
+        except Exception as e:
+            self.status = Status.FAILED.value
+            frappe.log_error(e)
+            raise
+        finally:
+            CachedResults.set(self.name, self._results)
+            self.update_insights_table()
+        return self._results
+
+    def before_fetch(self):
+        self.variant_controller.before_fetch()
+
+    @log_error(raise_exc=True)
+    def process_results_columns(self, results):
+        results[0] = ResultColumn.from_dicts(self.get_columns_from_results(results))
         return results
 
-    def apply_transform(self, results):
+    def get_columns_from_results(self, results):
+        return self.variant_controller.get_columns_from_results(results)
+
+    def after_fetch_results(self, results):
+        if self.transforms:
+            results = self.apply_transforms(results)
+        results = self.variant_controller.after_fetch_results(results)
+        return results
+
+    def apply_transforms(self, results):
         self.validate_transforms()
-
-        for row in self.transforms:
-            if row.type == "Pivot":
-                result = frappe.parse_json(results)
-                options = frappe.parse_json(row.options)
-                pivot_column = options.get("column")
-                index_column = options.get("index")
-                index_column_type = next(
-                    (c.type for c in self.columns if c.label == index_column),
-                    None,
-                )
-                index_column_options = next(
-                    (c.format_option for c in self.columns if c.label == index_column),
-                    None,
-                )
-                index_column_options = frappe.parse_json(index_column_options)
-                value_column = options.get("value")
-                value_column_type = next(
-                    (c.type for c in self.columns if c.label == value_column),
-                    None,
-                )
-
-                if not (pivot_column and index_column and value_column):
-                    frappe.throw("Invalid Pivot Options")
-                if pivot_column == index_column:
-                    frappe.throw("Pivot Column and Index Column cannot be same")
-
-                results_df = self.get_results_df(result)
-
-                pivot_column_values = results_df[pivot_column]
-                index_column_values = results_df[index_column]
-                value_column_values = results_df[value_column]
-
-                # make a dataframe for pivot table
-                pivot_df = pd.DataFrame(
-                    {
-                        index_column: index_column_values,
-                        pivot_column: pivot_column_values,
-                        value_column: value_column_values,
-                    }
-                )
-
-                pivoted = pivot_df.pivot_table(
-                    index=[pivot_df.columns[0]],
-                    columns=[pivot_df.columns[1]],
-                    values=[pivot_df.columns[2]],
-                    aggfunc="sum",
-                )
-
-                pivoted.columns = pivoted.columns.droplevel(0)
-                pivoted = pivoted.reset_index()
-                pivoted.columns.name = None
-                pivoted = pivoted.fillna(0)
-
-                cols = pivoted.columns.to_list()
-                index_result_column = ResultColumn.make(
-                    cols[0], index_column_type, index_column_options
-                )
-                other_columns = [
-                    ResultColumn.make(c, value_column_type) for c in cols[1:]
-                ]
-                cols = [index_result_column] + other_columns
-                data = pivoted.values.tolist()
-
-                return [cols] + data
-
-            if row.type == "Unpivot":
-                options = frappe.parse_json(row.options)
-                index_column = options.get("index_column")
-                new_column_name = options.get("column_label")
-                value_name = options.get("value_label")
-
-                if not (index_column and new_column_name and value_name):
-                    frappe.throw("Invalid Unpivot Options")
-
-                result = frappe.parse_json(results)
-                results_df = self.get_results_df(result)
-
-                unpivoted = pd.melt(
-                    results_df,
-                    id_vars=[index_column],
-                    var_name=new_column_name,
-                    value_name=value_name,
-                )
-
-                index_column_type = next(
-                    (c.type for c in self.columns if c.label == index_column),
-                    None,
-                )
-                index_column_options = next(
-                    (c.format_option for c in self.columns if c.label == index_column),
-                    None,
-                )
-                index_column_options = frappe.parse_json(index_column_options)
-                new_column_type = "String"
-                value_column_type = "Decimal"
-
-                cols = unpivoted.columns.to_list()
-                cols = [
-                    ResultColumn.make(cols[0], index_column_type, index_column_options),
-                    ResultColumn.make(cols[1], new_column_type),
-                    ResultColumn.make(cols[2], value_column_type),
-                ]
-
-                data = unpivoted.values.tolist()
-
-                return [cols] + data
-
-            if row.type == "Transpose":
-
-                options = frappe.parse_json(row.options)
-                index_column = options.get("index_column")
-                new_column_label = options.get("column_label")
-
-                if not index_column:
-                    frappe.throw("Invalid Transpose Options")
-
-                result = frappe.parse_json(results)
-                results_df = self.get_results_df(result)
-                results_df = results_df.set_index(index_column)
-                results_df_transposed = results_df.transpose()
-                results_df_transposed = results_df_transposed.reset_index()
-                results_df_transposed.columns.name = None
-
-                cols = results_df_transposed.columns.to_list()
-                index_result_column = ResultColumn.make(new_column_label, "String")
-                other_columns = [ResultColumn.make(c, "Decimal") for c in cols[1:]]
-                cols = [index_result_column] + other_columns
-                data = results_df_transposed.values.tolist()
-
-                return [cols] + data
+        for transform in self.transforms:
+            if transform.type == "Pivot":
+                return apply_pivot_transform(results, transform.options)
+            if transform.type == "Unpivot":
+                return apply_unpivot_transform(results, transform.options)
+            if transform.type == "Transpose":
+                return apply_transpose_transform(results, transform.options)
 
     def validate_transforms(self):
         pivot_transforms = [t for t in self.transforms if t.type == "Pivot"]
@@ -455,115 +223,6 @@ class InsightsQuery(InsightsQueryValidation, InsightsQueryClient, Document):
         if unpivot_transforms and transpose_transforms:
             frappe.throw("Unpivot and Transpose transforms cannot be used together")
 
-    def has_cumulative_columns(self):
-        return any(
-            col.aggregation and "Cumulative" in col.aggregation
-            for col in self.get_columns()
-        )
-
-    def apply_cumulative_sum(self, results):
-        result = frappe.parse_json(results)
-        results_df = self.get_results_df(result)
-
-        for column in self.columns:
-            if "Cumulative" in column.aggregation:
-                results_df[column.label] = results_df[column.label].cumsum()
-
-        return [result[0]] + results_df.values.tolist()
-
-    def get_formatted_results(self, as_html=False):
-        return format_results(self, as_html=as_html)
-
-
-def format_query(query):
-    return sqlparse.format(
-        str(query),
-        keyword_case="upper",
-        reindent_aligned=True,
-    )
-
-
-def format_results(query, as_html=False):
-    # above js function can be used as reference
-    # check results.columns.type and query.columns.format_option to format results
-    results = query.get_results_df()
-
-    columns_with_format_option = []
-    for column in query.columns:
-        if format_option := frappe.parse_json(column.format_option):
-            column.format_option = format_option
-            columns_with_format_option.append(column)
-
-    if not columns_with_format_option:
-        return results.to_html(index=False) if as_html else results.values.tolist()
-
-    for column in columns_with_format_option:
-        results[column.label] = results[column.label].apply(
-            partial(format_column_value, column=column)
-        )
-
-    if as_html:
-        return results.to_html(index=False)
-
-    return results.values.tolist()
-
-
-def format_column_value(value, column):
-    format_option = frappe.parse_json(column.format_option)
-    if format_option.get("date_format") and column.type in DATE_TYPES:
-        return format_date(value, format_option.get("date_format"))
-    else:
-        return value
-
-
-def format_date(value, date_format):
-    if not value:
-        return ""
-
-    if date_format == "Day of Week":
-        return value
-
-    if date_format == "Month of Year":
-        return value
-
-    if date_format == "Quarter of Year":
-        return f"Q{value}"
-
-    if date_format == "Hour of Day":
-        return pd.to_datetime(value).strftime("%I:%M %p")
-
-    strftime_format = {
-        "Minute": "%B %d, %Y %I:%M %p",
-        "Hour": "%B %d, %Y %I:00 %p",
-        "Day": "%B %d, %Y",
-        "Week": "%b %d, %Y",
-        "Mon": "%b %y",
-        "Month": "%B, %Y",
-        "Year": "%Y",
-        "Day Short": "%b %d, %y",
-    }.get(date_format)
-
-    if date_format == "Quarter":
-        quarter = pd.to_datetime(value).quarter
-        strftime_format = f"Q{quarter}, %Y"
-
-    if not strftime_format:
-        return value
-
-    return pd.to_datetime(value).strftime(strftime_format)
-
-
-def guess_type(value):
-    try:
-        pd.to_numeric(value)
-        return "Integer"
-    except ValueError:
-        try:
-            pd.to_numeric(value, downcast="float")
-            return "Decimal"
-        except ValueError:
-            try:
-                pd.to_datetime(value)
-                return "Datetime"
-            except ValueError:
-                return "String"
+    @frappe.whitelist()
+    def get_tables_columns(self):
+        return self.variant_controller.get_tables_columns()

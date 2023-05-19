@@ -83,7 +83,7 @@ const routes = [
 	{
 		props: true,
 		name: 'QueryBuilder',
-		path: '/query/build/:name?',
+		path: '/query/build/:name',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
 	{
@@ -101,6 +101,23 @@ const routes = [
 		meta: {
 			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
 		},
+	},
+	{
+		path: '/notebook',
+		name: 'NotebookList',
+		component: () => import('@/notebook/NotebookList.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:notebook',
+		name: 'Notebook',
+		component: () => import('@/notebook/Notebook.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:notebook/:page',
+		name: 'NotebookPage',
+		component: () => import('@/notebook/NotebookPage.vue'),
 	},
 	{
 		path: '/settings',

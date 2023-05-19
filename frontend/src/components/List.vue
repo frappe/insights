@@ -14,7 +14,7 @@ const props = defineProps({
 const searchTerm = ref('')
 const filteredData = computed(() => {
 	if (searchTerm.value === '') {
-		return props.data
+		return props.data.slice(0, 100)
 	}
 	return props.data
 		.filter((row) => {
@@ -55,16 +55,18 @@ function toggleSelected(row) {
 			<slot name="title">
 				<div class="text-3xl font-medium text-gray-900">{{ title }}</div>
 			</slot>
-			<Button
-				v-for="action in actions"
-				:key="action.label"
-				class="shadow-sm"
-				:appearance="action.appearance"
-				:iconLeft="action.iconLeft"
-				@click="action.handler"
-			>
-				{{ action.label }}
-			</Button>
+			<div class="flex space-x-4">
+				<Button
+					v-for="action in actions"
+					:key="action.label"
+					class="shadow-sm"
+					:appearance="action.appearance"
+					:iconLeft="action.iconLeft"
+					@click="action.handler"
+				>
+					{{ action.label }}
+				</Button>
+			</div>
 		</div>
 
 		<!-- Filter Bar -->
@@ -160,7 +162,14 @@ function toggleSelected(row) {
 			</ul>
 
 			<div v-else class="flex-1 overflow-hidden">
-				<slot name="empty-state"> </slot>
+				<slot name="empty-state">
+					<div
+						class="flex h-full w-full flex-col items-center justify-center text-lg text-gray-400/50"
+					>
+						<FeatherIcon name="folder" class="h-12 w-12" />
+						<p class="mt-4">No data to display</p>
+					</div>
+				</slot>
 			</div>
 		</div>
 	</div>

@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.api.permissions import is_private
@@ -36,7 +37,7 @@ def get_data_sources():
             "status",
             "database_type",
             "creation",
-            "is_site_db"
+            "is_site_db",
         ],
         order_by="creation desc",
     )
@@ -153,6 +154,8 @@ def get_queries():
             Query.name,
             Query.title,
             Query.status,
+            Query.is_assisted_query,
+            Query.is_native_query,
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
@@ -166,21 +169,22 @@ def get_queries():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_query(data_source, table=None, title=None):
+def create_query(**query):
     track("create_query")
-    query = frappe.new_doc("Insights Query")
-    query.title = title or "Untitled Query"
-    query.data_source = data_source
-    if table:
-        query.append(
+    doc = frappe.new_doc("Insights Query")
+    doc.title = query.get("title") or "Untitled Query"
+    doc.data_source = query.get("data_source") or "Demo Data"
+    doc.is_assisted_query = query.get("is_assisted_query")
+    if table := query.get("table") and not doc.is_assisted_query:
+        doc.append(
             "tables",
             {
                 "table": table.get("value"),
                 "label": table.get("label"),
             },
         )
-    query.save()
-    return query.name
+    doc.save()
+    return doc.as_dict()
 
 
 @frappe.whitelist()
@@ -480,12 +484,52 @@ def get_public_dashboard_chart_data(public_key, *args, **kwargs):
 
 
 @frappe.whitelist()
-def fetch_column_values(column, search_text=None):
-    if not column.get("data_source"):
+@redis_cache()
+def fetch_column_values(data_source, table, column, search_text=None):
+    if not data_source:
         frappe.throw("Data Source is required")
-    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
-    return data_source.get_column_options(
-        column.get("table"), column.get("column"), search_text
+    if not table:
+        frappe.throw("Table is required")
+    if not column:
+        frappe.throw("Column is required")
+    doc = frappe.get_doc("Insights Data Source", data_source)
+    return doc.get_column_options(table, column, search_text)
+
+
+@frappe.whitelist()
+def get_notebooks():
+    # TODO: Add permission check
+    return frappe.get_list(
+        "Insights Notebook",
+        fields=["name", "title", "creation", "modified"],
+        order_by="creation desc",
+    )
+
+
+@frappe.whitelist()
+def create_notebook(title):
+    notebook = frappe.new_doc("Insights Notebook")
+    notebook.title = title
+    notebook.save()
+    return notebook.name
+
+
+@frappe.whitelist()
+def create_notebook_page(notebook):
+    notebook_page = frappe.new_doc("Insights Notebook Page")
+    notebook_page.notebook = notebook
+    notebook_page.title = "Untitled"
+    notebook_page.save()
+    return notebook_page.name
+
+
+@frappe.whitelist()
+def get_notebook_pages(notebook):
+    return frappe.get_list(
+        "Insights Notebook Page",
+        filters={"notebook": notebook},
+        fields=["name", "title", "creation", "modified"],
+        order_by="creation desc",
     )
 
 
@@ -494,3 +538,10 @@ def add_chart_to_dashboard(dashboard, chart):
     dashboard = frappe.get_doc("Insights Dashboard", dashboard)
     dashboard.add_chart(chart)
     dashboard.save()
+
+
+@frappe.whitelist()
+def create_chart():
+    chart = frappe.new_doc("Insights Chart")
+    chart.save()
+    return chart.name

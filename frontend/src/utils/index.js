@@ -1,10 +1,31 @@
-import { watch } from 'vue'
 import { createToast } from '@/utils/toasts'
+import { watchDebounced } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
 	TEXT: ['Text', 'String'],
 	DATE: ['Date', 'Datetime', 'Time'],
+}
+
+export function isDimensionColumn(column) {
+	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)
+}
+
+export function moveCaretToEnd(el) {
+	if (typeof window.getSelection != 'undefined' && typeof document.createRange != 'undefined') {
+		var range = document.createRange()
+		range.selectNodeContents(el)
+		range.collapse(false)
+		var sel = window.getSelection()
+		sel.removeAllRanges()
+		sel.addRange(range)
+	} else if (typeof document.body.createTextRange != 'undefined') {
+		var textRange = document.body.createTextRange()
+		textRange.moveToElementText(el)
+		textRange.collapse(false)
+		textRange.select()
+	}
 }
 
 export function isEmptyObj(...args) {
@@ -188,6 +209,27 @@ export function setOrGet(obj, key, generator, generatorArgs) {
 		obj[key] = generator(...generatorArgs)
 	}
 	return obj[key]
+}
+
+export function useAutoSave(watchedFields, options = {}) {
+	if (!options.saveFn) throw new Error('saveFn is required')
+
+	const fields = computed(() => {
+		if (!watchedFields.value) return
+		return JSON.parse(JSON.stringify(watchedFields.value))
+	})
+
+	function saveIfChanged(newFields, oldFields) {
+		if (!oldFields || !newFields) return
+		if (JSON.stringify(newFields) == JSON.stringify(oldFields)) return
+		options.saveFn()
+	}
+
+	const interval = options.interval || 1000
+	watchDebounced(fields, saveIfChanged, {
+		deep: true,
+		debounce: interval,
+	})
 }
 
 export default {

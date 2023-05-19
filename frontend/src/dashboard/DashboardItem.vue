@@ -55,7 +55,7 @@ if (isChart) {
 		() => chartData.recommendedChart,
 		() => {
 			if (props.item.options.query) return
-			if (props.item.item_type !== chartData.recommendedChart.type) return
+			if (props.item.item_type !== chartData.recommendedChart.chart_type) return
 			props.item.options = {
 				...props.item.options,
 				...chartData.recommendedChart.options,
