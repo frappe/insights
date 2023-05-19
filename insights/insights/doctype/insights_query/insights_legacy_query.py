@@ -266,16 +266,28 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
             return []
 
         query_columns = self.doc.columns
+        inferred_column_types = get_columns_with_inferred_types(results)
         if not query_columns:
-            return get_columns_with_inferred_types(results)
+            return inferred_column_types
 
-        def find_by_label(label):
-            for rc in result_columns:
-                if rc.label == label:
-                    return rc
+        def add_format_options(result_column):
+            for qc in query_columns:
+                label_matches = qc.get("label") == result_column.get("label")
+                column_matches = qc.get("column") == result_column.get("name")
+                if label_matches or column_matches:
+                    result_column["format_options"] = qc.get("format_option")
+                    result_column["type"] = qc.get("type")
+                    return frappe._dict(result_column)
+            for ic in inferred_column_types:
+                label_matches = ic.get("label") == result_column.get("label")
+                column_matches = ic.get("column") == result_column.get("name")
+                if label_matches or column_matches:
+                    result_column["format_options"] = ic.get("format_option")
+                    result_column["type"] = ic.get("type")
+                    return frappe._dict(result_column)
 
         result_columns = results[0]
-        return [find_by_label(c["label"]) for c in query_columns]
+        return [add_format_options(rc) for rc in result_columns]
 
     def get_tables_columns(self):
         columns = []

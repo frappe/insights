@@ -28,13 +28,7 @@ class ResultColumn:
             type=data.get("type") or "String",
             options=data.get("format_option")
             or data.get("options")
-            or data.get("format_options")
-            # temporary fix until we change format_option from dict to str
-            or (
-                {"date_format": data.get("granularity")}
-                if data.get("granularity")
-                else {}
-            ),
+            or data.get("format_options"),
         )
 
     @classmethod

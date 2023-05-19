@@ -50,18 +50,36 @@ class InsightsAssistedQueryController:
             return []
 
         query_columns = self.query_json.get_columns()
+        inferred_column_types = get_columns_with_inferred_types(results)
         if not query_columns:
-            # then its a select * query
-            return get_columns_with_inferred_types(results)
+            return inferred_column_types
 
-        def find_query_column(label):
+        def add_format_options(result_column):
             for qc in query_columns:
-                if qc.alias == label:
-                    return qc
+                label_matches = qc.get("label") == result_column.get("label")
+                column_matches = qc.get("column") == result_column.get("name")
+                if label_matches or column_matches:
+                    # temporary fix until we change format_options in result columns from dict to str
+                    result_column["label"] = (
+                        result_column.get("label")
+                        or qc.get("label")
+                        or qc.get("column")
+                    )
+                    result_column["format_options"] = {
+                        "date_format": qc.get("granularity")
+                    }
+                    result_column["type"] = qc.get("type")
+                    return frappe._dict(result_column)
+            for ic in inferred_column_types:
+                label_matches = ic.get("label") == result_column.get("label")
+                column_matches = ic.get("column") == result_column.get("name")
+                if label_matches or column_matches:
+                    result_column["format_options"] = ic.get("format_option")
+                    result_column["type"] = ic.get("type")
+                    return frappe._dict(result_column)
 
         result_columns = results[0]
-        # find the query column to get the formatting options
-        return [find_query_column(rc["label"]) for rc in result_columns]
+        return [add_format_options(rc) for rc in result_columns]
 
     def get_tables_columns(self):
         columns = []

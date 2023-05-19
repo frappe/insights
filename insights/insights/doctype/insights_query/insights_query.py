@@ -164,8 +164,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         start = time.monotonic()
         try:
             self._results = self._data_source.run_query(self)
-            self._results = self.process_results_columns(self._results)
             self._results = self.after_fetch_results(self._results)
+            self._results = self.process_results_columns(self._results)
             self.execution_time = flt(time.monotonic() - start, 3)
             self.last_execution = frappe.utils.now()
             self.status = Status.SUCCESS.value
