@@ -41,7 +41,8 @@ class TestInsightsQuery(FrappeTestCase):
         self.assertTrue("status = 'Open'" in query.sql)
         self.assertTrue("5" in query.results)
 
-        column_values = fetch_column_values(query.data_source, "tabToDo", "status")
+        doc = frappe.get_doc("Insights Data Source", self.data_source)
+        column_values = doc.get_column_options("tabToDo", "Status")
         self.assertTrue(len(column_values), 2)
         self.assertTrue("Open" in column_values)
         self.assertTrue("Closed" in column_values)
