@@ -7,6 +7,8 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import random_string
 
+from insights.api import fetch_column_values
+
 test_dependencies = ("Insights Data Source", "Insights Table")
 test_records = frappe.get_test_records("Insights Query")
 
@@ -39,9 +41,7 @@ class TestInsightsQuery(FrappeTestCase):
         self.assertTrue("status = 'Open'" in query.sql)
         self.assertTrue("5" in query.results)
 
-        column_values = query.fetch_column_values(
-            {"table": "tabToDo", "column": "status"}
-        )
+        column_values = fetch_column_values(query.data_source, "tabToDo", "status")
         self.assertTrue(len(column_values), 2)
         self.assertTrue("Open" in column_values)
         self.assertTrue("Closed" in column_values)
