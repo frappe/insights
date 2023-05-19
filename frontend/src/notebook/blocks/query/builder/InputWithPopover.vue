@@ -54,7 +54,7 @@ function handleOptionSelect(value, togglePopover) {
 				"
 				@click="togglePopover"
 				:placeholder="placeholder || 'Pick a value'"
-				class="flex h-7 w-full cursor-pointer items-center px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
+				class="flex h-7 w-full cursor-pointer items-center overflow-hidden text-ellipsis !whitespace-nowrap px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
 				:class="[
 					!searchText?.length ? 'min-w-[3rem]' : '',
 					!selectedItem?.label && !isOpen ? '' : '',
