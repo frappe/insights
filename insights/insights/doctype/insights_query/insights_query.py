@@ -119,7 +119,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 self.get_columns(),
             ),
         )
-        create_insights_table(query_table, force=True)
+        create_insights_table(query_table)
 
     def get_columns(self):
         return self.variant_controller.get_columns()
