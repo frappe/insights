@@ -66,7 +66,7 @@ class InsightsAssistedQueryController:
             for qc in query_columns:
                 label_matches = qc.get("label") == result_column.get("label")
                 alias_matches = qc.get("alias") == result_column.get("label")
-                if not label_matches or not alias_matches:
+                if not label_matches and not alias_matches:
                     continue
                 result_column["label"] = qc.get("alias") or qc.get("label")
                 # temporary fix until we change format_options in result columns from dict to str

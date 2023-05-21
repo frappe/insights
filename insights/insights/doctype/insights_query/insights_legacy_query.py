@@ -282,7 +282,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
             for qc in query_columns:
                 label_matches = qc.get("label") == result_column.get("label")
                 column_matches = qc.get("column") == result_column.get("label")
-                if not label_matches or not column_matches:
+                if not label_matches and not column_matches:
                     continue
                 result_column["format_options"] = qc.get("format_option")
                 result_column["type"] = qc.get("type")
