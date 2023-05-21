@@ -270,21 +270,24 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         if not query_columns:
             return inferred_column_types
 
+        def get_inferred_column_type(result_column):
+            for ic in inferred_column_types:
+                if ic.get("label") == result_column.get("label"):
+                    return ic.get("type")
+            return "String"
+
         def add_format_options(result_column):
+            result_column["format_options"] = {}
+            result_column["type"] = get_inferred_column_type(result_column)
             for qc in query_columns:
                 label_matches = qc.get("label") == result_column.get("label")
-                column_matches = qc.get("column") == result_column.get("name")
-                if label_matches or column_matches:
-                    result_column["format_options"] = qc.get("format_option")
-                    result_column["type"] = qc.get("type")
-                    return frappe._dict(result_column)
-            for ic in inferred_column_types:
-                label_matches = ic.get("label") == result_column.get("label")
-                column_matches = ic.get("column") == result_column.get("name")
-                if label_matches or column_matches:
-                    result_column["format_options"] = ic.get("format_option")
-                    result_column["type"] = ic.get("type")
-                    return frappe._dict(result_column)
+                column_matches = qc.get("column") == result_column.get("label")
+                if not label_matches or not column_matches:
+                    continue
+                result_column["format_options"] = qc.get("format_option")
+                result_column["type"] = qc.get("type")
+                break
+            return frappe._dict(result_column)
 
         result_columns = results[0]
         return [add_format_options(rc) for rc in result_columns]
