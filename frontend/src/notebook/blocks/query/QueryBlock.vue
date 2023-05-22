@@ -31,7 +31,6 @@ if (!props.query) {
 	query = useQuery(props.query)
 }
 
-query.autosave = true
 provide('query', query)
 
 const state = reactive({

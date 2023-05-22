@@ -419,7 +419,6 @@ async function autoSelectJoinColumns(join) {
 			<QueryBuilderRow
 				v-if="state.dimensions.length"
 				:label="state.measures.length ? 'By' : 'Group by'"
-				:onRemove="() => (state.dimensions = [])"
 			>
 				<div class="flex flex-col space-y-2.5">
 					<QueryBuilderRow
