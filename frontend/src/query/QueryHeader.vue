@@ -32,15 +32,17 @@ const SourceOption = (props) => {
 	)
 }
 const dataSourceOptions = computed(() => {
-	return sources.list.map((source) => ({
-		component: (props) => (
-			<SourceOption
-				name={source.name}
-				label={source.title}
-				active={source.name === query.doc.data_source}
-			/>
-		),
-	}))
+	return (
+		sources.list.map((source) => ({
+			component: (props) => (
+				<SourceOption
+					name={source.name}
+					label={source.title}
+					active={source.name === query.doc.data_source}
+				/>
+			),
+		})) || []
+	)
 })
 
 function changeDataSource(sourceName) {
