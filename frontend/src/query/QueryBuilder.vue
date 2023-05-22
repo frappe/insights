@@ -14,7 +14,7 @@ const props = defineProps({ name: String })
 				},
 				{
 					label: props.name,
-					href: `/query/${props.name}`,
+					href: `/query/build/${props.name}`,
 				},
 			]"
 		>

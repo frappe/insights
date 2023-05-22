@@ -371,7 +371,7 @@ const $notify = inject('$notify')
 function duplicateQuery() {
 	query.duplicate.submit().then(async (res) => {
 		await nextTick()
-		router.push(`/query/${res.message}`)
+		router.push(`/query/build/${res.message}`)
 		$notify({
 			appearance: 'success',
 			title: 'Query Duplicated',

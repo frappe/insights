@@ -72,7 +72,7 @@ function duplicateQuery() {
 		if (page?.addQuery) {
 			page.addQuery(props.is_native ? 'query-editor' : 'query-builder', name)
 		} else {
-			router.push(`/query/${name}`)
+			router.push(`/query/build/${name}`)
 		}
 	})
 }
