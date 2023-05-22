@@ -59,9 +59,8 @@ export function useQuery(name) {
 	}
 	query.execute = async () => {
 		if (query.beforeExecuteFns.length) {
-			for (const fn of query.beforeExecuteFns) {
-				await fn()
-			}
+			await Promise.all(query.beforeExecuteFns.map((fn) => fn()))
+			await query.get.fetch()
 		}
 		return query.debouncedRun(null, {
 			onSuccess() {
