@@ -15,6 +15,7 @@ import ValueSelector from './ValueSelector.vue'
 
 const props = defineProps({ name: String })
 const query = useQuery(props.name)
+query.autosave = true
 await query.reload()
 provide('query', query)
 

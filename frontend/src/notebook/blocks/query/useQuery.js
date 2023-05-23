@@ -106,7 +106,7 @@ function makeQuery(name) {
 				state.save()
 			}
 			// TODO: fix the weird bug where the inputs are not selected when auto-saving
-			// watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+			watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
 		}
 	)
 
