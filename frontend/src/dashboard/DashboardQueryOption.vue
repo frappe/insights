@@ -1,8 +1,6 @@
 <script setup>
-import DashboardQueryDialog from '@/dashboard/DashboardQueryDialog.vue'
-import CreateQueryDialog from '@/dashboard/CreateQueryDialog.vue'
 import useQueries from '@/query/useQueries'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps(['modelValue'])
@@ -14,13 +12,8 @@ const queryName = computed({
 const queries = useQueries()
 queries.reload()
 
-const showCreateQueryDialog = ref(false)
-const showQueryBuilder = ref(false)
-
-function openQuery(name) {
-	queryName.value = name
-	showCreateQueryDialog.value = false
-	showQueryBuilder.value = true
+function openQueryInNewTab() {
+	window.open(`/insights/query/build/${queryName.value}`, '_blank')
 }
 </script>
 
@@ -31,8 +24,6 @@ function openQuery(name) {
 			<Autocomplete
 				v-model.value="queryName"
 				placeholder="Select a query"
-				:allow-create="true"
-				@create-option="showCreateQueryDialog = true"
 				:options="
 					queries.list.map((query) => ({
 						label: query.title,
@@ -42,8 +33,8 @@ function openQuery(name) {
 			/>
 			<div
 				v-if="queryName"
-				class="absolute top-0 right-0 flex h-full w-8 cursor-pointer items-center justify-center"
-				@click="showQueryBuilder = true"
+				class="absolute right-0 top-0 flex h-full w-8 cursor-pointer items-center justify-center"
+				@click="openQueryInNewTab"
 			>
 				<FeatherIcon
 					name="maximize-2"
@@ -52,12 +43,4 @@ function openQuery(name) {
 			</div>
 		</div>
 	</div>
-
-	<CreateQueryDialog v-model:show="showCreateQueryDialog" @create="openQuery" />
-	<DashboardQueryDialog
-		v-if="queryName"
-		v-model:show="showQueryBuilder"
-		:query="queryName"
-		@close="queries.reload"
-	/>
 </template>
