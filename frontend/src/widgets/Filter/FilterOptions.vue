@@ -66,26 +66,18 @@ async function setColumnOptions(chartItem) {
 	const filter_column = options.value.column
 	if (!filter_column?.column) return
 	const columns = await getQueryColumns(chartItem.options.query)
-	chartColumnOptions[chartItem.options.query] = columns
-		.filter((c) => {
-			return (
-				c.type === filter_column.type &&
-				c.table === filter_column.table &&
-				c.column === filter_column.column &&
-				c.data_source === filter_column.data_source
-			)
-		})
-		.map((column) => {
-			return {
-				label: column.label,
-				column: column.column,
-				table: column.table,
-				type: column.type,
-				table_label: column.table_label,
-				data_source: column.data_source,
-				value: `${column.table}.${column.column}`,
-			}
-		})
+	chartColumnOptions[chartItem.options.query] = columns.map((column) => {
+		return {
+			label: column.label,
+			column: column.column,
+			table: column.table,
+			type: column.type,
+			table_label: column.table_label,
+			data_source: column.data_source,
+			description: `${column.type} - ${column.table_label}`,
+			value: `${column.table}.${column.column}`,
+		}
+	})
 }
 </script>
 

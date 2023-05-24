@@ -136,13 +136,25 @@ updateDocumentTitle(pageMeta)
 					<DashboardQueryOption
 						v-if="dashboard.isChart(dashboard.currentItem)"
 						v-model="dashboard.currentItem.options.query"
+						@update:model-value="dashboard.loadCurrentItemQuery"
 					/>
 
 					<component
+						v-if="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
+						:columns="dashboard.currentItem.query?.resultColumns"
 						:key="dashboard.currentItem.item_id"
 					/>
+
+					<Button
+						iconLeft="trash"
+						appearance="white"
+						class="ml-auto text-red-500"
+						@click="dashboard.removeItem(dashboard.currentItem)"
+					>
+						Delete Widget
+					</Button>
 				</div>
 			</div>
 		</template>

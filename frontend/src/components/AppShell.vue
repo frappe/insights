@@ -1,9 +1,18 @@
 <template>
 	<div class="flex flex-1 overflow-hidden bg-gray-50 text-base">
 		<Sidebar v-if="!hideSidebar" />
-		<div class="flex flex-1 flex-col overflow-hidden">
-			<RouterView :key="$route.fullPath" />
-		</div>
+		<RouterView v-slot="{ Component }">
+			<Suspense>
+				<div class="flex flex-1 flex-col overflow-hidden">
+					<component :is="Component" :key="$route.fullPath" />
+				</div>
+				<template #fallback>
+					<div class="flex h-full flex-col items-center justify-center">
+						<FeatherIcon name="loader" class="h-8 w-8 animate-spin text-gray-400" />
+					</div>
+				</template>
+			</Suspense>
+		</RouterView>
 	</div>
 </template>
 
@@ -18,5 +27,5 @@ const route = useRoute()
 const hideSidebar = computed(() => {
 	return route.meta.hideSidebar || !auth.isLoggedIn
 })
-onMounted(() => auth.isLoggedIn && settings.get.fetch)
+onMounted(() => auth.isLoggedIn && settings.get.fetch())
 </script>

@@ -15,7 +15,10 @@ class SQLiteColumnFormatter(ColumnFormatter):
         if format == "Hour":
             return func.strftime("%Y-%m-%d %H:00", column)
         if format == "Day" or format == "Day Short":
-            return func.strftime("%Y-%m-%d", column)
+            return func.strftime("%Y-%m-%d 00:00", column)
+        if format == "Week":
+            date = func.strftime("%Y-%m-%d", column)
+            return func.date(date, "-1 day", "weekday 0")
         if format == "Month" or format == "Mon":
             return func.strftime("%Y-%m-01", column)
         if format == "Year":
@@ -102,6 +105,21 @@ class SQLiteFunctions(Functions):
                 return day_diff / 90
             if unit == "YEAR":
                 return day_diff / 365
+
+        if function == "date_format":
+            return SQLiteColumnFormatter.format_date(args[1], args[0])
+
+        if function == "start_of":
+            valid_units = ["day", "week", "month", "quarter", "year"]
+            unit = args[0].lower()
+            if unit not in valid_units:
+                raise Exception(
+                    f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}"
+                )
+            return SQLiteColumnFormatter.format_date(args[0].title(), args[1])
+
+        if function == "today":
+            return func.date()
 
         return super().apply(function, *args)
 

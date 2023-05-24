@@ -13,20 +13,28 @@ class ResultColumn:
     options: dict = {}
 
     @staticmethod
-    def make(
-        label=None, type="String", options=None, query_column=None
-    ) -> "ResultColumn":
-        if query_column:
-            return {
-                "label": query_column.get("label") or "Unnamed",
-                "type": query_column.get("type") or "String",
-                "options": frappe.parse_json(query_column.get("format_option")) or {},
+    def from_args(label, type="String", options=None) -> "ResultColumn":
+        return frappe._dict(
+            {
+                "label": label or "Unnamed",
+                "type": type or "String",
+                "options": options or {},
             }
-        return {
-            "label": label or "Unnamed",
-            "type": type or "String",
-            "options": options or {},
-        }
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ResultColumn":
+        return frappe._dict(
+            label=data.get("alias") or data.get("label") or "Unnamed",
+            type=data.get("type") or "String",
+            options=data.get("format_option")
+            or data.get("options")
+            or data.get("format_options"),
+        )
+
+    @classmethod
+    def from_dicts(cls, data: List[dict]) -> List["ResultColumn"]:
+        return [cls.from_dict(d) for d in data]
 
 
 @redis_cache(ttl=60 * 60 * 24)

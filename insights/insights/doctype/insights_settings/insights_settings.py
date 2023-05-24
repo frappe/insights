@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 from insights import notify
+from insights.api.subscription import get_subscription_key
 from insights.decorators import check_role
 
 
@@ -39,7 +40,7 @@ class InsightsSettings(Document):
         if frappe.session.user == "Administrator":
             frappe.throw("Administrator cannot access support portal")
 
-        subscription_key = get_insights_subscription_key()
+        subscription_key = get_subscription_key()
         if not subscription_key:
             notify(type="error", title="Subscription Key not found")
             return
@@ -64,10 +65,3 @@ class InsightsSettings(Document):
                 message="Error sending login link to your email",
                 type="error",
             )
-
-
-def get_insights_subscription_key():
-    try:
-        return frappe.conf.sk_insights
-    except BaseException:
-        return None

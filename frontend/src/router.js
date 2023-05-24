@@ -1,3 +1,4 @@
+import { getTrialStatus } from '@/subscription'
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
@@ -60,34 +61,29 @@ const routes = [
 	{
 		path: '/data-source',
 		name: 'DataSourceList',
-		component: () => import('@/pages/DataSourceList.vue'),
+		component: () => import('@/datasource/DataSourceList.vue'),
 	},
 	{
 		props: true,
 		name: 'DataSource',
 		path: '/data-source/:name',
-		component: () => import('@/pages/DataSource.vue'),
+		component: () => import('@/datasource/DataSource.vue'),
 	},
 	{
 		props: true,
 		name: 'DataSourceTable',
 		path: '/data-source/:name/:table',
-		component: () => import('@/pages/DataSourceTable.vue'),
+		component: () => import('@/datasource/DataSourceTable.vue'),
 	},
 	{
 		path: '/query',
-		redirect: '/query/build',
-	},
-	{
-		props: true,
-		name: 'Query',
-		path: '/query/:name?',
-		redirect: '/query/build',
+		name: 'QueryList',
+		component: () => import('@/query/QueryList.vue'),
 	},
 	{
 		props: true,
 		name: 'QueryBuilder',
-		path: '/query/build/:name?',
+		path: '/query/build/:name',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
 	{
@@ -107,6 +103,23 @@ const routes = [
 		},
 	},
 	{
+		path: '/notebook',
+		name: 'NotebookList',
+		component: () => import('@/notebook/NotebookList.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:notebook',
+		name: 'Notebook',
+		component: () => import('@/notebook/Notebook.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:notebook/:page',
+		name: 'NotebookPage',
+		component: () => import('@/notebook/NotebookPage.vue'),
+	},
+	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
@@ -123,6 +136,14 @@ const routes = [
 		path: '/not-found',
 		name: 'Not Found',
 		component: () => import('@/pages/NotFound.vue'),
+		meta: {
+			hideSidebar: true,
+		},
+	},
+	{
+		path: '/trial-expired',
+		name: 'Trial Expired',
+		component: () => import('@/pages/TrialExpired.vue'),
 		meta: {
 			hideSidebar: true,
 		},
@@ -151,6 +172,10 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
+	const trialExpired = import.meta.env.DEV ? false : await getTrialStatus()
+	if (trialExpired && to.name !== 'Trial Expired') {
+		return next('/trial-expired')
+	}
 	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
@@ -179,7 +204,7 @@ window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
 		auth.reset()
-		// router.push('/login')
+		router.push('/login')
 	}
 	return res
 }

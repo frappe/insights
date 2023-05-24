@@ -32,7 +32,7 @@
 								route.current
 									? 'bg-gray-200/70'
 									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-								'rg:justify-start group -mx-1 flex items-center justify-center rounded-md p-2 font-medium',
+								'rg:justify-start group flex w-full items-center justify-center rounded-md p-2 font-medium',
 							]"
 							aria-current="page"
 						>
@@ -60,7 +60,7 @@
 						{
 							label: 'Documentation',
 							icon: 'help-circle',
-							handler: () => open('https://frappeinsights.com/docs'),
+							handler: () => open('https://docs.frappeinsights.com'),
 						},
 						auth.user.is_admin
 							? {
@@ -109,7 +109,16 @@ import { createResource } from 'frappe-ui'
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
-import { Wrench, LayoutDashboard, Database, Settings, User, Users, Star } from 'lucide-vue-next'
+import {
+	Wrench,
+	LayoutDashboard,
+	Database,
+	Settings,
+	User,
+	Users,
+	Star,
+	Book,
+} from 'lucide-vue-next'
 
 const sidebarItems = ref([
 	{
@@ -126,10 +135,17 @@ const sidebarItems = ref([
 		name: 'Data Source',
 	},
 	{
-		path: '/query/build',
-		label: 'Query Builder',
+		path: '/query',
+		label: 'Query',
 		icon: Wrench,
-		name: 'QueryBuilder',
+		name: 'QueryList',
+		current: false,
+	},
+	{
+		path: '/notebook',
+		label: 'Notebook',
+		icon: Book,
+		name: 'Notebook',
 		current: false,
 	},
 	{

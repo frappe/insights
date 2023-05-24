@@ -56,7 +56,7 @@
 					</Setting>
 
 					<Setting
-						label="Use Query as Tables"
+						label="Enable Query Reusability"
 						description="Allow selecting query as a table in another query. Any query selected as a table will be appended as a sub query using CTE (Common Table Expression)."
 					>
 						<Input

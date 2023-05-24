@@ -1,12 +1,21 @@
 <div align="center" markdown="1">
 
-<img src=".github/logo.png" alt="Frappe Insights logo" width="384"/>
+<img src=".github/logo.png" alt="Frappe Insights logo" width="384" style="margin-bottom: 8px"/>
 
-**Free and Open Source Data Analytics Tool for your Frappe Apps**
+**Simple. Crafted. Powerful. Data Analysis.**
 
+![GitHub issues](https://img.shields.io/github/issues/frappe/insights)
+![GitHub license](https://img.shields.io/github/license/frappe/insights)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/frappe/insights)
 [![codecov](https://codecov.io/github/frappe/insights/branch/develop/graph/badge.svg?token=8ZXHCY4G9U)](https://codecov.io/github/frappe/insights)
-[![unittest](https://github.com/frappe/insights/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/frappe/insights/actions/workflows/ci.yml)
+[![unittests](https://github.com/frappe/insights/actions/workflows/server-tests.yml/badge.svg)](https://github.com/frappe/insights/actions/workflows/server-tests.yml)
 
+</div>
+
+<div align="center" style="max-height: 40px;">
+	<a href="https://frappecloud.com/insights/signup">
+		<img src="https://github.com/frappe/hrms/blob/develop/.github/try-on-f-cloud-button.svg" height="40">
+	</a>
 </div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
@@ -14,17 +23,38 @@
 </div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
-	<a href=".github/preview.gif">Preview</a>
+	<a href="https://insights-demo.frappe.cloud">Live Demo</a>
 	-
-	<a href="https://frappeinsights.frappe.cloud/docs">Documentation</a>
+	<a href="https://docs.frappeinsights.com">Documentation</a>
 </div>
 
-## Features
+## Introduction
+Frappe Insights is an open-source project designed to simplify data analysis and reporting from databases. Built upon the Frappe Framework, Frappe Insights aims to provide an intuitive interface that enables users to effortlessly generate complex reports and gain valuable insights from their data.
 
-- **Multiple Data Sources** - Connect to multiple data sources and query them at one place.
-- **Complex Queries** - Write complex queries get the results in a tabular format.
-- **Visualize Data** - Visualize your data in the form of charts.
-- **Dashboards** - Create dashboards to automate tracking of important metrics.
+
+## Motivation
+The inspiration behind Frappe Insights was the need to simplify data analysis for the apps built upon Frappe Framework. While the framework provides robust tools for managing structured data using DocTypes, analyzing and visualizing that data often requires developer expertise. Frappe Insights aims to bridge this gap by offering a user-friendly solution that empowers non-technical users to perform data analysis tasks without relying on developers.
+
+## Key Features
+
+**Query Builder**: Frappe Insights offers a user-friendly query builder interface that allows users to create database queries without the need for extensive SQL knowledge. The interface provides a step-by-step approach for building queries, empowering users to easily select tables, apply filters, perform calculations, and more.
+
+**Visualizations and Dashboards**: Once a query is created, Frappe Insights enables users to visualize the results using a variety of charts and graphs. Users can easily create custom dashboards by combining multiple visualizations to gain a comprehensive view of their data.
+
+**Connectivity**: Frappe Insights currently supports integration with MySQL databases, allowing users to connect to their existing databases and work directly with their data. More database integrations are planned for the future.
+
+## Under the Hood
+
+[**Frappe Framework**](https://github.com/frappe/frappe): Frappe Insights is built upon the Frappe Framework, a full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
+
+[**Frappe UI**](https://github.com/frappe/frappe-ui): Frappe Insights uses the Frappe UI, a Vue-based UI library, to provide a modern and responsive user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
+
+[**SQLAlchemy**](https://github.com/sqlalchemy/sqlalchemy): Frappe Insights uses SQLAlchemy, a Python SQL toolkit and Object Relational Mapper, to interact with the database. SQLAlchemy provides a powerful and flexible interface for working with databases, allowing Frappe Insights to support multiple database integrations.
+
+[**eCharts**](https://github.com/apache/echarts): Frappe Insights uses eCharts, a powerful open-source charting and visualization library, to render charts and graphs. eCharts provides a variety of chart types and customization options, allowing Frappe Insights to provide a rich and interactive data visualization experience.
+
+[**Pandas**](https://github.com/pandas-dev/pandas): Frappe Insights uses Pandas, a Python data analysis library, to perform data analysis tasks. Pandas provides a variety of data structures and functions for working with structured data, allowing Frappe Insights to provide powerful data analysis capabilities.
+
 
 ## Installation
 ### Docker

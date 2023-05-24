@@ -1,12 +1,13 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import frappe
 
-__version__ = "0.3.0"
+__version__ = "0.6.2"
 
 
 def notify(**kwargs):
+    import frappe
+
     frappe.publish_realtime(
         event="insights_notification",
         user=frappe.session.user,

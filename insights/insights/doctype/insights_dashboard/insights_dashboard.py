@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import random
 from json import dumps
 
 import frappe
@@ -9,14 +10,23 @@ from frappe.model.document import Document
 
 from insights import notify
 from insights.api.permissions import is_private
+from insights.api.telemetry import track
 from insights.cache_utils import get_or_set_cache, make_digest
+from insights.decorators import debounce
 
-from .utils import convert_into_simple_filter, convert_to_expression
+from .utils import (
+    convert_into_simple_filter,
+    convert_to_expression,
+    guess_layout_for_chart,
+)
 
 CACHE_NAMESPACE = "insights_dashboard"
 
 
 class InsightsDashboard(Document):
+    def on_trash(self):
+        track("delete_dashboard")
+
     @frappe.whitelist()
     def is_private(self):
         return is_private("Insights Dashboard", self.name)
@@ -24,6 +34,20 @@ class InsightsDashboard(Document):
     @property
     def cache_namespace(self):
         return f"{CACHE_NAMESPACE}|{self.name}"
+
+    def add_chart(self, chart):
+        chart_doc = frappe.get_doc("Insights Chart", chart)
+        new_layout = guess_layout_for_chart(chart_doc.chart_type, self)
+        self.append(
+            "items",
+            {
+                "item_id": frappe.utils.cint(random.random() * 1000000),
+                "item_type": chart_doc.chart_type,
+                "options": chart_doc.options,
+                "layout": new_layout,
+            },
+        )
+        self.save()
 
     @frappe.whitelist()
     def clear_charts_cache(self):
@@ -53,9 +77,13 @@ class InsightsDashboard(Document):
                 )
             )
 
-        return self.run_query(query_name, additional_filters=filter_conditions)
+        return InsightsDashboard.run_query(
+            self.cache_namespace, query_name, additional_filters=filter_conditions
+        )
 
-    def run_query(self, query_name, additional_filters=None):
+    @staticmethod
+    @debounce(2)
+    def run_query(cache_namespace, query_name, additional_filters=None):
         def get_result():
             query = frappe.get_cached_doc("Insights Query", query_name)
             if not additional_filters:
@@ -89,7 +117,7 @@ class InsightsDashboard(Document):
 
         last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
         key = make_digest(query_name, last_modified, additional_filters)
-        key = f"{self.cache_namespace}:{key}"
+        key = f"{cache_namespace}:{key}"
 
         query_result_expiry = frappe.db.get_single_value(
             "Insights Settings", "query_result_expiry"
@@ -101,28 +129,33 @@ class InsightsDashboard(Document):
 @frappe.whitelist()
 def get_queries_column(query_names):
     # TODO: handle permissions
-    tables = {}
+    table_by_datasource = {}
     for query in list(set(query_names)):
         # TODO: to further optimize, store the used tables in the query on save
         doc = frappe.get_cached_doc("Insights Query", query)
         for table in doc.get_selected_tables():
-            tables[table.table] = table
+            if doc.data_source not in table_by_datasource:
+                table_by_datasource[doc.data_source] = {}
+            table_by_datasource[doc.data_source][table.table] = table
 
     columns = []
-    for table in tables.values():
-        doc = frappe.get_cached_doc("Insights Table", {"table": table.table})
-        _columns = doc.get_columns()
-        for column in _columns:
-            columns.append(
-                {
-                    "column": column.column,
-                    "label": column.label,
-                    "table": table.table,
-                    "table_label": table.label,
-                    "type": column.type,
-                    "data_source": doc.data_source,
-                }
+    for data_source in table_by_datasource.values():
+        for table in data_source.values():
+            doc = frappe.get_cached_doc(
+                "Insights Table", {"table": table.table, "data_source": doc.data_source}
             )
+            _columns = doc.get_columns()
+            for column in _columns:
+                columns.append(
+                    {
+                        "column": column.column,
+                        "label": column.label,
+                        "table": table.table,
+                        "table_label": table.label,
+                        "type": column.type,
+                        "data_source": doc.data_source,
+                    }
+                )
 
     return columns
 
@@ -131,14 +164,6 @@ def get_queries_column(query_names):
 def get_query_columns(query):
     # TODO: handle permissions
     return frappe.get_cached_doc("Insights Query", query).fetch_columns()
-
-
-@frappe.whitelist()
-def fetch_column_values(column, search_text=None):
-    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
-    return data_source.get_column_options(
-        column.get("table"), column.get("column"), search_text
-    )
 
 
 def get_dashboard_public_key(name):

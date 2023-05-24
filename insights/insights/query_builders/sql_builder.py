@@ -1,6 +1,5 @@
 import operator
 from contextlib import suppress
-from datetime import datetime
 
 import frappe
 from frappe import _dict, parse_json
@@ -44,15 +43,27 @@ class Aggregations:
             return func.avg(column)
         if agg_lower == "count" or agg_lower == "cumulative count":
             return func.count(text("*"))
+        if agg_lower == "distinct":
+            return distinct(column)
+        if agg_lower == "distinct_count":
+            return func.count(distinct(column))
 
         raise NotImplementedError(f"Aggregation {aggregation} not implemented")
 
 
 class ColumnFormatter:
     @classmethod
-    def format(cls, format_option: dict, column_type: str, column: Column) -> Column:
-        if format_option and column_type in ("Date", "Datetime"):
-            return cls.format_date(format_option.date_format, column)
+    def format(cls, format_options: dict, column_type: str, column: Column) -> Column:
+        if (
+            format_options
+            and format_options.date_format
+            and column_type in ("Date", "Datetime")
+        ):
+            date_format = format_options.date_format
+            date_format = (
+                date_format if type(date_format) == str else date_format.get("value")
+            )
+            return cls.format_date(date_format, column)
         return column
 
     @classmethod
@@ -62,7 +73,11 @@ class ColumnFormatter:
         if format == "Hour":
             return func.date_format(column, "%Y-%m-%d %H:00")
         if format == "Day" or format == "Day Short":
-            return func.date_format(column, "%Y-%m-%d")
+            return func.date_format(column, "%Y-%m-%d 00:00")
+        if format == "Week":
+            # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
+            date = func.date_format(column, "%Y-%m-%d")
+            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({column}) - 1) DAY"))
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":
@@ -82,6 +97,8 @@ class ColumnFormatter:
         if format == "Quarter of Year":
             return func.quarter(column)
         if format == "Quarter":
+            # 2022-02-12 -> 2022-01-01
+            # STR_TO_DATE(CONCAT(YEAR(CURRENT_DATE), '-', (QUARTER(CURRENT_DATE) * 3) - 2, '-01'), '%Y-%m-%d')
             return func.str_to_date(
                 func.concat(
                     func.year(column),  # 2018
@@ -103,14 +120,12 @@ def get_descendants(node, tree, include_self=False):
             select([Tree.c.name])
             .where(Tree.c.lft > lft_rgt.c.lft)
             .where(Tree.c.rgt < lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
         if not include_self
         else (
             select([Tree.c.name])
             .where(Tree.c.lft >= lft_rgt.c.lft)
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
-            .order_by(Tree.c.lft.asc())
         )
     )
 
@@ -271,6 +286,18 @@ class Functions:
             query = get_descendants(node, tree, include_self=True)
             return field.in_(query)
 
+        if function == "date_format":
+            return ColumnFormatter.format_date(args[1], args[0])
+
+        if function == "start_of":
+            valid_units = ["day", "week", "month", "quarter", "year"]
+            unit = args[0].lower()
+            if unit not in valid_units:
+                raise Exception(
+                    f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}"
+                )
+            return ColumnFormatter.format_date(args[0].title(), args[1])
+
         raise NotImplementedError(f"Function {function} not implemented")
 
 
@@ -414,6 +441,14 @@ class BinaryOperations:
 
         raise NotImplementedError(f"Operation {operator} not implemented")
 
+    @classmethod
+    def is_binary_operator(cls, operator):
+        return (
+            operator in cls.ARITHMETIC_OPERATIONS
+            or operator in cls.COMPARE_OPERATIONS
+            or operator in cls.LOGICAL_OPERATIONS
+        )
+
 
 class ExpressionProcessor:
     def __init__(self, builder: "SQLQueryBuilder"):
@@ -495,6 +530,8 @@ class SQLQueryBuilder:
 
         if query.is_native_query:
             return query.sql.strip().rstrip(";") if query.sql else ""
+        elif query.is_assisted_query:
+            return self.build_assisted_query()
         else:
             self.process_tables_and_joins()
             self.process_columns()
@@ -585,8 +622,8 @@ class SQLQueryBuilder:
 
         sql = None
         if not self._columns:
-            # if no columns, then select * from table
-            sql = select(text("*"))
+            # hack: to avoid duplicate columns error if tables have same column names
+            sql = select(text("t0.*"))
         else:
             sql = select(*self._columns)
 
@@ -633,3 +670,114 @@ class SQLQueryBuilder:
             compile_args["dialect"] = self.dialect
         compiled = query.compile(**compile_args)
         return compiled
+
+    def build_assisted_query(self):
+        self._joins = []
+        self._filters = None
+        self._columns = []
+        self._measures = []
+        self._dimensions = []
+        self._order_by_columns = []
+        self._limit = 100
+
+        assisted_query = self.query.variant_controller.query_json
+        if not assisted_query or not assisted_query.table:
+            return ""
+        main_table = assisted_query.table.table
+        main_table = self.make_table(main_table)
+
+        for join in assisted_query.joins:
+            if not join.left_table or not join.right_table:
+                continue
+            self._joins.append(
+                {
+                    "left": self.make_table(join.left_table.table),
+                    "right": self.make_table(join.right_table.table),
+                    "type": join.join_type.value,
+                    "left_key": self.make_column(
+                        join.left_column.column, join.left_table.table
+                    ),
+                    "right_key": self.make_column(
+                        join.right_column.column, join.right_table.table
+                    ),
+                }
+            )
+
+        def make_sql_column(column):
+            _column = self.make_column(column.column, column.table)
+            if column.is_expression():
+                _column = self.expression_processor.process(column.expression.ast)
+
+            if column.is_aggregate():
+                _column = self.aggregations.apply(column.aggregation, _column)
+
+            if column.has_granularity():
+                _column = self.column_formatter.format_date(column.granularity, _column)
+            return _column.label(column.alias)
+
+        if assisted_query.filters:
+            filters = []
+            for fltr in assisted_query.filters:
+                _column = make_sql_column(fltr.column)
+                filter_value = fltr.value.value
+                operator = fltr.operator.value
+
+                if BinaryOperations.is_binary_operator(operator):
+                    operation = BinaryOperations.get_operation(operator)
+                    _filter = operation(_column, filter_value)
+                elif "set" in operator:  # is set, is not set
+                    _filter = Functions.apply(operator, _column)
+                else:
+                    args = [filter_value]
+                    if operator == "between":
+                        args = filter_value.split(",")
+                    elif operator == "in" or operator == "not_in":
+                        args = [val["value"] for val in filter_value]
+                    _filter = Functions.apply(operator, _column, *args)
+
+                filters.append(_filter)
+            self._filters = and_(*filters)
+
+        for column in assisted_query.columns:
+            self._columns.append(make_sql_column(column))
+
+        # don't select calculated columns
+        # since they are used as variables in measures, dimensions, filters, etc
+
+        for measure in assisted_query.measures:
+            self._measures.append(make_sql_column(measure))
+
+        for dimension in assisted_query.dimensions:
+            self._dimensions.append(make_sql_column(dimension))
+
+        for order in assisted_query.orders:
+            _column = make_sql_column(order)
+            self._order_by_columns.append(
+                _column.asc() if order.order == "asc" else _column.desc()
+            )
+
+        self._limit = assisted_query.limit or 100
+
+        columns = self._columns + self._dimensions + self._measures
+        if not columns:
+            columns = [text("*")]
+
+        query = select(*columns).select_from(main_table)
+        for join in self._joins:
+            query = query.join_from(
+                join["left"],
+                join["right"],
+                join["left_key"] == join["right_key"],
+                isouter=join["type"] != "inner",
+                full=join["type"] == "full",
+            )
+
+        if self._filters is not None:
+            query = query.where(self._filters)
+        if self._dimensions:
+            query = query.group_by(*self._dimensions)
+        if self._order_by_columns:
+            query = query.order_by(*self._order_by_columns)
+        query = query.limit(self._limit)
+
+        return self.compile(query)

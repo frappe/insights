@@ -3,7 +3,7 @@
 
 import frappe
 
-from insights.api import sync_data_source
+from insights.api.telemetry import track
 from insights.setup.demo import setup
 
 
@@ -14,32 +14,42 @@ def setup_complete():
 
 def get_new_datasource(db):
     data_source = frappe.new_doc("Insights Data Source")
-    data_source.update(
-        {
-            "database_type": db.get("type"),
-            "database_name": db.get("name"),
-            "title": db.get("title"),
-            "host": db.get("host"),
-            "port": db.get("port"),
-            "username": db.get("username"),
-            "password": db.get("password"),
-            "use_ssl": db.get("useSSL"),
-        }
-    )
+    if db.get("type") == "MariaDB":
+        data_source.update(
+            {
+                "database_type": db.get("type"),
+                "database_name": db.get("name"),
+                "title": db.get("title"),
+                "host": db.get("host"),
+                "port": db.get("port"),
+                "username": db.get("username"),
+                "password": db.get("password"),
+                "use_ssl": db.get("useSSL"),
+            }
+        )
+    if db.get("type") == "SQLite":
+        data_source.update(
+            {
+                "database_type": db.get("type"),
+                "title": db.get("title") or db.get("name"),
+                "database_name": db.get("name") or frappe.scrub(db.get("title")),
+            }
+        )
     return data_source
 
 
 @frappe.whitelist()
-def test_database_connection(db):
-    data_source = get_new_datasource(db)
+def test_database_connection(database):
+    data_source = get_new_datasource(database)
     return data_source.test_connection(raise_exception=True)
 
 
 @frappe.whitelist()
-def add_database(db):
-    data_source = get_new_datasource(db)
+def add_database(database):
+    track("add_data_source")
+    data_source = get_new_datasource(database)
     data_source.save()
-    sync_data_source(data_source.name)
+    data_source.enqueue_sync_tables()
     update_setup_status()
 
 

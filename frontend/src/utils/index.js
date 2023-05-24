@@ -1,9 +1,31 @@
-import { watch } from 'vue'
+import { createToast } from '@/utils/toasts'
+import { watchDebounced } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
 	TEXT: ['Text', 'String'],
 	DATE: ['Date', 'Datetime', 'Time'],
+}
+
+export function isDimensionColumn(column) {
+	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)
+}
+
+export function moveCaretToEnd(el) {
+	if (typeof window.getSelection != 'undefined' && typeof document.createRange != 'undefined') {
+		var range = document.createRange()
+		range.selectNodeContents(el)
+		range.collapse(false)
+		var sel = window.getSelection()
+		sel.removeAllRanges()
+		sel.addRange(range)
+	} else if (typeof document.body.createTextRange != 'undefined') {
+		var textRange = document.body.createTextRange()
+		textRange.moveToElementText(el)
+		textRange.collapse(false)
+		textRange.select()
+	}
 }
 
 export function isEmptyObj(...args) {
@@ -102,7 +124,7 @@ export function ellipsis(value, length) {
 	return value
 }
 
-function getShortNumber(number, precision = 0) {
+export function getShortNumber(number, precision = 0) {
 	const locale = 'en-IN' // TODO: get locale from user settings
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
@@ -113,6 +135,13 @@ function getShortNumber(number, precision = 0) {
 		formatted = formatted.replace('T', 'K')
 	}
 	return formatted
+}
+
+export function formatNumber(number, precision = 0) {
+	const locale = 'en-IN' // TODO: get locale from user settings
+	return new Intl.NumberFormat(locale, {
+		maximumFractionDigits: precision,
+	}).format(number)
 }
 
 export async function getDataURL(type, data) {
@@ -146,16 +175,61 @@ export function getQueryLink(table) {
 export function copyToClipboard(text) {
 	if (navigator.clipboard) {
 		navigator.clipboard.writeText(text)
-		$notify({
+		createToast({
 			appearance: 'success',
 			title: 'Copied to clipboard',
 		})
 	} else {
-		$notify({
-			appearance: 'error',
-			title: 'Copy to clipboard not supported',
-		})
+		// try to use execCommand
+		const textArea = document.createElement('textarea')
+		textArea.value = text
+		textArea.style.position = 'fixed'
+		document.body.appendChild(textArea)
+		textArea.focus()
+		textArea.select()
+		try {
+			document.execCommand('copy')
+			createToast({
+				appearance: 'success',
+				title: 'Copied to clipboard',
+			})
+		} catch (err) {
+			createToast({
+				appearance: 'error',
+				title: 'Copy to clipboard not supported',
+			})
+		} finally {
+			document.body.removeChild(textArea)
+		}
 	}
+}
+
+export function setOrGet(obj, key, generator, generatorArgs) {
+	if (!obj.hasOwnProperty(key)) {
+		obj[key] = generator(...generatorArgs)
+	}
+	return obj[key]
+}
+
+export function useAutoSave(watchedFields, options = {}) {
+	if (!options.saveFn) throw new Error('saveFn is required')
+
+	const fields = computed(() => {
+		if (!watchedFields.value) return
+		return JSON.parse(JSON.stringify(watchedFields.value))
+	})
+
+	function saveIfChanged(newFields, oldFields) {
+		if (!oldFields || !newFields) return
+		if (JSON.stringify(newFields) == JSON.stringify(oldFields)) return
+		options.saveFn()
+	}
+
+	const interval = options.interval || 1000
+	watchDebounced(fields, saveIfChanged, {
+		deep: true,
+		debounce: interval,
+	})
 }
 
 export default {
@@ -165,6 +239,7 @@ export default {
 	isEqual,
 	updateDocumentTitle,
 	fuzzySearch,
+	formatNumber,
 	getShortNumber,
 	copyToClipboard,
 }

@@ -47,7 +47,7 @@ def create_insights_table(table, force=False):
         {
             "data_source": table.data_source,
             "table": table.table,
-            "is_query_based": table.is_query_based,
+            "is_query_based": table.is_query_based or 0,
         },
     )
 
@@ -60,7 +60,7 @@ def create_insights_table(table, force=False):
                 "data_source": table.data_source,
                 "table": table.table,
                 "label": table.label,
-                "is_query_based": table.is_query_based,
+                "is_query_based": table.is_query_based or 0,
             }
         )
 
@@ -75,7 +75,7 @@ def create_insights_table(table, force=False):
 
     for column in table.columns or []:
         # do not overwrite existing columns, since type or label might have been changed
-        if any([doc_column.column == column.column for doc_column in doc.columns]):
+        if any(doc_column.column == column.column for doc_column in doc.columns):
             continue
         doc.append("columns", column)
 
@@ -84,9 +84,13 @@ def create_insights_table(table, force=False):
         if column.column not in column_names:
             doc.remove(column)
 
-    # need to ignore permissions when creating/updating a table in query store
-    # a user may have access to create a query and store it, but not to create a table
-    doc.save(ignore_permissions=force)
+    version = frappe.new_doc("Version")
+    # if there's some update to store only then save the doc
+    doc_changed = version.update_version_info(doc.get_doc_before_save(), doc)
+    if not exists or force or doc_changed:
+        # need to ignore permissions when creating/updating a table in query store
+        # a user may have access to create a query and store it, but not to create a table
+        doc.save(ignore_permissions=True)
     return doc.name
 
 

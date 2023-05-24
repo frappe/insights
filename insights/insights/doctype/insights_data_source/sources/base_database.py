@@ -18,6 +18,10 @@ from .utils import (
 )
 
 
+class DatabaseConnectionError(frappe.ValidationError):
+    pass
+
+
 class BaseDatabase:
     def __init__(self):
         self.engine = None
@@ -32,13 +36,17 @@ class BaseDatabase:
     def connect(self):
         try:
             return self.engine.connect()
-        except Exception as e:
+        except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
-            frappe.throw("Error connecting to database")
+            raise DatabaseConnectionError(e)
 
-    def build_query(self, query):
+    def build_query(self, query, with_cte=False):
         """Build insights query and return the sql"""
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        if with_cte and frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        ):
+            query_str = replace_query_tables_with_cte(query_str, self.data_source)
         return query_str if query_str else None
 
     def run_query(self, query):
@@ -88,7 +96,9 @@ class BaseDatabase:
             with Timer() as t:
                 res = connection.execute(sql)
             create_execution_log(sql, self.data_source, t.elapsed)
-            columns = [ResultColumn.make(d[0], d[1]) for d in res.cursor.description]
+            columns = [
+                ResultColumn.from_args(d[0], d[1]) for d in res.cursor.description
+            ]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
             return [columns] + rows if return_columns else rows

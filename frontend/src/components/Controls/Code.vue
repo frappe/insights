@@ -1,12 +1,15 @@
 <template>
 	<codemirror
+		class="focusable"
 		:tab-size="2"
 		v-model="code"
-		:autofocus="true"
+		:autofocus="autofocus"
 		:indent-with-tab="true"
 		:extensions="extensions"
-		placeholder="Enter an expression..."
+		:placeholder="placeholder"
 		@update="onUpdate"
+		@focus="emit('focus')"
+		@blur="emit('blur')"
 	/>
 </template>
 
@@ -21,8 +24,15 @@ import { computed, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 
 const props = defineProps({
-	modelValue: {
-		required: true,
+	modelValue: String,
+	value: String,
+	autofocus: {
+		type: Boolean,
+		default: true,
+	},
+	placeholder: {
+		type: String,
+		default: 'Enter an expression...',
 	},
 	completions: {
 		type: Function,
@@ -41,7 +51,7 @@ const props = defineProps({
 		default: () => ({}),
 	},
 })
-const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate'])
+const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate', 'focus', 'blur'])
 
 const onUpdate = (viewUpdate) => {
 	emit('viewUpdate', {
@@ -50,7 +60,7 @@ const onUpdate = (viewUpdate) => {
 }
 
 const code = computed({
-	get: () => props.modelValue || '',
+	get: () => (props.modelValue ? props.modelValue || '' : props.value || ''),
 	set: (value) => emit('update:modelValue', value),
 })
 watch(code, (value, oldValue) => {

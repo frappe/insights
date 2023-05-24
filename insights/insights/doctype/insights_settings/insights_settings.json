@@ -12,7 +12,6 @@
   "enable_permissions",
   "allow_subquery",
   "auto_execute_query",
-  "auto_refresh_dashboard_in_minutes",
   "query_result_expiry",
   "query_result_limit",
   "is_subscribed",
@@ -38,12 +37,6 @@
    "fieldname": "onboarding_complete",
    "fieldtype": "Check",
    "label": "Onboarding Complete"
-  },
-  {
-   "default": "30",
-   "fieldname": "auto_refresh_dashboard_in_minutes",
-   "fieldtype": "Int",
-   "label": "Auto Refresh Dashboard In (Minutes)"
   },
   {
    "default": "0",
@@ -113,7 +106,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-04-05 12:14:48.233859",
+ "modified": "2023-05-19 19:43:32.059934",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

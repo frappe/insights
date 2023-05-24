@@ -1,12 +1,17 @@
-import { safeJSONParse } from '@/utils'
-import { API_METHODS } from '@/utils/query'
-import { call, createDocumentResource, createResource } from 'frappe-ui'
+import dayjs from '@/utils/dayjs'
+import { call, createResource } from 'frappe-ui'
 import { defineStore } from 'pinia'
 
 const queries = createResource({
 	url: 'insights.api.get_queries',
 	initialData: [],
 	cache: 'queriesList',
+	transform(data) {
+		return data.map((qry) => {
+			qry.created_from_now = dayjs(qry.creation).fromNow()
+			return qry
+		})
+	},
 })
 
 export default defineStore('queries', {
@@ -22,11 +27,18 @@ export default defineStore('queries', {
 			this.list = await queries.fetch()
 			this.loading = false
 		},
-		async create(data_source) {
+		async create(query) {
 			this.creating = true
-			const queryName = await call('insights.api.create_query', { data_source })
+			const queryDoc = await call('insights.api.create_query', query)
 			this.creating = false
-			return queryName
+			return queryDoc
+		},
+		async get(name) {
+			if (!name) return
+			const existingQuery = this.list.find((q) => q.name === name)
+			if (existingQuery) return existingQuery
+			await this.reload()
+			return this.list.find((q) => q.name === name)
 		},
 		filterByText(text) {
 			if (!text) return this.list
@@ -40,28 +52,3 @@ export default defineStore('queries', {
 		},
 	},
 })
-
-export function useQuery(name) {
-	if (!name) return
-	const query = createDocumentResource({
-		doctype: 'Insights Query',
-		name: name,
-		whitelistedMethods: API_METHODS,
-		transform(doc) {
-			doc.columns = doc.columns.map((c) => {
-				c.format_option = safeJSONParse(c.format_option, {})
-				return c
-			})
-			doc.results = safeJSONParse(doc.results, [])
-			query.resultColumns = doc.results[0]?.map((c) => {
-				return {
-					column: c.label,
-					type: c.type,
-				}
-			})
-			return doc
-		},
-	})
-	query.get.fetch()
-	return query
-}

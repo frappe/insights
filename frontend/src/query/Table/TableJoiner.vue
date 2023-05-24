@@ -22,7 +22,7 @@
 				</div>
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Right Table</div>
-					<LinkIcon :link="getQueryLink(join.with.value)" :show="join.with.label">
+					<LinkIcon :link="getQueryLink(join.with?.value)" :show="join.with?.label">
 						<Autocomplete
 							v-model="join.with"
 							:options="query.tables.joinOptions"
@@ -35,6 +35,7 @@
 						<div class="flex-1">
 							<div class="mb-1 font-light">Left Column</div>
 							<Autocomplete
+								:key="join.condition.left"
 								v-model="join.condition.left"
 								:options="leftColumnOptions"
 								placeholder="Select a Column"
@@ -44,6 +45,7 @@
 						<div class="flex-1">
 							<div class="mb-1 font-light">Right Column</div>
 							<Autocomplete
+								:key="join.condition.right"
 								v-model="join.condition.right"
 								:options="rightColumnOptions"
 								placeholder="Select a Column"

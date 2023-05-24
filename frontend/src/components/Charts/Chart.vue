@@ -36,7 +36,7 @@ onMounted(() =>
 		chartRef.value && resizeObserver.observe(chartRef.value)
 	}, 1000)
 )
-onBeforeUnmount(() => resizeObserver.unobserve(chartRef.value))
+onBeforeUnmount(() => chartRef.value && resizeObserver.unobserve(chartRef.value))
 
 function convertAttributesToOptions(attributes) {
 	return Object.keys(attributes).reduce((acc, key) => {
@@ -77,9 +77,14 @@ function downloadChart() {
 </script>
 
 <template>
-	<div class="h-full w-full rounded-md px-2 py-3">
-		<div class="h-full w-full">
-			<div v-bind="$attrs" :class="['mx-3', $attrs.chartSubtitle ? 'h-11' : 'h-6']">
+	<div class="h-full w-full rounded-md p-2">
+		<div class="flex h-full w-full flex-col">
+			<div
+				v-if="$attrs.chartTitle"
+				v-bind="$attrs"
+				class="flex-shrink-0"
+				:class="['mx-3', $attrs.chartSubtitle ? 'h-11' : 'h-6']"
+			>
 				<div class="text-lg font-normal leading-6 text-gray-800">
 					{{ $attrs.chartTitle }}
 				</div>
@@ -87,13 +92,7 @@ function downloadChart() {
 					{{ $attrs.chartSubtitle }}
 				</div>
 			</div>
-			<div
-				ref="chartRef"
-				:class="[
-					'w-full',
-					$attrs.chartSubtitle ? 'h-[calc(100%-2.75rem)]' : 'h-[calc(100%-1.5rem)]',
-				]"
-			>
+			<div ref="chartRef" class="w-full flex-1 overflow-hidden">
 				<slot></slot>
 			</div>
 		</div>

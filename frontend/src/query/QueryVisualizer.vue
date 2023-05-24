@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 overflow-scroll p-2 pt-3">
+	<div v-if="chart.doc" class="flex flex-1 overflow-scroll p-2 pt-3">
 		<div class="flex w-full flex-shrink-0 flex-col lg:h-full lg:w-[18rem] lg:pr-4">
 			<div class="space-y-4">
 				<!-- Widget Options -->
@@ -16,6 +16,7 @@
 					:is="widgets.getOptionComponent(chart.doc.chart_type)"
 					:key="chart.doc.chart_type"
 					v-model="chart.doc.options"
+					:columns="query.resultColumns"
 				/>
 			</div>
 		</div>
@@ -24,7 +25,9 @@
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
-				<Button appearance="white" class="shadow-sm" @click="chart.save()"> Save </Button>
+				<Button appearance="white" class="shadow-sm" @click="showDashboardDialog = true">
+					Add to Dashboard
+				</Button>
 				<Button appearance="white" class="shadow-sm" @click="showShareDialog = true">
 					Share
 				</Button>
@@ -48,25 +51,47 @@
 				</template>
 			</component>
 		</div>
-	</div>
 
-	<PublicShareDialog
-		v-if="chart.doc.doctype && chart.doc.name"
-		v-model:show="showShareDialog"
-		:resource-type="chart.doc.doctype"
-		:resource-name="chart.doc.name"
-		:allow-public-access="true"
-		:isPublic="Boolean(chart.doc.is_public)"
-		@togglePublicAccess="chart.togglePublicAccess"
-	/>
+		<PublicShareDialog
+			v-if="chart.doc.doctype && chart.doc.name"
+			v-model:show="showShareDialog"
+			:resource-type="chart.doc.doctype"
+			:resource-name="chart.doc.name"
+			:allow-public-access="true"
+			:isPublic="Boolean(chart.doc.is_public)"
+			@togglePublicAccess="chart.togglePublicAccess"
+		/>
+
+		<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">
+			<template #body-content>
+				<div class="text-base">
+					<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard</span>
+					<Autocomplete
+						ref="dashboardInput"
+						:options="dashboardOptions"
+						v-model="toDashboard"
+					/>
+				</div>
+			</template>
+			<template #actions>
+				<Button
+					appearance="primary"
+					@click="addChartToDashboard"
+					:loading="addingToDashboard"
+				>
+					Add
+				</Button>
+			</template>
+		</Dialog>
+	</div>
 </template>
 
 <script setup>
 import PublicShareDialog from '@/components/PublicShareDialog.vue'
+import useDashboards from '@/dashboard/useDashboards'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
-import { call } from 'frappe-ui'
-import { inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import useChart from './useChart'
 
 const query = inject('query')
@@ -78,9 +103,48 @@ const chartOptions = [
 	},
 ].concat(widgets.getChartOptions())
 
-let chart = ref(null)
-
-call('insights.api.get_chart_name', { query: query.name }).then((res) => {
-	chart.value = useChart(res)
+let chart = ref({})
+query.get_chart_name.submit().then((res) => {
+	chart.value = useChart(res.message)
+	chart.value.enableAutoSave()
 })
+
+const showDashboardDialog = ref(false)
+const dashboards = useDashboards()
+dashboards.reload()
+const toDashboard = ref(null)
+const addingToDashboard = ref(false)
+const dashboardOptions = computed(() => {
+	// sort alphabetically
+	return dashboards.list
+		.sort((a, b) => {
+			return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
+		})
+		.map((d) => ({ label: d.title, value: d.name }))
+})
+const $notify = inject('$notify')
+const addChartToDashboard = async () => {
+	if (!toDashboard.value) return
+	await chart.value.addToDashboard(toDashboard.value.value)
+	showDashboardDialog.value = false
+	$notify({
+		appearance: 'success',
+		title: 'Success',
+		message: 'Chart added to dashboard',
+	})
+}
+
+const dashboardInput = ref(null)
+watch(
+	() => showDashboardDialog.value,
+	(val) => {
+		if (val) {
+			setTimeout(() => {
+				dashboardInput.value.input?.$el?.blur()
+				dashboardInput.value.input?.$el?.focus()
+			}, 500)
+		}
+	},
+	{ immediate: true }
+)
 </script>

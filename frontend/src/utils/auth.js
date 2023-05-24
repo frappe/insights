@@ -1,5 +1,6 @@
 import { call, createResource } from 'frappe-ui'
 import { reactive, watch } from 'vue'
+import subscription from '@/subscription'
 
 const auth = reactive({
 	isLoggedIn: false,
@@ -40,9 +41,9 @@ watch(
 	(newVal, oldVal) => {
 		if (newVal && !oldVal) {
 			userInfo.fetch()
+			subscription.fetchTrialStatus()
 		}
-	},
-	{ immediate: true }
+	}
 )
 
 async function login(email, password) {
