@@ -60,7 +60,7 @@ const query = inject('query')
 const chat = ref([])
 const newPrompt = ref('')
 
-const generate_sql = createResource({ url: 'insights.api.chat_bot_ai.generate_sql' })
+const generate_sql = createResource({ url: 'insights.api.copilot.generate_sql' })
 function reply() {
 	if (!newPrompt.value) return
 	if (generate_sql.loading) return

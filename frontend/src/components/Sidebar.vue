@@ -118,6 +118,7 @@ import {
 	Users,
 	Star,
 	Book,
+	Bot,
 } from 'lucide-vue-next'
 
 const sidebarItems = ref([
@@ -146,6 +147,13 @@ const sidebarItems = ref([
 		label: 'Notebook',
 		icon: Book,
 		name: 'Notebook',
+		current: false,
+	},
+	{
+		path: '/copilot',
+		label: 'Insights Copilot',
+		icon: Bot,
+		name: 'Copilot',
 		current: false,
 	},
 	{

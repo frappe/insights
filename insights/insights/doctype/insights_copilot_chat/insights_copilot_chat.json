@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-05-24 22:12:56.611730",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "column_break_nnod",
+  "copilot_bot",
+  "section_break_rgut",
+  "history"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "default": "[]",
+   "fieldname": "history",
+   "fieldtype": "JSON",
+   "label": "History"
+  },
+  {
+   "fieldname": "column_break_nnod",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rgut",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "copilot_bot",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Copilot Bot",
+   "options": "Insights Copilot Bot",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-05-24 23:36:37.485842",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Copilot Chat",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

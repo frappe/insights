@@ -120,6 +120,12 @@ const routes = [
 		component: () => import('@/notebook/NotebookPage.vue'),
 	},
 	{
+		props: true,
+		path: '/copilot/:chat_id?',
+		name: 'Copilot',
+		component: () => import('@/copilot/Copilot.vue'),
+	},
+	{
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
