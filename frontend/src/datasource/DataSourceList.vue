@@ -1,7 +1,7 @@
 <template>
 	<div class="h-full w-full bg-white px-6 py-4">
-		<Breadcrumbs :items="[{ label: 'Data Sources', href: '/datasource' }]"></Breadcrumbs>
-		<List
+		<Breadcrumbs :items="[{ label: 'Data Sources', href: '/data-source' }]"></Breadcrumbs>
+		<ListView
 			title="Data Sources"
 			:actions="[
 				{
@@ -15,27 +15,29 @@
 			:data="sources.list"
 			:rowClick="({ name }) => router.push({ name: 'DataSource', params: { name } })"
 		>
-		</List>
+		</ListView>
 	</div>
 
-	<Dialog :options="{ title: 'New Data Source' }" v-model="new_dialog">
-		<template #body-content>
-			<AddDatabase @success="onNewDatasource" />
-		</template>
-	</Dialog>
+	<NewDialogWithTypes
+		v-model:show="new_dialog"
+		title="Select Database Type"
+		:types="databaseTypes"
+	/>
+
+	<ConnectMariaDBDialog v-model:show="showConnectMariaDBDialog" />
 </template>
 
 <script setup lang="jsx">
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import List from '@/components/List.vue'
-import AddDatabase from '@/components/SetupWizard/AddDatabase.vue'
+import ListView from '@/components/ListView.vue'
 import useDataSources from '@/datasource/useDataSources'
 import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import NewDialogWithTypes from '@/query/NewDialogWithTypes.vue'
+import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
 
 const new_dialog = ref(false)
-const router = useRouter()
 const sources = useDataSources()
 sources.reload()
 
@@ -49,13 +51,27 @@ const columns = [
 	{ label: 'Created', key: 'created_from_now' },
 ]
 
-const onNewDatasource = () => {
-	new_dialog.value = false
-	sources.reload()
-}
+const router = useRouter()
+const showConnectMariaDBDialog = ref(false)
+const databaseTypes = ref([
+	{
+		label: 'MariaDB',
+		description: 'Connect to a MariaDB database',
+		icon: 'database',
+		handler: () => {
+			new_dialog.value = false
+			showConnectMariaDBDialog.value = true
+		},
+	},
+	// {
+	// 	label: 'File',
+	// 	description: 'Upload a CSV, JSON, or SQLite Database',
+	// 	icon: 'database',
+	// 	tag: 'beta',
+	// 	handler: () => router.push({ name: 'DataSourceNew', params: { type: 'file' } }),
+	// },
+])
 
-const pageMeta = ref({
-	title: 'Data Sources',
-})
+const pageMeta = ref({ title: 'Data Sources' })
 updateDocumentTitle(pageMeta)
 </script>

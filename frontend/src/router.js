@@ -1,7 +1,7 @@
+import { getTrialStatus } from '@/subscription'
 import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
-import { getTrialStatus } from '@/subscription'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -61,19 +61,19 @@ const routes = [
 	{
 		path: '/data-source',
 		name: 'DataSourceList',
-		component: () => import('@/pages/DataSourceList.vue'),
+		component: () => import('@/datasource/DataSourceList.vue'),
 	},
 	{
 		props: true,
 		name: 'DataSource',
 		path: '/data-source/:name',
-		component: () => import('@/pages/DataSource.vue'),
+		component: () => import('@/datasource/DataSource.vue'),
 	},
 	{
 		props: true,
 		name: 'DataSourceTable',
 		path: '/data-source/:name/:table',
-		component: () => import('@/pages/DataSourceTable.vue'),
+		component: () => import('@/datasource/DataSourceTable.vue'),
 	},
 	{
 		path: '/query',

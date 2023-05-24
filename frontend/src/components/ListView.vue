@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { ellipsis } from '@/utils'
+import PageTitle from './PageTitle.vue'
 
 const emit = defineEmits(['row-select'])
 const props = defineProps({
@@ -51,27 +52,13 @@ function toggleSelected(row) {
 <template>
 	<div class="flex h-full w-full flex-col overflow-hidden">
 		<!-- Title -->
-		<div class="flex h-12 flex-shrink-0 items-center justify-between">
-			<slot name="title">
-				<div class="text-3xl font-medium text-gray-900">{{ title }}</div>
-			</slot>
-			<div class="flex space-x-4">
-				<Button
-					v-for="action in actions"
-					:key="action.label"
-					class="shadow-sm"
-					:appearance="action.appearance"
-					:iconLeft="action.iconLeft"
-					@click="action.handler"
-				>
-					{{ action.label }}
-				</Button>
-			</div>
-		</div>
+		<PageTitle :title="title" :actions="actions">
+			<slot name="title-items"></slot>
+		</PageTitle>
 
-		<!-- Filter Bar -->
 		<div class="flex flex-1 flex-col overflow-hidden">
-			<div class="my-4 flex justify-between">
+			<!-- Filter Bar -->
+			<div class="my-2 flex justify-between">
 				<div class="flex space-x-4">
 					<div class="flex items-center rounded-md bg-gray-100 px-3">
 						<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />

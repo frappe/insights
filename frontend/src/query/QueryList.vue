@@ -1,12 +1,13 @@
 <script setup lang="jsx">
-import List from '@/components/List.vue'
+import ListView from '@/components/ListView.vue'
 import useDataSources from '@/datasource/useDataSources'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
+import { Badge } from 'frappe-ui'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import NewDialogWithTypes from './NewDialogWithTypes.vue'
 import useQueries from './useQueries'
-import { Badge } from 'frappe-ui'
 
 const queries = useQueries()
 queries.reload()
@@ -102,7 +103,7 @@ const queryBuilderTypes = ref([
 
 <template>
 	<div class="h-full w-full bg-white px-6 py-4">
-		<List
+		<ListView
 			title="Queries"
 			:actions="[
 				{
@@ -116,48 +117,12 @@ const queryBuilderTypes = ref([
 			:data="queries.list"
 			:rowClick="({ name }) => router.push({ name: 'QueryBuilder', params: { name } })"
 		>
-		</List>
+		</ListView>
 	</div>
 
-	<Dialog v-model="new_dialog">
-		<template #body>
-			<div class="bg-white px-4 py-5 text-base sm:p-6">
-				<h3 class="text-lg font-medium leading-6 text-gray-900">Select Interface Type</h3>
-				<!-- There are three types of query builder -->
-				<div class="mt-4 grid grid-cols-1 gap-6">
-					<div
-						v-for="(type, index) in queryBuilderTypes"
-						:key="index"
-						class="group flex cursor-pointer items-center space-x-4"
-						@click="type.handler()"
-					>
-						<div
-							class="rounded-md border p-4 text-gray-400 shadow-sm transition-all group-hover:scale-105"
-						>
-							<FeatherIcon :name="type.icon" class="h-6 w-6 text-gray-400" />
-						</div>
-						<div>
-							<div class="flex items-center space-x-2">
-								<p
-									class="text-lg font-medium leading-6 text-gray-900 transition-colors group-hover:text-blue-500"
-								>
-									{{ type.label }}
-								</p>
-								<Badge
-									v-if="type.tag"
-									color="green"
-									class="!rounded-full !px-2 !py-0.5"
-								>
-									{{ type.tag }}
-								</Badge>
-							</div>
-							<p class="text-sm leading-5 text-gray-500">
-								{{ type.description }}
-							</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</template>
-	</Dialog>
+	<NewDialogWithTypes
+		v-model:show="new_dialog"
+		title="Select Interface Type"
+		:types="queryBuilderTypes"
+	/>
 </template>

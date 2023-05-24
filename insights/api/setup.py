@@ -30,15 +30,15 @@ def get_new_datasource(db):
 
 
 @frappe.whitelist()
-def test_database_connection(db):
-    data_source = get_new_datasource(db)
+def test_database_connection(database):
+    data_source = get_new_datasource(database)
     return data_source.test_connection(raise_exception=True)
 
 
 @frappe.whitelist()
-def add_database(db):
+def add_database(database):
     track("add_data_source")
-    data_source = get_new_datasource(db)
+    data_source = get_new_datasource(database)
     data_source.save()
     data_source.enqueue_sync_tables()
     update_setup_status()

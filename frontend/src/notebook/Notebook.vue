@@ -1,6 +1,6 @@
 <script setup lang="jsx">
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import List from '@/components/List.vue'
+import ListView from '@/components/ListView.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
@@ -52,7 +52,7 @@ updateDocumentTitle(pageMeta)
 		<Breadcrumbs
 			:items="[{ label: 'Notebooks', href: '/notebook' }, { label: notebook.doc.title }]"
 		></Breadcrumbs>
-		<List
+		<ListView
 			title="Pages"
 			:actions="[
 				{
@@ -91,7 +91,7 @@ updateDocumentTitle(pageMeta)
 					/>
 				</div>
 			</template>
-		</List>
+		</ListView>
 
 		<Dialog
 			:options="{

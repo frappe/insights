@@ -6,8 +6,9 @@
 				{ label: dataSource.doc.title },
 			]"
 		></Breadcrumbs>
-		<List
+		<ListView
 			v-if="dataSource.doc && dataSource.tables.length"
+			:title="dataSource.doc.title"
 			:columns="columns"
 			:data="dataSource.tables"
 			:rowClick="
@@ -18,16 +19,13 @@
 					})
 			"
 		>
-			<template #title>
-				<div class="flex items-center space-x-4">
-					<div class="text-3xl font-medium text-gray-900">{{ dataSource.doc.title }}</div>
-					<Badge color="green" class="h-fit">Active</Badge>
-					<Dropdown
-						placement="left"
-						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
-						:options="dropdownActions"
-					/>
-				</div>
+			<template #title-items>
+				<Badge color="green" class="h-fit">Active</Badge>
+				<Dropdown
+					placement="left"
+					:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+					:options="dropdownActions"
+				/>
 			</template>
 			<template #empty-state>
 				<div
@@ -43,7 +41,7 @@
 					</div>
 				</div>
 			</template>
-		</List>
+		</ListView>
 	</div>
 
 	<ImportDialog
@@ -56,7 +54,7 @@
 <script setup lang="jsx">
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ImportDialog from '@/components/ImportDialog.vue'
-import List from '@/components/List.vue'
+import ListView from '@/components/ListView.vue'
 import { useDataSource } from '@/datasource/useDataSource'
 import { Badge } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'

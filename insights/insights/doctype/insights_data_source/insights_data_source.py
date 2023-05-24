@@ -14,7 +14,7 @@ from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_team.insights_team import get_permission_filter
 
-from .sources.base_database import BaseDatabase
+from .sources.base_database import BaseDatabase, DatabaseConnectionError
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
 from .sources.query_store import QueryStore
@@ -119,6 +119,8 @@ class InsightsDataSource(Document):
     def test_connection(self, raise_exception=False):
         try:
             return self.db.test_connection()
+        except DatabaseConnectionError:
+            return False
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:

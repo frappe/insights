@@ -18,6 +18,10 @@ from .utils import (
 )
 
 
+class DatabaseConnectionError(frappe.ValidationError):
+    pass
+
+
 class BaseDatabase:
     def __init__(self):
         self.engine = None
@@ -32,9 +36,9 @@ class BaseDatabase:
     def connect(self):
         try:
             return self.engine.connect()
-        except Exception as e:
+        except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
-            frappe.throw("Error connecting to database")
+            raise DatabaseConnectionError(e)
 
     def build_query(self, query, with_cte=False):
         """Build insights query and return the sql"""

@@ -1,6 +1,6 @@
 <script setup lang="jsx">
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import List from '@/components/List.vue'
+import ListView from '@/components/ListView.vue'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
@@ -49,7 +49,7 @@ updateDocumentTitle(pageMeta)
 <template>
 	<div class="h-full w-full bg-white px-6 py-4">
 		<Breadcrumbs :items="[{ label: 'Notebooks', href: '/notebook' }]"></Breadcrumbs>
-		<List
+		<ListView
 			title="Notebooks"
 			:actions="[
 				{
@@ -69,7 +69,7 @@ updateDocumentTitle(pageMeta)
 			:data="notebooks.list"
 			:rowClick="({ name }) => router.push({ name: 'Notebook', params: { notebook: name } })"
 		>
-		</List>
+		</ListView>
 	</div>
 
 	<Dialog :options="{ title: 'New Dashboard' }" v-model="new_notebook_dialog">
