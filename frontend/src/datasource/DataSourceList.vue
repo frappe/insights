@@ -25,7 +25,7 @@
 	/>
 
 	<ConnectMariaDBDialog v-model:show="showConnectMariaDBDialog" />
-	<UploadSQLiteFileDialog v-model:show="showSQLiteFileUploadDialog" />
+	<UploadCSVFileDialog v-model:show="showCSVFileUploadDialog" />
 </template>
 
 <script setup lang="jsx">
@@ -37,7 +37,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import NewDialogWithTypes from '@/query/NewDialogWithTypes.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
-import UploadSQLiteFileDialog from '@/datasource/UploadSQLiteFileDialog.vue'
+import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
 
 const new_dialog = ref(false)
 const sources = useDataSources()
@@ -55,7 +55,7 @@ const columns = [
 
 const router = useRouter()
 const showConnectMariaDBDialog = ref(false)
-const showSQLiteFileUploadDialog = ref(false)
+const showCSVFileUploadDialog = ref(false)
 const databaseTypes = ref([
 	{
 		label: 'MariaDB',
@@ -67,13 +67,12 @@ const databaseTypes = ref([
 		},
 	},
 	{
-		label: 'SQLite',
-		description: 'Create or Upload a SQLite database',
-		icon: 'database',
-		tag: 'beta',
+		label: 'CSV',
+		description: 'Upload a CSV file',
+		icon: 'file',
 		handler: () => {
 			new_dialog.value = false
-			showSQLiteFileUploadDialog.value = true
+			showCSVFileUploadDialog.value = true
 		},
 	},
 ])

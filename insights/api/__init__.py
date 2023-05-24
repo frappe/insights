@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+
 import frappe
 from frappe.utils.caching import redis_cache
 
@@ -8,6 +9,7 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.api.telemetry import track
 from insights.decorators import check_role
+from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
     check_table_permission,
@@ -314,43 +316,55 @@ def get_csv_from_base64(encoded_string):
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_columns_from_csv(file):
-    import csv
+def get_columns_from_uploaded_file(filename):
+    import pandas as pd
 
-    file_type = file.get("type")
-    data = file.get("data")  # base64 encoded
+    file = frappe.get_doc("File", filename)
+    parts = file.get_extension()
+    if "csv" not in parts[1]:
+        frappe.throw("Only CSV files are supported")
 
-    if file_type == "text/csv":
-        data = get_csv_from_base64(data)
-        reader = csv.reader(data)
-        return next(reader)
+    file_path = file.get_full_path()
+    df = pd.read_csv(file_path)
+    columns = df.columns.tolist()
+    columns_with_types = []
+    for column in columns:
+        column_type = infer_type_from_list(df[column].tolist())
+        columns_with_types.append({"label": column, "type": column_type})
+
+    return columns_with_types
 
 
-def create_csv_file(file):
-    file_doc = frappe.new_doc("File")
-    file_doc.file_name = file.get("name")
-    file_doc.content = get_csv_from_base64(file.get("data")).read()
-    file_doc.save(ignore_permissions=True)
-    return file_doc
+def create_data_source_for_csv():
+    if not frappe.db.exists("Insights Data Source", "File Uploads"):
+        data_source = frappe.new_doc("Insights Data Source")
+        data_source.database_type = "SQLite"
+        data_source.database_name = "file_uploads"
+        data_source.title = "File Uploads"
+        data_source.allow_imports = 1
+        data_source.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
 @check_role("Insights User")
-def upload_csv(data_source, label, file, if_exists, columns):
+def import_csv(table_label, table_name, filename, if_exists, columns):
+
+    create_data_source_for_csv()
+
     table_import = frappe.new_doc("Insights Table Import")
-    table_import.data_source = data_source
-    table_import.table_name = frappe.scrub(label)
-    table_import.table_label = label
+    table_import.data_source = "File Uploads"
+    table_import.table_label = table_label
+    table_import.table_name = table_name
     table_import.if_exists = if_exists
-    table_import.source = create_csv_file(file).file_url
+    table_import.source = frappe.get_doc("File", filename).file_url
     table_import.save()
     table_import.columns = []
     for column in columns:
         table_import.append(
             "columns",
             {
-                "column": frappe.scrub(column.get("column")),
-                "label": frappe.unscrub(column.get("column")),
+                "column": column.get("name"),
+                "label": column.get("label"),
                 "type": column.get("type"),
             },
         )

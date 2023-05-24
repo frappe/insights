@@ -43,21 +43,14 @@
 			</template>
 		</ListView>
 	</div>
-
-	<ImportDialog
-		:data-source="props.name"
-		:show="showImportDialog"
-		@close="showImportDialog = false"
-	></ImportDialog>
 </template>
 
 <script setup lang="jsx">
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
-import ImportDialog from '@/components/ImportDialog.vue'
 import ListView from '@/components/ListView.vue'
 import { useDataSource } from '@/datasource/useDataSource'
 import { Badge } from 'frappe-ui'
-import { computed, inject, ref } from 'vue'
+import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -68,7 +61,6 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const showImportDialog = ref(false)
 const dataSource = useDataSource(props.name)
 dataSource.fetch_tables()
 
@@ -84,13 +76,6 @@ const columns = [
 
 const dropdownActions = computed(() => {
 	return [
-		dataSource.doc.allow_imports
-			? {
-					label: 'Import CSV',
-					icon: 'upload',
-					handler: () => (showImportDialog.value = true),
-			  }
-			: null,
 		{
 			label: 'Sync Tables',
 			icon: 'refresh-cw',
