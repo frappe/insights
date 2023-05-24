@@ -226,3 +226,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     @frappe.whitelist()
     def get_tables_columns(self):
         return self.variant_controller.get_tables_columns()
+
+    def get_selected_tables(self):
+        return self.variant_controller.get_selected_tables()

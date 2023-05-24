@@ -36,3 +36,6 @@ class InsightsRawQueryController:
 
     def get_tables_columns(self):
         return []
+
+    def get_selected_tables(self):
+        return []
