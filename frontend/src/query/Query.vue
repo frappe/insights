@@ -1,40 +1,43 @@
 <template>
-	<div v-if="query.doc" class="flex h-full w-full flex-col overflow-hidden">
+	<div v-if="query.doc" class="flex flex-1 flex-col overflow-hidden">
 		<div class="flex flex-shrink-0 items-center justify-between px-2 py-1">
 			<QueryHeader />
 			<Tabs v-if="!hideTabs" class="!w-40" :tabs="tabs" @switch="switchTab" />
 		</div>
-
-		<template v-if="activeTab == buildTabLabel">
-			<template v-if="query.doc.is_native_query">
-				<div class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1">
-					<NativeQueryEditor />
-				</div>
+		<div class="flex flex-1 flex-shrink-0 flex-col overflow-y-scroll">
+			<template v-if="activeTab == buildTabLabel">
+				<template v-if="query.doc.is_native_query">
+					<div
+						class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
+					>
+						<NativeQueryEditor />
+					</div>
+				</template>
+				<template v-else>
+					<div
+						class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
+					>
+						<template v-if="!query.doc.is_assisted_query">
+							<TablePanel />
+							<ColumnPanel />
+							<FilterPanel />
+						</template>
+						<template v-else>
+							<div class="flex min-h-[20rem] w-full flex-1 rounded-md border py-2">
+								<Suspense>
+									<VisualQuery :name="query.doc.name" />
+								</Suspense>
+							</div>
+						</template>
+					</div>
+				</template>
+				<QueryResult class="min-h-[20rem] flex-1" />
 			</template>
-			<template v-else>
-				<div
-					class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
-				>
-					<template v-if="!query.doc.is_assisted_query">
-						<TablePanel />
-						<ColumnPanel />
-						<FilterPanel />
-					</template>
-					<template v-else>
-						<div class="mt-2 flex w-full rounded-md border py-2">
-							<Suspense>
-								<VisualQuery :name="query.doc.name" />
-							</Suspense>
-						</div>
-					</template>
-				</div>
-			</template>
-			<QueryResult />
-		</template>
 
-		<template v-if="activeTab == 'Visualize'">
-			<QueryVisualizer />
-		</template>
+			<template v-if="activeTab == 'Visualize'">
+				<QueryVisualizer class="flex-1" />
+			</template>
+		</div>
 	</div>
 </template>
 

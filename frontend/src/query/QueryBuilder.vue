@@ -5,7 +5,7 @@ const props = defineProps({ name: String })
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col bg-white px-6 py-4">
+	<div class="flex h-full w-full flex-col overflow-hidden bg-white px-6 py-4">
 		<Breadcrumbs
 			:items="[
 				{
