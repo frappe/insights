@@ -5,7 +5,7 @@ import VueGridLayout from 'vue3-drr-grid-layout'
 import 'vue3-drr-grid-layout/dist/style.css'
 import { socketio_port } from '../../../../sites/common_site_config.json'
 import App from './App.vue'
-import './index.css'
+import './index.scss'
 import router from './router'
 import { createToast } from './utils/toasts'
 

@@ -1,19 +1,19 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import os
-import shutil
-from typing import List
+import hashlib
 
 import frappe
 import tiktoken
+from langchain.agents import Tool, initialize_agent
+from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain.vectorstores import Chroma
 
 from insights.decorators import check_role
-from insights.utils import get_data_source_schema_for_prompt
+from insights.utils import get_data_source_dialect, get_data_source_schema
 
 
 @frappe.whitelist()
@@ -29,160 +29,276 @@ def create_new_chat():
     return new_chat.name
 
 
-class ChatBotAI:
-    def __init__(
-        self,
-        name: str,
-        api_key: str,
-        system_prompt: str = None,
-        history: List[dict] = None,
-        model_name: str = "gpt-3.5-turbo",
-        **kwargs,
-    ):
-        self.name = name
-        self.api_key = api_key
-        self.model_name = model_name
-        self.system_prompt = system_prompt
-        self.history = history or []
-        self.debug = kwargs.get("debug", False)
+class OpenAI:
+    @staticmethod
+    def get_key():
+        return frappe.conf.get("openai_api_key")
 
-        private_folder = frappe.get_site_path("private", "files", "vectorstores")
-        self.vector_store_path = os.path.join(private_folder, self.name)
+    @staticmethod
+    def get_chatgpt():
+        return ChatOpenAI(
+            openai_api_key=OpenAI.get_key(),
+            model_name="gpt-3.5-turbo",
+            temperature=0.0,
+        )
+
+
+def count_token(messages, model="gpt-3.5-turbo"):
+    if not isinstance(messages, list):
+        messages = [messages]
+    return sum((len(tiktoken.encoding_for_model(model).encode(m)) for m in messages))
+
+
+class SchemaStore:
+    def __init__(self, data_source, debug=False):
+        self.data_source = data_source
+        self.collection_name = frappe.scrub(data_source)
+        self.vector_store_path = frappe.get_site_path(
+            "private",
+            "files",
+            "vector_stores",
+            "schema_store",
+        )
+        self.debug = debug
 
     @property
     def vector_store(self):
-        if not os.path.exists(self.vector_store_path):
-            return None
-
         if not hasattr(self, "_vector_store"):
+            self.debug and print("Loading vector store from disk")
             self._vector_store = Chroma(
-                collection_name=self.name,
+                collection_name=self.collection_name,
                 persist_directory=self.vector_store_path,
-                embedding_function=OpenAIEmbeddings(openai_api_key=self.api_key),
+                embedding_function=OpenAIEmbeddings(openai_api_key=self.openai_api_key),
             )
 
         return self._vector_store
 
-    def reset_ingested_data(self):
-        if os.path.exists(self.vector_store_path):
-            shutil.rmtree(self.vector_store_path)
+    def ingest_schema(self):
+        schema = self.get_schema()
+        schema = self.skip_ingested_tables(schema)
 
-    def has_ingested_data(self):
-        return bool(self.vector_store)
+        if not schema:
+            self.debug and print("No new data to ingest")
+            return
 
-    def validate_data(self, data: List[str]):
-        if not data:
-            frappe.throw("No data to ingest")
-        if not isinstance(data, list):
-            frappe.throw("Data must be a list")
-        if not all(isinstance(d, str) for d in data):
-            frappe.throw("All data must be a string")
+        self.debug and print(f"Ingesting {len(schema)} rows of data")
 
-    def ingest_data(self, data: List[str], reset: bool = False):
-        self.validate_data(data)
+        ids = [d["id"] for d in schema]
+        texts = [d["text"] for d in schema]
+        metadata = [d["metadata"] for d in schema]
 
-        encoding = tiktoken.encoding_for_model("text-embedding-ada-002")
-        token_count = len(encoding.encode("".join(data)))
-        print(f"{token_count} tokens to ingest")
+        # $0.0004 / 1K tokens
+        tokens_consumed = count_token(texts, model="text-embedding-ada-002")
+        usage = tokens_consumed / 1000 * 0.0004
+        self.debug and print(f"This will consume {usage} USD")
 
-        print("Ingesting data")
-        reset and self.reset_ingested_data()
         self._vector_store = Chroma.from_texts(
-            data,
-            collection_name=self.name,
+            ids=ids,
+            texts=texts,
+            metadatas=metadata,
+            collection_name=self.collection_name,
             persist_directory=self.vector_store_path,
-            embedding=OpenAIEmbeddings(openai_api_key=self.api_key),
+            embedding=OpenAIEmbeddings(openai_api_key=OpenAI.get_key()),
+        )
+        self._vector_store.persist()
+
+    def get_schema(self):
+        """
+        Returns a list of dicts with attributes: id, text, metadata.
+        - ID: A unique identifier for the Table and its Columns.
+        - Text: The Table name and Column names.
+        - Metadata: The Table name and the number of rows in the table.
+        """
+
+        schema = get_data_source_schema(
+            self.data_source,
+            is_query_based=0,
+            hidden=0,
         )
 
-    def set_system_prompt(self, system_prompt):
-        self.system_prompt = system_prompt
+        # schema is a list of dicts with attributes: name, table, column, type, modified, row_count
+        # name and modified can be used to generate the ID.
+        # table and column can be used to generate the text.
+        # row_count can be used to generate the metadata.
 
-    def count_tokens(self, string: str) -> int:
-        encoding = tiktoken.encoding_for_model(self.model_name)
-        token_count = len(encoding.encode(string))
-        print(f"Tokens Consumed: {token_count}")
-        return token_count
+        data = []
+        for table in schema:
+            id = self.get_id_for_table(table)
+            text = self.get_text_for_table(table)
+            metadata = self.get_metadata_for_table(table)
+            data.append({"id": id, "text": text, "metadata": metadata})
 
-    def add_context(self, question):
-        context = self.vector_store.similarity_search(question, k=5)
-        context = "\n".join([d.page_content for d in context])
-        print(f"Useful Context: {context}")
-        return f"""{self.system_prompt}
-        ---------------
-        {context}"""
+        return data
 
-    def answer_question(self, question):
-        system_prompt = self.system_prompt or get_sql_bot_prompt()
-        if self.vector_store:
-            system_prompt = self.add_context(question)
+    def get_id_for_table(self, table):
+        """Returns a unique hash generated from the table name and modified date."""
+        name = table["name"]
+        modified = table["modified"]
+        return hashlib.sha256(f"{name}{modified}".encode("utf-8")).hexdigest()
 
-        self.count_tokens(system_prompt + question)
-        chat = ChatOpenAI(openai_api_key=self.api_key, temperature=0)
-        system_message = SystemMessage(content=system_prompt)
-        query = HumanMessage(content=question)
-
-        history = [
-            AIMessage(content=d["message"])
-            if d["role"] == "assistant"
-            else HumanMessage(content=d["message"])
-            for d in self.history
+    def get_text_for_table(self, table):
+        """
+        Returns human-readable text to describe the table and columns.
+        Example: The database table `tabUser` has columns `name(String)`, `email(String)`, `creation(Date)`, `modified(Date)`.
+        """
+        table_name, columns = table["table"], table["columns"]
+        column_names = [column["column"] for column in columns]
+        column_types = [column["type"] for column in columns]
+        column_descriptions = [
+            f"{name}({type})" for name, type in zip(column_names, column_types)
         ]
-        messages = [system_message] + history + [query]
-        answer = chat(messages)
-        self.count_tokens(answer.content)
-        return answer.content
+        column_descriptions = ", ".join(column_descriptions)
+        return f"The database table `{table_name}` has columns `{column_descriptions}`."
 
-    def reply_to_message(self, message):
-        return self.answer_question(message)
+    def get_metadata_for_table(self, table):
+        """Returns the table name and the number of rows in the table."""
+        return {"table_name": table["table"], "row_count": table["row_count"]}
 
+    def skip_ingested_tables(self, data):
+        """Removes the tables that are already ingested."""
+        new_ids = [row["id"] for row in data]
+        results = self.vector_store._collection.get(ids=new_ids)
+        if not results["ids"]:
+            return data
+        return [row for row in data if row["id"] not in results["ids"]]
 
-def get_sql_bot_prompt():
-    return """
-    You are a sqlGPT, an AI assistant that generates SQL queries. You only respond with the SQL query and "do not explain" it or provide any other additional information. You build queries from the database schema context provided below. You respond with a syntactically correct SQLite query that can be executed in the database to find the result as is. You "must" give short and proper aliases to the tables and columns. If you don't find any answer you "must" respond with the following text: "-"
-    """
+    def find_relevant_tables(self, query):
+        docs = self.vector_store.similarity_search(query, k=5)
+        return "\n\n".join(doc.page_content for doc in docs)
 
+    def make_agent_tool(self):
+        def _find_relevant_tables(query):
+            return self.find_relevant_tables(query)
 
-def answer_with_bot(message, system_message, data_source, history=None):
-    if not frappe.conf.get("openai_api_key"):
-        frappe.throw("OpenAI API Key not set")
-
-    slug = frappe.scrub(data_source)
-    data_source_type = frappe.db.get_value(
-        "Insights Data Source", data_source, "database_type"
-    )
-    system_message = f"{system_message} \n\n **Keep in mind** that this is a {data_source_type} database."
-    chat_bot = ChatBotAI(
-        name=f"copilot_for_{slug}",
-        history=history,
-        system_prompt=system_message,
-        api_key=frappe.conf.get("openai_api_key"),
-    )
-    if not chat_bot.has_ingested_data():
-        schema = get_data_source_schema_for_prompt(data_source)
-        chat_bot.ingest_data(schema)
-
-    return chat_bot.reply_to_message(message)
+        return Tool(
+            func=_find_relevant_tables,
+            name="Find Relevant Tables",
+            description=(
+                "A tool useful for finding the tables that are relevant to generate a sql query."
+                "If user expects a sql query as an answer, this tool **should** be used to find the relevant tables first. "
+                "Usage Eg.: `Show me relevant tables to <user question>?`"
+            ),
+        )
 
 
-@frappe.whitelist()
-def generate_sql(prompt, data_source, chat_history=None):
-    if not frappe.conf.get("openai_api_key"):
-        frappe.throw("OpenAI API Key not set")
+SQL_GEN_INSTRUCTIONS = """
+You are sqlGPT, a dedicated AI assistant for generating SQL queries. Specializing in {dialect}, sqlGPT is designed to create precise, syntactically correct SQL queries.
 
-    slug = frappe.scrub(data_source)
-    chat_bot = ChatBotAI(
-        name=f"sql_bot_for_{slug}",
-        system_prompt=get_sql_bot_prompt(),
-        api_key=frappe.conf.get("openai_api_key"),
-    )
-    if not chat_bot.has_ingested_data():
-        schema = get_data_source_schema_for_prompt(data_source)
-        chat_bot.ingest_data(schema)
+sqlGPT does not assumes any prior knowledge of the database schema. Instead, it uses a special action/tool to get the list of tables and columns, then with this information, it generate the SQL queries. In case of ambiguity, you can ask for clarification.
 
-    data_source_type = frappe.db.get_value(
-        "Insights Data Source", data_source, "database_type"
-    )
-    prompt = f"""
-    Generate a SQL query for {data_source_type} database. Here's my prompt: {prompt}
-    """
-    return chat_bot.answer_question(prompt)
+Make sure to follow these rules:
+- STRICTLY generate SELECT queries. Only!
+- Remember to find out the relevant tables first before generating the SQL query.
+- 90% of the time, users will expect a SELECT query as an answer.
+- In case user asks for an explanation, keep it short and simple.
+- In case you need to explain the answer, make sure to use markdown syntax for easy readability.
+
+Remember, sqlGPT is specifically designed for {dialect} databases.
+
+{suffix}
+"""
+TOOLS_INSTRUCTIONS = """You have access to the following tools:"""
+SCHEMA_INSTRUCTIONS = (
+    """Use **ONLY** the following tables and columns in your queries:\n\n{schema}"""
+)
+
+
+class SQLCopilot:
+    tools = None
+    memory = None
+    agent = None
+    schema_store = None
+    max_schema_tokens = 1000
+
+    def __init__(self, data_source, debug=False, with_tools=False):
+        self.data_source = data_source
+        self.with_tools = with_tools
+        self.debug = debug
+        self.schema_store = SchemaStore(
+            data_source=self.data_source,
+            debug=self.debug,
+        )
+
+    def ask(self, question, history=None):
+        self.prepare_tools()
+        self.prepare_memory(history)
+        self.prepare_copilot()
+        return self._ask(question)
+
+    def has_small_schema(self):
+        self.schema = self.schema_store.get_schema()
+        if not self.schema:
+            return True
+        self.schema_text = "\n\n".join([d["text"] for d in self.schema])
+        tokens = count_token(self.schema_text)
+        return tokens < self.max_schema_tokens
+
+    def prepare_tools(self):
+        self.tools = [self.schema_store.make_agent_tool()]
+
+    def prepare_memory(self, history):
+        msg_count = 5
+        self.memory = ConversationBufferWindowMemory(
+            k=msg_count,  # no. of messages to remember
+            memory_key="chat_history",
+            return_messages=True,
+        )
+        if not history or not isinstance(history, list):
+            return
+
+        self.debug and print(f"Using history: {len(history)} messages")
+        for message in history[-msg_count:]:
+            if message["role"] == "assistant":
+                self.memory.chat_memory.add_ai_message(message["message"])
+            else:
+                self.memory.chat_memory.add_user_message(message["message"])
+
+    def prepare_copilot(self):
+        if self.with_tools or not self.has_small_schema():
+            self.debug and print("Using schema retrieval tool")
+            self.initialize_agent_with_tools()
+            return
+
+        self.debug and print("Using default agent")
+        self.initialize_default_agent()
+
+    def initialize_default_agent(self):
+        schema = self.schema_store.get_schema()
+        if not schema:
+            raise ValueError("No tables found in the database.")
+
+        schema_text = "\n".join([d["text"] for d in schema])
+        dialect = get_data_source_dialect(self.data_source)
+        system_prompt = SQL_GEN_INSTRUCTIONS.format(
+            dialect=dialect, suffix=SCHEMA_INSTRUCTIONS.format(schema=schema_text)
+        )
+
+        messages = []
+        messages.append(SystemMessage(content=system_prompt))
+        messages += self.memory.chat_memory.messages
+
+        def _ask(question):
+            messages.append(HumanMessage(content=question))
+            tokens = count_token([m.content for m in messages])
+            self.debug and print(f"Consuming {tokens} tokens")
+            reply = OpenAI.get_chatgpt()(messages)
+            return reply.content
+
+        self._ask = _ask
+
+    def initialize_agent_with_tools(self):
+        dialect = get_data_source_dialect(self.data_source)
+        system_prompt = SQL_GEN_INSTRUCTIONS.format(
+            dialect=dialect, suffix=TOOLS_INSTRUCTIONS
+        )
+        agent = initialize_agent(
+            agent="conversational-react-description",
+            llm=OpenAI.get_chatgpt(),
+            verbose=True,
+            max_iterations=3,
+            memory=self.memory,
+            tools=self.tools or [],
+            early_stopping_method="generate",
+            agent_kwargs={"prefix": system_prompt},
+        )
+        self._ask = agent.run

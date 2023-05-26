@@ -1,11 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import auth from '@/utils/auth'
 import Sparkles from '@/components/Icons/Sparkles.vue'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import { TextEditor } from 'frappe-ui'
 import useCopilotChat from '@/copilot/useCopilotChat'
 import { useRouter } from 'vue-router'
+import { markdownToHTML } from 'frappe-ui/src/utils/markdown'
 
 const props = defineProps({ chat_id: String })
 const chat = useCopilotChat()
@@ -18,18 +19,12 @@ if (!props.chat_id) {
 	})
 }
 
-const newMessageHTML = ref('')
+const newMessage = ref('')
 const newMsgEditor = ref(null)
-function sendMessage() {
-	const newMessage = newMsgEditor.value.editor.getText()
-	chat.sendMessage({
-		message: newMessage,
-		html: newMessageHTML.value,
-	})
-	newMessageHTML.value = ''
+function askCopilot() {
+	chat.sendMessage(newMessage.value)
+	newMessage.value = ''
 }
-
-window.newMsgEditor = newMsgEditor
 </script>
 <template>
 	<div class="h-full w-full bg-white px-6 py-4">
@@ -40,40 +35,70 @@ window.newMsgEditor = newMsgEditor
 						<Sparkles class="h-4 w-4 text-gray-600"></Sparkles>
 						<div class="flex-1 font-medium">Insights Copilot</div>
 					</div>
-					<Button appearance="minimal" icon="sidebar"></Button>
+					<div class="flex items-center space-x-2">
+						<Dropdown
+							:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+							:options="[
+								{
+									label: 'Clear Chat',
+									icon: 'x-square',
+									handler: () => chat.clear(),
+								},
+								{
+									label: 'Open Sidebar',
+									icon: 'sidebar',
+									handler: () => {},
+								},
+							]"
+						/>
+					</div>
 				</div>
 				<div class="flex-1 overflow-y-scroll pb-6">
 					<div class="flex flex-col space-y-6">
-						<div v-for="message in chat.history" :key="message.id" class="flex gap-4">
-							<div class="flex-shrink-0" v-if="message.role === 'assistant'">
-								<div
-									class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
-								>
-									<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
+						<transition-group name="fade">
+							<div
+								v-for="message in chat.history"
+								:key="message.id"
+								class="flex gap-4"
+							>
+								<div class="flex-shrink-0" v-if="message.role === 'assistant'">
+									<div
+										class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
+									>
+										<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
+									</div>
+								</div>
+								<div class="flex-shrink-0" v-else-if="message.role === 'user'">
+									<Avatar
+										:label="auth.user.full_name"
+										:imageURL="auth.user.user_image"
+										size="md"
+									/>
+								</div>
+								<div class="relative flex-1 rounded-md bg-white text-base">
+									<TextEditor
+										editor-class="h-fit custom-prose flex flex-col justify-end"
+										:content="markdownToHTML(message.message)"
+										:editable="false"
+									/>
 								</div>
 							</div>
-							<div class="flex-shrink-0" v-else-if="message.role === 'user'">
-								<Avatar
-									:label="auth.user.full_name"
-									:imageURL="auth.user.user_image"
-									size="md"
-								/>
+
+							<div v-if="chat.sending" class="flex gap-4">
+								<div class="flex-shrink-0">
+									<div
+										class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
+									>
+										<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
+									</div>
+								</div>
+								<div
+									class="relative flex flex-1 animate-pulse items-center rounded-md font-mono text-base"
+								>
+									...
+								</div>
 							</div>
-							<div
-								class="relative flex-1 rounded-md bg-white text-base"
-								:class="[
-									message.role === 'assistant'
-										? 'text-gray-600'
-										: 'text-gray-800',
-								]"
-							>
-								<TextEditor
-									editor-class="h-fit prose-sm flex flex-col justify-end"
-									:content="message.html || message.message"
-									:editable="false"
-								/>
-							</div>
-						</div>
+						</transition-group>
 					</div>
 				</div>
 				<div class="sticky bottom-0 flex flex-shrink-0 space-x-4">
@@ -85,20 +110,20 @@ window.newMsgEditor = newMsgEditor
 						</div>
 						<TextEditor
 							ref="newMsgEditor"
-							editor-class="h-fit prose-sm flex flex-col justify-end"
-							:content="newMessageHTML"
 							:editable="true"
 							placeholder="Ask a question..."
-							@change="newMessageHTML = $event"
+							editor-class="h-fit flex flex-col justify-end custom-prose"
+							:content="newMessage"
+							@change="newMessage = $event"
 						/>
-						<div>
+						<div class="flex h-full items-center">
 							<Button
-								appearance="primary"
+								:appearance="!newMessage ? 'minimal' : 'primary'"
 								icon="arrow-right"
-								class="!rounded-full"
-								:disabled="!newMessageHTML"
-								@click="sendMessage"
-							></Button>
+								:disabled="!newMessage || chat.sending"
+								@click="askCopilot"
+							>
+							</Button>
 						</div>
 					</div>
 				</div>

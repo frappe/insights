@@ -5,10 +5,8 @@ from random import randint
 
 import frappe
 from frappe.model.document import Document
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
-from insights.api.copilot import answer_with_bot
+from insights.api.copilot import SQLCopilot
 
 
 class InsightsCopilotChat(Document):
@@ -17,21 +15,19 @@ class InsightsCopilotChat(Document):
         if not history:
             return
 
-        system_message = frappe.db.get_value(
-            "Insights Copilot Bot", self.copilot_bot, "system_message"
-        )
-        answer = answer_with_bot(
-            message=history[-1]["message"],
-            system_message=system_message,
-            data_source="Demo Data",
+        copilot = SQLCopilot(data_source="Demo Data", debug=True)
+        answer = copilot.ask(
+            question=history[-1]["message"],
             history=history[:-1],
         )
+        self.last_message_id = history[-1]["id"]
         history.append(
             {
                 "id": randint(1, 100000),
                 "role": "assistant",
-                "message": answer,
+                "message": answer.strip(),
             }
         )
         self.history = frappe.as_json(history)
         self.db_set("history", self.history)
+        self.reload()

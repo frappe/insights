@@ -38,30 +38,51 @@ class ResultColumn:
 
 
 @redis_cache(ttl=60 * 60 * 24)
-def get_data_source_schema_for_prompt(data_source):
+def get_data_source_schema(data_source, **filters):
     tables = frappe.get_all(
         "Insights Table",
-        {"data_source": data_source, "is_query_based": 0},
+        {"data_source": data_source, **filters},
         pluck="name",
     )
-    schema = []
     InsightsTable = frappe.qb.DocType("Insights Table")
     InsightsTableColumn = frappe.qb.DocType("Insights Table Column")
-    for table_name in tables:
-        query = (
-            frappe.qb.from_(InsightsTable)
-            .select(
-                InsightsTable.table,
-                InsightsTableColumn.column,
-                InsightsTableColumn.type,
-            )
-            .left_join(InsightsTableColumn)
-            .on(InsightsTable.name == InsightsTableColumn.parent)
-            .where(InsightsTable.name == table_name)
-            .run(as_dict=True)
+    data = (
+        frappe.qb.from_(InsightsTable)
+        .select(
+            InsightsTable.name,
+            InsightsTable.table,
+            InsightsTableColumn.column,
+            InsightsTableColumn.type,
+            InsightsTableColumn.modified,
+            InsightsTable.metadata,
         )
-        tablename = query[0].table
-        columns = [f"{col.column}({col.type})" for col in query]
-        schema.append(f"Table '{tablename}' has these columns: {', '.join(columns)}")
+        .left_join(InsightsTableColumn)
+        .on(InsightsTable.name == InsightsTableColumn.parent)
+        .where(InsightsTable.name.isin(tables))
+        .run(as_dict=True)
+    )
+    schema = {}
+    for row in data:
+        if row.table not in schema:
+            metadata = frappe.parse_json(row.metadata)
+            schema[row.table] = {
+                "name": row.name,
+                "table": row.table,
+                "columns": [],
+                "modified": row.modified,
+                "row_count": metadata.get("row_count") or 0,
+            }
+        schema[row.table]["columns"].append(
+            {
+                "column": row.column,
+                "type": row.type,
+            }
+        )
 
-    return schema
+    return list(schema.values())
+
+
+@redis_cache(ttl=60 * 60 * 24 * 7)
+def get_data_source_dialect(data_source):
+    data_source = frappe.get_cached_doc("Insights Data Source", data_source)
+    return data_source.db.engine.dialect.name

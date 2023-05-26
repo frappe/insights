@@ -1,6 +1,6 @@
 # frappe -- https://github.com/frappe/frappe is installed via 'bench init'
 pandas==1.5.1
 SQLAlchemy==1.4.43
-langchain==0.0.133
+langchain==0.0.181
 tiktoken==0.3.3
 chromadb==0.3.21

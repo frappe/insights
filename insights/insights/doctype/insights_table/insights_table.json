@@ -10,6 +10,7 @@
   "is_query_based",
   "column_break_3",
   "data_source",
+  "metadata",
   "hidden",
   "section_break_6",
   "columns",
@@ -76,11 +77,17 @@
    "fieldname": "is_query_based",
    "fieldtype": "Check",
    "label": "Is Query Based"
+  },
+  {
+   "default": "{}",
+   "fieldname": "metadata",
+   "fieldtype": "JSON",
+   "label": "Metadata"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-05 14:33:25.604960",
+ "modified": "2023-05-26 13:13:55.305070",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table",

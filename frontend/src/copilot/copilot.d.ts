@@ -2,7 +2,6 @@
 
 interface ChatMessage {
 	id: any
-	html: string
 	message: string
 	role: "user" | "assistant"
 }
@@ -14,6 +13,7 @@ interface CopilotChat {
 	sending: boolean
 	history: ChatMessage[]
 	load: (chat_id: string) => void
+	clear: () => void
 	sendMessage: (message: string) => void
 	createNewChat: () => void
 }

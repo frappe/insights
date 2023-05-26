@@ -3,17 +3,17 @@
 @import 'frappe-ui/src/style.css';
 
 .dataframe th {
-	@apply whitespace-nowrap border-r border-b bg-gray-50 py-2 px-4 text-left text-sm font-medium text-gray-700;
+	@apply whitespace-nowrap border-b border-r bg-gray-50 px-4 py-2 text-left text-sm font-medium text-gray-700;
 }
 .dataframe td {
-	@apply whitespace-nowrap border-r border-b bg-white py-2 px-4 text-right text-sm text-gray-700;
+	@apply whitespace-nowrap border-b border-r bg-white px-4 py-2 text-right text-sm text-gray-700;
 }
 .dataframe tr > th:first-child {
 	@apply sticky left-0;
 }
 
 .font-code {
-  font-family: 'Fira Code' !important;
+	font-family: 'Fira Code' !important;
 }
 
 /* Code Control */
@@ -31,18 +31,20 @@
 }
 
 .cm-placeholder {
-	@apply !text-gray-500;
+	--tw-text-opacity: 1;
+	color: rgb(100 116 139 / var(--tw-text-opacity)) !important;
 }
 .cm-content {
 	padding: 0px !important;
 }
 .cm-activeLine {
-	@apply !bg-transparent;
+	background-color: transparent !important;
 }
 .cm-scroller {
 	font-family: 'Fira Code' !important;
 	line-height: 1.5rem !important;
-	@apply !text-gray-500
+	--tw-text-opacity: 1 !important;
+  color: rgb(100 116 139 / var(--tw-text-opacity)) !important;
 }
 .cm-matchingBracket {
 	font-weight: 500 !important;
@@ -64,32 +66,31 @@
 	font-family: 'Inter' !important;
 }
 .cm-tooltip-autocomplete ul li[aria-selected='true'] {
-	@apply !bg-gray-200/80 !rounded;
+	border-radius: 0.25rem/* 4px */ !important;
+  background-color: rgb(226 232 240 / 0.8) !important;
 	color: #000 !important;
 }
-
-
 
 @layer components {
 	/* Works on Firefox */
 	* {
 		scrollbar-width: thin;
-		scrollbar-color: #C0C6CC #EBEEF0;
+		scrollbar-color: #c0c6cc #ebeef0;
 	}
-	
+
 	html {
 		scrollbar-width: auto;
 	}
 
 	/* Works on Chrome, Edge, and Safari */
 	*::-webkit-scrollbar-thumb {
-		background: #E2E8F0;
+		background: #e2e8f0;
 		border-radius: 6px;
 	}
 
 	*::-webkit-scrollbar-track,
 	*::-webkit-scrollbar-corner {
-		background: #F8FAFC;
+		background: #f8fafc;
 	}
 
 	*::-webkit-scrollbar {
@@ -101,15 +102,52 @@
 		width: 0px;
 		height: 12px;
 	}
-
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.1s ease;
+	transition: opacity 0.1s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0;
+	opacity: 0;
+}
+
+.custom-prose {
+	@apply prose-h1:my-5 prose-h1:font-semibold prose-h2:my-4 prose-h2:font-semibold prose-p:text-[15px] prose-p:leading-7 prose-code:before:content-[''] prose-code:after:content-[''] prose-ol:my-1 prose-ul:my-1 prose-th:py-1 prose-td:py-1;
+}
+
+/* Placeholder */
+.custom-prose  [data-placeholder].is-empty::before {
+	content: attr(data-placeholder);
+	float: left;
+	pointer-events: none;
+	height: 0;
+	align-self: center;
+	font-size: inherit;
+	@apply absolute text-gray-300;
+}
+
+.custom-prose
+	
+	:where(blockquote p:first-of-type):not(:where([class~='not-prose'] *)) {
+	&::before {
+		content: '';
+	}
+	&::after {
+		content: '';
+	}
+}
+
+.custom-prose  :where(code):not(:where([class~='not-prose'] *)) {
+	@apply rounded bg-gray-100 px-1.5 py-1 text-gray-700;
+}
+
+.custom-prose  :where(pre):not(:where([class~='not-prose'] *)) {
+	@apply bg-gray-100 text-gray-800;
+}
+
+.custom-prose  table p {
+	@apply text-base;
 }

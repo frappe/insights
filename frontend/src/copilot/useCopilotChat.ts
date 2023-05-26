@@ -19,6 +19,7 @@ export default function useCopilotChat() {
 		loading: false,
 		sending: false,
 		load,
+		clear,
 		sendMessage,
 		createNewChat,
 	})
@@ -26,15 +27,15 @@ export default function useCopilotChat() {
 		chat.loading = true
 		resource = getCopilotChat(chat_id)
 		await resource.get.fetch()
-		chat.chat_id = resource.doc.chat_id
+		chat.chat_id = resource.doc.name
 		chat.title = resource.doc.title
 		chat.history = safeJSONParse(resource.doc.history) || []
 		chat.loading = false
 	}
 
-	async function sendMessage({ message, html }: { message: string; html: string }) {
+	async function sendMessage(message: string) {
 		const id = Math.floor(Math.random() * 1000000)
-		chat.history.push({ id, role: 'user', message: message, html: html })
+		chat.history.push({ id, role: 'user', message: message })
 		chat.sending = true
 		await resource.setValue.submit({
 			history: JSON.stringify(chat.history),
@@ -49,6 +50,16 @@ export default function useCopilotChat() {
 		const message = await call('insights.api.copilot.create_new_chat')
 		await load(message)
 		chat.loading = false
+	}
+
+	async function clear() {
+		chat.history = []
+		chat.sending = true
+		await resource.setValue.submit({
+			history: JSON.stringify(chat.history),
+		})
+		await load(chat.chat_id)
+		chat.sending = false
 	}
 
 	return chat
