@@ -7,12 +7,13 @@ interface ChatMessage {
 }
 
 interface CopilotChat {
-	chat_id: string
+	name: string
+	mode: string
 	title: string
 	loading: boolean
 	sending: boolean
 	history: ChatMessage[]
-	load: (chat_id: string) => void
+	load: (chat_name: string) => void
 	clear: () => void
 	sendMessage: (message: string) => void
 	createNewChat: () => void

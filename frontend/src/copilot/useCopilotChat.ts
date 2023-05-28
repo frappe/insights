@@ -13,7 +13,8 @@ import { reactive } from 'vue'
 export default function useCopilotChat() {
 	let resource: CopilotChatResource = null
 	const chat: CopilotChat = reactive({
-		chat_id: '',
+		name: '',
+		mode: '',
 		title: 'New Chat',
 		history: [],
 		loading: false,
@@ -23,12 +24,13 @@ export default function useCopilotChat() {
 		sendMessage,
 		createNewChat,
 	})
-	async function load(chat_id: string) {
+	async function load(chat_name: string) {
 		chat.loading = true
-		resource = getCopilotChat(chat_id)
+		resource = getCopilotChat(chat_name)
 		await resource.get.fetch()
-		chat.chat_id = resource.doc.name
+		chat.name = resource.doc.name
 		chat.title = resource.doc.title
+		chat.mode = resource.doc.mode
 		chat.history = safeJSONParse(resource.doc.history) || []
 		chat.loading = false
 	}
@@ -38,9 +40,10 @@ export default function useCopilotChat() {
 		chat.history.push({ id, role: 'user', message: message })
 		chat.sending = true
 		await resource.setValue.submit({
+			mode: chat.mode,
 			history: JSON.stringify(chat.history),
 		})
-		await load(chat.chat_id)
+		await load(chat.name)
 		chat.sending = false
 	}
 
@@ -58,17 +61,26 @@ export default function useCopilotChat() {
 		await resource.setValue.submit({
 			history: JSON.stringify(chat.history),
 		})
-		await load(chat.chat_id)
+		await load(chat.name)
 		chat.sending = false
 	}
 
 	return chat
 }
 
+type CopilotChatResource = ReturnType<typeof makeCopilotChatResource>
+const copilotChatCache = new Map<string, CopilotChatResource>()
+
 function getCopilotChat(docname: string) {
+	if (!copilotChatCache.has(docname)) {
+		copilotChatCache.set(docname, makeCopilotChatResource(docname))
+	}
+	return copilotChatCache.get(docname)
+}
+
+function makeCopilotChatResource(docname: string) {
 	return createDocumentResource({
 		doctype: 'Insights Copilot Chat',
 		name: docname,
 	})
 }
-type CopilotChatResource = ReturnType<typeof getCopilotChat>

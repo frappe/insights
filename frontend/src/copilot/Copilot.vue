@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watchEffect, onMounted } from 'vue'
 import auth from '@/utils/auth'
 import Sparkles from '@/components/Icons/Sparkles.vue'
 import ContentEditable from '@/notebook/ContentEditable.vue'
@@ -25,6 +25,14 @@ function askCopilot() {
 	chat.sendMessage(newMessage.value)
 	newMessage.value = ''
 }
+
+const chatContainer = ref(null)
+const observer = new ResizeObserver(() => {
+	chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+})
+onMounted(() => {
+	observer.observe(chatContainer.value)
+})
 </script>
 <template>
 	<div class="h-full w-full bg-white px-6 py-4">
@@ -33,9 +41,15 @@ function askCopilot() {
 				<div class="flex flex-shrink-0 items-center justify-between py-4">
 					<div class="flex items-center space-x-2">
 						<Sparkles class="h-4 w-4 text-gray-600"></Sparkles>
-						<div class="flex-1 font-medium">Insights Copilot</div>
+						<div class="flex-1 text-lg font-medium">Insights Copilot</div>
 					</div>
 					<div class="flex items-center space-x-2">
+						<Input
+							type="select"
+							v-model="chat.mode"
+							:options="['Execute SQL', 'Generate SQL']"
+						/>
+
 						<Dropdown
 							:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 							:options="[
@@ -53,13 +67,13 @@ function askCopilot() {
 						/>
 					</div>
 				</div>
-				<div class="flex-1 overflow-y-scroll pb-6">
+				<div ref="chatContainer" class="flex-1 overflow-y-scroll pb-6">
 					<div class="flex flex-col space-y-6">
 						<transition-group name="fade">
 							<div
 								v-for="message in chat.history"
 								:key="message.id"
-								class="flex gap-4"
+								class="group relative flex gap-4"
 							>
 								<div class="flex-shrink-0" v-if="message.role === 'assistant'">
 									<div
@@ -77,10 +91,17 @@ function askCopilot() {
 								</div>
 								<div class="relative flex-1 rounded-md bg-white text-base">
 									<TextEditor
-										editor-class="h-fit custom-prose flex flex-col justify-end"
+										editor-class="h-fit custom-prose flex flex-col justify-end max-w-full"
 										:content="markdownToHTML(message.message)"
 										:editable="false"
 									/>
+								</div>
+
+								<div
+									class="absolute right-0 top-0 opacity-0 transition-opacity group-hover:opacity-100"
+									v-if="message.role === 'user'"
+								>
+									<Button icon="edit" appearance="minimal"></Button>
 								</div>
 							</div>
 
@@ -112,7 +133,7 @@ function askCopilot() {
 							ref="newMsgEditor"
 							:editable="true"
 							placeholder="Ask a question..."
-							editor-class="h-fit flex flex-col justify-end custom-prose"
+							editor-class="h-fit flex flex-col justify-end custom-prose max-w-full"
 							:content="newMessage"
 							@change="newMessage = $event"
 						/>

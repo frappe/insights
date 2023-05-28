@@ -9,7 +9,7 @@
  "field_order": [
   "title",
   "column_break_nnod",
-  "copilot_bot",
+  "mode",
   "section_break_rgut",
   "history",
   "last_message_id"
@@ -35,22 +35,22 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "copilot_bot",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Copilot Bot",
-   "options": "Insights Copilot Bot",
-   "reqd": 1
-  },
-  {
    "fieldname": "last_message_id",
    "fieldtype": "Data",
    "label": "Last Message ID"
+  },
+  {
+   "default": "Generate SQL",
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mode",
+   "options": "Generate SQL\nExecute SQL"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-27 00:46:39.040247",
+ "modified": "2023-05-27 12:54:20.485516",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Copilot Chat",

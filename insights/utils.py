@@ -7,6 +7,22 @@ import frappe
 from frappe.utils.caching import redis_cache
 
 
+class DoctypeShorthand:
+    DOCTYPE = None
+
+    @classmethod
+    def get_name(cls, *args, **kwargs):
+        return frappe.db.exists(cls.DOCTYPE, *args, **kwargs)
+
+    @classmethod
+    def get(cls, *args, **kwargs):
+        return frappe.get_cached_doc(cls.DOCTYPE, *args, **kwargs)
+
+
+class DataSource(DoctypeShorthand):
+    DOCTYPE = "Insights Data Source"
+
+
 class ResultColumn:
     label: str
     type: Union[str, List[str]]
