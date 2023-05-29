@@ -14,7 +14,15 @@ def setup_complete():
 
 def get_new_datasource(db):
     data_source = frappe.new_doc("Insights Data Source")
-    if db.get("type") == "MariaDB":
+    if db.get("connection_string"):
+        data_source.update(
+            {
+                "title": db.get("title"),
+                "database_type": db.get("type"),
+                "connection_string": db.get("connection_string"),
+            }
+        )
+    if db.get("type") == "MariaDB" or db.get("type") == "PostgreSQL":
         data_source.update(
             {
                 "database_type": db.get("type"),

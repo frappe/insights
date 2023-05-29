@@ -25,6 +25,7 @@
 	/>
 
 	<ConnectMariaDBDialog v-model:show="showConnectMariaDBDialog" />
+	<ConnectPostgreDBDialog v-model:show="showConnectPostgreDBDialog" />
 	<UploadCSVFileDialog v-model:show="showCSVFileUploadDialog" />
 </template>
 
@@ -37,6 +38,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import NewDialogWithTypes from '@/query/NewDialogWithTypes.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
+import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
 
 const new_dialog = ref(false)
@@ -55,6 +57,7 @@ const columns = [
 
 const router = useRouter()
 const showConnectMariaDBDialog = ref(false)
+const showConnectPostgreDBDialog = ref(false)
 const showCSVFileUploadDialog = ref(false)
 const databaseTypes = ref([
 	{
@@ -64,6 +67,15 @@ const databaseTypes = ref([
 		handler: () => {
 			new_dialog.value = false
 			showConnectMariaDBDialog.value = true
+		},
+	},
+	{
+		label: 'PostgreSQL',
+		description: 'Connect to a PostgreSQL database',
+		icon: 'database',
+		handler: () => {
+			new_dialog.value = false
+			showConnectPostgreDBDialog.value = true
 		},
 	},
 	{

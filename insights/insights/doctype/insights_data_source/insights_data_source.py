@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+from contextlib import suppress
 from functools import cached_property, lru_cache
 
 import frappe
@@ -17,6 +18,7 @@ from insights.insights.doctype.insights_team.insights_team import get_permission
 from .sources.base_database import BaseDatabase, DatabaseConnectionError
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
 from .sources.mariadb import MariaDB
+from .sources.postgresql import PostgresDatabase
 from .sources.query_store import QueryStore
 from .sources.sqlite import SQLiteDB
 
@@ -73,14 +75,18 @@ class InsightsDataSource(Document):
         return self.get_database()
 
     def get_database(self):
+        password = None
+        with suppress(BaseException):
+            password = self.get_password()
         conn_args = {
             "data_source": self.name,
             "host": self.host,
             "port": self.port,
             "use_ssl": self.use_ssl,
             "username": self.username,
-            "password": self.get_password(),
+            "password": password,
             "database_name": self.database_name,
+            "connection_string": self.connection_string,
         }
 
         if is_frappe_db(conn_args):
@@ -88,6 +94,9 @@ class InsightsDataSource(Document):
 
         if self.database_type == "MariaDB":
             return MariaDB(**conn_args)
+
+        if self.database_type == "PostgreSQL":
+            return PostgresDatabase(**conn_args)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
@@ -106,6 +115,8 @@ class InsightsDataSource(Document):
                 frappe.throw(f"{field} is mandatory for SQLite")
 
     def validate_remote_db_fields(self):
+        if self.connection_string:
+            return
         mandatory = ("host", "port", "username", "password", "database_name")
         for field in mandatory:
             if not self.get(field):

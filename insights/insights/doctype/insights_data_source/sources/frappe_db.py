@@ -12,11 +12,8 @@ from sqlalchemy.engine.base import Connection
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
 from .base_database import BaseDatabase
-from .utils import (
-    MARIADB_TO_GENERIC_TYPES,
-    create_insights_table,
-    get_sqlalchemy_engine,
-)
+from .mariadb import MARIADB_TO_GENERIC_TYPES
+from .utils import create_insights_table, get_sqlalchemy_engine
 
 
 class FrappeTableFactory:

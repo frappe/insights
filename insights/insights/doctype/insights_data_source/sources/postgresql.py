@@ -2,8 +2,11 @@
 # For license information, please see license.txt
 
 
+import re
+
 import frappe
 from sqlalchemy import column as Column
+from sqlalchemy import inspect
 from sqlalchemy import select as Select
 from sqlalchemy import table as Table
 from sqlalchemy import text
@@ -14,20 +17,23 @@ from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 from .base_database import BaseDatabase
 from .utils import create_insights_table, get_sqlalchemy_engine
 
-MARIADB_TO_GENERIC_TYPES = {
-    "int": "Integer",
+IGNORED_TABLES = ["__.*"]
+
+POSTGRESQL_TO_GENERIC_TYPES = {
+    "integer": "Integer",
     "bigint": "Long Int",
-    "decimal": "Decimal",
+    "numeric": "Decimal",
     "text": "Text",
-    "longtext": "Long Text",
-    "date": "Date",
-    "datetime": "Datetime",
-    "time": "Time",
     "varchar": "String",
+    "date": "Date",
+    "timestamp": "Datetime",
+    "time": "Time",
+    "longtext": "Long Text",
+    "boolean": "String",  # TODO: change to boolean
 }
 
 
-class MariaDBTableFactory:
+class PostgresTableFactory:
     """Fetchs tables and columns from database and links from doctype"""
 
     def __init__(self, data_source) -> None:
@@ -49,28 +55,18 @@ class MariaDBTableFactory:
         return tables
 
     def get_db_tables(self, table_names=None):
-        t = Table(
-            "tables",
-            Column("table_name"),
-            Column("table_schema"),
-            Column("table_type"),
-            schema="information_schema",
-        )
-
-        query = (
-            t.select()
-            .where(t.c.table_schema == text("DATABASE()"))
-            .where(t.c.table_type == "BASE TABLE")
+        inspector = inspect(self.db_conn)
+        tables = set(inspector.get_table_names()) | set(
+            inspector.get_foreign_table_names()
         )
         if table_names:
-            query = query.where(t.c.table_name.in_(table_names))
-
-        tables = self.db_conn.execute(query).fetchall()
+            tables = [table for table in tables if table in table_names]
         return [
-            self.get_table(table[0])
-            for table in tables
-            if not table[0].startswith("__")
+            self.get_table(table) for table in tables if not self.should_ignore(table)
         ]
+
+    def should_ignore(self, table_name):
+        return any(re.match(pattern, table_name) for pattern in IGNORED_TABLES)
 
     def get_table(self, table_name):
         return frappe._dict(
@@ -82,22 +78,15 @@ class MariaDBTableFactory:
         )
 
     def get_all_columns(self):
-        t = Table(
-            "columns",
-            Column("table_name"),
-            Column("column_name"),
-            Column("data_type"),
-            Column("table_schema"),
-            schema="information_schema",
-        )
-
-        query = t.select().where(t.c.table_schema == text("DATABASE()"))
-        columns = self.db_conn.execute(query).fetchall()
+        inspector = inspect(self.db_conn)
+        tables = inspector.get_table_names()
         columns_by_table = {}
-        for col in columns:
-            columns_by_table.setdefault(col[0], []).append(
-                self.get_column(col[1], col[2])
-            )
+        for table in tables:
+            columns = inspector.get_columns(table)
+            for col in columns:
+                columns_by_table.setdefault(table, []).append(
+                    self.get_column(col["name"], col["type"])
+                )
         return columns_by_table
 
     def get_table_columns(self, table):
@@ -110,39 +99,40 @@ class MariaDBTableFactory:
             {
                 "column": column_name,
                 "label": frappe.unscrub(column_name),
-                "type": MARIADB_TO_GENERIC_TYPES.get(column_type, "String"),
+                "type": POSTGRESQL_TO_GENERIC_TYPES.get(column_type, "String"),
             }
         )
 
 
-class MariaDB(BaseDatabase):
-    def __init__(
-        self, data_source, host, port, username, password, database_name, use_ssl
-    ):
-        self.data_source = data_source
-        self.engine = get_sqlalchemy_engine(
-            dialect="mysql",
-            driver="pymysql",
-            username=username,
-            password=password,
-            database=database_name,
-            host=host,
-            port=port,
-            ssl=use_ssl,
-            ssl_verify_cert=use_ssl,
-            charset="utf8mb4",
-            use_unicode=True,
-        )
+class PostgresDatabase(BaseDatabase):
+    def __init__(self, **kwargs):
+        self.data_source = kwargs.pop("data_source")
+        if connection_string := kwargs.pop("connection_string", None):
+            self.engine = get_sqlalchemy_engine(connection_string=connection_string)
+        else:
+            self.validate_required_fields(kwargs)
+            self.engine = get_sqlalchemy_engine(
+                dialect="postgresql",
+                driver="psycopg2",
+                username=kwargs.pop("username"),
+                password=kwargs.pop("password"),
+                database=kwargs.pop("database_name"),
+                host=kwargs.pop("host"),
+                port=kwargs.pop("port"),
+                sslmode="require" if kwargs.pop("use_ssl") else None,
+            )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
-        self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
+        self.table_factory: PostgresTableFactory = PostgresTableFactory(
+            self.data_source
+        )
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
-        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
+        data = self.execute_query(f"""select * from "{table}" limit {limit}""")
+        length = self.execute_query(f'''select count(*) from "{table}"''')[0][0]
         return {
             "data": data or [],
             "length": length or 0,

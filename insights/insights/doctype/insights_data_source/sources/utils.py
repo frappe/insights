@@ -11,20 +11,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.pool import NullPool
 
-MARIADB_TO_GENERIC_TYPES = {
-    "int": "Integer",
-    "bigint": "Long Int",
-    "decimal": "Decimal",
-    "text": "Text",
-    "longtext": "Long Text",
-    "date": "Date",
-    "datetime": "Datetime",
-    "time": "Time",
-    "varchar": "String",
-}
-
 
 def get_sqlalchemy_engine(**kwargs) -> Engine:
+    if kwargs.get("connection_string"):
+        return create_engine(kwargs.get("connection_string"), poolclass=NullPool)
 
     dialect = kwargs.pop("dialect")
     driver = kwargs.pop("driver")
