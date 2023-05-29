@@ -12,6 +12,7 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.api.telemetry import track
 from insights.cache_utils import get_or_set_cache, make_digest
+from insights.decorators import debounce
 
 from .utils import (
     convert_into_simple_filter,
@@ -76,9 +77,13 @@ class InsightsDashboard(Document):
                 )
             )
 
-        return self.run_query(query_name, additional_filters=filter_conditions)
+        return InsightsDashboard.run_query(
+            self.cache_namespace, query_name, additional_filters=filter_conditions
+        )
 
-    def run_query(self, query_name, additional_filters=None):
+    @staticmethod
+    @debounce(2)
+    def run_query(cache_namespace, query_name, additional_filters=None):
         def get_result():
             query = frappe.get_cached_doc("Insights Query", query_name)
             if not additional_filters:
@@ -112,7 +117,7 @@ class InsightsDashboard(Document):
 
         last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
         key = make_digest(query_name, last_modified, additional_filters)
-        key = f"{self.cache_namespace}:{key}"
+        key = f"{cache_namespace}:{key}"
 
         query_result_expiry = frappe.db.get_single_value(
             "Insights Settings", "query_result_expiry"
