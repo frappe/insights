@@ -54,7 +54,7 @@ updateDocumentTitle(pageMeta)
 			v-if="page.doc.name"
 			class="h-full w-full overflow-y-scroll bg-white pb-96 pt-16 text-base"
 		>
-			<div class="w-full px-[6rem]">
+			<div class="w-full px-[6rem] lg:mx-auto lg:max-w-[60rem]">
 				<div class="flex items-center">
 					<ContentEditable
 						class="focusable flex-1 text-[36px] font-bold"
