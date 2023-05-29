@@ -61,10 +61,12 @@ def create_insights_table(table, force=False):
                 "table": table.table,
                 "label": table.label,
                 "is_query_based": table.is_query_based or 0,
+                "metadata": table.metadata,
             }
         )
 
     doc.label = table.label
+    doc.metadata = table.metadata
     if force:
         doc.columns = []
         doc.table_links = []

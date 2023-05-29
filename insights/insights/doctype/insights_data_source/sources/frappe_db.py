@@ -44,6 +44,7 @@ class FrappeTableFactory:
         t = Table(
             "tables",
             Column("table_name"),
+            Column("table_rows"),
             Column("table_schema"),
             Column("table_type"),
             schema="information_schema",
@@ -59,17 +60,16 @@ class FrappeTableFactory:
 
         tables = self.db_conn.execute(query).fetchall()
         return [
-            self.get_table(table[0])
-            for table in tables
-            if not table[0].startswith("__")
+            self.get_table(table) for table in tables if not table[0].startswith("__")
         ]
 
-    def get_table(self, table_name):
+    def get_table(self, db_table):
         return _dict(
             {
-                "table": table_name,
-                "label": table_name.replace("tab", ""),
+                "table": db_table[0],
+                "label": db_table[0].replace("tab", ""),
                 "data_source": self.data_source,
+                "metadata": {"row_count": db_table[1]},
             }
         )
 

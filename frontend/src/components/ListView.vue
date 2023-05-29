@@ -53,7 +53,9 @@ function toggleSelected(row) {
 	<div class="flex h-full w-full flex-col overflow-hidden">
 		<!-- Title -->
 		<PageTitle :title="title" :actions="actions">
-			<slot name="title-items"></slot>
+			<template #title-items>
+				<slot name="title-items"></slot>
+			</template>
 		</PageTitle>
 
 		<div class="flex flex-1 flex-col overflow-hidden">
