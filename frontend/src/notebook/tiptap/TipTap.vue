@@ -1,7 +1,7 @@
 <template>
 	<TextEditor
 		ref="tiptap"
-		editorClass="max-w-full prose-h1:font-semibold prose-h1:my-5 prose-h2:font-semibold prose-h2:my-4 prose-p:text-[15px] prose-p:leading-7 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-1 prose-ol:my-1 prose-th:py-1 prose-td:py-1"
+		editorClass="max-w-full prose-h1:font-semibold prose-h1:mt-5 prose-h1:mb-3 prose-h2:font-semibold prose-h2:mt-4 prose-h2:mb-2 prose-p:my-0 prose-p:py-1 prose-p:text-[16px] prose-p:leading-6 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-th:py-1 prose-td:py-1"
 		@change="updateContent"
 		:bubble-menu="bubbleMenu"
 		:bubble-menu-options="{
