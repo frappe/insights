@@ -1,7 +1,9 @@
 <script setup>
+import UseTooltip from '@/components/UseTooltip.vue'
+import { isInViewport } from '@/utils'
 import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/vue'
 import { LoadingIndicator } from 'frappe-ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const emit = defineEmits(['update:modelValue', 'filterInput'])
 const props = defineProps({
@@ -42,6 +44,12 @@ function isSelected(value) {
 		return selectedValue.value?.value === value.value
 	}
 }
+
+const optionsRef = ref(null)
+
+// this is to manually trigger tooltip visibility
+// because isInViewport isn't reactive so the component doesn't re-render
+const canShowTooltip = ref(false)
 </script>
 
 <template>
@@ -51,6 +59,7 @@ function isSelected(value) {
 		:nullable="!props.allowMultiple"
 		:multiple="Boolean(props.allowMultiple)"
 		:value="props.allowMultiple ? multipleValues : selectedValue"
+		@mouseover="canShowTooltip = true"
 	>
 		<ComboboxInput
 			v-if="props.allowMultiple"
@@ -64,13 +73,14 @@ function isSelected(value) {
 		>
 			<transition-group name="fade">
 				<ComboboxOption
-					v-for="value in props.values"
+					v-for="(value, idx) in props.values"
 					:key="value.value"
 					:value="value"
 					v-slot="{ active }"
 					@click.prevent.stop="select(value)"
 				>
 					<div
+						ref="optionsRef"
 						class="flex w-full cursor-pointer items-center justify-between rounded-md p-2 hover:bg-gray-100"
 						:class="{
 							'bg-gray-100': active,
@@ -92,6 +102,29 @@ function isSelected(value) {
 						>
 							{{ value.description }}
 						</span>
+					</div>
+
+					<div
+						v-if="
+							canShowTooltip &&
+							(value.tooltip || value.tooltip_component) &&
+							isInViewport(optionsRef?.[idx])
+						"
+					>
+						<UseTooltip
+							:targetElement="optionsRef[idx]"
+							:content="value.tooltip"
+							:hoverDelay="0.1"
+							placement="right-start"
+						>
+							<template #content="{ visible }" v-if="value.tooltip_component">
+								<component
+									v-if="visible"
+									:option="value"
+									:is="value.tooltip_component"
+								/>
+							</template>
+						</UseTooltip>
 					</div>
 				</ComboboxOption>
 				<ComboboxOption

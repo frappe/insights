@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
 	if (props.autoClose) document.removeEventListener('click', handleClickOutside)
 })
 
-defineExpose({ toggle, open, close })
+defineExpose({ toggle, open, close, isOpen: show })
 </script>
 
 <template>
