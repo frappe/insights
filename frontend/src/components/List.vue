@@ -151,11 +151,11 @@ function toggleSelected(row) {
 				</li>
 
 				<li
-					class="sticky bottom-0 right-0 flex w-full border-t bg-white py-3 text-lg text-gray-500"
+					class="sticky bottom-0 right-0 flex w-full flex-1 flex-shrink-0 items-end bg-white"
 				>
-					<p class="ml-auto">
-						Showing {{ filteredData.length }} of {{ props.data.length }} results
-					</p>
+					<div class="mb-3 flex w-full justify-end border-t py-3 text-lg text-gray-500">
+						<p>Showing {{ filteredData.length }} of {{ props.data.length }} results</p>
+					</div>
 				</li>
 			</ul>
 
