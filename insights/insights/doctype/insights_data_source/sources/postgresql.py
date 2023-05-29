@@ -131,8 +131,12 @@ class PostgresDatabase(BaseDatabase):
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(f"""select * from "{table}" limit {limit}""")
-        length = self.execute_query(f'''select count(*) from "{table}"''')[0][0]
+        data = self.execute_query(
+            f"""select * from "{table}" limit {limit}""", cached=True
+        )
+        length = self.execute_query(f'''select count(*) from "{table}"''', cached=True)[
+            0
+        ][0]
         return {
             "data": data or [],
             "length": length or 0,

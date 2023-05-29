@@ -12,8 +12,10 @@ from insights.utils import ResultColumn
 
 from .utils import (
     add_limit_to_sql,
+    cache_results,
     compile_query,
     execute_and_log,
+    get_cached_results,
     replace_query_tables_with_cte,
 )
 
@@ -73,6 +75,7 @@ class BaseDatabase:
         return_columns=False,
         replace_query_tables=False,
         is_native_query=False,
+        cached=False,
     ):
         if sql is None:
             return []
@@ -83,12 +86,19 @@ class BaseDatabase:
 
         self.validate_native_sql(sql)
 
+        if cached:
+            cached_results = get_cached_results(sql, self.data_source)
+            if cached_results:
+                return cached_results
+
         with self.connect() as connection:
             res = execute_and_log(connection, sql, self.data_source)
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
-            return [cols] + rows if return_columns else rows
+            ret = [cols] + rows if return_columns else rows
+            cached and cache_results(sql, self.data_source, ret)
+            return ret
 
     def compile_if_needed(self, sql, is_native_query):
         if isinstance(sql, ClauseElement) and not is_native_query:

@@ -11,6 +11,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.pool import NullPool
 
+from insights.cache_utils import make_digest
+
 
 def get_sqlalchemy_engine(**kwargs) -> Engine:
     if kwargs.get("connection_string"):
@@ -254,12 +256,27 @@ def compile_query(query, dialect=None):
     return compiled
 
 
-# a sugar method to return execution time and log the query
-def execute_and_log(conn, sql, data_source, verbose=False):
+def execute_and_log(conn, sql, data_source):
     with Timer() as t:
         result = conn.execute(sql)
     create_execution_log(sql, data_source, t.elapsed)
     return result
+
+
+def cache_results(sql, data_source, results):
+    key = make_digest(sql, data_source)
+    frappe.cache().set_value(
+        f"insights_query_result:{data_source}:{key}",
+        frappe.as_json(results),
+        expires_in_sec=60 * 5,
+    )
+
+
+def get_cached_results(sql, data_source):
+    key = make_digest(sql, data_source)
+    return frappe.parse_json(
+        frappe.cache().get_value(f"insights_query_result:{data_source}:{key}")
+    )
 
 
 def create_execution_log(sql, data_source, time_taken=0):
