@@ -19,6 +19,9 @@ export default function useNotebookPage(page_name) {
 	state.reload = async () => {
 		state.loading = true
 		state.doc = await resource.get.fetch()
+		if (isEmpty(state.doc.content)) {
+			state.doc.content = getPlaceholderContent()
+		}
 		state.loading = false
 	}
 	state.reload()
@@ -28,7 +31,7 @@ export default function useNotebookPage(page_name) {
 		state.doc.content = appendLastParagraph(state.doc.content)
 		const contentString = JSON.stringify(state.doc.content, null, 2)
 		await resource.setValue.submit({
-			title: state.doc.title,
+			title: state.doc.title || 'Untitled',
 			content: contentString,
 		})
 		state.loading = false
@@ -84,4 +87,91 @@ function appendLastParagraph(content) {
 		})
 	}
 	return content
+}
+
+function isEmpty(content) {
+	if (!content) return true
+	if (typeof content == 'string') content = safeJSONParse(content)
+	if (!content.type) return true
+	if (!content.content?.length) return true
+}
+
+function getPlaceholderContent() {
+	return {
+		type: 'doc',
+		content: [
+			{
+				type: 'paragraph',
+				attrs: { textAlign: 'left' },
+				content: [
+					{ type: 'text', text: '❓Don’t know where to start? Start by defining your..' },
+				],
+			},
+			{
+				type: 'paragraph',
+				attrs: { textAlign: 'left' },
+				content: [
+					{ type: 'text', marks: [{ type: 'bold' }], text: '🎯 Objective' },
+					{ type: 'text', text: ': ' },
+					{
+						type: 'text',
+						marks: [{ type: 'italic' }],
+						text: 'We have to find out why so and so…',
+					},
+				],
+			},
+			{
+				type: 'paragraph',
+				attrs: { textAlign: 'left' },
+				content: [{ type: 'text', marks: [{ type: 'bold' }], text: '🔍 Approach:' }],
+			},
+			{
+				type: 'bulletList',
+				content: [
+					{
+						type: 'listItem',
+						content: [
+							{
+								type: 'paragraph',
+								attrs: { textAlign: 'left' },
+								content: [
+									{
+										type: 'text',
+										marks: [{ type: 'italic' }],
+										text: 'We start with this data',
+									},
+								],
+							},
+						],
+					},
+					{
+						type: 'listItem',
+						content: [
+							{
+								type: 'paragraph',
+								attrs: { textAlign: 'left' },
+								content: [
+									{
+										type: 'text',
+										marks: [{ type: 'italic' }],
+										text: 'Combine with that data',
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+			{
+				type: 'paragraph',
+				attrs: { textAlign: 'left' },
+				content: [
+					{
+						type: 'text',
+						text: '❌ Want to start from scratch? Use the clear button inside the 3-dot menu ',
+					},
+				],
+			},
+		],
+	}
 }

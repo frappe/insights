@@ -59,11 +59,16 @@ updateDocumentTitle(pageMeta)
 					<ContentEditable
 						class="focusable flex-1 text-[36px] font-bold"
 						v-model="page.doc.title"
-						placeholder="Page Title"
+						placeholder="Untitled Analysis"
 					></ContentEditable>
 					<Dropdown
 						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 						:options="[
+							{
+								label: 'Clear',
+								icon: 'eraser',
+								handler: () => (page.doc.content = []),
+							},
 							{
 								label: 'Delete',
 								icon: 'trash',

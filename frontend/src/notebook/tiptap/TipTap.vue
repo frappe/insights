@@ -1,7 +1,7 @@
 <template>
 	<TextEditor
 		ref="tiptap"
-		editorClass="max-w-full prose-h1:font-semibold prose-h1:mt-5 prose-h1:mb-3 prose-h2:font-semibold prose-h2:mt-4 prose-h2:mb-2 prose-p:my-0 prose-p:py-1 prose-p:text-[16px] prose-p:leading-6 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-th:py-1 prose-td:py-1"
+		editorClass="max-w-full prose-h1:font-semibold prose-h1:mt-5 prose-h1:mb-3 prose-h2:font-semibold prose-h2:mt-4 prose-h2:mb-2 prose-p:!my-0 prose-p:py-1 prose-p:text-[16px] prose-p:leading-6 prose-code:before:content-[''] prose-code:after:content-[''] prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-th:py-1 prose-td:py-1 prose-blockquote:my-3"
 		@change="updateContent"
 		:bubble-menu="bubbleMenu"
 		:bubble-menu-options="{
@@ -120,5 +120,9 @@ const bubbleMenu = [
 
 .prose table p {
 	@apply text-base;
+}
+
+.ProseMirror:not(.ProseMirror-focused) p.is-editor-empty:first-child::before {
+	@apply text-gray-400;
 }
 </style>
