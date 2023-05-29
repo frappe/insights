@@ -254,6 +254,14 @@ def compile_query(query, dialect=None):
     return compiled
 
 
+# a sugar method to return execution time and log the query
+def execute_and_log(conn, sql, data_source, verbose=False):
+    with Timer() as t:
+        result = conn.execute(sql)
+    create_execution_log(sql, data_source, t.elapsed)
+    return result
+
+
 def create_execution_log(sql, data_source, time_taken=0):
     frappe.get_doc(
         {
