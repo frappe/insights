@@ -3,7 +3,7 @@
 		<List
 			v-if="dataSource.doc && dataSource.tables.length"
 			:columns="columns"
-			:data="dataSource.tables"
+			:data="dataSource.tables.filter((t) => !t.is_query_based)"
 			:rowClick="
 				({ name }) =>
 					router.push({
