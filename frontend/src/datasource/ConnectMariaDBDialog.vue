@@ -88,14 +88,20 @@ const submitLabel = computed(() => {
 	return 'Add Database'
 })
 
+const testing = ref(false)
 const testConnection = async () => {
 	database['type'] = 'MariaDB'
+	testing.value = true
 	connected.value = await sources.testConnection({ database })
+	testing.value = false
 }
 
+const creating = ref(false)
 const createNewDatabase = async () => {
 	database['type'] = 'MariaDB'
+	creating.value = true
 	await sources.createDatabase({ database })
+	creating.value = false
 	show.value = false
 }
 </script>
@@ -110,7 +116,7 @@ const createNewDatabase = async () => {
 						:disabled="testConnectionDisabled"
 						@click="testConnection"
 						loadingText="Connecting..."
-						:loading="sources.testing"
+						:loading="testing"
 						:iconLeft="connectIcon"
 					>
 						{{ connectLabel }}
@@ -119,7 +125,7 @@ const createNewDatabase = async () => {
 						appearance="primary"
 						:disabled="submitDisabled"
 						loadingText="Adding Database..."
-						:loading="sources.creating"
+						:loading="creating"
 						@click="createNewDatabase"
 					>
 						{{ submitLabel }}

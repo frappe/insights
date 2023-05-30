@@ -137,7 +137,7 @@ const formattedSQL = computed(() => {
 		<BlockAction
 			icon="play"
 			label="Execute"
-			:action="state.query.execute"
+			:action="() => state.query.execute() || (state.minimizeResult = false)"
 			:loading="state.query.executing"
 		/>
 		<BlockAction
