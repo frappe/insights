@@ -66,7 +66,7 @@ updateDocumentTitle(pageMeta)
 						:options="[
 							{
 								label: 'Clear',
-								icon: 'eraser',
+								icon: 'x-square',
 								handler: () => (page.doc.content = []),
 							},
 							{
