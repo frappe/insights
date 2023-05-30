@@ -16,9 +16,11 @@ class InsightsCopilotChat(Document):
             return
 
         copilot = SQLCopilot(
-            data_source="Demo Data", allow_executions=True, verbose=True
+            data_source="Demo Data",
+            history=history[:-1],
+            verbose=True,
         )
-        answer = copilot.ask(question=history[-1]["message"], history=history[:-1])
+        answer = copilot.ask(question=history[-1]["message"], validate=False)
         self.last_message_id = history[-1]["id"]
         history.append(
             {

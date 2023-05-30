@@ -14,7 +14,6 @@ export default function useCopilotChat() {
 	let resource: CopilotChatResource = null
 	const chat: CopilotChat = reactive({
 		name: '',
-		mode: '',
 		title: 'New Chat',
 		history: [],
 		loading: false,
@@ -30,7 +29,6 @@ export default function useCopilotChat() {
 		await resource.get.fetch()
 		chat.name = resource.doc.name
 		chat.title = resource.doc.title
-		chat.mode = resource.doc.mode
 		chat.history = safeJSONParse(resource.doc.history) || []
 		chat.loading = false
 	}
@@ -40,7 +38,6 @@ export default function useCopilotChat() {
 		chat.history.push({ id, role: 'user', message: message })
 		chat.sending = true
 		await resource.setValue.submit({
-			mode: chat.mode,
 			history: JSON.stringify(chat.history),
 		})
 		await load(chat.name)

@@ -8,7 +8,6 @@ interface ChatMessage {
 
 interface CopilotChat {
 	name: string
-	mode: string
 	title: string
 	loading: boolean
 	sending: boolean

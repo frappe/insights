@@ -44,7 +44,7 @@
 	font-family: 'Fira Code' !important;
 	line-height: 1.5rem !important;
 	--tw-text-opacity: 1 !important;
-  color: rgb(100 116 139 / var(--tw-text-opacity)) !important;
+	color: rgb(100 116 139 / var(--tw-text-opacity)) !important;
 }
 .cm-matchingBracket {
 	font-weight: 500 !important;
@@ -66,8 +66,8 @@
 	font-family: 'Inter' !important;
 }
 .cm-tooltip-autocomplete ul li[aria-selected='true'] {
-	border-radius: 0.25rem/* 4px */ !important;
-  background-color: rgb(226 232 240 / 0.8) !important;
+	border-radius: 0.25rem /* 4px */ !important;
+	background-color: rgb(226 232 240 / 0.8) !important;
 	color: #000 !important;
 }
 
@@ -115,11 +115,11 @@
 }
 
 .custom-prose {
-	@apply prose-h1:my-5 prose-h1:font-semibold prose-h2:my-4 prose-h2:font-semibold prose-p:text-[15px] prose-p:leading-7 prose-code:before:content-[''] prose-code:after:content-[''] prose-ol:my-1 prose-ul:my-1 prose-th:py-1 prose-td:py-1;
+	@apply prose-h1:my-5 prose-h1:font-semibold prose-h2:my-4 prose-h2:font-semibold prose-p:text-[15px] prose-p:leading-7 prose-ol:my-1 prose-ul:my-1 prose-th:py-1 prose-td:py-1;
 }
 
 /* Placeholder */
-.custom-prose  [data-placeholder].is-empty::before {
+.custom-prose [data-placeholder].is-empty::before {
 	content: attr(data-placeholder);
 	float: left;
 	pointer-events: none;
@@ -129,9 +129,7 @@
 	@apply absolute text-gray-300;
 }
 
-.custom-prose
-	
-	:where(blockquote p:first-of-type):not(:where([class~='not-prose'] *)) {
+.custom-prose :where(blockquote p:first-of-type):not(:where([class~='not-prose'] *)) {
 	&::before {
 		content: '';
 	}
@@ -140,14 +138,14 @@
 	}
 }
 
-.custom-prose  :where(code):not(:where([class~='not-prose'] *)) {
+.custom-prose :where(code):not(:where([class~='not-prose'] *)) {
 	@apply rounded bg-gray-100 px-1.5 py-1 text-gray-700;
 }
 
-.custom-prose  :where(pre):not(:where([class~='not-prose'] *)) {
+.custom-prose :where(pre):not(:where([class~='not-prose'] *)) {
 	@apply bg-gray-100 text-gray-800;
 }
 
-.custom-prose  table p {
+.custom-prose table p {
 	@apply text-base;
 }

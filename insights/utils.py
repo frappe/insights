@@ -18,9 +18,17 @@ class DoctypeShorthand:
     def get(cls, *args, **kwargs):
         return frappe.get_cached_doc(cls.DOCTYPE, *args, **kwargs)
 
+    @classmethod
+    def get_all(cls, *args, **kwargs):
+        return frappe.get_all(cls.DOCTYPE, *args, **kwargs)
+
 
 class DataSource(DoctypeShorthand):
     DOCTYPE = "Insights Data Source"
+
+
+class Table(DoctypeShorthand):
+    DOCTYPE = "Insights Table"
 
 
 class ResultColumn:

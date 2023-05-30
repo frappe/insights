@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed, watchEffect, onMounted } from 'vue'
+import { ref, computed, watchEffect, onMounted, watch } from 'vue'
 import auth from '@/utils/auth'
 import Sparkles from '@/components/Icons/Sparkles.vue'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import { TextEditor } from 'frappe-ui'
 import useCopilotChat from '@/copilot/useCopilotChat'
 import { useRouter } from 'vue-router'
-import { markdownToHTML } from 'frappe-ui/src/utils/markdown'
+import { markdownToHTML, htmlToMarkdown } from 'frappe-ui/src/utils/markdown'
 
 const props = defineProps({ chat_id: String })
 const chat = useCopilotChat()
@@ -22,13 +22,16 @@ if (!props.chat_id) {
 const newMessage = ref('')
 const newMsgEditor = ref(null)
 function askCopilot() {
-	chat.sendMessage(newMessage.value)
+	const text = newMsgEditor.value?.editor?.getText()
+	chat.sendMessage(text)
 	newMessage.value = ''
 }
 
 const chatContainer = ref(null)
 const observer = new ResizeObserver(() => {
 	chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+	const preTags = chatContainer.value?.querySelectorAll('pre > code.language-sql')
+	console.log(preTags)
 })
 onMounted(() => {
 	observer.observe(chatContainer.value)
@@ -44,12 +47,6 @@ onMounted(() => {
 						<div class="flex-1 text-lg font-medium">Insights Copilot</div>
 					</div>
 					<div class="flex items-center space-x-2">
-						<Input
-							type="select"
-							v-model="chat.mode"
-							:options="['Execute SQL', 'Generate SQL']"
-						/>
-
 						<Dropdown
 							:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
 							:options="[
