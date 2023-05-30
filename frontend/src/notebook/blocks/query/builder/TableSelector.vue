@@ -28,24 +28,34 @@ if (!props.tableOptions) {
 		}
 	)
 	tables = computed(() => {
-		return dataSource.tables
-			.filter((t) => !t.hidden)
-			.map((table) => {
-				return {
-					table: table.table,
-					value: table.table,
-					label: table.label,
-					description: table.table,
-					tooltip_component: (tooltip_props) => (
-						<Suspense>
-							<TableTooltip
-								data_source={props.data_source}
-								table={tooltip_props.option.table}
-							/>
-						</Suspense>
-					),
-				}
-			})
+		return (
+			dataSource.tables
+				.filter((t) => !t.hidden)
+				// remove duplicates
+				.filter((table, index, self) => {
+					return (
+						self.findIndex((t) => {
+							return t.table === table.table
+						}) === index
+					)
+				})
+				.map((table) => {
+					return {
+						table: table.table,
+						value: table.table,
+						label: table.label,
+						description: table.table,
+						tooltip_component: (tooltip_props) => (
+							<Suspense>
+								<TableTooltip
+									data_source={props.data_source}
+									table={tooltip_props.option.table}
+								/>
+							</Suspense>
+						),
+					}
+				})
+		)
 	})
 }
 </script>
