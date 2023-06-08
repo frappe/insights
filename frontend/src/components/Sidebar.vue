@@ -62,6 +62,11 @@
 							icon: 'help-circle',
 							handler: () => open('https://docs.frappeinsights.com'),
 						},
+						{
+							label: 'Join Telegram Group',
+							icon: 'message-circle',
+							handler: () => open('https://t.me/frappeinsights'),
+						},
 						auth.user.is_admin
 							? {
 									label: 'Switch to Desk',
