@@ -269,7 +269,6 @@ async function autoSelectJoinColumns(join) {
 					<InputWithPopover
 						:items="COLUMN_TYPES"
 						placeholder="Type"
-						:disable-filter="true"
 						:value="findByValue(COLUMN_TYPES, calc.column.type)"
 						@update:modelValue="(v) => (calc.column.type = v.value)"
 					/>
@@ -334,7 +333,6 @@ async function autoSelectJoinColumns(join) {
 						:value="findByValue(dateFormatOptions, column.column.granularity)"
 						@update:modelValue="(v) => (column.column.granularity = v.value)"
 						placeholder="Format"
-						:disable-filter="true"
 						:items="dateFormatOptions"
 					/>
 				</div>
@@ -358,7 +356,6 @@ async function autoSelectJoinColumns(join) {
 							<InputWithPopover
 								:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
 								placeholder="Aggregate"
-								:disable-filter="true"
 								@update:modelValue="(v) => setAggregation(v, measure)"
 								:items="AGGREGATIONS"
 							/>
@@ -425,7 +422,6 @@ async function autoSelectJoinColumns(join) {
 										(v) => (dimension.column.granularity = v.value)
 									"
 									placeholder="Format"
-									:disable-filter="true"
 									:items="dateFormatOptions"
 								/>
 							</div>
@@ -466,7 +462,6 @@ async function autoSelectJoinColumns(join) {
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:value="findByValue(ORDER, order.column.order)"
 					placeholder="Ascending"
-					:disable-filter="true"
 					:items="ORDER"
 					@update:modelValue="(v) => (order.column.order = v.value)"
 				/>
