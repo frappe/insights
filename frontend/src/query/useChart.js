@@ -65,6 +65,7 @@ function getChart(chartName) {
 					const recommendedChart = guessChart(state.data)
 					state.doc.chart_type = recommendedChart?.type
 					state.doc.options = recommendedChart?.options
+					state.doc.options.title = _query.doc.title
 				}
 				state.doc.options.query = state.doc.query
 				state.loading = false
