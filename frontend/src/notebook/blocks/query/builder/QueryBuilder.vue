@@ -65,9 +65,8 @@ const GET_EMPTY_COLUMN = () => ({
 
 function addBlock(type) {
 	if (type == 'Summarise') {
-		if (state.value.measures.length) return
-		state.value.measures = [{ ...GET_EMPTY_COLUMN() }]
-		state.value.dimensions = [{ ...GET_EMPTY_COLUMN() }]
+		if (!state.value.measures.length) state.value.measures = [{ ...GET_EMPTY_COLUMN() }]
+		if (!state.value.dimensions.length) state.value.dimensions = [{ ...GET_EMPTY_COLUMN() }]
 		return
 	}
 	const typeToEmptyValue = {
