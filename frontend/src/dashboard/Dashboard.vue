@@ -144,7 +144,10 @@ updateDocumentTitle(pageMeta)
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
 						:columns="dashboard.currentItem.query?.resultColumns"
-						:key="dashboard.currentItem.item_id"
+						:key="
+							dashboard.currentItem.item_id &&
+							JSON.stringify(dashboard.currentItem.options)
+						"
 					/>
 
 					<Button

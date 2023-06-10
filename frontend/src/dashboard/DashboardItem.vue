@@ -2,7 +2,7 @@
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { watchOnce, whenever } from '@vueuse/shared'
+import { whenever } from '@vueuse/shared'
 import { debounce } from 'frappe-ui'
 import { computed, inject, reactive, ref, watch, watchEffect } from 'vue'
 
@@ -51,16 +51,25 @@ if (isChart) {
 	watch(chartFilters, () => {
 		chartData.load(props.item.options.query)
 	})
-	watchOnce(
+	watch(
 		() => chartData.recommendedChart,
 		() => {
-			if (props.item.options.query) return
-			if (props.item.item_type !== chartData.recommendedChart.chart_type) return
+			if (!props.item.options.query) return
+			if (props.item.options.title) return
+			if (
+				props.item.options.query == dashboard.currentItem?.options.query &&
+				!props.item.options.title
+			) {
+				props.item.options.title = dashboard.currentItem.query.doc.title
+			}
+
+			if (props.item.item_type !== chartData.recommendedChart.type) return
 			props.item.options = {
 				...props.item.options,
 				...chartData.recommendedChart.options,
 			}
-		}
+		},
+		{ deep: true }
 	)
 }
 
