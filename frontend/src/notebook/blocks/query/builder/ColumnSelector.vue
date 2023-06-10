@@ -39,7 +39,7 @@ const column = computed({
 })
 
 function findOptionByValue(columns, value) {
-	return columns.find((c) => value == c.expression?.raw || value == `${c.table}.${c.column}`)
+	return columns.find((c) => value == getColumnValue(c))
 }
 
 const dataSourceTables = ref([])
@@ -63,6 +63,7 @@ watch(
 )
 
 function getColumnValue(column) {
+	if (column.description == 'local') return column.alias
 	return column.expression?.raw || `${column.table}.${column.column}`
 }
 function filterFn(col, currIndex, self) {
@@ -74,18 +75,17 @@ function filterFn(col, currIndex, self) {
 const columns = computed(() => {
 	const columnOptions = props.columnOptions.filter(filterFn)
 	if (!dataSourceTables.value?.length) return columnOptions
-	return dataSourceTables.value
+	const source_table_columns = dataSourceTables.value
 		.map((d) => d.doc?.columns)
 		.flat()
 		.filter(filterFn)
-		.concat(columnOptions)
-		.reverse() // reverse to show the local columns first
+	return columnOptions.concat(source_table_columns)
 })
 const columnOptions = computed(() => {
 	if (!columns.value?.length) return []
 	return columns.value.map((c) => {
 		return {
-			label: c.alias || c.label,
+			label: c.label || c.alias,
 			description: c.description || c.table,
 			value: getColumnValue(c),
 		}
