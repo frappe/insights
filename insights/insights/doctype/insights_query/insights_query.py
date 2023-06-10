@@ -81,6 +81,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def reset(self):
         new_query = frappe.new_doc("Insights Query")
         new_query.name = self.name
+        new_query.title = "Untitled Query"
         new_query.data_source = self.data_source
         new_query_dict = new_query.as_dict(no_default_fields=True)
         self.update(new_query_dict)
@@ -183,6 +184,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @log_error(raise_exc=True)
     def process_results_columns(self, results):
+        if not results:
+            return results
         results[0] = ResultColumn.from_dicts(self.get_columns_from_results(results))
         return results
 
