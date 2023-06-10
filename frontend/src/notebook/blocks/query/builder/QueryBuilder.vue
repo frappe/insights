@@ -54,7 +54,7 @@ const COLUMN = {
 	type: '',
 	alias: '',
 	order: '',
-	granularity: '',
+	granularity: 'Month',
 	aggregation: '',
 	format: {},
 	expression: {},
