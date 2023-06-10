@@ -72,7 +72,7 @@ updateDocumentTitle(pageMeta)
 		</ListView>
 	</div>
 
-	<Dialog :options="{ title: 'New Dashboard' }" v-model="new_notebook_dialog">
+	<Dialog :options="{ title: 'New Notebook' }" v-model="new_notebook_dialog">
 		<template #body-content>
 			<div class="space-y-4">
 				<Input
