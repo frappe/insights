@@ -254,29 +254,7 @@ async function autoSelectJoinColumns(join) {
 				<div
 					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
 				>
-					<InputWithPopover
-						:value="findByValue(AGGREGATIONS, calc.column.aggregation)"
-						placeholder="Aggregate"
-						:disable-filter="true"
-						@update:modelValue="(v) => setAggregation(v, calc)"
-						:items="AGGREGATIONS"
-					/>
-
-					<Suspense v-if="calc.column.aggregation != 'custom'">
-						<ColumnSelector
-							v-if="calc.column.aggregation !== 'count'"
-							:columnOptions="selectedColumns"
-							:data_source="query.doc.data_source"
-							:tables="selectedTables"
-							v-model="calc.column"
-						/>
-					</Suspense>
-					<Suspense v-else>
-						<ColumnExpressionSelector
-							v-model="calc.column.expression"
-							@update:model-value="() => (calc.column.aggregation = 'custom')"
-						/>
-					</Suspense>
+					<ColumnExpressionSelector v-model="calc.column.expression" />
 				</div>
 
 				<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
