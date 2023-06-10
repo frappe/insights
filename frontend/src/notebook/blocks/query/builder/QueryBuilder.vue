@@ -148,7 +148,7 @@ const selectedColumns = computed(() => {
 	state.value.calculations.forEach((c) => addIfValid(c.column))
 	state.value.measures.forEach((c) => addIfValid(c.column))
 	state.value.dimensions.forEach((c) => addIfValid(c.column))
-	return columns.map((c) => ({ ...c, description: 'local' }))
+	return columns.map((c) => ({ ...c, label: c.alias || c.label, description: 'local' }))
 })
 
 const COLUMN_TYPES = [
