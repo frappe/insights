@@ -65,11 +65,11 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="max-w-[20rem] pl-1 pr-2 text-gray-800">
+	<div class="relative max-w-[20rem] pl-1 pr-3 text-gray-800">
 		<div
 			ref="codeEditor"
-			class="max-h-7 overflow-hidden py-0.5 transition-all"
-			:class="focused && '!max-h-[30rem]'"
+			class="max-h-7 w-48 overflow-hidden py-0.5 transition-all"
+			:class="focused && '!max-h-[30rem] !w-80'"
 		>
 			<Code
 				:value="expression.raw"
@@ -85,6 +85,9 @@ onMounted(() => {
 					}
 				"
 			></Code>
+		</div>
+		<div v-if="!focused" class="absolute right-2 top-2">
+			<FeatherIcon name="more-horizontal" class="h-4 w-4 text-gray-500" />
 		</div>
 	</div>
 
