@@ -14,6 +14,7 @@ from .demo import DemoDataFactory
 def after_install():
     import_demo_data()
     import_demo_queries_and_dashboards()
+    sync_site_tables()
 
 
 def import_demo_data():
@@ -50,3 +51,8 @@ def import_demo_queries_and_dashboards():
     except Exception as e:
         frappe.log_error("Failed to create Demo Queries and Dashboards")
         click.secho(f"Error while creating demo queries and dashboards: {e}", fg="red")
+
+
+def sync_site_tables():
+    doc = frappe.get_doc("Insights Data Source", "Site DB")
+    doc.enqueue_sync_tables()
