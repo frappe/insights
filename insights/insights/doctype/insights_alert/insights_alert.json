@@ -116,13 +116,13 @@
   },
   {
    "fieldname": "message",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Markdown Editor",
    "label": "Message"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-05 12:51:09.804815",
+ "modified": "2023-06-12 12:42:52.680651",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",
