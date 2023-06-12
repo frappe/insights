@@ -20,7 +20,7 @@
 
 	<NewDialogWithTypes
 		v-model:show="new_dialog"
-		title="Select Database Type"
+		title="Select Source Type"
 		:types="databaseTypes"
 	/>
 
