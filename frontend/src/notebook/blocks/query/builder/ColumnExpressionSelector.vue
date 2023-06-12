@@ -75,6 +75,7 @@ onMounted(() => {
 				:value="expression.raw"
 				:completions="getCompletions"
 				:autofocus="false"
+				placeholder="Write an expression"
 				@focus="focused = true"
 				@blur="focused = false"
 				@viewUpdate="codeViewUpdate"
@@ -86,7 +87,7 @@ onMounted(() => {
 				"
 			></Code>
 		</div>
-		<div v-if="!focused" class="absolute right-2 top-2">
+		<div v-if="!focused && expression.raw" class="absolute right-2 top-2">
 			<FeatherIcon name="more-horizontal" class="h-4 w-4 text-gray-500" />
 		</div>
 	</div>
