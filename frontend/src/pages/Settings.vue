@@ -91,6 +91,23 @@
 					</Setting>
 				</div>
 			</div>
+			<div class="rounded-lg border bg-white p-6 shadow-sm">
+				<div class="flex items-baseline">
+					<div class="text-xl font-medium text-gray-700">Notifications</div>
+				</div>
+				<div class="mt-4 flex flex-col space-y-8">
+					<Setting
+						label="Telegram Bot Token"
+						description="Telegram bot token to send notifications to Telegram."
+					>
+						<Input
+							type="password"
+							v-model="settingsDoc.telegram_api_token"
+							placeholder="Telegram Bot Token"
+						/>
+					</Setting>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -119,7 +136,8 @@ const updateDisabled = computed(() => {
 		local.query_result_expiry === remote.query_result_expiry &&
 		local.auto_execute_query === remote.auto_execute_query &&
 		local.allow_subquery === remote.allow_subquery &&
-		local.fiscal_year_start === remote.fiscal_year_start
+		local.fiscal_year_start === remote.fiscal_year_start &&
+		local.telegram_api_token === remote.telegram_api_token
 	)
 })
 
