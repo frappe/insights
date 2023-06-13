@@ -81,7 +81,7 @@ class BaseDatabase:
 
         with self.connect() as connection:
             res = execute_and_log(connection, sql, self.data_source)
-            cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
+            cols = [ResultColumn.make(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
             return [cols] + rows if return_columns else rows
