@@ -37,6 +37,8 @@ const tabs = [
 function close() {
 	show.value = false
 	selectedTabIndex.value = 0
+	content.value = ''
+	isCritical.value = false
 }
 const $notify = inject('$notify')
 async function submit() {
