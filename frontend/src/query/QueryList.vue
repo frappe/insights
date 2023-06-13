@@ -6,7 +6,7 @@ import { updateDocumentTitle } from '@/utils'
 import { Badge } from 'frappe-ui'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import NewDialogWithTypes from './NewDialogWithTypes.vue'
+import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import useQueries from './useQueries'
 
 const queries = useQueries()
