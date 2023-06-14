@@ -63,6 +63,7 @@ watch(
 )
 
 function getColumnValue(column) {
+	if (!column) return
 	if (column.description == 'local') return column.alias
 	return column.expression?.raw || `${column.table}.${column.column}`
 }

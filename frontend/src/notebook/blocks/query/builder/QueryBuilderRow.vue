@@ -2,7 +2,7 @@
 	<div class="group flex items-start space-x-2.5 text-base">
 		<div
 			v-if="$props.label"
-			class="h-7 w-[10ch] text-right text-sm uppercase leading-7 text-gray-500"
+			class="flex h-7 w-[10ch] flex-shrink-0 justify-end text-sm uppercase leading-7 text-gray-500"
 		>
 			{{ $props.label }}
 		</div>

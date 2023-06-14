@@ -216,14 +216,18 @@ async function autoSelectJoinColumns(join) {
 					v-model="join.left_table"
 					:items="selectedTables"
 				></InputWithPopover>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-500">and</div>
+				<div class="flex h-8 flex-shrink-0 text-sm uppercase leading-8 text-gray-500">
+					and
+				</div>
 				<TableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
 					:data_source="query.doc.data_source"
 					v-model="join.right_table"
 					@update:model-value="() => autoSelectJoinColumns(join)"
 				/>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-500">if</div>
+				<div class="flex h-8 flex-shrink-0 text-sm uppercase leading-8 text-gray-500">
+					if
+				</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
@@ -232,7 +236,9 @@ async function autoSelectJoinColumns(join) {
 						v-model="join.left_column"
 					/>
 				</Suspense>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-500">matches</div>
+				<div class="flex h-8 flex-shrink-0 text-sm uppercase leading-8 text-gray-500">
+					matches
+				</div>
 				<Suspense>
 					<ColumnSelector
 						class="flex rounded-lg border border-gray-300 text-gray-800"
