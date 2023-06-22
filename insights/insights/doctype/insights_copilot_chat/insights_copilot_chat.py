@@ -20,7 +20,7 @@ class InsightsCopilotChat(Document):
             history=history[:-1],
             verbose=True,
         )
-        answer = copilot.ask(question=history[-1]["message"])
+        answer = copilot.ask(question=history[-1]["message"], stream=True)
         self.last_message_id = history[-1]["id"]
         history.append(
             {

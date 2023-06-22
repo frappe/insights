@@ -5,6 +5,7 @@ import hashlib
 
 import frappe
 import tiktoken
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.schema import AIMessage, FunctionMessage, HumanMessage, SystemMessage
@@ -44,6 +45,7 @@ class OpenAI:
             openai_api_key=OpenAI.get_key(),
             model_name=OPENAI_MODEL,
             temperature=0.0,
+            streaming=True,
         )
 
 
@@ -225,13 +227,15 @@ class SQLCopilot:
                 "No tables found in the database. Please make sure the data source is synced."
             )
 
-    def ask(self, question):
+    def ask(self, question, stream=False):
         max_iterations, iteration = 5, 0
         while True:
             messages = self.prepare_messages(question)
             chatgpt = OpenAI.get_chatgpt()
             response = chatgpt.predict_messages(
-                messages, functions=self.get_functions()
+                messages,
+                functions=self.get_functions(),
+                callbacks=[StreamOutputCallback()] if stream else [],
             )
             if not self.is_function_call(response) or iteration >= max_iterations:
                 break
@@ -338,3 +342,8 @@ class SQLCopilot:
         self._function_messages.append(
             FunctionMessage(name=function_name, content=function_response)
         )
+
+
+class StreamOutputCallback(BaseCallbackHandler):
+    def on_llm_new_token(self, token, **kwargs):
+        frappe.publish_realtime("llm_stream_output", token, user=frappe.session.user)

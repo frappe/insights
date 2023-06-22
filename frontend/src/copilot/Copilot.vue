@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watchEffect, onMounted, watch } from 'vue'
+import { ref, computed, watchEffect, onMounted, watch, inject, onBeforeUnmount } from 'vue'
 import auth from '@/utils/auth'
 import Sparkles from '@/components/Icons/Sparkles.vue'
 import ContentEditable from '@/notebook/ContentEditable.vue'
@@ -35,6 +35,23 @@ const observer = new ResizeObserver(() => {
 })
 onMounted(() => {
 	observer.observe(chatContainer.value)
+})
+
+const streamOutput = ref('...')
+const $socket = inject('$socket')
+const $auth = inject('$auth')
+$socket.on('llm_stream_output', (data) => {
+	if (!data) return
+	if (streamOutput.value == '...') streamOutput.value = ''
+	streamOutput.value += data
+})
+watchEffect(() => {
+	if (!chat.sending) {
+		streamOutput.value = '...'
+	}
+})
+onBeforeUnmount(() => {
+	$socket.off('llm_stream_output')
 })
 </script>
 <template>
@@ -110,10 +127,12 @@ onMounted(() => {
 										<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
 									</div>
 								</div>
-								<div
-									class="relative flex flex-1 animate-pulse items-center rounded-md font-mono text-base"
-								>
-									...
+								<div class="relative flex-1 rounded-md bg-white text-base">
+									<TextEditor
+										editor-class="h-fit custom-prose flex flex-col justify-end max-w-full"
+										:content="markdownToHTML(streamOutput)"
+										:editable="false"
+									/>
 								</div>
 							</div>
 						</transition-group>
