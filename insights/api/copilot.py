@@ -5,11 +5,9 @@ import hashlib
 
 import frappe
 import tiktoken
-from langchain.agents import Tool, initialize_agent
-from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain.schema import AIMessage, FunctionMessage, HumanMessage, SystemMessage
 from langchain.vectorstores import Chroma
 
 from insights.decorators import check_role
@@ -32,7 +30,7 @@ def create_new_chat():
     return new_chat.name
 
 
-OPENAI_MODEL = "gpt-3.5-turbo"
+OPENAI_MODEL = "gpt-3.5-turbo-0613"
 
 
 class OpenAI:
@@ -128,7 +126,7 @@ class SchemaStore:
         data = []
         doc = DataSource.get(self.data_source)
         for table in tables:
-            query = f"SELECT * FROM `{table.table}` LIMIT 5"
+            query = f"SELECT * FROM `{table.table}` LIMIT 3"
             try:
                 results = doc.db.execute_query(query, return_columns=True)
             except BaseException:
@@ -179,23 +177,9 @@ class SchemaStore:
         docs = self.vector_store.similarity_search(query, k)
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def make_agent_tool(self):
-        def _find_relevant_tables(query):
-            return self.find_relevant_tables(query)
-
-        return Tool(
-            func=_find_relevant_tables,
-            name="Find Relevant Tables",
-            description=(
-                "A tool useful for finding the tables that are relevant to generate a sql query."
-                "If user expects a sql query as an answer, this tool **should** be used to find the relevant tables first. "
-                "Usage Eg.: `Show me relevant tables to <user question>?`"
-            ),
-        )
-
 
 SQL_GEN_INSTRUCTIONS = """
-You are a data analysis expert called BI_GPT. Your job is to analyze business data by writing SQL queries. You are expert in writing {dialect} SQL queries. Given a question and schema of the database, you can figure out the best possible SQL query that will gain insights from the database.
+You are a data analysis expert called BI_GPT. Your job is to analyze business data by writing SQL queries. You are expert in writing {dialect} SQL queries. Given a question and schema of the database, you can figure out the best possible SQL query that will help gain insights from the database.
 
 Before answering any user's question, always follow these instructions:
 About database schema:
@@ -209,35 +193,25 @@ About writing SQL queries:
 - ALWAYS add a LIMIT clause to the query. The limit should be {limit}.
 
 About answer format:
-- DO NOT add any explanation to the answer.
-- ALWAYS return the answer in the following format:
-    1. <your interpretation of the user's question> eg. User wants to know the total sales for each customer.
-    2. <list the relevant tables being used in the query> eg. Using `table1` and `table2`
-    3. <the SQL query that answers the user's question in markdown format>
-    eg.
-        ```sql
-        SELECT ...
-        ```
+- DO NOT explain the generated query.
+- Use markdown formatting to format the answer.
 
 STRICTLY follow the each and every instruction above. If you don't, you will be banned from the system.
-
-{suffix}
 """
-TOOLS_INSTRUCTIONS = """You have access to following tools:"""
-SCHEMA_INSTRUCTIONS = """Database has the following tables:\n\n{schema}"""
 
 
 class SQLCopilot:
     def __init__(
         self,
         data_source,
-        verbose=False,
         history=None,
+        verbose=False,
     ):
         self.data_source = data_source
-        self.verbose = verbose
         self.history = history or []
+        self.verbose = verbose
         self.max_query_limit = 20
+        self._function_messages = []
         self.prepare_schema()
 
     def prepare_schema(self):
@@ -251,52 +225,33 @@ class SQLCopilot:
                 "No tables found in the database. Please make sure the data source is synced."
             )
 
-    def ask(self, question, validate=True):
-        messages = self.prepare_messages(question)
-        tokens = count_token([m.content for m in messages])
-        self.verbose and print(f"Consuming {tokens} tokens")
-        self.verbose and print(f"\n\nUser: {question}")
-        if not validate:
-            reply = OpenAI.get_chatgpt()(messages)
-            messages.append(AIMessage(content=reply.content))
-            self.history.append({"role": "assistant", "message": reply.content})
-            return reply.content
-
-        iteration, max_iterations = 0, 3
-        final_answer = None
-        while not final_answer:
-            reply = OpenAI.get_chatgpt()(messages)
-            messages.append(AIMessage(content=reply.content))
-            self.verbose and print(f"\n\nCopilot: {reply.content}")
-            validation_error = self.validate_answer(reply.content)
-            if not validate or not validation_error or iteration >= max_iterations:
-                final_answer = reply.content
+    def ask(self, question):
+        max_iterations, iteration = 5, 0
+        while True:
+            messages = self.prepare_messages(question)
+            chatgpt = OpenAI.get_chatgpt()
+            response = chatgpt.predict_messages(
+                messages, functions=self.get_functions()
+            )
+            if not self.is_function_call(response) or iteration >= max_iterations:
                 break
-            iteration += 1
-            messages.append(HumanMessage(content=validation_error))
-            self.verbose and print(f"\n\nUser: {validation_error}")
+            self.handle_function_call(response)
 
-        self.history.append({"role": "assistant", "message": final_answer})
-        return reply.content
+        self.history.append({"role": "assistant", "message": response.content})
+        return response.content
 
     def prepare_messages(self, question):
         messages = []
-        relevant_tables = self.schema_store.find_relevant_tables(question, k=3)
-        system_message = self.get_system_message(relevant_tables)
-        messages.append(system_message)
+        system_prompt = SQL_GEN_INSTRUCTIONS.format(
+            dialect=get_data_source_dialect(self.data_source),
+            limit=self.max_query_limit,
+        )
+        messages.append(SystemMessage(content=system_prompt))
         messages += self.get_history_messages()
         messages.append(HumanMessage(content=question))
-        self.history.append({"role": "user", "message": question})
+        if self._function_messages:
+            messages += self._function_messages
         return messages
-
-    def get_system_message(self, relevant_tables):
-        dialect = get_data_source_dialect(self.data_source)
-        system_message = SQL_GEN_INSTRUCTIONS.format(
-            dialect=dialect,
-            limit=self.max_query_limit,
-            suffix=SCHEMA_INSTRUCTIONS.format(schema=relevant_tables),
-        )
-        return SystemMessage(content=system_message)
 
     def get_history_messages(self):
         if not self.history:
@@ -310,60 +265,76 @@ class SQLCopilot:
                 messages.append(HumanMessage(content=message["message"]))
         return messages
 
-    def validate_answer(self, answer):
-        """
-        Returns the error message if validation fails.
-        Returns None if validation succeeds.
+    def get_functions(self):
+        return [
+            {
+                "name": "get_relevant_db_tables",
+                "description": "A function useful for finding the tables that are relevant to generate a sql query.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "question": {
+                            "type": "string",
+                            "description": "The user's question",
+                        },
+                    },
+                    "required": ["question"],
+                },
+            },
+            {
+                "name": "execute_sql_query",
+                "description": "A function useful for executing a sql query.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "A syntactically correct sql query",
+                        },
+                    },
+                    "required": ["query"],
+                },
+            },
+        ]
 
-        Validates the answer by executing the query and checking the results.
+    def run_function(self, function_name, arguments):
+        def _get_relevant_tables(question):
+            tables = self.schema_store.find_relevant_tables(question)
+            return "Relevant tables:\n\n" + tables
 
-        If execution fails, returns the error message
-        If execution succeeds and there are no results, returns a message saying that there are no results
-        If execution succeeds and there are results, returns None
-        """
-
-        try:
-            query = self.get_query_from_answer(answer)
-        except BaseException as e:
-            return f"It threw an error. Error: {e}. Look for corrections and try again."
-
-        doc = DataSource.get(self.data_source)
-        try:
+        def execute_sql_query(query):
+            source = DataSource.get(self.data_source)
             limited_query = add_limit_to_sql(query, limit=self.max_query_limit)
-            results = doc.db.execute_query(limited_query)
-            if not results:
-                return "The query didn't return any results. Look for corrections and try again."
+            try:
+                results = source.db.execute_query(limited_query)
+                if not results:
+                    return "The query didn't return any results. Try writing a different query."
+                return "Results:\n\n" + str(results)
 
-            self.verbose and print(f"Query executed successfully. Results: {results}")
-            return None
+            except BaseException as e:
+                return f"It threw an error. Error: {e}. Look for corrections and try again."
+
+        try:
+            if function_name == "get_relevant_db_tables":
+                return _get_relevant_tables(**arguments)
+            elif function_name == "execute_sql_query":
+                return execute_sql_query(**arguments)
         except BaseException as e:
             return f"It threw an error. Error: {e}. Look for corrections and try again."
 
-    def get_query_from_answer(self, answer):
-        ans_lower = answer.lower()
-        if "select" not in ans_lower and "from" not in ans_lower:
-            raise frappe.ValidationError("Answer doesn't contain a select query")
-
-        # try to manually extract the query from the answer
-        try:
-            query = answer.split("```sql")[1].split("```")[0]
-            if query.lower().startswith("select"):
-                return query
-        except BaseException:
-            self.verbose and print("Manual extraction failed")
-
-        chatgpt = OpenAI.get_chatgpt()
-        query = chatgpt(
-            [
-                SystemMessage(
-                    content="Extract the sql query from the given text. "
-                    "Reply with ONLY the sql query and NOTHING else. "
-                    "DO NOT use any kind of formatting."
-                ),
-                HumanMessage(content=answer),
-            ]
+    def is_function_call(self, response):
+        return (
+            not response.content
+            and response.additional_kwargs
+            and response.additional_kwargs["function_call"]
         )
-        self.verbose and print(f"Extracted query: {query.content}")
-        if "select" not in ans_lower and "from" not in ans_lower:
-            raise frappe.ValidationError("Answer doesn't contain a select query")
-        return query.content
+
+    def handle_function_call(self, response):
+        function_call = response.additional_kwargs["function_call"]
+        function_name = function_call["name"]
+        arguments = function_call["arguments"]
+        arguments = frappe.parse_json(arguments)
+        function_response = self.run_function(function_name, arguments)
+        self._function_messages.append(
+            FunctionMessage(name=function_name, content=function_response)
+        )
