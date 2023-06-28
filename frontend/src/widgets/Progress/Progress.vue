@@ -1,6 +1,7 @@
 <script setup>
 import { getShortNumber } from '@/utils'
 import { computed } from 'vue'
+import settings from '@/utils/systemSettings'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },
@@ -33,7 +34,7 @@ const target = computed(() => {
 
 function formatValue(value) {
 	if (props.options.shorten) {
-		return getShortNumber(value, props.options.decimals)
+		return getShortNumber(value, props.options.decimals, settings.doc?.language)
 	}
 	return Number(value).toLocaleString(undefined, {
 		maximumFractionDigits: props.options.decimals,

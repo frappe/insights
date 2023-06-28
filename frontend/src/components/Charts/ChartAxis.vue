@@ -2,6 +2,7 @@
 
 <script setup>
 import { inject, useAttrs, watch } from 'vue'
+import settings from '@/utils/systemSettings'
 
 const { axisType, type = 'category', ...attributes } = useAttrs()
 const options = inject('options')
@@ -15,7 +16,7 @@ const defaults = {
 				return value
 			}
 			if (type === 'value') {
-				return $utils.getShortNumber(value, 1)
+				return $utils.getShortNumber(value, 1, settings.doc?.language)
 			}
 		},
 	},

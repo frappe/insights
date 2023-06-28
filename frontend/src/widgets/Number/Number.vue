@@ -1,5 +1,6 @@
 <script setup>
 import { computed, inject } from 'vue'
+import settings from '@/utils/systemSettings'
 
 const $utils = inject('$utils')
 const props = defineProps({
@@ -21,9 +22,9 @@ const formattedValue = computed(() => {
 	}, 0)
 
 	if (props.options.hasOwnProperty('shorten') && !props.options.shorten) {
-		return $utils.formatNumber(_value, props.options.decimals)
+		return $utils.formatNumber(_value, props.options.decimals, settings.doc?.language)
 	}
-	return $utils.getShortNumber(_value, props.options.decimals)
+	return $utils.getShortNumber(_value, props.options.decimals, settings.doc?.language)
 })
 </script>
 
