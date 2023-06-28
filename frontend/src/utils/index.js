@@ -103,8 +103,7 @@ export function ellipsis(value, length) {
 	return value
 }
 
-export function getShortNumber(number, precision = 0) {
-	const locale = 'en-IN' // TODO: get locale from user settings
+export function getShortNumber(number, precision = 0, locale = undefined) {
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
@@ -116,8 +115,7 @@ export function getShortNumber(number, precision = 0) {
 	return formatted
 }
 
-export function formatNumber(number, precision = 0) {
-	const locale = 'en-IN' // TODO: get locale from user settings
+export function formatNumber(number, precision = 0, locale = undefined) {
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,
 	}).format(number)
