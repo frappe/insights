@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import frappe
+import telegram
 from croniter import croniter
 from frappe.integrations.utils import make_post_request
 from frappe.model.document import Document
@@ -29,26 +30,9 @@ class InsightsAlert(Document):
         self.db_set("last_execution", now_datetime(), update_modified=False)
 
     def send_telegram_alert(self):
-        apiToken = frappe.get_single("Insights Settings").get_password(
-            "telegram_api_token"
-        )
-        if not apiToken:
-            frappe.throw("Telegram API Token not set in Insights Settings")
-
-        chatID = self.telegram_chat_id
-        message = f"Insights Alert: {self.title}"
-        payload = {"chat_id": chatID, "text": message}
-        apiURL = f"https://api.telegram.org/bot{apiToken}/sendMessage"
-
-        try:
-            make_post_request(
-                apiURL,
-                data=frappe.as_json(payload),
-                headers={"Content-Type": "application/json"},
-            )
-        except Exception:
-            frappe.log_error("Insights Alert Error")
-            raise
+        message = self.evaluate_message()
+        tg = Telegram(self.telegram_chat_id)
+        tg.send(message)
 
     def send_email_alert(self):
         subject = f"Insights Alert: {self.title}"
@@ -72,20 +56,17 @@ class InsightsAlert(Document):
         if not results:
             return False
 
-        result_dict = {}
         column_names = [d.get("label") for d in results[0]]
-        result_df = DataFrame(results[1:], columns=column_names)
-        for column in result_df.columns:
-            result_dict[column] = result_df[column].tolist()
+        results = DataFrame(results[1:], columns=column_names)
 
         return frappe.safe_eval(
-            self.condition, eval_locals=frappe._dict(results=result_dict)
+            self.condition, eval_locals=frappe._dict(results=results, any=any)
         )
 
     def evaluate_message(self):
         query = frappe.get_doc("Insights Query", self.query)
         query_dict = query.as_dict()
-        query_dict.results = f"""<div class="results">{query.get_formatted_results(as_html=True)}</div>"""
+        # query_dict.results = f"""<div class="results">{query.get_formatted_results(as_html=True)}</div>"""
         message = frappe.render_template(self.message, context=query_dict)
         return frappe.render_template(
             "insights/templates/alert.html", context=frappe._dict(message=message)
@@ -130,3 +111,30 @@ def send_alerts():
         if alert_doc.is_event_due():
             alert_doc.send_alert()
             frappe.db.commit()
+
+
+class Telegram:
+    def __init__(self, chat_id: str = None):
+        self.token = frappe.get_single("Insights Settings").get_password(
+            "telegram_api_token"
+        )
+        if not self.token:
+            frappe.throw("Telegram Bot Token not set in Insights Settings")
+
+        if chat_id:
+            self.chat_id = chat_id
+
+    def send(self, message):
+        try:
+            text = message[: telegram.MAX_MESSAGE_LENGTH]
+            parse_mode = telegram.ParseMode.MARKDOWN
+            return self.bot.send_message(
+                chat_id=self.chat_id, text=text, parse_mode=parse_mode
+            )
+        except Exception:
+            frappe.log_error("Telegram Bot Error")
+            raise
+
+    @property
+    def bot(self):
+        return telegram.Bot(token=self.token)

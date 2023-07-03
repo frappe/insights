@@ -62,6 +62,16 @@
 							icon: 'help-circle',
 							handler: () => open('https://docs.frappeinsights.com'),
 						},
+						{
+							label: 'Join Telegram Group',
+							icon: 'message-circle',
+							handler: () => open('https://t.me/frappeinsights'),
+						},
+						{
+							label: 'Help',
+							icon: 'life-buoy',
+							handler: () => (showHelpDialog = true),
+						},
 						auth.user.is_admin
 							? {
 									label: 'Switch to Desk',
@@ -98,6 +108,8 @@
 			</div>
 		</div>
 	</div>
+
+	<HelpDialog v-model="showHelpDialog" />
 </template>
 
 <script setup>
@@ -111,6 +123,7 @@ import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
 import { Wrench, LayoutDashboard, Database, Settings, User, Users, Star } from 'lucide-vue-next'
 
+const showHelpDialog = ref(false)
 const sidebarItems = ref([
 	{
 		path: '/dashboard',

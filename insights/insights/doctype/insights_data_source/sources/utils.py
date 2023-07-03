@@ -75,7 +75,7 @@ def create_insights_table(table, force=False):
 
     for column in table.columns or []:
         # do not overwrite existing columns, since type or label might have been changed
-        if any([doc_column.column == column.column for doc_column in doc.columns]):
+        if any(doc_column.column == column.column for doc_column in doc.columns):
             continue
         doc.append("columns", column)
 
@@ -84,9 +84,13 @@ def create_insights_table(table, force=False):
         if column.column not in column_names:
             doc.remove(column)
 
-    # need to ignore permissions when creating/updating a table in query store
-    # a user may have access to create a query and store it, but not to create a table
-    doc.save(ignore_permissions=force)
+    version = frappe.new_doc("Version")
+    # if there's some update to store only then save the doc
+    doc_changed = version.update_version_info(doc.get_doc_before_save(), doc)
+    if not exists or force or doc_changed:
+        # need to ignore permissions when creating/updating a table in query store
+        # a user may have access to create a query and store it, but not to create a table
+        doc.save(ignore_permissions=True)
     return doc.name
 
 
@@ -258,6 +262,14 @@ def compile_query(query, dialect=None):
     compile_args = {"compile_kwargs": {"literal_binds": True}, "dialect": dialect}
     compiled = query.compile(**compile_args)
     return compiled
+
+
+# a sugar method to return execution time and log the query
+def execute_and_log(conn, sql, data_source, verbose=False):
+    with Timer() as t:
+        result = conn.execute(sql)
+    create_execution_log(sql, data_source, t.elapsed)
+    return result
 
 
 def create_execution_log(sql, data_source, time_taken=0):

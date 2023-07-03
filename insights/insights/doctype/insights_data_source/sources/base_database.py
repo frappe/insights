@@ -3,6 +3,7 @@
 
 import frappe
 from sqlalchemy.sql import text
+from sqlalchemy.sql.elements import ClauseElement
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -10,10 +11,9 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
 from insights.utils import ResultColumn
 
 from .utils import (
-    Timer,
     add_limit_to_sql,
     compile_query,
-    create_execution_log,
+    execute_and_log,
     replace_query_tables_with_cte,
 )
 
@@ -70,34 +70,42 @@ class BaseDatabase:
         replace_query_tables=False,
         is_native_query=False,
     ):
-        if not isinstance(sql, str) and not is_native_query:
-            # since db.execute() is also being used with Query objects i.e non-compiled queries
-            compiled = compile_query(sql, self.engine.dialect)
-            sql = str(compiled) if compiled else None
-
         if sql is None:
             return []
 
+        sql = self.compile_if_needed(sql, is_native_query)
+        sql = self.process_subquery(sql, replace_query_tables)
+        sql = self.escape_special_characters(sql) if is_native_query else sql
+
+        self.validate_native_sql(sql)
+
+        with self.connect() as connection:
+            res = execute_and_log(connection, sql, self.data_source)
+            cols = [ResultColumn.make(d[0]) for d in res.cursor.description]
+            rows = [list(r) for r in res.fetchall()]
+            rows = [r[0] for r in rows] if pluck else rows
+            return [cols] + rows if return_columns else rows
+
+    def compile_if_needed(self, sql, is_native_query):
+        if isinstance(sql, ClauseElement) and not is_native_query:
+            # since db.execute() is also being used with Query objects i.e non-compiled queries
+            compiled = compile_query(sql, self.engine.dialect)
+            sql = str(compiled) if compiled else None
+        return sql
+
+    def process_subquery(self, sql, replace_query_tables):
         allow_subquery = frappe.db.get_single_value(
             "Insights Settings", "allow_subquery"
         )
         if replace_query_tables and allow_subquery:
             sql = replace_query_tables_with_cte(sql, self.data_source)
+        return sql
 
-        self.validate_query(sql)
+    def escape_special_characters(self, sql):
         # to fix special characters in query like %
-        sql = sql.replace("%%", "%") if is_native_query else sql
-        sql = text(sql) if is_native_query else sql
-        with self.connect() as connection:
-            with Timer() as t:
-                res = connection.execute(sql)
-            create_execution_log(sql, self.data_source, t.elapsed)
-            columns = [ResultColumn.make(d[0], d[1]) for d in res.cursor.description]
-            rows = [list(r) for r in res.fetchall()]
-            rows = [r[0] for r in rows] if pluck else rows
-            return [columns] + rows if return_columns else rows
+        return text(sql.replace("%%", "%"))
 
-    def validate_query(self, query):
+    def validate_native_sql(self, query):
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
         if not select_or_with:
             frappe.throw("Only SELECT and WITH queries are allowed")
