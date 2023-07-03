@@ -760,7 +760,7 @@ class SQLQueryBuilder:
 
         columns = self._columns + self._dimensions + self._measures
         if not columns:
-            columns = [text("*")]
+            columns = [text("t0.*")]
 
         query = select(*columns).select_from(main_table)
         for join in self._joins:
