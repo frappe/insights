@@ -3,11 +3,16 @@ import auth from '@/utils/auth'
 import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
+import { isSetupComplete } from '@/setup'
 
 const routes = [
 	{
 		path: '/setup',
-		redirect: '/',
+		name: 'Setup',
+		component: () => import('@/setup/Setup.vue'),
+		meta: {
+			hideSidebar: true,
+		},
 	},
 	{
 		path: '/login',
@@ -156,11 +161,12 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	if (!auth.isLoggedIn && to.name !== 'Login' && to.meta.allowGuest) {
+	if (to.meta.allowGuest && !auth.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
 		return next()
 	}
 
+	// route to login page if not logged in
 	if (!auth.isLoggedIn) {
 		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
@@ -172,7 +178,7 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
-	const trialExpired = import.meta.env.DEV ? false : await getTrialStatus()
+	const trialExpired = await getTrialStatus()
 	if (trialExpired && to.name !== 'Trial Expired') {
 		return next('/trial-expired')
 	}
@@ -186,17 +192,23 @@ router.beforeEach(async (to, from, next) => {
 		return next('/no-permission')
 	}
 
+	// redirect to /setup if setup is not complete
+	const setupComplete = await isSetupComplete()
+	if (!setupComplete && to.name !== 'Setup') {
+		return next('/setup')
+	}
+	// redirect to / if setup is complete and user is on /setup
+	if (setupComplete && to.name === 'Setup') {
+		return next('/')
+	}
+
 	// redirect to /dashboard if onboarding is complete
 	const onboardingComplete = await getOnboardingStatus()
 	if (onboardingComplete && to.name == 'Get Started') {
 		return next('/dashboard')
 	}
 
-	if (to.path === '/login') {
-		next('/')
-	} else {
-		next()
-	}
+	to.path === '/login' ? next('/') : next()
 })
 
 const _fetch = window.fetch
