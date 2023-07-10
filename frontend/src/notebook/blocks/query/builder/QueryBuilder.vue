@@ -88,6 +88,12 @@ function addBlock(type) {
 	}
 	const block = typeToEmptyValue[type]
 	const key = typeToKey[type]
+
+	// if joining and only one table is selected, use that table as the left table
+	if (type == 'Combine' && selectedTables.value.length == 1) {
+		block.left_table = selectedTables.value[0]
+	}
+
 	if (Array.isArray(state.value[key])) {
 		state.value[key].push(block)
 	} else {
