@@ -67,9 +67,7 @@ def get_table_columns(data_source, table):
 @check_role("Insights User")
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @frappe.whitelist()
@@ -105,9 +103,7 @@ def get_dashboard_list():
     )
     for dashboard in dashboards:
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
             filters={
@@ -176,7 +172,7 @@ def get_queries():
 def create_query(**query):
     track("create_query")
     doc = frappe.new_doc("Insights Query")
-    doc.title = query.get("title") or "Untitled Query"
+    doc.title = query.get("title")
     doc.data_source = query.get("data_source") or "Demo Data"
     doc.is_assisted_query = query.get("is_assisted_query")
     if table := query.get("table") and not doc.is_assisted_query:
@@ -222,9 +218,7 @@ def get_user_info():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
-):
+def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
 
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
@@ -268,9 +262,7 @@ def create_table_link(
 @check_role("Insights User")
 def get_onboarding_status():
     return {
-        "is_onboarded": frappe.db.get_single_value(
-            "Insights Settings", "onboarding_complete"
-        ),
+        "is_onboarded": frappe.db.get_single_value("Insights Settings", "onboarding_complete"),
         "query_created": bool(frappe.db.a_row_exists("Insights Query")),
         "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
         "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
@@ -468,15 +460,11 @@ def get_public_chart(public_key):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
-    chart_name = frappe.db.exists(
-        "Insights Chart", {"public_key": public_key, "is_public": 1}
-    )
+    chart_name = frappe.db.exists("Insights Chart", {"public_key": public_key, "is_public": 1})
     if not chart_name:
         frappe.throw("Invalid Public Key")
 
-    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(
-        no_default_fields=True
-    )
+    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(no_default_fields=True)
     chart_data = frappe.get_cached_doc("Insights Query", chart.query).fetch_results()
     chart["data"] = chart_data
     return chart

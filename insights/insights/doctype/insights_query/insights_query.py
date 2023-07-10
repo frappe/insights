@@ -40,6 +40,10 @@ from .utils import (
 
 
 class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
+    def before_validate(self):
+        if not self.title and self.name:
+            self.title = self.name.replace("-", " ").replace("QRY", "Query")
+
     def before_save(self):
         self.update_sql_query()
 
@@ -81,7 +85,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def reset(self):
         new_query = frappe.new_doc("Insights Query")
         new_query.name = self.name
-        new_query.title = "Untitled Query"
+        new_query.title = self.name.replace("-", " ").replace("QRY", "Query")
         new_query.data_source = self.data_source
         new_query_dict = new_query.as_dict(no_default_fields=True)
         self.update(new_query_dict)
