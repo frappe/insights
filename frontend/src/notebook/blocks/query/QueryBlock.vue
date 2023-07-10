@@ -1,6 +1,4 @@
 <script setup>
-import useDataSources from '@/datasource/useDataSources'
-import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import useQueries from '@/query/useQueries'
 import { copyToClipboard } from '@/utils'
 import { computed, inject, provide, reactive, ref } from 'vue'
@@ -18,12 +16,7 @@ const props = defineProps({ query: String, is_native: Boolean })
 
 let query = null
 if (!props.query) {
-	const sources = await useDataSources()
-	await sources.reload()
-	const source = sources.list[0]
-	const queryDoc = await useQueries().create({
-		data_source: source.name,
-	})
+	const queryDoc = await useQueries().create()
 	emit('setQuery', queryDoc.name)
 	query = useQuery(queryDoc.name)
 	props.is_native ? await query.convertToNative() : await query.convertToAssisted()
@@ -47,24 +40,6 @@ state.removeQuery = () => {
 }
 
 const blockRef = ref(null)
-const sources = useDataSources()
-sources.reload()
-const sourceOptions = computed(() =>
-	sources.list.map((source) => ({
-		label: source.title,
-		value: source.name,
-		description: source.name,
-	}))
-)
-const selectedSource = computed(() => {
-	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
-})
-async function changeDataSource(source) {
-	if (source.value === query.doc.data_source) return
-	query.doc.data_source = source.value
-	await query.updateDoc({ data_source: source.value })
-}
-
 const page = inject('page')
 const router = useRouter()
 function duplicateQuery() {
@@ -87,7 +62,7 @@ const formattedSQL = computed(() => {
 	<div
 		ref="blockRef"
 		v-if="query.doc.name"
-		class="relative my-6 overflow-hidden rounded border bg-white"
+		class="relative my-6 overflow-hidden rounded-md border bg-white"
 	>
 		<QueryBlockHeader />
 		<transition name="fade" mode="out-in">
@@ -112,22 +87,6 @@ const formattedSQL = computed(() => {
 	</div>
 
 	<BlockActions :blockRef="blockRef">
-		<BlockAction class="!px-0">
-			<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
-				<InputWithPopover
-					placeholder="Data Source"
-					:items="sourceOptions"
-					:value="selectedSource"
-					placement="bottom-end"
-					:disableFilter="true"
-					@update:modelValue="changeDataSource"
-				></InputWithPopover>
-				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
-					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
-				</p>
-			</div>
-		</BlockAction>
-
 		<BlockAction
 			label="Save"
 			icon="save"

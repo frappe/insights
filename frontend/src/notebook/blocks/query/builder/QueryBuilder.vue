@@ -10,6 +10,7 @@ import InputWithPopover from './InputWithPopover.vue'
 import OperatorSelector from './OperatorSelector.vue'
 import QueryBuilderRow from './QueryBuilderRow.vue'
 import ResizeableInput from './ResizeableInput.vue'
+import SourceAndTableSelector from './SourceAndTableSelector.vue'
 import TableSelector from './TableSelector.vue'
 import ValueSelector from './ValueSelector.vue'
 
@@ -189,16 +190,12 @@ async function autoSelectJoinColumns(join) {
 
 <template>
 	<div class="flex flex-1 flex-col justify-between px-3 py-1 text-base">
-		<div
-			v-if="query.doc.data_source"
-			class="space-y-3 overflow-scroll scrollbar-hide"
-			:key="query.doc.data_source"
-		>
+		<div class="space-y-3 overflow-scroll scrollbar-hide" :key="query.doc.data_source">
 			<QueryBuilderRow label="Start with" :onRemove="() => (state.table = {})">
-				<TableSelector
+				<SourceAndTableSelector
 					class="flex rounded-lg border border-gray-300 text-gray-800"
-					:data_source="query.doc.data_source"
 					v-model="state.table"
+					@update:model-value="query.doc.data_source = $event.data_source"
 				/>
 			</QueryBuilderRow>
 
@@ -488,7 +485,6 @@ async function autoSelectJoinColumns(join) {
 		</div>
 
 		<div class="flex items-center space-x-1.5 pt-4 text-sm text-gray-400">
-			<FeatherIcon name="plus" class="mr-1 h-4 w-4" />
 			<div
 				v-for="item in [
 					'Combine',
