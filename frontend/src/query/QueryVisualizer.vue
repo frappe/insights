@@ -76,6 +76,7 @@
 			<template #actions>
 				<Button
 					appearance="primary"
+					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 					@click="addChartToDashboard"
 					:loading="addingToDashboard"
 				>

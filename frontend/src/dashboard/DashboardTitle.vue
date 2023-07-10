@@ -47,6 +47,7 @@ const editing = ref(false)
 			icon="check"
 			appearance="primary"
 			@click="() => ((editing = false), $emit('update', title))"
+			class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 		></Button>
 	</div>
 </template>

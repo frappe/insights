@@ -70,7 +70,12 @@
 			>
 				Remove
 			</Button>
-			<Button @click="addOrEditColumn" appearance="primary" :disabled="applyDisabled">
+			<Button
+				@click="addOrEditColumn"
+				appearance="primary"
+				:disabled="applyDisabled"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+			>
 				{{ props.column.name ? 'Update' : 'Add ' }}
 			</Button>
 		</div>

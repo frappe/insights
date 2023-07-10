@@ -12,7 +12,7 @@ const dashboard = inject('dashboard')
 	<div
 		v-if="options.markdown"
 		class="relative flex h-full w-full items-center px-2"
-		:class="[dashboard.editing ? 'rounded-md border-2 border-dashed border-gray-300' : '']"
+		:class="[dashboard.editing ? 'rounded-lg border-2 border-dashed border-gray-300' : '']"
 	>
 		<TextEditor
 			editor-class="h-fit prose-sm flex flex-col justify-end"

@@ -6,7 +6,7 @@
 			:actions="[
 				{
 					label: 'New Data Source',
-					appearance: 'white',
+					appearance: 'primary',
 					iconLeft: 'plus',
 					handler: () => (new_dialog = true),
 				},

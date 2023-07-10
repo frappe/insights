@@ -18,7 +18,7 @@
 							</div>
 							<Checkbox v-model="isPublic" />
 						</div>
-						<div class="flex overflow-hidden rounded-md bg-gray-100" v-if="publicLink">
+						<div class="flex overflow-hidden rounded-lg bg-gray-100" v-if="publicLink">
 							<div
 								class="font-code form-input flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-r-none text-sm text-gray-600"
 							>
@@ -77,7 +77,7 @@
 
 							<div
 								v-else
-								class="flex h-20 items-center justify-center rounded-md border-2 border-dashed text-sm font-light text-gray-400"
+								class="flex h-20 items-center justify-center rounded-lg border-2 border-dashed text-sm font-light text-gray-400"
 							>
 								Only you have access to this
 								{{ resourceType.replace('Insights ', '').toLowerCase() }}

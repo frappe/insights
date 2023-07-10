@@ -9,7 +9,7 @@
 		</div>
 		<div
 			v-if="!pickingFilter && (!filters.conditions || filters.conditions.length == 0)"
-			class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+			class="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 		>
 			<p>No filters added</p>
 		</div>

@@ -34,7 +34,7 @@ if (isChart) {
 	<div class="dashboard-item h-full min-h-[60px] w-full p-1.5">
 		<div class="flex h-full w-full">
 			<div
-				class="group relative flex h-full w-full rounded-md"
+				class="group relative flex h-full w-full rounded-lg"
 				:class="{
 					'border bg-white shadow-sm':
 						item.item_type !== 'Filter' && item.item_type !== 'Text',
@@ -42,7 +42,7 @@ if (isChart) {
 			>
 				<div
 					v-if="chartData.loading"
-					class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-md bg-white"
+					class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-lg bg-white"
 				>
 					<LoadingIndicator class="w-6 text-gray-300" />
 				</div>

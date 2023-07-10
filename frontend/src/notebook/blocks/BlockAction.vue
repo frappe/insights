@@ -12,7 +12,7 @@ const props = defineProps({
 
 <template>
 	<div
-		class="flex h-8 cursor-pointer items-center rounded-md border border-gray-200 bg-white px-2 hover:bg-gray-50 hover:text-gray-800"
+		class="flex h-8 cursor-pointer items-center rounded-lg border border-gray-200 bg-white px-2 hover:bg-gray-50 hover:text-gray-800"
 		@click.prevent.stop="() => !loading && action && action()"
 	>
 		<slot>

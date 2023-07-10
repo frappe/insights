@@ -81,7 +81,7 @@ function showDeletePrompt() {
 					item.appearance == 'danger'
 						? 'text-red-600 hover:bg-gray-200/70 hover:text-red-600'
 						: 'text-gray-600 hover:bg-gray-200/70 hover:text-gray-800',
-					'group flex cursor-pointer items-center rounded-md px-2 py-1.5 font-medium hover:bg-gray-200/70 hover:text-gray-800',
+					'group flex cursor-pointer items-center rounded-lg px-2 py-1.5 font-medium hover:bg-gray-200/70 hover:text-gray-800',
 				]"
 				@click="handleSidebarItemClick(item)"
 			>

@@ -34,7 +34,11 @@ async function updateERPNextSourceTitle() {
 			<div v-if="setupState.sourceType == 'erpnext'">
 				<Input v-model="erpnextSiteTitle" label="Title" />
 				<div class="mt-6 flex flex-shrink-0 justify-end space-x-3">
-					<Button appearance="primary" @click="updateERPNextSourceTitle">
+					<Button
+						appearance="primary"
+						@click="updateERPNextSourceTitle"
+						class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+					>
 						Continue
 					</Button>
 				</div>

@@ -3,8 +3,8 @@
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Settings</div>
 			<Button
-				:appearance="updateDisabled ? 'white' : 'primary'"
-				class="shadow-sm"
+				appearance="primary "
+				class="!rounded-lg bg-gray-900 text-gray-50 shadow-sm hover:bg-gray-800"
 				:disabled="updateDisabled"
 				@click="settings.updateSettings(settingsDoc)"
 			>

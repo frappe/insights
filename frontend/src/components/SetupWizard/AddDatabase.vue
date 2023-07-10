@@ -79,6 +79,7 @@
 				loadingText="Adding Database..."
 				:loading="createDatabase.loading"
 				@click="createNewDatabase"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				{{ submitLabel }}
 			</Button>

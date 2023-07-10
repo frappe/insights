@@ -180,7 +180,7 @@
 			<template #body-content>
 				<div class="relative">
 					<p
-						class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
+						class="rounded-lg border bg-gray-100 p-2 text-base text-gray-600"
 						style="font-family: 'Fira Code'"
 						v-html="formattedSQL"
 					></p>
@@ -224,6 +224,7 @@
 			<template #actions>
 				<Button
 					appearance="primary"
+					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 					@click="() => applyTransform('Pivot', pivot)"
 					:disabled="pivotDisabled"
 					:loading="query.addTransform?.loading"
@@ -263,6 +264,7 @@
 			<template #actions>
 				<Button
 					appearance="primary"
+					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 					@click="() => applyTransform('Unpivot', unpivot)"
 					:disabled="unpivotDisabled"
 					:loading="query.addTransform?.loading"
@@ -296,6 +298,7 @@
 			<template #actions>
 				<Button
 					appearance="primary"
+					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 					@click="() => applyTransform('Transpose', transpose)"
 					:disabled="transposeDisabled"
 					:loading="query.addTransform?.loading"

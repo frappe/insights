@@ -18,7 +18,7 @@
 							</div>
 							<Checkbox v-model="isPublic" />
 						</div>
-						<div class="flex overflow-hidden rounded-md bg-gray-100" v-if="publicLink">
+						<div class="flex overflow-hidden rounded-lg bg-gray-100" v-if="publicLink">
 							<div
 								class="font-code form-input flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-r-none text-sm text-gray-600"
 							>

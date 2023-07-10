@@ -18,7 +18,7 @@ function toggleFavourite() {
 		}"
 	>
 		<div
-			class="mr-4 flex h-full flex-1 flex-col rounded-md border border-gray-100 bg-white shadow-sm"
+			class="mr-4 flex h-full flex-1 flex-col rounded-lg border border-gray-200 bg-white shadow-sm"
 		>
 			<div class="flex flex-1 flex-col p-4">
 				<div class="flex flex-col space-y-3">
@@ -28,7 +28,7 @@ function toggleFavourite() {
 								{{ dashboard.title }}
 							</div>
 							<span
-								class="ml-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+								class="ml-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
 								:class="{
 									'text-yellow-400': dashboard.is_favourite,
 									'text-gray-400': !dashboard.is_favourite,

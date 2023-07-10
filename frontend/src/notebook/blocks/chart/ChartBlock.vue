@@ -131,7 +131,7 @@ watch(
 			class="absolute right-0 top-0 flex h-full w-full flex-col items-center justify-center"
 		>
 			<div class="mb-1 w-[10rem] text-gray-400">Select a query</div>
-			<div class="w-[10rem] rounded-md border border-dashed border-gray-300">
+			<div class="w-[10rem] rounded-lg border border-dashed border-gray-300">
 				<QuerySelector />
 			</div>
 		</div>
@@ -166,7 +166,12 @@ watch(
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="addToDashboard" :loading="addingToDashboard">
+			<Button
+				appearance="primary"
+				@click="addToDashboard"
+				:loading="addingToDashboard"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+			>
 				Add
 			</Button>
 		</template>

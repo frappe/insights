@@ -18,11 +18,11 @@ const filteredDashboards = computed(() => {
 <template>
 	<div class="flex items-baseline">
 		<div class="text-xl font-medium text-gray-700">{{ title }}</div>
-		<div class="ml-2 rounded-md border bg-white px-2 text-gray-500">
+		<div class="ml-2 rounded-lg border bg-white px-2 text-gray-500">
 			{{ dashboards.length }}
 		</div>
 		<div v-if="enableSearch" class="ml-auto flex items-center pr-4">
-			<div class="flex items-center rounded-md border border-gray-100 bg-white px-3">
+			<div class="flex items-center rounded-lg border border-gray-200 bg-white px-3">
 				<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 				<input
 					ref="searchInput"

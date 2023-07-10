@@ -4,7 +4,7 @@
 			v-show="show"
 			class="absolute z-10 flex h-full w-full justify-center bg-gray-50/60 pt-20 text-base backdrop-blur-sm backdrop-grayscale"
 		>
-			<div class="max-h-[28rem] w-[38rem] rounded-md border bg-white shadow-md">
+			<div class="max-h-[28rem] w-[38rem] rounded-lg border bg-white shadow-md">
 				<div class="flex items-center border-b px-3">
 					<FeatherIcon name="search" class="absolute h-4 w-4 text-gray-500" />
 					<input

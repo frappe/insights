@@ -60,7 +60,7 @@ function toggleSelected(row) {
 			<!-- Filter Bar -->
 			<div class="my-2 flex justify-between">
 				<div class="flex space-x-4">
-					<div class="flex items-center rounded-md bg-gray-100 px-3">
+					<div class="flex items-center rounded-lg bg-gray-100 px-3">
 						<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 						<input
 							ref="searchInput"
@@ -71,11 +71,11 @@ function toggleSelected(row) {
 					</div>
 				</div>
 				<!-- Enable after grid feature -->
-				<!-- <div class="flex items-center space-x-1 rounded-md bg-gray-100 p-1">
-					<div class="cursor-pointer rounded-md px-2 py-1 transition-all">
+				<!-- <div class="flex items-center space-x-1 rounded-lg bg-gray-100 p-1">
+					<div class="cursor-pointer rounded-lg px-2 py-1 transition-all">
 						<FeatherIcon name="grid" class="h-4 w-4" />
 					</div>
-					<div class="cursor-pointer rounded-md bg-white px-2 py-1 shadow transition-all">
+					<div class="cursor-pointer rounded-lg bg-white px-2 py-1 shadow transition-all">
 						<FeatherIcon name="list" class="h-4 w-4" />
 					</div>
 				</div> -->
@@ -92,7 +92,7 @@ function toggleSelected(row) {
 					<div>
 						<Input
 							type="checkbox"
-							class="rounded-md border-gray-300"
+							class="rounded-lg border-gray-300"
 							@click.prevent.stop="selectAll"
 						/>
 					</div>
@@ -118,7 +118,7 @@ function toggleSelected(row) {
 					<div>
 						<Input
 							type="checkbox"
-							class="rounded-md border-gray-300"
+							class="rounded-lg border-gray-300"
 							:checked="isSelected(row)"
 							@click.stop="toggleSelected(row)"
 						/>

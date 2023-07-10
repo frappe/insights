@@ -108,7 +108,7 @@ const queryBuilderTypes = ref([
 			:actions="[
 				{
 					label: 'New Query',
-					appearance: 'white',
+					appearance: 'primary',
 					iconLeft: 'plus',
 					handler: () => (new_dialog = true),
 				},

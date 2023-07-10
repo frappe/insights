@@ -95,7 +95,7 @@ function handleTableSelect(selectedTable) {
 		</div>
 		<UsePopover ref="dataSourcePopover" v-if="trigger" :targetElement="trigger">
 			<div
-				class="w-[12rem] rounded-md border bg-white text-base shadow-sm transition-[width]"
+				class="w-[12rem] rounded-lg border bg-white text-base shadow-sm transition-[width]"
 			>
 				<div class="flex items-center rounded-t-md border-b bg-white px-2">
 					<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
@@ -133,7 +133,7 @@ function handleTableSelect(selectedTable) {
 							placement="right-start"
 						>
 							<div
-								class="w-[12rem] rounded-md border bg-white text-base shadow-sm transition-[width]"
+								class="w-[12rem] rounded-lg border bg-white text-base shadow-sm transition-[width]"
 							>
 								<div class="flex items-center rounded-t-md border-b bg-white px-2">
 									<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />

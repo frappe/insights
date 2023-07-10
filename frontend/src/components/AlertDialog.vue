@@ -213,6 +213,7 @@ Thanks,
 				appearance="primary"
 				:disabled="createAlertDisabled"
 				:loading="createAlertResource.loading"
+				class="mr-2 !rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 				@click="createAlert"
 			>
 				Create

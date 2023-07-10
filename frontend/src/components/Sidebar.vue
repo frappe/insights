@@ -6,7 +6,7 @@
 				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
-				<img src="../assets/insights-icon.svg" class="rounded-md" />
+				<img src="../assets/insights-icon.svg" class="rounded-lg" />
 			</router-link>
 
 			<div class="mt-4 flex flex-col">
@@ -32,7 +32,7 @@
 								route.current
 									? 'bg-gray-200/70'
 									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-								'rg:justify-start group flex w-full items-center justify-center rounded-md p-2 font-medium',
+								'rg:justify-start group flex w-full items-center justify-center rounded-lg p-2 font-medium',
 							]"
 							aria-current="page"
 						>
@@ -88,7 +88,7 @@
 				>
 					<template v-slot="{ open }">
 						<button
-							class="flex w-full items-center space-x-2 rounded-md p-2 text-left text-base font-medium"
+							class="flex w-full items-center space-x-2 rounded-lg p-2 text-left text-base font-medium"
 							:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
 						>
 							<Avatar

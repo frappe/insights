@@ -50,7 +50,7 @@ const progressPercent = computed(() => {
 <template>
 	<div
 		v-if="props.options.title"
-		class="flex h-full w-full items-center justify-center rounded-md p-6"
+		class="flex h-full w-full items-center justify-center rounded-lg p-6"
 	>
 		<div class="h-fit w-full max-w-[22rem]">
 			<div>

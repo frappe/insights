@@ -31,12 +31,12 @@
 			<!-- Empty State -->
 			<div
 				v-if="!needsExecution && formattedResult?.length === 0"
-				class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
+				class="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 font-light text-gray-400"
 			>
 				<p>No results found</p>
 			</div>
 			<div v-else class="relative flex flex-1 select-text flex-col-reverse overflow-hidden">
-				<div class="flex-1 overflow-scroll rounded-md bg-gray-50 pt-0">
+				<div class="flex-1 overflow-scroll rounded-lg bg-gray-50 pt-0">
 					<table class="border-separate border-spacing-0 text-sm">
 						<thead class="sticky top-0 text-gray-600">
 							<tr>
@@ -87,7 +87,7 @@
 					>
 						<Button
 							appearance="primary"
-							class="!shadow-md"
+							class="!rounded-lg bg-gray-900 text-gray-50 !shadow-md hover:bg-gray-800"
 							@click="query.debouncedRun()"
 							:loading="query.run.loading"
 							loadingText="Executing..."

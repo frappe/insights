@@ -99,6 +99,7 @@ function validateAndContinue() {
 				appearance="primary"
 				:disabled="selectedOption === null"
 				@click="validateAndContinue"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Continue
 			</Button>

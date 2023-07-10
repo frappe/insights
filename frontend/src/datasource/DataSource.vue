@@ -30,7 +30,7 @@
 			<template #empty-state>
 				<div
 					v-if="dataSource.tables.length !== 0"
-					class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md text-base font-light text-gray-500"
+					class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-lg text-base font-light text-gray-500"
 				>
 					<div class="text-base font-light text-gray-500">Tables are not synced yet.</div>
 					<div

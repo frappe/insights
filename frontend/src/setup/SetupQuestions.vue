@@ -129,6 +129,7 @@ async function validateAndContinue() {
 					sendingResponses ||
 					questions.some((question) => question.selectedAnswerIndexes.length === 0)
 				"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Continue
 			</Button>

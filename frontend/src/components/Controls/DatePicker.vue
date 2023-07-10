@@ -8,18 +8,18 @@
 				:value="value && formatter ? formatter(value) : value"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
-					'form-input block h-7 w-full cursor-pointer select-none rounded-md text-sm placeholder-gray-500',
+					'form-input block h-7 w-full cursor-pointer select-none rounded-lg text-sm placeholder-gray-500',
 					inputClass,
 				]"
 			/>
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 w-fit select-none space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
+				class="my-2 w-fit select-none space-y-3 rounded-lg border border-gray-50 bg-white p-3 text-base shadow"
 			>
 				<div class="flex items-center text-gray-700">
 					<div
-						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
 					>
 						<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
 					</div>
@@ -27,7 +27,7 @@
 						{{ formatMonth }}
 					</div>
 					<div
-						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
 					>
 						<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
 					</div>
@@ -57,7 +57,7 @@
 							<div
 								v-for="date in week"
 								:key="toValue(date)"
-								class="mr-1 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-md last:mr-0 hover:bg-blue-50 hover:text-blue-500"
+								class="mr-1 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-lg last:mr-0 hover:bg-blue-50 hover:text-blue-500"
 								:class="{
 									'text-gray-500': date.getMonth() !== currentMonth - 1,
 									'text-blue-500': toValue(date) === toValue(today),
@@ -79,7 +79,7 @@
 
 				<div class="mt-1 flex w-full justify-end">
 					<div
-						class="cursor-pointer rounded-md px-2 py-1 hover:bg-gray-100"
+						class="cursor-pointer rounded-lg px-2 py-1 hover:bg-gray-100"
 						@click="
 							() => {
 								selectDate('')

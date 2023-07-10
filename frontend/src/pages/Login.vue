@@ -16,7 +16,7 @@
 			/>
 			<ErrorMessage :error="errorMessage" class="mt-4" />
 			<Button
-				class="mt-4"
+				class="mt-4 !rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 				appearance="primary"
 				:disabled="loggingIn"
 				:loading="loggingIn"

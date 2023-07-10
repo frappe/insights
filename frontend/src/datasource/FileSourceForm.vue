@@ -86,7 +86,7 @@ function reset() {
 		<FileUploader @success="(file) => (table.file = file)">
 			<template #default="{ progress, uploading, openFileSelector }">
 				<div
-					class="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-gray-300 p-8 text-base"
+					class="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 text-base"
 					@click="openFileSelector"
 				>
 					<FeatherIcon name="upload" class="h-8 w-8 text-gray-400" />
@@ -182,6 +182,7 @@ function reset() {
 				@click="submit"
 				:disabled="importDisabled"
 				:loading="importingTable"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Import
 			</Button>

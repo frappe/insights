@@ -66,7 +66,7 @@ async function submit() {
 					<div
 						v-for="(tab, index) in tabs"
 						class="flex h-full flex-1 items-center justify-between bg-transparent px-3 py-1.5 transition-all"
-						:class="[selectedTabIndex === index ? 'rounded-md bg-white shadow' : '']"
+						:class="[selectedTabIndex === index ? 'rounded-lg bg-white shadow' : '']"
 						@click="selectedTabIndex = index"
 					>
 						<div class="flex flex-col">
@@ -100,6 +100,7 @@ async function submit() {
 					/>
 					<Button
 						appearance="primary"
+						class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 						:label="selectedTabIndex === 2 ? 'Report Bug' : 'Send'"
 						@click="submit"
 					/>

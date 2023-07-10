@@ -8,7 +8,7 @@
 				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
 				<Button icon="plus" @click="addingTable = true"></Button>
 			</div>
-			<div v-if="addingTable" class="flex w-full flex-shrink-0 space-x-2 pt-1 pb-3">
+			<div v-if="addingTable" class="flex w-full flex-shrink-0 space-x-2 pb-3 pt-1">
 				<div class="flex-1">
 					<Autocomplete
 						ref="tableSearch"
@@ -22,7 +22,7 @@
 			</div>
 			<div
 				v-if="query.tables.data?.length == 0"
-				class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+				class="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 			>
 				<p>No tables selected</p>
 			</div>

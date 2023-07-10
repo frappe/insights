@@ -23,7 +23,7 @@ const options = computed({
 		ref="textEditor"
 		:editable="true"
 		:content="options.markdown"
-		editor-class="h-[8rem] prose-sm cursor-text bg-gray-100 rounded-md p-2"
+		editor-class="h-[8rem] prose-sm cursor-text bg-gray-100 rounded-lg p-2"
 		@change="(val) => (options.markdown = val)"
 	/>
 </template>

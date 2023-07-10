@@ -19,6 +19,11 @@ const props = defineProps({
 				:appearance="action.appearance"
 				:iconLeft="action.iconLeft"
 				@click="action.handler"
+				:class="
+					action.appearance === 'primary'
+						? '!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800 '
+						: ''
+				"
 			>
 				{{ action.label }}
 			</Button>

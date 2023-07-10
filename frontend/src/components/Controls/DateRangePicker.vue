@@ -8,18 +8,18 @@
 				:value="formatter ? formatDates(value) : value"
 				@focus="!readonly ? togglePopover() : null"
 				:class="[
-					'form-input block h-8 w-full cursor-pointer select-none rounded-md text-sm placeholder-gray-500',
+					'form-input block h-8 w-full cursor-pointer select-none rounded-lg text-sm placeholder-gray-500',
 					inputClass,
 				]"
 			/>
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 w-[16rem] select-none space-y-3 rounded-md border border-gray-50 bg-white p-3 text-base shadow"
+				class="my-2 w-[16rem] select-none space-y-3 rounded-lg border border-gray-50 bg-white p-3 text-base shadow"
 			>
 				<div class="flex items-center text-gray-700">
 					<div
-						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
 					>
 						<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
 					</div>
@@ -27,7 +27,7 @@
 						{{ formatMonth }}
 					</div>
 					<div
-						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+						class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
 					>
 						<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
 					</div>
@@ -75,6 +75,7 @@
 						@click="() => selectDates() | togglePopover()"
 						:disabled="!fromDate || !toDate"
 						appearance="primary"
+						class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 					>
 						Apply
 					</Button>

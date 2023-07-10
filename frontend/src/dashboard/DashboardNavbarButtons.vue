@@ -36,7 +36,14 @@ whenever(cmdD, dashboard.discardChanges)
 		>
 			Edit
 		</Button>
-		<Button v-else appearance="primary" @click="dashboard.save"> Save </Button>
+		<Button
+			v-else
+			appearance="primary"
+			@click="dashboard.save"
+			class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+		>
+			Save
+		</Button>
 		<DashboardMenuButton />
 	</div>
 </template>

@@ -75,7 +75,13 @@ async function selectQuery() {
 					<Button appearance="danger" @click="deleteQuery" :loading="queries.deleting">
 						Discard
 					</Button>
-					<Button appearance="primary" @click="selectQuery"> Done </Button>
+					<Button
+						appearance="primary"
+						@click="selectQuery"
+						class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+					>
+						Done
+					</Button>
 				</div>
 			</div>
 		</template>

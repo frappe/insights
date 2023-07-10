@@ -111,7 +111,7 @@ watchEffect(() => {
 				>
 					<div
 						v-if="chartData.loading"
-						class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-md bg-white"
+						class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-lg bg-white"
 					>
 						<LoadingIndicator class="w-6 text-gray-300" />
 					</div>
@@ -153,7 +153,7 @@ watchEffect(() => {
 						</div>
 						<div
 							v-if="!dashboard.editing && item.options.query"
-							class="invisible -mb-1 -mt-1 flex cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
+							class="invisible -mb-1 -mt-1 flex cursor-pointer rounded-lg p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
 						>
 							<FeatherIcon
 								name="external-link"
@@ -167,7 +167,7 @@ watchEffect(() => {
 
 			<template #body>
 				<div
-					class="mb-1 flex cursor-pointer space-x-2.5 rounded-md bg-gray-700 px-2 py-1.5 shadow-sm transition-opacity duration-200 ease-in-out"
+					class="mb-1 flex cursor-pointer space-x-2.5 rounded-lg bg-gray-700 px-2 py-1.5 shadow-sm transition-opacity duration-200 ease-in-out"
 				>
 					<FeatherIcon
 						v-for="action in actions"

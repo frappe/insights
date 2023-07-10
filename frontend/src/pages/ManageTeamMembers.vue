@@ -70,7 +70,7 @@ function addMembers(members) {
 		</div>
 		<div
 			v-else
-			class="flex flex-1 items-center justify-center rounded-md border border-dashed p-4 font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded-lg border border-dashed p-4 font-light text-gray-400"
 		>
 			This team has no members
 		</div>

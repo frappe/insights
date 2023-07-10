@@ -86,11 +86,18 @@
 				type="text"
 				v-model="filter.value.value"
 				:placeholder="valuePlaceholder"
-				class="form-input block h-8 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
+				class="form-input block h-8 w-full select-none rounded-lg placeholder-gray-500 placeholder:text-sm"
 			/>
 		</div>
 		<div class="flex justify-end">
-			<Button @click="apply" appearance="primary" :disabled="applyDisabled"> Apply </Button>
+			<Button
+				@click="apply"
+				appearance="primary"
+				:disabled="applyDisabled"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+			>
+				Apply
+			</Button>
 		</div>
 	</div>
 </template>

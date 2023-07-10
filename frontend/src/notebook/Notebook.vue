@@ -57,7 +57,7 @@ updateDocumentTitle(pageMeta)
 			:actions="[
 				{
 					label: 'New Page',
-					appearance: 'white',
+					appearance: 'primary',
 					iconLeft: 'plus',
 					handler: () => createNotebookPage(),
 				},

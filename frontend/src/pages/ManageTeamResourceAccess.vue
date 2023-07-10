@@ -89,7 +89,7 @@ function addResources(resources) {
 			</div>
 			<div
 				v-else
-				class="flex h-full items-center justify-center rounded-md border border-dashed p-4 text-sm font-light text-gray-500"
+				class="flex h-full items-center justify-center rounded-lg border border-dashed p-4 text-sm font-light text-gray-500"
 			>
 				No {{ resourceTitle }} added yet.
 			</div>

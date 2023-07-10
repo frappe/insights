@@ -36,7 +36,7 @@ const show = computed({
 						@click="type.handler()"
 					>
 						<div
-							class="rounded-md border p-4 text-gray-400 shadow-sm transition-all group-hover:scale-105"
+							class="rounded-lg border p-4 text-gray-400 shadow-sm transition-all group-hover:scale-105"
 						>
 							<FeatherIcon :name="type.icon" class="h-6 w-6 text-gray-400" />
 						</div>

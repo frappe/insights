@@ -64,7 +64,7 @@ function handleOptionSelect(value, togglePopover) {
 		<template #body="{ togglePopover, isOpen }">
 			<div
 				v-show="isOpen"
-				class="mt-1.5 w-fit rounded-md border bg-white text-base shadow-sm transition-[width]"
+				class="mt-1.5 w-fit rounded-lg border bg-white text-base shadow-sm transition-[width]"
 			>
 				<slot
 					name="popover"

@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="columns.length == 0"
-		class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+		class="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
 	>
 		<p>No columns selected</p>
 	</div>
@@ -26,7 +26,7 @@
 					"
 				>
 					<DragHandleIcon
-						class="handle mr-1 -ml-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400"
+						class="handle -ml-1 mr-1 h-4 w-4 rotate-90 cursor-grab self-center text-gray-400"
 					/>
 					<span
 						class="overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"

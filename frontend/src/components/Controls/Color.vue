@@ -8,7 +8,7 @@
 				<div
 					tabindex="0"
 					:class="inputClass"
-					class="flex h-8 w-full items-center rounded-md bg-gray-100 px-3 placeholder-gray-500 focus:outline-none"
+					class="flex h-8 w-full items-center rounded-lg bg-gray-100 px-3 placeholder-gray-500 focus:outline-none"
 					@click="togglePopover()"
 					readonly
 				>
@@ -38,7 +38,7 @@
 				</div>
 			</template>
 			<template #body>
-				<div class="mt-1 w-fit rounded-md border bg-white p-3 pt-2 text-center shadow-md">
+				<div class="mt-1 w-fit rounded-lg border bg-white p-3 pt-2 text-center shadow-md">
 					<div>
 						<div class="inline-grid grid-cols-5 gap-3 border-b border-none">
 							<div
@@ -75,7 +75,7 @@
 								type="text"
 								placeholder="Custom Hex"
 								:class="inputClass"
-								class="col-span-5 -mt-1 flex h-8 items-center rounded-md border-0 bg-gray-100 px-3 text-base placeholder-gray-500 focus:outline-none"
+								class="col-span-5 -mt-1 flex h-8 items-center rounded-lg border-0 bg-gray-100 px-3 text-base placeholder-gray-500 focus:outline-none"
 								@change="(e) => setColorValue(e.target.value)"
 							/>
 						</div>

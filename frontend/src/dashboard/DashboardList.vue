@@ -1,8 +1,12 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-gray-50 px-6 py-4">
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
-			<Button appearance="white" iconLeft="plus" class="shadow-sm" @click="showDialog = true">
+			<Button
+				iconLeft="plus"
+				class="!rounded-lg bg-gray-900 text-gray-50 shadow-sm hover:bg-gray-800"
+				@click="showDialog = true"
+			>
 				Create New
 			</Button>
 		</div>
@@ -29,7 +33,12 @@
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="createDashboard" :loading="dashboards.creating">
+			<Button
+				appearance="primary"
+				@click="createDashboard"
+				:loading="dashboards.creating"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+			>
 				Create
 			</Button>
 		</template>

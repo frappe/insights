@@ -102,7 +102,7 @@ onMounted(() => {
 		<div class="flex w-[10rem] flex-col space-y-1.5 text-sm transition-all">
 			<div
 				v-show="helpInfo"
-				class="ml-auto w-[20rem] rounded-md border bg-white p-2 shadow-lg"
+				class="ml-auto w-[20rem] rounded-lg border bg-white p-2 shadow-lg"
 			>
 				<span class="mr-1 font-light">Syntax:</span>
 				<span class="font-medium italic" style="font-family: 'Fira Code'">

@@ -81,7 +81,7 @@
 		</div>
 		<div
 			v-else
-			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-50"
+			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-lg bg-gray-50"
 		>
 			<LoadingIndicator class="mb-2 w-8 text-gray-400" />
 			<div class="text-lg text-gray-500">Syncing columns from database...</div>
@@ -128,6 +128,7 @@
 				@click="createLink"
 				:loading="creatingLink"
 				:disabled="createLinkDisabled"
+				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Create
 			</Button>
