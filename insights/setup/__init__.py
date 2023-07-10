@@ -4,12 +4,8 @@
 
 import json
 import os
-import time
 
-import click
 import frappe
-
-from .demo import DemoDataFactory
 
 
 def after_install():
