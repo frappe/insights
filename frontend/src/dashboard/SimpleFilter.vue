@@ -145,7 +145,7 @@ function resetFilter() {
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex w-full">
 					<button
-						class="flex w-full items-center rounded-md border bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow-sm"
+						class="flex w-full items-center rounded-md border border-gray-100 bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow"
 						@click="togglePopover"
 					>
 						<span v-if="!filter.column" class="text-gray-500">Select a filter...</span>

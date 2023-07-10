@@ -88,7 +88,7 @@ watchEffect(() => {
 </script>
 
 <template>
-	<div class="dashboard-item h-full min-h-[60px] w-full p-1.5 [&>div:first-child]:h-full">
+	<div class="dashboard-item h-full min-h-[60px] w-full p-2 [&>div:first-child]:h-full">
 		<Popover
 			class="flex h-full w-full [&>div:first-child]:w-full"
 			:show="dashboard.editing && dashboard.currentItem?.item_id === item.item_id"
@@ -96,9 +96,9 @@ watchEffect(() => {
 		>
 			<template #target>
 				<div
-					class="group relative flex h-full rounded-md"
+					class="group relative flex h-full rounded-lg py-1"
 					:class="{
-						'border bg-white shadow-sm':
+						'border border-gray-100 bg-white shadow':
 							item.item_type !== 'Filter' && item.item_type !== 'Text',
 						'ring-2 ring-blue-300 ring-offset-1':
 							item.item_id === dashboard.currentItem?.item_id,
