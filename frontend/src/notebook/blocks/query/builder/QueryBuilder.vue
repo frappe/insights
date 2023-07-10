@@ -1,8 +1,9 @@
 <script setup>
+import UseTooltip from '@/components/UseTooltip.vue'
 import { useDataSourceTable } from '@/datasource/useDataSource'
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
-import { computed, inject, provide } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import useQuery from '../useQuery'
 import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
 import ColumnSelector from './ColumnSelector.vue'
@@ -64,7 +65,7 @@ const GET_EMPTY_COLUMN = () => ({
 	column: { ...COLUMN },
 })
 
-function addBlock(type) {
+function addStep(type) {
 	if (type == 'Summarise') {
 		if (!state.value.measures.length) state.value.measures = [{ ...GET_EMPTY_COLUMN() }]
 		if (!state.value.dimensions.length) state.value.dimensions = [{ ...GET_EMPTY_COLUMN() }]
@@ -192,6 +193,8 @@ async function autoSelectJoinColumns(join) {
 		value: `${join.right_table.table}.${right_column}`,
 	}
 }
+
+const addStepRef = ref(null)
 </script>
 
 <template>
@@ -492,7 +495,8 @@ async function autoSelectJoinColumns(join) {
 
 		<div class="flex items-center space-x-1.5 pt-4 text-sm text-gray-400">
 			<div
-				v-for="item in [
+				ref="addStepRef"
+				v-for="(item, idx) in [
 					'Combine',
 					'Filter',
 					'Select',
@@ -502,9 +506,27 @@ async function autoSelectJoinColumns(join) {
 					'Limit',
 				]"
 				class="h-7 cursor-pointer rounded-lg border border-gray-300 px-2 text-sm leading-7 transition-all hover:bg-gray-50"
-				@click="addBlock(item)"
+				@click="addStep(item)"
 			>
-				{{ item }}
+				<span> {{ item }} </span>
+				<UseTooltip
+					v-if="addStepRef && addStepRef[idx]"
+					:targetElement="addStepRef[idx]"
+					:content="
+						{
+							Combine: 'Combine data from multiple tables',
+							Filter: 'Filter data based on conditions',
+							Select: 'Select columns to include in the result',
+							Calculate: 'Create new columns using expressions',
+							Summarise: 'Summarise data using aggregations',
+							Sort: 'Sort the result by one or more columns',
+							Limit: 'Limit the number of rows in the result',
+						}[item]
+					"
+					:hoverDelay="0.1"
+					placement="bottom"
+				>
+				</UseTooltip>
 			</div>
 		</div>
 	</div>
