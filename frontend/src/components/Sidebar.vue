@@ -1,6 +1,6 @@
 <template>
 	<div class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r bg-white" v-if="currentRoute">
-		<div class="flex flex-grow flex-col overflow-y-auto p-3">
+		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-500">
 				<img src="../assets/insights-logo.svg" class="h-7" />
 				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
