@@ -4,7 +4,7 @@ import { ref } from 'vue'
 const setupComplete = ref(localStorage.getItem('setupComplete') === 'true')
 
 async function loadSetupStatus() {
-	if (setupComplete.value === null) {
+	if (!setupComplete.value) {
 		const setup_status = await call('insights.api.setup.setup_complete')
 		setupComplete.value = Boolean(setup_status)
 	}
