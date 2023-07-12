@@ -123,7 +123,7 @@ import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
 import HelpDialog from '@/components/HelpDialog.vue'
 import {
-	AlignStartVertical,
+	GanttChartSquare,
 	LayoutDashboard,
 	Database,
 	Settings,
@@ -151,7 +151,7 @@ const sidebarItems = ref([
 	{
 		path: '/query',
 		label: 'Query',
-		icon: AlignStartVertical,
+		icon: GanttChartSquare,
 		name: 'QueryList',
 		current: false,
 	},

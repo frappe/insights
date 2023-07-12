@@ -4,7 +4,7 @@
 			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
 			<Button
 				iconLeft="plus"
-				class="!rounded-lg bg-gray-900 text-gray-50 shadow-sm hover:bg-gray-800"
+				class="!rounded-lg bg-gray-900 !text-gray-50 shadow-sm hover:bg-gray-800"
 				@click="showDialog = true"
 			>
 				Create New
