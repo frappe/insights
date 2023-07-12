@@ -1,3 +1,4 @@
+import settings from '@/utils/systemSettings'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import { computed, watch } from 'vue'
@@ -124,7 +125,8 @@ export function ellipsis(value, length) {
 	return value
 }
 
-export function getShortNumber(number, precision = 0, locale = undefined) {
+export function getShortNumber(number, precision = 0) {
+	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
@@ -136,7 +138,8 @@ export function getShortNumber(number, precision = 0, locale = undefined) {
 	return formatted
 }
 
-export function formatNumber(number, precision = 0, locale = undefined) {
+export function formatNumber(number, precision = 0) {
+	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,
 	}).format(number)
