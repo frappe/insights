@@ -300,7 +300,7 @@ const addStepRef = ref(null)
 				>
 					<Suspense>
 						<ColumnSelector
-							:columnOptions="selectedColumns"
+							:localColumns="selectedColumns"
 							:data_source="query.doc.data_source"
 							:tables="selectedTables"
 							v-model="filter.column"
@@ -333,7 +333,7 @@ const addStepRef = ref(null)
 				>
 					<Suspense>
 						<ColumnSelector
-							:columnOptions="selectedColumns"
+							:localColumns="selectedColumns"
 							:data_source="query.doc.data_source"
 							:tables="selectedTables"
 							v-model="column.column"
@@ -356,8 +356,8 @@ const addStepRef = ref(null)
 
 			<!-- Summarise -->
 			<QueryBuilderRow v-if="state.measures.length" label="Summarise">
-				<div class="flex flex-col space-y-2.5">
-					<QueryBuilderRow
+				<div class="flex space-x-2.5">
+					<div
 						v-for="(measure, index) in state.measures"
 						:key="index"
 						:onRemove="() => state.measures.splice(index, 1)"
@@ -367,7 +367,7 @@ const addStepRef = ref(null)
 						>
 							<InputWithPopover
 								:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
-								placeholder="Aggregate"
+								placeholder="Sum of"
 								@update:modelValue="(v) => setAggregation(v, measure)"
 								:items="AGGREGATIONS"
 							/>
@@ -375,72 +375,73 @@ const addStepRef = ref(null)
 							<Suspense v-if="measure.column.aggregation != 'custom'">
 								<ColumnSelector
 									v-if="measure.column.aggregation !== 'count'"
-									:columnOptions="selectedColumns"
+									:localColumns="selectedColumns"
 									:data_source="query.doc.data_source"
 									:tables="selectedTables"
 									v-model="measure.column"
+									placeholder="Net Total"
 									@update:model-value="(c) => (measure.column.alias = c.label)"
 								/>
 							</Suspense>
 							<Suspense v-else>
 								<ColumnSelector
-									:columnOptions="selectedColumns"
+									:localColumns="selectedColumns"
 									v-model="measure.column"
 									@update:model-value="(c) => (measure.column.alias = c.label)"
 								/>
 							</Suspense>
 						</div>
-						<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
-						<div class="flex rounded-lg border border-gray-300 text-gray-800">
-							<ResizeableInput v-model="measure.column.alias" placeholder="Label" />
-						</div>
-						<div
-							class="!ml-1 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
-							@click="state.measures.push({ ...GET_EMPTY_COLUMN() })"
-						>
-							<FeatherIcon name="plus" class="h-4 w-4" />
-						</div>
-					</QueryBuilderRow>
+					</div>
+					<div
+						class="!ml-1 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+						@click="state.measures.push({ ...GET_EMPTY_COLUMN() })"
+					>
+						<FeatherIcon name="plus" class="h-4 w-4" />
+					</div>
 				</div>
 			</QueryBuilderRow>
-			<QueryBuilderRow
-				v-if="state.dimensions.length"
-				:label="state.measures.length ? 'By' : 'Group by'"
-			>
-				<div class="flex flex-col space-y-2.5">
-					<QueryBuilderRow
-						v-for="(dimension, index) in state.dimensions"
-						:key="index"
-						:onRemove="() => state.dimensions.splice(index, 1)"
-					>
-						<Suspense>
-							<div
-								class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
-							>
-								<ColumnSelector
-									v-model="dimension.column"
-									:tables="selectedTables"
-									:data_source="query.doc.data_source"
-									:columnOptions="selectedColumns"
-									:columnFilter="(c) => isDimensionColumn(c)"
-									@update:model-value="(c) => (dimension.column.alias = c.label)"
-								/>
-								<InputWithPopover
-									v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
-									:value="
-										findByValue(dateFormatOptions, dimension.column.granularity)
-									"
-									@update:modelValue="
-										(v) => (dimension.column.granularity = v.value)
-									"
-									placeholder="Format"
-									:items="dateFormatOptions"
-								/>
-							</div>
-						</Suspense>
-						<div class="h-8 text-sm uppercase leading-8 text-gray-500">as</div>
-						<div class="flex rounded-lg border border-gray-300 text-gray-800">
-							<ResizeableInput v-model="dimension.column.alias" placeholder="Label" />
+			<div class="pl-6">
+				<QueryBuilderRow
+					v-if="state.dimensions.length"
+					:label="state.measures.length ? 'By' : 'Group by'"
+				>
+					<div class="flex space-x-2.5">
+						<div
+							v-for="(dimension, index) in state.dimensions"
+							:key="index"
+							:onRemove="() => state.dimensions.splice(index, 1)"
+						>
+							<Suspense>
+								<div
+									class="flex items-center divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 text-gray-800"
+								>
+									<ColumnSelector
+										v-model="dimension.column"
+										:tables="selectedTables"
+										:data_source="query.doc.data_source"
+										:localColumns="selectedColumns"
+										:columnFilter="(c) => isDimensionColumn(c)"
+										placeholder="Branch"
+										@update:model-value="
+											(c) => (dimension.column.alias = c.label)
+										"
+									/>
+									<InputWithPopover
+										v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
+										:value="
+											findByValue(
+												dateFormatOptions,
+												dimension.column.granularity
+											)
+										"
+										@update:modelValue="
+											(v) => (dimension.column.granularity = v.value)
+										"
+										placeholder="Format"
+										:items="dateFormatOptions"
+									/>
+								</div>
+							</Suspense>
 						</div>
 						<div
 							class="!ml-0.5 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
@@ -448,9 +449,9 @@ const addStepRef = ref(null)
 						>
 							<FeatherIcon name="plus" class="h-4 w-4" />
 						</div>
-					</QueryBuilderRow>
-				</div>
-			</QueryBuilderRow>
+					</div>
+				</QueryBuilderRow>
+			</div>
 
 			<!-- Order By -->
 			<QueryBuilderRow
@@ -465,7 +466,7 @@ const addStepRef = ref(null)
 						class="flex rounded-lg border border-gray-300 text-gray-800"
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
-						:columnOptions="selectedColumns"
+						:localColumns="selectedColumns"
 						v-model="order.column"
 					/>
 				</Suspense>

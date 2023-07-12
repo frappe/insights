@@ -99,7 +99,7 @@ function handleTableSelect(selectedTable) {
 					<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 					<input
 						v-model="datasourceSearchTerm"
-						class="flex w-full items-center bg-white px-2 py-1.5 text-sm focus:outline-none"
+						class="flex w-full items-center bg-white p-2 text-sm focus:outline-none"
 						placeholder="Search data source..."
 					/>
 				</div>
@@ -131,13 +131,13 @@ function handleTableSelect(selectedTable) {
 							placement="right-start"
 						>
 							<div
-								class="w-[12rem] rounded-lg border bg-white text-base shadow transition-[width]"
+								class="-ml-3 w-[12rem] rounded-lg border bg-white text-base shadow transition-[width]"
 							>
 								<div class="flex items-center rounded-t-md border-b bg-white px-2">
 									<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 									<input
 										v-model="tableSearchTerm"
-										class="flex w-full items-center bg-white px-2 py-1.5 text-sm focus:outline-none"
+										class="flex w-full items-center bg-white p-2 text-sm focus:outline-none"
 										placeholder="Search table..."
 									/>
 								</div>
@@ -158,7 +158,7 @@ function handleTableSelect(selectedTable) {
 										:key="t.value"
 										@click="handleTableSelect(t)"
 									>
-										<FeatherIcon
+										<!-- <FeatherIcon
 											name="check"
 											class="h-4 w-4 transition-opacity"
 											:class="
@@ -166,7 +166,7 @@ function handleTableSelect(selectedTable) {
 													? 'opacity-100'
 													: 'opacity-0'
 											"
-										/>
+										/> -->
 										<span>{{ t.label }}</span>
 									</div>
 								</div>
