@@ -94,14 +94,12 @@ function handleTableSelect(selectedTable) {
 			<span> {{ table?.label || 'Pick starting data' }} </span>
 		</div>
 		<UsePopover ref="dataSourcePopover" v-if="trigger" :targetElement="trigger">
-			<div
-				class="w-[12rem] rounded-lg border bg-white text-base shadow-sm transition-[width]"
-			>
+			<div class="w-[12rem] rounded-lg border bg-white text-base shadow transition-[width]">
 				<div class="flex items-center rounded-t-md border-b bg-white px-2">
 					<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 					<input
 						v-model="datasourceSearchTerm"
-						class="flex w-full items-center bg-white px-2 py-1.5 focus:outline-none"
+						class="flex w-full items-center bg-white px-2 py-1.5 text-sm focus:outline-none"
 						placeholder="Search data source..."
 					/>
 				</div>
@@ -133,13 +131,13 @@ function handleTableSelect(selectedTable) {
 							placement="right-start"
 						>
 							<div
-								class="w-[12rem] rounded-lg border bg-white text-base shadow-sm transition-[width]"
+								class="w-[12rem] rounded-lg border bg-white text-base shadow transition-[width]"
 							>
 								<div class="flex items-center rounded-t-md border-b bg-white px-2">
 									<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
 									<input
 										v-model="tableSearchTerm"
-										class="flex w-full items-center bg-white px-2 py-1.5 focus:outline-none"
+										class="flex w-full items-center bg-white px-2 py-1.5 text-sm focus:outline-none"
 										placeholder="Search table..."
 									/>
 								</div>
