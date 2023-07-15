@@ -81,7 +81,7 @@ const canShowTooltip = ref(false)
 				>
 					<div
 						ref="optionsRef"
-						class="flex w-full cursor-pointer items-center justify-between rounded-lg p-2 hover:bg-gray-100"
+						class="flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-gray-100"
 						:class="{
 							'bg-gray-100': active,
 						}"
@@ -98,7 +98,7 @@ const canShowTooltip = ref(false)
 						</div>
 						<span
 							v-if="value.description"
-							class="ml-4 w-fit overflow-hidden text-ellipsis whitespace-nowrap text-right text-gray-400"
+							class="ml-4 w-fit overflow-hidden text-ellipsis whitespace-nowrap text-right text-gray-500"
 						>
 							{{ value.description }}
 						</span>
@@ -129,14 +129,14 @@ const canShowTooltip = ref(false)
 				</ComboboxOption>
 				<ComboboxOption
 					v-if="props.loading"
-					class="flex items-center px-1.5 py-1 text-sm text-gray-400"
+					class="flex items-center px-1.5 py-1 text-sm text-gray-500"
 				>
 					<LoadingIndicator class="h-4 w-4" />
 					<span class="ml-2">Loading...</span>
 				</ComboboxOption>
 				<ComboboxOption
 					v-else-if="props.values?.length === 0"
-					class="px-1.5 pb-0 text-sm text-gray-400"
+					class="px-1.5 pb-0 text-sm text-gray-500"
 				>
 					No results found
 				</ComboboxOption>

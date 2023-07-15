@@ -4,7 +4,7 @@
 			<template #target="{ open: openPopover }">
 				<div class="w-full">
 					<ComboboxButton
-						class="flex w-full items-center justify-between rounded-lg bg-gray-100"
+						class="flex w-full items-center justify-between rounded bg-gray-100"
 						:class="{
 							'rounded-b-none': isComboboxOpen,
 							'p-1': selectedOptions.length > 0,
@@ -17,7 +17,7 @@
 							class="flex w-[calc(100%-1rem)] space-x-1.5 overflow-x-scroll p-0.5 text-gray-800"
 						>
 							<span
-								class="flex h-6 items-center rounded-lg bg-white px-2 text-sm shadow"
+								class="flex h-6 items-center rounded bg-white px-2 text-sm shadow"
 								v-for="option in selectedOptions"
 								:key="option.value || option"
 							>
@@ -27,13 +27,13 @@
 							</span>
 						</span>
 
-						<span class="text-base text-gray-500" v-else>
+						<span class="text-base text-gray-600" v-else>
 							{{ placeholder || '' }}
 						</span>
 
 						<FeatherIcon
 							name="chevron-down"
-							class="h-4 w-4 text-gray-500"
+							class="h-4 w-4 text-gray-600"
 							aria-hidden="true"
 						/>
 					</ComboboxButton>
@@ -42,7 +42,7 @@
 			<template #body="{ close: closePopover }">
 				<div
 					v-show="isComboboxOpen"
-					class="rounded-lg rounded-t-none bg-white px-1.5 shadow-md"
+					class="rounded rounded-t-none bg-white px-1.5 shadow-md"
 				>
 					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto">
 						<div
@@ -104,7 +104,7 @@
 									<span>{{ option.label }}</span>
 									<span
 										v-if="option.description"
-										class="text-sm font-light text-gray-500"
+										class="text-sm font-light text-gray-600"
 									>
 										{{ option.description }}
 									</span>
@@ -117,13 +117,12 @@
 							</div>
 						</ComboboxOption>
 						<div class="sticky bottom-0 flex justify-end space-x-2 bg-white py-2">
-							<Button appearance="secondary" @click.prevent.stop="selectOrClearAll()">
+							<Button variant="secondary" @click.prevent.stop="selectOrClearAll()">
 								{{ selectedOptions.length > 0 ? 'Clear' : 'Select All' }}
 							</Button>
 							<Button
-								appearance="primary"
+								variant="solid"
 								@click="$emit('apply', selectedOptions) || closePopover()"
-								class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 							>
 								Apply
 							</Button>

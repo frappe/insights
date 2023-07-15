@@ -16,12 +16,12 @@ const props = defineProps({
 				v-for="action in actions"
 				:key="action.label"
 				class="shadow-sm"
-				:appearance="action.appearance"
+				:variant="action.variant"
 				:iconLeft="action.iconLeft"
 				@click="action.handler"
 				:class="
-					action.appearance === 'primary'
-						? '!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800 '
+					action.variant === 'primary'
+						? '!rounded bg-gray-900 text-gray-50 hover:bg-gray-800 '
 						: ''
 				"
 			>

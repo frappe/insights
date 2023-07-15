@@ -64,7 +64,7 @@
 		<Button v-if="$props.showDiscard" @click="$emit('discard')"> Discard </Button>
 		<div class="ml-auto flex items-center space-x-2">
 			<Button
-				:appearance="connectAppearance"
+				:variant="connectAppearance"
 				:disabled="testConnectionDisabled"
 				@click="testConnection"
 				loadingText="Connecting..."
@@ -74,12 +74,11 @@
 				{{ connectLabel }}
 			</Button>
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="submitDisabled"
 				loadingText="Adding Database..."
 				:loading="createDatabase.loading"
 				@click="createNewDatabase"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				{{ submitLabel }}
 			</Button>

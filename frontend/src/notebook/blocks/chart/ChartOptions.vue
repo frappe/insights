@@ -15,10 +15,10 @@ const chartOptions = [
 <template>
 	<div class="flex h-full w-full flex-col p-3">
 		<div class="relative flex flex-shrink-0 justify-between pb-3 text-base">
-			<span class="font-code text-sm uppercase text-gray-500"> Options </span>
+			<span class="font-code text-sm uppercase text-gray-600"> Options </span>
 			<FeatherIcon
 				name="x"
-				class="h-4 w-4 cursor-pointer text-gray-400 transition-all hover:text-gray-800"
+				class="h-4 w-4 cursor-pointer text-gray-500 transition-all hover:text-gray-800"
 				@click.prevent.stop="onClose && onClose()"
 			></FeatherIcon>
 		</div>

@@ -64,7 +64,7 @@ function validateAndContinue() {
 		<div class="grid grid-cols-2 gap-4">
 			<div
 				v-for="(option, index) in options"
-				class="col-span-1 flex cursor-pointer items-center rounded-lg border border-gray-300 px-4 py-3 transition-all"
+				class="col-span-1 flex cursor-pointer items-center rounded border border-gray-300 px-4 py-3 transition-all"
 				:class="
 					selectedOption === index
 						? 'border-blue-500 bg-blue-50'
@@ -96,10 +96,9 @@ function validateAndContinue() {
 
 		<div class="mt-6 flex justify-end space-x-3">
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="selectedOption === null"
 				@click="validateAndContinue"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Continue
 			</Button>

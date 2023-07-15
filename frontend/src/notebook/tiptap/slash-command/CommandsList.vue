@@ -1,5 +1,5 @@
 <template>
-	<div class="flex w-40 flex-col rounded-lg border bg-white p-1 text-base shadow">
+	<div class="flex w-40 flex-col rounded border bg-white p-1 text-base shadow">
 		<template v-if="enabledItems.length">
 			<button
 				class="flex h-8 w-full cursor-pointer items-center rounded px-1 text-base"
@@ -9,7 +9,7 @@
 				@click="selectItem(index)"
 				@mouseenter="selectedIndex = index"
 			>
-				<component :is="item.icon || 'Minus'" class="mr-2 h-4 w-4 text-gray-500" />
+				<component :is="item.icon || 'Minus'" class="mr-2 h-4 w-4 text-gray-600" />
 				{{ item.title }}
 			</button>
 		</template>

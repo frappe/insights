@@ -57,10 +57,9 @@
 			<div class="flex justify-end space-x-2">
 				<Button :disabled="!editTable.join" @click="clear_join"> Clear </Button>
 				<Button
-					appearance="primary"
+					variant="solid"
 					:disabled="!join.with || !join.condition || !join.type"
 					@click="applyJoin"
-					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 				>
 					Apply
 				</Button>

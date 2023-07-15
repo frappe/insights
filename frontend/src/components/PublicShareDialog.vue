@@ -7,18 +7,18 @@
 				</h3>
 				<div class="space-y-3 text-base">
 					<div class="space-y-4">
-						<div class="flex items-center space-x-4 rounded-lg border px-4 py-2">
+						<div class="flex items-center space-x-4 rounded border px-4 py-2">
 							<FeatherIcon name="globe" class="h-5 w-5 text-blue-500" />
 							<div class="flex flex-1 flex-col">
 								<div class="font-medium text-gray-600">Create Public Link</div>
-								<div class="text-sm text-gray-400">
+								<div class="text-sm text-gray-500">
 									Anyone with the link can view this
 									{{ resourceType.replace('Insights ', '').toLowerCase() }}
 								</div>
 							</div>
 							<Checkbox v-model="isPublic" />
 						</div>
-						<div class="flex overflow-hidden rounded-lg bg-gray-100" v-if="publicLink">
+						<div class="flex overflow-hidden rounded bg-gray-100" v-if="publicLink">
 							<div
 								class="font-code form-input flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-r-none text-sm text-gray-600"
 							>

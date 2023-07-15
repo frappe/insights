@@ -24,19 +24,19 @@ const tablePreview = computed(() => {
 <template>
 	<div
 		v-if="tablePreview"
-		class="flex w-64 flex-col divide-y divide-gray-400 rounded-lg border bg-gray-800 px-2.5 py-2 text-base shadow-lg"
+		class="flex w-64 flex-col divide-y divide-gray-400 rounded border bg-gray-800 px-2.5 py-2 text-base shadow-lg"
 	>
 		<div class="flex items-center justify-between pb-2">
 			<div class="font-medium text-gray-100">
 				{{ tablePreview.label }}
-				<span class="text-sm text-gray-400">
+				<span class="text-sm text-gray-500">
 					{{ ' ' }} ({{ tablePreview.columns.length }} columns)
 				</span>
 			</div>
 
-			<div class="text-sm text-gray-400">{{ tablePreview.row_count }} rows</div>
+			<div class="text-sm text-gray-500">{{ tablePreview.row_count }} rows</div>
 		</div>
-		<div class="pt-2 text-sm text-gray-400">
+		<div class="pt-2 text-sm text-gray-500">
 			<div
 				v-for="column in tablePreview.columns.slice(0, 10)"
 				class="flex items-center justify-between py-1"

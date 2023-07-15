@@ -177,7 +177,7 @@ export function copyToClipboard(text) {
 	if (navigator.clipboard) {
 		navigator.clipboard.writeText(text)
 		createToast({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Copied to clipboard',
 		})
 	} else {
@@ -191,12 +191,12 @@ export function copyToClipboard(text) {
 		try {
 			document.execCommand('copy')
 			createToast({
-				appearance: 'success',
+				variant: 'success',
 				title: 'Copied to clipboard',
 			})
 		} catch (err) {
 			createToast({
-				appearance: 'error',
+				variant: 'error',
 				title: 'Copy to clipboard not supported',
 			})
 		} finally {

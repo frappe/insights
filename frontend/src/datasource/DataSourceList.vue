@@ -6,7 +6,7 @@
 			:actions="[
 				{
 					label: 'New Data Source',
-					appearance: 'primary',
+					variant: 'solid',
 					iconLeft: 'plus',
 					handler: () => (new_dialog = true),
 				},
@@ -46,7 +46,7 @@ const sources = useDataSources()
 sources.reload()
 
 const StatusCell = (props) => (
-	<Badge color={props.row.status == 'Inactive' ? 'yellow' : 'green'}>{props.row.status}</Badge>
+	<Badge theme={props.row.status == 'Inactive' ? 'yellow' : 'green'}>{props.row.status}</Badge>
 )
 const columns = [
 	{ label: 'Title', key: 'title' },

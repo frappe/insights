@@ -62,7 +62,7 @@ const formattedSQL = computed(() => {
 	<div
 		ref="blockRef"
 		v-if="query.doc.name"
-		class="relative my-6 overflow-hidden rounded-lg border bg-white"
+		class="relative my-6 overflow-hidden rounded border bg-white"
 	>
 		<QueryBlockHeader />
 		<transition name="fade" mode="out-in">
@@ -137,13 +137,13 @@ const formattedSQL = computed(() => {
 		<template #body-content>
 			<div class="relative">
 				<p
-					class="rounded-lg border bg-gray-100 p-2 text-base text-gray-600"
+					class="rounded border bg-gray-100 p-2 text-base text-gray-600"
 					style="font-family: 'Fira Code'"
 					v-html="formattedSQL"
 				></p>
 				<Button
 					icon="copy"
-					appearance="white"
+					variant="white"
 					class="absolute bottom-2 right-2"
 					@click="copyToClipboard(query.doc.sql)"
 				></Button>

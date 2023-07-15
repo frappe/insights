@@ -18,32 +18,25 @@ whenever(cmdD, dashboard.discardChanges)
 	<div class="flex flex-shrink-0 justify-end space-x-2">
 		<DashboardShareButton v-if="!dashboard.editing && dashboard.canShare" />
 		<Button
-			appearance="white"
+			variant="white"
 			v-if="!dashboard.editing"
 			iconLeft="refresh-ccw"
 			@click="dashboard.refresh"
 		>
 			Refresh
 		</Button>
-		<Button v-if="dashboard.editing" appearance="white" @click="dashboard.discardChanges">
+		<Button v-if="dashboard.editing" variant="white" @click="dashboard.discardChanges">
 			Cancel
 		</Button>
 		<Button
 			v-if="!dashboard.editing"
-			appearance="white"
+			variant="white"
 			class="border-blue-600 !font-medium text-blue-600"
 			@click="dashboard.edit"
 		>
 			Edit
 		</Button>
-		<Button
-			v-else
-			appearance="primary"
-			@click="dashboard.save"
-			class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-		>
-			Save
-		</Button>
+		<Button v-else variant="solid" @click="dashboard.save"> Save </Button>
 		<DashboardMenuButton />
 	</div>
 </template>

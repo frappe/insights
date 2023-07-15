@@ -16,7 +16,7 @@ async function handleDelete() {
 	<Dropdown
 		v-if="dashboard.doc"
 		placement="left"
-		:button="{ icon: 'more-vertical', appearance: 'white' }"
+		:button="{ icon: 'more-vertical', variant: 'white' }"
 		:options="[
 			{
 				label: 'Delete',
@@ -29,7 +29,7 @@ async function handleDelete() {
 	<Dialog
 		:options="{
 			title: 'Delete Dashboard',
-			icon: { name: 'trash', appearance: 'danger' },
+			icon: { name: 'trash', variant: 'danger' },
 		}"
 		v-model="showDeleteDialog"
 		:dismissable="true"
@@ -38,8 +38,8 @@ async function handleDelete() {
 			<p class="text-base text-gray-600">Are you sure you want to delete this dashboard?</p>
 		</template>
 		<template #actions>
-			<Button appearance="white" @click="showDeleteDialog = false">Cancel</Button>
-			<Button appearance="danger" @click="handleDelete" :loading="dashboard.deleting">
+			<Button variant="white" @click="showDeleteDialog = false">Cancel</Button>
+			<Button variant="danger" @click="handleDelete" :loading="dashboard.deleting">
 				Yes
 			</Button>
 		</template>

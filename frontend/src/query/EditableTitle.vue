@@ -22,7 +22,7 @@ const editing = ref(false)
 		</div>
 		<div
 			v-if="!editing"
-			class="flex cursor-pointer items-center rounded-lg p-2 transition-all hover:bg-gray-200"
+			class="flex cursor-pointer items-center rounded p-2 transition-all hover:bg-gray-200"
 			@click="
 				() => {
 					editing = true
@@ -56,8 +56,7 @@ const editing = ref(false)
 		<Button
 			v-if="editing"
 			icon="check"
-			appearance="primary"
-			class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+			variant="solid"
 			@click="
 				() => {
 					$emit('update', title)

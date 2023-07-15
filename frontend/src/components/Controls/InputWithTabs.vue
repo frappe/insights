@@ -25,23 +25,17 @@ function getLabel() {
 				:value="getLabel()"
 				:placeholder="placeholder"
 				@focus="togglePopover()"
-				class="form-input block h-8 w-full cursor-text select-none rounded-lg text-sm placeholder-gray-500"
+				class="form-input block h-8 w-full cursor-text select-none rounded text-sm placeholder-gray-500"
 			/>
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 flex select-none flex-col space-y-3 rounded-lg border bg-white p-3 text-base shadow-md"
+				class="my-2 flex select-none flex-col space-y-3 rounded border bg-white p-3 text-base shadow-md"
 			>
 				<Tabs :tabs="tabs" @switch="$emit('tab-change', $event.label)" />
 				<slot name="inputs"></slot>
 				<div class="flex w-full justify-end">
-					<Button
-						appearance="primary"
-						@click="togglePopover()"
-						class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-					>
-						Done
-					</Button>
+					<Button variant="solid" @click="togglePopover()"> Done </Button>
 				</div>
 			</div>
 		</template>

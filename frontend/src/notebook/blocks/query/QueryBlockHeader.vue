@@ -12,7 +12,7 @@ const state = inject('state')
 				v-model="state.query.doc.title"
 				class="-ml-2 cursor-text"
 			></ResizeableInput>
-			<p class="text-gray-500">({{ state.query.doc.name }})</p>
+			<p class="text-gray-600">({{ state.query.doc.name }})</p>
 			<p
 				class="ml-2.5 h-1.5 w-1.5 rounded-full"
 				:class="[!state.query.unsaved ? 'hidden' : 'bg-orange-500']"

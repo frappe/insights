@@ -30,7 +30,7 @@ if (!route.meta.allowGuest) {
 			$notify({
 				title: data.title || data.message,
 				message: data.title ? data.message : '',
-				appearance: data.type,
+				variant: data.type,
 			})
 		}
 	})

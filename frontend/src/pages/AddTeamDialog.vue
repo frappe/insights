@@ -16,14 +16,7 @@
 			/>
 		</template>
 		<template #actions>
-			<Button
-				appearance="primary"
-				:disabled="!newTeam.team_name"
-				@click="addTeam"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-			>
-				Add
-			</Button>
+			<Button variant="solid" :disabled="!newTeam.team_name" @click="addTeam"> Add </Button>
 			<Button @click="show = false">Cancel</Button>
 		</template>
 	</Dialog>

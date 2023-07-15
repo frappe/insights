@@ -77,7 +77,7 @@ function downloadChart() {
 </script>
 
 <template>
-	<div class="h-full w-full rounded-lg p-2">
+	<div class="h-full w-full rounded p-2">
 		<div class="flex h-full w-full flex-col">
 			<div
 				v-if="$attrs.chartTitle"

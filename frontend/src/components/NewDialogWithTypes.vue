@@ -36,9 +36,9 @@ const show = computed({
 						@click="type.handler()"
 					>
 						<div
-							class="rounded-lg border p-4 text-gray-400 shadow-sm transition-all group-hover:scale-105"
+							class="rounded border p-4 text-gray-500 shadow-sm transition-all group-hover:scale-105"
 						>
-							<FeatherIcon :name="type.icon" class="h-6 w-6 text-gray-400" />
+							<FeatherIcon :name="type.icon" class="h-6 w-6 text-gray-500" />
 						</div>
 						<div>
 							<div class="flex items-center space-x-2">
@@ -49,13 +49,13 @@ const show = computed({
 								</p>
 								<Badge
 									v-if="type.tag"
-									color="green"
+									theme="green"
 									class="!rounded-full !px-2 !py-0.5"
 								>
 									{{ type.tag }}
 								</Badge>
 							</div>
-							<p class="text-sm leading-5 text-gray-500">
+							<p class="text-sm leading-5 text-gray-600">
 								{{ type.description }}
 							</p>
 						</div>

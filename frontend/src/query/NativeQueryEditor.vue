@@ -45,7 +45,7 @@ function runQuery() {
 		<div class="h-8 flex-shrink-0 text-sm uppercase tracking-wide text-gray-600">
 			Native Query
 		</div>
-		<div class="flex flex-1 overflow-scroll rounded-lg border p-1">
+		<div class="flex flex-1 overflow-scroll rounded border p-1">
 			<Code
 				:key="completions.tables.length"
 				language="sql"
@@ -55,7 +55,7 @@ function runQuery() {
 			></Code>
 		</div>
 		<div class="mt-4 h-10 flex-shrink-0 space-x-2">
-			<Button iconLeft="play" appearance="white" class="shadow-sm" @click="runQuery">
+			<Button iconLeft="play" variant="white" class="shadow-sm" @click="runQuery">
 				Run
 			</Button>
 		</div>

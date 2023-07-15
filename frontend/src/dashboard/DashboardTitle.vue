@@ -20,7 +20,7 @@ const editing = ref(false)
 		<Button
 			v-if="!editing && !disabled"
 			icon="edit"
-			appearance="minimal"
+			variant="minimal"
 			@click="
 				() => {
 					editing = true
@@ -40,14 +40,13 @@ const editing = ref(false)
 		/>
 		<Button
 			icon="x"
-			appearance="secondary"
+			variant="secondary"
 			@click="() => ((editing = false), (title = oldTitle))"
 		></Button>
 		<Button
 			icon="check"
-			appearance="primary"
+			variant="solid"
 			@click="() => ((editing = false), $emit('update', title))"
-			class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 		></Button>
 	</div>
 </template>

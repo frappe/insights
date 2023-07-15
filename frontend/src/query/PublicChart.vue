@@ -21,7 +21,7 @@ const chart = usePublicChart(props.public_key)
 				title="Insufficient options"
 				message="Please check the options for this chart"
 				icon="settings"
-				icon-class="text-gray-400"
+				icon-class="text-gray-500"
 			/>
 		</template>
 	</component>

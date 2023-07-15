@@ -8,7 +8,7 @@
 				</div>
 				<template #fallback>
 					<div class="flex h-full flex-col items-center justify-center">
-						<FeatherIcon name="loader" class="h-8 w-8 animate-spin text-gray-400" />
+						<FeatherIcon name="loader" class="h-8 w-8 animate-spin text-gray-500" />
 					</div>
 				</template>
 			</Suspense>

@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 flex-col rounded-lg bg-gray-100 pb-8">
+	<div class="flex flex-1 flex-col rounded bg-gray-100 pb-8">
 		<div class="flex flex-1 flex-col items-center justify-center">
 			<div class="flex flex-col text-base">
 				<div class="mb-2 text-2xl text-gray-600">Get Started</div>
@@ -19,7 +19,7 @@
 			</div>
 		</div>
 		<div
-			class="cursor-pointer text-center text-sm font-light text-gray-500 hover:underline"
+			class="cursor-pointer text-center text-sm font-light text-gray-600 hover:underline"
 			@click="openDialog = true"
 		>
 			Skip?
@@ -31,7 +31,7 @@
 			<p class="text-base text-gray-600">Are you sure you want to skip onboarding?</p>
 		</template>
 		<template #actions>
-			<Button appearance="danger" @click="skip"> Yes </Button>
+			<Button variant="danger" @click="skip"> Yes </Button>
 		</template>
 	</Dialog>
 </template>

@@ -43,10 +43,9 @@
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="!newUser.first_name || !newUser.last_name || !newUser.email"
 				@click="addUser"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Add
 			</Button>

@@ -123,6 +123,6 @@ const bubbleMenu = [
 }
 
 .ProseMirror:not(.ProseMirror-focused) p.is-editor-empty:first-child::before {
-	@apply text-gray-400;
+	@apply text-gray-500;
 }
 </style>

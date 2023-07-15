@@ -102,7 +102,7 @@ const DateRangePicker = (props) => (
 
 const DatePicker = (props) => (
 	<DatePickerFlat
-		class="rounded-lg p-2"
+		class="rounded p-2"
 		value={props.value.value}
 		onChange={(date) => {
 			props.setValue({

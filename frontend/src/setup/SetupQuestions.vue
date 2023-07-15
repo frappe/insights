@@ -63,7 +63,7 @@ async function validateAndContinue() {
 		$notify({
 			title: 'Please answer all questions',
 			message: 'You must select at least one answer for each question.',
-			appearance: 'error',
+			variant: 'error',
 		})
 	} else {
 		sendingResponses.value = true
@@ -120,16 +120,15 @@ async function validateAndContinue() {
 		</div>
 
 		<div class="mt-6 flex justify-end space-x-3">
-			<Button appearance="white" @click="emit('prev')"> Back </Button>
+			<Button variant="white" @click="emit('prev')"> Back </Button>
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="validateAndContinue"
 				:loading="sendingResponses"
 				:disabled="
 					sendingResponses ||
 					questions.some((question) => question.selectedAnswerIndexes.length === 0)
 				"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Continue
 			</Button>

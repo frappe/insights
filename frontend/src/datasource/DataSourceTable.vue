@@ -23,7 +23,7 @@
 					{{ dataSourceTable.doc.label }}
 				</h1>
 				<div class="flex h-8 items-center">
-					<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
+					<Badge :theme="hidden ? 'yellow' : 'green'" class="h-fit">
 						{{ hidden ? 'Disabled' : 'Enabled' }}
 					</Badge>
 				</div>
@@ -33,7 +33,7 @@
 					placement="left"
 					:button="{
 						icon: 'more-horizontal',
-						appearance: 'minimal',
+						variant: 'minimal',
 					}"
 					:options="[
 						{
@@ -81,10 +81,10 @@
 		</div>
 		<div
 			v-else
-			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-lg bg-gray-50"
+			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded bg-gray-50"
 		>
-			<LoadingIndicator class="mb-2 w-8 text-gray-400" />
-			<div class="text-lg text-gray-500">Syncing columns from database...</div>
+			<LoadingIndicator class="mb-2 w-8 text-gray-500" />
+			<div class="text-lg text-gray-600">Syncing columns from database...</div>
 		</div>
 	</div>
 
@@ -124,11 +124,10 @@
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="createLink"
 				:loading="creatingLink"
 				:disabled="createLinkDisabled"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Create
 			</Button>
@@ -245,7 +244,7 @@ const createLinkResource = createResource({
 		newLink.foreignKey = ''
 		addLinkDialog.value = false
 		$notify({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Success',
 			message: 'Link created successfully',
 		})

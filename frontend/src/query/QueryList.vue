@@ -37,7 +37,7 @@ const createQuery = async () => {
 }
 
 const StatusCell = (props) => (
-	<Badge color={props.row.status == 'Pending Execution' ? 'yellow' : 'green'}>
+	<Badge theme={props.row.status == 'Pending Execution' ? 'yellow' : 'green'}>
 		{props.row.status}
 	</Badge>
 )
@@ -108,7 +108,7 @@ const queryBuilderTypes = ref([
 			:actions="[
 				{
 					label: 'New Query',
-					appearance: 'primary',
+					variant: 'solid',
 					iconLeft: 'plus',
 					handler: () => (new_dialog = true),
 				},

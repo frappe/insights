@@ -57,7 +57,7 @@ const markLine = computed(() =>
 		ref="eChart"
 		:chartTitle="props.options.title"
 		:chartSubtitle="props.options.subtitle"
-		:color="props.options.colors"
+		:theme="props.options.colors"
 	>
 		<ChartGrid>
 			<ChartLegend type="scroll" bottom="bottom" />

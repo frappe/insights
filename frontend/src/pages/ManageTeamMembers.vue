@@ -53,24 +53,24 @@ function addMembers(members) {
 					<Avatar :label="member.full_name" :imageURL="member.user_image" />
 					<div>
 						<div>{{ member.full_name }}</div>
-						<div class="text-sm text-gray-500">{{ member.email }}</div>
+						<div class="text-sm text-gray-600">{{ member.email }}</div>
 					</div>
 				</div>
 				<div class="flex items-center">
 					<Button
 						icon="x"
-						appearance="minimal"
+						variant="minimal"
 						@click="team.removeMember(member.name)"
 					></Button>
 				</div>
 			</div>
 		</div>
-		<div v-else-if="addingMember" class="flex flex-1 items-center justify-center text-gray-400">
+		<div v-else-if="addingMember" class="flex flex-1 items-center justify-center text-gray-500">
 			<LoadingIndicator class="h-6 w-6" />
 		</div>
 		<div
 			v-else
-			class="flex flex-1 items-center justify-center rounded-lg border border-dashed p-4 font-light text-gray-400"
+			class="flex flex-1 items-center justify-center rounded border border-dashed p-4 font-light text-gray-500"
 		>
 			This team has no members
 		</div>

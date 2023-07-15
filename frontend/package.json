@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "vite",
 		"serve": "vite preview",
-		"build": "vite build --base=/assets/insights/frontend/ && yarn copy-html-entry",
+		"build": "vue-tsc && vite build --base=/assets/insights/frontend/ && yarn copy-html-entry",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html"
 	},
 	"dependencies": {
@@ -19,13 +19,16 @@
 		"dayjs": "^1.11.6",
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "0.0.109",
+		"frappe-ui": "0.1.0-alpha.5",
 		"lucide-vue-next": "^0.259.0",
 		"pinia": "^2.0.30",
+		"typescript": "^5.0.4",
+		"tailwindcss": "3.2.7",
 		"vite": "^2.9.12",
 		"vue": "^3.2.25",
 		"vue-codemirror": "^6.0.1",
 		"vue-router": "^4.0.12",
+		"vue-tsc": "^1.6.5",
 		"vue3-drr-grid-layout": "^1.9.7",
 		"vuedraggable": "^4.1.0"
 	},

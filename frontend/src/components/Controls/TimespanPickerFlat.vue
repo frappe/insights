@@ -25,13 +25,7 @@
 			</Input>
 		</div>
 		<div class="flex justify-end">
-			<Button
-				appearance="primary"
-				@click="apply()"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-			>
-				Done
-			</Button>
+			<Button variant="solid" @click="apply()"> Done </Button>
 		</div>
 	</div>
 </template>

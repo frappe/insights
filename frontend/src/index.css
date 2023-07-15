@@ -31,7 +31,7 @@
 }
 
 .cm-placeholder {
-	@apply !text-gray-500;
+	@apply !text-gray-600;
 }
 .cm-content {
 	padding: 0px !important;
@@ -42,7 +42,7 @@
 .cm-scroller {
 	font-family: 'Fira Code' !important;
 	line-height: 1.5rem !important;
-	@apply !text-gray-500
+	@apply !text-gray-600
 }
 .cm-matchingBracket {
 	font-weight: 500 !important;

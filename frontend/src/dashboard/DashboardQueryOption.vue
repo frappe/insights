@@ -72,16 +72,10 @@ async function selectQuery() {
 			<div v-if="newQuery" class="flex h-[46rem] w-full flex-col justify-end p-4 text-base">
 				<Query :name="newQuery.name" :hideTabs="true" />
 				<div class="ml-auto space-x-2 px-2">
-					<Button appearance="danger" @click="deleteQuery" :loading="queries.deleting">
+					<Button variant="danger" @click="deleteQuery" :loading="queries.deleting">
 						Discard
 					</Button>
-					<Button
-						appearance="primary"
-						@click="selectQuery"
-						class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-					>
-						Done
-					</Button>
+					<Button variant="solid" @click="selectQuery"> Done </Button>
 				</div>
 			</div>
 		</template>

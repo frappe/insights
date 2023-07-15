@@ -86,10 +86,10 @@ function reset() {
 		<FileUploader @success="(file) => (table.file = file)">
 			<template #default="{ progress, uploading, openFileSelector }">
 				<div
-					class="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 text-base"
+					class="flex cursor-pointer flex-col items-center justify-center rounded border border-dashed border-gray-300 p-8 text-base"
 					@click="openFileSelector"
 				>
-					<FeatherIcon name="upload" class="h-8 w-8 text-gray-400" />
+					<FeatherIcon name="upload" class="h-8 w-8 text-gray-500" />
 					<div class="mt-2 text-gray-600">
 						<p v-if="!uploading" class="text-center font-medium text-blue-500">
 							Select a file
@@ -134,7 +134,7 @@ function reset() {
 	</span>
 	<div v-if="columns?.length" class="flex max-h-[15rem] flex-col overflow-hidden text-base">
 		<div
-			class="sticky right-0 top-0 z-10 flex h-8 w-full cursor-pointer items-center space-x-8 pr-8 text-xs uppercase text-gray-500"
+			class="sticky right-0 top-0 z-10 flex h-8 w-full cursor-pointer items-center space-x-8 pr-8 text-xs uppercase text-gray-600"
 		>
 			<span class="flex-1"> CSV Column </span>
 			<span class="flex-1"> Column Name </span>
@@ -167,7 +167,7 @@ function reset() {
 						<Button
 							class="!ml-0"
 							icon="x"
-							appearance="minimal"
+							variant="minimal"
 							@click="removeColumn(column.column)"
 						/>
 					</div>
@@ -178,11 +178,10 @@ function reset() {
 	<div class="mt-6 flex justify-between pt-2" v-if="table.file">
 		<div class="ml-auto flex items-center space-x-2">
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="submit"
 				:disabled="importDisabled"
 				:loading="importingTable"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				Import
 			</Button>

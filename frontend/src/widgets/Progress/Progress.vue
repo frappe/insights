@@ -49,17 +49,17 @@ const progressPercent = computed(() => {
 <template>
 	<div
 		v-if="props.options.title"
-		class="flex h-full w-full items-center justify-center rounded-lg p-6"
+		class="flex h-full w-full items-center justify-center rounded p-6"
 	>
 		<div class="h-fit w-full max-w-[22rem]">
 			<div>
-				<div class="text-gray-500">{{ props.options.title }}</div>
+				<div class="text-gray-600">{{ props.options.title }}</div>
 				<div class="text-[34px] leading-tight">
 					{{ props.options.prefix }}{{ formatValue(progress) }}{{ props.options.suffix }}
 				</div>
 			</div>
 			<div class="mb-1">
-				<div class="flex justify-between text-xs tracking-wide text-gray-500">
+				<div class="flex justify-between text-xs tracking-wide text-gray-600">
 					<div>{{ progressPercent }}%</div>
 					<div>
 						{{ props.options.prefix }}{{ formatValue(target)

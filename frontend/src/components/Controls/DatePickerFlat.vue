@@ -2,7 +2,7 @@
 	<div class="w-fit select-none space-y-3 bg-white p-1 text-base">
 		<div class="flex items-center text-gray-700">
 			<div
-				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
+				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-gray-100"
 			>
 				<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
 			</div>
@@ -10,7 +10,7 @@
 				{{ formatMonth }}
 			</div>
 			<div
-				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100"
+				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-gray-100"
 			>
 				<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
 			</div>
@@ -34,9 +34,9 @@
 					<div
 						v-for="date in week"
 						:key="toValue(date)"
-						class="mr-1 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-lg last:mr-0 hover:bg-blue-50 hover:text-blue-500"
+						class="mr-1 flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded last:mr-0 hover:bg-blue-50 hover:text-blue-500"
 						:class="{
-							'text-gray-500': date.getMonth() !== currentMonth - 1,
+							'text-gray-600': date.getMonth() !== currentMonth - 1,
 							'text-blue-500': toValue(date) === toValue(today),
 							'bg-blue-50 font-semibold text-blue-500': toValue(date) === value,
 						}"
@@ -49,10 +49,7 @@
 		</div>
 
 		<div class="mt-1 flex w-full justify-end">
-			<div
-				class="cursor-pointer rounded-lg px-2 py-1 hover:bg-gray-100"
-				@click="selectDate('')"
-			>
+			<div class="cursor-pointer rounded px-2 py-1 hover:bg-gray-100" @click="selectDate('')">
 				Clear
 			</div>
 		</div>

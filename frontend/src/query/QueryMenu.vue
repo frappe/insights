@@ -2,7 +2,7 @@
 	<div class="flex flex-shrink-0 space-x-2">
 		<Dropdown
 			placement="left"
-			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+			:button="{ icon: 'more-horizontal', variant: 'minimal' }"
 			:options="[
 				!query.doc.is_stored && !query.doc.is_native_query
 					? {
@@ -86,7 +86,7 @@
 		<Dialog
 			:options="{
 				title: 'Delete Query',
-				icon: { name: 'trash', appearance: 'danger' },
+				icon: { name: 'trash', variant: 'danger' },
 			}"
 			v-model="show_delete_dialog"
 			:dismissable="true"
@@ -96,7 +96,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="danger"
+					variant="danger"
 					:loading="query.delete.loading"
 					@click="
 						() => {
@@ -115,7 +115,7 @@
 		<Dialog
 			:options="{
 				title: `Convert to ${!query.doc.is_native_query ? 'Native' : 'Builder'} Query`,
-				icon: { name: 'info', appearance: 'warning' },
+				icon: { name: 'info', variant: 'warning' },
 			}"
 			v-model="show_convert_query_dialog"
 			:dismissable="true"
@@ -129,7 +129,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="warning"
+					variant="warning"
 					:loading="query.convert.loading"
 					@click="
 						() => {
@@ -147,7 +147,7 @@
 		<Dialog
 			:options="{
 				title: 'Reset Query',
-				icon: { name: 'alert-circle', appearance: 'danger' },
+				icon: { name: 'alert-circle', variant: 'danger' },
 			}"
 			v-model="show_reset_dialog"
 			:dismissable="true"
@@ -157,7 +157,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="danger"
+					variant="danger"
 					:loading="query.reset.loading"
 					@click="
 						() => {
@@ -180,13 +180,13 @@
 			<template #body-content>
 				<div class="relative">
 					<p
-						class="rounded-lg border bg-gray-100 p-2 text-base text-gray-600"
+						class="rounded border bg-gray-100 p-2 text-base text-gray-600"
 						style="font-family: 'Fira Code'"
 						v-html="formattedSQL"
 					></p>
 					<Button
 						icon="copy"
-						appearance="white"
+						variant="white"
 						class="absolute bottom-2 right-2"
 						@click="copyToClipboard(query.doc.sql)"
 					></Button>
@@ -223,8 +223,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
-					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+					variant="solid"
 					@click="() => applyTransform('Pivot', pivot)"
 					:disabled="pivotDisabled"
 					:loading="query.addTransform?.loading"
@@ -263,8 +262,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
-					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+					variant="solid"
 					@click="() => applyTransform('Unpivot', unpivot)"
 					:disabled="unpivotDisabled"
 					:loading="query.addTransform?.loading"
@@ -297,8 +295,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
-					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
+					variant="solid"
 					@click="() => applyTransform('Transpose', transpose)"
 					:disabled="transposeDisabled"
 					:loading="query.addTransform?.loading"
@@ -376,7 +373,7 @@ function duplicateQuery() {
 		await nextTick()
 		router.push(`/query/build/${res.message}`)
 		$notify({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Query Duplicated',
 		})
 	})
@@ -385,7 +382,7 @@ function duplicateQuery() {
 function storeQuery() {
 	query.store.submit().then((res) => {
 		$notify({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Query Stored',
 		})
 	})

@@ -2,16 +2,19 @@
 	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-gray-50 px-6 py-4">
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
-			<Button
-				iconLeft="plus"
-				class="!rounded-lg bg-gray-900 !text-gray-50 shadow-sm hover:bg-gray-800"
-				@click="showDialog = true"
-			>
+			<Button variant="solid" @click="showDialog = true">
+				<template #prefix>
+					<Plus class="h-4 w-4" />
+				</template>
 				Create New
 			</Button>
 		</div>
-		<div class="flex flex-1 flex-col overflow-scroll">
-			<DashboardsGroup :dashboards="favorites" title="Favorites" />
+		<div class="flex flex-1 flex-col space-y-6 overflow-scroll">
+			<DashboardsGroup
+				v-if="favorites.length > 0"
+				:dashboards="favorites"
+				title="Favorites"
+			/>
 			<DashboardsGroup
 				v-if="settings.doc?.enable_permissions"
 				:dashboards="privates"
@@ -33,12 +36,7 @@
 			</div>
 		</template>
 		<template #actions>
-			<Button
-				appearance="primary"
-				@click="createDashboard"
-				:loading="dashboards.creating"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-			>
+			<Button variant="solid" @click="createDashboard" :loading="dashboards.creating">
 				Create
 			</Button>
 		</template>
@@ -52,6 +50,7 @@ import settings from '@/utils/settings'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardsGroup from './DashboardListGroup.vue'
+import { Plus } from 'lucide-vue-next'
 
 const dashboards = useDashboards()
 dashboards.reload()

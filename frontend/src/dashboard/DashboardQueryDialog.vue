@@ -50,10 +50,7 @@ function openQueryInNewTab() {
 					<div
 						class="flex h-full w-full max-w-7xl transform gap-2 overflow-hidden text-base transition-all"
 					>
-						<div
-							v-if="show"
-							class="flex-1 overflow-hidden rounded-lg bg-white shadow-xl"
-						>
+						<div v-if="show" class="flex-1 overflow-hidden rounded bg-white shadow-xl">
 							<DashboardQueryEditor :name="props.query" class="h-full" />
 						</div>
 						<div v-if="show" class="flex flex-shrink-0 flex-col space-y-2">

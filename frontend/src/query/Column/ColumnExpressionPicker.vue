@@ -11,7 +11,7 @@
 		</div>
 		<Popover class="h-36 w-full text-sm" placement="left-start">
 			<template #target="{ open }">
-				<div class="relative h-full w-full rounded-lg border p-1">
+				<div class="relative h-full w-full rounded border p-1">
 					<Code
 						v-model="input.value"
 						:completions="getCompletions"
@@ -33,7 +33,7 @@
 					>
 						<div
 							v-show="expression.help"
-							class="ml-auto w-[20rem] rounded-lg border bg-white p-2 shadow-lg"
+							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
 						>
 							<span class="mr-1 font-light">Syntax:</span>
 							<span class="font-medium italic" style="font-family: 'Fira Code'">
@@ -119,17 +119,12 @@
 			<Button
 				v-if="editing"
 				class="text-red-500"
-				appearance="white"
+				variant="white"
 				@click="removeExpressionColumn"
 			>
 				Remove
 			</Button>
-			<Button
-				appearance="primary"
-				@click="addOrEditColumn"
-				:disabled="addDisabled"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-			>
+			<Button variant="solid" @click="addOrEditColumn" :disabled="addDisabled">
 				{{ editing ? 'Update' : 'Add ' }}
 			</Button>
 		</div>

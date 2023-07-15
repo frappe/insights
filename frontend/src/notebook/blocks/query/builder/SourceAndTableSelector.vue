@@ -89,14 +89,14 @@ function handleTableSelect(selectedTable) {
 		<div
 			ref="trigger"
 			class="flex h-7 w-full cursor-pointer items-center overflow-hidden text-ellipsis !whitespace-nowrap px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
-			:class="table?.label ? '' : 'text-gray-400'"
+			:class="table?.label ? '' : 'text-gray-500'"
 		>
 			<span> {{ table?.label || 'Pick starting data' }} </span>
 		</div>
 		<UsePopover ref="dataSourcePopover" v-if="trigger" :targetElement="trigger">
-			<div class="w-[12rem] rounded-lg border bg-white text-base shadow transition-[width]">
+			<div class="w-[12rem] rounded border bg-white text-base shadow transition-[width]">
 				<div class="flex items-center rounded-t-md border-b bg-white px-2">
-					<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
+					<FeatherIcon name="search" class="h-4 w-4 text-gray-600" />
 					<input
 						v-model="datasourceSearchTerm"
 						class="flex w-full items-center bg-white p-2 text-sm focus:outline-none"
@@ -131,10 +131,10 @@ function handleTableSelect(selectedTable) {
 							placement="right-start"
 						>
 							<div
-								class="-ml-3 w-[12rem] rounded-lg border bg-white text-base shadow transition-[width]"
+								class="-ml-3 w-[12rem] rounded border bg-white text-base shadow transition-[width]"
 							>
 								<div class="flex items-center rounded-t-md border-b bg-white px-2">
-									<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
+									<FeatherIcon name="search" class="h-4 w-4 text-gray-600" />
 									<input
 										v-model="tableSearchTerm"
 										class="flex w-full items-center bg-white p-2 text-sm focus:outline-none"

@@ -30,7 +30,7 @@
 					<div v-show="!loading && (isComboBoxOpen || isPopoverOpen)">
 						<ComboboxOptions
 							static
-							class="max-h-48 w-full origin-top overflow-y-scroll rounded-lg border bg-white p-1 shadow"
+							class="max-h-48 w-full origin-top overflow-y-scroll rounded border bg-white p-1 shadow"
 						>
 							<div
 								v-if="filteredOptions.length === 0 && !$props.allowCreate"
@@ -66,7 +66,7 @@
 										<span>{{ option.label }}</span>
 										<span
 											v-if="option.description"
-											class="text-sm font-light text-gray-500"
+											class="text-sm font-light text-gray-600"
 										>
 											{{ option.description }}
 										</span>

@@ -12,7 +12,7 @@ const updateTitle = (title) => {
 	query.setValue.submit({ title }).then(() => {
 		$notify({
 			title: 'Query title updated',
-			appearance: 'success',
+			variant: 'success',
 		})
 		query.doc.title = title
 	})
@@ -47,7 +47,7 @@ function changeDataSource(sourceName) {
 	query.updateDoc({ data_source: sourceName }).then(() => {
 		$notify({
 			title: 'Data source updated',
-			appearance: 'success',
+			variant: 'success',
 		})
 		query.doc.data_source = sourceName
 	})
@@ -60,7 +60,7 @@ function changeDataSource(sourceName) {
 		<Dropdown
 			:button="{
 				iconLeft: 'database',
-				appearance: 'minimal',
+				variant: 'minimal',
 				label: query.doc.data_source || 'Select data source',
 			}"
 			:options="dataSourceOptions"

@@ -3,8 +3,8 @@
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Settings</div>
 			<Button
-				appearance="primary "
-				class="!rounded-lg bg-gray-900 text-gray-50 shadow-sm hover:bg-gray-800"
+				variant="primary "
+				class="!rounded bg-gray-900 text-gray-50 shadow-sm hover:bg-gray-800"
 				:disabled="updateDisabled"
 				@click="settings.updateSettings(settingsDoc)"
 			>
@@ -12,7 +12,7 @@
 			</Button>
 		</div>
 		<div class="flex flex-1 flex-col space-y-6 overflow-scroll">
-			<div class="rounded-lg border bg-white p-6 shadow-sm">
+			<div class="rounded border bg-white p-6 shadow-sm">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">General</div>
 				</div>
@@ -22,7 +22,7 @@
 						description="Maximum number of rows to be returned by a query. This is to prevent long running queries and memory issues."
 					>
 						<Input type="number" min="0" v-model="settingsDoc.query_result_limit" />
-						<div class="ml-2 text-gray-500">Rows</div>
+						<div class="ml-2 text-gray-600">Rows</div>
 					</Setting>
 
 					<Setting
@@ -30,7 +30,7 @@
 						description="Number of minutes to cache query results. This is to prevent accidental running of the same query multiple times."
 					>
 						<Input type="number" min="0" v-model="settingsDoc.query_result_expiry" />
-						<div class="ml-2 text-gray-500">Minutes</div>
+						<div class="ml-2 text-gray-600">Minutes</div>
 					</Setting>
 
 					<Setting
@@ -68,7 +68,7 @@
 				</div>
 			</div>
 
-			<div v-if="settingsDoc.is_subscribed" class="rounded-lg border bg-white p-6 shadow-sm">
+			<div v-if="settingsDoc.is_subscribed" class="rounded border bg-white p-6 shadow-sm">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Subscription</div>
 				</div>
@@ -78,7 +78,7 @@
 						description="Send a login link to the support portal. You can login to the support portal to manage support tickets."
 					>
 						<Button
-							appearance="white"
+							variant="white"
 							@click="settings.send_support_login_link.submit()"
 							:loading="settings.send_support_login_link.loading"
 							:disabled="
@@ -91,7 +91,7 @@
 					</Setting>
 				</div>
 			</div>
-			<div class="rounded-lg border bg-white p-6 shadow-sm">
+			<div class="rounded border bg-white p-6 shadow-sm">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Notifications</div>
 				</div>

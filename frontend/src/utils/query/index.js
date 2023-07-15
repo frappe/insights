@@ -65,14 +65,14 @@ export function useQuery(name) {
 		return query.debouncedRun(null, {
 			onSuccess() {
 				createToast({
-					appearance: 'success',
+					variant: 'success',
 					title: 'Execution Successful',
 				})
 			},
 			onError() {
 				query.run.loading = false
 				createToast({
-					appearance: 'error',
+					variant: 'error',
 					title: 'Error while executing query',
 					message: 'Please review the query and try again.',
 				})

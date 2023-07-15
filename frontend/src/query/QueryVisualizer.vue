@@ -25,10 +25,10 @@
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
-				<Button appearance="white" class="shadow-sm" @click="showDashboardDialog = true">
+				<Button variant="white" class="shadow-sm" @click="showDashboardDialog = true">
 					Add to Dashboard
 				</Button>
-				<Button appearance="white" class="shadow-sm" @click="showShareDialog = true">
+				<Button variant="white" class="shadow-sm" @click="showShareDialog = true">
 					Share
 				</Button>
 			</div>
@@ -46,7 +46,7 @@
 						title="Insufficient options"
 						message="Please check the options for this chart"
 						icon="settings"
-						icon-class="text-gray-400"
+						icon-class="text-gray-500"
 					/>
 				</template>
 			</component>
@@ -74,12 +74,7 @@
 				</div>
 			</template>
 			<template #actions>
-				<Button
-					appearance="primary"
-					class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-					@click="addChartToDashboard"
-					:loading="addingToDashboard"
-				>
+				<Button variant="solid" @click="addChartToDashboard" :loading="addingToDashboard">
 					Add
 				</Button>
 			</template>
@@ -129,7 +124,7 @@ const addChartToDashboard = async () => {
 	await chart.value.addToDashboard(toDashboard.value.value)
 	showDashboardDialog.value = false
 	$notify({
-		appearance: 'success',
+		variant: 'success',
 		title: 'Success',
 		message: 'Chart added to dashboard',
 	})

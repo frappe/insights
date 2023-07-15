@@ -65,17 +65,12 @@
 			<Button
 				v-if="props.column.name"
 				class="text-red-500"
-				appearance="white"
+				variant="white"
 				@click="removeMetric"
 			>
 				Remove
 			</Button>
-			<Button
-				@click="addOrEditColumn"
-				appearance="primary"
-				:disabled="applyDisabled"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-			>
+			<Button @click="addOrEditColumn" variant="solid" :disabled="applyDisabled">
 				{{ props.column.name ? 'Update' : 'Add ' }}
 			</Button>
 		</div>

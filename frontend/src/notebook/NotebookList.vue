@@ -54,13 +54,13 @@ updateDocumentTitle(pageMeta)
 			:actions="[
 				{
 					label: 'Notebook',
-					appearance: 'primary',
+					variant: 'solid',
 					iconLeft: 'plus',
 					handler: () => (new_notebook_dialog = true),
 				},
 				{
 					label: 'Notebook Page',
-					appearance: 'primary',
+					variant: 'solid',
 					iconLeft: 'plus',
 					handler: () => createNotebookPage(),
 				},
@@ -84,12 +84,7 @@ updateDocumentTitle(pageMeta)
 			</div>
 		</template>
 		<template #actions>
-			<Button
-				appearance="primary"
-				@click="createNotebook"
-				:loading="notebooks.creating"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
-			>
+			<Button variant="solid" @click="createNotebook" :loading="notebooks.creating">
 				Create
 			</Button>
 		</template>

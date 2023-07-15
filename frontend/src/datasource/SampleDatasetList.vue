@@ -37,13 +37,13 @@ async function setupSampleData() {
 	<div class="grid grid-cols-1 gap-4">
 		<div
 			v-for="(dataset, index) in sampleDatasets"
-			class="col-span-1 flex cursor-pointer items-center rounded-lg border border-gray-300 px-4 py-3 transition-all"
+			class="col-span-1 flex cursor-pointer items-center rounded border border-gray-300 px-4 py-3 transition-all"
 			:class="
 				selectedDataset === index ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-500'
 			"
 			@click="selectedDataset = index"
 		>
-			<div v-if="dataset.icon" class="mr-3 p-2 text-gray-500">
+			<div v-if="dataset.icon" class="mr-3 p-2 text-gray-600">
 				<FeatherIcon :name="dataset.icon" class="h-8 w-8" />
 			</div>
 			<div>
@@ -57,11 +57,10 @@ async function setupSampleData() {
 
 	<div class="mt-6 flex flex-shrink-0 justify-end space-x-3">
 		<Button
-			appearance="primary"
+			variant="solid"
 			@click="setupSampleData"
 			:loading="settingUpSampleData"
 			:disabled="settingUpSampleData || selectedDataset === null"
-			class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 		>
 			Continue
 		</Button>

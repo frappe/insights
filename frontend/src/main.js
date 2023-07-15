@@ -21,7 +21,7 @@ setConfig('resourceFetcher', (options) => {
 			if (err.error.messages && err.error.messages[0]) {
 				createToast({
 					title: 'Error',
-					appearance: 'error',
+					variant: 'error',
 					message: err.error.messages[0],
 				})
 			}

@@ -122,7 +122,7 @@ const createNewDatabase = async () => {
 	<div class="mt-6 flex justify-between pt-2">
 		<div class="ml-auto flex items-center space-x-2">
 			<Button
-				:appearance="connectAppearance"
+				:variant="connectAppearance"
 				:disabled="testConnectionDisabled"
 				@click="testConnection"
 				loadingText="Connecting..."
@@ -132,12 +132,11 @@ const createNewDatabase = async () => {
 				{{ connectLabel }}
 			</Button>
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="submitDisabled"
 				loadingText="Adding Database..."
 				:loading="creating"
 				@click="createNewDatabase"
-				class="!rounded-lg bg-gray-900 text-gray-50 hover:bg-gray-800"
 			>
 				{{ submitLabel }}
 			</Button>

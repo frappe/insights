@@ -85,7 +85,7 @@ function getChart(chartName) {
 		chartDocResource.setValue.submit({ is_public: isPublic }).then(() => {
 			$notify({
 				title: 'Chart access updated',
-				appearance: 'success',
+				variant: 'success',
 			})
 			state.doc.is_public = isPublic
 		})

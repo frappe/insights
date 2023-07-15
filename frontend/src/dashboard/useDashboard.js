@@ -202,7 +202,7 @@ export default function useDashboard(name) {
 		resource.setValue.submit({ title }).then(() => {
 			$notify({
 				title: 'Dashboard title updated',
-				appearance: 'success',
+				variant: 'success',
 			})
 			state.doc.title = title
 		})
@@ -242,7 +242,7 @@ export default function useDashboard(name) {
 		resource.setValue.submit({ is_public: isPublic }).then(() => {
 			$notify({
 				title: 'Dashboard access updated',
-				appearance: 'success',
+				variant: 'success',
 			})
 			state.doc.is_public = isPublic
 		})

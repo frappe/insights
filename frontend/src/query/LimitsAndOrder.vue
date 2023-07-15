@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex h-full flex-1 items-center justify-between rounded-b-md px-1 text-base text-gray-500"
+		class="flex h-full flex-1 items-center justify-between rounded-b-md px-1 text-base text-gray-600"
 	>
 		<div class="ml-auto text-sm">
 			<span>Limit to</span>

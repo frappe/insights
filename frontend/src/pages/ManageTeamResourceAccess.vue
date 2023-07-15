@@ -55,7 +55,7 @@ function addResources(resources) {
 	<div class="flex w-full flex-col space-y-3 text-base">
 		<div class="flex flex-shrink-0 flex-col">
 			<div class="text-lg font-medium leading-6">Manage {{ resourceTitle }} Access</div>
-			<div class="mb-4 text-sm text-gray-500">
+			<div class="mb-4 text-sm text-gray-600">
 				{{ resourceDescription }}
 			</div>
 			<ListPicker
@@ -81,7 +81,7 @@ function addResources(resources) {
 					<div class="flex items-center space-x-2">
 						<Button
 							icon="x"
-							appearance="minimal"
+							variant="minimal"
 							@click="team.removeResource(resource)"
 						></Button>
 					</div>
@@ -89,7 +89,7 @@ function addResources(resources) {
 			</div>
 			<div
 				v-else
-				class="flex h-full items-center justify-center rounded-lg border border-dashed p-4 text-sm font-light text-gray-500"
+				class="flex h-full items-center justify-center rounded border border-dashed p-4 text-sm font-light text-gray-600"
 			>
 				No {{ resourceTitle }} added yet.
 			</div>

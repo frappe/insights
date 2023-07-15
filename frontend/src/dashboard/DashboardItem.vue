@@ -94,7 +94,7 @@ const itemRef = ref(null)
 	<div class="dashboard-item h-full min-h-[60px] w-full p-2 [&>div:first-child]:h-full">
 		<div
 			ref="itemRef"
-			class="group relative flex h-full rounded-lg py-1"
+			class="group relative flex h-full rounded py-1"
 			:class="{
 				'border border-gray-100 bg-white shadow':
 					item.item_type !== 'Filter' && item.item_type !== 'Text',
@@ -107,7 +107,7 @@ const itemRef = ref(null)
 		>
 			<div
 				v-if="chartData.loading"
-				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded-lg bg-white"
+				class="absolute inset-0 z-[10000] flex h-full w-full items-center justify-center rounded bg-white"
 			>
 				<LoadingIndicator class="w-6 text-gray-300" />
 			</div>
@@ -127,7 +127,7 @@ const itemRef = ref(null)
 						title="Insufficient options"
 						icon="settings"
 						:message="null"
-						icon-class="text-gray-400"
+						icon-class="text-gray-500"
 					/>
 				</template>
 			</component>
@@ -145,7 +145,7 @@ const itemRef = ref(null)
 				</div>
 				<div
 					v-if="!dashboard.editing && item.options.query"
-					class="invisible -mb-1 -mt-1 flex cursor-pointer rounded-lg p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
+					class="invisible -mb-1 -mt-1 flex cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
 				>
 					<FeatherIcon
 						name="external-link"
@@ -162,7 +162,7 @@ const itemRef = ref(null)
 			:show="dashboard.editing && dashboard.currentItem?.item_id === item.item_id"
 			placement="top-end"
 		>
-			<div class="flex cursor-pointer rounded-lg bg-gray-800 p-1 shadow-sm">
+			<div class="flex cursor-pointer rounded bg-gray-800 p-1 shadow-sm">
 				<div
 					v-for="action in actions"
 					:key="action.label"

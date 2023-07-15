@@ -38,7 +38,7 @@ onBeforeUnmount(() => {
 		<slot name="content" v-bind="{ visible: isVisible }">
 			<div
 				v-if="props.content"
-				class="z-10 rounded-lg border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
+				class="z-10 rounded border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
 			>
 				{{ props.content }}
 			</div>

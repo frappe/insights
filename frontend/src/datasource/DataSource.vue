@@ -20,19 +20,19 @@
 			"
 		>
 			<template #title-items>
-				<Badge color="green" class="h-fit">Active</Badge>
+				<Badge theme="green" class="h-fit">Active</Badge>
 				<Dropdown
 					placement="left"
-					:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+					:button="{ icon: 'more-horizontal', variant: 'ghost' }"
 					:options="dropdownActions"
 				/>
 			</template>
 			<template #empty-state>
 				<div
 					v-if="dataSource.tables.length !== 0"
-					class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-lg text-base font-light text-gray-500"
+					class="mt-2 flex h-full w-full flex-col items-center justify-center rounded text-base font-light text-gray-600"
 				>
-					<div class="text-base font-light text-gray-500">Tables are not synced yet.</div>
+					<div class="text-base font-light text-gray-600">Tables are not synced yet.</div>
 					<div
 						class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
 						@click="syncTables"
@@ -65,7 +65,7 @@ const dataSource = useDataSource(props.name)
 dataSource.fetch_tables()
 
 const StatusCell = (props) => (
-	<Badge color={props.row.hidden ? 'yellow' : 'green'}>
+	<Badge theme={props.row.hidden ? 'yellow' : 'green'}>
 		{props.row.hidden ? 'Disabled' : 'Enabled'}
 	</Badge>
 )
@@ -93,6 +93,6 @@ const $notify = inject('$notify')
 function syncTables() {
 	dataSource
 		.sync_tables()
-		.catch((err) => $notify({ title: 'Error Syncing Tables', appearance: 'error' }))
+		.catch((err) => $notify({ title: 'Error Syncing Tables', variant: 'error' }))
 }
 </script>
