@@ -31,7 +31,7 @@
 			<p class="text-base text-gray-600">Are you sure you want to skip onboarding?</p>
 		</template>
 		<template #actions>
-			<Button variant="danger" @click="skip"> Yes </Button>
+			<Button variant="solid" theme="red" @click="skip"> Yes </Button>
 		</template>
 	</Dialog>
 </template>

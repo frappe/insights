@@ -60,29 +60,29 @@
 						{
 							label: 'Documentation',
 							icon: 'help-circle',
-							handler: () => open('https://docs.frappeinsights.com'),
+							onClick: () => open('https://docs.frappeinsights.com'),
 						},
 						{
 							label: 'Join Telegram Group',
 							icon: 'message-circle',
-							handler: () => open('https://t.me/frappeinsights'),
+							onClick: () => open('https://t.me/frappeinsights'),
 						},
 						{
 							label: 'Help',
 							icon: 'life-buoy',
-							handler: () => (showHelpDialog = true),
+							onClick: () => (showHelpDialog = true),
 						},
 						auth.user.is_admin
 							? {
 									label: 'Switch to Desk',
 									icon: 'grid',
-									handler: () => open('/app'),
+									onClick: () => open('/app'),
 							  }
 							: null,
 						{
 							label: 'Logout',
 							icon: 'log-out',
-							handler: () => auth.logout(),
+							onClick: () => auth.logout(),
 						},
 					]"
 				>

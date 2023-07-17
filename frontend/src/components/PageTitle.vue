@@ -18,7 +18,7 @@ const props = defineProps({
 				class="shadow-sm"
 				:variant="action.variant"
 				:iconLeft="action.iconLeft"
-				@click="action.handler"
+				@click="action.onClick"
 				:class="
 					action.variant === 'primary'
 						? '!rounded bg-gray-900 text-gray-50 hover:bg-gray-800 '

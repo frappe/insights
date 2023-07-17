@@ -56,13 +56,13 @@ updateDocumentTitle(pageMeta)
 					label: 'Notebook',
 					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_notebook_dialog = true),
+					onClick: () => (new_notebook_dialog = true),
 				},
 				{
 					label: 'Notebook Page',
 					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => createNotebookPage(),
+					onClick: () => createNotebookPage(),
 				},
 			]"
 			:columns="columns"

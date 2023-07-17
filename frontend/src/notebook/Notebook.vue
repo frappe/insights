@@ -59,7 +59,7 @@ updateDocumentTitle(pageMeta)
 					label: 'New Page',
 					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => createNotebookPage(),
+					onClick: () => createNotebookPage(),
 				},
 			]"
 			:columns="columns"
@@ -80,12 +80,12 @@ updateDocumentTitle(pageMeta)
 					<div class="text-3xl font-medium text-gray-900">{{ notebook.doc.title }}</div>
 					<Dropdown
 						placement="left"
-						:button="{ icon: 'more-horizontal', variant: 'minimal' }"
+						:button="{ icon: 'more-horizontal', variant: 'ghost' }"
 						:options="[
 							{
 								label: 'Delete',
 								icon: 'trash-2',
-								handler: () => (showDeleteDialog = true),
+								onClick: () => (showDeleteDialog = true),
 							},
 						]"
 					/>
@@ -96,7 +96,7 @@ updateDocumentTitle(pageMeta)
 		<Dialog
 			:options="{
 				title: 'Delete Notebook',
-				icon: { name: 'trash', variant: 'danger' },
+				icon: { name: 'trash', variant: 'solid', theme: 'red' },
 			}"
 			v-model="showDeleteDialog"
 			:dismissable="true"
@@ -107,8 +107,13 @@ updateDocumentTitle(pageMeta)
 				</p>
 			</template>
 			<template #actions>
-				<Button variant="white" @click="showDeleteDialog = false">Cancel</Button>
-				<Button variant="danger" @click="handleDelete" :loading="notebook.deleting">
+				<Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+				<Button
+					variant="solid"
+					theme="red"
+					@click="handleDelete"
+					:loading="notebook.deleting"
+				>
 					Yes
 				</Button>
 			</template>

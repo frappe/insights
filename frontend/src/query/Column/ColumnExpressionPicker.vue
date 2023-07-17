@@ -119,7 +119,7 @@
 			<Button
 				v-if="editing"
 				class="text-red-500"
-				variant="white"
+				variant="outline"
 				@click="removeExpressionColumn"
 			>
 				Remove

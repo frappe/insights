@@ -83,20 +83,20 @@ const queryBuilderTypes = ref([
 		description: 'Create a query using the notebook interface',
 		icon: 'book',
 		tag: 'beta',
-		handler: () => openQueryEditor('notebook'),
+		onClick: () => openQueryEditor('notebook'),
 	},
 	{
 		label: 'Visual',
 		description: 'Create a query using the visual interface',
 		icon: 'box',
 		tag: 'beta',
-		handler: () => openQueryEditor('visual'),
+		onClick: () => openQueryEditor('visual'),
 	},
 	{
 		label: 'Classic',
 		description: 'Create a query using the classic interface',
 		icon: 'layout',
-		handler: () => openQueryEditor('classic'),
+		onClick: () => openQueryEditor('classic'),
 	},
 ])
 </script>
@@ -110,7 +110,7 @@ const queryBuilderTypes = ref([
 					label: 'New Query',
 					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_dialog = true),
+					onClick: () => (new_dialog = true),
 				},
 			]"
 			:columns="columns"

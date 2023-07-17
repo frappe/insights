@@ -118,7 +118,7 @@ updateDocumentTitle(pageMeta)
 					<!-- Widget Options -->
 					<div class="flex items-center text-lg font-medium text-gray-500">
 						<Button
-							variant="white"
+							variant="outline"
 							icon="arrow-left"
 							@click="dashboard.currentItem = undefined"
 						></Button>
@@ -152,7 +152,7 @@ updateDocumentTitle(pageMeta)
 
 					<Button
 						iconLeft="trash"
-						variant="white"
+						variant="outline"
 						class="ml-auto text-red-500"
 						@click="dashboard.removeItem(dashboard.currentItem)"
 					>

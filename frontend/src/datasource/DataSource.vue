@@ -79,12 +79,12 @@ const dropdownActions = computed(() => {
 		{
 			label: 'Sync Tables',
 			icon: 'refresh-cw',
-			handler: syncTables,
+			onClick: syncTables,
 		},
 		{
 			label: 'Delete',
 			icon: 'trash',
-			handler: () => dataSource.delete(),
+			onClick: () => dataSource.delete(),
 		},
 	]
 })

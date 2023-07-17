@@ -33,23 +33,23 @@
 					placement="left"
 					:button="{
 						icon: 'more-horizontal',
-						variant: 'minimal',
+						variant: 'ghost',
 					}"
 					:options="[
 						{
 							label: hidden ? 'Enable' : 'Disable',
 							icon: hidden ? 'eye' : 'eye-off',
-							handler: () => (hidden = !hidden),
+							onClick: () => (hidden = !hidden),
 						},
 						{
 							label: 'Sync Table',
 							icon: 'refresh-cw',
-							handler: () => dataSourceTable.sync(),
+							onClick: () => dataSourceTable.sync(),
 						},
 						{
 							label: 'Add Link',
 							icon: 'link',
-							handler: () => (addLinkDialog = true),
+							onClick: () => (addLinkDialog = true),
 						},
 					]"
 				/>

@@ -5,7 +5,7 @@
 				<h1 class="text-3xl font-medium text-gray-900">Users</h1>
 				<div class="space-x-4">
 					<Button
-						variant="white"
+						variant="outline"
 						class="shadow-sm"
 						iconLeft="plus"
 						@click="showAddUserDialog = true"

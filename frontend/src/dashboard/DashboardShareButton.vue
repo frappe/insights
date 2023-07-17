@@ -11,7 +11,7 @@ const showShareDialog = ref(false)
 		Private
 	</Badge>
 
-	<Button iconLeft="share-2" variant="white" @click="showShareDialog = true"> Share </Button>
+	<Button iconLeft="share-2" variant="outline" @click="showShareDialog = true"> Share </Button>
 
 	<ShareDialog
 		v-if="dashboard.doc"

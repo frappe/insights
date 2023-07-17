@@ -33,7 +33,7 @@ const show = computed({
 						v-for="(type, index) in types"
 						:key="index"
 						class="group flex cursor-pointer items-center space-x-4"
-						@click="type.handler()"
+						@click="type.onClick()"
 					>
 						<div
 							class="rounded border p-4 text-gray-500 shadow-sm transition-all group-hover:scale-105"

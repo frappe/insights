@@ -62,17 +62,17 @@ updateDocumentTitle(pageMeta)
 						placeholder="Untitled Analysis"
 					></ContentEditable>
 					<Dropdown
-						:button="{ icon: 'more-horizontal', variant: 'minimal' }"
+						:button="{ icon: 'more-horizontal', variant: 'ghost' }"
 						:options="[
 							{
 								label: 'Clear',
 								icon: 'x-square',
-								handler: () => (page.doc.content = []),
+								onClick: () => (page.doc.content = []),
 							},
 							{
 								label: 'Delete',
 								icon: 'trash',
-								handler: () => (show_delete_dialog = true),
+								onClick: () => (show_delete_dialog = true),
 							},
 						]"
 					/>
@@ -85,7 +85,7 @@ updateDocumentTitle(pageMeta)
 	<Dialog
 		:options="{
 			title: 'Delete Page',
-			icon: { name: 'trash', variant: 'danger' },
+			icon: { name: 'trash', variant: 'solid', theme: 'red' },
 		}"
 		v-model="show_delete_dialog"
 		:dismissable="true"
@@ -94,7 +94,7 @@ updateDocumentTitle(pageMeta)
 			<p class="text-base text-gray-600">Are you sure you want to delete this page?</p>
 		</template>
 		<template #actions>
-			<Button variant="danger" :loading="page.delete.loading" @click="deletePage">
+			<Button variant="solid" theme="red" :loading="page.delete.loading" @click="deletePage">
 				Yes
 			</Button>
 		</template>

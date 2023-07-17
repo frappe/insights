@@ -8,7 +8,7 @@
 					label: 'New Data Source',
 					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_dialog = true),
+					onClick: () => (new_dialog = true),
 				},
 			]"
 			:columns="columns"
@@ -64,7 +64,7 @@ const databaseTypes = ref([
 		label: 'MariaDB',
 		description: 'Connect to a MariaDB database',
 		icon: 'database',
-		handler: () => {
+		onClick: () => {
 			new_dialog.value = false
 			showConnectMariaDBDialog.value = true
 		},
@@ -73,7 +73,7 @@ const databaseTypes = ref([
 		label: 'PostgreSQL',
 		description: 'Connect to a PostgreSQL database',
 		icon: 'database',
-		handler: () => {
+		onClick: () => {
 			new_dialog.value = false
 			showConnectPostgreDBDialog.value = true
 		},
@@ -82,7 +82,7 @@ const databaseTypes = ref([
 		label: 'CSV',
 		description: 'Upload a CSV file',
 		icon: 'file',
-		handler: () => {
+		onClick: () => {
 			new_dialog.value = false
 			showCSVFileUploadDialog.value = true
 		},

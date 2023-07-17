@@ -120,7 +120,7 @@ async function validateAndContinue() {
 		</div>
 
 		<div class="mt-6 flex justify-end space-x-3">
-			<Button variant="white" @click="emit('prev')"> Back </Button>
+			<Button variant="outline" @click="emit('prev')"> Back </Button>
 			<Button
 				variant="solid"
 				@click="validateAndContinue"

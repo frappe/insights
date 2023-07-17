@@ -65,7 +65,7 @@
 			<Button
 				v-if="props.column.name"
 				class="text-red-500"
-				variant="white"
+				variant="outline"
 				@click="removeMetric"
 			>
 				Remove

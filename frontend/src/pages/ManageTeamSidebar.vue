@@ -27,7 +27,8 @@ const sidebarItems = ref([
 	{
 		label: 'Delete Team',
 		icon: 'trash-2',
-		variant: 'danger',
+		variant: 'solid',
+		theme: 'red',
 	},
 ])
 const emit = defineEmits(['change', 'delete-team'])
@@ -55,10 +56,11 @@ function showDeletePrompt() {
 	showPrompt({
 		title: 'Delete Team',
 		message: `Are you sure you want to delete this team?`,
-		icon: { name: 'trash', variant: 'danger' },
+		icon: { name: 'trash', variant: 'solid', theme: 'red' },
 		primaryAction: {
 			label: 'Delete',
-			variant: 'danger',
+			variant: 'solid',
+			theme: 'red',
 			action: ({ close }) => {
 				return team
 					.deleteTeam()

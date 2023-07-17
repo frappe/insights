@@ -2,174 +2,156 @@
 	<div class="flex flex-shrink-0 space-x-2">
 		<Dropdown
 			placement="left"
-			:button="{ icon: 'more-horizontal', variant: 'minimal' }"
+			:button="{ icon: 'more-horizontal', variant: 'ghost' }"
 			:options="[
 				!query.doc.is_stored && !query.doc.is_native_query
 					? {
 							label: 'Store Query',
 							icon: 'bookmark',
-							handler: storeQuery,
+							onClick: storeQuery,
 					  }
 					: null,
 				{
 					label: 'Execute (⌘+E)',
 					icon: 'play',
-					handler: query.execute,
+					onClick: query.execute,
 				},
 				settings.doc?.enable_permissions && query.isOwner
 					? {
 							label: 'Share',
 							icon: 'share-2',
-							handler: () => (show_share_dialog = true),
+							onClick: () => (show_share_dialog = true),
 					  }
 					: null,
 				{
 					label: 'Set Alert',
 					icon: 'bell',
-					handler: () => (show_alert_dialog = true),
+					onClick: () => (show_alert_dialog = true),
 				},
 				{
 					label: 'Pivot',
 					icon: 'git-branch',
-					handler: () => (show_pivot_dialog = true),
+					onClick: () => (show_pivot_dialog = true),
 				},
 				{
 					label: 'Unpivot',
 					icon: 'git-merge',
-					handler: () => (show_unpivot_dialog = true),
+					onClick: () => (show_unpivot_dialog = true),
 				},
 				{
 					label: 'Transpose',
 					icon: 'rotate-ccw',
-					handler: () => (show_transpose_dialog = true),
+					onClick: () => (show_transpose_dialog = true),
 				},
 				{
 					label: 'Reset Transforms',
 					icon: 'refresh-ccw',
-					handler: resetPivot,
+					onClick: resetPivot,
 				},
 				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
-					handler: () => (show_reset_dialog = true),
+					onClick: () => (show_reset_dialog = true),
 				},
 				!query.doc.is_native_query
 					? {
 							label: 'View SQL',
 							icon: 'help-circle',
-							handler: () => (show_sql_dialog = true),
+							onClick: () => (show_sql_dialog = true),
 					  }
 					: null,
 				{
 					label: !query.doc.is_native_query ? 'Write SQL' : 'Build SQL',
 					icon: 'codesandbox',
-					handler: () => (show_convert_query_dialog = true),
+					onClick: () => (show_convert_query_dialog = true),
 				},
 				{
 					label: 'Duplicate',
 					icon: 'copy',
-					handler: duplicateQuery,
+					onClick: duplicateQuery,
 				},
 				{
 					label: 'Download CSV',
 					icon: 'download',
-					handler: downloadCSV,
+					onClick: downloadCSV,
 				},
 				{
 					label: 'Delete',
 					icon: 'trash-2',
-					handler: () => (show_delete_dialog = true),
+					onClick: () => (show_delete_dialog = true),
 				},
 			]"
 		/>
 
 		<Dialog
-			:options="{
-				title: 'Delete Query',
-				icon: { name: 'trash', variant: 'danger' },
-			}"
 			v-model="show_delete_dialog"
 			:dismissable="true"
-		>
-			<template #body-content>
-				<p class="text-base text-gray-600">Are you sure you want to delete this query?</p>
-			</template>
-			<template #actions>
-				<Button
-					variant="danger"
-					:loading="query.delete.loading"
-					@click="
-						() => {
+			:options="{
+				title: 'Delete Query',
+				message: 'Are you sure you want to delete this query?',
+				icon: { name: 'trash', appearance: 'danger' },
+				actions: [
+					{
+						label: 'Delete',
+						variant: 'solid',
+						theme: 'red',
+						onClick: () => {
 							query.delete.submit().then(() => {
 								$router.push('/query')
 								show_delete_dialog = false
 							})
-						}
-					"
-				>
-					Yes
-				</Button>
-			</template>
+						},
+					},
+				],
+			}"
+		>
 		</Dialog>
 
 		<Dialog
-			:options="{
-				title: `Convert to ${!query.doc.is_native_query ? 'Native' : 'Builder'} Query`,
-				icon: { name: 'info', variant: 'warning' },
-			}"
 			v-model="show_convert_query_dialog"
 			:dismissable="true"
-		>
-			<template #body-content>
-				<p class="text-base text-gray-600">
-					Are you sure you want to convert this query to a
-					{{ !query.doc.is_native_query ? 'native' : 'builder' }}
-					query? This will overwrite the existing query.
-				</p>
-			</template>
-			<template #actions>
-				<Button
-					variant="warning"
-					:loading="query.convert.loading"
-					@click="
-						() => {
+			:options="{
+				title: `Convert to ${!query.doc.is_native_query ? 'Native' : 'Builder'} Query`,
+				icon: { name: 'info', appearance: 'warning' },
+				message: `Are you sure you want to convert this query to a ${
+					!query.doc.is_native_query ? 'native' : 'builder'
+				} query? This will overwrite the existing query.`,
+				actions: [
+					{
+						label: 'Yes',
+						variant: 'solid',
+						onClick: () => {
 							query.convert.submit().then(() => {
 								show_convert_query_dialog = false
 							})
-						}
-					"
-				>
-					Yes
-				</Button>
-			</template>
+						},
+					},
+				],
+			}"
+		>
 		</Dialog>
 
 		<Dialog
-			:options="{
-				title: 'Reset Query',
-				icon: { name: 'alert-circle', variant: 'danger' },
-			}"
 			v-model="show_reset_dialog"
 			:dismissable="true"
-		>
-			<template #body-content>
-				<p class="text-base text-gray-600">Are you sure you want to reset this query?</p>
-			</template>
-			<template #actions>
-				<Button
-					variant="danger"
-					:loading="query.reset.loading"
-					@click="
-						() => {
+			:options="{
+				title: 'Reset Query',
+				message: 'Are you sure you want to reset this query?',
+				icon: { name: 'alert-circle', appearance: 'danger' },
+				actions: [
+					{
+						label: 'Reset',
+						variant: 'solid',
+						theme: 'red',
+						onClick: () => {
 							query.reset.submit().then(() => {
 								show_reset_dialog = false
 							})
-						}
-					"
-				>
-					Yes
-				</Button>
-			</template>
+						},
+					},
+				],
+			}"
+		>
 		</Dialog>
 
 		<Dialog
@@ -186,7 +168,7 @@
 					></p>
 					<Button
 						icon="copy"
-						variant="white"
+						variant="outline"
 						class="absolute bottom-2 right-2"
 						@click="copyToClipboard(query.doc.sql)"
 					></Button>
@@ -323,11 +305,11 @@
 <script setup>
 import AlertDialog from '@/components/AlertDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
+import { copyToClipboard } from '@/utils'
 import settings from '@/utils/settings'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
-import { copyToClipboard } from '@/utils'
 import { useRouter } from 'vue-router'
 
 const props = defineProps(['query'])

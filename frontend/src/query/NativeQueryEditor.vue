@@ -55,7 +55,7 @@ function runQuery() {
 			></Code>
 		</div>
 		<div class="mt-4 h-10 flex-shrink-0 space-x-2">
-			<Button iconLeft="play" variant="white" class="shadow-sm" @click="runQuery">
+			<Button iconLeft="play" variant="outline" class="shadow-sm" @click="runQuery">
 				Run
 			</Button>
 		</div>

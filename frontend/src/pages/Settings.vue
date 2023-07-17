@@ -78,7 +78,7 @@
 						description="Send a login link to the support portal. You can login to the support portal to manage support tickets."
 					>
 						<Button
-							variant="white"
+							variant="outline"
 							@click="settings.send_support_login_link.submit()"
 							:loading="settings.send_support_login_link.loading"
 							:disabled="

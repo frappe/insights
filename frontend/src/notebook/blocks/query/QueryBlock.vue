@@ -143,7 +143,7 @@ const formattedSQL = computed(() => {
 				></p>
 				<Button
 					icon="copy"
-					variant="white"
+					variant="outline"
 					class="absolute bottom-2 right-2"
 					@click="copyToClipboard(query.doc.sql)"
 				></Button>

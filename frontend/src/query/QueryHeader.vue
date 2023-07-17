@@ -60,7 +60,7 @@ function changeDataSource(sourceName) {
 		<Dropdown
 			:button="{
 				iconLeft: 'database',
-				variant: 'minimal',
+				variant: 'ghost',
 				label: query.doc.data_source || 'Select data source',
 			}"
 			:options="dataSourceOptions"
