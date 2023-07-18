@@ -6,10 +6,13 @@
 				<template #prefix>
 					<Plus class="h-4 w-4" />
 				</template>
-				Create New
+				New Dashboard
 			</Button>
 		</div>
-		<div class="-m-1 flex flex-1 flex-col space-y-6 overflow-scroll p-1">
+		<div
+			v-if="dashboards?.list?.length"
+			class="-m-1 flex flex-1 flex-col space-y-6 overflow-y-scroll p-1"
+		>
 			<DashboardsGroup
 				v-if="favorites.length > 0"
 				:dashboards="favorites"
@@ -21,6 +24,17 @@
 				title="Private"
 			/>
 			<DashboardsGroup :dashboards="sortedDashboards" title="All" :enableSearch="true" />
+		</div>
+		<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
+			<div class="text-base font-light text-gray-600">
+				You haven't created any dashboards yet.
+			</div>
+			<div
+				class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
+				@click="showDialog = true"
+			>
+				Create a new dashboard
+			</div>
 		</div>
 	</div>
 

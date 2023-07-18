@@ -10,8 +10,8 @@
 						<div class="flex items-center space-x-4 rounded border px-4 py-2">
 							<FeatherIcon name="globe" class="h-5 w-5 text-blue-500" />
 							<div class="flex flex-1 flex-col">
-								<div class="font-medium text-gray-600">Create Public Link</div>
-								<div class="text-sm text-gray-500">
+								<div class="font-medium text-gray-800">Create Public Link</div>
+								<div class="text-sm text-gray-700">
 									Anyone with the link can view this
 									{{ resourceType.replace('Insights ', '').toLowerCase() }}
 								</div>

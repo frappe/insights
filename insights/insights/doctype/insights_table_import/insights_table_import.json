@@ -104,7 +104,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-05-02 16:58:39.758052",
+ "modified": "2023-07-18 17:12:56.085628",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import",
@@ -120,6 +120,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
@@ -132,6 +133,7 @@
    "report": 1,
    "role": "Insights User",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],

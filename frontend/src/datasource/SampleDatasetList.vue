@@ -38,9 +38,7 @@ async function setupSampleData() {
 		<div
 			v-for="(dataset, index) in sampleDatasets"
 			class="col-span-1 flex cursor-pointer items-center rounded border border-gray-300 px-4 py-3 transition-all"
-			:class="
-				selectedDataset === index ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-500'
-			"
+			:class="selectedDataset === index ? 'border-gray-600' : 'hover:border-gray-300'"
 			@click="selectedDataset = index"
 		>
 			<div v-if="dataset.icon" class="mr-3 p-2 text-gray-600">
