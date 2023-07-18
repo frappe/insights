@@ -6,7 +6,7 @@
 				<div class="space-x-4">
 					<Button
 						variant="outline"
-						class="shadow-sm"
+						class="shadow"
 						iconLeft="plus"
 						@click="showAddTeamDialog = true"
 						>Add Team</Button

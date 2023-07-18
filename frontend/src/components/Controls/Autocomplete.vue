@@ -11,7 +11,7 @@
 					@blur="handleBlur($event, togglePopover)"
 					@change="filterQuery = $event.target.value"
 					:displayValue="(option) => option?.label"
-					class="form-input block w-full placeholder-gray-500"
+					class="form-input block w-full border-gray-400 placeholder-gray-500"
 				>
 				</ComboboxInput>
 				<div v-if="loading" class="absolute right-2 flex h-full items-center">

@@ -1,18 +1,17 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-white px-6 py-4">
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Settings</div>
 			<Button
-				variant="primary "
-				class="!rounded bg-gray-900 text-gray-50 shadow-sm hover:bg-gray-800"
+				variant="solid"
 				:disabled="updateDisabled"
 				@click="settings.updateSettings(settingsDoc)"
 			>
 				Update
 			</Button>
 		</div>
-		<div class="flex flex-1 flex-col space-y-6 overflow-scroll">
-			<div class="rounded border bg-white p-6 shadow-sm">
+		<div class="-m-1 flex flex-1 flex-col space-y-6 overflow-scroll p-1">
+			<div class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">General</div>
 				</div>
@@ -68,7 +67,7 @@
 				</div>
 			</div>
 
-			<div v-if="settingsDoc.is_subscribed" class="rounded border bg-white p-6 shadow-sm">
+			<div v-if="settingsDoc.is_subscribed" class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Subscription</div>
 				</div>
@@ -91,7 +90,8 @@
 					</Setting>
 				</div>
 			</div>
-			<div class="rounded border bg-white p-6 shadow-sm">
+
+			<div class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Notifications</div>
 				</div>

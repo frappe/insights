@@ -15,9 +15,7 @@ const chart = inject('chart')
 	</div>
 	<UsePopover v-if="targetElement" :targetElement="targetElement" placement="bottom-end">
 		<template #default="{ toggle }">
-			<div
-				class="h-[22rem] w-[15rem] overflow-y-scroll rounded border bg-white text-base shadow-sm"
-			>
+			<div class="h-[22rem] w-[15rem] overflow-y-scroll rounded bg-white text-base shadow">
 				<ChartOptions :onClose="() => toggle(false)" />
 			</div>
 		</template>

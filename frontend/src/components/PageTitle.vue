@@ -15,7 +15,6 @@ const props = defineProps({
 			<Button
 				v-for="action in actions"
 				:key="action.label"
-				class="shadow-sm"
 				:variant="action.variant"
 				:iconLeft="action.iconLeft"
 				@click="action.onClick"

@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-gray-50 px-6 py-4">
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-white px-6 py-4">
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
 			<Button variant="solid" @click="showDialog = true">
@@ -9,7 +9,7 @@
 				Create New
 			</Button>
 		</div>
-		<div class="flex flex-1 flex-col space-y-6 overflow-scroll">
+		<div class="-m-1 flex flex-1 flex-col space-y-6 overflow-scroll p-1">
 			<DashboardsGroup
 				v-if="favorites.length > 0"
 				:dashboards="favorites"

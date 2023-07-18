@@ -8,7 +8,7 @@
 				<div
 					tabindex="0"
 					:class="inputClass"
-					class="flex h-8 w-full items-center rounded bg-gray-100 px-3 placeholder-gray-500 focus:outline-none"
+					class="form-input block w-full items-center rounded border-gray-400 bg-gray-100 placeholder-gray-500 focus:outline-none"
 					@click="togglePopover()"
 					readonly
 				>

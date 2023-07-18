@@ -96,8 +96,7 @@ const itemRef = ref(null)
 			ref="itemRef"
 			class="group relative flex h-full rounded py-1"
 			:class="{
-				'border border-gray-100 bg-white shadow':
-					item.item_type !== 'Filter' && item.item_type !== 'Text',
+				' bg-white shadow': item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':
 					item.item_id === dashboard.currentItem?.item_id,
 				'cursor-grab': dashboard.editing,

@@ -50,7 +50,7 @@
 						>
 							<div class="relative flex flex-1 overflow-hidden">
 								<ComboboxInput
-									class="form-input w-full placeholder-gray-500"
+									class="form-input block w-full border-gray-400 placeholder-gray-500"
 									ref="input"
 									type="text"
 									@change="

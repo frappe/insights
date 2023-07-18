@@ -17,7 +17,7 @@ function toggleFavourite() {
 			params: { name: dashboard.name },
 		}"
 	>
-		<div class="flex h-full flex-1 flex-col rounded border border-gray-200 bg-white shadow-sm">
+		<div class="flex h-full flex-1 flex-col rounded bg-white shadow">
 			<div class="flex flex-1 flex-col p-4">
 				<div class="flex flex-col space-y-3">
 					<div class="flex items-center justify-between">

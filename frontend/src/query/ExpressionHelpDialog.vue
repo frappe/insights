@@ -11,7 +11,7 @@
 			<input
 				v-model="search"
 				placeholder="Search functions"
-				class="form-input block w-full border-gray-400 placeholder-gray-500"
+				class="form-input block w-full border-gray-400 border-gray-400 placeholder-gray-500"
 			/>
 			<div
 				class="mt-4 flex max-h-[30rem] flex-col space-y-1 divide-y overflow-y-scroll text-base"

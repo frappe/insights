@@ -25,10 +25,10 @@
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
-				<Button variant="outline" class="shadow-sm" @click="showDashboardDialog = true">
+				<Button variant="outline" class="shadow" @click="showDashboardDialog = true">
 					Add to Dashboard
 				</Button>
-				<Button variant="outline" class="shadow-sm" @click="showShareDialog = true">
+				<Button variant="outline" class="shadow" @click="showShareDialog = true">
 					Share
 				</Button>
 			</div>

@@ -30,12 +30,10 @@ const formattedValue = computed(() => {
 <template>
 	<div v-if="formattedValue" class="h-full w-full overflow-hidden px-8 py-4">
 		<div class="mx-auto flex h-full w-full min-w-40 flex-col justify-center overflow-hidden">
-			<div
-				class="w-full overflow-hidden text-ellipsis whitespace-nowrap font-medium leading-6 tracking-tight"
-			>
+			<div class="w-full overflow-hidden text-ellipsis whitespace-nowrap leading-6">
 				{{ props.options.title }}
 			</div>
-			<div class="text-7xl font-medium leading-10">
+			<div class="text-[28px] font-medium leading-10">
 				{{ props.options.prefix }}{{ formattedValue }}{{ props.options.suffix }}
 			</div>
 		</div>

@@ -65,7 +65,7 @@ const canShowTooltip = ref(false)
 			v-if="props.allowMultiple"
 			autocomplete="off"
 			placeholder="Filter..."
-			class="form-input mb-1 block h-7 w-full placeholder-gray-500"
+			class="form-input mb-1 block h-7 w-full border-gray-400 placeholder-gray-500"
 		/>
 		<ComboboxOptions
 			static

@@ -86,7 +86,7 @@
 				type="text"
 				v-model="filter.value.value"
 				:placeholder="valuePlaceholder"
-				class="form-input block h-8 w-full select-none rounded placeholder-gray-500 placeholder:text-sm"
+				class="form-input block h-8 w-full select-none rounded border-gray-400 placeholder-gray-500"
 			/>
 		</div>
 		<div class="flex justify-end">

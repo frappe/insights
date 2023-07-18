@@ -36,8 +36,7 @@ if (isChart) {
 			<div
 				class="group relative flex h-full w-full rounded"
 				:class="{
-					'border bg-white shadow-sm':
-						item.item_type !== 'Filter' && item.item_type !== 'Text',
+					'bg-white shadow': item.item_type !== 'Filter' && item.item_type !== 'Text',
 				}"
 			>
 				<div

@@ -4,12 +4,7 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Users</h1>
 				<div class="space-x-4">
-					<Button
-						variant="outline"
-						class="shadow-sm"
-						iconLeft="plus"
-						@click="showAddUserDialog = true"
-					>
+					<Button variant="outline" iconLeft="plus" @click="showAddUserDialog = true">
 						Add User
 					</Button>
 				</div>

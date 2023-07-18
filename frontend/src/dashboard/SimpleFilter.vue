@@ -232,7 +232,7 @@ function resetFilter() {
 							autocomplete="off"
 							placeholder="Filter..."
 							@input="checkAndFetchColumnValues($event.target.value)"
-							class="form-input mb-2 block h-7 w-full placeholder-gray-500"
+							class="form-input mb-2 block h-7 w-full border-gray-400 placeholder-gray-500"
 						/>
 						<ComboboxOptions static class="flex max-h-[20rem] flex-col overflow-hidden">
 							<div class="mb-1 px-1 text-sm text-gray-500">Select an option</div>
@@ -309,7 +309,7 @@ function resetFilter() {
 								}
 							}
 						"
-						class="form-input block h-7 w-full select-none rounded placeholder-gray-500 placeholder:text-sm"
+						class="form-input block h-7 w-full select-none rounded border-gray-400 placeholder-gray-500"
 					/>
 				</div>
 			</template>
