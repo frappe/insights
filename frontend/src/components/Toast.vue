@@ -2,12 +2,7 @@
 	<teleport to="#frappeui-toast-root">
 		<transition :name="position.includes('top') ? 'toast-top' : 'toast-bottom'">
 			<div v-if="shown" :class="['pointer-events-auto m-2 transition duration-200 ease-out']">
-				<div
-					:class="[
-						'w-[24rem] max-w-xl rounded border border-gray-100 bg-white p-3 shadow',
-						variantClasses,
-					]"
-				>
+				<div :class="['w-[24rem] max-w-xl rounded bg-white p-3 shadow', variantClasses]">
 					<div class="flex items-start">
 						<div v-if="icon || variantIcon" class="mr-2">
 							<FeatherIcon
@@ -161,16 +156,16 @@ export default {
 		},
 		variantIconClasses() {
 			if (this.variant === 'success') {
-				return 'text-white bg-green-400 p-0.5'
+				return 'text-white bg-green-600 p-0.5'
 			}
 			if (this.variant === 'info') {
-				return 'text-white bg-blue-400'
+				return 'text-white bg-blue-600'
 			}
 			if (this.variant === 'warning') {
-				return 'text-white bg-orange-400'
+				return 'text-white bg-orange-600'
 			}
 			if (this.variant === 'error') {
-				return 'text-white bg-red-400 p-0.5'
+				return 'text-white bg-red-600 p-0.5'
 			}
 		},
 	},

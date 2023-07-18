@@ -19,7 +19,7 @@ const filteredDashboards = computed(() => {
 	<div>
 		<div class="flex items-center">
 			<div class="text-xl font-medium text-gray-700">{{ title }}</div>
-			<Badge variant="outline" :label="dashboards.length" class="ml-2" />
+			<Badge variant="outline" :label="String(dashboards.length)" class="ml-2" />
 			<div v-if="enableSearch" class="ml-auto flex items-center">
 				<Input
 					ref="searchInput"
