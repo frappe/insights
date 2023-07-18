@@ -9,7 +9,7 @@ const showShareDialog = ref(false)
 <template>
 	<Badge v-if="dashboard.isPrivate" theme="yellow"> Private </Badge>
 
-	<Button iconLeft="share-2" variant="outline" @click="showShareDialog = true"> Share </Button>
+	<Button variant="outline" @click="showShareDialog = true"> Share </Button>
 
 	<ShareDialog
 		v-if="dashboard.doc"
