@@ -1,6 +1,5 @@
 import { getTrialStatus } from '@/subscription'
 import auth from '@/utils/auth'
-import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
 import { isSetupComplete } from '@/setup'
@@ -25,12 +24,8 @@ const routes = [
 	},
 	{
 		path: '/',
-		redirect: '/get-started',
-	},
-	{
-		path: '/get-started',
-		name: 'Get Started',
-		component: () => import('@/pages/GetStarted.vue'),
+		name: 'Home',
+		component: () => import('@/home/Home.vue'),
 	},
 	{
 		path: '/dashboard',
@@ -200,12 +195,6 @@ router.beforeEach(async (to, from, next) => {
 	// redirect to / if setup is complete and user is on /setup
 	if (setupComplete && to.name === 'Setup') {
 		return next('/')
-	}
-
-	// redirect to /dashboard if onboarding is complete
-	const onboardingComplete = await getOnboardingStatus()
-	if (onboardingComplete && to.name == 'Get Started') {
-		return next('/dashboard')
 	}
 
 	to.path === '/login' ? next('/') : next()

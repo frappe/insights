@@ -6,6 +6,8 @@ const auth = reactive({
 	isLoggedIn: false,
 	user: {
 		user_id: '',
+		first_name: '',
+		last_name: '',
 		full_name: '',
 		user_image: '',
 		is_admin: undefined,
@@ -33,6 +35,8 @@ const userInfo = createResource({
 	onSuccess(res) {
 		auth.user.is_admin = res.is_admin
 		auth.user.is_user = res.is_user
+		auth.user.first_name = res.first_name
+		auth.user.last_name = res.last_name
 	},
 })
 
@@ -53,6 +57,8 @@ async function login(email, password) {
 		pwd: password,
 	})
 	if (res) {
+		auth.user.first_name = res.first_name
+		auth.user.last_name = res.last_name
 		auth.user.full_name = res.full_name
 		auth.user.user_image = res.user_image
 		auth.isLoggedIn = true

@@ -209,8 +209,12 @@ def get_user_info():
         "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
     )
 
+    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+
     return {
         "user_id": frappe.session.user,
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",
         "is_user": is_user,
     }
@@ -256,24 +260,6 @@ def create_table_link(data_source, primary_table, foreign_table, primary_key, fo
     if not foreign.get("table_links", link):
         foreign.append("table_links", link)
         foreign.save()
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def get_onboarding_status():
-    return {
-        "is_onboarded": frappe.db.get_single_value("Insights Settings", "onboarding_complete"),
-        "query_created": bool(frappe.db.a_row_exists("Insights Query")),
-        "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-        "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-    }
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def skip_onboarding():
-    frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)
 
 
 @frappe.whitelist()
@@ -577,3 +563,55 @@ def contact_team(message_type, message_content, is_critical=False):
     except Exception as e:
         frappe.log_error(e)
         frappe.throw("Something went wrong. Please try again later.")
+
+
+@frappe.whitelist()
+def get_recent_activity():
+    # Version doctype stores all the activities
+    # we need to filter out the activities of doctypes that starts with Insights
+    # there will be multiple versions created every single time a doc is updated
+    # we need to group them by the docname and get the latest one within a span of n minutes
+
+    Version = frappe.qb.DocType("Version")
+    all_activities = (
+        frappe.qb.from_(Version)
+        .select(
+            Version.ref_doctype,
+            Version.docname,
+            Version.modified,
+            Version.owner,
+        )
+        .where(
+            Version.ref_doctype.isin(
+                [
+                    "Insights Dashboard",
+                    "Insights Query",
+                    "Insights Notebook Page",
+                    "Insights Notebook",
+                    "Insights Settings",
+                ]
+            )
+            & (Version.owner != "Administrator")
+        )
+        .orderby(Version.modified, order=frappe.qb.desc)
+        .limit(1000)
+        .run(as_dict=True)
+    )
+
+    from datetime import timedelta
+
+    n = 5
+    recent_activities = []
+    for activity in all_activities:
+        if not recent_activities:
+            recent_activities.append(activity)
+            continue
+
+        if activity.docname != recent_activities[-1].docname:
+            recent_activities.append(activity)
+            continue
+
+        if activity.modified > recent_activities[-1].modified + timedelta(minutes=n):
+            recent_activities.append(activity)
+
+    return recent_activities
