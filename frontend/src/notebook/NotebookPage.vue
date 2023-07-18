@@ -57,7 +57,7 @@ updateDocumentTitle(pageMeta)
 			<div class="w-full px-[6rem] lg:mx-auto lg:max-w-[65rem]">
 				<div class="flex items-center">
 					<ContentEditable
-						class="focusable flex-1 text-[36px] font-bold"
+						class="flex-1 text-[36px] font-bold"
 						v-model="page.doc.title"
 						placeholder="Untitled Analysis"
 					></ContentEditable>

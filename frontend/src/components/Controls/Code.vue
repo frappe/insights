@@ -1,6 +1,5 @@
 <template>
 	<codemirror
-		class="focusable"
 		:tab-size="2"
 		v-model="code"
 		:autofocus="autofocus"

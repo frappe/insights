@@ -2,7 +2,7 @@
 	<div class="flex flex-shrink-0 space-x-2">
 		<Dropdown
 			placement="left"
-			:button="{ icon: 'more-horizontal', variant: 'ghost' }"
+			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
 				!query.doc.is_stored && !query.doc.is_native_query
 					? {
