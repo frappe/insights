@@ -80,6 +80,10 @@ async function validateAndContinue() {
 		emit('next')
 	}
 }
+
+function skipAndContinue() {
+	emit('next')
+}
 </script>
 
 <template>
@@ -120,7 +124,7 @@ async function validateAndContinue() {
 		</div>
 
 		<div class="mt-6 flex justify-end space-x-3">
-			<Button variant="outline" @click="emit('prev')"> Back </Button>
+			<Button variant="outline" @click="skipAndContinue"> Skip </Button>
 			<Button
 				variant="solid"
 				@click="validateAndContinue"

@@ -129,10 +129,10 @@ function reset() {
 			/>
 		</div>
 	</div>
-	<span v-if="columns?.length" class="mb-2 text-lg font-medium leading-6 text-gray-900">
+	<span v-if="columns?.length" class="text-lg font-medium leading-6 text-gray-900">
 		Columns Mapping
 	</span>
-	<div v-if="columns?.length" class="flex max-h-[15rem] flex-col overflow-hidden text-base">
+	<div v-if="columns?.length" class="mt-2 flex max-h-[15rem] flex-col overflow-hidden text-base">
 		<div
 			class="sticky right-0 top-0 z-10 flex h-8 w-full cursor-pointer items-center space-x-8 pr-8 text-xs uppercase text-gray-600"
 		>
@@ -140,7 +140,7 @@ function reset() {
 			<span class="flex-1"> Column Name </span>
 			<span class="flex-1"> Column Type </span>
 		</div>
-		<div class="flex flex-col overflow-scroll">
+		<div class="flex flex-col overflow-y-scroll">
 			<Draggable class="w-full" v-model="columns" group="columns" item-key="column">
 				<template #item="{ element: column }">
 					<div

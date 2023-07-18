@@ -15,7 +15,7 @@ const titleBySourceType = {
 	mariadb: 'Setup MariaDB',
 	postgresql: 'Setup PostgreSQL',
 	file: 'Setup Spreadsheet',
-	sample: 'Setup Sample Dataset',
+	sample: 'Select Sample Dataset',
 }
 const descriptionBySourceType = {
 	erpnext:
@@ -80,7 +80,7 @@ function handlePrev() {
 				<div class="flex items-center space-x-2">
 					<template v-for="(step, index) in steps">
 						<div
-							class="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300"
+							class="flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-gray-300"
 							:class="
 								currentStep === index
 									? 'border-blue-500 bg-blue-50 font-bold text-blue-500'
@@ -98,7 +98,7 @@ function handlePrev() {
 			</div>
 
 			<div class="mt-8">
-				<div class="text-6xl font-bold tracking-tight text-gray-900">
+				<div class="text-[24px] font-bold text-gray-900">
 					{{ steps[currentStep].title }}
 				</div>
 				<div class="mt-1 text-gray-700">
@@ -106,7 +106,7 @@ function handlePrev() {
 				</div>
 			</div>
 
-			<div class="flex flex-col overflow-hidden">
+			<div class="relative flex flex-col overflow-hidden">
 				<transition name="fade" mode="out-in">
 					<component
 						:is="steps[currentStep].component"
@@ -114,6 +114,11 @@ function handlePrev() {
 						@prev="handlePrev"
 					/>
 				</transition>
+				<div class="absolute bottom-0 left-0">
+					<Button variant="outline" @click="handlePrev" v-if="currentStep > 0">
+						Back
+					</Button>
+				</div>
 			</div>
 		</div>
 	</div>
