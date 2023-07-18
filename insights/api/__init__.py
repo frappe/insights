@@ -577,3 +577,94 @@ def contact_team(message_type, message_content, is_critical=False):
     except Exception as e:
         frappe.log_error(e)
         frappe.throw("Something went wrong. Please try again later.")
+
+
+@frappe.whitelist()
+@redis_cache()
+def get_all_columns(data_source):
+    check_data_source_permission(data_source)
+    InsightsTable = frappe.qb.DocType("Insights Table")
+    InsightsTableColumn = frappe.qb.DocType("Insights Table Column")
+    return (
+        frappe.qb.from_(InsightsTable)
+        .left_join(InsightsTableColumn)
+        .on(InsightsTable.name == InsightsTableColumn.parent)
+        .select(
+            InsightsTable.table.as_("table"),
+            InsightsTable.label.as_("table_label"),
+            InsightsTable.data_source.as_("data_source"),
+            InsightsTable.is_query_based.as_("is_query_based"),
+            InsightsTableColumn.column.as_("column"),
+            InsightsTableColumn.label.as_("label"),
+            InsightsTableColumn.type.as_("type"),
+        )
+        .where((InsightsTable.data_source == data_source) & (InsightsTable.hidden == 0))
+        .orderby(InsightsTable.is_query_based)
+        .orderby(InsightsTable.label)
+        .run(as_dict=True)
+    )
+
+
+@frappe.whitelist()
+def get_join_path(data_source, table1, table2):
+    join_graph = make_join_graph(data_source)
+    if not join_graph.bfs(table1, table2):
+        return None
+
+    # list of tables that will be involved in the join
+    path = join_graph.shortest_path(table1, table2)
+
+    # find the columns that will be used for the join
+    # if path = ["Sales Invoice", "Sales Invoice Item", "Item"]
+    # ret = [{ "left_table": "Sales Invoice", "left_column": "item_code", "right_table": "Sales Invoice Item", "right_column": "item_code" }, ...]
+
+    joins = []
+    for i in range(len(path) - 1):
+        left_table = path[i]
+        right_table = path[i + 1]
+        left_table_name = frappe.db.get_value(
+            "Insights Table", {"data_source": data_source, "table": left_table}, "name"
+        )
+        left_table_doc = frappe.get_doc("Insights Table", left_table_name)
+        for link in left_table_doc.table_links:
+            if link.foreign_table == right_table:
+                joins.append(
+                    {
+                        "left_table": left_table,
+                        "left_column": link.primary_key,
+                        "right_table": right_table,
+                        "right_column": link.foreign_key,
+                    }
+                )
+                break
+    return joins
+
+
+# @redis_cache(ttl=60 * 60 * 24)
+def make_join_graph(data_source):
+    from insights.api.join_graph import Graph
+
+    g = Graph()
+    tables = frappe.get_all("Insights Table", {"data_source": data_source}, ["name", "table"])
+    tableByName = {table["name"]: table["table"] for table in tables}
+    table_links = frappe.get_all(
+        "Insights Table Link",
+        filters={"parent": ["in", list(tableByName.keys())]},
+        fields=["parent", "foreign_table", "primary_key", "foreign_key"],
+    )
+    for link in table_links:
+        primary_table = tableByName[link.parent]
+        # if primary_table == "tabDocType" or link.foreign_table == "tabDocType":
+        #     continue
+        g.add_node(primary_table)
+        g.add_node(link.foreign_table)
+        g.add_edge(
+            primary_table,
+            link.foreign_table,
+            metadata={
+                "primary_key": link.primary_key,
+                "foreign_key": link.foreign_key,
+            },
+        )
+
+    return g

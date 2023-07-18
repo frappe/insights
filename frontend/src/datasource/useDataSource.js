@@ -103,6 +103,7 @@ function getDataSourceResource(name) {
 		whitelistedMethods: {
 			enqueue_sync_tables: 'enqueue_sync_tables',
 			get_tables: 'get_tables',
+			get_columns: 'get_columns',
 		},
 	})
 }
@@ -115,4 +116,18 @@ async function getTableName(data_source, table) {
 	// cache the name
 	cached_tablenames[data_source + table] = name
 	return name
+}
+
+export async function getAllColumns(data_source) {
+	return await call('insights.api.get_all_columns', {
+		data_source: data_source,
+	})
+}
+
+export async function getJoinPath(data_source, tableA, tableB) {
+	return await call('insights.api.get_join_path', {
+		data_source: data_source,
+		table1: tableA,
+		table2: tableB,
+	})
 }
