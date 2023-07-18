@@ -37,7 +37,7 @@ const createQuery = async () => {
 }
 
 const StatusCell = (props) => (
-	<Badge theme={props.row.status == 'Pending Execution' ? 'yellow' : 'green'}>
+	<Badge theme={props.row.status == 'Pending Execution' ? 'orange' : 'green'}>
 		{props.row.status}
 	</Badge>
 )

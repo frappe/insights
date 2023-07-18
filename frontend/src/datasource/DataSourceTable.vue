@@ -23,7 +23,7 @@
 					{{ dataSourceTable.doc.label }}
 				</h1>
 				<div class="flex h-8 items-center">
-					<Badge :theme="hidden ? 'yellow' : 'green'" class="h-fit">
+					<Badge :theme="hidden ? 'yellow' : 'green'" size="lg">
 						{{ hidden ? 'Disabled' : 'Enabled' }}
 					</Badge>
 				</div>

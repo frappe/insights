@@ -10,7 +10,7 @@ const state = inject('state')
 		<div class="font-code flex items-center">
 			<ResizeableInput
 				v-model="state.query.doc.title"
-				class="-ml-2 cursor-text"
+				class="-ml-2 cursor-text text-gray-700"
 			></ResizeableInput>
 			<p class="text-gray-600">({{ state.query.doc.name }})</p>
 			<p

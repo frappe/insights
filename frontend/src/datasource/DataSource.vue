@@ -20,7 +20,7 @@
 			"
 		>
 			<template #title-items>
-				<Badge theme="green" class="h-fit">Active</Badge>
+				<Badge theme="green">Active</Badge>
 				<Dropdown
 					placement="left"
 					:button="{ icon: 'more-horizontal', variant: 'ghost' }"
@@ -65,7 +65,7 @@ const dataSource = useDataSource(props.name)
 dataSource.fetch_tables()
 
 const StatusCell = (props) => (
-	<Badge theme={props.row.hidden ? 'yellow' : 'green'}>
+	<Badge theme={props.row.hidden ? 'orange' : 'green'}>
 		{props.row.hidden ? 'Disabled' : 'Enabled'}
 	</Badge>
 )

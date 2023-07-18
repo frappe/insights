@@ -46,7 +46,7 @@ const sources = useDataSources()
 sources.reload()
 
 const StatusCell = (props) => (
-	<Badge theme={props.row.status == 'Inactive' ? 'yellow' : 'green'}>{props.row.status}</Badge>
+	<Badge theme={props.row.status == 'Inactive' ? 'orange' : 'green'}>{props.row.status}</Badge>
 )
 const columns = [
 	{ label: 'Title', key: 'title' },

@@ -47,11 +47,7 @@ const show = computed({
 								>
 									{{ type.label }}
 								</p>
-								<Badge
-									v-if="type.tag"
-									theme="green"
-									class="!rounded-full !px-2 !py-0.5"
-								>
+								<Badge v-if="type.tag" theme="green">
 									{{ type.tag }}
 								</Badge>
 							</div>

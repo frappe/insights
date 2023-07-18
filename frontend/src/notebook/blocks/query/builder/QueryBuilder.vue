@@ -400,7 +400,7 @@ const addStepRef = ref(null)
 					</div>
 				</div>
 			</QueryBuilderRow>
-			<div class="pl-6">
+			<div class="pl-7">
 				<QueryBuilderRow
 					v-if="state.dimensions.length"
 					:label="state.measures.length ? 'By' : 'Group by'"
