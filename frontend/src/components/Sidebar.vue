@@ -88,13 +88,13 @@
 				>
 					<template v-slot="{ open }">
 						<button
-							class="flex w-full items-center space-x-2 rounded p-2 text-left text-base font-medium"
+							class="flex w-full items-center space-x-2 rounded p-1 text-left text-base font-medium"
 							:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
 						>
 							<Avatar
+								size="xl"
 								:label="auth.user.full_name"
 								:imageURL="auth.user.user_image"
-								size="md"
 							/>
 							<span
 								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"

@@ -1,36 +1,34 @@
 <template>
-	<div v-if="chart.doc" class="flex flex-1 overflow-scroll p-2 pt-3">
-		<div class="flex w-full flex-shrink-0 flex-col lg:h-full lg:w-[18rem] lg:pr-4">
-			<div class="space-y-4">
-				<!-- Widget Options -->
-				<Input
-					type="select"
-					label="Chart Type"
-					class="w-full"
-					v-model="chart.doc.chart_type"
-					:options="chartOptions"
-				/>
+	<div v-if="chart.doc" class="flex flex-1 p-2 pt-3">
+		<div
+			class="flex w-full flex-shrink-0 flex-col space-y-4 overflow-y-scroll lg:h-full lg:w-[18rem] lg:pr-4"
+		>
+			<!-- Widget Options -->
+			<Input
+				type="select"
+				label="Chart Type"
+				class="w-full"
+				v-model="chart.doc.chart_type"
+				:options="chartOptions"
+			/>
 
-				<component
-					v-if="chart.doc.chart_type"
-					:is="widgets.getOptionComponent(chart.doc.chart_type)"
-					:key="chart.doc.chart_type"
-					v-model="chart.doc.options"
-					:columns="query.resultColumns"
-				/>
-			</div>
+			<component
+				v-if="chart.doc.chart_type"
+				:is="widgets.getOptionComponent(chart.doc.chart_type)"
+				:key="chart.doc.chart_type"
+				v-model="chart.doc.options"
+				:columns="query.resultColumns"
+			/>
 		</div>
 
 		<div
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
-				<Button variant="outline" class="shadow" @click="showDashboardDialog = true">
+				<Button variant="outline" @click="showDashboardDialog = true">
 					Add to Dashboard
 				</Button>
-				<Button variant="outline" class="shadow" @click="showShareDialog = true">
-					Share
-				</Button>
+				<Button variant="outline" @click="showShareDialog = true"> Share </Button>
 			</div>
 			<component
 				v-if="chart.doc.chart_type"

@@ -4,7 +4,7 @@
 			<template #target="{ open: openPopover }">
 				<div class="w-full">
 					<ComboboxButton
-						class="flex w-full items-center justify-between rounded bg-gray-100"
+						class="form-input flex h-fit w-full items-center justify-between rounded border-gray-400 bg-gray-100"
 						:class="{
 							'rounded-b-none': isComboboxOpen,
 							'p-1': selectedOptions.length > 0,
@@ -14,7 +14,7 @@
 					>
 						<span
 							v-if="selectedOptions.length > 0"
-							class="flex w-[calc(100%-1rem)] space-x-1.5 overflow-x-scroll p-0.5 text-gray-800"
+							class="flex w-[calc(100%-1rem)] space-x-1.5 p-0.5 text-gray-800"
 						>
 							<span
 								class="flex h-6 items-center rounded bg-white px-2 text-sm shadow"
@@ -40,15 +40,12 @@
 				</div>
 			</template>
 			<template #body="{ close: closePopover }">
-				<div
-					v-show="isComboboxOpen"
-					class="rounded rounded-t-none bg-white px-1.5 shadow-md"
-				>
+				<div v-show="isComboboxOpen" class="rounded rounded-t-none bg-white px-1.5 shadow">
 					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto">
 						<div
 							class="sticky top-0 mb-1.5 flex items-stretch space-x-1.5 bg-white pt-1.5"
 						>
-							<div class="relative flex flex-1 overflow-hidden">
+							<div class="relative -m-1 flex flex-1 overflow-hidden p-1">
 								<ComboboxInput
 									class="form-input block w-full border-gray-400 placeholder-gray-500"
 									ref="input"
