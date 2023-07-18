@@ -94,7 +94,7 @@ const shouldRender = computed(() => {
 		ref="eChart"
 		:chartTitle="props.options.title"
 		:chartSubtitle="props.options.subtitle"
-		:theme="props.options.colors"
+		:color="props.options.colors"
 	>
 		<ChartGrid>
 			<ChartLegend type="scroll" bottom="bottom" />

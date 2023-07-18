@@ -135,7 +135,7 @@ function appendPercentage(value) {
 		ref="eChart"
 		:chartTitle="props.options.title"
 		:chartSubtitle="props.options.subtitle"
-		:theme="props.options.colors"
+		:color="props.options.colors"
 	>
 		<ChartSeries
 			type="pie"
