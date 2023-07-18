@@ -198,11 +198,11 @@ const addStepRef = ref(null)
 </script>
 
 <template>
-	<div class="flex flex-1 flex-col justify-between px-3 py-1 text-base">
-		<div class="space-y-3 overflow-scroll scrollbar-hide" :key="query.doc.data_source">
+	<div class="flex flex-1 flex-col justify-between px-3 text-base">
+		<div class="space-y-3 overflow-scroll py-1 scrollbar-hide" :key="query.doc.data_source">
 			<QueryBuilderRow label="Start with" :onRemove="() => (state.table = {})">
 				<SourceAndTableSelector
-					class="flex rounded border border-gray-300 text-gray-800"
+					class="flex rounded text-gray-800 shadow"
 					v-model="state.table"
 					@update:model-value="query.doc.data_source = $event.data_source"
 				/>
@@ -217,7 +217,7 @@ const addStepRef = ref(null)
 				:onRemove="() => state.joins.splice(index, 1)"
 			>
 				<InputWithPopover
-					class="flex rounded border border-gray-300 text-gray-800"
+					class="flex rounded text-gray-800 shadow"
 					placeholder="Pick a table"
 					v-model="join.left_table"
 					:items="selectedTables"
@@ -226,7 +226,7 @@ const addStepRef = ref(null)
 					and
 				</div>
 				<TableSelector
-					class="flex rounded border border-gray-300 text-gray-800"
+					class="flex rounded text-gray-800 shadow"
 					:data_source="query.doc.data_source"
 					v-model="join.right_table"
 					@update:model-value="() => autoSelectJoinColumns(join)"
@@ -236,7 +236,7 @@ const addStepRef = ref(null)
 				</div>
 				<Suspense>
 					<ColumnSelector
-						class="flex rounded border border-gray-300 text-gray-800"
+						class="flex rounded text-gray-800 shadow"
 						:data_source="query.doc.data_source"
 						:tables="[join.left_table]"
 						v-model="join.left_column"
@@ -247,7 +247,7 @@ const addStepRef = ref(null)
 				</div>
 				<Suspense>
 					<ColumnSelector
-						class="flex rounded border border-gray-300 text-gray-800"
+						class="flex rounded text-gray-800 shadow"
 						:data_source="query.doc.data_source"
 						:tables="[join.right_table]"
 						v-model="join.right_column"
@@ -264,14 +264,14 @@ const addStepRef = ref(null)
 				:onRemove="() => state.calculations.splice(index, 1)"
 			>
 				<div
-					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 text-gray-800"
+					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<ColumnExpressionSelector v-model="calc.column.expression" />
 				</div>
 
 				<div class="h-8 text-sm uppercase leading-8 text-gray-600">as</div>
 				<div
-					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 text-gray-800"
+					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<ResizeableInput
 						placeholder="Label"
@@ -296,7 +296,7 @@ const addStepRef = ref(null)
 				:onRemove="() => state.filters.splice(index, 1)"
 			>
 				<div
-					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 text-gray-800"
+					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<Suspense>
 						<ColumnSelector
@@ -329,7 +329,7 @@ const addStepRef = ref(null)
 				:onRemove="() => state.columns.splice(index, 1)"
 			>
 				<div
-					class="flex items-center divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 text-gray-800"
+					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<Suspense>
 						<ColumnSelector
@@ -349,7 +349,7 @@ const addStepRef = ref(null)
 					/>
 				</div>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-600">as</div>
-				<div class="flex rounded border border-gray-300 text-gray-800">
+				<div class="flex rounded text-gray-800 shadow">
 					<ResizeableInput v-model="column.column.alias" placeholder="Label" />
 				</div>
 			</QueryBuilderRow>
@@ -363,7 +363,7 @@ const addStepRef = ref(null)
 						:onRemove="() => state.measures.splice(index, 1)"
 					>
 						<div
-							class="flex items-center divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 text-gray-800"
+							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 						>
 							<InputWithPopover
 								:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
@@ -413,7 +413,7 @@ const addStepRef = ref(null)
 						>
 							<Suspense>
 								<div
-									class="flex items-center divide-x divide-gray-300 overflow-hidden rounded border border-gray-300 text-gray-800"
+									class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 								>
 									<ColumnSelector
 										v-model="dimension.column"
@@ -463,7 +463,7 @@ const addStepRef = ref(null)
 			>
 				<Suspense>
 					<ColumnSelector
-						class="flex rounded border border-gray-300 text-gray-800"
+						class="flex rounded text-gray-800 shadow"
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
 						:localColumns="selectedColumns"
@@ -472,7 +472,7 @@ const addStepRef = ref(null)
 				</Suspense>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-600">in</div>
 				<InputWithPopover
-					class="flex rounded border border-gray-300 text-gray-800"
+					class="flex rounded text-gray-800 shadow"
 					:value="findByValue(ORDER, order.column.order)"
 					placeholder="Ascending"
 					:items="ORDER"
@@ -487,7 +487,7 @@ const addStepRef = ref(null)
 				label="Limit to"
 				:onRemove="() => (state.limit = undefined)"
 			>
-				<div class="flex rounded border border-gray-300 text-gray-800">
+				<div class="flex rounded text-gray-800 shadow">
 					<ResizeableInput v-model="state.limit" placeholder="100" />
 				</div>
 				<div class="h-8 text-sm uppercase leading-8 text-gray-600">rows</div>
@@ -506,7 +506,7 @@ const addStepRef = ref(null)
 					'Sort',
 					'Limit',
 				]"
-				class="h-7 cursor-pointer rounded border border-gray-300 px-2 text-sm leading-7 transition-all hover:bg-gray-50"
+				class="flex h-7 cursor-pointer items-center rounded border border-gray-300 px-2 text-sm transition-all hover:bg-gray-50"
 				@click="addStep(item)"
 			>
 				<span> {{ item }} </span>

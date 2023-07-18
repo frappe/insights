@@ -144,12 +144,12 @@ function handleColumnSelect(col) {
 			<span> {{ column?.label || 'Pick a column' }} </span>
 		</div>
 		<UsePopover ref="columnPopover" v-if="trigger" :targetElement="trigger">
-			<div class="w-[12rem] rounded border bg-white text-base shadow transition-[width]">
-				<div class="flex items-center rounded-t-md border-b bg-white px-2">
-					<FeatherIcon name="search" class="h-4 w-4 text-gray-600" />
-					<input
+			<div class="w-[12rem] rounded bg-white text-base shadow transition-[width]">
+				<div class="flex items-center rounded-t-md border-b bg-white">
+					<Input
+						iconLeft="search"
+						class="rounded-b-none border-none bg-transparent text-sm focus:shadow-none focus:outline-none focus:ring-0"
 						v-model="columnSearchTerm"
-						class="flex w-full items-center bg-white px-2 py-1.5 text-sm focus:outline-none"
 						placeholder="Search column..."
 					/>
 				</div>

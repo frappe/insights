@@ -94,12 +94,12 @@ function handleTableSelect(selectedTable) {
 			<span> {{ table?.label || 'Pick starting data' }} </span>
 		</div>
 		<UsePopover ref="dataSourcePopover" v-if="trigger" :targetElement="trigger">
-			<div class="w-[12rem] rounded border bg-white text-base shadow transition-[width]">
-				<div class="flex items-center rounded-t-md border-b bg-white px-2">
-					<FeatherIcon name="search" class="h-4 w-4 text-gray-600" />
-					<input
+			<div class="w-[12rem] rounded bg-white text-base shadow transition-[width]">
+				<div class="flex items-center rounded-t-md border-b bg-white">
+					<Input
+						iconLeft="search"
+						class="rounded-b-none border-none bg-transparent text-sm focus:shadow-none focus:outline-none focus:ring-0"
 						v-model="datasourceSearchTerm"
-						class="flex w-full items-center bg-white p-2 text-sm focus:outline-none"
 						placeholder="Search data source..."
 					/>
 				</div>
@@ -131,13 +131,13 @@ function handleTableSelect(selectedTable) {
 							placement="right-start"
 						>
 							<div
-								class="-ml-3 w-[12rem] rounded border bg-white text-base shadow transition-[width]"
+								class="-ml-2 w-[12rem] rounded border bg-white text-base shadow transition-[width]"
 							>
-								<div class="flex items-center rounded-t-md border-b bg-white px-2">
-									<FeatherIcon name="search" class="h-4 w-4 text-gray-600" />
-									<input
+								<div class="flex items-center rounded-t-md border-b bg-white">
+									<Input
+										iconLeft="search"
+										class="rounded-b-none border-none bg-transparent text-sm focus:shadow-none focus:outline-none focus:ring-0"
 										v-model="tableSearchTerm"
-										class="flex w-full items-center bg-white p-2 text-sm focus:outline-none"
 										placeholder="Search table..."
 									/>
 								</div>
