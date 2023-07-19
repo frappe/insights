@@ -22,10 +22,11 @@ import auth from '@/utils/auth'
 import Sidebar from '@/components/Sidebar.vue'
 import { useRoute } from 'vue-router'
 import settings from '@/utils/settings'
+import systemSettings from '@/utils/systemSettings'
 
 const route = useRoute()
 const hideSidebar = computed(() => {
 	return route.meta.hideSidebar || !auth.isLoggedIn
 })
-onMounted(() => auth.isLoggedIn && settings.get.fetch())
+onMounted(() => auth.isLoggedIn && settings.get.fetch() && systemSettings.get.fetch())
 </script>
