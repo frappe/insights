@@ -7,6 +7,8 @@ import { inject } from 'vue'
 
 const $dayjs = inject('$dayjs')
 const today = $dayjs().format('dddd, D MMMM')
+
+document.title = 'Home | Frappe Insights'
 </script>
 
 <template>
