@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:NB-{####}",
  "creation": "2023-04-16 21:22:14.818759",
  "default_view": "List",
  "doctype": "DocType",
@@ -20,10 +21,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-17 21:45:46.852036",
+ "modified": "2023-07-19 12:57:08.384599",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Notebook",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
