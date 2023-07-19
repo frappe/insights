@@ -1,12 +1,9 @@
 name: Server Tests
 
 on:
-  pull_request:
-  push:
-    branches:
-      - develop
-    paths:
-      - "**.py"
+  schedule:
+    # Run everday at midnight UTC / 5:30 IST
+    - cron: "0 0 * * *"
 
 concurrency:
   group: develop-insights-${{ github.event.number }}

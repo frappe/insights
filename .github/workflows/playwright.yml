@@ -1,10 +1,9 @@
 name: E2E Tests
 
 on:
-  push:
-    branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+  schedule:
+    # Run everday at midnight UTC / 5:30 IST
+    - cron: "0 0 * * *"
 jobs:
   test:
     timeout-minutes: 60
