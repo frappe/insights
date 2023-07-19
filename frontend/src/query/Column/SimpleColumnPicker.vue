@@ -24,7 +24,7 @@
 			<Input
 				type="text"
 				v-model="simpleColumn.label"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>
@@ -57,7 +57,7 @@
 						value: 'desc',
 					},
 				]"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>

@@ -60,7 +60,7 @@
 			<Input
 				type="text"
 				v-model="expression.label"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>
@@ -70,7 +70,7 @@
 			<Input
 				type="select"
 				v-model="expression.valueType"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Select a type..."
 				:options="columnTypes"
 			/>
@@ -102,7 +102,7 @@
 						value: 'desc',
 					},
 				]"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>

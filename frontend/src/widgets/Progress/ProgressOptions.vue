@@ -66,7 +66,6 @@ if (!options.value.targetType) {
 							v-model="options.target"
 							placeholder="Enter a value..."
 							type="number"
-							class="h-8"
 						/>
 					</div>
 				</template>
