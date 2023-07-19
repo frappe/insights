@@ -28,12 +28,12 @@
 						v-if="span !== 'Current'"
 						type="number"
 						v-model="interval"
-						class="h-8 w-full text-sm"
+						class="w-full text-sm"
 					/>
 					<Input
 						type="select"
 						v-model="intervalType"
-						class="h-8 w-full text-sm"
+						class="w-full text-sm"
 						:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
 					>
 					</Input>

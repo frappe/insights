@@ -9,7 +9,7 @@
 				<div class="space-y-1 text-sm text-gray-600">
 					<div class="font-light">Left Table</div>
 					<LinkIcon :link="getQueryLink(editTable.table)" :show="editTable.label">
-						<Input v-model="editTable.label" disabled class="h-8 cursor-not-allowed" />
+						<Input v-model="editTable.label" disabled class="cursor-not-allowed" />
 					</LinkIcon>
 				</div>
 				<div class="space-y-1 text-sm text-gray-600">
@@ -41,7 +41,7 @@
 								placeholder="Select a Column"
 							/>
 						</div>
-						<span class="flex h-8 items-center px-1 text-lg"> = </span>
+						<span class="flex items-center px-1 text-lg"> = </span>
 						<div class="flex-1">
 							<div class="mb-1 font-light">Right Column</div>
 							<Autocomplete
