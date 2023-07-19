@@ -30,7 +30,7 @@ async function createNotebookPage() {
 		name: 'NotebookPage',
 		params: {
 			notebook: props.notebook,
-			page: page_name,
+			name: page_name,
 		},
 	})
 }
@@ -70,7 +70,7 @@ updateDocumentTitle(pageMeta)
 						name: 'NotebookPage',
 						params: {
 							notebook: props.notebook,
-							page: name,
+							name: name,
 						},
 					})
 			"

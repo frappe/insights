@@ -1,18 +1,23 @@
 <script setup lang="jsx">
 import ListView from '@/components/ListView.vue'
+import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import useDataSources from '@/datasource/useDataSources'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { Badge } from 'frappe-ui'
 import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
+import { useRoute, useRouter } from 'vue-router'
 import useQueries from './useQueries'
 
 const queries = useQueries()
 queries.reload()
 
 const new_dialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	new_dialog.value = true
+}
+
 const router = useRouter()
 const sources = useDataSources()
 sources.reload()
@@ -33,7 +38,7 @@ const createQuery = async () => {
 	})
 	newQuery.value = { dataSource: '', title: '' }
 	await nextTick()
-	router.push({ name: 'QueryBuilder', params: { name } })
+	router.push({ name: 'Query', params: { name } })
 }
 
 const StatusCell = (props) => (
@@ -63,7 +68,7 @@ async function openQueryEditor(type) {
 			name: 'NotebookPage',
 			params: {
 				notebook: uncategorized.name,
-				page: page_name,
+				name: page_name,
 			},
 		})
 	}
@@ -72,7 +77,7 @@ async function openQueryEditor(type) {
 	if (type === 'classic') new_query.is_assisted_query = 0
 	const query = await queries.create(new_query)
 	router.push({
-		name: 'QueryBuilder',
+		name: 'Query',
 		params: { name: query.name },
 	})
 }
@@ -115,7 +120,7 @@ const queryBuilderTypes = ref([
 			]"
 			:columns="columns"
 			:data="queries.list"
-			:rowClick="({ name }) => router.push({ name: 'QueryBuilder', params: { name } })"
+			:rowClick="({ name }) => router.push({ name: 'Query', params: { name } })"
 		>
 		</ListView>
 	</div>

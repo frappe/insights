@@ -82,7 +82,7 @@ const routes = [
 	},
 	{
 		props: true,
-		name: 'QueryBuilder',
+		name: 'Query',
 		path: '/query/build/:name',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
@@ -115,7 +115,7 @@ const routes = [
 	},
 	{
 		props: true,
-		path: '/notebook/:notebook/:page',
+		path: '/notebook/:notebook/:name',
 		name: 'NotebookPage',
 		component: () => import('@/notebook/NotebookPage.vue'),
 	},
@@ -198,6 +198,13 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	to.path === '/login' ? next('/') : next()
+})
+
+router.afterEach((to, from) => {
+	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
+	if (TRACKED_RECORDS.includes(to.name) && to.name !== from.name) {
+		auth.createViewLog(to.name, to.params.name)
+	}
 })
 
 const _fetch = window.fetch

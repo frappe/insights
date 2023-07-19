@@ -10,9 +10,9 @@ import { updateDocumentTitle } from '@/utils'
 
 const props = defineProps({
 	notebook: String,
-	page: String,
+	name: String,
 })
-const page = useNotebookPage(props.page)
+const page = useNotebookPage(props.name)
 const notebook = useNotebook(props.notebook)
 provide('page', page)
 

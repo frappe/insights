@@ -17,6 +17,7 @@ const auth = reactive({
 	logout,
 	reset,
 	isAuthorized,
+	createViewLog,
 })
 
 // fetch inital state from cookies
@@ -89,6 +90,14 @@ async function isAuthorized() {
 		await userInfo.fetch()
 	}
 	return auth.user.is_admin || auth.user.is_user
+}
+
+async function createViewLog(recordType, recordName) {
+	if (!auth.isLoggedIn) return
+	await call('insights.api.create_last_viewed_log', {
+		record_type: recordType,
+		record_name: recordName,
+	})
 }
 
 export default auth

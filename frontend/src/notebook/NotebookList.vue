@@ -37,7 +37,7 @@ async function createNotebookPage() {
 		name: 'NotebookPage',
 		params: {
 			notebook: uncategorized.name,
-			page: page_name,
+			name: page_name,
 		},
 	})
 }

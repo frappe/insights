@@ -566,52 +566,63 @@ def contact_team(message_type, message_content, is_critical=False):
 
 
 @frappe.whitelist()
-def get_recent_activity():
-    # Version doctype stores all the activities
-    # we need to filter out the activities of doctypes that starts with Insights
-    # there will be multiple versions created every single time a doc is updated
-    # we need to group them by the docname and get the latest one within a span of n minutes
+def create_last_viewed_log(record_type, record_name):
+    recordToDoctype = {
+        "Query": "Insights Query",
+        "Dashboard": "Insights Dashboard",
+        "NotebookPage": "Insights Notebook Page",
+    }
+    try:
+        comment = frappe.get_doc(
+            {
+                "doctype": "Comment",
+                "comment_type": "Comment",
+                "comment_email": frappe.session.user,
+                "reference_doctype": recordToDoctype.get(record_type),
+                "reference_name": record_name,
+                "content": "Last Viewed",
+            }
+        )
+        comment.insert(ignore_permissions=True)
+    except BaseException:
+        pass
 
-    Version = frappe.qb.DocType("Version")
-    all_activities = (
-        frappe.qb.from_(Version)
-        .select(
-            Version.ref_doctype,
-            Version.docname,
-            Version.modified,
-            Version.owner,
-        )
+
+@frappe.whitelist()
+def get_last_viewed_records():
+    Comment = frappe.qb.DocType("Comment")
+    TRACKED_DOCTYPES = ["Insights Query", "Insights Dashboard", "Insights Notebook Page"]
+    records = (
+        frappe.qb.from_(Comment)
+        .select(Comment.reference_doctype, Comment.reference_name, Comment.creation)
         .where(
-            Version.ref_doctype.isin(
-                [
-                    "Insights Dashboard",
-                    "Insights Query",
-                    "Insights Notebook Page",
-                    "Insights Notebook",
-                    "Insights Settings",
-                ]
-            )
-            & (Version.owner != "Administrator")
+            (Comment.comment_email == frappe.session.user)
+            & Comment.reference_doctype.isin(TRACKED_DOCTYPES)
+            & (Comment.comment_type == "Comment")
+            & (Comment.content == "Last Viewed")
         )
-        .orderby(Version.modified, order=frappe.qb.desc)
-        .limit(1000)
+        .orderby(Comment.creation, order=frappe.qb.desc)
+        .groupby(Comment.reference_doctype, Comment.reference_name)
+        .limit(10)
         .run(as_dict=True)
     )
 
-    from datetime import timedelta
+    # fetch titles for each record
+    # we run a separate query for each doctype to avoid a large IN query
+    docnames_by_doctype = {}
+    for record in records:
+        docnames_by_doctype.setdefault(record.reference_doctype, []).append(record.reference_name)
 
-    n = 5
-    recent_activities = []
-    for activity in all_activities:
-        if not recent_activities:
-            recent_activities.append(activity)
-            continue
+    for doctype, docnames in docnames_by_doctype.items():
+        titles = frappe.get_all(
+            doctype,
+            filters={"name": ["in", docnames]},
+            fields=["name", "title"],
+        )
+        for title in titles:
+            for record in records:
+                if record.reference_doctype == doctype and record.reference_name == title.name:
+                    record["title"] = title.title
+                    break
 
-        if activity.docname != recent_activities[-1].docname:
-            recent_activities.append(activity)
-            continue
-
-        if activity.modified > recent_activities[-1].modified + timedelta(minutes=n):
-            recent_activities.append(activity)
-
-    return recent_activities
+    return records
