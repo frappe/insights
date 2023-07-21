@@ -94,7 +94,7 @@ async function isAuthorized() {
 
 async function createViewLog(recordType, recordName) {
 	if (!auth.isLoggedIn) return
-	await call('insights.api.create_last_viewed_log', {
+	await call('insights.api.home.create_last_viewed_log', {
 		record_type: recordType,
 		record_name: recordName,
 	})

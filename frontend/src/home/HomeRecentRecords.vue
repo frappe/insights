@@ -1,12 +1,12 @@
 <script setup>
 import { call } from 'frappe-ui'
 import { inject, ref } from 'vue'
-import ListView from '../components/ListView.vue'
+import { useRouter } from 'vue-router'
 
 const $dayjs = inject('$dayjs')
 
 const recent_records = ref([])
-call('insights.api.get_last_viewed_records').then((data) => {
+call('insights.api.home.get_last_viewed_records').then((data) => {
 	recent_records.value = data.map((d) => {
 		const record_type = d.reference_doctype.replace('Insights ', '')
 		const routeName = record_type.replace(' ', '')
@@ -14,11 +14,27 @@ call('insights.api.get_last_viewed_records').then((data) => {
 			title: d.title,
 			type: record_type,
 			name: d.reference_name,
+			notebook: d.notebook,
 			last_viewed: $dayjs(d.creation).format('MMM DD, YYYY hh:mm A'),
 			last_viewed_from_now: `Last viewed ${$dayjs(d.creation).fromNow()}`,
 		}
 	})
 })
+
+const router = useRouter()
+function openRecord(row) {
+	const { type, notebook, name } = row
+	switch (type) {
+		case 'Notebook Page':
+			return router.push(`/notebook/${notebook}/${name}`)
+		case 'Dashboard':
+			return router.push(`/dashboard/${name}`)
+		case 'Query':
+			return router.push(`/query/${name}`)
+		default:
+			break
+	}
+}
 </script>
 
 <template>
@@ -36,7 +52,8 @@ call('insights.api.get_last_viewed_records').then((data) => {
 				<li
 					v-for="(row, idx) in recent_records"
 					:key="idx"
-					class="flex cursor-default items-center gap-4 border-b text-gray-800"
+					class="flex cursor-pointer items-center gap-4 border-b text-gray-800 transition-colors hover:bg-gray-50"
+					@click="openRecord(row)"
 				>
 					<div>
 						<FeatherIcon name="arrow-up-right" class="h-4 w-4 text-gray-600" />
