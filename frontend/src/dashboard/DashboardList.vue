@@ -61,10 +61,10 @@
 import useDashboards from '@/dashboard/useDashboards'
 import { updateDocumentTitle } from '@/utils'
 import settings from '@/utils/settings'
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import DashboardsGroup from './DashboardListGroup.vue'
 import { Plus } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import DashboardsGroup from './DashboardListGroup.vue'
 
 const dashboards = useDashboards()
 dashboards.reload()
@@ -82,6 +82,11 @@ const privates = computed(() => {
 })
 
 const showDialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	showDialog.value = true
+}
+
 const newDashboardTitle = ref('')
 const router = useRouter()
 

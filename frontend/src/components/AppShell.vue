@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 overflow-hidden bg-gray-50 text-base">
+	<div class="flex flex-1 overflow-hidden text-base">
 		<Sidebar v-if="!hideSidebar" />
 		<RouterView v-slot="{ Component }">
 			<Suspense>

@@ -1,5 +1,8 @@
 <template>
-	<div class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r bg-white" v-if="currentRoute">
+	<div
+		class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r border-gray-300 bg-white"
+		v-if="currentRoute"
+	>
 		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
 				<img src="../assets/insights-logo.svg" class="h-7" />
@@ -115,26 +118,32 @@
 <script setup>
 import { Avatar } from 'frappe-ui'
 
-import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { createResource } from 'frappe-ui'
-import auth from '@/utils/auth'
-import { getOnboardingStatus } from '@/utils/onboarding'
-import settings from '@/utils/settings'
 import HelpDialog from '@/components/HelpDialog.vue'
+import auth from '@/utils/auth'
+import settings from '@/utils/settings'
+import { createResource } from 'frappe-ui'
 import {
-	GanttChartSquare,
-	LayoutDashboard,
+	Book,
 	Database,
+	GanttChartSquare,
+	HomeIcon,
+	LayoutDashboard,
 	Settings,
 	User,
 	Users,
-	Star,
-	Book,
 } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([
+	{
+		path: '/',
+		label: 'Home',
+		icon: HomeIcon,
+		name: 'Home',
+		current: false,
+	},
 	{
 		path: '/dashboard',
 		label: 'Dashboards',
@@ -171,18 +180,6 @@ const sidebarItems = ref([
 	},
 ])
 
-getOnboardingStatus().then((onboardingComplete) => {
-	if (!onboardingComplete) {
-		// add onboarding item as first item in sidebar
-		sidebarItems.value.unshift({
-			path: '/get-started',
-			label: 'Get Started',
-			icon: Star,
-			name: 'GetStarted',
-			current: false,
-		})
-	}
-})
 watch(
 	() => auth.user.is_admin && settings.doc?.enable_permissions,
 	(isAdmin) => {

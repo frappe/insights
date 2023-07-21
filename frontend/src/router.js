@@ -1,6 +1,5 @@
 import { getTrialStatus } from '@/subscription'
 import auth from '@/utils/auth'
-import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
 import { isSetupComplete } from '@/setup'
@@ -25,12 +24,8 @@ const routes = [
 	},
 	{
 		path: '/',
-		redirect: '/get-started',
-	},
-	{
-		path: '/get-started',
-		name: 'Get Started',
-		component: () => import('@/pages/GetStarted.vue'),
+		name: 'Home',
+		component: () => import('@/home/Home.vue'),
 	},
 	{
 		path: '/dashboard',
@@ -87,7 +82,7 @@ const routes = [
 	},
 	{
 		props: true,
-		name: 'QueryBuilder',
+		name: 'Query',
 		path: '/query/build/:name',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
@@ -120,7 +115,7 @@ const routes = [
 	},
 	{
 		props: true,
-		path: '/notebook/:notebook/:page',
+		path: '/notebook/:notebook/:name',
 		name: 'NotebookPage',
 		component: () => import('@/notebook/NotebookPage.vue'),
 	},
@@ -202,13 +197,14 @@ router.beforeEach(async (to, from, next) => {
 		return next('/')
 	}
 
-	// redirect to /dashboard if onboarding is complete
-	const onboardingComplete = await getOnboardingStatus()
-	if (onboardingComplete && to.name == 'Get Started') {
-		return next('/dashboard')
-	}
-
 	to.path === '/login' ? next('/') : next()
+})
+
+router.afterEach((to, from) => {
+	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
+	if (TRACKED_RECORDS.includes(to.name) && to.name !== from.name) {
+		auth.createViewLog(to.name, to.params.name)
+	}
 })
 
 const _fetch = window.fetch

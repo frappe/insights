@@ -209,8 +209,12 @@ def get_user_info():
         "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
     )
 
+    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+
     return {
         "user_id": frappe.session.user,
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",
         "is_user": is_user,
     }
@@ -256,24 +260,6 @@ def create_table_link(data_source, primary_table, foreign_table, primary_key, fo
     if not foreign.get("table_links", link):
         foreign.append("table_links", link)
         foreign.save()
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def get_onboarding_status():
-    return {
-        "is_onboarded": frappe.db.get_single_value("Insights Settings", "onboarding_complete"),
-        "query_created": bool(frappe.db.a_row_exists("Insights Query")),
-        "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-        "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-    }
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def skip_onboarding():
-    frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)
 
 
 @frappe.whitelist()

@@ -35,13 +35,18 @@ import ListView from '@/components/ListView.vue'
 import useDataSources from '@/datasource/useDataSources'
 import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
 import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
 
 const new_dialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	new_dialog.value = true
+}
+
 const sources = useDataSources()
 sources.reload()
 
