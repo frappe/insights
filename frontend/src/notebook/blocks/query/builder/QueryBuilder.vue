@@ -199,7 +199,7 @@ const addStepRef = ref(null)
 
 <template>
 	<div class="flex flex-1 flex-col justify-between px-3 text-base">
-		<div class="space-y-3 overflow-scroll py-1 scrollbar-hide" :key="query.doc.data_source">
+		<div class="space-y-4 overflow-scroll py-1 scrollbar-hide" :key="query.doc.data_source">
 			<QueryBuilderRow label="Start with" :onRemove="() => (state.table = {})">
 				<SourceAndTableSelector
 					class="flex rounded text-gray-800 shadow"
@@ -222,7 +222,7 @@ const addStepRef = ref(null)
 					v-model="join.left_table"
 					:items="selectedTables"
 				></InputWithPopover>
-				<div class="flex h-8 flex-shrink-0 text-sm uppercase leading-8 text-gray-600">
+				<div class="flex h-7 flex-shrink-0 text-sm uppercase leading-7 text-gray-600">
 					and
 				</div>
 				<TableSelector
@@ -231,7 +231,7 @@ const addStepRef = ref(null)
 					v-model="join.right_table"
 					@update:model-value="() => autoSelectJoinColumns(join)"
 				/>
-				<div class="flex h-8 flex-shrink-0 text-sm uppercase leading-8 text-gray-600">
+				<div class="flex h-7 flex-shrink-0 text-sm uppercase leading-7 text-gray-600">
 					if
 				</div>
 				<Suspense>
@@ -242,7 +242,7 @@ const addStepRef = ref(null)
 						v-model="join.left_column"
 					/>
 				</Suspense>
-				<div class="flex h-8 flex-shrink-0 text-sm uppercase leading-8 text-gray-600">
+				<div class="flex h-7 flex-shrink-0 text-sm uppercase leading-7 text-gray-600">
 					matches
 				</div>
 				<Suspense>
@@ -269,7 +269,7 @@ const addStepRef = ref(null)
 					<ColumnExpressionSelector v-model="calc.column.expression" />
 				</div>
 
-				<div class="h-8 text-sm uppercase leading-8 text-gray-600">as</div>
+				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
 				<div
 					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
@@ -348,7 +348,7 @@ const addStepRef = ref(null)
 						:items="dateFormatOptions"
 					/>
 				</div>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-600">as</div>
+				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
 				<div class="flex rounded text-gray-800 shadow">
 					<ResizeableInput v-model="column.column.alias" placeholder="Label" />
 				</div>
@@ -470,7 +470,7 @@ const addStepRef = ref(null)
 						v-model="order.column"
 					/>
 				</Suspense>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-600">in</div>
+				<div class="h-7 text-sm uppercase leading-7 text-gray-600">in</div>
 				<InputWithPopover
 					class="flex rounded text-gray-800 shadow"
 					:value="findByValue(ORDER, order.column.order)"
@@ -478,7 +478,7 @@ const addStepRef = ref(null)
 					:items="ORDER"
 					@update:modelValue="(v) => (order.column.order = v.value)"
 				/>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-600">order</div>
+				<div class="h-7 text-sm uppercase leading-7 text-gray-600">order</div>
 			</QueryBuilderRow>
 
 			<!-- Limit -->
@@ -490,7 +490,7 @@ const addStepRef = ref(null)
 				<div class="flex rounded text-gray-800 shadow">
 					<ResizeableInput v-model="state.limit" placeholder="100" />
 				</div>
-				<div class="h-8 text-sm uppercase leading-8 text-gray-600">rows</div>
+				<div class="h-7 text-sm uppercase leading-7 text-gray-600">rows</div>
 			</QueryBuilderRow>
 		</div>
 
@@ -506,7 +506,7 @@ const addStepRef = ref(null)
 					'Sort',
 					'Limit',
 				]"
-				class="flex h-7 cursor-pointer items-center rounded border border-gray-300 px-2 text-sm transition-all hover:bg-gray-50"
+				class="flex h-7 cursor-pointer items-center rounded border border-gray-300 px-2 text-sm leading-7 transition-all hover:bg-gray-50"
 				@click="addStep(item)"
 			>
 				<span> {{ item }} </span>

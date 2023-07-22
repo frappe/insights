@@ -94,16 +94,13 @@ function handleTableSelect(selectedTable) {
 			<span> {{ table?.label || 'Pick starting data' }} </span>
 		</div>
 		<UsePopover ref="dataSourcePopover" v-if="trigger" :targetElement="trigger">
-			<div class="w-[12rem] rounded bg-white text-base shadow transition-[width]">
-				<div class="flex items-center rounded-t-md border-b bg-white">
-					<Input
-						iconLeft="search"
-						class="rounded-b-none border-none bg-transparent text-sm focus:shadow-none focus:outline-none focus:ring-0"
-						v-model="datasourceSearchTerm"
-						placeholder="Search data source..."
-					/>
-				</div>
-				<div class="max-h-48 overflow-y-auto text-sm">
+			<div class="w-[12rem] rounded bg-white p-1.5 text-base shadow transition-all">
+				<Input
+					iconLeft="search"
+					v-model="datasourceSearchTerm"
+					placeholder="Find data source"
+				/>
+				<div class="mt-1 max-h-48 overflow-y-auto text-sm">
 					<p
 						v-if="sourceOptions?.length === 0 || filteredSourceOptions?.length === 0"
 						class="p-2 text-center text-gray-600"
@@ -117,7 +114,7 @@ function handleTableSelect(selectedTable) {
 					>
 						<div
 							ref="submenu"
-							class="flex cursor-pointer items-center justify-between p-2 transition-all hover:bg-gray-100"
+							class="flex cursor-pointer items-center justify-between rounded p-2 transition-all hover:bg-gray-100"
 							:class="selectedDataSource === source.value ? 'bg-gray-100' : ''"
 							@click="selectedDataSource = source.value"
 						>
@@ -131,17 +128,14 @@ function handleTableSelect(selectedTable) {
 							placement="right-start"
 						>
 							<div
-								class="-ml-2 w-[12rem] rounded border bg-white text-base shadow transition-[width]"
+								class="-ml-2 w-[12rem] rounded border bg-white p-1.5 text-base shadow transition-all"
 							>
-								<div class="flex items-center rounded-t-md border-b bg-white">
-									<Input
-										iconLeft="search"
-										class="rounded-b-none border-none bg-transparent text-sm focus:shadow-none focus:outline-none focus:ring-0"
-										v-model="tableSearchTerm"
-										placeholder="Search table..."
-									/>
-								</div>
-								<div class="max-h-48 overflow-y-auto text-sm">
+								<Input
+									iconLeft="search"
+									v-model="tableSearchTerm"
+									placeholder="Find table"
+								/>
+								<div class="mt-1 max-h-48 overflow-y-auto text-sm">
 									<p
 										v-if="
 											tableOptions?.length === 0 ||

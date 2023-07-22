@@ -144,16 +144,13 @@ function handleColumnSelect(col) {
 			<span> {{ column?.label || 'Pick a column' }} </span>
 		</div>
 		<UsePopover ref="columnPopover" v-if="trigger" :targetElement="trigger">
-			<div class="w-[12rem] rounded bg-white text-base shadow transition-[width]">
-				<div class="flex items-center rounded-t-md border-b bg-white">
-					<Input
-						iconLeft="search"
-						class="rounded-b-none border-none bg-transparent text-sm focus:shadow-none focus:outline-none focus:ring-0"
-						v-model="columnSearchTerm"
-						placeholder="Search column..."
-					/>
-				</div>
-				<div class="max-h-48 overflow-y-auto text-sm">
+			<div class="w-[12rem] rounded bg-white p-1.5 text-base shadow transition-all">
+				<Input
+					iconLeft="search"
+					v-model="columnSearchTerm"
+					placeholder="Search column..."
+				/>
+				<div class="mt-1 max-h-48 overflow-y-auto text-sm">
 					<p
 						v-if="
 							columnOptions?.length === 0 ||
@@ -165,7 +162,7 @@ function handleColumnSelect(col) {
 					</p>
 					<div v-else v-for="table in Object.keys(filteredColumnOptionsGroupedByTable)">
 						<div
-							class="sticky top-0 flex items-center border-b bg-white px-2 py-1 text-gray-700"
+							class="sticky top-0 flex items-center bg-white px-2 py-1 text-gray-700"
 						>
 							<FeatherIcon name="table" class="mr-1 h-3.5 w-3.5" />
 							<span class="flex-1 py-0.5 text-sm">
@@ -174,7 +171,7 @@ function handleColumnSelect(col) {
 						</div>
 						<div v-for="col in filteredColumnOptionsGroupedByTable[table]">
 							<div
-								class="flex cursor-pointer items-center justify-between p-2 transition-all hover:bg-gray-100"
+								class="flex cursor-pointer items-center justify-between rounded p-2 transition-all hover:bg-gray-100"
 								:class="column?.value === col.value ? 'bg-gray-100' : ''"
 								@click="handleColumnSelect(col)"
 							>
