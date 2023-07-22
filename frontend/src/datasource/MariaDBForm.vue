@@ -59,11 +59,6 @@ const testConnectionDisabled = computed(() => {
 })
 
 const connected = ref(null)
-const connectAppearance = computed(() => {
-	if (sources.testing || connected.value === null) return 'white'
-	if (connected.value) return 'success'
-	return 'danger'
-})
 const connectLabel = computed(() => {
 	if (sources.testing) return ''
 	if (connected.value === null) return 'Connect'
@@ -107,7 +102,7 @@ const createNewDatabase = async () => {
 	<div class="mt-6 flex justify-between pt-2">
 		<div class="ml-auto flex items-center space-x-2">
 			<Button
-				:variant="connectAppearance"
+				variant="outline"
 				:disabled="testConnectionDisabled"
 				@click="testConnection"
 				loadingText="Connecting..."
