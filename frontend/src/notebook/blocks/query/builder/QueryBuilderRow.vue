@@ -11,7 +11,7 @@
 			v-if="onRemove"
 			icon="x"
 			variant="ghost"
-			class="!text-gray-600"
+			class="!ml-1 !text-gray-600"
 			@click.prevent.stop="onRemove()"
 		>
 		</Button>

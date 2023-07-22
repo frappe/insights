@@ -131,7 +131,7 @@ function setAggregation(aggregation, measure) {
 }
 
 const dateFormatOptions = [{ label: 'None', value: '' }].concat(
-	dateFormats.map((f) => ({ label: f.value, value: f.value }))
+	dateFormats.map((f) => ({ label: f.value, value: f.value, description: f.label }))
 )
 function findByValue(array, value, defaultValue = {}) {
 	return array.find((item) => item.value == value) || defaultValue
@@ -321,14 +321,9 @@ const addStepRef = ref(null)
 			</QueryBuilderRow>
 
 			<!-- Columns -->
-			<QueryBuilderRow
-				v-if="state.columns.length"
-				v-for="(column, index) in state.columns"
-				:key="index"
-				label="Select"
-				:onRemove="() => state.columns.splice(index, 1)"
-			>
+			<QueryBuilderRow v-if="state.columns.length" :key="index" label="Select">
 				<div
+					v-for="(column, index) in state.columns"
 					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<Suspense>
@@ -347,11 +342,22 @@ const addStepRef = ref(null)
 						placeholder="Format"
 						:items="dateFormatOptions"
 					/>
+					<Button
+						icon="x"
+						variant="ghost"
+						class="!-ml-1 !rounded-none !border-none !text-gray-600"
+						@click.prevent.stop="state.columns.splice(index, 1)"
+					></Button>
 				</div>
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
-				<div class="flex rounded text-gray-800 shadow">
-					<ResizeableInput v-model="column.column.alias" placeholder="Label" />
-				</div>
+				<Button
+					icon="plus"
+					variant="ghost"
+					class="!ml-1 !text-gray-600"
+					@click.prevent.stop="
+						state.columns.splice(index + 1, 0, { ...GET_EMPTY_COLUMN() })
+					"
+				>
+				</Button>
 			</QueryBuilderRow>
 
 			<!-- Summarise -->

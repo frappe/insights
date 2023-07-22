@@ -141,15 +141,11 @@ function handleColumnSelect(col) {
 			class="flex h-7 w-full cursor-pointer items-center overflow-hidden text-ellipsis !whitespace-nowrap px-2.5 leading-7 outline-none ring-0 transition-all focus:outline-none"
 			:class="column?.label ? '' : 'text-gray-500'"
 		>
-			<span> {{ column?.label || 'Pick a column' }} </span>
+			<span> {{ column?.label || 'Column' }} </span>
 		</div>
 		<UsePopover ref="columnPopover" v-if="trigger" :targetElement="trigger">
-			<div class="w-[12rem] rounded bg-white p-1.5 text-base shadow transition-all">
-				<Input
-					iconLeft="search"
-					v-model="columnSearchTerm"
-					placeholder="Search column..."
-				/>
+			<div class="min-w-[12rem] rounded bg-white p-1.5 text-base shadow transition-all">
+				<Input iconLeft="search" v-model="columnSearchTerm" placeholder="Find column" />
 				<div class="mt-1 max-h-48 overflow-y-auto text-sm">
 					<p
 						v-if="
@@ -171,11 +167,12 @@ function handleColumnSelect(col) {
 						</div>
 						<div v-for="col in filteredColumnOptionsGroupedByTable[table]">
 							<div
-								class="flex cursor-pointer items-center justify-between rounded p-2 transition-all hover:bg-gray-100"
+								class="flex cursor-pointer items-center justify-between space-x-8 rounded p-2 transition-all hover:bg-gray-100"
 								:class="column?.value === col.value ? 'bg-gray-100' : ''"
 								@click="handleColumnSelect(col)"
 							>
 								<span>{{ col.label }}</span>
+								<span class="text-xs text-gray-500">{{ col.description }}</span>
 							</div>
 						</div>
 					</div>
