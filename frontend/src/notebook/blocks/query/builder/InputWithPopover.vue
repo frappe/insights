@@ -9,7 +9,7 @@ const props = defineProps({
 	value: { type: Object, default: undefined },
 	modelValue: Object,
 	placeholder: String,
-	items: Array,
+	items: { type: Array, default: () => [] },
 	disableFilter: Boolean,
 	disableInput: Boolean,
 	placement: { type: String, default: 'bottom-start' },

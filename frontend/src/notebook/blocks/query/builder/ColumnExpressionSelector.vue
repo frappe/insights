@@ -65,12 +65,8 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="relative max-w-[20rem] pl-1 pr-3 text-gray-800">
-		<div
-			ref="codeEditor"
-			class="max-h-7 w-48 overflow-hidden py-0.5 transition-all"
-			:class="focused && '!max-h-[30rem] !w-80'"
-		>
+	<div class="relative min-h-[3.5rem] max-w-[20rem] pl-1 pr-3 text-gray-800">
+		<div ref="codeEditor" class="w-80 overflow-hidden py-0.5 transition-all">
 			<Code
 				:value="expression.raw"
 				:completions="getCompletions"
@@ -87,33 +83,42 @@ onMounted(() => {
 				"
 			></Code>
 		</div>
-		<div v-if="!focused && expression.raw" class="absolute right-2 top-2">
-			<FeatherIcon name="more-horizontal" class="h-4 w-4 text-gray-600" />
-		</div>
 	</div>
 
 	<UsePopover
 		v-if="codeEditor"
 		:show="focused && Boolean(helpInfo)"
 		:targetElement="codeEditor"
-		placement="bottom-start"
+		placement="right-start"
 		:key="helpInfoRefreshKey"
 	>
 		<div class="flex w-[10rem] flex-col space-y-1.5 text-sm transition-all">
 			<div v-show="helpInfo" class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg">
-				<span class="mr-1 font-light">Syntax:</span>
+				<p>{{ helpInfo?.description }}</p>
+				<div class="mt-2 rounded bg-gray-50 p-2 text-xs leading-5">
+					<code>
+						<span class="text-gray-600"># Syntax</span>
+						<br />
+						{{ helpInfo?.syntax }}
+						<br />
+						<br />
+						<span class="text-gray-600"># Example</span>
+						<br />
+						{{ helpInfo?.example }}
+					</code>
+				</div>
+				<!-- <span class="mr-1 font-light">Syntax:</span>
 				<span class="font-medium italic" style="font-family: 'Fira Code'">
-					{{ helpInfo?.syntax }}
+					
 				</span>
 				<br />
 				<br />
-				<span>{{ helpInfo?.description }}</span>
 				<br />
 				<br />
 				<span class="mr-1 font-light">Example:</span>
 				<span class="font-medium" style="font-family: 'Fira Code'">
 					{{ helpInfo?.example }}
-				</span>
+				</span> -->
 			</div>
 		</div>
 	</UsePopover>

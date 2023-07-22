@@ -2,6 +2,7 @@
 	<codemirror
 		:tab-size="2"
 		v-model="code"
+		class="font-[400]"
 		:autofocus="autofocus"
 		:indent-with-tab="true"
 		:extensions="extensions"

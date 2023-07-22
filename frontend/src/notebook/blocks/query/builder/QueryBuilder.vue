@@ -200,7 +200,15 @@ const addStepRef = ref(null)
 <template>
 	<div class="flex flex-1 flex-col justify-between px-3 text-base">
 		<div class="space-y-4 overflow-scroll py-1 scrollbar-hide" :key="query.doc.data_source">
-			<QueryBuilderRow label="Start with" :onRemove="() => (state.table = {})">
+			<QueryBuilderRow
+				label="Start with"
+				:actions="[
+					{
+						icon: 'x',
+						onClick: () => (state.table = {}),
+					},
+				]"
+			>
 				<SourceAndTableSelector
 					class="flex rounded text-gray-800 shadow"
 					v-model="state.table"
@@ -214,7 +222,12 @@ const addStepRef = ref(null)
 				v-for="(join, index) in state.joins"
 				:key="index"
 				label="Combine"
-				:onRemove="() => state.joins.splice(index, 1)"
+				:actions="[
+					{
+						icon: 'x',
+						onClick: () => state.joins.splice(index, 1),
+					},
+				]"
 			>
 				<InputWithPopover
 					class="flex rounded text-gray-800 shadow"
@@ -260,8 +273,13 @@ const addStepRef = ref(null)
 				v-if="state.calculations.length"
 				v-for="(calc, index) in state.calculations"
 				:key="index"
-				label="Calculate"
-				:onRemove="() => state.calculations.splice(index, 1)"
+				label="Calculate Column"
+				:actions="[
+					{
+						icon: 'x',
+						onClick: () => state.calculations.splice(index, 1),
+					},
+				]"
 			>
 				<div
 					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
@@ -271,7 +289,7 @@ const addStepRef = ref(null)
 
 				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
 				<div
-					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+					class="flex h-fit items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<ResizeableInput
 						placeholder="Label"
@@ -290,40 +308,67 @@ const addStepRef = ref(null)
 			<!-- Filters -->
 			<QueryBuilderRow
 				v-if="state.filters.length"
-				v-for="(filter, index) in state.filters"
-				:key="index"
 				label="Filter by"
-				:onRemove="() => state.filters.splice(index, 1)"
+				:actions="[
+					{
+						icon: 'plus',
+						onClick: () => state.filters.push({ ...GET_EMPTY_FILTER() }),
+					},
+				]"
 			>
-				<div
-					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
-				>
-					<Suspense>
-						<ColumnSelector
-							:localColumns="selectedColumns"
-							:data_source="query.doc.data_source"
-							:tables="selectedTables"
-							v-model="filter.column"
+				<div v-for="(filter, index) in state.filters" :key="index" class="flex space-x-2.5">
+					<div
+						class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+					>
+						<Suspense>
+							<ColumnSelector
+								:localColumns="selectedColumns"
+								:data_source="query.doc.data_source"
+								:tables="selectedTables"
+								v-model="filter.column"
+							/>
+						</Suspense>
+						<OperatorSelector
+							v-model="filter.operator"
+							:column_type="filter.column.type"
+							@update:model-value="() => (filter.value = {})"
 						/>
-					</Suspense>
-					<OperatorSelector
-						v-model="filter.operator"
-						:column_type="filter.column.type"
-						@update:model-value="() => (filter.value = {})"
-					/>
-					<ValueSelector
-						v-if="!filter.operator.value?.includes('is')"
-						:column="filter.column"
-						:operator="filter.operator"
-						v-model="filter.value"
-					/>
+						<ValueSelector
+							v-if="!filter.operator.value?.includes('is')"
+							:column="filter.column"
+							:operator="filter.operator"
+							v-model="filter.value"
+						/>
+						<Button
+							icon="x"
+							variant="ghost"
+							class="!rounded-none !text-gray-600"
+							@click.prevent.stop="state.filters.splice(index, 1)"
+						></Button>
+					</div>
+					<div
+						v-if="index < state.filters.length - 1"
+						class="flex h-7 flex-shrink-0 text-sm uppercase leading-7 text-gray-600"
+					>
+						and
+					</div>
 				</div>
 			</QueryBuilderRow>
 
 			<!-- Columns -->
-			<QueryBuilderRow v-if="state.columns.length" :key="index" label="Select">
+			<QueryBuilderRow
+				v-if="state.columns.length"
+				label="Select"
+				:actions="[
+					{
+						icon: 'plus',
+						onClick: () => state.columns.push({ ...GET_EMPTY_COLUMN() }),
+					},
+				]"
+			>
 				<div
 					v-for="(column, index) in state.columns"
+					:key="index"
 					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
 					<Suspense>
@@ -345,29 +390,16 @@ const addStepRef = ref(null)
 					<Button
 						icon="x"
 						variant="ghost"
-						class="!-ml-1 !rounded-none !border-none !text-gray-600"
+						class="!rounded-none !text-gray-600"
 						@click.prevent.stop="state.columns.splice(index, 1)"
 					></Button>
 				</div>
-				<Button
-					icon="plus"
-					variant="ghost"
-					class="!ml-1 !text-gray-600"
-					@click.prevent.stop="
-						state.columns.splice(index + 1, 0, { ...GET_EMPTY_COLUMN() })
-					"
-				>
-				</Button>
 			</QueryBuilderRow>
 
 			<!-- Summarise -->
 			<QueryBuilderRow v-if="state.measures.length" label="Summarise">
 				<div class="flex space-x-2.5">
-					<div
-						v-for="(measure, index) in state.measures"
-						:key="index"
-						:onRemove="() => state.measures.splice(index, 1)"
-					>
+					<div v-for="(measure, index) in state.measures" :key="index">
 						<div
 							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 						>
@@ -396,14 +428,21 @@ const addStepRef = ref(null)
 									@update:model-value="(c) => (measure.column.alias = c.label)"
 								/>
 							</Suspense>
+							<Button
+								icon="x"
+								variant="ghost"
+								class="!rounded-none !text-gray-600"
+								@click.prevent.stop="state.measures.splice(index, 1)"
+							></Button>
 						</div>
 					</div>
-					<div
-						class="!ml-1 cursor-pointer rounded p-1.5 text-gray-500 hover:bg-gray-100"
+					<Button
+						icon="plus"
+						variant="ghost"
+						class="!ml-1 !text-gray-600"
 						@click="state.measures.push({ ...GET_EMPTY_COLUMN() })"
 					>
-						<FeatherIcon name="plus" class="h-4 w-4" />
-					</div>
+					</Button>
 				</div>
 			</QueryBuilderRow>
 			<div class="pl-7">
@@ -412,11 +451,7 @@ const addStepRef = ref(null)
 					:label="state.measures.length ? 'By' : 'Group by'"
 				>
 					<div class="flex space-x-2.5">
-						<div
-							v-for="(dimension, index) in state.dimensions"
-							:key="index"
-							:onRemove="() => state.dimensions.splice(index, 1)"
-						>
+						<div v-for="(dimension, index) in state.dimensions" :key="index">
 							<Suspense>
 								<div
 									class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
@@ -446,15 +481,22 @@ const addStepRef = ref(null)
 										placeholder="Format"
 										:items="dateFormatOptions"
 									/>
+									<Button
+										icon="x"
+										variant="ghost"
+										class="!rounded-none !text-gray-600"
+										@click.prevent.stop="state.dimensions.splice(index, 1)"
+									></Button>
 								</div>
 							</Suspense>
 						</div>
-						<div
-							class="!ml-0.5 cursor-pointer rounded p-1.5 text-gray-500 hover:bg-gray-100"
+						<Button
+							icon="plus"
+							variant="ghost"
+							class="!ml-1 !text-gray-600"
 							@click="state.dimensions.push({ ...GET_EMPTY_COLUMN() })"
 						>
-							<FeatherIcon name="plus" class="h-4 w-4" />
-						</div>
+						</Button>
 					</div>
 				</QueryBuilderRow>
 			</div>
@@ -465,7 +507,12 @@ const addStepRef = ref(null)
 				v-for="(order, index) in state.orders"
 				:key="index"
 				label="Sort by"
-				:onRemove="() => state.orders.splice(index, 1)"
+				:actions="[
+					{
+						icon: 'x',
+						onClick: () => state.orders.splice(index, 1),
+					},
+				]"
 			>
 				<Suspense>
 					<ColumnSelector
@@ -491,7 +538,12 @@ const addStepRef = ref(null)
 			<QueryBuilderRow
 				v-if="state.limit != undefined"
 				label="Limit to"
-				:onRemove="() => (state.limit = undefined)"
+				:actions="[
+					{
+						icon: 'x',
+						onClick: () => (state.limit = undefined),
+					},
+				]"
 			>
 				<div class="flex rounded text-gray-800 shadow">
 					<ResizeableInput v-model="state.limit" placeholder="100" />

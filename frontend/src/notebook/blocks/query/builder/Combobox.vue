@@ -93,7 +93,7 @@ const canShowTooltip = ref(false)
 								class="mr-2 h-3.5 w-3.5"
 							/>
 							<span class="overflow-hidden text-ellipsis whitespace-nowrap">
-								{{ value.label || value.value || value }}
+								{{ value.label || value.value || 'No label' }}
 							</span>
 						</div>
 						<span
