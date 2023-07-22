@@ -8,38 +8,6 @@ import { createToast } from '@/utils/toasts'
 import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
 
-export const API_METHODS = {
-	run: 'run',
-	store: 'store',
-	convert: 'convert',
-	setLimit: 'set_limit',
-	duplicate: 'duplicate',
-	reset: 'reset_and_save',
-	fetchTables: 'fetch_tables',
-	fetchColumns: 'fetch_columns',
-	fetchColumnValues: 'fetch_column_values',
-
-	// table methods
-	addTable: 'add_table',
-	removeTable: 'remove_table',
-	updateTable: 'update_table',
-	fetchJoinOptions: 'fetch_join_options',
-
-	// column methods
-	addColumn: 'add_column',
-	moveColumn: 'move_column',
-	updateColumn: 'update_column',
-	removeColumn: 'remove_column',
-
-	// filter methods
-	updateFilters: 'update_filters',
-
-	addTransform: 'add_transform',
-	resetTransforms: 'reset_transforms',
-	getSourceSchema: 'get_source_schema',
-	get_chart_name: 'get_chart_name',
-}
-
 export function useQuery(name) {
 	const query = useQueryResource(name)
 	query.beforeExecuteFns = []

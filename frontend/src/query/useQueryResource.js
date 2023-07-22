@@ -38,6 +38,8 @@ export const API_METHODS = {
 	convert_to_native: 'convert_to_native',
 	convert_to_assisted: 'convert_to_assisted',
 	get_tables_columns: 'get_tables_columns',
+	save_as_table: 'save_as_table',
+	delete_linked_table: 'delete_linked_table',
 }
 
 export function useQueryResource(name) {

@@ -553,6 +553,7 @@ const addStepRef = ref(null)
 		</div>
 
 		<div class="flex items-center space-x-1.5 pt-4 text-sm text-gray-500">
+			<span> Add a step: </span>
 			<div
 				ref="addStepRef"
 				v-for="(item, idx) in [

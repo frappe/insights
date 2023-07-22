@@ -57,6 +57,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.delete_default_chart()
 
     @property
+    def is_saved_as_table(self):
+        table_name = frappe.db.exists("Insights Table", {"table": self.name, "is_query_based": 1})
+        return bool(table_name)
+
+    @property
     def _data_source(self):
         return InsightsDataSource.get_doc(self.data_source)
 
@@ -114,7 +119,9 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         chart.query = self.name
         chart.save(ignore_permissions=True)
 
-    def update_insights_table(self):
+    def update_insights_table(self, force=False):
+        if not self.is_saved_as_table and not force:
+            return
         query_table = _dict(
             table=self.name,
             label=self.title,
