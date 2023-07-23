@@ -25,6 +25,7 @@ document.cookie
 		auth.user[key] = decodeURIComponent(value)
 		if (key === 'user_id') {
 			auth.isLoggedIn = value !== 'Guest'
+			trackActiveSite()
 		}
 	})
 
@@ -42,6 +43,7 @@ watch(
 		if (newVal && !oldVal) {
 			userInfo.fetch()
 			subscription.fetchTrialStatus()
+			trackActiveSite()
 		}
 	},
 	{ immediate: true }
@@ -84,6 +86,10 @@ async function isAuthorized() {
 		await userInfo.fetch()
 	}
 	return auth.user.is_admin || auth.user.is_user
+}
+
+async function trackActiveSite() {
+	auth.isLoggedIn && call('insights.api.telemetry.track_active_site')
 }
 
 export default auth
