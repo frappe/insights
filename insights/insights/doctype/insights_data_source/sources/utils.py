@@ -166,9 +166,7 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
         if data_source is None:
             data_source = sql.data_source
         if data_source and sql.data_source != data_source:
-            frappe.throw(
-                "Cannot use queries from different data sources in a single query"
-            )
+            frappe.throw("Cannot use queries from different data sources in a single query")
 
         stored_query_sql[sql.name] = sql.sql
         sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source)

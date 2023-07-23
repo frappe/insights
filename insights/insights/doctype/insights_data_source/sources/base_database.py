@@ -45,9 +45,7 @@ class BaseDatabase:
     def build_query(self, query, with_cte=False):
         """Build insights query and return the sql"""
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
-        if with_cte and frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        ):
+        if with_cte and frappe.db.get_single_value("Insights Settings", "allow_subquery"):
             query_str = replace_query_tables_with_cte(query_str, self.data_source)
         return query_str if query_str else None
 
@@ -59,14 +57,9 @@ class BaseDatabase:
         if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
             sql = replace_query_tables_with_cte(sql, self.data_source)
         # set a hard max limit to prevent long running queries
-        max_rows = (
-            frappe.db.get_single_value("Insights Settings", "query_result_limit")
-            or 1000
-        )
+        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 1000
         sql = add_limit_to_sql(sql, max_rows)
-        return self.execute_query(
-            sql, return_columns=True, is_native_query=query.is_native_query
-        )
+        return self.execute_query(sql, return_columns=True, is_native_query=query.is_native_query)
 
     def execute_query(
         self,
@@ -108,9 +101,7 @@ class BaseDatabase:
         return sql
 
     def process_subquery(self, sql, replace_query_tables):
-        allow_subquery = frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        )
+        allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         if replace_query_tables and allow_subquery:
             sql = replace_query_tables_with_cte(sql, self.data_source)
         return sql
