@@ -37,3 +37,4 @@ insights.patches.make_query_tables
 insights.patches.show_support_login_message
 insights.insights.doctype.insights_table.patches.delete_duplicate_records
 insights.insights.doctype.insights_query.patches.rename_untitled_query_to_query_name
+insights.insights.doctype.insights_table.patches.delete_unused_query_based_tables
