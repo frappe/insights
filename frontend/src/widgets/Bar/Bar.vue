@@ -68,7 +68,9 @@ const series = computed(() =>
 		name: dataset.label,
 		barMaxWidth: 50,
 		data: props.options.invertAxis ? dataset.data.reverse() : dataset.data,
-		'itemStyle-borderRadius': '[4, 4, 0, 0]',
+		itemStyle: {
+			borderRadius: props.options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
+		},
 		markLine: markLine,
 		stack: props.options.stack ? 'stack' : null,
 		itemStyle: {
@@ -79,10 +81,6 @@ const series = computed(() =>
 	}))
 )
 
-function valueFormatter(value) {
-	return isNaN(value) ? value : value.toLocaleString()
-}
-
 const shouldRender = computed(() => {
 	return !!labels.value.length && !!datasets.value.length
 })
@@ -92,15 +90,21 @@ const shouldRender = computed(() => {
 	<Chart
 		v-if="shouldRender"
 		ref="eChart"
-		:chartTitle="props.options.title"
-		:chartSubtitle="props.options.subtitle"
-		:color="props.options.colors"
+		:options="{
+			chartTitle: props.options.title,
+			chartSubtitle: props.options.subtitle,
+			color: props.options.colors,
+		}"
 	>
 		<ChartGrid>
-			<ChartLegend type="scroll" bottom="bottom" />
-			<ChartAxis v-for="(axis, i) in XandY" v-bind="axis" :key="i" />
-			<ChartSeries v-for="(data, i) in series" v-bind="data" :key="i" />
-			<ChartTooltip trigger="axis" :appendToBody="true" :valueFormatter="valueFormatter" />
+			<ChartLegend :options="{ type: 'scroll', bottom: 'bottom' }" />
+			<ChartAxis v-for="(axis, i) in XandY" :options="axis" :key="i" />
+			<ChartSeries v-for="(data, i) in series" :options="data" :key="i" />
+			<ChartTooltip
+				:options="{
+					valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+				}"
+			/>
 		</ChartGrid>
 	</Chart>
 	<template v-else>

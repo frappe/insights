@@ -1,29 +1,27 @@
 <template></template>
 
 <script setup>
-import { inject, useAttrs, watch } from 'vue'
+import { inject, watch } from 'vue'
 
-const { axisType, type = 'category', ...attributes } = useAttrs()
-const options = inject('options')
+const chartOptions = inject('options')
 const $utils = inject('$utils')
-const convertAttributesToOptions = inject('convertAttributesToOptions')
+const props = defineProps({ options: Object, default: () => ({}) })
 
-const defaults = {
-	axisLabel: {
-		formatter: function (value, index) {
-			if (type === 'category') {
-				return value
-			}
-			if (type === 'value') {
-				return $utils.getShortNumber(value, 1)
-			}
+watch(() => props.options, updateOptions, { deep: true, immediate: true })
+function updateOptions(newOptions) {
+	const { axisType, type = 'category', ...rest } = newOptions
+	const defaults = {
+		axisLabel: {
+			formatter: function (value, index) {
+				if (type === 'category') {
+					return value
+				}
+				if (type === 'value') {
+					return $utils.getShortNumber(value, 1)
+				}
+			},
 		},
-	},
-}
-
-watch(() => attributes, updateOptions, { deep: true, immediate: true })
-function updateOptions(newAttributes) {
-	const optionsObject = convertAttributesToOptions(newAttributes)
-	options[axisType] = { type, ...defaults, ...optionsObject }
+	}
+	chartOptions[axisType] = { type, ...defaults, ...rest }
 }
 </script>

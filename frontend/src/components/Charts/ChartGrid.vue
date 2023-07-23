@@ -3,8 +3,10 @@
 </template>
 
 <script setup>
-import { inject, useAttrs } from 'vue'
-const options = inject('options')
+import { inject } from 'vue'
+const props = defineProps({ options: Object, default: () => ({}) })
+
+const chartOptions = inject('options')
 const defaults = {
 	top: 25,
 	bottom: 35,
@@ -12,5 +14,5 @@ const defaults = {
 	right: 30,
 	containLabel: true,
 }
-options.grid = { ...defaults, ...useAttrs() }
+chartOptions.grid = { ...defaults, ...props.options }
 </script>
