@@ -145,7 +145,12 @@ function handleColumnSelect(col) {
 		</div>
 		<UsePopover ref="columnPopover" v-if="trigger" :targetElement="trigger">
 			<div class="min-w-[12rem] rounded bg-white p-1.5 text-base shadow transition-all">
-				<Input iconLeft="search" v-model="columnSearchTerm" placeholder="Find column" />
+				<Input
+					iconLeft="search"
+					:value="columnSearchTerm"
+					@input="columnSearchTerm = $event"
+					placeholder="Find column"
+				/>
 				<div class="mt-1 max-h-48 overflow-y-auto text-sm">
 					<p
 						v-if="

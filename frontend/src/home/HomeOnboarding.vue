@@ -13,7 +13,7 @@ const steps = reactive([
 		description:
 			"Insights need access to your data to start analyzing it. Don't worry, we do not store your data.",
 		primary_button: {
-			label: 'Connect',
+			label: 'Create Data Source',
 			action: () => router.push('/data-source#new'),
 		},
 	},
@@ -21,9 +21,9 @@ const steps = reactive([
 		title: 'Build Your First Query',
 		name: 'build_query',
 		description:
-			"Let's introduce you to the query builder, where you'll be spending most of your time.",
+			"Let's introduce you to the query builder, where you'll be spending most of your time building queries.",
 		primary_button: {
-			label: 'Build',
+			label: 'Build Query',
 			action: () => router.push('/query#new'),
 		},
 	},
@@ -33,7 +33,7 @@ const steps = reactive([
 		description:
 			'Organize your visualizations meaningfully by creating a dashboard for you and your team.',
 		primary_button: {
-			label: 'Create',
+			label: 'Create Dashboard',
 			action: () => router.push('/dashboard#new'),
 		},
 	},
@@ -59,6 +59,7 @@ function skipCurrentStep() {
 }
 function completeOnboarding() {
 	onboarding.value = { ...onboarding.value, all_set: true }
+	showOnboarding.value = false
 }
 </script>
 
@@ -88,21 +89,50 @@ function completeOnboarding() {
 	</div>
 
 	<Dialog
+		v-if="!onboarding.all_set && currentStep < steps.length"
 		v-model="showOnboarding"
 		:options="{
 			title: steps[currentStep].title,
+			size: '2xl',
 		}"
 	>
 		<template #body-content>
 			<div class="flex flex-col items-center justify-center space-y-4">
-				<div class="flex h-72 w-full items-center justify-center rounded bg-gray-200">
-					<FeatherIcon name="image" class="h-24 w-24 text-gray-400" />
+				<div
+					v-if="steps[currentStep].name !== 'all_set'"
+					:key="steps[currentStep].name"
+					class="flex w-full items-center justify-center overflow-hidden rounded shadow-md"
+				>
+					<video autoplay loop muted class="h-full w-full">
+						<source
+							v-if="steps[currentStep].name === 'connect_data'"
+							src="../assets/add-data-source.mp4"
+							type="video/mp4"
+						/>
+						<source
+							v-if="steps[currentStep].name === 'build_query'"
+							src="../assets/build-first-query.mp4"
+							type="video/mp4"
+						/>
+						<source
+							v-if="steps[currentStep].name === 'create_dashboard'"
+							src="../assets/create-first-dashboard.mp4"
+							type="video/mp4"
+						/>
+						Your browser does not support the video tag.
+					</video>
 				</div>
 				<div class="">
 					{{ steps[currentStep].description }}
 				</div>
 				<div class="flex w-full justify-end space-x-2">
-					<Button variant="ghost" @click="skipCurrentStep"> Skip </Button>
+					<Button
+						v-if="steps[currentStep].name !== 'all_set'"
+						variant="ghost"
+						@click="skipCurrentStep"
+					>
+						Skip
+					</Button>
 					<Button variant="solid" @click="steps[currentStep].primary_button.action">
 						{{ steps[currentStep].primary_button.label }}
 					</Button>

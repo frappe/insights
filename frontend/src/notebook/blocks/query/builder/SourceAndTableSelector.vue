@@ -97,7 +97,8 @@ function handleTableSelect(selectedTable) {
 			<div class="w-[12rem] rounded bg-white p-1.5 text-base shadow transition-all">
 				<Input
 					iconLeft="search"
-					v-model="datasourceSearchTerm"
+					:value="datasourceSearchTerm"
+					@input="datasourceSearchTerm = $event"
 					placeholder="Find data source"
 				/>
 				<div class="mt-1 max-h-48 overflow-y-auto text-sm">
@@ -132,7 +133,8 @@ function handleTableSelect(selectedTable) {
 							>
 								<Input
 									iconLeft="search"
-									v-model="tableSearchTerm"
+									:value="tableSearchTerm"
+									@input="tableSearchTerm = $event"
 									placeholder="Find table"
 								/>
 								<div class="mt-1 max-h-48 overflow-y-auto text-sm">
