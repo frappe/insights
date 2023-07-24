@@ -11,7 +11,7 @@ const steps = reactive([
 		title: 'Connect Your Data',
 		name: 'connect_data',
 		description:
-			"Insights need access to your data to start analyzing it. Don't worry, we do not store your data.",
+			"Insights needs access to your data to start analyzing it. Don't worry, we do not store your data.",
 		primary_button: {
 			label: 'Create Data Source',
 			action: () => router.push('/data-source#new'),
