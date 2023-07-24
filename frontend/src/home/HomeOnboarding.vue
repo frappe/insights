@@ -75,7 +75,7 @@ function completeOnboarding() {
 				<div>
 					<div class="text-lg font-bold text-gray-900">Get Started with Insights</div>
 					<div class="mt-1 text-gray-600">
-						Follow through a couple to steps to get yourself familiar with Insights.
+						Follow through a couple of steps to get yourself familiar with Insights.
 					</div>
 				</div>
 			</div>
