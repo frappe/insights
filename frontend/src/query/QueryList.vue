@@ -94,7 +94,6 @@ const queryBuilderTypes = ref([
 		label: 'Visual',
 		description: 'Create a query using the visual interface',
 		icon: 'box',
-		tag: 'beta',
 		onClick: () => openQueryEditor('visual'),
 	},
 	{
