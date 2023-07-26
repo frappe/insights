@@ -155,10 +155,10 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
-	const trialExpired = import.meta.env.DEV ? false : await getTrialStatus()
-	if (trialExpired && to.name !== 'Trial Expired') {
-		return next('/trial-expired')
-	}
+	// const trialExpired = await getTrialStatus()
+	// if (trialExpired && to.name !== 'Trial Expired') {
+	// 	return next('/trial-expired')
+	// }
 	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
