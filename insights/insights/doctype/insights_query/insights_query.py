@@ -102,15 +102,12 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.variant_controller.after_reset()
 
     def update_sql_query(self):
-        query = self.get_sql()
-        query = format_query(query) if query else None
+        query = self._data_source.build_query(self)
+        query = format_query(query)
         if self.sql == query:
             return
         self.sql = query
         self.status = Status.PENDING.value
-
-    def get_sql(self):
-        return self.variant_controller.get_sql()
 
     def create_default_chart(self):
         if frappe.db.exists("Insights Chart", {"query": self.name}):

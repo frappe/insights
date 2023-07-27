@@ -25,9 +25,7 @@ from .sources.sqlite import SQLiteDB
 
 class InsightsDataSource(Document):
     def before_insert(self):
-        if self.is_site_db and frappe.db.exists(
-            "Insights Data Source", {"is_site_db": 1}
-        ):
+        if self.is_site_db and frappe.db.exists("Insights Data Source", {"is_site_db": 1}):
             frappe.throw("Only one site database can be configured")
 
     @frappe.whitelist()
@@ -57,9 +55,7 @@ class InsightsDataSource(Document):
 
         linked_doctypes = ["Insights Table"]
         for doctype in linked_doctypes:
-            for name in frappe.db.get_all(
-                doctype, {"data_source": self.name}, pluck="name"
-            ):
+            for name in frappe.db.get_all(doctype, {"data_source": self.name}, pluck="name"):
                 frappe.delete_doc(doctype, name)
 
         track("delete_data_source")
@@ -123,9 +119,7 @@ class InsightsDataSource(Document):
                 frappe.throw(f"{field} is mandatory for Database")
 
     def before_save(self):
-        self.status = (
-            SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
-        )
+        self.status = SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
 
     def test_connection(self, raise_exception=False):
         try:
@@ -137,8 +131,8 @@ class InsightsDataSource(Document):
             if raise_exception:
                 raise e
 
-    def build_query(self, query: InsightsQuery, with_cte=False):
-        return self.db.build_query(query, with_cte)
+    def build_query(self, query: InsightsQuery):
+        return self.db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
         try:

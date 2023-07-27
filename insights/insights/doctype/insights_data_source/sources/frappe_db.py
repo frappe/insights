@@ -55,11 +55,7 @@ class FrappeTableFactory:
             query = query.where(t.c.table_name.in_(table_names))
 
         tables = self.db_conn.execute(query).fetchall()
-        return [
-            self.get_table(table[0])
-            for table in tables
-            if not table[0].startswith("__")
-        ]
+        return [self.get_table(table[0]) for table in tables if not table[0].startswith("__")]
 
     def get_table(self, table_name):
         return _dict(
@@ -84,9 +80,7 @@ class FrappeTableFactory:
         columns = self.db_conn.execute(query).fetchall()
         columns_by_table = {}
         for col in columns:
-            columns_by_table.setdefault(col[0], []).append(
-                self.get_column(col[1], col[2])
-            )
+            columns_by_table.setdefault(col[0], []).append(self.get_column(col[1], col[2]))
         return columns_by_table
 
     def get_table_columns(self, table):
@@ -134,9 +128,7 @@ class FrappeTableFactory:
                 CustomField.options,
                 CustomField.dt.as_("parent"),
             )
-            .where(
-                (CustomField.fieldtype == "Link") | (CustomField.fieldtype == "Table")
-            )
+            .where((CustomField.fieldtype == "Link") | (CustomField.fieldtype == "Table"))
             .get_sql()
         )
         custom_links = self.db_conn.execute(query).fetchall()
@@ -223,10 +215,7 @@ class FrappeTableFactory:
                 DocField.options,
                 DocType.issingle,
             )
-            .where(
-                (DocField.fieldtype == "Dynamic Link")
-                & (DocType.name == DocField.parent)
-            )
+            .where((DocField.fieldtype == "Dynamic Link") & (DocType.name == DocField.parent))
             .get_sql()
         )
 
@@ -239,10 +228,7 @@ class FrappeTableFactory:
                 CustomField.options,
                 DocType.issingle,
             )
-            .where(
-                (CustomField.fieldtype == "Dynamic Link")
-                & (DocType.name == CustomField.dt)
-            )
+            .where((CustomField.fieldtype == "Dynamic Link") & (DocType.name == CustomField.dt))
             .get_sql()
         )
 
@@ -272,9 +258,7 @@ class FrappeTableFactory:
 
 
 class FrappeDB(BaseDatabase):
-    def __init__(
-        self, data_source, host, port, username, password, database_name, use_ssl
-    ):
+    def __init__(self, data_source, host, port, username, password, database_name, use_ssl):
         self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
@@ -301,12 +285,8 @@ class FrappeDB(BaseDatabase):
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(
-            f"""select * from `{table}` limit {limit}""", cached=True
-        )
-        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[
-            0
-        ][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""", cached=True)
+        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[0][0]
         return {
             "data": data or [],
             "length": length or 0,
@@ -322,7 +302,8 @@ class FrappeDB(BaseDatabase):
         query = t.select().distinct().limit(limit)
         if search_text:
             query = query.where(Column(column).like(f"%{search_text}%"))
-        return self.execute_query(query, pluck=True, replace_query_tables=True)
+        query = self.compile_query(query)
+        return self.execute_query(query, pluck=True)
 
 
 class SiteDB(FrappeDB):

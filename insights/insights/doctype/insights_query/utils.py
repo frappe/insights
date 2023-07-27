@@ -87,10 +87,15 @@ class Status(Enum):
 
 
 def format_query(query):
-    return sqlparse.format(
-        str(query),
-        keyword_case="upper",
-        reindent_aligned=True,
+    return (
+        sqlparse.format(
+            str(query),
+            keyword_case="upper",
+            reindent_aligned=True,
+            strip_comments=True,  # see: process_cte in sources/utils.py
+        )
+        if query
+        else ""
     )
 
 
@@ -135,9 +140,7 @@ def apply_pivot_transform(results, options):
 
     new_columns = pivoted.columns.to_list()
     result_index_column = ResultColumn.from_dict(index_column)
-    result_columns = [
-        ResultColumn.from_args(c, value_column["type"]) for c in new_columns[1:]
-    ]
+    result_columns = [ResultColumn.from_args(c, value_column["type"]) for c in new_columns[1:]]
     new_columns = [result_index_column] + result_columns
     return [new_columns] + pivoted.values.tolist()
 
@@ -231,9 +234,7 @@ def get_columns_with_inferred_types(results):
     columns = ResultColumn.from_dicts(results[0])
     column_names = [column.label for column in columns]
     results_df = pd.DataFrame(results[1:], columns=column_names)
-    column_types = (
-        infer_type_from_list(results_df[column_name]) for column_name in column_names
-    )
+    column_types = (infer_type_from_list(results_df[column_name]) for column_name in column_names)
     for column, column_type in zip(columns, column_types):
         column.type = column_type
     return columns
@@ -325,10 +326,7 @@ class Join(frappe._dict):
 
     def __bool__(self):
         return bool(
-            self.left_table
-            and self.right_table
-            and self.left_column
-            and self.right_column
+            self.left_table and self.right_table and self.left_column and self.right_column
         )
 
     @staticmethod

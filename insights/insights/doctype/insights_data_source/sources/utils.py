@@ -191,6 +191,10 @@ def process_cte(main_query, data_source=None):
     Replaces stored queries in the main query with the actual query using CTE
     """
 
+    processed_comment = "/* query tables processed as CTE */"
+    if processed_comment in main_query:
+        return main_query
+
     stored_query_sql = get_stored_query_sql(main_query, data_source)
     if not stored_query_sql:
         return main_query
@@ -225,7 +229,7 @@ def process_cte(main_query, data_source=None):
     for query_name, sql in stored_query_sql.items():
         cte += f" `{query_name}` AS ({sql}),"
     cte = cte[:-1]
-    return cte + " " + main_query
+    return f"{processed_comment} {cte} {main_query}"
 
 
 def strip_quotes(table):

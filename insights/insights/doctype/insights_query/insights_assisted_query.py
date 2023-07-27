@@ -39,9 +39,6 @@ class InsightsAssistedQueryController:
         query.orders = (c.get("column") for c in query.orders or [])
         return Query(**query)
 
-    def get_sql(self):
-        return self.doc._data_source.build_query(self.doc, with_cte=True)
-
     def get_columns(self):
         return self.get_columns_from_results(self.doc.retrieve_results())
 
@@ -83,9 +80,7 @@ class InsightsAssistedQueryController:
         selected_tables = self.get_selected_tables()
         selected_tables_names = [t.get("table") for t in selected_tables]
         for table in set(selected_tables_names):
-            table_doc = InsightsTable.get_doc(
-                data_source=self.doc.data_source, table=table
-            )
+            table_doc = InsightsTable.get_doc(data_source=self.doc.data_source, table=table)
             table_columns = table_doc.get_columns()
             columns += [
                 frappe._dict(
@@ -110,9 +105,7 @@ class InsightsAssistedQueryController:
     def before_fetch(self):
         if self.doc.data_source != "Query Store":
             return
-        raise frappe.ValidationError(
-            "Query Store data source is not supported for assisted query"
-        )
+        raise frappe.ValidationError("Query Store data source is not supported for assisted query")
 
     def after_fetch_results(self, results):
         return results

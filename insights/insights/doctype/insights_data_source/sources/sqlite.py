@@ -84,9 +84,7 @@ class SQLiteTableFactory:
 
 class SQLiteDB(BaseDatabase):
     def __init__(self, data_source, database_name) -> None:
-        database_path = frappe.get_site_path(
-            "private", "files", f"{database_name}.sqlite"
-        )
+        database_path = frappe.get_site_path("private", "files", f"{database_name}.sqlite")
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)
@@ -97,12 +95,8 @@ class SQLiteDB(BaseDatabase):
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(
-            f"""select * from `{table}` limit {limit}""", cached=True
-        )
-        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[
-            0
-        ][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""", cached=True)
+        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[0][0]
         return {
             "data": data or [],
             "length": length or 0,
@@ -118,7 +112,8 @@ class SQLiteDB(BaseDatabase):
         query = t.select().distinct().limit(limit)
         if search_text:
             query = query.where(Column(column).like(f"%{search_text}%"))
-        return self.execute_query(query, pluck=True, replace_query_tables=True)
+        query = self.compile_query(query)
+        return self.execute_query(query, pluck=True)
 
     def table_exists(self, table):
         return self.execute_query(

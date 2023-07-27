@@ -109,9 +109,7 @@ class InsightsLegacyQueryClient:
                 if expression:
                     # check if expression is an object
                     row.expression = (
-                        dumps(expression, indent=2)
-                        if isinstance(expression, dict)
-                        else expression
+                        dumps(expression, indent=2) if isinstance(expression, dict) else expression
                     )
                 break
 
@@ -155,9 +153,7 @@ class InsightsLegacyQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
-        with_query_tables = frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        )
+        with_query_tables = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         return get_tables(self.data_source, with_query_tables)
 
     @frappe.whitelist()
@@ -255,9 +251,6 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def after_reset(self):
         self.doc.filters = DEFAULT_FILTERS
 
-    def get_sql(self):
-        return self.doc._data_source.build_query(self.doc, with_cte=True)
-
     def get_columns(self):
         return self.get_columns_from_results(self.doc.retrieve_results())
 
@@ -333,9 +326,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def before_fetch(self):
         if self.doc.data_source != "Query Store":
             return
-        sub_stored_queries = [
-            t.table for t in self.doc.tables if t.table != self.doc.name
-        ]
+        sub_stored_queries = [t.table for t in self.doc.tables if t.table != self.doc.name]
         sync_query_store(sub_stored_queries, force=True)
 
     def after_fetch_results(self, results):
@@ -344,10 +335,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         return results
 
     def has_cumulative_columns(self):
-        return any(
-            col.aggregation and "Cumulative" in col.aggregation
-            for col in self.doc.columns
-        )
+        return any(col.aggregation and "Cumulative" in col.aggregation for col in self.doc.columns)
 
     def apply_cumulative_sum(self, results):
         column_names = [d["label"] for d in results[0]]
