@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-8 w-full cursor-pointer items-center rounded-md bg-gray-100 p-1">
+	<div class="flex h-8 w-full cursor-pointer select-none items-center rounded bg-gray-100 p-1">
 		<div
 			v-for="tab in tabs"
 			class="flex h-full flex-1 items-center justify-center px-4 text-sm transition-all"

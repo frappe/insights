@@ -2,11 +2,14 @@
 	<codemirror
 		:tab-size="2"
 		v-model="code"
-		:autofocus="true"
+		class="font-[400]"
+		:autofocus="autofocus"
 		:indent-with-tab="true"
 		:extensions="extensions"
 		:placeholder="placeholder"
 		@update="onUpdate"
+		@focus="emit('focus')"
+		@blur="emit('blur')"
 	/>
 </template>
 
@@ -23,6 +26,10 @@ import { Codemirror } from 'vue-codemirror'
 const props = defineProps({
 	modelValue: String,
 	value: String,
+	autofocus: {
+		type: Boolean,
+		default: true,
+	},
 	placeholder: {
 		type: String,
 		default: 'Enter an expression...',
@@ -44,7 +51,7 @@ const props = defineProps({
 		default: () => ({}),
 	},
 })
-const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate'])
+const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate', 'focus', 'blur'])
 
 const onUpdate = (viewUpdate) => {
 	emit('viewUpdate', {
@@ -78,7 +85,7 @@ const autocompletionOptions = {
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
-	optionClass: () => 'flex h-7 !px-2 items-center rounded-md !text-gray-600',
+	optionClass: () => 'flex h-7 !px-2 items-center rounded !text-gray-600',
 }
 if (props.completions) {
 	autocompletionOptions.override = [

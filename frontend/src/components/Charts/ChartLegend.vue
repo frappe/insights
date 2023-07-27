@@ -3,11 +3,12 @@
 <script setup>
 import { inject, useAttrs } from 'vue'
 
-const options = inject('options')
+const props = defineProps({ options: Object, default: () => ({}) })
 
-const { type = 'plain', ...attributes } = useAttrs()
-
-options.legend = {
+const chartOptions = inject('options')
+const type = props.options?.type || 'plain'
+const rest = props.options || {}
+chartOptions.legend = {
 	type: type,
 	icon: 'circle',
 	pageIconSize: 12,
@@ -15,6 +16,6 @@ options.legend = {
 	pageIconInactiveColor: '#C0CCDA',
 	pageFormatter: '{current}',
 	pageButtonItemGap: 2,
-	...attributes,
+	...rest,
 }
 </script>

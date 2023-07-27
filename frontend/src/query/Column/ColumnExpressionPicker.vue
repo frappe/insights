@@ -11,7 +11,7 @@
 		</div>
 		<Popover class="h-36 w-full text-sm" placement="left-start">
 			<template #target="{ open }">
-				<div class="relative h-full w-full">
+				<div class="relative h-full w-full rounded border p-1">
 					<Code
 						v-model="input.value"
 						:completions="getCompletions"
@@ -33,7 +33,7 @@
 					>
 						<div
 							v-show="expression.help"
-							class="ml-auto w-[20rem] rounded-md border bg-white p-2 shadow-lg"
+							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
 						>
 							<span class="mr-1 font-light">Syntax:</span>
 							<span class="font-medium italic" style="font-family: 'Fira Code'">
@@ -60,7 +60,7 @@
 			<Input
 				type="text"
 				v-model="expression.label"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>
@@ -70,7 +70,7 @@
 			<Input
 				type="select"
 				v-model="expression.valueType"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Select a type..."
 				:options="columnTypes"
 			/>
@@ -102,7 +102,7 @@
 						value: 'desc',
 					},
 				]"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>
@@ -119,12 +119,12 @@
 			<Button
 				v-if="editing"
 				class="text-red-500"
-				appearance="white"
+				variant="outline"
 				@click="removeExpressionColumn"
 			>
 				Remove
 			</Button>
-			<Button appearance="primary" @click="addOrEditColumn" :disabled="addDisabled">
+			<Button variant="solid" @click="addOrEditColumn" :disabled="addDisabled">
 				{{ editing ? 'Update' : 'Add ' }}
 			</Button>
 		</div>

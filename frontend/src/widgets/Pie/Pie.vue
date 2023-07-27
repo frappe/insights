@@ -3,8 +3,7 @@ import Chart from '@/components/Charts/Chart.vue'
 import ChartLegend from '@/components/Charts/ChartLegend.vue'
 import ChartSeries from '@/components/Charts/ChartSeries.vue'
 import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
-import { whenever } from '@vueuse/core'
-import { computed, inject, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 const props = defineProps({
 	chartData: { type: Object, required: true },
@@ -133,30 +132,46 @@ function appendPercentage(value) {
 	<Chart
 		v-if="shouldRender"
 		ref="eChart"
-		:chartTitle="props.options.title"
-		:chartSubtitle="props.options.subtitle"
-		:color="props.options.colors"
+		:options="{
+			chartTitle: props.options.title,
+			chartSubtitle: props.options.subtitle,
+			color: props.options.colors,
+		}"
 	>
 		<ChartSeries
-			type="pie"
-			:name="dataset.label"
-			:data="data"
-			:center="center"
-			:radius="radius"
-			:labelLine-show="props.options.inlineLabels"
-			:labelLine-lineStyle-width="2"
-			:labelLine-length="10"
-			:labelLine-length2="20"
-			:labelLine-smooth="true"
-			:label-show="props.options.inlineLabels"
-			:label-formatter="formatLabel"
-			:emphasis-scaleSize="5"
+			:options="{
+				type: 'pie',
+				name: dataset.label,
+				data: data,
+				center: center,
+				radius: radius,
+				labelLine: {
+					show: props.options.inlineLabels,
+					lineStyle: {
+						width: 2,
+					},
+					length: 10,
+					length2: 20,
+					smooth: true,
+				},
+				label: {
+					show: props.options.inlineLabels,
+					formatter: formatLabel,
+				},
+				emphasis: {
+					scaleSize: 5,
+				},
+			}"
 		/>
-		<ChartTooltip trigger="item" :appendToBody="true" :valueFormatter="appendPercentage" />
+		<ChartTooltip
+			:options="{ trigger: 'item', appendToBody: true, formatter: appendPercentage }"
+		/>
 		<ChartLegend
 			v-if="!props.options.inlineLabels"
-			v-bind="legendOptions"
-			:formatter="formatLegend"
+			:options="{
+				...legendOptions,
+				formatter: formatLegend,
+			}"
 		/>
 	</Chart>
 	<template v-else>

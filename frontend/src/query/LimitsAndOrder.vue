@@ -1,15 +1,15 @@
 <template>
 	<div
-		class="flex h-full flex-1 items-center justify-between rounded-b-md px-1 text-base text-gray-500"
+		class="flex h-full flex-1 items-center justify-between rounded-b-md px-1 text-base text-gray-600"
 	>
-		<div class="ml-auto text-sm">
+		<div class="ml-auto space-x-1">
 			<span>Limit to</span>
 			<input
 				type="text"
 				ref="limitInput"
 				v-model.number="limit"
 				:size="String(limit).length"
-				class="form-input mx-1 bg-gray-100 py-0.5 pl-2 pr-1 font-medium text-gray-600 hover:underline focus:border-transparent focus:bg-gray-200 focus:text-gray-600"
+				class="form-input border-gray-400 pr-1 placeholder-gray-500"
 				@keydown.enter.stop="
 					() => {
 						query.setLimit.submit({ limit: parseInt(limit) })

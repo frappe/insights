@@ -1,14 +1,17 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+
 import frappe
 from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
+from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.api.permissions import is_private
 from insights.api.telemetry import track
 from insights.decorators import check_role
+from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
     check_table_permission,
@@ -32,7 +35,14 @@ def get_data_sources():
             "status": "Active",
             **get_permission_filter("Insights Data Source"),
         },
-        fields=["name", "title", "status", "database_type", "creation", "is_site_db"],
+        fields=[
+            "name",
+            "title",
+            "status",
+            "database_type",
+            "creation",
+            "is_site_db",
+        ],
         order_by="creation desc",
     )
 
@@ -57,9 +67,7 @@ def get_table_columns(data_source, table):
 @check_role("Insights User")
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @frappe.whitelist()
@@ -95,9 +103,7 @@ def get_dashboard_list():
     )
     for dashboard in dashboards:
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
             filters={
@@ -148,6 +154,8 @@ def get_queries():
             Query.name,
             Query.title,
             Query.status,
+            Query.is_assisted_query,
+            Query.is_native_query,
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
@@ -161,21 +169,23 @@ def get_queries():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_query(data_source, table=None, title=None):
+def create_query(**query):
     track("create_query")
-    query = frappe.new_doc("Insights Query")
-    query.title = title or "Untitled Query"
-    query.data_source = data_source
-    if table:
-        query.append(
+    doc = frappe.new_doc("Insights Query")
+    doc.title = query.get("title")
+    doc.data_source = query.get("data_source") or "Demo Data"
+    doc.is_assisted_query = query.get("is_assisted_query")
+    doc.is_native_query = query.get("is_native_query")
+    if table := query.get("table") and not doc.is_assisted_query:
+        doc.append(
             "tables",
             {
                 "table": table.get("value"),
                 "label": table.get("label"),
             },
         )
-    query.save()
-    return query.name
+    doc.save()
+    return doc.as_dict()
 
 
 @frappe.whitelist()
@@ -200,8 +210,12 @@ def get_user_info():
         "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
     )
 
+    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+
     return {
         "user_id": frappe.session.user,
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",
         "is_user": is_user,
     }
@@ -209,9 +223,7 @@ def get_user_info():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
-):
+def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
 
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
@@ -253,26 +265,6 @@ def create_table_link(
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_onboarding_status():
-    return {
-        "is_onboarded": frappe.db.get_single_value(
-            "Insights Settings", "onboarding_complete"
-        ),
-        "query_created": bool(frappe.db.a_row_exists("Insights Query")),
-        "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-        "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-    }
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def skip_onboarding():
-    frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)
-
-
-@frappe.whitelist()
-@check_role("Insights User")
 def get_dashboard_options(chart):
     allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
     if not allowed_dashboards:
@@ -305,43 +297,55 @@ def get_csv_from_base64(encoded_string):
 
 @frappe.whitelist()
 @check_role("Insights User")
-def get_columns_from_csv(file):
-    import csv
+def get_columns_from_uploaded_file(filename):
+    import pandas as pd
 
-    file_type = file.get("type")
-    data = file.get("data")  # base64 encoded
+    file = frappe.get_doc("File", filename)
+    parts = file.get_extension()
+    if "csv" not in parts[1]:
+        frappe.throw("Only CSV files are supported")
 
-    if file_type == "text/csv":
-        data = get_csv_from_base64(data)
-        reader = csv.reader(data)
-        return next(reader)
+    file_path = file.get_full_path()
+    df = pd.read_csv(file_path)
+    columns = df.columns.tolist()
+    columns_with_types = []
+    for column in columns:
+        column_type = infer_type_from_list(df[column].tolist())
+        columns_with_types.append({"label": column, "type": column_type})
+
+    return columns_with_types
 
 
-def create_csv_file(file):
-    file_doc = frappe.new_doc("File")
-    file_doc.file_name = file.get("name")
-    file_doc.content = get_csv_from_base64(file.get("data")).read()
-    file_doc.save(ignore_permissions=True)
-    return file_doc
+def create_data_source_for_csv():
+    if not frappe.db.exists("Insights Data Source", "File Uploads"):
+        data_source = frappe.new_doc("Insights Data Source")
+        data_source.database_type = "SQLite"
+        data_source.database_name = "file_uploads"
+        data_source.title = "File Uploads"
+        data_source.allow_imports = 1
+        data_source.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
 @check_role("Insights User")
-def upload_csv(data_source, label, file, if_exists, columns):
+def import_csv(table_label, table_name, filename, if_exists, columns):
+
+    create_data_source_for_csv()
+
     table_import = frappe.new_doc("Insights Table Import")
-    table_import.data_source = data_source
-    table_import.table_name = frappe.scrub(label)
-    table_import.table_label = label
+    table_import.data_source = "File Uploads"
+    table_import.table_label = table_label
+    table_import.table_name = table_name
     table_import.if_exists = if_exists
-    table_import.source = create_csv_file(file).file_url
+    table_import.source = frappe.get_doc("File", filename).file_url
     table_import.save()
     table_import.columns = []
     for column in columns:
         table_import.append(
             "columns",
             {
-                "column": frappe.scrub(column.get("column")),
-                "label": frappe.unscrub(column.get("column")),
+                "column": column.get("name"),
+                "label": column.get("label"),
                 "type": column.get("type"),
             },
         )
@@ -443,15 +447,11 @@ def get_public_chart(public_key):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
-    chart_name = frappe.db.exists(
-        "Insights Chart", {"public_key": public_key, "is_public": 1}
-    )
+    chart_name = frappe.db.exists("Insights Chart", {"public_key": public_key, "is_public": 1})
     if not chart_name:
         frappe.throw("Invalid Public Key")
 
-    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(
-        no_default_fields=True
-    )
+    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(no_default_fields=True)
     chart_data = frappe.get_cached_doc("Insights Query", chart.query).fetch_results()
     chart["data"] = chart_data
     return chart
@@ -475,12 +475,52 @@ def get_public_dashboard_chart_data(public_key, *args, **kwargs):
 
 
 @frappe.whitelist()
-def fetch_column_values(column, search_text=None):
-    if not column.get("data_source"):
+@redis_cache()
+def fetch_column_values(data_source, table, column, search_text=None):
+    if not data_source:
         frappe.throw("Data Source is required")
-    data_source = frappe.get_doc("Insights Data Source", column.get("data_source"))
-    return data_source.get_column_options(
-        column.get("table"), column.get("column"), search_text
+    if not table:
+        frappe.throw("Table is required")
+    if not column:
+        frappe.throw("Column is required")
+    doc = frappe.get_doc("Insights Data Source", data_source)
+    return doc.get_column_options(table, column, search_text)
+
+
+@frappe.whitelist()
+def get_notebooks():
+    # TODO: Add permission check
+    return frappe.get_list(
+        "Insights Notebook",
+        fields=["name", "title", "creation", "modified"],
+        order_by="creation desc",
+    )
+
+
+@frappe.whitelist()
+def create_notebook(title):
+    notebook = frappe.new_doc("Insights Notebook")
+    notebook.title = title
+    notebook.save()
+    return notebook.name
+
+
+@frappe.whitelist()
+def create_notebook_page(notebook):
+    notebook_page = frappe.new_doc("Insights Notebook Page")
+    notebook_page.notebook = notebook
+    notebook_page.title = "Untitled"
+    notebook_page.save()
+    return notebook_page.name
+
+
+@frappe.whitelist()
+def get_notebook_pages(notebook):
+    return frappe.get_list(
+        "Insights Notebook Page",
+        filters={"notebook": notebook},
+        fields=["name", "title", "creation", "modified"],
+        order_by="creation desc",
     )
 
 
@@ -489,6 +529,13 @@ def add_chart_to_dashboard(dashboard, chart):
     dashboard = frappe.get_doc("Insights Dashboard", dashboard)
     dashboard.add_chart(chart)
     dashboard.save()
+
+
+@frappe.whitelist()
+def create_chart():
+    chart = frappe.new_doc("Insights Chart")
+    chart.save()
+    return chart.name
 
 
 @frappe.whitelist()

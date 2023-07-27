@@ -1,17 +1,17 @@
 <template>
 	<div
 		ref="resultContainer"
-		class="flex w-full flex-1 flex-shrink-0 flex-col overflow-hidden bg-white p-2"
+		class="flex h-full w-full flex-shrink-0 flex-col overflow-hidden bg-white p-2"
 	>
 		<!-- Result Header -->
-		<div class="relative flex h-8 flex-shrink-0 items-center justify-between">
+		<div class="relative flex h-9 flex-shrink-0 items-center justify-between">
 			<div class="flex space-x-1">
 				<div class="text-sm tracking-wide text-gray-600">RESULT</div>
 				<div
 					v-if="executionTime"
-					class="flex items-center space-x-1 text-sm font-light text-gray-500"
+					class="flex items-center space-x-1 text-sm font-light text-gray-600"
 				>
-					<span class="text-sm text-gray-500">
+					<span class="text-sm text-gray-600">
 						({{ totalRows.toLocaleString() }} rows in {{ executionTime }}s)
 					</span>
 					<Tooltip
@@ -24,19 +24,19 @@
 					</Tooltip>
 				</div>
 			</div>
-			<LimitsAndOrder class="-mt-1" />
+			<LimitsAndOrder v-if="!query.doc.is_assisted_query" class="-mt-1" />
 		</div>
 		<!-- Result  -->
 		<div class="relative flex flex-1 overflow-hidden">
 			<!-- Empty State -->
 			<div
 				v-if="!needsExecution && formattedResult?.length === 0"
-				class="flex h-full w-full items-center justify-center rounded-md border-2 border-dashed border-gray-200 font-light text-gray-400"
+				class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-200 font-light text-gray-500"
 			>
 				<p>No results found</p>
 			</div>
 			<div v-else class="relative flex flex-1 select-text flex-col-reverse overflow-hidden">
-				<div class="flex-1 overflow-scroll rounded-md bg-gray-50 pt-0">
+				<div class="flex-1 overflow-scroll rounded bg-gray-50 pt-0">
 					<table class="border-separate border-spacing-0 text-sm">
 						<thead class="sticky top-0 text-gray-600">
 							<tr>
@@ -86,8 +86,8 @@
 						class="absolute left-0 top-0 flex h-full w-full items-center justify-center"
 					>
 						<Button
-							appearance="primary"
-							class="!shadow-md"
+							variant="solid"
+							class="!rounded bg-gray-900 text-gray-50 !shadow-md hover:bg-gray-800"
 							@click="query.debouncedRun()"
 							:loading="query.run.loading"
 							loadingText="Executing..."

@@ -43,15 +43,21 @@ class Aggregations:
             return func.avg(column)
         if agg_lower == "count" or agg_lower == "cumulative count":
             return func.count(text("*"))
+        if agg_lower == "distinct":
+            return distinct(column)
+        if agg_lower == "distinct_count":
+            return func.count(distinct(column))
 
         raise NotImplementedError(f"Aggregation {aggregation} not implemented")
 
 
 class ColumnFormatter:
     @classmethod
-    def format(cls, format_option: dict, column_type: str, column: Column) -> Column:
-        if format_option and column_type in ("Date", "Datetime"):
-            return cls.format_date(format_option.date_format, column)
+    def format(cls, format_options: dict, column_type: str, column: Column) -> Column:
+        if format_options and format_options.date_format and column_type in ("Date", "Datetime"):
+            date_format = format_options.date_format
+            date_format = date_format if type(date_format) == str else date_format.get("value")
+            return cls.format_date(date_format, column)
         return column
 
     @classmethod
@@ -100,15 +106,9 @@ class ColumnFormatter:
 
 def get_descendants(node, tree, include_self=False):
     Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
-    lft_rgt = (
-        select([Tree.c.lft, Tree.c.rgt]).where(Tree.c.name == node).alias("lft_rgt")
-    )
+    lft_rgt = select([Tree.c.lft, Tree.c.rgt]).where(Tree.c.name == node).alias("lft_rgt")
     return (
-        (
-            select([Tree.c.name])
-            .where(Tree.c.lft > lft_rgt.c.lft)
-            .where(Tree.c.rgt < lft_rgt.c.rgt)
-        )
+        (select([Tree.c.name]).where(Tree.c.lft > lft_rgt.c.lft).where(Tree.c.rgt < lft_rgt.c.rgt))
         if not include_self
         else (
             select([Tree.c.name])
@@ -220,9 +220,7 @@ class Functions:
         if function == "timespan":
             column = args[0]
             timespan = args[1].lower()  # "last 7 days"
-            timespan = (
-                timespan[:-1] if timespan.endswith("s") else timespan
-            )  # "last 7 day"
+            timespan = timespan[:-1] if timespan.endswith("s") else timespan  # "last 7 day"
 
             units = [
                 "day",
@@ -255,9 +253,7 @@ class Functions:
             ]
             unit = args[0].upper()
             if unit not in VALID_UNITS:
-                raise Exception(
-                    f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}"
-                )
+                raise Exception(f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}")
             return func.timestampdiff(text(unit), args[1], args[2])
 
         if function == "descendants":
@@ -281,9 +277,7 @@ class Functions:
             valid_units = ["day", "week", "month", "quarter", "year"]
             unit = args[0].lower()
             if unit not in valid_units:
-                raise Exception(
-                    f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}"
-                )
+                raise Exception(f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}")
             return ColumnFormatter.format_date(args[0].title(), args[1])
 
         raise NotImplementedError(f"Function {function} not implemented")
@@ -307,8 +301,7 @@ def get_current_date_range(unit):
 
 def get_fiscal_year_start_date():
     return getdate(
-        frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
-        or "1995-04-01"
+        frappe.db.get_single_value("Insights Settings", "fiscal_year_start") or "1995-04-01"
     )
 
 
@@ -316,9 +309,7 @@ def get_fy_start(date):
     fy_start = get_fiscal_year_start_date()
     dt = getdate(date)  # eg. 2019-01-01
     if dt.month < fy_start.month:
-        return getdate(
-            f"{dt.year - 1}-{fy_start.month}-{fy_start.day}"
-        )  # eg. 2018-04-01
+        return getdate(f"{dt.year - 1}-{fy_start.month}-{fy_start.day}")  # eg. 2018-04-01
     return getdate(f"{dt.year}-{fy_start.month}-{fy_start.day}")  # eg. 2019-04-01
 
 
@@ -341,9 +332,7 @@ def get_directional_date_range(direction, unit, number_of_unit):
         ]
     if unit == "week":
         dates = [
-            get_first_day_of_week(
-                add_to_date(today, days=direction * 7 * number_of_unit)
-            ),
+            get_first_day_of_week(add_to_date(today, days=direction * 7 * number_of_unit)),
             get_last_day_of_week(add_to_date(today, days=direction * 7)),
         ]
     if unit == "month":
@@ -353,9 +342,7 @@ def get_directional_date_range(direction, unit, number_of_unit):
         ]
     if unit == "quarter":
         dates = [
-            get_quarter_start(
-                add_to_date(today, months=direction * 3 * number_of_unit)
-            ),
+            get_quarter_start(add_to_date(today, months=direction * 3 * number_of_unit)),
             get_quarter_ending(add_to_date(today, months=direction * 3)),
         ]
     if unit == "year":
@@ -428,6 +415,14 @@ class BinaryOperations:
             return cls.LOGICAL_OPERATIONS[operator]
 
         raise NotImplementedError(f"Operation {operator} not implemented")
+
+    @classmethod
+    def is_binary_operator(cls, operator):
+        return (
+            operator in cls.ARITHMETIC_OPERATIONS
+            or operator in cls.COMPARE_OPERATIONS
+            or operator in cls.LOGICAL_OPERATIONS
+        )
 
 
 class ExpressionProcessor:
@@ -510,6 +505,8 @@ class SQLQueryBuilder:
 
         if query.is_native_query:
             return query.sql.strip().rstrip(";") if query.sql else ""
+        elif query.is_assisted_query:
+            return self.build_assisted_query()
         else:
             self.process_tables_and_joins()
             self.process_columns()
@@ -648,3 +645,112 @@ class SQLQueryBuilder:
             compile_args["dialect"] = self.dialect
         compiled = query.compile(**compile_args)
         return compiled
+
+    def build_assisted_query(self):
+        self._joins = []
+        self._filters = None
+        self._columns = []
+        self._measures = []
+        self._dimensions = []
+        self._order_by_columns = []
+        self._limit = None
+
+        assisted_query = self.query.variant_controller.query_json
+        if not assisted_query or not assisted_query.table:
+            return ""
+        main_table = assisted_query.table.table
+        main_table = self.make_table(main_table)
+
+        for join in assisted_query.joins:
+            if not join.left_table or not join.right_table:
+                continue
+            self._joins.append(
+                {
+                    "left": self.make_table(join.left_table.table),
+                    "right": self.make_table(join.right_table.table),
+                    "type": join.join_type.value,
+                    "left_key": self.make_column(join.left_column.column, join.left_table.table),
+                    "right_key": self.make_column(
+                        join.right_column.column, join.right_table.table
+                    ),
+                }
+            )
+
+        def make_sql_column(column):
+            _column = self.make_column(column.column, column.table)
+            if column.is_expression():
+                _column = self.expression_processor.process(column.expression.ast)
+
+            if column.is_aggregate():
+                _column = self.aggregations.apply(column.aggregation, _column)
+
+            if column.has_granularity():
+                _column = self.column_formatter.format_date(column.granularity, _column)
+            return _column.label(column.alias)
+
+        if assisted_query.filters:
+            filters = []
+            for fltr in assisted_query.filters:
+                _column = make_sql_column(fltr.column)
+                filter_value = fltr.value.value
+                operator = fltr.operator.value
+
+                if BinaryOperations.is_binary_operator(operator):
+                    operation = BinaryOperations.get_operation(operator)
+                    _filter = operation(_column, filter_value)
+                elif "set" in operator:  # is set, is not set
+                    _filter = Functions.apply(operator, _column)
+                else:
+                    args = [filter_value]
+                    if operator == "between":
+                        args = filter_value.split(",")
+                    elif operator == "in" or operator == "not_in":
+                        args = [val["value"] for val in filter_value]
+                    _filter = Functions.apply(operator, _column, *args)
+
+                filters.append(_filter)
+            self._filters = and_(*filters)
+
+        for column in assisted_query.columns:
+            self._columns.append(make_sql_column(column))
+
+        # don't select calculated columns
+        # since they are used as variables in measures, dimensions, filters, etc
+
+        for measure in assisted_query.measures:
+            self._measures.append(make_sql_column(measure))
+
+        for dimension in assisted_query.dimensions:
+            self._dimensions.append(make_sql_column(dimension))
+
+        for order in assisted_query.orders:
+            _column = make_sql_column(order)
+            self._order_by_columns.append(
+                _column.asc() if order.order == "asc" else _column.desc()
+            )
+
+        self._limit = assisted_query.limit or None
+
+        columns = self._columns + self._dimensions + self._measures
+        if not columns:
+            columns = [text("t0.*")]
+
+        query = select(*columns).select_from(main_table)
+        for join in self._joins:
+            query = query.join_from(
+                join["left"],
+                join["right"],
+                join["left_key"] == join["right_key"],
+                isouter=join["type"] != "inner",
+                full=join["type"] == "full",
+            )
+
+        if self._filters is not None:
+            query = query.where(self._filters)
+        if self._dimensions:
+            query = query.group_by(*self._dimensions)
+        if self._order_by_columns:
+            query = query.order_by(*self._order_by_columns)
+        query = query.limit(self._limit) if self._limit else query
+
+        return self.compile(query)

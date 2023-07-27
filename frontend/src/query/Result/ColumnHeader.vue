@@ -8,7 +8,7 @@
 			<div
 				v-if="queryColumn"
 				@click.prevent.stop="orderByColumn"
-				class="ml-4 cursor-pointer py-1 text-gray-500 hover:text-gray-800"
+				class="ml-4 cursor-pointer py-1 text-gray-600 hover:text-gray-800"
 			>
 				<FeatherIcon
 					v-if="queryColumn.order_by == 'asc'"

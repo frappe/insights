@@ -16,9 +16,7 @@
 			/>
 		</template>
 		<template #actions>
-			<Button appearance="primary" :disabled="!newTeam.team_name" @click="addTeam">
-				Add
-			</Button>
+			<Button variant="solid" :disabled="!newTeam.team_name" @click="addTeam"> Add </Button>
 			<Button @click="show = false">Cancel</Button>
 		</template>
 	</Dialog>

@@ -24,7 +24,7 @@
 			<Input
 				type="text"
 				v-model="simpleColumn.label"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>
@@ -57,7 +57,7 @@
 						value: 'desc',
 					},
 				]"
-				class="h-8 placeholder:text-sm"
+				class="placeholder:text-sm"
 				placeholder="Enter a label..."
 			/>
 		</div>
@@ -65,12 +65,12 @@
 			<Button
 				v-if="props.column.name"
 				class="text-red-500"
-				appearance="white"
+				variant="outline"
 				@click="removeMetric"
 			>
 				Remove
 			</Button>
-			<Button @click="addOrEditColumn" appearance="primary" :disabled="applyDisabled">
+			<Button @click="addOrEditColumn" variant="solid" :disabled="applyDisabled">
 				{{ props.column.name ? 'Update' : 'Add ' }}
 			</Button>
 		</div>

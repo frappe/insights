@@ -5,8 +5,8 @@
 				<h1 class="text-3xl font-medium text-gray-900">Teams</h1>
 				<div class="space-x-4">
 					<Button
-						appearance="white"
-						class="shadow-sm"
+						variant="outline"
+						class="shadow"
 						iconLeft="plus"
 						@click="showAddTeamDialog = true"
 						>Add Team</Button
@@ -19,13 +19,13 @@
 				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="text" placeholder="Team Name" />
 				</div>
-				<div class="flex flex-1 flex-col rounded-md border">
+				<div class="flex flex-1 flex-col rounded border">
 					<!-- List Header -->
 					<div
-						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b px-4 py-3 text-sm text-gray-600"
 					>
 						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-300" />
+							<Input type="checkbox" class="rounded border-gray-300" />
 						</p>
 						<p class="flex-1 flex-shrink-0">Team Name</p>
 						<p class="flex-1 flex-shrink-0">Members</p>
@@ -45,10 +45,10 @@
 							@click="teamToEdit = team.name"
 						>
 							<div
-								class="flex h-11 cursor-pointer items-center rounded-md px-4 hover:bg-gray-50"
+								class="flex h-11 cursor-pointer items-center rounded px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-300" />
+									<Input type="checkbox" class="rounded border-gray-300" />
 								</p>
 								<p
 									class="flex-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium text-gray-900"
@@ -56,7 +56,7 @@
 									{{ team.team_name }}
 								</p>
 								<p
-									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500"
+									class="flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600"
 								>
 									<Avatars
 										v-if="team.members.length > 0"
@@ -65,22 +65,22 @@
 									<span v-else> - </span>
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600 lg:inline-block"
 								>
 									{{ team.source_count }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600 lg:inline-block"
 								>
 									{{ team.table_count }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600 lg:inline-block"
 								>
 									{{ team.query_count }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600 lg:inline-block"
 								>
 									{{ team.dashboard_count }}
 								</p>

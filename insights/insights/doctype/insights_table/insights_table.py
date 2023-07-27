@@ -22,6 +22,8 @@ class InsightsTable(Document):
 
     @frappe.whitelist()
     def get_preview(self):
+        if self.is_query_based:
+            return []
         data_source = frappe.get_doc("Insights Data Source", self.data_source)
         return data_source.get_table_preview(self.table)
 

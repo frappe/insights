@@ -1,8 +1,8 @@
 <template>
-	<div class="relative flex flex-1 overflow-hidden rounded-md py-3">
+	<div class="relative flex flex-1 overflow-hidden rounded py-3">
 		<div
 			v-if="props.rows.length == 0"
-			class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-500"
+			class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-600"
 		>
 			<span>No Data</span>
 		</div>

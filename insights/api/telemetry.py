@@ -1,7 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import os
+from contextlib import suppress
 
 import frappe
 from frappe.utils.data import date_diff
@@ -38,10 +38,10 @@ def track(event):
 
 @frappe.whitelist()
 def track_active_site():
-    if frappe.conf.developer_mode:
+    if frappe.conf.developer_mode or not should_track_active_status():
         return
 
-    if should_track_active_status():
+    with suppress(Exception):
         ph = Posthog(
             "phc_PxMKOBaHDGJApbZkYqSVro6YSecTYgQ6tB4BAV2nYmd",
             host="https://posthog.frappe.cloud",

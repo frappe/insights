@@ -1,36 +1,34 @@
 <template>
-	<div v-if="chart.doc" class="flex flex-1 overflow-scroll p-2 pt-3">
-		<div class="flex w-full flex-shrink-0 flex-col lg:h-full lg:w-[18rem] lg:pr-4">
-			<div class="space-y-4">
-				<!-- Widget Options -->
-				<Input
-					type="select"
-					label="Chart Type"
-					class="w-full"
-					v-model="chart.doc.chart_type"
-					:options="chartOptions"
-				/>
+	<div v-if="chart.doc" class="flex flex-1 p-2 pt-3">
+		<div
+			class="flex w-full flex-shrink-0 flex-col space-y-4 overflow-y-scroll lg:h-full lg:w-[18rem] lg:pr-4"
+		>
+			<!-- Widget Options -->
+			<Input
+				type="select"
+				label="Chart Type"
+				class="w-full"
+				v-model="chart.doc.chart_type"
+				:options="chartOptions"
+			/>
 
-				<component
-					v-if="chart.doc.chart_type"
-					:is="widgets.getOptionComponent(chart.doc.chart_type)"
-					:key="chart.doc.chart_type"
-					v-model="chart.doc.options"
-					:columns="query.resultColumns"
-				/>
-			</div>
+			<component
+				v-if="chart.doc.chart_type"
+				:is="widgets.getOptionComponent(chart.doc.chart_type)"
+				:key="chart.doc.chart_type"
+				v-model="chart.doc.options"
+				:columns="query.resultColumns"
+			/>
 		</div>
 
 		<div
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
 			<div class="ml-4 flex space-x-2">
-				<Button appearance="white" class="shadow-sm" @click="showDashboardDialog = true">
+				<Button variant="outline" @click="showDashboardDialog = true">
 					Add to Dashboard
 				</Button>
-				<Button appearance="white" class="shadow-sm" @click="showShareDialog = true">
-					Share
-				</Button>
+				<Button variant="outline" @click="showShareDialog = true"> Share </Button>
 			</div>
 			<component
 				v-if="chart.doc.chart_type"
@@ -46,7 +44,7 @@
 						title="Insufficient options"
 						message="Please check the options for this chart"
 						icon="settings"
-						icon-class="text-gray-400"
+						icon-class="text-gray-500"
 					/>
 				</template>
 			</component>
@@ -65,7 +63,7 @@
 		<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">
 			<template #body-content>
 				<div class="text-base">
-					<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
+					<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard</span>
 					<Autocomplete
 						ref="dashboardInput"
 						:options="dashboardOptions"
@@ -74,11 +72,7 @@
 				</div>
 			</template>
 			<template #actions>
-				<Button
-					appearance="primary"
-					@click="addChartToDashboard"
-					:loading="addingToDashboard"
-				>
+				<Button variant="solid" @click="addChartToDashboard" :loading="addingToDashboard">
 					Add
 				</Button>
 			</template>
@@ -91,7 +85,6 @@ import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import useDashboards from '@/dashboard/useDashboards'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
-import { call } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import useChart from './useChart'
 
@@ -107,7 +100,7 @@ const chartOptions = [
 let chart = ref({})
 query.get_chart_name.submit().then((res) => {
 	chart.value = useChart(res.message)
-	chart.value.autosave = true
+	chart.value.enableAutoSave()
 })
 
 const showDashboardDialog = ref(false)
@@ -125,19 +118,11 @@ const dashboardOptions = computed(() => {
 })
 const $notify = inject('$notify')
 const addChartToDashboard = async () => {
-	if (!toDashboard.value) {
-		return
-	}
-
-	addingToDashboard.value = true
-	await call('insights.api.add_chart_to_dashboard', {
-		dashboard: toDashboard.value.value,
-		chart: chart.value.doc.name,
-	})
-	addingToDashboard.value = false
+	if (!toDashboard.value) return
+	await chart.value.addToDashboard(toDashboard.value.value)
 	showDashboardDialog.value = false
 	$notify({
-		appearance: 'success',
+		variant: 'success',
 		title: 'Success',
 		message: 'Chart added to dashboard',
 	})

@@ -2,21 +2,12 @@
 	<teleport to="#frappeui-toast-root">
 		<transition :name="position.includes('top') ? 'toast-top' : 'toast-bottom'">
 			<div v-if="shown" :class="['pointer-events-auto m-2 transition duration-200 ease-out']">
-				<div
-					:class="[
-						'w-[24rem] max-w-xl rounded-lg border border-gray-100 bg-white p-3 shadow',
-						appearanceClasses,
-					]"
-				>
+				<div :class="['w-[24rem] max-w-xl rounded bg-white p-3 shadow', variantClasses]">
 					<div class="flex items-start">
-						<div v-if="icon || appearanceIcon" class="mr-2">
+						<div v-if="icon || variantIcon" class="mr-2">
 							<FeatherIcon
-								:name="icon || appearanceIcon"
-								:class="[
-									'h-5 w-5 rounded-full',
-									appearanceIconClasses,
-									iconClasses,
-								]"
+								:name="icon || variantIcon"
+								:class="['h-5 w-5 rounded-full', variantIconClasses, iconClasses]"
 							/>
 						</div>
 						<div>
@@ -25,7 +16,8 @@
 									{{ title }}
 								</p>
 								<p v-if="message" class="mt-1 text-base text-gray-600">
-									{{ message }}
+									<span v-if="containsHTML" v-html="message"></span>
+									<span v-else>{{ message }}</span>
 								</p>
 							</slot>
 						</div>
@@ -48,7 +40,7 @@
 <script>
 import { FeatherIcon } from 'frappe-ui'
 const positions = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
-const appearance = ['success', 'info', 'warning', 'error']
+const variant = ['success', 'info', 'warning', 'error']
 
 export default {
 	name: 'Toast',
@@ -69,7 +61,7 @@ export default {
 		message: {
 			type: String,
 		},
-		appearance: {
+		variant: {
 			type: String,
 			default: 'info',
 		},
@@ -114,6 +106,9 @@ export default {
 		}
 	},
 	computed: {
+		containsHTML() {
+			return this.message?.includes('<')
+		},
 		transitionProps() {
 			let props = {
 				enterActiveClass: 'transition duration-200 ease-out',
@@ -131,46 +126,46 @@ export default {
 			}
 			return props
 		},
-		appearanceClasses() {
-			if (this.appearance === 'success') {
+		variantClasses() {
+			if (this.variant === 'success') {
 				return 'bg-green-50'
 			}
-			if (this.appearance === 'info') {
+			if (this.variant === 'info') {
 				return 'bg-blue-50'
 			}
-			if (this.appearance === 'warning') {
+			if (this.variant === 'warning') {
 				return 'bg-orange-50'
 			}
-			if (this.appearance === 'error') {
+			if (this.variant === 'error') {
 				return 'bg-red-50'
 			}
 		},
-		appearanceIcon() {
-			if (this.appearance === 'success') {
+		variantIcon() {
+			if (this.variant === 'success') {
 				return 'check'
 			}
-			if (this.appearance === 'info') {
+			if (this.variant === 'info') {
 				return 'info'
 			}
-			if (this.appearance === 'warning') {
+			if (this.variant === 'warning') {
 				return 'alert-circle'
 			}
-			if (this.appearance === 'error') {
+			if (this.variant === 'error') {
 				return 'x'
 			}
 		},
-		appearanceIconClasses() {
-			if (this.appearance === 'success') {
-				return 'text-white bg-green-400 p-0.5'
+		variantIconClasses() {
+			if (this.variant === 'success') {
+				return 'text-white bg-green-600 p-0.5'
 			}
-			if (this.appearance === 'info') {
-				return 'text-white bg-blue-400'
+			if (this.variant === 'info') {
+				return 'text-white bg-blue-600'
 			}
-			if (this.appearance === 'warning') {
-				return 'text-white bg-orange-400'
+			if (this.variant === 'warning') {
+				return 'text-white bg-orange-600'
 			}
-			if (this.appearance === 'error') {
-				return 'text-white bg-red-400 p-0.5'
+			if (this.variant === 'error') {
+				return 'text-white bg-red-600 p-0.5'
 			}
 		},
 	},

@@ -1,51 +1,26 @@
 <script setup>
-import BaseLayout from '@/layouts/BaseLayout.vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import Query from '@/query/Query.vue'
-import QueryBuilderToolbar from '@/query/QueryBuilderToolbar.vue'
-import QueryListCompact from '@/query/QueryListCompact.vue'
-import useQueryBuilder from '@/query/useQueryBuilder'
-import { updateDocumentTitle } from '@/utils'
-import { provide, ref } from 'vue'
-
-const props = defineProps({ name: { type: String } })
-const queryBuilder = useQueryBuilder()
-if (props.name) queryBuilder.openQuery(props.name)
-provide('queryBuilder', queryBuilder)
-
-const pageMeta = ref({ title: 'Query Builder' })
-updateDocumentTitle(pageMeta)
+const props = defineProps({ name: String })
 </script>
 
 <template>
-	<BaseLayout>
-		<template #navbar>
-			<div class="relative flex w-full flex-shrink-0 items-center space-x-4">
-				<p class="px-1 text-xl font-medium">Query Builder</p>
-			</div>
-		</template>
-
-		<template #content>
-			<div
-				v-if="!queryBuilder.queries.length"
-				class="flex w-full flex-1 items-center justify-center"
-			>
-				<QueryListCompact @select="(name) => queryBuilder.openQuery(name)" />
-			</div>
-
-			<div v-else class="flex w-full flex-1 flex-col overflow-hidden p-3">
-				<QueryBuilderToolbar />
-				<div
-					class="flex w-full flex-1 overflow-hidden rounded-b-md rounded-r-md border bg-white p-2 shadow-sm"
-				>
-					<Query v-if="queryBuilder.currentQuery" :key="queryBuilder.currentQuery.name" />
-				</div>
-			</div>
-		</template>
-	</BaseLayout>
-
-	<Dialog v-model="queryBuilder.showNewDialog">
-		<template #body>
-			<QueryListCompact @select="(name) => queryBuilder.openQuery(name)" />
-		</template>
-	</Dialog>
+	<div class="flex h-full w-full flex-col overflow-hidden bg-white px-6 py-4">
+		<Breadcrumbs
+			:items="[
+				{
+					label: 'Query',
+					href: '/query',
+				},
+				{
+					label: props.name,
+					href: `/query/build/${props.name}`,
+				},
+			]"
+		>
+		</Breadcrumbs>
+		<div class="-mx-1 flex w-full flex-1 flex-col overflow-hidden py-3">
+			<Query :name="props.name" />
+		</div>
+	</div>
 </template>

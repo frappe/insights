@@ -8,7 +8,7 @@
 				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
 				<Button icon="plus" @click="addingTable = true"></Button>
 			</div>
-			<div v-if="addingTable" class="flex w-full flex-shrink-0 space-x-2 pt-1 pb-3">
+			<div v-if="addingTable" class="flex w-full flex-shrink-0 space-x-2 pb-3 pt-1">
 				<div class="flex-1">
 					<Autocomplete
 						ref="tableSearch"
@@ -22,7 +22,7 @@
 			</div>
 			<div
 				v-if="query.tables.data?.length == 0"
-				class="flex flex-1 items-center justify-center rounded-md border-2 border-dashed border-gray-200 text-sm font-light text-gray-400"
+				class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-500"
 			>
 				<p>No tables selected</p>
 			</div>
@@ -34,13 +34,13 @@
 					class="flex h-10 w-full cursor-pointer items-center border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
 					@click.prevent.stop="selectedTable = table"
 				>
-					<FeatherIcon name="layout" class="mr-2 h-[14px] w-[14px] text-gray-500" />
+					<FeatherIcon name="layout" class="mr-2 h-[14px] w-[14px] text-gray-600" />
 					<span
 						class="overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"
 					>
 						{{ table.label }}
 					</span>
-					<span v-if="table.join" class="ml-2 text-gray-500">
+					<span v-if="table.join" class="ml-2 text-gray-600">
 						<JoinLeftIcon v-if="table.join.type.value == 'left'" />
 						<JoinRightIcon v-if="table.join.type.value == 'right'" />
 						<JoinInnerIcon v-if="table.join.type.value == 'inner'" />
@@ -53,12 +53,12 @@
 						{{ table.join.with.label }}
 					</span>
 					<span
-						class="ml-auto mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-light text-gray-500"
+						class="ml-auto mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-light text-gray-600"
 					>
 						{{ query.doc.data_source }}
 					</span>
 					<div
-						class="flex items-center px-1 py-0.5 text-gray-500 hover:text-gray-600"
+						class="flex items-center px-1 py-0.5 text-gray-600 hover:text-gray-600"
 						@click.prevent.stop="removeTable(table)"
 					>
 						<FeatherIcon name="x" class="h-3 w-3" />

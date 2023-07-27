@@ -173,7 +173,7 @@ function testSendAlert() {
 							v-model="alert.condition.advanceCondition"
 							placeholder="Write a python expression..."
 						/>
-						<p class="font-code mt-1 text-sm text-gray-500">
+						<p class="font-code mt-1 text-sm text-gray-600">
 							Example: results["Count of Records"][0] > 100
 						</p>
 					</div>
@@ -199,7 +199,7 @@ Please order more.
 Thanks,
 						`"
 					/>
-					<p class="mt-2 text-sm text-gray-500">
+					<p class="mt-2 text-sm text-gray-600">
 						You can use all the fields from the query like
 						<span class="font-code px-1"> title, data_source </span>
 						etc. like this
@@ -210,9 +210,10 @@ Thanks,
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="createAlertDisabled"
 				:loading="createAlertResource.loading"
+				class="mr-2"
 				@click="createAlert"
 			>
 				Create

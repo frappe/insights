@@ -7,7 +7,7 @@ import { webserver_port } from '../../../sites/common_site_config.json'
 
 export default defineConfig({
 	plugins: [vue(), vueJsx()],
-	esbuild: { loader: 'jsx' },
+	esbuild: { loader: 'tsx' },
 	server: {
 		port: 8080,
 		proxy: getProxyOptions({ port: webserver_port }),

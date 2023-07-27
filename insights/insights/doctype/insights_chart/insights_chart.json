@@ -21,8 +21,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Query",
-   "options": "Insights Query",
-   "reqd": 1
+   "options": "Insights Query"
   },
   {
    "default": "{}",
@@ -60,7 +59,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-05 21:25:01.131103",
+ "modified": "2023-05-13 12:11:47.615480",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart",
@@ -75,6 +74,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
    "share": 1,
    "write": 1
   }

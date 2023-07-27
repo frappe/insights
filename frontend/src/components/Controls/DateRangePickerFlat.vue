@@ -2,7 +2,7 @@
 	<div class="select-none space-y-3 bg-white p-1 text-base">
 		<div class="flex items-center text-gray-700">
 			<div
-				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-gray-100"
 			>
 				<FeatherIcon @click="prevMonth" name="chevron-left" class="h-5 w-5" />
 			</div>
@@ -10,7 +10,7 @@
 				{{ formatMonth }}
 			</div>
 			<div
-				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md hover:bg-gray-100"
+				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-gray-100"
 			>
 				<FeatherIcon @click="nextMonth" name="chevron-right" class="h-5 w-5" />
 			</div>
@@ -36,7 +36,7 @@
 						:key="toValue(date)"
 						class="flex h-[32px] w-[32px] cursor-pointer items-center justify-center hover:bg-blue-50 hover:text-blue-500"
 						:class="{
-							'text-gray-500': date.getMonth() !== currentMonth - 1,
+							'text-gray-600': date.getMonth() !== currentMonth - 1,
 							'text-blue-500': toValue(date) === toValue(today),
 							'bg-blue-50 text-blue-500': isInRange(date),
 							'rounded-l-md bg-blue-100':
@@ -53,7 +53,7 @@
 
 		<div class="mt-1 flex w-full justify-end space-x-2">
 			<Button @click="() => clearDates()" :disabled="!value"> Clear </Button>
-			<Button @click="selectDates()" :disabled="!fromDate || !toDate" appearance="primary">
+			<Button @click="selectDates()" :disabled="!fromDate || !toDate" variant="solid">
 				Apply
 			</Button>
 		</div>

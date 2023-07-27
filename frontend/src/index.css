@@ -27,11 +27,11 @@
 	border-radius: 0.375rem;
 	padding: 0.5rem;
 	user-select: text;
-	@apply !bg-gray-100;
+	@apply bg-gray-100;
 }
 
 .cm-placeholder {
-	@apply !text-gray-500;
+	@apply !text-gray-600;
 }
 .cm-content {
 	padding: 0px !important;
@@ -42,7 +42,7 @@
 .cm-scroller {
 	font-family: 'Fira Code' !important;
 	line-height: 1.5rem !important;
-	@apply !text-gray-500
+	@apply !text-gray-600
 }
 .cm-matchingBracket {
 	font-weight: 500 !important;
@@ -102,4 +102,14 @@
 		height: 12px;
 	}
 
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.1s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }

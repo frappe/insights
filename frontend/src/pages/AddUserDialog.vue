@@ -43,7 +43,7 @@
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="!newUser.first_name || !newUser.last_name || !newUser.email"
 				@click="addUser"
 			>

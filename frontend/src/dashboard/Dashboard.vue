@@ -116,9 +116,9 @@ updateDocumentTitle(pageMeta)
 
 				<div v-else class="space-y-4">
 					<!-- Widget Options -->
-					<div class="flex items-center text-lg font-medium text-gray-400">
+					<div class="flex items-center text-lg font-medium text-gray-500">
 						<Button
-							appearance="white"
+							variant="outline"
 							icon="arrow-left"
 							@click="dashboard.currentItem = undefined"
 						></Button>
@@ -152,7 +152,7 @@ updateDocumentTitle(pageMeta)
 
 					<Button
 						iconLeft="trash"
-						appearance="white"
+						variant="outline"
 						class="ml-auto text-red-500"
 						@click="dashboard.removeItem(dashboard.currentItem)"
 					>

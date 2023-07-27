@@ -17,7 +17,7 @@
 				:h="layout.h"
 			>
 				<slot name="item" :item="props.items[index]">
-					<pre class="h-full w-full rounded-md bg-white p-4 shadow">
+					<pre class="h-full w-full rounded bg-white p-4 shadow">
 
 						{{ { i: layout.i, x: layout.x, y: layout.y, w: layout.w, h: layout.h } }}
 

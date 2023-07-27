@@ -21,10 +21,6 @@ def wrap_up(args):
     set_user_as_insights_admin(args)
     login_as_first_user(args)
 
-    settings = frappe.get_single("Insights Settings")
-    settings.setup_complete = 1
-    settings.save()
-
 
 def set_user_as_insights_admin(args):
     # if developer mode is enabled, first user step is skipped, hence no user is created

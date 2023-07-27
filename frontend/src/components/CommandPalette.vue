@@ -4,9 +4,9 @@
 			v-show="show"
 			class="absolute z-10 flex h-full w-full justify-center bg-gray-50/60 pt-20 text-base backdrop-blur-sm backdrop-grayscale"
 		>
-			<div class="max-h-[28rem] w-[38rem] rounded-md border bg-white shadow-md">
+			<div class="max-h-[28rem] w-[38rem] rounded border bg-white shadow-md">
 				<div class="flex items-center border-b px-3">
-					<FeatherIcon name="search" class="absolute h-4 w-4 text-gray-500" />
+					<FeatherIcon name="search" class="absolute h-4 w-4 text-gray-600" />
 					<input
 						ref="searchInput"
 						v-model="searchTerm"
@@ -16,7 +16,7 @@
 				</div>
 				<div class="mt-2 flex flex-col px-2">
 					<div v-if="commands.length > 0">
-						<div class="text-sm text-gray-500">Navigation</div>
+						<div class="text-sm text-gray-600">Navigation</div>
 						<div
 							v-for="(command, idx) in commands"
 							class="-mx-2 flex h-10 cursor-pointer items-center space-x-2 px-2"
@@ -31,17 +31,17 @@
 						>
 							<FeatherIcon
 								:name="command.icon || 'arrow-right'"
-								class="h-4 w-4 text-gray-500"
+								class="h-4 w-4 text-gray-600"
 							/>
 							<div class="flex items-baseline">
 								<span>{{ command.title }}</span>
-								<span class="ml-2 text-sm text-gray-500">
+								<span class="ml-2 text-sm text-gray-600">
 									{{ command.description }}
 								</span>
 							</div>
 						</div>
 					</div>
-					<div v-else class="text-sm text-gray-500">No results found</div>
+					<div v-else class="text-sm text-gray-600">No results found</div>
 				</div>
 			</div>
 		</div>

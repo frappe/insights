@@ -51,7 +51,7 @@ async function submit() {
 	$notify({
 		title: 'Message Sent',
 		message: 'Your message has been sent to the team.',
-		appearance: 'success',
+		variant: 'success',
 	})
 }
 </script>
@@ -61,23 +61,23 @@ async function submit() {
 		<template #body-content>
 			<div class="flex w-full flex-col space-y-4 text-base">
 				<div
-					class="flex w-full cursor-pointer items-center space-x-2 rounded-lg bg-gray-100 p-1.5"
+					class="flex w-full cursor-pointer items-center space-x-2 rounded bg-gray-100 p-1.5"
 				>
 					<div
 						v-for="(tab, index) in tabs"
 						class="flex h-full flex-1 items-center justify-between bg-transparent px-3 py-1.5 transition-all"
-						:class="[selectedTabIndex === index ? 'rounded-md bg-white shadow' : '']"
+						:class="[selectedTabIndex === index ? 'rounded bg-white shadow' : '']"
 						@click="selectedTabIndex = index"
 					>
 						<div class="flex flex-col">
 							<p>{{ tab.label }}</p>
-							<p class="text-xs text-gray-500">{{ tab.description }}</p>
+							<p class="text-xs text-gray-600">{{ tab.description }}</p>
 						</div>
-						<FeatherIcon :name="tab.iconName" class="h-5 w-5 text-gray-400" />
+						<FeatherIcon :name="tab.iconName" class="h-5 w-5 text-gray-500" />
 					</div>
 				</div>
 
-				<div class="flex h-[20rem] flex-col rounded-lg border px-4 py-2 shadow">
+				<div class="flex h-[20rem] flex-col rounded border px-4 py-2 shadow">
 					<TextEditor
 						:key="selectedTabIndex"
 						editor-class="flex flex-1 prose-sm flex flex-col justify-end"
@@ -87,7 +87,7 @@ async function submit() {
 						@change="content = $event"
 					/>
 				</div>
-				<span class="!mt-2 text-sm text-gray-500">
+				<span class="!mt-2 text-sm text-gray-600">
 					You can use markdown syntax to format your message. You can also drag and drop
 					images to upload them.
 				</span>
@@ -99,7 +99,7 @@ async function submit() {
 						v-model="isCritical"
 					/>
 					<Button
-						appearance="primary"
+						variant="solid"
 						:label="selectedTabIndex === 2 ? 'Report Bug' : 'Send'"
 						@click="submit"
 					/>

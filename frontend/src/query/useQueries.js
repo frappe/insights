@@ -1,20 +1,15 @@
-import { safeJSONParse } from '@/utils'
-import { API_METHODS } from '@/utils/query'
-import { call, createDocumentResource, createResource } from 'frappe-ui'
-import { defineStore } from 'pinia'
 import dayjs from '@/utils/dayjs'
+import { call, createResource } from 'frappe-ui'
+import { defineStore } from 'pinia'
 
 const queries = createResource({
 	url: 'insights.api.get_queries',
 	initialData: [],
 	cache: 'queriesList',
 	transform(data) {
-		return data.map((source) => {
-			source.created_from_now = dayjs(source.creation).fromNow()
-			Object.keys(source).forEach((key) => {
-				if (!source[key]) source[key] = '-'
-			})
-			return source
+		return data.map((qry) => {
+			qry.created_from_now = dayjs(qry.creation).fromNow()
+			return qry
 		})
 	},
 })
@@ -32,11 +27,25 @@ export default defineStore('queries', {
 			this.list = await queries.fetch()
 			this.loading = false
 		},
-		async create(data_source, title) {
+		async create(query) {
 			this.creating = true
-			const queryName = await call('insights.api.create_query', { data_source, title })
+			const queryDoc = await call('insights.api.create_query', query)
+			await this.reload()
 			this.creating = false
-			return queryName
+			return queryDoc
+		},
+		async get(name) {
+			if (!name) return
+			const existingQuery = this.list.find((q) => q.name === name)
+			if (existingQuery) return existingQuery
+			await this.reload()
+			return this.list.find((q) => q.name === name)
+		},
+		async delete(name) {
+			this.deleting = true
+			await call('frappe.client.delete', { doctype: 'Insights Query', name })
+			await this.reload()
+			this.deleting = false
 		},
 		filterByText(text) {
 			if (!text) return this.list
@@ -50,23 +59,3 @@ export default defineStore('queries', {
 		},
 	},
 })
-
-export function useQuery(name) {
-	if (!name) return
-	const query = createDocumentResource({
-		doctype: 'Insights Query',
-		name: name,
-		whitelistedMethods: API_METHODS,
-		transform(doc) {
-			doc.columns = doc.columns.map((c) => {
-				c.format_option = safeJSONParse(c.format_option, {})
-				return c
-			})
-			doc.results = safeJSONParse(doc.results, [])
-			query.resultColumns = doc.results[0]
-			return doc
-		},
-	})
-	query.get.fetch()
-	return query
-}

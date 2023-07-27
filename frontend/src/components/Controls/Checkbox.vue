@@ -1,7 +1,7 @@
 <template>
 	<SwitchGroup v-bind="$attrs">
 		<div class="flex items-center justify-between">
-			<SwitchLabel class="mr-4 text-gray-500">{{ $props.label }}</SwitchLabel>
+			<SwitchLabel class="mr-4 text-gray-600">{{ $props.label }}</SwitchLabel>
 			<Switch
 				v-model="enabled"
 				:class="enabled ? 'bg-blue-600' : 'bg-gray-200'"

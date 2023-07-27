@@ -110,7 +110,7 @@ function resetPosition() {
 		@drop.prevent="drop"
 	>
 		<div
-			class="ghost-element absolute rounded-md bg-gray-200/60 transition-all duration-75 ease-out"
+			class="ghost-element absolute rounded bg-gray-200/60 transition-all duration-75 ease-out"
 			:class="[props.showCollision && state.collides ? 'bg-red-200/60' : '']"
 			:style="{
 				opacity: state.isDragging ? 1 : 0,

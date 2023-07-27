@@ -1,15 +1,23 @@
 <script setup lang="jsx">
-import List from '@/components/List.vue'
+import ListView from '@/components/ListView.vue'
+import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import useDataSources from '@/datasource/useDataSources'
+import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
+import { Badge } from 'frappe-ui'
 import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import useQueries from './useQueries'
 
 const queries = useQueries()
 queries.reload()
 
 const new_dialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	new_dialog.value = true
+}
+
 const router = useRouter()
 const sources = useDataSources()
 sources.reload()
@@ -24,14 +32,17 @@ const createDisabled = computed(
 )
 const createQuery = async () => {
 	const { dataSource, title } = newQuery.value
-	const name = await queries.create(dataSource, title)
+	const name = await queries.create({
+		data_source: dataSource,
+		title,
+	})
 	newQuery.value = { dataSource: '', title: '' }
 	await nextTick()
-	router.push({ name: 'QueryBuilder', params: { name } })
+	router.push({ name: 'Query', params: { name } })
 }
 
 const StatusCell = (props) => (
-	<Badge color={props.row.status == 'Pending Execution' ? 'yellow' : 'green'}>
+	<Badge theme={props.row.status == 'Pending Execution' ? 'orange' : 'green'}>
 		{props.row.status}
 	</Badge>
 )
@@ -46,53 +57,83 @@ const columns = [
 
 const pageMeta = ref({ title: 'Queries' })
 updateDocumentTitle(pageMeta)
+
+const notebooks = useNotebooks()
+notebooks.reload()
+async function openQueryEditor(type) {
+	if (type === 'notebook') {
+		const uncategorized = notebooks.list.find((notebook) => notebook.title === 'Uncategorized')
+		const page_name = await notebooks.createPage(uncategorized.name)
+		return router.push({
+			name: 'NotebookPage',
+			params: {
+				notebook: uncategorized.name,
+				name: page_name,
+			},
+		})
+	}
+	const new_query = {}
+	if (type === 'visual') new_query.is_assisted_query = 1
+	if (type === 'classic') new_query.is_assisted_query = 0
+	if (type === 'sql') new_query.is_native_query = 1
+	const query = await queries.create(new_query)
+	router.push({
+		name: 'Query',
+		params: { name: query.name },
+	})
+}
+
+const queryBuilderTypes = ref([
+	{
+		label: 'Notebook',
+		description: 'Create a query using the notebook interface',
+		icon: 'book',
+		tag: 'beta',
+		onClick: () => openQueryEditor('notebook'),
+	},
+	{
+		label: 'Visual',
+		description: 'Create a query using the visual interface',
+		icon: 'box',
+		onClick: () => openQueryEditor('visual'),
+	},
+	{
+		label: 'Classic',
+		description: 'Create a query using the classic interface',
+		icon: 'layout',
+		onClick: () => openQueryEditor('classic'),
+	},
+	{
+		label: 'SQL',
+		description: 'Create a query using SQL',
+		icon: 'code',
+		onClick: () => openQueryEditor('sql'),
+	},
+])
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-8 py-4">
-		<List
+	<div class="h-full w-full bg-white px-6 py-4">
+		<ListView
 			title="Queries"
 			:actions="[
 				{
 					label: 'New Query',
-					appearance: 'white',
+					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_dialog = true),
+					onClick: () => (new_dialog = true),
 				},
 			]"
 			:columns="columns"
 			:data="queries.list"
-			:rowClick="({ name }) => router.push({ name: 'QueryBuilder', params: { name } })"
+			:rowClick="({ name }) => router.push({ name: 'Query', params: { name } })"
 		>
-		</List>
+		</ListView>
 	</div>
 
-	<Dialog :options="{ title: 'New Query' }" v-model="new_dialog">
-		<template #body-content>
-			<div class="space-y-4">
-				<Input
-					type="select"
-					label="Data Source"
-					v-model="newQuery.dataSource"
-					:options="dataSourceOptions"
-				/>
-				<Input
-					type="text"
-					label="Title"
-					v-model="newQuery.title"
-					placeholder="Enter a suitable title..."
-				/>
-			</div>
-		</template>
-		<template #actions>
-			<Button
-				appearance="primary"
-				@click="createQuery"
-				:disabled="createDisabled"
-				:loading="queries.creating"
-			>
-				Create
-			</Button>
-		</template>
-	</Dialog>
+	<NewDialogWithTypes
+		v-model:show="new_dialog"
+		title="Select Interface Type"
+		:types="queryBuilderTypes"
+	/>
 </template>

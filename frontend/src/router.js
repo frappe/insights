@@ -1,13 +1,17 @@
-import auth from '@/utils/auth'
-import { getOnboardingStatus } from '@/utils/onboarding'
-import settings from '@/utils/settings'
 import { getTrialStatus } from '@/subscription'
+import auth from '@/utils/auth'
+import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
+import { isSetupComplete } from '@/setup'
 
 const routes = [
 	{
 		path: '/setup',
-		redirect: '/',
+		name: 'Setup',
+		component: () => import('@/setup/Setup.vue'),
+		meta: {
+			hideSidebar: true,
+		},
 	},
 	{
 		path: '/login',
@@ -20,12 +24,8 @@ const routes = [
 	},
 	{
 		path: '/',
-		redirect: '/get-started',
-	},
-	{
-		path: '/get-started',
-		name: 'Get Started',
-		component: () => import('@/pages/GetStarted.vue'),
+		name: 'Home',
+		component: () => import('@/home/Home.vue'),
 	},
 	{
 		path: '/dashboard',
@@ -61,19 +61,19 @@ const routes = [
 	{
 		path: '/data-source',
 		name: 'DataSourceList',
-		component: () => import('@/pages/DataSourceList.vue'),
+		component: () => import('@/datasource/DataSourceList.vue'),
 	},
 	{
 		props: true,
 		name: 'DataSource',
 		path: '/data-source/:name',
-		component: () => import('@/pages/DataSource.vue'),
+		component: () => import('@/datasource/DataSource.vue'),
 	},
 	{
 		props: true,
 		name: 'DataSourceTable',
 		path: '/data-source/:name/:table',
-		component: () => import('@/pages/DataSourceTable.vue'),
+		component: () => import('@/datasource/DataSourceTable.vue'),
 	},
 	{
 		path: '/query',
@@ -82,8 +82,8 @@ const routes = [
 	},
 	{
 		props: true,
-		name: 'QueryBuilder',
-		path: '/query/build/:name?',
+		name: 'Query',
+		path: '/query/build/:name',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
 	{
@@ -101,6 +101,23 @@ const routes = [
 		meta: {
 			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
 		},
+	},
+	{
+		path: '/notebook',
+		name: 'NotebookList',
+		component: () => import('@/notebook/NotebookList.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:notebook',
+		name: 'Notebook',
+		component: () => import('@/notebook/Notebook.vue'),
+	},
+	{
+		props: true,
+		path: '/notebook/:notebook/:name',
+		name: 'NotebookPage',
+		component: () => import('@/notebook/NotebookPage.vue'),
 	},
 	{
 		path: '/settings',
@@ -139,11 +156,12 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	if (!auth.isLoggedIn && to.name !== 'Login' && to.meta.allowGuest) {
+	if (to.meta.allowGuest && !auth.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
 		return next()
 	}
 
+	// route to login page if not logged in
 	if (!auth.isLoggedIn) {
 		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
@@ -169,16 +187,23 @@ router.beforeEach(async (to, from, next) => {
 		return next('/no-permission')
 	}
 
-	// redirect to /dashboard if onboarding is complete
-	const onboardingComplete = await getOnboardingStatus()
-	if (onboardingComplete && to.name == 'Get Started') {
-		return next('/dashboard')
+	// redirect to /setup if setup is not complete
+	const setupComplete = await isSetupComplete()
+	if (!setupComplete && to.name !== 'Setup') {
+		return next('/setup')
+	}
+	// redirect to / if setup is complete and user is on /setup
+	if (setupComplete && to.name === 'Setup') {
+		return next('/')
 	}
 
-	if (to.path === '/login') {
-		next('/')
-	} else {
-		next()
+	to.path === '/login' ? next('/') : next()
+})
+
+router.afterEach((to, from) => {
+	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
+	if (TRACKED_RECORDS.includes(to.name) && to.name !== from.name) {
+		auth.createViewLog(to.name, to.params.name)
 	}
 })
 
