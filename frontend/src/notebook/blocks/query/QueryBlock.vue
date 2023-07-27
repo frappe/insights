@@ -1,4 +1,6 @@
 <script setup>
+import useDataSources from '@/datasource/useDataSources'
+import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import useQueries from '@/query/useQueries'
 import { copyToClipboard } from '@/utils'
 import { computed, inject, provide, reactive, ref } from 'vue'
@@ -56,6 +58,19 @@ const show_sql_dialog = ref(false)
 const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
 })
+
+const sources = useDataSources()
+sources.reload()
+const sourceOptions = computed(() =>
+	sources.list.map((source) => ({
+		label: source.title,
+		value: source.name,
+		description: source.name,
+	}))
+)
+const selectedSource = computed(() => {
+	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
+})
 </script>
 
 <template>
@@ -87,6 +102,22 @@ const formattedSQL = computed(() => {
 	</div>
 
 	<BlockActions :blockRef="blockRef">
+		<BlockAction class="!px-0">
+			<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
+				<InputWithPopover
+					placeholder="Data Source"
+					:items="sourceOptions"
+					:value="selectedSource"
+					placement="bottom-end"
+					:disableFilter="true"
+					@update:modelValue="state.query.doc.data_source = $event.value"
+				></InputWithPopover>
+				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
+					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
+				</p>
+			</div>
+		</BlockAction>
+
 		<BlockAction
 			label="Save"
 			icon="save"
