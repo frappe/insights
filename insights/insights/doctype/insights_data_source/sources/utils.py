@@ -43,8 +43,10 @@ def create_insights_table(table, force=False):
         },
     )
 
+    doc_before = None
     if docname := exists:
         doc = frappe.get_doc("Insights Table", docname)
+        doc_before = frappe.get_doc("Insights Table", docname)
     else:
         doc = frappe.get_doc(
             {
@@ -78,8 +80,9 @@ def create_insights_table(table, force=False):
 
     version = frappe.new_doc("Version")
     # if there's some update to store only then save the doc
-    doc_changed = version.update_version_info(doc.get_doc_before_save(), doc)
-    if not exists or force or doc_changed:
+    doc_changed = version.update_version_info(doc_before, doc)
+    is_new = not exists
+    if is_new or doc_changed or force:
         # need to ignore permissions when creating/updating a table in query store
         # a user may have access to create a query and store it, but not to create a table
         doc.save(ignore_permissions=True)
