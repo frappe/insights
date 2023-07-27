@@ -145,14 +145,14 @@ function resetFilter() {
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex w-full">
 					<button
-						class="flex w-full items-center rounded-md border bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow-sm"
+						class="flex w-full items-center rounded border border-gray-100 bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow"
 						@click="togglePopover"
 					>
-						<span v-if="!filter.column" class="text-gray-500">Select a filter...</span>
+						<span v-if="!filter.column" class="text-gray-600">Select a filter...</span>
 						<span
 							v-else
 							class="overflow-hidden text-ellipsis whitespace-nowrap"
-							:class="{ 'text-gray-500': !filter.operator }"
+							:class="{ 'text-gray-600': !filter.operator }"
 						>
 							{{ filter.label || filter.column.label }}
 						</span>
@@ -166,7 +166,7 @@ function resetFilter() {
 						<div class="ml-auto flex items-center pl-2">
 							<div
 								v-if="isOpen || !applyDisabled"
-								class="-my-1 -mr-2 rounded-md p-1 hover:bg-blue-50 hover:text-blue-600"
+								class="-my-1 -mr-2 rounded p-1 hover:bg-blue-50 hover:text-blue-600"
 								@click.prevent.stop="resetFilter()"
 							>
 								<FeatherIcon name="x" class="h-3.5 w-3.5" />
@@ -185,11 +185,11 @@ function resetFilter() {
 				<!-- Column Selector -->
 				<div
 					v-if="selecting === 'column'"
-					class="mt-2 flex w-fit flex-col rounded-md bg-white p-2 text-base shadow"
+					class="mt-2 flex w-fit flex-col rounded bg-white p-2 text-base shadow"
 				>
-					<div class="mb-1 px-1 text-sm text-gray-400">Select a column</div>
+					<div class="mb-1 px-1 text-sm text-gray-500">Select a column</div>
 					<div
-						class="cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-100"
+						class="cursor-pointer rounded px-2 py-1.5 hover:bg-gray-100"
 						v-for="column in columns"
 						:key="column.value"
 						@click.prevent.stop="filter.column = column"
@@ -200,11 +200,11 @@ function resetFilter() {
 				<!-- Operator Selector -->
 				<div
 					v-if="selecting === 'operator'"
-					class="mt-2 flex w-fit flex-col rounded-md bg-white p-2 text-base shadow"
+					class="mt-2 flex w-fit flex-col rounded bg-white p-2 text-base shadow"
 				>
-					<div class="mb-1 px-1 text-sm text-gray-400">Select an operator</div>
+					<div class="mb-1 px-1 text-sm text-gray-500">Select an operator</div>
 					<div
-						class="cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-100"
+						class="cursor-pointer rounded px-2 py-1.5 hover:bg-gray-100"
 						v-for="operator in operators"
 						:key="operator.value"
 						@click.prevent.stop="filter.operator = operator"
@@ -215,7 +215,7 @@ function resetFilter() {
 				<!-- Value Selector -->
 				<div
 					v-if="selecting === 'value'"
-					class="mt-2 flex w-fit flex-col rounded-md bg-white p-2 text-base shadow"
+					class="mt-2 flex w-fit flex-col rounded bg-white p-2 text-base shadow"
 				>
 					<Combobox
 						v-if="showValuePicker"
@@ -232,10 +232,10 @@ function resetFilter() {
 							autocomplete="off"
 							placeholder="Filter..."
 							@input="checkAndFetchColumnValues($event.target.value)"
-							class="form-input mb-2 block h-7 w-full placeholder-gray-500"
+							class="form-input mb-2 block h-7 w-full border-gray-400 placeholder-gray-500"
 						/>
 						<ComboboxOptions static class="flex max-h-[20rem] flex-col overflow-hidden">
-							<div class="mb-1 px-1 text-sm text-gray-400">Select an option</div>
+							<div class="mb-1 px-1 text-sm text-gray-500">Select an option</div>
 							<div class="flex-1 overflow-y-scroll">
 								<ComboboxOption
 									v-for="value in values"
@@ -244,7 +244,7 @@ function resetFilter() {
 									v-slot="{ active, selected }"
 								>
 									<div
-										class="flex cursor-pointer items-center rounded-md px-2 py-1.5 hover:bg-gray-100"
+										class="flex cursor-pointer items-center rounded px-2 py-1.5 hover:bg-gray-100"
 										:class="{ 'bg-gray-100': active }"
 									>
 										<span>{{ value.label }}</span>
@@ -309,7 +309,7 @@ function resetFilter() {
 								}
 							}
 						"
-						class="form-input block h-7 w-full select-none rounded-md placeholder-gray-500 placeholder:text-sm"
+						class="form-input block h-7 w-full select-none rounded border-gray-400 placeholder-gray-500"
 					/>
 				</div>
 			</template>

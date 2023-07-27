@@ -27,7 +27,7 @@ const operators = computed(() => {
 	<InputWithPopover
 		v-model="operator"
 		:items="operators"
-		placeholder="operator"
+		placeholder="Operator"
 		class="min-w-0"
 		:class="$attrs.class"
 		:disableFilter="true"

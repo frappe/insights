@@ -15,10 +15,14 @@ const props = defineProps({
 			<Button
 				v-for="action in actions"
 				:key="action.label"
-				class="shadow-sm"
-				:appearance="action.appearance"
+				:variant="action.variant"
 				:iconLeft="action.iconLeft"
-				@click="action.handler"
+				@click="action.onClick"
+				:class="
+					action.variant === 'primary'
+						? '!rounded bg-gray-900 text-gray-50 hover:bg-gray-800 '
+						: ''
+				"
 			>
 				{{ action.label }}
 			</Button>

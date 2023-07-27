@@ -62,22 +62,19 @@ function toggleSelected(row) {
 			<!-- Filter Bar -->
 			<div class="my-2 flex justify-between">
 				<div class="flex space-x-4">
-					<div class="flex items-center rounded-md bg-gray-100 px-3">
-						<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
-						<input
-							ref="searchInput"
-							v-model="searchTerm"
-							class="flex w-64 items-center bg-gray-100 px-2.5 py-1.5 focus:outline-none"
-							placeholder="Search..."
-						/>
-					</div>
+					<Input
+						ref="searchInput"
+						v-model="searchTerm"
+						iconLeft="search"
+						placeholder="Search..."
+					/>
 				</div>
 				<!-- Enable after grid feature -->
-				<!-- <div class="flex items-center space-x-1 rounded-md bg-gray-100 p-1">
-					<div class="cursor-pointer rounded-md px-2 py-1 transition-all">
+				<!-- <div class="flex items-center space-x-1 rounded bg-gray-100 p-1">
+					<div class="cursor-pointer rounded px-2 py-1 transition-all">
 						<FeatherIcon name="grid" class="h-4 w-4" />
 					</div>
-					<div class="cursor-pointer rounded-md bg-white px-2 py-1 shadow transition-all">
+					<div class="cursor-pointer rounded bg-white px-2 py-1 shadow transition-all">
 						<FeatherIcon name="list" class="h-4 w-4" />
 					</div>
 				</div> -->
@@ -89,12 +86,12 @@ function toggleSelected(row) {
 				class="relative flex flex-1 flex-col overflow-y-scroll text-lg"
 			>
 				<li
-					class="sticky top-0 z-10 flex items-center gap-4 border-b bg-white text-gray-400"
+					class="sticky top-0 z-10 flex items-center gap-4 border-b bg-white text-gray-500"
 				>
 					<div>
 						<Input
 							type="checkbox"
-							class="rounded-md border-gray-300"
+							class="rounded border-gray-300"
 							@click.prevent.stop="selectAll"
 						/>
 					</div>
@@ -113,14 +110,14 @@ function toggleSelected(row) {
 				<li
 					v-for="row in filteredData"
 					:key="row[columns[0].key]"
-					class="flex items-center gap-4 border-b text-gray-500"
+					class="flex items-center gap-4 border-b text-gray-600"
 					:class="props.rowClick ? 'cursor-pointer hover:bg-gray-50' : ''"
 					@click="props.rowClick && props.rowClick(row)"
 				>
 					<div>
 						<Input
 							type="checkbox"
-							class="rounded-md border-gray-300"
+							class="rounded border-gray-300"
 							:checked="isSelected(row)"
 							@click.stop="toggleSelected(row)"
 						/>
@@ -142,18 +139,18 @@ function toggleSelected(row) {
 				</li>
 
 				<li
-					class="sticky bottom-0 right-0 flex w-full border-t bg-white py-3 text-lg text-gray-500"
+					class="sticky bottom-0 right-0 flex w-full flex-1 flex-shrink-0 items-end bg-white"
 				>
-					<p class="ml-auto">
-						Showing {{ filteredData.length }} of {{ props.data.length }} results
-					</p>
+					<div class="mb-3 flex w-full justify-end border-t py-3 text-lg text-gray-600">
+						<p>Showing {{ filteredData.length }} of {{ props.data.length }} results</p>
+					</div>
 				</li>
 			</ul>
 
 			<div v-else class="flex-1 overflow-hidden">
 				<slot name="empty-state">
 					<div
-						class="flex h-full w-full flex-col items-center justify-center text-lg text-gray-400/50"
+						class="flex h-full w-full flex-col items-center justify-center text-lg text-gray-500/50"
 					>
 						<FeatherIcon name="folder" class="h-12 w-12" />
 						<p class="mt-4">No data to display</p>

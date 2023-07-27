@@ -16,6 +16,7 @@ export async function getLoginLink() {
 }
 
 export async function getTrialStatus() {
+	if (import.meta.env.DEV) return false
 	return subscription.trialExpired !== null ? subscription.trialExpired : await fetchTrialStatus()
 }
 

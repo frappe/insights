@@ -1,7 +1,11 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from contextlib import suppress
+
 import frappe
+from frappe.utils.data import date_diff
+from posthog import Posthog
 
 try:
     from frappe.utils.telemetry import capture
@@ -30,3 +34,29 @@ def get_credentials():
 
 def track(event):
     return capture(event, "insights")
+
+
+@frappe.whitelist()
+def track_active_site():
+    if frappe.conf.developer_mode or not should_track_active_status():
+        return
+
+    with suppress(Exception):
+        ph = Posthog(
+            "phc_PxMKOBaHDGJApbZkYqSVro6YSecTYgQ6tB4BAV2nYmd",
+            host="https://posthog.frappe.cloud",
+        )
+        ph.capture(distinct_id=frappe.local.site, event="insights_active_site")
+        frappe.cache().set_value("last_active_at", frappe.utils.now_datetime())
+
+
+def should_track_active_status():
+    last_active_at = frappe.cache().get_value("last_active_at")
+    if not last_active_at:
+        return True
+
+    last_active_at = frappe.utils.get_datetime(last_active_at)
+    if date_diff(frappe.utils.now_datetime(), last_active_at) > 1:
+        return True
+
+    return False

@@ -14,18 +14,18 @@
 				v-if="span !== 'Current'"
 				type="number"
 				v-model="interval"
-				class="h-8 w-full text-sm"
+				class="w-full text-sm"
 			/>
 			<Input
 				type="select"
 				v-model="intervalType"
-				class="h-8 w-full text-sm"
+				class="w-full text-sm"
 				:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
 			>
 			</Input>
 		</div>
 		<div class="flex justify-end">
-			<Button appearance="primary" @click="apply()"> Done </Button>
+			<Button variant="solid" @click="apply()"> Done </Button>
 		</div>
 	</div>
 </template>

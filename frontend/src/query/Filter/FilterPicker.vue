@@ -4,9 +4,7 @@
 		<div class="text-sm tracking-wide text-gray-600">{{ editing ? 'EDIT' : 'ADD' }} FILTER</div>
 	</div>
 	<div class="flex flex-1 flex-col space-y-3 overflow-y-scroll">
-		<div
-			class="flex h-9 flex-shrink-0 items-center space-x-2 rounded-md bg-gray-100 p-1 text-sm"
-		>
+		<div class="flex h-9 flex-shrink-0 items-center space-x-2 rounded bg-gray-100 p-1 text-sm">
 			<div
 				class="flex h-full flex-1 items-center justify-center rounded font-light"
 				:class="{

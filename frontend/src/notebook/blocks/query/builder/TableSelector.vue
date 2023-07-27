@@ -1,8 +1,9 @@
-<script setup>
+<script setup lang="jsx">
 import { useDataSource } from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { Suspense, computed, ref } from 'vue'
 import InputWithPopover from './InputWithPopover.vue'
+import TableTooltip from './TableTooltip.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -27,16 +28,34 @@ if (!props.tableOptions) {
 		}
 	)
 	tables = computed(() => {
-		return dataSource.tables
-			.filter((t) => !t.hidden)
-			.map((table) => {
-				return {
-					table: table.table,
-					value: table.table,
-					label: table.label,
-					description: table.table,
-				}
-			})
+		return (
+			dataSource.tables
+				.filter((t) => !t.hidden)
+				// remove duplicates
+				.filter((table, index, self) => {
+					return (
+						self.findIndex((t) => {
+							return t.table === table.table
+						}) === index
+					)
+				})
+				.map((table) => {
+					return {
+						table: table.table,
+						value: table.table,
+						label: table.label,
+						description: table.table,
+						tooltip_component: (tooltip_props) => (
+							<Suspense>
+								<TableTooltip
+									data_source={props.data_source}
+									table={tooltip_props.option.table}
+								/>
+							</Suspense>
+						),
+					}
+				})
+		)
 	})
 }
 </script>

@@ -101,7 +101,7 @@ async function setColumnOptions(chartItem) {
 
 		<div v-if="options.column?.column">
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Links</span>
-			<div class="max-h-[20rem] space-y-2">
+			<div class="max-h-[20rem] space-y-2 overflow-y-scroll">
 				<div
 					class="flex h-8 w-full items-center text-gray-600"
 					v-for="chartItem in charts"

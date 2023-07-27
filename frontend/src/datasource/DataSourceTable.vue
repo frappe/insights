@@ -23,7 +23,7 @@
 					{{ dataSourceTable.doc.label }}
 				</h1>
 				<div class="flex h-8 items-center">
-					<Badge :color="hidden ? 'yellow' : 'green'" class="h-fit">
+					<Badge :theme="hidden ? 'yellow' : 'green'" size="lg">
 						{{ hidden ? 'Disabled' : 'Enabled' }}
 					</Badge>
 				</div>
@@ -33,23 +33,23 @@
 					placement="left"
 					:button="{
 						icon: 'more-horizontal',
-						appearance: 'minimal',
+						variant: 'ghost',
 					}"
 					:options="[
 						{
 							label: hidden ? 'Enable' : 'Disable',
 							icon: hidden ? 'eye' : 'eye-off',
-							handler: () => (hidden = !hidden),
+							onClick: () => (hidden = !hidden),
 						},
 						{
 							label: 'Sync Table',
 							icon: 'refresh-cw',
-							handler: () => dataSourceTable.sync(),
+							onClick: () => dataSourceTable.sync(),
 						},
 						{
 							label: 'Add Link',
 							icon: 'link',
-							handler: () => (addLinkDialog = true),
+							onClick: () => (addLinkDialog = true),
 						},
 					]"
 				/>
@@ -81,7 +81,7 @@
 		</div>
 		<div
 			v-else
-			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded-md bg-gray-50"
+			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded bg-gray-50"
 		>
 			<LoadingIndicator class="mb-2 w-8 text-gray-400" />
 			<div class="text-lg text-gray-500">
@@ -132,7 +132,7 @@
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="createLink"
 				:loading="creatingLink"
 				:disabled="createLinkDisabled"
@@ -252,7 +252,7 @@ const createLinkResource = createResource({
 		newLink.foreignKey = ''
 		addLinkDialog.value = false
 		$notify({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Success',
 			message: 'Link created successfully',
 		})

@@ -17,7 +17,9 @@
   "column_break_5",
   "database_name",
   "username",
-  "password"
+  "password",
+  "section_break_j5ez",
+  "connection_string"
  ],
  "fields": [
   {
@@ -85,7 +87,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Database Type",
-   "options": "MariaDB\nSQLite"
+   "options": "MariaDB\nPostgreSQL\nSQLite"
   },
   {
    "default": "0",
@@ -100,11 +102,20 @@
    "fieldname": "allow_imports",
    "fieldtype": "Check",
    "label": "Allow Table Import"
+  },
+  {
+   "fieldname": "section_break_j5ez",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "connection_string",
+   "fieldtype": "Small Text",
+   "label": "Connection String"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-07 21:15:17.441717",
+ "modified": "2023-05-29 14:25:59.190544",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",

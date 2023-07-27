@@ -3,13 +3,15 @@
 <script setup>
 import { inject, useAttrs } from 'vue'
 
-const options = inject('options')
+const props = defineProps({ options: Object, default: () => ({}) })
+const trigger = props.options?.trigger || 'axis'
+const confine = props.options?.confine || true
+const rest = props.options || {}
 
-const { trigger = 'axis', appendToBody = 'true', ...attributes } = useAttrs()
-
-options.tooltip = {
+const chartOptions = inject('options')
+chartOptions.tooltip = {
 	trigger: trigger,
-	appendToBody: appendToBody,
-	...attributes,
+	confine: confine,
+	...rest,
 }
 </script>

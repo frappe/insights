@@ -68,10 +68,10 @@ export function useTeam(teamname) {
 		showPrompt({
 			title: 'Remove Member',
 			message: `Are you sure you want to remove ${member} from this team?`,
-			icon: { name: 'trash', appearance: 'danger' },
+			icon: { name: 'trash', variant: 'danger' },
 			primaryAction: {
 				label: 'Remove',
-				appearance: 'danger',
+				variant: 'danger',
 				action: ({ close }) => {
 					return team.remove_team_member
 						.submit({ user: member })

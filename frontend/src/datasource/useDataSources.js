@@ -9,7 +9,10 @@ const sources = createResource({
 	transform(data) {
 		return data.map((source) => {
 			source.created_from_now = dayjs(source.creation).fromNow()
-			source.title = source.is_site_db ? window.location.hostname : source.name
+			source.title =
+				source.is_site_db && source.title == 'Site DB'
+					? window.location.hostname
+					: source.title
 			return source
 		})
 	},

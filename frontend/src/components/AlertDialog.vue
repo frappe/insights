@@ -29,7 +29,7 @@ const alert = reactive({
 	telegram_chat_id: null,
 	condition: {
 		isAdvanced: false,
-		left: query.results.allColumnOptions[0],
+		left: '',
 		operator: '=',
 		right: null,
 		advanceCondition: null,
@@ -66,7 +66,7 @@ const createAlertResource = createResource({ url: 'insights.api.create_alert' })
 function makeCondition() {
 	return alert.condition.isAdvanced
 		? alert.condition.advanceCondition
-		: `results['${alert.condition.left}'][0] ${alert.condition.operator} ${alert.condition.right}`
+		: `any(results['${alert.condition.left}'] ${alert.condition.operator} ${alert.condition.right})`
 }
 function createAlert() {
 	if (createAlertDisabled.value) return
@@ -173,7 +173,7 @@ function testSendAlert() {
 							v-model="alert.condition.advanceCondition"
 							placeholder="Write a python expression..."
 						/>
-						<p class="font-code mt-1 text-sm text-gray-500">
+						<p class="font-code mt-1 text-sm text-gray-600">
 							Example: results["Count of Records"][0] > 100
 						</p>
 					</div>
@@ -188,22 +188,20 @@ function testSendAlert() {
 					<p class="text-lg font-medium text-gray-800">
 						Message <span class="text-sm font-normal">(Optional)</span>
 					</p>
-					<TextEditor
-						ref="textEditor"
-						:editable="true"
-						:content="alert.message"
-						editor-class="mt-1 h-40 prose-sm cursor-text bg-gray-100 rounded-md p-2 prose-p:my-1"
+					<Input
+						type="textarea"
+						class="mt-1 h-40"
+						v-model="alert.message"
 						:placeholder="`e.g. 
-
-### Low inventory for {{ title }}
-**Summary**:
-{{ results[:10] }}
+Hey,
+We have **low inventory** for **{{ title }}**.
+Please order more.
+Thanks,
 						`"
-						@change="(val) => (alert.message = val)"
 					/>
-					<p class="mt-2 text-sm text-gray-500">
+					<p class="mt-2 text-sm text-gray-600">
 						You can use all the fields from the query like
-						<span class="font-code px-1"> title, data_source, results </span>
+						<span class="font-code px-1"> title, data_source </span>
 						etc. like this
 						<span class="font-code px-1" v-html="'{{ title }}'"></span>
 					</p>
@@ -212,9 +210,10 @@ function testSendAlert() {
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				:disabled="createAlertDisabled"
 				:loading="createAlertResource.loading"
+				class="mr-2"
 				@click="createAlert"
 			>
 				Create

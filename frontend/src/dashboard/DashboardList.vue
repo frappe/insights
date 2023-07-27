@@ -1,19 +1,40 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
+	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-white px-6 py-4">
 		<div class="flex h-12 flex-shrink-0 items-center justify-between">
 			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
-			<Button appearance="white" iconLeft="plus" class="shadow-sm" @click="showDialog = true">
-				Create New
+			<Button variant="solid" @click="showDialog = true">
+				<template #prefix>
+					<Plus class="h-4 w-4" />
+				</template>
+				New Dashboard
 			</Button>
 		</div>
-		<div class="flex flex-1 flex-col overflow-scroll">
-			<DashboardsGroup :dashboards="favorites" title="Favorites" />
+		<div
+			v-if="dashboards?.list?.length"
+			class="-m-1 flex flex-1 flex-col space-y-6 overflow-y-scroll p-1"
+		>
+			<DashboardsGroup
+				v-if="favorites.length > 0"
+				:dashboards="favorites"
+				title="Favorites"
+			/>
 			<DashboardsGroup
 				v-if="settings.doc?.enable_permissions"
 				:dashboards="privates"
 				title="Private"
 			/>
 			<DashboardsGroup :dashboards="sortedDashboards" title="All" :enableSearch="true" />
+		</div>
+		<div v-else class="flex flex-1 flex-col items-center justify-center space-y-1">
+			<div class="text-base font-light text-gray-600">
+				You haven't created any dashboards yet.
+			</div>
+			<div
+				class="cursor-pointer text-sm font-light text-blue-500 hover:underline"
+				@click="showDialog = true"
+			>
+				Create a new dashboard
+			</div>
 		</div>
 	</div>
 
@@ -29,7 +50,7 @@
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="createDashboard" :loading="dashboards.creating">
+			<Button variant="solid" @click="createDashboard" :loading="dashboards.creating">
 				Create
 			</Button>
 		</template>
@@ -40,8 +61,9 @@
 import useDashboards from '@/dashboard/useDashboards'
 import { updateDocumentTitle } from '@/utils'
 import settings from '@/utils/settings'
+import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import DashboardsGroup from './DashboardListGroup.vue'
 
 const dashboards = useDashboards()
@@ -60,6 +82,11 @@ const privates = computed(() => {
 })
 
 const showDialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	showDialog.value = true
+}
+
 const newDashboardTitle = ref('')
 const router = useRouter()
 

@@ -29,7 +29,6 @@ def complete_setup_wizard():
                 "country": "United States",
                 "timezone": "America/New_York",
                 "currency": "USD",
-                "setup_demo_db": 1,
             }
         )
 

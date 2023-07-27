@@ -12,7 +12,7 @@
 				<Popover>
 					<template #target="{ togglePopover }">
 						<div
-							class="cursor-pointer rounded-md p-1 hover:bg-gray-200"
+							class="cursor-pointer rounded p-1 hover:bg-gray-200"
 							@click="togglePopover()"
 						>
 							<FeatherIcon name="more-horizontal" class="h-4 w-4" />
@@ -21,7 +21,7 @@
 					<template #body="{ isOpen, togglePopover }">
 						<div
 							v-if="isOpen"
-							class="flex items-end space-x-2 rounded-md bg-white px-3 py-2 shadow-md"
+							class="flex items-end space-x-2 rounded bg-white px-3 py-2 shadow-md"
 						>
 							<Input
 								class="w-40"
@@ -39,9 +39,8 @@
 								v-model="col.type"
 							></Input>
 							<Button
-								class="h-fit"
 								icon="check"
-								appearance="primary"
+								variant="solid"
 								@click="$emit('update-column-type', col) & togglePopover()"
 							></Button>
 						</div>

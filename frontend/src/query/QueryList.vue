@@ -1,18 +1,23 @@
 <script setup lang="jsx">
 import ListView from '@/components/ListView.vue'
+import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import useDataSources from '@/datasource/useDataSources'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { Badge } from 'frappe-ui'
 import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import NewDialogWithTypes from './NewDialogWithTypes.vue'
+import { useRoute, useRouter } from 'vue-router'
 import useQueries from './useQueries'
 
 const queries = useQueries()
 queries.reload()
 
 const new_dialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	new_dialog.value = true
+}
+
 const router = useRouter()
 const sources = useDataSources()
 sources.reload()
@@ -33,11 +38,11 @@ const createQuery = async () => {
 	})
 	newQuery.value = { dataSource: '', title: '' }
 	await nextTick()
-	router.push({ name: 'QueryBuilder', params: { name } })
+	router.push({ name: 'Query', params: { name } })
 }
 
 const StatusCell = (props) => (
-	<Badge color={props.row.status == 'Pending Execution' ? 'yellow' : 'green'}>
+	<Badge theme={props.row.status == 'Pending Execution' ? 'orange' : 'green'}>
 		{props.row.status}
 	</Badge>
 )
@@ -63,16 +68,17 @@ async function openQueryEditor(type) {
 			name: 'NotebookPage',
 			params: {
 				notebook: uncategorized.name,
-				page: page_name,
+				name: page_name,
 			},
 		})
 	}
 	const new_query = {}
 	if (type === 'visual') new_query.is_assisted_query = 1
 	if (type === 'classic') new_query.is_assisted_query = 0
+	if (type === 'sql') new_query.is_native_query = 1
 	const query = await queries.create(new_query)
 	router.push({
-		name: 'QueryBuilder',
+		name: 'Query',
 		params: { name: query.name },
 	})
 }
@@ -83,20 +89,25 @@ const queryBuilderTypes = ref([
 		description: 'Create a query using the notebook interface',
 		icon: 'book',
 		tag: 'beta',
-		handler: () => openQueryEditor('notebook'),
+		onClick: () => openQueryEditor('notebook'),
 	},
 	{
 		label: 'Visual',
 		description: 'Create a query using the visual interface',
 		icon: 'box',
-		tag: 'beta',
-		handler: () => openQueryEditor('visual'),
+		onClick: () => openQueryEditor('visual'),
 	},
 	{
 		label: 'Classic',
 		description: 'Create a query using the classic interface',
 		icon: 'layout',
-		handler: () => openQueryEditor('classic'),
+		onClick: () => openQueryEditor('classic'),
+	},
+	{
+		label: 'SQL',
+		description: 'Create a query using SQL',
+		icon: 'code',
+		onClick: () => openQueryEditor('sql'),
 	},
 ])
 </script>
@@ -108,14 +119,14 @@ const queryBuilderTypes = ref([
 			:actions="[
 				{
 					label: 'New Query',
-					appearance: 'white',
+					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_dialog = true),
+					onClick: () => (new_dialog = true),
 				},
 			]"
 			:columns="columns"
 			:data="queries.list"
-			:rowClick="({ name }) => router.push({ name: 'QueryBuilder', params: { name } })"
+			:rowClick="({ name }) => router.push({ name: 'Query', params: { name } })"
 		>
 		</ListView>
 	</div>

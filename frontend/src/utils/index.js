@@ -1,3 +1,4 @@
+import settings from '@/utils/systemSettings'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import { computed, watch } from 'vue'
@@ -125,7 +126,7 @@ export function ellipsis(value, length) {
 }
 
 export function getShortNumber(number, precision = 0) {
-	const locale = 'en-IN' // TODO: get locale from user settings
+	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
@@ -138,7 +139,7 @@ export function getShortNumber(number, precision = 0) {
 }
 
 export function formatNumber(number, precision = 0) {
-	const locale = 'en-IN' // TODO: get locale from user settings
+	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,
 	}).format(number)
@@ -176,7 +177,7 @@ export function copyToClipboard(text) {
 	if (navigator.clipboard) {
 		navigator.clipboard.writeText(text)
 		createToast({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Copied to clipboard',
 		})
 	} else {
@@ -190,12 +191,12 @@ export function copyToClipboard(text) {
 		try {
 			document.execCommand('copy')
 			createToast({
-				appearance: 'success',
+				variant: 'success',
 				title: 'Copied to clipboard',
 			})
 		} catch (err) {
 			createToast({
-				appearance: 'error',
+				variant: 'error',
 				title: 'Copy to clipboard not supported',
 			})
 		} finally {
@@ -230,6 +231,17 @@ export function useAutoSave(watchedFields, options = {}) {
 		deep: true,
 		debounce: interval,
 	})
+}
+
+export function isInViewport(element) {
+	if (!element) return false
+	const rect = element.getBoundingClientRect()
+	return (
+		rect.top > 0 &&
+		rect.left > 0 &&
+		rect.bottom < (window.innerHeight || document.documentElement.clientHeight) &&
+		rect.right < (window.innerWidth || document.documentElement.clientWidth)
+	)
 }
 
 export default {

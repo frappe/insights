@@ -3,6 +3,8 @@ import Code from '@/components/Controls/Code.vue'
 import { inject, computed } from 'vue'
 
 const query = inject('query')
+query.autosave = true
+query.reload()
 query.fetchSourceSchema()
 const completions = computed(() => {
 	if (!query.sourceSchema) return { schema: {}, tables: [] }

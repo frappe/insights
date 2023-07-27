@@ -21,6 +21,8 @@ class InsightsSettings(Document):
             self.query_result_limit = settings.query_result_limit
         if hasattr(settings, "allow_subquery"):
             self.allow_subquery = settings.allow_subquery
+        if hasattr(settings, "telegram_api_token"):
+            self.telegram_api_token = settings.telegram_api_token
         self.save()
 
     @property

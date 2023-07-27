@@ -55,26 +55,46 @@ const markLine = computed(() =>
 	<Chart
 		v-if="shouldRender"
 		ref="eChart"
-		:chartTitle="props.options.title"
-		:chartSubtitle="props.options.subtitle"
-		:color="props.options.colors"
+		:options="{
+			chartTitle: props.options.title,
+			chartSubtitle: props.options.subtitle,
+			color: props.options.colors,
+		}"
 	>
 		<ChartGrid>
-			<ChartLegend type="scroll" bottom="bottom" />
-			<ChartAxis axisType="xAxis" type="category" :axisTick="false" :data="labels" />
-			<ChartAxis axisType="yAxis" type="value" splitLine-lineStyle-type="dashed" />
+			<ChartLegend :options="{ type: 'scroll', bottom: 'bottom' }" />
+			<ChartAxis
+				:options="{ axisType: 'xAxis', type: 'category', axisTick: false, data: labels }"
+			/>
+			<ChartAxis
+				:options="{
+					axisType: 'yAxis',
+					type: 'value',
+					splitLine: {
+						lineStyle: {
+							type: 'dashed',
+						},
+					},
+				}"
+			/>
 			<ChartSeries
 				v-for="dataset in datasets"
-				:name="dataset.label"
-				:data="dataset.data"
-				type="line"
-				:smooth="props.options.smoothLines ? 0.4 : false"
-				:smoothMonotone="'x'"
-				:showSymbol="props.options.showPoints"
-				:markLine="markLine"
-				:areaStyle="{ opacity: props.options.showArea ? 0.1 : 0 }"
+				:options="{
+					name: dataset.label,
+					data: dataset.data,
+					type: 'line',
+					smooth: props.options.smoothLines ? 0.4 : false,
+					smoothMonotone: 'x',
+					showSymbol: props.options.showPoints,
+					markLine: markLine,
+					areaStyle: { opacity: props.options.showArea ? 0.1 : 0 },
+				}"
 			/>
-			<ChartTooltip />
+			<ChartTooltip
+				:options="{
+					valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+				}"
+			/>
 		</ChartGrid>
 	</Chart>
 	<template v-else>

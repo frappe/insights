@@ -10,10 +10,11 @@ from insights.insights.doctype.insights_table_import.insights_table_import impor
 from insights.utils import ResultColumn
 
 from .utils import (
-    Timer,
     add_limit_to_sql,
+    cache_results,
     compile_query,
-    create_execution_log,
+    execute_and_log,
+    get_cached_results,
     replace_query_tables_with_cte,
 )
 
@@ -40,70 +41,71 @@ class BaseDatabase:
             frappe.log_error(title="Error connecting to database", message=e)
             raise DatabaseConnectionError(e)
 
-    def build_query(self, query, with_cte=False):
-        """Build insights query and return the sql"""
+    def build_query(self, query):
+        """Used to update the sql in insights query"""
         query_str = self.query_builder.build(query, dialect=self.engine.dialect)
-        if with_cte and frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        ):
-            query_str = replace_query_tables_with_cte(query_str, self.data_source)
-        return query_str if query_str else None
+        query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
+        return query_str
 
     def run_query(self, query):
-        """Run insights query and return the result"""
-        sql = self.build_query(query)
-        if sql is None:
-            return []
-        if frappe.db.get_single_value("Insights Settings", "allow_subquery"):
-            sql = replace_query_tables_with_cte(sql, self.data_source)
-        # set a hard max limit to prevent long running queries
-        max_rows = (
-            frappe.db.get_single_value("Insights Settings", "query_result_limit")
-            or 1000
-        )
-        sql = add_limit_to_sql(sql, max_rows)
-        return self.execute_query(
-            sql, return_columns=True, is_native_query=query.is_native_query
-        )
+        sql = self.query_builder.build(query, dialect=self.engine.dialect)
+        sql = self.escape_special_characters(sql) if query.is_native_query else sql
+        return self.execute_query(sql, return_columns=True)
 
     def execute_query(
         self,
-        sql,
+        sql,  # can be a string or a sqlalchemy query object or text object
         pluck=False,
         return_columns=False,
-        replace_query_tables=False,
-        is_native_query=False,
+        cached=False,
     ):
-        if not isinstance(sql, str) and not is_native_query:
-            # since db.execute() is also being used with Query objects i.e non-compiled queries
-            compiled = compile_query(sql, self.engine.dialect)
-            sql = str(compiled) if compiled else None
-
         if sql is None:
             return []
 
-        allow_subquery = frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        )
-        if replace_query_tables and allow_subquery:
-            sql = replace_query_tables_with_cte(sql, self.data_source)
+        sql = self.compile_query(sql)
+        sql = self.process_subquery(sql)
+        sql = self.set_row_limit(sql)
 
-        self.validate_query(sql)
-        # to fix special characters in query like %
-        sql = sql.replace("%%", "%") if is_native_query else sql
-        sql = text(sql) if is_native_query else sql
+        self.validate_native_sql(sql)
+
+        if cached:
+            cached_results = get_cached_results(sql, self.data_source)
+            if cached_results:
+                return cached_results
+
         with self.connect() as connection:
-            with Timer() as t:
-                res = connection.execute(sql)
-            create_execution_log(sql, self.data_source, t.elapsed)
-            columns = [
-                ResultColumn.from_args(d[0], d[1]) for d in res.cursor.description
-            ]
+            res = execute_and_log(connection, sql, self.data_source)
+            cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
-            return [columns] + rows if return_columns else rows
+            ret = [cols] + rows if return_columns else rows
+            cached and cache_results(sql, self.data_source, ret)
+            return ret
 
-    def validate_query(self, query):
+    def compile_query(self, query):
+        if hasattr(query, "compile"):
+            compiled = compile_query(query, self.engine.dialect)
+            query = str(compiled) if compiled else None
+        return query
+
+    def process_subquery(self, sql):
+        allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
+        if allow_subquery:
+            sql = replace_query_tables_with_cte(sql, self.data_source)
+        return sql
+
+    def escape_special_characters(self, sql):
+        # to fix special characters in query like %
+        return text(sql.replace("%%", "%"))
+
+    def set_row_limit(self, sql):
+        # set a hard max limit to prevent long running queries
+        # there's no use case to view more than 1000 rows in the UI
+        # TODO: while exporting, we can remove this limit
+        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 1000
+        return add_limit_to_sql(sql, max_rows)
+
+    def validate_native_sql(self, query):
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
         if not select_or_with:
             frappe.throw("Only SELECT and WITH queries are allowed")

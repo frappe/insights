@@ -53,7 +53,7 @@ const QuerySelector = (props) => {
 				onUpdate:modelValue={(op) => chart.updateQuery(op.value)}
 			></InputWithPopover>
 			<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
-				<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
+				<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
 			</p>
 		</div>
 	)
@@ -78,7 +78,7 @@ const addToDashboard = async () => {
 	await chart.addToDashboard(toDashboard.value.value)
 	showDashboardDialog.value = false
 	$notify({
-		appearance: 'success',
+		variant: 'success',
 		title: 'Success',
 		message: 'Chart added to dashboard',
 	})
@@ -120,7 +120,7 @@ watch(
 						title="Insufficient options"
 						message="Please check the options for this chart"
 						icon="settings"
-						icon-class="text-gray-400"
+						icon-class="text-gray-500"
 					/>
 				</div>
 			</template>
@@ -130,8 +130,8 @@ watch(
 			v-else
 			class="absolute right-0 top-0 flex h-full w-full flex-col items-center justify-center"
 		>
-			<div class="mb-1 w-[10rem] text-gray-400">Select a query</div>
-			<div class="w-[10rem] rounded-md border border-dashed border-gray-300">
+			<div class="mb-1 w-[10rem] text-gray-500">Select a query</div>
+			<div class="w-[10rem] rounded border border-dashed border-gray-300">
 				<QuerySelector />
 			</div>
 		</div>
@@ -166,7 +166,7 @@ watch(
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="addToDashboard" :loading="addingToDashboard">
+			<Button variant="solid" @click="addToDashboard" :loading="addingToDashboard">
 				Add
 			</Button>
 		</template>

@@ -11,7 +11,7 @@
 		</div>
 		<Popover class="h-36 w-full text-sm" placement="left-start">
 			<template #target="{ open }">
-				<div class="relative h-full w-full rounded-md border p-1">
+				<div class="relative h-full w-full rounded border p-1">
 					<Code
 						v-model="input"
 						:completions="getCompletions"
@@ -33,7 +33,7 @@
 					>
 						<div
 							v-show="expression.help"
-							class="ml-auto w-[20rem] rounded-md border bg-white p-2 shadow-lg"
+							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
 						>
 							<span class="mr-1 font-light">Syntax:</span>
 							<span class="font-medium italic" style="font-family: 'Fira Code'">
@@ -57,7 +57,7 @@
 		<!-- Action Buttons -->
 		<div class="mt-3 flex justify-end space-x-2">
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="addExpressionFilter"
 				:disabled="Boolean(expression.error)"
 			>

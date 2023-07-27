@@ -30,6 +30,7 @@ export default defineStore('queries', {
 		async create(query) {
 			this.creating = true
 			const queryDoc = await call('insights.api.create_query', query)
+			await this.reload()
 			this.creating = false
 			return queryDoc
 		},
@@ -39,6 +40,12 @@ export default defineStore('queries', {
 			if (existingQuery) return existingQuery
 			await this.reload()
 			return this.list.find((q) => q.name === name)
+		},
+		async delete(name) {
+			this.deleting = true
+			await call('frappe.client.delete', { doctype: 'Insights Query', name })
+			await this.reload()
+			this.deleting = false
 		},
 		filterByText(text) {
 			if (!text) return this.list

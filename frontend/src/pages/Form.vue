@@ -38,7 +38,7 @@ props.meta.fields.forEach((field) => {
 				v-if="field.required && !modelValue[field.name]"
 				class="absolute right-0 top-1 text-xs text-red-400"
 			>
-				*
+				* required
 			</span>
 		</div>
 	</div>

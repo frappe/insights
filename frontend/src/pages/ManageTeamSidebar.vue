@@ -27,7 +27,8 @@ const sidebarItems = ref([
 	{
 		label: 'Delete Team',
 		icon: 'trash-2',
-		appearance: 'danger',
+		variant: 'solid',
+		theme: 'red',
 	},
 ])
 const emit = defineEmits(['change', 'delete-team'])
@@ -44,7 +45,7 @@ const currentSidebarItem = computed({
 
 const team = inject('team')
 function handleSidebarItemClick(item) {
-	if (item.appearance == 'danger') {
+	if (item.variant == 'danger') {
 		showDeletePrompt()
 	} else {
 		currentSidebarItem.value = item.label
@@ -55,10 +56,11 @@ function showDeletePrompt() {
 	showPrompt({
 		title: 'Delete Team',
 		message: `Are you sure you want to delete this team?`,
-		icon: { name: 'trash', appearance: 'danger' },
+		icon: { name: 'trash', variant: 'solid', theme: 'red' },
 		primaryAction: {
 			label: 'Delete',
-			appearance: 'danger',
+			variant: 'solid',
+			theme: 'red',
 			action: ({ close }) => {
 				return team
 					.deleteTeam()
@@ -78,10 +80,10 @@ function showDeletePrompt() {
 				:key="item.label"
 				:class="[
 					item.current ? 'bg-gray-200/70' : 'text-gray-600 ',
-					item.appearance == 'danger'
+					item.variant == 'danger'
 						? 'text-red-600 hover:bg-gray-200/70 hover:text-red-600'
 						: 'text-gray-600 hover:bg-gray-200/70 hover:text-gray-800',
-					'group flex cursor-pointer items-center rounded-md px-2 py-1.5 font-medium hover:bg-gray-200/70 hover:text-gray-800',
+					'group flex cursor-pointer items-center rounded px-2 py-1.5 font-medium hover:bg-gray-200/70 hover:text-gray-800',
 				]"
 				@click="handleSidebarItemClick(item)"
 			>

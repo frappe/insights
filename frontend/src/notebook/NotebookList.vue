@@ -37,7 +37,7 @@ async function createNotebookPage() {
 		name: 'NotebookPage',
 		params: {
 			notebook: uncategorized.name,
-			page: page_name,
+			name: page_name,
 		},
 	})
 }
@@ -54,15 +54,15 @@ updateDocumentTitle(pageMeta)
 			:actions="[
 				{
 					label: 'Notebook',
-					appearance: 'white',
+					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_notebook_dialog = true),
+					onClick: () => (new_notebook_dialog = true),
 				},
 				{
 					label: 'Notebook Page',
-					appearance: 'white',
+					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => createNotebookPage(),
+					onClick: () => createNotebookPage(),
 				},
 			]"
 			:columns="columns"
@@ -72,7 +72,7 @@ updateDocumentTitle(pageMeta)
 		</ListView>
 	</div>
 
-	<Dialog :options="{ title: 'New Dashboard' }" v-model="new_notebook_dialog">
+	<Dialog :options="{ title: 'New Notebook' }" v-model="new_notebook_dialog">
 		<template #body-content>
 			<div class="space-y-4">
 				<Input
@@ -84,7 +84,7 @@ updateDocumentTitle(pageMeta)
 			</div>
 		</template>
 		<template #actions>
-			<Button appearance="primary" @click="createNotebook" :loading="notebooks.creating">
+			<Button variant="solid" @click="createNotebook" :loading="notebooks.creating">
 				Create
 			</Button>
 		</template>

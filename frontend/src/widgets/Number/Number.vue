@@ -28,14 +28,12 @@ const formattedValue = computed(() => {
 </script>
 
 <template>
-	<div v-if="formattedValue" class="h-full w-full overflow-hidden px-8 py-5">
+	<div v-if="formattedValue" class="h-full w-full overflow-hidden px-8 py-4">
 		<div class="mx-auto flex h-full w-full min-w-40 flex-col justify-center overflow-hidden">
-			<div
-				class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-base text-gray-600"
-			>
+			<div class="w-full overflow-hidden text-ellipsis whitespace-nowrap leading-6">
 				{{ props.options.title }}
 			</div>
-			<div class="text-[34px] leading-tight">
+			<div class="text-[28px] font-medium leading-10">
 				{{ props.options.prefix }}{{ formattedValue }}{{ props.options.suffix }}
 			</div>
 		</div>

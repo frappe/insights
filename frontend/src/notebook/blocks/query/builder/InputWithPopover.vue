@@ -9,7 +9,7 @@ const props = defineProps({
 	value: { type: Object, default: undefined },
 	modelValue: Object,
 	placeholder: String,
-	items: Array,
+	items: { type: Array, default: () => [] },
 	disableFilter: Boolean,
 	disableInput: Boolean,
 	placement: { type: String, default: 'bottom-start' },
@@ -64,7 +64,7 @@ function handleOptionSelect(value, togglePopover) {
 		<template #body="{ togglePopover, isOpen }">
 			<div
 				v-show="isOpen"
-				class="mt-1.5 w-fit rounded-md border bg-white text-base shadow-sm transition-[width]"
+				class="mt-1.5 w-fit rounded border bg-white text-base shadow-sm transition-[width]"
 			>
 				<slot
 					name="popover"

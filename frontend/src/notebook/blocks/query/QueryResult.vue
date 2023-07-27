@@ -23,12 +23,12 @@ const query_result_limit = computed(() =>
 		v-show="query.formattedResults.length"
 		class="flex h-9 w-full flex-shrink-0 items-center space-x-2 px-3 text-base"
 	>
-		<span class="font-code uppercase text-gray-500"> Results </span>
+		<span class="font-code uppercase text-gray-600"> Results </span>
 		<div
 			v-if="data.length && executionTime"
-			class="flex items-center space-x-1 text-sm font-light text-gray-500"
+			class="flex items-center space-x-1 text-sm font-light text-gray-600"
 		>
-			<span class="text-sm text-gray-500">
+			<span class="text-sm text-gray-600">
 				({{ totalRows.toLocaleString() }} rows in {{ executionTime }}s)
 			</span>
 			<Tooltip

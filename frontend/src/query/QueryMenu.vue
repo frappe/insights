@@ -2,174 +2,200 @@
 	<div class="flex flex-shrink-0 space-x-2">
 		<Dropdown
 			placement="left"
-			:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
 				!query.doc.is_stored && !query.doc.is_native_query
 					? {
 							label: 'Store Query',
 							icon: 'bookmark',
-							handler: storeQuery,
+							onClick: storeQuery,
 					  }
 					: null,
+				!query.doc.is_saved_as_table
+					? {
+							label: 'Save as Table',
+							icon: 'bookmark',
+							onClick: () => (show_save_table_dialog = true),
+					  }
+					: {
+							label: 'Delete Linked Table',
+							icon: 'trash-2',
+							onClick: () => (show_save_table_dialog = true),
+					  },
 				{
 					label: 'Execute (⌘+E)',
 					icon: 'play',
-					handler: query.execute,
+					onClick: query.execute,
 				},
 				settings.doc?.enable_permissions && query.isOwner
 					? {
 							label: 'Share',
 							icon: 'share-2',
-							handler: () => (show_share_dialog = true),
+							onClick: () => (show_share_dialog = true),
 					  }
 					: null,
 				{
 					label: 'Set Alert',
 					icon: 'bell',
-					handler: () => (show_alert_dialog = true),
+					onClick: () => (show_alert_dialog = true),
 				},
 				{
 					label: 'Pivot',
 					icon: 'git-branch',
-					handler: () => (show_pivot_dialog = true),
+					onClick: () => (show_pivot_dialog = true),
 				},
 				{
 					label: 'Unpivot',
 					icon: 'git-merge',
-					handler: () => (show_unpivot_dialog = true),
+					onClick: () => (show_unpivot_dialog = true),
 				},
 				{
 					label: 'Transpose',
 					icon: 'rotate-ccw',
-					handler: () => (show_transpose_dialog = true),
+					onClick: () => (show_transpose_dialog = true),
 				},
 				{
 					label: 'Reset Transforms',
 					icon: 'refresh-ccw',
-					handler: resetPivot,
+					onClick: resetPivot,
 				},
 				{
 					label: 'Reset',
 					icon: 'refresh-ccw',
-					handler: () => (show_reset_dialog = true),
+					onClick: () => (show_reset_dialog = true),
 				},
 				!query.doc.is_native_query
 					? {
 							label: 'View SQL',
 							icon: 'help-circle',
-							handler: () => (show_sql_dialog = true),
+							onClick: () => (show_sql_dialog = true),
 					  }
 					: null,
 				{
 					label: !query.doc.is_native_query ? 'Write SQL' : 'Build SQL',
 					icon: 'codesandbox',
-					handler: () => (show_convert_query_dialog = true),
+					onClick: () => (show_convert_query_dialog = true),
 				},
 				{
 					label: 'Duplicate',
 					icon: 'copy',
-					handler: duplicateQuery,
+					onClick: duplicateQuery,
 				},
 				{
 					label: 'Download CSV',
 					icon: 'download',
-					handler: downloadCSV,
+					onClick: downloadCSV,
 				},
 				{
 					label: 'Delete',
 					icon: 'trash-2',
-					handler: () => (show_delete_dialog = true),
+					onClick: () => (show_delete_dialog = true),
 				},
 			]"
 		/>
 
 		<Dialog
-			:options="{
-				title: 'Delete Query',
-				icon: { name: 'trash', appearance: 'danger' },
-			}"
 			v-model="show_delete_dialog"
 			:dismissable="true"
-		>
-			<template #body-content>
-				<p class="text-base text-gray-600">Are you sure you want to delete this query?</p>
-			</template>
-			<template #actions>
-				<Button
-					appearance="danger"
-					:loading="query.delete.loading"
-					@click="
-						() => {
+			:options="{
+				title: 'Delete Query',
+				message: 'Are you sure you want to delete this query?',
+				icon: { name: 'trash', appearance: 'danger' },
+				actions: [
+					{
+						label: 'Delete',
+						variant: 'solid',
+						theme: 'red',
+						onClick: () => {
 							query.delete.submit().then(() => {
 								$router.push('/query')
 								show_delete_dialog = false
 							})
-						}
-					"
-				>
-					Yes
-				</Button>
-			</template>
+						},
+					},
+				],
+			}"
+		>
 		</Dialog>
 
 		<Dialog
+			v-model="show_save_table_dialog"
+			:dismissable="true"
+			:options="{
+				title: query.doc.is_saved_as_table ? 'Delete Linked Table' : 'Save as Table',
+				message: query.doc.is_saved_as_table
+					? 'Are you sure you want to deleted the linked table? You will not be able to use this query as a table in other queries.'
+					: 'You can save this query as a table to reuse it in other queries as a table. Tip: Give a proper title to the query before saving it as a table.',
+				icon: {
+					appearance: 'primary',
+					name: query.doc.is_saved_as_table ? 'trash-2' : 'bookmark',
+				},
+				actions: [
+					{
+						label: query.doc.is_saved_as_table ? 'Unlink' : 'Save',
+						variant: 'solid',
+						loading: query.doc.is_saved_as_table
+							? query.delete_linked_table?.loading
+							: query.save_as_table?.loading,
+						onClick: () => {
+							const fn = query.doc.is_saved_as_table
+								? query.delete_linked_table
+								: query.save_as_table
+							fn.submit().then(() => {
+								show_save_table_dialog = false
+							})
+						},
+					},
+				],
+			}"
+		>
+		</Dialog>
+
+		<Dialog
+			v-model="show_convert_query_dialog"
+			:dismissable="true"
 			:options="{
 				title: `Convert to ${!query.doc.is_native_query ? 'Native' : 'Builder'} Query`,
 				icon: { name: 'info', appearance: 'warning' },
-			}"
-			v-model="show_convert_query_dialog"
-			:dismissable="true"
-		>
-			<template #body-content>
-				<p class="text-base text-gray-600">
-					Are you sure you want to convert this query to a
-					{{ !query.doc.is_native_query ? 'native' : 'builder' }}
-					query? This will overwrite the existing query.
-				</p>
-			</template>
-			<template #actions>
-				<Button
-					appearance="warning"
-					:loading="query.convert.loading"
-					@click="
-						() => {
+				message: `Are you sure you want to convert this query to a ${
+					!query.doc.is_native_query ? 'native' : 'builder'
+				} query? This will overwrite the existing query.`,
+				actions: [
+					{
+						label: 'Yes',
+						variant: 'solid',
+						onClick: () => {
 							query.convert.submit().then(() => {
 								show_convert_query_dialog = false
 							})
-						}
-					"
-				>
-					Yes
-				</Button>
-			</template>
+						},
+					},
+				],
+			}"
+		>
 		</Dialog>
 
 		<Dialog
-			:options="{
-				title: 'Reset Query',
-				icon: { name: 'alert-circle', appearance: 'danger' },
-			}"
 			v-model="show_reset_dialog"
 			:dismissable="true"
-		>
-			<template #body-content>
-				<p class="text-base text-gray-600">Are you sure you want to reset this query?</p>
-			</template>
-			<template #actions>
-				<Button
-					appearance="danger"
-					:loading="query.reset.loading"
-					@click="
-						() => {
+			:options="{
+				title: 'Reset Query',
+				message: 'Are you sure you want to reset this query?',
+				icon: { name: 'alert-circle', appearance: 'danger' },
+				actions: [
+					{
+						label: 'Reset',
+						variant: 'solid',
+						theme: 'red',
+						onClick: () => {
 							query.reset.submit().then(() => {
 								show_reset_dialog = false
 							})
-						}
-					"
-				>
-					Yes
-				</Button>
-			</template>
+						},
+					},
+				],
+			}"
+		>
 		</Dialog>
 
 		<Dialog
@@ -180,13 +206,13 @@
 			<template #body-content>
 				<div class="relative">
 					<p
-						class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
+						class="rounded border bg-gray-100 p-2 text-base text-gray-600"
 						style="font-family: 'Fira Code'"
 						v-html="formattedSQL"
 					></p>
 					<Button
 						icon="copy"
-						appearance="white"
+						variant="outline"
 						class="absolute bottom-2 right-2"
 						@click="copyToClipboard(query.doc.sql)"
 					></Button>
@@ -223,7 +249,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
+					variant="solid"
 					@click="() => applyTransform('Pivot', pivot)"
 					:disabled="pivotDisabled"
 					:loading="query.addTransform?.loading"
@@ -262,7 +288,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
+					variant="solid"
 					@click="() => applyTransform('Unpivot', unpivot)"
 					:disabled="unpivotDisabled"
 					:loading="query.addTransform?.loading"
@@ -295,7 +321,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
+					variant="solid"
 					@click="() => applyTransform('Transpose', transpose)"
 					:disabled="transposeDisabled"
 					:loading="query.addTransform?.loading"
@@ -323,16 +349,17 @@
 <script setup>
 import AlertDialog from '@/components/AlertDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
+import { copyToClipboard } from '@/utils'
 import settings from '@/utils/settings'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
-import { copyToClipboard } from '@/utils'
 import { useRouter } from 'vue-router'
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')
 
+const show_save_table_dialog = ref(false)
 const show_reset_dialog = ref(false)
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
@@ -373,7 +400,7 @@ function duplicateQuery() {
 		await nextTick()
 		router.push(`/query/build/${res.message}`)
 		$notify({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Query Duplicated',
 		})
 	})
@@ -382,7 +409,7 @@ function duplicateQuery() {
 function storeQuery() {
 	query.store.submit().then((res) => {
 		$notify({
-			appearance: 'success',
+			variant: 'success',
 			title: 'Query Stored',
 		})
 	})

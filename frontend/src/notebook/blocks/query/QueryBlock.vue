@@ -18,12 +18,7 @@ const props = defineProps({ query: String, is_native: Boolean })
 
 let query = null
 if (!props.query) {
-	const sources = await useDataSources()
-	await sources.reload()
-	const source = sources.list[0]
-	const queryDoc = await useQueries().create({
-		data_source: source.name,
-	})
+	const queryDoc = await useQueries().create()
 	emit('setQuery', queryDoc.name)
 	query = useQuery(queryDoc.name)
 	props.is_native ? await query.convertToNative() : await query.convertToAssisted()
@@ -47,24 +42,6 @@ state.removeQuery = () => {
 }
 
 const blockRef = ref(null)
-const sources = useDataSources()
-sources.reload()
-const sourceOptions = computed(() =>
-	sources.list.map((source) => ({
-		label: source.title,
-		value: source.name,
-		description: source.name,
-	}))
-)
-const selectedSource = computed(() => {
-	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
-})
-async function changeDataSource(source) {
-	if (source.value === query.doc.data_source) return
-	query.doc.data_source = source.value
-	await query.updateDoc({ data_source: source.value })
-}
-
 const page = inject('page')
 const router = useRouter()
 function duplicateQuery() {
@@ -80,6 +57,19 @@ function duplicateQuery() {
 const show_sql_dialog = ref(false)
 const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
+})
+
+const sources = useDataSources()
+sources.reload()
+const sourceOptions = computed(() =>
+	sources.list.map((source) => ({
+		label: source.title,
+		value: source.name,
+		description: source.name,
+	}))
+)
+const selectedSource = computed(() => {
+	return sourceOptions.value.find((op) => op.value === query.doc.data_source)
 })
 </script>
 
@@ -120,7 +110,7 @@ const formattedSQL = computed(() => {
 					:value="selectedSource"
 					placement="bottom-end"
 					:disableFilter="true"
-					@update:modelValue="changeDataSource"
+					@update:modelValue="state.query.doc.data_source = $event.value"
 				></InputWithPopover>
 				<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
 					<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-400" />
@@ -137,7 +127,7 @@ const formattedSQL = computed(() => {
 		<BlockAction
 			icon="play"
 			label="Execute"
-			:action="state.query.execute"
+			:action="() => state.query.execute() || (state.minimizeResult = false)"
 			:loading="state.query.executing"
 		/>
 		<BlockAction
@@ -178,13 +168,13 @@ const formattedSQL = computed(() => {
 		<template #body-content>
 			<div class="relative">
 				<p
-					class="rounded-md border bg-gray-100 p-2 text-base text-gray-600"
+					class="rounded border bg-gray-100 p-2 text-base text-gray-600"
 					style="font-family: 'Fira Code'"
 					v-html="formattedSQL"
 				></p>
 				<Button
 					icon="copy"
-					appearance="white"
+					variant="outline"
 					class="absolute bottom-2 right-2"
 					@click="copyToClipboard(query.doc.sql)"
 				></Button>

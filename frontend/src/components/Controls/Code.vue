@@ -1,8 +1,8 @@
 <template>
 	<codemirror
-		class="focusable"
 		:tab-size="2"
 		v-model="code"
+		class="font-[400]"
 		:autofocus="autofocus"
 		:indent-with-tab="true"
 		:extensions="extensions"
@@ -85,7 +85,7 @@ const autocompletionOptions = {
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
-	optionClass: () => 'flex h-7 !px-2 items-center rounded-md !text-gray-600',
+	optionClass: () => 'flex h-7 !px-2 items-center rounded !text-gray-600',
 }
 if (props.completions) {
 	autocompletionOptions.override = [

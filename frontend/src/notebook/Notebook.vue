@@ -30,7 +30,7 @@ async function createNotebookPage() {
 		name: 'NotebookPage',
 		params: {
 			notebook: props.notebook,
-			page: page_name,
+			name: page_name,
 		},
 	})
 }
@@ -57,9 +57,9 @@ updateDocumentTitle(pageMeta)
 			:actions="[
 				{
 					label: 'New Page',
-					appearance: 'white',
+					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => createNotebookPage(),
+					onClick: () => createNotebookPage(),
 				},
 			]"
 			:columns="columns"
@@ -70,7 +70,7 @@ updateDocumentTitle(pageMeta)
 						name: 'NotebookPage',
 						params: {
 							notebook: props.notebook,
-							page: name,
+							name: name,
 						},
 					})
 			"
@@ -80,12 +80,12 @@ updateDocumentTitle(pageMeta)
 					<div class="text-3xl font-medium text-gray-900">{{ notebook.doc.title }}</div>
 					<Dropdown
 						placement="left"
-						:button="{ icon: 'more-horizontal', appearance: 'minimal' }"
+						:button="{ icon: 'more-horizontal', variant: 'ghost' }"
 						:options="[
 							{
 								label: 'Delete',
 								icon: 'trash-2',
-								handler: () => (showDeleteDialog = true),
+								onClick: () => (showDeleteDialog = true),
 							},
 						]"
 					/>
@@ -96,7 +96,7 @@ updateDocumentTitle(pageMeta)
 		<Dialog
 			:options="{
 				title: 'Delete Notebook',
-				icon: { name: 'trash', appearance: 'danger' },
+				icon: { name: 'trash', variant: 'solid', theme: 'red' },
 			}"
 			v-model="showDeleteDialog"
 			:dismissable="true"
@@ -107,8 +107,13 @@ updateDocumentTitle(pageMeta)
 				</p>
 			</template>
 			<template #actions>
-				<Button appearance="white" @click="showDeleteDialog = false">Cancel</Button>
-				<Button appearance="danger" @click="handleDelete" :loading="notebook.deleting">
+				<Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+				<Button
+					variant="solid"
+					theme="red"
+					@click="handleDelete"
+					:loading="notebook.deleting"
+				>
 					Yes
 				</Button>
 			</template>

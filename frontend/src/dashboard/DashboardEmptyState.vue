@@ -5,7 +5,7 @@ const dashboard = inject('dashboard')
 
 <template>
 	<div class="flex flex-1 flex-col items-center justify-center space-y-1">
-		<div class="text-base font-light text-gray-500">
+		<div class="text-base font-light text-gray-600">
 			{{
 				!dashboard.editing ? "You haven't added any charts." : 'Drag and drop charts here.'
 			}}

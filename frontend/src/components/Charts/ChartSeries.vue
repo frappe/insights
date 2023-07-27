@@ -1,25 +1,22 @@
 <template></template>
 
 <script setup>
-import { inject, useAttrs, watch } from 'vue'
+import { inject, watch } from 'vue'
 
-const attributes = useAttrs()
-const options = inject('options')
-const convertAttributesToOptions = inject('convertAttributesToOptions')
+const props = defineProps({ options: Object, default: () => ({}) })
 
-if (!options.series) {
-	options.series = []
+const chartOptions = inject('options')
+if (!chartOptions.series) {
+	chartOptions.series = []
 }
 
-watch(() => attributes, updateOptions, { deep: true, immediate: true })
-
-function updateOptions(newAttributes) {
-	const optionsObject = convertAttributesToOptions(newAttributes)
-	const existingSeries = options.series.find((series) => series.name === newAttributes.name)
+watch(() => props.options, updateOptions, { deep: true, immediate: true })
+function updateOptions(newOptions) {
+	const existingSeries = chartOptions.series.find((series) => series.name === newOptions.name)
 	if (existingSeries) {
-		Object.assign(existingSeries, optionsObject)
+		Object.assign(existingSeries, newOptions)
 	} else {
-		options.series.push(optionsObject)
+		chartOptions.series.push(newOptions)
 	}
 }
 </script>

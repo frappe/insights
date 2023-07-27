@@ -1,12 +1,15 @@
 <template>
-	<div class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r bg-white" v-if="currentRoute">
-		<div class="flex flex-grow flex-col overflow-y-auto p-3">
-			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-500">
+	<div
+		class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r border-gray-300 bg-white"
+		v-if="currentRoute"
+	>
+		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
+			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
 				<img src="../assets/insights-logo.svg" class="h-7" />
 				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
-				<img src="../assets/insights-icon.svg" class="rounded-md" />
+				<img src="../assets/insights-icon.svg" class="rounded" />
 			</router-link>
 
 			<div class="mt-4 flex flex-col">
@@ -20,7 +23,7 @@
 					>
 						<template #body>
 							<div
-								class="w-fit rounded-lg border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
+								class="w-fit rounded border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
 							>
 								{{ route.label }}
 							</div>
@@ -31,8 +34,8 @@
 							:class="[
 								route.current
 									? 'bg-gray-200/70'
-									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-								'rg:justify-start group flex w-full items-center justify-center rounded-md p-2 font-medium',
+									: 'text-gray-700 hover:bg-gray-50 hover:text-gray-800',
+								'rg:justify-start group flex w-full items-center justify-center rounded p-2 font-medium',
 							]"
 							aria-current="page"
 						>
@@ -41,8 +44,8 @@
 								:stroke-width="1.5"
 								:class="[
 									route.current
-										? 'text-gray-600'
-										: 'text-gray-500 group-hover:text-gray-600',
+										? 'text-gray-800'
+										: 'text-gray-700 group-hover:text-gray-700',
 									'rg:mr-3 rg:h-4 rg:w-4 mr-0 h-5 w-5 flex-shrink-0',
 								]"
 							/>
@@ -53,38 +56,48 @@
 				</nav>
 			</div>
 
-			<div class="rg:mx-0 -mx-2 mt-auto flex items-center text-base text-gray-600">
+			<div class="mt-auto flex items-center text-base text-gray-600">
 				<Dropdown
 					placement="left"
 					:options="[
 						{
 							label: 'Documentation',
 							icon: 'help-circle',
-							handler: () => open('https://docs.frappeinsights.com'),
+							onClick: () => open('https://docs.frappeinsights.com'),
+						},
+						{
+							label: 'Join Telegram Group',
+							icon: 'message-circle',
+							onClick: () => open('https://t.me/frappeinsights'),
+						},
+						{
+							label: 'Help',
+							icon: 'life-buoy',
+							onClick: () => (showHelpDialog = true),
 						},
 						auth.user.is_admin
 							? {
 									label: 'Switch to Desk',
 									icon: 'grid',
-									handler: () => open('/app'),
+									onClick: () => open('/app'),
 							  }
 							: null,
 						{
 							label: 'Logout',
 							icon: 'log-out',
-							handler: () => auth.logout(),
+							onClick: () => auth.logout(),
 						},
 					]"
 				>
 					<template v-slot="{ open }">
 						<button
-							class="flex w-full items-center space-x-2 rounded-md p-2 text-left text-base font-medium"
+							class="flex w-full items-center space-x-2 rounded p-1 text-left text-base font-medium"
 							:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
 						>
 							<Avatar
+								size="xl"
 								:label="auth.user.full_name"
 								:imageURL="auth.user.user_image"
-								size="md"
 							/>
 							<span
 								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"
@@ -98,30 +111,40 @@
 			</div>
 		</div>
 	</div>
+
+	<HelpDialog v-model="showHelpDialog" />
 </template>
 
 <script setup>
 import { Avatar } from 'frappe-ui'
 
-import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { createResource } from 'frappe-ui'
+import HelpDialog from '@/components/HelpDialog.vue'
 import auth from '@/utils/auth'
-import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
+import { createResource } from 'frappe-ui'
 import {
-	Wrench,
-	LayoutDashboard,
+	Book,
 	Database,
+	GanttChartSquare,
+	HomeIcon,
+	LayoutDashboard,
 	Settings,
 	User,
 	Users,
-	Star,
-	Book,
 	Bot,
 } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
+const showHelpDialog = ref(false)
 const sidebarItems = ref([
+	{
+		path: '/',
+		label: 'Home',
+		icon: HomeIcon,
+		name: 'Home',
+		current: false,
+	},
 	{
 		path: '/dashboard',
 		label: 'Dashboards',
@@ -138,7 +161,7 @@ const sidebarItems = ref([
 	{
 		path: '/query',
 		label: 'Query',
-		icon: Wrench,
+		icon: GanttChartSquare,
 		name: 'QueryList',
 		current: false,
 	},
@@ -165,18 +188,6 @@ const sidebarItems = ref([
 	},
 ])
 
-getOnboardingStatus().then((onboardingComplete) => {
-	if (!onboardingComplete) {
-		// add onboarding item as first item in sidebar
-		sidebarItems.value.unshift({
-			path: '/get-started',
-			label: 'Get Started',
-			icon: Star,
-			name: 'GetStarted',
-			current: false,
-		})
-	}
-})
 watch(
 	() => auth.user.is_admin && settings.doc?.enable_permissions,
 	(isAdmin) => {

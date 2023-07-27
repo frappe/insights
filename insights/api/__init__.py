@@ -3,6 +3,8 @@
 
 
 import frappe
+from frappe.integrations.utils import make_post_request
+from frappe.rate_limiter import rate_limit
 from frappe.utils.caching import redis_cache
 
 from insights import notify
@@ -65,9 +67,7 @@ def get_table_columns(data_source, table):
 @check_role("Insights User")
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @frappe.whitelist()
@@ -103,9 +103,7 @@ def get_dashboard_list():
     )
     for dashboard in dashboards:
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
             filters={
@@ -174,9 +172,10 @@ def get_queries():
 def create_query(**query):
     track("create_query")
     doc = frappe.new_doc("Insights Query")
-    doc.title = query.get("title") or "Untitled Query"
+    doc.title = query.get("title")
     doc.data_source = query.get("data_source") or "Demo Data"
     doc.is_assisted_query = query.get("is_assisted_query")
+    doc.is_native_query = query.get("is_native_query")
     if table := query.get("table") and not doc.is_assisted_query:
         doc.append(
             "tables",
@@ -211,8 +210,12 @@ def get_user_info():
         "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
     )
 
+    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+
     return {
         "user_id": frappe.session.user,
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",
         "is_user": is_user,
     }
@@ -220,9 +223,7 @@ def get_user_info():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
-):
+def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
 
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
@@ -260,26 +261,6 @@ def create_table_link(
     if not foreign.get("table_links", link):
         foreign.append("table_links", link)
         foreign.save()
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def get_onboarding_status():
-    return {
-        "is_onboarded": frappe.db.get_single_value(
-            "Insights Settings", "onboarding_complete"
-        ),
-        "query_created": bool(frappe.db.a_row_exists("Insights Query")),
-        "dashboard_created": bool(frappe.db.a_row_exists("Insights Dashboard")),
-        "chart_created": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-        "chart_added": bool(frappe.db.a_row_exists("Insights Dashboard Item")),
-    }
-
-
-@frappe.whitelist()
-@check_role("Insights User")
-def skip_onboarding():
-    frappe.db.set_value("Insights Settings", None, "onboarding_complete", 1)
 
 
 @frappe.whitelist()
@@ -466,15 +447,11 @@ def get_public_chart(public_key):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
-    chart_name = frappe.db.exists(
-        "Insights Chart", {"public_key": public_key, "is_public": 1}
-    )
+    chart_name = frappe.db.exists("Insights Chart", {"public_key": public_key, "is_public": 1})
     if not chart_name:
         frappe.throw("Invalid Public Key")
 
-    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(
-        no_default_fields=True
-    )
+    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(no_default_fields=True)
     chart_data = frappe.get_cached_doc("Insights Query", chart.query).fetch_results()
     chart["data"] = chart_data
     return chart
@@ -559,3 +536,31 @@ def create_chart():
     chart = frappe.new_doc("Insights Chart")
     chart.save()
     return chart.name
+
+
+@frappe.whitelist()
+@rate_limit(limit=10, seconds=60 * 60)
+def contact_team(message_type, message_content, is_critical=False):
+    if not message_type or not message_content:
+        frappe.throw("Message Type and Content are required")
+
+    message_title = {
+        "Feedback": "Feedback from Insights User",
+        "Bug": "Bug Report from Insights User",
+        "Question": "Question from Insights User",
+    }.get(message_type)
+
+    if not message_title:
+        frappe.throw("Invalid Message Type")
+
+    try:
+        make_post_request(
+            "https://frappeinsights.com/api/method/contact-team",
+            data={
+                "message_title": message_title,
+                "message_content": message_content,
+            },
+        )
+    except Exception as e:
+        frappe.log_error(e)
+        frappe.throw("Something went wrong. Please try again later.")

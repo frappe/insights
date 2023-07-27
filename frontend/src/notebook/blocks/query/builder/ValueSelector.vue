@@ -102,7 +102,7 @@ const DateRangePicker = (props) => (
 
 const DatePicker = (props) => (
 	<DatePickerFlat
-		class="rounded-lg p-2"
+		class="rounded p-2"
 		value={props.value.value}
 		onChange={(date) => {
 			props.setValue({
@@ -134,7 +134,7 @@ const selectorComponentMap = {
 		v-else
 		v-model="value"
 		:disableInput="isMultiValue"
-		placeholder="Pick a value"
+		placeholder="Value"
 		@input="selectorType === 'combobox' && checkAndFetchColumnValues($event)"
 	>
 		<template #popover="{ value, togglePopover, setValue }">

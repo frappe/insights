@@ -7,12 +7,12 @@
 				:value="_value"
 				:placeholder="placeholder"
 				@focus="togglePopover()"
-				class="form-input block h-8 w-full cursor-text select-none rounded-md text-sm placeholder-gray-500"
+				class="form-input block h-8 w-full cursor-text select-none rounded border-gray-400 text-sm placeholder-gray-500"
 			/>
 		</template>
 		<template #body="{ togglePopover }">
 			<div
-				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded-md border bg-white p-3 text-base shadow-md"
+				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded border bg-white p-3 text-base shadow-md"
 			>
 				<Tabs
 					:tabs="[
@@ -28,19 +28,19 @@
 						v-if="span !== 'Current'"
 						type="number"
 						v-model="interval"
-						class="h-8 w-full text-sm"
+						class="w-full text-sm"
 					/>
 					<Input
 						type="select"
 						v-model="intervalType"
-						class="h-8 w-full text-sm"
+						class="w-full text-sm"
 						:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
 					>
 					</Input>
 				</div>
 				<div class="flex justify-end">
 					<Button
-						appearance="primary"
+						variant="solid"
 						@click="
 							() => {
 								apply()

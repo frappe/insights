@@ -1,5 +1,5 @@
 <template>
-	<div class="flex h-screen w-screen bg-white font-sans antialiased">
+	<div class="flex h-screen w-screen bg-white antialiased">
 		<template v-if="route.meta.allowGuest">
 			<router-view></router-view>
 		</template>
@@ -30,7 +30,7 @@ if (!route.meta.allowGuest) {
 			$notify({
 				title: data.title || data.message,
 				message: data.title ? data.message : '',
-				appearance: data.type,
+				variant: data.type,
 			})
 		}
 	})

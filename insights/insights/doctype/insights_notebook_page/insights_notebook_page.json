@@ -1,6 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "format:NBP-{####}",
  "creation": "2023-04-16 21:22:19.312584",
  "default_view": "List",
  "doctype": "DocType",
@@ -46,10 +46,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-17 21:45:29.425141",
+ "modified": "2023-07-19 12:44:05.463015",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Notebook Page",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

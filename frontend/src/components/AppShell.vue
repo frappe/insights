@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-1 overflow-hidden bg-gray-50 text-base">
+	<div class="flex flex-1 overflow-hidden text-base">
 		<Sidebar v-if="!hideSidebar" />
 		<RouterView v-slot="{ Component }">
 			<Suspense>
@@ -8,7 +8,7 @@
 				</div>
 				<template #fallback>
 					<div class="flex h-full flex-col items-center justify-center">
-						<FeatherIcon name="loader" class="h-8 w-8 animate-spin text-gray-400" />
+						<FeatherIcon name="loader" class="h-8 w-8 animate-spin text-gray-500" />
 					</div>
 				</template>
 			</Suspense>
@@ -22,10 +22,11 @@ import auth from '@/utils/auth'
 import Sidebar from '@/components/Sidebar.vue'
 import { useRoute } from 'vue-router'
 import settings from '@/utils/settings'
+import systemSettings from '@/utils/systemSettings'
 
 const route = useRoute()
 const hideSidebar = computed(() => {
 	return route.meta.hideSidebar || !auth.isLoggedIn
 })
-onMounted(() => auth.isLoggedIn && settings.get.fetch())
+onMounted(() => auth.isLoggedIn && settings.get.fetch() && systemSettings.get.fetch())
 </script>

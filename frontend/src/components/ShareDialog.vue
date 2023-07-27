@@ -7,18 +7,18 @@
 				</h3>
 				<div class="space-y-3 text-base">
 					<div v-if="props.allowPublicAccess" class="space-y-4">
-						<div class="flex items-center space-x-4 rounded-lg border px-4 py-2">
+						<div class="flex items-center space-x-4 rounded border px-4 py-2">
 							<FeatherIcon name="globe" class="h-5 w-5 text-blue-500" />
 							<div class="flex flex-1 flex-col">
 								<div class="font-medium text-gray-600">Create Public Link</div>
-								<div class="text-sm text-gray-400">
+								<div class="text-sm text-gray-500">
 									Anyone with the link can view this
 									{{ resourceType.replace('Insights ', '').toLowerCase() }}
 								</div>
 							</div>
 							<Checkbox v-model="isPublic" />
 						</div>
-						<div class="flex overflow-hidden rounded-md bg-gray-100" v-if="publicLink">
+						<div class="flex overflow-hidden rounded bg-gray-100" v-if="publicLink">
 							<div
 								class="font-code form-input flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-r-none text-sm text-gray-600"
 							>
@@ -62,14 +62,14 @@
 									<Avatar :label="team.team_name" />
 									<div class="ml-2 flex flex-col">
 										<span>{{ team.team_name }}</span>
-										<span class="text-gray-400"
+										<span class="text-gray-500"
 											>{{ team.members_count }} members</span
 										>
 									</div>
 									<Button
 										icon="x"
 										class="ml-auto"
-										appearance="minimal"
+										variant="minimal"
 										@click="handleAccessRevoke(team.name)"
 									></Button>
 								</div>
@@ -77,7 +77,7 @@
 
 							<div
 								v-else
-								class="flex h-20 items-center justify-center rounded-md border-2 border-dashed text-sm font-light text-gray-400"
+								class="flex h-20 items-center justify-center rounded border-2 border-dashed text-sm font-light text-gray-500"
 							>
 								Only you have access to this
 								{{ resourceType.replace('Insights ', '').toLowerCase() }}

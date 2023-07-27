@@ -102,7 +102,7 @@ const submitQuery = () => {
 		</template>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="submitQuery"
 				:disabled="createDisabled"
 				:loading="createQuery.loading"

@@ -11,20 +11,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.pool import NullPool
 
-MARIADB_TO_GENERIC_TYPES = {
-    "int": "Integer",
-    "bigint": "Long Int",
-    "decimal": "Decimal",
-    "text": "Text",
-    "longtext": "Long Text",
-    "date": "Date",
-    "datetime": "Datetime",
-    "time": "Time",
-    "varchar": "String",
-}
+from insights.cache_utils import make_digest
 
 
 def get_sqlalchemy_engine(**kwargs) -> Engine:
+    if kwargs.get("connection_string"):
+        return create_engine(kwargs.get("connection_string"), poolclass=NullPool)
 
     dialect = kwargs.pop("dialect")
     driver = kwargs.pop("driver")
@@ -51,8 +43,10 @@ def create_insights_table(table, force=False):
         },
     )
 
+    doc_before = None
     if docname := exists:
         doc = frappe.get_doc("Insights Table", docname)
+        doc_before = frappe.get_doc("Insights Table", docname)
     else:
         doc = frappe.get_doc(
             {
@@ -88,8 +82,9 @@ def create_insights_table(table, force=False):
 
     version = frappe.new_doc("Version")
     # if there's some update to store only then save the doc
-    doc_changed = version.update_version_info(doc.get_doc_before_save(), doc)
-    if not exists or force or doc_changed:
+    doc_changed = version.update_version_info(doc_before, doc)
+    is_new = not exists
+    if is_new or doc_changed or force:
         # need to ignore permissions when creating/updating a table in query store
         # a user may have access to create a query and store it, but not to create a table
         doc.save(ignore_permissions=True)
@@ -176,9 +171,7 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
         if data_source is None:
             data_source = sql.data_source
         if data_source and sql.data_source != data_source:
-            frappe.throw(
-                "Cannot use queries from different data sources in a single query"
-            )
+            frappe.throw("Cannot use queries from different data sources in a single query")
 
         stored_query_sql[sql.name] = sql.sql
         sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source)
@@ -199,6 +192,10 @@ def process_cte(main_query, data_source=None):
     """
     Replaces stored queries in the main query with the actual query using CTE
     """
+
+    processed_comment = "/* query tables processed as CTE */"
+    if processed_comment in main_query:
+        return main_query
 
     stored_query_sql = get_stored_query_sql(main_query, data_source)
     if not stored_query_sql:
@@ -234,7 +231,7 @@ def process_cte(main_query, data_source=None):
     for query_name, sql in stored_query_sql.items():
         cte += f" `{query_name}` AS ({sql}),"
     cte = cte[:-1]
-    return cte + " " + main_query
+    return f"{processed_comment} {cte} {main_query}"
 
 
 def strip_quotes(table):
@@ -264,6 +261,29 @@ def compile_query(query, dialect=None):
     compile_args = {"compile_kwargs": {"literal_binds": True}, "dialect": dialect}
     compiled = query.compile(**compile_args)
     return compiled
+
+
+def execute_and_log(conn, sql, data_source):
+    with Timer() as t:
+        result = conn.execute(sql)
+    create_execution_log(sql, data_source, t.elapsed)
+    return result
+
+
+def cache_results(sql, data_source, results):
+    key = make_digest(sql, data_source)
+    frappe.cache().set_value(
+        f"insights_query_result:{data_source}:{key}",
+        frappe.as_json(results),
+        expires_in_sec=60 * 5,
+    )
+
+
+def get_cached_results(sql, data_source):
+    key = make_digest(sql, data_source)
+    return frappe.parse_json(
+        frappe.cache().get_value(f"insights_query_result:{data_source}:{key}")
+    )
 
 
 def create_execution_log(sql, data_source, time_taken=0):

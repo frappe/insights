@@ -65,6 +65,7 @@ function getChart(chartName) {
 					const recommendedChart = guessChart(state.data)
 					state.doc.chart_type = recommendedChart?.type
 					state.doc.options = recommendedChart?.options
+					state.doc.options.title = _query.doc.title
 				}
 				state.doc.options.query = state.doc.query
 				state.loading = false
@@ -84,7 +85,7 @@ function getChart(chartName) {
 		chartDocResource.setValue.submit({ is_public: isPublic }).then(() => {
 			$notify({
 				title: 'Chart access updated',
-				appearance: 'success',
+				variant: 'success',
 			})
 			state.doc.is_public = isPublic
 		})

@@ -14,7 +14,7 @@ resource.updateSettings = (settings) => {
 		createToast({
 			title: 'Settings Updated',
 			message: 'Your settings have been updated successfully',
-			appearance: 'success',
+			variant: 'success',
 		})
 	})
 }

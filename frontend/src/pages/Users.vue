@@ -4,12 +4,7 @@
 			<div class="flex flex-1 justify-between">
 				<h1 class="text-3xl font-medium text-gray-900">Users</h1>
 				<div class="space-x-4">
-					<Button
-						appearance="white"
-						class="shadow-sm"
-						iconLeft="plus"
-						@click="showAddUserDialog = true"
-					>
+					<Button variant="outline" iconLeft="plus" @click="showAddUserDialog = true">
 						Add User
 					</Button>
 				</div>
@@ -20,13 +15,13 @@
 				<div class="mb-4 flex flex-shrink-0 space-x-4">
 					<Input type="text" placeholder="Full Name" v-model="search.full_name" />
 				</div>
-				<div class="flex flex-1 flex-col overflow-hidden rounded-md border">
+				<div class="flex flex-1 flex-col overflow-hidden rounded border">
 					<!-- List Header -->
 					<div
-						class="flex flex-shrink-0 items-center justify-between border-b py-3 px-4 text-sm text-gray-500"
+						class="flex flex-shrink-0 items-center justify-between border-b px-4 py-3 text-sm text-gray-600"
 					>
 						<p class="mr-4">
-							<Input type="checkbox" class="rounded-md border-gray-300" />
+							<Input type="checkbox" class="rounded border-gray-300" />
 						</p>
 						<p class="flex-1 flex-shrink-0">Full Name</p>
 						<p class="flex-1 flex-shrink-0">Email</p>
@@ -44,10 +39,10 @@
 							@click="userToEdit = user.name"
 						>
 							<div
-								class="group flex h-11 cursor-pointer items-center rounded-md px-4 hover:bg-gray-50"
+								class="group flex h-11 cursor-pointer items-center rounded px-4 hover:bg-gray-50"
 							>
 								<p class="mr-4">
-									<Input type="checkbox" class="rounded-md border-gray-300" />
+									<Input type="checkbox" class="rounded border-gray-300" />
 								</p>
 								<p class="flex flex-1 flex-shrink-0 items-center justify-between">
 									<span
@@ -55,22 +50,22 @@
 									>
 										{{ user.full_name }}
 									</span>
-									<Badge v-if="user.type == 'Admin'" color="green" class="mr-6">
+									<Badge v-if="user.type == 'Admin'" theme="green" class="mr-6">
 										{{ user.type }}
 									</Badge>
 								</p>
 								<p
-									class="flex-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500"
+									class="flex-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600"
 								>
 									{{ user.email }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600 lg:inline-block"
 								>
 									{{ user.teams.length > 0 ? user.teams.join(', ') : '-' }}
 								</p>
 								<p
-									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-500 lg:inline-block"
+									class="hidden flex-1 flex-shrink-0 overflow-hidden whitespace-nowrap text-sm text-gray-600 lg:inline-block"
 								>
 									{{ fromNow(user.last_active) || '-' }}
 								</p>

@@ -1,23 +1,16 @@
 <template>
 	<LoginBox title="Log in to your account">
-		<form class="flex flex-col" @submit.prevent="makeLoginRequest">
+		<form class="flex flex-col space-y-3" @submit.prevent="makeLoginRequest">
 			<Input
 				label="Email"
-				placeholder="johndoe@mail.com"
 				v-model="email"
+				placeholder="johndoe@mail.com"
 				:type="email !== 'Administrator' ? 'email' : 'text'"
 			/>
-			<Input
-				class="mt-4"
-				label="Password"
-				type="password"
-				placeholder="•••••"
-				v-model="password"
-			/>
-			<ErrorMessage :error="errorMessage" class="mt-4" />
+			<Input label="Password" type="password" placeholder="•••••" v-model="password" />
+			<ErrorMessage :error="errorMessage" class="!mt-2" />
 			<Button
-				class="mt-4"
-				appearance="primary"
+				variant="solid"
 				:disabled="loggingIn"
 				:loading="loggingIn"
 				@click="makeLoginRequest"

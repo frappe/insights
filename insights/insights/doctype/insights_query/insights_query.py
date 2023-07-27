@@ -40,6 +40,10 @@ from .utils import (
 
 
 class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
+    def before_validate(self):
+        if not self.title and self.name:
+            self.title = self.name.replace("-", " ").replace("QRY", "Query")
+
     def before_save(self):
         self.update_sql_query()
 
@@ -51,6 +55,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def on_trash(self):
         self.delete_insights_table()
         self.delete_default_chart()
+
+    @property
+    def is_saved_as_table(self):
+        table_name = frappe.db.exists("Insights Table", {"table": self.name, "is_query_based": 1})
+        return bool(table_name)
 
     @property
     def _data_source(self):
@@ -81,6 +90,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def reset(self):
         new_query = frappe.new_doc("Insights Query")
         new_query.name = self.name
+        new_query.title = self.name.replace("-", " ").replace("QRY", "Query")
         new_query.data_source = self.data_source
         new_query_dict = new_query.as_dict(no_default_fields=True)
         self.update(new_query_dict)
@@ -92,15 +102,12 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.variant_controller.after_reset()
 
     def update_sql_query(self):
-        query = self.get_sql()
-        query = format_query(query) if query else None
+        query = self._data_source.build_query(self)
+        query = format_query(query)
         if self.sql == query:
             return
         self.sql = query
         self.status = Status.PENDING.value
-
-    def get_sql(self):
-        return self.variant_controller.get_sql()
 
     def create_default_chart(self):
         if frappe.db.exists("Insights Chart", {"query": self.name}):
@@ -109,7 +116,9 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         chart.query = self.name
         chart.save(ignore_permissions=True)
 
-    def update_insights_table(self):
+    def update_insights_table(self, force=False):
+        if not self.is_saved_as_table and not force:
+            return
         query_table = _dict(
             table=self.name,
             label=self.title,
@@ -183,6 +192,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @log_error(raise_exc=True)
     def process_results_columns(self, results):
+        if not results:
+            return results
         results[0] = ResultColumn.from_dicts(self.get_columns_from_results(results))
         return results
 

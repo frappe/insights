@@ -1,13 +1,17 @@
 import { getTrialStatus } from '@/subscription'
 import auth from '@/utils/auth'
-import { getOnboardingStatus } from '@/utils/onboarding'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
+import { isSetupComplete } from '@/setup'
 
 const routes = [
 	{
 		path: '/setup',
-		redirect: '/',
+		name: 'Setup',
+		component: () => import('@/setup/Setup.vue'),
+		meta: {
+			hideSidebar: true,
+		},
 	},
 	{
 		path: '/login',
@@ -20,12 +24,8 @@ const routes = [
 	},
 	{
 		path: '/',
-		redirect: '/get-started',
-	},
-	{
-		path: '/get-started',
-		name: 'Get Started',
-		component: () => import('@/pages/GetStarted.vue'),
+		name: 'Home',
+		component: () => import('@/home/Home.vue'),
 	},
 	{
 		path: '/dashboard',
@@ -82,7 +82,7 @@ const routes = [
 	},
 	{
 		props: true,
-		name: 'QueryBuilder',
+		name: 'Query',
 		path: '/query/build/:name',
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
@@ -115,7 +115,7 @@ const routes = [
 	},
 	{
 		props: true,
-		path: '/notebook/:notebook/:page',
+		path: '/notebook/:notebook/:name',
 		name: 'NotebookPage',
 		component: () => import('@/notebook/NotebookPage.vue'),
 	},
@@ -162,11 +162,12 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-	if (!auth.isLoggedIn && to.name !== 'Login' && to.meta.allowGuest) {
+	if (to.meta.allowGuest && !auth.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
 		return next()
 	}
 
+	// route to login page if not logged in
 	if (!auth.isLoggedIn) {
 		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
@@ -178,10 +179,10 @@ router.beforeEach(async (to, from, next) => {
 	}
 
 	const isAuthorized = await auth.isAuthorized()
-	const trialExpired = import.meta.env.DEV ? false : await getTrialStatus()
-	if (trialExpired && to.name !== 'Trial Expired') {
-		return next('/trial-expired')
-	}
+	// const trialExpired = await getTrialStatus()
+	// if (trialExpired && to.name !== 'Trial Expired') {
+	// 	return next('/trial-expired')
+	// }
 	if (!isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
@@ -192,16 +193,23 @@ router.beforeEach(async (to, from, next) => {
 		return next('/no-permission')
 	}
 
-	// redirect to /dashboard if onboarding is complete
-	const onboardingComplete = await getOnboardingStatus()
-	if (onboardingComplete && to.name == 'Get Started') {
-		return next('/dashboard')
+	// redirect to /setup if setup is not complete
+	const setupComplete = await isSetupComplete()
+	if (!setupComplete && to.name !== 'Setup') {
+		return next('/setup')
+	}
+	// redirect to / if setup is complete and user is on /setup
+	if (setupComplete && to.name === 'Setup') {
+		return next('/')
 	}
 
-	if (to.path === '/login') {
-		next('/')
-	} else {
-		next()
+	to.path === '/login' ? next('/') : next()
+})
+
+router.afterEach((to, from) => {
+	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
+	if (TRACKED_RECORDS.includes(to.name) && to.name !== from.name) {
+		auth.createViewLog(to.name, to.params.name)
 	}
 })
 

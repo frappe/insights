@@ -6,9 +6,9 @@
 			:actions="[
 				{
 					label: 'New Data Source',
-					appearance: 'white',
+					variant: 'solid',
 					iconLeft: 'plus',
-					handler: () => (new_dialog = true),
+					onClick: () => (new_dialog = true),
 				},
 			]"
 			:columns="columns"
@@ -20,11 +20,12 @@
 
 	<NewDialogWithTypes
 		v-model:show="new_dialog"
-		title="Select Database Type"
+		title="Select Source Type"
 		:types="databaseTypes"
 	/>
 
 	<ConnectMariaDBDialog v-model:show="showConnectMariaDBDialog" />
+	<ConnectPostgreDBDialog v-model:show="showConnectPostgreDBDialog" />
 	<UploadCSVFileDialog v-model:show="showCSVFileUploadDialog" />
 </template>
 
@@ -34,17 +35,23 @@ import ListView from '@/components/ListView.vue'
 import useDataSources from '@/datasource/useDataSources'
 import { updateDocumentTitle } from '@/utils'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import NewDialogWithTypes from '@/query/NewDialogWithTypes.vue'
+import { useRouter, useRoute } from 'vue-router'
+import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
+import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
 
 const new_dialog = ref(false)
+const route = useRoute()
+if (route.hash == '#new') {
+	new_dialog.value = true
+}
+
 const sources = useDataSources()
 sources.reload()
 
 const StatusCell = (props) => (
-	<Badge color={props.row.status == 'Inactive' ? 'yellow' : 'green'}>{props.row.status}</Badge>
+	<Badge theme={props.row.status == 'Inactive' ? 'orange' : 'green'}>{props.row.status}</Badge>
 )
 const columns = [
 	{ label: 'Title', key: 'title' },
@@ -55,22 +62,32 @@ const columns = [
 
 const router = useRouter()
 const showConnectMariaDBDialog = ref(false)
+const showConnectPostgreDBDialog = ref(false)
 const showCSVFileUploadDialog = ref(false)
 const databaseTypes = ref([
 	{
 		label: 'MariaDB',
 		description: 'Connect to a MariaDB database',
 		icon: 'database',
-		handler: () => {
+		onClick: () => {
 			new_dialog.value = false
 			showConnectMariaDBDialog.value = true
+		},
+	},
+	{
+		label: 'PostgreSQL',
+		description: 'Connect to a PostgreSQL database',
+		icon: 'database',
+		onClick: () => {
+			new_dialog.value = false
+			showConnectPostgreDBDialog.value = true
 		},
 	},
 	{
 		label: 'CSV',
 		description: 'Upload a CSV file',
 		icon: 'file',
-		handler: () => {
+		onClick: () => {
 			new_dialog.value = false
 			showCSVFileUploadDialog.value = true
 		},

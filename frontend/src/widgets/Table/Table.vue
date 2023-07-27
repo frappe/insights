@@ -42,10 +42,7 @@ function total(column) {
 </script>
 
 <template>
-	<div
-		v-if="results"
-		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded-md p-3"
-	>
+	<div v-if="results" class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded p-3">
 		<div
 			v-if="props.options.title"
 			class="h-5 flex-shrink-0 text-base font-medium text-gray-600"
@@ -55,7 +52,7 @@ function total(column) {
 		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
 			<div
 				v-if="rows.length == 0"
-				class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-500"
+				class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-600"
 			>
 				<span>No Data</span>
 			</div>

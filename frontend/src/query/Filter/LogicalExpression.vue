@@ -34,7 +34,7 @@
 				</div>
 				<div
 					ref="addConditionRef"
-					class="!-mt-0.5 !-mb-2 flex h-9 cursor-pointer items-center text-sm font-light text-gray-400 hover:text-gray-500"
+					class="!-mt-0.5 !-mb-2 flex h-9 cursor-pointer items-center text-sm font-light text-gray-500 hover:text-gray-600"
 					@click.prevent.stop="$emit('add-filter', { level, position })"
 				>
 					+ {{ operator == '&&' ? 'and' : 'or' }} condition
