@@ -1,9 +1,14 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
+import { call } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 
 const query = inject('query')
-query.getSourceSchema.submit()
+call('insights.api.get_source_schema', {
+	data_source: query.doc.data_source,
+}).then((response) => {
+	query.sourceSchema = response
+})
 const completions = computed(() => {
 	if (!query.sourceSchema) return { schema: {}, tables: [] }
 

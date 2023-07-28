@@ -564,3 +564,8 @@ def contact_team(message_type, message_content, is_critical=False):
     except Exception as e:
         frappe.log_error(e)
         frappe.throw("Something went wrong. Please try again later.")
+
+
+@frappe.whitelist()
+def get_source_schema(data_source):
+    return frappe.get_doc("Insights Data Source", data_source).get_schema()

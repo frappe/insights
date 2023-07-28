@@ -120,8 +120,9 @@ function makeQuery(name) {
 	watchDebounced(getUpdatedFields, setUnsaved, { deep: true, debounce: 500 })
 
 	state.fetchSourceSchema = async () => {
-		const response = await resource.get_source_schema.fetch()
-		state.sourceSchema = response.message
+		state.sourceSchema = await call('insights.api.get_source_schema', {
+			data_source: state.doc.data_source,
+		})
 	}
 
 	state.loadChart = async () => {

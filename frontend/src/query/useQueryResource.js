@@ -29,11 +29,9 @@ export const API_METHODS = {
 
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
-	getSourceSchema: 'get_source_schema',
 	get_chart_name: 'get_chart_name',
 
 	run: 'run',
-	get_source_schema: 'get_source_schema',
 	get_chart_name: 'get_chart_name',
 	convert_to_native: 'convert_to_native',
 	convert_to_assisted: 'convert_to_assisted',
