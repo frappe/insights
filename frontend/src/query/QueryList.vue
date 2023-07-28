@@ -76,6 +76,7 @@ async function openQueryEditor(type) {
 	if (type === 'visual') new_query.is_assisted_query = 1
 	if (type === 'classic') new_query.is_assisted_query = 0
 	if (type === 'sql') new_query.is_native_query = 1
+	if (type === 'script') new_query.is_script_query = 1
 	const query = await queries.create(new_query)
 	router.push({
 		name: 'Query',
@@ -108,6 +109,12 @@ const queryBuilderTypes = ref([
 		description: 'Create a query using SQL',
 		icon: 'code',
 		onClick: () => openQueryEditor('sql'),
+	},
+	{
+		label: 'Script',
+		description: 'Create a query using a script',
+		icon: 'code',
+		onClick: () => openQueryEditor('script'),
 	},
 ])
 </script>

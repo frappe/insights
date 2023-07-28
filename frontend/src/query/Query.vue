@@ -13,6 +13,13 @@
 						<NativeQueryEditor />
 					</div>
 				</template>
+				<template v-else-if="query.doc.is_script_query">
+					<div
+						class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
+					>
+						<ScriptQueryEditor />
+					</div>
+				</template>
 				<template v-else>
 					<div
 						class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
@@ -47,6 +54,7 @@ import { default as VisualQuery } from '@/notebook/blocks/query/builder/QueryBui
 import ColumnPanel from '@/query/Column/ColumnPanel.vue'
 import FilterPanel from '@/query/Filter/FilterPanel.vue'
 import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
+import ScriptQueryEditor from '@/query/ScriptQueryEditor.vue'
 import QueryHeader from '@/query/QueryHeader.vue'
 import QueryVisualizer from '@/query/QueryVisualizer.vue'
 import QueryResult from '@/query/Result/QueryResult.vue'
