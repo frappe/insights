@@ -6,7 +6,14 @@ from functools import cached_property
 
 import frappe
 
-from .utils import Column, InsightsTable, Query, get_columns_with_inferred_types
+from .utils import (
+    Column,
+    InsightsDataSource,
+    InsightsTable,
+    Query,
+    get_columns_with_inferred_types,
+    update_sql,
+)
 
 DEFAULT_JSON = {
     "table": {},
@@ -29,6 +36,9 @@ class InsightsAssistedQueryController:
         if not frappe.parse_json(self.doc.json):
             self.doc.json = frappe.as_json(DEFAULT_JSON)
 
+    def before_save(self):
+        update_sql(self.doc)
+
     @cached_property
     def query_json(self):
         query = frappe.parse_json(self.doc.json)
@@ -38,9 +48,6 @@ class InsightsAssistedQueryController:
         query.dimensions = (c.get("column") for c in query.dimensions or [])
         query.orders = (c.get("column") for c in query.orders or [])
         return Query(**query)
-
-    def get_columns(self):
-        return self.get_columns_from_results(self.doc.retrieve_results())
 
     def get_columns_from_results(self, results):
         if not results:
@@ -107,5 +114,8 @@ class InsightsAssistedQueryController:
             return
         raise frappe.ValidationError("Query Store data source is not supported for assisted query")
 
-    def after_fetch_results(self, results):
+    def after_fetch(self, results):
         return results
+
+    def fetch_results(self):
+        return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)

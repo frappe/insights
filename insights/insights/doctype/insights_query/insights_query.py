@@ -27,7 +27,6 @@ from .insights_raw_query import InsightsRawQueryController
 from .utils import (
     CachedResults,
     InsightsChart,
-    InsightsDataSource,
     InsightsSettings,
     InsightsTable,
     InsightsTableColumn,
@@ -35,7 +34,6 @@ from .utils import (
     apply_pivot_transform,
     apply_transpose_transform,
     apply_unpivot_transform,
-    format_query,
 )
 
 
@@ -45,7 +43,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             self.title = self.name.replace("-", " ").replace("QRY", "Query")
 
     def before_save(self):
-        self.update_sql_query()
+        self.variant_controller.before_save()
 
     def on_update(self):
         self.create_default_chart()
@@ -60,10 +58,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def is_saved_as_table(self):
         table_name = frappe.db.exists("Insights Table", {"table": self.name, "is_query_based": 1})
         return bool(table_name)
-
-    @property
-    def _data_source(self):
-        return InsightsDataSource.get_doc(self.data_source)
 
     @property
     def results(self):
@@ -92,6 +86,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         new_query.name = self.name
         new_query.title = self.name.replace("-", " ").replace("QRY", "Query")
         new_query.data_source = self.data_source
+        new_query.is_native_query = self.is_native_query
+        new_query.is_assisted_query = self.is_assisted_query
         new_query_dict = new_query.as_dict(no_default_fields=True)
         self.update(new_query_dict)
         self.status = Status.SUCCESS.value
@@ -99,15 +95,9 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.after_reset()
 
     def after_reset(self):
-        self.variant_controller.after_reset()
-
-    def update_sql_query(self):
-        query = self._data_source.build_query(self)
-        query = format_query(query)
-        if self.sql == query:
+        if not hasattr(self.variant_controller, "after_reset"):
             return
-        self.sql = query
-        self.status = Status.PENDING.value
+        self.variant_controller.after_reset()
 
     def create_default_chart(self):
         if frappe.db.exists("Insights Chart", {"query": self.name}):
@@ -131,7 +121,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         create_insights_table(query_table)
 
     def get_columns(self):
-        return self.variant_controller.get_columns()
+        return self.get_columns_from_results(self.retrieve_results())
 
     def update_query_store(self):
         if not self.is_stored:
@@ -172,8 +162,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self._results = []
         start = time.monotonic()
         try:
-            self._results = self._data_source.run_query(self)
-            self._results = self.after_fetch_results(self._results)
+            self._results = self.variant_controller.fetch_results()
+            self._results = self.after_fetch(self._results)
             self._results = self.process_results_columns(self._results)
             self.execution_time = flt(time.monotonic() - start, 3)
             self.last_execution = frappe.utils.now()
@@ -200,10 +190,10 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def get_columns_from_results(self, results):
         return self.variant_controller.get_columns_from_results(results)
 
-    def after_fetch_results(self, results):
+    def after_fetch(self, results):
         if self.transforms:
             results = self.apply_transforms(results)
-        results = self.variant_controller.after_fetch_results(results)
+        results = self.variant_controller.after_fetch(results)
         return results
 
     def apply_transforms(self, results):

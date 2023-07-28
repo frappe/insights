@@ -78,10 +78,6 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def get_source_schema(self):
-        return self._data_source.get_schema()
-
-    @frappe.whitelist()
     def get_chart_name(self):
         return InsightsChart.get_name(query=self.name)
 

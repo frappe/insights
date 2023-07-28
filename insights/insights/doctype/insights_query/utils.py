@@ -86,6 +86,15 @@ class Status(Enum):
     FAILED = "Pending Execution"
 
 
+def update_sql(query):
+    sql = InsightsDataSource.get_doc(query.data_source)
+    sql = format_query(sql)
+    if query.sql == sql:
+        return
+    query.sql = sql
+    query.status = Status.PENDING.value
+
+
 def format_query(query):
     return (
         sqlparse.format(
