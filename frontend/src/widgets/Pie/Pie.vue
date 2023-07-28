@@ -164,7 +164,7 @@ function appendPercentage(value) {
 			}"
 		/>
 		<ChartTooltip
-			:options="{ trigger: 'item', appendToBody: true, formatter: appendPercentage }"
+			:options="{ trigger: 'item', appendToBody: true, valueFormatter: appendPercentage }"
 		/>
 		<ChartLegend
 			v-if="!props.options.inlineLabels"
