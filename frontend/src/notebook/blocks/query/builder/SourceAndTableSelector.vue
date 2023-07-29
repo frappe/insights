@@ -62,7 +62,7 @@ const filteredSourceOptions = computed(() => {
 		.filter((source) =>
 			source.label.toLowerCase().includes(datasourceSearchTerm.value.toLowerCase())
 		)
-		.slice(0, 25)
+		.slice(0, 50)
 })
 
 const tablePopover = ref(null)
