@@ -87,7 +87,8 @@ class Status(Enum):
 
 
 def update_sql(query):
-    sql = InsightsDataSource.get_doc(query.data_source)
+    data_source = InsightsDataSource.get_doc(query.data_source)
+    sql = data_source.build_query(query)
     sql = format_query(sql)
     if query.sql == sql:
         return
