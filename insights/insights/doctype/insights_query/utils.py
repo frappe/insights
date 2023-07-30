@@ -348,6 +348,14 @@ class Query(frappe._dict):
     def is_valid(self):
         return self.table.is_valid()
 
+    def get_tables(self):
+        tables = set()
+        tables.add(self.table.table) if self.table else None
+        for j in self.joins:
+            tables.add(j.left_table.table) if j.left_table else None
+            tables.add(j.right_table.table) if j.right_table else None
+        return list(tables)
+
     def get_columns(self):
         return self._extract_columns()
 
@@ -365,3 +373,152 @@ class Query(frappe._dict):
             columns.append(Column(**c))
 
         return [c for c in columns if c]
+
+
+@dataclass
+class ExportedQuery(frappe._dict):
+    version: str
+    query: Query
+    subqueries: dict
+    metadata: dict = field(default_factory=dict)
+
+    def serialize(self):
+        return frappe.as_json(self)
+
+    @classmethod
+    def deserialize(cls, data_str):
+        data: ExportedQuery = frappe.parse_json(data_str)
+        subqueries = {}
+        for name, subquery in data.subqueries.items():
+            subqueries[name] = cls.deserialize(subquery)
+        return cls(
+            version=data.version,
+            query=Query(**data.query),
+            subqueries=subqueries,
+            metadata=data.metadata or {},
+        )
+
+
+class QueryExporter:
+    def __init__(self, query: Query, metadata=None):
+        self.query = query
+        self._subqueries = {}
+        self.metadata = metadata
+
+    def export(self) -> ExportedQuery:
+        self._subqueries = self._get_subqueries()
+        return ExportedQuery(
+            version="1.0",
+            query=self.query,
+            subqueries=self._subqueries,
+            metadata=self.metadata,
+        )
+
+    def _get_subqueries(self):
+        subqueries = frappe.get_all(
+            "Insights Table",
+            filters={
+                "table": ["in", self.query.get_tables()],
+                "is_query_based": 1,
+            },
+            pluck="table",
+        )
+        dependencies = {}
+        for subquery in subqueries:
+            if subquery in dependencies:
+                continue
+            query = InsightsQuery.get_doc(subquery)
+            dependencies[query.name] = query.export_query()
+        return dependencies
+
+
+class QueryImporter:
+    def __init__(self, data_source: str, exported_query: str, imported_subqueries=None):
+        self.data_source = data_source
+        self.exported_query = ExportedQuery.deserialize(exported_query)
+        self._imported_subqueries = imported_subqueries or {}
+
+    def import_query(self):
+        self._import_subqueries()
+        return self._import_query()
+
+    def _import_subqueries(self):
+        for name, subquery in self.exported_query.subqueries.items():
+            query_importer = QueryImporter(self.data_source, subquery, self._imported_subqueries)
+            new_name = query_importer.import_query()
+            self._imported_subqueries[name] = new_name
+        self._update_subquery_references()
+
+    def _import_query(self):
+        query = InsightsQuery.new_doc()
+        query.data_source = self.data_source
+        query.json = frappe.as_json(self.exported_query.query)
+        for key, value in self.exported_query.metadata.items():
+            query.set(key, value)
+        query.save()
+        if self.exported_query.metadata.get("is_saved_as_table"):
+            query.update_insights_table(force=True)
+            frappe.enqueue_doc(
+                "Insights Query",
+                query.name,
+                "fetch_results",
+                timeout=600,
+                enqueue_after_commit=True,
+            )
+        return query.name
+
+    def _update_subquery_references(self):
+        for old_name, new_name in self._imported_subqueries.items():
+            self._rename_subquery_in_table(old_name, new_name)
+            self._rename_subquery_in_joins(old_name, new_name)
+            self._rename_subquery_in_columns(old_name, new_name)
+            self._rename_subquery_in_filters(old_name, new_name)
+            self._rename_subquery_in_calculations(old_name, new_name)
+            self._rename_subquery_in_measures(old_name, new_name)
+            self._rename_subquery_in_dimensions(old_name, new_name)
+            self._rename_subquery_in_orders(old_name, new_name)
+
+    def _rename_subquery_in_table(self, old_name, new_name):
+        if self.exported_query.query.table.table == old_name:
+            self.exported_query.query.table.table = new_name
+
+    def _rename_subquery_in_joins(self, old_name, new_name):
+        for join in self.exported_query.query.joins:
+            if join.left_table.table == old_name:
+                join.left_table.table = new_name
+            if join.right_table.table == old_name:
+                join.right_table.table = new_name
+            if join.left_column.table == old_name:
+                join.left_column.table = new_name
+            if join.right_column.table == old_name:
+                join.right_column.table = new_name
+
+    def _rename_subquery_in_columns(self, old_name, new_name):
+        for column in self.exported_query.query.columns:
+            if column.table == old_name:
+                column.table = new_name
+
+    def _rename_subquery_in_filters(self, old_name, new_name):
+        for filter in self.exported_query.query.filters:
+            if filter.column.table == old_name:
+                filter.column.table = new_name
+
+    def _rename_subquery_in_calculations(self, old_name, new_name):
+        for calculation in self.exported_query.query.calculations:
+            if calculation.table == old_name:
+                calculation.table = new_name
+
+    def _rename_subquery_in_measures(self, old_name, new_name):
+        for measure in self.exported_query.query.measures:
+            if measure.table == old_name:
+                measure.table = new_name
+
+    def _rename_subquery_in_dimensions(self, old_name, new_name):
+        for dimension in self.exported_query.query.dimensions:
+            if dimension.table == old_name:
+                dimension.table = new_name
+
+    def _rename_subquery_in_orders(self, old_name, new_name):
+        for order in self.exported_query.query.orders:
+            if order.table == old_name:
+                order.table = new_name

@@ -8,7 +8,13 @@ import frappe
 
 from insights.utils import InsightsDataSource, InsightsTable
 
-from .utils import Column, Query, get_columns_with_inferred_types, update_sql
+from .utils import (
+    Column,
+    Query,
+    QueryExporter,
+    get_columns_with_inferred_types,
+    update_sql,
+)
 
 DEFAULT_JSON = {
     "table": {},
@@ -110,3 +116,16 @@ class InsightsAssistedQueryController:
 
     def fetch_results(self):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
+
+    def export_query(self):
+        query_dict = self.doc.as_dict()
+        exporter = QueryExporter(
+            query=self.query_json,
+            metadata={
+                "title": self.doc.title,
+                "is_assisted_query": 1,
+                "transforms": query_dict.transforms,
+                "is_saved_as_table": query_dict.is_saved_as_table,
+            },
+        )
+        return exporter.export()
