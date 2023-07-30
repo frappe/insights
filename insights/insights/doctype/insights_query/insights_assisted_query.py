@@ -33,6 +33,7 @@ class InsightsAssistedQueryController:
 
     def before_save(self):
         update_sql(self.doc)
+        self.doc.json = frappe.as_json(self.query_json)
 
     @cached_property
     def query_json(self):

@@ -153,7 +153,7 @@ const selectedColumns = computed(() => {
 	state.value.calculations.forEach((col) => isValidColumn(col) && columns.push(col))
 	state.value.measures.forEach((col) => isValidColumn(col) && columns.push(col))
 	state.value.dimensions.forEach((col) => isValidColumn(col) && columns.push(col))
-	return columns.map((c) => ({ ...c, label: c.alias || c.label, description: 'local' }))
+	return columns
 })
 
 const COLUMN_TYPES = [
@@ -332,6 +332,7 @@ const addStepRef = ref(null)
 						/>
 						<ValueSelector
 							v-if="!filter.operator.value?.includes('is')"
+							:data_source="query.doc.data_source"
 							:column="filter.column"
 							:operator="filter.operator"
 							v-model="filter.value"

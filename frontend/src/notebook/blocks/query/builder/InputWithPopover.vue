@@ -27,8 +27,8 @@ const filteredItems = computed(() => {
 	if (!searchText.value) return props.items
 	return props.items.filter(
 		(item) =>
-			item.label.toLowerCase().includes(searchText.value.toLowerCase()) ||
-			item.value.toLowerCase().includes(searchText.value.toLowerCase())
+			item.label?.toLowerCase().includes(searchText.value.toLowerCase()) ||
+			item.value?.toLowerCase().includes(searchText.value.toLowerCase())
 	)
 })
 
