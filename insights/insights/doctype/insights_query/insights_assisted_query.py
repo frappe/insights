@@ -42,11 +42,6 @@ class InsightsAssistedQueryController:
     @cached_property
     def query_json(self):
         query = frappe.parse_json(self.doc.json)
-        query.columns = (c.get("column") for c in query.columns or [])
-        query.calculations = (c.get("column") for c in query.calculations or [])
-        query.measures = (c.get("column") for c in query.measures or [])
-        query.dimensions = (c.get("column") for c in query.dimensions or [])
-        query.orders = (c.get("column") for c in query.orders or [])
         return Query(**query)
 
     def get_columns_from_results(self, results):
