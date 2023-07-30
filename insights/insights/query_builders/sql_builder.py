@@ -656,13 +656,13 @@ class SQLQueryBuilder:
         self._limit = None
 
         assisted_query = self.query.variant_controller.query_json
-        if not assisted_query or not assisted_query.table:
+        if not assisted_query or not assisted_query.is_valid():
             return ""
         main_table = assisted_query.table.table
         main_table = self.make_table(main_table)
 
         for join in assisted_query.joins:
-            if not join.left_table or not join.right_table:
+            if not join.left_table.is_valid() or not join.right_table.is_valid():
                 continue
             self._joins.append(
                 {
@@ -691,6 +691,8 @@ class SQLQueryBuilder:
         if assisted_query.filters:
             filters = []
             for fltr in assisted_query.filters:
+                if not fltr.is_valid():
+                    continue
                 _column = make_sql_column(fltr.column)
                 filter_value = fltr.value.value
                 operator = fltr.operator.value
@@ -712,18 +714,26 @@ class SQLQueryBuilder:
             self._filters = and_(*filters)
 
         for column in assisted_query.columns:
+            if not column.is_valid():
+                continue
             self._columns.append(make_sql_column(column))
 
         # don't select calculated columns
         # since they are used as variables in measures, dimensions, filters, etc
 
         for measure in assisted_query.measures:
+            if not measure.is_valid():
+                continue
             self._measures.append(make_sql_column(measure))
 
         for dimension in assisted_query.dimensions:
+            if not dimension.is_valid():
+                continue
             self._dimensions.append(make_sql_column(dimension))
 
         for order in assisted_query.orders:
+            if not order.is_valid():
+                continue
             _column = make_sql_column(order)
             self._order_by_columns.append(
                 _column.asc() if order.order == "asc" else _column.desc()

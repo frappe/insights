@@ -226,29 +226,27 @@ def get_columns_with_inferred_types(results):
 @dataclass
 class Column(frappe._dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.table = self.get("table")
-        self.column = self.get("column")
-        self.type = self.get("type") or "String"
-        self.order = self.get("order")
-        self.aggregation = self.get("aggregation")
-        self.expression = frappe.parse_json(self.get("expression", {}))
-        self.label = self.get("label") or self.get("alias") or self.get("column")
-        self.alias = self.get("alias") or self.get("label") or self.get("column")
-        self.format = self.get("format")
-        self.meta = self.get("meta")
-        self.granularity = self.get("granularity")
+        self.table = kwargs.get("table")
+        self.column = kwargs.get("column")
+        self.type = kwargs.get("type") or "String"
+        self.order = kwargs.get("order")
+        self.aggregation = kwargs.get("aggregation")
+        self.expression = frappe.parse_json(kwargs.get("expression", {}))
+        self.label = kwargs.get("label") or kwargs.get("alias") or kwargs.get("column")
+        self.alias = kwargs.get("alias") or kwargs.get("label") or kwargs.get("column")
+        self.format = kwargs.get("format")
+        self.meta = kwargs.get("meta")
+        self.granularity = kwargs.get("granularity")
 
     def __repr__(self) -> str:
         return f"""Column(table={self.table}, column={self.column}, type={self.type}, label={self.label}, alias={self.alias}, aggregation={self.aggregation}, expression={self.is_expression()})"""
 
-    def __bool__(self):
+    def is_valid(self):
         return bool(self.table and self.column) or bool(self.is_expression())
 
     @staticmethod
     def from_dicts(dicts):
-        columns = (Column(**d) for d in dicts)
-        return [c for c in columns if c]
+        return [Column(**d) for d in dicts]
 
     def is_aggregate(self):
         return self.aggregation and self.aggregation != "custom"
@@ -275,38 +273,38 @@ class Column(frappe._dict):
 @dataclass
 class LabelValue(frappe._dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.value = self.get("value")
-        self.label = self.get("label") or self.get("value")
+        self.value = kwargs.get("value")
+        self.label = kwargs.get("label") or kwargs.get("value")
 
-    def __bool__(self):
+    def is_valid(self):
         return bool(self.value)
 
 
 @dataclass
 class Table(frappe._dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.table = self.get("table")
-        self.label = self.get("label") or self.get("table")
+        self.table = kwargs.get("table")
+        self.label = kwargs.get("label") or kwargs.get("table")
 
-    def __bool__(self):
+    def is_valid(self):
         return bool(self.table)
 
 
 @dataclass
 class Join(frappe._dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.left_table = Table(**self.get("left_table"))
-        self.right_table = Table(**self.get("right_table"))
-        self.join_type = LabelValue(**self.get("join_type"))
-        self.left_column = Column(**self.get("left_column"))
-        self.right_column = Column(**self.get("right_column"))
+        self.left_table = Table(**kwargs.get("left_table"))
+        self.right_table = Table(**kwargs.get("right_table"))
+        self.join_type = LabelValue(**kwargs.get("join_type"))
+        self.left_column = Column(**kwargs.get("left_column"))
+        self.right_column = Column(**kwargs.get("right_column"))
 
-    def __bool__(self):
-        return bool(
-            self.left_table and self.right_table and self.left_column and self.right_column
+    def is_valid(self):
+        return (
+            self.left_table.is_valid()
+            and self.right_table.is_valid()
+            and self.left_column.is_valid()
+            and self.right_column.is_valid()
         )
 
     @staticmethod
@@ -318,13 +316,12 @@ class Join(frappe._dict):
 @dataclass
 class Filter(frappe._dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.column = Column(**self.get("column"))
-        self.operator = LabelValue(**self.get("operator"))
-        self.value = LabelValue(**self.get("value"))
+        self.column = Column(**kwargs.get("column"))
+        self.operator = LabelValue(**kwargs.get("operator"))
+        self.value = LabelValue(**kwargs.get("value"))
 
-    def __bool__(self):
-        return bool(self.column and self.operator and self.value)
+    def is_valid(self):
+        return self.column.is_valid() and self.operator.is_valid() and self.value.is_valid()
 
     @classmethod
     def from_dicts(cls, dicts):
@@ -335,7 +332,6 @@ class Filter(frappe._dict):
 @dataclass
 class Query(frappe._dict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.table = Table(**kwargs.get("table"))
         self.joins = Join.from_dicts(kwargs.get("joins"))
         self.filters = Filter.from_dicts(kwargs.get("filters"))
@@ -346,8 +342,11 @@ class Query(frappe._dict):
         self.orders = Column.from_dicts(kwargs.get("orders"))
         self.limit = kwargs.get("limit")
 
-    def __bool__(self):
-        return bool(self.table)
+    # not using __bool__ here because of a weird behavior
+    # where when __bool__ returns False, and column is empty,
+    # json.dumps will return empty dict instead of a dict with empty values
+    def is_valid(self):
+        return self.table.is_valid()
 
     def get_columns(self):
         return self._extract_columns()
