@@ -6,14 +6,9 @@ from functools import cached_property
 
 import frappe
 
-from .utils import (
-    Column,
-    InsightsDataSource,
-    InsightsTable,
-    Query,
-    get_columns_with_inferred_types,
-    update_sql,
-)
+from insights.utils import InsightsDataSource, InsightsTable
+
+from .utils import Column, Query, get_columns_with_inferred_types, update_sql
 
 DEFAULT_JSON = {
     "table": {},

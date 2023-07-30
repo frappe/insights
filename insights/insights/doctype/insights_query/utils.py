@@ -3,31 +3,13 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 import frappe
 import pandas as pd
 import sqlparse
 from frappe import _dict
 
-from insights.utils import ResultColumn
-
-
-class InsightsChart:
-    @classmethod
-    def get_name(cls, *args, **kwargs):
-        return frappe.db.exists("Insights Chart", kwargs)
-
-
-class InsightsTable:
-    @classmethod
-    def get_name(cls, *args, **kwargs):
-        return frappe.db.exists("Insights Table", kwargs)
-
-    @classmethod
-    def get_doc(cls, *args, **kwargs):
-        kwargs = {"name": args[0]} if len(args) > 0 else kwargs
-        return frappe.get_doc("Insights Table", kwargs)
+from insights.utils import InsightsDataSource, InsightsQuery, ResultColumn
 
 
 class InsightsTableColumn:
@@ -47,18 +29,6 @@ class InsightsTableColumn:
     @classmethod
     def from_dicts(cls, objs):
         return [InsightsTableColumn.from_dict(obj) for obj in objs]
-
-
-class InsightsDataSource:
-    @classmethod
-    def get_doc(cls, name):
-        return frappe.get_doc("Insights Data Source", name)
-
-
-class InsightsSettings:
-    @classmethod
-    def get(cls, key):
-        return frappe.db.get_single_value("Insights Settings", key)
 
 
 class CachedResults:
