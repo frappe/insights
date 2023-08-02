@@ -407,4 +407,42 @@ def import_query(data_source, query):
     query_doc.set("transforms", query.metadata.transforms)
     query_doc.variant_controller.import_query(query.data)
     query_doc.save(ignore_permissions=True)
+
+    if query.metadata.is_saved_as_table:
+        query_doc.update_insights_table(force=True)
+        frappe.enqueue_doc(
+            "Insights Query",
+            query_doc.name,
+            "fetch_results",
+            queue="long",
+        )
+
     return query_doc.name
+
+
+class BaseNestedQueryImporter:
+    def __init__(self, data: dict, doc, imported_queries=None):
+        self.doc = doc
+        self.data = frappe._dict(data)
+        self.imported_queries = imported_queries or {}
+
+    def import_query(self):
+        self._import_subqueries()
+        self._update_subquery_references()
+        self._update_doc()
+
+    def _import_subqueries(self):
+        if not self.data.subqueries:
+            return
+        for name, subquery in self.data.subqueries.items():
+            if name in self.imported_queries:
+                continue
+            # FIX: imported_queries is not updated with the subqueries of the subquery
+            new_name = import_query(self.doc.data_source, subquery)
+            self.imported_queries[name] = new_name
+
+    def _update_subquery_references(self):
+        raise NotImplementedError
+
+    def _update_doc(self):
+        raise NotImplementedError

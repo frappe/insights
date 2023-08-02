@@ -2,17 +2,15 @@
 # For license information, please see license.txt
 
 
-from functools import cached_property
-
 import frappe
 
 from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable
 
 from .utils import (
+    BaseNestedQueryImporter,
     Column,
     Query,
     get_columns_with_inferred_types,
-    import_query,
     update_sql,
 )
 
@@ -136,34 +134,12 @@ class InsightsAssistedQueryController:
         return {"query": self.query_json, "subqueries": dependencies}
 
     def import_query(self, exported_query):
-        return QueryImporter(exported_query, self.doc).import_query()
+        return AssistedQueryImporter(exported_query, self.doc).import_query()
 
 
-class QueryImporter:
-    def __init__(self, data: dict, doc, imported_queries=None):
-        self.doc = doc
-        self.data = frappe._dict(data)
-        self.imported_queries = imported_queries or {}
-
-    def import_query(self):
-        # import subqueries first
-        self._import_subqueries()
-
-        # update query with new subquery names
-        self._update_subquery_references()
-
-        # update the doc
+class AssistedQueryImporter(BaseNestedQueryImporter):
+    def _update_doc(self):
         self.doc.json = frappe.as_json(self.data.query)
-
-    def _import_subqueries(self):
-        if not self.data.subqueries:
-            return
-        for name, subquery in self.data.subqueries.items():
-            if name in self.imported_queries:
-                continue
-            # FIX: imported_queries is not updated with the subqueries of the subquery
-            new_name = import_query(self.doc.data_source, subquery)
-            self.imported_queries[name] = new_name
 
     def _update_subquery_references(self):
         for old_name, new_name in self.imported_queries.items():
