@@ -31,6 +31,7 @@ from .utils import (
     apply_pivot_transform,
     apply_transpose_transform,
     apply_unpivot_transform,
+    export_query,
 )
 
 
@@ -228,5 +229,5 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def get_selected_tables(self):
         return self.variant_controller.get_selected_tables()
 
-    def export_query(self):
-        return self.variant_controller.export_query()
+    def export(self):
+        return export_query(self)
