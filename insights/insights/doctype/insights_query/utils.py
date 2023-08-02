@@ -379,6 +379,7 @@ def export_query(doc):
     exported_query = frappe._dict(
         data=doc.variant_controller.export_query(),
         metadata={
+            "data_source": doc.data_source,
             "title": doc.title,
             "transforms": doc.transforms,
             "is_saved_as_table": doc.is_saved_as_table,

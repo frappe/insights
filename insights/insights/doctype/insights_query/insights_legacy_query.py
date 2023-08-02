@@ -369,8 +369,14 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
             query = InsightsQuery.get_doc(subquery)
             dependencies[query.name] = frappe.parse_json(query.export())
 
+        query_dict = self.doc.as_dict()
         return {
-            "query": self.doc.as_dict(no_default_fields=True),
+            "query": {
+                "tables": query_dict["tables"],
+                "columns": query_dict["columns"],
+                "filters": query_dict["filters"],
+                "limit": query_dict["limit"],
+            },
             "subqueries": dependencies,
         }
 
