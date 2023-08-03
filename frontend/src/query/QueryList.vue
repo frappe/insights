@@ -1,10 +1,12 @@
 <script setup lang="jsx">
 import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useDataSources from '@/datasource/useDataSources'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { Badge } from 'frappe-ui'
+import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import useQueries from './useQueries'
@@ -113,17 +115,20 @@ const queryBuilderTypes = ref([
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-6 py-4">
+	<header
+		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
+	>
+		<PageBreadcrumbs class="h-7" :items="[{ label: 'Queries' }]" />
+		<div>
+			<Button label="New Query" variant="solid" @click="new_dialog = true">
+				<template #prefix>
+					<PlusIcon class="w-4" />
+				</template>
+			</Button>
+		</div>
+	</header>
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-4">
 		<ListView
-			title="Queries"
-			:actions="[
-				{
-					label: 'New Query',
-					variant: 'solid',
-					iconLeft: 'plus',
-					onClick: () => (new_dialog = true),
-				},
-			]"
 			:columns="columns"
 			:data="queries.list"
 			:rowClick="({ name }) => router.push({ name: 'Query', params: { name } })"

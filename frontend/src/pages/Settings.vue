@@ -1,15 +1,22 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-white px-6 py-4">
-		<div class="flex h-12 flex-shrink-0 items-center justify-between">
-			<div class="text-3xl font-medium text-gray-900">Settings</div>
+	<header
+		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
+	>
+		<PageBreadcrumbs class="h-7" :items="[{ label: 'Settings' }]" />
+		<div class="space-x-2.5">
 			<Button
-				variant="solid"
+				label="Update"
 				:disabled="updateDisabled"
+				variant="solid"
 				@click="settings.updateSettings(settingsDoc)"
 			>
-				Update
+				<template #prefix>
+					<CheckIcon class="w-4" />
+				</template>
 			</Button>
 		</div>
+	</header>
+	<div class="flex flex-1 space-y-4 overflow-hidden bg-white px-6 py-4">
 		<div class="-m-1 flex flex-1 flex-col space-y-6 overflow-scroll p-1">
 			<div class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
@@ -118,6 +125,8 @@ import settings from '@/utils/settings'
 import { computed, ref, watchEffect } from 'vue'
 import Setting from '@/components/Setting.vue'
 import DatePicker from '@/components/Controls/DatePicker.vue'
+import { CheckIcon } from 'lucide-vue-next'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 
 const settingsDoc = ref({})
 watchEffect(() => {

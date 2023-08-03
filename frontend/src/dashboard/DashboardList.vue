@@ -1,17 +1,20 @@
 <template>
-	<div class="flex flex-1 flex-col space-y-4 overflow-hidden bg-white px-6 py-4">
-		<div class="flex h-12 flex-shrink-0 items-center justify-between">
-			<div class="text-3xl font-medium text-gray-900">Dashboards</div>
-			<Button variant="solid" @click="showDialog = true">
+	<header
+		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
+	>
+		<PageBreadcrumbs class="h-7" :items="[{ label: 'Dashboards' }]" />
+		<div class="space-x-2.5">
+			<Button label="New Dashboard" variant="solid" @click="showDialog = true">
 				<template #prefix>
 					<Plus class="h-4 w-4" />
 				</template>
-				New Dashboard
 			</Button>
 		</div>
+	</header>
+	<div class="flex flex-1 space-y-4 overflow-hidden bg-white px-5 py-4">
 		<div
 			v-if="dashboards?.list?.length"
-			class="-m-1 flex flex-1 flex-col space-y-6 overflow-y-scroll p-1"
+			class="flex flex-1 flex-col space-y-6 overflow-y-scroll p-1"
 		>
 			<DashboardsGroup
 				v-if="favorites.length > 0"
@@ -65,6 +68,7 @@ import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardsGroup from './DashboardListGroup.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 
 const dashboards = useDashboards()
 dashboards.reload()
