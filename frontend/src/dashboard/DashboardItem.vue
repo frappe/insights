@@ -1,8 +1,8 @@
 <script setup>
+import UsePopover from '@/components/UsePopover.vue'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import UsePopover from '@/components/UsePopover.vue'
 import { whenever } from '@vueuse/shared'
 import { debounce } from 'frappe-ui'
 import { computed, inject, reactive, ref, watch, watchEffect } from 'vue'
@@ -80,11 +80,10 @@ function downloadChart() {
 }
 
 const refreshKey = ref(0)
-const updateKey = debounce(() => refreshKey.value++, 1000)
 watchEffect(() => {
 	// update key when item changes
 	JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value])
-	updateKey()
+	debounce(() => refreshKey.value++, refreshKey.value ? 800 : 3000)()
 })
 
 const itemRef = ref(null)
