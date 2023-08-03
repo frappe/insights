@@ -1,5 +1,5 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import auth from '@/utils/auth'
+import useAuthStore from '@/store/authStore'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
@@ -7,6 +7,8 @@ import { useQueryTables } from '@/utils/query/tables'
 import { createToast } from '@/utils/toasts'
 import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
+
+const auth = useAuthStore()
 
 export function useQuery(name) {
 	const query = useQueryResource(name)

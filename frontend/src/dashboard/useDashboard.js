@@ -1,10 +1,12 @@
 import { useQueryResource } from '@/query/useQueryResource'
+import useAuthStore from '@/store/authStore'
 import { safeJSONParse } from '@/utils'
-import auth from '@/utils/auth'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
+
+const auth = useAuthStore()
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)

@@ -119,7 +119,7 @@
 import { Avatar } from 'frappe-ui'
 
 import HelpDialog from '@/components/HelpDialog.vue'
-import auth from '@/utils/auth'
+import useAuthStore from '@/store/authStore'
 import settings from '@/utils/settings'
 import { createResource } from 'frappe-ui'
 import {
@@ -134,6 +134,8 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+
+const auth = useAuthStore()
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([

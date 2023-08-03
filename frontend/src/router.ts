@@ -1,5 +1,5 @@
 import { isSetupComplete } from '@/setup'
-import auth from '@/utils/auth'
+import useAuthStore, { AuthStore } from '@/store/authStore'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -18,7 +18,7 @@ const routes = [
 		component: () => import('@/pages/Login.vue'),
 		meta: {
 			hideSidebar: true,
-			allowGuest: true,
+			isGuestView: true,
 		},
 	},
 	{
@@ -44,7 +44,7 @@ const routes = [
 		component: () => import('@/dashboard/PublicDashboard.vue'),
 		meta: {
 			hideSidebar: true,
-			allowGuest: true,
+			isGuestView: true,
 		},
 	},
 	{
@@ -54,7 +54,7 @@ const routes = [
 		component: () => import('@/query/PublicChart.vue'),
 		meta: {
 			hideSidebar: true,
-			allowGuest: true,
+			isGuestView: true,
 		},
 	},
 	{
@@ -90,7 +90,8 @@ const routes = [
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
+			isAllowed: (auth: AuthStore): boolean =>
+				auth.user.is_admin && settings.doc.enable_permissions,
 		},
 	},
 	{
@@ -98,7 +99,8 @@ const routes = [
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
+			isAllowed: (auth: AuthStore): boolean =>
+				auth.user.is_admin && settings.doc.enable_permissions,
 		},
 	},
 	{
@@ -154,8 +156,11 @@ let router = createRouter({
 	routes,
 })
 
-router.beforeEach(async (to, from, next) => {
-	if (to.meta.allowGuest && !auth.isLoggedIn && to.name !== 'Login') {
+router.beforeEach(async (to, _, next) => {
+	const auth = useAuthStore()
+	!auth.initialized && await auth.initialize()
+
+	if (to.meta.isGuestView && !auth.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
 		return next()
 	}
@@ -171,18 +176,13 @@ router.beforeEach(async (to, from, next) => {
 		return next(false)
 	}
 
-	const isAuthorized = await auth.isAuthorized()
-	// const trialExpired = await getTrialStatus()
-	// if (trialExpired && to.name !== 'Trial Expired') {
-	// 	return next('/trial-expired')
-	// }
-	if (!isAuthorized && to.name !== 'No Permission') {
+	if (!auth.isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
-	if (isAuthorized && to.name === 'No Permission') {
+	if (auth.isAuthorized && to.name === 'No Permission') {
 		return next()
 	}
-	if (to.meta.isAllowed && !to.meta.isAllowed()) {
+	if (to.meta.isAllowed && !to.meta.isAllowed(auth)) {
 		return next('/no-permission')
 	}
 

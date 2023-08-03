@@ -1,11 +1,13 @@
 import useChart from '@/query/useChart'
 import { useQueryResource } from '@/query/useQueryResource'
+import useAuthStore from '@/store/authStore'
 import { safeJSONParse } from '@/utils'
-import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
+
+const auth = useAuthStore()
 
 const queries = {}
 
