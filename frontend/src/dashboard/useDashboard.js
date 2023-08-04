@@ -1,10 +1,10 @@
+import { useQueryResource } from '@/query/useQueryResource'
 import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import widgets from '@/widgets/widgets'
-import { createDocumentResource } from 'frappe-ui'
+import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
-import { useQueryResource } from '@/query/useQueryResource'
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -197,17 +197,17 @@ export default function useDashboard(name) {
 		state.refreshCallbacks.push(fn)
 	}
 
-	async function updateTitle(title) {
+	const updateTitle = debounce(function (title) {
 		if (!title || !state.editing) return
-		resource.setValue.submit({ title }).then(() => {
-			$notify({
-				title: 'Dashboard title updated',
-				variant: 'success',
-			})
-			state.doc.title = title
-		})
-		reload()
-	}
+		// save the title on save
+		// resource.setValue.submit({ title }).then(() => {
+		// 	$notify({
+		// 		title: 'Dashboard title updated',
+		// 		variant: 'success',
+		// 	})
+		// })
+		state.doc.title = title
+	}, 500)
 
 	function makeLayoutObject(item) {
 		return {
