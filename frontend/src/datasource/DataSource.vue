@@ -1,7 +1,5 @@
 <template>
-	<header
-		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
-	>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
 		<PageBreadcrumbs
 			class="h-7"
 			:items="[
@@ -10,14 +8,7 @@
 			]"
 		/>
 	</header>
-	<div class="flex flex-1 overflow-hidden bg-white px-6 py-4">
-		<!-- <Breadcrumbs
-			:items="[
-				{ label: 'Data Sources', href: '/data-source' },
-				{ label: dataSource.doc.title },
-			]"
-		></Breadcrumbs> -->
-		<!-- :title="dataSource.doc.title" -->
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<ListView
 			v-if="dataSource.doc && dataSource.tables.length"
 			:columns="columns"

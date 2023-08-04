@@ -6,9 +6,7 @@ const props = defineProps({ name: String })
 </script>
 
 <template>
-	<header
-		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
-	>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-2.5">
 		<PageBreadcrumbs
 			class="h-7"
 			:items="[
@@ -20,7 +18,7 @@ const props = defineProps({ name: String })
 			]"
 		/>
 	</header>
-	<div class="flex h-full w-full flex-col overflow-hidden bg-white px-4 py-3">
+	<div class="flex h-full w-full flex-col overflow-hidden bg-white px-4 py-2">
 		<Query :name="props.name" />
 	</div>
 </template>

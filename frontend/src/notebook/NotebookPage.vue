@@ -32,9 +32,7 @@ updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<header
-		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
-	>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
 		<PageBreadcrumbs
 			class="h-7"
 			:items="[
@@ -44,7 +42,7 @@ updateDocumentTitle(pageMeta)
 			]"
 		/>
 	</header>
-	<div class="flex flex-1 overflow-hidden bg-white px-6 py-4">
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<div
 			v-if="page.doc.name"
 			class="h-full w-full overflow-y-scroll bg-white pb-96 pt-16 text-base"

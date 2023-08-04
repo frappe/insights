@@ -1,5 +1,5 @@
 <template>
-	<header class="sticky top-0 z-10 flex items-center border-b bg-white px-5 py-2.5">
+	<header class="sticky top-0 z-10 flex items-center bg-white px-5 py-2.5">
 		<PageBreadcrumbs
 			class="h-7"
 			:items="[
@@ -47,7 +47,7 @@
 			/>
 		</div>
 	</header>
-	<div class="flex flex-1 flex-col overflow-hidden bg-white px-6 py-4">
+	<div class="flex flex-1 flex-col overflow-hidden bg-white px-6 py-2">
 		<div
 			v-if="
 				dataSourceTable.doc &&

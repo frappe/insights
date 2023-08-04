@@ -1,7 +1,5 @@
 <template>
-	<header
-		class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-2.5"
-	>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
 		<PageBreadcrumbs class="h-7" :items="[{ label: 'Dashboards' }]" />
 		<div class="space-x-2.5">
 			<Button label="New Dashboard" variant="solid" @click="showDialog = true">
@@ -11,7 +9,7 @@
 			</Button>
 		</div>
 	</header>
-	<div class="flex flex-1 space-y-4 overflow-hidden bg-white px-5 py-4">
+	<div class="flex flex-1 space-y-4 overflow-hidden bg-white px-5 py-2">
 		<div
 			v-if="dashboards?.list?.length"
 			class="flex flex-1 flex-col space-y-6 overflow-y-scroll p-1"
