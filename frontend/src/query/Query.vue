@@ -1,6 +1,6 @@
 <template>
 	<div v-if="query.doc" class="flex flex-1 flex-col overflow-hidden">
-		<div class="flex flex-shrink-0 items-center justify-between px-2 py-1">
+		<div class="flex flex-shrink-0 items-center justify-between px-2 pb-2">
 			<QueryHeader />
 			<Tabs v-if="!hideTabs" class="!w-40" :tabs="tabs" @switch="switchTab" />
 		</div>
