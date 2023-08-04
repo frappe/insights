@@ -38,13 +38,19 @@ const XandY = computed(() => [
 		type: 'category',
 		data: props.options.invertAxis ? labels.value.reverse() : labels.value,
 		axisTick: false,
-		'axisLabel-interval': 0,
-		'axisLabel-rotate': props.options.rotateLabels,
+		axisLabel: {
+			rotate: props.options.rotateLabels,
+			interval: 0,
+		},
 	},
 	{
 		axisType: props.options.invertAxis ? 'xAxis' : 'yAxis',
 		type: 'value',
-		'splitLine-lineStyle-type': 'dashed',
+		splitLine: {
+			lineStyle: {
+				type: 'dashed',
+			},
+		},
 	},
 ])
 
