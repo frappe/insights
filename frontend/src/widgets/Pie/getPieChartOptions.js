@@ -117,7 +117,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 		tooltip: {
 			trigger: 'item',
 			confine: true,
-			appendToBody: true,
+			appendToBody: false,
 			valueFormatter: appendPercentage,
 		},
 		legend: !options.inlineLabels

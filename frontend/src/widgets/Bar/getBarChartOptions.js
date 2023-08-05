@@ -33,7 +33,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 		{
 			type: 'value',
 			splitLine: {
-				lineStyle: { type: 'dashed' },
+				show: false,
 			},
 			axisLabel: {
 				formatter: (value, index) =>
@@ -68,5 +68,11 @@ export default function getBarChartOptions(labels, datasets, options) {
 				borderRadius: options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
 			},
 		})),
+		tooltip: {
+			trigger: 'axis',
+			confine: true,
+			appendToBody: false,
+			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+		},
 	}
 }

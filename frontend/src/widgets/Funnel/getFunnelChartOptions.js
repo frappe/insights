@@ -7,7 +7,7 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 		tooltip: {
 			trigger: 'item',
 			confine: true,
-			appendToBody: true,
+			appendToBody: false,
 			formatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
 		},
 		legend: {

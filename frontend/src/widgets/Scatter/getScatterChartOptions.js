@@ -28,7 +28,7 @@ export default function getScatterChartOptions(labels, datasets, options) {
 			axisType: 'yAxis',
 			type: 'value',
 			splitLine: {
-				lineStyle: { type: 'dashed' },
+				show: false,
 			},
 			axisLabel: {
 				formatter: (value, index) => $utils.getShortNumber(value, 1),

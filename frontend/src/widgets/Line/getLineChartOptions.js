@@ -36,7 +36,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 			axisType: 'yAxis',
 			type: 'value',
 			splitLine: {
-				lineStyle: { type: 'dashed' },
+				show: false,
 			},
 			axisLabel: {
 				formatter: (value, index) => $utils.getShortNumber(value, 1),
@@ -63,9 +63,9 @@ export default function getLineChartOptions(labels, datasets, options) {
 			pageButtonItemGap: 2,
 		},
 		tooltip: {
-			trigger: 'item',
+			trigger: 'axis',
 			confine: true,
-			appendToBody: true,
+			appendToBody: false,
 			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
 		},
 	}
