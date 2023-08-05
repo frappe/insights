@@ -4,7 +4,7 @@ import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
-import { debounce } from 'frappe-ui'
+import { debounce, call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
 const queries = {}

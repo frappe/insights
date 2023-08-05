@@ -3,24 +3,20 @@ import { ellipsis } from '@/utils'
 import { computed } from 'vue'
 
 const props = defineProps({
-	chartData: { type: Object, required: true },
+	data: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const results = computed(() => props.chartData.data)
 const MAX_ROWS = 500
 const rows = computed(() => {
-	if (!results.value?.length || !props.options.columns?.length) return []
-	const resultHeader = results.value[0].map((d) => d.label)
-	const resultData = results.value.slice(1, MAX_ROWS)
-	return resultData.map((row) => {
-		const newRow = []
-		props.options.columns.forEach((label) => {
-			const index = resultHeader.indexOf(label)
-			newRow.push(row[index])
-		})
-		return newRow
+	if (!props.data?.length || !props.options.columns?.length) return []
+	const resultRows = props.data.map((row) => {
+		return props.options.columns.map((column) => row[column])
 	})
+	if (resultRows.length > MAX_ROWS) {
+		return resultRows.slice(0, MAX_ROWS)
+	}
+	return resultRows
 })
 
 function guessColumnValueType(column) {
@@ -42,7 +38,10 @@ function total(column) {
 </script>
 
 <template>
-	<div v-if="results" class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded p-3">
+	<div
+		v-if="options?.columns?.length || rows?.length"
+		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded p-3"
+	>
 		<div
 			v-if="props.options.title"
 			class="h-5 flex-shrink-0 text-base font-medium text-gray-600"

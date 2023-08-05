@@ -34,7 +34,7 @@
 				v-if="chart.doc.chart_type"
 				ref="widget"
 				:is="widgets.getComponent(chart.doc.chart_type)"
-				:chartData="{ data: chart.data }"
+				:data="chart.data"
 				:options="chart.doc.options"
 				:key="JSON.stringify(chart.doc.options)"
 			>

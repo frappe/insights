@@ -120,14 +120,14 @@ export default function useDashboard(name) {
 			if (item.item_id === filter_id) {
 				const charts = Object.keys(item.options.links) || []
 				charts.forEach((chart) => {
-					updateChartFilters(chart)
+					refreshChartFilters(chart)
 				})
 				return true
 			}
 		})
 	}
 
-	async function updateChartFilters(chart_id) {
+	async function refreshChartFilters(chart_id) {
 		const promises = state.doc.items
 			.filter((item) => item.item_type === 'Filter')
 			.map(async (filter) => {
@@ -150,7 +150,7 @@ export default function useDashboard(name) {
 
 	async function getChartFilters(chart_id) {
 		if (!state.filtersByChart[chart_id]) {
-			await updateChartFilters(chart_id)
+			await refreshChartFilters(chart_id)
 		}
 		return state.filtersByChart[chart_id]
 	}
@@ -273,7 +273,7 @@ export default function useDashboard(name) {
 		getFilterState,
 		setFilterState,
 		refreshFilter,
-		updateChartFilters,
+		refreshChartFilters,
 		edit,
 		discardChanges,
 		toggleSidebar,
