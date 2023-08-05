@@ -1,7 +1,7 @@
 <script setup>
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { computed } from 'vue'
-import getBarChartOptions from './getBarChartOptions'
+import getScatterChartOptions from './getScatterChartOptions'
 
 const props = defineProps({
 	data: { type: Object, required: true },
@@ -23,11 +23,11 @@ const datasets = computed(() => {
 	})
 })
 
-const barChartOptions = computed(() => {
-	return getBarChartOptions(labels.value, datasets.value, props.options)
+const scatterChartOptions = computed(() => {
+	return getScatterChartOptions(labels.value, datasets.value, props.options)
 })
 </script>
 
 <template>
-	<BaseChart :title="props.options.title" :options="barChartOptions" />
+	<BaseChart :title="props.options.title" :options="scatterChartOptions" />
 </template>

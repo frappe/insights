@@ -14,7 +14,7 @@ from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
-from insights.utils import ResultColumn
+from insights.utils import InsightsChart, InsightsSettings, InsightsTable, ResultColumn
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_assisted_query import InsightsAssistedQueryController
@@ -27,9 +27,6 @@ from .insights_raw_query import InsightsRawQueryController
 from .insights_script_query import InsightsScriptQueryController
 from .utils import (
     CachedResults,
-    InsightsChart,
-    InsightsSettings,
-    InsightsTable,
     InsightsTableColumn,
     Status,
     apply_pivot_transform,
@@ -234,3 +231,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def get_selected_tables(self):
         return self.variant_controller.get_selected_tables()
+
+    def export_query(self):
+        return self.variant_controller.export_query()

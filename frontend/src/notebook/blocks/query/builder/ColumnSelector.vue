@@ -34,7 +34,7 @@ watch(
 )
 
 const columns = computed(() => {
-	const localColumns = props.localColumns.filter(filterFn)
+	const localColumns = props.localColumns.filter(filterFn).map((c) => ({ ...c, isLocal: true }))
 	if (!tables.value?.length) return localColumns
 	const tableColumns = tables.value
 		.map((d) => d.doc?.columns)
@@ -49,7 +49,6 @@ function filterFn(col, currIndex, self) {
 }
 function getColumnValue(column) {
 	if (!column) return
-	if (column.description == 'local') return column.alias
 	return column.expression?.raw || `${column.table}.${column.column}`
 }
 
@@ -58,8 +57,8 @@ const columnOptions = computed(() => {
 	return columns.value.map((c) => {
 		return {
 			label: c.label || c.alias,
-			description: c.description || c.table,
-			table_label: c.table_label,
+			group: c.isLocal ? 'Local' : c.table_label,
+			description: c.column,
 			value: getColumnValue(c),
 		}
 	})
@@ -69,8 +68,9 @@ const columnOptionsGroupedByTable = computed(() => {
 	if (!columnOptions.value?.length) return []
 	const grouped = {}
 	columnOptions.value.forEach((c) => {
-		if (!grouped[c.table_label]) grouped[c.table_label] = []
-		grouped[c.table_label].push(c)
+		if (c.description == 'local') c.group = 'Local'
+		if (!grouped[c.group]) grouped[c.group] = []
+		grouped[c.group].push(c)
 	})
 	return grouped
 })
@@ -88,15 +88,17 @@ const column = computed({
 		),
 	set: (option) => {
 		const column = findOptionByValue(columns.value, option.value)
+		const passedValue = valuePropPassed.value ? props.value : props.modelValue
 		emit('update:modelValue', {
 			...column,
 			...option,
-			alias: column.alias || props.modelValue.alias,
-			order: column.order || props.modelValue.order,
-			granularity: column.granularity || props.modelValue.granularity,
-			aggregation: column.aggregation || props.modelValue.aggregation,
-			format: column.format || props.modelValue.format,
-			expression: column.expression || props.modelValue.expression,
+			alias: column.alias || passedValue.alias,
+			order: column.order || passedValue.order,
+			granularity: column.granularity || passedValue.granularity,
+			aggregation: column.aggregation || passedValue.aggregation,
+			format: column.format || passedValue.format,
+			expression: column.expression || passedValue.expression,
+			meta: column.meta || passedValue.meta,
 		})
 	},
 })

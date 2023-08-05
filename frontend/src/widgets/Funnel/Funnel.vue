@@ -1,7 +1,7 @@
 <script setup>
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { computed } from 'vue'
-import getPieChartOptions from './getPieChartOptions'
+import getFunnelChartOptions from './getFunnelChartOptions'
 
 const props = defineProps({
 	data: { type: Object, required: true },
@@ -20,11 +20,11 @@ const dataset = computed(() => {
 	}
 })
 
-const pieChartOptions = computed(() => {
-	return getPieChartOptions(labels.value, dataset.value, props.options)
+const funnelChartOptions = computed(() => {
+	return getFunnelChartOptions(labels.value, dataset.value, props.options)
 })
 </script>
 
 <template>
-	<BaseChart :title="props.options.title" :options="pieChartOptions" />
+	<BaseChart :title="props.options.title" :options="funnelChartOptions" />
 </template>

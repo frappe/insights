@@ -9,14 +9,10 @@ import pandas as pd
 from frappe.utils.data import cstr
 
 from insights.api import fetch_column_values, get_tables
+from insights.utils import InsightsDataSource, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store
-from .utils import (
-    InsightsDataSource,
-    InsightsTable,
-    get_columns_with_inferred_types,
-    update_sql,
-)
+from .utils import get_columns_with_inferred_types, update_sql
 
 DEFAULT_FILTERS = dumps(
     {

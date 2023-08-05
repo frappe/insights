@@ -5,7 +5,7 @@
 import frappe
 from frappe.utils import cint
 
-from .utils import InsightsChart
+from insights.utils import InsightsChart
 
 
 class InsightsQueryClient:

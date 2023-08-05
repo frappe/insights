@@ -12,6 +12,7 @@ import ResizeableInput from './ResizeableInput.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
+	data_source: String,
 	column: Object,
 	operator: Object,
 	modelValue: Object,
@@ -52,11 +53,11 @@ const columnValues = ref([])
 const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (!isEqualityCheck.value) return
-	if (props.column?.type == 'String' && props.column?.data_source) {
+	if (props.column?.type == 'String' && props.data_source) {
 		const URL = 'insights.api.fetch_column_values'
 		fetchingColumnValues.value = true
 		const values = await call(URL, {
-			data_source: props.column.data_source,
+			data_source: props.data_source,
 			table: props.column.table,
 			column: props.column.column,
 			search_text,

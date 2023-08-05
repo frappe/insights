@@ -30,7 +30,7 @@ function openRecord(row) {
 		case 'Dashboard':
 			return router.push(`/dashboard/${name}`)
 		case 'Query':
-			return router.push(`/query/${name}`)
+			return router.push(`/query/build/${name}`)
 		default:
 			break
 	}

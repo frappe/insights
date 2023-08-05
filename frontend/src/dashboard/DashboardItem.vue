@@ -1,40 +1,17 @@
 <script setup>
+import UsePopover from '@/components/UsePopover.vue'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import UsePopover from '@/components/UsePopover.vue'
-import { whenever } from '@vueuse/shared'
+import { watchDebounced, whenever } from '@vueuse/shared'
 import { debounce } from 'frappe-ui'
-import { computed, inject, reactive, ref, watch, watchEffect } from 'vue'
+import { computed, inject, provide, reactive, ref, watch } from 'vue'
+import DashboardItemActions from './DashboardItemActions.vue'
 
 const dashboard = inject('dashboard')
 const props = defineProps({
 	item: { type: Object, required: true },
 })
-
-function openQueryInNewTab() {
-	if (!props.item.options.query) return
-	window.open(`/insights/query/build/${props.item.options.query}`, '_blank')
-}
-const actions = [
-	{
-		icon: 'external-link',
-		label: 'Open Query',
-		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
-		onClick: openQueryInNewTab,
-	},
-	{
-		icon: 'download',
-		label: 'Download',
-		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
-		onClick: downloadChart,
-	},
-	{
-		icon: 'trash',
-		label: 'Delete',
-		onClick: (item) => dashboard.removeItem(item),
-	},
-]
 
 let isChart = dashboard.isChart(props.item)
 let chartFilters = isChart ? computed(() => dashboard.filtersByChart[props.item.item_id]) : null
@@ -46,48 +23,46 @@ if (isChart) {
 			return dashboard.getChartResults(props.item.item_id)
 		},
 	})
+	// load chart data
 	whenever(query, () => chartData.load(query.value), { immediate: true })
 	dashboard.onRefresh(() => chartData.load(query.value))
-	dashboard.updateChartFilters(props.item.item_id)
-	watch(chartFilters, () => {
-		chartData.load(props.item.options.query)
+	dashboard.refreshChartFilters(props.item.item_id)
+	watch(chartFilters, () => chartData.load(props.item.options.query))
+
+	// set initial chart options
+	watchDebounced(() => chartData.recommendedChart, setInitialChartOptions, {
+		deep: true,
+		debounce: 500,
 	})
-	watch(
-		() => chartData.recommendedChart,
-		() => {
-			if (!props.item.options.query) return
-			if (props.item.options.title) return
-			if (
-				props.item.options.query == dashboard.currentItem?.options.query &&
-				!props.item.options.title
-			) {
-				props.item.options.title = dashboard.currentItem.query.doc.title
-			}
-
-			if (props.item.item_type !== chartData.recommendedChart.type) return
-			props.item.options = {
-				...props.item.options,
-				...chartData.recommendedChart.options,
-			}
-		},
-		{ deep: true }
-	)
 }
 
+const itemRef = ref(null) // used for popover
 const widget = ref(null)
-function downloadChart() {
-	widget.value?.$refs?.eChart?.downloadChart?.()
-}
+provide('widgetRef', widget)
 
 const refreshKey = ref(0)
-const updateKey = debounce(() => refreshKey.value++, 1000)
-watchEffect(() => {
-	// update key when item changes
-	JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value])
-	updateKey()
-})
+watch(
+	() => JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value]),
+	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)(),
+	{ immediate: true }
+)
 
-const itemRef = ref(null)
+function setInitialChartOptions() {
+	if (!props.item.options.query) return
+	if (props.item.options.title) return
+	if (
+		props.item.options.query == dashboard.currentItem?.options.query &&
+		!props.item.options.title
+	) {
+		props.item.options.title = dashboard.currentItem.query.doc.title
+	}
+
+	if (props.item.item_type !== chartData.recommendedChart.type) return
+	props.item.options = {
+		...props.item.options,
+		...chartData.recommendedChart.options,
+	}
+}
 </script>
 
 <template>
@@ -116,7 +91,7 @@ const itemRef = ref(null)
 				:class="[dashboard.editing ? 'pointer-events-none' : '']"
 				:is="widgets.getComponent(item.item_type)"
 				:item_id="item.item_id"
-				:chartData="chartData"
+				:data="chartData.data"
 				:options="item.options"
 				:key="refreshKey"
 			>
@@ -161,17 +136,7 @@ const itemRef = ref(null)
 			:show="dashboard.editing && dashboard.currentItem?.item_id === item.item_id"
 			placement="top-end"
 		>
-			<div class="flex cursor-pointer rounded bg-gray-800 p-1 shadow-sm">
-				<div
-					v-for="action in actions"
-					:key="action.label"
-					class="px-1 py-0.5"
-					:class="{ hidden: action.hidden && action.hidden(item) }"
-					@click="action.onClick(item)"
-				>
-					<FeatherIcon :name="action.icon" class="h-3.5 w-3.5 text-white" />
-				</div>
-			</div>
+			<DashboardItemActions :item="item" />
 		</UsePopover>
 	</div>
 </template>

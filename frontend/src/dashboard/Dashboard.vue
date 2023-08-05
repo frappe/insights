@@ -1,10 +1,11 @@
 <script setup>
-import DashboardTitle from '@/dashboard/DashboardTitle.vue'
-import useDashboard from '@/dashboard/useDashboard'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
+import useDashboard from '@/dashboard/useDashboard'
 import BaseLayout from '@/layouts/BaseLayout.vue'
+import ContentEditable from '@/notebook/ContentEditable.vue'
 import { updateDocumentTitle } from '@/utils'
 import widgets from '@/widgets/widgets'
+import { debounce } from 'frappe-ui'
 import { computed, provide, ref } from 'vue'
 import DashboardEmptyState from './DashboardEmptyState.vue'
 import DashboardItem from './DashboardItem.vue'
@@ -55,17 +56,22 @@ const pageMeta = computed(() => {
 	}
 })
 updateDocumentTitle(pageMeta)
+
+const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 500)
 </script>
 
 <template>
 	<BaseLayout v-if="dashboard.doc.name">
 		<template #navbar>
 			<div class="flex flex-shrink-0 items-center space-x-4">
-				<DashboardTitle
-					:title="dashboard.doc.title"
+				<ContentEditable
+					class="text-lg font-medium"
+					:class="[dashboard.editing ? '' : 'cursor-default']"
+					:value="dashboard.doc.title"
 					:disabled="!dashboard.editing"
-					@update="dashboard.updateTitle"
-				/>
+					@change="dashboard.updateTitle($event)"
+					placeholder="Untitled Dashboard"
+				></ContentEditable>
 			</div>
 			<DashboardNavbarButtons />
 		</template>

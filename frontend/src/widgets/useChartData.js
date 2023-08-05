@@ -31,8 +31,9 @@ export default function useChartData(options = {}) {
 		state.loading = true
 		options.resultsFetcher().then((results) => {
 			state.loading = false
-			state.data = getFormattedResult(results)
-			state.recommendedChart = guessChart(state.data)
+			const formattedResults = getFormattedResult(results)
+			state.data = convertResultToObjects(formattedResults)
+			state.recommendedChart = guessChart(formattedResults)
 		})
 	}
 
@@ -101,4 +102,16 @@ export function guessChart(dataset) {
 			columns: headers,
 		},
 	}
+}
+
+export function convertResultToObjects(results) {
+	// results first row is an list of dicts with label and type
+	// return list of plain objects with first row's labels as keys
+	// return [{ label1: value1, label2: value2 }, ...}]
+	return results.slice(1).map((row) => {
+		return results[0].reduce((obj, { label }, index) => {
+			obj[label] = row[index]
+			return obj
+		}, {})
+	})
 }
