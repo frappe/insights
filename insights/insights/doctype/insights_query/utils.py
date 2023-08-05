@@ -323,6 +323,9 @@ class Filter(frappe._dict):
         self.value = LabelValue(**kwargs.get("value"))
 
     def is_valid(self):
+        is_unary = self.operator.value in ["is_set", "is_not_set"]
+        if is_unary:
+            return self.column.is_valid() and self.operator.is_valid()
         return self.column.is_valid() and self.operator.is_valid() and self.value.is_valid()
 
     @classmethod
