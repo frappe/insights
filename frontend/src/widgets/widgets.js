@@ -43,6 +43,14 @@ const WIDGETS = {
 		defaultWidth: 10,
 		defaultHeight: 8,
 	},
+	Funnel: {
+		type: 'Funnel',
+		component: defineAsyncComponent(() => import('./Funnel/Funnel.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Funnel/FunnelOptions.vue')),
+		options: {},
+		defaultWidth: 10,
+		defaultHeight: 8,
+	},
 	Table: {
 		type: 'Table',
 		component: defineAsyncComponent(() => import('./Table/Table.vue')),
