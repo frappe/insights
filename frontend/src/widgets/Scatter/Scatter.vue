@@ -1,5 +1,5 @@
 <script setup>
-import BaseChart from '@/components/Charts/BaseChart'
+import BaseChart from '@/components/Charts/BaseChart.vue'
 import { computed } from 'vue'
 import getScatterChartOptions from './getScatterChartOptions'
 

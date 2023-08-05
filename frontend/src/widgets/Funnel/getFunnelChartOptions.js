@@ -1,9 +1,9 @@
 import { getColors } from '@/utils/colors'
 
-export default function getFunnelChartOptions(labels, dataset) {
+export default function getFunnelChartOptions(labels, dataset, options) {
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: getColors(),
 		tooltip: {
 			trigger: 'item',
 			confine: true,
