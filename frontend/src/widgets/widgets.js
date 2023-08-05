@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 
-const VALID_CHARTS = ['Number', 'Line', 'Bar', 'Pie', 'Table', 'Progress']
+const VALID_CHARTS = ['Number', 'Line', 'Bar', 'Pie', 'Table', 'Progress', 'Scatter', 'Funnel']
 
 const WIDGETS = {
 	Number: {
