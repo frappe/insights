@@ -21,6 +21,15 @@ const WIDGETS = {
 		defaultWidth: 10,
 		defaultHeight: 8,
 	},
+	Scatter: {
+		type: 'Scatter',
+		icon: 'scatter-chart',
+		component: defineAsyncComponent(() => import('./Scatter/Scatter.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Scatter/ScatterOptions.vue')),
+		options: {},
+		defaultWidth: 10,
+		defaultHeight: 10,
+	},
 	Bar: {
 		type: 'Bar',
 		icon: 'bar-chart',

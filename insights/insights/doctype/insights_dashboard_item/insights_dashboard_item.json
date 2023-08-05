@@ -28,7 +28,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "\nBar\nLine\nPie\nNumber\nProgress\nTable\nFilter\nText"
+   "options": "\nBar\nLine\nScatter\nPie\nNumber\nProgress\nTable\nFilter\nText"
   },
   {
    "fieldname": "section_break_2",
@@ -48,7 +48,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-04-20 14:05:53.999312",
+ "modified": "2023-08-05 01:16:41.009688",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard Item",
