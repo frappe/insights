@@ -13,21 +13,23 @@
 }
 
 .font-code {
-  font-family: 'Fira Code' !important;
+	@apply !font-mono;
 }
 
 /* Code Control */
 
 .cm-gutters {
-	@apply !bg-gray-50 !text-sm !leading-6;
+	@apply !border-none !bg-transparent pl-2 !text-sm !leading-6;
+}
+/* hide fold bar */
+.cm-foldGutter span {
+	@apply !opacity-0;
 }
 .cm-activeLine {
-	padding-left: 10px !important;
-	margin-left: -4px !important;
-	@apply !bg-gray-50;
+	@apply !bg-transparent;
 }
 .cm-activeLineGutter {
-	@apply !bg-gray-300;
+	@apply !bg-transparent !font-medium text-gray-900;
 }
 .cm-editor {
 	height: 100%;
@@ -39,16 +41,14 @@
 }
 
 .cm-placeholder {
-	@apply !text-gray-600;
+	@apply !leading-6 !text-gray-600;
 }
 .cm-content {
-	padding: 6px 0px 6px 4px !important;
+	padding: 6px 0px !important;
 }
 
 .cm-scroller {
-	font-family: 'Fira Code' !important;
-	line-height: 1.5rem !important;
-	@apply !text-gray-600
+	@apply !font-mono !leading-6 !text-gray-600;
 }
 .cm-matchingBracket {
 	font-weight: 500 !important;
@@ -70,32 +70,30 @@
 	font-family: 'Inter' !important;
 }
 .cm-tooltip-autocomplete ul li[aria-selected='true'] {
-	@apply !bg-gray-200/80 !rounded;
+	@apply !rounded !bg-gray-200/80;
 	color: #000 !important;
 }
-
-
 
 @layer components {
 	/* Works on Firefox */
 	* {
 		scrollbar-width: thin;
-		scrollbar-color: #C0C6CC #EBEEF0;
+		scrollbar-color: #c0c6cc #ebeef0;
 	}
-	
+
 	html {
 		scrollbar-width: auto;
 	}
 
 	/* Works on Chrome, Edge, and Safari */
 	*::-webkit-scrollbar-thumb {
-		background: #E2E8F0;
+		background: #e2e8f0;
 		border-radius: 6px;
 	}
 
 	*::-webkit-scrollbar-track,
 	*::-webkit-scrollbar-corner {
-		background: #F8FAFC;
+		background: #f8fafc;
 	}
 
 	*::-webkit-scrollbar {
@@ -107,15 +105,14 @@
 		width: 0px;
 		height: 12px;
 	}
-
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.1s ease;
+	transition: opacity 0.1s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0;
+	opacity: 0;
 }

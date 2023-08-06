@@ -2,17 +2,9 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-	show: {
-		type: Boolean,
-		default: false,
-	},
-	title: {
-		type: String,
-	},
-	types: {
-		type: Array,
-		default: () => [],
-	},
+	show: { type: Boolean, default: false },
+	title: { type: String },
+	types: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:show'])
 const show = computed({
