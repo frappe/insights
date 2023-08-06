@@ -1,5 +1,5 @@
 <script setup>
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/store/dataSourceStore'
 import { FileUploader, createResource } from 'frappe-ui'
 import { computed, reactive, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'

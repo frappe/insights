@@ -12,7 +12,7 @@ const emptyUser: User = {
 	is_user: false,
 }
 
-const authStore = defineStore('auth', function () {
+const authStore = defineStore('insights:auth', function () {
 	const initialized = ref(false)
 	const user = ref(emptyUser)
 
@@ -26,7 +26,6 @@ const authStore = defineStore('auth', function () {
 		isLoggedIn.value && api.trackActiveSite()
 		initialized.value = true
 	}
-	initialize()
 
 	async function fetchUserInfo() {
 		if (!isLoggedIn.value) return
@@ -63,7 +62,7 @@ const authStore = defineStore('auth', function () {
 	}
 
 	return {
-		user,
+		user: user,
 		initialized,
 		isLoggedIn,
 		isAuthorized,

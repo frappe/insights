@@ -1,5 +1,5 @@
 <script setup>
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/store/dataSourceStore'
 import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import useQueries from '@/query/useQueries'
 import { copyToClipboard } from '@/utils'
@@ -59,7 +59,7 @@ const formattedSQL = computed(() => {
 	return query.doc.sql.replaceAll('\n', '<br>').replaceAll('      ', '&ensp;&ensp;&ensp;&ensp;')
 })
 
-const sources = useDataSources()
+const sources = useDataSourceStore()
 sources.reload()
 const sourceOptions = computed(() =>
 	sources.list.map((source) => ({

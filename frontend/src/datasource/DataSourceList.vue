@@ -35,7 +35,7 @@ import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
 import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/store/dataSourceStore'
 import { updateDocumentTitle } from '@/utils'
 import { PlusIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
@@ -49,7 +49,7 @@ if (route.hash == '#new') {
 	new_dialog.value = true
 }
 
-const sources = useDataSources()
+const sources = useDataSourceStore()
 sources.reload()
 
 const StatusCell = (props) => (

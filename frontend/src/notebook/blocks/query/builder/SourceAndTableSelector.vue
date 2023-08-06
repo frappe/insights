@@ -1,7 +1,7 @@
 <script setup lang="jsx">
 import UsePopover from '@/components/UsePopover.vue'
 import { useDataSource } from '@/datasource/useDataSource'
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/store/dataSourceStore'
 import { whenever } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -13,7 +13,7 @@ const table = computed({
 })
 
 const selectedDataSource = ref(null)
-const sources = useDataSources()
+const sources = useDataSourceStore()
 sources.reload()
 const sourceOptions = computed(() =>
 	sources.list.map((source) => ({

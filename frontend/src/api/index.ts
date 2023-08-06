@@ -1,4 +1,5 @@
-import { call } from 'frappe-ui'
+import { call, createDocumentResource, createListResource, createResource } from 'frappe-ui'
+import getWhitelistedMethods from './whitelistedMethods'
 
 export const login = (email: string, password: string): Promise<User> => {
 	return call('login', { usr: email, pwd: password })
@@ -13,4 +14,23 @@ export const createLastViewedLog = (recordType: string, recordName: string) => {
 		record_type: recordType,
 		record_name: recordName,
 	}) as Promise<any>
+}
+
+export const getListResource = (listResourceOption: ListResourceParams): ListResource => {
+	return createListResource(listResourceOption)
+}
+
+
+export const createDataSource: Resource = createResource({ url: 'insights.api.add_database' })
+export const testDataSourceConnection: Resource = createResource({
+	url: 'insights.api.test_database_connection',
+})
+
+export const getDocumentResource = (doctype: string, docname: string) => {
+	return createDocumentResource({
+		doctype: doctype,
+		name: docname,
+		auto: false,
+		whitelistedMethods: getWhitelistedMethods(doctype),
+	})
 }

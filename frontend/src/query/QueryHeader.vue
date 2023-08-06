@@ -1,5 +1,5 @@
 <script setup lang="jsx">
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/store/dataSourceStore'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import QueryMenu from '@/query/QueryMenu.vue'
 import { debounce } from 'frappe-ui'
@@ -15,7 +15,7 @@ const debouncedUpdateTitle = debounce(async (title) => {
 	query.doc.title = title
 }, 1500)
 
-const sources = useDataSources()
+const sources = useDataSourceStore()
 sources.reload()
 const SourceOption = (props) => {
 	return (

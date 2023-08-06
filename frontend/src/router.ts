@@ -1,5 +1,5 @@
 import { isSetupComplete } from '@/setup'
-import useAuthStore, { AuthStore } from '@/store/authStore'
+import useAuthStore from '@/store/authStore'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -90,8 +90,9 @@ const routes = [
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),
 		meta: {
-			isAllowed: (auth: AuthStore): boolean =>
-				auth.user.is_admin && settings.doc.enable_permissions,
+			isAllowed(): boolean {
+				return useAuthStore().user.is_admin && settings.enable_permissions
+			},
 		},
 	},
 	{
@@ -99,8 +100,9 @@ const routes = [
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
-			isAllowed: (auth: AuthStore): boolean =>
-				auth.user.is_admin && settings.doc.enable_permissions,
+			isAllowed(): boolean {
+				return useAuthStore().user.is_admin && settings.enable_permissions
+			},
 		},
 	},
 	{
@@ -158,7 +160,7 @@ let router = createRouter({
 
 router.beforeEach(async (to, _, next) => {
 	const auth = useAuthStore()
-	!auth.initialized && await auth.initialize()
+	!auth.initialized && (await auth.initialize())
 
 	if (to.meta.isGuestView && !auth.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
@@ -182,7 +184,7 @@ router.beforeEach(async (to, _, next) => {
 	if (auth.isAuthorized && to.name === 'No Permission') {
 		return next()
 	}
-	if (to.meta.isAllowed && !to.meta.isAllowed(auth)) {
+	if (to.meta.isAllowed && !to.meta.isAllowed()) {
 		return next('/no-permission')
 	}
 
@@ -206,7 +208,7 @@ router.afterEach((to, from) => {
 		to.name !== from.name &&
 		to.params.name !== from.params.name
 	) {
-		auth.createViewLog(to.name, to.params.name)
+		useAuthStore().createViewLog(to.name, to.params.name)
 	}
 })
 
@@ -214,7 +216,7 @@ const _fetch = window.fetch
 window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
-		auth.reset()
+		useAuthStore().resetAuthState()
 		router.push('/login')
 	}
 	return res
