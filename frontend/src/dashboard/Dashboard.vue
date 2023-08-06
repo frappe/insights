@@ -65,7 +65,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 		<template #navbar>
 			<div class="flex flex-shrink-0 items-center space-x-4">
 				<ContentEditable
-					class="text-lg font-medium"
+					class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 					:class="[dashboard.editing ? '' : 'cursor-default']"
 					:value="dashboard.doc.title"
 					:disabled="!dashboard.editing"

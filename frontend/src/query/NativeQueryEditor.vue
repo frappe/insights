@@ -5,11 +5,13 @@ import { computed, inject, ref, watch } from 'vue'
 import SchemaExplorerDialog from './SchemaExplorerDialog.vue'
 
 const query = inject('query')
-call('insights.api.get_source_schema', {
-	data_source: query.doc.data_source,
-}).then((response) => {
-	query.sourceSchema = response
-})
+if (query.doc.data_source) {
+	call('insights.api.get_source_schema', {
+		data_source: query.doc.data_source,
+	}).then((response) => {
+		query.sourceSchema = response
+	})
+}
 const completions = computed(() => {
 	if (!query.sourceSchema) return { schema: {}, tables: [] }
 

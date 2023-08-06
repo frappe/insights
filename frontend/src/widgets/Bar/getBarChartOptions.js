@@ -33,7 +33,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 		{
 			type: 'value',
 			splitLine: {
-				show: false,
+				lineStyle: { type: 'dashed' },
 			},
 			axisLabel: {
 				formatter: (value, index) =>

@@ -36,7 +36,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 			axisType: 'yAxis',
 			type: 'value',
 			splitLine: {
-				show: false,
+				lineStyle: { type: 'dashed' },
 			},
 			axisLabel: {
 				formatter: (value, index) => $utils.getShortNumber(value, 1),

@@ -41,17 +41,20 @@
 
 	<Dialog :options="{ title: 'New Dashboard' }" v-model="showDialog">
 		<template #body-content>
-			<div class="space-y-4">
-				<Input
-					type="text"
-					label="Title"
-					placeholder="Enter a suitable title..."
-					v-model="newDashboardTitle"
-				/>
-			</div>
+			<Input
+				type="text"
+				label="Title"
+				placeholder="Enter a suitable title..."
+				v-model="newDashboardTitle"
+			/>
 		</template>
 		<template #actions>
-			<Button variant="solid" @click="createDashboard" :loading="dashboards.creating">
+			<Button
+				class="w-full"
+				variant="solid"
+				@click="createDashboard"
+				:loading="dashboards.creating"
+			>
 				Create
 			</Button>
 		</template>
