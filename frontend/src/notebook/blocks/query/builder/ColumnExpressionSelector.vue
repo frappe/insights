@@ -107,18 +107,6 @@ onMounted(() => {
 						{{ helpInfo?.example }}
 					</code>
 				</div>
-				<!-- <span class="mr-1 font-light">Syntax:</span>
-				<span class="font-medium italic" style="font-family: 'Fira Code'">
-					
-				</span>
-				<br />
-				<br />
-				<br />
-				<br />
-				<span class="mr-1 font-light">Example:</span>
-				<span class="font-medium" style="font-family: 'Fira Code'">
-					{{ helpInfo?.example }}
-				</span> -->
 			</div>
 		</div>
 	</UsePopover>
