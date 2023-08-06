@@ -46,11 +46,11 @@ const valueOptions = computed(() => {
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
-			<Autocomplete v-model.value="options.xAxis" :options="indexOptions" />
+			<Autocomplete v-model="options.xAxis" :options="indexOptions" />
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<Autocomplete v-model.value="options.yAxis" :options="valueOptions" />
+			<Autocomplete v-model="options.yAxis" :options="valueOptions" />
 		</div>
 
 		<div>
@@ -68,7 +68,7 @@ const valueOptions = computed(() => {
 		<div v-show="!options.inlineLabels">
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Label Position</span>
 			<Autocomplete
-				v-model.value="options.labelPosition"
+				v-model="options.labelPosition"
 				:options="['Top', 'Left', 'Bottom', 'Right']"
 			/>
 		</div>

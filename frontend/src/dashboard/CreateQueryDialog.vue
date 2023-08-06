@@ -1,5 +1,4 @@
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import useDataSources from '@/datasource/useDataSources'
 import { createResource } from 'frappe-ui'
 import { computed, reactive, watch } from 'vue'

@@ -48,15 +48,16 @@ async function selectQuery() {
 		<span class="mb-2 block text-sm leading-4 text-gray-700">Query</span>
 		<div class="relative">
 			<Autocomplete
-				v-model.value="queryName"
+				:value="queryName"
 				placeholder="Select a query"
 				:allowCreate="true"
 				:options="queryOptions"
+				@change="queryName = $event"
 				@createOption="createQuery"
 			/>
 			<div
 				v-if="queryName"
-				class="absolute right-0 top-0 flex h-full w-8 cursor-pointer items-center justify-center"
+				class="absolute right-0 top-0 flex h-full w-8 cursor-pointer items-center justify-center rounded bg-gray-100"
 				@click="openQueryInNewTab"
 			>
 				<FeatherIcon
