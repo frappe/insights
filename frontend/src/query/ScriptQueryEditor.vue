@@ -25,7 +25,14 @@ function runQuery() {
 			</Code>
 		</div>
 		<div class="mt-2 flex-shrink-0 space-x-2">
-			<Button iconLeft="play" variant="outline" @click="runQuery"> Run </Button>
+			<Button
+				iconLeft="play"
+				variant="outline"
+				@click="runQuery"
+				:loading="query.run.loading"
+			>
+				Run
+			</Button>
 		</div>
 	</div>
 </template>

@@ -61,7 +61,10 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def results(self):
         fetch_if_not_cached = self.status == Status.SUCCESS.value
         limit = InsightsSettings.get("query_result_limit") or 1000
-        results = self.retrieve_results(fetch_if_not_cached)
+        try:
+            results = self.retrieve_results(fetch_if_not_cached)
+        except Exception:
+            results = []
         return frappe.as_json(results[:limit])
 
     @property
@@ -168,10 +171,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             self._results = self.process_results_columns(self._results)
             self.execution_time = flt(time.monotonic() - start, 3)
             self.last_execution = frappe.utils.now()
-            self.status = Status.SUCCESS.value
+            self.db_set("status", Status.SUCCESS.value)
         except Exception as e:
-            self.status = Status.FAILED.value
+            frappe.db.rollback()
             frappe.log_error(e)
+            self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:
             CachedResults.set(self.name, self._results)

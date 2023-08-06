@@ -3,9 +3,24 @@
 
 
 import frappe
-from frappe.utils.safe_exec import safe_exec
+import pandas as pd
+import RestrictedPython.Guards
+from frappe.utils.safe_exec import (
+    FrappeTransformer,
+    NamespaceDict,
+    _getattr,
+    _getitem,
+    _write,
+    add_data_utils,
+    compile_restricted,
+    get_python_builtins,
+)
 
 from .utils import get_columns_with_inferred_types
+
+
+class ScriptQueryExecutionError(frappe.ValidationError):
+    pass
 
 
 class InsightsScriptQueryController:
@@ -31,13 +46,20 @@ class InsightsScriptQueryController:
         results = []
         try:
             _locals = {"results": results}
-            safe_exec(script, None, _locals)
+            exec(
+                compile_restricted(script, filename="<scriptquery>", policy=FrappeTransformer),
+                get_safe_exec_globals(),
+                _locals,
+            )
             results = _locals["results"]
-        except BaseException:
+            if isinstance(results, pd.DataFrame):
+                # convert to list of lists where the first row is the column names
+                results = results.values.tolist()
+                results.insert(0, list(results.columns))
+        except BaseException as e:
             frappe.log_error(title="Insights Script Query Error")
             frappe.throw(
-                "There was an error executing the script. "
-                "Please check the error log for more details.",
+                f"Error while executing script: {e}",
                 title="Insights Script Query Error",
             )
 
@@ -54,16 +76,7 @@ class InsightsScriptQueryController:
         if not all(isinstance(row, list) for row in results):
             frappe.throw("All rows should be lists.")
 
-        if not all(isinstance(col, str) for col in results[0]):
-            frappe.throw("All columns should be strings.")
-
-        if not all(len(row) == len(results[0]) for row in results):
-            frappe.throw("All rows should have the same number of columns.")
-
-        if not all(col for col in results[0]):
-            frappe.throw("All columns should have a label.")
-
-        results[0] = [{"label": col.strip()} for col in results[0]]
+        results[0] = [{"label": col} for col in results[0]]
         return results
 
     def before_fetch(self):
@@ -77,3 +90,33 @@ class InsightsScriptQueryController:
 
     def get_selected_tables(self):
         return []
+
+
+def get_safe_exec_globals():
+    datautils = frappe._dict()
+    add_data_utils(datautils)
+
+    pandas = frappe._dict()
+    pandas.DataFrame = pd.DataFrame
+    pandas.read_csv = pd.read_csv
+    pandas.json_normalize = pd.json_normalize
+    # mock out to_csv and to_json to prevent users from writing to disk
+    pandas.DataFrame.to_csv = lambda *args, **kwargs: None
+    pandas.DataFrame.to_json = lambda *args, **kwargs: None
+
+    out = NamespaceDict(
+        utils=datautils,
+        as_json=frappe.as_json,
+        parse_json=frappe.parse_json,
+        make_get_request=frappe.integrations.utils.make_get_request,
+        pandas=pandas,
+    )
+
+    out._write_ = _write
+    out._getitem_ = _getitem
+    out._getattr_ = _getattr
+    out._getiter_ = iter
+    out._iter_unpack_sequence_ = RestrictedPython.Guards.guarded_iter_unpack_sequence
+    out.update(get_python_builtins())
+
+    return out

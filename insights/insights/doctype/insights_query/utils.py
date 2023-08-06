@@ -53,7 +53,7 @@ class CachedResults:
 class Status(Enum):
     PENDING = "Pending Execution"
     SUCCESS = "Execution Successful"
-    FAILED = "Pending Execution"
+    FAILED = "Execution Failed"
 
 
 def update_sql(query):

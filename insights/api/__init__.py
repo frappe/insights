@@ -176,6 +176,7 @@ def create_query(**query):
     doc.data_source = query.get("data_source")
     doc.is_assisted_query = query.get("is_assisted_query")
     doc.is_native_query = query.get("is_native_query")
+    doc.is_script_query = query.get("is_script_query")
     if table := query.get("table") and not doc.is_assisted_query:
         doc.append(
             "tables",

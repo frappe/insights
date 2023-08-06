@@ -116,6 +116,7 @@ const queryBuilderTypes = ref([
 		label: 'Script',
 		description: 'Create a query using a script',
 		icon: 'code',
+		tag: 'beta',
 		onClick: () => openQueryEditor('script'),
 	},
 ])
