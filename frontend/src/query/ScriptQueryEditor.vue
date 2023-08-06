@@ -20,7 +20,7 @@ function runQuery() {
 		<div class="flex-shrink-0 text-sm uppercase leading-7 tracking-wide text-gray-600">
 			Script Query
 		</div>
-		<div class="flex flex-1 overflow-y-scroll rounded border p-2">
+		<div class="flex flex-1 overflow-y-scroll rounded border">
 			<Code language="python" v-model="script" placeholder="Enter your script here...">
 			</Code>
 		</div>
