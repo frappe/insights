@@ -19,7 +19,15 @@
 /* Code Control */
 
 .cm-gutters {
-	display: none !important;
+	@apply !bg-gray-50 !text-sm !leading-6;
+}
+.cm-activeLine {
+	padding-left: 10px !important;
+	margin-left: -4px !important;
+	@apply !bg-gray-50;
+}
+.cm-activeLineGutter {
+	@apply !bg-gray-300;
 }
 .cm-editor {
 	height: 100%;
@@ -34,11 +42,9 @@
 	@apply !text-gray-600;
 }
 .cm-content {
-	padding: 0px !important;
+	padding: 6px 0px 6px 4px !important;
 }
-.cm-activeLine {
-	@apply !bg-transparent;
-}
+
 .cm-scroller {
 	font-family: 'Fira Code' !important;
 	line-height: 1.5rem !important;

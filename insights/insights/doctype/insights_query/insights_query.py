@@ -24,6 +24,7 @@ from .insights_legacy_query import (
 )
 from .insights_query_client import InsightsQueryClient
 from .insights_raw_query import InsightsRawQueryController
+from .insights_script_query import InsightsScriptQueryController
 from .utils import (
     CachedResults,
     InsightsTableColumn,
@@ -60,7 +61,10 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def results(self):
         fetch_if_not_cached = self.status == Status.SUCCESS.value
         limit = InsightsSettings.get("query_result_limit") or 1000
-        results = self.retrieve_results(fetch_if_not_cached)
+        try:
+            results = self.retrieve_results(fetch_if_not_cached)
+        except Exception:
+            results = []
         return frappe.as_json(results[:limit])
 
     @property
@@ -73,6 +77,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             return InsightsRawQueryController(self)
         if self.is_assisted_query:
             return InsightsAssistedQueryController(self)
+        if self.is_script_query:
+            return InsightsScriptQueryController(self)
         return InsightsLegacyQueryController(self)
 
     def validate(self):
@@ -85,6 +91,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         new_query.data_source = self.data_source
         new_query.is_native_query = self.is_native_query
         new_query.is_assisted_query = self.is_assisted_query
+        new_query.is_script_query = self.is_script_query
         new_query_dict = new_query.as_dict(no_default_fields=True)
         self.update(new_query_dict)
         self.status = Status.SUCCESS.value
@@ -164,10 +171,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             self._results = self.process_results_columns(self._results)
             self.execution_time = flt(time.monotonic() - start, 3)
             self.last_execution = frappe.utils.now()
-            self.status = Status.SUCCESS.value
+            self.db_set("status", Status.SUCCESS.value)
         except Exception as e:
-            self.status = Status.FAILED.value
+            frappe.db.rollback()
             frappe.log_error(e)
+            self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:
             CachedResults.set(self.name, self._results)
