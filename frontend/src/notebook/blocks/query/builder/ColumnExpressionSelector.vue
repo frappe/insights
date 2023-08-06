@@ -68,6 +68,7 @@ onMounted(() => {
 	<div class="relative min-h-[3.5rem] max-w-[20rem] pl-1 pr-3 text-gray-800">
 		<div ref="codeEditor" class="w-80 overflow-hidden py-0.5 transition-all">
 			<Code
+				class="text-sm"
 				:value="expression.raw"
 				:completions="getCompletions"
 				:autofocus="false"
@@ -111,3 +112,9 @@ onMounted(() => {
 		</div>
 	</UsePopover>
 </template>
+
+<style lang="scss">
+.cm-gutters {
+	display: none !important;
+}
+</style>
