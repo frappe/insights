@@ -24,8 +24,6 @@ export default function getBarChartOptions(labels, datasets, options) {
 			axisLabel: {
 				rotate: options.rotateLabels,
 				interval: 0,
-			},
-			axisLabel: {
 				formatter: (value, index) =>
 					!isNaN(value) ? $utils.getShortNumber(value, 1) : value,
 			},
@@ -73,6 +71,16 @@ export default function getBarChartOptions(labels, datasets, options) {
 			confine: true,
 			appendToBody: false,
 			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+		},
+		legend: {
+			icon: 'circle',
+			type: 'scroll',
+			bottom: 'bottom',
+			pageIconSize: 12,
+			pageIconColor: '#64748B',
+			pageIconInactiveColor: '#C0CCDA',
+			pageFormatter: '{current}',
+			pageButtonItemGap: 2,
 		},
 	}
 }
