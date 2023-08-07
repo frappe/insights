@@ -125,7 +125,7 @@
       {
         "item_id": "386503",
         "item_type": "Filter",
-        "options": "{\n    \"column\": {\n        \"column\": \"order_purchase_timestamp\",\n        \"data_source\": \"Demo Data\",\n        \"description\": \"Datetime - Orders\",\n        \"label\": \"Order Purchase Timestamp\",\n        \"table\": \"orders\",\n        \"type\": \"Datetime\",\n        \"value\": \"orders.order_purchase_timestamp\"\n    },\n    \"label\": \"Period\",\n    \"links\": {}\n}",
+        "options": "{\n    \"column\": {\n        \"column\": \"order_purchase_timestamp\",\n        \"data_source\": \"Demo Data\",\n        \"description\": \"Datetime - Orders\",\n        \"label\": \"Order Purchase Timestamp\",\n        \"table\": \"orders\",\n        \"type\": \"Datetime\",\n        \"value\": \"orders.order_purchase_timestamp\"\n    },\n    \"label\": \"Period\",\n    \"links\": {\n        \"687928\": {\n            \"column\": \"order_purchase_timestamp\",\n            \"data_source\": \"Demo Data\",\n            \"description\": \"Datetime - Orders\",\n            \"label\": \"Order Purchase Timestamp\",\n            \"table\": \"Orders\",\n            \"table_label\": \"Orders\",\n            \"type\": \"Datetime\",\n            \"value\": \"Orders.order_purchase_timestamp\"\n        }\n    }\n}",
         "layout": "{\n    \"h\": 2,\n    \"i\": 386503,\n    \"moved\": false,\n    \"w\": 4,\n    \"x\": 0,\n    \"y\": 0\n}",
         "filter_label": "Period",
         "filter_column": "{\n    \"column\": \"order_purchase_timestamp\",\n    \"data_source\": \"Demo Data\",\n    \"description\": \"Datetime - Orders\",\n    \"label\": \"Order Purchase Timestamp\",\n    \"table\": \"Orders\",\n    \"type\": \"Datetime\"\n}",
