@@ -20,7 +20,7 @@
 		"dayjs": "^1.11.6",
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "0.1.0-alpha.5",
+		"frappe-ui": "0.1.0-alpha.11",
 		"lucide-vue-next": "^0.259.0",
 		"pinia": "^2.0.30",
 		"tailwindcss": "3.2.7",
