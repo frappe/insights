@@ -53,10 +53,12 @@ class CachedResults:
 class Status(Enum):
     PENDING = "Pending Execution"
     SUCCESS = "Execution Successful"
-    FAILED = "Pending Execution"
+    FAILED = "Execution Failed"
 
 
 def update_sql(query):
+    if not query.data_source:
+        return
     data_source = InsightsDataSource.get_doc(query.data_source)
     sql = data_source.build_query(query)
     sql = format_query(sql)
@@ -321,6 +323,9 @@ class Filter(frappe._dict):
         self.value = LabelValue(**kwargs.get("value"))
 
     def is_valid(self):
+        is_unary = self.operator.value in ["is_set", "is_not_set"]
+        if is_unary:
+            return self.column.is_valid() and self.operator.is_valid()
         return self.column.is_valid() and self.operator.is_valid() and self.value.is_valid()
 
     @classmethod

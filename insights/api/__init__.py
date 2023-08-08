@@ -173,9 +173,10 @@ def create_query(**query):
     track("create_query")
     doc = frappe.new_doc("Insights Query")
     doc.title = query.get("title")
-    doc.data_source = query.get("data_source") or "Demo Data"
+    doc.data_source = query.get("data_source")
     doc.is_assisted_query = query.get("is_assisted_query")
     doc.is_native_query = query.get("is_native_query")
+    doc.is_script_query = query.get("is_script_query")
     if table := query.get("table") and not doc.is_assisted_query:
         doc.append(
             "tables",

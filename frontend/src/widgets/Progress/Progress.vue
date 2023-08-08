@@ -3,32 +3,19 @@ import { getShortNumber } from '@/utils'
 import { computed } from 'vue'
 
 const props = defineProps({
-	chartData: { type: Object, required: true },
+	data: { type: Object, required: true },
 	options: { type: Object, required: true },
-})
-
-const results = computed(() => props.chartData.data)
-const resultMap = computed(() => {
-	if (!results.value?.length) return []
-	const columns = results.value[0].map((d) => d.label)
-	return results.value.slice(1).map((row) => {
-		const result = {}
-		row.forEach((value, index) => {
-			result[columns[index]] = value
-		})
-		return result
-	})
 })
 
 const progress = computed(() => {
 	if (!props.options.progress) return 0
-	return resultMap.value.reduce((acc, row) => acc + row[props.options.progress], 0)
+	return props.data.reduce((acc, row) => acc + row[props.options.progress], 0)
 })
 
 const target = computed(() => {
 	if (!props.options.target) return 0
 	if (props.options.targetType === 'Value') return parseInt(props.options.target)
-	return resultMap.value.reduce((acc, row) => acc + row[props.options.target], 0)
+	return props.data.reduce((acc, row) => acc + row[props.options.target], 0)
 })
 
 function formatValue(value) {

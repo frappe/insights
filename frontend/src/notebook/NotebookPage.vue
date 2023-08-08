@@ -1,12 +1,12 @@
 <script setup lang="jsx">
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebookPage from '@/notebook/useNotebookPage'
-import TipTap from './tiptap/TipTap.vue'
-import { provide, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { updateDocumentTitle } from '@/utils'
+import { computed, provide, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import TipTap from './tiptap/TipTap.vue'
 
 const props = defineProps({
 	notebook: String,
@@ -32,24 +32,17 @@ updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-6 py-4">
-		<Breadcrumbs
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs
+			class="h-7"
 			:items="[
-				{
-					label: 'Notebooks',
-					href: '/notebook',
-				},
-				{
-					label: notebook.doc.title,
-					href: `/notebook/${page.doc.notebook}`,
-				},
-				{
-					label: page.doc.title,
-					href: `/notebook/${page.doc.notebook}/${page.doc.name}`,
-				},
+				{ label: 'Notebooks', route: { path: '/notebook' } },
+				{ label: 'Pages', route: { path: `/notebook/${notebook.doc.name}` } },
+				{ label: page.doc.title },
 			]"
-		>
-		</Breadcrumbs>
+		/>
+	</header>
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<div
 			v-if="page.doc.name"
 			class="h-full w-full overflow-y-scroll bg-white pb-96 pt-16 text-base"

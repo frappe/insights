@@ -68,6 +68,7 @@ onMounted(() => {
 	<div class="relative min-h-[3.5rem] max-w-[20rem] pl-1 pr-3 text-gray-800">
 		<div ref="codeEditor" class="w-80 overflow-hidden py-0.5 transition-all">
 			<Code
+				class="text-sm"
 				:value="expression.raw"
 				:completions="getCompletions"
 				:autofocus="false"
@@ -107,19 +108,13 @@ onMounted(() => {
 						{{ helpInfo?.example }}
 					</code>
 				</div>
-				<!-- <span class="mr-1 font-light">Syntax:</span>
-				<span class="font-medium italic" style="font-family: 'Fira Code'">
-					
-				</span>
-				<br />
-				<br />
-				<br />
-				<br />
-				<span class="mr-1 font-light">Example:</span>
-				<span class="font-medium" style="font-family: 'Fira Code'">
-					{{ helpInfo?.example }}
-				</span> -->
 			</div>
 		</div>
 	</UsePopover>
 </template>
+
+<style lang="scss">
+.cm-gutters {
+	display: none !important;
+}
+</style>

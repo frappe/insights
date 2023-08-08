@@ -1,16 +1,16 @@
 <template>
-	<div class="h-full w-full bg-white px-6 py-4">
-		<Breadcrumbs :items="[{ label: 'Data Sources', href: '/data-source' }]"></Breadcrumbs>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs class="h-7" :items="[{ label: 'Data Sources' }]" />
+		<div>
+			<Button label="New Data Source" variant="solid" @click="new_dialog = true">
+				<template #prefix>
+					<PlusIcon class="w-4" />
+				</template>
+			</Button>
+		</div>
+	</header>
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<ListView
-			title="Data Sources"
-			:actions="[
-				{
-					label: 'New Data Source',
-					variant: 'solid',
-					iconLeft: 'plus',
-					onClick: () => (new_dialog = true),
-				},
-			]"
 			:columns="columns"
 			:data="sources.list"
 			:rowClick="({ name }) => router.push({ name: 'DataSource', params: { name } })"
@@ -30,18 +30,20 @@
 </template>
 
 <script setup lang="jsx">
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ListView from '@/components/ListView.vue'
-import useDataSources from '@/datasource/useDataSources'
-import { updateDocumentTitle } from '@/utils'
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
 import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
+import useDataSources from '@/datasource/useDataSources'
+import { updateDocumentTitle } from '@/utils'
+import { PlusIcon } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 
 const new_dialog = ref(false)
+
 const route = useRoute()
 if (route.hash == '#new') {
 	new_dialog.value = true

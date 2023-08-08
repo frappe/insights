@@ -1,26 +1,24 @@
 <script setup>
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import Query from '@/query/Query.vue'
+
 const props = defineProps({ name: String })
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col overflow-hidden bg-white px-6 py-4">
-		<Breadcrumbs
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs
+			class="h-7"
 			:items="[
-				{
-					label: 'Query',
-					href: '/query',
-				},
+				{ label: 'Queries', route: { path: '/query' } },
 				{
 					label: props.name,
-					href: `/query/build/${props.name}`,
+					route: { path: `/query/build/${props.name}` },
 				},
 			]"
-		>
-		</Breadcrumbs>
-		<div class="-mx-1 flex w-full flex-1 flex-col overflow-hidden py-3">
-			<Query :name="props.name" />
-		</div>
+		/>
+	</header>
+	<div class="flex h-full w-full flex-col overflow-hidden bg-white px-4 py-1">
+		<Query :name="props.name" />
 	</div>
 </template>

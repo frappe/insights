@@ -4,7 +4,7 @@ import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
-import { debounce } from 'frappe-ui'
+import { debounce, call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
 const queries = {}
@@ -120,6 +120,7 @@ function makeQuery(name) {
 	watchDebounced(getUpdatedFields, setUnsaved, { deep: true, debounce: 500 })
 
 	state.fetchSourceSchema = async () => {
+		if (!state.doc.data_source) return
 		state.sourceSchema = await call('insights.api.get_source_schema', {
 			data_source: state.doc.data_source,
 		})

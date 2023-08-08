@@ -23,7 +23,7 @@
 				v-model="filter.value"
 				:options="valueOptions"
 				:placeholder="valuePlaceholder"
-				@inputChange="checkAndFetchColumnValues"
+				@update:query="checkAndFetchColumnValues"
 				:loading="query.fetchColumnValues.loading"
 			/>
 			<TimespanPicker
@@ -96,12 +96,10 @@
 </template>
 
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import DatePicker from '@/components/Controls/DatePicker.vue'
 import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
 import ListPicker from '@/components/Controls/ListPicker.vue'
 import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
-
 import { formatDate, isEmptyObj } from '@/utils'
 import { debounce } from 'frappe-ui'
 import { computed, inject, reactive, watch } from 'vue'
@@ -248,10 +246,16 @@ const checkAndFetchColumnValues = debounce(function (search_text = '') {
 }, 300)
 
 watch(
-	() => showListPicker.value || showValueOptions.value,
-	(show) => {
-		// if operator is changed, fetch values for the column
-		show && !valueOptions.value?.length && checkAndFetchColumnValues()
+	() => ({
+		shouldFetch: showListPicker.value || showValueOptions.value,
+		columnChanged: filter.column?.value,
+	}),
+	({ shouldFetch, columnChanged }) => {
+		const oldValues = query.fetchColumnValues.data?.message
+		if (columnChanged && oldValues?.length) {
+			query.fetchColumnValues.data.message = []
+		}
+		shouldFetch && columnChanged && !valueOptions.value?.length && checkAndFetchColumnValues()
 	},
 	{ immediate: true }
 )
