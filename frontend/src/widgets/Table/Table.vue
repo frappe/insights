@@ -40,18 +40,15 @@ function total(column) {
 <template>
 	<div
 		v-if="options?.columns?.length || rows?.length"
-		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded p-3"
+		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded px-4 py-2"
 	>
-		<div
-			v-if="props.options.title"
-			class="h-5 flex-shrink-0 text-base font-medium text-gray-600"
-		>
+		<div v-if="props.options.title" class="text-lg font-normal leading-6 text-gray-800">
 			{{ props.options.title }}
 		</div>
 		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
 			<div
 				v-if="rows.length == 0"
-				class="absolute top-0 flex h-full w-full items-center justify-center text-lg font-light text-gray-600"
+				class="absolute top-0 flex h-full w-full items-center justify-center text-lg text-gray-600"
 			>
 				<span>No Data</span>
 			</div>
@@ -60,14 +57,14 @@ function total(column) {
 					<tr>
 						<td
 							v-if="props.options.index"
-							class="w-10 whitespace-nowrap bg-gray-100 px-2.5 py-1.5 font-medium text-gray-600 first:rounded-l-md last:rounded-r-md"
+							class="w-10 whitespace-nowrap border-b bg-white py-1.5 font-medium text-gray-600"
 							scope="col"
 						>
 							#
 						</td>
 						<td
 							v-for="column in props.options.columns"
-							class="whitespace-nowrap bg-gray-100 px-2.5 py-1.5 font-medium text-gray-600 first:rounded-l-md last:rounded-r-md"
+							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 font-medium text-gray-600 hover:text-gray-800"
 							scope="col"
 						>
 							{{ column }}
@@ -76,16 +73,10 @@ function total(column) {
 				</thead>
 				<tbody>
 					<tr v-for="(row, index) in rows" class="border-b">
-						<td
-							v-if="props.options.index"
-							class="w-10 whitespace-nowrap bg-white px-2.5 py-2 font-light text-gray-600"
-						>
+						<td v-if="props.options.index" class="w-10 whitespace-nowrap bg-white py-2">
 							{{ index + 1 }}
 						</td>
-						<td
-							v-for="cell in row"
-							class="whitespace-nowrap bg-white px-2.5 py-2 font-light text-gray-600"
-						>
+						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2">
 							{{
 								typeof cell == 'number'
 									? cell.toLocaleString()
