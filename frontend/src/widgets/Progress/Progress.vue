@@ -40,12 +40,14 @@ const progressPercent = computed(() => {
 	>
 		<div class="h-fit w-full max-w-[22rem]">
 			<div>
-				<div class="text-gray-600">{{ props.options.title }}</div>
-				<div class="text-[34px] leading-tight">
+				<div class="w-full overflow-hidden text-ellipsis whitespace-nowrap leading-6">
+					{{ props.options.title }}
+				</div>
+				<div class="text-[28px] font-medium leading-8">
 					{{ props.options.prefix }}{{ formatValue(progress) }}{{ props.options.suffix }}
 				</div>
 			</div>
-			<div class="mb-1">
+			<div class="my-1">
 				<div class="flex justify-between text-xs tracking-wide text-gray-600">
 					<div>{{ progressPercent }}%</div>
 					<div>
