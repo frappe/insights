@@ -98,12 +98,12 @@ function makeQuery(name) {
 	watchOnce(
 		() => state.autosave,
 		() => {
-			function saveIfChanged(newVal, oldVal) {
+			const saveIfChanged = throttle(function (newVal, oldVal) {
 				if (!oldVal || !newVal) return
 				if (state.loading) return
 				if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
 				state.save()
-			}
+			}, 3000)
 			// TODO: fix the weird bug where the inputs are not selected when auto-saving
 			watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
 		}
@@ -157,4 +157,17 @@ function makeQuery(name) {
 	}
 
 	return state
+}
+
+function throttle(func, limit) {
+	let inThrottle
+	return function () {
+		const args = arguments
+		const context = this
+		if (!inThrottle) {
+			func.apply(context, args)
+			inThrottle = true
+			setTimeout(() => (inThrottle = false), limit)
+		}
+	}
 }
