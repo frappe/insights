@@ -31,7 +31,6 @@ setConfig('resourceFetcher', (options) => {
 
 app.use(router)
 app.use(VueGridLayout)
-app.config.unwrapInjectedRef = true
 app.provide(
 	'$socket',
 	initSocket({
