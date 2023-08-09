@@ -15,7 +15,7 @@
 						v-model="newTable"
 						:options="query.tables.newTableOptions"
 						placeholder="Select a table..."
-						@change="addNewTable"
+						@update:modelValue="addNewTable"
 					/>
 				</div>
 				<Button icon="x" @click="addingTable = false"></Button>

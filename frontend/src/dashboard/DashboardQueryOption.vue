@@ -52,7 +52,7 @@ async function selectQuery() {
 				placeholder="Select a query"
 				:allowCreate="true"
 				:options="queryOptions"
-				@change="queryName = $event"
+				@update:modelValue="queryName = $event"
 				@createOption="createQuery"
 			/>
 			<div
