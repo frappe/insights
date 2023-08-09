@@ -4,6 +4,10 @@ import { inject } from 'vue'
 export default function getBarChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
 
+	if (!datasets || !datasets.length) {
+		return {}
+	}
+
 	const markLine = options.referenceLine
 		? {
 				data: [

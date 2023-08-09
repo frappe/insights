@@ -1,6 +1,10 @@
 import { getColors } from '@/utils/colors'
 
 export default function getFunnelChartOptions(labels, dataset, options) {
+	if (!dataset || !dataset.data || !dataset.data.length) {
+		return {}
+	}
+
 	return {
 		animation: false,
 		color: getColors(),

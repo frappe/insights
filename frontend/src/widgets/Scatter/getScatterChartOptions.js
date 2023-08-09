@@ -4,6 +4,10 @@ import { inject } from 'vue'
 export default function getScatterChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
 
+	if (!datasets || !datasets.length) {
+		return {}
+	}
+
 	return {
 		animation: false,
 		color: options.colors || getColors(),
