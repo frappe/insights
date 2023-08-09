@@ -381,6 +381,9 @@ class Query(frappe._dict):
 
 
 def export_query(doc):
+    if not hasattr(doc.variant_controller, "export_query"):
+        frappe.throw("The selected query type does not support exporting")
+
     exported_query = frappe._dict(
         data=doc.variant_controller.export_query(),
         metadata={
@@ -397,7 +400,7 @@ def export_query(doc):
             ),
         },
     )
-    return frappe.as_json(exported_query)
+    return exported_query
 
 
 def import_query(data_source, query):

@@ -389,6 +389,7 @@ class LegacyQueryImporter(BaseNestedQueryImporter):
         self.doc.set("tables", self.data.query["tables"])
         self.doc.set("columns", self.data.query["columns"])
         self.doc.set("filters", self.data.query["filters"])
+        self.doc.set("limit", self.data.query["limit"])
 
     def _update_subquery_references(self):
         for old_name, new_name in self.imported_queries.items():
