@@ -1,60 +1,53 @@
 <template>
-	<div class="flex h-full w-full flex-col bg-white px-8 py-4">
-		<Breadcrumbs
+	<header class="sticky top-0 z-10 flex items-center bg-white px-5 py-2.5">
+		<PageBreadcrumbs
+			class="h-7"
 			:items="[
 				{
 					label: 'Data Sources',
 					href: '/data-source',
+					route: { path: '/data-source' },
 				},
 				{
 					label: props.name,
-					href: `/data-source/${props.name}`,
+					route: { path: `/data-source/${props.name}` },
 				},
 				{
 					label: dataSourceTable.doc?.label || props.table,
-					href: `/data-source/${props.name}/${props.table}`,
 				},
 			]"
 		/>
-
-		<div v-if="dataSourceTable.doc" class="mt-2 flex items-center space-x-4">
-			<div class="flex items-start space-x-4">
-				<h1 class="text-3xl font-medium text-gray-900">
-					{{ dataSourceTable.doc.label }}
-				</h1>
-				<div class="flex h-8 items-center">
-					<Badge :theme="hidden ? 'yellow' : 'green'" size="lg">
-						{{ hidden ? 'Disabled' : 'Enabled' }}
-					</Badge>
-				</div>
-			</div>
-			<div class="space-x-2">
-				<Dropdown
-					placement="left"
-					:button="{
-						icon: 'more-horizontal',
-						variant: 'ghost',
-					}"
-					:options="[
-						{
-							label: hidden ? 'Enable' : 'Disable',
-							icon: hidden ? 'eye' : 'eye-off',
-							onClick: () => (hidden = !hidden),
-						},
-						{
-							label: 'Sync Table',
-							icon: 'refresh-cw',
-							onClick: () => dataSourceTable.sync(),
-						},
-						{
-							label: 'Add Link',
-							icon: 'link',
-							onClick: () => (addLinkDialog = true),
-						},
-					]"
-				/>
-			</div>
+		<div v-if="dataSourceTable.doc" class="ml-2 flex items-center space-x-2.5">
+			<Badge :theme="hidden ? 'yellow' : 'green'" size="md">
+				{{ hidden ? 'Disabled' : 'Enabled' }}
+			</Badge>
+			<Dropdown
+				placement="left"
+				:button="{
+					icon: 'more-horizontal',
+					variant: 'ghost',
+				}"
+				:options="[
+					{
+						label: hidden ? 'Enable' : 'Disable',
+						icon: hidden ? 'eye' : 'eye-off',
+						onClick: () => (hidden = !hidden),
+					},
+					{
+						label: 'Sync Table',
+						icon: 'refresh-cw',
+						onClick: () => dataSourceTable.sync(),
+					},
+					{
+						label: 'Add Link',
+						icon: 'link',
+						onClick: () => (addLinkDialog = true),
+					},
+				]"
+			/>
 		</div>
+	</header>
+	<div class="flex flex-1 flex-col overflow-hidden bg-white px-6 py-2">
 		<div
 			v-if="
 				dataSourceTable.doc &&
@@ -62,12 +55,12 @@
 				dataSourceTable.rows?.data &&
 				!dataSourceTable.syncing
 			"
-			class="flex flex-1 flex-col overflow-hidden pt-3"
+			class="flex flex-1 flex-col overflow-hidden"
 		>
-			<div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
+			<!-- <div class="flex h-6 flex-shrink-0 space-x-1 text-sm font-light text-gray-600">
 				{{ dataSourceTable.doc.columns.length }} Columns -
 				{{ dataSourceTable.rows.length }} Rows
-			</div>
+			</div> -->
 			<div class="flex flex-1 overflow-scroll">
 				<Grid :header="true" :rows="dataSourceTable.rows.data">
 					<template #header>
@@ -137,12 +130,11 @@
 
 <script setup>
 import Grid from '@/components/Grid.vue'
-import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import { useDataSourceTable } from '@/datasource/useDataSource'
-import { Dropdown, Badge, createResource, LoadingIndicator } from 'frappe-ui'
-import { computed, ref, reactive, watch, inject, nextTick } from 'vue'
-import Breadcrumbs from '../components/Breadcrumbs.vue'
+import { Badge, Dropdown, LoadingIndicator, createResource } from 'frappe-ui'
+import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 
 const props = defineProps({
 	name: {

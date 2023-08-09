@@ -1,9 +1,9 @@
 <script setup lang="jsx">
 import useDataSources from '@/datasource/useDataSources'
+import ContentEditable from '@/notebook/ContentEditable.vue'
 import QueryMenu from '@/query/QueryMenu.vue'
 import { debounce } from 'frappe-ui'
 import { computed, inject } from 'vue'
-import ContentEditable from '@/notebook/ContentEditable.vue'
 
 const $notify = inject('$notify')
 const query = inject('query')
@@ -52,7 +52,7 @@ function changeDataSource(sourceName) {
 <template>
 	<div class="mr-2 flex h-full items-center space-x-3">
 		<ContentEditable
-			class="text-xl"
+			class="rounded-sm text-xl font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 			v-model="query.doc.title"
 			@update:model-value="debouncedUpdateTitle"
 			placeholder="Untitled Query"

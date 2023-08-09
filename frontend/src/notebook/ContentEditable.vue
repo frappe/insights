@@ -1,8 +1,8 @@
 <template>
 	<component
 		:is="tag"
-		class="contenteditable align-middle outline-none before:text-gray-500 focus:outline-none"
-		:contenteditable="contenteditable"
+		class="contenteditable align-middle outline-none transition-all before:text-gray-500"
+		:contenteditable="disabled ? false : contenteditable"
 		:placeholder="placeholder"
 		@input="update"
 		@blur="update"
@@ -30,6 +30,10 @@ const props = defineProps({
 	contenteditable: {
 		type: [Boolean, String],
 		default: true,
+	},
+	disabled: {
+		type: Boolean,
+		default: false,
 	},
 	modelValue: String | Number,
 	value: String | Number,

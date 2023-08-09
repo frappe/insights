@@ -30,7 +30,7 @@ function openRecord(row) {
 		case 'Dashboard':
 			return router.push(`/dashboard/${name}`)
 		case 'Query':
-			return router.push(`/query/${name}`)
+			return router.push(`/query/build/${name}`)
 		default:
 			break
 	}
@@ -52,7 +52,7 @@ function openRecord(row) {
 				<li
 					v-for="(row, idx) in recent_records"
 					:key="idx"
-					class="flex cursor-pointer items-center gap-4 border-b text-gray-800 transition-colors hover:bg-gray-50"
+					class="flex cursor-pointer items-center gap-4 border-b transition-colors hover:bg-gray-50"
 					@click="openRecord(row)"
 				>
 					<div>

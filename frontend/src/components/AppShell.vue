@@ -17,12 +17,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
-import auth from '@/utils/auth'
 import Sidebar from '@/components/Sidebar.vue'
-import { useRoute } from 'vue-router'
+import auth from '@/utils/auth'
 import settings from '@/utils/settings'
 import systemSettings from '@/utils/systemSettings'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const hideSidebar = computed(() => {

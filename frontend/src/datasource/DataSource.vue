@@ -1,14 +1,16 @@
 <template>
-	<div class="h-full w-full bg-white px-6 py-4">
-		<Breadcrumbs
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs
+			class="h-7"
 			:items="[
-				{ label: 'Data Sources', href: '/data-source' },
+				{ label: 'Data Sources', route: { path: '/data-source' } },
 				{ label: dataSource.doc.title },
 			]"
-		></Breadcrumbs>
+		/>
+	</header>
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<ListView
 			v-if="dataSource.doc && dataSource.tables.length"
-			:title="dataSource.doc.title"
 			:columns="columns"
 			:data="dataSource.tables.filter((t) => !t.is_query_based)"
 			:rowClick="
@@ -46,12 +48,12 @@
 </template>
 
 <script setup lang="jsx">
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ListView from '@/components/ListView.vue'
 import { useDataSource } from '@/datasource/useDataSource'
 import { Badge } from 'frappe-ui'
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 
 const props = defineProps({
 	name: {

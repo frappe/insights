@@ -1,7 +1,7 @@
 import { useQueryResource } from '@/query/useQueryResource'
 import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
-import { guessChart } from '@/widgets/useChartData'
+import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, createDocumentResource, debounce } from 'frappe-ui'
 import { reactive } from 'vue'
@@ -59,10 +59,11 @@ function getChart(chartName) {
 			() => _query.doc,
 			() => {
 				if (!_query.doc) return
-				state.data = getFormattedResult(_query.doc.results)
-				state.columns = state.data[0]
+				const formattedResults = getFormattedResult(_query.doc.results)
+				state.columns = formattedResults[0]
+				state.data = convertResultToObjects(formattedResults)
 				if (!state.doc.chart_type) {
-					const recommendedChart = guessChart(state.data)
+					const recommendedChart = guessChart(formattedResults)
 					state.doc.chart_type = recommendedChart?.type
 					state.doc.options = recommendedChart?.options
 					state.doc.options.title = _query.doc.title

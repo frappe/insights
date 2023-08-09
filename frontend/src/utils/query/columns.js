@@ -26,7 +26,7 @@ export function useQueryColumns(query) {
 			return acc
 		}, [])
 	const fetchColumns = (newVal, oldVal) => {
-		if (newVal && !isEqual(newVal, oldVal)) {
+		if (newVal?.length && !isEqual(newVal, oldVal)) {
 			query.fetchColumns.submit()
 		}
 	}

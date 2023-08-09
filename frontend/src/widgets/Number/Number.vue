@@ -3,21 +3,15 @@ import { computed, inject } from 'vue'
 
 const $utils = inject('$utils')
 const props = defineProps({
-	chartData: { type: Object, required: true },
+	data: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const results = computed(() => {
-	return props.chartData.data
-})
 const formattedValue = computed(() => {
-	if (!results.value?.length) return
+	if (!props.data?.length) return
 	if (!props.options.column) return
-	const columnIndex = results.value[0].findIndex((header) => {
-		return header.label === props.options.column
-	})
-	const _value = results.value.slice(1).reduce((acc, row) => {
-		return acc + row[columnIndex]
+	const _value = props.data.reduce((acc, row) => {
+		return acc + row[props.options.column]
 	}, 0)
 
 	if (props.options.hasOwnProperty('shorten') && !props.options.shorten) {

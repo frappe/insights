@@ -17,6 +17,7 @@
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { javascript } from '@codemirror/lang-javascript'
 import { MySQL, sql } from '@codemirror/lang-sql'
+import { python } from '@codemirror/lang-python'
 import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
 import { EditorView } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
@@ -72,6 +73,8 @@ watch(code, (value, oldValue) => {
 const language =
 	props.language === 'javascript'
 		? javascript()
+		: props.language === 'python'
+		? python()
 		: sql({
 				dialect: MySQL,
 				upperCaseKeywords: true,

@@ -1,10 +1,10 @@
+import { useQueryResource } from '@/query/useQueryResource'
 import { safeJSONParse } from '@/utils'
 import auth from '@/utils/auth'
 import widgets from '@/widgets/widgets'
-import { createDocumentResource } from 'frappe-ui'
+import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
-import { useQueryResource } from '@/query/useQueryResource'
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -120,14 +120,14 @@ export default function useDashboard(name) {
 			if (item.item_id === filter_id) {
 				const charts = Object.keys(item.options.links) || []
 				charts.forEach((chart) => {
-					updateChartFilters(chart)
+					refreshChartFilters(chart)
 				})
 				return true
 			}
 		})
 	}
 
-	async function updateChartFilters(chart_id) {
+	async function refreshChartFilters(chart_id) {
 		const promises = state.doc.items
 			.filter((item) => item.item_type === 'Filter')
 			.map(async (filter) => {
@@ -150,7 +150,7 @@ export default function useDashboard(name) {
 
 	async function getChartFilters(chart_id) {
 		if (!state.filtersByChart[chart_id]) {
-			await updateChartFilters(chart_id)
+			await refreshChartFilters(chart_id)
 		}
 		return state.filtersByChart[chart_id]
 	}
@@ -197,17 +197,17 @@ export default function useDashboard(name) {
 		state.refreshCallbacks.push(fn)
 	}
 
-	async function updateTitle(title) {
+	const updateTitle = debounce(function (title) {
 		if (!title || !state.editing) return
-		resource.setValue.submit({ title }).then(() => {
-			$notify({
-				title: 'Dashboard title updated',
-				variant: 'success',
-			})
-			state.doc.title = title
-		})
-		reload()
-	}
+		// save the title on save
+		// resource.setValue.submit({ title }).then(() => {
+		// 	$notify({
+		// 		title: 'Dashboard title updated',
+		// 		variant: 'success',
+		// 	})
+		// })
+		state.doc.title = title
+	}, 500)
 
 	function makeLayoutObject(item) {
 		return {
@@ -273,7 +273,7 @@ export default function useDashboard(name) {
 		getFilterState,
 		setFilterState,
 		refreshFilter,
-		updateChartFilters,
+		refreshChartFilters,
 		edit,
 		discardChanges,
 		toggleSidebar,

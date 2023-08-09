@@ -1,9 +1,17 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
+import { call } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
+import SchemaExplorerDialog from './SchemaExplorerDialog.vue'
 
 const query = inject('query')
-query.getSourceSchema.submit()
+if (query.doc.data_source) {
+	call('insights.api.get_source_schema', {
+		data_source: query.doc.data_source,
+	}).then((response) => {
+		query.sourceSchema = response
+	})
+}
 const completions = computed(() => {
 	if (!query.sourceSchema) return { schema: {}, tables: [] }
 
@@ -38,24 +46,37 @@ function runQuery() {
 		query.run.submit()
 	})
 }
+
+const showDataExplorer = ref(false)
 </script>
 
 <template>
 	<div class="flex w-full flex-1 flex-shrink-0 flex-col">
-		<div class="flex-shrink-0 text-sm uppercase leading-7 tracking-wide text-gray-600">
+		<div class="flex-shrink-0 uppercase leading-7 tracking-wide text-gray-600">
 			Native Query
 		</div>
-		<div class="flex flex-1 overflow-y-scroll rounded border p-2">
+		<div class="flex flex-1 flex-col overflow-y-scroll rounded border">
 			<Code
 				:key="completions.tables.length"
 				language="sql"
 				v-model="nativeQuery"
 				:schema="completions.schema"
 				:tables="completions.tables"
+				placeholder="Type your query here"
 			></Code>
-		</div>
-		<div class="mt-2 flex-shrink-0 space-x-2">
-			<Button iconLeft="play" variant="outline" @click="runQuery"> Run </Button>
+			<div class="flex gap-2 p-2">
+				<div>
+					<Button
+						variant="subtle"
+						icon="book-open"
+						@click="showDataExplorer = !showDataExplorer"
+					></Button>
+				</div>
+				<div>
+					<Button variant="solid" icon="play" @click="runQuery"> </Button>
+				</div>
+			</div>
 		</div>
 	</div>
+	<SchemaExplorerDialog v-model:show="showDataExplorer" />
 </template>

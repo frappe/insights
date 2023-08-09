@@ -132,7 +132,6 @@
 </template>
 
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Code from '@/components/Controls/Code.vue'
 import ExpressionHelpDialog from '../ExpressionHelpDialog.vue'
 import Tooltip from '@/components/Tooltip.vue'

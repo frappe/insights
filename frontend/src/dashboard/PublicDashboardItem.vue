@@ -23,7 +23,7 @@ if (isChart) {
 	whenever(query, () => chartData.load(query.value), { immediate: true })
 	dashboard.onRefresh(() => chartData.load(query.value))
 	chartFilters = computed(() => dashboard.filtersByChart[props.item.item_id])
-	dashboard.updateChartFilters(props.item.item_id)
+	dashboard.refreshChartFilters(props.item.item_id)
 	watch(chartFilters, () => {
 		chartData.load(props.item.options.query)
 	})
@@ -49,7 +49,7 @@ if (isChart) {
 				<component
 					ref="widget"
 					:is="widgets.getComponent(item.item_type)"
-					:chartData="chartData"
+					:data="chartData.data"
 					:item_id="item.item_id"
 					:options="item.options"
 				>

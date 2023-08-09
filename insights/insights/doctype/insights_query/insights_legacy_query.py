@@ -9,9 +9,10 @@ import pandas as pd
 from frappe.utils.data import cstr
 
 from insights.api import fetch_column_values, get_tables
+from insights.utils import InsightsDataSource, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store
-from .utils import InsightsTable, get_columns_with_inferred_types
+from .utils import get_columns_with_inferred_types, update_sql
 
 DEFAULT_FILTERS = dumps(
     {
@@ -248,11 +249,11 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def __init__(self, doc):
         self.doc = doc
 
+    def before_save(self):
+        update_sql(self.doc)
+
     def after_reset(self):
         self.doc.filters = DEFAULT_FILTERS
-
-    def get_columns(self):
-        return self.get_columns_from_results(self.doc.retrieve_results())
 
     def get_columns_from_results(self, results):
         if not results:
@@ -329,7 +330,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         sub_stored_queries = [t.table for t in self.doc.tables if t.table != self.doc.name]
         sync_query_store(sub_stored_queries, force=True)
 
-    def after_fetch_results(self, results):
+    def after_fetch(self, results):
         if self.has_cumulative_columns():
             results = self.apply_cumulative_sum(results)
         return results
@@ -346,3 +347,6 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
                 results_df[column.label] = results_df[column.label].cumsum()
 
         return [results[0]] + results_df.values.tolist()
+
+    def fetch_results(self):
+        return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)

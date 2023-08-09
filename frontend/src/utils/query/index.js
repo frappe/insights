@@ -18,7 +18,6 @@ export function useQuery(name) {
 	query.filters = useQueryFilters(query)
 	query.results = useQueryResults(query)
 
-	query.sourceSchema = computed(() => query.getSourceSchema.data?.message)
 	query.debouncedRun = debounce(query.run.submit, 500)
 	query.beforeExecute = (fn) => {
 		// since there are two query types,

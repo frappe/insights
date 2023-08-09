@@ -4,6 +4,7 @@ import { createDocumentResource } from 'frappe-ui'
 const resource = createDocumentResource({
 	doctype: 'Insights Settings',
 	name: 'Insights Settings',
+	auto: false,
 	whitelistedMethods: {
 		update_settings: 'update_settings',
 		send_support_login_link: 'send_support_login_link',

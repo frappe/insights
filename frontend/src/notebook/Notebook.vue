@@ -1,9 +1,11 @@
 <script setup lang="jsx">
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ListView from '@/components/ListView.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
+import { PlusIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -48,20 +50,21 @@ updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-6 py-4">
-		<Breadcrumbs
-			:items="[{ label: 'Notebooks', href: '/notebook' }, { label: notebook.doc.title }]"
-		></Breadcrumbs>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs
+			class="h-7"
+			:items="[{ label: 'Notebooks', route: { path: '/notebook' } }, { label: 'Pages' }]"
+		/>
+		<div class="space-x-2.5">
+			<Button label="New Page" variant="solid" @click="() => createNotebookPage()">
+				<template #prefix>
+					<PlusIcon class="w-4" />
+				</template>
+			</Button>
+		</div>
+	</header>
+	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<ListView
-			title="Pages"
-			:actions="[
-				{
-					label: 'New Page',
-					variant: 'solid',
-					iconLeft: 'plus',
-					onClick: () => createNotebookPage(),
-				},
-			]"
 			:columns="columns"
 			:data="notebook.pages"
 			:rowClick="

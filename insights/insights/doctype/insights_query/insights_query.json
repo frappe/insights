@@ -12,6 +12,7 @@
   "is_native_query",
   "is_assisted_query",
   "is_saved_as_table",
+  "is_script_query",
   "column_break_3",
   "data_source",
   "is_stored",
@@ -25,6 +26,7 @@
   "limit",
   "section_break_cnma",
   "json",
+  "script",
   "query_and_result_tab",
   "section_break_11",
   "sql",
@@ -109,7 +111,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: !doc.is_native_query",
+   "depends_on": "eval: !doc.is_assisted_query && !doc.is_native_query",
    "fieldname": "section_break_3",
    "fieldtype": "Section Break"
   },
@@ -120,7 +122,6 @@
    "in_standard_filter": 1,
    "label": "Data Source",
    "options": "Insights Data Source",
-   "reqd": 1,
    "search_index": 1
   },
   {
@@ -160,7 +161,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending Execution\nExecution Successful",
+   "options": "Pending Execution\nExecution Successful\nExecution Failed",
    "read_only": 1
   },
   {
@@ -219,11 +220,24 @@
    "fieldtype": "Check",
    "is_virtual": 1,
    "label": "Is Saved as Table"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_script_query",
+   "fieldtype": "Check",
+   "label": "Is Script Query"
+  },
+  {
+   "depends_on": "eval: doc.is_script_query",
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "label": "Script",
+   "options": "Python"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-22 23:42:07.915992",
+ "modified": "2023-08-06 11:19:07.413824",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

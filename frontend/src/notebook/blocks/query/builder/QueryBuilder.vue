@@ -32,7 +32,7 @@ const state = computed({
 const selectedTables = computed(() => {
 	const tables = [state.value.table]
 	state.value.joins.forEach((join) => {
-		join.right_table.value && tables.push(join.right_table)
+		join.right_table.table && tables.push(join.right_table)
 	})
 	return tables
 })
@@ -61,9 +61,7 @@ const COLUMN = {
 	format: {},
 	expression: {},
 }
-const GET_EMPTY_COLUMN = () => ({
-	column: { ...COLUMN },
-})
+const GET_EMPTY_COLUMN = () => COLUMN
 
 function addStep(type) {
 	if (type == 'Summarise') {
@@ -114,7 +112,7 @@ const AGGREGATIONS = [
 ]
 function setAggregation(aggregation, measure) {
 	if (aggregation.value == 'count') {
-		Object.assign(measure.column, {
+		Object.assign(measure, {
 			label: 'Count',
 			column: 'count',
 			table: 'count',
@@ -123,8 +121,8 @@ function setAggregation(aggregation, measure) {
 			aggregation: aggregation.value,
 		})
 	} else {
-		Object.assign(measure.column, {
-			...GET_EMPTY_COLUMN().column,
+		Object.assign(measure, {
+			...GET_EMPTY_COLUMN(),
 			aggregation: aggregation.value,
 		})
 	}
@@ -151,12 +149,11 @@ function isValidColumn(column) {
 
 const selectedColumns = computed(() => {
 	const columns = []
-	const addIfValid = (column) => isValidColumn(column) && columns.push(column)
-	state.value.columns.forEach((c) => addIfValid(c.column))
-	state.value.calculations.forEach((c) => addIfValid(c.column))
-	state.value.measures.forEach((c) => addIfValid(c.column))
-	state.value.dimensions.forEach((c) => addIfValid(c.column))
-	return columns.map((c) => ({ ...c, label: c.alias || c.label, description: 'local' }))
+	state.value.columns.forEach((col) => isValidColumn(col) && columns.push(col))
+	state.value.calculations.forEach((col) => isValidColumn(col) && columns.push(col))
+	state.value.measures.forEach((col) => isValidColumn(col) && columns.push(col))
+	state.value.dimensions.forEach((col) => isValidColumn(col) && columns.push(col))
+	return columns
 })
 
 const COLUMN_TYPES = [
@@ -284,7 +281,7 @@ const addStepRef = ref(null)
 				<div
 					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 				>
-					<ColumnExpressionSelector v-model="calc.column.expression" />
+					<ColumnExpressionSelector v-model="calc.expression" />
 				</div>
 
 				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
@@ -293,14 +290,14 @@ const addStepRef = ref(null)
 				>
 					<ResizeableInput
 						placeholder="Label"
-						v-model="calc.column.alias"
-						@update:modelValue="calc.column.label = $event"
+						v-model="calc.alias"
+						@update:modelValue="calc.label = $event"
 					/>
 					<InputWithPopover
 						:items="COLUMN_TYPES"
 						placeholder="Type"
-						:value="findByValue(COLUMN_TYPES, calc.column.type)"
-						@update:modelValue="(v) => (calc.column.type = v.value)"
+						:value="findByValue(COLUMN_TYPES, calc.type)"
+						@update:modelValue="(v) => (calc.type = v.value)"
 					/>
 				</div>
 			</QueryBuilderRow>
@@ -335,6 +332,7 @@ const addStepRef = ref(null)
 						/>
 						<ValueSelector
 							v-if="!filter.operator.value?.includes('is')"
+							:data_source="query.doc.data_source"
 							:column="filter.column"
 							:operator="filter.operator"
 							v-model="filter.value"
@@ -376,14 +374,14 @@ const addStepRef = ref(null)
 							:localColumns="selectedColumns"
 							:data_source="query.doc.data_source"
 							:tables="selectedTables"
-							v-model="column.column"
-							@update:model-value="(c) => (column.column.alias = c.label)"
+							v-model="state.columns[index]"
+							@update:model-value="(c) => (column.alias = c.label)"
 						/>
 					</Suspense>
 					<InputWithPopover
-						v-if="FIELDTYPES.DATE.includes(column.column?.type)"
-						:value="findByValue(dateFormatOptions, column.column.granularity)"
-						@update:modelValue="(v) => (column.column.granularity = v.value)"
+						v-if="FIELDTYPES.DATE.includes(column?.type)"
+						:value="findByValue(dateFormatOptions, column.granularity)"
+						@update:modelValue="(v) => (column.granularity = v.value)"
 						placeholder="Format"
 						:items="dateFormatOptions"
 					/>
@@ -404,28 +402,27 @@ const addStepRef = ref(null)
 							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 						>
 							<InputWithPopover
-								:value="findByValue(AGGREGATIONS, measure.column.aggregation)"
+								:value="findByValue(AGGREGATIONS, measure.aggregation)"
 								placeholder="Sum of"
 								@update:modelValue="(v) => setAggregation(v, measure)"
 								:items="AGGREGATIONS"
 							/>
 
-							<Suspense v-if="measure.column.aggregation != 'custom'">
+							<Suspense v-if="measure.aggregation != 'custom'">
 								<ColumnSelector
-									v-if="measure.column.aggregation !== 'count'"
+									v-if="measure.aggregation !== 'count'"
 									:localColumns="selectedColumns"
 									:data_source="query.doc.data_source"
 									:tables="selectedTables"
-									v-model="measure.column"
-									placeholder="Net Total"
-									@update:model-value="(c) => (measure.column.alias = c.label)"
+									v-model="state.measures[index]"
+									@update:model-value="(c) => (measure.alias = c.label)"
 								/>
 							</Suspense>
 							<Suspense v-else>
 								<ColumnSelector
 									:localColumns="selectedColumns"
-									v-model="measure.column"
-									@update:model-value="(c) => (measure.column.alias = c.label)"
+									v-model="state.measures[index]"
+									@update:model-value="(c) => (measure.alias = c.label)"
 								/>
 							</Suspense>
 							<Button
@@ -457,26 +454,20 @@ const addStepRef = ref(null)
 									class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
 								>
 									<ColumnSelector
-										v-model="dimension.column"
+										v-model="state.dimensions[index]"
 										:tables="selectedTables"
 										:data_source="query.doc.data_source"
 										:localColumns="selectedColumns"
 										:columnFilter="(c) => isDimensionColumn(c)"
-										placeholder="Branch"
-										@update:model-value="
-											(c) => (dimension.column.alias = c.label)
-										"
+										@update:model-value="(c) => (dimension.alias = c.label)"
 									/>
 									<InputWithPopover
-										v-if="FIELDTYPES.DATE.includes(dimension.column?.type)"
+										v-if="FIELDTYPES.DATE.includes(dimension?.type)"
 										:value="
-											findByValue(
-												dateFormatOptions,
-												dimension.column.granularity
-											)
+											findByValue(dateFormatOptions, dimension.granularity)
 										"
 										@update:modelValue="
-											(v) => (dimension.column.granularity = v.value)
+											(v) => (dimension.granularity = v.value)
 										"
 										placeholder="Format"
 										:items="dateFormatOptions"
@@ -520,16 +511,16 @@ const addStepRef = ref(null)
 						:data_source="query.doc.data_source"
 						:tables="selectedTables"
 						:localColumns="selectedColumns"
-						v-model="order.column"
+						v-model="state.orders[index]"
 					/>
 				</Suspense>
 				<div class="h-7 text-sm uppercase leading-7 text-gray-600">in</div>
 				<InputWithPopover
 					class="flex rounded text-gray-800 shadow"
-					:value="findByValue(ORDER, order.column.order)"
+					:value="findByValue(ORDER, order.order)"
 					placeholder="Ascending"
 					:items="ORDER"
-					@update:modelValue="(v) => (order.column.order = v.value)"
+					@update:modelValue="(v) => (order.order = v.value)"
 				/>
 				<div class="h-7 text-sm uppercase leading-7 text-gray-600">order</div>
 			</QueryBuilderRow>

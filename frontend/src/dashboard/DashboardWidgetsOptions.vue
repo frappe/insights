@@ -11,6 +11,8 @@ import {
 } from 'lucide-vue-next'
 import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
+import { ScatterChart } from 'lucide-vue-next'
+import { ListFilter } from 'lucide-vue-next'
 
 const dashboard = inject('dashboard')
 const emit = defineEmits(['dragChange'])
@@ -28,6 +30,8 @@ const icons = {
 	Progress: BatteryMedium,
 	Filter: TextCursorInput,
 	Text: AlignLeft,
+	Scatter: ScatterChart,
+	Funnel: ListFilter,
 }
 </script>
 <template>
