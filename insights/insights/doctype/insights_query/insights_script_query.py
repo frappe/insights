@@ -6,7 +6,6 @@ import frappe
 import pandas as pd
 import RestrictedPython.Guards
 from frappe.utils.safe_exec import (
-    FrappeTransformer,
     NamespaceDict,
     _getattr,
     _getitem,
@@ -47,7 +46,7 @@ class InsightsScriptQueryController:
         try:
             _locals = {"results": results}
             exec(
-                compile_restricted(script, filename="<scriptquery>", policy=FrappeTransformer),
+                compile_restricted(script, filename="<scriptquery>"),
                 get_safe_exec_globals(),
                 _locals,
             )
