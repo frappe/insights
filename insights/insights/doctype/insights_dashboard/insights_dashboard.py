@@ -124,6 +124,23 @@ class InsightsDashboard(Document):
     def export(self):
         return export_dashboard(self)
 
+    @frappe.whitelist()
+    def export_dashboard(self):
+        exported_dashboard = self.export()
+        filename = frappe.scrub(self.title.lower())
+        file = frappe.get_doc(
+            {
+                "doctype": "File",
+                "file_name": f"{filename}.json",
+                "content": exported_dashboard,
+            }
+        )
+        file.save(ignore_permissions=True)
+        return {
+            "file_name": f"{filename}.json",
+            "file_url": file.file_url,
+        }
+
 
 @frappe.whitelist()
 def get_queries_column(query_names):
@@ -187,7 +204,9 @@ def export_dashboard(doc):
         # because any column used in filter will be from the charts' query
 
     dashboard_dict = doc.as_dict()
+    data_sources = [query.metadata["data_source"] for query in queries.values()]
     exported_dashboard = frappe._dict(
+        data_sources=list(set(data_sources)),
         queries=queries,
         dashboard={
             "title": dashboard_dict["title"],
@@ -197,9 +216,24 @@ def export_dashboard(doc):
     return frappe.as_json(exported_dashboard)
 
 
-def import_dashboard(dashboard, data_source_map=None):
-    if not data_source_map:
-        data_source_map = {}
+@frappe.whitelist()
+def get_dashboard_file(filename):
+    file = frappe.get_doc("File", filename)
+    dashboard = file.get_content()
+    dashboard = frappe.parse_json(dashboard)
+    queries = [frappe.parse_json(query) for query in dashboard.get("queries").values()]
+    data_sources = [query.metadata["data_source"] for query in queries]
+    return {
+        "data_sources": list(set(data_sources)),
+        "queries": queries,
+        "dashboard": dashboard.get("dashboard"),
+    }
+
+
+@frappe.whitelist()
+def import_dashboard(filename, title=None, data_source_map=None):
+    file = frappe.get_doc("File", filename)
+    dashboard = file.get_content()
 
     dashboard = frappe.parse_json(dashboard)
     queries = dashboard.get("queries")
@@ -210,7 +244,7 @@ def import_dashboard(dashboard, data_source_map=None):
             continue
         query = frappe.parse_json(query)
         query_data_source = query.metadata["data_source"]
-        data_source = data_source_map.get(query_data_source) or query_data_source
+        data_source = data_source_map.get(query_data_source)
         query_name = import_query(data_source, query)
         imported_queries[name] = query_name
 
@@ -223,7 +257,7 @@ def import_dashboard(dashboard, data_source_map=None):
         item["options"] = frappe.as_json(options)
 
     dashboard_doc = frappe.new_doc("Insights Dashboard")
-    dashboard_doc.title = dashboard_dict["title"]
+    dashboard_doc.title = title or dashboard_dict["title"]
     dashboard_doc.set("items", dashboard_dict["items"])
     dashboard_doc.insert(ignore_permissions=True)
 

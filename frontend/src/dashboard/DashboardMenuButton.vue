@@ -3,6 +3,7 @@ import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const dashboard = inject('dashboard')
+const showExportDialog = ref(false)
 const showDeleteDialog = ref(false)
 const router = useRouter()
 async function handleDelete() {
@@ -18,6 +19,12 @@ async function handleDelete() {
 		placement="left"
 		:button="{ icon: 'more-vertical', variant: 'outline' }"
 		:options="[
+			{
+				label: 'Export',
+				variant: 'outline',
+				icon: 'download',
+				onClick: () => (showExportDialog = true),
+			},
 			{
 				label: 'Delete',
 				variant: 'outline',
@@ -38,6 +45,27 @@ async function handleDelete() {
 			actions: [
 				{ label: 'Cancel', variant: 'outline', onClick: () => (showDeleteDialog = false) },
 				{ label: 'Yes', variant: 'solid', theme: 'red', onClick: handleDelete },
+			],
+		}"
+	>
+	</Dialog>
+
+	<Dialog
+		v-model="showExportDialog"
+		:dismissable="true"
+		:options="{
+			title: 'Export Dashboard',
+			message:
+				'Exporting a dashboard will create a JSON file that can be imported into another dashboard.',
+			icon: { name: 'download', variant: 'solid' },
+			actions: [
+				{ label: 'Cancel', variant: 'outline', onClick: () => (showExportDialog = false) },
+				{
+					label: 'Export',
+					variant: 'solid',
+					onClick: () =>
+						dashboard.exportDashboard().then(() => (showExportDialog = false)),
+				},
 			],
 		}"
 	>
