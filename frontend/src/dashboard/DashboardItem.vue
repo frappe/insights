@@ -63,6 +63,10 @@ function setInitialChartOptions() {
 		...chartData.recommendedChart.options,
 	}
 }
+
+function openQueryInNewTab() {
+	window.open(`/insights/query/build/${props.item.options.query}`, '_blank')
+}
 </script>
 
 <template>

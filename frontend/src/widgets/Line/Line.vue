@@ -15,7 +15,8 @@ const labels = computed(() => {
 
 const datasets = computed(() => {
 	if (!props.data?.length || !props.options.yAxis) return []
-	return props.options.yAxis.map(({ column }) => {
+	return props.options.yAxis.map((series) => {
+		const column = series.column || series
 		return {
 			label: column,
 			data: props.data.map((d) => d[column]),

@@ -87,7 +87,7 @@ const yAxis = computed({
 			</Draggable>
 			<div>
 				<span
-					v-if="yAxis.length < 2"
+					v-if="yAxis?.length < 2"
 					class="cursor-pointer text-sm text-gray-500 hover:text-gray-700"
 					@click="yAxis.push({ column: '' })"
 				>
@@ -96,7 +96,7 @@ const yAxis = computed({
 			</div>
 		</div>
 
-		<div v-if="yAxis.length == 2" class="space-y-2 text-gray-600">
+		<div v-if="yAxis?.length == 2" class="space-y-2 text-gray-600">
 			<Checkbox v-model="options.splitYAxis" label="Split Y Axis" />
 		</div>
 
