@@ -192,6 +192,7 @@ export default {
 			return this.options || Object.values(COLOR_MAP)
 		},
 		selectedColorLabel() {
+			if (!this.value) return null
 			return this.multiple
 				? this.modelValue.length > 1
 					? `${this.modelValue.length} colors`
