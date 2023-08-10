@@ -37,7 +37,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 			data: labels,
 		},
 		yAxis: datasets.map((dataset) => ({
-			name: dataset.label,
+			name: options.splitYAxis ? dataset.label : undefined,
 			type: 'value',
 			splitLine: {
 				lineStyle: { type: 'dashed' },
