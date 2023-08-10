@@ -39,7 +39,6 @@ function makeQuery(name) {
 			state.unsaved = false
 		})
 	}
-	state.reload()
 
 	state.convertToNative = async function () {
 		state.loading = true
