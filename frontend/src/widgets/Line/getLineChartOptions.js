@@ -4,6 +4,10 @@ import { inject } from 'vue'
 export default function getLineChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
 
+	if (!datasets || !datasets.length) {
+		return {}
+	}
+
 	const markLine = options.referenceLine
 		? {
 				data: [
@@ -20,7 +24,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 		animation: false,
 		color: options.colors || getColors(),
 		grid: {
-			top: 25,
+			top: 30,
 			bottom: 35,
 			left: 20,
 			right: 30,
@@ -32,8 +36,8 @@ export default function getLineChartOptions(labels, datasets, options) {
 			axisTick: false,
 			data: labels,
 		},
-		yAxis: {
-			axisType: 'yAxis',
+		yAxis: datasets.map((dataset) => ({
+			name: dataset.label,
 			type: 'value',
 			splitLine: {
 				lineStyle: { type: 'dashed' },
@@ -41,11 +45,12 @@ export default function getLineChartOptions(labels, datasets, options) {
 			axisLabel: {
 				formatter: (value, index) => $utils.getShortNumber(value, 1),
 			},
-		},
-		series: datasets.map((dataset) => ({
+		})),
+		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
 			data: dataset.data,
 			type: 'line',
+			yAxisIndex: options.splitYAxis ? index : 0,
 			smooth: options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
 			showSymbol: options.showPoints,

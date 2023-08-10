@@ -1,7 +1,7 @@
 <template>
 	<div v-if="chart.doc" class="flex flex-1 p-2 pt-3">
 		<div
-			class="flex w-full flex-shrink-0 flex-col space-y-4 overflow-y-scroll lg:h-full lg:w-[18rem] lg:pr-4"
+			class="-ml-1 flex w-full flex-shrink-0 flex-col space-y-4 overflow-y-scroll pl-1 lg:h-full lg:w-[18rem] lg:pr-4"
 		>
 			<!-- Widget Options -->
 			<Input

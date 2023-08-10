@@ -8,7 +8,7 @@
 						:class="{ 'bg-gray-200': isComboboxOpen }"
 						@click="() => togglePopover()"
 					>
-						<div class="flex items-center">
+						<div class="flex items-center overflow-hidden">
 							<slot name="prefix" />
 							<span
 								class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
