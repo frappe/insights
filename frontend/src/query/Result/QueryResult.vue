@@ -12,7 +12,7 @@
 					class="flex items-center space-x-1 text-sm font-light text-gray-600"
 				>
 					<span class="text-sm text-gray-600">
-						({{ totalRows.toLocaleString() }} rows in {{ executionTime }}s)
+						({{ formatNumber(totalRows) }} rows in {{ executionTime }}s)
 					</span>
 					<Tooltip
 						v-if="totalRows > query.results.MAX_ROWS"
@@ -68,7 +68,7 @@
 								>
 									{{
 										typeof cell == 'number'
-											? cell.toLocaleString()
+											? formatNumber(cell)
 											: ellipsis(cell, 100)
 									}}
 								</td>
@@ -104,16 +104,14 @@
 <script setup>
 import LimitsAndOrder from '@/query/LimitsAndOrder.vue'
 import ColumnHeader from '@/query/Result/ColumnHeader.vue'
-import { ellipsis, FIELDTYPES } from '@/utils'
+import { ellipsis, FIELDTYPES, formatNumber } from '@/utils'
 import settings from '@/utils/settings'
 
 import { computed, inject, watch } from 'vue'
 
 const query = inject('query')
 
-const query_result_limit = computed(() =>
-	parseInt(settings.doc?.query_result_limit).toLocaleString()
-)
+const query_result_limit = computed(() => formatNumber(parseInt(settings.doc?.query_result_limit)))
 const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {

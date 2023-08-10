@@ -1,3 +1,4 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 import { inject } from 'vue'
 
@@ -54,7 +55,7 @@ export default function getScatterChartOptions(labels, datasets, options) {
 			trigger: 'item',
 			confine: true,
 			appendToBody: true,
-			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 	}
 }

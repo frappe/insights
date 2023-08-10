@@ -1,3 +1,4 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 
 export default function getFunnelChartOptions(labels, dataset, options) {
@@ -8,7 +9,7 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 			trigger: 'item',
 			confine: true,
 			appendToBody: false,
-			formatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			formatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 		legend: {
 			data: labels,
