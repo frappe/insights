@@ -3,6 +3,10 @@ import { getColors } from '@/utils/colors'
 export default function getPieChartOptions(labels, dataset, options) {
 	const MAX_SLICES = 9
 
+	if (!dataset || !dataset.data?.length) {
+		return {}
+	}
+
 	const slices = dataset.data.slice(0, parseInt(options.maxSlices) || MAX_SLICES)
 	const otherSlices = dataset.data
 		.slice(parseInt(options.maxSlices) || 9)
