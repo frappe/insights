@@ -43,8 +43,7 @@ provide('widgetRef', widget)
 const refreshKey = ref(0)
 watch(
 	() => JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value]),
-	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)(),
-	{ immediate: true }
+	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)()
 )
 
 function setInitialChartOptions() {
@@ -97,7 +96,6 @@ function openQueryInNewTab() {
 				:item_id="item.item_id"
 				:data="chartData.data"
 				:options="item.options"
-				:key="refreshKey"
 			>
 				<template #placeholder>
 					<InvalidWidget
