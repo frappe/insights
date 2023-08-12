@@ -101,9 +101,7 @@ class InsightsAssistedQueryController:
         return tables + join_tables
 
     def before_fetch(self):
-        if self.doc.data_source != "Query Store":
-            return
-        raise frappe.ValidationError("Query Store data source is not supported for assisted query")
+        return
 
     def after_fetch(self, results):
         return results
