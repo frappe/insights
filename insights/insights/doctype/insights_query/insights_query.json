@@ -38,7 +38,8 @@
   "last_execution",
   "transform_tab",
   "section_break_18",
-  "transforms"
+  "transforms",
+  "variables"
  ],
  "fields": [
   {
@@ -233,11 +234,17 @@
    "fieldtype": "Code",
    "label": "Script",
    "options": "Python"
+  },
+  {
+   "fieldname": "variables",
+   "fieldtype": "Table",
+   "label": "Variables",
+   "options": "Insights Query Variable"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-06 11:19:07.413824",
+ "modified": "2023-08-12 23:07:09.482374",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

@@ -44,7 +44,9 @@ class InsightsScriptQueryController:
 
         results = []
         try:
-            _locals = {"results": results}
+            variables = self.doc.get("variables") or []
+            variables = {var.variable_name: var.variable_value for var in variables}
+            _locals = {"results": results, **variables}
             exec(
                 compile_restricted(script, filename="<scriptquery>"),
                 get_safe_exec_globals(),
