@@ -3,6 +3,8 @@ import useDataSources from '@/datasource/useDataSources'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import QueryMenu from '@/query/QueryMenu.vue'
 import { debounce } from 'frappe-ui'
+import { Component } from 'lucide-vue-next'
+import { Bookmark } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 
 const $notify = inject('$notify')
@@ -50,14 +52,18 @@ function changeDataSource(sourceName) {
 </script>
 
 <template>
-	<div class="mr-2 flex h-full items-center space-x-3">
+	<div class="mr-2 flex h-full items-center">
+		<div v-if="query.doc.is_saved_as_table" class="mr-2">
+			<Component class="h-4 w-4 text-gray-600" fill="currentColor" />
+		</div>
 		<ContentEditable
-			class="rounded-sm text-xl font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+			class="mr-3 rounded-sm text-xl font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 			v-model="query.doc.title"
 			@update:model-value="debouncedUpdateTitle"
 			placeholder="Untitled Query"
 		></ContentEditable>
 		<Dropdown
+			class="mr-2"
 			v-if="!query.doc.is_assisted_query"
 			:button="{
 				iconLeft: 'database',
