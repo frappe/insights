@@ -169,9 +169,15 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             self._results = self.variant_controller.fetch_results()
             self._results = self.after_fetch(self._results)
             self._results = self.process_results_columns(self._results)
-            self.execution_time = flt(time.monotonic() - start, 3)
-            self.last_execution = frappe.utils.now()
-            self.db_set("status", Status.SUCCESS.value)
+            self.db_set(
+                {
+                    "status": Status.SUCCESS.value,
+                    "execution_time": flt(time.monotonic() - start, 3),
+                    "last_execution": frappe.utils.now(),
+                },
+                update_modified=False,
+                commit=True,
+            )
         except Exception as e:
             frappe.db.rollback()
             frappe.log_error(e)
