@@ -693,7 +693,7 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
-                _column = make_sql_column(fltr.column)
+                _column = self.make_column(fltr.column.column, fltr.column.table)
                 filter_value = fltr.value.value
                 operator = fltr.operator.value
 
