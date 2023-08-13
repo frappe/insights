@@ -139,10 +139,20 @@ export function getShortNumber(number, precision = 0) {
 }
 
 export function formatNumber(number, precision = 0) {
+	precision = precision || guessPrecision(number)
+	console.log(precision)
 	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,
 	}).format(number)
+}
+
+export function guessPrecision(number) {
+	// eg. 1.0 precision = 1, 1.00 precision = 2
+	const str = number.toString()
+	const decimalIndex = str.indexOf('.')
+	if (decimalIndex === -1) return 0
+	return Math.min(str.length - decimalIndex - 1, 4)
 }
 
 export async function getDataURL(type, data) {
