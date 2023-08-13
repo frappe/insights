@@ -140,7 +140,6 @@ export function getShortNumber(number, precision = 0) {
 
 export function formatNumber(number, precision = 0) {
 	precision = precision || guessPrecision(number)
-	console.log(precision)
 	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,

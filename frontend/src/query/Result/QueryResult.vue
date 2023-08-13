@@ -41,8 +41,8 @@
 						<thead class="sticky top-0 text-gray-600">
 							<tr>
 								<th
-									v-for="column in columns"
-									:key="column.name"
+									v-for="(column, index) in columns"
+									:key="index"
 									class="whitespace-nowrap border-b border-r bg-gray-100 px-3 py-1.5 font-medium text-gray-700"
 									scope="col"
 								>
@@ -115,7 +115,7 @@ const query_result_limit = computed(() => formatNumber(parseInt(settings.doc?.qu
 const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
-	return query.results.formattedResult[0]?.map((c) => c.label)
+	return query.results.formattedResult[0]
 })
 const isNumberColumn = computed(() => {
 	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
