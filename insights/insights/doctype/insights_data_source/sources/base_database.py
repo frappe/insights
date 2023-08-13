@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
@@ -36,7 +37,7 @@ class BaseDatabase:
 
     def connect(self):
         try:
-            return self.engine.connect()
+            return sessionmaker(bind=self.engine)()
         except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
             raise DatabaseConnectionError(e)
