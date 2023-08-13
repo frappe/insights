@@ -13,7 +13,7 @@ const query = inject('query')
 const debouncedUpdateTitle = debounce(async (title) => {
 	await query.setValue.submit({ title })
 	query.doc.title = title
-}, 500)
+}, 1500)
 
 const sources = useDataSources()
 sources.reload()

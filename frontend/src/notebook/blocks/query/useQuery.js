@@ -82,7 +82,6 @@ function makeQuery(name) {
 		if (!state.doc.data_source) return
 		const updatedFields = {
 			data_source: state.doc.data_source,
-			title: state.doc.title,
 		}
 		if (state.doc.is_native_query) {
 			updatedFields.sql = state.doc.sql
