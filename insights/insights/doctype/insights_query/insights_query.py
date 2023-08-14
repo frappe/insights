@@ -180,7 +180,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             )
         except Exception as e:
             frappe.db.rollback()
-            frappe.log_error(e)
+            frappe.log_error(str(e)[:140])
             self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:
