@@ -156,7 +156,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def retrieve_results(self, fetch_if_not_cached=False):
         results = CachedResults.get(self.name)
-        if not results and fetch_if_not_cached:
+        if results is None and fetch_if_not_cached:
             results = self.fetch_results()
         return results or []
 

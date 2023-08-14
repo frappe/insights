@@ -27,6 +27,7 @@
   "section_break_cnma",
   "json",
   "script",
+  "script_log",
   "query_and_result_tab",
   "section_break_11",
   "sql",
@@ -240,6 +241,12 @@
    "fieldtype": "Table",
    "label": "Variables",
    "options": "Insights Query Variable"
+  },
+  {
+   "fieldname": "script_log",
+   "fieldtype": "Text",
+   "label": "Script Log",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
