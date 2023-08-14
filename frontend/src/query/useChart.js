@@ -134,6 +134,10 @@ function getChart(chartName) {
 		state.addingToDashboard = false
 	}
 
+	function resetOptions() {
+		state.doc.options = {}
+	}
+
 	return Object.assign(state, {
 		load,
 		save,
@@ -142,6 +146,7 @@ function getChart(chartName) {
 		enableAutoSave,
 		disableAutoSave,
 		addToDashboard,
+		resetOptions,
 		delete: deleteChart,
 	})
 }

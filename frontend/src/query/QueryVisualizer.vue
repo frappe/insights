@@ -19,6 +19,8 @@
 				v-model="chart.doc.options"
 				:columns="query.resultColumns"
 			/>
+
+			<Button variant="subtle" @click="chart.resetOptions()">Reset Options</Button>
 		</div>
 
 		<div
