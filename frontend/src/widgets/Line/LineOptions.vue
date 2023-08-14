@@ -87,7 +87,7 @@ const yAxis = computed({
 			</Draggable>
 			<div>
 				<span
-					v-if="yAxis?.length < 2"
+					v-if="options.splitYAxis ? yAxis.length < 2 : true"
 					class="cursor-pointer text-sm text-gray-500 hover:text-gray-700"
 					@click="yAxis.push({ column: '' })"
 				>
