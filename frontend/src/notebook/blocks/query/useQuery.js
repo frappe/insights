@@ -82,13 +82,9 @@ function makeQuery(name) {
 		if (!state.doc.data_source) return
 		const updatedFields = {
 			data_source: state.doc.data_source,
-		}
-		if (state.doc.is_native_query) {
-			updatedFields.sql = state.doc.sql
-		} else if (state.doc.is_script_query) {
-			updatedFields.script = state.doc.script
-		} else {
-			updatedFields.json = JSON.stringify(safeJSONParse(state.doc.json), null, 2)
+			sql: state.doc.sql,
+			script: state.doc.script,
+			json: JSON.stringify(safeJSONParse(state.doc.json), null, 2),
 		}
 		return updatedFields
 	}
