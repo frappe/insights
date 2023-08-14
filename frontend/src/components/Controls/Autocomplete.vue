@@ -79,15 +79,22 @@
 							>
 								<li
 									:class="[
-										'flex items-center rounded px-2.5 py-1.5 text-base',
+										'flex items-center justify-between rounded px-2.5 py-1.5 text-base',
 										{ 'bg-gray-100': active },
 									]"
 								>
-									<slot
-										name="item-prefix"
-										v-bind="{ active, selected, option }"
-									/>
-									{{ option.label }}
+									<div>
+										<slot
+											name="item-prefix"
+											v-bind="{ active, selected, option }"
+										/>
+										{{ option.label }}
+									</div>
+									<slot name="item-suffix" v-bind="{ active, selected, option }">
+										<div class="text-sm text-gray-500">
+											{{ option.description }}
+										</div>
+									</slot>
 								</li>
 							</ComboboxOption>
 						</div>
