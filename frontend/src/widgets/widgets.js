@@ -11,6 +11,14 @@ const WIDGETS = {
 		defaultWidth: 4,
 		defaultHeight: 4,
 	},
+	Trend: {
+		type: 'Trend',
+		component: defineAsyncComponent(() => import('./Trend/Trend.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Trend/TrendOptions.vue')),
+		options: {},
+		defaultWidth: 4,
+		defaultHeight: 4,
+	},
 	Line: {
 		type: 'Line',
 		component: defineAsyncComponent(() => import('./Line/Line.vue')),

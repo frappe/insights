@@ -8,6 +8,7 @@ import {
 	BatteryMedium,
 	TextCursorInput,
 	AlignLeft,
+	TrendingUp,
 } from 'lucide-vue-next'
 import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
@@ -32,6 +33,7 @@ const icons = {
 	Text: AlignLeft,
 	Scatter: ScatterChart,
 	Funnel: ListFilter,
+	Trend: TrendingUp,
 }
 </script>
 <template>
