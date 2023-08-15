@@ -27,12 +27,11 @@
 </template>
 
 <script setup>
-import { inject, computed } from 'vue'
+import { computed, inject } from 'vue'
 
 const query = inject('query')
 const props = defineProps({
 	column: {
-		type: String,
 		required: true,
 	},
 })
