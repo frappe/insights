@@ -142,9 +142,10 @@ const simpleColumn = reactive({
 	aggType: aggregations.value.find((t) => {
 		return t.value == props.column.aggregation
 	}),
-	dateFormat: dateFormats.find((t) => {
-		return t.value == props.column.format_option?.date_format
-	}),
+	dateFormat:
+		dateFormats.find((t) => {
+			return t.value == props.column.format_option?.date_format
+		}) || {},
 })
 if (!simpleColumn.aggType) simpleColumn.aggType = { label: 'No Aggregation', value: '' }
 
