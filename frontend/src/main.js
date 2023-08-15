@@ -18,11 +18,11 @@ setConfig('resourceFetcher', (options) => {
 	return frappeRequest({
 		...options,
 		onError(err) {
-			if (err.error.messages && err.error.messages[0]) {
+			if (err.messages && err.messages[0]) {
 				createToast({
 					title: 'Error',
 					variant: 'error',
-					message: err.error.messages[0],
+					message: err.messages[0],
 				})
 			}
 		},
