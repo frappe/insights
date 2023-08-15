@@ -1,8 +1,7 @@
-import { getTrialStatus } from '@/subscription'
+import { isSetupComplete } from '@/setup'
 import auth from '@/utils/auth'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
-import { isSetupComplete } from '@/setup'
 
 const routes = [
 	{
@@ -202,7 +201,11 @@ router.beforeEach(async (to, from, next) => {
 
 router.afterEach((to, from) => {
 	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
-	if (TRACKED_RECORDS.includes(to.name) && to.name !== from.name) {
+	if (
+		TRACKED_RECORDS.includes(to.name) &&
+		to.name !== from.name &&
+		to.params.name !== from.params.name
+	) {
 		auth.createViewLog(to.name, to.params.name)
 	}
 })
