@@ -83,7 +83,7 @@ function handlePrev() {
 							class="flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-gray-300"
 							:class="
 								currentStep === index
-									? 'border-blue-500 bg-blue-50 font-bold text-blue-500'
+									? 'border-gray-800  font-bold text-gray-800'
 									: ''
 							"
 						>
