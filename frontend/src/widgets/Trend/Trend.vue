@@ -85,7 +85,7 @@ const trendLineOptions = computed(() => {
 				<div
 					class="overflow-hidden text-ellipsis whitespace-nowrap leading-6 text-gray-600"
 				>
-					Sales
+					{{ options.title }}
 				</div>
 				<Badge
 					:theme="delta > 0 ? 'green' : 'red'"
