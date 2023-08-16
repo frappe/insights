@@ -29,6 +29,7 @@ function makeQuery(name) {
 		chart: {},
 		sourceSchema: [],
 		formattedResults: [],
+		resultColumns: [],
 	})
 
 	state.reload = async function () {

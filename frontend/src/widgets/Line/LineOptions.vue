@@ -89,7 +89,7 @@ const yAxis = computed({
 				<span
 					v-if="options.splitYAxis ? yAxis.length < 2 : true"
 					class="cursor-pointer text-sm text-gray-500 hover:text-gray-700"
-					@click="yAxis.push({ column: '' })"
+					@click="yAxis ? yAxis.push({ column: '' }) : (yAxis = [{ column: '' }])"
 				>
 					+ Add Series
 				</span>

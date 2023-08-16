@@ -10,6 +10,9 @@ const series = computed({
 	get: () => props.modelValue,
 	set: (value) => emit('update:modelValue', value),
 })
+if (!series.value.column) {
+	series.value.column = {}
+}
 </script>
 
 <template>

@@ -118,7 +118,7 @@ const columns = computed(() => {
 	return query.results.formattedResult[0]
 })
 const isNumberColumn = computed(() => {
-	return query.doc.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
+	return query.resultColumns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 })
 
 if (settings.doc?.auto_execute_query) {

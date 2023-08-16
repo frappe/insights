@@ -135,6 +135,7 @@ function getChart(chartName) {
 	}
 
 	function resetOptions() {
+		state.doc.chart_type = undefined
 		state.doc.options = {}
 	}
 
