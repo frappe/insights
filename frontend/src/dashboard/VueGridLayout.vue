@@ -3,7 +3,7 @@
 		ref="grid"
 		:layout="layouts"
 		v-bind="options"
-		@update:layout="emit('update:layouts', layouts)"
+		@update:layout="debouncedUpdateLayouts"
 	>
 		<template #default="{ gridItemProps }">
 			<grid-item
@@ -30,6 +30,7 @@
 </template>
 
 <script setup>
+import { debounce } from 'frappe-ui'
 import { reactive, ref, watch, watchEffect } from 'vue'
 
 const emit = defineEmits(['update:layouts'])
@@ -55,6 +56,8 @@ watchEffect(() => {
 	layouts.value = [...props.layouts]
 })
 
+const debouncedUpdateLayouts = debounce((layouts) => emit('update:layouts', layouts), 200)
+
 async function toggleEnable(disable) {
 	if (options.isDraggable === !disable && options.isResizable === !disable) return
 	options.isDraggable = !disable
@@ -63,36 +66,47 @@ async function toggleEnable(disable) {
 watch(() => props.disabled, toggleEnable, 200)
 </script>
 
-<style>
-.vue-grid-item .resizing {
-	opacity: 0.8;
+<style lang="scss">
+.vgl-layout {
+	--vgl-placeholder-bg: #b1b1b1;
+	--vgl-placeholder-opacity: 20%;
+	--vgl-placeholder-z-index: 2;
+
+	--vgl-item-resizing-z-index: 3;
+	--vgl-item-resizing-opacity: 60%;
+	--vgl-item-dragging-z-index: 3;
+	--vgl-item-dragging-opacity: 100%;
+
+	--vgl-resizer-size: 10px;
+	--vgl-resizer-border-color: #444;
+	--vgl-resizer-border-width: 2px;
 }
 
-.vue-grid-item {
-	border-radius: 0.375rem;
-	background: none;
+.vgl-item--placeholder {
+	z-index: var(--vgl-placeholder-z-index, 2);
+	user-select: none;
+	background-color: var(--vgl-placeholder-bg);
+	opacity: var(--vgl-placeholder-opacity);
+	transition-duration: 100ms;
+	border-radius: 1rem;
 }
 
-.vue-grid-item.vue-grid-placeholder {
-	background: #818181;
-	opacity: 0.2;
-	transition-duration: 0.1s;
-}
-
-.vue-grid-item > .vue-resizable-handle {
+.vgl-item__resizer {
 	position: absolute;
-	width: 20px;
-	height: 20px;
-	z-index: 20;
-	bottom: 0;
-	right: 0;
-	background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pg08c3ZnIGlkPSJVbnRpdGxlZC1QYWdlJTIwMSIgdmlld0JveD0iMCAwIDYgNiIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6I2ZmZmZmZjAwIiB2ZXJzaW9uPSIxLjEiDQl4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWw6c3BhY2U9InByZXNlcnZlIg0JeD0iMHB4IiB5PSIwcHgiIHdpZHRoPSI2cHgiIGhlaWdodD0iNnB4Ig0+DQk8ZyBvcGFjaXR5PSIwLjMwMiI+DQkJPHBhdGggZD0iTSA2IDYgTCAwIDYgTCAwIDQuMiBMIDQgNC4yIEwgNC4yIDQuMiBMIDQuMiAwIEwgNiAwIEwgNiA2IEwgNiA2IFoiIGZpbGw9IiMwMDAwMDAiLz4NCTwvZz4NPC9zdmc+);
-	background-position: bottom right;
-	background-size: 8px;
-	background-repeat: no-repeat;
-	padding: 0 8px 8px 0;
-	background-origin: content-box;
+	right: 12px;
+	bottom: 12px;
 	box-sizing: border-box;
+	width: var(--vgl-resizer-size);
+	height: var(--vgl-resizer-size);
 	cursor: se-resize;
+}
+
+.vgl-item__resizer:before {
+	position: absolute;
+	inset: 0 3px 3px 0;
+	content: '';
+	border: 0 solid var(--vgl-resizer-border-color);
+	border-right-width: var(--vgl-resizer-border-width);
+	border-bottom-width: var(--vgl-resizer-border-width);
 }
 </style>
