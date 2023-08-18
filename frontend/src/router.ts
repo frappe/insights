@@ -203,12 +203,13 @@ router.beforeEach(async (to, _, next) => {
 
 router.afterEach((to, from) => {
 	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
+	const toName = to.name as string
 	if (
-		TRACKED_RECORDS.includes(to.name) &&
-		to.name !== from.name &&
+		TRACKED_RECORDS.includes(toName) &&
+		toName !== from.name &&
 		to.params.name !== from.params.name
 	) {
-		useAuthStore().createViewLog(to.name, to.params.name)
+		useAuthStore().createViewLog(toName, to.params.name as string)
 	}
 })
 
