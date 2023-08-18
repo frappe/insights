@@ -6,7 +6,6 @@
 		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
 				<img src="../assets/insights-logo.svg" class="h-7" />
-				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
 				<img src="../assets/insights-icon.svg" class="rounded" />
@@ -219,13 +218,5 @@ const currentRoute = computed(() => {
 	return route.path
 })
 
-const getAppVersion = createResource({
-	url: 'insights.api.get_app_version',
-	initialData: '0.0.0',
-	auto: true,
-})
-const appVersion = computed(() => {
-	return `v${getAppVersion.data}`
-})
 const open = (url) => window.open(url, '_blank')
 </script>
