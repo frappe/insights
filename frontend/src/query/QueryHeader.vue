@@ -28,6 +28,9 @@ const SourceOption = (props) => {
 		</div>
 	)
 }
+const currentSource = computed(() => {
+	return sources.list.find((source) => source.name === query.doc.data_source)
+})
 const dataSourceOptions = computed(() => {
 	return sources.list.map((source) => ({
 		component: (props) => (
@@ -68,7 +71,7 @@ function changeDataSource(sourceName) {
 			:button="{
 				iconLeft: 'database',
 				variant: 'outline',
-				label: query.doc.data_source || 'Select data source',
+				label: currentSource?.title || 'Select data source',
 			}"
 			:options="dataSourceOptions"
 		/>
