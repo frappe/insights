@@ -1,5 +1,5 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'

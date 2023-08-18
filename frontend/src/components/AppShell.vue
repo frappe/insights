@@ -17,7 +17,7 @@
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
 import SuspenseFallback from '@/components/SuspenseFallback'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import settings from '@/utils/settings'
 import systemSettings from '@/utils/systemSettings'
 import { computed, onMounted } from 'vue'

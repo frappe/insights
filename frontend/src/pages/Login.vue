@@ -23,7 +23,7 @@
 
 <script setup>
 import LoginBox from '@/components/LoginBox.vue'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import { onMounted, ref } from '@vue/runtime-core'
 import { useRoute, useRouter } from 'vue-router'
 

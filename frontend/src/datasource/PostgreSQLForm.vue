@@ -1,5 +1,5 @@
 <script setup>
-import useDataSourceStore from '@/store/dataSourceStore'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { computed, reactive, ref } from 'vue'
 import Form from '../pages/Form.vue'
 

@@ -1,5 +1,5 @@
 <script setup>
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import { inject } from 'vue'
 import HomeOnboarding from './HomeOnboarding.vue'
 import HomePinnedItems from './HomePinnedItems.vue'

@@ -1,7 +1,7 @@
 <script setup lang="jsx">
 import UsePopover from '@/components/UsePopover.vue'
 import { useDataSource } from '@/datasource/useDataSource'
-import useDataSourceStore from '@/store/dataSourceStore'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { whenever } from '@vueuse/core'
 import { computed, ref } from 'vue'
 

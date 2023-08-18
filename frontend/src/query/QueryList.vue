@@ -2,7 +2,7 @@
 import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import useDataSourceStore from '@/store/dataSourceStore'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { Badge } from 'frappe-ui'

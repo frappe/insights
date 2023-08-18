@@ -119,7 +119,7 @@
 import { Avatar } from 'frappe-ui'
 
 import HelpDialog from '@/components/HelpDialog.vue'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import settings from '@/utils/settings'
 import { createResource } from 'frappe-ui'
 import {

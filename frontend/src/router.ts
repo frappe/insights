@@ -1,5 +1,5 @@
 import { isSetupComplete } from '@/setup'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import settings from '@/utils/settings'
 import { createRouter, createWebHistory } from 'vue-router'
 

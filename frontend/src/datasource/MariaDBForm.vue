@@ -1,6 +1,6 @@
 <script setup>
 import Form from '@/pages/Form.vue'
-import useDataSourceStore from '@/store/dataSourceStore'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { computed, reactive, ref } from 'vue'
 
 const props = defineProps({ submitLabel: String })

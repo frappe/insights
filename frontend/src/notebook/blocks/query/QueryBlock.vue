@@ -1,5 +1,5 @@
 <script setup>
-import useDataSourceStore from '@/store/dataSourceStore'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import useQueries from '@/query/useQueries'
 import { copyToClipboard } from '@/utils'

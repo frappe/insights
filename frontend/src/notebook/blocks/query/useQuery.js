@@ -1,6 +1,6 @@
 import useChart from '@/query/useChart'
 import { useQueryResource } from '@/query/useQueryResource'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'

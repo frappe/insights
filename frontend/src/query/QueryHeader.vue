@@ -1,5 +1,5 @@
 <script setup lang="jsx">
-import useDataSourceStore from '@/store/dataSourceStore'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import QueryMenu from '@/query/QueryMenu.vue'
 import { debounce } from 'frappe-ui'

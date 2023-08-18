@@ -1,5 +1,5 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import useAuthStore from '@/store/authStore'
+import useAuthStore from '@/stores/authStore'
 import { safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
