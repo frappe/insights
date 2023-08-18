@@ -662,7 +662,7 @@ class SQLQueryBuilder:
         main_table = self.make_table(main_table)
 
         for join in assisted_query.joins:
-            if not join.left_table.is_valid() or not join.right_table.is_valid():
+            if not join.is_valid():
                 continue
             self._joins.append(
                 {
