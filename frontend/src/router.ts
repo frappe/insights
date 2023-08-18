@@ -1,7 +1,6 @@
-import { isSetupComplete } from '@/setup'
-import useAuthStore from '@/stores/authStore'
-import settings from '@/utils/settings'
+import authStore from '@/stores/authStore'
 import { createRouter, createWebHistory } from 'vue-router'
+import settingsStore from './stores/settingsStore'
 
 const routes = [
 	{
@@ -91,7 +90,7 @@ const routes = [
 		component: () => import('@/pages/Users.vue'),
 		meta: {
 			isAllowed(): boolean {
-				return useAuthStore().user.is_admin && settings.enable_permissions
+				return authStore().user.is_admin && settingsStore().settings.enable_permissions
 			},
 		},
 	},
@@ -101,7 +100,7 @@ const routes = [
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
 			isAllowed(): boolean {
-				return useAuthStore().user.is_admin && settings.enable_permissions
+				return authStore().user.is_admin && settingsStore().settings.enable_permissions
 			},
 		},
 	},
@@ -159,7 +158,7 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, _, next) => {
-	const auth = useAuthStore()
+	const auth = authStore()
 	!auth.initialized && (await auth.initialize())
 
 	if (to.meta.isGuestView && !auth.isLoggedIn && to.name !== 'Login') {
@@ -188,8 +187,11 @@ router.beforeEach(async (to, _, next) => {
 		return next('/no-permission')
 	}
 
+	const settings = settingsStore()
+	!settings.initialized && (await settings.initialize())
+
 	// redirect to /setup if setup is not complete
-	const setupComplete = await isSetupComplete()
+	const setupComplete = settings.settings.setup_complete
 	if (!setupComplete && to.name !== 'Setup') {
 		return next('/setup')
 	}
@@ -209,7 +211,7 @@ router.afterEach((to, from) => {
 		toName !== from.name &&
 		to.params.name !== from.params.name
 	) {
-		useAuthStore().createViewLog(toName, to.params.name as string)
+		authStore().createViewLog(toName, to.params.name as string)
 	}
 })
 
@@ -217,7 +219,7 @@ const _fetch = window.fetch
 window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
-		useAuthStore().resetAuthState()
+		authStore().resetAuthState()
 		router.push('/login')
 	}
 	return res

@@ -20,17 +20,24 @@ export const getListResource = (listResourceOption: ListResourceParams): ListRes
 	return createListResource(listResourceOption)
 }
 
-
 export const createDataSource: Resource = createResource({ url: 'insights.api.add_database' })
 export const testDataSourceConnection: Resource = createResource({
 	url: 'insights.api.test_database_connection',
 })
 
-export const getDocumentResource = (doctype: string, docname: string) => {
-	return createDocumentResource({
+export const getDocumentResource = (
+	doctype: string,
+	docname?: string,
+	autoload: boolean = true
+) => {
+	const resource = createDocumentResource({
 		doctype: doctype,
-		name: docname,
-		auto: false,
+		name: docname || doctype,
+		auto: autoload,
 		whitelistedMethods: getWhitelistedMethods(doctype),
 	})
+	resource.triggerFetch = async () => {
+		!resource.get.loading && (await resource.get.fetch())
+	}
+	return resource
 }

@@ -119,8 +119,8 @@
 import { Avatar } from 'frappe-ui'
 
 import HelpDialog from '@/components/HelpDialog.vue'
-import useAuthStore from '@/stores/authStore'
-import settings from '@/utils/settings'
+import authStore from '@/stores/authStore'
+import settingsStore from '@/stores/settingsStore'
 import { createResource } from 'frappe-ui'
 import {
 	Book,
@@ -135,7 +135,8 @@ import {
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-const auth = useAuthStore()
+const auth = authStore()
+const settings = settingsStore().settings
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([
@@ -183,7 +184,7 @@ const sidebarItems = ref([
 ])
 
 watch(
-	() => auth.user.is_admin && settings.doc?.enable_permissions,
+	() => auth.user.is_admin && settings.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item
