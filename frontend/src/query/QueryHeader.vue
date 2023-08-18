@@ -16,7 +16,7 @@ const debouncedUpdateTitle = debounce(async (title) => {
 }, 1500)
 
 const sources = useDataSourceStore()
-sources.reload()
+
 const SourceOption = (props) => {
 	return (
 		<div

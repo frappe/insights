@@ -61,7 +61,7 @@ function submit() {
 	import_csv
 		.submit(data)
 		.then(() => {
-			useDataSources().reload()
+			useDataSourceStore().reload()
 			emit('submit')
 			reset()
 		})

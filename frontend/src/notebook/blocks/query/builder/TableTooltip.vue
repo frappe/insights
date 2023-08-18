@@ -1,5 +1,5 @@
 <script setup>
-import { useDataSourceTable } from '@/datasource/useDataSource'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { computed } from 'vue'
 
 const props = defineProps({ data_source: String, table: String })
@@ -17,7 +17,7 @@ const tablePreview = computed(() => {
 	return {
 		label: table.doc.label,
 		row_count: table.doc.meta?.row_count || 0,
-		columns: table.doc.columns.map(({ label, type }) => ({ label, type })),
+		columns: table.columns.map(({ label, type }) => ({ label, type })),
 	}
 })
 </script>

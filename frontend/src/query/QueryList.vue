@@ -22,7 +22,6 @@ if (route.hash == '#new') {
 
 const router = useRouter()
 const sources = useDataSourceStore()
-sources.reload()
 
 const newQuery = ref({ dataSource: '', title: '' })
 const dataSourceOptions = computed(() => [

@@ -1,5 +1,4 @@
 import * as api from '@/api'
-import { useDataSource } from '@/datasource/useDataSource'
 import dayjs from '@/utils/dayjs'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
@@ -11,6 +10,7 @@ const useDataSourceStore = defineStore('insights:data_sources', () => {
 		filters: {},
 		fields: ['name', 'title', 'status', 'creation', 'modified', 'is_site_db', 'database_type'],
 		orderBy: 'creation desc',
+		auto: true,
 	})
 
 	const list = computed<DataSourceListItem[]>(
@@ -36,14 +36,12 @@ const useDataSourceStore = defineStore('insights:data_sources', () => {
 	return {
 		list,
 		dropdownOptions,
-		loading: computed(() => listResource.list.loading),
-		testing: computed(() => api.testDataSourceConnection.loading),
-		creating: computed(() => api.createDataSource.loading),
-		deleting: computed(() => listResource.delete.loading),
-		get: (name: string) => useDataSource(name),
-		reload: () => listResource.list.reload(),
-		create: (args: any) => api.createDataSource.submit(args),
-		delete: (name: string) => listResource.delete.submit(name),
+		loading: listResource.list.loading,
+		testing: api.testDataSourceConnection.loading,
+		creating: api.createDataSource.loading,
+		deleting: listResource.delete.loading,
+		create: (args: any) => api.createDataSource.submit(args).then(() => listResource.list.reload()),
+		delete: (name: string) => listResource.delete.submit(name).then(() => listResource.list.reload()),
 		testConnection: (args: any) => api.testDataSourceConnection.submit(args),
 	}
 })

@@ -18,6 +18,7 @@ interface AuthState {
 
 type ListResourceParams = {
 	type?: 'list'
+	auto?: boolean
 	doctype: string
 	filters: any
 	fields: string[]
@@ -33,14 +34,14 @@ type ListResource = {
 		data: any[]
 		loading: boolean
 		reload: () => void
-	},
+	}
 	delete: Resource
 }
 
 type Resource = {
 	data: any
 	loading: boolean
-	submit: (args: any) => Promise<any>
+	submit: (args?: any) => Promise<any>
 }
 
 type DataSourceListItem = {
@@ -55,8 +56,39 @@ type DataSourceListItem = {
 	modified_from_now: string
 }
 
+type DocumentResource = {
+	doc: object
+	loading: boolean
+	get: Resource
+	delete: Resource
+	triggerFetch: () => void
+}
+
+interface DataSourceResource extends DocumentResource {
+	get_tables: Resource
+	enqueue_sync_tables: Resource
+}
+
+interface TableResource extends DocumentResource {
+	updateVisibility: Resource
+	getPreview: Resource
+	syncTable: Resource
+	update_column_type: Resource
+}
+
 type DropdownOption = {
 	label: string
 	value: string
 	description: string
+}
+
+interface DataSourceTableOption extends DropdownOption {
+	data_source: string
+	table: string
+}
+
+interface DataSourceTableListItem {
+	table: string
+	label: string
+	hidden: boolean
 }

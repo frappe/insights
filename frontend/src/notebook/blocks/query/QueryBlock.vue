@@ -60,7 +60,7 @@ const formattedSQL = computed(() => {
 })
 
 const sources = useDataSourceStore()
-sources.reload()
+
 const sourceOptions = computed(() =>
 	sources.list.map((source) => ({
 		label: source.title,

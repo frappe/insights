@@ -28,16 +28,23 @@ export const testDataSourceConnection: Resource = createResource({
 export const getDocumentResource = (
 	doctype: string,
 	docname?: string,
-	autoload: boolean = true
+	options?: object
 ) => {
 	const resource = createDocumentResource({
 		doctype: doctype,
 		name: docname || doctype,
-		auto: autoload,
 		whitelistedMethods: getWhitelistedMethods(doctype),
+		...options,
 	})
 	resource.triggerFetch = async () => {
 		!resource.get.loading && (await resource.get.fetch())
 	}
 	return resource
+}
+
+export const fetchTableName = async (data_source: string, table: string) => {
+	return call('insights.api.get_table_name', {
+		data_source: data_source,
+		table: table,
+	})
 }

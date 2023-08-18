@@ -1,7 +1,8 @@
 <script setup>
-import { useDataSource, useDataSourceTable } from '@/datasource/useDataSource'
-import useDataSources from '@/datasource/useDataSources'
-import { computed, ref, watch, inject } from 'vue'
+import useDataSource from '@/datasource/useDataSource'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
+import useDataSourceStore from '@/stores/dataSourceStore'
+import { computed, inject, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:show'])
 const props = defineProps({ show: Boolean })
@@ -12,7 +13,7 @@ const show = computed({
 })
 
 const dataSources = computed(() =>
-	useDataSources().list.map((d) => {
+	useDataSourceStore().list.map((d) => {
 		return {
 			title: d.title,
 			name: d.name,
@@ -38,7 +39,7 @@ watch(
 		currentTables.value = []
 		currentColumns.value = []
 		const dataSource = useDataSource(currentDataSource.value.name)
-		dataSource.fetch_tables().then((tables) => {
+		dataSource.fetchTables().then((tables) => {
 			currentTables.value = tables.map((t) => {
 				return {
 					label: t.label,
@@ -57,14 +58,12 @@ watch(
 		if (!currentTable.value) return
 		currentColumns.value = []
 		const table = await useDataSourceTable({ name: currentTable.value.name })
-		table.get.fetch().then(() => {
-			currentColumns.value = table.doc.columns.map((c) => {
-				return {
-					label: c.label,
-					column: c.column,
-					type: c.type,
-				}
-			})
+		currentColumns.value = table.columns.map((c) => {
+			return {
+				label: c.label,
+				column: c.column,
+				type: c.type,
+			}
 		})
 	},
 	{ immediate: true }
