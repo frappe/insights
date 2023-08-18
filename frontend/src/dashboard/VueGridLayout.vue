@@ -3,7 +3,7 @@
 		ref="grid"
 		:layout="layouts"
 		v-bind="options"
-		@update:layout="debouncedUpdateLayouts"
+		@update:layout="emit('update:layouts', layouts)"
 	>
 		<template #default="{ gridItemProps }">
 			<grid-item
@@ -55,8 +55,6 @@ const layouts = ref([])
 watchEffect(() => {
 	layouts.value = [...props.layouts]
 })
-
-const debouncedUpdateLayouts = debounce((layouts) => emit('update:layouts', layouts), 200)
 
 async function toggleEnable(disable) {
 	if (options.isDraggable === !disable && options.isResizable === !disable) return
