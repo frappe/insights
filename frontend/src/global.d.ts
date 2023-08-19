@@ -1,6 +1,9 @@
 declare module 'frappe-ui'
 declare module '@/utils/dayjs'
 
+declare type HashString = `#${string}`
+declare type RGBString = `rgb(${number}, ${number}, ${number})`
+
 interface User {
 	user_id: string
 	first_name: string
