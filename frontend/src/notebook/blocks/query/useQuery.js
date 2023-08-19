@@ -1,11 +1,13 @@
 import useChart from '@/query/useChart'
 import { useQueryResource } from '@/query/useQueryResource'
+import useAuthStore from '@/stores/authStore'
 import { safeJSONParse } from '@/utils'
-import auth from '@/utils/auth'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
+
+const auth = useAuthStore()
 
 const queries = {}
 
@@ -29,6 +31,7 @@ function makeQuery(name) {
 		chart: {},
 		sourceSchema: [],
 		formattedResults: [],
+		resultColumns: [],
 	})
 
 	state.reload = async function () {
@@ -39,7 +42,6 @@ function makeQuery(name) {
 			state.unsaved = false
 		})
 	}
-	state.reload()
 
 	state.convertToNative = async function () {
 		state.loading = true
@@ -83,14 +85,9 @@ function makeQuery(name) {
 		if (!state.doc.data_source) return
 		const updatedFields = {
 			data_source: state.doc.data_source,
-			title: state.doc.title,
-		}
-		if (state.doc.is_native_query) {
-			updatedFields.sql = state.doc.sql
-		} else if (state.doc.is_script_query) {
-			updatedFields.script = state.doc.script
-		} else {
-			updatedFields.json = JSON.stringify(safeJSONParse(state.doc.json), null, 2)
+			sql: state.doc.sql,
+			script: state.doc.script,
+			json: JSON.stringify(safeJSONParse(state.doc.json), null, 2),
 		}
 		return updatedFields
 	}

@@ -1,8 +1,6 @@
-import { getTrialStatus } from '@/subscription'
-import auth from '@/utils/auth'
-import settings from '@/utils/settings'
+import authStore from '@/stores/authStore'
 import { createRouter, createWebHistory } from 'vue-router'
-import { isSetupComplete } from '@/setup'
+import settingsStore from './stores/settingsStore'
 
 const routes = [
 	{
@@ -19,7 +17,7 @@ const routes = [
 		component: () => import('@/pages/Login.vue'),
 		meta: {
 			hideSidebar: true,
-			allowGuest: true,
+			isGuestView: true,
 		},
 	},
 	{
@@ -45,7 +43,7 @@ const routes = [
 		component: () => import('@/dashboard/PublicDashboard.vue'),
 		meta: {
 			hideSidebar: true,
-			allowGuest: true,
+			isGuestView: true,
 		},
 	},
 	{
@@ -55,7 +53,7 @@ const routes = [
 		component: () => import('@/query/PublicChart.vue'),
 		meta: {
 			hideSidebar: true,
-			allowGuest: true,
+			isGuestView: true,
 		},
 	},
 	{
@@ -91,7 +89,9 @@ const routes = [
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
+			isAllowed(): boolean {
+				return authStore().user.is_admin && settingsStore().settings.enable_permissions
+			},
 		},
 	},
 	{
@@ -99,7 +99,9 @@ const routes = [
 		name: 'Teams',
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
-			isAllowed: () => auth.user.is_admin && settings.doc.enable_permissions,
+			isAllowed(): boolean {
+				return authStore().user.is_admin && settingsStore().settings.enable_permissions
+			},
 		},
 	},
 	{
@@ -155,8 +157,11 @@ let router = createRouter({
 	routes,
 })
 
-router.beforeEach(async (to, from, next) => {
-	if (to.meta.allowGuest && !auth.isLoggedIn && to.name !== 'Login') {
+router.beforeEach(async (to, _, next) => {
+	const auth = authStore()
+	!auth.initialized && (await auth.initialize())
+
+	if (to.meta.isGuestView && !auth.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
 		return next()
 	}
@@ -172,23 +177,21 @@ router.beforeEach(async (to, from, next) => {
 		return next(false)
 	}
 
-	const isAuthorized = await auth.isAuthorized()
-	// const trialExpired = await getTrialStatus()
-	// if (trialExpired && to.name !== 'Trial Expired') {
-	// 	return next('/trial-expired')
-	// }
-	if (!isAuthorized && to.name !== 'No Permission') {
+	if (!auth.isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
-	if (isAuthorized && to.name === 'No Permission') {
+	if (auth.isAuthorized && to.name === 'No Permission') {
 		return next()
 	}
 	if (to.meta.isAllowed && !to.meta.isAllowed()) {
 		return next('/no-permission')
 	}
 
+	const settings = settingsStore()
+	!settings.initialized && (await settings.initialize())
+
 	// redirect to /setup if setup is not complete
-	const setupComplete = await isSetupComplete()
+	const setupComplete = settings.settings.setup_complete
 	if (!setupComplete && to.name !== 'Setup') {
 		return next('/setup')
 	}
@@ -202,8 +205,13 @@ router.beforeEach(async (to, from, next) => {
 
 router.afterEach((to, from) => {
 	const TRACKED_RECORDS = ['Query', 'Dashboard', 'NotebookPage']
-	if (TRACKED_RECORDS.includes(to.name) && to.name !== from.name) {
-		auth.createViewLog(to.name, to.params.name)
+	const toName = to.name as string
+	if (
+		TRACKED_RECORDS.includes(toName) &&
+		toName !== from.name &&
+		to.params.name !== from.params.name
+	) {
+		authStore().createViewLog(toName, to.params.name as string)
 	}
 })
 
@@ -211,7 +219,7 @@ const _fetch = window.fetch
 window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
-		auth.reset()
+		authStore().resetAuthState()
 		router.push('/login')
 	}
 	return res

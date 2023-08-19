@@ -662,7 +662,7 @@ class SQLQueryBuilder:
         main_table = self.make_table(main_table)
 
         for join in assisted_query.joins:
-            if not join.left_table.is_valid() or not join.right_table.is_valid():
+            if not join.is_valid():
                 continue
             self._joins.append(
                 {
@@ -693,7 +693,7 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
-                _column = make_sql_column(fltr.column)
+                _column = self.make_column(fltr.column.column, fltr.column.table)
                 filter_value = fltr.value.value
                 operator = fltr.operator.value
 

@@ -8,7 +8,7 @@
 						:class="{ 'bg-gray-200': isComboboxOpen }"
 						@click="() => togglePopover()"
 					>
-						<div class="flex items-center">
+						<div class="flex items-center overflow-hidden">
 							<slot name="prefix" />
 							<span
 								class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
@@ -72,22 +72,29 @@
 							</div>
 							<ComboboxOption
 								as="template"
-								v-for="option in group.items"
+								v-for="option in group.items.slice(0, 50)"
 								:key="option.value"
 								:value="option"
 								v-slot="{ active, selected }"
 							>
 								<li
 									:class="[
-										'flex items-center rounded px-2.5 py-1.5 text-base',
+										'flex items-center justify-between rounded px-2.5 py-1.5 text-base',
 										{ 'bg-gray-100': active },
 									]"
 								>
-									<slot
-										name="item-prefix"
-										v-bind="{ active, selected, option }"
-									/>
-									{{ option.label }}
+									<div>
+										<slot
+											name="item-prefix"
+											v-bind="{ active, selected, option }"
+										/>
+										{{ option.label }}
+									</div>
+									<slot name="item-suffix" v-bind="{ active, selected, option }">
+										<div class="text-sm text-gray-500">
+											{{ option.description }}
+										</div>
+									</slot>
 								</li>
 							</ComboboxOption>
 						</div>
@@ -192,16 +199,14 @@ export default {
 		},
 		filterOptions(options) {
 			if (!this.query) {
-				return options.slice(0, 50)
+				return options
 			}
-			return options
-				.filter((option) => {
-					let searchTexts = [option.label, option.value]
-					return searchTexts.some((text) =>
-						(text || '').toString().toLowerCase().includes(this.query.toLowerCase())
-					)
-				})
-				.slice(0, 50)
+			return options.filter((option) => {
+				let searchTexts = [option.label, option.value]
+				return searchTexts.some((text) =>
+					(text || '').toString().toLowerCase().includes(this.query.toLowerCase())
+				)
+			})
 		},
 		displayValue(option) {
 			if (typeof option === 'string') {

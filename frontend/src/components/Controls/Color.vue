@@ -8,7 +8,7 @@
 				<div
 					tabindex="0"
 					:class="inputClass"
-					class="form-input block w-full items-center rounded border-gray-400 bg-gray-100 placeholder-gray-500 focus:outline-none"
+					class="form-input relative block w-full items-center rounded border-gray-400 bg-gray-100 placeholder-gray-500 focus:outline-none"
 					@click="togglePopover()"
 					readonly
 				>
@@ -34,6 +34,16 @@
 						<span class="text-gray-500" v-else>
 							{{ placeholder || label }}
 						</span>
+						<div
+							v-if="selectedColorLabel"
+							class="absolute inset-y-0 right-0 z-10 flex cursor-pointer items-center rounded p-1"
+							@click.prevent.stop="resetColor()"
+						>
+							<FeatherIcon
+								class="h-4 w-4 text-gray-500 hover:text-gray-800"
+								name="x"
+							></FeatherIcon>
+						</div>
 					</div>
 				</div>
 			</template>
@@ -161,6 +171,9 @@ export default {
 				this.$emit('update:modelValue', value)
 			}
 		},
+		resetColor() {
+			this.$emit('update:modelValue', null)
+		},
 	},
 	computed: {
 		value: {
@@ -179,6 +192,7 @@ export default {
 			return this.options || Object.values(COLOR_MAP)
 		},
 		selectedColorLabel() {
+			if (!this.value || !this.modelValue) return null
 			return this.multiple
 				? this.modelValue.length > 1
 					? `${this.modelValue.length} colors`

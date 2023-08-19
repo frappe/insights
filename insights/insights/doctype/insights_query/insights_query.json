@@ -27,6 +27,7 @@
   "section_break_cnma",
   "json",
   "script",
+  "script_log",
   "query_and_result_tab",
   "section_break_11",
   "sql",
@@ -38,7 +39,8 @@
   "last_execution",
   "transform_tab",
   "section_break_18",
-  "transforms"
+  "transforms",
+  "variables"
  ],
  "fields": [
   {
@@ -233,11 +235,23 @@
    "fieldtype": "Code",
    "label": "Script",
    "options": "Python"
+  },
+  {
+   "fieldname": "variables",
+   "fieldtype": "Table",
+   "label": "Variables",
+   "options": "Insights Query Variable"
+  },
+  {
+   "fieldname": "script_log",
+   "fieldtype": "Text",
+   "label": "Script Log",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-06 11:19:07.413824",
+ "modified": "2023-08-13 19:58:27.525185",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",
@@ -275,5 +289,6 @@
  "sort_order": "DESC",
  "states": [],
  "title_field": "title",
- "track_changes": 1
+ "track_changes": 1,
+ "track_views": 1
 }

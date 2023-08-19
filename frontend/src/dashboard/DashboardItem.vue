@@ -44,7 +44,7 @@ const refreshKey = ref(0)
 watch(
 	() => JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value]),
 	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)(),
-	{ immediate: true }
+	{ deep: true }
 )
 
 function setInitialChartOptions() {
@@ -65,7 +65,7 @@ function setInitialChartOptions() {
 }
 
 function openQueryInNewTab() {
-	window.open(`/insights/query/build/${props.item.options.query}`)
+	window.open(`/insights/query/build/${props.item.options.query}`, '_blank')
 }
 </script>
 
@@ -73,7 +73,7 @@ function openQueryInNewTab() {
 	<div class="dashboard-item h-full min-h-[60px] w-full p-2 [&>div:first-child]:h-full">
 		<div
 			ref="itemRef"
-			class="group relative flex h-full rounded py-1"
+			class="group relative flex h-full rounded"
 			:class="{
 				' bg-white shadow': item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':

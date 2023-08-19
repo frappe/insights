@@ -10,6 +10,7 @@ from .utils import (
     BaseNestedQueryImporter,
     Column,
     Query,
+    apply_cumulative_sum,
     get_columns_with_inferred_types,
     update_sql,
 )
@@ -105,12 +106,24 @@ class InsightsAssistedQueryController:
         return tables + join_tables
 
     def before_fetch(self):
-        if self.doc.data_source != "Query Store":
-            return
-        raise frappe.ValidationError("Query Store data source is not supported for assisted query")
+        return
 
     def after_fetch(self, results):
-        return results
+        if not self.has_cumulative_columns():
+            return results
+
+        columns = [
+            col
+            for col in self.query_json.get_columns()
+            if col.aggregation and "cumulative" in col.aggregation
+        ]
+        return apply_cumulative_sum(columns, results)
+
+    def has_cumulative_columns(self):
+        return any(
+            col.aggregation and "cumulative" in col.aggregation
+            for col in self.query_json.get_columns()
+        )
 
     def fetch_results(self):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)

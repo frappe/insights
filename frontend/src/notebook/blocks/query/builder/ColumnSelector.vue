@@ -1,6 +1,6 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
-import { useDataSourceTable } from '@/datasource/useDataSource'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { computed, ref, watch } from 'vue'
 const props = defineProps({
 	data_source: String,
@@ -37,7 +37,7 @@ const columns = computed(() => {
 	const localColumns = props.localColumns.filter(filterFn).map((c) => ({ ...c, isLocal: true }))
 	if (!tables.value?.length) return localColumns
 	const tableColumns = tables.value
-		.map((d) => d.doc?.columns)
+		.map((table) => table.columns)
 		.flat()
 		.filter(filterFn)
 	return localColumns.concat(tableColumns)
@@ -49,7 +49,12 @@ function filterFn(col, currIndex, self) {
 }
 function getColumnValue(column) {
 	if (!column) return
-	return column.expression?.raw || `${column.table}.${column.column}`
+	if (column.expression?.raw) return column.expression.raw
+
+	let value = `${column.table}.${column.column}`
+	if (column.granularity) value = `${column.granularity}(${value})`
+	if (column.aggregation) value = `${column.aggregation}(${value})`
+	return value
 }
 
 const columnOptions = computed(() => {

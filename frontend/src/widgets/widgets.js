@@ -1,12 +1,30 @@
 import { defineAsyncComponent } from 'vue'
 
-const VALID_CHARTS = ['Number', 'Line', 'Bar', 'Pie', 'Table', 'Progress', 'Scatter', 'Funnel']
+const VALID_CHARTS = [
+	'Number',
+	'Line',
+	'Bar',
+	'Pie',
+	'Table',
+	'Progress',
+	'Scatter',
+	'Funnel',
+	'Trend',
+]
 
 const WIDGETS = {
 	Number: {
 		type: 'Number',
 		component: defineAsyncComponent(() => import('./Number/Number.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
+		options: {},
+		defaultWidth: 4,
+		defaultHeight: 4,
+	},
+	Trend: {
+		type: 'Trend',
+		component: defineAsyncComponent(() => import('./Trend/Trend.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Trend/TrendOptions.vue')),
 		options: {},
 		defaultWidth: 4,
 		defaultHeight: 4,

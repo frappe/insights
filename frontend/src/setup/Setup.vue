@@ -1,5 +1,5 @@
 <script setup>
-import { completeSetup } from '@/setup'
+import settings from '@/stores/settingsStore'
 import { computed, markRaw, provide, reactive, ref } from 'vue'
 import SetupQuestions from './SetupQuestions.vue'
 import SourceConnectionStep from './SourceConnectionStep.vue'
@@ -58,9 +58,10 @@ const steps = ref([
 ])
 
 const currentStep = ref(0)
-function handleNext() {
+async function handleNext() {
 	if (currentStep.value === steps.value.length - 1) {
-		return completeSetup()
+		await settings.update({ setup_complete: 1 }, false)
+		window.location.reload()
 	}
 	currentStep.value += 1
 }
@@ -83,7 +84,7 @@ function handlePrev() {
 							class="flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-gray-300"
 							:class="
 								currentStep === index
-									? 'border-blue-500 bg-blue-50 font-bold text-blue-500'
+									? 'border-gray-800  font-bold text-gray-800'
 									: ''
 							"
 						>

@@ -74,7 +74,7 @@ const canShowTooltip = ref(false)
 			<transition-group name="fade">
 				<ComboboxOption
 					v-for="(value, idx) in props.values"
-					:key="value.value"
+					:key="value.value || idx"
 					:value="value"
 					v-slot="{ active }"
 					@click.prevent.stop="select(value)"

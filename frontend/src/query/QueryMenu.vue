@@ -27,7 +27,7 @@
 					icon: 'play',
 					onClick: query.execute,
 				},
-				settings.doc?.enable_permissions && query.isOwner
+				settings.enable_permissions && query.isOwner
 					? {
 							label: 'Share',
 							icon: 'share-2',
@@ -333,7 +333,7 @@
 	</div>
 
 	<ShareDialog
-		v-if="settings.doc?.enable_permissions"
+		v-if="settings.enable_permissions"
 		v-model:show="show_share_dialog"
 		:resource-type="query.doc.doctype"
 		:resource-name="query.doc.name"
@@ -350,11 +350,13 @@
 import AlertDialog from '@/components/AlertDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
 import { copyToClipboard } from '@/utils'
-import settings from '@/utils/settings'
+import settingsStore from '@/stores/settingsStore'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+
+const settings = settingsStore().settings
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')

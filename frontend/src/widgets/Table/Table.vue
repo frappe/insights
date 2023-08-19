@@ -1,5 +1,5 @@
 <script setup>
-import { ellipsis } from '@/utils'
+import { ellipsis, formatNumber } from '@/utils'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -33,7 +33,7 @@ function total(column) {
 	const index = props.options.columns.indexOf(column)
 	const values = rows.value.map((row) => parseInt(row[index]))
 	const total = values.reduce((a, b) => a + b, 0)
-	return Number(total).toLocaleString()
+	return formatNumber(Number(total))
 }
 </script>
 
@@ -77,11 +77,7 @@ function total(column) {
 							{{ index + 1 }}
 						</td>
 						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2">
-							{{
-								typeof cell == 'number'
-									? cell.toLocaleString()
-									: ellipsis(cell, 100)
-							}}
+							{{ typeof cell == 'number' ? formatNumber(cell) : ellipsis(cell, 100) }}
 						</td>
 					</tr>
 					<tr v-if="props.options.showTotal" class="border-b font-medium">

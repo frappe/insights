@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
@@ -60,6 +61,8 @@ class BaseDatabase:
         cached=False,
     ):
         if sql is None:
+            return []
+        if isinstance(sql, str) and not sql.strip():
             return []
 
         sql = self.compile_query(sql)

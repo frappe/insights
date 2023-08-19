@@ -177,6 +177,8 @@ def create_query(**query):
     doc.is_assisted_query = query.get("is_assisted_query")
     doc.is_native_query = query.get("is_native_query")
     doc.is_script_query = query.get("is_script_query")
+    if query.get("is_script_query"):
+        doc.data_source = "Query Store"
     if table := query.get("table") and not doc.is_assisted_query:
         doc.append(
             "tables",
@@ -329,12 +331,12 @@ def create_data_source_for_csv():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def import_csv(table_label, table_name, filename, if_exists, columns):
+def import_csv(table_label, table_name, filename, if_exists, columns, data_source):
 
     create_data_source_for_csv()
 
     table_import = frappe.new_doc("Insights Table Import")
-    table_import.data_source = "File Uploads"
+    table_import.data_source = data_source
     table_import.table_label = table_label
     table_import.table_name = table_name
     table_import.if_exists = if_exists

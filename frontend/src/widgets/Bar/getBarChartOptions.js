@@ -1,10 +1,11 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 import { inject } from 'vue'
 
 export default function getBarChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
 
-	if (!datasets || !datasets.length) {
+	if (!labels?.length || !datasets?.length) {
 		return {}
 	}
 
@@ -74,7 +75,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 			trigger: 'axis',
 			confine: true,
 			appendToBody: false,
-			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 		legend: {
 			icon: 'circle',

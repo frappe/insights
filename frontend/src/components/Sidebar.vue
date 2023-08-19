@@ -6,7 +6,6 @@
 		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
 				<img src="../assets/insights-logo.svg" class="h-7" />
-				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
 				<img src="../assets/insights-icon.svg" class="rounded" />
@@ -119,8 +118,8 @@
 import { Avatar } from 'frappe-ui'
 
 import HelpDialog from '@/components/HelpDialog.vue'
-import auth from '@/utils/auth'
-import settings from '@/utils/settings'
+import authStore from '@/stores/authStore'
+import settingsStore from '@/stores/settingsStore'
 import { createResource } from 'frappe-ui'
 import {
 	Book,
@@ -134,6 +133,9 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+
+const auth = authStore()
+const settings = settingsStore().settings
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([
@@ -181,7 +183,7 @@ const sidebarItems = ref([
 ])
 
 watch(
-	() => auth.user.is_admin && settings.doc?.enable_permissions,
+	() => auth.user.is_admin && settings.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item
@@ -216,13 +218,5 @@ const currentRoute = computed(() => {
 	return route.path
 })
 
-const getAppVersion = createResource({
-	url: 'insights.api.get_app_version',
-	initialData: '0.0.0',
-	auto: true,
-})
-const appVersion = computed(() => {
-	return `v${getAppVersion.data}`
-})
 const open = (url) => window.open(url, '_blank')
 </script>

@@ -1,7 +1,7 @@
 <template>
 	<div v-if="props.column" class="group flex items-center justify-between">
 		<div class="flex items-center">
-			<div class="rounded text-base">{{ props.column }}</div>
+			<div class="rounded text-base">{{ props.column?.label || props.column }}</div>
 		</div>
 		<div class="flex select-none items-center justify-end">
 			<!-- show sort options only if column is from doc.columns -->
@@ -27,18 +27,18 @@
 </template>
 
 <script setup>
-import { inject, computed } from 'vue'
+import { computed, inject } from 'vue'
 
 const query = inject('query')
 const props = defineProps({
 	column: {
-		type: String,
 		required: true,
 	},
 })
 
-const queryColumn = computed(() => query.columns.data.find((c) => c.label == props.column))
+const queryColumn = computed(() => query.columns.data.find((c) => c.label == props.column?.label))
 const orderByColumn = () => {
+	if (!queryColumn.value) return
 	if (queryColumn.value.order_by == 'desc') {
 		queryColumn.value.order_by = 'asc'
 	} else if (queryColumn.value.order_by == 'asc') {

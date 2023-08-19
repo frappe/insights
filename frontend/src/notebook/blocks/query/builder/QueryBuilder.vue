@@ -1,6 +1,6 @@
 <script setup>
 import UseTooltip from '@/components/UseTooltip.vue'
-import { useDataSourceTable } from '@/datasource/useDataSource'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
 import { computed, inject, provide, ref } from 'vue'
@@ -17,8 +17,8 @@ import ValueSelector from './ValueSelector.vue'
 
 const props = defineProps({ name: String })
 const query = useQuery(props.name)
-query.autosave = true
 await query.reload()
+query.autosave = true
 provide('query', query)
 
 const legacyQuery = inject('query')
@@ -56,7 +56,7 @@ const COLUMN = {
 	type: '',
 	alias: '',
 	order: '',
-	granularity: 'Month',
+	granularity: '',
 	aggregation: '',
 	format: {},
 	expression: {},
@@ -104,6 +104,8 @@ const AGGREGATIONS = [
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum of', value: 'sum' },
 	{ label: 'Average of', value: 'avg' },
+	{ label: 'Cumulative Count of Records', value: 'cumulative count' },
+	{ label: 'Cumulative Sum of', value: 'cumulative sum' },
 	{ label: 'Unique values of', value: 'distinct' },
 	{ label: 'Unique count of', value: 'distinct_count' },
 	{ label: 'Minimum of', value: 'min' },

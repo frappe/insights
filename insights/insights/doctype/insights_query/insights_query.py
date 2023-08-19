@@ -157,7 +157,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def retrieve_results(self, fetch_if_not_cached=False):
         results = CachedResults.get(self.name)
-        if not results and fetch_if_not_cached:
+        if results is None and fetch_if_not_cached:
             results = self.fetch_results()
         return results or []
 
@@ -170,12 +170,18 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             self._results = self.variant_controller.fetch_results()
             self._results = self.after_fetch(self._results)
             self._results = self.process_results_columns(self._results)
-            self.execution_time = flt(time.monotonic() - start, 3)
-            self.last_execution = frappe.utils.now()
-            self.db_set("status", Status.SUCCESS.value)
+            self.db_set(
+                {
+                    "status": Status.SUCCESS.value,
+                    "execution_time": flt(time.monotonic() - start, 3),
+                    "last_execution": frappe.utils.now(),
+                },
+                update_modified=False,
+                commit=True,
+            )
         except Exception as e:
             frappe.db.rollback()
-            frappe.log_error(e)
+            frappe.log_error(str(e)[:140])
             self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:

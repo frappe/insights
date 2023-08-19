@@ -2,7 +2,7 @@
 import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
 import { Badge } from 'frappe-ui'
@@ -21,8 +21,7 @@ if (route.hash == '#new') {
 }
 
 const router = useRouter()
-const sources = useDataSources()
-sources.reload()
+const sources = useDataSourceStore()
 
 const newQuery = ref({ dataSource: '', title: '' })
 const dataSourceOptions = computed(() => [

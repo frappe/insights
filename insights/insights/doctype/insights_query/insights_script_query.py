@@ -15,6 +15,8 @@ from frappe.utils.safe_exec import (
     get_python_builtins,
 )
 
+from insights import notify
+
 from .utils import get_columns_with_inferred_types
 
 
@@ -44,17 +46,17 @@ class InsightsScriptQueryController:
 
         results = []
         try:
-            _locals = {"results": results}
+            self.reset_script_log()
+            variables = self.doc.get("variables") or []
+            variables = {var.variable_name: var.variable_value for var in variables}
+            _locals = {"results": results, **variables}
             exec(
                 compile_restricted(script, filename="<scriptquery>"),
                 get_safe_exec_globals(),
                 _locals,
             )
+            self.update_script_log()
             results = _locals["results"]
-            if isinstance(results, pd.DataFrame):
-                # convert to list of lists where the first row is the column names
-                results = results.values.tolist()
-                results.insert(0, list(results.columns))
         except BaseException as e:
             frappe.log_error(title="Insights Script Query Error")
             frappe.throw(
@@ -65,15 +67,34 @@ class InsightsScriptQueryController:
         results = self.validate_results(results)
         return results
 
+    def reset_script_log(self):
+        self.doc.db_set(
+            "script_log",
+            "",
+            commit=True,
+            update_modified=False,
+        )
+
+    def update_script_log(self):
+        self.doc.db_set(
+            "script_log",
+            "\n".join(frappe.debug_log),
+            commit=True,
+            update_modified=False,
+        )
+
     def validate_results(self, results):
         if not results:
-            frappe.throw("The script should declare a variable named 'results'.")
+            notify("The script should declare a variable named 'results'.")
+            return []
 
         if not isinstance(results[0], list):
-            frappe.throw("Results should be a list of lists.")
+            notify("Results should be a list of lists.")
+            return []
 
         if not all(isinstance(row, list) for row in results):
-            frappe.throw("All rows should be lists.")
+            notify("All rows should be lists.")
+            return []
 
         results[0] = [{"label": col} for col in results[0]]
         return results
@@ -109,6 +130,7 @@ def get_safe_exec_globals():
         parse_json=frappe.parse_json,
         make_get_request=frappe.integrations.utils.make_get_request,
         pandas=pandas,
+        log=frappe.log,
     )
 
     out._write_ = _write

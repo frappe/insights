@@ -54,7 +54,7 @@ const valueOptions = computed(() => {
 			<ListPicker
 				:value="options.yAxis"
 				:options="valueOptions"
-				@change="options.yAxis = $event.map((item) => item.value)"
+				@update:modelValue="options.yAxis = $event.map((item) => item.value)"
 			/>
 		</div>
 

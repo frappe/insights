@@ -32,15 +32,15 @@
 <script setup lang="jsx">
 import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
 import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { updateDocumentTitle } from '@/utils'
 import { PlusIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 
 const new_dialog = ref(false)
 
@@ -49,8 +49,7 @@ if (route.hash == '#new') {
 	new_dialog.value = true
 }
 
-const sources = useDataSources()
-sources.reload()
+const sources = useDataSourceStore()
 
 const StatusCell = (props) => (
 	<Badge theme={props.row.status == 'Inactive' ? 'orange' : 'green'}>{props.row.status}</Badge>

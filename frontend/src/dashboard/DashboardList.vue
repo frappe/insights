@@ -32,7 +32,7 @@
 				title="Favorites"
 			/>
 			<DashboardsGroup
-				v-if="settings.doc?.enable_permissions"
+				v-if="settings.enable_permissions"
 				:dashboards="privates"
 				title="Private"
 			/>
@@ -78,13 +78,15 @@
 <script setup>
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useDashboards from '@/dashboard/useDashboards'
+import settingsStore from '@/stores/settingsStore'
 import { updateDocumentTitle } from '@/utils'
-import settings from '@/utils/settings'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardImportDialog from './DashboardImportDialog.vue'
 import DashboardsGroup from './DashboardListGroup.vue'
+
+const settings = settingsStore().settings
 
 const dashboards = useDashboards()
 dashboards.reload()
