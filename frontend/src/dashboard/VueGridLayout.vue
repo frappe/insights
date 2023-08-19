@@ -3,7 +3,7 @@
 		ref="grid"
 		:layout="layouts"
 		v-bind="options"
-		@update:layout="emit('update:layouts', layouts)"
+		@update:layout="emit('update:layouts', $event)"
 	>
 		<template #default="{ gridItemProps }">
 			<grid-item
@@ -30,7 +30,6 @@
 </template>
 
 <script setup>
-import { debounce } from 'frappe-ui'
 import { reactive, ref, watch, watchEffect } from 'vue'
 
 const emit = defineEmits(['update:layouts'])
