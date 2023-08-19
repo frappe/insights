@@ -49,7 +49,12 @@ function filterFn(col, currIndex, self) {
 }
 function getColumnValue(column) {
 	if (!column) return
-	return column.expression?.raw || `${column.table}.${column.column}`
+	if (column.expression?.raw) return column.expression.raw
+
+	let value = `${column.table}.${column.column}`
+	if (column.granularity) value = `${column.granularity}(${value})`
+	if (column.aggregation) value = `${column.aggregation}(${value})`
+	return value
 }
 
 const columnOptions = computed(() => {

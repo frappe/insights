@@ -5,14 +5,13 @@ from copy import deepcopy
 from json import dumps
 
 import frappe
-import pandas as pd
 from frappe.utils.data import cstr
 
 from insights.api import fetch_column_values, get_tables
 from insights.utils import InsightsDataSource, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store
-from .utils import get_columns_with_inferred_types, update_sql
+from .utils import apply_cumulative_sum, get_columns_with_inferred_types, update_sql
 
 DEFAULT_FILTERS = dumps(
     {
@@ -331,22 +330,16 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         sync_query_store(sub_stored_queries, force=True)
 
     def after_fetch(self, results):
-        if self.has_cumulative_columns():
-            results = self.apply_cumulative_sum(results)
-        return results
+        if not self.has_cumulative_columns():
+            return results
+
+        columns = [
+            col for col in self.doc.columns if col.aggregation and "Cumulative" in col.aggregation
+        ]
+        return apply_cumulative_sum(columns, results)
 
     def has_cumulative_columns(self):
         return any(col.aggregation and "Cumulative" in col.aggregation for col in self.doc.columns)
-
-    def apply_cumulative_sum(self, results):
-        column_names = [d["label"] for d in results[0]]
-        results_df = pd.DataFrame(results[1:], columns=column_names)
-
-        for column in self.doc.columns:
-            if "Cumulative" in column.aggregation:
-                results_df[column.label] = results_df[column.label].cumsum()
-
-        return [results[0]] + results_df.values.tolist()
 
     def fetch_results(self):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)

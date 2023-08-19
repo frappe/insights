@@ -182,6 +182,19 @@ def apply_transpose_transform(results, options):
     return [results_columns] + results_data
 
 
+def apply_cumulative_sum(columns, results):
+    if not columns:
+        return results
+
+    column_names = [d["label"] for d in results[0]]
+    results_df = pd.DataFrame(results[1:], columns=column_names)
+
+    for column in columns:
+        results_df[column.label] = results_df[column.label].cumsum()
+
+    return [results[0]] + results_df.values.tolist()
+
+
 def infer_type(value):
     try:
         # test if decimal

@@ -104,6 +104,8 @@ const AGGREGATIONS = [
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum of', value: 'sum' },
 	{ label: 'Average of', value: 'avg' },
+	{ label: 'Cumulative Count of Records', value: 'cumulative count' },
+	{ label: 'Cumulative Sum of', value: 'cumulative sum' },
 	{ label: 'Unique values of', value: 'distinct' },
 	{ label: 'Unique count of', value: 'distinct_count' },
 	{ label: 'Minimum of', value: 'min' },
