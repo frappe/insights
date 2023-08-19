@@ -17,16 +17,14 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 
 const props = defineProps(['modelValue', 'label'])
-const emits = defineEmits(['input', 'change', 'update:modelValue'])
+const emits = defineEmits(['update:modelValue'])
 
-const enabled = ref(Boolean(props.modelValue))
-watch(enabled, () => {
-	emits('input', enabled.value)
-	emits('change', enabled.value)
-	emits('update:modelValue', enabled.value)
+const enabled = computed({
+	get: () => props.modelValue,
+	set: (value) => emits('update:modelValue', value),
 })
 </script>
