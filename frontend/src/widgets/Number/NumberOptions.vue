@@ -13,10 +13,6 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-if (!options.hasOwnProperty('shorten')) {
-	options.value.shorten = true
-}
-
 const columnOptions = computed(() => {
 	return props.columns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
