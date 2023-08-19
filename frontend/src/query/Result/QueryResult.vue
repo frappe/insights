@@ -104,14 +104,16 @@
 <script setup>
 import LimitsAndOrder from '@/query/LimitsAndOrder.vue'
 import ColumnHeader from '@/query/Result/ColumnHeader.vue'
+import settingsStore from '@/stores/settingsStore'
 import { ellipsis, FIELDTYPES, formatNumber } from '@/utils'
-import settings from '@/utils/settings'
+
+const settings = settingsStore().settings
 
 import { computed, inject, watch } from 'vue'
 
 const query = inject('query')
 
-const query_result_limit = computed(() => formatNumber(parseInt(settings.doc?.query_result_limit)))
+const query_result_limit = computed(() => formatNumber(parseInt(settings.query_result_limit)))
 const formattedResult = computed(() => query.results.formattedResult.slice(1))
 const needsExecution = computed(() => query.doc?.status === 'Pending Execution')
 const columns = computed(() => {
@@ -121,7 +123,7 @@ const isNumberColumn = computed(() => {
 	return query.resultColumns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 })
 
-if (settings.doc?.auto_execute_query) {
+if (settings.auto_execute_query) {
 	watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && query.execute(), {
 		immediate: true,
 	})

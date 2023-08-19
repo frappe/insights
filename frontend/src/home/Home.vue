@@ -1,10 +1,12 @@
 <script setup>
-import auth from '@/utils/auth'
-import HomeOnboarding from './HomeOnboarding.vue'
-import HomeQuickActions from './HomeQuickActions.vue'
-import HomePinnedItems from './HomePinnedItems.vue'
-import HomeRecentRecords from './HomeRecentRecords.vue'
+import useAuthStore from '@/stores/authStore'
 import { inject } from 'vue'
+import HomeOnboarding from './HomeOnboarding.vue'
+import HomePinnedItems from './HomePinnedItems.vue'
+import HomeQuickActions from './HomeQuickActions.vue'
+import HomeRecentRecords from './HomeRecentRecords.vue'
+
+const auth = useAuthStore()
 
 const $dayjs = inject('$dayjs')
 const today = $dayjs().format('dddd, D MMMM')

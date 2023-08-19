@@ -131,7 +131,7 @@
 <script setup>
 import Grid from '@/components/Grid.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import { useDataSourceTable } from '@/datasource/useDataSource'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { Badge, Dropdown, LoadingIndicator, createResource } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
 import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'

@@ -1,9 +1,10 @@
 <script setup>
 import { formatNumber } from '@/utils'
-import settings from '@/utils/settings'
+import settingsStore from '@/stores/settingsStore'
 import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject } from 'vue'
 
+const settings = settingsStore().settings
 const query = inject('query')
 const columns = computed(() => query.formattedResults?.[0] || [])
 const data = computed(() => query.formattedResults?.slice(1) || [])
@@ -14,7 +15,7 @@ const executionTime = computed(() => {
 })
 const totalRows = computed(() => query.doc.results_row_count - 1)
 
-const query_result_limit = computed(() => formatNumber(parseInt(settings.doc?.query_result_limit)))
+const query_result_limit = computed(() => formatNumber(parseInt(settings.query_result_limit)))
 </script>
 
 <template>

@@ -43,7 +43,7 @@
 						</div>
 					</div>
 
-					<div v-if="settings.doc?.enable_permissions">
+					<div v-if="settings.enable_permissions">
 						<Autocomplete
 							v-model="newTeam"
 							placeholder="Add a team to share with"
@@ -91,11 +91,12 @@
 </template>
 
 <script setup>
+import settingsStore from '@/stores/settingsStore'
 import { copyToClipboard } from '@/utils'
-import settings from '@/utils/settings'
 import { createResource } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
 
+const settings = settingsStore().settings
 const emit = defineEmits(['update:show', 'togglePublicAccess'])
 const props = defineProps({
 	show: {

@@ -1,5 +1,5 @@
 <script setup lang="jsx">
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import QueryMenu from '@/query/QueryMenu.vue'
 import { debounce } from 'frappe-ui'
@@ -15,8 +15,8 @@ const debouncedUpdateTitle = debounce(async (title) => {
 	query.doc.title = title
 }, 1500)
 
-const sources = useDataSources()
-sources.reload()
+const sources = useDataSourceStore()
+
 const SourceOption = (props) => {
 	return (
 		<div
@@ -28,6 +28,9 @@ const SourceOption = (props) => {
 		</div>
 	)
 }
+const currentSource = computed(() => {
+	return sources.list.find((source) => source.name === query.doc.data_source)
+})
 const dataSourceOptions = computed(() => {
 	return sources.list.map((source) => ({
 		component: (props) => (
@@ -68,7 +71,7 @@ function changeDataSource(sourceName) {
 			:button="{
 				iconLeft: 'database',
 				variant: 'outline',
-				label: query.doc.data_source || 'Select data source',
+				label: currentSource?.title || 'Select data source',
 			}"
 			:options="dataSourceOptions"
 		/>

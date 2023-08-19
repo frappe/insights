@@ -1,27 +1,23 @@
 <template>
 	<div class="flex h-screen w-screen bg-white antialiased">
-		<template v-if="route.meta.allowGuest">
-			<router-view></router-view>
-		</template>
-		<template v-else>
+		<RouterView v-if="isGuestView" />
+		<Suspense>
 			<AppShell />
-			<Toasts />
-			<Dialog v-model="prompt.show" :options="prompt.options" />
-		</template>
+		</Suspense>
+		<Toasts />
 	</div>
 </template>
 
 <script setup>
 import AppShell from '@/components/AppShell.vue'
-import usePrompt from '@/utils/prompt'
 import Toasts from '@/utils/toasts'
-import { inject, onBeforeUnmount } from 'vue'
+import { inject, onBeforeUnmount, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const prompt = usePrompt()
+const isGuestView = computed(() => route.meta.isGuestView)
 
-if (!route.meta.allowGuest) {
+if (!isGuestView.value) {
 	const $socket = inject('$socket')
 	const $notify = inject('$notify')
 	const $auth = inject('$auth')

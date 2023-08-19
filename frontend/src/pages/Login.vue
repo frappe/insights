@@ -23,9 +23,11 @@
 
 <script setup>
 import LoginBox from '@/components/LoginBox.vue'
+import useAuthStore from '@/stores/authStore'
 import { onMounted, ref } from '@vue/runtime-core'
 import { useRoute, useRouter } from 'vue-router'
-import auth from '@/utils/auth'
+
+const auth = useAuthStore()
 
 const loggingIn = ref(null)
 const email = ref(null)

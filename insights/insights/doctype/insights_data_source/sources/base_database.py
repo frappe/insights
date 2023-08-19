@@ -62,6 +62,8 @@ class BaseDatabase:
     ):
         if sql is None:
             return []
+        if isinstance(sql, str) and not sql.strip():
+            return []
 
         sql = self.compile_query(sql)
         sql = self.process_subquery(sql)

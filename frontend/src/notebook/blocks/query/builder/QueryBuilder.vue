@@ -1,6 +1,6 @@
 <script setup>
 import UseTooltip from '@/components/UseTooltip.vue'
-import { useDataSourceTable } from '@/datasource/useDataSource'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
 import { computed, inject, provide, ref } from 'vue'
@@ -56,7 +56,7 @@ const COLUMN = {
 	type: '',
 	alias: '',
 	order: '',
-	granularity: 'Month',
+	granularity: '',
 	aggregation: '',
 	format: {},
 	expression: {},
