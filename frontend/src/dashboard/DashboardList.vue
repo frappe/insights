@@ -2,6 +2,18 @@
 	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
 		<PageBreadcrumbs class="h-7" :items="[{ label: 'Dashboards' }]" />
 		<div class="space-x-2.5">
+			<Dropdown
+				placement="right"
+				:button="{ icon: 'more-horizontal', variant: 'ghost' }"
+				:options="[
+					{
+						label: 'Import Dashboard',
+						variant: 'outline',
+						icon: 'download',
+						onClick: () => (showImportDialog = true),
+					},
+				]"
+			/>
 			<Button label="New Dashboard" variant="solid" @click="showDialog = true">
 				<template #prefix>
 					<Plus class="h-4 w-4" />
@@ -59,6 +71,8 @@
 			</Button>
 		</template>
 	</Dialog>
+
+	<DashboardImportDialog v-model:show="showImportDialog" />
 </template>
 
 <script setup>
@@ -69,6 +83,7 @@ import { updateDocumentTitle } from '@/utils'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import DashboardImportDialog from './DashboardImportDialog.vue'
 import DashboardsGroup from './DashboardListGroup.vue'
 
 const settings = settingsStore().settings
@@ -87,6 +102,7 @@ const favorites = computed(() => {
 const privates = computed(() => {
 	return dashboards.list.filter((dashboard) => dashboard.is_private)
 })
+const showImportDialog = ref(false)
 
 const showDialog = ref(false)
 const route = useRoute()

@@ -25,6 +25,27 @@ export default defineStore('dashboards', {
 			this.reload()
 			return name
 		},
+		async import(args) {
+			this.creating = true
+			const { file, title, dataSourceMap } = args
+			const { name } = await call(
+				'insights.insights.doctype.insights_dashboard.insights_dashboard.import_dashboard',
+				{
+					filename: file.name,
+					title,
+					data_source_map: dataSourceMap,
+				}
+			)
+			this.reload()
+			this.creating = false
+			return name
+		},
+		getDashboardFile(filename) {
+			return call(
+				'insights.insights.doctype.insights_dashboard.insights_dashboard.get_dashboard_file',
+				{ filename: filename }
+			)
+		},
 		async toggleLike(dashboard) {
 			await call('frappe.desk.like.toggle_like', {
 				doctype: 'Insights Dashboard',

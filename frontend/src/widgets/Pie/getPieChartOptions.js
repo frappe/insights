@@ -3,7 +3,7 @@ import { getColors } from '@/utils/colors'
 export default function getPieChartOptions(labels, dataset, options) {
 	const MAX_SLICES = 9
 
-	if (!dataset || !dataset.data?.length) {
+	if (!labels?.length || !dataset?.data?.length) {
 		return {}
 	}
 

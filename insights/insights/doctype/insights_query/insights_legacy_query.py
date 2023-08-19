@@ -8,10 +8,15 @@ import frappe
 from frappe.utils.data import cstr
 
 from insights.api import fetch_column_values, get_tables
-from insights.utils import InsightsDataSource, InsightsTable
+from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store
-from .utils import apply_cumulative_sum, get_columns_with_inferred_types, update_sql
+from .utils import (
+    BaseNestedQueryImporter,
+    apply_cumulative_sum,
+    get_columns_with_inferred_types,
+    update_sql,
+)
 
 DEFAULT_FILTERS = dumps(
     {
@@ -343,3 +348,74 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
 
     def fetch_results(self):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
+
+    def export_query(self):
+        selected_tables = self.get_selected_tables()
+        selected_table_names = [table.table for table in selected_tables]
+        subqueries = frappe.get_all(
+            "Insights Table",
+            filters={
+                "table": ["in", selected_table_names],
+                "is_query_based": 1,
+            },
+            pluck="table",
+        )
+        dependencies = {}
+        for subquery in subqueries:
+            if subquery in dependencies:
+                continue
+            query = InsightsQuery.get_doc(subquery)
+            dependencies[query.name] = frappe.parse_json(query.export())
+
+        query_dict = self.doc.as_dict()
+        return {
+            "query": {
+                "tables": query_dict["tables"],
+                "columns": query_dict["columns"],
+                "filters": query_dict["filters"],
+                "limit": query_dict["limit"],
+            },
+            "subqueries": dependencies,
+        }
+
+    def import_query(self, exported_query):
+        return LegacyQueryImporter(exported_query, self.doc).import_query()
+
+
+class LegacyQueryImporter(BaseNestedQueryImporter):
+    def _update_doc(self):
+        self.doc.set("tables", self.data.query["tables"])
+        self.doc.set("columns", self.data.query["columns"])
+        self.doc.set("filters", self.data.query["filters"])
+        self.doc.set("limit", self.data.query["limit"])
+
+    def _update_subquery_references(self):
+        for old_name, new_name in self.imported_queries.items():
+            self._rename_subquery_in_table(old_name, new_name)
+            self._rename_subquery_in_joins(old_name, new_name)
+            self._rename_subquery_in_columns(old_name, new_name)
+            self._rename_subquery_in_filters(old_name, new_name)
+
+    def _rename_subquery_in_table(self, old_name, new_name):
+        for table in self.data.query["tables"]:
+            if table["table"] == old_name:
+                table["table"] = new_name
+
+    def _rename_subquery_in_joins(self, old_name, new_name):
+        for table in self.data.query["tables"]:
+            if not table["join"]:
+                continue
+            join = frappe.parse_json(table["join"])
+            if join["with"]["value"] == old_name:
+                join["with"]["value"] = new_name
+                join["with"]["table"] = new_name
+                table["join"] = dumps(join, indent=2)
+
+    def _rename_subquery_in_columns(self, old_name, new_name):
+        for column in self.data.query["columns"]:
+            if column["table"] == old_name:
+                column["table"] = new_name
+
+    def _rename_subquery_in_filters(self, old_name, new_name):
+        # do a hacky string replace for now
+        self.data.query["filters"] = self.data.query["filters"].replace(old_name, new_name)

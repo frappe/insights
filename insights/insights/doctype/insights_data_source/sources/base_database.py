@@ -103,9 +103,9 @@ class BaseDatabase:
 
     def set_row_limit(self, sql):
         # set a hard max limit to prevent long running queries
-        # there's no use case to view more than 1000 rows in the UI
-        # TODO: while exporting, we can remove this limit
-        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 1000
+        # there's no use case to view more than 500 rows in the UI
+        # TODO: while exporting as csv, we can remove this limit
+        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
         return add_limit_to_sql(sql, max_rows)
 
     def validate_native_sql(self, query):
