@@ -39,13 +39,18 @@ const percentDelta = computed(() => {
 	return (delta.value / previousValue.value) * 100
 })
 
-const formatNumber = (val, decimals = 0) => $utils.formatNumber(val, decimals)
+const formatNumber = (val, decimals = 0) => {
+	if (!props.options.hasOwnProperty('shorten') || props.options.shorten) {
+		return $utils.getShortNumber(val, decimals)
+	}
+	return $utils.formatNumber(val, decimals)
+}
 
 const trendLineOptions = computed(() => {
 	return {
 		animation: false,
 		grid: {
-			top: '-10%',
+			top: 0,
 			left: 0,
 			right: 0,
 			bottom: 0,
@@ -79,8 +84,13 @@ const trendLineOptions = computed(() => {
 </script>
 
 <template>
-	<div v-if="values" class="h-full w-full overflow-hidden px-8 py-4">
-		<div class="mx-auto flex h-full min-h-[10rem] w-full min-w-40 flex-col overflow-y-auto">
+	<div
+		v-if="values"
+		class="flex h-full w-full items-center justify-center overflow-hidden py-4 px-6"
+	>
+		<div
+			class="mx-auto flex h-full max-h-[10rem] min-h-[10rem] w-full min-w-40 max-w-[20rem] flex-col overflow-y-auto"
+		>
 			<div class="flex w-full justify-between space-x-4">
 				<div
 					class="overflow-hidden text-ellipsis whitespace-nowrap leading-6 text-gray-600"

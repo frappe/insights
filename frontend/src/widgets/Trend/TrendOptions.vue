@@ -13,10 +13,6 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-if (!options.hasOwnProperty('shorten')) {
-	options.value.shorten = true
-}
-
 const dateOptions = computed(() => {
 	return props.columns
 		?.filter((column) => FIELDTYPES.DATE.includes(column.type))
@@ -63,5 +59,6 @@ const valueOptions = computed(() => {
 			<Input type="text" v-model="options.suffix" placeholder="Enter a suffix..." />
 		</div>
 		<Checkbox v-model="options.showTrendLine" label="Show Trend Line" />
+		<Checkbox v-model="options.shorten" label="Shorten Numbers" />
 	</div>
 </template>

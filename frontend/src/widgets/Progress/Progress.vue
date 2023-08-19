@@ -34,10 +34,7 @@ const progressPercent = computed(() => {
 </script>
 
 <template>
-	<div
-		v-if="props.options.title"
-		class="flex h-full w-full items-center justify-center rounded p-6"
-	>
+	<div class="flex h-full w-full items-center justify-center rounded p-6">
 		<div class="h-fit w-full max-w-[22rem]">
 			<div>
 				<div class="w-full overflow-hidden text-ellipsis whitespace-nowrap leading-6">
@@ -64,7 +61,4 @@ const progressPercent = computed(() => {
 			</div>
 		</div>
 	</div>
-	<template v-else>
-		<slot name="placeholder"></slot>
-	</template>
 </template>

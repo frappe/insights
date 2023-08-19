@@ -73,7 +73,7 @@ function openQueryInNewTab() {
 	<div class="dashboard-item h-full min-h-[60px] w-full p-2 [&>div:first-child]:h-full">
 		<div
 			ref="itemRef"
-			class="group relative flex h-full rounded py-1"
+			class="group relative flex h-full rounded"
 			:class="{
 				' bg-white shadow': item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':
