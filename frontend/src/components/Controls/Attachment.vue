@@ -1,66 +1,75 @@
 <template>
 	<div class="flex flex-col text-base">
-		<span class="mb-2 block text-sm leading-4 text-gray-700"> Attach File </span>
+		<span class="mb-2 block text-sm leading-4 text-gray-700">
+			{{ label || 'Attach File' }}
+		</span>
 		<input
 			ref="fileInput"
 			id="attachment"
 			type="file"
-			accept=".csv"
+			:accept="fileType"
 			class="hidden"
-			:disabled="!!value"
+			:disabled="!!file"
 			@input="selectFile"
 		/>
 
 		<!-- Upload Button -->
-		<Button class="h-7 text-sm" v-if="!value" @click="upload">
-			<FeatherIcon name="upload" class="mr-1 inline-block h-3 w-3" /> Upload a file
+		<Button v-if="!file?.name" class="form-input h-7" @click="upload" :loading="uploading">
+			<FeatherIcon name="upload" class="mr-1 inline-block h-3 w-3" />
+			{{ placeholder || 'Upload a file' }}
 		</Button>
 
 		<!-- Clear Button -->
-		<Button class="h-7 text-sm" v-if="value && !isReadOnly" iconRight="x" @click="clear">
-			{{ value.name }}
+		<Button v-else class="form-input h-7" iconRight="x" @click="clear">
+			{{ file.file_name }}
 		</Button>
 	</div>
 </template>
-<script>
-import { convertFileToDataURL } from '@/utils'
-import { defineComponent } from 'vue'
 
-export default defineComponent({
-	props: {
-		value: Object,
-		isReadOnly: Boolean,
-		placeholder: String,
-		label: String,
-	},
-	methods: {
-		upload() {
-			this.$refs.fileInput.click()
-		},
-		clear() {
-			this.$refs.fileInput.value = ''
-			this.$emit('change', null)
-		},
-		async selectFile(e) {
-			const target = e.target
-			const file = target.files?.[0]
-			if (!file) {
-				return
-			}
+<script setup>
+import FileUploadHandler from 'frappe-ui/src/utils/fileUploadHandler'
+import { computed, ref } from 'vue'
 
-			const attachment = await this.getAttachment(file)
-			this.$emit('change', attachment)
-		},
-		async getAttachment(file) {
-			if (!file) {
-				return null
-			}
-
-			const name = file.name
-			const type = file.type
-			const data = await convertFileToDataURL(file, type)
-			return { name, type, data }
-		},
-	},
+const emit = defineEmits(['update:modelValue'])
+const props = defineProps({
+	modelValue: Object | null,
+	placeholder: String,
+	label: String,
+	fileType: String,
 })
+
+const file = computed({
+	get: () => props.modelValue,
+	set: (val) => emit('update:modelValue', val),
+})
+
+const fileInput = ref(null)
+function upload() {
+	fileInput.value.click()
+}
+function clear() {
+	fileInput.value.value = ''
+	file.value = null
+}
+
+const uploading = ref(false)
+async function selectFile(e) {
+	const newFile = e.target.files?.[0]
+	if (!newFile) return
+
+	uploading.value = true
+	const uploader = new FileUploadHandler()
+	uploader
+		.upload(newFile, {})
+		.then((data) => {
+			file.value = data
+		})
+		.catch((error) => {
+			file.value = null
+			console.error(error)
+		})
+		.finally(() => {
+			uploading.value = false
+		})
+}
 </script>

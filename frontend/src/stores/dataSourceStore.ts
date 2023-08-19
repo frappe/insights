@@ -8,7 +8,16 @@ const useDataSourceStore = defineStore('insights:data_sources', () => {
 		doctype: 'Insights Data Source',
 		cache: 'dataSourceList',
 		filters: {},
-		fields: ['name', 'title', 'status', 'creation', 'modified', 'is_site_db', 'database_type'],
+		fields: [
+			'name',
+			'title',
+			'status',
+			'creation',
+			'modified',
+			'is_site_db',
+			'database_type',
+			'allow_imports',
+		],
 		orderBy: 'creation desc',
 		auto: true,
 	})
@@ -25,13 +34,15 @@ const useDataSourceStore = defineStore('insights:data_sources', () => {
 				return dataSource
 			}) || []
 	)
-	const dropdownOptions = computed<DropdownOption[]>(() =>
-		list.value.map((dataSource: DataSourceListItem) => ({
+	const dropdownOptions = computed<DropdownOption[]>(() => list.value.map(makeDropdownOption))
+
+	function makeDropdownOption(dataSource: DataSourceListItem): DropdownOption {
+		return {
 			label: dataSource.title,
 			value: dataSource.name,
 			description: dataSource.database_type,
-		}))
-	)
+		}
+	}
 
 	return {
 		list,
@@ -41,8 +52,22 @@ const useDataSourceStore = defineStore('insights:data_sources', () => {
 		creating: api.createDataSource.loading,
 		deleting: listResource.delete.loading,
 		create: (args: any) => api.createDataSource.submit(args).then(() => listResource.list.reload()),
-		delete: (name: string) => listResource.delete.submit(name).then(() => listResource.list.reload()),
+		delete: (name: string) =>
+			listResource.delete.submit(name).then(() => listResource.list.reload()),
 		testConnection: (args: any) => api.testDataSourceConnection.submit(args),
+		getDropdownOptions: (filters: any) => {
+			// filters = {is_site_db: 1}
+			const filteredDataSources = list.value.filter((dataSource: DataSourceListItem) => {
+				for (const key in filters) {
+					const k = key as keyof DataSourceListItem
+					if (dataSource[k] != filters[k]) {
+						return false
+					}
+				}
+				return true
+			})
+			return filteredDataSources.map(makeDropdownOption)
+		},
 	}
 })
 

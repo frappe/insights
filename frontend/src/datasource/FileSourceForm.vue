@@ -1,4 +1,6 @@
 <script setup>
+import Attachment from '@/components/Controls/Attachment.vue'
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import { FileUploader, createResource } from 'frappe-ui'
 import { computed, reactive, ref, watch } from 'vue'
@@ -10,6 +12,7 @@ const columnTypes = ['String', 'Integer', 'Decimal', 'Date', 'Datetime']
 const table = reactive({
 	label: '',
 	name: '',
+	data_source: '',
 	file: null,
 	ifExists: 'Overwrite',
 })
@@ -32,7 +35,14 @@ function removeColumn(column) {
 	columns.value = columns.value.filter((c) => c.column !== column)
 }
 
-const importDisabled = computed(() => !table.label || !table.file || columns.length === 0)
+const importDisabled = computed(
+	() =>
+		!table.data_source ||
+		!table.label ||
+		!table.file ||
+		columns.length === 0 ||
+		importingTable.value
+)
 watch(
 	() => table.file,
 	(newFile) => {
@@ -48,6 +58,7 @@ const import_csv = createResource({
 	url: 'insights.api.import_csv',
 })
 
+const dataSourceStore = useDataSourceStore()
 const importingTable = ref(false)
 function submit() {
 	importingTable.value = true
@@ -57,11 +68,11 @@ function submit() {
 		filename: table.file.name,
 		if_exists: table.ifExists,
 		columns: columns.value,
+		data_source: table.data_source,
 	}
 	import_csv
 		.submit(data)
 		.then(() => {
-			useDataSourceStore().reload()
 			emit('submit')
 			reset()
 		})
@@ -76,14 +87,15 @@ function reset() {
 	table.name = ''
 	table.file = null
 	table.ifExists = 'Overwrite'
+	table.data_source = ''
 	columns.value = []
 	importingTable.value = false
 }
 </script>
 
 <template>
-	<div v-if="!table.file">
-		<FileUploader @success="(file) => (table.file = file)">
+	<div>
+		<FileUploader v-if="false" @success="(file) => (table.file = file)">
 			<template #default="{ progress, uploading, openFileSelector }">
 				<div
 					class="flex cursor-pointer flex-col items-center justify-center rounded border border-dashed border-gray-300 p-8 text-base"
@@ -97,46 +109,61 @@ function reset() {
 						<p v-else class="text-center font-medium text-blue-500">
 							Uploading... ({{ progress }}%)
 						</p>
-						<p v-if="!uploading" class="text-center text-xs">
+						<p v-if="!uploading" class="mt-1 text-center text-xs">
 							Only CSV files upto 10MB
 						</p>
 					</div>
 				</div>
 			</template>
 		</FileUploader>
-	</div>
-	<div v-else>
-		<div class="mb-4 flex gap-4">
-			<div class="flex flex-1 flex-col space-y-3">
+		<div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+			<transition-group name="fade">
+				<div>
+					<span class="mb-2 block text-sm leading-4 text-gray-700">Data Source</span>
+					<Autocomplete
+						v-model="table.data_source"
+						:options="dataSourceStore.getDropdownOptions({ allow_imports: 1 })"
+						placeholder="Select Data Source"
+					/>
+				</div>
+				<Attachment
+					v-model="table.file"
+					label="File"
+					fileType=".csv"
+					placeholder="Upload CSV File"
+				/>
 				<Input
+					v-if="table.file"
 					label="New Table Label"
 					type="text"
 					placeholder="eg. Sales Data"
 					v-model="table.label"
 				/>
 				<Input
+					v-if="table.file"
 					label="New Table Name"
 					type="text"
 					placeholder="eg. sales_data"
 					v-model="table.name"
 				/>
-			</div>
-			<div class="flex flex-1 flex-col space-y-3">
 				<Input
+					v-if="table.file"
 					type="select"
 					label="Action if exists"
 					v-model="table.ifExists"
 					:options="['Fail', 'Overwrite', 'Append']"
 				/>
-			</div>
+			</transition-group>
 		</div>
-		<span class="text-base font-medium leading-6 text-gray-900"> Columns Mapping </span>
+	</div>
+	<div v-if="table.data_source && table.file" class="mt-4">
+		<span class="text-base font-medium leading-6 text-gray-900"> Columns </span>
 		<div
 			v-if="columns?.length"
 			class="mt-2 flex max-h-[15rem] flex-col overflow-hidden text-base"
 		>
 			<div
-				class="sticky right-0 top-0 z-10 flex h-8 w-full cursor-pointer items-center space-x-8 pr-8 pb-2 text-xs uppercase text-gray-600"
+				class="sticky right-0 top-0 z-10 flex h-8 w-full cursor-pointer items-center space-x-8 pr-8 pb-1 text-xs uppercase text-gray-600"
 			>
 				<span class="flex-1"> CSV Column </span>
 				<span class="flex-1"> Column Name </span>
@@ -188,18 +215,17 @@ function reset() {
 			No columns found in the uploaded file.<br />
 			Please upload a different file.
 		</div>
-
-		<div class="mt-6 flex justify-between pt-2" v-if="table.file">
-			<div class="ml-auto flex items-center space-x-2">
-				<Button
-					variant="solid"
-					@click="submit"
-					:disabled="importDisabled"
-					:loading="importingTable"
-				>
-					Import
-				</Button>
-			</div>
+	</div>
+	<div class="mt-4 flex justify-between pt-2">
+		<div class="ml-auto flex items-center space-x-2">
+			<Button
+				variant="solid"
+				@click="submit"
+				:disabled="importDisabled"
+				:loading="importingTable"
+			>
+				Import
+			</Button>
 		</div>
 	</div>
 </template>
