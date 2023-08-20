@@ -1,6 +1,6 @@
 <script setup>
 import useDashboards from '@/dashboard/useDashboards'
-import useDataSources from '@/datasource/useDataSources'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { FileUploader } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
 
@@ -12,8 +12,7 @@ const show = computed({
 	set: (value) => emit('update:show', value),
 })
 
-const dataSources = useDataSources()
-dataSources.reload()
+const dataSourceStore = useDataSourceStore()
 
 const dashboards = useDashboards()
 const dashboardFile = ref(null)
@@ -111,9 +110,7 @@ function importDashboard() {
 								v-model="dataSourceMap[dataSource]"
 								:options="
 									[{ label: 'Select Data Source', value: '' }].concat(
-										dataSources.list.map((d) => {
-											return { label: d.title, value: d.name }
-										})
+										dataSourceStore.dropdownOptions
 									)
 								"
 							/>
