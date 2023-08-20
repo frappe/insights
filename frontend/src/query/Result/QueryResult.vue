@@ -88,7 +88,7 @@
 						<Button
 							variant="solid"
 							class="!rounded bg-gray-900 text-gray-50 !shadow-md hover:bg-gray-800"
-							@click="query.debouncedRun()"
+							@click="query.execute()"
 							:loading="query.run.loading"
 							loadingText="Executing..."
 						>
