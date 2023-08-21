@@ -3,9 +3,10 @@ import UseTooltip from '@/components/UseTooltip.vue'
 import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { FIELDTYPES, isDimensionColumn } from '@/utils'
 import { dateFormats } from '@/utils/format'
+import { Sigma } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
 import useQuery from '../useQuery'
-import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
+import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import ColumnSelector from './ColumnSelector.vue'
 import InputWithPopover from './InputWithPopover.vue'
 import OperatorSelector from './OperatorSelector.vue'
@@ -49,7 +50,7 @@ const GET_EMPTY_FILTER = () => ({
 	operator: {},
 	value: {},
 })
-const COLUMN = {
+const GET_EMPTY_COLUMN = () => ({
 	table: '',
 	column: '',
 	label: '',
@@ -60,8 +61,7 @@ const COLUMN = {
 	aggregation: '',
 	format: {},
 	expression: {},
-}
-const GET_EMPTY_COLUMN = () => COLUMN
+})
 
 function addStep(type) {
 	if (type == 'Summarise') {
@@ -158,16 +158,6 @@ const selectedColumns = computed(() => {
 	return columns
 })
 
-const COLUMN_TYPES = [
-	{ label: 'String', value: 'String' },
-	{ label: 'Integer', value: 'Integer' },
-	{ label: 'Decimal', value: 'Decimal' },
-	{ label: 'Text', value: 'Text' },
-	{ label: 'Datetime', value: 'Datetime' },
-	{ label: 'Date', value: 'Date' },
-	{ label: 'Time', value: 'Time' },
-]
-
 async function autoSelectJoinColumns(join) {
 	if (!join.left_table?.table || !join.right_table?.table) return
 	if (join.left_column?.table || join.right_column?.table) return
@@ -194,6 +184,8 @@ async function autoSelectJoinColumns(join) {
 }
 
 const addStepRef = ref(null)
+const currentExpressionIndex = ref(null)
+const showColumnExpressionEditor = ref(false)
 </script>
 
 <template>
@@ -268,39 +260,41 @@ const addStepRef = ref(null)
 			</QueryBuilderRow>
 
 			<!-- Expressions -->
-			<QueryBuilderRow
-				v-if="state.calculations.length"
-				v-for="(calc, index) in state.calculations"
-				:key="index"
-				label="Calculate Column"
-				:actions="[
-					{
-						icon: 'x',
-						onClick: () => state.calculations.splice(index, 1),
-					},
-				]"
-			>
-				<div
-					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
-				>
-					<ColumnExpressionSelector v-model="calc.expression" />
-				</div>
-
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
-				<div
-					class="flex h-fit items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
-				>
-					<ResizeableInput
-						placeholder="Label"
-						v-model="calc.alias"
-						@update:modelValue="calc.label = $event"
-					/>
-					<InputWithPopover
-						:items="COLUMN_TYPES"
-						placeholder="Type"
-						:value="findByValue(COLUMN_TYPES, calc.type)"
-						@update:modelValue="(v) => (calc.type = v.value)"
-					/>
+			<QueryBuilderRow v-if="state.calculations.length" label="Calculate">
+				<div class="flex space-x-2.5">
+					<div v-for="(calc, index) in state.calculations" :key="index">
+						<div
+							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+						>
+							<div
+								class="flex h-7 cursor-pointer items-center px-2.5 leading-7"
+								:class="calc.label ? 'text-gray-900' : 'text-gray-500'"
+								@click="
+									() => {
+										currentExpressionIndex = index
+										showColumnExpressionEditor = true
+									}
+								"
+							>
+								<Sigma class="mr-1.5 inline-block h-3.5 w-3.5" />
+								{{ calc.label || 'Edit Column' }}
+							</div>
+							<Button
+								icon="x"
+								variant="ghost"
+								class="!rounded-none !text-gray-600"
+								@click.prevent.stop="state.calculations.splice(index, 1)"
+							>
+							</Button>
+						</div>
+					</div>
+					<Button
+						icon="plus"
+						variant="ghost"
+						class="!ml-1 !text-gray-600"
+						@click="state.calculations.push({ ...GET_EMPTY_COLUMN() })"
+					>
+					</Button>
 				</div>
 			</QueryBuilderRow>
 
@@ -583,12 +577,27 @@ const addStepRef = ref(null)
 			</div>
 		</div>
 	</div>
-</template>
 
-<style lang="scss">
-.cm-editor {
-	user-select: text;
-	padding: 0px !important;
-	background-color: white !important;
-}
-</style>
+	<Dialog
+		v-model="showColumnExpressionEditor"
+		:options="{ title: 'Calculate Column' }"
+		dismissable
+	>
+		<template #body-content>
+			<ColumnExpressionEditor
+				:column="state.calculations[currentExpressionIndex]"
+				@update:column="
+					(column) => {
+						const toUpdate = state.calculations[currentExpressionIndex]
+						state.calculations[currentExpressionIndex] = {
+							...toUpdate,
+							...column,
+						}
+						showColumnExpressionEditor = false
+						currentExpressionIndex = null
+					}
+				"
+			/>
+		</template>
+	</Dialog>
+</template>
