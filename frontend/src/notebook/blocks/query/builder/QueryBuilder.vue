@@ -138,8 +138,8 @@ function findByValue(array, value, defaultValue = {}) {
 }
 
 const ORDER = [
-	{ value: 'asc', label: 'Ascending' },
-	{ value: 'desc', label: 'Descending' },
+	{ value: 'asc', label: 'Asc' },
+	{ value: 'desc', label: 'Desc' },
 ]
 
 function isValidColumn(column) {
@@ -489,36 +489,42 @@ const showColumnExpressionEditor = ref(false)
 			</div>
 
 			<!-- Order By -->
-			<QueryBuilderRow
-				v-if="state.orders.length"
-				v-for="(order, index) in state.orders"
-				:key="index"
-				label="Sort by"
-				:actions="[
-					{
-						icon: 'x',
-						onClick: () => state.orders.splice(index, 1),
-					},
-				]"
-			>
-				<Suspense>
-					<ColumnSelector
-						class="flex rounded text-gray-800 shadow"
-						:data_source="query.doc.data_source"
-						:tables="selectedTables"
-						:localColumns="selectedColumns"
-						v-model="state.orders[index]"
-					/>
-				</Suspense>
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">in</div>
-				<InputWithPopover
-					class="flex rounded text-gray-800 shadow"
-					:value="findByValue(ORDER, order.order)"
-					placeholder="Ascending"
-					:items="ORDER"
-					@update:modelValue="(v) => (order.order = v.value)"
-				/>
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">order</div>
+			<QueryBuilderRow v-if="state.orders.length" label="Sort by">
+				<div class="flex space-x-2.5">
+					<div v-for="(order, index) in state.orders" :key="index">
+						<div
+							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+						>
+							<Suspense>
+								<ColumnSelector
+									:data_source="query.doc.data_source"
+									:tables="selectedTables"
+									:localColumns="selectedColumns"
+									v-model="state.orders[index]"
+								/>
+							</Suspense>
+							<InputWithPopover
+								:value="findByValue(ORDER, order.order, ORDER[0])"
+								:items="ORDER"
+								@update:modelValue="(v) => (order.order = v.value)"
+							/>
+							<Button
+								icon="x"
+								variant="ghost"
+								class="!rounded-none !text-gray-600"
+								@click.prevent.stop="state.orders.splice(index, 1)"
+							>
+							</Button>
+						</div>
+					</div>
+					<Button
+						icon="plus"
+						variant="ghost"
+						class="!ml-1 !text-gray-600"
+						@click="state.orders.push({ ...GET_EMPTY_COLUMN(), order: 'asc' })"
+					>
+					</Button>
+				</div>
 			</QueryBuilderRow>
 
 			<!-- Limit -->
