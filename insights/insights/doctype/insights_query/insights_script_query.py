@@ -4,16 +4,7 @@
 
 import frappe
 import pandas as pd
-import RestrictedPython.Guards
-from frappe.utils.safe_exec import (
-    NamespaceDict,
-    _getattr,
-    _getitem,
-    _write,
-    add_data_utils,
-    compile_restricted,
-    get_python_builtins,
-)
+from frappe.utils.safe_exec import compile_restricted, get_safe_globals
 
 from insights import notify
 
@@ -113,8 +104,7 @@ class InsightsScriptQueryController:
 
 
 def get_safe_exec_globals():
-    datautils = frappe._dict()
-    add_data_utils(datautils)
+    safe_globals = get_safe_globals()
 
     pandas = frappe._dict()
     pandas.DataFrame = pd.DataFrame
@@ -123,21 +113,6 @@ def get_safe_exec_globals():
     # mock out to_csv and to_json to prevent users from writing to disk
     pandas.DataFrame.to_csv = lambda *args, **kwargs: None
     pandas.DataFrame.to_json = lambda *args, **kwargs: None
+    safe_globals.pandas = pandas
 
-    out = NamespaceDict(
-        utils=datautils,
-        as_json=frappe.as_json,
-        parse_json=frappe.parse_json,
-        make_get_request=frappe.integrations.utils.make_get_request,
-        pandas=pandas,
-        log=frappe.log,
-    )
-
-    out._write_ = _write
-    out._getitem_ = _getitem
-    out._getattr_ = _getattr
-    out._getiter_ = iter
-    out._iter_unpack_sequence_ = RestrictedPython.Guards.guarded_iter_unpack_sequence
-    out.update(get_python_builtins())
-
-    return out
+    return safe_globals
