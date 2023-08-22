@@ -34,25 +34,27 @@ function makeQuery(name) {
 		resultColumns: [],
 	})
 
-	state.reload = async function () {
-		return resource.get.fetch().then((doc) => {
-			state.doc = doc
-			state.isOwner = state.doc.owner == auth.user.user_id
-			state.loading = false
-			state.unsaved = false
-		})
+	state.reload = async () => {
+		return resource.get.fetch().then(() => state.syncDoc())
+	}
+
+	state.syncDoc = async function () {
+		state.doc = resource.doc
+		state.isOwner = state.doc.owner == auth.user.user_id
+		state.loading = false
+		state.unsaved = false
 	}
 
 	state.convertToNative = async function () {
 		state.loading = true
 		await resource.convert_to_native.submit()
-		await state.reload()
+		await state.syncDoc()
 		state.loading = false
 	}
 	state.convertToAssisted = async function () {
 		state.loading = true
 		await resource.convert_to_assisted.submit()
-		await state.reload()
+		await state.syncDoc()
 		state.loading = false
 	}
 
@@ -66,7 +68,7 @@ function makeQuery(name) {
 		await state.save()
 		await resource.run
 			.submit()
-			.then(() => state.reload())
+			.then(() => state.syncDoc())
 			.catch((e) => {
 				console.error(e)
 			})
@@ -77,7 +79,7 @@ function makeQuery(name) {
 		state.loading = true
 		const updatedFields = getUpdatedFields()
 		await resource.setValue.submit(updatedFields)
-		await state.reload()
+		await state.syncDoc()
 		state.loading = false
 	}
 
@@ -92,24 +94,20 @@ function makeQuery(name) {
 		return updatedFields
 	}
 
-	watchOnce(
-		() => state.autosave,
-		() => {
-			const saveIfChanged = throttle(function (newVal, oldVal) {
-				if (!oldVal || !newVal) return
-				if (state.loading) return
-				if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
-				state.save()
-			}, 3000)
-			// TODO: fix the weird bug where the inputs are not selected when auto-saving
-			watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+	watchOnce(() => state.autosave, setupAutosaveListener)
+
+	function setupAutosaveListener() {
+		const saveIfChanged = function (newVal, oldVal) {
+			if (!oldVal || !newVal) return
+			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
+			state.save()
 		}
-	)
+		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+	}
 
 	const setUnsaved = (newVal, oldVal) => {
 		if (state.unsaved) return
 		if (!oldVal || !newVal) return
-		if (state.loading) return
 		if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
 		state.unsaved = true
 	}
@@ -142,7 +140,7 @@ function makeQuery(name) {
 	state.updateDoc = async (doc) => {
 		state.loading = true
 		await resource.setValue.submit(doc)
-		await state.reload()
+		await state.syncDoc()
 		state.loading = false
 	}
 

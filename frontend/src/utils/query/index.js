@@ -27,9 +27,9 @@ export function useQuery(name) {
 		query.beforeExecuteFns.push(fn)
 	}
 	query.execute = async () => {
+		query.run.loading = true
 		if (query.beforeExecuteFns.length) {
 			await Promise.all(query.beforeExecuteFns.map((fn) => fn()))
-			await query.get.fetch()
 		}
 		return query.debouncedRun(null, {
 			onSuccess() {
@@ -52,6 +52,7 @@ export function useQuery(name) {
 		await query.setValue.submit(doc)
 	}
 
+	window.queryTwo = query
 	return query
 }
 

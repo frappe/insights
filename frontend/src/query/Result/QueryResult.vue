@@ -124,9 +124,7 @@ const isNumberColumn = computed(() => {
 })
 
 if (settings.auto_execute_query) {
-	watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && query.execute(), {
-		immediate: true,
-	})
+	watch(needsExecution, (newVal, oldVal) => newVal && !oldVal && query.execute())
 }
 
 const executionTime = computed(() => {
