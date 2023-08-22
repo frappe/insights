@@ -72,6 +72,7 @@ def get_table_name(data_source, table):
 
 @frappe.whitelist()
 @check_role("Insights User")
+@redis_cache(ttl=60 * 60 * 24)
 def get_tables(data_source=None, with_query_tables=False):
     if not data_source:
         return []

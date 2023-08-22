@@ -49,13 +49,13 @@ const filteredSourceOptions = computed(() => {
 const tablePopover = ref(null)
 const tableSearchTerm = ref('')
 const filteredTableOptions = computed(() => {
-	if (!tableSearchTerm.value) return tableOptions.value
+	if (!tableSearchTerm.value) return tableOptions.value.slice(0, 50)
 	if (!tableOptions.value) return []
 	return tableOptions.value
 		.filter((option) =>
 			option.label.toLowerCase().includes(tableSearchTerm.value.toLowerCase())
 		)
-		.slice(0, 25)
+		.slice(0, 50)
 })
 function handleTableSelect(selectedTable) {
 	selectedDataSource.value = null
