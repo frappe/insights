@@ -676,7 +676,7 @@ class SQLQueryBuilder:
                 }
             )
 
-        def make_sql_column(column):
+        def make_sql_column(column, for_filter=False):
             _column = self.make_column(column.column, column.table)
             if column.is_expression():
                 _column = self.expression_processor.process(column.expression.ast)
@@ -684,7 +684,7 @@ class SQLQueryBuilder:
             if column.is_aggregate():
                 _column = self.aggregations.apply(column.aggregation, _column)
 
-            if column.has_granularity():
+            if column.has_granularity() and not for_filter:
                 _column = self.column_formatter.format_date(column.granularity, _column)
             return _column.label(column.alias)
 
@@ -693,7 +693,7 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
-                _column = self.make_column(fltr.column.column, fltr.column.table)
+                _column = make_sql_column(fltr.column, for_filter=True)
                 filter_value = fltr.value.value
                 operator = fltr.operator.value
 
