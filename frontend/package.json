@@ -1,7 +1,10 @@
 {
-	"name": "frappe-ui-frontend",
+	"name": "insights-frontend",
 	"private": true,
 	"version": "0.0.0",
+	"engines" : { 
+    "node" : ">=16.0.0"
+  },
 	"scripts": {
 		"dev": "vite",
 		"serve": "vite preview",
