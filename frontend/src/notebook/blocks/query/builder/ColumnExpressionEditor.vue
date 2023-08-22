@@ -132,7 +132,7 @@ function updateColumn() {
 			v-model="expressionColumn.label"
 			placeholder="Label"
 		/>
-		<Input label="Type" type="select" :options="COLUMN_TYPES" :column="expressionColumn.type" />
+		<Input label="Type" type="select" :options="COLUMN_TYPES" v-model="expressionColumn.type" />
 	</div>
 
 	<Button class="mt-8 w-full" variant="solid" label="Apply Changes" @click="updateColumn" />
