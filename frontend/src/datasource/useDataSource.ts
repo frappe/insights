@@ -5,7 +5,6 @@ import { computed, reactive, ref, UnwrapRef } from 'vue'
 function useDataSource(name: string) {
 	const cacheStore = useCacheStore()
 	if (cacheStore.getDataSource(name)) {
-		console.log('data source -> cache hit')
 		return cacheStore.getDataSource(name)
 	}
 

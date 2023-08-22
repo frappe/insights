@@ -14,7 +14,6 @@ async function useDataSourceTable(params: GetTableParams) {
 
 	const cacheStore = useCacheStore()
 	if (cacheStore.getTable(name)) {
-		console.log('table -> cache hit')
 		return cacheStore.getTable(name)
 	}
 
