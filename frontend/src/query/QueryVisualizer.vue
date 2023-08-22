@@ -26,30 +26,32 @@
 		<div
 			class="relative flex h-full min-h-[30rem] w-full flex-1 flex-col space-y-3 overflow-hidden lg:w-auto"
 		>
-			<div class="ml-4 flex space-x-2">
+			<div class="ml-4 flex flex-shrink-0 space-x-2">
 				<Button variant="outline" @click="showDashboardDialog = true">
 					Add to Dashboard
 				</Button>
 				<Button variant="outline" @click="showShareDialog = true"> Share </Button>
 			</div>
-			<component
-				v-if="chart.doc.chart_type"
-				ref="widget"
-				:is="widgets.getComponent(chart.doc.chart_type)"
-				:data="chart.data"
-				:options="chart.doc.options"
-				:key="JSON.stringify(chart.doc.options)"
-			>
-				<template #placeholder>
-					<InvalidWidget
-						class="absolute"
-						title="Insufficient options"
-						message="Please check the options for this chart"
-						icon="settings"
-						icon-class="text-gray-500"
-					/>
-				</template>
-			</component>
+			<div class="flex-1">
+				<component
+					v-if="chart.doc.chart_type"
+					ref="widget"
+					:is="widgets.getComponent(chart.doc.chart_type)"
+					:data="chart.data"
+					:options="chart.doc.options"
+					:key="JSON.stringify(chart.doc.options)"
+				>
+					<template #placeholder>
+						<InvalidWidget
+							class="absolute"
+							title="Insufficient options"
+							message="Please check the options for this chart"
+							icon="settings"
+							icon-class="text-gray-500"
+						/>
+					</template>
+				</component>
+			</div>
 		</div>
 
 		<PublicShareDialog
