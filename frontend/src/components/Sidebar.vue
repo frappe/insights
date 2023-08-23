@@ -126,7 +126,7 @@ import {
 	Database,
 	GanttChartSquare,
 	HomeIcon,
-	LayoutDashboard,
+	LayoutPanelTop,
 	Settings,
 	User,
 	Users,
@@ -149,7 +149,7 @@ const sidebarItems = ref([
 	{
 		path: '/dashboard',
 		label: 'Dashboards',
-		icon: LayoutDashboard,
+		icon: LayoutPanelTop,
 		name: 'Dashboard',
 		current: false,
 	},
