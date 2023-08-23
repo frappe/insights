@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, inject, watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 
 import LinkIcon from '@/components/Controls/LinkIcon.vue'
 import { getQueryLink } from '@/utils'
@@ -83,7 +83,14 @@ const props = defineProps({
 })
 
 const query = inject('query')
-const join = ref({ with: {}, condition: {}, type: { label: 'Left', value: 'left' } })
+const join = ref({
+	type: { label: 'Left', value: 'left' },
+	with: {},
+	condition: {
+		left: {},
+		right: {},
+	},
+})
 const editTable = ref({ ...props.table }) // table that is being edited
 
 if (editTable.value.join) {
