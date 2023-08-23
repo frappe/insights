@@ -1,4 +1,5 @@
 <script setup>
+import { getShortNumber } from '@/utils'
 import useDashboards from '@/dashboard/useDashboards'
 const props = defineProps({
 	dashboard: { type: Object, required: true },
@@ -39,9 +40,15 @@ function toggleFavourite() {
 						<FeatherIcon name="arrow-right" class="h-4 w-4 text-gray-600" />
 					</div>
 					<div class="flex items-end justify-between">
-						<div class="flex h-6 items-center text-sm text-gray-600">
-							<FeatherIcon name="bar-chart-2" class="mr-1 h-4 w-4" />
-							{{ dashboard.charts.length }}
+						<div class="flex gap-2">
+							<div class="flex h-6 items-center text-sm text-gray-600">
+								<FeatherIcon name="eye" class="mr-1 h-4 w-4" />
+								{{ getShortNumber(dashboard.view_count) }}
+							</div>
+							<div class="flex h-6 items-center text-sm text-gray-600">
+								<FeatherIcon name="bar-chart-2" class="mr-1 h-4 w-4" />
+								{{ dashboard.charts.length }}
+							</div>
 						</div>
 
 						<div class="flex h-6 items-center text-sm text-gray-600">

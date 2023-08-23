@@ -114,6 +114,10 @@ def get_dashboard_list():
             pluck="parent",
         )
         dashboard["charts_count"] = len(dashboard["charts"])
+        dashboard["view_count"] = frappe.db.count(
+            "View Log",
+            filters={"reference_doctype": "Insights Dashboard", "reference_name": dashboard.name},
+        )
 
         dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
 
