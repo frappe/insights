@@ -3,6 +3,7 @@
 
 
 import frappe
+from pypika.functions import Max
 
 
 @frappe.whitelist()
@@ -25,15 +26,19 @@ def get_last_viewed_records():
     TRACKED_DOCTYPES = ["Insights Query", "Insights Dashboard", "Insights Notebook Page"]
     records = (
         frappe.qb.from_(ViewLog)
-        .select(ViewLog.reference_doctype, ViewLog.reference_name, ViewLog.creation)
+        .select(
+            ViewLog.reference_doctype,
+            ViewLog.reference_name,
+            Max(ViewLog.modified).as_("creation"),
+        )
         .where(
             (ViewLog.viewed_by == frappe.session.user)
             & ViewLog.reference_doctype.isin(TRACKED_DOCTYPES)
         )
-        .orderby(ViewLog.creation, order=frappe.qb.desc)
         .groupby(ViewLog.reference_doctype, ViewLog.reference_name)
-        .limit(10)
-        .run(as_dict=True)
+        .orderby(Max(ViewLog.modified).as_("creation"), order=frappe.qb.desc)
+        .limit(20)
+        .run(as_dict=True, debug=1)
     )
     fetch_titles(records)
     fetch_notebook_names(records)
