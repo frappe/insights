@@ -4,7 +4,7 @@ import UsePopover from '@/components/UsePopover.vue'
 import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'
-import { inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 
 const query = inject('query')
 const emit = defineEmits(['update:column'])
@@ -90,6 +90,15 @@ function setCompletionPosition() {
 	completion.setAttribute('style', `left: ${left}px !important; top: ${top + 20}px !important;`)
 }
 
+const applyDisabled = computed(() => {
+	return (
+		!expressionColumn.value.label ||
+		!expressionColumn.value.type ||
+		!expressionColumn.value.expression.raw ||
+		!expressionColumn.value.expression.ast
+	)
+})
+
 function updateColumn() {
 	emit('update:column', { ...expressionColumn.value })
 	expressionColumn.value = {
@@ -135,16 +144,22 @@ function updateColumn() {
 		<Input label="Type" type="select" :options="COLUMN_TYPES" v-model="expressionColumn.type" />
 	</div>
 
-	<Button class="mt-8 w-full" variant="solid" label="Apply Changes" @click="updateColumn" />
+	<Button
+		class="mt-8 w-full"
+		variant="solid"
+		label="Apply Changes"
+		:disabled="applyDisabled"
+		@click="updateColumn"
+	/>
 
 	<UsePopover
 		v-if="codeEditor"
 		:show="focused && Boolean(helpInfo)"
 		:targetElement="codeEditor"
-		placement="right-start"
+		placement="left-start"
 		:key="helpInfoRefreshKey"
 	>
-		<div class="flex w-[10rem] flex-col space-y-1.5 text-sm transition-all">
+		<div class="-ml-[20rem] flex w-[10rem] flex-col space-y-1.5 text-sm transition-all">
 			<div v-show="helpInfo" class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg">
 				<p>{{ helpInfo?.description }}</p>
 				<div class="mt-2 rounded bg-gray-50 p-2 text-xs leading-5">

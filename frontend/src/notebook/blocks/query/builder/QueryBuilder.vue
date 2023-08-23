@@ -110,7 +110,7 @@ const AGGREGATIONS = [
 	{ label: 'Unique count of', value: 'distinct_count' },
 	{ label: 'Minimum of', value: 'min' },
 	{ label: 'Maximum of', value: 'max' },
-	{ label: 'Custom', value: 'custom' },
+	{ label: 'Σ', value: 'custom', description: 'Custom aggregation' },
 ]
 function setAggregation(aggregation, measure) {
 	if (aggregation.value == 'count') {
@@ -395,7 +395,12 @@ const showColumnExpressionEditor = ref(false)
 				<div class="flex space-x-2.5">
 					<div v-for="(measure, index) in state.measures" :key="index">
 						<div
-							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+							class="flex items-center overflow-hidden rounded text-gray-800 shadow"
+							:class="
+								measure.aggregation != 'custom'
+									? 'divide-x divide-gray-400'
+									: '-space-x-3'
+							"
 						>
 							<InputWithPopover
 								:value="findByValue(AGGREGATIONS, measure.aggregation)"
@@ -404,19 +409,24 @@ const showColumnExpressionEditor = ref(false)
 								:items="AGGREGATIONS"
 							/>
 
-							<Suspense v-if="measure.aggregation != 'custom'">
+							<Suspense v-if="measure.aggregation == 'custom'">
+								<!-- if custom aggregation, show local columns only -->
 								<ColumnSelector
-									v-if="measure.aggregation !== 'count'"
-									:localColumns="selectedColumns"
-									:data_source="query.doc.data_source"
-									:tables="selectedTables"
+									:localColumns="
+										state.calculations
+											.filter(isValidColumn)
+											.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+									"
 									v-model="state.measures[index]"
 									@update:model-value="(c) => (measure.alias = c.label)"
 								/>
 							</Suspense>
 							<Suspense v-else>
 								<ColumnSelector
+									v-if="measure.aggregation !== 'count'"
 									:localColumns="selectedColumns"
+									:data_source="query.doc.data_source"
+									:tables="selectedTables"
 									v-model="state.measures[index]"
 									@update:model-value="(c) => (measure.alias = c.label)"
 								/>
