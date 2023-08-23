@@ -17,7 +17,7 @@ const props = defineProps({
 	operator: Object,
 	modelValue: Object,
 })
-const value = computed({
+const modelValue = computed({
 	get: () => props.modelValue,
 	set: (value) => emit('update:modelValue', value),
 })
@@ -63,12 +63,22 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 			search_text,
 		})
 		columnValues.value = values.map((value) => ({ label: value, value }))
+		// prepend the selected value to the list
+		if (Array.isArray(modelValue.value.value)) {
+			// modelValue.value = {label: '2 selected', value: [{ label: '', value: ''}, ...]}
+			modelValue.value.value.forEach((selectedOption) => {
+				if (!columnValues.value.find((v) => v.value === selectedOption.value)) {
+					columnValues.value.unshift(selectedOption)
+				}
+			})
+		}
 		fetchingColumnValues.value = false
 	}
 }, 300)
 whenever(
 	() => selectorType.value == 'combobox',
-	() => checkAndFetchColumnValues()
+	() => checkAndFetchColumnValues(),
+	{ immediate: true }
 )
 const ColumnValueCombobox = (props) => (
 	<Combobox
@@ -126,14 +136,14 @@ const selectorComponentMap = {
 <template>
 	<ResizeableInput
 		v-if="selectorType === 'text'"
-		v-model="value.value"
+		v-model="modelValue.value"
 		placeholder="Type a value"
-		@update:modelValue="value = { value: $event, label: $event }"
+		@update:modelValue="modelValue = { value: $event, label: $event }"
 	></ResizeableInput>
 
 	<InputWithPopover
 		v-else
-		v-model="value"
+		v-model="modelValue"
 		:disableInput="isMultiValue"
 		placeholder="Value"
 		@input="selectorType === 'combobox' && checkAndFetchColumnValues($event)"
