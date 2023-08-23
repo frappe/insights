@@ -43,7 +43,7 @@ function downloadChart() {
 
 <template>
 	<div class="h-full w-full rounded p-2">
-		<div class="flex h-full w-full flex-col space-y-2">
+		<div class="flex h-full w-full flex-col">
 			<div
 				v-if="title"
 				class="mt-1 flex-shrink-0"
