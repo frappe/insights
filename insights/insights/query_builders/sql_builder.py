@@ -300,9 +300,10 @@ def get_current_date_range(unit):
 
 
 def get_fiscal_year_start_date():
-    return getdate(
-        frappe.db.get_single_value("Insights Settings", "fiscal_year_start") or "1995-04-01"
-    )
+    fiscal_year_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+    if not fiscal_year_start or get_date_str(fiscal_year_start) == "0001-01-01":
+        return getdate("1995-04-01")
+    return getdate(fiscal_year_start)
 
 
 def get_fy_start(date):
@@ -349,6 +350,11 @@ def get_directional_date_range(direction, unit, number_of_unit):
         dates = [
             get_year_start(add_to_date(today, years=direction * number_of_unit)),
             get_year_ending(add_to_date(today, years=direction)),
+        ]
+    if unit == "fiscal year":
+        dates = [
+            get_fy_start(add_to_date(today, years=direction * number_of_unit)),
+            get_fiscal_year_ending(add_to_date(today, years=direction)),
         ]
 
     if dates[0] > dates[1]:
