@@ -6,7 +6,7 @@
 				label="Update"
 				:disabled="updateDisabled"
 				variant="solid"
-				@click="store.update(settingsDoc)"
+				@click="store.update(configurables)"
 			>
 				<template #prefix>
 					<CheckIcon class="w-4" />
