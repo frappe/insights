@@ -315,7 +315,6 @@ function getDashboardResource(name) {
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
-			savestate: 'savestate',
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
 			is_private: 'is_private',

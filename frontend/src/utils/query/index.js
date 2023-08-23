@@ -30,6 +30,7 @@ export function useQuery(name) {
 		query.run.loading = true
 		if (query.beforeExecuteFns.length) {
 			await Promise.all(query.beforeExecuteFns.map((fn) => fn()))
+			await query.get.fetch()
 		}
 		return query.debouncedRun(null, {
 			onSuccess() {

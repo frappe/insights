@@ -114,11 +114,7 @@ const toDashboard = ref(null)
 const addingToDashboard = ref(false)
 const dashboardOptions = computed(() => {
 	// sort alphabetically
-	return dashboards.list
-		.sort((a, b) => {
-			return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
-		})
-		.map((d) => ({ label: d.title, value: d.name }))
+	return dashboards.list.map((d) => ({ label: d.title, value: d.name }))
 })
 const $notify = inject('$notify')
 const addChartToDashboard = async () => {

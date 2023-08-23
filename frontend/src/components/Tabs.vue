@@ -4,10 +4,10 @@
 			v-for="tab in tabs"
 			class="flex h-full flex-1 items-center justify-center px-4 text-sm transition-all"
 			:class="{
-				'rounded bg-white shadow': tab.active,
+				'rounded bg-white shadow': tab.active || (modelValue && modelValue === tab.value),
 				'cursor-not-allowed': tab.disabled,
 			}"
-			@click="$emit('switch', tab)"
+			@click="handleClick(tab)"
 		>
 			{{ tab.label }}
 		</div>
@@ -16,10 +16,13 @@
 
 <script setup>
 const props = defineProps({
-	tabs: {
-		type: Array,
-		required: true,
-	},
+	modelValue: { type: Object, required: false },
+	tabs: { type: Array, required: true },
 })
-defineEmits(['switch'])
+const emit = defineEmits(['switch', 'update:modelValue'])
+function handleClick(tab) {
+	if (tab.disabled) return
+	emit('switch', tab)
+	emit('update:modelValue', tab.value)
+}
 </script>

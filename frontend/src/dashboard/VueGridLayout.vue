@@ -1,10 +1,5 @@
 <template>
-	<grid-layout
-		ref="grid"
-		:layout="layouts"
-		v-bind="options"
-		@update:layout="emit('update:layouts', $event)"
-	>
+	<grid-layout ref="grid" :layout="layouts" v-bind="options" @update:layout="layouts = $event">
 		<template #default="{ gridItemProps }">
 			<grid-item
 				v-for="(layout, index) in layouts"
@@ -30,7 +25,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, watchEffect } from 'vue'
+import { reactive, ref, watch, watchEffect, computed } from 'vue'
 
 const emit = defineEmits(['update:layouts'])
 const props = defineProps({
@@ -50,9 +45,9 @@ const options = reactive({
 	useCssTransforms: true,
 	cols: { lg: 20, md: 20, sm: 20, xs: 1, xxs: 1 },
 })
-const layouts = ref([])
-watchEffect(() => {
-	layouts.value = [...props.layouts]
+const layouts = computed({
+	get: () => props.layouts,
+	set: (value) => emit('update:layouts', value),
 })
 
 async function toggleEnable(disable) {

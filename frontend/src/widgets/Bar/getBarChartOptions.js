@@ -67,9 +67,6 @@ export default function getBarChartOptions(labels, datasets, options) {
 			},
 			markLine: markLine,
 			stack: options.stack ? 'stack' : null,
-			itemStyle: {
-				borderRadius: options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
-			},
 		})),
 		tooltip: {
 			trigger: 'axis',

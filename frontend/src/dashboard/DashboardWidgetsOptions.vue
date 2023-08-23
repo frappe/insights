@@ -10,6 +10,7 @@ import {
 	AlignLeft,
 	TrendingUp,
 } from 'lucide-vue-next'
+import ComboChartIcon from '@/components/Icons/ComboChartIcon.vue'
 import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
 import { ScatterChart } from 'lucide-vue-next'
@@ -34,6 +35,7 @@ const icons = {
 	Scatter: ScatterChart,
 	Funnel: ListFilter,
 	Trend: TrendingUp,
+	'Mixed Axis': ComboChartIcon,
 }
 </script>
 <template>
