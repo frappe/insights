@@ -143,7 +143,7 @@ def get_queries():
 
     Query = frappe.qb.DocType("Insights Query")
     QueryTable = frappe.qb.DocType("Insights Query Table")
-    QueryChart = frappe.qb.DocType("Insights Query Chart")
+    QueryChart = frappe.qb.DocType("Insights Chart")
     GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
@@ -160,7 +160,7 @@ def get_queries():
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
-            QueryChart.type.as_("chart_type"),
+            QueryChart.chart_type,
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)

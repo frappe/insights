@@ -90,8 +90,8 @@ watch(() => props.disabled, toggleEnable, 200)
 
 .vgl-item__resizer {
 	position: absolute;
-	right: 12px;
-	bottom: 12px;
+	right: 10px;
+	bottom: 10px;
 	box-sizing: border-box;
 	width: var(--vgl-resizer-size);
 	height: var(--vgl-resizer-size);

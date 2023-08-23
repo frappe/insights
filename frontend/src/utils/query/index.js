@@ -52,7 +52,6 @@ export function useQuery(name) {
 		await query.setValue.submit(doc)
 	}
 
-	window.queryTwo = query
 	return query
 }
 

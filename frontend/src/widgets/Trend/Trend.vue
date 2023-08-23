@@ -89,7 +89,8 @@ const trendLineOptions = computed(() => {
 		class="flex h-full w-full items-center justify-center overflow-hidden py-4 px-6"
 	>
 		<div
-			class="mx-auto flex h-full max-h-[10rem] min-h-[10rem] w-full min-w-40 max-w-[20rem] flex-col overflow-y-auto"
+			class="mx-auto flex w-full min-w-40 max-w-[20rem] flex-col overflow-y-auto"
+			:class="options.showTrendLine ? 'h-[10rem]' : 'h-fit'"
 		>
 			<div class="flex w-full justify-between space-x-4">
 				<div
