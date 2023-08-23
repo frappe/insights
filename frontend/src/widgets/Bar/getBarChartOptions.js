@@ -30,7 +30,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 				rotate: options.rotateLabels,
 				interval: 0,
 				formatter: (value, index) =>
-					!isNaN(value) ? $utils.getShortNumber(value, 1) : value,
+					!isNaN(value) ? $utils.getShortNumber(value, 1) : $utils.ellipsis(value, 20),
 			},
 		},
 		{
@@ -40,7 +40,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 			},
 			axisLabel: {
 				formatter: (value, index) =>
-					!isNaN(value) ? $utils.getShortNumber(value, 1) : value,
+					!isNaN(value) ? $utils.getShortNumber(value, 1) : $utils.ellipsis(value, 20),
 			},
 		},
 	]

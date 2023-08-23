@@ -263,4 +263,5 @@ export default {
 	formatNumber,
 	getShortNumber,
 	copyToClipboard,
+	ellipsis,
 }
