@@ -156,14 +156,23 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 						"
 					/>
 
-					<Button
-						iconLeft="trash"
-						variant="outline"
-						class="ml-auto text-red-500"
-						@click="dashboard.removeItem(dashboard.currentItem)"
-					>
-						Delete Widget
-					</Button>
+					<div class="flex space-x-2">
+						<Button
+							iconLeft="refresh-ccw"
+							variant="outline"
+							@click="dashboard.resetOptions(dashboard.currentItem)"
+						>
+							Reset Options
+						</Button>
+						<Button
+							iconLeft="trash"
+							variant="outline"
+							class="ml-auto text-red-500"
+							@click="dashboard.removeItem(dashboard.currentItem)"
+						>
+							Delete Widget
+						</Button>
+					</div>
 				</div>
 			</div>
 		</template>

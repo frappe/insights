@@ -220,13 +220,6 @@ export default function useDashboard(name) {
 
 	const updateTitle = debounce(function (title) {
 		if (!title || !state.editing) return
-		// save the title on save
-		// resource.setValue.submit({ title }).then(() => {
-		// 	$notify({
-		// 		title: 'Dashboard title updated',
-		// 		variant: 'success',
-		// 	})
-		// })
 		state.doc.title = title
 	}, 500)
 
@@ -282,6 +275,11 @@ export default function useDashboard(name) {
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
 	const isChart = (item) => !['Filter', 'Text'].includes(item.item_type)
+	const resetOptions = (item) => {
+		item.options = {
+			query: item.options.query,
+		}
+	}
 
 	return Object.assign(state, {
 		reload,
@@ -307,6 +305,7 @@ export default function useDashboard(name) {
 		togglePublicAccess,
 		loadCurrentItemQuery,
 		exportDashboard,
+		resetOptions,
 	})
 }
 
