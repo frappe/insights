@@ -22,7 +22,7 @@ export const getListResource = (listResourceOption: ListResourceParams): ListRes
 
 export const createDataSource: Resource = createResource({ url: 'insights.api.setup.add_database' })
 export const testDataSourceConnection: Resource = createResource({
-	url: 'insights.api.setup_test_database_connection',
+	url: 'insights.api.setup.test_database_connection',
 })
 
 export const getDocumentResource = (
