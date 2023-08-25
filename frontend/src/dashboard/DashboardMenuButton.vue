@@ -1,15 +1,37 @@
 <script setup>
-import { inject, ref } from 'vue'
+import useTemplateStore from '@/stores/templateStore'
+import BrowseTemplatesDialog from '@/templates/BrowseTemplatesDialog.vue'
+import { inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const dashboard = inject('dashboard')
-const showExportDialog = ref(false)
 const showDeleteDialog = ref(false)
 const router = useRouter()
 async function handleDelete() {
 	await dashboard.deleteDashboard()
 	showDeleteDialog.value = false
 	router.push({ name: 'Dashboards' })
+}
+
+const showCreateTemplateDialog = ref(false)
+const showTemplatesDialog = ref(false)
+const template = reactive({
+	title: dashboard.doc.title,
+	description: '',
+})
+
+const templateStore = useTemplateStore()
+function handleCreateTemplate() {
+	templateStore
+		.createTemplate({
+			title: template.title,
+			description: template.description,
+			dashboard_name: dashboard.doc.name,
+		})
+		.then(() => {
+			showCreateTemplateDialog.value = false
+			showTemplatesDialog.value = true
+		})
 }
 </script>
 
@@ -20,10 +42,10 @@ async function handleDelete() {
 		:button="{ icon: 'more-vertical', variant: 'outline' }"
 		:options="[
 			{
-				label: 'Export',
+				label: 'Publish as Template',
 				variant: 'outline',
 				icon: 'download',
-				onClick: () => (showExportDialog = true),
+				onClick: () => (showCreateTemplateDialog = true),
 			},
 			{
 				label: 'Delete',
@@ -51,23 +73,44 @@ async function handleDelete() {
 	</Dialog>
 
 	<Dialog
-		v-model="showExportDialog"
+		v-model="showCreateTemplateDialog"
 		:dismissable="true"
 		:options="{
-			title: 'Export Dashboard',
-			message:
-				'Exporting a dashboard will create a JSON file that can be imported into another dashboard.',
-			icon: { name: 'download', variant: 'solid' },
+			title: 'Create a Template',
 			actions: [
-				{ label: 'Cancel', variant: 'outline', onClick: () => (showExportDialog = false) },
 				{
-					label: 'Export',
+					label: 'Upload to Marketplace',
 					variant: 'solid',
-					onClick: () =>
-						dashboard.exportDashboard().then(() => (showExportDialog = false)),
+					iconLeft: 'upload',
+					loading: dashboard.creatingTemplate,
+					onClick: handleCreateTemplate,
 				},
 			],
 		}"
 	>
+		<template #body-content>
+			<div class="mb-4 -mt-4">
+				<p class="text-base text-gray-500">
+					You can share your dashboard with other users by exporting it as a template on
+					the marketplace.
+				</p>
+			</div>
+
+			<div class="mb-2 flex flex-col space-y-4 text-base">
+				<Input type="text" label="Template Title" v-model="template.title" class="w-full" />
+				<Input
+					type="textarea"
+					label="Template Description"
+					v-model="template.description"
+					class="h-20 w-full"
+				/>
+			</div>
+		</template>
 	</Dialog>
+
+	<BrowseTemplatesDialog
+		v-model:show="showTemplatesDialog"
+		activeTab="My Templates"
+		title="Marketplace"
+	/>
 </template>

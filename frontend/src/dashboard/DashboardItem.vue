@@ -43,7 +43,7 @@ provide('widgetRef', widget)
 const refreshKey = ref(0)
 watch(
 	() => JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value]),
-	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)(),
+	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 5000 : 500)(),
 	{ deep: true }
 )
 

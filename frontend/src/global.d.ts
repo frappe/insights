@@ -45,6 +45,7 @@ type Resource = {
 	data: any
 	loading: boolean
 	submit: (args?: any) => Promise<any>
+	reload: () => void
 }
 
 type DataSourceListItem = {

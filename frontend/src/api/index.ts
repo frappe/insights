@@ -25,11 +25,7 @@ export const testDataSourceConnection: Resource = createResource({
 	url: 'insights.api.setup.test_database_connection',
 })
 
-export const getDocumentResource = (
-	doctype: string,
-	docname?: string,
-	options?: object
-) => {
+export const getDocumentResource = (doctype: string, docname?: string, options?: object) => {
 	const resource = createDocumentResource({
 		doctype: doctype,
 		name: docname || doctype,
@@ -46,5 +42,26 @@ export const fetchTableName = async (data_source: string, table: string) => {
 	return call('insights.api.get_table_name', {
 		data_source: data_source,
 		table: table,
+	})
+}
+
+export const getMyTemplatesResource = (): Resource => {
+	return createResource({
+		url: 'insights.api.templates.get_my_templates',
+		cache: 'insights:my_templates',
+		auto: true,
+	})
+}
+export const getAllTemplatesResource = (): Resource => {
+	return createResource({
+		url: 'insights.api.templates.get_all_templates',
+		cache: 'insights:all_templates',
+		auto: true,
+	})
+}
+
+export const getCreateTemplateResource = (): Resource => {
+	return createResource({
+		url: 'insights.api.templates.create_template',
 	})
 }
