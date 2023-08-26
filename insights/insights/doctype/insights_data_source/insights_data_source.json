@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "field:title",
+ "autoname": "format:DSO-{###}",
  "creation": "2022-02-23 06:14:40.960055",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -115,11 +115,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-29 14:25:59.190544",
+ "modified": "2023-08-26 21:41:41.172267",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
