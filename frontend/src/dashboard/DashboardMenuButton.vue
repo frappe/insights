@@ -1,6 +1,6 @@
 <script setup>
 import useTemplateStore from '@/stores/templateStore'
-import BrowseTemplatesDialog from '@/templates/BrowseTemplatesDialog.vue'
+import MarketplaceDialog from '@/templates/MarketplaceDialog.vue'
 import { inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -108,9 +108,5 @@ function handleCreateTemplate() {
 		</template>
 	</Dialog>
 
-	<BrowseTemplatesDialog
-		v-model:show="showTemplatesDialog"
-		activeTab="My Templates"
-		title="Marketplace"
-	/>
+	<MarketplaceDialog v-model:show="showTemplatesDialog" activeTab="My Templates" />
 </template>

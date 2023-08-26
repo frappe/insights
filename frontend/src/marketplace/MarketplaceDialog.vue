@@ -34,5 +34,10 @@ const activeTab = ref(
 </script>
 
 <template>
-	<DialogWithSidebar v-model:show="show" :tabs="tabs" :active-tab="activeTab" />
+	<DialogWithSidebar
+		title="Marketplace"
+		v-model:show="show"
+		:tabs="tabs"
+		:active-tab="activeTab"
+	/>
 </template>
