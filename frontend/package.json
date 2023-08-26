@@ -2,9 +2,9 @@
 	"name": "insights-frontend",
 	"private": true,
 	"version": "0.0.0",
-	"engines" : { 
-    "node" : ">=16.0.0"
-  },
+	"engines": {
+		"node": ">=16.0.0"
+	},
 	"scripts": {
 		"dev": "vite",
 		"serve": "vite preview",
@@ -22,6 +22,7 @@
 		"@vueuse/core": "^9.1.0",
 		"codemirror": "^6.0.1",
 		"dayjs": "^1.11.6",
+		"dom-to-image": "^2.6.0",
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
 		"frappe-ui": "^0.1.0-alpha.12",
