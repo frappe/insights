@@ -1,4 +1,5 @@
 import { getAllTemplatesResource, getCreateTemplateResource, getMyTemplatesResource } from '@/api'
+import { safeJSONParse } from '@/utils'
 import dayjs from '@/utils/dayjs'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
@@ -12,6 +13,8 @@ interface Template {
 	status: string
 	modified: string
 	modifiedFromNow: string
+	data_sources: Array<{ name: string; type: string }>
+	charts: Array<{ title: string; type: string }>
 }
 
 interface NewTemplate {
@@ -22,7 +25,7 @@ interface NewTemplate {
 
 const useTemplateStore = defineStore('insights:templates', () => {
 	const myTemplatesResource: Resource = getMyTemplatesResource()
-	const myTemplates = computed<Template>(() => {
+	const myTemplates = computed<Template[]>(() => {
 		if (!myTemplatesResource.data) return []
 		return myTemplatesResource.data?.map(toTemplate)
 	})
@@ -40,7 +43,7 @@ const useTemplateStore = defineStore('insights:templates', () => {
 	}
 
 	const allTemplatesResource: Resource = getAllTemplatesResource()
-	const allTemplates = computed<Template>(() => {
+	const allTemplates = computed<Template[]>(() => {
 		if (!allTemplatesResource.data) return []
 		return allTemplatesResource.data?.map(toTemplate)
 	})
@@ -56,7 +59,8 @@ const useTemplateStore = defineStore('insights:templates', () => {
 
 export default useTemplateStore
 
-function toTemplate(template: Template) {
+function toTemplate(template: any): Template {
+	const metadata = safeJSONParse(template.metadata)
 	return {
 		name: template.name,
 		title: template.title,
@@ -66,5 +70,7 @@ function toTemplate(template: Template) {
 		status: template.status,
 		modified: template.modified,
 		modifiedFromNow: dayjs(template.modified).fromNow(),
+		charts: metadata?.charts.map((c: any) => ({ title: c.title, type: c.chart_type })) ?? [],
+		data_sources: metadata?.data_sources.map((ds: any) => ({ name: ds.name, type: ds.database_type })) ?? [],
 	}
 }

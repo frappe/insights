@@ -1,6 +1,6 @@
 <script setup>
 import useTemplateStore from '@/stores/templateStore'
-import MarketplaceDialog from '@/templates/MarketplaceDialog.vue'
+import MarketplaceDialog from '@/marketplace/MarketplaceDialog.vue'
 import { inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 

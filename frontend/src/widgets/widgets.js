@@ -1,3 +1,18 @@
+import ComboChartIcon from '@/components/Icons/ComboChartIcon.vue'
+import {
+	AlignLeft,
+	BarChart3,
+	BatteryMedium,
+	DollarSign,
+	LineChart,
+	ListFilter,
+	PieChart,
+	ScatterChart,
+	Table,
+	TextCursorInput,
+	TrendingUp,
+} from 'lucide-vue-next'
+
 import { defineAsyncComponent } from 'vue'
 
 const VALID_CHARTS = [
@@ -16,6 +31,7 @@ const VALID_CHARTS = [
 const WIDGETS = {
 	Number: {
 		type: 'Number',
+		icon: DollarSign,
 		component: defineAsyncComponent(() => import('./Number/Number.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
 		options: {},
@@ -24,6 +40,7 @@ const WIDGETS = {
 	},
 	Trend: {
 		type: 'Trend',
+		icon: TrendingUp,
 		component: defineAsyncComponent(() => import('./Trend/Trend.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Trend/TrendOptions.vue')),
 		options: {},
@@ -32,6 +49,7 @@ const WIDGETS = {
 	},
 	Line: {
 		type: 'Line',
+		icon: LineChart,
 		component: defineAsyncComponent(() => import('./Line/Line.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Line/LineOptions.vue')),
 		options: {},
@@ -40,6 +58,7 @@ const WIDGETS = {
 	},
 	Scatter: {
 		type: 'Scatter',
+		icon: ScatterChart,
 		component: defineAsyncComponent(() => import('./Scatter/Scatter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Scatter/ScatterOptions.vue')),
 		options: {},
@@ -48,6 +67,7 @@ const WIDGETS = {
 	},
 	Bar: {
 		type: 'Bar',
+		icon: BarChart3,
 		component: defineAsyncComponent(() => import('./Bar/Bar.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Bar/BarOptions.vue')),
 		options: {},
@@ -56,6 +76,7 @@ const WIDGETS = {
 	},
 	Pie: {
 		type: 'Pie',
+		icon: PieChart,
 		component: defineAsyncComponent(() => import('./Pie/Pie.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Pie/PieOptions.vue')),
 		options: {},
@@ -64,6 +85,7 @@ const WIDGETS = {
 	},
 	Funnel: {
 		type: 'Funnel',
+		icon: ListFilter,
 		component: defineAsyncComponent(() => import('./Funnel/Funnel.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Funnel/FunnelOptions.vue')),
 		options: {},
@@ -72,6 +94,7 @@ const WIDGETS = {
 	},
 	Table: {
 		type: 'Table',
+		icon: Table,
 		component: defineAsyncComponent(() => import('./Table/Table.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Table/TableOptions.vue')),
 		options: {},
@@ -80,6 +103,7 @@ const WIDGETS = {
 	},
 	Progress: {
 		type: 'Progress',
+		icon: BatteryMedium,
 		component: defineAsyncComponent(() => import('./Progress/Progress.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Progress/ProgressOptions.vue')),
 		options: {},
@@ -88,6 +112,7 @@ const WIDGETS = {
 	},
 	'Mixed Axis': {
 		type: 'Mixed Axis',
+		icon: ComboChartIcon,
 		component: defineAsyncComponent(() => import('./MixedAxis/MixedAxis.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./MixedAxis/MixedAxisOptions.vue')),
 		options: {},
@@ -96,6 +121,7 @@ const WIDGETS = {
 	},
 	Filter: {
 		type: 'Filter',
+		icon: TextCursorInput,
 		component: defineAsyncComponent(() => import('./Filter/Filter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Filter/FilterOptions.vue')),
 		options: {},
@@ -104,6 +130,7 @@ const WIDGETS = {
 	},
 	Text: {
 		type: 'Text',
+		icon: AlignLeft,
 		component: defineAsyncComponent(() => import('./Text/Text.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Text/TextOptions.vue')),
 		options: {},

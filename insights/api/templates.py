@@ -38,13 +38,10 @@ def create_template(template):
                 "author": frappe.session.user,
                 "author_name": frappe.db.get_value("User", frappe.session.user, "full_name"),
                 "app_version": get_app_version(),
-                "data": json.dumps(
-                    {
-                        "title": template.title,
-                        "description": template.description,
-                        "data": dashboard_data,
-                    }
-                ),
+                "title": template.title,
+                "description": template.description,
+                "data": frappe.as_json(dashboard_data["data"]),
+                "metadata": frappe.as_json(dashboard_data["metadata"]),
             },
         )
 
