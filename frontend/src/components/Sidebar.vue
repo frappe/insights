@@ -67,7 +67,7 @@
 						{
 							label: 'Browse Templates',
 							icon: 'grid',
-							onClick: () => (openMarketplace = true),
+							onClick: () => marketplaceStore.openMarketplaceDialog(),
 						},
 						{
 							label: 'Join Telegram Group',
@@ -117,14 +117,13 @@
 	</div>
 
 	<HelpDialog v-model="showHelpDialog" />
-	<MarketplaceDialog v-model:show="openMarketplace" />
 </template>
 
 <script setup>
 import HelpDialog from '@/components/HelpDialog.vue'
+
 import authStore from '@/stores/authStore'
 import settingsStore from '@/stores/settingsStore'
-import MarketplaceDialog from '@/marketplace/MarketplaceDialog.vue'
 import { Avatar } from 'frappe-ui'
 import {
 	Book,
@@ -138,11 +137,12 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import useMarketplaceStore from '@/stores/marketplaceStore'
 
 const auth = authStore()
 const settings = settingsStore().settings
+const marketplaceStore = useMarketplaceStore()
 
-const openMarketplace = ref(false)
 const showHelpDialog = ref(false)
 const sidebarItems = ref([
 	{

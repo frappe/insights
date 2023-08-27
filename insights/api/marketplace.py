@@ -1,13 +1,15 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import json
 
 import frappe
 from frappe.integrations.utils import make_get_request, make_post_request
 
 from insights.api import get_app_version
 from insights.api.subscription import get_subscription_key
+from insights.insights.doctype.insights_dashboard.insights_dashboard import (
+    import_dashboard,
+)
 
 
 def get_marketplace_url(throw=True):
@@ -93,4 +95,30 @@ def get_all_templates():
         frappe.throw(
             title="Failed to fetch templates",
             msg="Failed to fetch templates. Please try again.",
+        )
+
+
+@frappe.whitelist()
+def import_template(template_name, dashboard_title, data_source_map):
+    template = get_template(template_name)
+    return import_dashboard(template["data"], dashboard_title, data_source_map)
+
+
+def get_template(template_name):
+    marketplace_url = get_marketplace_url()
+    subscription_key = get_subscription_key()
+
+    try:
+        response = make_post_request(
+            marketplace_url + "/api/method/get_template",
+            data={"subscription_key": subscription_key, "template_name": template_name},
+        )
+        template_with_data = response["message"]
+        return template_with_data
+
+    except BaseException:
+        frappe.log_error(title="Failed to fetch template")
+        frappe.throw(
+            title="Failed to fetch template",
+            msg="Failed to fetch template. Please try again.",
         )

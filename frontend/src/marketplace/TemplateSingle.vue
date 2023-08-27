@@ -1,16 +1,22 @@
 <script setup>
 import widgets from '@/widgets/widgets'
 import { Download, Database } from 'lucide-vue-next'
+import useMarketplaceStore from '@/stores/marketplaceStore'
 
+const marketplaceStore = useMarketplaceStore()
 const props = defineProps({
 	template: { type: Object, required: true },
 })
+
+function handleImport() {
+	marketplaceStore.openImportDialog(props.template)
+}
 </script>
 
 <template>
 	<div class="text-base">
 		<div class="flex gap-4">
-			<div class="relative flex h-60 w-1/3 items-center justify-center rounded-t bg-gray-50">
+			<div class="relative flex h-60 w-1/3 items-center justify-center rounded bg-gray-50">
 				<span class="text-sm text-gray-600"> Loading Preview... </span>
 			</div>
 			<div class="flex flex-1 flex-col p-2">
@@ -30,7 +36,7 @@ const props = defineProps({
 							{{ template.author_name }}
 						</span>
 					</div>
-					<Button variant="solid">
+					<Button variant="solid" @click="handleImport">
 						<template #prefix> <Download class="h-4 w-4" /></template>
 						<span>Import</span>
 					</Button>

@@ -1,15 +1,15 @@
 <script setup>
-import useTemplateStore from '@/stores/templateStore'
+import useMarketplaceStore from '@/stores/marketplaceStore'
 import { ArrowLeft } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import TemplateSingle from './TemplateSingle.vue'
 import TemplatesGrid from './TemplatesGrid.vue'
 
 const currentTemplate = ref(null)
-const templates = useTemplateStore()
+const marketplaceStore = useMarketplaceStore()
 const search = ref('')
 const filteredTemplates = computed(() => {
-	return templates.allTemplates?.filter((template) => {
+	return marketplaceStore.allTemplates?.filter((template) => {
 		return template.title.toLowerCase().includes(search.value.toLowerCase())
 	})
 })
@@ -38,7 +38,6 @@ const filteredTemplates = computed(() => {
 		</template>
 
 		<template v-else-if="currentTemplate">
-			<!-- breadcrumbs -->
 			<div>
 				<Button variant="ghost" @click="currentTemplate = null">
 					<template #prefix>

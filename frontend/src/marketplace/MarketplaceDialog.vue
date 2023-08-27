@@ -1,43 +1,41 @@
 <script setup>
 import DialogWithSidebar from '@/components/DialogWithSidebar.vue'
+import useMarketplaceStore from '@/stores/marketplaceStore'
+import { useMagicKeys, whenever } from '@vueuse/core'
 import { Globe, User } from 'lucide-vue-next'
-import { computed, ref, markRaw } from 'vue'
+import { markRaw } from 'vue'
+import MarketplaceTemplateImportDialog from './MarketplaceTemplateImportDialog.vue'
 import MyTemplates from './MyTemplates.vue'
 import TemplatesBrowser from './TemplatesBrowser.vue'
 
-const emit = defineEmits(['update:show'])
-const props = defineProps({
-	show: Boolean,
-	activeTab: String,
+const marketplaceStore = useMarketplaceStore()
+const keys = useMagicKeys()
+const escape = keys['Escape']
+whenever(escape, () => {
+	if (marketplaceStore.marketplaceDialogOpen && !marketplaceStore.importDialogOpen) {
+		marketplaceStore.closeMarketplaceDialog()
+	}
 })
-
-const show = computed({
-	get: () => props.show,
-	set: (value) => emit('update:show', value),
-})
-
-const tabs = ref([
-	{
-		label: 'Browse Templates',
-		component: markRaw(TemplatesBrowser),
-		icon: markRaw(Globe),
-	},
-	{
-		label: 'My Templates',
-		component: markRaw(MyTemplates),
-		icon: markRaw(User),
-	},
-])
-const activeTab = ref(
-	props.activeTab ? tabs.value.find((t) => t.label === props.activeTab) : tabs.value[0]
-)
 </script>
 
 <template>
 	<DialogWithSidebar
 		title="Marketplace"
-		v-model:show="show"
-		:tabs="tabs"
-		:active-tab="activeTab"
+		v-model:show="marketplaceStore.marketplaceDialogOpen"
+		:dismissable="false"
+		:tabs="[
+			{
+				label: 'Browse Templates',
+				component: markRaw(TemplatesBrowser),
+				icon: Globe,
+			},
+			{
+				label: 'My Templates',
+				component: markRaw(MyTemplates),
+				icon: User,
+			},
+		]"
 	/>
+
+	<MarketplaceTemplateImportDialog />
 </template>

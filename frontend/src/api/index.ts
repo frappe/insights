@@ -47,14 +47,14 @@ export const fetchTableName = async (data_source: string, table: string) => {
 
 export const getMyTemplatesResource = (): Resource => {
 	return createResource({
-		url: 'insights.api.templates.get_my_templates',
+		url: 'insights.api.marketplace.get_my_templates',
 		cache: 'insights:my_templates',
 		auto: true,
 	})
 }
 export const getAllTemplatesResource = (): Resource => {
 	return createResource({
-		url: 'insights.api.templates.get_all_templates',
+		url: 'insights.api.marketplace.get_all_templates',
 		cache: 'insights:all_templates',
 		auto: true,
 	})
@@ -62,6 +62,12 @@ export const getAllTemplatesResource = (): Resource => {
 
 export const getCreateTemplateResource = (): Resource => {
 	return createResource({
-		url: 'insights.api.templates.create_template',
+		url: 'insights.api.marketplace.create_template',
+	})
+}
+
+export const  getImportTemplateResource = (): Resource => {
+	return createResource({
+		url: 'insights.api.marketplace.import_template',
 	})
 }

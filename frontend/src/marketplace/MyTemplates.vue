@@ -1,12 +1,12 @@
 <script setup>
 import { computed, ref } from 'vue'
-import useTemplateStore from '@/stores/templateStore'
+import useMarketplaceStore from '@/stores/marketplaceStore'
 import TemplatesGrid from './TemplatesGrid.vue'
 
-const templates = useTemplateStore()
+const marketplaceStore = useMarketplaceStore()
 const search = ref('')
 const filteredTemplates = computed(() => {
-	return templates.myTemplates?.filter((template) => {
+	return marketplaceStore.myTemplates?.filter((template) => {
 		return template.title.toLowerCase().includes(search.value.toLowerCase())
 	})
 })

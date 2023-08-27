@@ -1,7 +1,18 @@
 <template>
-	<Dialog v-model="show" :options="{ size: '5xl' }">
+	<Dialog
+		:modelValue="show"
+		:options="{ size: '5xl' }"
+		@update:modelValue="props.dismissable ? $emit('update:show', $event) : null"
+	>
 		<template #body>
-			<div class="flex" :style="{ height: 'calc(100vh - 8rem)' }">
+			<div class="relative flex" :style="{ height: 'calc(100vh - 8rem)' }">
+				<div class="absolute top-4 right-4">
+					<Button variant="ghost" @click="show = false">
+						<template #icon>
+							<FeatherIcon name="x" class="h-5 w-5 text-gray-600" />
+						</template>
+					</Button>
+				</div>
 				<div class="flex w-52 shrink-0 flex-col bg-gray-50 p-2">
 					<h1 v-if="props.title" class="px-2 pt-2 text-lg font-semibold">
 						{{ props.title }}
@@ -44,11 +55,12 @@ const props = defineProps({
 	show: Boolean,
 	title: String,
 	tabs: Array,
-	activeTab: Object,
+	activeTabIdx: Number,
+	dismissable: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['update:show'])
-const activeTab = ref(props.activeTab || props.tabs[0])
+const activeTab = ref(props.tabs[props.activeTabIdx || 0])
 const show = computed({
 	get: () => props.show,
 	set: (value) => emit('update:show', value),

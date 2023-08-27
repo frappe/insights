@@ -1,8 +1,8 @@
 <script setup>
-import useTemplateStore from '@/stores/templateStore'
 import MarketplaceDialog from '@/marketplace/MarketplaceDialog.vue'
 import { inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import useMarketplaceStore from '@/stores/marketplaceStore'
 
 const dashboard = inject('dashboard')
 const showDeleteDialog = ref(false)
@@ -13,16 +13,14 @@ async function handleDelete() {
 	router.push({ name: 'Dashboards' })
 }
 
+const marketplaceStore = useMarketplaceStore()
 const showCreateTemplateDialog = ref(false)
-const showTemplatesDialog = ref(false)
 const template = reactive({
 	title: dashboard.doc.title,
 	description: '',
 })
-
-const templateStore = useTemplateStore()
 function handleCreateTemplate() {
-	templateStore
+	marketplaceStore
 		.createTemplate({
 			title: template.title,
 			description: template.description,
@@ -30,7 +28,7 @@ function handleCreateTemplate() {
 		})
 		.then(() => {
 			showCreateTemplateDialog.value = false
-			showTemplatesDialog.value = true
+			marketplaceStore.openMarketplaceDialog()
 		})
 }
 </script>
@@ -107,6 +105,4 @@ function handleCreateTemplate() {
 			</div>
 		</template>
 	</Dialog>
-
-	<MarketplaceDialog v-model:show="showTemplatesDialog" activeTab="My Templates" />
 </template>

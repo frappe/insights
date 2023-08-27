@@ -12,6 +12,7 @@
 			</Suspense>
 		</RouterView>
 	</div>
+	<MarketplaceDialog />
 </template>
 
 <script setup>
@@ -21,6 +22,7 @@ import authStore from '@/stores/authStore'
 import settingsStore from '@/stores/settingsStore'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import MarketplaceDialog from '@/marketplace/MarketplaceDialog.vue'
 
 const auth = authStore()
 const route = useRoute()
