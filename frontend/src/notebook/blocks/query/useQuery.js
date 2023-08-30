@@ -68,7 +68,7 @@ function makeQuery(name) {
 		await state.save()
 		await resource.run
 			.submit()
-			.then(() => state.syncDoc())
+			.then(() => state.reload())
 			.catch((e) => {
 				console.error(e)
 			})
@@ -83,7 +83,7 @@ function makeQuery(name) {
 			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
 			state.save()
 		}
-		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 5000 })
+		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 3000 })
 		window.onbeforeunload = (event) => {
 			state.unsaved && state.save()
 			event.preventDefault()
