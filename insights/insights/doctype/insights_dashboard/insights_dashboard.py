@@ -83,7 +83,6 @@ class InsightsDashboard(Document):
         )
 
     @staticmethod
-    @debounce(2)
     def run_query(cache_namespace, query_name, additional_filters=None):
         def get_result():
             query = frappe.get_cached_doc("Insights Query", query_name)
