@@ -374,7 +374,11 @@ const showColumnExpressionEditor = ref(false)
 					</Suspense>
 					<InputWithPopover
 						v-if="FIELDTYPES.DATE.includes(column?.type)"
-						:value="findByValue(dateFormatOptions, column.granularity)"
+						:value="
+							column.granularity?.length == 0
+								? findByValue(dateFormatOptions, 'Month')
+								: findByValue(dateFormatOptions, column.granularity)
+						"
 						@update:modelValue="(v) => (column.granularity = v.value)"
 						placeholder="Format"
 						:items="dateFormatOptions"
@@ -468,7 +472,12 @@ const showColumnExpressionEditor = ref(false)
 									<InputWithPopover
 										v-if="FIELDTYPES.DATE.includes(dimension?.type)"
 										:value="
-											findByValue(dateFormatOptions, dimension.granularity)
+											dimension.granularity?.length == 0
+												? findByValue(dateFormatOptions, 'Month')
+												: findByValue(
+														dateFormatOptions,
+														dimension.granularity
+												  )
 										"
 										@update:modelValue="
 											(v) => (dimension.granularity = v.value)
