@@ -1,10 +1,10 @@
 <script setup>
 import UseTooltip from '@/components/UseTooltip.vue'
 import useDataSourceTable from '@/datasource/useDataSourceTable'
-import { FIELDTYPES, isDimensionColumn } from '@/utils'
+import { FIELDTYPES, isDimensionColumn, safeJSONParse } from '@/utils'
 import { dateFormats } from '@/utils/format'
 import { Sigma } from 'lucide-vue-next'
-import { computed, inject, provide, ref } from 'vue'
+import { computed, inject, provide, ref, watch } from 'vue'
 import useQuery from '../useQuery'
 import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import ColumnSelector from './ColumnSelector.vue'
@@ -25,10 +25,8 @@ provide('query', query)
 const legacyQuery = inject('query')
 legacyQuery.beforeExecute?.(async () => await query.save())
 
-const state = computed({
-	get: () => (typeof query.doc.json == 'string' ? JSON.parse(query.doc.json) : query.doc.json),
-	set: (value) => (query.doc.json = value),
-})
+const state = ref(safeJSONParse(query.doc.json))
+watch(state, (value) => (query.doc.json = value), { deep: true })
 
 const selectedTables = computed(() => {
 	const tables = [state.value.table]

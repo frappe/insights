@@ -39,7 +39,7 @@ function makeQuery(name) {
 	}
 
 	state.syncDoc = async function () {
-		state.doc = resource.doc
+		state.doc = { ...resource.doc }
 		state.isOwner = state.doc.owner == auth.user.user_id
 		state.loading = false
 		state.unsaved = false
@@ -75,12 +75,19 @@ function makeQuery(name) {
 		state.executing = false
 	}, 300)
 
-	state.save = async () => {
-		state.loading = true
-		const updatedFields = getUpdatedFields()
-		await resource.setValue.submit(updatedFields)
-		await state.syncDoc()
-		state.loading = false
+	watchOnce(() => state.autosave, setupAutosaveListener)
+	function setupAutosaveListener() {
+		const saveIfChanged = function (newVal, oldVal) {
+			if (state.executing) return
+			if (!oldVal || !newVal) return
+			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
+			state.save()
+		}
+		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 5000 })
+		window.onbeforeunload = (event) => {
+			state.unsaved && state.save()
+			event.preventDefault()
+		}
 	}
 
 	function getUpdatedFields() {
@@ -94,15 +101,11 @@ function makeQuery(name) {
 		return updatedFields
 	}
 
-	watchOnce(() => state.autosave, setupAutosaveListener)
-
-	function setupAutosaveListener() {
-		const saveIfChanged = function (newVal, oldVal) {
-			if (!oldVal || !newVal) return
-			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
-			state.save()
-		}
-		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+	state.save = async () => {
+		state.loading = true
+		const updatedFields = getUpdatedFields()
+		await resource.setValue.submit(updatedFields)
+		state.loading = false
 	}
 
 	const setUnsaved = (newVal, oldVal) => {
