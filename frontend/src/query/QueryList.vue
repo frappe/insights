@@ -1,11 +1,13 @@
 <script setup lang="jsx">
-import ListView from '@/components/ListView.vue'
+import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import useDataSourceStore from '@/stores/dataSourceStore'
 import useNotebooks from '@/notebook/useNotebooks'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { updateDocumentTitle } from '@/utils'
-import { Badge } from 'frappe-ui'
+import { getChartIcon } from '@/widgets/widgets'
+import { ListRow, ListRowItem } from 'frappe-ui'
+import ListView from '@/components/ListView.vue'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -41,20 +43,6 @@ const createQuery = async () => {
 	await nextTick()
 	router.push({ name: 'Query', params: { name } })
 }
-
-const StatusCell = (props) => (
-	<Badge theme={props.row.status == 'Pending Execution' ? 'orange' : 'green'}>
-		{props.row.status}
-	</Badge>
-)
-const columns = [
-	{ label: 'Title', key: 'title' },
-	{ label: 'Status', key: 'status', cellComponent: StatusCell },
-	{ label: 'Chart Type', key: 'chart_type' },
-	{ label: 'Data Source', key: 'data_source' },
-	{ label: 'ID', key: 'name' },
-	{ label: 'Created', key: 'created_from_now' },
-]
 
 const pageMeta = ref({ title: 'Queries' })
 updateDocumentTitle(pageMeta)
@@ -132,14 +120,64 @@ const queryBuilderTypes = ref([
 			</Button>
 		</div>
 	</header>
-	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
-		<ListView
-			:columns="columns"
-			:data="queries.list"
-			:rowClick="({ name }) => router.push({ name: 'Query', params: { name } })"
-		>
-		</ListView>
-	</div>
+
+	<ListView
+		:columns="[
+			{ label: 'Title', name: 'title', class: 'flex-[3]' },
+			{ label: 'Status', name: 'status', class: 'flex-[2]' },
+			{ label: 'Chart Type', name: 'chart_type', class: 'flex-1' },
+			{ label: 'Data Source', name: 'data_source', class: 'flex-1' },
+			{ label: 'ID', name: 'name', class: 'flex-1' },
+			{ label: 'Created By', name: 'owner_name', class: 'flex-1' },
+			{ label: 'Created', name: 'created_from_now', class: 'flex-1 text-right' },
+		]"
+		:rows="queries.list"
+	>
+		<template #list-row="{ row: query }">
+			<ListRow
+				as="router-link"
+				:row="query"
+				:to="{ name: 'Query', params: { name: query.name } }"
+			>
+				<ListRowItem class="flex-[3]"> {{ query.title }} </ListRowItem>
+				<ListRowItem class="flex-[2] space-x-2">
+					<IndicatorIcon
+						:class="
+							{
+								'Pending Execution': 'text-yellow-500',
+								'Execution Successful': 'text-green-500',
+								'Execution Failed': 'text-red-500',
+							}[query.status] || 'text-gray-500'
+						"
+					/>
+					<span> {{ query.status }} </span>
+				</ListRowItem>
+				<ListRowItem class="flex-1 space-x-2">
+					<component
+						v-if="query.chart_type"
+						:is="getChartIcon(query.chart_type)"
+						class="h-4 w-4 text-gray-700"
+					/>
+					<span> {{ query.chart_type }} </span>
+				</ListRowItem>
+				<ListRowItem class="flex-1"> {{ query.data_source }} </ListRowItem>
+				<ListRowItem class="flex-1"> {{ query.name }} </ListRowItem>
+				<ListRowItem class="flex-1 space-x-2">
+					<Avatar :image="query.owner_image" :label="query.owner_name" size="md" />
+					<span> {{ query.owner_name }} </span>
+				</ListRowItem>
+				<ListRowItem class="flex-1 justify-end">
+					{{ query.created_from_now }}
+				</ListRowItem>
+			</ListRow>
+		</template>
+
+		<template #emptyState>
+			<div class="text-xl font-medium">No Query Created.</div>
+			<div class="mt-1 text-base text-gray-600">Create a new query to get started.</div>
+			<Button class="mt-3" label="New Query" variant="solid" @click="new_dialog = true" />
+		</template>
+	</ListView>
 
 	<NewDialogWithTypes
 		v-model:show="new_dialog"
