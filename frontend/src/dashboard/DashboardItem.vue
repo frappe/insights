@@ -4,7 +4,6 @@ import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { watchDebounced, whenever } from '@vueuse/shared'
-import { debounce } from 'frappe-ui'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 
@@ -39,13 +38,6 @@ if (isChart) {
 const itemRef = ref(null) // used for popover
 const widget = ref(null)
 provide('widgetRef', widget)
-
-const refreshKey = ref(0)
-watch(
-	() => JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value]),
-	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)(),
-	{ deep: true }
-)
 
 function setInitialChartOptions() {
 	if (!props.item.options.query) return
@@ -97,7 +89,6 @@ function openQueryInNewTab() {
 				:item_id="item.item_id"
 				:data="chartData.data"
 				:options="item.options"
-				:key="refreshKey"
 			>
 				<template #placeholder>
 					<InvalidWidget

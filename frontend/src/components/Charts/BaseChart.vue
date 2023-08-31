@@ -1,6 +1,6 @@
 <script setup>
 import * as echarts from 'echarts'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
 
 const props = defineProps({
 	title: { type: String, required: false },
@@ -39,6 +39,8 @@ function downloadChart() {
 	link.download = `${props.title}.${type}`
 	link.click()
 }
+
+onUpdated(() => eChart && eChart.resize())
 </script>
 
 <template>
