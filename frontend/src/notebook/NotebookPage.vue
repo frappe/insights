@@ -60,7 +60,7 @@ updateDocumentTitle(pageMeta)
 							{
 								label: 'Clear',
 								icon: 'x-square',
-								onClick: () => (page.doc.content = []),
+								onClick: () => (page.doc.content = {}),
 							},
 							{
 								label: 'Delete',
