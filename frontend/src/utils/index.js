@@ -1,6 +1,7 @@
 import settings from '@/utils/systemSettings'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
+import domtoimage from 'dom-to-image'
 import { computed, watch } from 'vue'
 
 export const FIELDTYPES = {
@@ -253,6 +254,28 @@ export function isInViewport(element) {
 	)
 }
 
+export function downloadImage(element, filename) {
+	return domtoimage
+		.toBlob(element, {
+			quality: 0.8,
+			bgcolor: 'rgb(248, 248, 248)',
+		})
+		.then(function (blob) {
+			const link = document.createElement('a')
+			link.download = filename
+			link.href = URL.createObjectURL(blob)
+			link.click()
+		})
+}
+export function getImageSrc(element) {
+	return domtoimage
+		.toBlob(element, {
+			quality: 0.8,
+			bgcolor: 'rgb(248, 248, 248)',
+		})
+		.then((blob) => URL.createObjectURL(blob))
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,
@@ -264,4 +287,5 @@ export default {
 	getShortNumber,
 	copyToClipboard,
 	ellipsis,
+	downloadImage,
 }

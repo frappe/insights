@@ -65,6 +65,11 @@
 							onClick: () => open('https://docs.frappeinsights.com'),
 						},
 						{
+							label: 'Browse Templates',
+							icon: 'grid',
+							onClick: () => marketplaceStore.openMarketplaceDialog(),
+						},
+						{
 							label: 'Join Telegram Group',
 							icon: 'message-circle',
 							onClick: () => open('https://t.me/frappeinsights'),
@@ -115,12 +120,11 @@
 </template>
 
 <script setup>
-import { Avatar } from 'frappe-ui'
-
 import HelpDialog from '@/components/HelpDialog.vue'
+
 import authStore from '@/stores/authStore'
 import settingsStore from '@/stores/settingsStore'
-import { createResource } from 'frappe-ui'
+import { Avatar } from 'frappe-ui'
 import {
 	Book,
 	Database,
@@ -133,9 +137,11 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import useMarketplaceStore from '@/stores/marketplaceStore'
 
 const auth = authStore()
 const settings = settingsStore().settings
+const marketplaceStore = useMarketplaceStore()
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([

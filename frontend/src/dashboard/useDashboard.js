@@ -2,7 +2,7 @@ import { useQueryResource } from '@/query/useQueryResource'
 import useAuthStore from '@/stores/authStore'
 import { safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
-import { createDocumentResource, debounce } from 'frappe-ui'
+import { createDocumentResource } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
 
@@ -60,20 +60,6 @@ export default function useDashboard(name) {
 		state.currentItem = undefined
 		state.loading = false
 		state.editing = false
-	}
-
-	function exportDashboard() {
-		return resource.export_dashboard.submit().then((res) => {
-			const file_url = res.message.file_url
-			const filename = res.message.file_name
-			const link = document.createElement('a')
-			link.href = file_url
-			link.download = filename
-			link.click()
-			setTimeout(() => {
-				URL.revokeObjectURL(file_url)
-			}, 3000)
-		})
 	}
 
 	async function deleteDashboard() {
@@ -218,10 +204,10 @@ export default function useDashboard(name) {
 		state.refreshCallbacks.push(fn)
 	}
 
-	const updateTitle = debounce(function (title) {
+	function updateTitle(title) {
 		if (!title || !state.editing) return
 		state.doc.title = title
-	}, 500)
+	}
 
 	function makeLayoutObject(item) {
 		return {
@@ -304,7 +290,6 @@ export default function useDashboard(name) {
 		isChart,
 		togglePublicAccess,
 		loadCurrentItemQuery,
-		exportDashboard,
 		resetOptions,
 	})
 }
@@ -317,7 +302,7 @@ function getDashboardResource(name) {
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
 			is_private: 'is_private',
-			export_dashboard: 'export_dashboard',
+			create_template: 'create_template',
 		},
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)
