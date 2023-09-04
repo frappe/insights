@@ -41,7 +41,10 @@ updateDocumentTitle(pageMeta)
 	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
 		<PageBreadcrumbs
 			class="h-7"
-			:items="[{ label: 'Notebooks', route: { path: '/notebook' } }, { label: 'Pages' }]"
+			:items="[
+				{ label: 'Notebooks', route: { path: '/notebook' } },
+				{ label: notebook.doc.title || notebook.doc.name },
+			]"
 		/>
 		<div class="space-x-2.5">
 			<Button label="New Page" variant="solid" @click="() => createNotebookPage()">
