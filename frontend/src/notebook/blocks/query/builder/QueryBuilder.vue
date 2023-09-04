@@ -184,6 +184,15 @@ async function autoSelectJoinColumns(join) {
 const addStepRef = ref(null)
 const currentExpressionIndex = ref(null)
 const showColumnExpressionEditor = ref(false)
+
+function onColumnChange(column) {
+	debugger
+	column.alias = column.alias || column.label
+	// if date type, set default granularity
+	if (FIELDTYPES.DATE.includes(column.type) && !column.granularity) {
+		column.granularity = 'Month'
+	}
+}
 </script>
 
 <template>
@@ -369,16 +378,12 @@ const showColumnExpressionEditor = ref(false)
 							:data_source="query.doc.data_source"
 							:tables="selectedTables"
 							v-model="state.columns[index]"
-							@update:model-value="(c) => (column.alias = c.label)"
+							@update:model-value="onColumnChange"
 						/>
 					</Suspense>
 					<InputWithPopover
 						v-if="FIELDTYPES.DATE.includes(column?.type)"
-						:value="
-							column.granularity?.length == 0
-								? findByValue(dateFormatOptions, 'Month')
-								: findByValue(dateFormatOptions, column.granularity)
-						"
+						:value="findByValue(dateFormatOptions, column.granularity)"
 						@update:modelValue="(v) => (column.granularity = v.value)"
 						placeholder="Format"
 						:items="dateFormatOptions"
@@ -467,17 +472,12 @@ const showColumnExpressionEditor = ref(false)
 										:data_source="query.doc.data_source"
 										:localColumns="selectedColumns"
 										:columnFilter="(c) => isDimensionColumn(c)"
-										@update:model-value="(c) => (dimension.alias = c.label)"
+										@update:model-value="onColumnChange"
 									/>
 									<InputWithPopover
 										v-if="FIELDTYPES.DATE.includes(dimension?.type)"
 										:value="
-											dimension.granularity?.length == 0
-												? findByValue(dateFormatOptions, 'Month')
-												: findByValue(
-														dateFormatOptions,
-														dimension.granularity
-												  )
+											findByValue(dateFormatOptions, dimension.granularity)
 										"
 										@update:modelValue="
 											(v) => (dimension.granularity = v.value)
