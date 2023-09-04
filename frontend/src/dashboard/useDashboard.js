@@ -62,20 +62,6 @@ export default function useDashboard(name) {
 		state.editing = false
 	}
 
-	function exportDashboard() {
-		return resource.export_dashboard.submit().then((res) => {
-			const file_url = res.message.file_url
-			const filename = res.message.file_name
-			const link = document.createElement('a')
-			link.href = file_url
-			link.download = filename
-			link.click()
-			setTimeout(() => {
-				URL.revokeObjectURL(file_url)
-			}, 3000)
-		})
-	}
-
 	async function deleteDashboard() {
 		state.deleting = true
 		await resource.delete.submit()
@@ -304,7 +290,6 @@ export default function useDashboard(name) {
 		isChart,
 		togglePublicAccess,
 		loadCurrentItemQuery,
-		exportDashboard,
 		resetOptions,
 	})
 }
@@ -317,7 +302,6 @@ function getDashboardResource(name) {
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
 			is_private: 'is_private',
-			export_dashboard: 'export_dashboard',
 		},
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)
