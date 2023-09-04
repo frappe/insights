@@ -92,7 +92,6 @@ function setCompletionPosition() {
 
 const applyDisabled = computed(() => {
 	return (
-		!expressionColumn.value.label ||
 		!expressionColumn.value.type ||
 		!expressionColumn.value.expression.raw ||
 		!expressionColumn.value.expression.ast

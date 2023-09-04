@@ -767,6 +767,10 @@ class SQLQueryBuilder:
             query = query.group_by(*self._dimensions)
         if self._order_by_columns:
             query = query.order_by(*self._order_by_columns)
-        query = query.limit(self._limit) if self._limit else query
+        if self._limit:
+            query = query.limit(self._limit)
+        if not columns:
+            # if select * query then limit to 50 rows
+            query = query.limit(50)
 
         return self.compile(query)

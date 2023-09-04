@@ -12,7 +12,6 @@ import {
 	TextCursorInput,
 	TrendingUp,
 } from 'lucide-vue-next'
-
 import { defineAsyncComponent } from 'vue'
 
 const VALID_CHARTS = [
@@ -167,6 +166,12 @@ function getChartOptions() {
 	}))
 }
 
+export function getChartIcon(itemType) {
+	if (!itemType) return
+	if (!VALID_CHARTS.includes(itemType)) return
+	return get(itemType).icon
+}
+
 export default {
 	...WIDGETS,
 	list: Object.values(WIDGETS),
@@ -174,4 +179,5 @@ export default {
 	getComponent,
 	getOptionComponent,
 	getChartOptions,
+	getChartIcon,
 }

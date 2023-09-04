@@ -39,7 +39,7 @@ function makeQuery(name) {
 	}
 
 	state.syncDoc = async function () {
-		state.doc = resource.doc
+		state.doc = { ...resource.doc }
 		state.isOwner = state.doc.owner == auth.user.user_id
 		state.loading = false
 		state.unsaved = false
@@ -59,8 +59,10 @@ function makeQuery(name) {
 	}
 
 	// Results
-	state.MAX_ROWS = 500
-	state.formattedResults = computed(() => getFormattedResult(state.doc.results))
+	state.MAX_ROWS = 200
+	state.formattedResults = computed(() =>
+		getFormattedResult(state.doc.results.slice(0, state.MAX_ROWS))
+	)
 	state.resultColumns = computed(() => state.doc.results?.[0])
 
 	state.execute = debounce(async () => {
@@ -68,19 +70,26 @@ function makeQuery(name) {
 		await state.save()
 		await resource.run
 			.submit()
-			.then(() => state.syncDoc())
+			.then(() => state.reload())
 			.catch((e) => {
 				console.error(e)
 			})
 		state.executing = false
 	}, 300)
 
-	state.save = async () => {
-		state.loading = true
-		const updatedFields = getUpdatedFields()
-		await resource.setValue.submit(updatedFields)
-		await state.syncDoc()
-		state.loading = false
+	watchOnce(() => state.autosave, setupAutosaveListener)
+	function setupAutosaveListener() {
+		const saveIfChanged = function (newVal, oldVal) {
+			if (state.executing) return
+			if (!oldVal || !newVal) return
+			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
+			state.save()
+		}
+		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+		window.onbeforeunload = (event) => {
+			state.unsaved && state.save()
+			event.preventDefault()
+		}
 	}
 
 	function getUpdatedFields() {
@@ -94,15 +103,11 @@ function makeQuery(name) {
 		return updatedFields
 	}
 
-	watchOnce(() => state.autosave, setupAutosaveListener)
-
-	function setupAutosaveListener() {
-		const saveIfChanged = function (newVal, oldVal) {
-			if (!oldVal || !newVal) return
-			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
-			state.save()
-		}
-		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
+	state.save = async () => {
+		state.loading = true
+		const updatedFields = getUpdatedFields()
+		await resource.setValue.submit(updatedFields)
+		state.loading = false
 	}
 
 	const setUnsaved = (newVal, oldVal) => {

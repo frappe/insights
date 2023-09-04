@@ -47,15 +47,5 @@ export default defineStore('queries', {
 			await this.reload()
 			this.deleting = false
 		},
-		filterByText(text) {
-			if (!text) return this.list
-			return this.list.filter((q) => {
-				return (
-					q.title.toLowerCase().includes(text.toLowerCase()) ||
-					q.name.toLowerCase().includes(text.toLowerCase()) ||
-					q.data_source.toLowerCase().includes(text.toLowerCase())
-				)
-			})
-		},
 	},
 })

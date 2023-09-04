@@ -72,7 +72,6 @@ def get_table_name(data_source, table):
 
 @frappe.whitelist()
 @check_role("Insights User")
-@redis_cache(ttl=60 * 60 * 24)
 def get_tables(data_source=None, with_query_tables=False):
     if not data_source:
         return []
@@ -148,6 +147,7 @@ def get_queries():
     Query = frappe.qb.DocType("Insights Query")
     QueryTable = frappe.qb.DocType("Insights Query Table")
     QueryChart = frappe.qb.DocType("Insights Chart")
+    User = frappe.qb.DocType("User")
     GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
@@ -155,6 +155,8 @@ def get_queries():
         .on(Query.name == QueryTable.parent)
         .left_join(QueryChart)
         .on(QueryChart.query == Query.name)
+        .left_join(User)
+        .on(Query.owner == User.name)
         .select(
             Query.name,
             Query.title,
@@ -164,6 +166,9 @@ def get_queries():
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
+            Query.owner,
+            User.full_name.as_("owner_name"),
+            User.user_image.as_("owner_image"),
             QueryChart.chart_type,
         )
         .where(Query.name.isin(allowed_queries))
