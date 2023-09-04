@@ -91,7 +91,10 @@ const dropdownActions = computed(() => {
 		{
 			label: 'Delete',
 			icon: 'trash',
-			onClick: () => dataSource.delete(),
+			onClick: async () => {
+				await dataSource.delete()
+				router.push({ name: 'DataSourceList' })
+			},
 		},
 	]
 })
