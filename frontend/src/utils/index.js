@@ -1,3 +1,4 @@
+import domtoimage from 'dom-to-image'
 import settings from '@/utils/systemSettings'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
@@ -251,6 +252,27 @@ export function isInViewport(element) {
 		rect.bottom < (window.innerHeight || document.documentElement.clientHeight) &&
 		rect.right < (window.innerWidth || document.documentElement.clientWidth)
 	)
+}
+
+export function downloadImage(element, filename, options = {}) {
+	return domtoimage
+		.toBlob(element, {
+			bgcolor: 'rgb(248, 248, 248)',
+			...options,
+		})
+		.then(function (blob) {
+			const link = document.createElement('a')
+			link.download = filename
+			link.href = URL.createObjectURL(blob)
+			link.click()
+		})
+}
+export function getImageSrc(element) {
+	return domtoimage
+		.toBlob(element, {
+			bgcolor: 'rgb(248, 248, 248)',
+		})
+		.then((blob) => URL.createObjectURL(blob))
 }
 
 export default {

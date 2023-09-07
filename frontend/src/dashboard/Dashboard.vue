@@ -80,7 +80,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 			<div class="h-full w-full overflow-y-scroll p-2">
 				<div
 					ref="gridLayout"
-					class="relative flex h-fit min-h-screen w-full flex-1 flex-col"
+					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
 				>
 					<UseDropZone
 						v-if="dashboard.editing && draggingWidget"
