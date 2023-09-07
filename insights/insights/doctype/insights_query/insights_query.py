@@ -14,7 +14,7 @@ from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
-from insights.utils import InsightsChart, InsightsSettings, InsightsTable, ResultColumn
+from insights.utils import InsightsSettings, InsightsTable, ResultColumn
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_assisted_query import InsightsAssistedQueryController
@@ -50,8 +50,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.update_linked_docs()
 
     def on_trash(self):
-        self.delete_insights_table()
         self.delete_default_chart()
+        self.delete_insights_table()
 
     @property
     def is_saved_as_table(self):
@@ -152,8 +152,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         frappe.delete_doc_if_exists("Insights Table", table_name)
 
     def delete_default_chart(self):
-        chart_name = InsightsChart.get_name(query=self.name)
-        frappe.delete_doc_if_exists("Insights Chart", chart_name)
+        frappe.db.delete("Insights Chart", {"query": self.name})
 
     def retrieve_results(self, fetch_if_not_cached=False):
         results = CachedResults.get(self.name)
