@@ -28,7 +28,7 @@ class SQLiteColumnFormatter(ColumnFormatter):
         if format == "Hour of Day":
             return func.strftime("%H:00", column)
         if format == "Day of Week":
-            return func.strftime("%A", column)
+            return func.strftime("%w", column)
         if format == "Day of Month":
             return func.strftime("%d", column)
         if format == "Day of Year":
