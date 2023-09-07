@@ -6,9 +6,11 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 		return {}
 	}
 
+	const colors = options.colors || getColors()
+
 	return {
 		animation: false,
-		color: getColors(),
+		color: colors,
 		tooltip: {
 			trigger: 'item',
 			confine: true,
@@ -53,15 +55,15 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 					name: labels[index],
 					value,
 					itemStyle: {
-						borderColor: getColors()[index],
+						borderColor: colors[index],
 						borderWidth: 10,
 						borderCap: 'round',
 						borderJoin: 'round',
 					},
 					emphasis: {
 						itemStyle: {
-							color: getColors()[index],
-							borderColor: getColors()[index],
+							color: colors[index],
+							borderColor: colors[index],
 							borderWidth: 15,
 							borderCap: 'round',
 							borderJoin: 'round',
