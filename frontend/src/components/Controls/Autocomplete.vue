@@ -72,8 +72,8 @@
 							</div>
 							<ComboboxOption
 								as="template"
-								v-for="option in group.items.slice(0, 50)"
-								:key="option.value"
+								v-for="(option, idx) in group.items.slice(0, 50)"
+								:key="option?.value || idx"
 								:value="option"
 								v-slot="{ active, selected }"
 							>
@@ -88,10 +88,13 @@
 											name="item-prefix"
 											v-bind="{ active, selected, option }"
 										/>
-										{{ option.label }}
+										{{ option?.label || option?.value || option || 'No label' }}
 									</div>
 									<slot name="item-suffix" v-bind="{ active, selected, option }">
-										<div class="text-sm text-gray-500">
+										<div
+											v-if="option?.description"
+											class="text-sm text-gray-500"
+										>
 											{{ option.description }}
 										</div>
 									</slot>
