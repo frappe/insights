@@ -44,7 +44,7 @@ const progressPercent = computed(() => {
 					{{ props.options.prefix }}{{ formatValue(progress) }}{{ props.options.suffix }}
 				</div>
 			</div>
-			<div class="my-1">
+			<div class="my-2">
 				<div class="flex justify-between text-xs tracking-wide text-gray-600">
 					<div>{{ progressPercent }}%</div>
 					<div>
