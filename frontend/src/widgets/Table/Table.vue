@@ -57,14 +57,14 @@ function total(column) {
 					<tr>
 						<td
 							v-if="props.options.index"
-							class="w-10 whitespace-nowrap border-b bg-white py-1.5 font-medium text-gray-600"
+							class="w-10 whitespace-nowrap border-b bg-white py-1.5 text-gray-600"
 							scope="col"
 						>
 							#
 						</td>
 						<td
 							v-for="column in props.options.columns"
-							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 font-medium text-gray-600 hover:text-gray-800"
+							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 pr-4 text-gray-600 hover:text-gray-800"
 							scope="col"
 						>
 							{{ column }}
@@ -76,7 +76,7 @@ function total(column) {
 						<td v-if="props.options.index" class="w-10 whitespace-nowrap bg-white py-2">
 							{{ index + 1 }}
 						</td>
-						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2">
+						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2 pr-4">
 							{{ typeof cell == 'number' ? formatNumber(cell) : ellipsis(cell, 100) }}
 						</td>
 					</tr>
