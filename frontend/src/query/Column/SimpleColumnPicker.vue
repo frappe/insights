@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { isEmptyObj, FIELDTYPES } from '@/utils'
+import { FIELDTYPES, isEmptyObj } from '@/utils'
 
 import { dateFormats } from '@/utils/format'
 
@@ -180,7 +180,7 @@ const showDateFormatOptions = computed(() =>
 )
 function selectDateFormat(option) {
 	simpleColumn.column.format_option = {
-		date_format: option.value,
+		date_format: typeof option === 'string' ? option : option.value,
 	}
 }
 
@@ -207,9 +207,7 @@ function addOrEditColumn() {
 		aggregation: simpleColumn.aggType.value,
 		label: simpleColumn.label,
 		order_by: simpleColumn.order_by,
-		format_option: showDateFormatOptions.value
-			? { date_format: simpleColumn.dateFormat.value }
-			: {},
+		format_option: showDateFormatOptions.value ? simpleColumn.column.format_option : null,
 	}
 
 	if (!columnNeeded.value) {
