@@ -126,7 +126,20 @@ class InsightsAssistedQueryController:
         )
 
     def fetch_results(self, additional_filters=None):
-        return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
+        query = self.doc
+        if additional_filters:
+            query = self.apply_additional_filters(additional_filters)
+        return InsightsDataSource.get_doc(self.doc.data_source).run_query(query)
+
+    def apply_additional_filters(self, additional_filters):
+        query_json = self.query_json
+        for filter in additional_filters:
+            column = filter.get("column")
+            value = filter.get("value")
+            operator = filter.get("operator")
+            query_json.add_filter(column, operator, value)
+        self.doc.json = frappe.as_json(query_json)
+        return self.doc
 
     def export_query(self):
         subqueries = frappe.get_all(

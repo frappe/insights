@@ -366,6 +366,32 @@ class Query(frappe._dict):
     def is_valid(self):
         return self.table.is_valid()
 
+    def add_filter(self, column, operator, value):
+        if isinstance(value, str):
+            value = {"value": value}
+        if isinstance(operator, str):
+            operator = {"value": operator}
+        if not column or not isinstance(column, dict):
+            frappe.throw("Invalid Column")
+
+        is_filter_applied_to_column = any(
+            f.column.column == column.get("column") and f.column.table == column.get("table")
+            for f in self.filters
+            if f.column.is_valid()
+        )
+
+        if not is_filter_applied_to_column:
+            self.filters.append(Filter(column=column, value=value, operator=operator))
+        else:
+            # update existing filter
+            for f in self.filters:
+                if f.column.column == column.get("column") and f.column.table == column.get(
+                    "table"
+                ):
+                    f.value = LabelValue(**value)
+                    f.operator = LabelValue(**operator)
+                    break
+
     def get_tables(self):
         tables = set()
         tables.add(self.table.table) if self.table else None

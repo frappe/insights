@@ -708,6 +708,9 @@ class SQLQueryBuilder:
                     _filter = operation(_column, filter_value)
                 elif "set" in operator:  # is set, is not set
                     _filter = Functions.apply(operator, _column)
+                elif operator == "is":
+                    fn = "is_set" if filter_value == "set" else "is_not_set"
+                    _filter = Functions.apply(fn, _column)
                 else:
                     args = [filter_value]
                     if operator == "between":
