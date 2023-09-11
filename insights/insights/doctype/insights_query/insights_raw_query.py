@@ -34,7 +34,7 @@ class InsightsRawQueryController:
     def get_selected_tables(self):
         return []
 
-    def fetch_results(self):
+    def fetch_results(self, additional_filters=None):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
 
     def export_query(self):

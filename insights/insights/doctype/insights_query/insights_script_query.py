@@ -30,7 +30,7 @@ class InsightsScriptQueryController:
             return []
         return get_columns_with_inferred_types(results)
 
-    def fetch_results(self):
+    def fetch_results(self, additional_filters=None):
         script = self.doc.script
         if not script:
             return []

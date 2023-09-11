@@ -15,11 +15,7 @@ from insights.cache_utils import get_or_set_cache, make_digest
 from insights.decorators import debounce
 from insights.insights.doctype.insights_query.utils import import_query
 
-from .utils import (
-    convert_into_simple_filter,
-    convert_to_expression,
-    guess_layout_for_chart,
-)
+from .utils import guess_layout_for_chart
 
 CACHE_NAMESPACE = "insights_dashboard"
 
@@ -65,50 +61,15 @@ class InsightsDashboard(Document):
         if not query_name:
             return frappe.throw("Query not found")
 
-        filter_conditions = []
-        for chart_filter in filters:
-            chart_filter = frappe._dict(chart_filter)
-            filter_conditions.append(
-                convert_to_expression(
-                    chart_filter.column.get("table"),
-                    chart_filter.column.get("column"),
-                    chart_filter.operator,
-                    chart_filter.value,
-                    chart_filter.column_type,
-                )
-            )
-
         return InsightsDashboard.run_query(
-            self.cache_namespace, query_name, additional_filters=filter_conditions
+            self.cache_namespace, query_name, additional_filters=filters
         )
 
     @staticmethod
     def run_query(cache_namespace, query_name, additional_filters=None):
         def get_result():
             query = frappe.get_cached_doc("Insights Query", query_name)
-            if not additional_filters:
-                return query.fetch_results()
-
-            filters = frappe.parse_json(query.filters)
-
-            new_filters = frappe.parse_json(query.filters)
-            for new_filter in additional_filters:
-                found = False
-                # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
-                if new_simple_filter := convert_into_simple_filter(new_filter):
-                    for index, exisiting_filter in enumerate(filters.conditions):
-                        existing_simple_filter = convert_into_simple_filter(exisiting_filter)
-                        if not existing_simple_filter:
-                            continue
-                        if existing_simple_filter["column"] == new_simple_filter["column"]:
-                            new_filters.conditions[index] = new_filter
-                            found = True
-                            break
-                if not found:
-                    new_filters.conditions.append(new_filter)
-
-            query.filters = dumps(new_filters)
-            return query.fetch_results()
+            return query.fetch_results(additional_filters=additional_filters)
 
         last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
         key = make_digest(query_name, last_modified, additional_filters)

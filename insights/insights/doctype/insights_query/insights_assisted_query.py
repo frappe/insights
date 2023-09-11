@@ -125,7 +125,7 @@ class InsightsAssistedQueryController:
             for col in self.query_json.get_columns()
         )
 
-    def fetch_results(self):
+    def fetch_results(self, additional_filters=None):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
 
     def export_query(self):

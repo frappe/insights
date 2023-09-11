@@ -160,13 +160,13 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             results = self.fetch_results()
         return results or []
 
-    def fetch_results(self):
+    def fetch_results(self, additional_filters=None):
         self.before_fetch()
 
         self._results = []
         start = time.monotonic()
         try:
-            self._results = self.variant_controller.fetch_results()
+            self._results = self.variant_controller.fetch_results(additional_filters)
             self._results = self.after_fetch(self._results)
             self._results = self.process_results_columns(self._results)
             self.db_set(

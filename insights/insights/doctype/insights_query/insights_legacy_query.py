@@ -11,6 +11,10 @@ from insights.api import fetch_column_values, get_tables
 from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store
+from .insights_legacy_query_utils import (
+    convert_into_simple_filter,
+    convert_to_expression,
+)
 from .utils import (
     BaseNestedQueryImporter,
     apply_cumulative_sum,
@@ -346,8 +350,46 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def has_cumulative_columns(self):
         return any(col.aggregation and "Cumulative" in col.aggregation for col in self.doc.columns)
 
-    def fetch_results(self):
-        return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
+    def fetch_results(self, additional_filters=None):
+        query = self.doc
+        if additional_filters:
+            query = self.apply_additional_filters(additional_filters)
+        return InsightsDataSource.get_doc(self.doc.data_source).run_query(query)
+
+    def apply_additional_filters(self, additional_filters):
+        filter_conditions = []
+        for chart_filter in additional_filters:
+            chart_filter = frappe._dict(chart_filter)
+            filter_conditions.append(
+                convert_to_expression(
+                    chart_filter.column.get("table"),
+                    chart_filter.column.get("column"),
+                    chart_filter.operator,
+                    chart_filter.value,
+                    chart_filter.column_type,
+                )
+            )
+
+        filters = frappe.parse_json(self.doc.filters)
+        new_filters = frappe.parse_json(self.doc.filters)
+
+        for new_filter in filter_conditions:
+            found = False
+            # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
+            if new_simple_filter := convert_into_simple_filter(new_filter):
+                for index, exisiting_filter in enumerate(filters.conditions):
+                    existing_simple_filter = convert_into_simple_filter(exisiting_filter)
+                    if not existing_simple_filter:
+                        continue
+                    if existing_simple_filter["column"] == new_simple_filter["column"]:
+                        new_filters.conditions[index] = new_filter
+                        found = True
+                        break
+            if not found:
+                new_filters.conditions.append(new_filter)
+
+        self.doc.filters = dumps(new_filters, indent=2)
+        return self.doc
 
     def export_query(self):
         selected_tables = self.get_selected_tables()
