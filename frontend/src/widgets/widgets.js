@@ -57,6 +57,7 @@ const WIDGETS = {
 	},
 	Scatter: {
 		type: 'Scatter',
+		icon: ScatterChart,
 		component: defineAsyncComponent(() => import('./Scatter/Scatter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Scatter/ScatterOptions.vue')),
 		options: {},
