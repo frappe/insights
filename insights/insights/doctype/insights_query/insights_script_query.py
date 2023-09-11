@@ -5,7 +5,6 @@
 import frappe
 import pandas as pd
 from frappe.utils.safe_exec import compile_restricted, get_safe_globals
-
 from insights import notify
 
 from .utils import get_columns_with_inferred_types
