@@ -13,6 +13,7 @@ import AppShell from '@/components/AppShell.vue'
 import Toasts from '@/utils/toasts'
 import { inject, onBeforeUnmount, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import sessionStore from '@/stores/sessionStore'
 
 const route = useRoute()
 const isGuestView = computed(() => route.meta.isGuestView)
@@ -20,9 +21,9 @@ const isGuestView = computed(() => route.meta.isGuestView)
 if (!isGuestView.value) {
 	const $socket = inject('$socket')
 	const $notify = inject('$notify')
-	const $auth = inject('$auth')
+	const session = sessionStore()
 	$socket.on('insights_notification', (data) => {
-		if (data.user == $auth.user.user_id) {
+		if (data.user == session.user.user_id) {
 			$notify({
 				title: data.title || data.message,
 				message: data.title ? data.message : '',

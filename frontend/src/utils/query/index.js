@@ -1,5 +1,5 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import useAuthStore from '@/stores/authStore'
+import sessionStore from '@/stores/sessionStore'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
 import { useQueryResults } from '@/utils/query/results'
@@ -8,13 +8,13 @@ import { createToast } from '@/utils/toasts'
 import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
 
-const auth = useAuthStore()
+const session = sessionStore()
 
 export function useQuery(name) {
 	const query = useQueryResource(name)
 	query.beforeExecuteFns = []
 
-	query.isOwner = computed(() => query.doc?.owner === auth.user.user_id)
+	query.isOwner = computed(() => query.doc?.owner === session.user.user_id)
 	query.tables = useQueryTables(query)
 	query.columns = useQueryColumns(query)
 	query.filters = useQueryFilters(query)

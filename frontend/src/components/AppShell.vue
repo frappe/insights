@@ -17,13 +17,13 @@
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
 import SuspenseFallback from '@/components/SuspenseFallback'
-import authStore from '@/stores/authStore'
+import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-const auth = authStore()
+const session = sessionStore()
 const route = useRoute()
-const hideSidebar = computed(() => route.meta.hideSidebar || !auth.isLoggedIn)
-onMounted(() => auth.isLoggedIn && settingsStore())
+const hideSidebar = computed(() => route.meta.hideSidebar || !session.isLoggedIn)
+onMounted(() => session.isLoggedIn && settingsStore())
 </script>

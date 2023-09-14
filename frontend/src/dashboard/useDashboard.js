@@ -1,12 +1,12 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import useAuthStore from '@/stores/authStore'
+import sessionStore from '@/stores/sessionStore'
 import { safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
 
-const auth = useAuthStore()
+const session = sessionStore()
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -41,8 +41,8 @@ export default function useDashboard(name) {
 		await resource.get.fetch()
 		state.doc = resource.doc
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
-		state.isOwner = state.doc.owner == auth.user.user_id
-		state.canShare = state.isOwner || auth.user.is_admin
+		state.isOwner = state.doc.owner == session.user.user_id
+		state.canShare = state.isOwner || session.user.is_admin
 		resource.is_private.fetch().then((res) => {
 			state.isPrivate = res.message
 		})

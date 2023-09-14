@@ -1,13 +1,13 @@
 import useChart from '@/query/useChart'
 import { useQueryResource } from '@/query/useQueryResource'
-import useAuthStore from '@/stores/authStore'
+import sessionStore from '@/stores/sessionStore'
 import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
-const auth = useAuthStore()
+const session = sessionStore()
 
 const queries = {}
 
@@ -40,7 +40,7 @@ function makeQuery(name) {
 
 	state.syncDoc = async function () {
 		state.doc = { ...resource.doc }
-		state.isOwner = state.doc.owner == auth.user.user_id
+		state.isOwner = state.doc.owner == session.user.user_id
 		state.loading = false
 		state.unsaved = false
 	}

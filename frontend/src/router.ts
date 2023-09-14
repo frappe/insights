@@ -1,4 +1,4 @@
-import authStore from '@/stores/authStore'
+import sessionStore from '@/stores/sessionStore'
 import { createRouter, createWebHistory } from 'vue-router'
 import settingsStore from './stores/settingsStore'
 
@@ -90,7 +90,7 @@ const routes = [
 		component: () => import('@/pages/Users.vue'),
 		meta: {
 			isAllowed(): boolean {
-				return authStore().user.is_admin && settingsStore().settings.enable_permissions
+				return sessionStore().user.is_admin && settingsStore().settings.enable_permissions
 			},
 		},
 	},
@@ -100,7 +100,7 @@ const routes = [
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
 			isAllowed(): boolean {
-				return authStore().user.is_admin && settingsStore().settings.enable_permissions
+				return sessionStore().user.is_admin && settingsStore().settings.enable_permissions
 			},
 		},
 	},
@@ -158,16 +158,16 @@ let router = createRouter({
 })
 
 router.beforeEach(async (to, _, next) => {
-	const auth = authStore()
-	!auth.initialized && (await auth.initialize())
+	const session = sessionStore()
+	!session.initialized && (await session.initialize())
 
-	if (to.meta.isGuestView && !auth.isLoggedIn && to.name !== 'Login') {
+	if (to.meta.isGuestView && !session.isLoggedIn && to.name !== 'Login') {
 		// if page is allowed for guest, and is not login page, allow
 		return next()
 	}
 
 	// route to login page if not logged in
-	if (!auth.isLoggedIn) {
+	if (!session.isLoggedIn) {
 		// if in dev mode, open login page
 		if (import.meta.env.DEV) {
 			return to.fullPath === '/login' ? next() : next('/login')
@@ -177,10 +177,10 @@ router.beforeEach(async (to, _, next) => {
 		return next(false)
 	}
 
-	if (!auth.isAuthorized && to.name !== 'No Permission') {
+	if (!session.isAuthorized && to.name !== 'No Permission') {
 		return next('/no-permission')
 	}
-	if (auth.isAuthorized && to.name === 'No Permission') {
+	if (session.isAuthorized && to.name === 'No Permission') {
 		return next()
 	}
 	if (to.meta.isAllowed && !to.meta.isAllowed()) {
@@ -211,7 +211,7 @@ router.afterEach((to, from) => {
 		toName !== from.name &&
 		to.params.name !== from.params.name
 	) {
-		authStore().createViewLog(toName, to.params.name as string)
+		sessionStore().createViewLog(toName, to.params.name as string)
 	}
 })
 
@@ -219,7 +219,7 @@ const _fetch = window.fetch
 window.fetch = async function () {
 	const res = await _fetch(...arguments)
 	if (res.status === 403 && (!document.cookie || document.cookie.includes('user_id=Guest'))) {
-		authStore().resetAuthState()
+		sessionStore().resetSession()
 		router.push('/login')
 	}
 	return res

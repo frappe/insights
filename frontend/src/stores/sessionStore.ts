@@ -12,7 +12,7 @@ const emptyUser: User = {
 	is_user: false,
 }
 
-const authStore = defineStore('insights:auth', function () {
+const sessionStore = defineStore('insights:session', function () {
 	const initialized = ref(false)
 	const user = ref(emptyUser)
 
@@ -21,13 +21,13 @@ const authStore = defineStore('insights:auth', function () {
 
 	async function initialize(force: boolean = false) {
 		if (initialized.value && !force) return
-		Object.assign(user.value, getInitialStateFromCookies())
-		isLoggedIn.value && (await fetchUserInfo())
+		Object.assign(user.value, getSessionFromCookies())
+		isLoggedIn.value && (await fetchSessionInfo())
 		isLoggedIn.value && api.trackActiveSite()
 		initialized.value = true
 	}
 
-	async function fetchUserInfo() {
+	async function fetchSessionInfo() {
 		if (!isLoggedIn.value) return
 		const userInfo: User = await api.fetchUserInfo()
 		Object.assign(user.value, {
@@ -38,7 +38,7 @@ const authStore = defineStore('insights:auth', function () {
 	}
 
 	async function login(email: string, password: string) {
-		resetAuthState()
+		resetSession()
 		const userInfo = await api.login(email, password)
 		if (!userInfo) return
 		Object.assign(user.value, userInfo)
@@ -46,12 +46,12 @@ const authStore = defineStore('insights:auth', function () {
 	}
 
 	async function logout() {
-		resetAuthState()
+		resetSession()
 		await api.logout()
 		window.location.reload()
 	}
 
-	function resetAuthState() {
+	function resetSession() {
 		Object.assign(user, emptyUser)
 	}
 
@@ -67,15 +67,15 @@ const authStore = defineStore('insights:auth', function () {
 		isLoggedIn,
 		isAuthorized,
 		initialize,
-		fetchUserInfo,
+		fetchSessionInfo,
 		login,
 		logout,
-		resetAuthState,
+		resetSession,
 		createViewLog,
 	}
 })
 
-function getInitialStateFromCookies() {
+function getSessionFromCookies() {
 	return document.cookie
 		.split('; ')
 		.map((c) => c.split('='))
@@ -85,5 +85,5 @@ function getInitialStateFromCookies() {
 		}, {} as any)
 }
 
-export default authStore
-export type AuthStore = ReturnType<typeof authStore>
+export default sessionStore
+export type sessionStore = ReturnType<typeof sessionStore>

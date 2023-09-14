@@ -74,7 +74,7 @@
 							icon: 'life-buoy',
 							onClick: () => (showHelpDialog = true),
 						},
-						auth.user.is_admin
+						session.user.is_admin
 							? {
 									label: 'Switch to Desk',
 									icon: 'grid',
@@ -84,7 +84,7 @@
 						{
 							label: 'Logout',
 							icon: 'log-out',
-							onClick: () => auth.logout(),
+							onClick: () => session.logout(),
 						},
 					]"
 				>
@@ -95,13 +95,13 @@
 						>
 							<Avatar
 								size="xl"
-								:label="auth.user.full_name"
-								:imageURL="auth.user.user_image"
+								:label="session.user.full_name"
+								:imageURL="session.user.user_image"
 							/>
 							<span
 								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"
 							>
-								{{ auth.user.full_name }}
+								{{ session.user.full_name }}
 							</span>
 							<FeatherIcon name="chevron-down" class="rg:inline hidden h-4 w-4" />
 						</button>
@@ -118,7 +118,7 @@
 import { Avatar } from 'frappe-ui'
 
 import HelpDialog from '@/components/HelpDialog.vue'
-import authStore from '@/stores/authStore'
+import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
 import { createResource } from 'frappe-ui'
 import {
@@ -134,7 +134,7 @@ import {
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-const auth = authStore()
+const session = sessionStore()
 const settings = settingsStore().settings
 
 const showHelpDialog = ref(false)
@@ -183,7 +183,7 @@ const sidebarItems = ref([
 ])
 
 watch(
-	() => auth.user.is_admin && settings.enable_permissions,
+	() => session.user.is_admin && settings.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item

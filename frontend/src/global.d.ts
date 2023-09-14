@@ -14,7 +14,7 @@ interface User {
 	is_user: boolean
 }
 
-interface AuthState {
+interface Session {
 	initialized: boolean
 	user: User
 }
