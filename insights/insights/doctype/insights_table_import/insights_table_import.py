@@ -50,7 +50,8 @@ class InsightsTableImport(Document):
             # read only the first line to get the column names
             csv_reader = csv.DictReader(f)
             column_names = csv_reader.fieldnames
-            no_of_rows = sum(1 for _ in csv_reader)
+            rows = list(csv_reader)
+            no_of_rows = len(rows)
 
         self.db_set("rows", no_of_rows)
         for column in column_names:
