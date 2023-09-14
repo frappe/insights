@@ -7,13 +7,17 @@ import { computed, ref } from 'vue'
 
 const emit = defineEmits(['update:modelValue', 'remove'])
 const props = defineProps({
-	modelValue: { type: Object, required: true },
+	modelValue: { required: true },
 	options: { type: Array, required: true },
+	seriesType: { type: String },
 })
 const series = computed({
 	get: () => props.modelValue,
 	set: (value) => emit('update:modelValue', value),
 })
+if (props.seriesType) {
+	series.value.type = props.seriesType
+}
 if (!series.value.column) {
 	series.value.column = {}
 }
@@ -22,6 +26,7 @@ if (!series.value.type) {
 }
 
 const menuAnchor = ref(null)
+const showMenu = ref(false)
 </script>
 
 <template>
@@ -35,15 +40,19 @@ const menuAnchor = ref(null)
 			/>
 		</div>
 		<div ref="menuAnchor" class="flex-shrink-0">
-			<!-- <Button icon="x" variant="subtle" @click="$emit('remove')" /> -->
 			<Button icon="more-horizontal" variant="subtle" @click="showMenu = !showMenu" />
-			<UsePopover v-if="menuAnchor" :targetElement="menuAnchor" placement="right-start">
+			<UsePopover
+				v-if="menuAnchor"
+				:show="showMenu"
+				:targetElement="menuAnchor"
+				placement="right-start"
+			>
 				<div
 					class="h-fit max-h-[16rem] w-[15rem] space-y-3 overflow-y-scroll rounded bg-white p-3 text-base shadow"
 				>
 					<p class="text-gray-700">Series Options</p>
 
-					<div>
+					<div v-if="!props.seriesType">
 						<span class="mb-1 block text-sm leading-4 text-gray-700"> Axis Type </span>
 						<Tabs
 							v-model="series.type"

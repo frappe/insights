@@ -1,10 +1,8 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
-import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
-import Draggable from 'vuedraggable'
 import SeriesOption from '../SeriesOption.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -65,26 +63,16 @@ const yAxis = computed({
 		</div>
 		<div class="space-y-2">
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<Draggable
-				:modelValue="yAxis"
-				group="yAxis"
-				itemKey="column"
-				handle=".handle"
-				class="flex w-full flex-col space-y-2"
-			>
-				<template #item="{ element: series }">
-					<div class="flex flex-1">
-						<DragHandleIcon
-							class="handle mr-1 h-4 w-4 flex-shrink-0 rotate-90 cursor-grab self-center text-gray-500"
-						/>
-						<SeriesOption
-							:modelValue="series"
-							:options="valueOptions"
-							@remove="yAxis.splice(yAxis.indexOf(series), 1)"
-						/>
-					</div>
-				</template>
-			</Draggable>
+			<div class="flex w-full flex-col space-y-2">
+				<div class="flex flex-1" v-for="(series, index) in yAxis" :key="index">
+					<SeriesOption
+						seriesType="line"
+						:modelValue="series"
+						:options="valueOptions"
+						@remove="yAxis.splice(yAxis.indexOf(series), 1)"
+					/>
+				</div>
+			</div>
 			<div>
 				<span
 					v-if="options.splitYAxis ? yAxis.length < 2 : true"

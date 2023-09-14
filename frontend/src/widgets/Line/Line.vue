@@ -20,6 +20,7 @@ const datasets = computed(() => {
 		return {
 			label: column,
 			data: props.data.map((d) => d[column]),
+			options: series,
 		}
 	})
 })

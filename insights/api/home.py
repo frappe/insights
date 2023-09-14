@@ -38,7 +38,7 @@ def get_last_viewed_records():
         .groupby(ViewLog.reference_doctype, ViewLog.reference_name)
         .orderby(Max(ViewLog.modified).as_("creation"), order=frappe.qb.desc)
         .limit(20)
-        .run(as_dict=True, debug=1)
+        .run(as_dict=True)
     )
     fetch_titles(records)
     fetch_notebook_names(records)
