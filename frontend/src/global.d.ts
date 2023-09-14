@@ -12,6 +12,8 @@ interface User {
 	user_image: string
 	is_admin: boolean
 	is_user: boolean
+	country: string
+	locale: string
 }
 
 interface Session {

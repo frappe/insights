@@ -10,6 +10,8 @@ const emptyUser: User = {
 	user_image: '',
 	is_admin: false,
 	is_user: false,
+	country: '',
+	locale: 'en-US',
 }
 
 const sessionStore = defineStore('insights:session', function () {

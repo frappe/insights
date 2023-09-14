@@ -1,7 +1,7 @@
-import domtoimage from 'dom-to-image'
-import settings from '@/utils/systemSettings'
+import sessionStore from '@/stores/sessionStore'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
+import domtoimage from 'dom-to-image'
 import { computed, watch } from 'vue'
 
 export const FIELDTYPES = {
@@ -127,7 +127,8 @@ export function ellipsis(value, length) {
 }
 
 export function getShortNumber(number, precision = 0) {
-	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
+	const session = sessionStore()
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
@@ -141,7 +142,8 @@ export function getShortNumber(number, precision = 0) {
 
 export function formatNumber(number, precision = 0) {
 	precision = precision || guessPrecision(number)
-	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
+	const session = sessionStore()
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,
 	}).format(number)
