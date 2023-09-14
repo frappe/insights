@@ -1,7 +1,9 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import pathlib
 from typing import List, Union
+import chardet
 
 import frappe
 
@@ -74,3 +76,9 @@ class InsightsSettings:
     @classmethod
     def get(cls, key):
         return frappe.db.get_single_value("Insights Settings", key)
+
+
+def detect_encoding(file_path: pathlib.Path):
+    with open(file_path, 'rb') as file:
+        result = chardet.detect(file.read())
+    return result['encoding']
