@@ -3,7 +3,7 @@ import { computed, unref } from 'vue'
 import { getFormattedDate } from '../format'
 
 export function useQueryResults(query) {
-	const MAX_ROWS = 500
+	const MAX_ROWS = 100
 	const data = computed(() => {
 		return safeJSONParse(query.doc.results, [])
 	})

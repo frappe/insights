@@ -7,7 +7,7 @@ const props = defineProps({
 	options: { type: Object, required: true },
 })
 
-const MAX_ROWS = 500
+const MAX_ROWS = 100
 const rows = computed(() => {
 	if (!props.data?.length || !props.options.columns?.length) return []
 	const resultRows = props.data.map((row) => {

@@ -59,7 +59,7 @@ function makeQuery(name) {
 	}
 
 	// Results
-	state.MAX_ROWS = 200
+	state.MAX_ROWS = 100
 	state.formattedResults = computed(() =>
 		getFormattedResult(state.doc.results.slice(0, state.MAX_ROWS))
 	)
