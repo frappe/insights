@@ -9,7 +9,7 @@ function useDataSource(name: string) {
 	}
 
 	const resource: DataSourceResource = getDocumentResource('Insights Data Source', name)
-	resource.triggerFetch()
+	resource.fetchIfNeeded()
 
 	const doc = computed({
 		get: () => resource.doc || {},

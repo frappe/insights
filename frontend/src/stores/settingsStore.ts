@@ -21,8 +21,8 @@ const settingsStore = defineStore('insights:settings', () => {
 	const initialized = computed(() => insightsSettings.doc && systemSettings.doc)
 	async function initialize() {
 		if (initialized.value) return
-		await insightsSettings.triggerFetch()
-		await systemSettings.triggerFetch()
+		await insightsSettings.fetchIfNeeded()
+		await systemSettings.fetchIfNeeded()
 	}
 
 	const loading = computed(() => insightsSettings.loading || systemSettings.loading)

@@ -64,7 +64,7 @@ type DocumentResource = {
 	loading: boolean
 	get: Resource
 	delete: Resource
-	triggerFetch: () => void
+	fetchIfNeeded: () => void
 }
 
 interface DataSourceResource extends DocumentResource {

@@ -36,7 +36,7 @@ export const getDocumentResource = (
 		whitelistedMethods: getWhitelistedMethods(doctype),
 		...options,
 	})
-	resource.triggerFetch = async () => {
+	resource.fetchIfNeeded = async () => {
 		!resource.get.loading && (await resource.get.fetch())
 	}
 	return resource
