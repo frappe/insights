@@ -56,7 +56,7 @@ export default function getScatterChartOptions(labels, datasets, options) {
 			pageButtonItemGap: 2,
 		},
 		tooltip: {
-			trigger: 'item',
+			trigger: 'axis',
 			confine: true,
 			appendToBody: true,
 			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
