@@ -3,7 +3,6 @@
 
 import csv
 import os
-import pathlib
 from functools import cached_property
 
 import frappe
@@ -45,7 +44,7 @@ class InsightsTableImport(Document):
             self.set_columns_and_no_of_rows()
 
     def set_columns_and_no_of_rows(self):
-        encoding = detect_encoding(pathlib.Path(self._filepath))
+        encoding = detect_encoding(self._filepath)
         with open(self._filepath, "r", encoding=encoding, errors="replace") as f:
             # read only the first line to get the column names
             csv_reader = csv.DictReader(f)

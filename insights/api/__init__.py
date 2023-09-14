@@ -1,8 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import pathlib
-
 import frappe
 from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
@@ -321,7 +319,7 @@ def get_columns_from_uploaded_file(filename):
         frappe.throw("Only CSV files are supported")
 
     file_path = file.get_full_path()
-    encoding = detect_encoding(pathlib.Path(file_path))
+    encoding = detect_encoding(file_path)
     df = pd.read_csv(file_path, encoding=encoding)
     columns = df.columns.tolist()
     columns_with_types = []

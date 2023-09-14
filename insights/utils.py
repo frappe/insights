@@ -78,7 +78,8 @@ class InsightsSettings:
         return frappe.db.get_single_value("Insights Settings", key)
 
 
-def detect_encoding(file_path: pathlib.Path):
+def detect_encoding(file_path: str):
+    file_path: pathlib.Path = pathlib.Path(file_path)
     with open(file_path, 'rb') as file:
         result = chardet.detect(file.read())
     return result['encoding']

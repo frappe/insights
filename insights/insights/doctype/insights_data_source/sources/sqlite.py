@@ -1,8 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import pathlib
-
 import frappe
 import pandas as pd
 from sqlalchemy import column as Column
@@ -124,7 +122,7 @@ class SQLiteDB(BaseDatabase):
         )
 
     def import_table(self, import_doc: InsightsTableImport):
-        encoding = detect_encoding(pathlib.Path(import_doc._filepath))
+        encoding = detect_encoding(import_doc._filepath)
         df = pd.read_csv(import_doc._filepath, encoding=encoding)
 
         df.columns = [frappe.scrub(c) for c in df.columns]
