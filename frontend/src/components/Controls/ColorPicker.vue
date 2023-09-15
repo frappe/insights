@@ -1,7 +1,7 @@
 <template>
 	<Popover
 		transition="default"
-		placement="bottom-start"
+		:placement="placement"
 		class="!block w-full"
 		popoverClass="!min-w-fit"
 	>
@@ -133,6 +133,10 @@ let currentColor = '#FFF' as HashString
 const { isSupported, sRGBHex, open } = useEyeDropper()
 
 const props = defineProps({
+	placement: {
+		type: String,
+		default: 'bottom-start',
+	},
 	modelValue: {
 		type: String as PropType<HashString | RGBString | null>,
 		default: null,

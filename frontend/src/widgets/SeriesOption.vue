@@ -1,6 +1,6 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
-import Color from '@/components/Controls/Color.vue'
+import ColorInput from '@/components/Controls/ColorInput.vue'
 import Tabs from '@/components/Tabs.vue'
 import UsePopover from '@/components/UsePopover.vue'
 import { computed, ref } from 'vue'
@@ -63,7 +63,7 @@ const showMenu = ref(false)
 						/>
 					</div>
 
-					<Color label="Color" v-model="series.color" />
+					<ColorInput label="Color" v-model="series.color" placement="right-start" />
 
 					<template v-if="series.type == 'line'">
 						<div class="space-y-2 text-gray-600">
@@ -79,9 +79,9 @@ const showMenu = ref(false)
 						</div>
 					</template>
 
-					<div class="flex justify-end space-x-2">
-						<Button variant="subtle" @click="showMenu = false"> Close </Button>
-						<Button variant="subtle" theme="red" @click="$emit('remove')">
+					<div class="flex justify-end">
+						<Button variant="ghost" @click="showMenu = false"> Close </Button>
+						<Button variant="ghost" theme="red" @click="$emit('remove')">
 							Remove
 						</Button>
 					</div>

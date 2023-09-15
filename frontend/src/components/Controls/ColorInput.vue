@@ -1,5 +1,5 @@
 <template>
-	<ColorPicker :modelValue="value" @update:modelValue="(color) => emit('change', color)">
+	<ColorPicker :modelValue="value" @update:modelValue="handleColorChange" :placement="placement">
 		<template #target="{ togglePopover }">
 			<div class="relative flex items-center justify-between">
 				<div
@@ -16,8 +16,8 @@
 					class="dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:bg-zinc-700 w-full rounded-md text-sm text-gray-700"
 					placeholder="Select Color"
 					inputClass="pl-8 pr-6"
-					:value="value"
-					@change="handleColorChange"
+					:modelValue="value"
+					@update:modelValue="handleColorChange"
 				></Input>
 				<div
 					class="dark:text-zinc-300 absolute right-1 top-[3px] cursor-pointer p-1 text-gray-700"
@@ -44,13 +44,15 @@
 <script setup>
 import { getRGB } from '@/utils/colors'
 import ColorPicker from './ColorPicker.vue'
+import { computed } from 'vue'
 
-defineProps({ value: String })
-const emit = defineEmits(['change'])
+const props = defineProps({ modelValue: String, placement: String })
+const emit = defineEmits(['update:modelValue'])
 
-const clearValue = () => emit('change', null)
-const handleColorChange = (value) => {
-	value = getRGB(value)
-	emit('change', value)
-}
+const value = computed({
+	get: () => props.modelValue,
+	set: (value) => emit('update:modelValue', value),
+})
+
+const handleColorChange = (v) => (value.value = getRGB(v))
 </script>
