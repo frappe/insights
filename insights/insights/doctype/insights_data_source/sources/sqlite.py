@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-
 import frappe
 import pandas as pd
 from sqlalchemy import column as Column
@@ -16,6 +15,8 @@ from insights.insights.query_builders.sqlite.sqlite_query_builder import (
 from ...insights_table_import.insights_table_import import InsightsTableImport
 from .base_database import BaseDatabase
 from .utils import create_insights_table
+
+from insights.utils import detect_encoding
 
 
 class SQLiteTableFactory:
@@ -121,9 +122,12 @@ class SQLiteDB(BaseDatabase):
         )
 
     def import_table(self, import_doc: InsightsTableImport):
-        df = pd.read_csv(import_doc._filepath)
+        encoding = detect_encoding(import_doc._filepath)
+        df = pd.read_csv(import_doc._filepath, encoding=encoding)
+
         df.columns = [frappe.scrub(c) for c in df.columns]
         columns_to_import = [c.column for c in import_doc.columns]
+
         df = df[columns_to_import]
         table = import_doc.table_name
         df.to_sql(
