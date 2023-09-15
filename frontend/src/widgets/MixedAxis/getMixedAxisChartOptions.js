@@ -41,6 +41,7 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 			name: options.splitYAxis ? dataset.label : undefined,
 			nameLocation: 'middle',
 			nameGap: 45,
+			nameTextStyle: { color: 'transparent' },
 			type: 'value',
 			splitLine: {
 				lineStyle: { type: 'dashed' },
