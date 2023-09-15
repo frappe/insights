@@ -538,17 +538,20 @@ class SQLQueryBuilder:
                 continue
 
             _join = parse_json(row.join)
-            join_type = _join.get("type").get("value")
+            join_type = _join.get("type", {}).get("value")
 
             left_table = self.make_table(row.table)
-            right_table = self.make_table(_join.get("with").get("value"))
+            right_table = self.make_table(_join.get("with", {}).get("value"))
 
             condition = _join.get("condition")
-            left_key = condition.get("left").get("value")
-            right_key = condition.get("right").get("value")
+            left_key = condition.get("left", {}).get("value")
+            right_key = condition.get("right", {}).get("value")
 
             left_key = self.make_column(left_key, row.table)
-            right_key = self.make_column(right_key, _join.get("with").get("value"))
+            right_key = self.make_column(right_key, _join.get("with", {}).get("value"))
+
+            if not left_key or not right_key:
+                continue
 
             self._joins.append(
                 _dict(
