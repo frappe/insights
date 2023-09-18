@@ -4,7 +4,9 @@
 
 import frappe
 import pandas as pd
+from frappe.utils.password import get_decrypted_password
 from frappe.utils.safe_exec import compile_restricted, get_safe_globals
+
 from insights import notify
 
 from .utils import get_columns_with_inferred_types
@@ -34,11 +36,14 @@ class InsightsScriptQueryController:
         if not script:
             return []
 
+        def get_value(variable):
+            return get_decrypted_password(variable.doctype, variable.name, "variable_value")
+
         results = []
         try:
             self.reset_script_log()
             variables = self.doc.get("variables") or []
-            variables = {var.variable_name: var.variable_value for var in variables}
+            variables = {var.variable_name: get_value(var) for var in variables}
             _locals = {"results": results, **variables}
             exec(
                 compile_restricted(script, filename="<scriptquery>"),

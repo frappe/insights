@@ -29,7 +29,6 @@ const variables = computed({
 						class="sticky top-0 flex gap-x-2 border-b py-2 text-sm uppercase text-gray-600"
 					>
 						<div class="flex flex-1 flex-shrink-0 px-2">Name</div>
-						<div class="flex flex-1 flex-shrink-0 px-2">Type</div>
 						<div class="flex flex-1 flex-shrink-0 px-2">Value</div>
 						<div class="flex w-10"></div>
 					</div>
@@ -43,20 +42,11 @@ const variables = computed({
 							/>
 						</div>
 						<div class="flex flex-1 flex-shrink-0">
-							<select
-								class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-gray-100 focus:outline-none focus:ring-0"
-								v-model="variable.variable_type"
-							>
-								<option value="text">Text</option>
-								<option value="password">Password</option>
-							</select>
-						</div>
-						<div class="flex flex-1 flex-shrink-0">
 							<input
-								:type="variable.variable_type"
+								type="password"
 								class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-gray-100 focus:outline-none focus:ring-0"
 								v-model="variable.variable_value"
-								placeholder="eg. 1234567890"
+								placeholder="**********************"
 							/>
 						</div>
 						<div class="flex w-10 justify-end">
