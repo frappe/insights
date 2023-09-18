@@ -18,11 +18,11 @@ const settingsStore = defineStore('insights:settings', () => {
 	const insightsSettings = api.getDocumentResource('Insights Settings')
 	const systemSettings = api.getDocumentResource('System Settings')
 
-	const initialized = computed(() => insightsSettings.doc && systemSettings.doc)
+	const initialized = computed(() => insightsSettings.doc?.name && systemSettings.doc?.name)
 	async function initialize() {
 		if (initialized.value) return
-		await insightsSettings.fetchIfNeeded()
-		await systemSettings.fetchIfNeeded()
+		await insightsSettings.get.fetch()
+		await systemSettings.get.fetch()
 	}
 
 	const loading = computed(() => insightsSettings.loading || systemSettings.loading)
@@ -41,11 +41,12 @@ const settingsStore = defineStore('insights:settings', () => {
 
 	function update(settings: InsightsSettings, showToast: boolean = true) {
 		return insightsSettings.setValue.submit({ ...settings }).then(() => {
-			showToast && createToast({
-				title: 'Settings Updated',
-				message: 'Your settings have been updated successfully',
-				variant: 'success',
-			})
+			showToast &&
+				createToast({
+					title: 'Settings Updated',
+					message: 'Your settings have been updated successfully',
+					variant: 'success',
+				})
 		})
 	}
 
@@ -54,7 +55,7 @@ const settingsStore = defineStore('insights:settings', () => {
 		settings,
 		loading,
 		initialize,
-		update
+		update,
 	}
 })
 

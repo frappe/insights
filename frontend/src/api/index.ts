@@ -37,7 +37,9 @@ export const getDocumentResource = (
 		...options,
 	})
 	resource.fetchIfNeeded = async () => {
-		!resource.get.loading && (await resource.get.fetch())
+		if (!resource.get.loading) {
+			await resource.get.fetch()
+		}
 	}
 	return resource
 }

@@ -188,8 +188,9 @@ router.beforeEach(async (to, _, next) => {
 	}
 
 	const settings = settingsStore()
-	!settings.initialized && (await settings.initialize())
-
+	if (!settings.initialized) {
+		await settings.initialize()
+	}
 	// redirect to /setup if setup is not complete
 	const setupComplete = settings.settings.setup_complete
 	if (!setupComplete && to.name !== 'Setup') {
