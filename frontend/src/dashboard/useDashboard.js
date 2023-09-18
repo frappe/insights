@@ -5,7 +5,7 @@ import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
-import { createToast } from './utils/toasts'
+import { createToast } from '@/utils/toasts'
 
 const session = sessionStore()
 
