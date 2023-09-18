@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-
 import frappe
 from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
@@ -19,6 +18,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_permission_filter,
 )
 
+from insights.utils import detect_encoding
 
 @frappe.whitelist()
 @check_role("Insights User")
@@ -321,13 +321,13 @@ def get_columns_from_uploaded_file(filename):
         frappe.throw("Only CSV files are supported")
 
     file_path = file.get_full_path()
-    df = pd.read_csv(file_path)
+    encoding = detect_encoding(file_path)
+    df = pd.read_csv(file_path, encoding=encoding)
     columns = df.columns.tolist()
     columns_with_types = []
     for column in columns:
         column_type = infer_type_from_list(df[column].tolist())
         columns_with_types.append({"label": column, "type": column_type})
-
     return columns_with_types
 
 
