@@ -131,7 +131,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def update_query_store(self):
         if not self.is_stored:
             return
-        sync_query_store([self.name], force=True)
+        sync_query_store([self.name])
 
     def update_linked_docs(self):
         old_self = self.get("_doc_before_save")
@@ -189,7 +189,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         return self._results
 
     def before_fetch(self):
-        self.variant_controller.before_fetch()
+        if hasattr(self.variant_controller, "before_fetch"):
+            self.variant_controller.before_fetch()
 
     @log_error(raise_exc=True)
     def process_results_columns(self, results):

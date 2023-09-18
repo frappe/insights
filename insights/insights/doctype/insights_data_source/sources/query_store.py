@@ -20,7 +20,7 @@ class StoredQueryTableFactory:
         self.data_source = "Query Store"
 
     def import_query(self, query):
-        result = query.retrieve_results(fetch_if_not_cached=True)
+        result = query.fetch_results()
         if not result:
             return
         columns = [col["label"] for col in result[0]]

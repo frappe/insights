@@ -336,7 +336,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
         if self.doc.data_source != "Query Store":
             return
         sub_stored_queries = [t.table for t in self.doc.tables if t.table != self.doc.name]
-        sync_query_store(sub_stored_queries, force=True)
+        sync_query_store(sub_stored_queries)
 
     def after_fetch(self, results):
         if not self.has_cumulative_columns():

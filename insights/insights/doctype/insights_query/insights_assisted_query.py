@@ -4,6 +4,9 @@
 
 import frappe
 
+from insights.insights.doctype.insights_data_source.sources.query_store import (
+    sync_query_store,
+)
 from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable
 
 from .utils import (
@@ -106,7 +109,12 @@ class InsightsAssistedQueryController:
         return tables + join_tables
 
     def before_fetch(self):
-        return
+        if self.doc.data_source != "Query Store":
+            return
+        sub_queries = [
+            t.get("table") for t in self.get_selected_tables() if t.get("table") != self.doc.name
+        ]
+        sync_query_store(sub_queries)
 
     def after_fetch(self, results):
         if not self.has_cumulative_columns():
