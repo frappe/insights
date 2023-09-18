@@ -5,6 +5,7 @@ import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
+import { createToast } from './utils/toasts'
 
 const session = sessionStore()
 
@@ -252,7 +253,7 @@ export default function useDashboard(name) {
 	function togglePublicAccess(isPublic) {
 		if (state.doc.is_public === isPublic) return
 		resource.setValue.submit({ is_public: isPublic }).then(() => {
-			$notify({
+			createToast({
 				title: 'Dashboard access updated',
 				variant: 'success',
 			})
