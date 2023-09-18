@@ -25,11 +25,14 @@ const currentColumns = ref([])
 
 const query = inject('query')
 const currentDataSource = ref(null)
-if (query?.doc?.data_source) {
-	currentDataSource.value = {
-		name: query.doc.data_source,
-	}
-}
+watch(
+	() => query?.doc?.data_source,
+	(value) => {
+		if (!value) return
+		currentDataSource.value = { name: value }
+	},
+	{ immediate: true }
+)
 const currentTable = ref(null)
 
 watch(
