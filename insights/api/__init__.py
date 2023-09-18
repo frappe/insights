@@ -17,8 +17,8 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
     get_permission_filter,
 )
-
 from insights.utils import detect_encoding
+
 
 @frappe.whitelist()
 @check_role("Insights User")
@@ -233,6 +233,9 @@ def get_user_info():
         "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",
         "is_user": is_user or frappe.session.user == "Administrator",
+        # TODO: move to `get_session_info` since not user specific
+        "country": frappe.db.get_single_value("System Settings", "country"),
+        "locale": frappe.db.get_single_value("System Settings", "language"),
     }
 
 
