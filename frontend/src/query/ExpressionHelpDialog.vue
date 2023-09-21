@@ -1,26 +1,33 @@
 <template>
-	<div
-		class="absolute bottom-2 left-2 cursor-pointer rounded-full bg-white p-1 text-gray-600 shadow-md transition-all hover:bg-gray-100"
-		@click="show = true"
-	>
-		<FeatherIcon name="help-circle" class="h-4 w-4 cursor-pointer" />
-	</div>
+	<Button variant="ghost" @click="show = true" icon="help-circle"> </Button>
 
 	<Dialog :options="{ title: 'Functions' }" v-model="show" :dismissable="true">
 		<template #body-content>
 			<input
 				v-model="search"
 				placeholder="Search functions"
-				class="form-input block w-full border-gray-400 border-gray-400 placeholder-gray-500"
+				class="form-input block w-full border-gray-400 placeholder-gray-500"
 			/>
 			<div
 				class="mt-4 flex max-h-[30rem] flex-col space-y-1 divide-y overflow-y-scroll text-base"
 			>
-				<div v-for="func in filteredList" :key="func.name" class="py-1">
-					<span class="text-lg font-medium">{{ func.name }}</span> -
-					<span class="text-gray-600">{{ func.syntax }}</span>
-					<div class="">{{ func.description }}</div>
-					<div class="text-gray-600">{{ func.example }}</div>
+				<div v-for="func in filteredList" :key="func.name" class="flex">
+					<div class="flex-1 space-y-1 py-2">
+						<p class="font-mono text-lg font-medium">{{ func.name }}</p>
+						<p class="text-sm text-gray-600">{{ func.description }}</p>
+					</div>
+					<div class="mt-2 flex-1 rounded bg-gray-50 p-2 text-sm leading-5">
+						<code>
+							<span class="text-gray-600"># Syntax</span>
+							<br />
+							{{ func.syntax }}
+							<br />
+							<br />
+							<span class="text-gray-600"># Example</span>
+							<br />
+							{{ func.example }}
+						</code>
+					</div>
 				</div>
 				<div v-if="!filteredList.length" class="py-2 text-center text-gray-700">
 					No functions found

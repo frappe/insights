@@ -17,6 +17,14 @@
 }
 
 /* Code Control */
+.cm-editor {
+	user-select: text;
+	padding: 0px !important;
+	position: relative !important;
+}
+.cm-gutters {
+	display: none !important;
+}
 .cm-gutters {
 	@apply !border-none !bg-transparent pl-1 !text-sm !leading-6;
 }

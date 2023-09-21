@@ -1,5 +1,6 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
+import ExpressionHelp from '@/components/ExpressionHelp.vue'
 import UsePopover from '@/components/UsePopover.vue'
 import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
@@ -112,7 +113,7 @@ function updateColumn() {
 </script>
 
 <template>
-	<div class="space-y-3 text-base">
+	<div class="exp-editor space-y-3 text-base">
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Expression</span>
 			<div ref="codeEditor" class="form-input min-h-[7rem] border border-gray-400 p-0">
@@ -159,35 +160,13 @@ function updateColumn() {
 		:key="helpInfoRefreshKey"
 	>
 		<div class="-ml-[20rem] flex w-[10rem] flex-col space-y-1.5 text-sm transition-all">
-			<div v-show="helpInfo" class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg">
-				<p>{{ helpInfo?.description }}</p>
-				<div class="mt-2 rounded bg-gray-50 p-2 text-xs leading-5">
-					<code>
-						<span class="text-gray-600"># Syntax</span>
-						<br />
-						{{ helpInfo?.syntax }}
-						<br />
-						<br />
-						<span class="text-gray-600"># Example</span>
-						<br />
-						{{ helpInfo?.example }}
-					</code>
-				</div>
-			</div>
+			<ExpressionHelp v-show="helpInfo?.syntax" :info="helpInfo" />
 		</div>
 	</UsePopover>
 </template>
 
-<style lang="scss">
-.cm-editor {
-	user-select: text;
-	padding: 0px !important;
-	position: relative !important;
-}
-.cm-gutters {
-	display: none !important;
-}
-.cm-tooltip-autocomplete {
+<style>
+.exp-editor .cm-tooltip-autocomplete {
 	position: absolute !important;
 }
 </style>

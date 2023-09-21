@@ -18,7 +18,9 @@
 						@inputChange="open"
 						@viewUpdate="codeViewUpdate"
 					></Code>
-					<ExpressionHelpDialog />
+					<div class="absolute bottom-1 left-1">
+						<ExpressionHelpDialog />
+					</div>
 				</div>
 			</template>
 			<template #body>
@@ -31,24 +33,7 @@
 						leave-from-class="transform opacity-100"
 						leave-to-class="transform opacity-0"
 					>
-						<div
-							v-show="expression.help"
-							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
-						>
-							<span class="mr-1">Syntax:</span>
-							<span class="font-medium italic" style="font-family: 'Fira Code'">
-								{{ expression.help?.syntax }}
-							</span>
-							<br />
-							<br />
-							<span>{{ expression.help?.description }}</span>
-							<br />
-							<br />
-							<span class="mr-1">Example:</span>
-							<span class="font-medium" style="font-family: 'Fira Code'">
-								{{ expression.help?.example }}
-							</span>
-						</div>
+						<ExpressionHelp v-show="expression.help" :info="expression.help" />
 					</transition>
 				</div>
 			</template>
@@ -136,7 +121,7 @@ import Code from '@/components/Controls/Code.vue'
 import ExpressionHelpDialog from '../ExpressionHelpDialog.vue'
 import Tooltip from '@/components/Tooltip.vue'
 import { debounce } from 'frappe-ui'
-
+import ExpressionHelp from '@/components/ExpressionHelp.vue'
 import { dateFormats } from '@/utils/format'
 import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
