@@ -66,24 +66,22 @@ results = fetch_data_from_url()`
 				</Code>
 				<div class="sticky bottom-0 flex justify-between bg-white p-2">
 					<div class="flex gap-2">
+						<Button variant="outline" icon="help-circle" @click="showHelp = true" />
 						<Button
-							variant="subtle"
+							variant="outline"
 							@click="showVariablesDialog = !showVariablesDialog"
 						>
 							<template #icon>
 								<Braces class="h-4 w-4" />
 							</template>
 						</Button>
-						<Button variant="subtle" @click="showLogs = !showLogs">
+						<Button variant="outline" @click="showLogs = !showLogs">
 							<template #icon>
 								<Bug class="h-4 w-4" />
 							</template>
 						</Button>
 						<Button variant="solid" icon="play" @click="runQuery" :loading="executing">
 						</Button>
-					</div>
-					<div>
-						<Button variant="ghost" icon="help-circle" @click="showHelp = true" />
 					</div>
 				</div>
 			</div>
