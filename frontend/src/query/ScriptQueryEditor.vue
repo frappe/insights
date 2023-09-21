@@ -31,6 +31,28 @@ function handleSaveVariables(variables) {
 
 const showLogs = useStorage(`query-${query.doc.name}-show-logs`, false)
 const scriptLogs = computed(() => query.doc.script_log?.split('\n')?.slice(1))
+const showHelp = ref(false)
+const exampleCode = `def fetch_data_from_url():
+		# URL of the CSV file
+		csv_url = "https://example.com/data.csv"
+
+		try:
+				# Read data from the CSV file into a Pandas DataFrame
+				df = pd.read_csv(csv_url)
+
+				# use the log function to log messages to the script log
+				log(df)
+
+				# return the DataFrame
+				return df
+
+		except Exception as e:
+				log("An error occurred:", str(e))
+				return None
+
+# Call the function to execute the script and get the data as a Pandas DataFrame
+# set it to results
+results = fetch_data_from_url()`
 </script>
 
 <template>
@@ -42,19 +64,27 @@ const scriptLogs = computed(() => query.doc.script_log?.split('\n')?.slice(1))
 			<div class="relative flex flex-1 flex-col overflow-y-scroll">
 				<Code language="python" v-model="script" placeholder="Enter your script here...">
 				</Code>
-				<div class="sticky bottom-0 flex gap-2 bg-white p-2">
-					<Button variant="subtle" @click="showVariablesDialog = !showVariablesDialog">
-						<template #icon>
-							<Braces class="h-4 w-4" />
-						</template>
-					</Button>
-					<Button variant="subtle" @click="showLogs = !showLogs">
-						<template #icon>
-							<Bug class="h-4 w-4" />
-						</template>
-					</Button>
-					<Button variant="solid" icon="play" @click="runQuery" :loading="executing">
-					</Button>
+				<div class="sticky bottom-0 flex justify-between bg-white p-2">
+					<div class="flex gap-2">
+						<Button
+							variant="subtle"
+							@click="showVariablesDialog = !showVariablesDialog"
+						>
+							<template #icon>
+								<Braces class="h-4 w-4" />
+							</template>
+						</Button>
+						<Button variant="subtle" @click="showLogs = !showLogs">
+							<template #icon>
+								<Bug class="h-4 w-4" />
+							</template>
+						</Button>
+						<Button variant="solid" icon="play" @click="runQuery" :loading="executing">
+						</Button>
+					</div>
+					<div>
+						<Button variant="ghost" icon="help-circle" @click="showHelp = true" />
+					</div>
 				</div>
 			</div>
 			<transition
@@ -87,4 +117,39 @@ const scriptLogs = computed(() => query.doc.script_log?.split('\n')?.slice(1))
 		v-model:variables="query.doc.variables"
 		@save="handleSaveVariables"
 	/>
+
+	<Dialog
+		v-model="showHelp"
+		:options="{
+			title: 'Help',
+			size: '3xl',
+		}"
+	>
+		<template #body-content>
+			<div class="flex w-full flex-col gap-2 text-base leading-5">
+				<div class="">
+					In the Script Query interface, you can write custom Python scripts to query the
+					database and retrieve data as a Pandas DataFrame. You can also fetch data from
+					external sources using Pandas functions
+				</div>
+				<div>
+					For detailed information about these functions and how to use them, please refer
+					to
+					<a
+						class="text-blue-500 underline"
+						href="https://frappeframework.com/docs/user/en/desk/scripting/script-api"
+					>
+						Frappe Framework's Script API
+					</a>
+				</div>
+				<div class="">
+					Example script to read data from a CSV file hosted on a URL and create a Pandas
+					DataFrame:
+				</div>
+				<div class="rounded bg-gray-50 text-sm">
+					<Code :readOnly="true" language="python" :model-value="exampleCode"> </Code>
+				</div>
+			</div>
+		</template>
+	</Dialog>
 </template>
