@@ -16,7 +16,7 @@
 							>
 								{{ displayValue(selectedValue) }}
 							</span>
-							<span class="text-base leading-5 text-gray-500" v-else>
+							<span class="text-base leading-5 text-gray-600" v-else>
 								{{ placeholder || '' }}
 							</span>
 						</div>
@@ -66,7 +66,7 @@
 						>
 							<div
 								v-if="group.group && !group.hideLabel"
-								class="px-2.5 py-1.5 text-sm font-medium text-gray-500"
+								class="px-2.5 py-1.5 text-sm font-medium text-gray-600"
 							>
 								{{ group.group }}
 							</div>
@@ -93,7 +93,7 @@
 									<slot name="item-suffix" v-bind="{ active, selected, option }">
 										<div
 											v-if="option?.description"
-											class="text-sm text-gray-500"
+											class="text-sm text-gray-600"
 										>
 											{{ option.description }}
 										</div>

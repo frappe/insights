@@ -1,7 +1,7 @@
 <template>
 	<div class="flex w-full flex-shrink-0 items-center bg-white pb-2">
 		<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
-		<div class="text-sm uppercase tracking-wide text-gray-600">Edit Column</div>
+		<div class="text-sm uppercase tracking-wide text-gray-700">Edit Column</div>
 	</div>
 	<div class="flex flex-1 flex-col overflow-y-scroll">
 		<ColumnExpressionPicker

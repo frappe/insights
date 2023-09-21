@@ -1,23 +1,23 @@
 <template>
 	<div class="flex flex-col space-y-3">
-		<div class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Column</div>
+		<div class="space-y-1 text-sm text-gray-700">
+			<div class="">Column</div>
 			<Autocomplete
 				v-model="filter.column"
 				:options="columnOptions"
 				placeholder="Select a column..."
 			/>
 		</div>
-		<div class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Operator</div>
+		<div class="space-y-1 text-sm text-gray-700">
+			<div class="">Operator</div>
 			<Autocomplete
 				v-model="filter.operator"
 				:options="operatorOptions"
 				placeholder="Select operator..."
 			/>
 		</div>
-		<div class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Value</div>
+		<div class="space-y-1 text-sm text-gray-700">
+			<div class="">Value</div>
 			<Autocomplete
 				v-if="showValueOptions"
 				v-model="filter.value"

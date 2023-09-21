@@ -1,11 +1,11 @@
 <template>
-	<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden">
+	<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden text-gray-900">
 		<template v-if="!selectedTable">
 			<div
 				v-if="!addingTable"
 				class="flex flex-shrink-0 items-center justify-between bg-white pb-2"
 			>
-				<div class="text-sm tracking-wide text-gray-600">TABLES</div>
+				<div class="text-sm tracking-wide text-gray-700">TABLES</div>
 				<Button icon="plus" @click="addingTable = true"></Button>
 			</div>
 			<div v-if="addingTable" class="flex w-full flex-shrink-0 space-x-2 pb-3 pt-1">
@@ -22,7 +22,7 @@
 			</div>
 			<div
 				v-if="query.tables.data?.length == 0"
-				class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-500"
+				class="flex flex-1 items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm text-gray-700"
 			>
 				<p>No tables selected</p>
 			</div>
@@ -31,16 +31,16 @@
 				<div
 					v-for="(table, idx) in query.tables.data"
 					:key="idx"
-					class="flex h-10 w-full cursor-pointer items-center border-b text-sm text-gray-600 last:border-0 hover:bg-gray-50"
+					class="flex h-10 w-full cursor-pointer items-center border-b text-sm last:border-0 hover:bg-gray-50"
 					@click.prevent.stop="selectedTable = table"
 				>
-					<FeatherIcon name="layout" class="mr-2 h-[14px] w-[14px] text-gray-600" />
+					<FeatherIcon name="layout" class="mr-2 h-[14px] w-[14px]" />
 					<span
 						class="overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"
 					>
 						{{ table.label }}
 					</span>
-					<span v-if="table.join" class="ml-2 text-gray-600">
+					<span v-if="table.join" class="ml-2 text-gray-700">
 						<JoinLeftIcon v-if="table.join.type.value == 'left'" />
 						<JoinRightIcon v-if="table.join.type.value == 'right'" />
 						<JoinInnerIcon v-if="table.join.type.value == 'inner'" />
@@ -53,12 +53,12 @@
 						{{ table.join.with.label }}
 					</span>
 					<span
-						class="ml-auto mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-light text-gray-600"
+						class="ml-auto mr-1 overflow-hidden text-ellipsis whitespace-nowrap text-gray-700"
 					>
 						{{ query.doc.data_source }}
 					</span>
 					<div
-						class="flex items-center px-1 py-0.5 text-gray-600 hover:text-gray-600"
+						class="flex items-center px-1 py-0.5 text-gray-700 hover:text-gray-700"
 						@click.prevent.stop="removeTable(table)"
 					>
 						<FeatherIcon name="x" class="h-3 w-3" />

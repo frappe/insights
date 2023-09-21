@@ -2,7 +2,7 @@
 	<div class="flex flex-col">
 		<!-- Expression Code Field -->
 		<div class="flex justify-between">
-			<div class="mb-1 text-sm font-light">Expression</div>
+			<div class="mb-1 text-sm">Expression</div>
 			<Tooltip v-if="expression.error" :text="expression.error">
 				<div class="!mt-1 flex cursor-pointer items-center text-xs text-red-500">
 					<FeatherIcon name="alert-circle" class="h-4 w-4" />
@@ -35,7 +35,7 @@
 							v-show="expression.help"
 							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
 						>
-							<span class="mr-1 font-light">Syntax:</span>
+							<span class="mr-1">Syntax:</span>
 							<span class="font-medium italic" style="font-family: 'Fira Code'">
 								{{ expression.help?.syntax }}
 							</span>
@@ -44,7 +44,7 @@
 							<span>{{ expression.help?.description }}</span>
 							<br />
 							<br />
-							<span class="mr-1 font-light">Example:</span>
+							<span class="mr-1">Example:</span>
 							<span class="font-medium" style="font-family: 'Fira Code'">
 								{{ expression.help?.example }}
 							</span>

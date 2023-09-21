@@ -60,7 +60,7 @@ function changeDataSource(sourceName) {
 			<Component class="h-4 w-4 text-gray-600" fill="currentColor" />
 		</div>
 		<ContentEditable
-			class="mr-3 rounded-sm text-xl font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+			class="mr-3 rounded-sm text-xl font-medium !text-gray-900 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 			v-model="query.doc.title"
 			@update:model-value="debouncedUpdateTitle"
 			placeholder="Untitled Query"

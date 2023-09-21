@@ -7,10 +7,7 @@
 		<div class="relative flex h-9 flex-shrink-0 items-center justify-between">
 			<div class="flex space-x-1">
 				<div class="text-sm tracking-wide text-gray-600">RESULT</div>
-				<div
-					v-if="executionTime"
-					class="flex items-center space-x-1 text-sm font-light text-gray-600"
-				>
+				<div v-if="executionTime" class="flex items-center space-x-1 text-sm text-gray-600">
 					<span class="text-sm text-gray-600">
 						({{ formatNumber(totalRows) }} rows in {{ executionTime }}s)
 					</span>
@@ -31,7 +28,7 @@
 			<!-- Empty State -->
 			<div
 				v-if="!needsExecution && formattedResult?.length === 0"
-				class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-200 font-light text-gray-500"
+				class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-200 text-gray-500"
 			>
 				<p>No results found</p>
 			</div>

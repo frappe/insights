@@ -3,7 +3,7 @@
 		<div class="z-[5] flex w-full items-center">
 			<div
 				ref="operatorRef"
-				class="z-[5] mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white font-light hover:border-blue-300 hover:font-normal hover:text-blue-500"
+				class="z-[5] mr-2 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white hover:border-blue-300 hover:font-normal hover:text-blue-500"
 				@click.prevent.stop="$emit('toggle-operator', { level, position })"
 			>
 				{{ operator == '&&' ? '&' : 'or' }}
@@ -34,7 +34,7 @@
 				</div>
 				<div
 					ref="addConditionRef"
-					class="!-mt-0.5 !-mb-2 flex h-9 cursor-pointer items-center text-sm font-light text-gray-500 hover:text-gray-600"
+					class="!-mt-0.5 !-mb-2 flex h-9 cursor-pointer items-center text-sm text-gray-600 hover:text-gray-700"
 					@click.prevent.stop="$emit('add-filter', { level, position })"
 				>
 					+ {{ operator == '&&' ? 'and' : 'or' }} condition
@@ -42,7 +42,7 @@
 			</div>
 		</div>
 		<div class="absolute top-0 left-0 z-0 h-full w-full">
-			<svg width="100%" height="100%" class="text-gray-300">
+			<svg width="100%" height="100%" class="text-gray-400">
 				<g ref="connectorsRef" fill="none"></g>
 			</svg>
 		</div>

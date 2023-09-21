@@ -2,7 +2,7 @@
 	<div class="flex flex-col">
 		<!-- Expression Code Field -->
 		<div class="flex justify-between">
-			<div class="mb-1 text-sm font-light">Expression</div>
+			<div class="mb-1 text-sm">Expression</div>
 			<Tooltip v-if="expression.error" :text="expression.error">
 				<div class="!mt-1 flex cursor-pointer items-center text-xs text-red-500">
 					<FeatherIcon name="alert-circle" class="h-4 w-4" />
@@ -35,7 +35,7 @@
 							v-show="expression.help"
 							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
 						>
-							<span class="mr-1 font-light">Syntax:</span>
+							<span class="mr-1">Syntax:</span>
 							<span class="font-medium italic" style="font-family: 'Fira Code'">
 								{{ expression.help?.syntax }}
 							</span>
@@ -44,7 +44,7 @@
 							<span>{{ expression.help?.description }}</span>
 							<br />
 							<br />
-							<span class="mr-1 font-light">Example:</span>
+							<span class="mr-1">Example:</span>
 							<span class="font-medium" style="font-family: 'Fira Code'">
 								{{ expression.help?.example }}
 							</span>
@@ -55,8 +55,8 @@
 		</Popover>
 
 		<!-- Label Field -->
-		<div class="mt-2 text-sm text-gray-600">
-			<div class="mb-1 font-light">Label</div>
+		<div class="mt-2 text-sm text-gray-700">
+			<div class="mb-1">Label</div>
 			<Input
 				type="text"
 				v-model="expression.label"
@@ -65,8 +65,8 @@
 			/>
 		</div>
 		<!-- Type Field -->
-		<div class="mt-2 text-sm text-gray-600">
-			<div class="mb-1 font-light">Type</div>
+		<div class="mt-2 text-sm text-gray-700">
+			<div class="mb-1">Type</div>
 			<Input
 				type="select"
 				v-model="expression.valueType"
@@ -75,16 +75,16 @@
 				:options="columnTypes"
 			/>
 		</div>
-		<div v-if="showDateFormatOptions" class="mt-2 text-sm text-gray-600">
-			<div class="mb-1 font-light">Date Format</div>
+		<div v-if="showDateFormatOptions" class="mt-2 text-sm text-gray-700">
+			<div class="mb-1">Date Format</div>
 			<Autocomplete
 				v-model="expression.dateFormat"
 				:options="dateFormats"
 				placeholder="Select a date format..."
 			/>
 		</div>
-		<div class="mt-2 space-y-1 text-sm text-gray-600">
-			<div class="font-light">Sort</div>
+		<div class="mt-2 space-y-1 text-sm text-gray-700">
+			<div class="">Sort</div>
 			<Input
 				type="select"
 				v-model="expression.order_by"
@@ -106,7 +106,7 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
-		<div class="mt-4 text-sm text-gray-600">
+		<div class="mt-4 text-sm text-gray-700">
 			<Input
 				v-if="expression.valueType == 'String'"
 				type="checkbox"

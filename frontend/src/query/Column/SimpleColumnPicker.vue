@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col space-y-3">
-		<div class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Aggregation Type</div>
+		<div class="space-y-1 text-sm">
+			<div class="text-gray-700">Aggregation Type</div>
 			<Autocomplete
 				v-model="simpleColumn.aggType"
 				:options="aggregations"
@@ -9,8 +9,8 @@
 				@update:modelValue="onTypeSelect"
 			/>
 		</div>
-		<div v-if="columnNeeded" class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Column</div>
+		<div v-if="columnNeeded" class="space-y-1 text-sm">
+			<div class="text-gray-700">Column</div>
 			<Autocomplete
 				v-model="simpleColumn.column"
 				:options="filteredColumns"
@@ -19,8 +19,8 @@
 				@update:modelValue="onColumnSelect"
 			/>
 		</div>
-		<div class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Label</div>
+		<div class="space-y-1 text-sm">
+			<div class="text-gray-700">Label</div>
 			<Input
 				type="text"
 				v-model="simpleColumn.label"
@@ -29,8 +29,8 @@
 			/>
 		</div>
 
-		<div v-if="showDateFormatOptions" class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Date Format</div>
+		<div v-if="showDateFormatOptions" class="space-y-1 text-sm">
+			<div class="text-gray-700">Date Format</div>
 			<Autocomplete
 				v-model="simpleColumn.dateFormat"
 				:options="dateFormats.map((f) => ({ ...f, description: f.value }))"
@@ -38,8 +38,8 @@
 				@update:modelValue="selectDateFormat"
 			/>
 		</div>
-		<div class="space-y-1 text-sm text-gray-600">
-			<div class="font-light">Sort</div>
+		<div class="space-y-1 text-sm">
+			<div class="text-gray-700">Sort</div>
 			<Input
 				type="select"
 				v-model="simpleColumn.order_by"
