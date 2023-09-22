@@ -45,7 +45,10 @@ const GET_EMPTY_JOIN = () => ({
 })
 const GET_EMPTY_FILTER = () => ({
 	column: {},
-	operator: {},
+	operator: {
+		label: 'equals',
+		value: '=',
+	},
 	value: {},
 })
 const GET_EMPTY_COLUMN = () => ({
