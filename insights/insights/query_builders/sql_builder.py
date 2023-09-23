@@ -300,9 +300,10 @@ def get_current_date_range(unit):
 
 
 def get_fiscal_year_start_date():
-    return getdate(
-        frappe.db.get_single_value("Insights Settings", "fiscal_year_start") or "1995-04-01"
-    )
+    fiscal_year_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+    if not fiscal_year_start or get_date_str(fiscal_year_start) == "0001-01-01":
+        return getdate("1995-04-01")
+    return getdate(fiscal_year_start)
 
 
 def get_fy_start(date):
@@ -349,6 +350,11 @@ def get_directional_date_range(direction, unit, number_of_unit):
         dates = [
             get_year_start(add_to_date(today, years=direction * number_of_unit)),
             get_year_ending(add_to_date(today, years=direction)),
+        ]
+    if unit == "fiscal year":
+        dates = [
+            get_fy_start(add_to_date(today, years=direction * number_of_unit)),
+            get_fiscal_year_ending(add_to_date(today, years=direction)),
         ]
 
     if dates[0] > dates[1]:
@@ -665,7 +671,7 @@ class SQLQueryBuilder:
         main_table = self.make_table(main_table)
 
         for join in assisted_query.joins:
-            if not join.left_table.is_valid() or not join.right_table.is_valid():
+            if not join.is_valid():
                 continue
             self._joins.append(
                 {
@@ -679,7 +685,7 @@ class SQLQueryBuilder:
                 }
             )
 
-        def make_sql_column(column):
+        def make_sql_column(column, for_filter=False):
             _column = self.make_column(column.column, column.table)
             if column.is_expression():
                 _column = self.expression_processor.process(column.expression.ast)
@@ -687,7 +693,7 @@ class SQLQueryBuilder:
             if column.is_aggregate():
                 _column = self.aggregations.apply(column.aggregation, _column)
 
-            if column.has_granularity():
+            if column.has_granularity() and not for_filter:
                 _column = self.column_formatter.format_date(column.granularity, _column)
             return _column.label(column.alias)
 
@@ -696,7 +702,7 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
-                _column = make_sql_column(fltr.column)
+                _column = make_sql_column(fltr.column, for_filter=True)
                 filter_value = fltr.value.value
                 operator = fltr.operator.value
 
@@ -705,6 +711,9 @@ class SQLQueryBuilder:
                     _filter = operation(_column, filter_value)
                 elif "set" in operator:  # is set, is not set
                     _filter = Functions.apply(operator, _column)
+                elif operator == "is":
+                    fn = "is_set" if filter_value == "set" else "is_not_set"
+                    _filter = Functions.apply(fn, _column)
                 else:
                     args = [filter_value]
                     if operator == "between":
@@ -764,6 +773,10 @@ class SQLQueryBuilder:
             query = query.group_by(*self._dimensions)
         if self._order_by_columns:
             query = query.order_by(*self._order_by_columns)
-        query = query.limit(self._limit) if self._limit else query
+        if self._limit:
+            query = query.limit(self._limit)
+        if not columns:
+            # if select * query then limit to 50 rows
+            query = query.limit(50)
 
         return self.compile(query)

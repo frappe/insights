@@ -1,6 +1,7 @@
 <template>
 	<codemirror
 		:tab-size="2"
+		:disabled="readOnly"
 		v-model="code"
 		class="font-[400]"
 		:autofocus="autofocus"
@@ -27,6 +28,10 @@ import { Codemirror } from 'vue-codemirror'
 const props = defineProps({
 	modelValue: String,
 	value: String,
+	readOnly: {
+		type: Boolean,
+		default: false,
+	},
 	autofocus: {
 		type: Boolean,
 		default: true,

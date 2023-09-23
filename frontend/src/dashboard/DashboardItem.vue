@@ -4,7 +4,6 @@ import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { watchDebounced, whenever } from '@vueuse/shared'
-import { debounce } from 'frappe-ui'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 
@@ -40,13 +39,6 @@ const itemRef = ref(null) // used for popover
 const widget = ref(null)
 provide('widgetRef', widget)
 
-const refreshKey = ref(0)
-watch(
-	() => JSON.stringify([props.item.item_id, props.item.options, chartFilters?.value]),
-	() => debounce(() => refreshKey.value++, refreshKey.value == 0 ? 2000 : 500)(),
-	{ immediate: true }
-)
-
 function setInitialChartOptions() {
 	if (!props.item.options.query) return
 	if (props.item.options.title) return
@@ -63,13 +55,17 @@ function setInitialChartOptions() {
 		...chartData.recommendedChart.options,
 	}
 }
+
+function openQueryInNewTab() {
+	window.open(`/insights/query/build/${props.item.options.query}`, '_blank')
+}
 </script>
 
 <template>
 	<div class="dashboard-item h-full min-h-[60px] w-full p-2 [&>div:first-child]:h-full">
 		<div
 			ref="itemRef"
-			class="group relative flex h-full rounded py-1"
+			class="group relative flex h-full rounded"
 			:class="{
 				' bg-white shadow': item.item_type !== 'Filter' && item.item_type !== 'Text',
 				'ring-2 ring-blue-300 ring-offset-1':
@@ -77,7 +73,6 @@ function setInitialChartOptions() {
 				'cursor-grab': dashboard.editing,
 			}"
 			@click.prevent.stop="dashboard.setCurrentItem(item.item_id)"
-			@dblclick.prevent.stop="dashboard.edit() || dashboard.setCurrentItem(item.item_id)"
 		>
 			<div
 				v-if="chartData.loading"
@@ -93,7 +88,6 @@ function setInitialChartOptions() {
 				:item_id="item.item_id"
 				:data="chartData.data"
 				:options="item.options"
-				:key="refreshKey"
 			>
 				<template #placeholder>
 					<InvalidWidget

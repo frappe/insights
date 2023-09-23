@@ -1,6 +1,6 @@
 <script setup>
 import * as echarts from 'echarts'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
 
 const props = defineProps({
 	title: { type: String, required: false },
@@ -12,7 +12,7 @@ let eChart = null
 const chartRef = ref(null)
 onMounted(() => {
 	eChart = echarts.init(chartRef.value, 'light', { renderer: 'svg' })
-	props.options && eChart.setOption(props.options)
+	Object.keys(props.options).length && eChart.setOption(props.options)
 
 	const resizeObserver = new ResizeObserver(() => eChart.resize())
 	setTimeout(() => chartRef.value && resizeObserver.observe(chartRef.value), 1000)
@@ -39,12 +39,18 @@ function downloadChart() {
 	link.download = `${props.title}.${type}`
 	link.click()
 }
+
+onUpdated(() => eChart && eChart.resize())
 </script>
 
 <template>
 	<div class="h-full w-full rounded p-2">
 		<div class="flex h-full w-full flex-col">
-			<div v-if="title" class="flex-shrink-0" :class="['mx-3', subtitle ? 'h-11' : 'h-6']">
+			<div
+				v-if="title"
+				class="mt-1 flex-shrink-0"
+				:class="['mx-3', subtitle ? 'h-11' : 'h-6']"
+			>
 				<div class="text-lg font-normal leading-6 text-gray-800">
 					{{ title }}
 				</div>

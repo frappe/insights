@@ -14,7 +14,7 @@ from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
-from insights.utils import InsightsChart, InsightsSettings, InsightsTable, ResultColumn
+from insights.utils import InsightsSettings, InsightsTable, ResultColumn
 
 from ..insights_data_source.sources.query_store import sync_query_store
 from .insights_assisted_query import InsightsAssistedQueryController
@@ -32,6 +32,7 @@ from .utils import (
     apply_pivot_transform,
     apply_transpose_transform,
     apply_unpivot_transform,
+    export_query,
 )
 
 
@@ -49,8 +50,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.update_linked_docs()
 
     def on_trash(self):
-        self.delete_insights_table()
         self.delete_default_chart()
+        self.delete_insights_table()
 
     @property
     def is_saved_as_table(self):
@@ -130,7 +131,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def update_query_store(self):
         if not self.is_stored:
             return
-        sync_query_store([self.name], force=True)
+        sync_query_store([self.name])
 
     def update_linked_docs(self):
         old_self = self.get("_doc_before_save")
@@ -151,30 +152,35 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         frappe.delete_doc_if_exists("Insights Table", table_name)
 
     def delete_default_chart(self):
-        chart_name = InsightsChart.get_name(query=self.name)
-        frappe.delete_doc_if_exists("Insights Chart", chart_name)
+        frappe.db.delete("Insights Chart", {"query": self.name})
 
     def retrieve_results(self, fetch_if_not_cached=False):
         results = CachedResults.get(self.name)
-        if not results and fetch_if_not_cached:
+        if results is None and fetch_if_not_cached:
             results = self.fetch_results()
         return results or []
 
-    def fetch_results(self):
+    def fetch_results(self, additional_filters=None):
         self.before_fetch()
 
         self._results = []
         start = time.monotonic()
         try:
-            self._results = self.variant_controller.fetch_results()
+            self._results = self.variant_controller.fetch_results(additional_filters)
             self._results = self.after_fetch(self._results)
             self._results = self.process_results_columns(self._results)
-            self.execution_time = flt(time.monotonic() - start, 3)
-            self.last_execution = frappe.utils.now()
-            self.db_set("status", Status.SUCCESS.value)
+            self.db_set(
+                {
+                    "status": Status.SUCCESS.value,
+                    "execution_time": flt(time.monotonic() - start, 3),
+                    "last_execution": frappe.utils.now(),
+                },
+                update_modified=False,
+                commit=True,
+            )
         except Exception as e:
             frappe.db.rollback()
-            frappe.log_error(e)
+            frappe.log_error(str(e)[:140])
             self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:
@@ -183,7 +189,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         return self._results
 
     def before_fetch(self):
-        self.variant_controller.before_fetch()
+        if hasattr(self.variant_controller, "before_fetch"):
+            self.variant_controller.before_fetch()
 
     @log_error(raise_exc=True)
     def process_results_columns(self, results):
@@ -236,5 +243,5 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def get_selected_tables(self):
         return self.variant_controller.get_selected_tables()
 
-    def export_query(self):
-        return self.variant_controller.export_query()
+    def export(self):
+        return export_query(self)

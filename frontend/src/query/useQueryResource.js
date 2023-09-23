@@ -45,6 +45,7 @@ export function useQueryResource(name) {
 	const resource = createDocumentResource({
 		doctype: 'Insights Query',
 		name: name,
+		auto: false,
 		whitelistedMethods: API_METHODS,
 		transform(doc) {
 			doc.columns = doc.columns.map((c) => {

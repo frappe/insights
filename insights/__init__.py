@@ -5,8 +5,11 @@
 __version__ = "1.1.5"
 
 
-def notify(**kwargs):
+def notify(*args, **kwargs):
     import frappe
+
+    if len(args) == 1:
+        kwargs["message"] = args[0]
 
     frappe.publish_realtime(
         event="insights_notification",

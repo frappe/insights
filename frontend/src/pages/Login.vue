@@ -23,9 +23,11 @@
 
 <script setup>
 import LoginBox from '@/components/LoginBox.vue'
+import sessionStore from '@/stores/sessionStore'
 import { onMounted, ref } from '@vue/runtime-core'
 import { useRoute, useRouter } from 'vue-router'
-import auth from '@/utils/auth'
+
+const session = sessionStore()
 
 const loggingIn = ref(null)
 const email = ref(null)
@@ -48,7 +50,7 @@ const makeLoginRequest = async () => {
 	try {
 		errorMessage.value = null
 		loggingIn.value = true
-		let res = await auth.login(email.value, password.value)
+		let res = await session.login(email.value, password.value)
 		if (res) {
 			router.push(redirectRoute.value || '/')
 		}

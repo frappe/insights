@@ -37,7 +37,10 @@ updateDocumentTitle(pageMeta)
 			class="h-7"
 			:items="[
 				{ label: 'Notebooks', route: { path: '/notebook' } },
-				{ label: 'Pages', route: { path: `/notebook/${notebook.doc.name}` } },
+				{
+					label: notebook.doc.title || notebook.doc.name,
+					route: { path: `/notebook/${notebook.doc.name}` },
+				},
 				{ label: page.doc.title },
 			]"
 		/>
@@ -60,7 +63,7 @@ updateDocumentTitle(pageMeta)
 							{
 								label: 'Clear',
 								icon: 'x-square',
-								onClick: () => (page.doc.content = []),
+								onClick: () => (page.doc.content = {}),
 							},
 							{
 								label: 'Delete',

@@ -1,4 +1,5 @@
 <script setup>
+import { downloadImage } from '@/utils'
 import { inject } from 'vue'
 
 const props = defineProps({ item: Object })
@@ -19,7 +20,7 @@ const actions = [
 		label: 'Download',
 		hidden: (item) => item.item_type === 'Filter' || item.item_type === 'Text',
 		onClick() {
-			widgetRef.value?.$refs?.eChart?.downloadChart?.()
+			downloadImage(widgetRef.value.$el, `${props.item.options.title}.png`)
 		},
 	},
 	{

@@ -1,8 +1,13 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 import { inject } from 'vue'
 
 export default function getScatterChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
+
+	if (!labels?.length || !datasets?.length) {
+		return {}
+	}
 
 	return {
 		animation: false,
@@ -51,10 +56,10 @@ export default function getScatterChartOptions(labels, datasets, options) {
 			pageButtonItemGap: 2,
 		},
 		tooltip: {
-			trigger: 'item',
+			trigger: 'axis',
 			confine: true,
 			appendToBody: true,
-			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 	}
 }

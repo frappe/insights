@@ -1,7 +1,12 @@
 import { getColors } from '@/utils/colors'
+import { ellipsis } from '@/utils'
 
 export default function getPieChartOptions(labels, dataset, options) {
 	const MAX_SLICES = 9
+
+	if (!labels?.length || !dataset?.data?.length) {
+		return {}
+	}
 
 	const slices = dataset.data.slice(0, parseInt(options.maxSlices) || MAX_SLICES)
 	const otherSlices = dataset.data
@@ -16,7 +21,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 	const legendOptions = { type: 'plain', bottom: 0 }
 	let center = ['50%', '50%']
-	let radius = '75%'
+	let radius = '70%'
 
 	if (!options.inlineLabels && options.labelPosition) {
 		const position = options.labelPosition
@@ -30,30 +35,30 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 		switch (position) {
 			case 'Top':
-				radius = '75%'
+				radius = '70%'
 				legendOptions.top = 0
 				legendOptions.left = 'center'
 				center = ['50%', '60%']
 				legendOptions.padding = 20
 				break
 			case 'Bottom':
-				radius = '75%'
+				radius = '70%'
 				legendOptions.bottom = 0
 				legendOptions.left = 'center'
-				center = ['50%', '45%']
+				center = ['50%', '43%']
 				legendOptions.padding = [20, 20, 10, 20]
 				break
 			case 'Right':
-				radius = '85%'
-				center = ['35%', '50%']
-				legendOptions.left = '65%'
+				radius = '80%'
+				center = ['33%', '50%']
+				legendOptions.left = '63%'
 				legendOptions.top = 'middle'
 				legendOptions.padding = [20, 0, 20, 0]
 				break
 			case 'Left':
-				radius = '85%'
-				center = ['65%', '50%']
-				legendOptions.right = '65%'
+				radius = '80%'
+				center = ['67%', '50%']
+				legendOptions.right = '63%'
 				legendOptions.top = 'middle'
 				legendOptions.padding = [20, 0, 20, 0]
 				break
@@ -61,7 +66,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 	}
 
 	function formatLabel({ name, percent }) {
-		return `${name} (${percent.toFixed(0)}%)`
+		return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
 	}
 
 	function formatLegend(name) {
@@ -73,11 +78,11 @@ export default function getPieChartOptions(labels, dataset, options) {
 				.slice(parseInt(options.maxSlices) || MAX_SLICES)
 				.reduce((a, b) => a + b, 0)
 			const percent = (otherSlicesTotal / total) * 100
-			return `${name} (${percent.toFixed(0)}%)`
+			return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
 		}
 
 		const percent = (dataset.data[labelIndex] / total) * 100
-		return `${name} (${percent.toFixed(0)}%)`
+		return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
 	}
 
 	function appendPercentage(value) {

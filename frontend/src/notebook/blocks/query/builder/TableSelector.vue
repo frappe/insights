@@ -1,5 +1,5 @@
 <script setup lang="jsx">
-import { useDataSource } from '@/datasource/useDataSource'
+import useDataSource from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
 import { Suspense, computed, ref } from 'vue'
 import InputWithPopover from './InputWithPopover.vue'
@@ -17,46 +17,17 @@ const table = computed({
 })
 let tables = ref(props.tableOptions || [])
 if (!props.tableOptions) {
-	const dataSource = useDataSource(props.data_source)
-	dataSource.fetch_tables()
+	let dataSource = useDataSource(props.data_source)
+	dataSource.fetchTables()
 	whenever(
 		() => props.data_source,
 		(newVal, oldVal) => {
 			if (newVal == oldVal) return
-			dataSource.change_data_source(props.data_source)
-			dataSource.fetch_tables()
+			dataSource = useDataSource(props.data_source)
+			dataSource.fetchTables()
 		}
 	)
-	tables = computed(() => {
-		return (
-			dataSource.tables
-				.filter((t) => !t.hidden)
-				// remove duplicates
-				.filter((table, index, self) => {
-					return (
-						self.findIndex((t) => {
-							return t.table === table.table
-						}) === index
-					)
-				})
-				.map((table) => {
-					return {
-						table: table.table,
-						value: table.table,
-						label: table.label,
-						description: table.table,
-						tooltip_component: (tooltip_props) => (
-							<Suspense>
-								<TableTooltip
-									data_source={props.data_source}
-									table={tooltip_props.option.table}
-								/>
-							</Suspense>
-						),
-					}
-				})
-		)
-	})
+	tables = computed(() => dataSource.dropdownOptions)
 }
 </script>
 

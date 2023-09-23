@@ -8,6 +8,7 @@ from functools import cached_property, lru_cache
 import frappe
 from frappe import task
 from frappe.model.document import Document
+from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.api.telemetry import track
@@ -29,6 +30,7 @@ class InsightsDataSource(Document):
             frappe.throw("Only one site database can be configured")
 
     @frappe.whitelist()
+    @redis_cache(ttl=60 * 60 * 24)
     def get_tables(self):
         return frappe.get_list(
             "Insights Table",

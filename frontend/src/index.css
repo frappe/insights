@@ -17,9 +17,16 @@
 }
 
 /* Code Control */
-
+.cm-editor {
+	user-select: text;
+	padding: 0px !important;
+	position: relative !important;
+}
 .cm-gutters {
-	@apply !border-none !bg-transparent pl-2 !text-sm !leading-6;
+	display: none !important;
+}
+.cm-gutters {
+	@apply !border-none !bg-transparent pl-1 !text-sm !leading-6;
 }
 /* hide fold bar */
 .cm-foldGutter span {
@@ -37,7 +44,6 @@
 	border-radius: 0.375rem;
 	padding: 0.5rem;
 	user-select: text;
-	@apply bg-gray-100;
 }
 
 .cm-placeholder {

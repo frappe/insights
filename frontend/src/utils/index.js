@@ -1,6 +1,7 @@
-import settings from '@/utils/systemSettings'
+import sessionStore from '@/stores/sessionStore'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
+import domtoimage from 'dom-to-image'
 import { computed, watch } from 'vue'
 
 export const FIELDTYPES = {
@@ -126,7 +127,8 @@ export function ellipsis(value, length) {
 }
 
 export function getShortNumber(number, precision = 0) {
-	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
+	const session = sessionStore()
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
@@ -139,10 +141,20 @@ export function getShortNumber(number, precision = 0) {
 }
 
 export function formatNumber(number, precision = 0) {
-	const locale = settings.doc?.country == 'India' ? 'en-IN' : settings.doc?.language
+	precision = precision || guessPrecision(number)
+	const session = sessionStore()
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: precision,
 	}).format(number)
+}
+
+export function guessPrecision(number) {
+	// eg. 1.0 precision = 1, 1.00 precision = 2
+	const str = number.toString()
+	const decimalIndex = str.indexOf('.')
+	if (decimalIndex === -1) return 0
+	return Math.min(str.length - decimalIndex - 1, 4)
 }
 
 export async function getDataURL(type, data) {
@@ -244,6 +256,27 @@ export function isInViewport(element) {
 	)
 }
 
+export function downloadImage(element, filename, options = {}) {
+	return domtoimage
+		.toBlob(element, {
+			bgcolor: 'rgb(248, 248, 248)',
+			...options,
+		})
+		.then(function (blob) {
+			const link = document.createElement('a')
+			link.download = filename
+			link.href = URL.createObjectURL(blob)
+			link.click()
+		})
+}
+export function getImageSrc(element) {
+	return domtoimage
+		.toBlob(element, {
+			bgcolor: 'rgb(248, 248, 248)',
+		})
+		.then((blob) => URL.createObjectURL(blob))
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,
@@ -254,4 +287,5 @@ export default {
 	formatNumber,
 	getShortNumber,
 	copyToClipboard,
+	ellipsis,
 }

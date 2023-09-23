@@ -80,7 +80,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 			<div class="h-full w-full overflow-y-scroll p-2">
 				<div
 					ref="gridLayout"
-					class="relative flex h-fit min-h-screen w-full flex-1 flex-col"
+					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
 				>
 					<UseDropZone
 						v-if="dashboard.editing && draggingWidget"
@@ -156,14 +156,23 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 						"
 					/>
 
-					<Button
-						iconLeft="trash"
-						variant="outline"
-						class="ml-auto text-red-500"
-						@click="dashboard.removeItem(dashboard.currentItem)"
-					>
-						Delete Widget
-					</Button>
+					<div class="flex space-x-2">
+						<Button
+							iconLeft="refresh-ccw"
+							variant="outline"
+							@click="dashboard.resetOptions(dashboard.currentItem)"
+						>
+							Reset Options
+						</Button>
+						<Button
+							iconLeft="trash"
+							variant="outline"
+							class="ml-auto text-red-500"
+							@click="dashboard.removeItem(dashboard.currentItem)"
+						>
+							Delete Widget
+						</Button>
+					</div>
 				</div>
 			</div>
 		</template>

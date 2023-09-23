@@ -1,8 +1,10 @@
 <script setup>
-import { computed, inject } from 'vue'
+import { formatNumber } from '@/utils'
+import settingsStore from '@/stores/settingsStore'
 import { LoadingIndicator } from 'frappe-ui'
-import settings from '@/utils/settings'
+import { computed, inject } from 'vue'
 
+const settings = settingsStore().settings
 const query = inject('query')
 const columns = computed(() => query.formattedResults?.[0] || [])
 const data = computed(() => query.formattedResults?.slice(1) || [])
@@ -13,9 +15,7 @@ const executionTime = computed(() => {
 })
 const totalRows = computed(() => query.doc.results_row_count - 1)
 
-const query_result_limit = computed(() =>
-	parseInt(settings.doc?.query_result_limit).toLocaleString()
-)
+const query_result_limit = computed(() => formatNumber(parseInt(settings.query_result_limit)))
 </script>
 
 <template>
@@ -29,7 +29,7 @@ const query_result_limit = computed(() =>
 			class="flex items-center space-x-1 text-sm font-light text-gray-600"
 		>
 			<span class="text-sm text-gray-600">
-				({{ totalRows.toLocaleString() }} rows in {{ executionTime }}s)
+				({{ formatNumber(totalRows) }} rows in {{ executionTime }}s)
 			</span>
 			<Tooltip
 				v-if="totalRows > query.MAX_ROWS"
@@ -71,7 +71,7 @@ const query_result_limit = computed(() =>
 						:key="j"
 						class="overflow-hidden text-ellipsis whitespace-nowrap border-b border-r py-1.5 pl-3 pr-20 text-gray-600"
 					>
-						{{ typeof cell == 'number' ? cell.toLocaleString() : cell }}
+						{{ typeof cell == 'number' ? formatNumber(cell) : cell }}
 					</td>
 					<td class="border-b py-2 pl-3 pr-20 text-gray-600" width="99%"></td>
 				</tr>

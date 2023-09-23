@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 
+import frappe
+
 from .utils import InsightsDataSource, get_columns_with_inferred_types, update_sql
 
 
@@ -32,5 +34,11 @@ class InsightsRawQueryController:
     def get_selected_tables(self):
         return []
 
-    def fetch_results(self):
+    def fetch_results(self, additional_filters=None):
         return InsightsDataSource.get_doc(self.doc.data_source).run_query(self.doc)
+
+    def export_query(self):
+        return {"sql": self.doc.sql}
+
+    def import_query(self, exported_query):
+        self.doc.sql = exported_query.get("sql")

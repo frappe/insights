@@ -8,7 +8,9 @@ import {
 	BatteryMedium,
 	TextCursorInput,
 	AlignLeft,
+	TrendingUp,
 } from 'lucide-vue-next'
+import ComboChartIcon from '@/components/Icons/ComboChartIcon.vue'
 import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
 import { ScatterChart } from 'lucide-vue-next'
@@ -32,6 +34,8 @@ const icons = {
 	Text: AlignLeft,
 	Scatter: ScatterChart,
 	Funnel: ListFilter,
+	Trend: TrendingUp,
+	'Mixed Axis': ComboChartIcon,
 }
 </script>
 <template>
@@ -39,7 +43,7 @@ const icons = {
 		<template v-for="widget in widgets.list" :key="widget.type">
 			<div
 				:draggable="true"
-				class="cursor-grab rounded border border-gray-100 bg-gray-50 pb-2 pt-1 text-center text-gray-600"
+				class="cursor-grab rounded border border-gray-100 bg-gray-50 pb-2 pt-1 text-center"
 				@dragend="emit('dragChange', false)"
 				@dragstart="onDragStart(widget)"
 			>

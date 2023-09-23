@@ -182,6 +182,19 @@ def apply_transpose_transform(results, options):
     return [results_columns] + results_data
 
 
+def apply_cumulative_sum(columns, results):
+    if not columns:
+        return results
+
+    column_names = [d["label"] for d in results[0]]
+    results_df = pd.DataFrame(results[1:], columns=column_names)
+
+    for column in columns:
+        results_df[column.label] = results_df[column.label].cumsum()
+
+    return [results[0]] + results_df.values.tolist()
+
+
 def infer_type(value):
     try:
         # test if decimal
@@ -353,6 +366,40 @@ class Query(frappe._dict):
     def is_valid(self):
         return self.table.is_valid()
 
+    def add_filter(self, column, operator, value):
+        if isinstance(value, str):
+            value = {"value": value}
+        if isinstance(operator, str):
+            operator = {"value": operator}
+        if not column or not isinstance(column, dict):
+            frappe.throw("Invalid Column")
+
+        is_filter_applied_to_column = any(
+            f.column.column == column.get("column") and f.column.table == column.get("table")
+            for f in self.filters
+            if f.column.is_valid()
+        )
+
+        if not is_filter_applied_to_column:
+            self.filters.append(Filter(column=column, value=value, operator=operator))
+        else:
+            # update existing filter
+            for f in self.filters:
+                if f.column.column == column.get("column") and f.column.table == column.get(
+                    "table"
+                ):
+                    f.value = LabelValue(**value)
+                    f.operator = LabelValue(**operator)
+                    break
+
+    def get_tables(self):
+        tables = set()
+        tables.add(self.table.table) if self.table else None
+        for j in self.joins:
+            tables.add(j.left_table.table) if j.left_table else None
+            tables.add(j.right_table.table) if j.right_table else None
+        return list(tables)
+
     def get_columns(self):
         return self._extract_columns()
 
@@ -370,3 +417,80 @@ class Query(frappe._dict):
             columns.append(Column(**c))
 
         return [c for c in columns if c]
+
+
+def export_query(doc):
+    if not hasattr(doc.variant_controller, "export_query"):
+        frappe.throw("The selected query type does not support exporting")
+
+    exported_query = frappe._dict(
+        data=doc.variant_controller.export_query(),
+        metadata={
+            "data_source": doc.data_source,
+            "title": doc.title,
+            "transforms": doc.transforms,
+            "is_saved_as_table": doc.is_saved_as_table,
+            "type": (
+                "assisted"
+                if doc.is_assisted_query
+                else "native"
+                if doc.is_native_query
+                else "legacy"
+            ),
+        },
+    )
+    return exported_query
+
+
+def import_query(data_source, query):
+    query = frappe.parse_json(query)
+    query.metadata = _dict(query.metadata)
+
+    query_doc = frappe.new_doc("Insights Query")
+    query_doc.data_source = data_source
+    query_doc.title = query.metadata.title
+    query_doc.is_assisted_query = query.metadata.type == "assisted"
+    query_doc.is_native_query = query.metadata.type == "native"
+    query_doc.is_legacy_query = query.metadata.type == "legacy"
+    query_doc.set("transforms", query.metadata.transforms)
+    query_doc.variant_controller.import_query(query.data)
+    query_doc.save(ignore_permissions=True)
+
+    if query.metadata.is_saved_as_table:
+        query_doc.update_insights_table(force=True)
+        frappe.enqueue_doc(
+            "Insights Query",
+            query_doc.name,
+            "fetch_results",
+            queue="long",
+        )
+
+    return query_doc.name
+
+
+class BaseNestedQueryImporter:
+    def __init__(self, data: dict, doc, imported_queries=None):
+        self.doc = doc
+        self.data = frappe._dict(data)
+        self.imported_queries = imported_queries or {}
+
+    def import_query(self):
+        self._import_subqueries()
+        self._update_subquery_references()
+        self._update_doc()
+
+    def _import_subqueries(self):
+        if not self.data.subqueries:
+            return
+        for name, subquery in self.data.subqueries.items():
+            if name in self.imported_queries:
+                continue
+            # FIX: imported_queries is not updated with the subqueries of the subquery
+            new_name = import_query(self.doc.data_source, subquery)
+            self.imported_queries[name] = new_name
+
+    def _update_subquery_references(self):
+        raise NotImplementedError
+
+    def _update_doc(self):
+        raise NotImplementedError

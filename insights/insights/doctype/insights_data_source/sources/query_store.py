@@ -3,7 +3,6 @@
 
 import frappe
 import pandas as pd
-import sqlparse
 from sqlalchemy import create_engine
 
 from insights.insights.doctype.insights_data_source.sources.sqlite import SQLiteDB
@@ -21,7 +20,7 @@ class StoredQueryTableFactory:
         self.data_source = "Query Store"
 
     def import_query(self, query):
-        result = query.retrieve_results(fetch_if_not_cached=True)
+        result = query.fetch_results()
         if not result:
             return
         columns = [col["label"] for col in result[0]]
@@ -74,9 +73,7 @@ class StoredQueryTableFactory:
 class QueryStore(SQLiteDB):
     def __init__(self) -> None:
         self.data_source = "Query Store"
-        database_path = frappe.get_site_path(
-            "private", "files", "insights_query_store.sqlite"
-        )
+        database_path = frappe.get_site_path("private", "files", "insights_query_store.sqlite")
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.table_factory = StoredQueryTableFactory()
         self.query_builder = SQLiteQueryBuilder()
@@ -84,6 +81,10 @@ class QueryStore(SQLiteDB):
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force=force)
+
+    def get_table_columns(self, table):
+        query = frappe.get_doc("Insights Query", table)
+        return query.get_columns()
 
 
 def sync_query_store(tables=None, force=False):

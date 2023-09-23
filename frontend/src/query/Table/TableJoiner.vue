@@ -2,26 +2,26 @@
 	<div class="flex w-full flex-col overflow-hidden">
 		<div class="flex flex-shrink-0 items-center bg-white pb-3 pt-1">
 			<Button icon="chevron-left" class="mr-2" @click="$emit('close')"> </Button>
-			<div class="text-sm tracking-wide text-gray-600">JOIN</div>
+			<div class="text-sm tracking-wide text-gray-700">JOIN</div>
 		</div>
 		<div class="flex flex-1 flex-col space-y-3 overflow-y-scroll">
 			<div class="flex flex-col space-y-3">
-				<div class="space-y-1 text-sm text-gray-600">
-					<div class="font-light">Left Table</div>
+				<div class="space-y-1 text-sm">
+					<div class="text-gray-700">Left Table</div>
 					<LinkIcon :link="getQueryLink(editTable.table)" :show="editTable.label">
 						<Input v-model="editTable.label" disabled class="cursor-not-allowed" />
 					</LinkIcon>
 				</div>
-				<div class="space-y-1 text-sm text-gray-600">
-					<div class="font-light">Join Type</div>
+				<div class="space-y-1 text-sm">
+					<div class="text-gray-700">Join Type</div>
 					<Autocomplete
 						v-model="join.type"
 						:options="joinTypeOptions"
 						placeholder="Select a type..."
 					/>
 				</div>
-				<div class="space-y-1 text-sm text-gray-600">
-					<div class="font-light">Right Table</div>
+				<div class="space-y-1 text-sm">
+					<div class="text-gray-700">Right Table</div>
 					<LinkIcon :link="getQueryLink(join.with?.value)" :show="join.with?.label">
 						<Autocomplete
 							v-model="join.with"
@@ -30,10 +30,10 @@
 						/>
 					</LinkIcon>
 				</div>
-				<div class="text-sm text-gray-600">
+				<div class="text-sm">
 					<div class="flex items-end space-x-1">
 						<div class="flex-1">
-							<div class="mb-1 font-light">Left Column</div>
+							<div class="mb-1 text-gray-700">Left Column</div>
 							<Autocomplete
 								:key="join.condition.left"
 								v-model="join.condition.left"
@@ -43,7 +43,7 @@
 						</div>
 						<span class="flex items-center px-1 text-lg"> = </span>
 						<div class="flex-1">
-							<div class="mb-1 font-light">Right Column</div>
+							<div class="mb-1 text-gray-700">Right Column</div>
 							<Autocomplete
 								:key="join.condition.right"
 								v-model="join.condition.right"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, inject, watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 
 import LinkIcon from '@/components/Controls/LinkIcon.vue'
 import { getQueryLink } from '@/utils'
@@ -83,7 +83,14 @@ const props = defineProps({
 })
 
 const query = inject('query')
-const join = ref({ with: {}, condition: {}, type: { label: 'Left', value: 'left' } })
+const join = ref({
+	type: { label: 'Left', value: 'left' },
+	with: {},
+	condition: {
+		left: {},
+		right: {},
+	},
+})
 const editTable = ref({ ...props.table }) // table that is being edited
 
 if (editTable.value.join) {

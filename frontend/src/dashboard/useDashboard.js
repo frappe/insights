@@ -1,10 +1,13 @@
 import { useQueryResource } from '@/query/useQueryResource'
+import sessionStore from '@/stores/sessionStore'
 import { safeJSONParse } from '@/utils'
-import auth from '@/utils/auth'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
+import { createToast } from '@/utils/toasts'
+
+const session = sessionStore()
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -39,8 +42,8 @@ export default function useDashboard(name) {
 		await resource.get.fetch()
 		state.doc = resource.doc
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
-		state.isOwner = state.doc.owner == auth.user.user_id
-		state.canShare = state.isOwner || auth.user.is_admin
+		state.isOwner = state.doc.owner == session.user.user_id
+		state.canShare = state.isOwner || session.user.is_admin
 		resource.is_private.fetch().then((res) => {
 			state.isPrivate = res.message
 		})
@@ -155,6 +158,23 @@ export default function useDashboard(name) {
 		return state.filtersByChart[chart_id]
 	}
 
+	const fetchChartDataQueue = []
+	async function fetchChartData(args) {
+		// a wrapper around the fetch_chart_data method
+		// to make sure that there's a 1 second gap between
+		// two consecutive calls
+		// this is to avoid hitting the rate limit
+		const lastCall = fetchChartDataQueue.at(-1)
+		if (lastCall) {
+			const diff = new Date() - lastCall
+			if (diff < 1000) {
+				await new Promise((resolve) => setTimeout(resolve, 1000 - diff))
+			}
+		}
+		fetchChartDataQueue.push(new Date())
+		return resource.fetch_chart_data.submit(args).then((res) => res.message)
+	}
+
 	async function getChartResults(itemId, queryName) {
 		if (!queryName)
 			state.doc.items.some((item) => {
@@ -167,7 +187,7 @@ export default function useDashboard(name) {
 			throw new Error(`Query not found for item ${itemId}`)
 		}
 		const filters = await getChartFilters(itemId)
-		const { message: results } = await resource.fetch_chart_data.submit({
+		const results = await fetchChartData({
 			item_id: itemId,
 			query_name: queryName,
 			filters,
@@ -199,13 +219,6 @@ export default function useDashboard(name) {
 
 	const updateTitle = debounce(function (title) {
 		if (!title || !state.editing) return
-		// save the title on save
-		// resource.setValue.submit({ title }).then(() => {
-		// 	$notify({
-		// 		title: 'Dashboard title updated',
-		// 		variant: 'success',
-		// 	})
-		// })
 		state.doc.title = title
 	}, 500)
 
@@ -240,7 +253,7 @@ export default function useDashboard(name) {
 	function togglePublicAccess(isPublic) {
 		if (state.doc.is_public === isPublic) return
 		resource.setValue.submit({ is_public: isPublic }).then(() => {
-			$notify({
+			createToast({
 				title: 'Dashboard access updated',
 				variant: 'success',
 			})
@@ -261,6 +274,11 @@ export default function useDashboard(name) {
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
 	const isChart = (item) => !['Filter', 'Text'].includes(item.item_type)
+	const resetOptions = (item) => {
+		item.options = {
+			query: item.options.query,
+		}
+	}
 
 	return Object.assign(state, {
 		reload,
@@ -285,6 +303,7 @@ export default function useDashboard(name) {
 		isChart,
 		togglePublicAccess,
 		loadCurrentItemQuery,
+		resetOptions,
 	})
 }
 
@@ -293,7 +312,6 @@ function getDashboardResource(name) {
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
-			savestate: 'savestate',
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
 			is_private: 'is_private',

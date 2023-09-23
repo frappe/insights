@@ -2,7 +2,7 @@
 	<div class="flex flex-col">
 		<!-- Expression Code Field -->
 		<div class="flex justify-between">
-			<div class="mb-1 text-sm font-light">Expression</div>
+			<div class="mb-1 text-sm">Expression</div>
 			<Tooltip v-if="expression.error" :text="expression.error">
 				<div class="!mt-1 flex cursor-pointer items-center text-xs text-red-500">
 					<FeatherIcon name="alert-circle" class="h-4 w-4" />
@@ -18,7 +18,9 @@
 						@inputChange="open"
 						@viewUpdate="codeViewUpdate"
 					></Code>
-					<ExpressionHelpDialog />
+					<div class="absolute bottom-1 left-1">
+						<ExpressionHelpDialog />
+					</div>
 				</div>
 			</template>
 			<template #body>
@@ -31,24 +33,7 @@
 						leave-from-class="transform scale-100 opacity-100"
 						leave-to-class="transform scale-95 opacity-0"
 					>
-						<div
-							v-show="expression.help"
-							class="ml-auto w-[20rem] rounded border bg-white p-2 shadow-lg"
-						>
-							<span class="mr-1 font-light">Syntax:</span>
-							<span class="font-medium italic" style="font-family: 'Fira Code'">
-								{{ expression.help?.syntax }}
-							</span>
-							<br />
-							<br />
-							<span>{{ expression.help?.description }}</span>
-							<br />
-							<br />
-							<span class="mr-1 font-light">Example:</span>
-							<span class="font-medium" style="font-family: 'Fira Code'">
-								{{ expression.help?.example }}
-							</span>
-						</div>
+						<ExpressionHelp v-show="expression.help" :info="expression.help" />
 					</transition>
 				</div>
 			</template>
@@ -69,13 +54,13 @@
 
 <script setup>
 import Code from '@/components/Controls/Code.vue'
-import ExpressionHelpDialog from '../ExpressionHelpDialog.vue'
+import ExpressionHelp from '@/components/ExpressionHelp.vue'
 import Tooltip from '@/components/Tooltip.vue'
-import { debounce } from 'frappe-ui'
-
-import { FUNCTIONS } from '@/utils/query'
 import { parse } from '@/utils/expressions'
-import { inject, watchEffect, reactive, ref, computed } from 'vue'
+import { FUNCTIONS } from '@/utils/query'
+import { debounce } from 'frappe-ui'
+import { computed, inject, reactive, ref, watchEffect } from 'vue'
+import ExpressionHelpDialog from '../ExpressionHelpDialog.vue'
 
 const query = inject('query')
 

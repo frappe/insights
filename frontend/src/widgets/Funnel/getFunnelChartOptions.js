@@ -1,14 +1,21 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 
 export default function getFunnelChartOptions(labels, dataset, options) {
+	if (!labels?.length || !dataset?.data?.length) {
+		return {}
+	}
+
+	const colors = options.colors || getColors()
+
 	return {
 		animation: false,
-		color: getColors(),
+		color: colors,
 		tooltip: {
 			trigger: 'item',
 			confine: true,
 			appendToBody: false,
-			formatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			formatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 		legend: {
 			data: labels,
@@ -48,15 +55,15 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 					name: labels[index],
 					value,
 					itemStyle: {
-						borderColor: getColors()[index],
+						borderColor: colors[index],
 						borderWidth: 10,
 						borderCap: 'round',
 						borderJoin: 'round',
 					},
 					emphasis: {
 						itemStyle: {
-							color: getColors()[index],
-							borderColor: getColors()[index],
+							color: colors[index],
+							borderColor: colors[index],
 							borderWidth: 15,
 							borderCap: 'round',
 							borderJoin: 'round',

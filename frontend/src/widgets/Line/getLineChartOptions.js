@@ -1,8 +1,13 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 import { inject } from 'vue'
 
 export default function getLineChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
+
+	if (!datasets || !datasets.length) {
+		return {}
+	}
 
 	const markLine = options.referenceLine
 		? {
@@ -20,7 +25,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 		animation: false,
 		color: options.colors || getColors(),
 		grid: {
-			top: 25,
+			top: 30,
 			bottom: 35,
 			left: 20,
 			right: 30,
@@ -32,8 +37,8 @@ export default function getLineChartOptions(labels, datasets, options) {
 			axisTick: false,
 			data: labels,
 		},
-		yAxis: {
-			axisType: 'yAxis',
+		yAxis: datasets.map((dataset) => ({
+			name: options.splitYAxis ? dataset.label : undefined,
 			type: 'value',
 			splitLine: {
 				lineStyle: { type: 'dashed' },
@@ -41,16 +46,18 @@ export default function getLineChartOptions(labels, datasets, options) {
 			axisLabel: {
 				formatter: (value, index) => $utils.getShortNumber(value, 1),
 			},
-		},
-		series: datasets.map((dataset) => ({
+		})),
+		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
 			data: dataset.data,
 			type: 'line',
-			smooth: options.smoothLines ? 0.4 : false,
+			yAxisIndex: options.splitYAxis ? index : 0,
+			color: dataset.options.color,
+			smooth: dataset.options.smoothLines || options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
-			showSymbol: options.showPoints,
+			showSymbol: dataset.options.showPoints || options.showPoints,
 			markLine: markLine,
-			areaStyle: { opacity: options.showArea ? 0.1 : 0 },
+			areaStyle: { opacity: dataset.options.showArea || options.showArea ? 0.1 : 0 },
 		})),
 		legend: {
 			icon: 'circle',
@@ -66,7 +73,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 			trigger: 'axis',
 			confine: true,
 			appendToBody: false,
-			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 	}
 }

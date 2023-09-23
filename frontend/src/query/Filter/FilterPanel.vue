@@ -4,12 +4,12 @@
 			v-if="!pickingFilter"
 			class="flex w-full flex-shrink-0 items-center justify-between bg-white pb-2"
 		>
-			<div class="text-sm tracking-wide text-gray-600">FILTERS</div>
+			<div class="text-sm tracking-wide text-gray-700">FILTERS</div>
 			<Button icon="plus" @click="pickingFilter = true"></Button>
 		</div>
 		<div
 			v-if="!pickingFilter && (!filters.conditions || filters.conditions.length == 0)"
-			class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm font-light text-gray-500"
+			class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-200 text-sm text-gray-600"
 		>
 			<p>No filters added</p>
 		</div>

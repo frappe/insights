@@ -74,7 +74,7 @@ const canShowTooltip = ref(false)
 			<transition-group name="fade">
 				<ComboboxOption
 					v-for="(value, idx) in props.values"
-					:key="value.value"
+					:key="value.value || idx"
 					:value="value"
 					v-slot="{ active }"
 					@click.prevent.stop="select(value)"
@@ -91,6 +91,7 @@ const canShowTooltip = ref(false)
 								v-if="props.allowMultiple"
 								:name="isSelected(value) ? 'check-square' : 'square'"
 								class="mr-2 h-3.5 w-3.5"
+								:class="isSelected(value) ? 'text-gray-900' : 'text-gray-400'"
 							/>
 							<span class="overflow-hidden text-ellipsis whitespace-nowrap">
 								{{ value.label || value.value || 'No label' }}

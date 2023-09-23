@@ -1,8 +1,13 @@
+import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 import { inject } from 'vue'
 
 export default function getBarChartOptions(labels, datasets, options) {
 	const $utils = inject('$utils')
+
+	if (!labels?.length || !datasets?.length) {
+		return {}
+	}
 
 	const markLine = options.referenceLine
 		? {
@@ -25,7 +30,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 				rotate: options.rotateLabels,
 				interval: 0,
 				formatter: (value, index) =>
-					!isNaN(value) ? $utils.getShortNumber(value, 1) : value,
+					!isNaN(value) ? $utils.getShortNumber(value, 1) : $utils.ellipsis(value, 20),
 			},
 		},
 		{
@@ -35,7 +40,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 			},
 			axisLabel: {
 				formatter: (value, index) =>
-					!isNaN(value) ? $utils.getShortNumber(value, 1) : value,
+					!isNaN(value) ? $utils.getShortNumber(value, 1) : $utils.ellipsis(value, 20),
 			},
 		},
 	]
@@ -62,15 +67,12 @@ export default function getBarChartOptions(labels, datasets, options) {
 			},
 			markLine: markLine,
 			stack: options.stack ? 'stack' : null,
-			itemStyle: {
-				borderRadius: options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
-			},
 		})),
 		tooltip: {
 			trigger: 'axis',
 			confine: true,
 			appendToBody: false,
-			valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
+			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
 		},
 		legend: {
 			icon: 'circle',

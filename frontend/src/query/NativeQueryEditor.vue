@@ -55,7 +55,7 @@ const showDataExplorer = ref(false)
 		<div class="flex-shrink-0 uppercase leading-7 tracking-wide text-gray-600">
 			Native Query
 		</div>
-		<div class="flex flex-1 flex-col overflow-y-scroll rounded border">
+		<div class="relative flex flex-1 flex-col overflow-y-scroll rounded border">
 			<Code
 				:key="completions.tables.length"
 				language="sql"
@@ -64,7 +64,7 @@ const showDataExplorer = ref(false)
 				:tables="completions.tables"
 				placeholder="Type your query here"
 			></Code>
-			<div class="flex gap-2 p-2">
+			<div class="sticky bottom-0 flex gap-2 bg-white p-2">
 				<div>
 					<Button
 						variant="subtle"
@@ -73,7 +73,13 @@ const showDataExplorer = ref(false)
 					></Button>
 				</div>
 				<div>
-					<Button variant="solid" icon="play" @click="runQuery"> </Button>
+					<Button
+						variant="solid"
+						icon="play"
+						@click="runQuery"
+						:loading="query.run.loading"
+					>
+					</Button>
 				</div>
 			</div>
 		</div>

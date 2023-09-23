@@ -1,9 +1,9 @@
 <script setup>
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
-import ListPicker from '@/components/Controls/ListPicker.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
+import SeriesOption from '../SeriesOption.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -34,6 +34,18 @@ const valueOptions = computed(() => {
 			description: column.type,
 		}))
 })
+
+const deprecatedOptions = computed(() => {
+	return options.value?.yAxis?.every((item) => typeof item === 'string')
+})
+function convertDeprecatedOptions() {
+	options.value.yAxis = options.value.yAxis.map((item) => ({ column: item }))
+}
+
+const yAxis = computed({
+	get: () => (deprecatedOptions.value ? convertDeprecatedOptions() : options.value.yAxis),
+	set: (value) => (options.value.yAxis = value),
+})
 </script>
 
 <template>
@@ -49,13 +61,31 @@ const valueOptions = computed(() => {
 			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
 			<Autocomplete v-model="options.xAxis" :options="indexOptions" />
 		</div>
-		<div>
+		<div class="space-y-2">
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<ListPicker
-				:value="options.yAxis"
-				:options="valueOptions"
-				@change="options.yAxis = $event.map((item) => item.value)"
-			/>
+			<div class="flex w-full flex-col space-y-2">
+				<div class="flex flex-1" v-for="(series, index) in yAxis" :key="index">
+					<SeriesOption
+						seriesType="line"
+						:modelValue="series"
+						:options="valueOptions"
+						@remove="yAxis.splice(yAxis.indexOf(series), 1)"
+					/>
+				</div>
+			</div>
+			<div>
+				<span
+					v-if="options.splitYAxis ? yAxis.length < 2 : true"
+					class="cursor-pointer text-sm text-gray-500 hover:text-gray-700"
+					@click="yAxis ? yAxis.push({ column: '' }) : (yAxis = [{ column: '' }])"
+				>
+					+ Add Series
+				</span>
+			</div>
+		</div>
+
+		<div v-if="yAxis?.length == 2" class="space-y-2 text-gray-600">
+			<Checkbox v-model="options.splitYAxis" label="Split Y Axis" />
 		</div>
 
 		<div>

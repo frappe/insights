@@ -7,9 +7,7 @@
 					<component :is="Component" :key="$route.fullPath" />
 				</div>
 				<template #fallback>
-					<div class="flex h-full flex-col items-center justify-center">
-						<FeatherIcon name="loader" class="h-8 w-8 animate-spin text-gray-500" />
-					</div>
+					<SuspenseFallback />
 				</template>
 			</Suspense>
 		</RouterView>
@@ -18,15 +16,14 @@
 
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
-import auth from '@/utils/auth'
-import settings from '@/utils/settings'
-import systemSettings from '@/utils/systemSettings'
+import SuspenseFallback from '@/components/SuspenseFallback'
+import sessionStore from '@/stores/sessionStore'
+import settingsStore from '@/stores/settingsStore'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
+const session = sessionStore()
 const route = useRoute()
-const hideSidebar = computed(() => {
-	return route.meta.hideSidebar || !auth.isLoggedIn
-})
-onMounted(() => auth.isLoggedIn && settings.get.fetch() && systemSettings.get.fetch())
+const hideSidebar = computed(() => route.meta.hideSidebar || !session.isLoggedIn)
+onMounted(() => session.isLoggedIn && settingsStore())
 </script>

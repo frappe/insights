@@ -84,7 +84,7 @@ defineExpose({ toggle, open, close, isOpen: show })
 
 <template>
 	<teleport to="#frappeui-popper-root">
-		<div ref="popover">
+		<div ref="popover" class="z-[100]">
 			<transition v-bind="transition">
 				<div v-show="show">
 					<slot v-bind="{ toggle }"> </slot>

@@ -1,5 +1,5 @@
 <script setup>
-import { ellipsis } from '@/utils'
+import { ellipsis, formatNumber } from '@/utils'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -7,7 +7,7 @@ const props = defineProps({
 	options: { type: Object, required: true },
 })
 
-const MAX_ROWS = 500
+const MAX_ROWS = 100
 const rows = computed(() => {
 	if (!props.data?.length || !props.options.columns?.length) return []
 	const resultRows = props.data.map((row) => {
@@ -33,7 +33,7 @@ function total(column) {
 	const index = props.options.columns.indexOf(column)
 	const values = rows.value.map((row) => parseInt(row[index]))
 	const total = values.reduce((a, b) => a + b, 0)
-	return Number(total).toLocaleString()
+	return formatNumber(Number(total))
 }
 </script>
 
@@ -57,14 +57,14 @@ function total(column) {
 					<tr>
 						<td
 							v-if="props.options.index"
-							class="w-10 whitespace-nowrap border-b bg-white py-1.5 font-medium text-gray-600"
+							class="w-10 whitespace-nowrap border-b bg-white py-1.5 text-gray-600"
 							scope="col"
 						>
 							#
 						</td>
 						<td
 							v-for="column in props.options.columns"
-							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 font-medium text-gray-600 hover:text-gray-800"
+							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 pr-4 text-gray-600 hover:text-gray-800"
 							scope="col"
 						>
 							{{ column }}
@@ -76,12 +76,8 @@ function total(column) {
 						<td v-if="props.options.index" class="w-10 whitespace-nowrap bg-white py-2">
 							{{ index + 1 }}
 						</td>
-						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2">
-							{{
-								typeof cell == 'number'
-									? cell.toLocaleString()
-									: ellipsis(cell, 100)
-							}}
+						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2 pr-4">
+							{{ typeof cell == 'number' ? formatNumber(cell) : ellipsis(cell, 100) }}
 						</td>
 					</tr>
 					<tr v-if="props.options.showTotal" class="border-b font-medium">

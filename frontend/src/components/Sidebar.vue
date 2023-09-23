@@ -6,7 +6,6 @@
 		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
 				<img src="../assets/insights-logo.svg" class="h-7" />
-				<span class="mb-0.5 ml-1 font-mono">{{ appVersion }}</span>
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
 				<img src="../assets/insights-icon.svg" class="rounded" />
@@ -75,7 +74,7 @@
 							icon: 'life-buoy',
 							onClick: () => (showHelpDialog = true),
 						},
-						auth.user.is_admin
+						session.user.is_admin
 							? {
 									label: 'Switch to Desk',
 									icon: 'grid',
@@ -85,7 +84,7 @@
 						{
 							label: 'Logout',
 							icon: 'log-out',
-							onClick: () => auth.logout(),
+							onClick: () => session.logout(),
 						},
 					]"
 				>
@@ -96,13 +95,13 @@
 						>
 							<Avatar
 								size="xl"
-								:label="auth.user.full_name"
-								:imageURL="auth.user.user_image"
+								:label="session.user.full_name"
+								:imageURL="session.user.user_image"
 							/>
 							<span
 								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"
 							>
-								{{ auth.user.full_name }}
+								{{ session.user.full_name }}
 							</span>
 							<FeatherIcon name="chevron-down" class="rg:inline hidden h-4 w-4" />
 						</button>
@@ -119,21 +118,24 @@
 import { Avatar } from 'frappe-ui'
 
 import HelpDialog from '@/components/HelpDialog.vue'
-import auth from '@/utils/auth'
-import settings from '@/utils/settings'
+import sessionStore from '@/stores/sessionStore'
+import settingsStore from '@/stores/settingsStore'
 import { createResource } from 'frappe-ui'
 import {
 	Book,
 	Database,
 	GanttChartSquare,
 	HomeIcon,
-	LayoutDashboard,
+	LayoutPanelTop,
 	Settings,
 	User,
 	Users,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+
+const session = sessionStore()
+const settings = settingsStore().settings
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([
@@ -147,7 +149,7 @@ const sidebarItems = ref([
 	{
 		path: '/dashboard',
 		label: 'Dashboards',
-		icon: LayoutDashboard,
+		icon: LayoutPanelTop,
 		name: 'Dashboard',
 		current: false,
 	},
@@ -181,7 +183,7 @@ const sidebarItems = ref([
 ])
 
 watch(
-	() => auth.user.is_admin && settings.doc?.enable_permissions,
+	() => session.user.is_admin && settings.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item
@@ -216,13 +218,5 @@ const currentRoute = computed(() => {
 	return route.path
 })
 
-const getAppVersion = createResource({
-	url: 'insights.api.get_app_version',
-	initialData: '0.0.0',
-	auto: true,
-})
-const appVersion = computed(() => {
-	return `v${getAppVersion.data}`
-})
 const open = (url) => window.open(url, '_blank')
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="jsx">
 import UsePopover from '@/components/UsePopover.vue'
-import { useDataSource } from '@/datasource/useDataSource'
-import useDataSources from '@/datasource/useDataSources'
+import useDataSource from '@/datasource/useDataSource'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { whenever } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -13,8 +13,8 @@ const table = computed({
 })
 
 const selectedDataSource = ref(null)
-const sources = useDataSources()
-sources.reload()
+const sources = useDataSourceStore()
+
 const sourceOptions = computed(() =>
 	sources.list.map((source) => ({
 		label: source.title,
@@ -23,31 +23,12 @@ const sourceOptions = computed(() =>
 	}))
 )
 
-const tableOptions = ref([])
+let tableOptions = ref([])
 whenever(selectedDataSource, async (newVal, oldVal) => {
 	if (newVal == oldVal) return
 	const dataSource = useDataSource(selectedDataSource.value)
-	await dataSource.fetch_tables()
-
-	tableOptions.value = dataSource.tables
-		.filter((t) => !t.hidden)
-		// remove duplicates
-		.filter((sourceTable, index, self) => {
-			return (
-				self.findIndex((t) => {
-					return t.table === sourceTable.table
-				}) === index
-			)
-		})
-		.map((sourceTable) => {
-			return {
-				table: sourceTable.table,
-				value: sourceTable.table,
-				label: sourceTable.label,
-				description: sourceTable.table,
-				data_source: dataSource.doc.name,
-			}
-		})
+	await dataSource.fetchTables()
+	tableOptions.value = dataSource.dropdownOptions
 })
 
 const trigger = ref(null)
@@ -68,13 +49,13 @@ const filteredSourceOptions = computed(() => {
 const tablePopover = ref(null)
 const tableSearchTerm = ref('')
 const filteredTableOptions = computed(() => {
-	if (!tableSearchTerm.value) return tableOptions.value
+	if (!tableSearchTerm.value) return tableOptions.value.slice(0, 50)
 	if (!tableOptions.value) return []
 	return tableOptions.value
 		.filter((option) =>
 			option.label.toLowerCase().includes(tableSearchTerm.value.toLowerCase())
 		)
-		.slice(0, 25)
+		.slice(0, 50)
 })
 function handleTableSelect(selectedTable) {
 	selectedDataSource.value = null

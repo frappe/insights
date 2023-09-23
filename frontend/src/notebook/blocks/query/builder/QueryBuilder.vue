@@ -1,11 +1,12 @@
 <script setup>
 import UseTooltip from '@/components/UseTooltip.vue'
-import { useDataSourceTable } from '@/datasource/useDataSource'
-import { FIELDTYPES, isDimensionColumn } from '@/utils'
+import useDataSourceTable from '@/datasource/useDataSourceTable'
+import { FIELDTYPES, isDimensionColumn, safeJSONParse } from '@/utils'
 import { dateFormats } from '@/utils/format'
-import { computed, inject, provide, ref } from 'vue'
+import { Sigma } from 'lucide-vue-next'
+import { computed, inject, provide, ref, watch } from 'vue'
 import useQuery from '../useQuery'
-import ColumnExpressionSelector from './ColumnExpressionSelector.vue'
+import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import ColumnSelector from './ColumnSelector.vue'
 import InputWithPopover from './InputWithPopover.vue'
 import OperatorSelector from './OperatorSelector.vue'
@@ -17,17 +18,15 @@ import ValueSelector from './ValueSelector.vue'
 
 const props = defineProps({ name: String })
 const query = useQuery(props.name)
-query.autosave = true
 await query.reload()
+query.autosave = true
 provide('query', query)
 
 const legacyQuery = inject('query')
 legacyQuery.beforeExecute?.(async () => await query.save())
 
-const state = computed({
-	get: () => (typeof query.doc.json == 'string' ? JSON.parse(query.doc.json) : query.doc.json),
-	set: (value) => (query.doc.json = value),
-})
+const state = ref(safeJSONParse(query.doc.json))
+watch(state, (value) => (query.doc.json = value), { deep: true })
 
 const selectedTables = computed(() => {
 	const tables = [state.value.table]
@@ -46,22 +45,24 @@ const GET_EMPTY_JOIN = () => ({
 })
 const GET_EMPTY_FILTER = () => ({
 	column: {},
-	operator: {},
+	operator: {
+		label: 'equals',
+		value: '=',
+	},
 	value: {},
 })
-const COLUMN = {
+const GET_EMPTY_COLUMN = () => ({
 	table: '',
 	column: '',
 	label: '',
 	type: '',
 	alias: '',
 	order: '',
-	granularity: 'Month',
+	granularity: '',
 	aggregation: '',
 	format: {},
 	expression: {},
-}
-const GET_EMPTY_COLUMN = () => COLUMN
+})
 
 function addStep(type) {
 	if (type == 'Summarise') {
@@ -104,11 +105,13 @@ const AGGREGATIONS = [
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum of', value: 'sum' },
 	{ label: 'Average of', value: 'avg' },
+	{ label: 'Cumulative Count of Records', value: 'cumulative count' },
+	{ label: 'Cumulative Sum of', value: 'cumulative sum' },
 	{ label: 'Unique values of', value: 'distinct' },
 	{ label: 'Unique count of', value: 'distinct_count' },
 	{ label: 'Minimum of', value: 'min' },
 	{ label: 'Maximum of', value: 'max' },
-	{ label: 'Custom', value: 'custom' },
+	{ label: 'Σ', value: 'custom', description: 'Custom aggregation' },
 ]
 function setAggregation(aggregation, measure) {
 	if (aggregation.value == 'count') {
@@ -136,8 +139,8 @@ function findByValue(array, value, defaultValue = {}) {
 }
 
 const ORDER = [
-	{ value: 'asc', label: 'Ascending' },
-	{ value: 'desc', label: 'Descending' },
+	{ value: 'asc', label: 'Asc' },
+	{ value: 'desc', label: 'Desc' },
 ]
 
 function isValidColumn(column) {
@@ -155,16 +158,6 @@ const selectedColumns = computed(() => {
 	state.value.dimensions.forEach((col) => isValidColumn(col) && columns.push(col))
 	return columns
 })
-
-const COLUMN_TYPES = [
-	{ label: 'String', value: 'String' },
-	{ label: 'Integer', value: 'Integer' },
-	{ label: 'Decimal', value: 'Decimal' },
-	{ label: 'Text', value: 'Text' },
-	{ label: 'Datetime', value: 'Datetime' },
-	{ label: 'Date', value: 'Date' },
-	{ label: 'Time', value: 'Time' },
-]
 
 async function autoSelectJoinColumns(join) {
 	if (!join.left_table?.table || !join.right_table?.table) return
@@ -192,6 +185,17 @@ async function autoSelectJoinColumns(join) {
 }
 
 const addStepRef = ref(null)
+const currentExpressionIndex = ref(null)
+const showColumnExpressionEditor = ref(false)
+
+function onColumnChange(column) {
+	debugger
+	column.alias = column.alias || column.label
+	// if date type, set default granularity
+	if (FIELDTYPES.DATE.includes(column.type) && !column.granularity) {
+		column.granularity = 'Month'
+	}
+}
 </script>
 
 <template>
@@ -266,39 +270,41 @@ const addStepRef = ref(null)
 			</QueryBuilderRow>
 
 			<!-- Expressions -->
-			<QueryBuilderRow
-				v-if="state.calculations.length"
-				v-for="(calc, index) in state.calculations"
-				:key="index"
-				label="Calculate Column"
-				:actions="[
-					{
-						icon: 'x',
-						onClick: () => state.calculations.splice(index, 1),
-					},
-				]"
-			>
-				<div
-					class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
-				>
-					<ColumnExpressionSelector v-model="calc.expression" />
-				</div>
-
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">as</div>
-				<div
-					class="flex h-fit items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
-				>
-					<ResizeableInput
-						placeholder="Label"
-						v-model="calc.alias"
-						@update:modelValue="calc.label = $event"
-					/>
-					<InputWithPopover
-						:items="COLUMN_TYPES"
-						placeholder="Type"
-						:value="findByValue(COLUMN_TYPES, calc.type)"
-						@update:modelValue="(v) => (calc.type = v.value)"
-					/>
+			<QueryBuilderRow v-if="state.calculations.length" label="Calculate">
+				<div class="flex space-x-2.5">
+					<div v-for="(calc, index) in state.calculations" :key="index">
+						<div
+							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+						>
+							<div
+								class="flex h-7 cursor-pointer items-center px-2.5 leading-7"
+								:class="calc.label ? 'text-gray-900' : 'text-gray-500'"
+								@click="
+									() => {
+										currentExpressionIndex = index
+										showColumnExpressionEditor = true
+									}
+								"
+							>
+								<Sigma class="mr-1.5 inline-block h-3.5 w-3.5" />
+								{{ calc.label || 'Edit Column' }}
+							</div>
+							<Button
+								icon="x"
+								variant="ghost"
+								class="!rounded-none !text-gray-600"
+								@click.prevent.stop="state.calculations.splice(index, 1)"
+							>
+							</Button>
+						</div>
+					</div>
+					<Button
+						icon="plus"
+						variant="ghost"
+						class="!ml-1 !text-gray-600"
+						@click="state.calculations.push({ ...GET_EMPTY_COLUMN() })"
+					>
+					</Button>
 				</div>
 			</QueryBuilderRow>
 
@@ -375,7 +381,7 @@ const addStepRef = ref(null)
 							:data_source="query.doc.data_source"
 							:tables="selectedTables"
 							v-model="state.columns[index]"
-							@update:model-value="(c) => (column.alias = c.label)"
+							@update:model-value="onColumnChange"
 						/>
 					</Suspense>
 					<InputWithPopover
@@ -399,7 +405,12 @@ const addStepRef = ref(null)
 				<div class="flex space-x-2.5">
 					<div v-for="(measure, index) in state.measures" :key="index">
 						<div
-							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+							class="flex items-center overflow-hidden rounded text-gray-800 shadow"
+							:class="
+								measure.aggregation != 'custom'
+									? 'divide-x divide-gray-400'
+									: '-space-x-3'
+							"
 						>
 							<InputWithPopover
 								:value="findByValue(AGGREGATIONS, measure.aggregation)"
@@ -408,19 +419,24 @@ const addStepRef = ref(null)
 								:items="AGGREGATIONS"
 							/>
 
-							<Suspense v-if="measure.aggregation != 'custom'">
+							<Suspense v-if="measure.aggregation == 'custom'">
+								<!-- if custom aggregation, show local columns only -->
 								<ColumnSelector
-									v-if="measure.aggregation !== 'count'"
-									:localColumns="selectedColumns"
-									:data_source="query.doc.data_source"
-									:tables="selectedTables"
+									:localColumns="
+										state.calculations
+											.filter(isValidColumn)
+											.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+									"
 									v-model="state.measures[index]"
 									@update:model-value="(c) => (measure.alias = c.label)"
 								/>
 							</Suspense>
 							<Suspense v-else>
 								<ColumnSelector
+									v-if="measure.aggregation !== 'count'"
 									:localColumns="selectedColumns"
+									:data_source="query.doc.data_source"
+									:tables="selectedTables"
 									v-model="state.measures[index]"
 									@update:model-value="(c) => (measure.alias = c.label)"
 								/>
@@ -459,7 +475,7 @@ const addStepRef = ref(null)
 										:data_source="query.doc.data_source"
 										:localColumns="selectedColumns"
 										:columnFilter="(c) => isDimensionColumn(c)"
-										@update:model-value="(c) => (dimension.alias = c.label)"
+										@update:model-value="onColumnChange"
 									/>
 									<InputWithPopover
 										v-if="FIELDTYPES.DATE.includes(dimension?.type)"
@@ -493,36 +509,42 @@ const addStepRef = ref(null)
 			</div>
 
 			<!-- Order By -->
-			<QueryBuilderRow
-				v-if="state.orders.length"
-				v-for="(order, index) in state.orders"
-				:key="index"
-				label="Sort by"
-				:actions="[
-					{
-						icon: 'x',
-						onClick: () => state.orders.splice(index, 1),
-					},
-				]"
-			>
-				<Suspense>
-					<ColumnSelector
-						class="flex rounded text-gray-800 shadow"
-						:data_source="query.doc.data_source"
-						:tables="selectedTables"
-						:localColumns="selectedColumns"
-						v-model="state.orders[index]"
-					/>
-				</Suspense>
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">in</div>
-				<InputWithPopover
-					class="flex rounded text-gray-800 shadow"
-					:value="findByValue(ORDER, order.order)"
-					placeholder="Ascending"
-					:items="ORDER"
-					@update:modelValue="(v) => (order.order = v.value)"
-				/>
-				<div class="h-7 text-sm uppercase leading-7 text-gray-600">order</div>
+			<QueryBuilderRow v-if="state.orders.length" label="Sort by">
+				<div class="flex space-x-2.5">
+					<div v-for="(order, index) in state.orders" :key="index">
+						<div
+							class="flex items-center divide-x divide-gray-400 overflow-hidden rounded text-gray-800 shadow"
+						>
+							<Suspense>
+								<ColumnSelector
+									:data_source="query.doc.data_source"
+									:tables="selectedTables"
+									:localColumns="selectedColumns"
+									v-model="state.orders[index]"
+								/>
+							</Suspense>
+							<InputWithPopover
+								:value="findByValue(ORDER, order.order, ORDER[0])"
+								:items="ORDER"
+								@update:modelValue="(v) => (order.order = v.value)"
+							/>
+							<Button
+								icon="x"
+								variant="ghost"
+								class="!rounded-none !text-gray-600"
+								@click.prevent.stop="state.orders.splice(index, 1)"
+							>
+							</Button>
+						</div>
+					</div>
+					<Button
+						icon="plus"
+						variant="ghost"
+						class="!ml-1 !text-gray-600"
+						@click="state.orders.push({ ...GET_EMPTY_COLUMN(), order: 'asc' })"
+					>
+					</Button>
+				</div>
 			</QueryBuilderRow>
 
 			<!-- Limit -->
@@ -581,12 +603,27 @@ const addStepRef = ref(null)
 			</div>
 		</div>
 	</div>
-</template>
 
-<style lang="scss">
-.cm-editor {
-	user-select: text;
-	padding: 0px !important;
-	background-color: white !important;
-}
-</style>
+	<Dialog
+		v-model="showColumnExpressionEditor"
+		:options="{ title: 'Calculate Column' }"
+		dismissable
+	>
+		<template #body-content>
+			<ColumnExpressionEditor
+				:column="state.calculations[currentExpressionIndex]"
+				@update:column="
+					(column) => {
+						const toUpdate = state.calculations[currentExpressionIndex]
+						state.calculations[currentExpressionIndex] = {
+							...toUpdate,
+							...column,
+						}
+						showColumnExpressionEditor = false
+						currentExpressionIndex = null
+					}
+				"
+			/>
+		</template>
+	</Dialog>
+</template>

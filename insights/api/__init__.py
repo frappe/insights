@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-
 import frappe
 from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
@@ -18,6 +17,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
     get_permission_filter,
 )
+from insights.utils import detect_encoding
 
 
 @frappe.whitelist()
@@ -113,6 +113,10 @@ def get_dashboard_list():
             pluck="parent",
         )
         dashboard["charts_count"] = len(dashboard["charts"])
+        dashboard["view_count"] = frappe.db.count(
+            "View Log",
+            filters={"reference_doctype": "Insights Dashboard", "reference_name": dashboard.name},
+        )
 
         dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
 
@@ -142,7 +146,8 @@ def get_queries():
 
     Query = frappe.qb.DocType("Insights Query")
     QueryTable = frappe.qb.DocType("Insights Query Table")
-    QueryChart = frappe.qb.DocType("Insights Query Chart")
+    QueryChart = frappe.qb.DocType("Insights Chart")
+    User = frappe.qb.DocType("User")
     GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
@@ -150,6 +155,8 @@ def get_queries():
         .on(Query.name == QueryTable.parent)
         .left_join(QueryChart)
         .on(QueryChart.query == Query.name)
+        .left_join(User)
+        .on(Query.owner == User.name)
         .select(
             Query.name,
             Query.title,
@@ -159,7 +166,10 @@ def get_queries():
             GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
-            QueryChart.type.as_("chart_type"),
+            Query.owner,
+            User.full_name.as_("owner_name"),
+            User.user_image.as_("owner_image"),
+            QueryChart.chart_type,
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
@@ -177,6 +187,8 @@ def create_query(**query):
     doc.is_assisted_query = query.get("is_assisted_query")
     doc.is_native_query = query.get("is_native_query")
     doc.is_script_query = query.get("is_script_query")
+    if query.get("is_script_query"):
+        doc.data_source = "Query Store"
     if table := query.get("table") and not doc.is_assisted_query:
         doc.append(
             "tables",
@@ -205,10 +217,12 @@ def kill_running_job(data_source, query_id):
 @check_role("Insights User")
 def get_user_info():
     is_admin = frappe.db.exists(
-        "Has Role", {"parent": frappe.session.user, "role": "Insights Admin"}
+        "Has Role",
+        {"parent": frappe.session.user, "role": ["in", ("Insights Admin", "System Manager")]},
     )
     is_user = frappe.db.exists(
-        "Has Role", {"parent": frappe.session.user, "role": "Insights User"}
+        "Has Role",
+        {"parent": frappe.session.user, "role": ["in", ("Insights User", "System Manager")]},
     )
 
     user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
@@ -218,7 +232,10 @@ def get_user_info():
         "first_name": user.get("first_name"),
         "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",
-        "is_user": is_user,
+        "is_user": is_user or frappe.session.user == "Administrator",
+        # TODO: move to `get_session_info` since not user specific
+        "country": frappe.db.get_single_value("System Settings", "country"),
+        "locale": frappe.db.get_single_value("System Settings", "language"),
     }
 
 
@@ -307,13 +324,13 @@ def get_columns_from_uploaded_file(filename):
         frappe.throw("Only CSV files are supported")
 
     file_path = file.get_full_path()
-    df = pd.read_csv(file_path)
+    encoding = detect_encoding(file_path)
+    df = pd.read_csv(file_path, encoding=encoding)
     columns = df.columns.tolist()
     columns_with_types = []
     for column in columns:
         column_type = infer_type_from_list(df[column].tolist())
         columns_with_types.append({"label": column, "type": column_type})
-
     return columns_with_types
 
 
@@ -329,12 +346,12 @@ def create_data_source_for_csv():
 
 @frappe.whitelist()
 @check_role("Insights User")
-def import_csv(table_label, table_name, filename, if_exists, columns):
+def import_csv(table_label, table_name, filename, if_exists, columns, data_source):
 
     create_data_source_for_csv()
 
     table_import = frappe.new_doc("Insights Table Import")
-    table_import.data_source = "File Uploads"
+    table_import.data_source = data_source
     table_import.table_label = table_label
     table_import.table_name = table_name
     table_import.if_exists = if_exists
