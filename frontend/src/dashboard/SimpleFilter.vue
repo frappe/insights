@@ -93,7 +93,7 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 
 	if (filter.column?.type == 'String') {
 		// prettier-ignore
-		columnValues.value = await call('insights.api.fetch_column_values', {
+		columnValues.value = await call('insights.api.data_sources.fetch_column_values', {
 			data_source: filter.column.data_source,
 			table: filter.column.table,
 			column: filter.column.column,

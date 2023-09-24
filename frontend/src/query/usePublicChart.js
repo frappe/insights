@@ -34,7 +34,7 @@ export default function usePublicChart(publicKey) {
 
 function getPublicChart(public_key) {
 	return createResource({
-		url: 'insights.api.get_public_chart',
+		url: 'insights.api.public.get_public_chart',
 		params: { public_key },
 		transform(doc) {
 			doc.options = safeJSONParse(doc.options)

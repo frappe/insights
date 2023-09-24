@@ -20,7 +20,7 @@ export default defineStore('dashboards', {
 		async create(title) {
 			if (!title) return
 			this.creating = true
-			const { name } = await call('insights.api.create_dashboard', { title })
+			const { name } = await call('insights.api.dashboards.create_dashboard', { title })
 			this.creating = false
 			this.reload()
 			return name
@@ -52,7 +52,7 @@ export default defineStore('dashboards', {
 })
 
 const dashboards = createResource({
-	url: 'insights.api.get_dashboard_list',
+	url: 'insights.api.dashboards.get_dashboard_list',
 	initialData: [],
 	cache: 'dashboardsList',
 	transform(data) {

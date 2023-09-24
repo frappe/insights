@@ -18,7 +18,7 @@ const table = reactive({
 })
 const columns = ref([])
 const getColumns = createResource({
-	url: 'insights.api.get_columns_from_uploaded_file',
+	url: 'insights.api.data_sources.get_columns_from_uploaded_file',
 	initialData: [],
 	onSuccess: (data) => {
 		columns.value = data?.map((c) => {
@@ -55,7 +55,7 @@ function scrubName(name) {
 	return name?.toLocaleLowerCase().replace(/[^a-zA-Z0-9]/g, '_')
 }
 const import_csv = createResource({
-	url: 'insights.api.import_csv',
+	url: 'insights.api.data_sources.import_csv',
 })
 
 const dataSourceStore = useDataSourceStore()

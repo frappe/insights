@@ -62,7 +62,7 @@ const createAlertDisabled = computed(() => {
 	if (!alert.condition.right) return true
 	return false
 })
-const createAlertResource = createResource({ url: 'insights.api.create_alert' })
+const createAlertResource = createResource({ url: 'insights.api.alerts.create_alert' })
 function makeCondition() {
 	return alert.condition.isAdvanced
 		? alert.condition.advanceCondition
@@ -81,7 +81,7 @@ function createAlert() {
 			show.value = false
 		})
 }
-const testAlertResource = createResource({ url: 'insights.api.test_alert' })
+const testAlertResource = createResource({ url: 'insights.api.alerts.test_alert' })
 function testSendAlert() {
 	if (createAlertDisabled.value) return
 	const _alert = { ...alert }

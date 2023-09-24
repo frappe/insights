@@ -45,7 +45,7 @@ export const getDocumentResource = (
 }
 
 export const fetchTableName = async (data_source: string, table: string) => {
-	return call('insights.api.get_table_name', {
+	return call('insights.api.data_sources.get_table_name', {
 		data_source: data_source,
 		table: table,
 	})

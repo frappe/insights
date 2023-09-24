@@ -1,0 +1,80 @@
+import frappe
+
+from insights.api.telemetry import track
+from insights.decorators import check_role
+from insights.insights.doctype.insights_team.insights_team import (
+    get_allowed_resources_for_user,
+)
+
+
+@frappe.whitelist()
+@check_role("Insights User")
+def get_queries():
+    allowed_queries = get_allowed_resources_for_user("Insights Query")
+    if not allowed_queries:
+        return []
+
+    from frappe.query_builder.functions import CustomFunction
+
+    Query = frappe.qb.DocType("Insights Query")
+    QueryTable = frappe.qb.DocType("Insights Query Table")
+    QueryChart = frappe.qb.DocType("Insights Chart")
+    User = frappe.qb.DocType("User")
+    GroupConcat = CustomFunction("Group_Concat", ["column"])
+    return (
+        frappe.qb.from_(Query)
+        .left_join(QueryTable)
+        .on(Query.name == QueryTable.parent)
+        .left_join(QueryChart)
+        .on(QueryChart.query == Query.name)
+        .left_join(User)
+        .on(Query.owner == User.name)
+        .select(
+            Query.name,
+            Query.title,
+            Query.status,
+            Query.is_assisted_query,
+            Query.is_native_query,
+            GroupConcat(QueryTable.label).as_("tables"),
+            Query.data_source,
+            Query.creation,
+            Query.owner,
+            User.full_name.as_("owner_name"),
+            User.user_image.as_("owner_image"),
+            QueryChart.chart_type,
+        )
+        .where(Query.name.isin(allowed_queries))
+        .groupby(Query.name)
+        .orderby(Query.creation, order=frappe.qb.desc)
+    ).run(as_dict=True)
+
+
+@frappe.whitelist()
+@check_role("Insights User")
+def create_query(**query):
+    track("create_query")
+    doc = frappe.new_doc("Insights Query")
+    doc.title = query.get("title")
+    doc.data_source = query.get("data_source")
+    doc.is_assisted_query = query.get("is_assisted_query")
+    doc.is_native_query = query.get("is_native_query")
+    doc.is_script_query = query.get("is_script_query")
+    if query.get("is_script_query"):
+        doc.data_source = "Query Store"
+    if table := query.get("table") and not doc.is_assisted_query:
+        doc.append(
+            "tables",
+            {
+                "table": table.get("value"),
+                "label": table.get("label"),
+            },
+        )
+    doc.save()
+    return doc.as_dict()
+
+
+@frappe.whitelist()
+def create_chart():
+    chart = frappe.new_doc("Insights Chart")
+    chart.save()
+    return chart.name

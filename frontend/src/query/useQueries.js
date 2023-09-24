@@ -3,7 +3,7 @@ import { call, createResource } from 'frappe-ui'
 import { defineStore } from 'pinia'
 
 const queries = createResource({
-	url: 'insights.api.get_queries',
+	url: 'insights.api.queries.get_queries',
 	initialData: [],
 	cache: 'queriesList',
 	transform(data) {
@@ -29,7 +29,7 @@ export default defineStore('queries', {
 		},
 		async create(query) {
 			this.creating = true
-			const queryDoc = await call('insights.api.create_query', query)
+			const queryDoc = await call('insights.api.queries.create_query', query)
 			await this.reload()
 			this.creating = false
 			return queryDoc

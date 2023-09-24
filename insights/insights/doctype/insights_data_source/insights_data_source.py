@@ -12,7 +12,6 @@ from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.api.telemetry import track
-from insights.constants import SOURCE_STATUS
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_team.insights_team import get_permission_filter
 
@@ -22,6 +21,13 @@ from .sources.mariadb import MariaDB
 from .sources.postgresql import PostgresDatabase
 from .sources.query_store import QueryStore
 from .sources.sqlite import SQLiteDB
+
+SOURCE_STATUS = frappe._dict(
+    {
+        "Active": "Active",
+        "Inactive": "Inactive",
+    }
+)
 
 
 class InsightsDataSource(Document):
