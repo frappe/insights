@@ -2,7 +2,7 @@
 import useDashboards from '@/dashboard/useDashboards'
 import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import { createChart, default as useChart } from '@/query/useChart'
-import useQueries from '@/query/useQueries'
+import useQueryStore from '@/stores/queryStore'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
 import { computed, inject, provide, ref, watch } from 'vue'
@@ -31,8 +31,7 @@ function removeChart() {
 	chart.delete().then(() => emit('remove'))
 }
 
-const queries = await useQueries()
-await queries.reload()
+const queries = useQueryStore()
 const queryOptions = queries.list.map((query) => ({
 	label: query.title,
 	value: query.name,

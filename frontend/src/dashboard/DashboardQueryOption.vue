@@ -1,6 +1,6 @@
 <script setup>
 import Query from '@/query/Query.vue'
-import useQueries from '@/query/useQueries'
+import useQueryStore from '@/stores/queryStore'
 import { computed, ref } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -10,11 +10,10 @@ const queryName = computed({
 	get: () => props.modelValue,
 	set: (value) => emit('update:modelValue', value),
 })
-const queries = useQueries()
-queries.reload()
+const queryStore = useQueryStore()
 
 const queryOptions = computed(() =>
-	queries.list.map((query) => ({
+	queryStore.list.map((query) => ({
 		label: query.title,
 		value: query.name,
 	}))
@@ -27,16 +26,16 @@ function openQueryInNewTab() {
 const showCreateQuery = ref(false)
 const newQuery = ref(null)
 async function createQuery() {
-	newQuery.value = await queries.create({ is_assisted_query: 1 })
+	newQuery.value = await queryStore.create({ is_assisted_query: 1 })
 	showCreateQuery.value = true
 }
 async function deleteQuery() {
-	await queries.delete(newQuery.value.name)
+	await queryStore.delete(newQuery.value.name)
 	showCreateQuery.value = false
 	newQuery.value = null
 }
 async function selectQuery() {
-	await queries.reload()
+	await queryStore.reload()
 	emit('update:modelValue', newQuery.value.name)
 	showCreateQuery.value = false
 	newQuery.value = null
@@ -76,7 +75,7 @@ async function selectQuery() {
 						variant="solid"
 						theme="red"
 						@click="deleteQuery"
-						:loading="queries.deleting"
+						:loading="queryStore.deleting"
 					>
 						Discard
 					</Button>

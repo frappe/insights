@@ -14,17 +14,11 @@ def get_queries():
     if not allowed_queries:
         return []
 
-    from frappe.query_builder.functions import CustomFunction
-
     Query = frappe.qb.DocType("Insights Query")
-    QueryTable = frappe.qb.DocType("Insights Query Table")
     QueryChart = frappe.qb.DocType("Insights Chart")
     User = frappe.qb.DocType("User")
-    GroupConcat = CustomFunction("Group_Concat", ["column"])
     return (
         frappe.qb.from_(Query)
-        .left_join(QueryTable)
-        .on(Query.name == QueryTable.parent)
         .left_join(QueryChart)
         .on(QueryChart.query == Query.name)
         .left_join(User)
@@ -35,7 +29,6 @@ def get_queries():
             Query.status,
             Query.is_assisted_query,
             Query.is_native_query,
-            GroupConcat(QueryTable.label).as_("tables"),
             Query.data_source,
             Query.creation,
             Query.owner,

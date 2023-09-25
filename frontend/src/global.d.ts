@@ -23,6 +23,7 @@ interface Session {
 
 type ListResourceParams = {
 	type?: 'list'
+	url: string
 	auto?: boolean
 	doctype: string
 	filters: any
@@ -35,6 +36,7 @@ type ListResourceParams = {
 }
 
 type ListResource = {
+	filters: any
 	list: {
 		data: any[]
 		loading: boolean

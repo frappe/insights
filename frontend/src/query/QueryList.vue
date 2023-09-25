@@ -1,20 +1,20 @@
 <script setup lang="jsx">
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
+import ListFilter from '@/components/ListFilter/ListFilter.vue'
+import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebooks from '@/notebook/useNotebooks'
 import useDataSourceStore from '@/stores/dataSourceStore'
-import { updateDocumentTitle } from '@/utils'
+import useQueryStore from '@/stores/queryStore'
+import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getChartIcon } from '@/widgets/widgets'
 import { ListRow, ListRowItem } from 'frappe-ui'
-import ListView from '@/components/ListView.vue'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import useQueries from './useQueries'
 
-const queries = useQueries()
-queries.reload()
+const queryStore = useQueryStore()
 
 const new_dialog = ref(false)
 const route = useRoute()
@@ -31,11 +31,11 @@ const dataSourceOptions = computed(() => [
 	...sources.list.map((s) => ({ label: s.title, value: s.name })),
 ])
 const createDisabled = computed(
-	() => !newQuery.value.dataSource || !newQuery.value.title || queries.creating
+	() => !newQuery.value.dataSource || !newQuery.value.title || queryStore.creating
 )
 const createQuery = async () => {
 	const { dataSource, title } = newQuery.value
-	const name = await queries.create({
+	const name = await queryStore.create({
 		data_source: dataSource,
 		title,
 	})
@@ -66,7 +66,7 @@ async function openQueryEditor(type) {
 	if (type === 'classic') new_query.is_assisted_query = 0
 	if (type === 'sql') new_query.is_native_query = 1
 	if (type === 'script') new_query.is_script_query = 1
-	const query = await queries.create(new_query)
+	const query = await queryStore.create(new_query)
 	router.push({
 		name: 'Query',
 		params: { name: query.name },
@@ -107,6 +107,28 @@ const queryBuilderTypes = ref([
 		onClick: () => openQueryEditor('script'),
 	},
 ])
+
+const filters = ref({})
+const queries = computed(() => {
+	if (isEmptyObj(filters.value)) {
+		return queryStore.list
+	}
+	return queryStore.list.filter((query) => {
+		for (const [fieldname, [operator, value]] of Object.entries(filters.value)) {
+			const field_value = query[fieldname]
+			if (operator === '=') return field_value === value
+			if (operator === '!=') return field_value !== value
+			if (operator === '<') return field_value < value
+			if (operator === '>') return field_value > value
+			if (operator === '<=') return field_value <= value
+			if (operator === '>=') return field_value >= value
+			if (operator.includes('like')) {
+				return field_value.toLowerCase().includes(value.toLowerCase())
+			}
+		}
+		return true
+	})
+})
 </script>
 
 <template>
@@ -131,8 +153,11 @@ const queryBuilderTypes = ref([
 			{ label: 'Created By', name: 'owner_name', class: 'flex-1' },
 			{ label: 'Created', name: 'created_from_now', class: 'flex-1 text-right' },
 		]"
-		:rows="queries.list"
+		:rows="queries"
 	>
+		<template #actions>
+			<ListFilter :docfields="queryStore.getFilterableFields()" @change="filters = $event" />
+		</template>
 		<template #list-row="{ row: query }">
 			<ListRow
 				as="router-link"
