@@ -163,7 +163,7 @@ export default function usePublicDashboard(public_key) {
 
 function getPublicDashboard(public_key) {
 	const resource = createResource({
-		url: 'insights.api.get_public_dashboard',
+		url: 'insights.api.public.get_public_dashboard',
 		params: { public_key },
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)
@@ -171,7 +171,7 @@ function getPublicDashboard(public_key) {
 		},
 	})
 	resource.fetch_chart_data = createResource({
-		url: 'insights.api.get_public_dashboard_chart_data',
+		url: 'insights.api.public.get_public_dashboard_chart_data',
 	})
 	return resource
 }

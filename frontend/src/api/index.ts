@@ -25,6 +25,8 @@ export const testDataSourceConnection: Resource = createResource({
 	url: 'insights.api.setup.test_database_connection',
 })
 
+export const createQuery: Resource = createResource({ url: 'insights.api.queries.create_query' })
+
 export const getDocumentResource = (
 	doctype: string,
 	docname?: string,
@@ -45,7 +47,7 @@ export const getDocumentResource = (
 }
 
 export const fetchTableName = async (data_source: string, table: string) => {
-	return call('insights.api.get_table_name', {
+	return call('insights.api.data_sources.get_table_name', {
 		data_source: data_source,
 		table: table,
 	})

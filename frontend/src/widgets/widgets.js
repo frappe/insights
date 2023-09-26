@@ -14,7 +14,7 @@ import {
 } from 'lucide-vue-next'
 import { defineAsyncComponent } from 'vue'
 
-const VALID_CHARTS = [
+export const VALID_CHARTS = [
 	'Number',
 	'Line',
 	'Bar',

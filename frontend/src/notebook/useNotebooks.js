@@ -3,7 +3,7 @@ import { createResource, call } from 'frappe-ui'
 import { defineStore } from 'pinia'
 
 const notebooks = createResource({
-	url: 'insights.api.get_notebooks',
+	url: 'insights.api.notebooks.get_notebooks',
 	initialData: [],
 	cache: 'notebookList',
 	transform(data) {
@@ -30,12 +30,12 @@ export default defineStore('notebooks', {
 		},
 		async createNotebook(title) {
 			this.creating = true
-			await call('insights.api.create_notebook', { title })
+			await call('insights.api.notebooks.create_notebook', { title })
 			this.creating = false
 			this.reload()
 		},
 		async createPage(notebook_name) {
-			return call('insights.api.create_notebook_page', {
+			return call('insights.api.notebooks.create_notebook_page', {
 				notebook: notebook_name,
 			})
 		},

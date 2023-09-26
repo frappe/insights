@@ -1,5 +1,5 @@
 <script setup>
-import useQueries from '@/query/useQueries'
+import useQueryStore from '@/stores/queryStore'
 import { provide, reactive } from 'vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
 import QueryEditor from './QueryEditor.vue'
@@ -12,7 +12,7 @@ const props = defineProps({ query: String, is_native: Boolean })
 
 let query = null
 if (!props.query) {
-	const queryDoc = await useQueries().create()
+	const queryDoc = await useQueryStore().create()
 	emit('setQuery', queryDoc.name)
 	query = useQuery(queryDoc.name)
 	props.is_native ? await query.convertToNative() : await query.convertToAssisted()

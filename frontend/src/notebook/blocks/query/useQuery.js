@@ -120,7 +120,7 @@ function makeQuery(name) {
 
 	state.fetchSourceSchema = async () => {
 		if (!state.doc.data_source) return
-		state.sourceSchema = await call('insights.api.get_source_schema', {
+		state.sourceSchema = await call('insights.api.data_sources.get_source_schema', {
 			data_source: state.doc.data_source,
 		})
 	}

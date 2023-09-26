@@ -7,7 +7,7 @@ from json import dumps
 import frappe
 from frappe.utils.data import cstr
 
-from insights.api import fetch_column_values, get_tables
+from insights.api.data_sources import fetch_column_values, get_tables
 from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store

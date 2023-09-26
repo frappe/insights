@@ -54,7 +54,7 @@ const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (!isEqualityCheck.value) return
 	if (props.column?.type == 'String' && props.data_source) {
-		const URL = 'insights.api.fetch_column_values'
+		const URL = 'insights.api.data_sources.fetch_column_values'
 		fetchingColumnValues.value = true
 		const values = await call(URL, {
 			data_source: props.data_source,
