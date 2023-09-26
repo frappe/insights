@@ -13,6 +13,7 @@ import { ListRow, ListRowItem } from 'frappe-ui'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import sessionStore from '@/stores/sessionStore'
 
 const queryStore = useQueryStore()
 
@@ -108,8 +109,11 @@ const queryBuilderTypes = ref([
 	},
 ])
 
-const filters = ref({})
+const filters = ref({
+	owner: ['=', sessionStore().user.user_id],
+})
 const queries = computed(() => {
+	console.log(filters.value)
 	if (isEmptyObj(filters.value)) {
 		return queryStore.list
 	}
@@ -156,7 +160,7 @@ const queries = computed(() => {
 		:rows="queries"
 	>
 		<template #actions>
-			<ListFilter :docfields="queryStore.getFilterableFields()" @change="filters = $event" />
+			<ListFilter v-model="filters" :docfields="queryStore.getFilterableFields()" />
 		</template>
 		<template #list-row="{ row: query }">
 			<ListRow
