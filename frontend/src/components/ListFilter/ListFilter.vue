@@ -3,11 +3,11 @@
 		<template #target>
 			<Button label="Filter">
 				<template #prefix><FilterIcon class="h-4" /></template>
-				<template v-if="filters.size" #suffix>
+				<template v-if="filters.length" #suffix>
 					<div
-						class="flex h-5 w-5 items-center justify-center rounded bg-gray-900 pt-[1px] text-2xs font-medium text-white"
+						class="flex h-5 w-5 items-center justify-center rounded bg-gray-900 pt-[1px] text-xs font-medium text-white"
 					>
-						{{ filters.size }}
+						{{ filters.length }}
 					</div>
 				</template>
 			</Button>
