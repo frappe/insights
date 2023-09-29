@@ -110,7 +110,7 @@
 
 <script setup>
 import { Autocomplete, FeatherIcon, FormControl } from 'frappe-ui'
-import { computed, h } from 'vue'
+import { computed, h, onUpdated, ref, watch } from 'vue'
 import FilterIcon from './FilterIcon.vue'
 import NestedPopover from './NestedPopover.vue'
 import SearchComplete from './SearchComplete.vue'
@@ -156,9 +156,13 @@ const fields = computed(() => {
 	return fields
 })
 
-const filters = computed({
-	get: () => makeFiltersList(props.modelValue),
-	set: (value) => emits('update:modelValue', makeFiltersDict(value)),
+const filters = ref(makeFiltersList(props.modelValue))
+watch(filters, (value) => emits('update:modelValue', makeFiltersDict(value)), { deep: true })
+onUpdated(() => {
+	const newFilters = makeFiltersList(props.modelValue)
+	if (JSON.stringify(filters.value) !== JSON.stringify(newFilters)) {
+		filters.value = newFilters
+	}
 })
 
 function makeFiltersList(filtersDict) {

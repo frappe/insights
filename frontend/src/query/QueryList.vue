@@ -7,13 +7,13 @@ import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebooks from '@/notebook/useNotebooks'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import useQueryStore from '@/stores/queryStore'
+import sessionStore from '@/stores/sessionStore'
 import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getChartIcon } from '@/widgets/widgets'
 import { ListRow, ListRowItem } from 'frappe-ui'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import sessionStore from '@/stores/sessionStore'
 
 const queryStore = useQueryStore()
 
@@ -160,7 +160,15 @@ const queries = computed(() => {
 		:rows="queries"
 	>
 		<template #actions>
-			<ListFilter v-model="filters" :docfields="queryStore.getFilterableFields()" />
+			<ListFilter
+				v-model="filters"
+				@update:model-value="
+					(val) => {
+						console.log(val)
+					}
+				"
+				:docfields="queryStore.getFilterableFields()"
+			/>
 		</template>
 		<template #list-row="{ row: query }">
 			<ListRow

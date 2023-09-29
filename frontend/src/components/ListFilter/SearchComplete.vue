@@ -62,13 +62,18 @@ const r = createListResource({
 		selection.value = props.value ? options.value.find((o) => o.value === props.value) : null
 	},
 })
-const options = computed(
-	() =>
+const options = computed(() => {
+	const allOptions =
 		r.data?.map((result) => ({
 			label: result[props.labelField],
 			value: result[props.valueField],
 		})) || []
-)
+
+	if (selection.value && !allOptions.find((o) => o.value === selection.value.value)) {
+		allOptions.push(selection.value)
+	}
+	return allOptions
+})
 const selection = ref(null)
 
 function onUpdateQuery(query) {
