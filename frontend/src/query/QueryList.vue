@@ -160,15 +160,7 @@ const queries = computed(() => {
 		:rows="queries"
 	>
 		<template #actions>
-			<ListFilter
-				v-model="filters"
-				@update:model-value="
-					(val) => {
-						console.log(val)
-					}
-				"
-				:docfields="queryStore.getFilterableFields()"
-			/>
+			<ListFilter v-model="filters" :docfields="queryStore.getFilterableFields()" />
 		</template>
 		<template #list-row="{ row: query }">
 			<ListRow
