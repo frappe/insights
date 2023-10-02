@@ -7,7 +7,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import random_string
 
-from insights.api import fetch_column_values
+from insights.api.data_sources import fetch_column_values
 
 test_dependencies = ("Insights Data Source", "Insights Table")
 test_records = frappe.get_test_records("Insights Query")
@@ -178,9 +178,7 @@ class TestInsightsQueryBuilder(FrappeTestCase):
         for func in ["sum_if", "count_if", "if_null"]:
             expression = make_call_expression(
                 func,
-                make_binary_expression(
-                    make_todo_column("docstatus"), "=", make_number(1)
-                ),
+                make_binary_expression(make_todo_column("docstatus"), "=", make_number(1)),
                 make_todo_column("docstatus"),
             )
             query.append("columns", make_query_column_expression(expression))
