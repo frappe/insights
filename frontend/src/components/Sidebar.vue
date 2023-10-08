@@ -96,7 +96,7 @@
 							<Avatar
 								size="xl"
 								:label="session.user.full_name"
-								:imageURL="session.user.user_image"
+								:image="session.user.user_image"
 							/>
 							<span
 								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"
