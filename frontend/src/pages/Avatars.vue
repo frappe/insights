@@ -5,7 +5,7 @@
 			v-for="avatar in avatars"
 			:key="avatar.label"
 			:label="avatar.label"
-			:imageURL="avatar.imageURL"
+			:image="avatar.image"
 		/>
 	</div>
 </template>

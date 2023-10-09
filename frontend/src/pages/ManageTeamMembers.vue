@@ -50,7 +50,7 @@ function addMembers(members) {
 				:key="member.name"
 			>
 				<div class="flex items-center space-x-2">
-					<Avatar :label="member.full_name" :imageURL="member.user_image" />
+					<Avatar :label="member.full_name" :image="member.user_image" />
 					<div>
 						<div>{{ member.full_name }}</div>
 						<div class="text-sm text-gray-600">{{ member.email }}</div>
