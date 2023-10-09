@@ -258,7 +258,7 @@ class FrappeTableFactory:
 
 
 class FrappeDB(BaseDatabase):
-    def __init__(self, data_source, host, port, username, password, database_name, use_ssl):
+    def __init__(self, data_source, host, port, username, password, database_name, use_ssl, **_):
         self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
