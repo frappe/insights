@@ -82,6 +82,7 @@ class InsightsDataSource(Document):
         password = None
         with suppress(BaseException):
             password = self.get_password()
+
         conn_args = {
             "data_source": self.name,
             "host": self.host,
