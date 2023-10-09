@@ -33,7 +33,8 @@ class BaseDatabase:
         self.table_factory = None
 
     def test_connection(self):
-        return self.execute_query("SELECT 1")
+        with self.connect() as connection:
+            connection.execute(text("SELECT 1"))
 
     def connect(self):
         try:
