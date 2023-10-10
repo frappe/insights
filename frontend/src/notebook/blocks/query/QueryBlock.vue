@@ -33,7 +33,9 @@ const state = reactive({
 provide('state', state)
 
 state.removeQuery = () => {
-	query.delete().then(() => emit('remove'))
+	useQueryStore()
+		.delete(query.doc.name)
+		.then(() => emit('remove'))
 }
 </script>
 
