@@ -5,7 +5,7 @@ import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 const session = sessionStore()
 
@@ -79,17 +79,31 @@ function makeQuery(name) {
 
 	watchOnce(() => state.autosave, setupAutosaveListener)
 	function setupAutosaveListener() {
-		const saveIfChanged = function (newVal, oldVal) {
-			if (state.executing) return
-			if (!oldVal || !newVal) return
-			if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
-			state.save()
-		}
-		watchDebounced(getUpdatedFields, saveIfChanged, { deep: true, debounce: 1000 })
-		window.onbeforeunload = (event) => {
-			state.unsaved && state.save()
-			event.preventDefault()
-		}
+		watchDebounced(
+			getUpdatedFields,
+			function (newDoc, oldDoc) {
+				if (state.executing) return
+				if (!oldDoc || !newDoc) return
+				if (JSON.stringify(newDoc) == JSON.stringify(oldDoc)) return
+				if (state.saving) {
+					state.saveWhenSavingIsDone = true
+					return
+				}
+				state.save()
+			},
+			{ deep: true, debounce: 0 }
+		)
+
+		watch(
+			() => state.loading,
+			(newLoading, oldLoading) => {
+				const wasSaving = !newLoading && oldLoading
+				if (wasSaving && state.saveWhenSavingIsDone) {
+					state.saveWhenSavingIsDone = false
+					state.save()
+				}
+			}
+		)
 	}
 
 	function getUpdatedFields() {
@@ -105,8 +119,10 @@ function makeQuery(name) {
 
 	state.save = async () => {
 		state.loading = true
+		state.saving = true
 		const updatedFields = getUpdatedFields()
 		await resource.setValue.submit(updatedFields)
+		state.saving = false
 		state.loading = false
 	}
 
