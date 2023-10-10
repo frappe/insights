@@ -156,6 +156,13 @@ function makeQuery(name) {
 		return message
 	}
 
+	state.saveAsTable = async () => {
+		state.loading = true
+		await resource.save_as_table.submit()
+		await state.syncDoc()
+		state.loading = false
+	}
+
 	return state
 }
 

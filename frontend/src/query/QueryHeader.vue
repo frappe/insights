@@ -67,7 +67,6 @@ function changeDataSource(sourceName) {
 		></ContentEditable>
 		<Dropdown
 			class="mr-2"
-			v-if="!query.doc.is_assisted_query"
 			:button="{
 				iconLeft: 'database',
 				variant: 'outline',

@@ -1,5 +1,6 @@
 <script setup lang="jsx">
 import useDataSourceStore from '@/stores/dataSourceStore'
+import { Component } from 'lucide-vue-next'
 import { copyToClipboard } from '@/utils'
 import { debounce } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
@@ -8,8 +9,7 @@ import ResizeableInput from './builder/ResizeableInput.vue'
 
 const state = inject('state')
 const debouncedUpdateTitle = debounce(async (title) => {
-	await state.query.setValue.submit({ title })
-	state.query.doc.title = title
+	await state.query.updateDoc({ title })
 }, 1500)
 
 const show_sql_dialog = ref(false)
@@ -73,6 +73,9 @@ function changeDataSource(sourceName) {
 <template>
 	<div class="flex h-9 items-center justify-between rounded-t-lg pl-3 pr-1 text-base">
 		<div class="flex items-center font-mono">
+			<div v-if="state.query.doc.is_saved_as_table" class="mr-1">
+				<Component class="h-3 w-3 text-gray-600" fill="currentColor" />
+			</div>
 			<ResizeableInput
 				v-model="state.query.doc.title"
 				class="-ml-2 cursor-text"
@@ -86,7 +89,6 @@ function changeDataSource(sourceName) {
 		</div>
 		<div class="flex items-center space-x-2">
 			<Dropdown
-				v-if="!state.query.doc.is_assisted_query"
 				:button="{
 					iconLeft: 'database',
 					variant: 'outline',
@@ -101,32 +103,43 @@ function changeDataSource(sourceName) {
 				:onClick="() => state.query.execute() || (state.minimizeResult = false)"
 				:loading="state.query.executing"
 			/>
-			<Button
-				variant="outline"
-				:icon="state.minimizeResult ? 'maximize-2' : 'minimize-2'"
-				:label="state.minimizeResult ? 'Show Results' : 'Hide Results'"
-				:onClick="() => (state.minimizeResult = !state.minimizeResult)"
-			/>
-			<Button
-				variant="outline"
-				label="Duplicate"
-				icon="copy"
-				:onClick="duplicateQuery"
-				:loading="state.query.duplicating"
-			/>
-			<Button
-				v-if="!state.query.doc.is_native_query && state.query.doc.sql"
-				variant="outline"
-				label="View SQL"
-				icon="code"
-				:onClick="() => (show_sql_dialog = true)"
-			/>
-			<Button
-				variant="outline"
-				icon="trash"
-				label="Delete"
-				:onClick="state.removeQuery"
-				:loading="state.query.deleting"
+			<Dropdown
+				:button="{
+					icon: 'more-vertical',
+					variant: 'outline',
+				}"
+				:options="[
+					{
+						label: state.minimizeResult ? 'Show Results' : 'Hide Results',
+						icon: state.minimizeResult ? 'maximize-2' : 'minimize-2',
+						onClick: () => (state.minimizeResult = !state.minimizeResult),
+					},
+					!state.query.doc.is_saved_as_table
+						? {
+								label: 'Save as Table',
+								icon: 'bookmark',
+								onClick: () => state.query.saveAsTable(),
+						  }
+						: null,
+					{
+						label: 'Duplicate',
+						icon: 'copy',
+						onClick: duplicateQuery,
+						loading: state.query.duplicating,
+					},
+					{
+						label: 'View SQL',
+						icon: 'code',
+						onClick: () => (show_sql_dialog = true),
+						loading: state.query.duplicating,
+					},
+					{
+						label: 'Delete',
+						icon: 'trash',
+						onClick: state.removeQuery,
+						loading: state.query.deleting,
+					},
+				]"
 			/>
 		</div>
 	</div>
