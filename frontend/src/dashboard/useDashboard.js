@@ -61,6 +61,7 @@ export default function useDashboard(name) {
 		state.currentItem = undefined
 		state.loading = false
 		state.editing = false
+		window.location.reload()
 	}
 
 	async function deleteDashboard() {
