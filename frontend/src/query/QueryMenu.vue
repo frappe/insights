@@ -107,10 +107,12 @@
 						variant: 'solid',
 						theme: 'red',
 						onClick: () => {
-							query.delete.submit().then(() => {
-								$router.push('/query')
-								show_delete_dialog = false
-							})
+							useQueryStore()
+								.delete(query.doc.name)
+								.then(() => {
+									$router.push('/query')
+									show_delete_dialog = false
+								})
 						},
 					},
 				],
@@ -349,8 +351,9 @@
 <script setup>
 import AlertDialog from '@/components/AlertDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
-import { copyToClipboard } from '@/utils'
+import useQueryStore from '@/stores/queryStore'
 import settingsStore from '@/stores/settingsStore'
+import { copyToClipboard } from '@/utils'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
 import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
