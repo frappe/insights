@@ -152,6 +152,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 						:columns="dashboard.currentItem.query?.resultColumns"
 						:key="
 							dashboard.currentItem.item_id &&
+							dashboard.isChart(dashboard.currentItem) &&
 							JSON.stringify(dashboard.currentItem.options)
 						"
 					/>
