@@ -22,7 +22,6 @@ function makeQuery(name) {
 	const resource = useQueryResource(name)
 	const state = reactive({
 		autosave: false,
-		unsaved: false,
 		loading: true,
 		executing: false,
 		error: null,
@@ -42,7 +41,6 @@ function makeQuery(name) {
 		state.doc = { ...resource.doc }
 		state.isOwner = state.doc.owner == session.user.user_id
 		state.loading = false
-		state.unsaved = false
 	}
 
 	state.convertToNative = async function () {
@@ -125,14 +123,6 @@ function makeQuery(name) {
 		state.saving = false
 		state.loading = false
 	}
-
-	const setUnsaved = (newVal, oldVal) => {
-		if (state.unsaved) return
-		if (!oldVal || !newVal) return
-		if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
-		state.unsaved = true
-	}
-	watchDebounced(getUpdatedFields, setUnsaved, { deep: true, debounce: 500 })
 
 	state.fetchSourceSchema = async () => {
 		if (!state.doc.data_source) return
