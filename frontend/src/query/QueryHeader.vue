@@ -74,6 +74,14 @@ function changeDataSource(sourceName) {
 			}"
 			:options="dataSourceOptions"
 		/>
+		<Button
+			class="mr-2"
+			variant="outline"
+			icon="play"
+			@click="query.execute()"
+			:disabled="!query.doc.data_source"
+			:loading="query.run.loading"
+		/>
 		<QueryMenu />
 	</div>
 </template>
