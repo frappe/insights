@@ -1,5 +1,6 @@
 import operator
 from contextlib import suppress
+from datetime import date, datetime
 
 import frappe
 from frappe import _dict, parse_json
@@ -196,7 +197,8 @@ class Functions:
         # three arg functions
 
         if function == "between":
-            return args[0].between(args[1], args[2])
+            dates = add_start_and_end_time([args[1], args[2]])
+            return args[0].between(*dates)
 
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
@@ -236,8 +238,8 @@ class Functions:
             dates = get_date_range(timespan)
             if not dates:
                 raise Exception(f"Invalid timespan {args[1]}")
-
-            return column.between(get_date_str(dates[0]), get_date_str(dates[1]))
+            dates_str = add_start_and_end_time(dates)
+            return column.between(*dates_str)
 
         if function == "time_elapsed":
             VALID_UNITS = [
@@ -387,6 +389,15 @@ def get_date_range(timespan, include_current=False):
             dates[1] = max(dates[1], current_dates[1])
 
         return dates
+
+
+def add_start_and_end_time(dates):
+    if not dates:
+        return dates
+    if type(dates[0]) == str:
+        return [dates[0] + " 00:00:00", dates[1] + " 23:59:59"]
+    if type(dates[0]) == datetime or type(dates[0]) == date:
+        return [dates[0].strftime("%Y-%m-%d 00:00:00"), dates[1].strftime("%Y-%m-%d 23:59:59")]
 
 
 class BinaryOperations:
