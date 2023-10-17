@@ -183,7 +183,7 @@ const sidebarItems = ref([
 ])
 
 watch(
-	() => session.user.is_admin && settings.enable_permissions,
+	() => session.user.is_admin && settings?.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item
