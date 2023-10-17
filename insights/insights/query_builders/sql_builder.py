@@ -158,7 +158,7 @@ class Functions:
             return args[0].is_(None)
 
         if function == "count_if":
-            return func.sum(case([(args[0], 1)], else_=0))
+            return func.sum(case((args[0], 1), else_=0))
 
         if function == "distinct":
             return distinct(args[0])
@@ -192,7 +192,7 @@ class Functions:
             return func.ifnull(args[0], args[1])
 
         if function == "sum_if":
-            return func.sum(case([(args[0], args[1])], else_=0))
+            return func.sum(case((args[0], args[1]), else_=0))
 
         # three arg functions
 
@@ -217,7 +217,8 @@ class Functions:
             conditions = []
             for i in range(0, len(_args), 2):
                 conditions.append((_args[i], _args[i + 1]))
-            return case(conditions, else_=default)
+            # return case(conditions, else_=default)
+            return case(*conditions, else_=default)
 
         if function == "timespan":
             column = args[0]

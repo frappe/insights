@@ -263,7 +263,7 @@ def compile_query(query, dialect=None):
 
 def execute_and_log(conn, sql, data_source):
     with Timer() as t:
-        result = conn.execute(sql)
+        result = conn.exec_driver_sql(sql)
     create_execution_log(sql, data_source, t.elapsed)
     return result
 
