@@ -72,7 +72,7 @@
 				</div>
 			</div>
 
-			<div v-if="configurables.is_subscribed" class="rounded bg-white p-6 shadow">
+			<!-- <div v-if="configurables.is_subscribed" class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Subscription</div>
 				</div>
@@ -94,7 +94,7 @@
 						</Button>
 					</Setting>
 				</div>
-			</div>
+			</div> -->
 
 			<div class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
