@@ -16,24 +16,15 @@ type InsightsSettings = {
 
 const settingsStore = defineStore('insights:settings', () => {
 	const insightsSettings = api.getDocumentResource('Insights Settings')
-	const systemSettings = api.getDocumentResource('System Settings')
-
-	const initialized = computed(() => insightsSettings.doc?.name && systemSettings.doc?.name)
+	const initialized = computed(() => insightsSettings.doc?.name)
 	async function initialize() {
 		if (initialized.value) return
 		await insightsSettings.get.fetch()
-		await systemSettings.get.fetch()
 	}
 
-	const loading = computed(() => insightsSettings.loading || systemSettings.loading)
-
+	const loading = computed(() => insightsSettings.loading)
 	const settings = computed({
-		get() {
-			return {
-				...(insightsSettings.doc || {}),
-				...(systemSettings.doc || {}),
-			}
-		},
+		get: () => insightsSettings.doc,
 		set(value: InsightsSettings) {
 			insightsSettings.doc = value
 		},
