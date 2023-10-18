@@ -10,6 +10,7 @@
 				class="w-full"
 				v-model="chart.doc.chart_type"
 				:options="chartOptions"
+				@update:modelValue="chart.doc.options = {}"
 			/>
 
 			<component

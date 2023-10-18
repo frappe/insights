@@ -109,6 +109,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         chart = frappe.new_doc("Insights Chart")
         chart.query = self.name
         chart.save(ignore_permissions=True)
+        return chart
 
     def update_insights_table(self, force=False):
         if not self.is_saved_as_table and not force:

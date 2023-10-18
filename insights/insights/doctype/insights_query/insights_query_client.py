@@ -79,7 +79,11 @@ class InsightsQueryClient:
 
     @frappe.whitelist()
     def get_chart_name(self):
-        return InsightsChart.get_name(query=self.name)
+        chart_name = InsightsChart.get_name(query=self.name)
+        if not chart_name:
+            new_chart = self.create_default_chart()
+            chart_name = new_chart.name
+        return chart_name
 
     @frappe.whitelist()
     def save_as_table(self):
