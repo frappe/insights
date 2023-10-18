@@ -16,7 +16,7 @@ from insights.insights.doctype.insights_data_source.sources.utils import (
 )
 from insights.utils import InsightsSettings, InsightsTable, ResultColumn
 
-from ..insights_data_source.sources.query_store import sync_query_store
+from ..insights_data_source.sources.query_store import store_query
 from .insights_assisted_query import InsightsAssistedQueryController
 from .insights_legacy_query import (
     InsightsLegacyQueryClient,
@@ -46,7 +46,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def on_update(self):
         self.create_default_chart()
-        self.update_query_store()
         self.update_linked_docs()
 
     def on_trash(self):
@@ -128,11 +127,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def get_columns(self):
         return self.get_columns_from_results(self.retrieve_results())
 
-    def update_query_store(self):
-        if not self.is_stored:
-            return
-        sync_query_store([self.name])
-
     def update_linked_docs(self):
         old_self = self.get("_doc_before_save")
         old_title = old_self.title if old_self else None
@@ -185,6 +179,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             raise
         finally:
             CachedResults.set(self.name, self._results)
+            self.is_stored and store_query(self.name, self._results)
             self.update_insights_table()
         return self._results
 

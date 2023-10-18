@@ -86,7 +86,17 @@ class QueryStore(SQLiteDB):
         query = frappe.get_doc("Insights Query", table)
         return query.get_columns()
 
+    def store_query(self, query_name, results):
+        columns = [col["label"] for col in results[0]]
+        df = pd.DataFrame(results[1:], columns=columns, dtype=str)
+        df.to_sql(query_name, self.engine, if_exists="replace", index=False)
+
 
 def sync_query_store(tables=None, force=False):
     query_store = QueryStore()
     query_store.sync_tables(tables, force)
+
+
+def store_query(query_name, results):
+    query_store = QueryStore()
+    query_store.store_query(query_name, results)
