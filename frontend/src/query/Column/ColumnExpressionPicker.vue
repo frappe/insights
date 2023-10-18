@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col">
+	<div class="relative flex flex-col">
 		<!-- Expression Code Field -->
 		<div class="flex justify-between">
 			<div class="mb-1 text-sm">Expression</div>
@@ -100,7 +100,7 @@
 			/>
 		</div>
 		<!-- Action Buttons -->
-		<div class="mt-3 flex justify-end space-x-2">
+		<div class="sticky bottom-0 mt-3 flex justify-end space-x-2 bg-white pt-1">
 			<Button
 				v-if="editing"
 				class="text-red-500"

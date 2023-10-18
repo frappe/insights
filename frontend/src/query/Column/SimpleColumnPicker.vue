@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col space-y-3">
+	<div class="relative flex flex-col space-y-3">
 		<div class="space-y-1 text-sm">
 			<div class="text-gray-700">Aggregation Type</div>
 			<Autocomplete
@@ -61,7 +61,7 @@
 				placeholder="Enter a label..."
 			/>
 		</div>
-		<div class="flex justify-end space-x-2">
+		<div class="sticky bottom-0 mt-3 flex justify-end space-x-2 bg-white pt-1">
 			<Button
 				v-if="props.column.name"
 				class="text-red-500"
