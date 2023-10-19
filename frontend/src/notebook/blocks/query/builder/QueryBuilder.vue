@@ -413,9 +413,8 @@ function onColumnChange(column) {
 							"
 						>
 							<InputWithPopover
-								:value="
-									findByValue(AGGREGATIONS, measure.aggregation, AGGREGATIONS[1])
-								"
+								:value="findByValue(AGGREGATIONS, measure.aggregation)"
+								placeholder="Aggregation"
 								@update:modelValue="(v) => setAggregation(v, measure)"
 								:items="AGGREGATIONS"
 							/>
