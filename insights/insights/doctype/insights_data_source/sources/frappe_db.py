@@ -93,6 +93,7 @@ class FrappeTableFactory:
             .where((DocField.fieldtype == "Link") | (DocField.fieldtype == "Table"))
             .get_sql()
         )
+        query = text(query)
         standard_links = self.db_conn.execute(query).fetchall()
 
         CustomField = frappe.qb.DocType("Custom Field")
@@ -107,6 +108,7 @@ class FrappeTableFactory:
             .where((CustomField.fieldtype == "Link") | (CustomField.fieldtype == "Table"))
             .get_sql()
         )
+        query = text(query)
         custom_links = self.db_conn.execute(query).fetchall()
 
         for link_row in standard_links + custom_links:
@@ -209,8 +211,8 @@ class FrappeTableFactory:
         )
 
         dynamic_link_queries = [
-            standard_dynamic_links_query,
-            custom_dynamic_links_query,
+            text(standard_dynamic_links_query),
+            text(custom_dynamic_links_query),
         ]
 
         dynamic_link_map = {}
@@ -224,7 +226,7 @@ class FrappeTableFactory:
                 dynamic_link_map.setdefault(df.parent, []).append(df)
             else:
                 links = self.db_conn.execute(
-                    f"""select distinct {df.options} from `tab{df.parent}`"""
+                    text(f"""select distinct {df.options} from `tab{df.parent}`""")
                 ).fetchall()
                 links = [l[0] for l in links]
                 for doctype in links:
