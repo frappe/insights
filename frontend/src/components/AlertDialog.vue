@@ -57,9 +57,9 @@ const createAlertDisabled = computed(() => {
 	if (alert.channel === 'Email' && !alert.recipients) return true
 	if (alert.channel === 'Telegram' && !alert.telegram_chat_id) return true
 	if (alert.condition.isAdvanced && !alert.condition.advanceCondition) return true
-	if (!alert.condition.left) return true
-	if (!alert.condition.operator) return true
-	if (!alert.condition.right) return true
+	if (!alert.condition.isAdvanced && !alert.condition.left) return true
+	if (!alert.condition.isAdvanced && !alert.condition.operator) return true
+	if (!alert.condition.isAdvanced && !alert.condition.right) return true
 	return false
 })
 const createAlertResource = createResource({ url: 'insights.api.alerts.create_alert' })
@@ -169,10 +169,12 @@ function testSendAlert() {
 						/>
 					</div>
 					<div v-else class="!mt-2">
-						<Code
-							v-model="alert.condition.advanceCondition"
-							placeholder="Write a python expression..."
-						/>
+						<div class="form-textarea h-20">
+							<Code
+								v-model="alert.condition.advanceCondition"
+								placeholder="Write a python expression..."
+							/>
+						</div>
 						<p class="font-code mt-1 text-sm text-gray-600">
 							Example: results["Count of Records"][0] > 100
 						</p>
