@@ -174,13 +174,14 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 commit=True,
             )
         except Exception as e:
+            self._results = []
             frappe.db.rollback()
             frappe.log_error(str(e)[:140])
             self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:
             CachedResults.set(self.name, self._results)
-            self.is_stored and store_query(self.name, self._results)
+            self.is_stored and store_query(self, self._results)
             self.update_insights_table()
         return self._results
 
