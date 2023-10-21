@@ -45,12 +45,28 @@ function useDataSource(name: string) {
 			})
 	)
 
+	type TableRelationship = {
+		primary_table: string
+		secondary_table: string
+		primary_column: string
+		secondary_column: string
+		cardinality: string
+	}
+	function updateTableRelationship(tableRelationship: TableRelationship) {
+		return resource.update_table_link.submit({ data: tableRelationship })
+	}
+	function deleteTableRelationship(tableRelationship: TableRelationship) {
+		return resource.delete_table_link.submit({ data: tableRelationship })
+	}
+
 	const dataSource: DataSource = reactive({
 		doc,
 		tableList,
 		dropdownOptions,
 		loading: resource.loading,
 		fetchTables,
+		updateTableRelationship,
+		deleteTableRelationship,
 		syncTables: () => resource.enqueue_sync_tables.submit(),
 		delete: () => resource.delete.submit(),
 	})
