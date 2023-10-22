@@ -29,7 +29,7 @@ function handleSaveVariables(variables) {
 	showVariablesDialog.value = false
 }
 
-const showLogs = useStorage(`query-${query.doc.name}-show-logs`, false)
+const showLogs = useStorage(`insights:query-${query.doc.name}-show-logs`, false)
 const scriptLogs = computed(() => query.doc.script_log?.split('\n')?.slice(1))
 const showHelp = ref(false)
 const exampleCode = `def fetch_data_from_url():
