@@ -18,6 +18,7 @@ async function useDataSourceTable(params: GetTableParams) {
 	}
 
 	const resource: TableResource = getDocumentResource('Insights Table', name)
+	await resource.fetchIfNeeded()
 
 	const doc = computed<any>({
 		get: () => resource.doc || {},

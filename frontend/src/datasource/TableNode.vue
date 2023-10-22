@@ -56,7 +56,7 @@ function getTopOffset(idx) {
 			<div
 				v-for="(column, idx) in table.columns"
 				:key="column.column"
-				class="nodrag group relative flex cursor-pointer items-center justify-between border-b px-4 py-2 text-sm hover:bg-gray-50"
+				class="nodrag group relative flex cursor-pointer items-center border-b px-4 py-2 text-sm hover:bg-gray-50"
 				:draggable="true"
 				@dragover="onColumnDragOver"
 				@dragstart="onColumnDragStart($event, column)"
@@ -64,10 +64,8 @@ function getTopOffset(idx) {
 				@dragenter="state.highlightColumn(column)"
 				:class="isHighlighted(column) ? 'bg-gray-100' : ''"
 			>
-				<div class="space-x-2">
-					<span class="text-gray-500"> # </span>
-					<span class="truncate">{{ column.label }}</span>
-				</div>
+				<span class="mr-2 text-gray-500"> # </span>
+				<span class="truncate">{{ column.label }}</span>
 				<Handle
 					class="invisible"
 					:id="column.column"

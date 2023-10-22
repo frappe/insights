@@ -5,6 +5,7 @@ import { computed, inject, nextTick, provide, reactive, ref, watch } from 'vue'
 import TableEdge from './TableEdge.vue'
 import TableNode from './TableNode.vue'
 import useDataSourceTable from './useDataSourceTable'
+import { whenHasValue } from '@/utils'
 
 const dataSource = inject('dataSource')
 const searchQuery = ref('')
@@ -123,6 +124,7 @@ async function onTableDrop(event) {
 
 async function displayTableRelationships(tablename) {
 	const table = await useDataSourceTable({ name: tablename })
+	await whenHasValue(() => table.doc.name)
 	if (!table.doc.table_links) return
 	table.doc.table_links.forEach((link) => {
 		const foreignTableNode = canvas.findNode(link.foreign_table)

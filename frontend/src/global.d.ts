@@ -68,7 +68,7 @@ type DocumentResource = {
 	loading: boolean
 	get: Resource
 	delete: Resource
-	fetchIfNeeded: () => void
+	fetchIfNeeded: () => Promise<any>
 }
 
 interface DataSourceResource extends DocumentResource {
