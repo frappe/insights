@@ -1,11 +1,12 @@
 <script setup>
 import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
+import { whenHasValue } from '@/utils'
 import { MarkerType, VueFlow, useVueFlow } from '@vue-flow/core'
+import { useStorage, watchDebounced } from '@vueuse/core'
 import { computed, inject, nextTick, provide, reactive, ref, watch } from 'vue'
 import TableEdge from './TableEdge.vue'
 import TableNode from './TableNode.vue'
 import useDataSourceTable from './useDataSourceTable'
-import { whenHasValue } from '@/utils'
 
 const dataSource = inject('dataSource')
 const searchQuery = ref('')
@@ -61,7 +62,31 @@ const state = reactive({
 provide('state', state)
 
 const canvas = useVueFlow({ nodes: [] })
+
+const storedNodes = useStorage(`insights:${dataSource.doc.name}:nodes`, [])
 const nodes = computed(() => canvas.nodes.value)
+
+// load locally stored nodes
+if (storedNodes.value.length) {
+	canvas.addNodes(storedNodes.value)
+	const promises = storedNodes.value.map((node) => {
+		if (node.type == 'table') {
+			return displayTableRelationships(node.data.tablename)
+		}
+		return Promise.resolve()
+	})
+	await Promise.all(promises)
+}
+
+// when nodes change, store them locally
+watchDebounced(
+	nodes,
+	(newNodes) => {
+		if (JSON.stringify(newNodes) == JSON.stringify(storedNodes.value)) return
+		storedNodes.value = newNodes
+	},
+	{ deep: true, debounce: 1000 }
+)
 
 function onTableDragStart(event, table) {
 	if (event.dataTransfer) {
@@ -77,16 +102,14 @@ function onTableDragOver(event) {
 	}
 }
 
+const $notify = inject('$notify')
 async function onTableDrop(event) {
 	event.preventDefault()
 
 	const table = JSON.parse(event.dataTransfer?.getData('dragging-table'))
-	if (!table) {
-		console.warn('no tablename found in drop event')
-		return
-	}
+	if (!table) return
 	if (canvas.findNode(table.table)) {
-		console.warn('node already exists')
+		$notify({ title: 'Table already added', variant: 'warning' })
 		return
 	}
 
@@ -146,7 +169,9 @@ async function displayTableRelationships(tablename) {
 			data: edgeData,
 			markerEnd: MarkerType.ArrowClosed,
 		}
-		canvas.addEdges([newEdge])
+		if (!canvas.findEdge(newEdge.id)) {
+			canvas.addEdges([newEdge])
+		}
 	})
 }
 
@@ -165,12 +190,15 @@ function calculatePosition(idx) {
 
 function onEdgeChange(args) {
 	if (!args?.[0]) return
-	if (args[0] instanceof Array) {
-		args[0].forEach((event) => {
-			if (event.type == 'remove') {
-				const edge = canvas.findEdge(event.id)
-				dataSource.deleteTableRelationship(edge.data)
-			}
+	if (args[0].type == 'remove') {
+		const [from, to] = args[0].id.split(' -> ')
+		const [fromTable, fromColumn] = from.split('.')
+		const [toTable, toColumn] = to.split('.')
+		dataSource.deleteTableRelationship({
+			primary_table: fromTable,
+			primary_column: fromColumn,
+			foreign_table: toTable,
+			foreign_column: toColumn,
 		})
 	}
 }

@@ -206,7 +206,6 @@ class InsightsDataSource(Document):
         data = frappe._dict(data)
         data_source = self.name
         check_table_permission(data_source, data.primary_table)
-        check_table_permission(data_source, data.foreign_table)
 
         update_table_link(
             data_source,
@@ -217,27 +216,11 @@ class InsightsDataSource(Document):
             cardinality=data.cardinality,
         )
 
-        reverse_cardinality_map = {
-            "1:1": "1:1",
-            "1:N": "N:1",
-            "N:1": "1:N",
-            "N:N": "N:N",
-        }
-        update_table_link(
-            data_source,
-            primary_table=data.foreign_table,
-            foreign_table=data.primary_table,
-            primary_column=data.foreign_column,
-            foreign_column=data.primary_column,
-            cardinality=reverse_cardinality_map[data.cardinality],
-        )
-
     @frappe.whitelist()
     def delete_table_link(self, data):
         data = frappe._dict(data)
         data_source = self.name
         check_table_permission(data_source, data.primary_table)
-        check_table_permission(data_source, data.foreign_table)
 
         delete_table_link(
             data_source,
@@ -245,14 +228,6 @@ class InsightsDataSource(Document):
             foreign_table=data.foreign_table,
             primary_column=data.primary_column,
             foreign_column=data.foreign_column,
-        )
-
-        delete_table_link(
-            data_source,
-            primary_table=data.foreign_table,
-            foreign_table=data.primary_table,
-            primary_column=data.foreign_column,
-            foreign_column=data.primary_column,
         )
 
 

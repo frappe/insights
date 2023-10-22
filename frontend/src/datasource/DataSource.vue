@@ -10,7 +10,7 @@
 	</header>
 
 	<div class="flex h-full w-full overflow-hidden">
-		<TableRelationshipEditor />
+		<TableRelationshipEditor v-if="dataSource.doc.name" />
 	</div>
 </template>
 
