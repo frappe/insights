@@ -4,6 +4,7 @@
 import os
 
 import frappe
+from sqlalchemy import text
 
 
 def setup():
@@ -63,7 +64,9 @@ class DemoDataFactory:
         return factory
 
     def initialize(self):
-        self.data_url = "https://drive.google.com/u/1/uc?id=1OyqgwpqaxFY9lLnFpk2pZmihQng0ipk6&export=download"
+        self.data_url = (
+            "https://drive.google.com/u/1/uc?id=1OyqgwpqaxFY9lLnFpk2pZmihQng0ipk6&export=download"
+        )
         self.files_folder = frappe.get_site_path("private", "files")
         self.tar_filename = "insights_demo_data.tar"
         self.folder_name = "insights_demo_data"
@@ -81,9 +84,7 @@ class DemoDataFactory:
 
         self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
         if frappe.flags.in_test or os.environ.get("CI"):
-            self.local_filename = os.path.join(
-                os.path.dirname(__file__), "test_demo_data.tar"
-            )
+            self.local_filename = os.path.join(os.path.dirname(__file__), "test_demo_data.tar")
 
     def demo_data_exists(self):
         res = frappe.get_all(
@@ -220,9 +221,7 @@ class DemoDataFactory:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
         except Exception as e:
-            frappe.log_error(
-                "Error downloading demo data. Please check your Internet connection."
-            )
+            frappe.log_error("Error downloading demo data. Please check your Internet connection.")
             update_progress("Error...", -1)
             raise e
 
@@ -252,12 +251,13 @@ class DemoDataFactory:
             "Products": ["product_id"],
             "Sellers": ["seller_id"],
         }
+        db_conn = self.data_source.db.connect()
         for table in indexes.keys():
             table_name = frappe.scrub(table)
             index_name = f"idx_{table_name}_{'_'.join(indexes[table])}"
             columns = ", ".join([f"`{c}`" for c in indexes[table]])
-            self.data_source.db.engine.execute(
-                f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})"
+            db_conn.execute(
+                text(f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})")
             )
 
     def create_table_links(self):

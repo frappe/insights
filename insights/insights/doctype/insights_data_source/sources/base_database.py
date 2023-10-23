@@ -34,7 +34,7 @@ class BaseDatabase:
 
     def test_connection(self):
         with self.connect() as connection:
-            connection.execute(text("SELECT 1"))
+            return connection.execute(text("SELECT 1"))
 
     def connect(self):
         try:

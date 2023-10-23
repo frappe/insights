@@ -1,5 +1,5 @@
 <script setup>
-import settings from '@/stores/settingsStore'
+import settingsStore from '@/stores/settingsStore'
 import { computed, markRaw, provide, reactive, ref } from 'vue'
 import SetupQuestions from './SetupQuestions.vue'
 import SourceConnectionStep from './SourceConnectionStep.vue'
@@ -60,7 +60,7 @@ const steps = ref([
 const currentStep = ref(0)
 async function handleNext() {
 	if (currentStep.value === steps.value.length - 1) {
-		await settings.update({ setup_complete: 1 }, false)
+		await settingsStore().update({ setup_complete: 1 }, false)
 		window.location.reload()
 	}
 	currentStep.value += 1
