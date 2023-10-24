@@ -1,5 +1,10 @@
 <template>
-	<Combobox v-model="selectedValue" nullable v-slot="{ open: isComboboxOpen }">
+	<Combobox
+		v-model="selectedValue"
+		:multiple="multiple"
+		nullable
+		v-slot="{ open: isComboboxOpen }"
+	>
 		<Popover class="w-full" v-model:show="showOptions">
 			<template #target="{ open: openPopover, togglePopover }">
 				<slot name="target" v-bind="{ open: openPopover, togglePopover }">
@@ -11,10 +16,7 @@
 						>
 							<div class="flex items-center overflow-hidden">
 								<slot name="prefix" />
-								<span
-									class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
-									v-if="selectedValue?.value"
-								>
+								<span class="truncate text-base leading-5" v-if="selectedValue">
 									{{ displayValue(selectedValue) }}
 								</span>
 								<span class="text-base leading-5 text-gray-600" v-else>
@@ -130,7 +132,7 @@ import { Popover } from 'frappe-ui'
 
 export default {
 	name: 'Autocomplete',
-	props: ['modelValue', 'options', 'placeholder', 'bodyClasses'],
+	props: ['modelValue', 'options', 'placeholder', 'bodyClasses', 'multiple', 'returnValue'],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
 		Popover,
@@ -147,19 +149,25 @@ export default {
 		}
 	},
 	computed: {
-		valueIsObject() {
-			// to make autocomplete's value work with primitive types like string & number
-			return typeof this.modelValue === 'object'
-		},
 		selectedValue: {
 			get() {
-				const val = this.modelValue
-				return this.valueIsObject ? val : this.findOption(val)
+				if (!this.multiple) {
+					return this.returnValue ? this.findOption(this.modelValue) : this.modelValue
+				}
+				// in case of `multiple`, modelValue is an array of values
+				// and if returnValue is true, we need to return the value of the options
+				return this.returnValue
+					? this.modelValue?.map((v) => this.findOption(v))
+					: this.modelValue
 			},
 			set(val) {
 				this.query = ''
-				if (val) this.showOptions = false
-				this.$emit('update:modelValue', this.valueIsObject ? val : val?.value)
+				if (val && !this.multiple) this.showOptions = false
+				if (!this.multiple) {
+					this.$emit('update:modelValue', this.returnValue ? val?.value : val)
+					return
+				}
+				this.$emit('update:modelValue', this.returnValue ? val?.map((v) => v.value) : val)
 			},
 		},
 		groups() {
@@ -175,7 +183,7 @@ export default {
 						key: i,
 						group: group.group,
 						hideLabel: group.hideLabel || false,
-						items: this.filterOptions(this.getValidOptions(group.items)),
+						items: this.filterOptions(this.sanitizeOptions(group.items)),
 					}
 				})
 				.filter((group) => group.items.length > 0)
@@ -191,24 +199,35 @@ export default {
 	},
 	methods: {
 		findOption(value) {
-			return typeof value === 'object'
-				? value
-				: this.allOptions.find((o) => o.value === value)
+			return this.allOptions.find((o) => o.value === value)
 		},
 		filterOptions(options) {
 			if (!this.query) return options
 			return betterSearch(this.query, { items: options })
 		},
 		displayValue(option) {
-			if (typeof option === 'object') {
-				return option?.label
+			if (!this.multiple) {
+				if (typeof option === 'object') {
+					return option?.label
+				}
+				let selectedOption = this.allOptions.find((o) => o.value === option)
+				return selectedOption?.label || option
 			}
-			let selectedOption = this.allOptions.find((o) => o.value === option)
-			return selectedOption?.label || option
+
+			// in case of `multiple`, option is an array of values
+			// so the display value should be comma separated labels
+			return option
+				.map((v) => {
+					if (typeof v === 'object') {
+						return v?.label
+					}
+					let selectedOption = this.allOptions.find((o) => o.value === v)
+					return selectedOption?.label || v
+				})
+				.join(', ')
 		},
-		getValidOptions(options) {
-			// to make autocomplete's value work with primitive type options
-			// i.e array of strings instead of array of objects
+		sanitizeOptions(options) {
+			// in case the options are just strings, convert them to objects
 			return options.map((option) => {
 				return typeof option === 'object' ? option : { label: option, value: option }
 			})
