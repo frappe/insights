@@ -2,36 +2,39 @@
 	<Combobox v-model="selectedValue" nullable v-slot="{ open: isComboboxOpen }">
 		<Popover class="w-full" v-model:show="showOptions">
 			<template #target="{ open: openPopover, togglePopover }">
-				<div class="w-full">
-					<button
-						class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
-						:class="{ 'bg-gray-200': isComboboxOpen }"
-						@click="() => togglePopover()"
-					>
-						<div class="flex items-center overflow-hidden">
-							<slot name="prefix" />
-							<span
-								class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
-								v-if="selectedValue?.value"
-							>
-								{{ displayValue(selectedValue) }}
-							</span>
-							<span class="text-base leading-5 text-gray-600" v-else>
-								{{ placeholder || '' }}
-							</span>
-						</div>
-						<FeatherIcon
-							name="chevron-down"
-							class="h-4 w-4 text-gray-600"
-							aria-hidden="true"
-						/>
-					</button>
-				</div>
+				<slot name="target" v-bind="{ open: openPopover, togglePopover }">
+					<div class="w-full">
+						<button
+							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
+							:class="{ 'bg-gray-200': isComboboxOpen }"
+							@click="() => togglePopover()"
+						>
+							<div class="flex items-center overflow-hidden">
+								<slot name="prefix" />
+								<span
+									class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
+									v-if="selectedValue?.value"
+								>
+									{{ displayValue(selectedValue) }}
+								</span>
+								<span class="text-base leading-5 text-gray-600" v-else>
+									{{ placeholder || '' }}
+								</span>
+							</div>
+							<FeatherIcon
+								name="chevron-down"
+								class="h-4 w-4 text-gray-600"
+								aria-hidden="true"
+							/>
+						</button>
+					</div>
+				</slot>
 			</template>
 			<template #body="{ isOpen }">
 				<div v-show="isOpen">
 					<ComboboxOptions
 						class="mt-1 max-h-[15rem] overflow-y-auto rounded-lg bg-white px-1.5 pb-1.5 shadow-2xl"
+						:class="bodyClasses"
 						static
 					>
 						<div
@@ -79,16 +82,18 @@
 							>
 								<li
 									:class="[
-										'flex items-center justify-between rounded px-2.5 py-1.5 text-base',
+										'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base',
 										{ 'bg-gray-100': active },
 									]"
 								>
-									<div>
+									<div class="flex space-x-2">
 										<slot
 											name="item-prefix"
 											v-bind="{ active, selected, option }"
 										/>
-										{{ option?.label || option?.value || option || 'No label' }}
+										<span class="truncate">{{
+											option?.label || option?.value || option || 'No label'
+										}}</span>
 									</div>
 									<slot name="item-suffix" v-bind="{ active, selected, option }">
 										<div
@@ -125,7 +130,7 @@ import { Popover } from 'frappe-ui'
 
 export default {
 	name: 'Autocomplete',
-	props: ['modelValue', 'options', 'placeholder'],
+	props: ['modelValue', 'options', 'placeholder', 'bodyClasses'],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
 		Popover,
@@ -142,28 +147,19 @@ export default {
 		}
 	},
 	computed: {
-		valuePropPassed() {
-			return 'value' in this.$attrs
-		},
-		valueIsOption() {
+		valueIsObject() {
 			// to make autocomplete's value work with primitive types like string & number
-			const val = this.valuePropPassed ? this.$attrs.value : this.modelValue
-			return typeof val === 'object'
+			return typeof this.modelValue === 'object'
 		},
 		selectedValue: {
 			get() {
-				const val = this.valuePropPassed ? this.$attrs.value : this.modelValue
-				return this.valueIsOption ? val : this.findOption(val)
+				const val = this.modelValue
+				return this.valueIsObject ? val : this.findOption(val)
 			},
 			set(val) {
 				this.query = ''
-				if (val) {
-					this.showOptions = false
-				}
-				this.$emit(
-					this.valuePropPassed ? 'change' : 'update:modelValue',
-					this.valueIsOption ? val : val?.value
-				)
+				if (val) this.showOptions = false
+				this.$emit('update:modelValue', this.valueIsObject ? val : val?.value)
 			},
 		},
 		groups() {
@@ -195,39 +191,59 @@ export default {
 	},
 	methods: {
 		findOption(value) {
-			if (typeof value === 'object') {
-				return value
-			}
-			return this.allOptions.find((o) => o.value === value)
+			return typeof value === 'object'
+				? value
+				: this.allOptions.find((o) => o.value === value)
 		},
 		filterOptions(options) {
-			if (!this.query) {
-				return options
-			}
-			return options.filter((option) => {
-				let searchTexts = [option.label, option.value]
-				return searchTexts.some((text) =>
-					(text || '').toString().toLowerCase().includes(this.query.toLowerCase())
-				)
-			})
+			if (!this.query) return options
+			return betterSearch(this.query, { items: options })
 		},
 		displayValue(option) {
-			if (typeof option === 'string') {
-				let selectedOption = this.allOptions.find((o) => o.value === option)
-				return selectedOption?.label || option
+			if (typeof option === 'object') {
+				return option?.label
 			}
-			return option?.label
+			let selectedOption = this.allOptions.find((o) => o.value === option)
+			return selectedOption?.label || option
 		},
 		getValidOptions(options) {
 			// to make autocomplete's value work with primitive type options
 			// i.e array of strings instead of array of objects
 			return options.map((option) => {
-				if (typeof option === 'string') {
-					return { label: option, value: option }
-				}
-				return option
+				return typeof option === 'object' ? option : { label: option, value: option }
 			})
 		},
 	},
+}
+
+function betterSearch(query, options) {
+	const results = []
+	const keysToSearch = options.keys || ['label', 'value']
+	const queryWords = query.toLowerCase().split(' ')
+
+	options.items.forEach((item) => {
+		const itemWords = keysToSearch
+			.map((key) => (item[key] || '').toLowerCase())
+			.join(' ')
+			.split(' ')
+
+		const score = queryWords.reduce((acc, queryWord) => {
+			const wordScore = itemWords.reduce((acc, itemWord) => {
+				if (itemWord.startsWith(queryWord)) {
+					return acc + 100
+				}
+				if (itemWord.includes(queryWord)) {
+					return acc + 10
+				}
+				return acc
+			}, 0)
+			return acc + wordScore
+		}, 0)
+
+		if (score > 0) {
+			results.push({ item, score })
+		}
+	})
+	return results.sort((a, b) => b.score - a.score).map((result) => result.item)
 }
 </script>
