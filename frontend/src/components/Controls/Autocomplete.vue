@@ -34,92 +34,111 @@
 			</template>
 			<template #body="{ isOpen }">
 				<div v-show="isOpen">
-					<ComboboxOptions
-						class="mt-1 max-h-[15rem] overflow-y-auto rounded-lg bg-white px-1.5 pb-1.5 shadow-2xl"
-						:class="bodyClasses"
-						static
-					>
-						<div
-							class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white pt-1.5"
-						>
-							<div class="relative w-full">
-								<ComboboxInput
-									class="form-input w-full"
-									type="text"
-									@change="
-										(e) => {
-											query = e.target.value
-										}
-									"
-									:value="query"
-									autocomplete="off"
-									placeholder="Search"
-								/>
-								<button
-									class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
-									@click="selectedValue = null"
-								>
-									<FeatherIcon name="x" class="w-4" />
-								</button>
-							</div>
-						</div>
-						<div
-							class="mt-1.5"
-							v-for="group in groups"
-							:key="group.key"
-							v-show="group.items.length > 0"
-						>
+					<div class="mt-1 rounded-lg bg-white text-base shadow-2xl" :class="bodyClasses">
+						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
 							<div
-								v-if="group.group && !group.hideLabel"
-								class="px-2.5 py-1.5 text-sm font-medium text-gray-600"
+								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white pt-1.5"
 							>
-								{{ group.group }}
+								<div class="relative w-full">
+									<ComboboxInput
+										class="form-input w-full"
+										type="text"
+										@change="
+											(e) => {
+												query = e.target.value
+											}
+										"
+										:value="query"
+										autocomplete="off"
+										placeholder="Search"
+									/>
+									<button
+										class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
+										@click="selectedValue = null"
+									>
+										<FeatherIcon name="x" class="w-4" />
+									</button>
+								</div>
 							</div>
-							<ComboboxOption
-								as="template"
-								v-for="(option, idx) in group.items.slice(0, 50)"
-								:key="option?.value || idx"
-								:value="option"
-								v-slot="{ active, selected }"
+							<div
+								class="mt-1.5"
+								v-for="group in groups"
+								:key="group.key"
+								v-show="group.items.length > 0"
 							>
-								<li
-									:class="[
-										'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base',
-										{ 'bg-gray-100': active },
-									]"
+								<div
+									v-if="group.group && !group.hideLabel"
+									class="px-2.5 py-1.5 text-sm font-medium text-gray-600"
 								>
-									<div class="flex space-x-2">
-										<slot
-											name="item-prefix"
-											v-bind="{ active, selected, option }"
-										/>
-										<span class="truncate">{{
-											option?.label || option?.value || option || 'No label'
-										}}</span>
-									</div>
-									<slot name="item-suffix" v-bind="{ active, selected, option }">
-										<div
-											v-if="option?.description"
-											class="text-sm text-gray-600"
-										>
-											{{ option.description }}
+									{{ group.group }}
+								</div>
+								<ComboboxOption
+									as="template"
+									v-for="(option, idx) in group.items.slice(0, 50)"
+									:key="option?.value || idx"
+									:value="option"
+									v-slot="{ active, selected }"
+								>
+									<li
+										:class="[
+											'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base',
+											{ 'bg-gray-100': active },
+										]"
+									>
+										<div class="flex flex-1 gap-2 overflow-hidden">
+											<div v-if="$slots['item-prefix']" class="flex-shrink-0">
+												<slot
+													name="item-prefix"
+													v-bind="{ active, selected, option }"
+												/>
+											</div>
+											<span class="flex-1 truncate">
+												{{
+													option?.label ||
+													option?.value ||
+													option ||
+													'No label'
+												}}
+											</span>
 										</div>
-									</slot>
-								</li>
-							</ComboboxOption>
+
+										<div
+											v-if="$slots['item-suffix'] || option?.description"
+											class="ml-2 flex-shrink-0"
+										>
+											<slot
+												name="item-suffix"
+												v-bind="{ active, selected, option }"
+											>
+												<div
+													v-if="option?.description"
+													class="text-sm text-gray-600"
+												>
+													{{ option.description }}
+												</div>
+											</slot>
+										</div>
+									</li>
+								</ComboboxOption>
+							</div>
+							<li
+								v-if="groups.length == 0"
+								class="rounded-md px-2.5 py-1.5 text-base text-gray-600"
+							>
+								No results found
+							</li>
+						</ComboboxOptions>
+
+						<div v-if="$slots.footer" class="border-t p-1">
+							<slot name="footer"></slot>
 						</div>
-						<li
-							v-if="groups.length == 0"
-							class="rounded-md px-2.5 py-1.5 text-base text-gray-600"
-						>
-							No results found
-						</li>
-					</ComboboxOptions>
+					</div>
 				</div>
 			</template>
 		</Popover>
 	</Combobox>
 </template>
+
 <script>
 import {
 	Combobox,
@@ -175,7 +194,7 @@ export default {
 
 			let groups = this.options[0]?.group
 				? this.options
-				: [{ group: '', items: this.options }]
+				: [{ group: '', items: this.sanitizeOptions(this.options) }]
 
 			return groups
 				.map((group, i) => {
@@ -227,6 +246,7 @@ export default {
 				.join(', ')
 		},
 		sanitizeOptions(options) {
+			if (!options) return []
 			// in case the options are just strings, convert them to objects
 			return options.map((option) => {
 				return typeof option === 'object' ? option : { label: option, value: option }
