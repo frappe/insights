@@ -37,6 +37,7 @@
 					<div class="mt-1 rounded-lg bg-white text-base shadow-2xl" :class="bodyClasses">
 						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
 							<div
+								v-if="!hideSearch"
 								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white pt-1.5"
 							>
 								<div class="relative w-full">
@@ -151,7 +152,15 @@ import { Popover } from 'frappe-ui'
 
 export default {
 	name: 'Autocomplete',
-	props: ['modelValue', 'options', 'placeholder', 'bodyClasses', 'multiple', 'returnValue'],
+	props: [
+		'modelValue',
+		'options',
+		'placeholder',
+		'bodyClasses',
+		'multiple',
+		'returnValue',
+		'hideSearch',
+	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
 		Popover,
