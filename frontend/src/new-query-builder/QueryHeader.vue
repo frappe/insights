@@ -1,19 +1,11 @@
 <script setup lang="jsx">
-import useDataSourceStore from '@/stores/dataSourceStore'
 import ContentEditable from '@/notebook/ContentEditable.vue'
-import QueryMenu from '@/query/QueryMenu.vue'
-import { debounce } from 'frappe-ui'
-import { Component } from 'lucide-vue-next'
-import { Bookmark } from 'lucide-vue-next'
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { computed, inject } from 'vue'
+import { Component } from 'lucide-vue-next'
 
 const $notify = inject('$notify')
 const query = inject('query')
-
-const debouncedUpdateTitle = debounce(async (title) => {
-	await query.setValue.submit({ title })
-	query.doc.title = title
-}, 1500)
 
 const sources = useDataSourceStore()
 
@@ -62,7 +54,6 @@ function changeDataSource(sourceName) {
 		<ContentEditable
 			class="mr-3 rounded-sm text-xl font-medium !text-gray-900 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 			v-model="query.doc.title"
-			@update:model-value="debouncedUpdateTitle"
 			placeholder="Untitled Query"
 		></ContentEditable>
 		<Dropdown
@@ -80,8 +71,7 @@ function changeDataSource(sourceName) {
 			icon="play"
 			@click="query.execute()"
 			:disabled="!query.doc.data_source"
-			:loading="query.run.loading"
+			:loading="query.executing"
 		/>
-		<QueryMenu />
 	</div>
 </template>

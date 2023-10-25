@@ -737,35 +737,28 @@ class SQLQueryBuilder:
                 filters.append(_filter)
             self._filters = and_(*filters)
 
-        for column in assisted_query.columns:
+        _columns = (
+            assisted_query.columns
+            + assisted_query.measures
+            + assisted_query.dimensions
+            + assisted_query.order_by_columns
+        )
+        for column in _columns:
             if not column.is_valid():
                 continue
-            self._columns.append(make_sql_column(column))
-
-        # don't select calculated columns
-        # since they are used as variables in measures, dimensions, filters, etc
-
-        for measure in assisted_query.measures:
-            if not measure.is_valid():
-                continue
-            self._measures.append(make_sql_column(measure))
-
-        for dimension in assisted_query.dimensions:
-            if not dimension.is_valid():
-                continue
-            self._dimensions.append(make_sql_column(dimension))
-
-        for order in assisted_query.orders:
-            if not order.is_valid():
-                continue
-            _column = make_sql_column(order)
-            self._order_by_columns.append(
-                _column.asc() if order.order == "asc" else _column.desc()
-            )
+            if column.is_measure():
+                self._measures.append(make_sql_column(column))
+            if column.is_dimension():
+                self._dimensions.append(make_sql_column(column))
+            if column.order:
+                _column = make_sql_column(column)
+                self._order_by_columns.append(
+                    _column.asc() if column.order == "asc" else _column.desc()
+                )
 
         self._limit = assisted_query.limit or None
 
-        columns = self._columns + self._dimensions + self._measures
+        columns = self._dimensions + self._measures
         if not columns:
             columns = [text("t0.*")]
 

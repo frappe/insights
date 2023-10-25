@@ -284,6 +284,12 @@ class Column(frappe._dict):
     def is_string_type(self):
         return self.type in ["String", "Text"]
 
+    def is_measure(self):
+        return self.is_numeric_type() and (self.is_aggregate() or self.is_expression())
+
+    def is_dimension(self):
+        return not self.is_measure()
+
 
 @dataclass
 class LabelValue(frappe._dict):

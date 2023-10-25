@@ -45,10 +45,35 @@ function useDataSource(name: string) {
 			})
 	)
 
+	const groupedTableOptions = computed<DataSourceTableGroupedOption[]>(() => {
+		const tablesByGroup = tableList.value.reduce((acc, table) => {
+			const group = table.is_query_based ? 'Query-based tables' : 'Tables'
+			if (!acc[group]) acc[group] = []
+			acc[group].push(table)
+			return acc
+		}, {} as Record<string, DataSourceTableListItem[]>)
+
+		return Object.entries(tablesByGroup).map(([group, tables]) => {
+			return {
+				group,
+				items: tables.map((table) => {
+					return {
+						table: table.table,
+						value: table.table,
+						label: table.label,
+						description: table.table,
+						data_source: name,
+					}
+				}),
+			}
+		})
+	})
+
 	const dataSource: DataSource = reactive({
 		doc,
 		tableList,
 		dropdownOptions,
+		groupedTableOptions,
 		loading: resource.loading,
 		fetchTables,
 		syncTables: () => resource.enqueue_sync_tables.submit(),
@@ -64,6 +89,7 @@ export type DataSource = UnwrapRef<{
 	doc: object
 	tableList: DataSourceTableListItem[]
 	dropdownOptions: DataSourceTableOption[]
+	groupedTableOptions: DataSourceTableGroupedOption[]
 	loading: boolean
 	fetchTables: () => Promise<DataSourceTableListItem[]>
 	syncTables: () => Promise<any>

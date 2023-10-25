@@ -3,12 +3,27 @@ import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { computed, watch } from 'vue'
+import { dateFormats } from './format'
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
 	TEXT: ['Text', 'String'],
 	DATE: ['Date', 'Datetime', 'Time'],
 }
+
+export const AGGREGATIONS = [
+	{ label: 'Count of Records', value: 'count' },
+	{ label: 'Sum of', value: 'sum' },
+	{ label: 'Average of', value: 'avg' },
+	{ label: 'Cumulative Count of Records', value: 'cumulative count' },
+	{ label: 'Cumulative Sum of', value: 'cumulative sum' },
+	{ label: 'Unique values of', value: 'distinct' },
+	{ label: 'Unique count of', value: 'distinct_count' },
+	{ label: 'Minimum of', value: 'min' },
+	{ label: 'Maximum of', value: 'max' },
+]
+
+export const GRANULARITIES = dateFormats
 
 export function isDimensionColumn(column) {
 	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)

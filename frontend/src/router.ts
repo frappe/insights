@@ -85,6 +85,12 @@ const routes = [
 		component: () => import('@/query/QueryBuilder.vue'),
 	},
 	{
+		props: true,
+		name: 'QueryBuilder',
+		path: '/new-query-builder/:name',
+		component: () => import('@/new-query-builder/NewQueryBuilder.vue'),
+	},
+	{
 		path: '/users',
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),

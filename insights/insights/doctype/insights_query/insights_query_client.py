@@ -5,7 +5,7 @@
 import frappe
 from frappe.utils import cint
 
-from insights.utils import InsightsChart
+from insights.utils import InsightsChart, InsightsTable
 
 
 class InsightsQueryClient:
@@ -92,3 +92,86 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def delete_linked_table(self):
         return self.delete_insights_table()
+
+    @frappe.whitelist()
+    def fetch_table_meta(self):
+        if not self.is_assisted_query:
+            return []
+
+        tables = self.variant_controller.get_selected_tables()
+        table_names = [table["table"] for table in tables if table["table"]]
+        if not table_names:
+            return []
+        return SchemaGenerator(self.data_source, table_names).generate()
+
+
+class SchemaGenerator:
+    def __init__(self, data_source, table_names):
+        self.data_source = data_source
+        self.table_names = table_names
+        self._tables = {}
+
+    def generate(self):
+        schema = {}
+        for table_name in self.table_names:
+            if schema.get(table_name):
+                continue
+            schema[table_name] = self.get_schema(table_name)
+            for table_link in schema[table_name]["relations"]:
+                if table_link["foreign_table"] not in schema:
+                    schema[table_link["foreign_table"]] = self.get_schema(
+                        table_link["foreign_table"]
+                    )
+        return schema.values()
+
+    def get_schema(self, table_name):
+        table = self.get_table(table_name)
+        return frappe._dict(
+            {
+                "table": table_name,
+                "label": table.label,
+                "data_source": table.data_source,
+                "columns": self.get_table_columns(table_name),
+                "relations": self.get_table_relations(table_name),
+            }
+        )
+
+    def get_table(self, table_name):
+        if table_name not in self._tables:
+            self._tables[table_name] = self._fetch_table(table_name)
+        return self._tables[table_name]
+
+    def _fetch_table(self, table_name):
+        return InsightsTable.get_doc(
+            {
+                "data_source": self.data_source,
+                "table": table_name,
+            }
+        )
+
+    def get_table_columns(self, table_name):
+        table = self.get_table(table_name)
+        return [
+            {
+                "column": column.column,
+                "type": column.type,
+                "label": column.label,
+                "table": table_name,
+                "table_label": table.label,
+                "data_source": table.data_source,
+            }
+            for column in table.columns
+        ]
+
+    def get_table_relations(self, table_name):
+        table = self.get_table(table_name)
+        return [
+            {
+                "primary_table": table_name,
+                "primary_column": relation.primary_key,
+                "foreign_table": relation.foreign_table,
+                "foreign_column": relation.foreign_key,
+                "cardinality": relation.cardinality,
+            }
+            for relation in table.table_links
+        ]

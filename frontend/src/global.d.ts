@@ -98,4 +98,14 @@ interface DataSourceTableListItem {
 	table: string
 	label: string
 	hidden: boolean
+	is_query_based: boolean
+}
+
+type GroupedDropdownOption = {
+	group: string
+	items: DropdownOption[]
+}
+
+interface DataSourceTableGroupedOption extends GroupedDropdownOption {
+	items: DataSourceTableOption[]
 }
