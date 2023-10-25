@@ -28,9 +28,9 @@
 							</div>
 							<div id="fieldname" class="!min-w-[140px] flex-1">
 								<Autocomplete
-									:value="filter.fieldname"
+									:modelValue="filter.fieldname"
 									:options="fields"
-									@change="filter.fieldname = $event.value"
+									@update:modelValue="filter.fieldname = $event.value"
 									placeholder="Filter by..."
 								/>
 							</div>

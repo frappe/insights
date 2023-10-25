@@ -2,9 +2,9 @@
 	<Autocomplete
 		placeholder="Select an option"
 		:options="options"
-		:value="selection"
+		:modelValue="selection"
 		@update:query="(q) => onUpdateQuery(q)"
-		@change="(v) => (selection = v)"
+		@update:modelValue="(v) => (selection = v)"
 	/>
 </template>
 
