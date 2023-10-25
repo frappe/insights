@@ -53,7 +53,7 @@ function updateColumns(selectedOptions) {
 				ref="columnRefs"
 				v-for="(column, idx) in columns"
 				:key="column.id"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 text-sm hover:shadow"
+				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 				@click="activeColumnIdx = columns.indexOf(column)"
 			>
 				<div class="flex items-center space-x-2">

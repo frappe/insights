@@ -739,9 +739,10 @@ class SQLQueryBuilder:
 
         _columns = (
             assisted_query.columns
-            + assisted_query.measures
-            + assisted_query.dimensions
-            + assisted_query.order_by_columns
+            or [] + assisted_query.measures
+            or [] + assisted_query.dimensions
+            or [] + assisted_query.order_by_columns
+            or []
         )
         for column in _columns:
             if not column.is_valid():

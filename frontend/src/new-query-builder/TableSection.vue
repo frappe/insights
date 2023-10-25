@@ -1,22 +1,37 @@
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
+import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
+import TableJoinEditor from './TableJoinEditor.vue'
 
-const query = inject('query')
 const builder = inject('builder')
 
-const dataSource = useDataSource(query.doc.data_source)
+let dataSource = useDataSource(builder.data_source)
 dataSource.fetchTables()
 whenever(
-	() => query.doc.data_source,
+	() => builder.data_source,
 	(newVal, oldVal) => {
 		if (newVal == oldVal) return
-		dataSource = useDataSource(query.doc.data_source)
+		dataSource = useDataSource(builder.data_source)
 		dataSource.fetchTables()
 	}
 )
+
+const joins = computed(() => builder.query.joins)
+const joinRefs = ref([])
+const activeJoinIdx = ref(null)
+
+function onRemoveJoin() {
+	builder.query.joins.splice(activeJoinIdx, 1)
+	activeJoinIdx.value = null
+}
+function onSaveJoin(newJoin) {
+	builder.query.joins.splice(activeJoinIdx, 1, newJoin)
+	activeJoinIdx.value = null
+}
 </script>
 
 <template>
@@ -35,18 +50,36 @@ whenever(
 		<div class="space-y-2">
 			<div
 				v-if="builder.query.table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 text-sm hover:shadow"
+				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 			>
 				<div>{{ builder.query.table.label }}</div>
 			</div>
 			<div
-				v-for="join in builder.query.joins"
+				ref="joinRefs"
+				v-for="(join, idx) in joins"
 				:key="join.right_table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 text-sm hover:shadow"
+				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				@click="activeJoinIdx = idx"
 			>
 				<div>{{ join.right_table.label }}</div>
 				<JoinLeftIcon class="text-gray-600" />
 			</div>
 		</div>
 	</div>
+
+	<UsePopover
+		v-if="joinRefs?.[activeJoinIdx]"
+		:key="activeJoinIdx"
+		:show="activeJoinIdx !== null"
+		@update:show="activeJoinIdx = null"
+		:target-element="joinRefs[activeJoinIdx]"
+	>
+		<div class="w-[28rem] rounded bg-white text-base shadow-md">
+			<TableJoinEditor
+				:join="joins[activeJoinIdx]"
+				@remove="onRemoveJoin()"
+				@save="onSaveJoin($event)"
+			/>
+		</div>
+	</UsePopover>
 </template>

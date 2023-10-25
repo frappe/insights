@@ -311,14 +311,25 @@ class Table(frappe._dict):
         return bool(self.table)
 
 
+class JoinColumn(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        self.table = kwargs.get("table")
+        self.column = kwargs.get("column")
+        self.value = kwargs.get("column")
+        self.label = kwargs.get("label") or kwargs.get("column")
+
+    def is_valid(self):
+        return bool(self.table and self.column)
+
+
 @dataclass
 class Join(frappe._dict):
     def __init__(self, *args, **kwargs):
         self.left_table = Table(**kwargs.get("left_table"))
         self.right_table = Table(**kwargs.get("right_table"))
         self.join_type = LabelValue(**kwargs.get("join_type"))
-        self.left_column = Column(**kwargs.get("left_column"))
-        self.right_column = Column(**kwargs.get("right_column"))
+        self.left_column = JoinColumn(**kwargs.get("left_column"))
+        self.right_column = JoinColumn(**kwargs.get("right_column"))
 
     def is_valid(self):
         return (

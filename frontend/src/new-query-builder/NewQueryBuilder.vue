@@ -3,7 +3,7 @@ import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import Tabs from '@/components/Tabs.vue'
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
-import { inject, provide, reactive, ref, watch } from 'vue'
+import { inject, provide, reactive, ref, watch, computed } from 'vue'
 import ChartSection from './ChartSection.vue'
 import ColumnSection from './ColumnSection.vue'
 import FilterSection from './FilterSection.vue'
@@ -29,6 +29,7 @@ const tabs = ref([
 ])
 
 const builder = reactive({
+	data_source: computed(() => query.doc.data_source),
 	query: {
 		table: {},
 		joins: [],

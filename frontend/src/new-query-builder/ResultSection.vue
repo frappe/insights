@@ -20,7 +20,7 @@ const isNumberColumn = (index) => numberColumnIndexes.value[index]
 		<table class="border-separate border-spacing-0">
 			<thead class="sticky top-0">
 				<tr>
-					<th class="border-b bg-gray-100 px-3 py-2" scope="col">#</th>
+					<th class="border-b bg-gray-100 px-3 py-2 font-normal" scope="col">#</th>
 					<th
 						v-for="(column, index) in columns"
 						:key="index"

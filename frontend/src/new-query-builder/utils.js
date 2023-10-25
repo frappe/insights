@@ -53,12 +53,14 @@ export function inferJoinsFromColumns(builderQuery, tableMeta) {
 function makeJoinFromRelation(relation, tableMeta) {
 	const leftTable = tableMeta.find((m) => m.table === relation.primary_table)
 	const rightTable = tableMeta.find((m) => m.table === relation.foreign_table)
+	const leftColumn = leftTable.columns.find((c) => c.column === relation.primary_column)
+	const rightColumn = rightTable.columns.find((c) => c.column === relation.foreign_column)
 	return {
 		...NEW_JOIN,
-		left_table: { table: leftTable.table, label: leftTable.label },
-		left_column: { table: leftTable.table, column: relation.primary_column },
-		right_table: { table: rightTable.table, label: rightTable.label },
-		right_column: { table: rightTable.table, column: relation.foreign_column },
+		left_table: leftTable,
+		left_column: leftColumn,
+		right_table: rightTable,
+		right_column: rightColumn,
 	}
 }
 
