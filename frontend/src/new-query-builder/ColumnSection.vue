@@ -20,7 +20,7 @@ const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
 
 function updateColumns(selectedOptions) {
-	const addedColumns = selectedOptions.filter(
+	const addedColumns = [selectedOptions].filter(
 		(o) => !columns.value.find((c) => c.column === o.column && c.table === o.table)
 	)
 	builder.addColumns(addedColumns)
@@ -33,7 +33,6 @@ function updateColumns(selectedOptions) {
 			<p class="font-medium">Summarize</p>
 			<Autocomplete
 				v-model="columns"
-				:multiple="true"
 				:options="query.columnOptions"
 				bodyClasses="!w-[16rem]"
 				@update:modelValue="updateColumns"
