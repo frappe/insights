@@ -11,7 +11,9 @@ import FilterSection from './FilterSection.vue'
 import QueryHeader from './QueryHeader.vue'
 import ResultSection from './ResultSection.vue'
 import TableSection from './TableSection.vue'
+import useChart from './useChart'
 import useQuery from './useQuery'
+import ChartOptions from './ChartOptions.vue'
 import {
 	inferJoinForTable,
 	inferJoinsFromColumns,
@@ -24,10 +26,7 @@ const query = useQuery('QRY-0446')
 query.autosave = true
 provide('query', query)
 
-const tabs = ref([
-	{ label: 'Build', active: true },
-	{ label: 'Visualize', active: false },
-])
+const activeTab = ref('Build')
 
 const builder = reactive({
 	data_source: computed(() => query.doc.data_source),
@@ -42,6 +41,7 @@ const builder = reactive({
 		orders: [],
 		limit: 100,
 	},
+	chart: {},
 	addTable,
 	resetMainTable,
 	removeJoinAt,
@@ -60,6 +60,8 @@ watchOnce(
 	() => query.doc.json,
 	(newQuery) => (builder.query = safeJSONParse(newQuery))
 )
+
+builder.chart = await useChart(query)
 
 const $notify = inject('$notify')
 function addTable(newTable) {
@@ -142,13 +144,19 @@ function updateColumnAt(updatedColumnIdx, newColumn) {
 					<ResultSection></ResultSection>
 				</div>
 			</div>
+
 			<div class="w-[21rem] flex-shrink-0 space-y-4 border-r bg-white p-4">
-				<Tabs class="w-full" :tabs="tabs" />
-				<TableSection></TableSection>
-				<hr class="border-gray-200" />
-				<FilterSection></FilterSection>
-				<hr class="border-gray-200" />
-				<ColumnSection></ColumnSection>
+				<Tabs v-model="activeTab" class="w-full" :tabs="['Build', 'Visualize']" />
+				<template v-if="activeTab === 'Build'">
+					<TableSection></TableSection>
+					<hr class="border-gray-200" />
+					<FilterSection></FilterSection>
+					<hr class="border-gray-200" />
+					<ColumnSection></ColumnSection>
+				</template>
+				<template v-if="activeTab === 'Visualize'">
+					<ChartOptions></ChartOptions>
+				</template>
 			</div>
 		</div>
 	</div>

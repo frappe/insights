@@ -1,47 +1,16 @@
 <script setup>
-import { getChartResource } from '@/query/useChart'
-import { getFormattedResult } from '@/utils/query/results'
-import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { debounce } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import ChartSectionEmpty from './ChartSectionEmpty.vue'
 
 const query = inject('query')
-const chartName = await query.getChartName()
-
-const chartResource = getChartResource(chartName)
-await chartResource.get.fetch()
-
-const chartDoc = computed(() => chartResource.doc)
-const chartData = ref(null)
+const builder = inject('builder')
 const chartRefreshKey = ref(0)
 
-const updateChart = debounce(() => {
-	chartResource.setValue.submit({ ...chartResource.doc })
-}, 500)
-
 watch(
-	() => query.doc.results,
-	() => {
-		const formattedResults = getFormattedResult(query.doc.results)
-		chartData.value = convertResultToObjects(formattedResults)
-
-		if (!formattedResults.length) {
-			chartResource.doc.chart_type = null
-			chartResource.doc.options = {}
-			return
-		}
-
-		const recommendedChart = guessChart(formattedResults)
-		chartResource.doc.chart_type = recommendedChart?.type
-		chartResource.doc.options = recommendedChart?.options
-		chartResource.doc.options.title = query.doc.title
-		chartResource.doc.options.query = query.doc.name
-		chartRefreshKey.value++
-		updateChart()
-	},
-	{ immediate: true, deep: true }
+	() => builder.chart.chartDoc,
+	() => (chartRefreshKey.value += 1),
+	{ deep: true }
 )
 
 const emptyMessage = computed(() => {
@@ -59,8 +28,8 @@ const emptyMessage = computed(() => {
 	<div class="flex flex-1 items-center justify-center overflow-hidden rounded border">
 		<div
 			v-if="
-				!chartDoc?.name ||
-				!query.doc?.results?.length ||
+				!builder.chart.chartDoc?.name ||
+				!query.doc.results?.length ||
 				query.doc.status == 'Pending Execution'
 			"
 			class="flex flex-1 flex-col items-center justify-center"
@@ -70,12 +39,12 @@ const emptyMessage = computed(() => {
 		</div>
 		<div v-else class="flex h-full w-full flex-1">
 			<component
-				v-if="chartDoc.chart_type"
-				ref="widget"
-				:is="widgets.getComponent(chartDoc.chart_type)"
-				:data="chartData"
-				:options="chartDoc.options"
+				v-if="builder.chart.chartDoc.chart_type"
 				:key="chartRefreshKey"
+				ref="widget"
+				:is="widgets.getComponent(builder.chart.chartDoc.chart_type)"
+				:data="builder.chart.chartData"
+				:options="builder.chart.chartDoc.options"
 			/>
 		</div>
 	</div>
