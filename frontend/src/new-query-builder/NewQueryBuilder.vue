@@ -3,7 +3,8 @@ import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import Tabs from '@/components/Tabs.vue'
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
-import { inject, provide, reactive, ref, watch, computed } from 'vue'
+import { LoadingIndicator } from 'frappe-ui'
+import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import ChartSection from './ChartSection.vue'
 import ColumnSection from './ColumnSection.vue'
 import FilterSection from './FilterSection.vue'
@@ -42,6 +43,7 @@ const builder = reactive({
 		limit: 100,
 	},
 	addTable,
+	resetMainTable,
 	addColumns,
 	removeColumns,
 })
@@ -77,6 +79,18 @@ function addTable(newTable) {
 	builder.query.joins.push(join)
 }
 
+function resetMainTable() {
+	if (builder.query.joins.length || builder.query.columns.length) {
+		$notify({
+			variant: 'error',
+			title: 'Unable to reset main table',
+			message: 'Please remove all columns and joins before resetting the main table',
+		})
+		return
+	}
+	builder.query.table = {}
+}
+
 function addColumns(addedColumns) {
 	const newColumns = addedColumns.map(makeNewColumn)
 	builder.query.columns.push(...newColumns)
@@ -102,15 +116,18 @@ function removeColumns(removedColumns) {
 		<div class="px-6">
 			<QueryHeader></QueryHeader>
 		</div>
-		<div class="flex flex-1 flex-row-reverse overflow-hidden border-t">
+		<div class="relative flex flex-1 flex-row-reverse overflow-hidden border-t">
+			<div
+				v-if="query.loading"
+				class="absolute inset-0 z-10 flex items-center justify-center bg-gray-100/50"
+			>
+				<LoadingIndicator class="w-10 text-gray-600" />
+			</div>
 			<div class="flex h-full w-full flex-col space-y-4 overflow-hidden p-4">
-				<div
-					v-if="false"
-					class="flex flex-[2] flex-shrink-0 flex-col space-y-4 overflow-hidden"
-				>
+				<div class="flex flex-[3] flex-shrink-0 flex-col space-y-4 overflow-hidden">
 					<ChartSection></ChartSection>
 				</div>
-				<div class="flex flex-1 flex-shrink-0 flex-col space-y-4 overflow-hidden">
+				<div class="flex flex-[2] flex-shrink-0 flex-col space-y-4 overflow-hidden">
 					<ResultSection></ResultSection>
 				</div>
 			</div>

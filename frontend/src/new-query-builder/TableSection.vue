@@ -6,6 +6,7 @@ import useDataSource from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
 import { computed, inject, ref } from 'vue'
 import TableJoinEditor from './TableJoinEditor.vue'
+import { X } from 'lucide-vue-next'
 
 const builder = inject('builder')
 
@@ -52,7 +53,15 @@ function onSaveJoin(newJoin) {
 				v-if="builder.query.table.table"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 			>
-				<div>{{ builder.query.table.label }}</div>
+				<div class="flex items-center space-x-2">
+					<div>{{ builder.query.table.label }}</div>
+				</div>
+				<div class="flex items-center space-x-2">
+					<X
+						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
+						@click="builder.resetMainTable()"
+					/>
+				</div>
 			</div>
 			<div
 				ref="joinRefs"

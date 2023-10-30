@@ -10,13 +10,33 @@ const numberColumnIndexes = computed(() =>
 	query.resultColumns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 )
 const isNumberColumn = (index) => numberColumnIndexes.value[index]
+const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 </script>
 
 <template>
 	<div
+		v-if="!query.formattedResults.length"
+		class="flex flex-1 items-center justify-center rounded border"
+	>
+		<div class="flex flex-1 flex-col items-center justify-center gap-2">
+			<Filter class="h-10 w-10 text-gray-300" />
+			<span class="text-gray-500"> No results found</span>
+		</div>
+	</div>
+	<div
 		v-if="query.formattedResults.length"
 		class="relative flex-[1] flex-shrink-0 overflow-scroll rounded border"
 	>
+		<div
+			v-if="needsExecution"
+			class="absolute z-10 flex h-full w-full items-center justify-center backdrop-blur-sm"
+		>
+			<div class="flex flex-1 flex-col items-center justify-center gap-2">
+				<Button variant="solid" @click="query.execute()" :loading="query.executing">
+					Execute Query
+				</Button>
+			</div>
+		</div>
 		<table class="border-separate border-spacing-0">
 			<thead class="sticky top-0">
 				<tr>
