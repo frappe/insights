@@ -3,7 +3,7 @@ import useDataSource from '@/datasource/useDataSource'
 import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { computed, defineProps, inject, reactive, ref, watch } from 'vue'
 
-const emit = defineEmits(['save', 'cancel', 'remove'])
+const emit = defineEmits(['save', 'remove', 'discard'])
 const props = defineProps({ join: Object })
 
 const builder = inject('builder')
@@ -130,7 +130,7 @@ watch(
 			</div>
 		</div>
 		<div class="flex justify-between">
-			<Button variant="outline" @click="emit('cancel')">Cancel</Button>
+			<Button variant="outline" @click="emit('discard')">Discard</Button>
 			<div class="flex gap-2">
 				<Button variant="outline" theme="red" @click="emit('remove')">Remove</Button>
 				<Button variant="solid" @click="emit('save', activeJoin)">Save</Button>

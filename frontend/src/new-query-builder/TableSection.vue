@@ -88,6 +88,7 @@ function onSaveJoin(newJoin) {
 				:join="joins[activeJoinIdx]"
 				@remove="onRemoveJoin()"
 				@save="onSaveJoin($event)"
+				@discard="activeJoinIdx = null"
 			/>
 		</div>
 	</UsePopover>

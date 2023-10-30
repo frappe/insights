@@ -3,7 +3,6 @@ import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { computed, watch } from 'vue'
-import { dateFormats } from './format'
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
@@ -12,6 +11,7 @@ export const FIELDTYPES = {
 }
 
 export const AGGREGATIONS = [
+	{ label: 'Unique', value: 'group by' },
 	{ label: 'Count of Records', value: 'count' },
 	{ label: 'Sum of', value: 'sum' },
 	{ label: 'Average of', value: 'avg' },
@@ -23,7 +23,21 @@ export const AGGREGATIONS = [
 	{ label: 'Maximum of', value: 'max' },
 ]
 
-export const GRANULARITIES = dateFormats
+export const GRANULARITIES = [
+	{ label: 'Minute', value: 'Minute', description: 'January 12, 2020 1:14 PM' },
+	{ label: 'Hour', value: 'Hour', description: 'January 12, 2020 1:00 PM' },
+	{ label: 'Hour of Day', value: 'Hour of Day', description: '1:00 PM' },
+	{ label: 'Day', value: 'Day', description: '12th January, 2020' },
+	{ label: 'Day Short', value: 'Day Short', description: '12th Jan, 20' },
+	{ label: 'Week', value: 'Week', description: '12th January, 2020' },
+	{ label: 'Month', value: 'Month', description: 'January, 2020' },
+	{ label: 'Mon', value: 'Mon', description: 'Jan 20' },
+	{ label: 'Quarter', value: 'Quarter', description: 'Q1, 2020' },
+	{ label: 'Year', value: 'Year', description: '2020' },
+	{ label: 'Day of Week', value: 'Day of Week', description: 'Monday' },
+	{ label: 'Month of Year', value: 'Month of Year', description: 'January' },
+	{ label: 'Quarter of Year', value: 'Quarter of Year', description: 'Q1' },
+]
 
 export function isDimensionColumn(column) {
 	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)

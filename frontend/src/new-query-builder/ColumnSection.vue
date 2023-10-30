@@ -2,6 +2,7 @@
 import UsePopover from '@/components/UsePopover.vue'
 import { AlignCenter, Calendar, CalendarClock, CaseUpper, Hash, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import ColumnEditor from './ColumnEditor.vue'
 
 const typeToIcon = {
 	String: CaseUpper,
@@ -24,6 +25,15 @@ function updateColumns(selectedOptions) {
 		(o) => !columns.value.find((c) => c.column === o.column && c.table === o.table)
 	)
 	builder.addColumns(addedColumns)
+}
+
+function onRemoveColumn(column) {
+	builder.removeColumns([columns.value[activeColumnIdx.value]])
+	activeColumnIdx.value = null
+}
+function onSaveColumn(column) {
+	builder.query.columns.splice(activeColumnIdx.value, 1, column)
+	activeColumnIdx.value = null
 }
 </script>
 
@@ -75,8 +85,13 @@ function updateColumns(selectedOptions) {
 		@update:show="activeColumnIdx = null"
 		:target-element="columnRefs[activeColumnIdx]"
 	>
-		<!-- Column Selector Popover -->
-		<!-- A Column can be  -->
-		<div class="w-full"></div>
+		<div class="w-[19rem] rounded bg-white text-base shadow-md">
+			<ColumnEditor
+				:column="columns[activeColumnIdx]"
+				@discard="activeColumnIdx = null"
+				@remove="onRemoveColumn"
+				@save="onSaveColumn"
+			/>
+		</div>
 	</UsePopover>
 </template>
