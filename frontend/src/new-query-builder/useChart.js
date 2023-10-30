@@ -1,7 +1,9 @@
 import { getChartResource } from '@/query/useChart'
+import { areDeeplyEqual } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
-import { computed, ref, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { computed, reactive, ref, watch } from 'vue'
 
 export default async function useChart(query) {
 	const chartName = await query.getChartName()
@@ -10,10 +12,9 @@ export default async function useChart(query) {
 
 	const chartDoc = computed({
 		get: () => chartResource.doc,
-		set: (value) => (chartResource.doc = value),
+		set: (val) => (chartResource.doc = val),
 	})
-	const chartData = ref(null)
-
+	const chartData = ref([])
 	watch(
 		() => query.doc.results,
 		() => {
@@ -28,15 +29,40 @@ export default async function useChart(query) {
 
 			const recommendedChart = guessChart(formattedResults)
 			chartResource.doc.chart_type = recommendedChart?.type
-			chartResource.doc.options = recommendedChart?.options
 			chartResource.doc.options.title = query.doc.title
 			chartResource.doc.options.query = query.doc.name
+			chartResource.doc.options = {
+				...chartResource.doc.options,
+				...recommendedChart?.options,
+			}
 		},
 		{ immediate: true, deep: true }
 	)
 
+	function getFieldsToWatch() {
+		if (!chartResource.doc) return
+		return {
+			title: chartResource.doc.title,
+			chart_type: chartResource.doc.chart_type,
+			options: chartResource.doc.options,
+		}
+	}
+
+	function saveIfChanged(newVal) {
+		if (!newVal) return
+		const oldVal = {
+			title: chartResource.originalDoc.title,
+			chart_type: chartResource.originalDoc.chart_type,
+			options: chartResource.originalDoc.options,
+		}
+		if (areDeeplyEqual(newVal, oldVal)) return
+		chartResource.setValue.submit({ ...newVal })
+	}
+
+	watchDebounced(getFieldsToWatch, saveIfChanged, { deep: true, debounce: 1000 })
+
 	return {
-		chartDoc,
-		chartData,
+		doc: chartDoc,
+		data: chartData,
 	}
 }

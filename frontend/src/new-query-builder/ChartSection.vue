@@ -1,17 +1,11 @@
 <script setup>
 import widgets from '@/widgets/widgets'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, ref } from 'vue'
 import ChartSectionEmpty from './ChartSectionEmpty.vue'
 
 const query = inject('query')
 const builder = inject('builder')
 const chartRefreshKey = ref(0)
-
-watch(
-	() => builder.chart.chartDoc,
-	() => (chartRefreshKey.value += 1),
-	{ deep: true }
-)
 
 const emptyMessage = computed(() => {
 	if (query.doc.status == 'Pending Execution') {
@@ -28,7 +22,7 @@ const emptyMessage = computed(() => {
 	<div class="flex flex-1 items-center justify-center overflow-hidden rounded border">
 		<div
 			v-if="
-				!builder.chart.chartDoc?.name ||
+				!builder.chart.doc?.name ||
 				!query.doc.results?.length ||
 				query.doc.status == 'Pending Execution'
 			"
@@ -39,12 +33,12 @@ const emptyMessage = computed(() => {
 		</div>
 		<div v-else class="flex h-full w-full flex-1">
 			<component
-				v-if="builder.chart.chartDoc.chart_type"
-				:key="chartRefreshKey"
+				v-if="builder.chart.doc.chart_type"
 				ref="widget"
-				:is="widgets.getComponent(builder.chart.chartDoc.chart_type)"
-				:data="builder.chart.chartData"
-				:options="builder.chart.chartDoc.options"
+				:key="JSON.stringify(builder.chart.doc)"
+				:is="widgets.getComponent(builder.chart.doc.chart_type)"
+				:data="builder.chart.data"
+				:options="builder.chart.doc.options"
 			/>
 		</div>
 	</div>

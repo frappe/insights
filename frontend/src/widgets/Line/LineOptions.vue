@@ -39,7 +39,7 @@ const deprecatedOptions = computed(() => {
 	return options.value?.yAxis?.every((item) => typeof item === 'string')
 })
 function convertDeprecatedOptions() {
-	options.value.yAxis = options.value.yAxis.map((item) => ({ column: item }))
+	return options.value.yAxis.map((item) => ({ column: item }))
 }
 
 const yAxis = computed({
