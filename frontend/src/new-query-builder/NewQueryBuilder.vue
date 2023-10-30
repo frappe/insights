@@ -44,8 +44,11 @@ const builder = reactive({
 	},
 	addTable,
 	resetMainTable,
+	removeJoinAt,
+	updateJoinAt,
 	addColumns,
-	removeColumns,
+	removeColumnAt,
+	updateColumnAt,
 })
 provide('builder', builder)
 watch(
@@ -91,19 +94,27 @@ function resetMainTable() {
 	builder.query.table = {}
 }
 
+function removeJoinAt(joinIdx) {
+	builder.query.joins.splice(joinIdx, 1)
+}
+
+function updateJoinAt(joinIdx, newJoin) {
+	builder.query.joins.splice(joinIdx, 1, newJoin)
+}
+
 function addColumns(addedColumns) {
 	const newColumns = addedColumns.map(makeNewColumn)
 	builder.query.columns.push(...newColumns)
 	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
 }
 
-function removeColumns(removedColumns) {
-	removedColumns.forEach((removedColumn) => {
-		const idx = builder.query.columns.findIndex(
-			(c) => c.column === removedColumn.column && c.table === removedColumn.table
-		)
-		builder.query.columns.splice(idx, 1)
-	})
+function removeColumnAt(removedColumnIdx) {
+	builder.query.columns.splice(removedColumnIdx, 1)
+	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
+}
+
+function updateColumnAt(updatedColumnIdx, newColumn) {
+	builder.query.columns.splice(updatedColumnIdx, 1, newColumn)
 	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
 }
 </script>

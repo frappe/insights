@@ -27,12 +27,12 @@ function updateColumns(selectedOptions) {
 	builder.addColumns(addedColumns)
 }
 
-function onRemoveColumn(column) {
-	builder.removeColumns([columns.value[activeColumnIdx.value]])
+function onRemoveColumn() {
+	builder.removeColumnAt(activeColumnIdx.value)
 	activeColumnIdx.value = null
 }
 function onSaveColumn(column) {
-	builder.query.columns.splice(activeColumnIdx.value, 1, column)
+	builder.updateColumnAt(activeColumnIdx.value, column)
 	activeColumnIdx.value = null
 }
 </script>
@@ -72,7 +72,7 @@ function onSaveColumn(column) {
 				<div class="flex items-center space-x-2">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-						@click="builder.removeColumns([column])"
+						@click.prevent.stop="builder.removeColumnAt(idx)"
 					/>
 				</div>
 			</div>

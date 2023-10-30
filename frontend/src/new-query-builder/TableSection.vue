@@ -25,12 +25,12 @@ const joins = computed(() => builder.query.joins)
 const joinRefs = ref([])
 const activeJoinIdx = ref(null)
 
-function onRemoveJoin() {
-	builder.query.joins.splice(activeJoinIdx, 1)
+function onSaveJoin(newJoin) {
+	builder.updateJoinAt(activeJoinIdx.value, newJoin)
 	activeJoinIdx.value = null
 }
-function onSaveJoin(newJoin) {
-	builder.query.joins.splice(activeJoinIdx, 1, newJoin)
+function onRemoveJoin() {
+	builder.removeJoinAt(activeJoinIdx.value)
 	activeJoinIdx.value = null
 }
 </script>
@@ -86,9 +86,9 @@ function onSaveJoin(newJoin) {
 		<div class="w-[28rem] rounded bg-white text-base shadow-md">
 			<TableJoinEditor
 				:join="joins[activeJoinIdx]"
-				@remove="onRemoveJoin()"
 				@save="onSaveJoin($event)"
 				@discard="activeJoinIdx = null"
+				@remove="onRemoveJoin"
 			/>
 		</div>
 	</UsePopover>
