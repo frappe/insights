@@ -12,7 +12,7 @@ export const NEW_COLUMN = {
 }
 
 export const NEW_JOIN = {
-	join_type: { label: 'Left', value: 'left' },
+	join_type: { label: 'Left Join', value: 'left' },
 	left_table: {},
 	left_column: {},
 	right_table: {},

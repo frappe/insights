@@ -1,11 +1,12 @@
 import useChart from '@/query/useChart'
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
+import settingsStore from '@/stores/settingsStore'
 import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, watch, ref } from 'vue'
 
 const session = sessionStore()
 
@@ -36,14 +37,14 @@ function makeQuery(name) {
 	})
 
 	state.reload = async () => {
-		return resource.get.fetch().then(() => state.syncDoc())
+		await resource.get.fetch()
+		state.syncDoc()
+		state.loading = false
 	}
 	state.reload()
 
-	state.syncDoc = async function () {
+	state.syncDoc = function () {
 		state.doc = { ...resource.doc }
-		state.isOwner = state.doc.owner == session.user.user_id
-		state.loading = false
 	}
 
 	state.convertToNative = async function () {
@@ -68,13 +69,10 @@ function makeQuery(name) {
 
 	state.execute = debounce(async () => {
 		state.executing = true
-		await state.save()
 		await resource.run
 			.submit()
-			.then(() => state.reload())
-			.catch((e) => {
-				console.error(e)
-			})
+			.then(() => state.syncDoc())
+			.catch((e) => console.error(e))
 		state.executing = false
 	}, 300)
 
@@ -124,6 +122,7 @@ function makeQuery(name) {
 		state.saving = true
 		const updatedFields = getUpdatedFields()
 		await resource.setValue.submit(updatedFields)
+		state.syncDoc()
 		state.saving = false
 		state.loading = false
 	}
@@ -140,6 +139,10 @@ function makeQuery(name) {
 		state.chart = useChart(response.message)
 		state.chart.enableAutoSave()
 	}
+	state.getChartName = async () => {
+		const response = await resource.get_chart_name.fetch()
+		return response.message
+	}
 
 	state.delete = async () => {
 		state.deleting = true
@@ -155,21 +158,21 @@ function makeQuery(name) {
 	state.updateDoc = async (doc) => {
 		state.loading = true
 		await resource.setValue.submit(doc)
-		await state.syncDoc()
+		state.syncDoc()
 		state.loading = false
 	}
 
 	state.duplicate = async () => {
 		state.duplicating = true
-		const { message } = await resource.duplicate.submit()
+		const res = await resource.duplicate.submit()
 		state.duplicating = false
-		return message
+		return res.message
 	}
 
 	state.saveAsTable = async () => {
 		state.loading = true
 		await resource.save_as_table.submit()
-		await state.syncDoc()
+		state.syncDoc()
 		state.loading = false
 	}
 

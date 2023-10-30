@@ -152,7 +152,7 @@ function getChart(chartName) {
 	})
 }
 
-function getChartResource(chartName) {
+export function getChartResource(chartName) {
 	return createDocumentResource({
 		doctype: 'Insights Chart',
 		name: chartName,

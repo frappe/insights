@@ -738,11 +738,10 @@ class SQLQueryBuilder:
             self._filters = and_(*filters)
 
         _columns = (
-            assisted_query.columns
-            or [] + assisted_query.measures
-            or [] + assisted_query.dimensions
-            or [] + assisted_query.order_by_columns
-            or []
+            (assisted_query.columns or [])
+            + (assisted_query.measures or [])
+            + (assisted_query.dimensions or [])
+            + (assisted_query.order_by_columns or [])
         )
         for column in _columns:
             if not column.is_valid():
