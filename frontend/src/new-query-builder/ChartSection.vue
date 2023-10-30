@@ -3,6 +3,7 @@ import { getChartResource } from '@/query/useChart'
 import { getFormattedResult } from '@/utils/query/results'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
+import { debounce } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import ChartSectionEmpty from './ChartSectionEmpty.vue'
 
@@ -15,6 +16,10 @@ await chartResource.get.fetch()
 const chartDoc = computed(() => chartResource.doc)
 const chartData = ref(null)
 const chartRefreshKey = ref(0)
+
+const updateChart = debounce(() => {
+	chartResource.setValue.submit({ ...chartResource.doc })
+}, 500)
 
 watch(
 	() => query.doc.results,
@@ -29,12 +34,12 @@ watch(
 		}
 
 		const recommendedChart = guessChart(formattedResults)
-		console.log('recommendedChart', recommendedChart)
 		chartResource.doc.chart_type = recommendedChart?.type
 		chartResource.doc.options = recommendedChart?.options
 		chartResource.doc.options.title = query.doc.title
 		chartResource.doc.options.query = query.doc.name
 		chartRefreshKey.value++
+		updateChart()
 	},
 	{ immediate: true, deep: true }
 )
