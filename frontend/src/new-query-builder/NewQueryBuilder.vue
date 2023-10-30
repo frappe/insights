@@ -5,15 +5,16 @@ import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
+import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
 import ColumnSection from './ColumnSection.vue'
 import FilterSection from './FilterSection.vue'
 import QueryHeader from './QueryHeader.vue'
 import ResultSection from './ResultSection.vue'
 import TableSection from './TableSection.vue'
+import { ERROR_UNABLE_TO_INFER_JOIN, ERROR_UNABLE_TO_RESET_MAIN_TABLE } from './messages'
 import useChart from './useChart'
 import useQuery from './useQuery'
-import ChartOptions from './ChartOptions.vue'
 import {
 	inferJoinForTable,
 	inferJoinsFromColumns,
@@ -74,11 +75,7 @@ function addTable(newTable) {
 	if (isTableAlreadyAdded(builder.query, newTable)) return
 	const join = inferJoinForTable(newTable, builder.query, query.tableMeta)
 	if (!join) {
-		$notify({
-			variant: 'error',
-			title: 'Unable to find a relationship',
-			message: `Please add a relationship between ${mainTable.table} and ${newTable.table}`,
-		})
+		$notify(ERROR_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
 		return
 	}
 	builder.query.joins.push(join)
@@ -86,11 +83,7 @@ function addTable(newTable) {
 
 function resetMainTable() {
 	if (builder.query.joins.length || builder.query.columns.length) {
-		$notify({
-			variant: 'error',
-			title: 'Unable to reset main table',
-			message: 'Please remove all columns and joins before resetting the main table',
-		})
+		$notify(ERROR_UNABLE_TO_RESET_MAIN_TABLE())
 		return
 	}
 	builder.query.table = {}
