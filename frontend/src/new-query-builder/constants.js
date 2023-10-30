@@ -11,6 +11,12 @@ export const NEW_COLUMN = {
 	expression: {},
 }
 
+export const NEW_FILTER = {
+	column: { ...NEW_COLUMN },
+	operator: {},
+	value: {},
+}
+
 export const NEW_JOIN = {
 	join_type: { label: 'Left Join', value: 'left' },
 	left_table: {},

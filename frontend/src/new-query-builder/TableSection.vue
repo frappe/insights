@@ -7,6 +7,7 @@ import { whenever } from '@vueuse/core'
 import { computed, inject, ref } from 'vue'
 import TableJoinEditor from './TableJoinEditor.vue'
 import { X } from 'lucide-vue-next'
+import { Sheet } from 'lucide-vue-next'
 
 const builder = inject('builder')
 
@@ -38,7 +39,10 @@ function onRemoveJoin() {
 <template>
 	<div>
 		<div class="mb-2 flex items-center justify-between">
-			<p class="font-medium">Data</p>
+			<div class="flex items-center space-x-1.5">
+				<Sheet class="h-4 w-4 text-gray-600" />
+				<p class="font-medium">Data</p>
+			</div>
 			<Autocomplete
 				:options="dataSource.groupedTableOptions"
 				@update:modelValue="builder.addTable($event)"

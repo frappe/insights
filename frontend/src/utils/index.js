@@ -39,6 +39,51 @@ export const GRANULARITIES = [
 	{ label: 'Quarter of Year', value: 'Quarter of Year', description: 'Q1' },
 ]
 
+export function getOperatorOptions(columnType) {
+	let options = [
+		{ label: 'equals', value: '=' },
+		{ label: 'not equals', value: '!=' },
+		{ label: 'is', value: 'is' },
+	]
+
+	if (!columnType) {
+		return options
+	}
+
+	if (FIELDTYPES.TEXT.includes(columnType)) {
+		options = options.concat([
+			{ label: 'contains', value: 'contains' },
+			{ label: 'not contains', value: 'not_contains' },
+			{ label: 'starts with', value: 'starts_with' },
+			{ label: 'ends with', value: 'ends_with' },
+			{ label: 'one of', value: 'in' },
+			{ label: 'not one of', value: 'not_in' },
+		])
+	}
+	if (FIELDTYPES.NUMBER.includes(columnType)) {
+		options = options.concat([
+			{ label: 'one of', value: 'in' },
+			{ label: 'not one of', value: 'not_in' },
+			{ label: 'greater than', value: '>' },
+			{ label: 'smaller than', value: '<' },
+			{ label: 'greater than equal to', value: '>=' },
+			{ label: 'smaller than equal to', value: '<=' },
+			{ label: 'between', value: 'between' },
+		])
+	}
+	if (FIELDTYPES.DATE.includes(columnType)) {
+		options = options.concat([
+			{ label: 'greater than', value: '>' },
+			{ label: 'smaller than', value: '<' },
+			{ label: 'greater than equal to', value: '>=' },
+			{ label: 'smaller than equal to', value: '<=' },
+			{ label: 'between', value: 'between' },
+			{ label: 'within', value: 'timespan' },
+		])
+	}
+	return options
+}
+
 export function isDimensionColumn(column) {
 	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)
 }

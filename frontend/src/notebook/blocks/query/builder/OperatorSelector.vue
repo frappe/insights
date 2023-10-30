@@ -1,5 +1,5 @@
 <script setup>
-import { getOperatorOptions } from '@/utils/query/columns'
+import { getOperatorOptions } from '@/utils'
 import { computed } from 'vue'
 import InputWithPopover from './InputWithPopover.vue'
 

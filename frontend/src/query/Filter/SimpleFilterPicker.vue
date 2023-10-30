@@ -101,6 +101,7 @@ import ListPicker from '@/components/Controls/ListPicker.vue'
 import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
 import { formatDate, isEmptyObj } from '@/utils'
 import { debounce } from 'frappe-ui'
+import { getOperatorOptions } from '@/utils'
 import { computed, inject, reactive, watch } from 'vue'
 
 const query = inject('query')
@@ -129,7 +130,7 @@ if (props.filter && props.filter.type) {
 }
 
 const columnOptions = query.columns.options
-const operatorOptions = computed(() => query.columns.getOperatorOptions(filter.column?.type))
+const operatorOptions = computed(() => getOperatorOptions(filter.column?.type))
 
 const showDatePicker = computed(() => {
 	return (

@@ -18,7 +18,10 @@ export function inferJoinsFromColumns(builderQuery, tableMeta) {
 	const mainTable = builderQuery.table
 	if (!mainTable.table) return newJoins
 
-	const columns = builderQuery.columns
+	const columns = [
+		...builderQuery.columns,
+		...builderQuery.filters.map((f) => f.column).filter((c) => c.table && c.column),
+	]
 	const columnByTable = columns.reduce((acc, column) => {
 		if (!acc[column.table]) acc[column.table] = null
 		acc[column.table] = column

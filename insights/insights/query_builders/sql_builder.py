@@ -731,6 +731,7 @@ class SQLQueryBuilder:
                     if operator == "between":
                         args = filter_value.split(",")
                     elif operator == "in" or operator == "not_in":
+                        # TODO: filter value can be list of strings and not list of label,value dicts
                         args = [val["value"] for val in filter_value]
                     _filter = Functions.apply(operator, _column, *args)
 

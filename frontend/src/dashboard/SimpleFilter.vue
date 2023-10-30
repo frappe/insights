@@ -1,6 +1,6 @@
 <script setup>
 import { formatDate, isEmptyObj } from '@/utils'
-import { getOperatorOptions } from '@/utils/query/columns'
+import { getOperatorOptions } from '@/utils/'
 import { call, debounce } from 'frappe-ui'
 import { computed, reactive, ref, watch } from 'vue'
 

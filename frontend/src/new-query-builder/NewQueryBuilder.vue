@@ -15,6 +15,7 @@ import TableSection from './TableSection.vue'
 import { ERROR_UNABLE_TO_INFER_JOIN, ERROR_UNABLE_TO_RESET_MAIN_TABLE } from './messages'
 import useChart from './useChart'
 import useQuery from './useQuery'
+import { NEW_FILTER } from './constants'
 import {
 	inferJoinForTable,
 	inferJoinsFromColumns,
@@ -50,6 +51,9 @@ const builder = reactive({
 	addColumns,
 	removeColumnAt,
 	updateColumnAt,
+	addFilter,
+	removeFilterAt,
+	updateFilterAt,
 })
 provide('builder', builder)
 watch(
@@ -110,6 +114,19 @@ function removeColumnAt(removedColumnIdx) {
 
 function updateColumnAt(updatedColumnIdx, newColumn) {
 	builder.query.columns.splice(updatedColumnIdx, 1, newColumn)
+	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
+}
+
+function addFilter() {
+	builder.query.filters.push({ ...NEW_FILTER })
+	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
+}
+function removeFilterAt(removedFilterIdx) {
+	builder.query.filters.splice(removedFilterIdx, 1)
+	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
+}
+function updateFilterAt(updatedFilterIdx, newFilter) {
+	builder.query.filters.splice(updatedFilterIdx, 1, newFilter)
 	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
 }
 </script>

@@ -1,6 +1,6 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
-import { AlignCenter, Calendar, CalendarClock, CaseUpper, Hash, X } from 'lucide-vue-next'
+import { AlignCenter, Calendar, CalendarClock, CaseUpper, Combine, Hash, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import ColumnEditor from './ColumnEditor.vue'
 
@@ -40,7 +40,10 @@ function onSaveColumn(column) {
 <template>
 	<div>
 		<div class="mb-2 flex items-center justify-between">
-			<p class="font-medium">Summarize</p>
+			<div class="flex items-center space-x-1.5">
+				<Combine class="h-4 w-4 text-gray-600" />
+				<p class="font-medium">Summarize</p>
+			</div>
 			<Autocomplete
 				v-model="columns"
 				:options="query.columnOptions"
@@ -61,7 +64,7 @@ function onSaveColumn(column) {
 			<div
 				ref="columnRefs"
 				v-for="(column, idx) in columns"
-				:key="column.id"
+				:key="idx"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 				@click="activeColumnIdx = columns.indexOf(column)"
 			>
