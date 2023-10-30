@@ -184,7 +184,7 @@ export default {
 				}
 				// in case of `multiple`, modelValue is an array of values
 				// and if returnValue is true, we need to return the value of the options
-				return this.returnValue
+				return this.returnValue || typeof this.modelValue?.[0] !== 'object'
 					? this.modelValue?.map((v) => this.findOption(v))
 					: this.modelValue
 			},
@@ -234,6 +234,8 @@ export default {
 			return betterSearch(this.query, { items: options })
 		},
 		displayValue(option) {
+			if (!option) return ''
+
 			if (!this.multiple) {
 				if (typeof option === 'object') {
 					return option?.label
@@ -241,6 +243,8 @@ export default {
 				let selectedOption = this.allOptions.find((o) => o.value === option)
 				return selectedOption?.label || option
 			}
+
+			if (!Array.isArray(option)) return ''
 
 			// in case of `multiple`, option is an array of values
 			// so the display value should be comma separated labels
