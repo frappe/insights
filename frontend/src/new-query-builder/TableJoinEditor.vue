@@ -120,7 +120,7 @@ watch(
 					placeholder="Left Column"
 				/>
 			</div>
-			<div class="flex flex-shrink-0 items-center px-2 font-mono">=</div>
+			<div class="flex flex-shrink-0 items-center font-mono">=</div>
 			<div class="flex-1">
 				<Autocomplete
 					v-model="activeJoin.right_column"

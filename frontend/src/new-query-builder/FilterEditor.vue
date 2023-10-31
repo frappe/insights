@@ -126,7 +126,7 @@ function onColumnValueChange(value) {
 
 <template>
 	<div class="flex flex-col gap-4 p-4">
-		<div class="space-y-2">
+		<div class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Column</span>
 			<Autocomplete
 				:modelValue="{
@@ -138,7 +138,7 @@ function onColumnValueChange(value) {
 				@update:modelValue="onColumnChange"
 			/>
 		</div>
-		<div class="space-y-2">
+		<div class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Operator</span>
 			<Autocomplete
 				:modelValue="filter.operator"
@@ -147,7 +147,7 @@ function onColumnValueChange(value) {
 				@update:modelValue="filter.operator = $event"
 			/>
 		</div>
-		<div class="space-y-2">
+		<div class="space-y-1">
 			<span v-if="selectorType !== 'none'" class="text-sm font-medium text-gray-700">
 				Value
 			</span>

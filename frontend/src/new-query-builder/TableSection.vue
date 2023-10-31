@@ -87,7 +87,7 @@ function onRemoveJoin() {
 		@update:show="activeJoinIdx = null"
 		:target-element="joinRefs[activeJoinIdx]"
 	>
-		<div class="w-[28rem] rounded bg-white text-base shadow-md">
+		<div class="w-[24rem] rounded bg-white text-base shadow-md">
 			<TableJoinEditor
 				:join="joins[activeJoinIdx]"
 				@save="onSaveJoin($event)"

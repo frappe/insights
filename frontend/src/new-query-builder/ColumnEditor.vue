@@ -30,7 +30,7 @@ function onColumnChange(option) {
 
 <template>
 	<div class="flex flex-col gap-4 p-4">
-		<div class="space-y-2">
+		<div class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Aggregation</span>
 			<Autocomplete
 				:modelValue="activeColumn.aggregation"
@@ -39,7 +39,7 @@ function onColumnChange(option) {
 				@update:modelValue="(op) => (activeColumn.aggregation = op.val)"
 			/>
 		</div>
-		<div class="space-y-2">
+		<div class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Column</span>
 			<Autocomplete
 				:modelValue="{
@@ -51,7 +51,7 @@ function onColumnChange(option) {
 				@update:modelValue="onColumnChange"
 			/>
 		</div>
-		<div v-if="FIELDTYPES.DATE.includes(activeColumn.type)" class="space-y-2">
+		<div v-if="FIELDTYPES.DATE.includes(activeColumn.type)" class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Format</span>
 			<Autocomplete
 				:modelValue="activeColumn.granularity"
