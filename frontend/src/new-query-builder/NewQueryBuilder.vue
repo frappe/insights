@@ -2,14 +2,15 @@
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import Tabs from '@/components/Tabs.vue'
 import { safeJSONParse } from '@/utils'
-import { watchOnce } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, onMounted, onUpdated, provide, reactive, ref, watch } from 'vue'
+import { computed, inject, onMounted, provide, reactive, ref, watch } from 'vue'
 import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
 import ColumnSection from './ColumnSection.vue'
 import FilterSection from './FilterSection.vue'
 import QueryHeader from './QueryHeader.vue'
+import ResultColumnActions from './ResultColumnActions.vue'
+import ResultFooter from './ResultFooter.vue'
 import ResultSection from './ResultSection.vue'
 import TableSection from './TableSection.vue'
 import { NEW_FILTER } from './constants'
@@ -54,6 +55,7 @@ const builder = reactive({
 	addFilter,
 	removeFilterAt,
 	updateFilterAt,
+	setOrderBy,
 })
 provide('builder', builder)
 watch(
@@ -130,6 +132,15 @@ function updateFilterAt(updatedFilterIdx, newFilter) {
 	builder.query.filters.splice(updatedFilterIdx, 1, newFilter)
 	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
 }
+
+function setOrderBy(column, order) {
+	builder.query.columns.some((c) => {
+		if (c.label === column) {
+			c.order = order
+			return true
+		}
+	})
+}
 </script>
 
 <template>
@@ -148,11 +159,18 @@ function updateFilterAt(updatedFilterIdx, newFilter) {
 				<LoadingIndicator class="w-10 text-gray-600" />
 			</div>
 			<div class="flex h-full w-full flex-col space-y-4 overflow-hidden p-4">
-				<div class="flex flex-[3] flex-shrink-0 flex-col space-y-4 overflow-hidden">
+				<div class="flex flex-[3] flex-shrink-0 flex-col overflow-hidden">
 					<ChartSection></ChartSection>
 				</div>
-				<div class="flex flex-[2] flex-shrink-0 flex-col space-y-4 overflow-hidden">
-					<ResultSection></ResultSection>
+				<div class="flex flex-[2] flex-shrink-0 flex-col overflow-hidden">
+					<ResultSection>
+						<template #columnActions="{ column }">
+							<ResultColumnActions :column="column" />
+						</template>
+						<template #footer>
+							<ResultFooter></ResultFooter>
+						</template>
+					</ResultSection>
 				</div>
 			</div>
 
