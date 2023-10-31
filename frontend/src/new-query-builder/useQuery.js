@@ -82,10 +82,9 @@ function makeQuery(name) {
 			getUpdatedFields,
 			function (newDoc, oldDoc) {
 				if (!oldDoc || !newDoc) return
-				if (state.executing) return
 				if (state.saveWhenSavingIsDone) return
 				if (JSON.stringify(newDoc) == JSON.stringify(oldDoc)) return
-				if (state.saving) {
+				if (state.saving || state.executing) {
 					state.saveWhenSavingIsDone = true
 					return
 				}
