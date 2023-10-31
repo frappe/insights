@@ -4,6 +4,7 @@ import {
 	BarChart3,
 	BatteryMedium,
 	DollarSign,
+	GitBranch,
 	LineChart,
 	ListFilter,
 	PieChart,
@@ -25,6 +26,7 @@ export const VALID_CHARTS = [
 	'Funnel',
 	'Trend',
 	'Mixed Axis',
+	'Pivot Table',
 ]
 
 const WIDGETS = {
@@ -135,6 +137,15 @@ const WIDGETS = {
 		options: {},
 		defaultWidth: 8,
 		defaultHeight: 2,
+	},
+	'Pivot Table': {
+		type: 'Pivot Table',
+		icon: GitBranch,
+		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
+		options: {},
+		defaultWidth: 16,
+		defaultHeight: 14,
 	},
 }
 
