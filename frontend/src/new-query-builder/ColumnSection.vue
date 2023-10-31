@@ -45,7 +45,7 @@ function onSaveColumn(column) {
 				<p class="font-medium">Summarize</p>
 			</div>
 			<Autocomplete
-				v-model="columns"
+				:modelValue="columns"
 				:options="query.columnOptions"
 				bodyClasses="!w-[16rem]"
 				@update:modelValue="updateColumns"
