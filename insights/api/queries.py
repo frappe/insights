@@ -90,5 +90,4 @@ def apply_pivot_transform(data, rows, columns, values):
     _rows = csv.split("\n")
     for row in _rows:
         out.append(row.split(";"))
-    out[0] = [{"label": c, "type": "String"} for c in out[0]]
     return out

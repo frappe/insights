@@ -31,11 +31,12 @@ watchEffect(async () => {
 	)
 		return
 
-	pivotedData.value = await createPivotTable(
+	const data = await createPivotTable(
 		props.options.rows,
 		props.options.columns,
 		props.options.values
 	)
+	pivotedData.value = mergeCells(data)
 })
 
 const columns = computed(() => {
@@ -49,6 +50,43 @@ const rows = computed(() => {
 function isNumber(value) {
 	if (!value) return false
 	return !isNaN(value)
+}
+
+function mergeCells(data) {
+	// we need to merge cells with same value
+	// look for same values one after the other in each row
+	// or one below the other in each column
+	// and merge them with colspan or rowspan
+	const mergedData = []
+	for (let i = 0; i < data.length; i++) {
+		const row = data[i]
+		const mergedRow = []
+		for (let j = 0; j < row.length; j++) {
+			const cell = row[j]
+			if (cell === '<<skip>>') continue
+			const mergedCell = { value: cell }
+			if (mergedCell.colspan || mergedCell.rowspan) {
+				mergedRow.push(mergedCell)
+				continue
+			}
+			// look for same value in next cells
+			let colspan = 1
+			for (let k = j + 1; k < row.length; k++) {
+				const nextCell = row[k]
+				if (nextCell === '<<skip>>') continue
+				if (nextCell === cell && cell != 0) {
+					colspan++
+					row[k] = '<<skip>>'
+				} else {
+					break
+				}
+			}
+			mergedCell.colspan = colspan
+			mergedRow.push(mergedCell)
+		}
+		mergedData.push(mergedRow)
+	}
+	return mergedData
 }
 </script>
 
@@ -68,14 +106,15 @@ function isNumber(value) {
 				<span>No Data</span>
 			</div>
 			<table v-if="rows.length" class="w-full">
-				<thead class="sticky top-0">
+				<thead>
 					<tr>
 						<td
 							v-for="column in columns"
-							class="cursor-pointer truncate border-b border-r bg-white px-3 py-1.5 pr-4 text-gray-600 hover:text-gray-800"
+							class="truncate border-b border-r bg-white py-2 px-3 text-center"
 							scope="col"
+							:colspan="column.colspan"
 						>
-							{{ column.label }}
+							{{ column.value }}
 						</td>
 					</tr>
 				</thead>
@@ -84,9 +123,14 @@ function isNumber(value) {
 						<td
 							v-for="cell in row"
 							class="truncate border-b border-r bg-white py-2 px-3"
-							:class="isNumber(cell) ? 'text-right' : ''"
+							:class="isNumber(cell.value) ? 'text-right' : ''"
+							:colspan="cell.colspan"
 						>
-							{{ isNumber(cell) ? formatNumber(cell) : ellipsis(cell, 100) }}
+							{{
+								isNumber(cell.value)
+									? formatNumber(cell.value)
+									: ellipsis(cell.value, 100)
+							}}
 						</td>
 					</tr>
 				</tbody>
