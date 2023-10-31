@@ -6,7 +6,7 @@ import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, debounce } from 'frappe-ui'
-import { computed, reactive, watch, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 const session = sessionStore()
 
@@ -81,8 +81,9 @@ function makeQuery(name) {
 		watchDebounced(
 			getUpdatedFields,
 			function (newDoc, oldDoc) {
-				if (state.executing) return
 				if (!oldDoc || !newDoc) return
+				if (state.executing) return
+				if (state.saveWhenSavingIsDone) return
 				if (JSON.stringify(newDoc) == JSON.stringify(oldDoc)) return
 				if (state.saving) {
 					state.saveWhenSavingIsDone = true
@@ -90,13 +91,13 @@ function makeQuery(name) {
 				}
 				state.save()
 			},
-			{ deep: true, debounce: 0 }
+			{ deep: true, debounce: 500 }
 		)
 
 		watch(
-			() => state.loading,
-			(newLoading, oldLoading) => {
-				const wasSaving = !newLoading && oldLoading
+			() => state.saving,
+			(newSaving, oldSaving) => {
+				const wasSaving = !newSaving && oldSaving
 				if (wasSaving && state.saveWhenSavingIsDone) {
 					state.saveWhenSavingIsDone = false
 					state.save()
@@ -110,19 +111,25 @@ function makeQuery(name) {
 		const updatedFields = {
 			title: state.doc.title,
 			data_source: state.doc.data_source,
-			sql: state.doc.sql,
-			script: state.doc.script,
+			sql: state.doc.sql || '',
+			script: state.doc.script || '',
 			json: JSON.stringify(safeJSONParse(state.doc.json), null, 2),
 		}
 		return updatedFields
 	}
 
+	const autoExecuteQuery = computed(() => settingsStore().settings.auto_execute_query)
 	state.save = async () => {
 		state.loading = true
 		state.saving = true
-		const updatedFields = getUpdatedFields()
-		await resource.setValue.submit(updatedFields)
-		state.syncDoc()
+		await resource.setValue.submit(getUpdatedFields()).then(() => state.syncDoc())
+		if (
+			autoExecuteQuery.value &&
+			!state.executing &&
+			resource.doc.status == 'Pending Execution'
+		) {
+			await state.execute()
+		}
 		state.saving = false
 		state.loading = false
 	}
