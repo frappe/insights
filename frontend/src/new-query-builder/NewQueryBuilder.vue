@@ -4,7 +4,7 @@ import Tabs from '@/components/Tabs.vue'
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, provide, reactive, ref, watch } from 'vue'
+import { computed, inject, onMounted, onUpdated, provide, reactive, ref, watch } from 'vue'
 import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
 import ColumnSection from './ColumnSection.vue'
@@ -12,10 +12,10 @@ import FilterSection from './FilterSection.vue'
 import QueryHeader from './QueryHeader.vue'
 import ResultSection from './ResultSection.vue'
 import TableSection from './TableSection.vue'
+import { NEW_FILTER } from './constants'
 import { ERROR_UNABLE_TO_INFER_JOIN, ERROR_UNABLE_TO_RESET_MAIN_TABLE } from './messages'
 import useChart from './useChart'
 import useQuery from './useQuery'
-import { NEW_FILTER } from './constants'
 import {
 	inferJoinForTable,
 	inferJoinsFromColumns,
@@ -61,10 +61,11 @@ watch(
 	(newQuery) => (query.doc.json = newQuery),
 	{ deep: true }
 )
-watchOnce(
-	() => query.doc.json,
-	(newQuery) => (builder.query = safeJSONParse(newQuery))
-)
+onMounted(() => {
+	if (query.doc?.json) {
+		builder.query = safeJSONParse(query.doc.json)
+	}
+})
 
 builder.chart = await useChart(query)
 
