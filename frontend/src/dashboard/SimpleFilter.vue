@@ -160,6 +160,12 @@ function onComboboxValueChange(value) {
 		}
 	}
 }
+function isValueSelected(value) {
+	if (isMultiple.value) {
+		return filter.value?.value?.includes(value)
+	}
+	return filter.value?.value === value
+}
 </script>
 
 <template>
@@ -262,7 +268,7 @@ function onComboboxValueChange(value) {
 									v-for="value in values"
 									:key="value.value"
 									:value="value"
-									v-slot="{ active, selected }"
+									v-slot="{ active }"
 								>
 									<div
 										class="flex cursor-pointer items-center rounded px-2 py-1.5 hover:bg-gray-100"
@@ -270,7 +276,7 @@ function onComboboxValueChange(value) {
 									>
 										<span>{{ value.label }}</span>
 										<FeatherIcon
-											v-if="selected"
+											v-if="isValueSelected(value.value)"
 											name="check"
 											class="ml-auto h-3.5 w-3.5"
 										/>
