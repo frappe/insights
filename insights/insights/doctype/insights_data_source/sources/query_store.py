@@ -3,7 +3,7 @@
 
 import frappe
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from insights.insights.doctype.insights_data_source.sources.sqlite import SQLiteDB
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (
@@ -87,6 +87,11 @@ class QueryStore(SQLiteDB):
         return query.get_columns()
 
     def store_query(self, query, results):
+        if not results:
+            with self.engine.begin() as connection:
+                connection.execute(text(f"DROP TABLE IF EXISTS '{query.name}'"))
+                return
+
         table = self.table_factory.make_table(query)
         create_insights_table(table, force=True)
 
