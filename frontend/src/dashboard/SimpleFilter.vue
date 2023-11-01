@@ -50,10 +50,12 @@ watch(
 	{ immediate: true }
 )
 
+const isOpen = ref(false)
 const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
 })
 function applyFilter() {
+	if (!isOpen.value) return
 	if (applyDisabled.value) return
 	emit('apply', filter)
 }
@@ -183,7 +185,7 @@ function isValueSelected(value) {
 
 <template>
 	<div class="w-full [&:first-child]:w-full">
-		<Popover class="w-full" @close="applyFilter">
+		<Popover class="w-full" @close="applyFilter" @update:show="isOpen = $event">
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex w-full">
 					<button

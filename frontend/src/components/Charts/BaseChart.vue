@@ -1,6 +1,7 @@
 <script setup>
 import * as echarts from 'echarts'
 import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
+import { areDeeplyEqual } from '@/utils'
 
 const props = defineProps({
 	title: { type: String, required: false },
@@ -21,8 +22,10 @@ onMounted(() => {
 
 watch(
 	() => props.options,
-	() => {
+	(newOptions, oldOptions) => {
 		if (!eChart) return
+		if (JSON.stringify(newOptions) === JSON.stringify(oldOptions)) return
+		if (areDeeplyEqual(newOptions, oldOptions)) return
 		eChart.clear()
 		eChart.setOption(props.options)
 	},
