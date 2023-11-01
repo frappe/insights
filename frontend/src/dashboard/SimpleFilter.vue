@@ -121,6 +121,9 @@ const operatorLabel = computed(() => {
 	if (['between', 'timespan'].includes(filter.operator?.value)) {
 		return ':'
 	}
+	if (['in', 'not_in'].includes(filter.operator?.value)) {
+		return filter.operator?.label
+	}
 	return filter.operator?.value
 })
 
@@ -154,9 +157,19 @@ const comboboxModelValue = computed(() => {
 function onComboboxValueChange(value) {
 	!isMultiple.value && togglePopover(false)
 	if (isMultiple.value) {
+		const values = value
+			?.map((v) => v.value)
+			.reduce((acc, value) => {
+				// remove the ones which appear more than once
+				// since clicking on same value adds it twice
+				if (acc.includes(value)) {
+					return acc.filter((v) => v !== value)
+				}
+				return [...acc, value]
+			}, [])
 		filter.value = {
-			label: `${value?.length} values`,
-			value: value.map((v) => v.value),
+			label: values?.length > 1 ? `${values.length} values` : values?.[0],
+			value: values,
 		}
 	}
 }
