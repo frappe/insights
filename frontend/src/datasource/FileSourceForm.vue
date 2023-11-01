@@ -122,6 +122,7 @@ function reset() {
 					<span class="mb-2 block text-sm leading-4 text-gray-700">Data Source</span>
 					<Autocomplete
 						v-model="table.data_source"
+						:returnValue="true"
 						:options="dataSourceStore.getDropdownOptions({ allow_imports: 1 })"
 						placeholder="Select Data Source"
 					/>

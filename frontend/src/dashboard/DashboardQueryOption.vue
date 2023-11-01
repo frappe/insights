@@ -48,6 +48,7 @@ async function selectQuery() {
 		<div class="relative">
 			<Autocomplete
 				v-model="queryName"
+				:returnValue="true"
 				placeholder="Select a query"
 				:allowCreate="true"
 				:options="queryOptions"

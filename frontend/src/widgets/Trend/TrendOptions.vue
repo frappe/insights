@@ -44,11 +44,15 @@ const valueOptions = computed(() => {
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Date Column</span>
-			<Autocomplete v-model="options.dateColumn" :options="dateOptions" />
+			<Autocomplete v-model="options.dateColumn" :returnValue="true" :options="dateOptions" />
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Value Column</span>
-			<Autocomplete v-model="options.valueColumn" :options="valueOptions" />
+			<Autocomplete
+				v-model="options.valueColumn"
+				:returnValue="true"
+				:options="valueOptions"
+			/>
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Prefix</span>

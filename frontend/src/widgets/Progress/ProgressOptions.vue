@@ -41,7 +41,7 @@ if (!options.value.targetType) {
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Progress</span>
-			<Autocomplete v-model="options.progress" :options="valueOptions" />
+			<Autocomplete v-model="options.progress" :returnValue="true" :options="valueOptions" />
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Target</span>
@@ -58,6 +58,7 @@ if (!options.value.targetType) {
 						<Autocomplete
 							v-if="options.targetType === 'Column'"
 							v-model="options.target"
+							:returnValue="true"
 							placeholder="Select a column..."
 							:options="valueOptions"
 						/>
