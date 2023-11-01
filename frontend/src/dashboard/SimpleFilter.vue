@@ -54,7 +54,6 @@ const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
 })
 function applyFilter() {
-	if (filter.value?.value == props.value?.value) return
 	if (applyDisabled.value) return
 	emit('apply', filter)
 }
@@ -125,17 +124,41 @@ const operatorLabel = computed(() => {
 	return filter.operator?.value
 })
 
-const valueLabel = computed(() =>
-	filter.value?.length > 1
-		? `${filter.value?.length} values`
-		: filter.value[0]?.label || filter.value?.label
-)
-
 function resetFilter() {
 	filter.column = props.disableColumns ? filter.column : null
 	filter.operator = null
 	filter.value = null
 	emit('reset')
+}
+
+const valueLabel = computed(() => filter.value?.label)
+const isMultiple = computed(() => ['in', 'not_in'].includes(filter.operator?.value))
+if (isMultiple.value && Array.isArray(filter.value)) {
+	// for backward compatibility
+	const values = filter.value[0]?.value ? filter.value.map((v) => v.value) : filter.value
+	filter.value = {
+		label: `${filter.value?.length} values`,
+		value: values,
+	}
+}
+const comboboxModelValue = computed(() => {
+	if (isMultiple.value) {
+		return (
+			filter.value?.value?.map((value) => {
+				return { label: value, value }
+			}) || []
+		)
+	}
+	return filter.value
+})
+function onComboboxValueChange(value) {
+	!isMultiple.value && togglePopover(false)
+	if (isMultiple.value) {
+		filter.value = {
+			label: `${value?.length} values`,
+			value: value.map((v) => v.value),
+		}
+	}
 }
 </script>
 
@@ -220,12 +243,10 @@ function resetFilter() {
 					<Combobox
 						v-if="showValuePicker"
 						as="div"
-						v-model="filter.value"
 						nullable
-						:multiple="['in', 'not_in'].includes(filter.operator?.value)"
-						@update:model-value="
-							!filter.operator?.value.includes('in') && togglePopover(false)
-						"
+						:multiple="isMultiple"
+						:modelValue="comboboxModelValue"
+						@update:model-value="onComboboxValueChange"
 					>
 						<ComboboxInput
 							v-if="filter.operator?.value != 'is'"
