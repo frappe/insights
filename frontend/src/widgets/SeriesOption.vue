@@ -8,7 +8,6 @@ import { computed, ref } from 'vue'
 const emit = defineEmits(['update:modelValue', 'remove'])
 const props = defineProps({
 	modelValue: { required: true },
-	options: { type: Array, required: true },
 	seriesType: { type: String },
 })
 const series = computed({
@@ -27,17 +26,16 @@ if (!series.value.type) {
 
 const menuAnchor = ref(null)
 const showMenu = ref(false)
+function onRemove() {
+	emit('remove')
+	showMenu.value = false
+}
 </script>
 
 <template>
-	<div class="-m-1 flex flex-1 space-x-2 overflow-hidden p-1">
-		<div class="-m-1 flex-1 overflow-hidden p-1">
-			<Autocomplete
-				:modelValue="series.column"
-				:options="options"
-				placeholder="Select a column"
-				@update:modelValue="series.column = $event.value"
-			/>
+	<div class="-m-1 flex flex-1 items-center space-x-2 overflow-hidden p-1">
+		<div class="h-7 w-full flex-1 truncate rounded bg-gray-100 py-1 px-2 leading-5">
+			{{ series.column }}
 		</div>
 		<div ref="menuAnchor" class="flex-shrink-0">
 			<Button icon="more-horizontal" variant="subtle" @click="showMenu = !showMenu" />
@@ -81,9 +79,7 @@ const showMenu = ref(false)
 
 					<div class="flex justify-end">
 						<Button variant="ghost" @click="showMenu = false"> Close </Button>
-						<Button variant="ghost" theme="red" @click="$emit('remove')">
-							Remove
-						</Button>
+						<Button variant="ghost" theme="red" @click="onRemove"> Remove </Button>
 					</div>
 				</div>
 			</UsePopover>
