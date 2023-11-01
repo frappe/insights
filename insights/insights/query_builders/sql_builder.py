@@ -107,12 +107,12 @@ class ColumnFormatter:
 
 def get_descendants(node, tree, include_self=False):
     Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
-    lft_rgt = select([Tree.c.lft, Tree.c.rgt]).where(Tree.c.name == node).alias("lft_rgt")
+    lft_rgt = select(Tree.c.lft, Tree.c.rgt).where(Tree.c.name == node).alias("lft_rgt")
     return (
-        (select([Tree.c.name]).where(Tree.c.lft > lft_rgt.c.lft).where(Tree.c.rgt < lft_rgt.c.rgt))
+        (select(Tree.c.name).where(Tree.c.lft > lft_rgt.c.lft).where(Tree.c.rgt < lft_rgt.c.rgt))
         if not include_self
         else (
-            select([Tree.c.name])
+            select(Tree.c.name)
             .where(Tree.c.lft >= lft_rgt.c.lft)
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
         )
