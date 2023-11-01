@@ -21,7 +21,11 @@ onMounted(() => {
 
 watch(
 	() => props.options,
-	() => eChart && eChart.setOption(props.options),
+	() => {
+		if (!eChart) return
+		eChart.clear()
+		eChart.setOption(props.options)
+	},
 	{ deep: true }
 )
 
@@ -39,8 +43,6 @@ function downloadChart() {
 	link.download = `${props.title}.${type}`
 	link.click()
 }
-
-onUpdated(() => eChart && eChart.resize())
 </script>
 
 <template>
