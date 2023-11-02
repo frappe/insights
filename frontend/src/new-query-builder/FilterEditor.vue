@@ -19,6 +19,14 @@ const filter = reactive({
 	...props.filter,
 })
 
+const isValidFilter = computed(() => {
+	if (!filter.column.column) return false
+	if (!filter.operator.value) return false
+	if (filter.operator.value.includes('is_')) return true
+	if (!filter.value.value) return false
+	return true
+})
+
 const operatorOptions = computed(() => {
 	const options = getOperatorOptions(filter.column.type)
 	return options
@@ -187,7 +195,9 @@ function onColumnValueChange(value) {
 			/>
 		</div>
 		<div class="flex justify-between">
-			<Button variant="outline" @click="emit('discard')">Discard</Button>
+			<Button variant="outline" @click="emit(isValidFilter ? 'discard' : 'remove')">
+				Discard
+			</Button>
 			<div class="flex gap-2">
 				<Button variant="outline" theme="red" @click="emit('remove')">Remove</Button>
 				<Button variant="solid" @click="emit('save', filter)">Save</Button>
