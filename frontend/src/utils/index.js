@@ -2,7 +2,18 @@ import sessionStore from '@/stores/sessionStore'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { Baseline, Calendar, CalendarClock, Clock, Hash, Type } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
+
+export const fieldtypesToIcon = {
+	Integer: Hash,
+	Decimal: Hash,
+	Date: Calendar,
+	Datetime: CalendarClock,
+	Time: Clock,
+	Text: Type,
+	String: Baseline,
+}
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],

@@ -1,13 +1,12 @@
 <script setup>
-import { formatDate, isEmptyObj } from '@/utils'
-import { getOperatorOptions } from '@/utils/query/columns'
-import { call, debounce } from 'frappe-ui'
-import { computed, reactive, ref, watch } from 'vue'
-
 import DatePickerFlat from '@/components/Controls/DatePickerFlat.vue'
 import DateRangePickerFlat from '@/components/Controls/DateRangePickerFlat.vue'
 import TimespanPickerFlat from '@/components/Controls/TimespanPickerFlat.vue'
+import { fieldtypesToIcon, formatDate, isEmptyObj } from '@/utils'
+import { getOperatorOptions } from '@/utils/query/columns'
 import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/vue'
+import { call, debounce } from 'frappe-ui'
+import { computed, inject, reactive, ref, watch } from 'vue'
 
 const emit = defineEmits(['apply', 'reset'])
 const props = defineProps({
@@ -55,7 +54,6 @@ const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
 })
 function applyFilter() {
-	if (!isOpen.value) return
 	if (applyDisabled.value) return
 	emit('apply', filter)
 }
@@ -83,6 +81,8 @@ const showValuePicker = computed(
 		filter.column?.type == 'String'
 )
 
+const dashboard = inject('dashboard')
+const item_id = inject('item_id')
 const columnValues = ref([])
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (
@@ -93,13 +93,21 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	}
 
 	if (filter.column?.type == 'String') {
-		// prettier-ignore
-		columnValues.value = await call('insights.api.data_sources.fetch_column_values', {
+		let method = 'insights.api.data_sources.fetch_column_values'
+		let params = {
 			data_source: filter.column.data_source,
 			table: filter.column.table,
 			column: filter.column.column,
 			search_text,
-		})
+		}
+		if (dashboard.isPublic) {
+			method = 'insights.api.public.fetch_column_values_public'
+			params = {
+				public_key: dashboard.doc.public_key,
+				item_id: item_id,
+			}
+		}
+		columnValues.value = await call(method, params)
 	}
 }, 300)
 
@@ -120,13 +128,13 @@ watch(
 )
 
 const operatorLabel = computed(() => {
-	if (['between', 'timespan'].includes(filter.operator?.value)) {
-		return ':'
-	}
-	if (['in', 'not_in'].includes(filter.operator?.value)) {
-		return filter.operator?.label
-	}
-	return filter.operator?.value
+	// if (['between', 'timespan'].includes(filter.operator?.value)) {
+	// 	return ':'
+	// }
+	// if (['in', 'not_in'].includes(filter.operator?.value)) {
+	// 	return filter.operator?.label
+	// }
+	return filter.operator?.label
 })
 
 function resetFilter() {
@@ -136,7 +144,7 @@ function resetFilter() {
 	emit('reset')
 }
 
-const valueLabel = computed(() => filter.value?.label)
+const valueLabel = computed(() => filter.value?.label || filter.value?.value)
 const isMultiple = computed(() => ['in', 'not_in'].includes(filter.operator?.value))
 if (isMultiple.value && Array.isArray(filter.value)) {
 	// for backward compatibility
@@ -146,19 +154,20 @@ if (isMultiple.value && Array.isArray(filter.value)) {
 		value: values,
 	}
 }
-const comboboxModelValue = computed(() => {
-	if (isMultiple.value) {
-		return (
-			filter.value?.value?.map((value) => {
-				return { label: value, value }
-			}) || []
-		)
-	}
-	return filter.value
-})
-function onComboboxValueChange(value) {
-	!isMultiple.value && togglePopover(false)
-	if (isMultiple.value) {
+const comboboxModelValue = computed({
+	get: () => {
+		return !isMultiple.value
+			? filter.value
+			: filter.value?.value?.map((value) => {
+					return { label: value, value }
+			  })
+	},
+	set: (value) => {
+		if (!isMultiple.value) {
+			filter.value = value
+			return
+		}
+
 		const values = value
 			?.map((v) => v.value)
 			.reduce((acc, value) => {
@@ -169,12 +178,11 @@ function onComboboxValueChange(value) {
 				}
 				return [...acc, value]
 			}, [])
-		filter.value = {
-			label: values?.length > 1 ? `${values.length} values` : values?.[0],
-			value: values,
-		}
-	}
-}
+		const multipleValueLabel = values?.length > 1 ? `${values.length} values` : values?.[0]
+		filter.value = { label: multipleValueLabel, value: values }
+	},
+})
+function onComboboxValueChange(value, togglePopover) {}
 function isValueSelected(value) {
 	if (isMultiple.value) {
 		return filter.value?.value?.includes(value)
@@ -185,43 +193,39 @@ function isValueSelected(value) {
 
 <template>
 	<div class="w-full [&:first-child]:w-full">
-		<Popover class="w-full" @close="applyFilter" @update:show="isOpen = $event">
+		<Popover class="w-full" @close="applyFilter">
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex w-full">
 					<button
-						class="flex w-full items-center rounded border border-gray-100 bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow"
+						class="flex w-full items-center gap-1.5 overflow-hidden rounded bg-white p-0.5 pl-3 text-base font-medium leading-5 text-gray-900 shadow"
 						@click="togglePopover"
 					>
-						<span v-if="!filter.column" class="text-gray-600">Select a filter...</span>
-						<span
-							v-else
-							class="overflow-hidden text-ellipsis whitespace-nowrap"
-							:class="{ 'text-gray-600': !filter.operator }"
-						>
-							{{ filter.label || filter.column.label }}
+						<span v-if="!filter.column" class="font-normal text-gray-600">
+							Select a filter...
 						</span>
-						<span v-if="filter.operator" class="ml-1">{{ operatorLabel }}</span>
-						<span
-							v-if="filter.value"
-							class="ml-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap"
-						>
-							{{ valueLabel }}
-						</span>
-						<div class="ml-auto flex items-center pl-2">
-							<div
-								v-if="isOpen || !applyDisabled"
-								class="-my-1 -mr-2 rounded p-1 hover:bg-blue-50 hover:text-blue-600"
-								@click.prevent.stop="resetFilter()"
-							>
-								<FeatherIcon name="x" class="h-3.5 w-3.5" />
+						<template v-else>
+							<div class="flex flex-shrink-0 items-center gap-1">
+								<component
+									:is="fieldtypesToIcon[filter.column.type]"
+									class="h-4 w-4 text-gray-600"
+								/>
+								<span class="truncate">{{ filter.column.label }}</span>
 							</div>
-							<FeatherIcon
-								v-else
-								name="chevron-down"
-								class="h-3.5 w-3.5"
-								@click.prevent.stop="togglePopover(true)"
-							/>
-						</div>
+							<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
+								{{ operatorLabel }}
+							</span>
+							<span v-if="filter.value" class="flex-shrink-0 truncate">
+								{{ valueLabel }}
+							</span>
+							<div class="ml-auto flex h-7 items-center">
+								<Button
+									v-if="isOpen || !applyDisabled"
+									icon="x"
+									variant="ghost"
+									@click.prevent.stop="resetFilter()"
+								/>
+							</div>
+						</template>
 					</button>
 				</div>
 			</template>
@@ -266,8 +270,8 @@ function isValueSelected(value) {
 						as="div"
 						nullable
 						:multiple="isMultiple"
-						:modelValue="comboboxModelValue"
-						@update:model-value="onComboboxValueChange"
+						v-model="comboboxModelValue"
+						@update:model-value="!isMultiple && togglePopover(false)"
 					>
 						<ComboboxInput
 							v-if="filter.operator?.value != 'is'"
@@ -337,22 +341,14 @@ function isValueSelected(value) {
 							}
 						"
 					/>
-
-					<input
-						v-else
-						type="text"
-						placeholder="Enter a value"
-						:value="filter.value?.value"
-						@input="
-							(event) => {
-								filter.value = {
-									value: event.target.value,
-									label: event.target.value,
-								}
-							}
-						"
-						class="form-input block h-7 w-full select-none rounded border-gray-400 placeholder-gray-500"
-					/>
+					<div v-else class="flex items-center gap-2">
+						<Input
+							:model-value="filter.value?.value"
+							@update:model-value="filter.value = { value: $event, label: $event }"
+							placeholder="Enter a value"
+						/>
+						<Button variant="solid" icon="check" @click="togglePopover(false)" />
+					</div>
 				</div>
 			</template>
 		</Popover>
