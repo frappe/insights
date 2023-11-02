@@ -1,11 +1,7 @@
 <script setup>
-import DatePicker from '@/components/Controls/DatePicker.vue'
-import DateRangePicker from '@/components/Controls/DateRangePicker.vue'
-import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
-import { FIELDTYPES, formatDate, getOperatorOptions } from '@/utils'
-import { whenever } from '@vueuse/core'
-import { FormControl, call, debounce } from 'frappe-ui'
-import { computed, defineProps, inject, reactive, ref, watch } from 'vue'
+import { FIELDTYPES, getOperatorOptions } from '@/utils'
+import { computed, defineProps, inject, reactive, watch } from 'vue'
+import FilterValueSelector from './FilterValueSelector.vue'
 import { NEW_FILTER } from './constants'
 
 const emit = defineEmits(['save', 'discard', 'remove'])
@@ -39,21 +35,12 @@ const operatorOptions = computed(() => {
 if (!filter.operator?.value) {
 	filter.operator = operatorOptions.value[0]
 }
-watch(
-	() => filter.operator.value,
-	(newVal, oldVal) => {
-		if (newVal !== oldVal) filter.value = {}
+// prettier-ignore
+watch(() => filter.operator.value, (newVal, oldVal) => {
+	if (newVal !== oldVal) {
+		filter.value = {}
 	}
-)
-
-function onColumnChange(option) {
-	filter.column.table = option.table
-	filter.column.table_label = option.table_label
-	filter.column.column = option.column
-	filter.column.label = option.label
-	filter.column.alias = option.alias || option.label
-	filter.column.type = option.type
-}
+})
 
 const operator = computed(() => filter.operator?.value)
 const isExpression = computed(() => filter.column?.expression?.raw)
@@ -72,68 +59,26 @@ const selectorType = computed(() => {
 	if (!isExpression.value && isString.value && isEqualityCheck.value) return 'combobox'
 	return 'text'
 })
-
-function onDateRangeChange(dates) {
-	filter.value = {
-		value: dates,
-		label: dates
-			.split(',')
-			.map((date) => formatDate(date))
-			.join(' to '),
-	}
-}
-
-function onDateChange(date) {
-	filter.value = {
-		value: date,
-		label: formatDate(date),
-	}
-}
-
-const isMultiValue = computed(() => ['in', 'not_in'].includes(filter.operator?.value))
-const columnValues = ref([])
-const fetchingColumnValues = ref(false)
-const checkAndFetchColumnValues = debounce(async function (search_text = '') {
-	if (!isEqualityCheck.value) return
-	if (filter.column?.type == 'String' && builder.data_source) {
-		const URL = 'insights.api.data_sources.fetch_column_values'
-		fetchingColumnValues.value = true
-		const values = await call(URL, {
-			data_source: builder.data_source,
-			table: filter.column.table,
-			column: filter.column.column,
-			search_text,
-		})
-		columnValues.value = values.map((value) => ({ label: value, value }))
-		// prepend the selected value to the list
-		if (Array.isArray(filter.value.value)) {
-			// filter.value = {label: '2 selected', value: [{ label: '', value: ''}, ...]}
-			filter.value.value.forEach((selectedOption) => {
-				if (!columnValues.value.find((v) => v.value === selectedOption.value)) {
-					columnValues.value.unshift(selectedOption)
-				}
-			})
-		}
-		fetchingColumnValues.value = false
-	}
-}, 300)
-whenever(
-	() => selectorType.value == 'combobox',
-	() => checkAndFetchColumnValues(),
-	{ immediate: true }
-)
-function onColumnValueChange(value) {
-	filter.value = !isMultiValue.value
-		? value
-		: {
-				label: `${value.length} values`,
-				value: value,
-		  }
-}
 </script>
 
 <template>
 	<div class="flex flex-col gap-4 p-4">
+		<!-- <div
+			class="flex h-8 w-full cursor-pointer select-none items-center rounded bg-gray-100 p-1"
+		>
+			<div
+				v-for="tab in ['Simple', 'Expression']"
+				class="flex h-full flex-1 items-center justify-center px-4 text-sm transition-all"
+				:class="{
+					'rounded bg-white shadow':
+						tab.active || (modelValue && modelValue === tab.value),
+					'cursor-not-allowed': tab.disabled,
+				}"
+				@click="handleClick(tab)"
+			>
+				{{ tab.label }}
+			</div>
+		</div> -->
 		<div class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Column</span>
 			<Autocomplete
@@ -143,7 +88,7 @@ function onColumnValueChange(value) {
 				}"
 				placeholder="Column"
 				:options="query.columnOptions"
-				@update:modelValue="onColumnChange"
+				@update:modelValue="filter.column = $event"
 			/>
 		</div>
 		<div class="space-y-1">
@@ -155,43 +100,12 @@ function onColumnValueChange(value) {
 				@update:modelValue="filter.operator = $event"
 			/>
 		</div>
-		<div class="space-y-1">
-			<span v-if="selectorType !== 'none'" class="text-sm font-medium text-gray-700">
-				Value
-			</span>
-			<Autocomplete
-				v-if="selectorType === 'combobox'"
-				placeholder="Value"
-				:multiple="isMultiValue"
-				:modelValue="filter.value.value"
-				:options="columnValues"
-				@update:query="checkAndFetchColumnValues"
-				@update:modelValue="onColumnValueChange"
-			/>
-			<TimespanPicker
-				v-if="selectorType === 'timespanpicker'"
-				v-model="filter.value"
-				placeholder="Value"
-			/>
-			<DateRangePicker
-				v-if="selectorType === 'datepickerrange'"
-				:value="filter.value.value"
-				:formatter="formatDate"
-				@change="onDateRangeChange($event)"
-			/>
-			<DatePicker
-				v-if="selectorType === 'datepicker'"
-				:value="filter.value.value"
-				:formatter="formatDate"
-				@change="onDateChange($event)"
-			/>
-			<FormControl
-				v-if="selectorType === 'text'"
-				type="text"
-				autocomplete="off"
-				placeholder="Value"
-				:modelValue="filter.value.value"
-				@update:modelValue="filter.value.value = $event"
+		<div v-if="selectorType !== 'none'" class="space-y-1">
+			<span class="text-sm font-medium text-gray-700"> Value </span>
+			<FilterValueSelector
+				:filter="filter"
+				:selector-type="selectorType"
+				@update:filter="filter.value = $event.value"
 			/>
 		</div>
 		<div class="flex justify-between">
