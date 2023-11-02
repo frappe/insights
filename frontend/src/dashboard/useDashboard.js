@@ -1,6 +1,6 @@
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
-import { safeJSONParse } from '@/utils'
+import { areDeeplyEqual, safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
@@ -113,6 +113,7 @@ export default function useDashboard(name) {
 					value: value.value,
 			  }
 			: undefined
+		if (areDeeplyEqual(filterState, state.filterStates[item_id])) return
 		saveLocal(getFilterStateKey(item_id), filterState).then(() => {
 			state.filterStates[item_id] = filterState
 			refreshLinkedCharts(item_id)

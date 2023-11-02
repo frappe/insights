@@ -46,11 +46,11 @@ const valueOptions = computed(() => {
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
-			<Autocomplete v-model="options.xAxis" :options="indexOptions" />
+			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<Autocomplete v-model="options.yAxis" :options="valueOptions" />
+			<Autocomplete v-model="options.yAxis" :returnValue="true" :options="valueOptions" />
 		</div>
 
 		<div>

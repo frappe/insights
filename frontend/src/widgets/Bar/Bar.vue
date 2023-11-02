@@ -15,12 +15,17 @@ const labels = computed(() => {
 
 const datasets = computed(() => {
 	if (!props.data?.length || !props.options.yAxis) return []
-	return props.options.yAxis.map((column) => {
-		return {
-			label: column,
-			data: props.data.map((d) => d[column]),
-		}
-	})
+	return (
+		props.options.yAxis
+			// to exclude the columns that might be removed from the query but not the chart
+			.filter((column) => props.data[0].hasOwnProperty(column))
+			.map((column) => {
+				return {
+					label: column,
+					data: props.data.map((d) => d[column]),
+				}
+			})
+	)
 })
 
 const barChartOptions = computed(() => {

@@ -220,11 +220,11 @@ def delete_data_source(data_source):
 @frappe.whitelist()
 @redis_cache()
 def fetch_column_values(data_source, table, column, search_text=None):
-    if not data_source:
+    if not data_source or not isinstance(data_source, str):
         frappe.throw("Data Source is required")
-    if not table:
+    if not table or not isinstance(table, str):
         frappe.throw("Table is required")
-    if not column:
+    if not column or not isinstance(column, str):
         frappe.throw("Column is required")
     doc = frappe.get_doc("Insights Data Source", data_source)
     return doc.get_column_options(table, column, search_text)

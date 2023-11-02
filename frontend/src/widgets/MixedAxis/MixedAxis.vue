@@ -15,14 +15,19 @@ const labels = computed(() => {
 
 const datasets = computed(() => {
 	if (!props.data?.length || !props.options.yAxis) return []
-	return props.options.yAxis.map((series) => {
-		const column = series.column || series
-		return {
-			label: column,
-			data: props.data.map((d) => d[column]),
-			options: series,
-		}
-	})
+	return (
+		props.options.yAxis
+			// to exclude the columns that might be removed from the query but not the chart
+			.filter((series) => props.data[0].hasOwnProperty(series.column))
+			.map((series) => {
+				const column = series.column || series
+				return {
+					label: column,
+					data: props.data.map((d) => d[column]),
+					options: series,
+				}
+			})
+	)
 })
 
 const mixedAxisChartOptions = computed(() => {

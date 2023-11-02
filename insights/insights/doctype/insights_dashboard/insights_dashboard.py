@@ -12,8 +12,6 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.api.telemetry import track
 from insights.cache_utils import get_or_set_cache, make_digest
-from insights.decorators import debounce
-from insights.insights.doctype.insights_query.utils import import_query
 
 from .utils import guess_layout_for_chart
 

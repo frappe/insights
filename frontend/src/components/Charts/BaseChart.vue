@@ -1,4 +1,5 @@
 <script setup>
+import { areDeeplyEqual } from '@/utils'
 import * as echarts from 'echarts'
 import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
 
@@ -21,7 +22,13 @@ onMounted(() => {
 
 watch(
 	() => props.options,
-	() => eChart && eChart.setOption(props.options),
+	(newOptions, oldOptions) => {
+		if (!eChart) return
+		if (JSON.stringify(newOptions) === JSON.stringify(oldOptions)) return
+		if (areDeeplyEqual(newOptions, oldOptions)) return
+		eChart.clear()
+		eChart.setOption(props.options)
+	},
 	{ deep: true }
 )
 
@@ -39,8 +46,6 @@ function downloadChart() {
 	link.download = `${props.title}.${type}`
 	link.click()
 }
-
-onUpdated(() => eChart && eChart.resize())
 </script>
 
 <template>

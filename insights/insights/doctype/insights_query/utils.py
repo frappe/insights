@@ -115,6 +115,8 @@ def apply_pivot_transform(results, options):
         columns=pivot_column["label"],
         values=value_column["label"],
         aggfunc="sum",
+        fill_value=0,
+        sort=False,
     )
 
     pivoted = pivoted.reset_index()

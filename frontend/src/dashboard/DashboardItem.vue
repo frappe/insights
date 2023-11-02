@@ -1,6 +1,5 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
-import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { watchDebounced, whenever } from '@vueuse/shared'
@@ -67,7 +66,7 @@ function openQueryInNewTab() {
 			ref="itemRef"
 			class="group relative flex h-full rounded"
 			:class="{
-				' bg-white shadow': item.item_type !== 'Filter' && item.item_type !== 'Text',
+				' bg-white shadow': dashboard.isChart(item),
 				'ring-2 ring-blue-300 ring-offset-1':
 					item.item_id === dashboard.currentItem?.item_id,
 				'cursor-grab': dashboard.editing,
@@ -88,21 +87,11 @@ function openQueryInNewTab() {
 				:item_id="item.item_id"
 				:data="chartData.data"
 				:options="item.options"
-			>
-				<template #placeholder>
-					<InvalidWidget
-						class="absolute"
-						title="Insufficient options"
-						icon="settings"
-						:message="null"
-						icon-class="text-gray-500"
-					/>
-				</template>
-			</component>
+			/>
 
 			<div class="absolute right-3 top-3 z-10 flex items-center">
 				<div v-if="chartFilters?.length">
-					<Tooltip :text="chartFilters.map((c) => c.label).join(', ')">
+					<Tooltip :text="chartFilters.map((c) => c.label || c.column?.label).join(', ')">
 						<div
 							class="flex items-center space-x-1 rounded-full bg-gray-100 px-2 py-1 text-sm leading-3 text-gray-600"
 						>

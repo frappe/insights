@@ -2,7 +2,18 @@ import sessionStore from '@/stores/sessionStore'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { Baseline, Calendar, CalendarClock, Clock, Hash, Type } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
+
+export const fieldtypesToIcon = {
+	Integer: Hash,
+	Decimal: Hash,
+	Date: Calendar,
+	Datetime: CalendarClock,
+	Time: Clock,
+	Text: Type,
+	String: Baseline,
+}
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
@@ -228,7 +239,7 @@ export function guessPrecision(number) {
 	const str = number.toString()
 	const decimalIndex = str.indexOf('.')
 	if (decimalIndex === -1) return 0
-	return Math.min(str.length - decimalIndex - 1, 4)
+	return Math.min(str.length - decimalIndex - 1, 2)
 }
 
 export async function getDataURL(type, data) {

@@ -52,6 +52,9 @@ class InsightsScriptQueryController:
             )
             self.update_script_log()
             results = _locals["results"]
+            if isinstance(results, pd.DataFrame):
+                columns = [{"label": col} for col in results.columns.tolist()]
+                results = [columns] + results.values.tolist()
         except BaseException as e:
             frappe.log_error(title="Insights Script Query Error")
             frappe.throw(

@@ -1,4 +1,5 @@
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
 import { FIELDTYPES } from '@/utils'
@@ -46,6 +47,9 @@ const yAxis = computed({
 	get: () => (deprecatedOptions.value ? convertDeprecatedOptions() : options.value.yAxis),
 	set: (value) => (options.value.yAxis = value),
 })
+const areAllColumnsSelected = computed(() => {
+	return yAxis.value?.length && yAxis.value?.length === valueOptions.value?.length
+})
 </script>
 
 <template>
@@ -59,28 +63,44 @@ const yAxis = computed({
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
-			<Autocomplete v-model="options.xAxis" :options="indexOptions" />
+			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
 		</div>
-		<div class="space-y-2">
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
+		<div class="relative max-h-[15rem] space-y-2 overflow-hidden overflow-y-scroll">
+			<div class="sticky top-0 -mt-1 flex items-center justify-between bg-white">
+				<span class="block text-sm leading-4 text-gray-700">Y Axis</span>
+				<Autocomplete
+					:modelValue="yAxis?.map((item) => item.column)"
+					:multiple="true"
+					:returnValue="true"
+					:options="valueOptions"
+					@update:model-value="yAxis = $event.map((item) => ({ column: item }))"
+				>
+					<template #target="{ togglePopover }">
+						<Button variant="ghost" icon="plus" @click="togglePopover" />
+					</template>
+					<template #footer>
+						<div class="flex items-center justify-end">
+							<Button
+								v-if="!areAllColumnsSelected"
+								variant="subtle"
+								@click="
+									yAxis = valueOptions.map((item) => ({ column: item.value }))
+								"
+							>
+								Select All
+							</Button>
+						</div>
+					</template>
+				</Autocomplete>
+			</div>
 			<div class="flex w-full flex-col space-y-2">
 				<div class="flex flex-1" v-for="(series, index) in yAxis" :key="index">
 					<SeriesOption
 						seriesType="line"
 						:modelValue="series"
-						:options="valueOptions"
 						@remove="yAxis.splice(yAxis.indexOf(series), 1)"
 					/>
 				</div>
-			</div>
-			<div>
-				<span
-					v-if="options.splitYAxis ? yAxis.length < 2 : true"
-					class="cursor-pointer text-sm text-gray-500 hover:text-gray-700"
-					@click="yAxis ? yAxis.push({ column: '' }) : (yAxis = [{ column: '' }])"
-				>
-					+ Add Series
-				</span>
 			</div>
 		</div>
 

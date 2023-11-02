@@ -1,4 +1,7 @@
 import frappe
+from frappe.utils.caching import redis_cache
+
+from insights.api.data_sources import fetch_column_values
 
 
 @frappe.whitelist()
@@ -61,4 +64,34 @@ def get_public_dashboard_chart_data(public_key, *args, **kwargs):
     kwargs.pop("cmd")
     return frappe.get_cached_doc("Insights Dashboard", dashboard_name).fetch_chart_data(
         *args, **kwargs
+    )
+
+
+@frappe.whitelist(allow_guest=True)
+@redis_cache()
+def fetch_column_values_public(public_key, item_id, search_text=None):
+    if not public_key or not isinstance(public_key, str):
+        frappe.throw("Public Key is required")
+
+    dashboard_name = frappe.db.exists(
+        "Insights Dashboard", {"public_key": public_key, "is_public": 1}
+    )
+    if not dashboard_name:
+        frappe.throw("Invalid Public Key")
+
+    doc = frappe.get_doc("Insights Dashboard", dashboard_name)
+    row = next((row for row in doc.items if row.item_id == item_id), None)
+    if not row:
+        frappe.throw("Invalid Item ID")
+
+    options = frappe.parse_json(row.options)
+    column = options.get("column")
+    if not column:
+        frappe.throw("Column not found in Item Options")
+
+    return fetch_column_values(
+        data_source=column.get("data_source"),
+        table=column.get("table"),
+        column=column.get("column"),
+        search_text=search_text,
     )
