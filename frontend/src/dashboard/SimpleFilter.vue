@@ -224,6 +224,7 @@ function isValueSelected(value) {
 									variant="ghost"
 									@click.prevent.stop="resetFilter()"
 								/>
+								<FeatherIcon v-else name="chevron-down" class="mr-2 h-4 w-4" />
 							</div>
 						</template>
 					</button>
