@@ -111,8 +111,9 @@ const areAllColumnsSelected = computed(() => {
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
 			<Autocomplete
-				v-model="options.referenceLine"
+				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
+				@update:modelValue="options.referenceLine = $event.value"
 			/>
 		</div>
 
