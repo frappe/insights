@@ -122,7 +122,7 @@ function makeQuery(name) {
 	state.save = async () => {
 		state.loading = true
 		state.saving = true
-		await resource.setValue.submit(getUpdatedFields()).then(() => state.syncDoc())
+		await resource.setValue.submit(getUpdatedFields())
 		if (
 			autoExecuteQuery.value &&
 			!state.executing &&
@@ -193,17 +193,24 @@ function makeQuery(name) {
 		(newVal, oldVal) => {
 			const newJson = safeJSONParse(newVal)
 			const oldJson = safeJSONParse(oldVal)
-			if (JSON.stringify(newJson) == JSON.stringify(oldJson)) return
-			if (
-				JSON.stringify(newJson?.tables) == JSON.stringify(oldJson?.tables) &&
-				JSON.stringify(newJson?.joins) == JSON.stringify(oldJson?.joins)
-			)
-				return
-
+			if (!hasTablesChanged(newJson, oldJson)) return
 			state.fetchTableMeta()
 		},
-		{ deep: true, immediate: true }
+		{ deep: true }
 	)
+
+	function hasTablesChanged(newJson, oldJson) {
+		if (!oldJson) return true
+		const newTables = [
+			newJson.table.table,
+			...newJson.joins.map((join) => join.right_table.table),
+		]
+		const oldTables = [
+			oldJson.table.table,
+			...oldJson.joins.map((join) => join.right_table.table),
+		]
+		return JSON.stringify(newTables) != JSON.stringify(oldTables)
+	}
 
 	watch(
 		() => state.tableMeta,
