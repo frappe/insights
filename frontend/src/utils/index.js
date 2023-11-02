@@ -165,7 +165,7 @@ export function guessPrecision(number) {
 	const str = number.toString()
 	const decimalIndex = str.indexOf('.')
 	if (decimalIndex === -1) return 0
-	return Math.min(str.length - decimalIndex - 1, 4)
+	return Math.min(str.length - decimalIndex - 1, 2)
 }
 
 export async function getDataURL(type, data) {
