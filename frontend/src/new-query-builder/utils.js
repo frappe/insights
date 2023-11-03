@@ -100,5 +100,5 @@ export function inferJoinForTable(newTable, builderQuery, tableMeta) {
 export function isTableAlreadyAdded(builderQuery, newTable) {
 	const table = builderQuery.table
 	if (table.table === newTable.table) return true
-	return builderQuery.joins.some((join) => join.right_table === newTable.table)
+	return builderQuery.joins.some((join) => join.right_table.table === newTable.table)
 }
