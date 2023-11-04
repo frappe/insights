@@ -80,6 +80,7 @@ class InsightsDashboard(Document):
         new_results = (
             query.retrieve_results(fetch_if_not_cached=True)
             if not additional_filters
+            # TODO: if 3 charts with same query results is fetched, it will be fetched 3 times
             else query.fetch_results(additional_filters=additional_filters)
         )
 
