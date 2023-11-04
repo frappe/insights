@@ -8,6 +8,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.safe_exec import compile_restricted, get_safe_globals
 
 from insights import notify
+from insights.utils import ResultColumn
 
 from .utils import get_columns_with_inferred_types
 
@@ -52,9 +53,6 @@ class InsightsScriptQueryController:
             )
             self.update_script_log()
             results = _locals["results"]
-            if isinstance(results, pd.DataFrame):
-                columns = [{"label": col} for col in results.columns.tolist()]
-                results = [columns] + results.values.tolist()
         except BaseException as e:
             frappe.log_error(title="Insights Script Query Error")
             frappe.throw(
@@ -62,7 +60,7 @@ class InsightsScriptQueryController:
                 title="Insights Script Query Error",
             )
 
-        results = self.validate_results(results)
+        results = self.validate_and_sanitize_results(results)
         return results
 
     def reset_script_log(self):
@@ -81,20 +79,28 @@ class InsightsScriptQueryController:
             update_modified=False,
         )
 
-    def validate_results(self, results):
+    def validate_and_sanitize_results(self, results):
         if not results:
             notify("The script should declare a variable named 'results'.")
             return []
 
-        if not isinstance(results[0], list):
-            notify("Results should be a list of lists.")
-            return []
+        if isinstance(results, pd.DataFrame):
+            columns = [ResultColumn.from_args(col) for col in results.columns]
+            values = results.values.tolist()
+            return [columns] + values
 
         if not all(isinstance(row, list) for row in results):
             notify("All rows should be lists.")
             return []
 
-        results[0] = [{"label": col} for col in results[0]]
+        if all(isinstance(col, str) for col in results[0]):
+            new_columns = [ResultColumn.from_args(col) for col in results[0]]
+            return [new_columns] + results[1:]
+
+        if not all(isinstance(col, dict) and "label" in col for col in results[0]):
+            notify("All columns should be a dictionary with a 'label' key.")
+            return []
+
         return results
 
     def before_fetch(self):
@@ -121,5 +127,13 @@ def get_safe_exec_globals():
     pandas.DataFrame.to_csv = lambda *args, **kwargs: None
     pandas.DataFrame.to_json = lambda *args, **kwargs: None
     safe_globals.pandas = pandas
+    safe_globals.get_query_results = get_query_results
 
     return safe_globals
+
+
+def get_query_results(query_name):
+    if not isinstance(query_name, str):
+        raise ScriptQueryExecutionError("Query name should be a string.")
+    doc = frappe.get_doc("Insights Query", query_name)
+    return doc.retrieve_results(fetch_if_not_cached=True)
