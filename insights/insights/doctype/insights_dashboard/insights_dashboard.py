@@ -59,25 +59,28 @@ class InsightsDashboard(Document):
         if not query_name:
             return frappe.throw("Query not found")
 
-        return InsightsDashboard.run_query(
-            self.cache_namespace, query_name, additional_filters=filters
-        )
+        return self.run_query(query_name, additional_filters=filters)
 
-    @staticmethod
-    def run_query(cache_namespace, query_name, additional_filters=None):
-        def get_result():
-            query = frappe.get_cached_doc("Insights Query", query_name)
-            return query.fetch_results(additional_filters=additional_filters)
-
+    def run_query(self, query_name, additional_filters=None):
         last_modified = frappe.db.get_value("Insights Query", query_name, "modified")
         key = make_digest(query_name, last_modified, additional_filters)
-        key = f"{cache_namespace}:{key}"
+        key = f"{self.cache_namespace}:{key}"
+        if frappe.cache().exists(key):
+            return frappe.cache().get_value(key)
+
+        query = frappe.get_cached_doc("Insights Query", query_name)
+        new_results = (
+            query.retrieve_results(fetch_if_not_cached=True)
+            if not additional_filters
+            else query.fetch_results(additional_filters=additional_filters)
+        )
 
         query_result_expiry = frappe.db.get_single_value(
             "Insights Settings", "query_result_expiry"
         )
         query_result_expiry_in_seconds = query_result_expiry * 60
-        return get_or_set_cache(key, get_result, expiry=query_result_expiry_in_seconds)
+        frappe.cache().set_value(key, new_results, expires_in_sec=query_result_expiry_in_seconds)
+        return new_results
 
 
 @frappe.whitelist()
