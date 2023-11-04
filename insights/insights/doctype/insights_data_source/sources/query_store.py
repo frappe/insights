@@ -19,29 +19,15 @@ class StoredQueryTableFactory:
     def __init__(self) -> None:
         self.data_source = "Query Store"
 
-    def import_query(self, query):
-        result = query.fetch_results()
-        if not result:
-            return
-        columns = [col["label"] for col in result[0]]
-        df = pd.DataFrame(result[1:], columns=columns, dtype=str)
-        df.to_sql(query.name, self.connection, if_exists="replace", index=False)
-
     def sync_tables(self, connection, tables=None, force=False):
         self.connection = connection
-        for table in self.get_tables(tables):
-            create_insights_table(table, force=force)
-
-    def get_tables(self, tables=None):
-        _tables = []
         to_sync = self.get_stored_queries() if tables is None else tables
-        # create table object from the stored queries
         for docname in to_sync:
             doc = frappe.get_doc("Insights Query", docname)
-            # since we already have doc here, we can use it to import query result
-            self.import_query(doc)
-            _tables.append(self.make_table(doc))
-        return _tables
+            # fetch results internally imports them into the db
+            # also updates the insights table
+            doc.fetch_results()
+            force and create_insights_table(self.make_table(doc), force=True)
 
     def make_table(self, query):
         return frappe._dict(
