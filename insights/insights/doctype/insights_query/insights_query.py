@@ -150,10 +150,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         frappe.db.delete("Insights Chart", {"query": self.name})
 
     def retrieve_results(self, fetch_if_not_cached=False):
-        results = CachedResults.get(self.name)
-        if results is None and fetch_if_not_cached:
-            results = self.fetch_results()
-        return results or []
+        if not CachedResults.exists(self.name):
+            if fetch_if_not_cached:
+                return self.fetch_results()
+            return []
+        return CachedResults.get(self.name)
 
     def fetch_results(self, additional_filters=None):
         self.before_fetch()
