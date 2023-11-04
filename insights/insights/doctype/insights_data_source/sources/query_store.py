@@ -93,7 +93,7 @@ class QueryStore(SQLiteDB):
                 return
 
         table = self.table_factory.make_table(query)
-        create_insights_table(table, force=True)
+        create_insights_table(table)
 
         columns = [col["label"] for col in results[0]]
         df = pd.DataFrame(results[1:], columns=columns, dtype=str)
