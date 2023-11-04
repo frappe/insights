@@ -23,6 +23,8 @@ class StoredQueryTableFactory:
         self.connection = connection
         to_sync = self.get_stored_queries() if tables is None else tables
         for docname in to_sync:
+            if not frappe.db.exists("Insights Query", docname):
+                continue
             doc = frappe.get_doc("Insights Query", docname)
             # fetch results internally imports them into the db
             # also updates the insights table

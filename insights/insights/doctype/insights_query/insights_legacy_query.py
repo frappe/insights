@@ -335,7 +335,9 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def before_fetch(self):
         if self.doc.data_source != "Query Store":
             return
-        sub_stored_queries = [t.table for t in self.get_selected_tables()]
+        sub_stored_queries = [
+            t.table for t in self.get_selected_tables() if t.table != self.doc.name
+        ]
         sync_query_store(sub_stored_queries)
 
     def after_fetch(self, results):
