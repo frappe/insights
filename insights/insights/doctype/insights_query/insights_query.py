@@ -69,7 +69,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def results_row_count(self):
-        return len(CachedResults.get(self.name))
+        return len(self.retrieve_results())
 
     @cached_property
     def variant_controller(self):
@@ -154,7 +154,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             if fetch_if_not_cached:
                 return self.fetch_results()
             return []
-        return CachedResults.get(self.name)
+        return CachedResults.get(self.name) or []
 
     def fetch_results(self, additional_filters=None):
         self.before_fetch()
