@@ -1,12 +1,15 @@
 <script setup lang="jsx">
 import ContentEditable from '@/notebook/ContentEditable.vue'
 import useDataSourceStore from '@/stores/dataSourceStore'
-import { computed, inject } from 'vue'
-import { Component } from 'lucide-vue-next'
+import { watchDebounced } from '@vueuse/core'
+import { Component as ComponentIcon } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
 
 const $notify = inject('$notify')
 const query = inject('query')
 
+const title = ref(query.doc.title)
+watchDebounced(title, query.updateTitle, { debounce: 500 })
 const sources = useDataSourceStore()
 
 const SourceOption = (props) => {
@@ -36,12 +39,11 @@ const dataSourceOptions = computed(() => {
 })
 
 function changeDataSource(sourceName) {
-	query.updateDoc({ data_source: sourceName }).then(() => {
+	query.changeDataSource(sourceName).then(() => {
 		$notify({
 			title: 'Data source updated',
 			variant: 'success',
 		})
-		query.doc.data_source = sourceName
 	})
 }
 </script>
@@ -49,12 +51,12 @@ function changeDataSource(sourceName) {
 <template>
 	<div class="mr-2 flex items-center">
 		<div v-if="query.doc.is_saved_as_table" class="mr-2">
-			<Component class="h-4 w-4 text-gray-600" fill="currentColor" />
+			<ComponentIcon class="h-4 w-4 text-gray-600" fill="currentColor" />
 		</div>
 		<ContentEditable
-			class="mr-3 rounded-sm text-xl font-medium !text-gray-900 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-			v-model="query.doc.title"
+			v-model="title"
 			placeholder="Untitled Query"
+			class="mr-3 rounded-sm text-xl font-medium !text-gray-900 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 		></ContentEditable>
 		<Dropdown
 			class="mr-2"

@@ -11,7 +11,7 @@ const emptyMessage = computed(() => {
 	if (query.doc.status == 'Pending Execution') {
 		return 'Execute the query to see the chart'
 	}
-	if (!query.doc.results?.length) {
+	if (!query.formattedResults?.length) {
 		return 'No results found'
 	}
 	return 'Pick a chart type to get started'
@@ -23,7 +23,7 @@ const emptyMessage = computed(() => {
 		<div
 			v-if="
 				!builder.chart.doc?.name ||
-				!query.doc.results?.length ||
+				!query.formattedResults?.length ||
 				query.doc.status == 'Pending Execution'
 			"
 			class="flex flex-1 flex-col items-center justify-center"

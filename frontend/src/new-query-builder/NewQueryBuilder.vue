@@ -3,7 +3,7 @@ import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import Tabs from '@/components/Tabs.vue'
 import { safeJSONParse } from '@/utils'
 import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, onMounted, provide, reactive, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, provide, reactive, ref, watch } from 'vue'
 import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
 import ColumnSection from './ColumnSection.vue'
@@ -26,10 +26,7 @@ import {
 
 const props = defineProps({ name: String })
 const query = useQuery('QRY-0446')
-query.autosave = true
 provide('query', query)
-
-const activeTab = ref('Build')
 
 const builder = reactive({
 	data_source: computed(() => query.doc.data_source),
@@ -58,17 +55,10 @@ const builder = reactive({
 	setOrderBy,
 })
 provide('builder', builder)
-watch(
-	() => builder.query,
-	(newQuery) => (query.doc.json = newQuery),
-	{ deep: true }
-)
-onMounted(() => {
-	if (query.doc?.json) {
-		builder.query = safeJSONParse(query.doc.json)
-	}
-})
+watch(() => builder.query, query.updateQuery, { deep: true })
+onMounted(() => query.doc?.json && (builder.query = safeJSONParse({ ...query.doc.json })))
 
+const activeTab = ref('Build')
 builder.chart = await useChart(query)
 
 const $notify = inject('$notify')
@@ -76,7 +66,7 @@ function addTable(newTable) {
 	const mainTable = builder.query.table
 	if (!mainTable?.table) {
 		builder.query.table = { table: newTable.table, label: newTable.label }
-		query.execute()
+		nextTick(() => query.execute())
 		return
 	}
 	if (isTableAlreadyAdded(builder.query, newTable)) return

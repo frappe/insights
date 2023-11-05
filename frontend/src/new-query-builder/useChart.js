@@ -16,18 +16,15 @@ export default async function useChart(query) {
 	})
 	const chartData = ref([])
 	watch(
-		() => query.doc.results,
+		() => query.formattedResults,
 		() => {
-			const formattedResults = getFormattedResult(query.doc.results)
-			chartData.value = convertResultToObjects(formattedResults)
-
-			if (!formattedResults.length) {
+			if (!query.formattedResults.length) {
 				chartResource.doc.chart_type = null
 				chartResource.doc.options = {}
 				return
 			}
-
-			const recommendedChart = guessChart(formattedResults)
+			chartData.value = convertResultToObjects(query.formattedResults)
+			const recommendedChart = guessChart(query.formattedResults)
 			chartResource.doc.chart_type = recommendedChart?.type
 			chartResource.doc.options.title = query.doc.title
 			chartResource.doc.options.query = query.doc.name

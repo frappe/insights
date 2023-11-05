@@ -6,7 +6,7 @@ import { computed, inject } from 'vue'
 const query = inject('query')
 const builder = inject('builder')
 const resultColumns = computed(() => query.formattedResults?.[0] || [])
-const rows = computed(() => query.formattedResults?.slice(1) || [])
+const rows = computed(() => query.formattedResults?.slice(1, query.MAX_ROWS) || [])
 const numberColumnIndexes = computed(() =>
 	query.resultColumns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 )
