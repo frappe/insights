@@ -42,7 +42,7 @@ function onAddColumnExpression() {
 			...NEW_COLUMN,
 			expression: {
 				raw: '',
-				label: '',
+				ast: {},
 			},
 		},
 	])

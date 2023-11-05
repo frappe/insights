@@ -15,7 +15,10 @@ const column = reactive({
 	...NEW_COLUMN,
 	...props.column,
 })
-if (column.expression?.raw) {
+// `ast` is checked here, because when adding new expression column
+// `ast` is set to {} to open the expression editor instead of the simple editor
+// since setting it to `null` will open the simple editor
+if (column.expression?.ast) {
 	activeTab.value = 'Expression'
 } else if (!column.aggregation) {
 	column.aggregation = 'group by'
@@ -88,7 +91,9 @@ const isValidColumn = computed(() => {
 			/>
 		</div>
 		<div class="flex justify-between">
-			<Button variant="outline" @click="emit('discard')">Discard</Button>
+			<Button variant="outline" @click="emit(isValidColumn ? 'discard' : 'remove')">
+				Discard
+			</Button>
 			<div class="flex gap-2">
 				<Button variant="outline" theme="red" @click="emit('remove')">Remove</Button>
 				<Button variant="solid" :disabled="!isValidColumn" @click="emit('save', column)">
