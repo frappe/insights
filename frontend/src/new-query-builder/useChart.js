@@ -1,19 +1,14 @@
 import { getChartResource } from '@/query/useChart'
-import { areDeeplyEqual } from '@/utils'
-import { getFormattedResult } from '@/utils/query/results'
+import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
-import { watchDebounced } from '@vueuse/core'
-import { computed, reactive, ref, watch } from 'vue'
+import { debounce } from 'frappe-ui'
+import { computed, ref, watch } from 'vue'
 
 export default async function useChart(query) {
 	const chartName = await query.getChartName()
 	const chartResource = getChartResource(chartName)
 	await chartResource.get.fetch()
 
-	const chartDoc = computed({
-		get: () => chartResource.doc,
-		set: (val) => (chartResource.doc = val),
-	})
 	const chartData = ref([])
 	watch(
 		() => query.formattedResults,
@@ -21,6 +16,7 @@ export default async function useChart(query) {
 			if (!query.formattedResults.length) {
 				chartResource.doc.chart_type = null
 				chartResource.doc.options = {}
+				updateDoc(chartResource.doc)
 				return
 			}
 			chartData.value = convertResultToObjects(query.formattedResults)
@@ -32,34 +28,39 @@ export default async function useChart(query) {
 				...chartResource.doc.options,
 				...recommendedChart?.options,
 			}
+			updateDoc(chartResource.doc)
 		},
 		{ immediate: true, deep: true }
 	)
 
-	function getFieldsToWatch() {
-		if (!chartResource.doc) return
-		return {
-			title: chartResource.doc.title,
-			chart_type: chartResource.doc.chart_type,
-			options: chartResource.doc.options,
+	const run = createTaskRunner()
+	async function updateDoc(doc) {
+		const newValues = {
+			title: doc.title,
+			chart_type: doc.chart_type,
+			options: doc.options,
 		}
-	}
-
-	function saveIfChanged(newVal) {
-		if (!newVal) return
-		const oldVal = {
+		const oldValues = {
 			title: chartResource.originalDoc.title,
 			chart_type: chartResource.originalDoc.chart_type,
 			options: chartResource.originalDoc.options,
 		}
-		if (areDeeplyEqual(newVal, oldVal)) return
-		chartResource.setValue.submit({ ...newVal })
+		if (areDeeplyEqual(newValues, oldValues)) return
+		await run(() =>
+			chartResource.setValue.submit({
+				title: doc.title,
+				chart_type: doc.chart_type,
+				options: doc.options,
+			})
+		)
 	}
 
-	watchDebounced(getFieldsToWatch, saveIfChanged, { deep: true, debounce: 1000 })
-
 	return {
-		doc: chartDoc,
+		doc: computed({
+			get: () => chartResource.doc,
+			set: (value) => (chartResource.doc = value),
+		}),
 		data: chartData,
+		updateDoc: debounce(updateDoc, 500),
 	}
 }

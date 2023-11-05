@@ -60,6 +60,7 @@ onMounted(() => query.doc?.json && (builder.query = safeJSONParse({ ...query.doc
 
 const activeTab = ref('Build')
 builder.chart = await useChart(query)
+watch(() => builder.chart.doc, builder.chart.updateDoc, { deep: true })
 
 const $notify = inject('$notify')
 function addTable(newTable) {
