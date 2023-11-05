@@ -3,6 +3,7 @@ import UsePopover from '@/components/UsePopover.vue'
 import { AlignCenter, Calendar, CalendarClock, CaseUpper, Combine, Hash, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import ColumnEditor from './ColumnEditor.vue'
+import { NEW_COLUMN } from './constants'
 
 const typeToIcon = {
 	String: CaseUpper,
@@ -20,11 +21,11 @@ const columns = computed(() => builder.query.columns)
 const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
 
-function updateColumns(selectedOptions) {
-	const addedColumns = [selectedOptions].filter(
-		(o) => !columns.value.find((c) => c.column === o.column && c.table === o.table)
-	)
-	builder.addColumns(addedColumns)
+function onColumnSelect(column) {
+	if (columns.value.find((c) => c.table === column.table && c.column === column.column)) {
+		return
+	}
+	builder.addColumns([column])
 }
 
 function onRemoveColumn() {
@@ -34,6 +35,22 @@ function onRemoveColumn() {
 function onSaveColumn(column) {
 	builder.updateColumnAt(activeColumnIdx.value, column)
 	activeColumnIdx.value = null
+}
+function onAddColumnExpression() {
+	builder.addColumns([
+		{
+			...NEW_COLUMN,
+			expression: {
+				raw: '',
+				label: '',
+			},
+		},
+	])
+	activeColumnIdx.value = columns.value.length - 1
+}
+function isValidColumn(column) {
+	const isExpression = column.expression?.raw
+	return column.label && column.type && (isExpression || (column.table && column.column))
 }
 </script>
 
@@ -48,13 +65,18 @@ function onSaveColumn(column) {
 				:modelValue="columns"
 				:options="query.columnOptions"
 				bodyClasses="!w-[16rem]"
-				@update:modelValue="updateColumns"
+				@update:modelValue="onColumnSelect"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
 				</template>
-				<template #footer>
-					<Button class="w-full" variant="ghost" iconLeft="plus">
+				<template #footer="{ togglePopover }">
+					<Button
+						class="w-full"
+						variant="ghost"
+						iconLeft="plus"
+						@click="onAddColumnExpression() || togglePopover()"
+					>
 						Custom Expression
 					</Button>
 				</template>
@@ -68,9 +90,12 @@ function onSaveColumn(column) {
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 				@click="activeColumnIdx = columns.indexOf(column)"
 			>
-				<div class="flex items-center space-x-2">
-					<component :is="typeToIcon[column.type]" class="h-4 w-4 text-gray-600" />
-					<div>{{ column.label }}</div>
+				<div class="flex w-full items-center overflow-hidden">
+					<div class="flex w-full space-x-2 truncate" v-if="isValidColumn(column)">
+						<component :is="typeToIcon[column.type]" class="h-4 w-4 text-gray-600" />
+						<div>{{ column.label }}</div>
+					</div>
+					<div v-else class="text-gray-600">Select a column</div>
 				</div>
 				<div class="flex items-center space-x-2">
 					<X

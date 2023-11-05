@@ -32,7 +32,7 @@
 					</div>
 				</slot>
 			</template>
-			<template #body="{ isOpen }">
+			<template #body="{ isOpen, togglePopover }">
 				<div v-show="isOpen">
 					<div class="mt-1 rounded-lg bg-white text-base shadow-2xl" :class="bodyClasses">
 						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
@@ -131,7 +131,7 @@
 						</ComboboxOptions>
 
 						<div v-if="$slots.footer" class="border-t p-1">
-							<slot name="footer"></slot>
+							<slot name="footer" v-bind="{ togglePopover }"></slot>
 						</div>
 					</div>
 				</div>
