@@ -7,8 +7,8 @@ export function makeNewColumn(newColumn) {
 	return {
 		...NEW_COLUMN,
 		...newColumn,
-		granularity: isDate ? 'Month' : '',
-		aggregation: isNumber ? 'sum' : '',
+		granularity: newColumn.granularity || (isDate ? 'Month' : ''),
+		aggregation: newColumn.aggregation || (isNumber ? 'sum' : ''),
 	}
 }
 

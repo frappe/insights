@@ -15,6 +15,15 @@ const filter = reactive({
 	...props.filter,
 })
 
+const filterColumnOptions = computed(() =>
+	query.columnOptions.map((group) => {
+		return {
+			...group,
+			items: group.items.filter((c) => c.column !== 'count'),
+		}
+	})
+)
+
 const isValidFilter = computed(() => {
 	if (!filter.column.column) return false
 	if (!filter.operator.value) return false
@@ -87,7 +96,7 @@ const selectorType = computed(() => {
 					value: `${filter.column.table}.${filter.column.column}`,
 				}"
 				placeholder="Column"
-				:options="query.columnOptions"
+				:options="filterColumnOptions"
 				@update:modelValue="filter.column = $event"
 			/>
 		</div>

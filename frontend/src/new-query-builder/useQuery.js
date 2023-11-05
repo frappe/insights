@@ -79,18 +79,7 @@ function makeQuery(name) {
 		// no need to use `run` here because this doesn't change the doc
 		const res = await resource.fetch_table_meta.submit()
 		state.tableMeta = res.message
-		state.columnOptions = state.tableMeta.map((table) => {
-			return {
-				group: table.label,
-				items: table.columns.map((column) => {
-					return {
-						...column,
-						description: column.type,
-						value: `${table.table}.${column.column}`,
-					}
-				}),
-			}
-		})
+		state.columnOptions = makeColumnOptions(state.tableMeta)
 	}
 
 	return state
@@ -118,4 +107,36 @@ function hasTablesChanged(newJson, oldJson) {
 	const newTables = [newJson.table.table, ...newJson.joins.map((join) => join.right_table.table)]
 	const oldTables = [oldJson.table.table, ...oldJson.joins.map((join) => join.right_table.table)]
 	return JSON.stringify(newTables) != JSON.stringify(oldTables)
+}
+
+function makeColumnOptions(tableMeta) {
+	return tableMeta.map((table) => {
+		const countColumn = {
+			table: table.table,
+			column: 'count',
+			type: 'Integer',
+			label: `${table.label} Count`,
+			alias: `${table.label} Count`,
+			order: '',
+			granularity: '',
+			aggregation: 'count',
+			format: {},
+			expression: {},
+			description: 'Integer',
+			value: `${table.table}.count`,
+		}
+		return {
+			group: table.label,
+			items: [
+				countColumn,
+				...table.columns.map((column) => {
+					return {
+						...column,
+						description: column.type,
+						value: `${table.table}.${column.column}`,
+					}
+				}),
+			],
+		}
+	})
 }
