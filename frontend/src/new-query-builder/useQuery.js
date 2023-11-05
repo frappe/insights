@@ -81,9 +81,15 @@ function makeQuery(name) {
 
 function hasTablesChanged(newJson, oldJson) {
 	if (!oldJson) return true
-	const newTables = [newJson.table.table, ...newJson.joins.map((join) => join.right_table.table)]
-	const oldTables = [oldJson.table.table, ...oldJson.joins.map((join) => join.right_table.table)]
-	return JSON.stringify(newTables) != JSON.stringify(oldTables)
+	const newTables = getSelectedTables(newJson)
+	const oldTables = getSelectedTables(oldJson)
+	return !areDeeplyEqual(newTables, oldTables)
+}
+
+export function getSelectedTables(queryJson) {
+	if (!queryJson) return []
+	const tables = [queryJson.table.table, ...queryJson.joins.map((join) => join.right_table.table)]
+	return tables.filter((table) => table)
 }
 
 function makeColumnOptions(tableMeta) {

@@ -1,10 +1,8 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
-import { X } from 'lucide-vue-next'
+import { ListFilter, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import FilterEditor from './FilterEditor.vue'
-import { Filter } from 'lucide-vue-next'
-import { ListFilter } from 'lucide-vue-next'
 
 const query = inject('query')
 const builder = inject('builder')
@@ -24,6 +22,14 @@ function onRemoveFilter() {
 function onSaveFilter(filter) {
 	builder.updateFilterAt(activeFilterIdx.value, filter)
 	activeFilterIdx.value = null
+}
+function isValidFilter(filter) {
+	if (filter.expression?.raw && filter.expression?.ast) return true
+	return (
+		filter.column.column &&
+		filter.operator.value &&
+		(filter.value.value || filter.operator.value.includes('is_'))
+	)
 }
 </script>
 
@@ -45,17 +51,17 @@ function onSaveFilter(filter) {
 				@click="activeFilterIdx = filters.indexOf(filter)"
 			>
 				<div class="flex w-full items-center overflow-hidden">
-					<div
-						class="flex w-full space-x-2 truncate"
-						v-if="
-							filter.column.column &&
-							filter.operator.value &&
-							(filter.value.value || filter.operator.value.includes('is_'))
-						"
-					>
-						<span class="truncate">{{ filter.column.label }}</span>
-						<span class="font-medium text-green-600">{{ filter.operator.label }}</span>
-						<span class="truncate">{{ filter.value.label }}</span>
+					<div class="flex w-full space-x-2 truncate" v-if="isValidFilter(filter)">
+						<template v-if="filter.expression.raw">
+							<span class="truncate font-mono">{{ filter.expression.raw }}</span>
+						</template>
+						<template v-else>
+							<span class="truncate">{{ filter.column.label }}</span>
+							<span class="font-medium text-green-600">
+								{{ filter.operator.label }}
+							</span>
+							<span class="truncate">{{ filter.value.label }}</span>
+						</template>
 					</div>
 					<div v-else class="text-gray-600">Select a filter</div>
 				</div>

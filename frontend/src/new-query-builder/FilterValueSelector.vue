@@ -5,7 +5,7 @@ import TimespanPicker from '@/components/Controls/TimespanPicker.vue'
 import { formatDate } from '@/utils'
 import { whenever } from '@vueuse/core'
 import { FormControl, call, debounce } from 'frappe-ui'
-import { computed, defineProps, ref } from 'vue'
+import { computed, defineProps, inject, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:filter'])
 const props = defineProps({
@@ -13,9 +13,10 @@ const props = defineProps({
 	filter: { type: Object, required: true },
 })
 
+const builder = inject('builder')
 const filter = computed({
 	get: () => props.filter,
-	set: (value) => emit('update:filter', value),
+	set: (val) => emit('update:filter', val),
 })
 
 function onDateRangeChange(dates) {
@@ -34,25 +35,27 @@ function onDateChange(date) {
 		label: formatDate(date),
 	}
 }
-const isMultiValue = computed(() => ['in', 'not_in'].includes(filter.operator?.value))
+const isMultiValue = computed(() => ['in', 'not_in'].includes(filter.value.operator?.value))
 const columnValues = ref([])
 const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
-	if (!['=', '!=', 'in', 'not_in'].includes(filter.operator?.value)) return
-	if (filter.column?.type == 'String' && builder.data_source) {
+	const _filter = filter.value
+	if (!['=', '!=', 'in', 'not_in'].includes(_filter.operator?.value)) return
+	if (!_filter.column.table || !_filter.column.column || !builder.data_source) return
+	if (_filter.column?.type == 'String' && builder.data_source) {
 		const URL = 'insights.api.data_sources.fetch_column_values'
 		fetchingColumnValues.value = true
 		const values = await call(URL, {
 			data_source: builder.data_source,
-			table: filter.column.table,
-			column: filter.column.column,
+			table: _filter.column.table,
+			column: _filter.column.column,
 			search_text,
 		})
 		columnValues.value = values.map((value) => ({ label: value, value }))
 		// prepend the selected value to the list
-		if (Array.isArray(filter.value.value.value)) {
-			// filter.value.value = {label: '2 selected', value: [{ label: '', value: ''}, ...]}
-			filter.value.value.value.forEach((selectedOption) => {
+		if (Array.isArray(_filter.value.value)) {
+			// _filter.value = {label: '2 selected', value: [{ label: '', value: ''}, ...]}
+			_filter.value.value.forEach((selectedOption) => {
 				if (!columnValues.value.find((v) => v.value === selectedOption.value)) {
 					columnValues.value.unshift(selectedOption)
 				}
@@ -61,14 +64,18 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 		fetchingColumnValues.value = false
 	}
 }, 300)
-
+watch(
+	() => filter.value.column,
+	() => checkAndFetchColumnValues(),
+	{ deep: true }
+)
 whenever(
 	() => props.selectorType == 'combobox',
 	() => checkAndFetchColumnValues(),
 	{ immediate: true }
 )
 
-function onColumnValueChange(value) {
+function onOptionSelect(value) {
 	filter.value.value = !isMultiValue.value
 		? value
 		: {
@@ -86,7 +93,7 @@ function onColumnValueChange(value) {
 		:modelValue="filter.value.value"
 		:options="columnValues"
 		@update:query="checkAndFetchColumnValues"
-		@update:modelValue="onColumnValueChange"
+		@update:modelValue="onOptionSelect"
 	/>
 	<TimespanPicker
 		v-if="selectorType === 'timespanpicker'"

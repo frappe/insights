@@ -15,6 +15,7 @@ export const NEW_FILTER = {
 	column: { ...NEW_COLUMN },
 	operator: {},
 	value: {},
+	expression: {},
 }
 
 export const NEW_JOIN = {

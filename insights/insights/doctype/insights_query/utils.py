@@ -353,10 +353,12 @@ class Filter(frappe._dict):
         self.column = Column(**kwargs.get("column"))
         self.operator = LabelValue(**kwargs.get("operator"))
         self.value = LabelValue(**kwargs.get("value"))
+        self.expression = frappe.parse_json(kwargs.get("expression", {}))
 
     def is_valid(self):
-        is_unary = self.operator.value in ["is_set", "is_not_set"]
-        if is_unary:
+        if self.expression.get("raw") and self.expression.get("ast"):
+            return True
+        if self.operator.value in ["is_set", "is_not_set"]:
             return self.column.is_valid() and self.operator.is_valid()
         return self.column.is_valid() and self.operator.is_valid() and self.value.is_valid()
 

@@ -714,6 +714,10 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
+                if fltr.expression:
+                    _filter = self.expression_processor.process(fltr.expression.ast)
+                    filters.append(_filter)
+                    continue
                 _column = make_sql_column(fltr.column, for_filter=True)
                 filter_value = fltr.value.value
                 operator = fltr.operator.value
