@@ -395,6 +395,23 @@ export function areDeeplyEqual(obj1, obj2) {
 	return false
 }
 
+export function createTaskRunner() {
+	const queue = []
+	let running = false
+	const run = async () => {
+		if (running) return
+		running = true
+		while (queue.length) {
+			await queue.shift()()
+		}
+		running = false
+	}
+	return async (fn) => {
+		queue.push(fn)
+		await run()
+	}
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,

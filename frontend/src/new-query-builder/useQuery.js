@@ -1,7 +1,7 @@
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
-import { areDeeplyEqual } from '@/utils'
+import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
@@ -83,23 +83,6 @@ function makeQuery(name) {
 	}
 
 	return state
-}
-
-function createTaskRunner() {
-	const queue = []
-	let running = false
-	const run = async () => {
-		if (running) return
-		running = true
-		while (queue.length) {
-			await queue.shift()()
-		}
-		running = false
-	}
-	return async (fn) => {
-		queue.push(fn)
-		await run()
-	}
 }
 
 function hasTablesChanged(newJson, oldJson) {
