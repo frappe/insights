@@ -20,15 +20,9 @@ export default function useQuery(name) {
 function makeQuery(name) {
 	const resource = useQueryResource(name)
 	const state = reactive({
-		autosave: false,
 		loading: true,
 		executing: false,
-		error: null,
-		isOwner: false,
 		doc: {},
-		results: [],
-		chart: {},
-		sourceSchema: [],
 		formattedResults: [],
 		resultColumns: [],
 		tableMeta: [],
