@@ -4,6 +4,7 @@ import useDataSourceStore from '@/stores/dataSourceStore'
 import { watchDebounced } from '@vueuse/core'
 import { Component as ComponentIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import QueryMenu from './QueryMenu.vue'
 
 const $notify = inject('$notify')
 const query = inject('query')
@@ -75,5 +76,6 @@ function changeDataSource(sourceName) {
 			:disabled="!query.doc.data_source"
 			:loading="query.executing"
 		/>
+		<QueryMenu />
 	</div>
 </template>
