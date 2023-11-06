@@ -44,11 +44,10 @@ function makeQuery(name) {
 	state.updateTitle = (title) => run(() => resource.setValue.submit({ title }))
 	state.changeDataSource = (data_source) => run(() => resource.setValue.submit({ data_source }))
 
+	const autoExecuteEnabled = settingsStore().settings.auto_execute_query
 	state.updateQuery = debounce(async (newQuery) => {
 		if (areDeeplyEqual(newQuery, state.doc.json)) return
 		const tablesChanged = hasTablesChanged(newQuery, state.doc.json)
-		const autoExecuteEnabled = settingsStore().settings.auto_execute_query
-
 		await run(() =>
 			resource.setValue
 				.submit({ json: newQuery })
@@ -75,6 +74,15 @@ function makeQuery(name) {
 		state.tableMeta = res.message
 		state.columnOptions = makeColumnOptions(state.tableMeta)
 	}
+
+	state.updateTransforms = debounce(async (transforms) => {
+		if (!transforms) return
+		return run(() =>
+			resource.setValue
+				.submit({ transforms })
+				.then(() => autoExecuteEnabled && state.execute())
+		)
+	}, 500)
 
 	return state
 }

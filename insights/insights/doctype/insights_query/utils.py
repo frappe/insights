@@ -83,6 +83,9 @@ def format_query(query):
 
 def apply_pivot_transform(results, options):
     options = frappe.parse_json(options)
+    if not (options.get("column") and options.get("index") and options.get("value")):
+        return results
+
     pivot_column = [c for c in results[0] if c["label"] == options.get("column")]
     index_column = [c for c in results[0] if c["label"] == options.get("index")]
     value_column = [c for c in results[0] if c["label"] == options.get("value")]

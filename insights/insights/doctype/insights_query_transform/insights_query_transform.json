@@ -15,8 +15,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Pivot\nUnpivot\nTranspose",
-   "reqd": 1
+   "options": "Pivot\nUnpivot\nTranspose"
   },
   {
    "default": "{}",
@@ -24,14 +23,13 @@
    "fieldtype": "JSON",
    "in_list_view": 1,
    "label": "Options",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-31 16:15:07.705273",
+ "modified": "2023-11-06 23:43:11.514503",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Transform",

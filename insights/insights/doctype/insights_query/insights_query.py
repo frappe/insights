@@ -214,6 +214,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 return apply_unpivot_transform(results, transform.options)
             if transform.type == "Transpose":
                 return apply_transpose_transform(results, transform.options)
+        return results
 
     def validate_transforms(self):
         pivot_transforms = [t for t in self.transforms if t.type == "Pivot"]

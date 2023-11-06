@@ -25,3 +25,8 @@ export const NEW_JOIN = {
 	right_table: {},
 	right_column: {},
 }
+
+export const NEW_TRANSFORM = {
+	type: '',
+	options: {},
+}

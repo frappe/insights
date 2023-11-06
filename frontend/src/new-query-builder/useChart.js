@@ -10,28 +10,6 @@ export default async function useChart(query) {
 	await chartResource.get.fetch()
 
 	const chartData = ref([])
-	watch(
-		() => query.formattedResults,
-		() => {
-			if (!query.formattedResults.length) {
-				chartResource.doc.chart_type = null
-				chartResource.doc.options = {}
-				updateDoc(chartResource.doc)
-				return
-			}
-			chartData.value = convertResultToObjects(query.formattedResults)
-			const recommendedChart = guessChart(query.formattedResults)
-			chartResource.doc.chart_type = recommendedChart?.type
-			chartResource.doc.options.title = query.doc.title
-			chartResource.doc.options.query = query.doc.name
-			chartResource.doc.options = {
-				...chartResource.doc.options,
-				...recommendedChart?.options,
-			}
-			updateDoc(chartResource.doc)
-		},
-		{ immediate: true, deep: true }
-	)
 
 	const run = createTaskRunner()
 	async function updateDoc(doc) {
@@ -54,6 +32,29 @@ export default async function useChart(query) {
 			})
 		)
 	}
+
+	watch(
+		() => query.formattedResults,
+		() => {
+			if (!query.formattedResults.length) {
+				chartResource.doc.chart_type = null
+				chartResource.doc.options = {}
+				updateDoc(chartResource.doc)
+				return
+			}
+			chartData.value = convertResultToObjects(query.formattedResults)
+			const recommendedChart = guessChart(query.formattedResults)
+			chartResource.doc.chart_type = recommendedChart?.type
+			chartResource.doc.options.title = query.doc.title
+			chartResource.doc.options.query = query.doc.name
+			chartResource.doc.options = {
+				...chartResource.doc.options,
+				...recommendedChart?.options,
+			}
+			updateDoc(chartResource.doc)
+		},
+		{ immediate: true, deep: true }
+	)
 
 	return {
 		doc: computed({
