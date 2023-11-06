@@ -57,8 +57,9 @@ function isValidTransform(transform) {
 				v-for="(transform, idx) in builder.transforms"
 				:key="idx"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
-				@click="activeTransformIdx = builder.transforms.indexOf(transform)"
 			>
+				<!-- don't allow editing as the columns options are messed up -->
+				<!-- @click="activeTransformIdx = builder.transforms.indexOf(transform)" -->
 				<div class="flex w-full items-center overflow-hidden">
 					<div class="flex w-full space-x-2 truncate" v-if="isValidTransform(transform)">
 						<component
