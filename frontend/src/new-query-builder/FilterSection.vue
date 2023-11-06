@@ -81,7 +81,7 @@ function isValidFilter(filter) {
 		@update:show="activeFilterIdx = null"
 		:target-element="filterRefs[activeFilterIdx]"
 	>
-		<div class="w-[19rem] rounded bg-white text-base shadow-md">
+		<div class="w-[19rem] rounded bg-white text-base shadow-2xl">
 			<FilterEditor
 				:filter="filters[activeFilterIdx]"
 				@discard="activeFilterIdx = null"

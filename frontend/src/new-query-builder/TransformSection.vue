@@ -85,7 +85,7 @@ function isValidTransform(transform) {
 		@update:show="activeTransformIdx = null"
 		:target-element="transformRefs[activeTransformIdx]"
 	>
-		<div class="w-[19rem] rounded bg-white text-base shadow-md">
+		<div class="w-[19rem] rounded bg-white text-base shadow-2xl">
 			<TransformEditor
 				:transform="builder.transforms[activeTransformIdx]"
 				@discard="activeTransformIdx = null"
