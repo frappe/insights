@@ -39,9 +39,11 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 							scope="col"
 							class="max-w-[15rem] border-b border-r bg-gray-100 px-3 py-2 text-left font-normal"
 						>
-							<div class="flex justify-between">
-								<span class="mr-5 flex-shrink-0 truncate">{{ column.label }}</span>
-								<slot name="columnActions" v-bind="{ column }"></slot>
+							<div class="flex justify-between gap-5 overflow-hidden">
+								<span class="flex-1 truncate">{{ column.label }}</span>
+								<div v-if="$slots.columnActions" class="flex-shrink-0">
+									<slot name="columnActions" v-bind="{ column }"></slot>
+								</div>
 							</div>
 						</th>
 						<th class="border-b bg-gray-100 px-3 py-2" scope="col" width="99%"></th>
