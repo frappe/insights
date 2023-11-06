@@ -106,14 +106,12 @@
 					{
 						label: query.doc.is_saved_as_table ? 'Unlink' : 'Save',
 						variant: 'solid',
-						loading: query.doc.is_saved_as_table
-							? query.delete_linked_table?.loading
-							: query.save_as_table?.loading,
+						loading: query.loading,
 						onClick: () => {
 							const fn = query.doc.is_saved_as_table
 								? query.delete_linked_table
 								: query.save_as_table
-							fn.submit().then(() => {
+							fn().then(() => {
 								show_save_table_dialog = false
 							})
 						},
@@ -193,9 +191,9 @@ const formattedSQL = computed(() => {
 const router = useRouter()
 const $notify = inject('$notify')
 function duplicateQuery() {
-	query.duplicate.submit().then(async (res) => {
+	query.duplicate().then(async (query_name) => {
 		await nextTick()
-		router.push(`/query/build/${res.message}`)
+		router.push(`/query/build/${query_name}`)
 		$notify({
 			variant: 'success',
 			title: 'Query Duplicated',
@@ -204,7 +202,7 @@ function duplicateQuery() {
 }
 
 function storeQuery() {
-	query.store.submit().then((res) => {
+	query.store().then((res) => {
 		$notify({
 			variant: 'success',
 			title: 'Query Stored',
@@ -213,7 +211,7 @@ function storeQuery() {
 }
 
 function downloadCSV() {
-	let data = query.results.data
+	let data = query.doc.results
 	if (data.length === 0) return
 	data[0] = data[0].map((d) => d.label)
 	const csvString = data.map((row) => row.join(',')).join('\n')

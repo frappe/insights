@@ -26,7 +26,7 @@ import {
 } from './utils'
 
 const props = defineProps({ name: String })
-const query = useQuery('QRY-0446')
+const query = useQuery(props.name)
 provide('query', query)
 
 const builder = reactive({
@@ -156,7 +156,7 @@ function setOrderBy(column, order) {
 
 <template>
 	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
-		<PageBreadcrumbs class="h-7" :items="[{ label: 'Queries' }, { label: 'QRY-1924' }]" />
+		<PageBreadcrumbs class="h-7" :items="[{ label: 'Queries' }, { label: query.doc?.name }]" />
 	</header>
 	<div v-if="query.doc?.name" class="flex h-full w-full flex-col space-y-4 overflow-hidden pt-2">
 		<div class="px-6">

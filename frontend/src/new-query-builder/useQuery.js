@@ -84,6 +84,23 @@ function makeQuery(name) {
 		)
 	}, 500)
 
+	state.duplicate = async () => {
+		state.duplicating = true
+		await run(() => resource.duplicate.submit())
+		state.duplicating = false
+		return resource.duplicate.data.message
+	}
+
+	state.delete = async () => {
+		state.deleting = true
+		await run(() => resource.delete.submit())
+		state.deleting = false
+	}
+
+	state.store = () => run(() => resource.store.submit())
+	state.save_as_table = () => run(() => resource.save_as_table.submit())
+	state.delete_linked_table = () => run(() => resource.delete_linked_table.submit())
+
 	return state
 }
 
