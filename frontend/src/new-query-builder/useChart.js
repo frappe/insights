@@ -56,6 +56,27 @@ export default async function useChart(query) {
 		{ immediate: true, deep: true }
 	)
 
+	function togglePublicAccess(isPublic) {
+		if (state.doc.is_public === isPublic) return
+		chartDocResource.setValue.submit({ is_public: isPublic }).then(() => {
+			$notify({
+				title: 'Chart access updated',
+				variant: 'success',
+			})
+			state.doc.is_public = isPublic
+		})
+	}
+
+	async function addToDashboard(dashboardName) {
+		if (!dashboardName || !state.doc.name || state.addingToDashboard) return
+		state.addingToDashboard = true
+		await call('insights.api.dashboards.add_chart_to_dashboard', {
+			dashboard: dashboardName,
+			chart: state.doc.name,
+		})
+		state.addingToDashboard = false
+	}
+
 	return {
 		doc: computed({
 			get: () => chartResource.doc,
@@ -63,5 +84,7 @@ export default async function useChart(query) {
 		}),
 		data: chartData,
 		updateDoc: debounce(updateDoc, 500),
+		togglePublicAccess,
+		addToDashboard,
 	}
 }
