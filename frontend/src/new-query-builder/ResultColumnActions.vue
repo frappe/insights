@@ -10,15 +10,15 @@ function getOrder(columnLabel) {
 const sortOptions = [
 	{
 		label: 'Sort Ascending',
-		onClick: () => builder.setOrderBy(column.label, 'asc'),
+		onClick: () => builder.setOrderBy(props.column.label, 'asc'),
 	},
 	{
 		label: 'Sort Descending',
-		onClick: () => builder.setOrderBy(column.label, 'desc'),
+		onClick: () => builder.setOrderBy(props.column.label, 'desc'),
 	},
 	{
 		label: 'Remove Sort',
-		onClick: () => builder.setOrderBy(column.label, ''),
+		onClick: () => builder.setOrderBy(props.column.label, ''),
 	},
 ]
 const sortOrderToIcon = {
