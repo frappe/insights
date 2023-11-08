@@ -95,6 +95,22 @@ export function getOperatorOptions(columnType) {
 	return options
 }
 
+// a function to resolve the promise when a ref has a value
+export async function whenHasValue(ref) {
+	return new Promise((resolve) => {
+		const unwatch = watch(
+			ref,
+			(value) => {
+				if (value) {
+					resolve(value)
+					unwatch()
+				}
+			},
+			{ immediate: true, deep: true }
+		)
+	})
+}
+
 export function isDimensionColumn(column) {
 	return FIELDTYPES.TEXT.includes(column.type) || FIELDTYPES.DATE.includes(column.type)
 }

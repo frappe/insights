@@ -68,12 +68,14 @@ type DocumentResource = {
 	loading: boolean
 	get: Resource
 	delete: Resource
-	fetchIfNeeded: () => void
+	fetchIfNeeded: () => Promise<any>
 }
 
 interface DataSourceResource extends DocumentResource {
 	get_tables: Resource
 	enqueue_sync_tables: Resource
+	update_table_link: Resource
+	delete_table_link: Resource
 }
 
 interface TableResource extends DocumentResource {

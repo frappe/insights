@@ -6,6 +6,8 @@ const whitelistedMethods = {
 	'Insights Data Source': {
 		enqueue_sync_tables: 'enqueue_sync_tables',
 		get_tables: 'get_tables',
+		update_table_link: 'update_table_link',
+		delete_table_link: 'delete_table_link',
 	},
 	'Insights Table': {
 		syncTable: 'sync_table',

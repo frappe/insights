@@ -49,7 +49,7 @@ const steps = reactive([
 ])
 
 const initialOnboardingStatus = steps.reduce((acc, step) => ({ [step.name]: false }), {})
-const onboarding = useStorage('onboardingStatus', initialOnboardingStatus)
+const onboarding = useStorage('insights:onboardingStatus', initialOnboardingStatus)
 
 const currentStep = computed(() => {
 	return steps.findIndex((step) => !onboarding.value[step.name])

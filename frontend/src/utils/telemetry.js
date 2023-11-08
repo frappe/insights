@@ -5,7 +5,7 @@ import '../../../frappe/public/js/lib/posthog.js'
 const APP = 'insights'
 const SITENAME = window.location.hostname
 
-const telemetry = useStorage('telemetry', {
+const telemetry = useStorage('insights:telemetry', {
 	enabled: false,
 	project_id: undefined,
 	telemetry_host: undefined,

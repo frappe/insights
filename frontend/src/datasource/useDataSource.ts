@@ -69,6 +69,13 @@ function useDataSource(name: string) {
 		})
 	})
 
+	function updateTableRelationship(tableRelationship: TableRelationship) {
+		return resource.update_table_link.submit({ data: tableRelationship })
+	}
+	function deleteTableRelationship(tableRelationship: TableRelationship) {
+		return resource.delete_table_link.submit({ data: tableRelationship })
+	}
+
 	const dataSource: DataSource = reactive({
 		doc,
 		tableList,
@@ -76,12 +83,22 @@ function useDataSource(name: string) {
 		groupedTableOptions,
 		loading: resource.loading,
 		fetchTables,
+		updateTableRelationship,
+		deleteTableRelationship,
 		syncTables: () => resource.enqueue_sync_tables.submit(),
 		delete: () => resource.delete.submit(),
 	})
 
 	cacheStore.setDataSource(name, dataSource)
 	return dataSource
+}
+
+type TableRelationship = {
+	primary_table: string
+	secondary_table: string
+	primary_column: string
+	secondary_column: string
+	cardinality: string
 }
 
 export default useDataSource
@@ -92,6 +109,8 @@ export type DataSource = UnwrapRef<{
 	groupedTableOptions: DataSourceTableGroupedOption[]
 	loading: boolean
 	fetchTables: () => Promise<DataSourceTableListItem[]>
+	updateTableRelationship: (tableRelationship: TableRelationship) => Promise<any>
+	deleteTableRelationship: (tableRelationship: TableRelationship) => Promise<any>
 	syncTables: () => Promise<any>
 	delete: () => Promise<any>
 }>

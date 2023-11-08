@@ -13,7 +13,10 @@ from frappe.utils.caching import redis_cache
 from insights import notify
 from insights.api.telemetry import track
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
-from insights.insights.doctype.insights_team.insights_team import get_permission_filter
+from insights.insights.doctype.insights_team.insights_team import (
+    check_table_permission,
+    get_permission_filter,
+)
 
 from .sources.base_database import BaseDatabase, DatabaseConnectionError
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
@@ -197,6 +200,93 @@ class InsightsDataSource(Document):
 
     def get_schema(self):
         return get_data_source_schema(self.name)
+
+    @frappe.whitelist()
+    def update_table_link(self, data):
+        data = frappe._dict(data)
+        data_source = self.name
+        check_table_permission(data_source, data.primary_table)
+
+        update_table_link(
+            data_source,
+            primary_table=data.primary_table,
+            foreign_table=data.foreign_table,
+            primary_column=data.primary_column,
+            foreign_column=data.foreign_column,
+            cardinality=data.cardinality,
+        )
+
+    @frappe.whitelist()
+    def delete_table_link(self, data):
+        data = frappe._dict(data)
+        data_source = self.name
+        check_table_permission(data_source, data.primary_table)
+
+        delete_table_link(
+            data_source,
+            primary_table=data.primary_table,
+            foreign_table=data.foreign_table,
+            primary_column=data.primary_column,
+            foreign_column=data.foreign_column,
+        )
+
+
+def update_table_link(
+    data_source,
+    primary_table,
+    foreign_table,
+    primary_column,
+    foreign_column,
+    cardinality,
+):
+    check_table_permission(data_source, primary_table)
+    doc = frappe.get_doc(
+        "Insights Table",
+        {
+            "data_source": data_source,
+            "table": primary_table,
+        },
+    )
+
+    link = {
+        "primary_key": primary_column,
+        "foreign_key": foreign_column,
+        "foreign_table": foreign_table,
+    }
+    existing_link = doc.get("table_links", link)
+    if not existing_link:
+        link["cardinality"] = cardinality
+        doc.append("table_links", link)
+        doc.save()
+    elif existing_link[0].cardinality != cardinality:
+        existing_link[0].cardinality = cardinality
+        doc.save()
+
+
+def delete_table_link(
+    data_source,
+    primary_table,
+    foreign_table,
+    primary_column,
+    foreign_column,
+):
+    check_table_permission(data_source, primary_table)
+    doc = frappe.get_doc(
+        "Insights Table",
+        {
+            "data_source": data_source,
+            "table": primary_table,
+        },
+    )
+    for link in doc.table_links:
+        if (
+            link.primary_key == primary_column
+            and link.foreign_key == foreign_column
+            and link.foreign_table == foreign_table
+        ):
+            doc.remove(link)
+            doc.save()
+            break
 
 
 @lru_cache(maxsize=128)
