@@ -4,22 +4,22 @@ import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
+import { Sheet, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import TableJoinEditor from './TableJoinEditor.vue'
-import { X } from 'lucide-vue-next'
-import { Sheet } from 'lucide-vue-next'
 
 const builder = inject('builder')
 
-let dataSource = useDataSource(builder.data_source)
-dataSource.fetchTables()
+let dataSource = {}
 whenever(
 	() => builder.data_source,
 	(newVal, oldVal) => {
+		if (!newVal) return
 		if (newVal == oldVal) return
 		dataSource = useDataSource(builder.data_source)
 		dataSource.fetchTables()
-	}
+	},
+	{ immediate: true }
 )
 
 const joins = computed(() => builder.query.joins)

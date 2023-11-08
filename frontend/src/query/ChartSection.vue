@@ -64,7 +64,7 @@ watch(
 </script>
 
 <template>
-	<div class="flex flex-1 flex-col gap-4 overflow-hidden">
+	<div v-if="query.chart.doc?.name" class="flex flex-1 flex-col gap-4 overflow-hidden">
 		<div class="flex flex-shrink-0 space-x-2">
 			<Button variant="outline" :disabled="hideChart" @click="showDashboardDialog = true">
 				Add to Dashboard
@@ -94,7 +94,7 @@ watch(
 	</div>
 
 	<PublicShareDialog
-		v-if="query.chart.doc.doctype && query.chart.doc.name"
+		v-if="query.chart.doc?.doctype && query.chart.doc?.name"
 		v-model:show="showShareDialog"
 		:resource-type="query.chart.doc.doctype"
 		:resource-name="query.chart.doc.name"
