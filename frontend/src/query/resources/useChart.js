@@ -12,6 +12,7 @@ export default async function useChart(query) {
 	const chartData = ref([])
 
 	const run = createTaskRunner()
+	watch(() => chartResource.doc, updateDoc, { deep: true })
 	async function updateDoc(doc) {
 		const newValues = {
 			title: doc.title,
@@ -57,24 +58,24 @@ export default async function useChart(query) {
 	)
 
 	function togglePublicAccess(isPublic) {
-		if (state.doc.is_public === isPublic) return
-		chartDocResource.setValue.submit({ is_public: isPublic }).then(() => {
+		if (chartResource.doc.is_public === isPublic) return
+		chartResource.setValue.submit({ is_public: isPublic }).then(() => {
 			$notify({
 				title: 'Chart access updated',
 				variant: 'success',
 			})
-			state.doc.is_public = isPublic
+			chartResource.doc.is_public = isPublic
 		})
 	}
 
 	async function addToDashboard(dashboardName) {
-		if (!dashboardName || !state.doc.name || state.addingToDashboard) return
-		state.addingToDashboard = true
+		if (!dashboardName || !chartResource.doc.name || chartResource.addingToDashboard) return
+		chartResource.addingToDashboard = true
 		await call('insights.api.dashboards.add_chart_to_dashboard', {
 			dashboard: dashboardName,
-			chart: state.doc.name,
+			chart: chartResource.doc.name,
 		})
-		state.addingToDashboard = false
+		chartResource.addingToDashboard = false
 	}
 
 	return {
@@ -83,7 +84,6 @@ export default async function useChart(query) {
 			set: (value) => (chartResource.doc = value),
 		}),
 		data: chartData,
-		updateDoc: debounce(updateDoc, 500),
 		togglePublicAccess,
 		addToDashboard,
 	}

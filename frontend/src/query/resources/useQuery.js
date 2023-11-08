@@ -5,6 +5,7 @@ import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
+import useChart from './useChart'
 
 const session = sessionStore()
 
@@ -23,6 +24,7 @@ function makeQuery(name) {
 		loading: true,
 		executing: false,
 		doc: {},
+		chart: {},
 		formattedResults: [],
 		resultColumns: [],
 		tableMeta: [],
@@ -38,8 +40,7 @@ function makeQuery(name) {
 	state.formattedResults = computed(() => getFormattedResult(resource.doc.results))
 	state.resultColumns = computed(() => resource.doc.results?.[0])
 
-	state.reload = () => resource.get.fetch()
-	state.reload().then(() => state.fetchTableMeta())
+	state.reload = () => resource.get.fetch().then(() => state.fetchTableMeta())
 
 	state.updateTitle = (title) => run(() => resource.setValue.submit({ title }))
 	state.changeDataSource = (data_source) => run(() => resource.setValue.submit({ data_source }))
@@ -66,6 +67,7 @@ function makeQuery(name) {
 		const response = await resource.get_chart_name.fetch()
 		return response.message
 	}
+	useChart(state).then((chart) => (state.chart = chart))
 
 	state.fetchTableMeta = async () => {
 		if (!state.doc.data_source) return
@@ -100,6 +102,31 @@ function makeQuery(name) {
 	state.store = () => run(() => resource.store.submit())
 	state.save_as_table = () => run(() => resource.save_as_table.submit())
 	state.delete_linked_table = () => run(() => resource.delete_linked_table.submit())
+
+	// native query
+	state.updateSQL = debounce(async (sql) => {
+		if (sql === state.doc.sql) return
+		await run(() =>
+			resource.setValue.submit({ sql }).then(() => autoExecuteEnabled && state.execute())
+		)
+	}, 500)
+
+	// script query
+	state.updateScript = debounce(async (script) => {
+		if (script === state.doc.script) return
+		await run(() =>
+			resource.setValue.submit({ script }).then(() => autoExecuteEnabled && state.execute())
+		)
+	}, 500)
+
+	state.updateScriptVariables = debounce(async (script_variables) => {
+		if (variables === state.doc.variables) return
+		await run(() =>
+			resource.setValue
+				.submit({ variables })
+				.then(() => autoExecuteEnabled && state.execute())
+		)
+	}, 500)
 
 	return state
 }

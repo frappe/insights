@@ -4,6 +4,7 @@ import { useStorage } from '@vueuse/core'
 import { Braces, Bug } from 'lucide-vue-next'
 import { computed, inject, ref, watch } from 'vue'
 import VariablesDialog from './VariablesDialog.vue'
+import ResultSection from './ResultSection.vue'
 
 const query = inject('query')
 const script = ref(query.doc.script)
@@ -12,12 +13,12 @@ watch(
 	(value) => (script.value = value)
 )
 const executing = ref(false)
-async function runQuery() {
+async function onExecuteQuery() {
 	if (executing.value) return
 	executing.value = true
 	try {
-		await query.setValue.submit({ script: script.value })
-		await query.run.submit()
+		await query.updateScript(script.value)
+		await query.execute()
 	} finally {
 		executing.value = false
 	}
@@ -25,7 +26,7 @@ async function runQuery() {
 
 const showVariablesDialog = ref(false)
 function handleSaveVariables(variables) {
-	query.setValue.submit({ variables })
+	query.updateScriptVariables(variables)
 	showVariablesDialog.value = false
 }
 
@@ -56,11 +57,11 @@ results = fetch_data_from_url()`
 </script>
 
 <template>
-	<div class="flex w-full flex-1 flex-shrink-0 flex-col">
-		<div class="flex-shrink-0 text-sm uppercase leading-7 tracking-wide text-gray-600">
+	<div class="flex h-full w-full flex-col">
+		<div class="flex-shrink-0 uppercase leading-7 tracking-wide text-gray-600">
 			Script Query
 		</div>
-		<div class="flex flex-1 overflow-hidden rounded border">
+		<div class="flex flex-1 flex-shrink-0 overflow-hidden rounded border">
 			<div class="relative flex flex-1 flex-col overflow-y-scroll">
 				<Code language="python" v-model="script" placeholder="Enter your script here...">
 				</Code>
@@ -80,7 +81,12 @@ results = fetch_data_from_url()`
 								<Bug class="h-4 w-4" />
 							</template>
 						</Button>
-						<Button variant="solid" icon="play" @click="runQuery" :loading="executing">
+						<Button
+							variant="solid"
+							icon="play"
+							@click="onExecuteQuery"
+							:loading="executing"
+						>
 						</Button>
 					</div>
 				</div>
@@ -109,7 +115,11 @@ results = fetch_data_from_url()`
 				</div>
 			</transition>
 		</div>
+		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden py-4">
+			<ResultSection></ResultSection>
+		</div>
 	</div>
+
 	<VariablesDialog
 		v-model:show="showVariablesDialog"
 		v-model:variables="query.doc.variables"

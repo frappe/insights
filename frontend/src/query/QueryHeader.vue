@@ -1,20 +1,16 @@
 <script setup lang="jsx">
-import useDataSourceStore from '@/stores/dataSourceStore'
 import ContentEditable from '@/notebook/ContentEditable.vue'
-import QueryMenu from '@/query/QueryMenu.vue'
-import { debounce } from 'frappe-ui'
-import { Component } from 'lucide-vue-next'
-import { Bookmark } from 'lucide-vue-next'
-import { computed, inject } from 'vue'
+import useDataSourceStore from '@/stores/dataSourceStore'
+import { watchDebounced } from '@vueuse/core'
+import { Component as ComponentIcon } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
+import QueryMenu from './QueryMenu.vue'
 
 const $notify = inject('$notify')
 const query = inject('query')
 
-const debouncedUpdateTitle = debounce(async (title) => {
-	await query.setValue.submit({ title })
-	query.doc.title = title
-}, 1500)
-
+const title = ref(query.doc.title)
+watchDebounced(title, query.updateTitle, { debounce: 500 })
 const sources = useDataSourceStore()
 
 const SourceOption = (props) => {
@@ -44,44 +40,47 @@ const dataSourceOptions = computed(() => {
 })
 
 function changeDataSource(sourceName) {
-	query.updateDoc({ data_source: sourceName }).then(() => {
+	query.changeDataSource(sourceName).then(() => {
 		$notify({
 			title: 'Data source updated',
 			variant: 'success',
 		})
-		query.doc.data_source = sourceName
 	})
 }
 </script>
 
 <template>
-	<div class="mr-2 flex items-center">
-		<div v-if="query.doc.is_saved_as_table" class="mr-2">
-			<Component class="h-4 w-4 text-gray-600" fill="currentColor" />
+	<div class="flex w-full items-center justify-between gap-4">
+		<div class="flex items-center">
+			<div v-if="query.doc.is_saved_as_table" class="mr-2">
+				<ComponentIcon class="h-4 w-4 text-gray-600" fill="currentColor" />
+			</div>
+			<ContentEditable
+				v-model="title"
+				placeholder="Untitled Query"
+				class="mr-3 rounded-sm text-xl font-medium !text-gray-900 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+			></ContentEditable>
+			<Dropdown
+				class="mr-2"
+				:button="{
+					iconLeft: 'database',
+					variant: 'outline',
+					label: currentSource?.title || 'Select data source',
+				}"
+				:options="dataSourceOptions"
+			/>
+			<Button
+				class="mr-2"
+				variant="outline"
+				icon="play"
+				@click="query.execute()"
+				:disabled="!query.doc.data_source"
+				:loading="query.executing"
+			/>
+			<QueryMenu />
 		</div>
-		<ContentEditable
-			class="mr-3 rounded-sm text-xl font-medium !text-gray-900 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-			v-model="query.doc.title"
-			@update:model-value="debouncedUpdateTitle"
-			placeholder="Untitled Query"
-		></ContentEditable>
-		<Dropdown
-			class="mr-2"
-			:button="{
-				iconLeft: 'database',
-				variant: 'outline',
-				label: currentSource?.title || 'Select data source',
-			}"
-			:options="dataSourceOptions"
-		/>
-		<Button
-			class="mr-2"
-			variant="outline"
-			icon="play"
-			@click="query.execute()"
-			:disabled="!query.doc.data_source"
-			:loading="query.run.loading"
-		/>
-		<QueryMenu />
+		<div>
+			<slot name="right-actions"></slot>
+		</div>
 	</div>
 </template>

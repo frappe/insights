@@ -3,12 +3,11 @@ import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
 
 const query = inject('query')
-const builder = inject('builder')
 const chartOptions = [{ label: 'Select a chart type', value: undefined }].concat(
 	widgets.getChartOptions()
 )
 function resetOptions() {
-	builder.chart.doc.options = {}
+	query.chart.doc.options = {}
 }
 </script>
 
@@ -19,16 +18,16 @@ function resetOptions() {
 			type="select"
 			label="Chart Type"
 			class="w-full"
-			v-model="builder.chart.doc.chart_type"
+			v-model="query.chart.doc.chart_type"
 			:options="chartOptions"
-			@update:modelValue="builder.chart.doc.options = {}"
+			@update:modelValue="query.chart.doc.options = {}"
 		/>
 
 		<component
-			v-if="builder.chart.doc.chart_type"
-			:is="widgets.getOptionComponent(builder.chart.doc.chart_type)"
-			:key="builder.chart.doc.chart_type"
-			v-model="builder.chart.doc.options"
+			v-if="query.chart.doc.chart_type"
+			:is="widgets.getOptionComponent(query.chart.doc.chart_type)"
+			:key="query.chart.doc.chart_type"
+			v-model="query.chart.doc.options"
 			:columns="query.resultColumns"
 		/>
 

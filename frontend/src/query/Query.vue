@@ -1,84 +1,63 @@
-<template>
-	<div v-if="query.doc" class="flex flex-1 flex-col overflow-hidden">
-		<div class="flex flex-shrink-0 items-center justify-between px-2 pb-2">
-			<QueryHeader />
-			<Tabs v-if="!hideTabs" class="!w-40" :tabs="tabs" @switch="switchTab" />
-		</div>
-		<div class="flex flex-1 flex-shrink-0 flex-col overflow-y-scroll">
-			<template v-if="activeTab == buildTabLabel">
-				<div
-					v-if="query.doc.is_native_query"
-					class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
-				>
-					<NativeQueryEditor />
-				</div>
-				<div
-					v-else-if="query.doc.is_script_query"
-					class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
-				>
-					<ScriptQueryEditor />
-				</div>
-				<div
-					v-else
-					class="flex min-h-[20rem] flex-1 flex-shrink-0 gap-4 overflow-hidden px-2 py-1"
-				>
-					<template v-if="!query.doc.is_assisted_query">
-						<TablePanel />
-						<ColumnPanel />
-						<FilterPanel />
-					</template>
-					<template v-else>
-						<div class="flex min-h-[20rem] w-full flex-1 rounded border py-2">
-							<Suspense>
-								<VisualQuery :name="query.doc.name" />
-							</Suspense>
-						</div>
-					</template>
-				</div>
-				<QueryResult class="min-h-[20rem] flex-1" />
-			</template>
+<script setup>
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
+import Tabs from '@/components/Tabs.vue'
+import { provide, ref } from 'vue'
+import ChartOptions from './ChartOptions.vue'
+import ChartSection from './ChartSection.vue'
+import NativeQueryEditor from './NativeQueryEditor.vue'
+import QueryHeader from './QueryHeader.vue'
+import ScriptQueryEditor from './ScriptQueryEditor.vue'
+import useQuery from './resources/useQuery'
+import VisualQueryBuilder from './visual/VisualQueryBuilder.vue'
 
-			<template v-if="activeTab == 'Visualize'">
-				<QueryVisualizer class="flex-1" />
-			</template>
+const props = defineProps({ name: String })
+const query = useQuery(props.name)
+await query.reload()
+provide('query', query)
+
+const activeTab = ref('Query')
+const tabs = ['Query', 'Visualize']
+</script>
+
+<template>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs
+			class="h-7"
+			:items="[
+				{ label: 'Queries', route: { path: '/query' } },
+				{
+					label: props.name,
+					route: { path: `/query/build/${props.name}` },
+				},
+			]"
+		/>
+	</header>
+	<div
+		v-if="query.doc?.name"
+		class="flex h-full w-full flex-col space-y-4 overflow-hidden bg-white px-6 pt-2"
+	>
+		<div class="w-full flex-shrink-0">
+			<QueryHeader>
+				<template v-if="!query.doc.is_assisted_query" #right-actions>
+					<Tabs v-model="activeTab" :tabs="tabs" />
+				</template>
+			</QueryHeader>
+		</div>
+		<div v-if="activeTab == 'Query'" class="flex flex-1 flex-shrink-0 overflow-hidden">
+			<VisualQueryBuilder v-if="query.doc.is_assisted_query"></VisualQueryBuilder>
+			<NativeQueryEditor v-if="query.doc.is_native_query"></NativeQueryEditor>
+			<ScriptQueryEditor v-if="query.doc.is_script_query"></ScriptQueryEditor>
+		</div>
+		<div
+			v-if="activeTab == 'Visualize' && query.chart.doc?.name"
+			class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden"
+		>
+			<div class="w-[21rem] flex-shrink-0">
+				<ChartOptions></ChartOptions>
+			</div>
+			<div class="flex flex-1">
+				<ChartSection></ChartSection>
+			</div>
 		</div>
 	</div>
 </template>
-
-<script setup>
-import Tabs from '@/components/Tabs.vue'
-import { default as VisualQuery } from '@/notebook/blocks/query/builder/QueryBuilder.vue'
-import ColumnPanel from '@/query/Column/ColumnPanel.vue'
-import FilterPanel from '@/query/Filter/FilterPanel.vue'
-import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
-import ScriptQueryEditor from '@/query/ScriptQueryEditor.vue'
-import QueryHeader from '@/query/QueryHeader.vue'
-import QueryVisualizer from '@/query/QueryVisualizer.vue'
-import QueryResult from '@/query/Result/QueryResult.vue'
-import TablePanel from '@/query/Table/TablePanel.vue'
-import { updateDocumentTitle } from '@/utils'
-import { useQuery } from '@/utils/query'
-import { computed, provide, ref } from 'vue'
-
-const props = defineProps(['name', 'hideTabs'])
-const query = useQuery(props.name)
-provide('query', query)
-
-const buildTabLabel = computed(() => (query.doc?.is_native_query ? 'Write' : 'Build'))
-const tabs = ref([
-	{ label: buildTabLabel, active: true },
-	{ label: 'Visualize', active: false },
-])
-const activeTab = computed(() => tabs.value.find((t) => t.active).label)
-const switchTab = (tab) => {
-	tabs.value.forEach((t) => {
-		t.active = t.label === tab.label
-	})
-}
-
-const pageMeta = computed(() => ({
-	title: query.doc?.title,
-	subtitle: query.doc?.name,
-}))
-updateDocumentTitle(pageMeta)
-</script>

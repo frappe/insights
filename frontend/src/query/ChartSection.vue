@@ -6,12 +6,10 @@ import { computed, inject, ref, watch } from 'vue'
 import ChartSectionEmpty from './ChartSectionEmpty.vue'
 
 const query = inject('query')
-const builder = inject('builder')
-const chartRefreshKey = ref(0)
 
 const hideChart = computed(() => {
 	return (
-		!builder.chart.doc?.name ||
+		!query.chart.doc?.name ||
 		!query.formattedResults?.length ||
 		query.doc.status == 'Pending Execution'
 	)
@@ -41,7 +39,7 @@ const dashboardOptions = computed(() => {
 const $notify = inject('$notify')
 const addChartToDashboard = async () => {
 	if (!toDashboard.value) return
-	await builder.chart.addToDashboard(toDashboard.value.value)
+	await query.chart.addToDashboard(toDashboard.value.value)
 	showDashboardDialog.value = false
 	$notify({
 		variant: 'success',
@@ -85,24 +83,24 @@ watch(
 		</div>
 		<div v-else class="flex w-full flex-1 rounded border">
 			<component
-				v-if="builder.chart.doc.chart_type"
+				v-if="query.chart.doc.chart_type"
 				ref="widget"
-				:key="JSON.stringify(builder.chart.doc)"
-				:is="widgets.getComponent(builder.chart.doc.chart_type)"
-				:data="builder.chart.data"
-				:options="builder.chart.doc.options"
+				:key="JSON.stringify(query.chart.doc)"
+				:is="widgets.getComponent(query.chart.doc.chart_type)"
+				:data="query.chart.data"
+				:options="query.chart.doc.options"
 			/>
 		</div>
 	</div>
 
 	<PublicShareDialog
-		v-if="builder.chart.doc.doctype && builder.chart.doc.name"
+		v-if="query.chart.doc.doctype && query.chart.doc.name"
 		v-model:show="showShareDialog"
-		:resource-type="builder.chart.doc.doctype"
-		:resource-name="builder.chart.doc.name"
+		:resource-type="query.chart.doc.doctype"
+		:resource-name="query.chart.doc.name"
 		:allow-public-access="true"
-		:isPublic="Boolean(builder.chart.doc.is_public)"
-		@togglePublicAccess="builder.chart.togglePublicAccess"
+		:isPublic="Boolean(query.chart.doc.is_public)"
+		@togglePublicAccess="query.chart.togglePublicAccess"
 	/>
 
 	<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">

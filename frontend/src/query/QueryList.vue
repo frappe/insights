@@ -64,7 +64,6 @@ async function openQueryEditor(type) {
 	}
 	const new_query = {}
 	if (type === 'visual') new_query.is_assisted_query = 1
-	if (type === 'classic') new_query.is_assisted_query = 0
 	if (type === 'sql') new_query.is_native_query = 1
 	if (type === 'script') new_query.is_script_query = 1
 	const query = await queryStore.create(new_query)
@@ -89,12 +88,6 @@ const queryBuilderTypes = ref([
 		onClick: () => openQueryEditor('visual'),
 	},
 	{
-		label: 'Classic',
-		description: 'Create a query using the classic interface',
-		icon: 'layout',
-		onClick: () => openQueryEditor('classic'),
-	},
-	{
 		label: 'SQL',
 		description: 'Create a query using SQL',
 		icon: 'code',
@@ -113,7 +106,6 @@ const filters = ref({
 	owner: ['=', sessionStore().user.user_id],
 })
 const queries = computed(() => {
-	console.log(filters.value)
 	if (isEmptyObj(filters.value)) {
 		return queryStore.list
 	}

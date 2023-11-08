@@ -6,28 +6,35 @@ import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'
 import { computed, inject, onMounted, ref } from 'vue'
-import { getSelectedTables } from './useQuery'
+import { getSelectedTables } from '../resources/useQuery'
 
 const query = inject('query')
 const builder = inject('builder')
-const emit = defineEmits(['update:column'])
-const props = defineProps({ column: Object })
+const emit = defineEmits(['update:filter'])
+const props = defineProps({ filter: Object })
 
-const column = computed({
-	get: () => props.column,
-	set: (val) => emit('update:column', val),
+const filter = computed({
+	get: () => props.filter,
+	set: (val) =>
+		emit('update:filter', {
+			expression: {
+				raw: val.expression.raw,
+				ast: val.expression.ast,
+			},
+		}),
 })
 
 const focused = ref(false)
 const columnOptions = computed(() => {
-	// a list of options for code autocompletion
 	const selectedTables = getSelectedTables(builder.query)
 	return (
 		query.tableMeta
 			// allow columns from selected tables only
 			// since joins cannot be inferred from the expression
-			.filter((t) => selectedTables.includes(t.table))
-			.map((t) => t.columns.map((c) => ({ label: `${t.table}.${c.column}` })))
+			.filter((table) => selectedTables.includes(table.table))
+			.map((table) =>
+				table.columns.map((column) => ({ label: `${table.table}.${column.column}` }))
+			)
 			.flat()
 	)
 })
@@ -52,10 +59,10 @@ const getCompletions = (context, syntaxTree) => {
 const codeEditor = ref(null)
 const helpInfo = ref(null)
 const codeViewUpdate = debounce(function ({ cursorPos }) {
-	if (!column.value.expression?.raw) return
+	if (!filter.value.expression?.raw) return
 	setCompletionPosition()
 	helpInfo.value = null
-	const tokens = parse(column.value.expression.raw).tokens
+	const tokens = parse(filter.value.expression.raw).tokens
 	const token = tokens
 		.filter((t) => t.start <= cursorPos - 1 && t.end >= cursorPos && t.type == 'FUNCTION')
 		.at(-1)
@@ -85,16 +92,6 @@ function setCompletionPosition() {
 
 	completion.setAttribute('style', `left: ${left}px !important; top: ${top + 20}px !important;`)
 }
-
-const COLUMN_TYPES = [
-	{ label: 'String', value: 'String' },
-	{ label: 'Integer', value: 'Integer' },
-	{ label: 'Decimal', value: 'Decimal' },
-	{ label: 'Text', value: 'Text' },
-	{ label: 'Datetime', value: 'Datetime' },
-	{ label: 'Date', value: 'Date' },
-	{ label: 'Time', value: 'Time' },
-]
 </script>
 
 <template>
@@ -103,7 +100,7 @@ const COLUMN_TYPES = [
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Expression</span>
 			<div ref="codeEditor" class="form-input min-h-[7rem] border border-gray-400 p-0">
 				<Code
-					:modelValue="column.expression.raw"
+					:modelValue="filter.expression.raw"
 					:completions="getCompletions"
 					:autofocus="false"
 					placeholder="Write an expression"
@@ -111,7 +108,7 @@ const COLUMN_TYPES = [
 					@blur="focused = false"
 					@viewUpdate="codeViewUpdate"
 					@update:modelValue="
-						column.expression = {
+						filter.expression = {
 							raw: $event,
 							ast: parse($event).ast,
 						}
@@ -119,21 +116,6 @@ const COLUMN_TYPES = [
 				></Code>
 			</div>
 		</div>
-
-		<Input
-			type="text"
-			label="Label"
-			class="w-full"
-			v-model="column.label"
-			placeholder="Label"
-		/>
-		<Input
-			label="Type"
-			type="select"
-			class="w-full"
-			v-model="column.type"
-			:options="COLUMN_TYPES"
-		/>
 	</div>
 
 	<UsePopover
