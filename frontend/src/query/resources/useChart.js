@@ -1,7 +1,6 @@
 import { getChartResource } from '@/query/useChart'
 import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
-import { debounce } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
 
 export default async function useChart(query) {
@@ -12,26 +11,29 @@ export default async function useChart(query) {
 	const chartData = ref([])
 
 	const run = createTaskRunner()
-	watch(() => chartResource.doc, updateDoc, { deep: true })
+	watch(
+		() => ({
+			title: chartResource.doc.title,
+			chart_type: chartResource.doc.chart_type,
+			options: chartResource.doc.options,
+		}),
+		updateDoc,
+		{ deep: true }
+	)
 	async function updateDoc(doc) {
-		const newValues = {
-			title: doc.title,
-			chart_type: doc.chart_type,
-			options: doc.options,
-		}
+		if (!doc.chart_type) return
 		const oldValues = {
 			title: chartResource.originalDoc.title,
 			chart_type: chartResource.originalDoc.chart_type,
 			options: chartResource.originalDoc.options,
 		}
+		const newValues = {
+			title: doc.title,
+			chart_type: doc.chart_type,
+			options: doc.options,
+		}
 		if (areDeeplyEqual(newValues, oldValues)) return
-		await run(() =>
-			chartResource.setValue.submit({
-				title: doc.title,
-				chart_type: doc.chart_type,
-				options: doc.options,
-			})
-		)
+		await run(() => chartResource.setValue.submit(newValues))
 	}
 
 	watch(

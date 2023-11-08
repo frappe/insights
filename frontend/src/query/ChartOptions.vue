@@ -3,7 +3,7 @@ import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
 
 const query = inject('query')
-const chartOptions = [{ label: 'Select a chart type', value: undefined }].concat(
+const chartOptions = [{ label: 'Select a chart type', value: undefined, disabled: true }].concat(
 	widgets.getChartOptions()
 )
 function resetOptions() {
