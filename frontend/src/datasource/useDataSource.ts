@@ -46,7 +46,7 @@ function useDataSource(name: string) {
 	)
 
 	const groupedTableOptions = computed<DataSourceTableGroupedOption[]>(() => {
-		const tablesByGroup = tableList.value.reduce((acc, table) => {
+		const tablesByGroup = tableList.value.filter((t) => !t.hidden).reduce((acc, table) => {
 			const group = table.is_query_based ? 'Query-based tables' : 'Tables'
 			if (!acc[group]) acc[group] = []
 			acc[group].push(table)
