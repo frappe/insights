@@ -69,7 +69,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def results_row_count(self):
-        return len(CachedResults.get(self.name))
+        return len(self.retrieve_results())
 
     @cached_property
     def variant_controller(self):
@@ -150,10 +150,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         frappe.db.delete("Insights Chart", {"query": self.name})
 
     def retrieve_results(self, fetch_if_not_cached=False):
-        results = CachedResults.get(self.name)
-        if results is None and fetch_if_not_cached:
-            results = self.fetch_results()
-        return results or []
+        if not CachedResults.exists(self.name):
+            if fetch_if_not_cached:
+                return self.fetch_results()
+            return []
+        return CachedResults.get(self.name) or []
 
     def fetch_results(self, additional_filters=None):
         self.before_fetch()
@@ -180,9 +181,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             self.db_set("status", Status.FAILED.value, commit=True)
             raise
         finally:
-            CachedResults.set(self.name, self._results)
-            self.is_stored and store_query(self, self._results)
-            self.update_insights_table()
+            # custom results for dashboard is cached by dashboard
+            if not additional_filters:
+                CachedResults.set(self.name, self._results)
+                self.is_stored and store_query(self, self._results)
+                self.update_insights_table()
         return self._results
 
     def before_fetch(self):

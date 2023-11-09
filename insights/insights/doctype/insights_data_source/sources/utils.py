@@ -46,7 +46,7 @@ def create_insights_table(table, force=False):
     doc_before = None
     if docname := exists:
         doc = frappe.get_doc("Insights Table", docname)
-        doc_before = frappe.get_doc("Insights Table", docname)
+        doc_before = doc.get_doc_before_save()
     else:
         doc = frappe.get_doc(
             {

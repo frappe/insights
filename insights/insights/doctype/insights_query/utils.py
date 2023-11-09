@@ -31,21 +31,29 @@ class InsightsTableColumn:
         return [InsightsTableColumn.from_dict(obj) for obj in objs]
 
 
+QUERY_RESULT_CACHE_PREFIX = "insights_query_results"
+
+
 class CachedResults:
     @classmethod
+    def exists(cls, query):
+        key = f"{QUERY_RESULT_CACHE_PREFIX}:{query}"
+        return frappe.cache().exists(key)
+
+    @classmethod
     def get(cls, query):
-        key = f"insights_query_results:{query}"
+        key = f"{QUERY_RESULT_CACHE_PREFIX}:{query}"
         results_str = frappe.cache().get_value(key)
         if not results_str:
-            return []
+            return None
         results = frappe.parse_json(results_str)
         if not results:
-            return []
+            return None
         return results
 
     @classmethod
     def set(cls, query, results):
-        key = f"insights_query_results:{query}"
+        key = f"{QUERY_RESULT_CACHE_PREFIX}:{query}"
         results_str = frappe.as_json(results)
         frappe.cache().set_value(key, results_str)
 
