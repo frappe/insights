@@ -4,15 +4,7 @@ import { AlignCenter, Calendar, CalendarClock, CaseUpper, Combine, Hash, X } fro
 import { computed, inject, ref } from 'vue'
 import ColumnEditor from './ColumnEditor.vue'
 import { NEW_COLUMN } from './constants'
-
-const typeToIcon = {
-	String: CaseUpper,
-	Text: AlignCenter,
-	Date: Calendar,
-	Datetime: CalendarClock,
-	Integer: Hash,
-	Decimal: Hash,
-}
+import { fieldtypesToIcon } from '@/utils'
 
 const query = inject('query')
 const builder = inject('builder')
@@ -92,7 +84,10 @@ function isValidColumn(column) {
 			>
 				<div class="flex w-full items-center overflow-hidden">
 					<div class="flex w-full space-x-2 truncate" v-if="isValidColumn(column)">
-						<component :is="typeToIcon[column.type]" class="h-4 w-4 text-gray-600" />
+						<component
+							:is="fieldtypesToIcon[column.type]"
+							class="h-4 w-4 text-gray-600"
+						/>
 						<div>{{ column.label }}</div>
 					</div>
 					<div v-else class="text-gray-600">Select a column</div>

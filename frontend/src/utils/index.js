@@ -13,6 +13,7 @@ export const fieldtypesToIcon = {
 	Time: Clock,
 	Text: Type,
 	String: Baseline,
+	'Long Text': Type,
 }
 
 export const FIELDTYPES = {
