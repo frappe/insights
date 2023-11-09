@@ -54,7 +54,30 @@ const builder = reactive({
 })
 provide('builder', builder)
 watch(() => builder.query, query.updateQuery, { deep: true })
-onMounted(() => query.doc?.json && (builder.query = safeJSONParse({ ...query.doc.json })))
+onMounted(() => {
+	if (!query.doc?.json) return
+	const parsedJson = safeJSONParse({ ...query.doc.json })
+	// backward compatibility with old json
+	if (parsedJson.measures.length || parsedJson.dimensions.length) {
+		parsedJson.measures.forEach((m) => {
+			if (!parsedJson.columns.find((col) => col.label === m.label)) {
+				parsedJson.columns.push(m)
+			}
+		})
+		parsedJson.dimensions.forEach((d) => {
+			if (!parsedJson.columns.find((col) => col.label === d.label)) {
+				parsedJson.columns.push(d)
+			}
+		})
+	}
+	if (parsedJson.orders.length) {
+		parsedJson.columns.forEach((c) => {
+			const order = parsedJson.orders.find((o) => o.label === c.label)
+			if (order) c.order = order.order
+		})
+	}
+	builder.query = parsedJson
+})
 
 const activeTab = ref('Build')
 const tabs = ['Build', 'Visualize']
