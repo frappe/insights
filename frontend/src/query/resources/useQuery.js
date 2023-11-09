@@ -1,11 +1,12 @@
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
-import { areDeeplyEqual, createTaskRunner } from '@/utils'
+import { areDeeplyEqual, createTaskRunner, wheneverChanges } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import useChart from './useChart'
+import { watchOnce, whenever } from '@vueuse/core'
 
 const session = sessionStore()
 
@@ -40,7 +41,11 @@ function makeQuery(name) {
 	state.formattedResults = computed(() => getFormattedResult(resource.doc.results))
 	state.resultColumns = computed(() => resource.doc.results?.[0])
 
-	state.reload = () => resource.get.fetch().then(() => state.fetchTableMeta())
+	state.reload = () => resource.get.fetch()
+	wheneverChanges(
+		() => state.doc?.name,
+		() => state.fetchTableMeta()
+	)
 
 	state.updateTitle = (title) => run(() => resource.setValue.submit({ title }))
 	state.changeDataSource = (data_source) => run(() => resource.setValue.submit({ data_source }))
@@ -51,7 +56,7 @@ function makeQuery(name) {
 		const tablesChanged = hasTablesChanged(newQuery, state.doc.json)
 		await run(() =>
 			resource.setValue
-				.submit({ json: newQuery })
+				.submit({ json: JSON.stringify(newQuery, null, 2) })
 				.then(() => autoExecuteEnabled && state.execute())
 				.then(() => tablesChanged && state.fetchTableMeta())
 		)

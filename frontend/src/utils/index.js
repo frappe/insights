@@ -428,6 +428,21 @@ export function createTaskRunner() {
 	}
 }
 
+// a util function that is similar to watch but only runs the callback when the value is truthy and changes
+export function wheneverChanges(getter, callback, options = {}) {
+	let prevValue = null
+	const unwatch = watch(getter, (value) => {
+		if (areDeeplyEqual(value, prevValue)) return
+		if (!value) return
+		prevValue = value
+		callback(value)
+	})
+	if (options.immediate) {
+		callback(getter())
+	}
+	return unwatch
+}
+
 export default {
 	isEmptyObj,
 	safeJSONParse,

@@ -3,8 +3,8 @@
 
 import pathlib
 from typing import List, Union
-import chardet
 
+import chardet
 import frappe
 
 
@@ -52,6 +52,10 @@ class DoctypeBase:
         return frappe.get_doc(cls.doctype, args[0] if len(args) > 0 else kwargs)
 
     @classmethod
+    def get_cached_doc(cls, *args, **kwargs):
+        return frappe.get_cached_doc(cls.doctype, args[0] if len(args) > 0 else kwargs)
+
+    @classmethod
     def new_doc(cls):
         return frappe.new_doc(cls.doctype)
 
@@ -80,6 +84,6 @@ class InsightsSettings:
 
 def detect_encoding(file_path: str):
     file_path: pathlib.Path = pathlib.Path(file_path)
-    with open(file_path, 'rb') as file:
+    with open(file_path, "rb") as file:
         result = chardet.detect(file.read())
-    return result['encoding']
+    return result["encoding"]

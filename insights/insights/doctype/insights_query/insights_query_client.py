@@ -110,8 +110,12 @@ class SchemaGenerator:
         self.data_source = data_source
         self.table_names = table_names
         self._tables = {}
+        table_names_str = ",".join(table_names)
+        self.cache_key = f"insights_schema_{self.data_source.lower()}_{table_names_str}"
 
     def generate(self):
+        if frappe.cache.exists(self.cache_key):
+            return frappe.cache.get_value(self.cache_key)
         schema = {}
         for table_name in self.table_names:
             if schema.get(table_name):
@@ -122,7 +126,9 @@ class SchemaGenerator:
                     schema[table_link["foreign_table"]] = self.get_schema(
                         table_link["foreign_table"]
                     )
-        return schema.values()
+        schema_list = list(schema.values())
+        frappe.cache.set_value(self.cache_key, schema_list, expires_in_sec=60 * 10)
+        return schema_list
 
     def get_schema(self, table_name):
         table = self.get_table(table_name)
@@ -142,7 +148,7 @@ class SchemaGenerator:
         return self._tables[table_name]
 
     def _fetch_table(self, table_name):
-        return InsightsTable.get_doc(
+        return InsightsTable.get_cached_doc(
             {
                 "data_source": self.data_source,
                 "table": table_name,
