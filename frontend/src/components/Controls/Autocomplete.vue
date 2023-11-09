@@ -42,6 +42,7 @@
 							>
 								<div class="relative w-full">
 									<ComboboxInput
+										ref="searchInput"
 										class="form-input w-full"
 										type="text"
 										@change="
@@ -149,6 +150,7 @@ import {
 	ComboboxOptions,
 } from '@headlessui/vue'
 import { Popover } from 'frappe-ui'
+import { nextTick } from 'vue'
 
 export default {
 	name: 'Autocomplete',
@@ -160,6 +162,7 @@ export default {
 		'multiple',
 		'returnValue',
 		'hideSearch',
+		'autoFocus',
 	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
@@ -223,6 +226,9 @@ export default {
 	watch: {
 		query(q) {
 			this.$emit('update:query', q)
+		},
+		showOptions(val) {
+			if (val) nextTick(() => this.$refs.searchInput?.$el?.focus())
 		},
 	},
 	methods: {
