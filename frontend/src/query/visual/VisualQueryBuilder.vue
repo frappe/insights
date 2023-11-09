@@ -84,6 +84,7 @@ const tabs = ['Build', 'Visualize']
 
 const $notify = inject('$notify')
 function addTable(newTable) {
+	if (!newTable?.table) return
 	const mainTable = builder.query.table
 	if (!mainTable?.table) {
 		builder.query.table = { table: newTable.table, label: newTable.label }
