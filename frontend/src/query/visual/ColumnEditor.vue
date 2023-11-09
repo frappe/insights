@@ -65,7 +65,7 @@ const isValidColumn = computed(() => {
 					:modelValue="column.aggregation"
 					placeholder="Aggregation"
 					:options="AGGREGATIONS"
-					@update:modelValue="(op) => (column.aggregation = op.val)"
+					@update:modelValue="(op) => (column.aggregation = op.value)"
 				/>
 			</div>
 			<div class="space-y-1">
