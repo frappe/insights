@@ -18,7 +18,11 @@ const datasets = computed(() => {
 	return (
 		props.options.yAxis
 			// to exclude the columns that might be removed from the query but not the chart
-			.filter((series) => props.data[0].hasOwnProperty(series.column))
+			.filter(
+				(series) =>
+					props.data[0].hasOwnProperty(series?.column) ||
+					props.data[0].hasOwnProperty(series)
+			)
 			.map((series) => {
 				const column = series.column || series
 				return {
