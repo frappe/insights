@@ -142,6 +142,7 @@
 </template>
 
 <script>
+import { fuzzySearch } from '@/utils'
 import {
 	Combobox,
 	ComboboxButton,
@@ -237,7 +238,10 @@ export default {
 		},
 		filterOptions(options) {
 			if (!this.query) return options
-			return betterSearch(this.query, { items: options })
+			return fuzzySearch(options, {
+				term: this.query,
+				keys: ['label', 'value'],
+			})
 		},
 		displayValue(option) {
 			if (!option) return ''
@@ -272,36 +276,5 @@ export default {
 			})
 		},
 	},
-}
-
-function betterSearch(query, options) {
-	const results = []
-	const keysToSearch = options.keys || ['label', 'value']
-	const queryWords = query.toLowerCase().split(' ')
-
-	options.items.forEach((item) => {
-		const itemWords = keysToSearch
-			.map((key) => (item[key] || '').toLowerCase())
-			.join(' ')
-			.split(' ')
-
-		const score = queryWords.reduce((acc, queryWord) => {
-			const wordScore = itemWords.reduce((acc, itemWord) => {
-				if (itemWord.startsWith(queryWord)) {
-					return acc + 100
-				}
-				if (itemWord.includes(queryWord)) {
-					return acc + 10
-				}
-				return acc
-			}, 0)
-			return acc + wordScore
-		}, 0)
-
-		if (score > 0) {
-			results.push({ item, score })
-		}
-	})
-	return results.sort((a, b) => b.score - a.score).map((result) => result.item)
 }
 </script>
