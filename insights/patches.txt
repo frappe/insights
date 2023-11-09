@@ -40,3 +40,4 @@ insights.insights.doctype.insights_table.patches.delete_duplicate_records
 insights.insights.doctype.insights_query.patches.rename_untitled_query_to_query_name
 insights.insights.doctype.insights_table.patches.delete_unused_query_based_tables
 insights.insights.doctype.insights_query.patches.flatten_columns_in_query_json
+insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_query_structure

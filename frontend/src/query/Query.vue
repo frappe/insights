@@ -44,9 +44,9 @@ const tabs = ['Query', 'Visualize']
 			</QueryHeader>
 		</div>
 		<div v-if="activeTab == 'Query'" class="flex flex-1 flex-shrink-0 overflow-hidden">
-			<VisualQueryBuilder v-if="query.doc.is_assisted_query"></VisualQueryBuilder>
 			<NativeQueryEditor v-if="query.doc.is_native_query"></NativeQueryEditor>
-			<ScriptQueryEditor v-if="query.doc.is_script_query"></ScriptQueryEditor>
+			<ScriptQueryEditor v-else-if="query.doc.is_script_query"></ScriptQueryEditor>
+			<VisualQueryBuilder v-else></VisualQueryBuilder>
 		</div>
 		<div
 			v-if="activeTab == 'Visualize' && query.chart.doc?.name"
