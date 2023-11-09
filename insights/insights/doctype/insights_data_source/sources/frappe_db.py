@@ -50,7 +50,7 @@ class FrappeTableFactory:
 
         schema = {}
         for [table_name, column_name, data_type, _] in columns:
-            if table_name.startswith("__"):
+            if not table_name.startswith("tab"):
                 continue
             schema.setdefault(table_name, []).append(self.get_column(column_name, data_type))
         return schema
