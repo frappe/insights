@@ -122,16 +122,7 @@ class FrappeTableFactory:
                         "foreign_key": link.fieldname,
                         "foreign_table": "tab" + link.parent,
                         "foreign_table_label": link.parent,
-                    }
-                )
-                # ToDo is linked with User by `owner` field
-                # ToDo.owner = User.name
-                doctype_links.setdefault(link.parent, []).append(
-                    {
-                        "primary_key": link.fieldname,
-                        "foreign_key": "name",
-                        "foreign_table": "tab" + link.options,
-                        "foreign_table_label": link.options,
+                        "cardinality": "1:N",
                     }
                 )
             if link.fieldtype == "Table":
@@ -141,37 +132,7 @@ class FrappeTableFactory:
                         "foreign_key": "parent",
                         "foreign_table": "tab" + link.options,
                         "foreign_table_label": link.options,
-                    }
-                )
-                doctype_links.setdefault(link.options, []).append(
-                    {
-                        "primary_key": "parent",
-                        "foreign_key": "name",
-                        "foreign_table": "tab" + link.parent,
-                        "foreign_table_label": link.parent,
-                    }
-                )
-
-        dynamic_links = self.get_dynamic_link_map()
-        for doctype in dynamic_links:
-            if not doctype:
-                continue
-
-            for link in dynamic_links.get(doctype):
-                doctype_links.setdefault(doctype, []).append(
-                    {
-                        "primary_key": "name",
-                        "foreign_key": link.fieldname,
-                        "foreign_table": "tab" + link.parent,
-                        "foreign_table_label": link.parent,
-                    }
-                )
-                doctype_links.setdefault(link.parent, []).append(
-                    {
-                        "primary_key": link.fieldname,
-                        "foreign_key": "name",
-                        "foreign_table": "tab" + doctype,
-                        "foreign_table_label": doctype,
+                        "cardinality": "1:N",
                     }
                 )
 
