@@ -70,7 +70,6 @@ function addTable(newTable) {
 	const mainTable = builder.query.table
 	if (!mainTable?.table) {
 		builder.query.table = { table: newTable.table, label: newTable.label }
-		nextTick(() => query.execute())
 		return
 	}
 	if (isTableAlreadyAdded(builder.query, newTable)) return
