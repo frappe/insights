@@ -5,12 +5,12 @@ import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
 import { Sheet, X } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, reactive } from 'vue'
 import TableJoinEditor from './TableJoinEditor.vue'
 
 const builder = inject('builder')
 
-let dataSource = {}
+let dataSource = reactive({})
 whenever(
 	() => builder.data_source,
 	(newVal, oldVal) => {
@@ -44,8 +44,9 @@ function onRemoveJoin() {
 				<p class="font-medium">Data</p>
 			</div>
 			<Autocomplete
+				:key="builder.data_source"
 				:options="dataSource.groupedTableOptions"
-				@update:modelValue="builder.addTable($event)"
+				@update:modelValue="$event && builder.addTable($event)"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
