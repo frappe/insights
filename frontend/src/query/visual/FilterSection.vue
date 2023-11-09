@@ -60,7 +60,7 @@ function isValidFilter(filter) {
 								{{ filter.column.label || filter.column.column }}
 							</span>
 							<span class="flex-shrink-0 font-medium text-green-600">
-								{{ filter.operator.label || filter.operator.value }}
+								{{ filter.operator.value }}
 							</span>
 							<span class="flex-1 flex-shrink-0 truncate">
 								{{ filter.value.label || filter.value.value }}
