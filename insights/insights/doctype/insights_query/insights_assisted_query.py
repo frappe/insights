@@ -123,13 +123,13 @@ class InsightsAssistedQueryController:
         columns = [
             col
             for col in self.query_json.get_columns()
-            if col.aggregation and "cumulative" in col.aggregation
+            if col.aggregation and "cumulative" in col.aggregation.lower()
         ]
         return apply_cumulative_sum(columns, results)
 
     def has_cumulative_columns(self):
         return any(
-            col.aggregation and "cumulative" in col.aggregation
+            col.aggregation and "cumulative" in col.aggregation.lower()
             for col in self.query_json.get_columns()
         )
 
