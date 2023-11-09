@@ -56,7 +56,7 @@ function isValidFilter(filter) {
 							<span class="truncate font-mono">{{ filter.expression.raw }}</span>
 						</template>
 						<template v-else>
-							<span class="max-w-[30%] flex-shrink-0 truncate">
+							<span class="max-w-[40%] flex-shrink-0 truncate">
 								{{ filter.column.label || filter.column.column }}
 							</span>
 							<span class="flex-shrink-0 font-medium text-green-600">

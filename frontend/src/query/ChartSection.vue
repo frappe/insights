@@ -81,7 +81,7 @@ watch(
 			<ChartSectionEmpty></ChartSectionEmpty>
 			<span class="text-gray-500">{{ emptyMessage }}</span>
 		</div>
-		<div v-else class="flex w-full flex-1 rounded border">
+		<div v-else class="flex w-full flex-1 overflow-hidden rounded border">
 			<component
 				v-if="query.chart.doc.chart_type"
 				ref="widget"
