@@ -43,7 +43,7 @@ function makeQuery(name) {
 
 	state.reload = () => resource.get.fetch()
 	wheneverChanges(
-		() => state.doc?.name,
+		() => state.doc?.name || state.doc?.data_source,
 		() => state.fetchTableMeta()
 	)
 
