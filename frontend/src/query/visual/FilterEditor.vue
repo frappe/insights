@@ -19,6 +19,9 @@ const filter = reactive({
 if (filter.expression?.raw) {
 	activeTab.value = 'Expression'
 }
+if (filter.operator?.value == 'is' && filter.value?.value?.toLowerCase().includes('set')) {
+	filter.operator.value = filter.value.value === 'Set' ? 'is_set' : 'is_not_set'
+}
 
 const filterColumnOptions = computed(() =>
 	query.columnOptions.map((group) => {
