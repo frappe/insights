@@ -62,17 +62,6 @@ export function guessChart(dataset) {
 		}
 	}
 
-	// if there is only one string column and one number column, it's a pie chart
-	if (stringColumns.length === 1 && numberColumns.length === 1) {
-		return {
-			type: 'Pie',
-			options: {
-				xAxis: stringColumns[0].label,
-				yAxis: numberColumns[0].label,
-			},
-		}
-	}
-
 	// if there is at least one date column and one number column, it's a line chart
 	if (dateColumns.length >= 1 && numberColumns.length >= 1) {
 		return {
@@ -83,9 +72,23 @@ export function guessChart(dataset) {
 			},
 		}
 	}
-	// if there is at least one string column and one number column, it's a bar chart
+
 	if (stringColumns.length >= 1 && numberColumns.length >= 1) {
 		const uniqueValuesCount = new Set(rows.map((row) => row[stringColumns[0].label])).size
+
+		// if there is only one string column and one number column,
+		// and there are less than 10 unique values, it's a pie chart
+		if (stringColumns.length === 1 && numberColumns.length === 1 && uniqueValuesCount <= 10) {
+			return {
+				type: 'Pie',
+				options: {
+					xAxis: stringColumns[0].label,
+					yAxis: numberColumns[0].label,
+				},
+			}
+		}
+
+		// if there is at least one string column and one number column, it's a bar chart
 		return {
 			type: 'Bar',
 			options: {
