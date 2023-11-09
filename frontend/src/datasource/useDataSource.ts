@@ -17,41 +17,51 @@ function useDataSource(name: string) {
 	})
 
 	const tableList = ref<DataSourceTableListItem[]>([])
+	const dropdownOptions = ref<DataSourceTableOption[]>([])
+	const groupedTableOptions = ref<DataSourceTableGroupedOption[]>([])
+
 	async function fetchTables() {
 		const response = await resource.get_tables.submit()
 		tableList.value = response.message
+		dropdownOptions.value = makeDropdownOptions()
+		groupedTableOptions.value = makeGroupedTableOptions()
 		return tableList.value
 	}
 
-	const dropdownOptions = computed<DataSourceTableOption[]>(() =>
+	function makeDropdownOptions() {
+		return (
+			tableList.value
+				.filter((t) => !t.hidden)
+				// remove duplicates
+				.filter((sourceTable, index, self) => {
+					return (
+						self.findIndex((t) => {
+							return t.table === sourceTable.table
+						}) === index
+					)
+				})
+				.map((sourceTable) => {
+					return {
+						table: sourceTable.table,
+						value: sourceTable.table,
+						label: sourceTable.label,
+						description: sourceTable.table,
+						data_source: name,
+					}
+				})
+		)
+	}
+
+	function makeGroupedTableOptions() {
+		const tablesByGroup: Record<string, DataSourceTableListItem[]> = {}
+
 		tableList.value
 			.filter((t) => !t.hidden)
-			// remove duplicates
-			.filter((sourceTable, index, self) => {
-				return (
-					self.findIndex((t) => {
-						return t.table === sourceTable.table
-					}) === index
-				)
+			.forEach((table: DataSourceTableListItem) => {
+				const group = table.is_query_based ? 'Query-based tables' : 'Tables'
+				if (!tablesByGroup[group]) tablesByGroup[group] = []
+				tablesByGroup[group].push(table)
 			})
-			.map((sourceTable) => {
-				return {
-					table: sourceTable.table,
-					value: sourceTable.table,
-					label: sourceTable.label,
-					description: sourceTable.table,
-					data_source: name,
-				}
-			})
-	)
-
-	const groupedTableOptions = computed<DataSourceTableGroupedOption[]>(() => {
-		const tablesByGroup = tableList.value.filter((t) => !t.hidden).reduce((acc, table) => {
-			const group = table.is_query_based ? 'Query-based tables' : 'Tables'
-			if (!acc[group]) acc[group] = []
-			acc[group].push(table)
-			return acc
-		}, {} as Record<string, DataSourceTableListItem[]>)
 
 		return Object.entries(tablesByGroup).map(([group, tables]) => {
 			return {
@@ -67,7 +77,7 @@ function useDataSource(name: string) {
 				}),
 			}
 		})
-	})
+	}
 
 	function updateTableRelationship(tableRelationship: TableRelationship) {
 		return resource.update_table_link.submit({ data: tableRelationship })
