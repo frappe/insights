@@ -102,3 +102,27 @@ export function isTableAlreadyAdded(builderQuery, newTable) {
 	if (table.table === newTable.table) return true
 	return builderQuery.joins.some((join) => join.right_table.table === newTable.table)
 }
+
+export function sanitizeQueryJSON(queryJson) {
+	// backward compatibility with old json
+	if (queryJson.measures.length || queryJson.dimensions.length) {
+		queryJson.measures.forEach((m) => {
+			if (!queryJson.columns.find((col) => col.label === m.label)) {
+				queryJson.columns.push(m)
+			}
+		})
+		queryJson.dimensions.forEach((d) => {
+			if (!queryJson.columns.find((col) => col.label === d.label)) {
+				queryJson.columns.push(d)
+			}
+		})
+	}
+	if (queryJson.orders.length) {
+		queryJson.columns.forEach((c) => {
+			const order = queryJson.orders.find((o) => o.label === c.label)
+			if (order) c.order = order.order
+		})
+	}
+	if (!queryJson.limit) queryJson.limit = 100
+	return queryJson
+}
