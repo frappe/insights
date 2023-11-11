@@ -34,11 +34,14 @@
 			</template>
 			<template #body="{ isOpen, togglePopover }">
 				<div v-show="isOpen">
-					<div class="mt-1 rounded-lg bg-white text-base shadow-2xl" :class="bodyClasses">
+					<div
+						class="relative mt-1 rounded-lg bg-white text-base shadow-2xl"
+						:class="bodyClasses"
+					>
 						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
 							<div
 								v-if="!hideSearch"
-								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white pt-1.5"
+								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white py-1.5"
 							>
 								<div class="relative w-full">
 									<ComboboxInput
@@ -63,14 +66,13 @@
 								</div>
 							</div>
 							<div
-								class="mt-1.5"
 								v-for="group in groups"
 								:key="group.key"
 								v-show="group.items.length > 0"
 							>
 								<div
 									v-if="group.group && !group.hideLabel"
-									class="px-2.5 py-1.5 text-sm font-medium text-gray-600"
+									class="sticky top-10 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
 								>
 									{{ group.group }}
 								</div>
