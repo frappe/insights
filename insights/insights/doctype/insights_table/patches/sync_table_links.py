@@ -7,9 +7,9 @@ def execute():
     data_sources = frappe.get_all("Insights Data Source", pluck="name")
     for data_source in data_sources:
         doc = frappe.get_doc("Insights Data Source", data_source)
-        if not isinstance(doc.db, FrappeDB) and not doc.is_site_db:
-            continue
         try:
+            if not isinstance(doc.db, FrappeDB) and not doc.is_site_db:
+                continue
             doc.db.sync_tables(force=True)
             frappe.db.commit()
         except Exception:
