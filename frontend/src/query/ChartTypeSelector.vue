@@ -4,7 +4,9 @@ import { CheckIcon, ChevronDownIcon, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 
 const query = inject('query')
-
+if (!query.chart.doc.chart_type) {
+	query.chart.doc.chart_type = 'Auto'
+}
 const currentChartType = computed(() => {
 	return query.chart.doc?.chart_type
 })
