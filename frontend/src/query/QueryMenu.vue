@@ -11,17 +11,6 @@
 							onClick: storeQuery,
 					  }
 					: null,
-				!query.doc.is_saved_as_table
-					? {
-							label: 'Save as Table',
-							icon: 'bookmark',
-							onClick: () => (show_save_table_dialog = true),
-					  }
-					: {
-							label: 'Delete Linked Table',
-							icon: 'trash-2',
-							onClick: () => (show_save_table_dialog = true),
-					  },
 				{
 					label: 'Execute (⌘+E)',
 					icon: 'play',
@@ -91,37 +80,6 @@
 		</Dialog>
 
 		<Dialog
-			v-model="show_save_table_dialog"
-			:dismissable="true"
-			:options="{
-				title: query.doc.is_saved_as_table ? 'Delete Linked Table' : 'Save as Table',
-				message: query.doc.is_saved_as_table
-					? 'Are you sure you want to deleted the linked table? You will not be able to use this query as a table in other queries.'
-					: 'You can save this query as a table to reuse it in other queries as a table. Tip: Give a proper title to the query before saving it as a table.',
-				icon: {
-					appearance: 'primary',
-					name: query.doc.is_saved_as_table ? 'trash-2' : 'bookmark',
-				},
-				actions: [
-					{
-						label: query.doc.is_saved_as_table ? 'Unlink' : 'Save',
-						variant: 'solid',
-						loading: query.loading,
-						onClick: () => {
-							const fn = query.doc.is_saved_as_table
-								? query.delete_linked_table
-								: query.save_as_table
-							fn().then(() => {
-								show_save_table_dialog = false
-							})
-						},
-					},
-				],
-			}"
-		>
-		</Dialog>
-
-		<Dialog
 			:options="{ title: 'Generated SQL', size: '3xl' }"
 			v-model="show_sql_dialog"
 			:dismissable="true"
@@ -174,7 +132,6 @@ const settings = settingsStore().settings
 const props = defineProps(['query'])
 const query = props.query || inject('query')
 
-const show_save_table_dialog = ref(false)
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_share_dialog = ref(false)
