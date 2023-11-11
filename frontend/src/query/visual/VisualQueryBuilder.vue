@@ -13,7 +13,11 @@ import ResultFooter from './ResultFooter.vue'
 import TableSection from './TableSection.vue'
 import TransformSection from './TransformSection.vue'
 import { NEW_FILTER } from './constants'
-import { ERROR_UNABLE_TO_INFER_JOIN, ERROR_UNABLE_TO_RESET_MAIN_TABLE } from './messages'
+import {
+	WARN_UNABLE_TO_INFER_JOIN,
+	ERROR_UNABLE_TO_RESET_MAIN_TABLE,
+	ERROR_CANNOT_ADD_SELF_AS_TABLE,
+} from './messages'
 import {
 	inferJoinForTable,
 	inferJoinsFromColumns,
@@ -67,6 +71,9 @@ const tabs = ['Build', 'Visualize']
 const $notify = inject('$notify')
 function addTable(newTable) {
 	if (!newTable?.table) return
+	if (newTable.table === query.doc.name) {
+		return $notify(ERROR_CANNOT_ADD_SELF_AS_TABLE())
+	}
 	const mainTable = builder.query.table
 	if (!mainTable?.table) {
 		builder.query.table = { table: newTable.table, label: newTable.label }
@@ -75,8 +82,7 @@ function addTable(newTable) {
 	if (isTableAlreadyAdded(builder.query, newTable)) return
 	const join = inferJoinForTable(newTable, builder.query, query.tableMeta)
 	if (!join) {
-		$notify(ERROR_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
-		return
+		$notify(WARN_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
 	}
 	builder.query.joins.push(join)
 }

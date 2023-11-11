@@ -52,10 +52,25 @@ class InsightsDataSource(Document):
                 "table",
                 "label",
                 "hidden",
-                "data_source",
                 "is_query_based",
+                "data_source",
             ],
-            order_by="is_query_based asc, hidden asc, label asc",
+            order_by="hidden asc, label asc",
+        )
+
+    @frappe.whitelist()
+    def get_queries(self):
+        return frappe.get_list(
+            "Insights Query",
+            filters={
+                "data_source": self.name,
+                **get_permission_filter("Insights Query"),
+            },
+            fields=[
+                "name",
+                "title",
+                "data_source",
+            ],
         )
 
     def on_trash(self):

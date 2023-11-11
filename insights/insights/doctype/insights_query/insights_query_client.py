@@ -5,7 +5,7 @@
 import frappe
 from frappe.utils import cint
 
-from insights.utils import InsightsChart, InsightsTable
+from insights.utils import InsightsChart, InsightsQuery, InsightsTable
 
 
 class InsightsQueryClient:
@@ -148,6 +148,9 @@ class SchemaGenerator:
         return self._tables[table_name]
 
     def _fetch_table(self, table_name):
+        if frappe.db.exists("Insights Query", table_name):
+            return InsightsQuery.get_cached_doc(table_name).make_table()
+
         return InsightsTable.get_cached_doc(
             {
                 "data_source": self.data_source,

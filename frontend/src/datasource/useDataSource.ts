@@ -17,12 +17,15 @@ function useDataSource(name: string) {
 	})
 
 	const tableList = ref<DataSourceTableListItem[]>([])
+	const queryList = ref<QueryAsTableListItem[]>([])
 	const dropdownOptions = ref<DataSourceTableOption[]>([])
 	const groupedTableOptions = ref<DataSourceTableGroupedOption[]>([])
 
 	async function fetchTables() {
-		const response = await resource.get_tables.submit()
-		tableList.value = response.message
+		const promises = [resource.get_tables.submit(), resource.get_queries.submit()]
+		const responses = await Promise.all(promises)
+		tableList.value = responses[0].message
+		queryList.value = responses[1].message
 		dropdownOptions.value = makeDropdownOptions()
 		groupedTableOptions.value = makeGroupedTableOptions()
 		return tableList.value
@@ -53,29 +56,35 @@ function useDataSource(name: string) {
 	}
 
 	function makeGroupedTableOptions() {
-		const tablesByGroup: Record<string, DataSourceTableListItem[]> = {}
+		const tablesByGroup: Record<string, DataSourceTableOption[]> = {
+			Tables: [],
+			Queries: [],
+		}
 
 		tableList.value
-			.filter((t) => !t.hidden)
+			.filter((t) => !t.hidden && !t.is_query_based)
 			.forEach((table: DataSourceTableListItem) => {
-				const group = table.is_query_based ? 'Query-based tables' : 'Tables'
-				if (!tablesByGroup[group]) tablesByGroup[group] = []
-				tablesByGroup[group].push(table)
+				tablesByGroup['Tables'].push({
+					table: table.table,
+					label: table.label,
+					value: table.table,
+					description: table.table,
+					data_source: name,
+				})
 			})
 
+		queryList.value.forEach((query: QueryAsTableListItem) => {
+			tablesByGroup['Queries'].push({
+				table: query.name,
+				label: query.title,
+				value: query.name,
+				description: query.name,
+				data_source: name,
+			})
+		})
+
 		return Object.entries(tablesByGroup).map(([group, tables]) => {
-			return {
-				group,
-				items: tables.map((table) => {
-					return {
-						table: table.table,
-						value: table.table,
-						label: table.label,
-						description: table.table,
-						data_source: name,
-					}
-				}),
-			}
+			return { group, items: tables }
 		})
 	}
 

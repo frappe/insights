@@ -114,7 +114,10 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def update_insights_table(self, force=False):
         if not self.is_saved_as_table and not force:
             return
-        query_table = _dict(
+        create_insights_table(self.make_table())
+
+    def make_table(self):
+        return _dict(
             table=self.name,
             label=self.title,
             is_query_based=1,
@@ -122,8 +125,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             columns=InsightsTableColumn.from_dicts(
                 self.get_columns(),
             ),
+            table_links=[],
         )
-        create_insights_table(query_table)
 
     def get_columns(self):
         return self.get_columns_from_results(self.retrieve_results())

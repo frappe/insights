@@ -73,6 +73,7 @@ type DocumentResource = {
 
 interface DataSourceResource extends DocumentResource {
 	get_tables: Resource
+	get_queries: Resource
 	enqueue_sync_tables: Resource
 	update_table_link: Resource
 	delete_table_link: Resource
@@ -110,4 +111,10 @@ type GroupedDropdownOption = {
 
 interface DataSourceTableGroupedOption extends GroupedDropdownOption {
 	items: DataSourceTableOption[]
+}
+
+interface QueryAsTableListItem {
+	name: string
+	title: string
+	data_source: string
 }
