@@ -1,92 +1,92 @@
 import { getChartResource } from '@/query/useChart'
 import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
-import { computed, ref, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { computed, reactive } from 'vue'
 
 export default async function useChart(query) {
 	const chartName = await query.getChartName()
-	const chartResource = getChartResource(chartName)
-	await chartResource.get.fetch()
+	const resource = getChartResource(chartName)
+	await resource.get.fetch()
 
-	const chartData = ref([])
+	const chart = reactive({
+		doc: resource.doc,
+		data: computed(() => convertResultToObjects(query.formattedResults)),
+		togglePublicAccess,
+		addToDashboard,
+		getGuessedChart,
+	})
 
 	const run = createTaskRunner()
-	watch(
+	watchDebounced(
 		() => ({
-			title: chartResource.doc.title,
-			chart_type: chartResource.doc.chart_type,
-			options: chartResource.doc.options,
+			title: chart.doc.title,
+			chart_type: chart.doc.chart_type,
+			options: chart.doc.options,
 		}),
-		updateDoc,
-		{ deep: true }
+		_updateDoc,
+		{ deep: true, debounce: 1000 }
 	)
-	async function updateDoc(doc) {
-		if (!doc.chart_type) return
-		const oldValues = {
-			title: chartResource.originalDoc.title,
-			chart_type: chartResource.originalDoc.chart_type,
-			options: chartResource.originalDoc.options,
-		}
-		const newValues = {
-			title: doc.title,
-			chart_type: doc.chart_type,
-			options: doc.options,
-		}
-		if (areDeeplyEqual(newValues, oldValues)) return
-		await run(() => chartResource.setValue.submit(newValues))
+	async function _updateDoc(newDoc) {
+		if (newDoc.chart_type == 'Auto')
+			newDoc.options = {
+				title: newDoc.title,
+				query: query.doc.name,
+			}
+
+		const ogDoc = resource.originalDoc
+		if (
+			newDoc.title == ogDoc.title &&
+			newDoc.chart_type == ogDoc.chart_type &&
+			areDeeplyEqual(newDoc.options, ogDoc.options)
+		)
+			return
+
+		_save(newDoc)
 	}
 
-	watch(
-		() => query.formattedResults,
-		() => {
-			if (!query.formattedResults.length) {
-				chartResource.doc.chart_type = null
-				chartResource.doc.options = {}
-				updateDoc(chartResource.doc)
-				return
-			}
-			chartData.value = convertResultToObjects(query.formattedResults)
-			const recommendedChart = guessChart(query.formattedResults)
-			chartResource.doc.chart_type = recommendedChart?.type
-			chartResource.doc.options.title = query.doc.title
-			chartResource.doc.options.query = query.doc.name
-			chartResource.doc.options = {
-				...chartResource.doc.options,
+	function _save(chart) {
+		return run(() =>
+			resource.setValue.submit({
+				title: chart.title,
+				chart_type: chart.chart_type,
+				options: chart.options,
+			})
+		)
+	}
+
+	function getGuessedChart() {
+		const recommendedChart = guessChart(query.formattedResults)
+		return {
+			chart_type: recommendedChart?.type,
+			options: {
+				title: query.doc.title,
+				query: query.doc.name,
 				...recommendedChart?.options,
-			}
-			updateDoc(chartResource.doc)
-		},
-		{ immediate: true, deep: true }
-	)
+			},
+		}
+	}
 
 	function togglePublicAccess(isPublic) {
-		if (chartResource.doc.is_public === isPublic) return
-		chartResource.setValue.submit({ is_public: isPublic }).then(() => {
+		if (resource.doc.is_public === isPublic) return
+		resource.setValue.submit({ is_public: isPublic }).then(() => {
 			$notify({
 				title: 'Chart access updated',
 				variant: 'success',
 			})
-			chartResource.doc.is_public = isPublic
+			resource.doc.is_public = isPublic
 		})
 	}
 
 	async function addToDashboard(dashboardName) {
-		if (!dashboardName || !chartResource.doc.name || chartResource.addingToDashboard) return
-		chartResource.addingToDashboard = true
+		if (!dashboardName || !resource.doc.name || resource.addingToDashboard) return
+		resource.addingToDashboard = true
 		await call('insights.api.dashboards.add_chart_to_dashboard', {
 			dashboard: dashboardName,
-			chart: chartResource.doc.name,
+			chart: resource.doc.name,
 		})
-		chartResource.addingToDashboard = false
+		resource.addingToDashboard = false
 	}
 
-	return {
-		doc: computed({
-			get: () => chartResource.doc,
-			set: (value) => (chartResource.doc = value),
-		}),
-		data: chartData,
-		togglePublicAccess,
-		addToDashboard,
-	}
+	return chart
 }
