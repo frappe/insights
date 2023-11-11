@@ -1,6 +1,6 @@
 <script setup>
 import widgets from '@/widgets/widgets'
-import { ChevronDownIcon, Sparkles } from 'lucide-vue-next'
+import { CheckIcon, ChevronDownIcon, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 
 const query = inject('query')
@@ -33,6 +33,9 @@ const chartOptions = computed(() => {
 
 		<template #item-prefix="{ option }">
 			<component :is="getChartIcon(option.value)" class="h-4 w-4 text-gray-600" />
+		</template>
+		<template #item-suffix="{ selected }">
+			<CheckIcon v-if="selected" class="h-4 w-4 text-gray-600" />
 		</template>
 	</Autocomplete>
 </template>
