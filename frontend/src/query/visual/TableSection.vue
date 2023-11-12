@@ -1,6 +1,9 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
+import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
+import JoinInnerIcon from '@/components/Icons/JoinInnerIcon.vue'
+import JoinFullIcon from '@/components/Icons/JoinFullIcon.vue'
 import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
 import { whenever } from '@vueuse/core'
@@ -76,7 +79,10 @@ function onRemoveJoin() {
 				@click="activeJoinIdx = idx"
 			>
 				<div>{{ join.right_table.label }}</div>
-				<JoinLeftIcon class="text-gray-600" />
+				<JoinLeftIcon v-if="join.join_type.value == 'left'" class="text-gray-600" />
+				<JoinRightIcon v-if="join.join_type.value == 'right'" class="text-gray-600" />
+				<JoinInnerIcon v-if="join.join_type.value == 'inner'" class="text-gray-600" />
+				<JoinFullIcon v-if="join.join_type.value == 'full'" class="text-gray-600" />
 			</div>
 		</div>
 	</div>
