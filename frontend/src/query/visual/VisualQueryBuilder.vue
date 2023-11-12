@@ -121,7 +121,6 @@ function updateColumnAt(updatedColumnIdx, newColumn) {
 
 function addFilter() {
 	builder.query.filters.push({ ...NEW_FILTER })
-	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
 }
 function removeFilterAt(removedFilterIdx) {
 	builder.query.filters.splice(removedFilterIdx, 1)
