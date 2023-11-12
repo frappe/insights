@@ -6,7 +6,6 @@ import { getFormattedResult } from '@/utils/query/results'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import useChart from './useChart'
-import { watchOnce, whenever } from '@vueuse/core'
 
 const session = sessionStore()
 
@@ -64,7 +63,7 @@ function makeQuery(name) {
 
 	state.execute = debounce(async () => {
 		state.executing = true
-		await run(() => resource.run.submit())
+		await run(() => resource.run.submit().catch(() => {}))
 		state.executing = false
 	}, 500)
 
