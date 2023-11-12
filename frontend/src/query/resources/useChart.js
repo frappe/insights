@@ -1,11 +1,11 @@
 import { getChartResource } from '@/query/useChart'
 import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
-import { watchDebounced } from '@vueuse/core'
+import { useStorage, watchDebounced } from '@vueuse/core'
 import { computed, reactive } from 'vue'
 
 export default async function useChart(query) {
-	const chartName = await query.getChartName()
+	const chartName = await getChartName(query)
 	const resource = getChartResource(chartName)
 	await resource.get.fetch()
 
@@ -89,4 +89,13 @@ export default async function useChart(query) {
 	}
 
 	return chart
+}
+
+const chartNameCache = useStorage('insights:chart_name_cache', {})
+function getChartName(query) {
+	if (chartNameCache[query.doc.name]) return chartNameCache[query.doc.name]
+	return query.getChartName().then((name) => {
+		chartNameCache[query.doc.name] = name
+		return name
+	})
 }
