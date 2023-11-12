@@ -18,7 +18,7 @@ def execute():
     )
     for old_query in old_queries:
         doc = frappe.get_doc("Insights Query", old_query.name)
-        old_query = doc.as_dict()
+        old_query = doc
         if not old_query.sql or not old_query.tables or not old_query.tables[0].table:
             continue
         doc.db_set(
