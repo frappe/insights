@@ -280,7 +280,12 @@ class Column(frappe._dict):
         return self.aggregation and self.aggregation != "custom"
 
     def is_expression(self):
-        return self.expression.get("raw") and self.expression.get("ast") and self.alias
+        return (
+            self.expression
+            and self.expression.get("raw")
+            and self.expression.get("ast")
+            and self.alias
+        )
 
     def is_formatted(self):
         return self.format
@@ -361,9 +366,9 @@ class Join(frappe._dict):
 @dataclass
 class Filter(frappe._dict):
     def __init__(self, *args, **kwargs):
-        self.column = Column(**kwargs.get("column"))
-        self.operator = LabelValue(**kwargs.get("operator"))
-        self.value = LabelValue(**kwargs.get("value"))
+        self.column = Column(**(kwargs.get("column") or {}))
+        self.operator = LabelValue(**(kwargs.get("operator") or {}))
+        self.value = LabelValue(**(kwargs.get("value") or {}))
         self.expression = frappe.parse_json(kwargs.get("expression", {}))
 
     def is_valid(self):
