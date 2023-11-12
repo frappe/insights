@@ -8,7 +8,6 @@ const query = inject('query')
 const showShareDialog = ref(false)
 const showDashboardDialog = ref(false)
 const dashboards = useDashboards()
-dashboards.reload()
 const toDashboard = ref(null)
 const addingToDashboard = ref(false)
 const dashboardOptions = computed(() => {
@@ -28,19 +27,7 @@ const addChartToDashboard = async () => {
 	})
 }
 
-const dashboardInput = ref(null)
-watch(
-	() => showDashboardDialog.value,
-	(val) => {
-		if (val) {
-			setTimeout(() => {
-				dashboardInput.value.input?.$el?.blur()
-				dashboardInput.value.input?.$el?.focus()
-			}, 500)
-		}
-	},
-	{ immediate: true }
-)
+watch(showDashboardDialog, (val) => val && dashboards.reload(), { immediate: true })
 </script>
 
 <template>
@@ -63,11 +50,7 @@ watch(
 		<template #body-content>
 			<div class="text-base">
 				<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard</span>
-				<Autocomplete
-					ref="dashboardInput"
-					:options="dashboardOptions"
-					v-model="toDashboard"
-				/>
+				<Autocomplete :options="dashboardOptions" v-model="toDashboard" />
 			</div>
 		</template>
 		<template #actions>
