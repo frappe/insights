@@ -94,7 +94,7 @@ def get_filters(old_query):
             filters.append(
                 {
                     "expression": {
-                        "raw": condition.get("expression"),
+                        "raw": condition.get("raw"),
                         "ast": condition,
                     }
                 }
