@@ -23,7 +23,7 @@ interface Session {
 
 type ListResourceParams = {
 	type?: 'list'
-	url: string
+	url?: string
 	auto?: boolean
 	doctype: string
 	filters: any
