@@ -59,7 +59,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def results(self):
-        fetch_if_not_cached = self.status == Status.SUCCESS.value
+        fetch_if_not_cached = False
         limit = InsightsSettings.get("query_result_limit") or 1000
         try:
             results = self.retrieve_results(fetch_if_not_cached)
