@@ -9,6 +9,7 @@ import {
 	ListFilter,
 	PieChart,
 	ScatterChart,
+	Sparkles,
 	Table,
 	TextCursorInput,
 	TrendingUp,
@@ -179,6 +180,7 @@ function getChartOptions() {
 
 export function getChartIcon(itemType) {
 	if (!itemType) return
+	if (itemType == 'Auto') return Sparkles
 	if (!VALID_CHARTS.includes(itemType)) return
 	return get(itemType).icon
 }
