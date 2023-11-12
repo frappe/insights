@@ -22,14 +22,6 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 			<div class="flex flex-1 flex-col items-center justify-center gap-2">
 				<Filter class="h-10 w-10 text-gray-300" />
 				<span class="text-gray-500"> No results found </span>
-				<Button
-					class="shadow-2xl"
-					variant="solid"
-					@click="query.execute()"
-					:loading="query.executing"
-				>
-					Execute Query
-				</Button>
 			</div>
 		</div>
 		<template v-if="query.formattedResults.length">
