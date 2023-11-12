@@ -40,7 +40,13 @@ function makeQuery(name) {
 	state.formattedResults = computed(() => getFormattedResult(resource.doc.results))
 	state.resultColumns = computed(() => resource.doc.results?.[0])
 
-	state.reload = () => resource.get.fetch()
+	state.reload = () => {
+		return resource.get
+			.fetch()
+			.then(() => useChart(state))
+			.then((chart) => (state.chart = chart))
+	}
+
 	wheneverChanges(
 		() => state.doc?.name || state.doc?.data_source,
 		() => state.fetchTableMeta()
@@ -71,7 +77,6 @@ function makeQuery(name) {
 		const response = await resource.get_chart_name.fetch()
 		return response.message
 	}
-	useChart(state).then((chart) => (state.chart = chart))
 
 	state.fetchTableMeta = async () => {
 		if (!state.doc.data_source) return
