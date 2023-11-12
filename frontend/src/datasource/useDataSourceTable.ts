@@ -62,6 +62,12 @@ async function useDataSourceTable(params: GetTableParams) {
 const today = new Date().toISOString().split('T')[0]
 const dailyCacheKey = `insights:table-name-cache-{${today}}`
 
+for (const key of Object.keys(localStorage)) {
+	if (key.startsWith('insights:table-name-cache-')) {
+		localStorage.removeItem(key)
+	}
+}
+
 type TableNameCache = Record<string, string>
 const tableNameCache = useStorage<TableNameCache>(dailyCacheKey, {})
 
