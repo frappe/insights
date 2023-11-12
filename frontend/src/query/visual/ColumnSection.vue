@@ -108,7 +108,7 @@ function isValidColumn(column) {
 		@update:show="activeColumnIdx = null"
 		:target-element="columnRefs[activeColumnIdx]"
 	>
-		<div class="w-[19rem] rounded bg-white text-base shadow-2xl">
+		<div class="w-[20rem] rounded bg-white text-base shadow-2xl">
 			<ColumnEditor
 				:column="columns[activeColumnIdx]"
 				@discard="activeColumnIdx = null"
