@@ -19,7 +19,7 @@ export const NEW_FILTER = {
 }
 
 export const NEW_JOIN = {
-	join_type: { label: 'Left Join', value: 'left' },
+	join_type: { label: 'Inner Join', value: 'inner' },
 	left_table: {},
 	left_column: {},
 	right_table: {},
