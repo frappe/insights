@@ -19,6 +19,12 @@ const activeJoin = reactive({
 	...props.join,
 })
 
+const setOptionValue = (option, value) => (option.value = value)
+setOptionValue(activeJoin.left_table, activeJoin.left_table.table)
+setOptionValue(activeJoin.left_column, activeJoin.left_column.column)
+setOptionValue(activeJoin.join_type, activeJoin.join_type.value)
+setOptionValue(activeJoin.right_table, activeJoin.right_table.table)
+
 const joinTypeOptions = computed(() => [
 	{ label: 'Inner Join', value: 'inner' },
 	{ label: 'Left Join', value: 'left' },
@@ -40,13 +46,13 @@ const rightTableOptions = computed(() => dataSource?.groupedTableOptions || [])
 const leftColumnOptions = ref(null)
 const rightColumnOptions = ref(null)
 watch(
-	() => activeJoin.left_table,
-	async (newVal, oldVal) => {
-		if (!newVal?.table) return
-		if (JSON.stringify(newVal) === JSON.stringify(oldVal)) return
+	() => activeJoin.left_table?.table,
+	async (newLeft, oldLeft) => {
+		if (!newLeft) return
+		if (newLeft === oldLeft) return
 		const leftTable = await useDataSourceTable({
 			data_source: builder.data_source,
-			table: newVal.table,
+			table: newLeft,
 		})
 		leftColumnOptions.value = leftTable.columns.map((c) => ({
 			column: c.column,
@@ -54,20 +60,20 @@ watch(
 			label: c.label,
 			value: c.column,
 		}))
-		if (activeJoin.left_column?.table !== newVal.table) {
+		if (activeJoin.left_column?.table !== newLeft) {
 			activeJoin.left_column = {}
 		}
 	},
-	{ immediate: true, deep: true }
+	{ immediate: true }
 )
 watch(
-	() => activeJoin.right_table,
-	async (newVal, oldVal) => {
-		if (!newVal?.table) return
-		if (JSON.stringify(newVal) === JSON.stringify(oldVal)) return
+	() => activeJoin.right_table?.table,
+	async (newRight, oldRight) => {
+		if (!newRight) return
+		if (newRight === oldRight) return
 		const rightTable = await useDataSourceTable({
 			data_source: builder.data_source,
-			table: newVal.table,
+			table: newRight,
 		})
 		rightColumnOptions.value = rightTable.columns.map((c) => ({
 			column: c.column,
@@ -75,11 +81,11 @@ watch(
 			label: c.label,
 			value: c.column,
 		}))
-		if (activeJoin.right_column?.table !== newVal.table) {
+		if (activeJoin.right_column?.table !== newRight) {
 			activeJoin.right_column = {}
 		}
 	},
-	{ immediate: true, deep: true }
+	{ immediate: true }
 )
 </script>
 
