@@ -1,8 +1,7 @@
 <script setup>
 import Tabs from '@/components/Tabs.vue'
-import { safeJSONParse } from '@/utils'
 import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, nextTick, onMounted, provide, reactive, ref, watch } from 'vue'
+import { computed, inject, onMounted, provide, reactive, ref, watch } from 'vue'
 import ChartOptions from '../ChartOptions.vue'
 import ChartSection from '../ChartSection.vue'
 import ResultSection from '../ResultSection.vue'
@@ -12,11 +11,11 @@ import ResultColumnActions from './ResultColumnActions.vue'
 import ResultFooter from './ResultFooter.vue'
 import TableSection from './TableSection.vue'
 import TransformSection from './TransformSection.vue'
-import { NEW_FILTER } from './constants'
+import { NEW_FILTER, NEW_JOIN } from './constants'
 import {
-	WARN_UNABLE_TO_INFER_JOIN,
-	ERROR_UNABLE_TO_RESET_MAIN_TABLE,
 	ERROR_CANNOT_ADD_SELF_AS_TABLE,
+	ERROR_UNABLE_TO_RESET_MAIN_TABLE,
+	WARN_UNABLE_TO_INFER_JOIN,
 } from './messages'
 import {
 	inferJoinForTable,
@@ -61,8 +60,7 @@ provide('builder', builder)
 watch(() => builder.query, query.updateQuery, { deep: true })
 onMounted(() => {
 	if (!query.doc?.json) return
-	const parsedJson = safeJSONParse({ ...query.doc.json })
-	builder.query = sanitizeQueryJSON(parsedJson)
+	builder.query = sanitizeQueryJSON(query.doc.json)
 })
 
 const activeTab = ref('Build')
@@ -83,6 +81,12 @@ function addTable(newTable) {
 	const join = inferJoinForTable(newTable, builder.query, query.tableMeta)
 	if (!join) {
 		$notify(WARN_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
+		builder.query.joins.push({
+			...NEW_JOIN,
+			left_table: { table: mainTable.table, label: mainTable.label },
+			right_table: { table: newTable.table, label: newTable.label },
+		})
+		return
 	}
 	builder.query.joins.push(join)
 }

@@ -124,5 +124,5 @@ export function sanitizeQueryJSON(queryJson) {
 		})
 	}
 	if (!queryJson.limit) queryJson.limit = 100
-	return queryJson
+	return { ...queryJson }
 }
