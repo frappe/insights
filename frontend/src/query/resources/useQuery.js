@@ -57,8 +57,8 @@ function makeQuery(name) {
 
 	const autoExecuteEnabled = settingsStore().settings.auto_execute_query
 	state.updateQuery = debounce(async (newQuery) => {
-		if (areDeeplyEqual(newQuery, state.doc.json)) return
-		const tablesChanged = hasTablesChanged(newQuery, state.doc.json)
+		if (areDeeplyEqual(newQuery, resource.originalDoc.json)) return
+		const tablesChanged = hasTablesChanged(newQuery, resource.originalDoc.json)
 		await run(() =>
 			resource.setValue
 				.submit({ json: JSON.stringify(newQuery, null, 2) })
