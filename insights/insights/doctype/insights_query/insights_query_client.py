@@ -122,16 +122,18 @@ class SchemaGenerator:
                 continue
             schema[table_name] = self.get_schema(table_name)
             for table_link in schema[table_name]["relations"]:
-                if table_link["foreign_table"] not in schema:
-                    schema[table_link["foreign_table"]] = self.get_schema(
-                        table_link["foreign_table"]
-                    )
+                table = table_link["foreign_table"]
+                if table not in schema:
+                    schema[table] = self.get_schema(table)
         schema_list = list(schema.values())
+        schema_list = [table for table in schema_list if table.get("columns", [])]
         frappe.cache.set_value(self.cache_key, schema_list, expires_in_sec=60 * 10)
         return schema_list
 
     def get_schema(self, table_name):
         table = self.get_table(table_name)
+        if not table:
+            return {}
         return frappe._dict(
             {
                 "table": table_name,
@@ -151,15 +153,15 @@ class SchemaGenerator:
         if frappe.db.exists("Insights Query", table_name):
             return InsightsQuery.get_cached_doc(table_name).make_table()
 
-        return InsightsTable.get_cached_doc(
-            {
-                "data_source": self.data_source,
-                "table": table_name,
-            }
-        )
+        if table_docname := frappe.db.exists(
+            "Insights Table", {"data_source": self.data_source, "table": table_name}
+        ):
+            return InsightsTable.get_cached_doc(table_docname)
 
     def get_table_columns(self, table_name):
         table = self.get_table(table_name)
+        if not table:
+            return []
         return [
             {
                 "column": column.column,
@@ -174,6 +176,8 @@ class SchemaGenerator:
 
     def get_table_relations(self, table_name):
         table = self.get_table(table_name)
+        if not table:
+            return []
         return [
             {
                 "primary_table": table_name,
