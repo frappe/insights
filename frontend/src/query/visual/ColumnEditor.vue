@@ -15,6 +15,9 @@ const column = reactive({
 	...NEW_COLUMN,
 	...props.column,
 })
+if (column.table && column.column && !column.value) {
+	column.value = `${column.table}.${column.column}`
+}
 // `ast` is checked here, because when adding new expression column
 // `ast` is set to {} to open the expression editor instead of the simple editor
 // since setting it to `null` will open the simple editor
@@ -71,10 +74,8 @@ const isValidColumn = computed(() => {
 			<div class="space-y-1">
 				<span class="text-sm font-medium text-gray-700">Column</span>
 				<Autocomplete
-					:modelValue="{
-						...column,
-						value: `${column.table}.${column.column}`,
-					}"
+					:modelValue="column"
+					bodyClasses="w-[18rem]"
 					placeholder="Column"
 					:options="assistedQuery.groupedColumnOptions"
 					@update:modelValue="onColumnChange"
