@@ -48,6 +48,7 @@ function onRemoveJoin() {
 			</div>
 			<Autocomplete
 				:key="assistedQuery.data_source"
+				bodyClasses="w-[18rem]"
 				:options="dataSource.groupedTableOptions"
 				@update:modelValue="$event && assistedQuery.addTable($event)"
 			>

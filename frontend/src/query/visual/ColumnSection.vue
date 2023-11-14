@@ -56,7 +56,7 @@ function isValidColumn(column) {
 			</div>
 			<Autocomplete
 				:modelValue="columns"
-				bodyClasses="!w-[16rem]"
+				bodyClasses="w-[18rem]"
 				@update:modelValue="onColumnSelect"
 				:options="assistedQuery.groupedColumnOptions"
 			>
