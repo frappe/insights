@@ -22,8 +22,8 @@ const activeJoin = reactive({
 const setOptionValue = (option, value) => (option.value = value)
 setOptionValue(activeJoin.left_table, activeJoin.left_table.table)
 setOptionValue(activeJoin.left_column, activeJoin.left_column.column)
-setOptionValue(activeJoin.join_type, activeJoin.join_type.value)
 setOptionValue(activeJoin.right_table, activeJoin.right_table.table)
+setOptionValue(activeJoin.right_column, activeJoin.right_column.column)
 
 const joinTypeOptions = computed(() => [
 	{ label: 'Inner Join', value: 'inner' },
