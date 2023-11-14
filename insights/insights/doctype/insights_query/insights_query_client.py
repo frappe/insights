@@ -94,7 +94,10 @@ class InsightsQueryClient:
         return self.delete_insights_table()
 
     @frappe.whitelist()
-    def fetch_related_tables(self):
+    def fetch_related_tables_columns(self, search_query=None):
+        if search_query and not isinstance(search_query, str):
+            frappe.throw("Search query must be a string")
+
         if not self.is_assisted_query:
             return []
 
@@ -102,89 +105,92 @@ class InsightsQueryClient:
         table_names = [table["table"] for table in tables if table["table"]]
         if not table_names:
             return []
-        return SchemaGenerator(self.data_source, table_names).generate()
 
+        related_table_names = get_related_table_names(table_names, self.data_source)
 
-class SchemaGenerator:
-    def __init__(self, data_source, table_names):
-        self.data_source = data_source
-        self.table_names = table_names
-        self._tables = {}
-        table_names_str = ",".join(table_names)
-        self.cache_key = f"insights_schema_{self.data_source.lower()}_{table_names_str}"
+        insights_table = frappe.qb.DocType("Insights Table")
+        insights_table_column = frappe.qb.DocType("Insights Table Column")
 
-    def generate(self):
-        if frappe.cache.exists(self.cache_key):
-            return frappe.cache.get_value(self.cache_key)
-        schema = {}
-        for table_name in self.table_names:
-            if schema.get(table_name):
-                continue
-            schema[table_name] = self.get_schema(table_name)
-            for table_link in schema[table_name]["relations"]:
-                table = table_link["foreign_table"]
-                if table not in schema:
-                    schema[table] = self.get_schema(table)
-        schema_list = list(schema.values())
-        schema_list = [table for table in schema_list if table.get("columns", [])]
-        frappe.cache.set_value(self.cache_key, schema_list, expires_in_sec=60 * 10)
-        return schema_list
+        fields_to_select = [
+            insights_table_column.column,
+            insights_table_column.label,
+            insights_table_column.type,
+            insights_table.table,
+            insights_table.data_source,
+            insights_table.label.as_("table_label"),
+        ]
 
-    def get_schema(self, table_name):
-        table = self.get_table(table_name)
-        if not table:
-            return {}
-        return frappe._dict(
-            {
-                "table": table_name,
-                "label": table.label,
-                "data_source": table.data_source,
-                "columns": self.get_table_columns(table_name),
-                "relations": self.get_table_relations(table_name),
-            }
+        search_cond = insights_table.name.isnotnull()
+        if search_query:
+            search_cond = (insights_table_column.column.like(f"%{search_query}%")) | (
+                insights_table_column.label.like(f"%{search_query}%")
+            )
+
+        cols = (
+            frappe.qb.from_(insights_table)
+            .left_join(insights_table_column)
+            .on(insights_table.name == insights_table_column.parent)
+            .select(*fields_to_select)
+            .where(
+                (insights_table.data_source == self.data_source)
+                & (search_cond)
+                & (
+                    insights_table.table.isin(related_table_names)
+                    | insights_table.table.isin(table_names)
+                )
+            )
+            .groupby(insights_table.table, insights_table_column.column)
+            .run(as_dict=True)
         )
 
-    def get_table(self, table_name):
-        if table_name not in self._tables:
-            self._tables[table_name] = self._fetch_table(table_name)
-        return self._tables[table_name]
+        columns = []
+        for col in cols:
+            col_added = any(
+                col["column"] == column["column"] and col["table"] == column["table"]
+                for column in columns
+            )
+            if col_added:
+                continue
+            columns.append(
+                {
+                    "column": col.column,
+                    "label": col.label,
+                    "type": col.type,
+                    "table": col.table,
+                    "table_label": col.table_label,
+                    "data_source": col.data_source,
+                }
+            )
 
-    def _fetch_table(self, table_name):
-        if frappe.db.exists("Insights Query", table_name):
-            return InsightsQuery.get_cached_doc(table_name).make_table()
+        return columns
 
-        if table_docname := frappe.db.exists(
-            "Insights Table", {"data_source": self.data_source, "table": table_name}
-        ):
-            return InsightsTable.get_cached_doc(table_docname)
 
-    def get_table_columns(self, table_name):
-        table = self.get_table(table_name)
-        if not table:
-            return []
-        return [
-            {
-                "column": column.column,
-                "type": column.type,
-                "label": column.label,
-                "table": table_name,
-                "table_label": table.label,
-                "data_source": table.data_source,
-            }
-            for column in table.columns
-        ]
+def get_related_table_names(table_names, data_source):
+    insights_table = frappe.qb.DocType("Insights Table")
+    insights_table_link = frappe.qb.DocType("Insights Table Link")
 
-    def get_table_relations(self, table_name):
-        table = self.get_table(table_name)
-        if not table:
-            return []
-        return [
-            {
-                "primary_table": table_name,
-                "primary_column": relation.primary_key,
-                "foreign_table": relation.foreign_table,
-                "foreign_column": relation.foreign_key,
-                "cardinality": relation.cardinality,
-            }
-            for relation in table.table_links
-        ]
+    referenced_tables = (
+        frappe.qb.from_(insights_table)
+        .left_join(insights_table_link)
+        .on(insights_table.name == insights_table_link.parent)
+        .where(
+            (insights_table.data_source == data_source) & (insights_table.table.isin(table_names))
+        )
+        .select(insights_table_link.foreign_table)
+        .groupby(insights_table_link.foreign_table)
+        .run(pluck=True)
+    )
+    referencing_tables = (
+        frappe.qb.from_(insights_table)
+        .left_join(insights_table_link)
+        .on(insights_table.name == insights_table_link.parent)
+        .where(
+            (insights_table.data_source == data_source)
+            & (insights_table_link.foreign_table.isin(table_names))
+        )
+        .select(insights_table.table)
+        .groupby(insights_table.table)
+        .run(pluck=True)
+    )
+
+    return list(set(referenced_tables + referencing_tables))

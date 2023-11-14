@@ -1,4 +1,5 @@
 import { FIELDTYPES } from '@/utils'
+import { call } from 'frappe-ui'
 import { NEW_COLUMN, NEW_JOIN } from './constants'
 
 export function makeNewColumn(newColumn) {
@@ -12,9 +13,10 @@ export function makeNewColumn(newColumn) {
 	}
 }
 
-export function inferJoinsFromColumns(assistedQuery, relatedTables) {
+export async function inferJoinsFromColumns(assistedQuery) {
 	const newJoins = []
 
+	const data_source = assistedQuery.data_source
 	const mainTable = assistedQuery.table
 	if (!mainTable.table) return newJoins
 
@@ -23,75 +25,86 @@ export function inferJoinsFromColumns(assistedQuery, relatedTables) {
 		...assistedQuery.filters.map((f) => f.column).filter((c) => c.table && c.column),
 	]
 	const columnByTable = columns.reduce((acc, column) => {
-		if (!acc[column.table]) acc[column.table] = null
 		acc[column.table] = column
 		return acc
 	}, {})
 
-	Object.values(columnByTable).forEach((column) => {
-		if (column.table == mainTable.table) return
+	for (const column of Object.values(columnByTable)) {
+		if (column.table == mainTable.table) continue
 
 		// check if the column has a relation with main table, if so add the join
-		const relation = getRelation(mainTable.table, column.table, relatedTables)
+		const relation = await getRelation(mainTable.table, column.table, data_source)
 		if (relation) {
-			newJoins.push(makeJoinFromRelation(relation, relatedTables))
-			return
+			newJoins.push(makeJoinFromRelation(relation))
+			continue
 		}
 
 		// check if the column has a relation with any other table, if so add the join
-		Object.keys(columnByTable).some((table) => {
-			if (table === column.table) return false
-			if (table === mainTable.table) return false
-			const relation = getRelation(table, column.table, relatedTables)
+		for (const table of Object.keys(columnByTable)) {
+			if (table === column.table) continue
+			if (table === mainTable.table) continue
+			const relation = await getRelation(table, column.table, data_source)
 			if (relation) {
-				newJoins.push(makeJoinFromRelation(relation, relatedTables))
-				return true
+				newJoins.push(makeJoinFromRelation(relation))
+				break
 			}
-		})
-	})
+		}
+	}
 
 	return newJoins
 }
 
-function makeJoinFromRelation(relation, relatedTables) {
-	const leftTable = relatedTables.find((m) => m.table === relation.primary_table)
-	const rightTable = relatedTables.find((m) => m.table === relation.foreign_table)
-	const leftColumn = leftTable.columns.find((c) => c.column === relation.primary_column)
-	const rightColumn = rightTable.columns.find((c) => c.column === relation.foreign_column)
+function makeJoinFromRelation(relation) {
 	return {
 		...NEW_JOIN,
-		left_table: leftTable,
-		left_column: leftColumn,
-		right_table: rightTable,
-		right_column: rightColumn,
+		left_table: {
+			table: relation.primary_table,
+			label: relation.primary_table_label,
+		},
+		left_column: {
+			table: relation.primary_table,
+			column: relation.primary_column,
+		},
+		right_table: {
+			table: relation.foreign_table,
+			label: relation.foreign_table_label,
+		},
+		right_column: {
+			table: relation.foreign_table,
+			column: relation.foreign_column,
+		},
 	}
 }
 
-function getRelation(tableOne, tableTwo, relatedTables) {
-	const tableOneMeta = relatedTables.find((m) => m.table === tableOne)
-	if (!tableOneMeta) return null
-	return tableOneMeta.relations.find((r) => r.foreign_table === tableTwo)
+const relations_cache = {}
+async function getRelation(tableOne, tableTwo, data_source) {
+	const cache_key = `${data_source}-${tableOne}-${tableTwo}`
+	if (relations_cache[cache_key]) {
+		return relations_cache[cache_key]
+	}
+	relations_cache[cache_key] = await call('insights.api.data_sources.get_relation', {
+		data_source: data_source,
+		table_one: tableOne,
+		table_two: tableTwo,
+	})
+	return relations_cache[cache_key]
 }
 
-export function inferJoinForTable(newTable, assistedQuery, relatedTables) {
+export async function inferJoinForTable(newTable, assistedQuery) {
 	const mainTable = assistedQuery.table
+	const data_source = assistedQuery.data_source
 	if (!mainTable.table) return null
 
-	const relation = getRelation(mainTable.table, newTable.table, relatedTables)
-	if (relation) return makeJoinFromRelation(relation, relatedTables)
+	const relation = await getRelation(mainTable.table, newTable.table, data_source)
+	if (relation) return makeJoinFromRelation(relation)
 
 	// find a relation with any other joined table
 	let relationWithJoinedTable = null
-	assistedQuery.joins.some((join) => {
-		const relation = getRelation(join.left_table, newTable.table, relatedTables)
+	for (const join of assistedQuery.joins) {
+		const relation = await getRelation(join.left_table, newTable.table, data_source)
 		if (relation) {
-			relationWithJoinedTable = relation
-			return true
+			return makeJoinFromRelation(relation)
 		}
-	})
-
-	if (relationWithJoinedTable) {
-		return makeJoinFromRelation(relationWithJoinedTable, relatedTables)
 	}
 
 	return null

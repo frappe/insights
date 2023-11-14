@@ -1,6 +1,7 @@
-import { areDeeplyEqual, makeColumnOption, run_doc_method, wheneverChanges } from '@/utils'
+import { areDeeplyEqual, makeColumnOption, run_doc_method } from '@/utils'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
+import { debounce } from 'frappe-ui'
 import { computed, onMounted, reactive } from 'vue'
 import { NEW_COLUMN, NEW_FILTER, NEW_JOIN } from './constants'
 import {
@@ -46,6 +47,7 @@ export default function useAssistedQuery(query) {
 		addTransform,
 		removeTransformAt,
 		updateTransformAt,
+		fetchColumnOptions: debounce(fetchColumnOptions, 500),
 	})
 
 	onMounted(async () => {
@@ -75,31 +77,26 @@ export default function useAssistedQuery(query) {
 				limit: state.limit,
 			}
 		},
-		(newQuery) => {
-			const tablesChanged = hasTablesChanged(newQuery, query.doc.json)
-			query.updateQuery(newQuery).then(() => tablesChanged && fetchRelatedTables())
+		(newQuery, oldQuery) => {
+			const tablesChanged = hasTablesChanged(newQuery, oldQuery)
+			query.updateQuery(newQuery).then(({ query_updated }) => {
+				query_updated && tablesChanged && fetchColumnOptions()
+			})
 		},
 		{ deep: true, debounce: 500 }
 	)
 
-	let relatedTables = []
-	async function fetchRelatedTables() {
+	async function fetchColumnOptions(search_txt = '') {
 		if (!state.data_source) return
-		const res = await run_doc_method('fetch_related_tables', query.doc)
-		state.columnOptions = res.message
-			.map((t) => t.columns)
-			.flat()
-			.map(makeColumnOption)
-		state.groupedColumnOptions = makeGroupedColumnOptions(state.columnOptions)
-		relatedTables = res.message
-	}
-	if (state.joinAssistEnabled) {
-		wheneverChanges(() => query.doc?.name || query.doc?.data_source, fetchRelatedTables, {
-			immediate: true,
+		const search_txt_lower = search_txt.toLowerCase()
+		const res = await run_doc_method('fetch_related_tables_columns', query.doc, {
+			search_query: search_txt_lower,
 		})
+		state.columnOptions = res.message.map(makeColumnOption)
+		state.groupedColumnOptions = makeGroupedColumnOptions(res.message)
 	}
 
-	function addTable(newTable) {
+	async function addTable(newTable) {
 		if (!newTable?.table) return
 		if (newTable.table === query.doc.name) {
 			return createToast(ERROR_CANNOT_ADD_SELF_AS_TABLE())
@@ -110,17 +107,16 @@ export default function useAssistedQuery(query) {
 			return
 		}
 		if (isTableAlreadyAdded(state, newTable)) return
-		const join = inferJoinForTable(newTable, state, relatedTables)
-		if (!join) {
-			createToast(WARN_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
-			state.joins.push({
-				...NEW_JOIN,
-				left_table: { table: mainTable.table, label: mainTable.label },
-				right_table: { table: newTable.table, label: newTable.label },
-			})
-			return
+		const join = await inferJoinForTable(newTable, state)
+		if (join) {
+			return state.joins.push(join)
 		}
-		state.joins.push(join)
+		createToast(WARN_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
+		state.joins.push({
+			...NEW_JOIN,
+			left_table: { table: mainTable.table, label: mainTable.label },
+			right_table: { table: newTable.table, label: newTable.label },
+		})
 	}
 
 	function resetMainTable() {
@@ -189,8 +185,8 @@ export default function useAssistedQuery(query) {
 		query.updateTransforms(state.transforms)
 	}
 
-	function inferJoins() {
-		state.joins = inferJoinsFromColumns(state, relatedTables)
+	async function inferJoins() {
+		state.joins = (await inferJoinsFromColumns(state)) || []
 	}
 
 	return state

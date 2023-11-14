@@ -10,7 +10,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     check_table_permission,
     get_permission_filter,
 )
-from insights.utils import detect_encoding
+from insights.utils import InsightsTable, detect_encoding
 
 
 @frappe.whitelist()
@@ -83,7 +83,6 @@ def get_tables(data_source=None, with_query_tables=False):
 @frappe.whitelist()
 @check_role("Insights User")
 def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
-
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
 
@@ -156,7 +155,6 @@ def create_data_source_for_csv():
 @frappe.whitelist()
 @check_role("Insights User")
 def import_csv(table_label, table_name, filename, if_exists, columns, data_source):
-
     create_data_source_for_csv()
 
     table_import = frappe.new_doc("Insights Table Import")
@@ -233,3 +231,45 @@ def fetch_column_values(data_source, table, column, search_text=None):
 @frappe.whitelist()
 def get_source_schema(data_source):
     return frappe.get_doc("Insights Data Source", data_source).get_schema()
+
+
+@frappe.whitelist()
+def get_relation(data_source, table_one, table_two):
+    table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
+    if not table_one_doc:
+        frappe.throw(f"Table {table_one} not found")
+
+    table_two_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_two})
+    if not table_two_doc:
+        frappe.throw(f"Table {table_two} not found")
+
+    if relation := table_one_doc.get({"foreign_table": table_two}):
+        return {
+            "primary_table": table_one,
+            "primary_table_label": table_one_doc.label,
+            "primary_column": relation[0].primary_key,
+            "foreign_table": table_two,
+            "foreign_column": relation[0].foreign_key,
+            "foreign_table_label": table_two_doc.label,
+            "cardinality": relation[0].cardinality,
+        }
+
+    if relation := table_two_doc.get({"foreign_table": table_one}):
+        reverse_cardinality = get_reverse_cardinality(relation[0].cardinality)
+        return {
+            "primary_table": table_one,
+            "primary_table_label": table_one_doc.label,
+            "primary_column": relation[0].foreign_key,
+            "foreign_table": table_two,
+            "foreign_column": relation[0].primary_key,
+            "foreign_table_label": table_two_doc.label,
+            "cardinality": reverse_cardinality,
+        }
+
+
+def get_reverse_cardinality(cardinality):
+    if cardinality == "1:N":
+        return "N:1"
+    if cardinality == "N:1":
+        return "1:N"
+    return cardinality

@@ -8,6 +8,7 @@ import { fieldtypesToIcon, makeColumnOption } from '@/utils'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
+!assistedQuery.columnOptions.length && assistedQuery.fetchColumnOptions()
 
 const columns = computed(() => assistedQuery.columns)
 const columnRefs = ref(null)
@@ -59,6 +60,7 @@ function isValidColumn(column) {
 				bodyClasses="w-[18rem]"
 				@update:modelValue="onColumnSelect"
 				:options="assistedQuery.groupedColumnOptions"
+				@update:query="assistedQuery.fetchColumnOptions"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>

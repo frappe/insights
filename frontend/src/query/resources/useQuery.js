@@ -50,13 +50,15 @@ function makeQuery(name) {
 
 	const autoExecuteEnabled = settingsStore().settings.auto_execute_query
 	state.updateQuery = async (newQuery) => {
-		if (areDeeplyEqual(newQuery, resource.originalDoc.json)) return Promise.resolve()
+		if (areDeeplyEqual(newQuery, resource.originalDoc.json))
+			return Promise.resolve({ query_updated: false })
+
 		return new Promise((resolve) =>
 			run(() =>
 				resource.setValue
 					.submit({ json: JSON.stringify(newQuery, null, 2) })
 					.then(() => autoExecuteEnabled && state.execute())
-					.then(resolve)
+					.then(() => resolve({ query_updated: true }))
 			)
 		)
 	}

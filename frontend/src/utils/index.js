@@ -447,7 +447,7 @@ export async function run_doc_method(method, doc, args = {}) {
 		method,
 		dt: doc.doctype,
 		dn: doc.name,
-		args: {},
+		args: args,
 	})
 }
 
