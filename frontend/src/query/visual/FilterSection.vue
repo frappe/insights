@@ -48,6 +48,11 @@ function isValidFilter(filter) {
 				v-for="(filter, idx) in filters"
 				:key="idx"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				:class="
+					activeFilterIdx === idx
+						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
+						: ''
+				"
 				@click="activeFilterIdx = filters.indexOf(filter)"
 			>
 				<div class="flex w-full items-center overflow-hidden">

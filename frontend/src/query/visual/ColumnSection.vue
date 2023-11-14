@@ -14,6 +14,7 @@ const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
 
 function onColumnSelect(column) {
+	if (!column) return
 	if (columns.value.find((c) => c.table === column.table && c.column === column.column)) {
 		return
 	}
@@ -80,6 +81,11 @@ function isValidColumn(column) {
 				v-for="(column, idx) in columns"
 				:key="idx"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				:class="
+					activeColumnIdx === idx
+						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
+						: ''
+				"
 				@click="activeColumnIdx = columns.indexOf(column)"
 			>
 				<div class="flex w-full items-center overflow-hidden">

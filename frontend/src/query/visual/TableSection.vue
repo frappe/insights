@@ -76,6 +76,11 @@ function onRemoveJoin() {
 				v-for="(join, idx) in joins"
 				:key="join.right_table.table"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				:class="
+					idx === activeJoinIdx
+						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
+						: ''
+				"
 				@click="activeJoinIdx = idx"
 			>
 				<div>{{ join.right_table.label }}</div>

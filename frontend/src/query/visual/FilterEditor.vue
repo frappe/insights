@@ -19,6 +19,9 @@ const filter = reactive({
 if (filter.expression?.raw) {
 	activeTab.value = 'Expression'
 }
+if (filter.column && filter.column.column && filter.column.table && !filter.column.value) {
+	filter.column.value = `${filter.column.table}.${filter.column.column}`
+}
 if (filter.operator?.value == 'is' && filter.value?.value?.toLowerCase().includes('set')) {
 	filter.operator.value = filter.value.value === 'Set' ? 'is_set' : 'is_not_set'
 }
@@ -98,10 +101,7 @@ const selectorType = computed(() => {
 			<div class="space-y-1">
 				<span class="text-sm font-medium text-gray-700">Column</span>
 				<Autocomplete
-					:modelValue="{
-						...filter.column,
-						value: `${filter.column.table}.${filter.column.column}`,
-					}"
+					:modelValue="filter.column"
 					placeholder="Column"
 					:options="filterColumnOptions"
 					@update:modelValue="filter.column = $event"

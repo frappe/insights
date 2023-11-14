@@ -1,12 +1,9 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
 import { isEmptyObj } from '@/utils'
-import { Option, X } from 'lucide-vue-next'
+import { CornerLeftDown, CornerRightUp, Crop, Option, X } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import TransformEditor from './TransformEditor.vue'
-import { CornerRightUp } from 'lucide-vue-next'
-import { CornerLeftDown } from 'lucide-vue-next'
-import { Crop } from 'lucide-vue-next'
 
 const query = inject('query')
 const builder = inject('builder')
@@ -57,6 +54,11 @@ function isValidTransform(transform) {
 				v-for="(transform, idx) in builder.transforms"
 				:key="idx"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				:class="
+					activeTransformIdx === idx
+						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
+						: ''
+				"
 			>
 				<!-- don't allow editing as the columns options are messed up -->
 				<!-- @click="activeTransformIdx = builder.transforms.indexOf(transform)" -->
