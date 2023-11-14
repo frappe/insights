@@ -13,7 +13,7 @@ const props = defineProps({
 	filter: { type: Object, required: true },
 })
 
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 const filter = computed({
 	get: () => props.filter,
 	set: (val) => emit('update:filter', val),
@@ -41,12 +41,12 @@ const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	const _filter = filter.value
 	if (!['=', '!=', 'in', 'not_in'].includes(_filter.operator?.value)) return
-	if (!_filter.column.table || !_filter.column.column || !builder.data_source) return
-	if (_filter.column?.type == 'String' && builder.data_source) {
+	if (!_filter.column.table || !_filter.column.column || !assistedQuery.data_source) return
+	if (_filter.column?.type == 'String' && assistedQuery.data_source) {
 		const URL = 'insights.api.data_sources.fetch_column_values'
 		fetchingColumnValues.value = true
 		const values = await call(URL, {
-			data_source: builder.data_source,
+			data_source: assistedQuery.data_source,
 			table: _filter.column.table,
 			column: _filter.column.column,
 			search_text,

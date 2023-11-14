@@ -6,7 +6,7 @@ import { inject, ref } from 'vue'
 import TransformEditor from './TransformEditor.vue'
 
 const query = inject('query')
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 
 const transformRefs = ref(null)
 const activeTransformIdx = ref(null)
@@ -23,15 +23,15 @@ const transformTypeToLabel = {
 }
 
 function onAddTransform() {
-	builder.addTransform()
-	activeTransformIdx.value = builder.transforms.length - 1
+	assistedQuery.addTransform()
+	activeTransformIdx.value = assistedQuery.transforms.length - 1
 }
 function onRemoveTransform() {
-	builder.removeTransformAt(activeTransformIdx.value)
+	assistedQuery.removeTransformAt(activeTransformIdx.value)
 	activeTransformIdx.value = null
 }
 function onSaveTransform(transform) {
-	builder.updateTransformAt(activeTransformIdx.value, transform)
+	assistedQuery.updateTransformAt(activeTransformIdx.value, transform)
 	activeTransformIdx.value = null
 }
 function isValidTransform(transform) {
@@ -51,7 +51,7 @@ function isValidTransform(transform) {
 		<div class="space-y-2">
 			<div
 				ref="transformRefs"
-				v-for="(transform, idx) in builder.transforms"
+				v-for="(transform, idx) in assistedQuery.transforms"
 				:key="idx"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 				:class="
@@ -61,7 +61,7 @@ function isValidTransform(transform) {
 				"
 			>
 				<!-- don't allow editing as the columns options are messed up -->
-				<!-- @click="activeTransformIdx = builder.transforms.indexOf(transform)" -->
+				<!-- @click="activeTransformIdx = assistedQuery.transforms.indexOf(transform)" -->
 				<div class="flex w-full items-center overflow-hidden">
 					<div class="flex w-full space-x-2 truncate" v-if="isValidTransform(transform)">
 						<component
@@ -75,7 +75,7 @@ function isValidTransform(transform) {
 				<div class="flex items-center space-x-2">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-						@click.prevent.stop="builder.removeTransformAt(idx)"
+						@click.prevent.stop="assistedQuery.removeTransformAt(idx)"
 					/>
 				</div>
 			</div>
@@ -90,7 +90,7 @@ function isValidTransform(transform) {
 	>
 		<div class="w-[20rem] rounded bg-white text-base shadow-2xl">
 			<TransformEditor
-				:transform="builder.transforms[activeTransformIdx]"
+				:transform="assistedQuery.transforms[activeTransformIdx]"
 				@discard="activeTransformIdx = null"
 				@remove="onRemoveTransform"
 				@save="onSaveTransform"

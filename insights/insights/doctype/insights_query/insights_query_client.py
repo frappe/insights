@@ -94,7 +94,7 @@ class InsightsQueryClient:
         return self.delete_insights_table()
 
     @frappe.whitelist()
-    def fetch_table_meta(self):
+    def fetch_related_tables(self):
         if not self.is_assisted_query:
             return []
 

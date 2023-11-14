@@ -33,17 +33,17 @@
 <script setup>
 import { computed, inject, ref } from 'vue'
 
-const builder = inject('builder')
-const limit = ref(builder.query.limit)
+const assistedQuery = inject('assistedQuery')
+const limit = ref(assistedQuery.limit)
 const orderByColumns = computed(() => {
-	return builder.query.columns.filter((c) => c.order)
+	return assistedQuery.columns.filter((c) => c.order)
 })
 function getOrder(columnLabel) {
-	return builder.query.columns.find((c) => c.label == columnLabel)?.order
+	return assistedQuery.columns.find((c) => c.label == columnLabel)?.order
 }
 const limitInput = ref(null)
 function onLimitChange() {
-	builder.query.limit = limit
+	assistedQuery.limit = limit
 	limitInput.value.blur()
 }
 </script>

@@ -1,7 +1,7 @@
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
-import { areDeeplyEqual, createTaskRunner, wheneverChanges } from '@/utils'
+import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
@@ -27,8 +27,6 @@ function makeQuery(name) {
 		chart: {},
 		formattedResults: [],
 		resultColumns: [],
-		tableMeta: [],
-		columnOptions: [],
 	})
 
 	const run = createTaskRunner()
@@ -47,25 +45,21 @@ function makeQuery(name) {
 			.then((chart) => (state.chart = chart))
 	}
 
-	wheneverChanges(
-		() => state.doc?.name || state.doc?.data_source,
-		() => state.fetchTableMeta()
-	)
-
 	state.updateTitle = (title) => run(() => resource.setValue.submit({ title }))
 	state.changeDataSource = (data_source) => run(() => resource.setValue.submit({ data_source }))
 
 	const autoExecuteEnabled = settingsStore().settings.auto_execute_query
-	state.updateQuery = debounce(async (newQuery) => {
-		if (areDeeplyEqual(newQuery, resource.originalDoc.json)) return
-		const tablesChanged = hasTablesChanged(newQuery, resource.originalDoc.json)
-		await run(() =>
-			resource.setValue
-				.submit({ json: JSON.stringify(newQuery, null, 2) })
-				.then(() => autoExecuteEnabled && state.execute())
-				.then(() => tablesChanged && state.fetchTableMeta())
+	state.updateQuery = async (newQuery) => {
+		if (areDeeplyEqual(newQuery, resource.originalDoc.json)) return Promise.resolve()
+		return new Promise((resolve) =>
+			run(() =>
+				resource.setValue
+					.submit({ json: JSON.stringify(newQuery, null, 2) })
+					.then(() => autoExecuteEnabled && state.execute())
+					.then(resolve)
+			)
 		)
-	}, 500)
+	}
 
 	state.execute = debounce(async () => {
 		state.executing = true
@@ -76,14 +70,6 @@ function makeQuery(name) {
 	state.getChartName = async () => {
 		const response = await resource.get_chart_name.fetch()
 		return response.message
-	}
-
-	state.fetchTableMeta = async () => {
-		if (!state.doc.data_source) return
-		// no need to use `run` here because this doesn't change the doc
-		const res = await resource.fetch_table_meta.submit()
-		state.tableMeta = res.message
-		state.columnOptions = makeColumnOptions(state.tableMeta)
 	}
 
 	state.updateTransforms = debounce(async (transforms) => {
@@ -138,49 +124,4 @@ function makeQuery(name) {
 	}, 500)
 
 	return state
-}
-
-function hasTablesChanged(newJson, oldJson) {
-	if (!oldJson) return true
-	const newTables = getSelectedTables(newJson)
-	const oldTables = getSelectedTables(oldJson)
-	return !areDeeplyEqual(newTables, oldTables)
-}
-
-export function getSelectedTables(queryJson) {
-	if (!queryJson) return []
-	const tables = [queryJson.table.table, ...queryJson.joins.map((join) => join.right_table.table)]
-	return tables.filter((table) => table)
-}
-
-function makeColumnOptions(tableMeta) {
-	return tableMeta.map((table) => {
-		const countColumn = {
-			table: table.table,
-			column: 'count',
-			type: 'Integer',
-			label: `${table.label} Count`,
-			alias: `${table.label} Count`,
-			order: '',
-			granularity: '',
-			aggregation: 'count',
-			format: {},
-			expression: {},
-			description: 'Integer',
-			value: `${table.table}.count`,
-		}
-		return {
-			group: table.label,
-			items: [
-				countColumn,
-				...table.columns.map((column) => {
-					return {
-						...column,
-						description: column.type,
-						value: `${table.table}.${column.column}`,
-					}
-				}),
-			],
-		}
-	})
 }

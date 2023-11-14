@@ -12,15 +12,15 @@ export function makeNewColumn(newColumn) {
 	}
 }
 
-export function inferJoinsFromColumns(builderQuery, tableMeta) {
+export function inferJoinsFromColumns(assistedQuery, relatedTables) {
 	const newJoins = []
 
-	const mainTable = builderQuery.table
+	const mainTable = assistedQuery.table
 	if (!mainTable.table) return newJoins
 
 	const columns = [
-		...builderQuery.columns,
-		...builderQuery.filters.map((f) => f.column).filter((c) => c.table && c.column),
+		...assistedQuery.columns,
+		...assistedQuery.filters.map((f) => f.column).filter((c) => c.table && c.column),
 	]
 	const columnByTable = columns.reduce((acc, column) => {
 		if (!acc[column.table]) acc[column.table] = null
@@ -32,9 +32,9 @@ export function inferJoinsFromColumns(builderQuery, tableMeta) {
 		if (column.table == mainTable.table) return
 
 		// check if the column has a relation with main table, if so add the join
-		const relation = getRelation(mainTable.table, column.table, tableMeta)
+		const relation = getRelation(mainTable.table, column.table, relatedTables)
 		if (relation) {
-			newJoins.push(makeJoinFromRelation(relation, tableMeta))
+			newJoins.push(makeJoinFromRelation(relation, relatedTables))
 			return
 		}
 
@@ -42,9 +42,9 @@ export function inferJoinsFromColumns(builderQuery, tableMeta) {
 		Object.keys(columnByTable).some((table) => {
 			if (table === column.table) return false
 			if (table === mainTable.table) return false
-			const relation = getRelation(table, column.table, tableMeta)
+			const relation = getRelation(table, column.table, relatedTables)
 			if (relation) {
-				newJoins.push(makeJoinFromRelation(relation, tableMeta))
+				newJoins.push(makeJoinFromRelation(relation, relatedTables))
 				return true
 			}
 		})
@@ -53,9 +53,9 @@ export function inferJoinsFromColumns(builderQuery, tableMeta) {
 	return newJoins
 }
 
-function makeJoinFromRelation(relation, tableMeta) {
-	const leftTable = tableMeta.find((m) => m.table === relation.primary_table)
-	const rightTable = tableMeta.find((m) => m.table === relation.foreign_table)
+function makeJoinFromRelation(relation, relatedTables) {
+	const leftTable = relatedTables.find((m) => m.table === relation.primary_table)
+	const rightTable = relatedTables.find((m) => m.table === relation.foreign_table)
 	const leftColumn = leftTable.columns.find((c) => c.column === relation.primary_column)
 	const rightColumn = rightTable.columns.find((c) => c.column === relation.foreign_column)
 	return {
@@ -67,23 +67,23 @@ function makeJoinFromRelation(relation, tableMeta) {
 	}
 }
 
-function getRelation(tableOne, tableTwo, tableMeta) {
-	const tableOneMeta = tableMeta.find((m) => m.table === tableOne)
+function getRelation(tableOne, tableTwo, relatedTables) {
+	const tableOneMeta = relatedTables.find((m) => m.table === tableOne)
 	if (!tableOneMeta) return null
 	return tableOneMeta.relations.find((r) => r.foreign_table === tableTwo)
 }
 
-export function inferJoinForTable(newTable, builderQuery, tableMeta) {
-	const mainTable = builderQuery.table
+export function inferJoinForTable(newTable, assistedQuery, relatedTables) {
+	const mainTable = assistedQuery.table
 	if (!mainTable.table) return null
 
-	const relation = getRelation(mainTable.table, newTable.table, tableMeta)
-	if (relation) return makeJoinFromRelation(relation, tableMeta)
+	const relation = getRelation(mainTable.table, newTable.table, relatedTables)
+	if (relation) return makeJoinFromRelation(relation, relatedTables)
 
 	// find a relation with any other joined table
 	let relationWithJoinedTable = null
-	builderQuery.joins.some((join) => {
-		const relation = getRelation(join.left_table, newTable.table, tableMeta)
+	assistedQuery.joins.some((join) => {
+		const relation = getRelation(join.left_table, newTable.table, relatedTables)
 		if (relation) {
 			relationWithJoinedTable = relation
 			return true
@@ -91,16 +91,16 @@ export function inferJoinForTable(newTable, builderQuery, tableMeta) {
 	})
 
 	if (relationWithJoinedTable) {
-		return makeJoinFromRelation(relationWithJoinedTable, tableMeta)
+		return makeJoinFromRelation(relationWithJoinedTable, relatedTables)
 	}
 
 	return null
 }
 
-export function isTableAlreadyAdded(builderQuery, newTable) {
-	const table = builderQuery.table
+export function isTableAlreadyAdded(assistedQuery, newTable) {
+	const table = assistedQuery.table
 	if (table.table === newTable.table) return true
-	return builderQuery.joins.some((join) => join.right_table.table === newTable.table)
+	return assistedQuery.joins.some((join) => join.right_table.table === newTable.table)
 }
 
 export function sanitizeQueryJSON(queryJson) {

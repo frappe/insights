@@ -5,22 +5,22 @@ import { computed, inject, ref } from 'vue'
 import FilterEditor from './FilterEditor.vue'
 
 const query = inject('query')
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 
-const filters = computed(() => builder.query.filters)
+const filters = computed(() => assistedQuery.filters)
 const filterRefs = ref(null)
 const activeFilterIdx = ref(null)
 
 function onAddFilter() {
-	builder.addFilter()
+	assistedQuery.addFilter()
 	activeFilterIdx.value = filters.value.length - 1
 }
 function onRemoveFilter() {
-	builder.removeFilterAt(activeFilterIdx.value)
+	assistedQuery.removeFilterAt(activeFilterIdx.value)
 	activeFilterIdx.value = null
 }
 function onSaveFilter(filter) {
-	builder.updateFilterAt(activeFilterIdx.value, filter)
+	assistedQuery.updateFilterAt(activeFilterIdx.value, filter)
 	activeFilterIdx.value = null
 }
 function isValidFilter(filter) {
@@ -77,7 +77,7 @@ function isValidFilter(filter) {
 				<div class="flex items-center">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-						@click.prevent.stop="builder.removeFilterAt(idx)"
+						@click.prevent.stop="assistedQuery.removeFilterAt(idx)"
 					/>
 				</div>
 			</div>

@@ -1,7 +1,7 @@
 <script setup>
 import Tabs from '@/components/Tabs.vue'
 import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, onMounted, provide, reactive, ref, watch } from 'vue'
+import { inject, provide, ref, watch } from 'vue'
 import ChartOptions from '../ChartOptions.vue'
 import ChartSection from '../ChartSection.vue'
 import ResultSection from '../ResultSection.vue'
@@ -11,151 +11,14 @@ import ResultColumnActions from './ResultColumnActions.vue'
 import ResultFooter from './ResultFooter.vue'
 import TableSection from './TableSection.vue'
 import TransformSection from './TransformSection.vue'
-import { NEW_FILTER, NEW_JOIN } from './constants'
-import {
-	ERROR_CANNOT_ADD_SELF_AS_TABLE,
-	ERROR_UNABLE_TO_RESET_MAIN_TABLE,
-	WARN_UNABLE_TO_INFER_JOIN,
-} from './messages'
-import {
-	inferJoinForTable,
-	inferJoinsFromColumns,
-	isTableAlreadyAdded,
-	makeNewColumn,
-	sanitizeQueryJSON,
-} from './utils'
-
-const query = inject('query')
-
-const builder = reactive({
-	data_source: computed(() => query.doc.data_source),
-	query: {
-		table: {},
-		joins: [],
-		columns: [],
-		filters: [],
-		calculations: [],
-		dimensions: [],
-		measures: [],
-		orders: [],
-		limit: 100,
-	},
-	transforms: computed(() => [...query.doc.transforms]),
-	addTable,
-	resetMainTable,
-	removeJoinAt,
-	updateJoinAt,
-	addColumns,
-	removeColumnAt,
-	updateColumnAt,
-	addFilter,
-	removeFilterAt,
-	updateFilterAt,
-	addTransform,
-	removeTransformAt,
-	updateTransformAt,
-	setOrderBy,
-})
-provide('builder', builder)
-watch(() => builder.query, query.updateQuery, { deep: true })
-onMounted(() => {
-	if (!query.doc?.json) return
-	builder.query = sanitizeQueryJSON(query.doc.json)
-})
+import useAssistedQuery from './useAssistedQuery'
 
 const activeTab = ref('Build')
 const tabs = ['Build', 'Visualize']
 
-const $notify = inject('$notify')
-function addTable(newTable) {
-	if (!newTable?.table) return
-	if (newTable.table === query.doc.name) {
-		return $notify(ERROR_CANNOT_ADD_SELF_AS_TABLE())
-	}
-	const mainTable = builder.query.table
-	if (!mainTable?.table) {
-		builder.query.table = { table: newTable.table, label: newTable.label }
-		return
-	}
-	if (isTableAlreadyAdded(builder.query, newTable)) return
-	const join = inferJoinForTable(newTable, builder.query, query.tableMeta)
-	if (!join) {
-		$notify(WARN_UNABLE_TO_INFER_JOIN(mainTable.label, newTable.label))
-		builder.query.joins.push({
-			...NEW_JOIN,
-			left_table: { table: mainTable.table, label: mainTable.label },
-			right_table: { table: newTable.table, label: newTable.label },
-		})
-		return
-	}
-	builder.query.joins.push(join)
-}
-
-function resetMainTable() {
-	if (builder.query.joins.length || builder.query.columns.length) {
-		$notify(ERROR_UNABLE_TO_RESET_MAIN_TABLE())
-		return
-	}
-	builder.query.table = {}
-}
-
-function removeJoinAt(joinIdx) {
-	builder.query.joins.splice(joinIdx, 1)
-}
-
-function updateJoinAt(joinIdx, newJoin) {
-	builder.query.joins.splice(joinIdx, 1, newJoin)
-}
-
-function addColumns(addedColumns) {
-	const newColumns = addedColumns.map(makeNewColumn)
-	builder.query.columns.push(...newColumns)
-	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
-}
-
-function removeColumnAt(removedColumnIdx) {
-	builder.query.columns.splice(removedColumnIdx, 1)
-	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
-}
-
-function updateColumnAt(updatedColumnIdx, newColumn) {
-	builder.query.columns.splice(updatedColumnIdx, 1, newColumn)
-	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
-}
-
-function addFilter() {
-	builder.query.filters.push({ ...NEW_FILTER })
-}
-function removeFilterAt(removedFilterIdx) {
-	builder.query.filters.splice(removedFilterIdx, 1)
-	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
-}
-function updateFilterAt(updatedFilterIdx, newFilter) {
-	builder.query.filters.splice(updatedFilterIdx, 1, newFilter)
-	builder.query.joins = inferJoinsFromColumns(builder.query, query.tableMeta)
-}
-
-function addTransform() {
-	builder.transforms.push({ type: '', options: {} })
-	query.updateTransforms(builder.transforms)
-}
-function removeTransformAt(removedTransformIdx) {
-	builder.transforms.splice(removedTransformIdx, 1)
-	query.updateTransforms(builder.transforms)
-}
-function updateTransformAt(updatedTransformIdx, newTransform) {
-	builder.transforms.splice(updatedTransformIdx, 1, newTransform)
-	query.updateTransforms(builder.transforms)
-}
-
-function setOrderBy(column, order) {
-	builder.query.columns.some((c) => {
-		if (c.label === column) {
-			c.order = order
-			return true
-		}
-	})
-}
+const query = inject('query')
+const assistedQuery = useAssistedQuery(query)
+provide('assistedQuery', assistedQuery)
 </script>
 
 <template>

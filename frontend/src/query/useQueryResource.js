@@ -11,7 +11,7 @@ export const API_METHODS = {
 	fetchTables: 'fetch_tables',
 	fetchColumns: 'fetch_columns',
 	fetchColumnValues: 'fetch_column_values',
-	fetch_table_meta: 'fetch_table_meta',
+	fetch_related_tables: 'fetch_related_tables',
 
 	// table methods
 	addTable: 'add_table',

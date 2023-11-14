@@ -11,30 +11,30 @@ import { Sheet, X } from 'lucide-vue-next'
 import { computed, inject, ref, reactive } from 'vue'
 import TableJoinEditor from './TableJoinEditor.vue'
 
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 
 let dataSource = reactive({})
 whenever(
-	() => builder.data_source,
+	() => assistedQuery.data_source,
 	(newVal, oldVal) => {
 		if (!newVal) return
 		if (newVal == oldVal) return
-		dataSource = useDataSource(builder.data_source)
+		dataSource = useDataSource(assistedQuery.data_source)
 		dataSource.fetchTables()
 	},
 	{ immediate: true }
 )
 
-const joins = computed(() => builder.query.joins)
+const joins = computed(() => assistedQuery.joins)
 const joinRefs = ref([])
 const activeJoinIdx = ref(null)
 
 function onSaveJoin(newJoin) {
-	builder.updateJoinAt(activeJoinIdx.value, newJoin)
+	assistedQuery.updateJoinAt(activeJoinIdx.value, newJoin)
 	activeJoinIdx.value = null
 }
 function onRemoveJoin() {
-	builder.removeJoinAt(activeJoinIdx.value)
+	assistedQuery.removeJoinAt(activeJoinIdx.value)
 	activeJoinIdx.value = null
 }
 </script>
@@ -47,9 +47,9 @@ function onRemoveJoin() {
 				<p class="font-medium">Data</p>
 			</div>
 			<Autocomplete
-				:key="builder.data_source"
+				:key="assistedQuery.data_source"
 				:options="dataSource.groupedTableOptions"
-				@update:modelValue="$event && builder.addTable($event)"
+				@update:modelValue="$event && assistedQuery.addTable($event)"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
@@ -58,16 +58,16 @@ function onRemoveJoin() {
 		</div>
 		<div class="space-y-2">
 			<div
-				v-if="builder.query.table.table"
+				v-if="assistedQuery.table.table"
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 			>
 				<div class="flex items-center space-x-2">
-					<div>{{ builder.query.table.label }}</div>
+					<div>{{ assistedQuery.table.label }}</div>
 				</div>
 				<div class="flex items-center space-x-2">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-						@click="builder.resetMainTable()"
+						@click="assistedQuery.resetMainTable()"
 					/>
 				</div>
 			</div>

@@ -1,13 +1,13 @@
 <script setup>
 import { AGGREGATIONS, FIELDTYPES, GRANULARITIES } from '@/utils'
-import { defineProps, inject, reactive, ref, computed } from 'vue'
+import { computed, defineProps, inject, reactive, ref } from 'vue'
 import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import { NEW_COLUMN } from './constants'
 
 const emit = defineEmits(['save', 'discard', 'remove'])
 const props = defineProps({ column: Object })
 
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 const query = inject('query')
 
 const activeTab = ref('Simple')
@@ -76,7 +76,7 @@ const isValidColumn = computed(() => {
 						value: `${column.table}.${column.column}`,
 					}"
 					placeholder="Column"
-					:options="query.columnOptions"
+					:options="assistedQuery.groupedColumnOptions"
 					@update:modelValue="onColumnChange"
 				/>
 			</div>

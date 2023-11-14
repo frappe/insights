@@ -6,10 +6,10 @@ import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'
 import { computed, inject, onMounted, ref } from 'vue'
-import { getSelectedTables } from '../resources/useQuery'
+import { getSelectedTables } from './useAssistedQuery'
 
 const query = inject('query')
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 const emit = defineEmits(['update:filter'])
 const props = defineProps({ filter: Object })
 
@@ -25,18 +25,12 @@ const filter = computed({
 })
 
 const focused = ref(false)
-const columnOptions = computed(() => {
-	const selectedTables = getSelectedTables(builder.query)
-	return (
-		query.tableMeta
-			// allow columns from selected tables only
-			// since joins cannot be inferred from the expression
-			.filter((table) => selectedTables.includes(table.table))
-			.map((table) =>
-				table.columns.map((column) => ({ label: `${table.table}.${column.column}` }))
-			)
-			.flat()
-	)
+const columnCompletions = computed(() => {
+	// a list of options for code autocompletion
+	const selectedTables = getSelectedTables(assistedQuery)
+	return assistedQuery.columnOptions
+		.filter((c) => selectedTables.includes(c.table))
+		.map((c) => ({ label: `${c.table}.${c.column}` }))
 })
 const getCompletions = (context, syntaxTree) => {
 	let word = context.matchBefore(/\w*/)
@@ -45,7 +39,7 @@ const getCompletions = (context, syntaxTree) => {
 	if (nodeBefore.name === 'TemplateString') {
 		return {
 			from: word.from,
-			options: columnOptions.value,
+			options: columnCompletions.value,
 		}
 	}
 	if (nodeBefore.name === 'VariableName') {

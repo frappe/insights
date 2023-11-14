@@ -7,7 +7,7 @@ import { NEW_TRANSFORM } from './constants'
 const emit = defineEmits(['save', 'discard', 'remove'])
 const props = defineProps({ transform: Object })
 
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 const query = inject('query')
 
 const activeTransform = reactive({

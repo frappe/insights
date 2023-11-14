@@ -3,22 +3,22 @@ import { ArrowDown, ArrowDownUp, ArrowUp } from 'lucide-vue-next'
 import { inject } from 'vue'
 
 const props = defineProps({ column: Object })
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 function getOrder(columnLabel) {
-	return builder.query.columns.find((c) => c.label == columnLabel)?.order
+	return assistedQuery.columns.find((c) => c.label == columnLabel)?.order
 }
 const sortOptions = [
 	{
 		label: 'Sort Ascending',
-		onClick: () => builder.setOrderBy(props.column.label, 'asc'),
+		onClick: () => assistedQuery.setOrderBy(props.column.label, 'asc'),
 	},
 	{
 		label: 'Sort Descending',
-		onClick: () => builder.setOrderBy(props.column.label, 'desc'),
+		onClick: () => assistedQuery.setOrderBy(props.column.label, 'desc'),
 	},
 	{
 		label: 'Remove Sort',
-		onClick: () => builder.setOrderBy(props.column.label, ''),
+		onClick: () => assistedQuery.setOrderBy(props.column.label, ''),
 	},
 ]
 const sortOrderToIcon = {

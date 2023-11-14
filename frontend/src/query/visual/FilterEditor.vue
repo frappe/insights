@@ -8,7 +8,7 @@ import { NEW_FILTER } from './constants'
 const emit = defineEmits(['save', 'discard', 'remove'])
 const props = defineProps({ filter: Object })
 
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 const query = inject('query')
 
 const activeTab = ref('Simple')
@@ -27,9 +27,9 @@ if (filter.operator?.value == 'is' && filter.value?.value?.toLowerCase().include
 }
 
 const filterColumnOptions = computed(() =>
-	query.columnOptions.map((group) => {
+	assistedQuery.groupedColumnOptions.map((group) => {
 		return {
-			...group,
+			group: group.group,
 			items: group.items.filter((c) => c.column !== 'count'),
 		}
 	})

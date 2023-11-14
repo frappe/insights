@@ -2,6 +2,7 @@ import sessionStore from '@/stores/sessionStore'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { call } from 'frappe-ui'
 import { Baseline, Calendar, CalendarClock, Clock, Hash, Type } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
 
@@ -432,16 +433,30 @@ export function createTaskRunner() {
 // a util function that is similar to watch but only runs the callback when the value is truthy and changes
 export function wheneverChanges(getter, callback, options = {}) {
 	let prevValue = null
-	const unwatch = watch(getter, (value) => {
+	function onChange(value) {
 		if (areDeeplyEqual(value, prevValue)) return
 		if (!value) return
 		prevValue = value
 		callback(value)
-	})
-	if (options.immediate) {
-		callback(getter())
 	}
-	return unwatch
+	return watch(getter, onChange, options)
+}
+
+export async function run_doc_method(method, doc, args = {}) {
+	return call('run_doc_method', {
+		method,
+		dt: doc.doctype,
+		dn: doc.name,
+		args: {},
+	})
+}
+
+export function makeColumnOption(column) {
+	return {
+		...column,
+		description: column.type,
+		value: `${column.table}.${column.column}`,
+	}
 }
 
 export default {

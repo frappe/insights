@@ -1,15 +1,15 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
 import { AlignCenter, Calendar, CalendarClock, CaseUpper, Combine, Hash, X } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import ColumnEditor from './ColumnEditor.vue'
 import { NEW_COLUMN } from './constants'
-import { fieldtypesToIcon } from '@/utils'
+import { fieldtypesToIcon, makeColumnOption } from '@/utils'
 
 const query = inject('query')
-const builder = inject('builder')
+const assistedQuery = inject('assistedQuery')
 
-const columns = computed(() => builder.query.columns)
+const columns = computed(() => assistedQuery.columns)
 const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
 
@@ -18,19 +18,19 @@ function onColumnSelect(column) {
 	if (columns.value.find((c) => c.table === column.table && c.column === column.column)) {
 		return
 	}
-	builder.addColumns([column])
+	assistedQuery.addColumns([column])
 }
 
 function onRemoveColumn() {
-	builder.removeColumnAt(activeColumnIdx.value)
+	assistedQuery.removeColumnAt(activeColumnIdx.value)
 	activeColumnIdx.value = null
 }
 function onSaveColumn(column) {
-	builder.updateColumnAt(activeColumnIdx.value, column)
+	assistedQuery.updateColumnAt(activeColumnIdx.value, column)
 	activeColumnIdx.value = null
 }
 function onAddColumnExpression() {
-	builder.addColumns([
+	assistedQuery.addColumns([
 		{
 			...NEW_COLUMN,
 			expression: {
@@ -56,9 +56,9 @@ function isValidColumn(column) {
 			</div>
 			<Autocomplete
 				:modelValue="columns"
-				:options="query.columnOptions"
 				bodyClasses="!w-[16rem]"
 				@update:modelValue="onColumnSelect"
+				:options="assistedQuery.groupedColumnOptions"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
@@ -101,7 +101,7 @@ function isValidColumn(column) {
 				<div class="flex items-center space-x-2">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-						@click.prevent.stop="builder.removeColumnAt(idx)"
+						@click.prevent.stop="assistedQuery.removeColumnAt(idx)"
 					/>
 				</div>
 			</div>

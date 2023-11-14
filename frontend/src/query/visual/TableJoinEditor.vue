@@ -6,8 +6,8 @@ import { computed, defineProps, inject, reactive, ref, watch } from 'vue'
 const emit = defineEmits(['save', 'remove', 'discard'])
 const props = defineProps({ join: Object })
 
-const builder = inject('builder')
-const dataSource = useDataSource(builder.data_source)
+const assistedQuery = inject('assistedQuery')
+const dataSource = useDataSource(assistedQuery.data_source)
 !dataSource.tableList.length && dataSource.fetchTables()
 
 const activeJoin = reactive({
@@ -31,8 +31,8 @@ const joinTypeOptions = computed(() => [
 ])
 
 const leftTableOptions = computed(() => {
-	const options = [builder.query.table]
-	builder.query.joins.forEach((join) => {
+	const options = [assistedQuery.table]
+	assistedQuery.joins.forEach((join) => {
 		// exclude the current joined table
 		if (join.right_table.table === activeJoin.right_table.table) return
 		// exclude the already added tables
@@ -51,7 +51,7 @@ watch(
 		if (!newLeft) return
 		if (newLeft === oldLeft) return
 		const leftTable = await useDataSourceTable({
-			data_source: builder.data_source,
+			data_source: assistedQuery.data_source,
 			table: newLeft,
 		})
 		leftColumnOptions.value = leftTable.columns.map((c) => ({
@@ -72,7 +72,7 @@ watch(
 		if (!newRight) return
 		if (newRight === oldRight) return
 		const rightTable = await useDataSourceTable({
-			data_source: builder.data_source,
+			data_source: assistedQuery.data_source,
 			table: newRight,
 		})
 		rightColumnOptions.value = rightTable.columns.map((c) => ({
