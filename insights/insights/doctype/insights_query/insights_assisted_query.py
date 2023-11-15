@@ -43,7 +43,7 @@ class InsightsAssistedQueryController:
         columns = self.query_json.get_columns()
         tables = self.query_json.get_tables()
         for column in columns:
-            if column.is_expression():
+            if not column.is_valid() or column.is_expression() or column.get("column") == "count":
                 continue
             if column.get("table") not in tables:
                 frappe.throw(
