@@ -194,4 +194,4 @@ def get_related_table_names(table_names, data_source):
         .run(pluck=True)
     )
 
-    return list(set(referenced_tables + referencing_tables))
+    return list(set(referenced_tables + referencing_tables) - set(table_names))
