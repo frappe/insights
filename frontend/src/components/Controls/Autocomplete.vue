@@ -235,10 +235,9 @@ export default {
 		},
 	},
 	methods: {
-		findOption(value) {
-			if (!value) return value
-			if (value.label && value.value) return value
-			return this.allOptions.find((o) => o.value === value)
+		findOption(option) {
+			if (!option) return option
+			return this.allOptions.find((o) => o.value === (option.value || option))
 		},
 		filterOptions(options) {
 			if (!this.query) return options
