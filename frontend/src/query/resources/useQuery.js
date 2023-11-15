@@ -78,7 +78,7 @@ function makeQuery(name) {
 		if (!transforms) return
 		return run(() =>
 			resource.setValue
-				.submit({ transforms })
+				.submit({ transforms, status: 'Pending Execution' })
 				.then(() => autoExecuteEnabled && state.execute())
 		)
 	}, 500)
