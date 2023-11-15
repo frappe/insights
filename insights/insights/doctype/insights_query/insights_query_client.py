@@ -94,12 +94,11 @@ class InsightsQueryClient:
         return self.delete_insights_table()
 
     @frappe.whitelist()
-    def fetch_related_tables_columns(self, search_query=None):
-        if search_query and not isinstance(search_query, str):
-            frappe.throw("Search query must be a string")
-
+    def fetch_related_tables_columns(self, search_txt=None):
         if not self.is_assisted_query:
             return []
+        if search_txt and not isinstance(search_txt, str):
+            frappe.throw("Search query must be a string")
 
         tables = self.variant_controller.get_selected_tables()
         table_names = [table["table"] for table in tables if table["table"]]
@@ -108,44 +107,13 @@ class InsightsQueryClient:
 
         related_table_names = get_related_table_names(table_names, self.data_source)
 
-        insights_table = frappe.qb.DocType("Insights Table")
-        insights_table_column = frappe.qb.DocType("Insights Table Column")
-
-        fields_to_select = [
-            insights_table_column.column,
-            insights_table_column.label,
-            insights_table_column.type,
-            insights_table.table,
-            insights_table.data_source,
-            insights_table.label.as_("table_label"),
-        ]
-
-        search_cond = insights_table.name.isnotnull()
-        if search_query:
-            search_cond = (insights_table_column.column.like(f"%{search_query}%")) | (
-                insights_table_column.label.like(f"%{search_query}%")
-            )
-
-        cols = (
-            frappe.qb.from_(insights_table)
-            .left_join(insights_table_column)
-            .on(insights_table.name == insights_table_column.parent)
-            .select(*fields_to_select)
-            .where(
-                (insights_table.data_source == self.data_source)
-                & (search_cond)
-                & (
-                    insights_table.table.isin(related_table_names)
-                    | insights_table.table.isin(table_names)
-                )
-            )
-            .groupby(insights_table.table, insights_table_column.column)
-            .limit(500)
-            .run(as_dict=True)
+        selected_table_cols = get_matching_columns_from(table_names, self.data_source, search_txt)
+        related_table_cols = get_matching_columns_from(
+            related_table_names, self.data_source, search_txt
         )
 
         columns = []
-        for col in cols:
+        for col in selected_table_cols + related_table_cols:
             col_added = any(
                 col["column"] == column["column"] and col["table"] == column["table"]
                 for column in columns
@@ -195,3 +163,43 @@ def get_related_table_names(table_names, data_source):
     )
 
     return list(set(referenced_tables + referencing_tables) - set(table_names))
+
+
+def get_matching_columns_from(tables, data_source, search_txt=None, limit=200):
+    if not tables:
+        return []
+    if not search_txt or not isinstance(search_txt, str):
+        search_txt = ""
+
+    insights_table = frappe.qb.DocType("Insights Table")
+    insights_table_column = frappe.qb.DocType("Insights Table Column")
+
+    fields_to_select = [
+        insights_table_column.column,
+        insights_table_column.label,
+        insights_table_column.type,
+        insights_table.table,
+        insights_table.data_source,
+        insights_table.label.as_("table_label"),
+    ]
+
+    search_cond = insights_table.name.isnotnull()
+    if search_txt:
+        column_matches = insights_table_column.column.like(f"%{search_txt}%")
+        label_matches = insights_table_column.label.like(f"%{search_txt}%")
+        search_cond = column_matches | label_matches
+
+    return (
+        frappe.qb.from_(insights_table)
+        .left_join(insights_table_column)
+        .on(insights_table.name == insights_table_column.parent)
+        .select(*fields_to_select)
+        .where(
+            (insights_table.data_source == data_source)
+            & insights_table.table.isin(tables)
+            & (search_cond)
+        )
+        .groupby(insights_table.table, insights_table_column.column)
+        .limit(limit)
+        .run(as_dict=True)
+    )

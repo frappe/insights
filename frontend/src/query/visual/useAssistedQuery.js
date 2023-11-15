@@ -90,7 +90,7 @@ export default function useAssistedQuery(query) {
 		if (!state.data_source) return
 		const search_txt_lower = search_txt.toLowerCase()
 		const res = await run_doc_method('fetch_related_tables_columns', query.doc, {
-			search_query: search_txt_lower,
+			search_txt: search_txt_lower,
 		})
 		state.columnOptions = res.message.map(makeColumnOption)
 		state.groupedColumnOptions = makeGroupedColumnOptions(res.message)
