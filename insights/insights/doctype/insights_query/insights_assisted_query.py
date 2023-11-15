@@ -39,6 +39,18 @@ class InsightsAssistedQueryController:
         if not frappe.parse_json(self.doc.json):
             self.doc.json = frappe.as_json(DEFAULT_JSON)
 
+    def validate_if_all_column_tables_are_selected(self):
+        columns = self.query_json.get_columns()
+        tables = self.query_json.get_tables()
+        for column in columns:
+            if column.is_expression():
+                continue
+            if column.get("table") not in tables:
+                frappe.throw(
+                    msg=f"Table {column.get('table')} for column {column.get('label')} not selected. Add the table to the query and try again.",
+                    title="Missing Column Table",
+                )
+
     def before_save(self):
         update_sql(self.doc)
         self.doc.json = frappe.as_json(self.query_json)
@@ -109,6 +121,7 @@ class InsightsAssistedQueryController:
         return tables + join_tables
 
     def before_fetch(self):
+        self.validate_if_all_column_tables_are_selected()
         if self.doc.data_source != "Query Store":
             return
         sub_queries = [

@@ -763,6 +763,8 @@ class SQLQueryBuilder:
         if not columns:
             columns = [text("t0.*")]
 
+        # TODO: validate if all column tables are selected
+
         query = select(*columns).select_from(main_table)
         for join in self._joins:
             query = query.join_from(
