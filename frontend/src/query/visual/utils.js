@@ -21,7 +21,7 @@ export async function inferJoinsFromColumns(assistedQuery) {
 	if (!mainTable.table) return newJoins
 
 	const columns = [
-		...assistedQuery.columns,
+		...assistedQuery.columns.filter((c) => c.table && c.column),
 		...assistedQuery.filters.map((f) => f.column).filter((c) => c.table && c.column),
 	]
 	const columnByTable = columns.reduce((acc, column) => {
