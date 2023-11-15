@@ -119,6 +119,7 @@ export function isTableAlreadyAdded(assistedQuery, newTable) {
 export function sanitizeQueryJSON(queryJson) {
 	// backward compatibility with old json
 	if (queryJson.measures.length || queryJson.dimensions.length) {
+		// copy measures and dimensions to columns
 		queryJson.measures.forEach((m) => {
 			if (!queryJson.columns.find((col) => col.label === m.label)) {
 				queryJson.columns.push(m)
@@ -131,11 +132,18 @@ export function sanitizeQueryJSON(queryJson) {
 		})
 	}
 	if (queryJson.orders.length) {
+		// set `order` property on columns
 		queryJson.columns.forEach((c) => {
 			const order = queryJson.orders.find((o) => o.label === c.label)
 			if (order) c.order = order.order
 		})
 	}
+	if (queryJson.filters.length) {
+		// TODO:
+		// some filters have column set as expression
+		// we need to convert that into column expression object
+	}
+
 	if (!queryJson.limit) queryJson.limit = 100
 	return { ...queryJson }
 }
