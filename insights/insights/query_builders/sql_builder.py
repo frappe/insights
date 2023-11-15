@@ -719,7 +719,7 @@ class SQLQueryBuilder:
                     filters.append(_filter)
                     continue
                 _column = make_sql_column(fltr.column, for_filter=True)
-                filter_value = fltr.value.value
+                filter_value = fltr.value.value or ""
                 operator = fltr.operator.value
 
                 if BinaryOperations.is_binary_operator(operator):
@@ -728,7 +728,7 @@ class SQLQueryBuilder:
                 elif "set" in operator:  # is set, is not set
                     _filter = Functions.apply(operator, _column)
                 elif operator == "is":
-                    fn = "is_set" if filter_value == "set" else "is_not_set"
+                    fn = "is_set" if filter_value.lower() == "set" else "is_not_set"
                     _filter = Functions.apply(fn, _column)
                 else:
                     args = [filter_value]
