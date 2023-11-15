@@ -132,7 +132,7 @@ def get_columns(old_query):
                 "label": column.get("label"),
                 "alias": column.get("label"),
                 "type": column.get("type"),
-                "aggregation": column.get("aggregation"),
+                "aggregation": (column.get("aggregation") or "").lower(),
                 "order": column.get("order_by"),
                 "expression": frappe.parse_json(column.get("expression"))
                 if column.get("is_expression")

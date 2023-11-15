@@ -69,7 +69,10 @@ function isValidFilter(filter) {
 							<span class="flex-shrink-0 font-medium text-green-600">
 								{{ filter.operator.value }}
 							</span>
-							<span class="flex-1 flex-shrink-0 truncate">
+							<span
+								v-if="!filter.operator.value.includes('is_')"
+								class="flex-1 flex-shrink-0 truncate"
+							>
 								{{ filter.value.label || filter.value.value }}
 							</span>
 						</template>
