@@ -186,7 +186,7 @@ export default {
 		selectedValue: {
 			get() {
 				if (!this.multiple) {
-					return this.returnValue ? this.findOption(this.modelValue) : this.modelValue
+					return this.findOption(this.modelValue)
 				}
 				// in case of `multiple`, modelValue is an array of values
 				// and if returnValue is true, we need to return the value of the options
@@ -236,6 +236,8 @@ export default {
 	},
 	methods: {
 		findOption(value) {
+			if (!value) return value
+			if (value.label && value.value) return value
 			return this.allOptions.find((o) => o.value === value)
 		},
 		filterOptions(options) {
