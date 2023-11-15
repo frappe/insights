@@ -14,16 +14,32 @@ const options = computed({
 const valueOptions = computed(() => {
 	if (!query.resultColumns) return []
 	return query.resultColumns
-		.filter(
-			(c) =>
-				FIELDTYPES.NUMBER.includes(c.type) &&
-				![options.value.column, options.value.index].includes(c.label)
-		)
+		.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 		.map((c) => ({ label: c.label, value: c.label, description: c.type }))
 })
 const allOptions = computed(() => {
 	if (!query.resultColumns) return []
 	return query.resultColumns.map((c) => ({ label: c.label, value: c.label, description: c.type }))
+})
+
+const errors = computed(() => {
+	return {
+		column:
+			options.value.column &&
+			[options.value.index, options.value.value].includes(options.value.column)
+				? 'Column cannot be same as Row or Value'
+				: '',
+		index:
+			options.value.index &&
+			[options.value.column, options.value.value].includes(options.value.index)
+				? 'Row cannot be same as Column or Value'
+				: '',
+		value:
+			options.value.value &&
+			[options.value.column, options.value.index].includes(options.value.value)
+				? 'Value cannot be same as Column or Row'
+				: '',
+	}
 })
 </script>
 
@@ -34,8 +50,9 @@ const allOptions = computed(() => {
 			v-model="options.column"
 			:return-value="true"
 			placeholder="Column"
-			:options="allOptions.filter((c) => ![options.index, options.value].includes(c.value))"
+			:options="allOptions"
 		/>
+		<span v-if="errors.column" class="text-xs text-red-500"> {{ errors.column }} </span>
 	</div>
 	<div class="space-y-1">
 		<span class="text-sm font-medium text-gray-700">Row</span>
@@ -43,8 +60,9 @@ const allOptions = computed(() => {
 			v-model="options.index"
 			:return-value="true"
 			placeholder="Row"
-			:options="allOptions.filter((c) => ![options.column, options.value].includes(c.value))"
+			:options="allOptions"
 		/>
+		<span v-if="errors.index" class="text-xs text-red-500"> {{ errors.index }} </span>
 	</div>
 	<div class="space-y-1">
 		<span class="text-sm font-medium text-gray-700">Value</span>
@@ -54,5 +72,6 @@ const allOptions = computed(() => {
 			placeholder="Value"
 			:options="valueOptions"
 		/>
+		<span v-if="errors.value" class="text-xs text-red-500"> {{ errors.value }} </span>
 	</div>
 </template>
