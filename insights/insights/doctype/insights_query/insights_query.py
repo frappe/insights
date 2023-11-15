@@ -3,6 +3,7 @@
 
 
 import time
+from contextlib import suppress
 from functools import cached_property
 
 import frappe
@@ -112,9 +113,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         return chart
 
     def update_insights_table(self, force=False):
-        if not self.is_saved_as_table and not force:
-            return
-        create_insights_table(self.make_table())
+        with suppress(Exception):
+            create_insights_table(self.make_table())
 
     def make_table(self):
         return _dict(
@@ -153,6 +153,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         frappe.db.delete("Insights Chart", {"query": self.name})
 
     def retrieve_results(self, fetch_if_not_cached=False):
+        if hasattr(self, "_results"):
+            return self._results
         if not CachedResults.exists(self.name):
             if fetch_if_not_cached:
                 return self.fetch_results()
