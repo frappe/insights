@@ -78,6 +78,10 @@ const selectorType = computed(() => {
 	if (!isExpression.value && isString.value && isEqualityCheck.value) return 'combobox'
 	return 'text'
 })
+
+function isValidExpression(c) {
+	return c.expression?.raw && c.expression?.ast
+}
 </script>
 
 <template>
@@ -101,11 +105,23 @@ const selectorType = computed(() => {
 			<div class="space-y-1">
 				<span class="text-sm font-medium text-gray-700">Column</span>
 				<Autocomplete
+					v-if="!isValidExpression(filter.column)"
 					:modelValue="filter.column"
 					placeholder="Column"
 					:options="filterColumnOptions"
 					@update:modelValue="filter.column = $event"
 				/>
+				<FormControl
+					v-else
+					type="textarea"
+					class="w-full"
+					:modelValue="filter.column.expression.raw"
+					disabled
+				/>
+				<span v-if="isValidExpression(filter.column)" class="text-xs text-orange-500">
+					Editing a filter with a <i>column expression</i> is not supported yet. Remove
+					this filter and add an expression filter instead.
+				</span>
 			</div>
 			<div class="space-y-1">
 				<span class="text-sm font-medium text-gray-700">Operator</span>

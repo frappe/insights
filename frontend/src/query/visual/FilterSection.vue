@@ -25,8 +25,10 @@ function onSaveFilter(filter) {
 }
 function isValidFilter(filter) {
 	if (filter.expression?.raw && filter.expression?.ast) return true
+	const is_valid_column =
+		filter.column.column || (filter.column.expression?.raw && filter.column.expression?.ast)
 	return (
-		filter.column.column &&
+		is_valid_column &&
 		filter.operator.value &&
 		(filter.value.value || filter.operator.value.includes('is_'))
 	)
