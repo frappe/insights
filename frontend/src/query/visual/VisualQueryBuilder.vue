@@ -46,7 +46,7 @@ provide('assistedQuery', assistedQuery)
 		</div>
 
 		<div
-			class="flex w-[21rem] flex-shrink-0 flex-col space-y-4 overflow-y-scroll border-r bg-white p-4 pl-0"
+			class="flex w-[21rem] flex-shrink-0 flex-col space-y-4 overflow-y-scroll border-r bg-white p-4 pl-1"
 		>
 			<Tabs v-model="activeTab" class="w-full flex-shrink-0" :tabs="tabs" />
 			<template v-if="activeTab === 'Build'">
