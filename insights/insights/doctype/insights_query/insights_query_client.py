@@ -140,6 +140,7 @@ class InsightsQueryClient:
                 )
             )
             .groupby(insights_table.table, insights_table_column.column)
+            .limit(500)
             .run(as_dict=True)
         )
 
