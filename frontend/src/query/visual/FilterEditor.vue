@@ -110,6 +110,7 @@ function isValidExpression(c) {
 					placeholder="Column"
 					:options="filterColumnOptions"
 					@update:modelValue="filter.column = $event"
+					@update:query="assistedQuery.fetchColumnOptions"
 				/>
 				<FormControl
 					v-else

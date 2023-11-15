@@ -77,8 +77,9 @@ const isValidColumn = computed(() => {
 					:modelValue="column"
 					bodyClasses="w-[18rem]"
 					placeholder="Column"
-					:options="assistedQuery.groupedColumnOptions"
 					@update:modelValue="onColumnChange"
+					:options="assistedQuery.groupedColumnOptions"
+					@update:query="assistedQuery.fetchColumnOptions"
 				/>
 			</div>
 		</template>
