@@ -17,8 +17,6 @@ const activeTransform = reactive({
 if (!activeTransform.type) activeTransform.type = 'Pivot'
 if (!activeTransform.options) activeTransform.options = {}
 
-window.activeTransform = activeTransform
-
 const transformTypes = [
 	{ label: 'Select Transform Type', value: '', disabled: true },
 	{ label: 'Pivot', value: 'Pivot' },
