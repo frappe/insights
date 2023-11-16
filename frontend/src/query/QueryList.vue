@@ -10,6 +10,7 @@ import useQueryStore from '@/stores/queryStore'
 import sessionStore from '@/stores/sessionStore'
 import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getChartIcon } from '@/widgets/widgets'
+import { useStorage } from '@vueuse/core'
 import { ListRow, ListRowItem } from 'frappe-ui'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
@@ -102,7 +103,7 @@ const queryBuilderTypes = ref([
 	},
 ])
 
-const filters = ref({
+const filters = useStorage('insights:query-list-filters', {
 	owner: ['=', sessionStore().user.user_id],
 })
 const queries = computed(() => {
