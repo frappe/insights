@@ -22,7 +22,7 @@
 				v-model.number="limit"
 				:size="String(limit).length"
 				class="form-input"
-				@keydown.enter.stop="onLimitChange()"
+				@keydown.enter.stop="$refs.limitInput.blur()"
 				@keydown.esc.stop="$refs.limitInput.blur()"
 			/>
 			<span class="text-gray-600">rows</span>
@@ -34,16 +34,15 @@
 import { computed, inject, ref } from 'vue'
 
 const assistedQuery = inject('assistedQuery')
-const limit = ref(assistedQuery.limit)
+const limitInput = ref(null)
+const limit = computed({
+	get: () => assistedQuery.limit,
+	set: (value) => (assistedQuery.limit = value || 100),
+})
 const orderByColumns = computed(() => {
 	return assistedQuery.columns.filter((c) => c.order)
 })
 function getOrder(columnLabel) {
 	return assistedQuery.columns.find((c) => c.label == columnLabel)?.order
-}
-const limitInput = ref(null)
-function onLimitChange() {
-	assistedQuery.limit = limit
-	limitInput.value.blur()
 }
 </script>

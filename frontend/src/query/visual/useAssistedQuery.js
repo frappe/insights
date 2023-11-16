@@ -50,7 +50,7 @@ export default function useAssistedQuery(query) {
 		fetchColumnOptions: debounce(fetchColumnOptions, 500),
 	})
 
-	onMounted(async () => {
+	onMounted(() => {
 		const queryJSON = sanitizeQueryJSON(query.doc.json)
 		state.table = queryJSON.table
 		state.joins = queryJSON.joins
