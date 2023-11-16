@@ -43,7 +43,7 @@ const isValidFilter = computed(() => {
 })
 
 const operatorOptions = computed(() => {
-	const options = getOperatorOptions(filter.column.type)
+	const options = getOperatorOptions(filter.column?.type)
 	return options
 		.filter((option) => option.value !== 'is')
 		.concat([
@@ -80,6 +80,7 @@ const selectorType = computed(() => {
 })
 
 function isValidExpression(c) {
+	if (!c) return false
 	return c.expression?.raw && c.expression?.ast
 }
 </script>
@@ -109,14 +110,14 @@ function isValidExpression(c) {
 					:modelValue="filter.column"
 					placeholder="Column"
 					:options="filterColumnOptions"
-					@update:modelValue="filter.column = $event"
+					@update:modelValue="filter.column = $event || {}"
 					@update:query="assistedQuery.fetchColumnOptions"
 				/>
 				<FormControl
 					v-else
 					type="textarea"
 					class="w-full"
-					:modelValue="filter.column.expression.raw"
+					:modelValue="filter.column?.expression.raw"
 					disabled
 				/>
 				<span v-if="isValidExpression(filter.column)" class="text-xs text-orange-500">

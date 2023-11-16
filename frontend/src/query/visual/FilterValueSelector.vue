@@ -40,7 +40,8 @@ const columnValues = ref([])
 const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	const _filter = filter.value
-	if (!['=', '!=', 'in', 'not_in'].includes(_filter.operator?.value)) return
+	if (!_filter.column || !_filter.operator) return
+	if (!['=', '!=', 'in', 'not_in'].includes(_filter.operator.value)) return
 	if (!_filter.column.table || !_filter.column.column || !assistedQuery.data_source) return
 	if (_filter.column?.type == 'String' && assistedQuery.data_source) {
 		const URL = 'insights.api.data_sources.fetch_column_values'
