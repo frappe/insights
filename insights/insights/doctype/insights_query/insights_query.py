@@ -189,8 +189,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             # custom results for dashboard is cached by dashboard
             if not additional_filters:
                 CachedResults.set(self.name, self._results)
-                self.is_stored and store_query(self, self._results)
                 self.update_insights_table()
+                self.is_stored and store_query(self, self._results)
         return self._results
 
     def before_fetch(self):
