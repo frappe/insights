@@ -88,6 +88,8 @@ class InsightsDataSource(Document):
 
     @cached_property
     def db(self) -> BaseDatabase:
+        if frappe.flags.in_safe_exec:
+            raise NotImplementedError("Cannot access database in safe exec")
         if self.is_site_db:
             return SiteDB(data_source=self.name)
         if self.name == "Query Store":
