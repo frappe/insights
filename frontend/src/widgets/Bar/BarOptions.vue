@@ -16,6 +16,10 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
+if (!Array.isArray(options.value.yAxis)) {
+	options.value.yAxis = typeof options.value.yAxis === 'string' ? [options.value.yAxis] : []
+}
+
 const indexOptions = computed(() => {
 	return props.columns
 		?.filter((column) => !FIELDTYPES.NUMBER.includes(column.type))
