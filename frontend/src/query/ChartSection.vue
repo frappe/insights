@@ -1,6 +1,6 @@
 <script setup>
 import widgets from '@/widgets/widgets'
-import { computed, inject, reactive } from 'vue'
+import { computed, inject } from 'vue'
 import ChartActionButtons from './ChartActionButtons.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ChartTypeSelector from './ChartTypeSelector.vue'
@@ -25,20 +25,17 @@ const emptyMessage = computed(() => {
 	return 'Pick a chart type to get started'
 })
 
-function getChartComponent() {
-	if (query.chart.doc.chart_type == 'Auto') {
-		const guessedChart = query.chart.getGuessedChart()
-		return widgets.getComponent(guessedChart.chart_type)
+const chart = computed(() => {
+	const chart_type = query.chart.doc.chart_type
+	const guessedChart = query.chart.getGuessedChart(chart_type)
+	const options = Object.assign({}, guessedChart.options, query.chart.doc.options)
+	return {
+		type: chart_type,
+		data: query.chart.data,
+		options: chart_type == 'Auto' ? guessedChart.options : options,
+		component: widgets.getComponent(guessedChart.chart_type),
 	}
-	return widgets.getComponent(query.chart.doc.chart_type)
-}
-function getChartOptions() {
-	if (query.chart.doc.chart_type == 'Auto') {
-		const guessedChart = query.chart.getGuessedChart()
-		return guessedChart.options
-	}
-	return query.chart.doc.options
-}
+})
 </script>
 
 <template>
@@ -57,12 +54,12 @@ function getChartOptions() {
 			</div>
 			<div class="flex w-full flex-1 overflow-hidden rounded border">
 				<component
-					v-if="query.chart.doc.chart_type"
+					v-if="chart.type"
 					ref="widget"
+					:is="chart.component"
+					:options="chart.options"
+					:data="chart.data"
 					:key="JSON.stringify(query.chart.doc)"
-					:is="getChartComponent()"
-					:options="getChartOptions()"
-					:data="query.chart.data"
 				/>
 			</div>
 		</template>

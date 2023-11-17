@@ -46,24 +46,31 @@ export default function useChartData(options = {}) {
 	})
 }
 
-export function guessChart(dataset) {
+export function guessChart(dataset, chart_type) {
 	const [columns, ...rows] = dataset
 	const numberColumns = columns.filter((col) => FIELDTYPES.NUMBER.includes(col.type))
 	const dateColumns = columns.filter((col) => FIELDTYPES.DATE.includes(col.type))
 	const stringColumns = columns.filter((col) => FIELDTYPES.TEXT.includes(col.type))
 
 	// if there is only one number column, it's a number chart
-	if (columns.length === 1 && numberColumns.length === 1) {
+	const hasOnlyOneNumberColumn = columns.length === 1 && numberColumns.length === 1
+	const autoGuessNumberChart = chart_type === 'Auto' && hasOnlyOneNumberColumn
+	const shouldGuessNumberChart = chart_type === 'Number' && numberColumns.length >= 1
+	if (autoGuessNumberChart || shouldGuessNumberChart) {
 		return {
 			type: 'Number',
 			options: {
 				column: numberColumns[0].label,
+				shorten: false,
 			},
 		}
 	}
 
 	// if there is at least one date column and one number column, it's a line chart
-	if (dateColumns.length >= 1 && numberColumns.length >= 1) {
+	const hasAtLeastOneDateAndNumberColumn = dateColumns.length >= 1 && numberColumns.length >= 1
+	const autoGuessLineChart = chart_type === 'Auto' && hasAtLeastOneDateAndNumberColumn
+	const shouldGuessLineChart = chart_type === 'Line' && hasAtLeastOneDateAndNumberColumn
+	if (autoGuessLineChart || shouldGuessLineChart) {
 		return {
 			type: 'Line',
 			options: {
@@ -73,12 +80,19 @@ export function guessChart(dataset) {
 		}
 	}
 
-	if (stringColumns.length >= 1 && numberColumns.length >= 1) {
+	const hasAtLeastOneStringAndNumberColumn =
+		stringColumns.length >= 1 && numberColumns.length >= 1
+	if (hasAtLeastOneStringAndNumberColumn) {
 		const uniqueValuesCount = new Set(rows.map((row) => row[stringColumns[0].label])).size
-
 		// if there is only one string column and one number column,
 		// and there are less than 10 unique values, it's a pie chart
-		if (stringColumns.length === 1 && numberColumns.length === 1 && uniqueValuesCount <= 10) {
+		const hasLessThan10UniqueValues = uniqueValuesCount <= 10
+		const hasOnlyOneStringAndNumberColumn =
+			stringColumns.length === 1 && numberColumns.length === 1
+		const autoGuessPieChart =
+			chart_type === 'Auto' && hasOnlyOneStringAndNumberColumn && hasLessThan10UniqueValues
+		const shouldGuessPieChart = chart_type === 'Pie'
+		if (autoGuessPieChart || shouldGuessPieChart) {
 			return {
 				type: 'Pie',
 				options: {
@@ -89,20 +103,30 @@ export function guessChart(dataset) {
 		}
 
 		// if there is at least one string column and one number column, it's a bar chart
-		return {
-			type: 'Bar',
-			options: {
-				xAxis: stringColumns[0].label,
-				yAxis: numberColumns.map((col) => col.label),
-				rotateLabels: uniqueValuesCount > 10 ? '90' : '0',
-			},
+		const autoGuessBarChart = chart_type === 'Auto' && hasAtLeastOneStringAndNumberColumn
+		const shouldGuessBarChart = chart_type === 'Bar'
+		if (autoGuessBarChart || shouldGuessBarChart) {
+			return {
+				type: 'Bar',
+				options: {
+					xAxis: stringColumns[0].label,
+					yAxis: numberColumns.map((col) => col.label),
+					rotateLabels: uniqueValuesCount > 10 ? '90' : '0',
+				},
+			}
 		}
 	}
 
-	return {
-		type: 'Table',
-		options: { columns: columns.map((col) => col.label) },
+	const autoGuessTableChart = chart_type === 'Auto'
+	const shouldGuessTableChart = chart_type === 'Table'
+	if (autoGuessTableChart || shouldGuessTableChart) {
+		return {
+			type: 'Table',
+			options: { columns: columns.map((col) => col.label) },
+		}
 	}
+
+	return { type: chart_type, options: {} }
 }
 
 export function convertResultToObjects(results) {

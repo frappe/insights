@@ -55,8 +55,8 @@ export default async function useChart(query) {
 		)
 	}
 
-	function getGuessedChart() {
-		const recommendedChart = guessChart(query.formattedResults)
+	function getGuessedChart(chart_type) {
+		const recommendedChart = guessChart(query.formattedResults, chart_type)
 		return {
 			chart_type: recommendedChart?.type,
 			options: {
