@@ -93,7 +93,7 @@ def import_todo_table(db):
     df = pd.DataFrame(data[1:], columns=data[0])
     df.to_sql(
         name="tabToDo",
-        con=db.db.engine,
+        con=db._db.engine,
         index=False,
         if_exists="replace",
     )
