@@ -186,7 +186,15 @@ export default function useAssistedQuery(query) {
 	}
 
 	async function inferJoins() {
-		state.joins = (await inferJoinsFromColumns(state)) || []
+		const joins = await inferJoinsFromColumns(state)
+		const newJoins = joins.filter((join) => {
+			return !state.joins.some(
+				(j) =>
+					j.left_table.table === join.left_table.table &&
+					j.right_table.table === join.right_table.table
+			)
+		})
+		state.joins.push(...newJoins)
 	}
 
 	return state
