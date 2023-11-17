@@ -26,10 +26,7 @@ class InsightsTableImport(Document):
             frappe.throw("Data source does not allow imports")
         if self.source and not self.source.endswith(".csv"):
             frappe.throw("Please attach a CSV file")
-        if (
-            self._data_source.db.table_exists(self.table_name)
-            and self.if_exists == "Fail"
-        ):
+        if self._data_source._db.table_exists(self.table_name) and self.if_exists == "Fail":
             frappe.throw("Table already exists. Enter a new different table name")
 
     def before_save(self):
@@ -82,14 +79,10 @@ class InsightsTableImport(Document):
         table_import.db_set("status", "Started")
 
         try:
-            table_import._data_source.db.import_table(table_import)
+            table_import._data_source._db.import_table(table_import)
             table_import.db_set("status", "Success")
         except BaseException as e:
             print(f"Error importing table {table_import.table_name}", e)
-            frappe.log_error(
-                title=f"Insights: Failed to import table - {table_import.table_name}"
-            )
+            frappe.log_error(title=f"Insights: Failed to import table - {table_import.table_name}")
             table_import.db_set("status", "Failed")
-            table_import.db_set(
-                "error", "Failed to import table. Check error log for details"
-            )
+            table_import.db_set("error", "Failed to import table. Check error log for details")

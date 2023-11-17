@@ -69,18 +69,14 @@ class InsightsDataSource(Document):
         track("delete_data_source")
 
     @cached_property
-    def db(self) -> BaseDatabase:
-        if frappe.flags.in_safe_exec:
-            raise NotImplementedError("Cannot access database in safe exec")
+    def _db(self) -> BaseDatabase:
         if self.is_site_db:
             return SiteDB(data_source=self.name)
         if self.name == "Query Store":
             return QueryStore()
         if self.database_type == "SQLite":
             return SQLiteDB(data_source=self.name, database_name=self.database_name)
-        return self.get_database()
 
-    def get_database(self):
         password = None
         with suppress(BaseException):
             password = self.get_password()
@@ -134,7 +130,7 @@ class InsightsDataSource(Document):
 
     def test_connection(self, raise_exception=False):
         try:
-            return self.db.test_connection()
+            return self._db.test_connection()
         except DatabaseConnectionError:
             return False
         except Exception as e:
@@ -143,11 +139,11 @@ class InsightsDataSource(Document):
                 raise e
 
     def build_query(self, query: InsightsQuery):
-        return self.db.build_query(query)
+        return self._db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
         try:
-            return self.db.run_query(query)
+            return self._db.run_query(query)
         except Exception as e:
             frappe.log_error("Running query failed")
             notify(
@@ -160,11 +156,11 @@ class InsightsDataSource(Document):
             raise
 
     def execute_query(self, query: str, **kwargs):
-        return self.db.execute_query(query, **kwargs)
+        return self._db.execute_query(query, **kwargs)
 
     @task(queue="short")
     def sync_tables(self, *args, **kwargs):
-        return self.db.sync_tables(*args, **kwargs)
+        return self._db.sync_tables(*args, **kwargs)
 
     @frappe.whitelist()
     def enqueue_sync_tables(self):
@@ -189,13 +185,13 @@ class InsightsDataSource(Document):
         )
 
     def get_table_columns(self, table):
-        return self.db.get_table_columns(table)
+        return self._db.get_table_columns(table)
 
     def get_column_options(self, table, column, search_text=None, limit=50):
-        return self.db.get_column_options(table, column, search_text, limit)
+        return self._db.get_column_options(table, column, search_text, limit)
 
     def get_table_preview(self, table, limit=100):
-        return self.db.get_table_preview(table, limit)
+        return self._db.get_table_preview(table, limit)
 
     def get_schema(self):
         return get_data_source_schema(self.name)
