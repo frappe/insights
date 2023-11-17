@@ -1,7 +1,7 @@
 <script setup>
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import Tabs from '@/components/Tabs.vue'
-import { provide, ref } from 'vue'
+import { provide, ref, watchEffect } from 'vue'
 import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
 import NativeQueryEditor from './NativeQueryEditor.vue'
@@ -17,6 +17,12 @@ provide('query', query)
 
 const activeTab = ref('Query')
 const tabs = ['Query', 'Visualize']
+
+watchEffect(() => {
+	if (query.doc?.name) {
+		document.title = `${query.doc.name} - Frappe Insights`
+	}
+})
 </script>
 
 <template>
