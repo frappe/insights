@@ -5,7 +5,7 @@
 import frappe
 import pandas as pd
 from frappe.utils.password import get_decrypted_password
-from frappe.utils.safe_exec import compile_restricted, get_safe_globals
+from frappe.utils.safe_exec import safe_exec
 
 from insights import notify
 
@@ -45,10 +45,11 @@ class InsightsScriptQueryController:
             variables = self.doc.get("variables") or []
             variables = {var.variable_name: get_value(var) for var in variables}
             _locals = {"results": results, **variables}
-            exec(
-                compile_restricted(script, filename="<scriptquery>"),
-                get_safe_exec_globals(),
-                _locals,
+            safe_exec(
+                script,
+                _globals=get_globals(),
+                _locals=_locals,
+                restrict_commit_rollback=True,
             )
             self.update_script_log()
             results = _locals["results"]
@@ -107,9 +108,7 @@ class InsightsScriptQueryController:
         return []
 
 
-def get_safe_exec_globals():
-    safe_globals = get_safe_globals()
-
+def get_globals():
     pandas = frappe._dict()
     pandas.DataFrame = pd.DataFrame
     pandas.read_csv = pd.read_csv
@@ -117,6 +116,15 @@ def get_safe_exec_globals():
     # mock out to_csv and to_json to prevent users from writing to disk
     pandas.DataFrame.to_csv = lambda *args, **kwargs: None
     pandas.DataFrame.to_json = lambda *args, **kwargs: None
-    safe_globals.pandas = pandas
 
-    return safe_globals
+    return {
+        "pandas": pandas,
+        "get_query_results": get_query_results,
+    }
+
+
+def get_query_results(query_name):
+    if not isinstance(query_name, str):
+        raise ScriptQueryExecutionError("Query name should be a string.")
+    doc = frappe.get_doc("Insights Query", query_name)
+    return doc.retrieve_results(fetch_if_not_cached=True)
