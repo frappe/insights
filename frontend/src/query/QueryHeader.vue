@@ -52,7 +52,7 @@ function changeDataSource(sourceName) {
 <template>
 	<div class="flex w-full items-center justify-between gap-4">
 		<div class="flex items-center">
-			<div v-if="query.doc.is_saved_as_table" class="mr-2">
+			<div v-if="query.doc.is_stored" class="mr-2">
 				<ComponentIcon class="h-4 w-4 text-gray-600" fill="currentColor" />
 			</div>
 			<ContentEditable
