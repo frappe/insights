@@ -16,20 +16,20 @@ def execute():
     for data_source in data_sources:
         doc = frappe.get_doc("Insights Data Source", data_source)
         try:
-            if not isinstance(doc.db, FrappeDB) and not doc.is_site_db:
+            if not isinstance(doc._db, FrappeDB) and not doc.is_site_db:
                 click.echo(f"Skipping {data_source} as it is not a MariaDB data source")
                 continue
             click.echo(f"Syncing tables for {data_source}")
-            with doc.db.engine.begin() as connection:
-                doc.db.table_factory.db_conn = connection
-                table_names = doc.db.table_factory.get_columns_by_tables().keys()
+            with doc._db.engine.begin() as connection:
+                doc._db.table_factory.db_conn = connection
+                table_names = doc._db.table_factory.get_columns_by_tables().keys()
                 with click.progressbar(list(table_names)) as tables:
                     for table_name in tables:
                         table = get_table(table_name, data_source)
                         if not table:
                             continue
                         clear_table_links(table.name)
-                        table_links = doc.db.table_factory.get_table_links(table.label)
+                        table_links = doc._db.table_factory.get_table_links(table.label)
                         insert_table_links(table.name, table_links)
             frappe.db.commit()
         except Exception as e:
