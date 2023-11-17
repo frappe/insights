@@ -103,8 +103,9 @@ const queryBuilderTypes = ref([
 	},
 ])
 
+const user_id = sessionStore().user.user_id
 const filters = useStorage('insights:query-list-filters', {
-	owner: ['=', sessionStore().user.user_id],
+	owner: ['=', user_id],
 })
 const queries = computed(() => {
 	if (isEmptyObj(filters.value)) {
@@ -112,6 +113,7 @@ const queries = computed(() => {
 	}
 	return queryStore.list.filter((query) => {
 		for (const [fieldname, [operator, value]] of Object.entries(filters.value)) {
+			if (!fieldname || !operator || !value) continue
 			const field_value = query[fieldname]
 			if (operator === '=') return field_value === value
 			if (operator === '!=') return field_value !== value
