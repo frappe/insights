@@ -46,6 +46,13 @@
 					onClick: downloadCSV,
 				},
 				{
+					label: query.doc.is_assisted_query
+						? 'Switch to Classic Query Builder'
+						: 'Switch to Visual Query Builder',
+					icon: 'toggle-left',
+					onClick: () => (show_switch_dialog = true),
+				},
+				{
 					label: 'Delete',
 					icon: 'trash-2',
 					onClick: () => (show_delete_dialog = true),
@@ -78,6 +85,28 @@
 			}"
 		>
 		</Dialog>
+
+		<Dialog
+			v-model="show_switch_dialog"
+			:dismissable="true"
+			:options="{
+				title: query.doc.is_assisted_query
+					? 'Switch to Classic Query Builder'
+					: 'Switch to Visual Query Builder',
+				message: query.doc.is_assisted_query
+					? 'All the changes you have made in the query will be preserved. However, if you make any changes in the Classic Query Builder, they will be lost when you switch back to the Visual Query Builder. Are you sure you want to continue?'
+					: 'All the changes you have made in the Classic Query Builder will be converted to the Visual Query Builder. Are you sure you want to continue?',
+				icon: { name: 'toggle-left', appearance: 'warning' },
+				actions: [
+					{
+						label: 'Switch',
+						variant: 'solid',
+						onClick: () =>
+							query.switchQueryBuilder().then(() => (show_switch_dialog = false)),
+					},
+				],
+			}"
+		/>
 
 		<Dialog
 			:options="{ title: 'Generated SQL', size: '3xl' }"
@@ -136,6 +165,7 @@ const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_share_dialog = ref(false)
 const show_alert_dialog = ref(false)
+const show_switch_dialog = ref(false)
 
 const keys = useMagicKeys()
 const cmdE = keys['Meta+E']

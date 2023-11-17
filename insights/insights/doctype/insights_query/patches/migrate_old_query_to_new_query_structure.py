@@ -18,27 +18,26 @@ def execute():
     )
     for old_query in old_queries:
         doc = frappe.get_doc("Insights Query", old_query.name)
-        old_query = doc
-        if not old_query.sql or not old_query.tables or not old_query.tables[0].table:
-            continue
-        doc.db_set(
-            "json",
-            frappe.as_json(
-                {
-                    "table": get_table(old_query),
-                    "joins": get_joins(old_query),
-                    "filters": get_filters(old_query),
-                    "columns": get_columns(old_query),
-                    "calculations": [],
-                    "measures": [],
-                    "dimensions": [],
-                    "orders": [],
-                    "limit": old_query.limit,
-                }
-            ),
-            update_modified=False,
-        )
+        doc.db_set("json", convert_classic_to_assisted(doc), update_modified=False)
         doc.db_set("is_assisted_query", 1, update_modified=False)
+
+
+def convert_classic_to_assisted(old_query):
+    if not old_query.sql or not old_query.tables or not old_query.tables[0].table:
+        return
+    return frappe.as_json(
+        {
+            "table": get_table(old_query),
+            "joins": get_joins(old_query),
+            "filters": get_filters(old_query),
+            "columns": get_columns(old_query),
+            "calculations": [],
+            "measures": [],
+            "dimensions": [],
+            "orders": [],
+            "limit": old_query.limit,
+        }
+    )
 
 
 def get_table(old_query):

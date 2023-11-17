@@ -39,6 +39,7 @@ export const API_METHODS = {
 	get_tables_columns: 'get_tables_columns',
 	save_as_table: 'save_as_table',
 	delete_linked_table: 'delete_linked_table',
+	switch_query_type: 'switch_query_type',
 }
 
 export function useQueryResource(name) {

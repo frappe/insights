@@ -5,7 +5,13 @@
 import frappe
 from frappe.utils import cint
 
-from insights.utils import InsightsChart, InsightsQuery, InsightsTable
+from insights.insights.doctype.insights_query.insights_assisted_query import (
+    DEFAULT_JSON,
+)
+from insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_query_structure import (
+    convert_classic_to_assisted,
+)
+from insights.utils import InsightsChart
 
 
 class InsightsQueryClient:
@@ -92,6 +98,15 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def delete_linked_table(self):
         return self.delete_insights_table()
+
+    @frappe.whitelist()
+    def switch_query_type(self):
+        if self.is_assisted_query:
+            self.is_assisted_query = 0
+        else:
+            self.is_assisted_query = 1
+            self.json = convert_classic_to_assisted(self) or self.json
+        self.save()
 
     @frappe.whitelist()
     def fetch_related_tables_columns(self, search_txt=None):

@@ -9,6 +9,7 @@ import QueryHeader from './QueryHeader.vue'
 import ScriptQueryEditor from './ScriptQueryEditor.vue'
 import useQuery from './resources/useQuery'
 import VisualQueryBuilder from './visual/VisualQueryBuilder.vue'
+import ClassicQueryBuilder from './ClassicQueryBuilder.vue'
 
 const props = defineProps({ name: String })
 const query = useQuery(props.name)
@@ -50,9 +51,16 @@ watchEffect(() => {
 			</QueryHeader>
 		</div>
 		<div v-if="activeTab == 'Query'" class="flex flex-1 flex-shrink-0 overflow-hidden">
-			<NativeQueryEditor v-if="query.doc.is_native_query"></NativeQueryEditor>
+			<VisualQueryBuilder v-if="query.doc.is_assisted_query"></VisualQueryBuilder>
+			<NativeQueryEditor v-else-if="query.doc.is_native_query"></NativeQueryEditor>
 			<ScriptQueryEditor v-else-if="query.doc.is_script_query"></ScriptQueryEditor>
-			<VisualQueryBuilder v-else></VisualQueryBuilder>
+			<ClassicQueryBuilder
+				v-else-if="
+					!query.doc.is_assisted_query &&
+					!query.doc.is_native_query &&
+					!query.doc.is_script_query
+				"
+			/>
 		</div>
 		<div
 			v-if="activeTab == 'Visualize' && query.chart.doc?.name"

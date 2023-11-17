@@ -2,7 +2,11 @@ import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
 import { areDeeplyEqual, createTaskRunner } from '@/utils'
+import { useQueryColumns } from '@/utils/query/columns'
+import { useQueryFilters } from '@/utils/query/filters'
 import { getFormattedResult } from '@/utils/query/results'
+import { useQueryTables } from '@/utils/query/tables'
+import { whenever } from '@vueuse/core'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import useChart from './useChart'
@@ -37,6 +41,7 @@ function makeQuery(name) {
 	state.MAX_ROWS = 100
 	state.formattedResults = computed(() => getFormattedResult(resource.doc.results))
 	state.resultColumns = computed(() => resource.doc.results?.[0])
+	state.isOwner = computed(() => resource.doc?.owner === session.user.user_id)
 
 	state.reload = () => {
 		return resource.get
@@ -97,8 +102,44 @@ function makeQuery(name) {
 	}
 
 	state.store = () => run(() => resource.store.submit())
-	state.save_as_table = () => run(() => resource.save_as_table.submit())
-	state.delete_linked_table = () => run(() => resource.delete_linked_table.submit())
+	state.switchQueryBuilder = () => {
+		return run(() => {
+			return resource.switch_query_type.submit().then(() => {
+				window.location.reload()
+			})
+		})
+	}
+	// classic query
+	const isClassicQuery = computed(() => {
+		if (!resource.doc) return false
+		return (
+			!resource.doc?.is_assisted_query &&
+			!resource.doc?.is_native_query &&
+			!resource.doc?.is_script_query
+		)
+	})
+	whenever(isClassicQuery, () => {
+		if (state.classicQueryInitialized || !isClassicQuery.value) return
+
+		state.addTable = resource.addTable
+		state.fetchTables = resource.fetchTables
+		state.updateTable = resource.updateTable
+		state.removeTable = resource.removeTable
+		state.fetchJoinOptions = resource.fetchJoinOptions
+		state.tables = useQueryTables(state)
+
+		state.addColumn = resource.addColumn
+		state.moveColumn = resource.moveColumn
+		state.removeColumn = resource.removeColumn
+		state.updateColumn = resource.updateColumn
+		state.fetchColumns = resource.fetchColumns
+		state.columns = useQueryColumns(state)
+
+		state.updateFilters = resource.updateFilters
+		state.fetchColumnValues = resource.fetchColumnValues
+		state.filters = useQueryFilters(state)
+		state.classicQueryInitialized = true
+	})
 
 	// native query
 	state.updateSQL = debounce(async (sql) => {
