@@ -1,6 +1,6 @@
 <template>
 	<div class="flex items-center justify-between rounded-b-md px-1 text-base">
-		<div v-if="orderByColumns.length" class="flex items-center space-x-1">
+		<!-- <div v-if="orderByColumns.length" class="flex items-center space-x-1">
 			<span class="text-gray-600">Sorted by</span>
 			<div class="flex items-center space-x-1">
 				<span
@@ -13,6 +13,15 @@
 					<span v-if="index < orderByColumns.length - 1" class="text-gray-600">,</span>
 				</span>
 			</div>
+		</div> -->
+		<div v-if="queriedRowCount >= 0" class="flex items-center space-x-1">
+			<span class="text-gray-600">Showing</span>
+			<span class="font-mono"> {{ displayedRowCount }}</span>
+			<span class="text-gray-600">out of</span>
+			<span class="font-mono">{{ queriedRowCount }}</span>
+			<span class="text-gray-600">rows in</span>
+			<span class="font-mono">{{ executionTime }}</span>
+			<span class="text-gray-600">seconds</span>
 		</div>
 		<div class="ml-auto flex items-center space-x-1">
 			<span class="text-gray-600">Limit to</span>
@@ -32,6 +41,11 @@
 
 <script setup>
 import { computed, inject, ref } from 'vue'
+
+const query = inject('query')
+const executionTime = computed(() => query.doc.execution_time)
+const queriedRowCount = computed(() => query.doc.results_row_count - 1)
+const displayedRowCount = computed(() => Math.min(query.MAX_ROWS, queriedRowCount.value))
 
 const assistedQuery = inject('assistedQuery')
 const limitInput = ref(null)
