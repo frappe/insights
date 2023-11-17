@@ -35,7 +35,8 @@ function makeQuery(name) {
 
 	const run = createTaskRunner()
 	state.doc = computed(() => resource.doc)
-	state.loading = computed(() => resource.loading)
+
+	const setLoading = (value) => (state.loading = value)
 
 	// Results
 	state.MAX_ROWS = 100
@@ -44,34 +45,46 @@ function makeQuery(name) {
 	state.isOwner = computed(() => resource.doc?.owner === session.user.user_id)
 
 	state.reload = () => {
+		setLoading(true)
 		return resource.get
 			.fetch()
 			.then(() => useChart(state))
 			.then((chart) => (state.chart = chart))
+			.finally(() => setLoading(false))
 	}
 
-	state.updateTitle = (title) => run(() => resource.setValue.submit({ title }))
-	state.changeDataSource = (data_source) => run(() => resource.setValue.submit({ data_source }))
+	state.updateTitle = (title) => {
+		setLoading(true)
+		return run(() => resource.setValue.submit({ title }).finally(() => setLoading(false)))
+	}
+	state.changeDataSource = (data_source) => {
+		setLoading(true)
+		return run(() => resource.setValue.submit({ data_source }).then(() => setLoading(false)))
+	}
 
 	const autoExecuteEnabled = settingsStore().settings.auto_execute_query
 	state.updateQuery = async (newQuery) => {
 		if (areDeeplyEqual(newQuery, resource.originalDoc.json))
 			return Promise.resolve({ query_updated: false })
 
+		setLoading(true)
 		return new Promise((resolve) =>
 			run(() =>
 				resource.setValue
 					.submit({ json: JSON.stringify(newQuery, null, 2) })
 					.then(() => autoExecuteEnabled && state.execute())
 					.then(() => resolve({ query_updated: true }))
+					.finally(() => setLoading(false))
 			)
 		)
 	}
 
 	state.execute = debounce(async () => {
+		setLoading(true)
 		state.executing = true
 		await run(() => resource.run.submit().catch(() => {}))
 		state.executing = false
+		setLoading(false)
 	}, 500)
 
 	state.getChartName = async () => {
@@ -81,10 +94,12 @@ function makeQuery(name) {
 
 	state.updateTransforms = debounce(async (transforms) => {
 		if (!transforms) return
+		setLoading(true)
 		return run(() =>
 			resource.setValue
 				.submit({ transforms, status: 'Pending Execution' })
 				.then(() => autoExecuteEnabled && state.execute())
+				.finally(() => setLoading(false))
 		)
 	}, 500)
 
@@ -101,7 +116,10 @@ function makeQuery(name) {
 		state.deleting = false
 	}
 
-	state.store = () => run(() => resource.store.submit())
+	state.store = () => {
+		setLoading(true)
+		run(() => resource.store.submit().finally(() => setLoading(false)))
+	}
 	state.switchQueryBuilder = () => {
 		return run(() => {
 			return resource.switch_query_type.submit().then(() => {
@@ -144,25 +162,35 @@ function makeQuery(name) {
 	// native query
 	state.updateSQL = debounce(async (sql) => {
 		if (sql === state.doc.sql) return
+		setLoading(true)
 		await run(() =>
-			resource.setValue.submit({ sql }).then(() => autoExecuteEnabled && state.execute())
+			resource.setValue
+				.submit({ sql })
+				.then(() => autoExecuteEnabled && state.execute())
+				.finally(() => setLoading(false))
 		)
 	}, 500)
 
 	// script query
 	state.updateScript = debounce(async (script) => {
 		if (script === state.doc.script) return
+		setLoading(true)
 		await run(() =>
-			resource.setValue.submit({ script }).then(() => autoExecuteEnabled && state.execute())
+			resource.setValue
+				.submit({ script })
+				.then(() => autoExecuteEnabled && state.execute())
+				.finally(() => setLoading(false))
 		)
 	}, 500)
 
 	state.updateScriptVariables = debounce(async (script_variables) => {
 		if (variables === state.doc.variables) return
+		setLoading(true)
 		await run(() =>
 			resource.setValue
 				.submit({ variables })
 				.then(() => autoExecuteEnabled && state.execute())
+				.finally(() => setLoading(false))
 		)
 	}, 500)
 
