@@ -404,9 +404,9 @@ class Query(frappe._dict):
         return self.table.is_valid()
 
     def add_filter(self, column, operator, value):
-        if isinstance(value, str):
+        if not isinstance(value, dict):
             value = {"value": value}
-        if isinstance(operator, str):
+        if not isinstance(operator, dict):
             operator = {"value": operator}
         if not column or not isinstance(column, dict):
             frappe.throw("Invalid Column")
