@@ -7,18 +7,21 @@ import { computed, inject, nextTick, provide, reactive, ref, watch } from 'vue'
 import TableEdge from './TableEdge.vue'
 import TableNode from './TableNode.vue'
 import useDataSourceTable from './useDataSourceTable'
+import { Grip } from 'lucide-vue-next'
 
 const dataSource = inject('dataSource')
 const searchQuery = ref('')
 const filteredList = computed(() => {
 	if (!searchQuery.value) {
-		return dataSource.tableList.filter((table) => !table.is_query_based)
+		return dataSource.tableList.filter((table) => !table.is_query_based).slice(0, 100)
 	}
-	return dataSource.tableList.filter(
-		(table) =>
-			!table.is_query_based &&
-			table.label.toLowerCase().includes(searchQuery.value.toLowerCase())
-	)
+	return dataSource.tableList
+		.filter(
+			(table) =>
+				!table.is_query_based &&
+				table.label.toLowerCase().includes(searchQuery.value.toLowerCase())
+		)
+		.slice(0, 100)
 })
 
 const state = reactive({
@@ -231,13 +234,16 @@ function onEdgeChange(args) {
 		</div>
 	</div>
 
-	<div class="flex w-[21rem] flex-shrink-0 flex-col gap-3 bg-white p-4 shadow">
+	<div class="flex w-[21rem] flex-shrink-0 flex-col gap-3 overflow-hidden bg-white p-4 shadow">
 		<div class="flex items-center justify-between">
 			<div class="text-xl font-medium">Tables</div>
 		</div>
 		<Input placeholder="Search" icon-left="search" v-model="searchQuery" />
-		<div class="flex-1 overflow-visible">
-			<div v-if="filteredList.length" class="flex flex-col gap-2">
+		<div class="flex-1 overflow-hidden">
+			<div
+				v-if="filteredList.length"
+				class="flex h-full flex-col gap-2 overflow-x-hidden overflow-y-scroll"
+			>
 				<div
 					v-for="table in filteredList"
 					:key="table.name"
@@ -246,7 +252,7 @@ function onEdgeChange(args) {
 					@dragstart="onTableDragStart($event, table)"
 				>
 					<div class="flex items-center space-x-2 py-1">
-						<DragHandleIcon class="h-4 w-4 rotate-90 text-gray-600" />
+						<Grip class="h-4 w-4 rotate-90 text-gray-600" />
 						<span> {{ table.label }} </span>
 					</div>
 				</div>
