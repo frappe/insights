@@ -44,7 +44,7 @@ import { computed, inject, ref } from 'vue'
 
 const query = inject('query')
 const executionTime = computed(() => query.doc.execution_time)
-const queriedRowCount = computed(() => query.doc.results_row_count - 1)
+const queriedRowCount = computed(() => query.doc.results_row_count)
 const displayedRowCount = computed(() => Math.min(query.MAX_ROWS, queriedRowCount.value))
 
 const assistedQuery = inject('assistedQuery')

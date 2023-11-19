@@ -70,7 +70,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def results_row_count(self):
-        return len(self.retrieve_results())
+        return len(self.retrieve_results()) - 1
 
     @cached_property
     def variant_controller(self):
