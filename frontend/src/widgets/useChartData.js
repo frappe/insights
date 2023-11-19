@@ -83,7 +83,8 @@ export function guessChart(dataset, chart_type) {
 	const hasAtLeastOneStringAndNumberColumn =
 		stringColumns.length >= 1 && numberColumns.length >= 1
 	if (hasAtLeastOneStringAndNumberColumn) {
-		const uniqueValuesCount = new Set(rows.map((row) => row[stringColumns[0].label])).size
+		const stringColIndex = columns.findIndex((col) => FIELDTYPES.TEXT.includes(col.type))
+		const uniqueValuesCount = new Set(rows.map((row) => row[stringColIndex])).size
 		// if there is only one string column and one number column,
 		// and there are less than 10 unique values, it's a pie chart
 		const hasLessThan10UniqueValues = uniqueValuesCount <= 10

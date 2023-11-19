@@ -2,10 +2,10 @@ import { areDeeplyEqual, createTaskRunner, safeJSONParse } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced } from '@vueuse/core'
 import { createDocumentResource } from 'frappe-ui'
-import { computed, reactive, unref } from 'vue'
+import { computed, reactive } from 'vue'
 import useQuery from './useQuery'
 
-export default async function useChart(chart_name, query_results) {
+export default async function useChart(chart_name) {
 	const resource = getChartResource(chart_name)
 	await resource.get.fetch()
 
@@ -19,13 +19,9 @@ export default async function useChart(chart_name, query_results) {
 		delete: deleteChart,
 	})
 
-	if (query_results) {
-		chart.data = computed(() => convertResultToObjects(query_results))
-	} else {
-		const query = useQuery(chart.doc.query)
-		chart.data = computed(() => query.formattedResults)
-		chart.doc.options.title = chart.doc.options.title || query.doc.title
-	}
+	const query = useQuery(chart.doc.query)
+	chart.data = computed(() => convertResultToObjects(query.formattedResults))
+	chart.doc.options.title = chart.doc.options?.title || query.doc?.title
 
 	const run = createTaskRunner()
 	watchDebounced(
@@ -62,7 +58,7 @@ export default async function useChart(chart_name, query_results) {
 	}
 
 	function getGuessedChart(chart_type) {
-		const recommendedChart = guessChart(query_results, chart_type)
+		const recommendedChart = guessChart(query.formattedResults, chart_type)
 		return {
 			chart_type: recommendedChart?.type,
 			options: {
