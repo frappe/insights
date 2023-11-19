@@ -1,6 +1,5 @@
 <script setup lang="jsx">
 import useDashboards from '@/dashboard/useDashboards'
-import InputWithPopover from '@/notebook/blocks/query/builder/InputWithPopover.vue'
 import { createChart, default as useChart } from '@/query/useChart'
 import useQueryStore from '@/stores/queryStore'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
@@ -44,13 +43,13 @@ const selectedQuery = computed(() => {
 const QuerySelector = (props) => {
 	return (
 		<div class="relative flex w-full items-center text-gray-800 [&>div]:w-full">
-			<InputWithPopover
+			<Autocomplete
 				placeholder="Query"
-				items={queryOptions}
-				value={selectedQuery.value}
+				options={queryOptions}
+				modelValue={selectedQuery.value}
 				placement="bottom"
 				onUpdate:modelValue={(op) => chart.updateQuery(op.value)}
-			></InputWithPopover>
+			></Autocomplete>
 			<p class="pointer-events-none absolute right-0 top-0 flex h-full items-center px-2">
 				<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
 			</p>
