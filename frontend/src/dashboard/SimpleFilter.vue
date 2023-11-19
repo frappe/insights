@@ -195,39 +195,37 @@ function isValueSelected(value) {
 	<div class="w-full [&:first-child]:w-full">
 		<Popover class="w-full" @close="applyFilter">
 			<template #target="{ togglePopover, isOpen }">
-				<div class="flex w-full">
+				<div class="flex w-full rounded bg-white shadow">
 					<button
-						class="flex w-full items-center gap-1.5 overflow-hidden rounded bg-white p-0.5 pl-3 text-base font-medium leading-5 text-gray-900 shadow"
+						class="flex flex-1 flex-shrink-0 items-center justify-between gap-1.5 overflow-hidden rounded bg-white p-0.5 pl-3 text-base font-medium leading-5 text-gray-900"
 						@click="togglePopover"
 					>
 						<span v-if="!filter.column" class="font-normal text-gray-600">
 							Select a filter...
 						</span>
-						<template v-else>
-							<div class="flex flex-shrink-0 items-center gap-1">
-								<component
-									:is="fieldtypesToIcon[filter.column.type]"
-									class="h-4 w-4 text-gray-600"
-								/>
-								<span class="truncate">{{ filter.column.label }}</span>
-							</div>
-							<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
-								{{ operatorLabel }}
-							</span>
-							<span v-if="filter.value" class="flex-shrink-0 truncate">
-								{{ valueLabel }}
-							</span>
-							<div class="ml-auto flex h-7 items-center">
-								<Button
-									v-if="isOpen || !applyDisabled"
-									icon="x"
-									variant="ghost"
-									@click.prevent.stop="resetFilter()"
-								/>
-								<FeatherIcon v-else name="chevron-down" class="mr-2 h-4 w-4" />
-							</div>
-						</template>
+						<div class="flex flex-shrink-0 items-center gap-1">
+							<component
+								:is="fieldtypesToIcon[filter.column.type]"
+								class="h-4 w-4 flex-shrink-0 text-gray-600"
+							/>
+							<span class="truncate">{{ filter.column.label }}</span>
+						</div>
+						<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
+							{{ operatorLabel }}
+						</span>
+						<span v-if="filter.value" class="flex-shrink-0 truncate">
+							{{ valueLabel }}
+						</span>
 					</button>
+					<div class="flex h-7 items-center rounded">
+						<Button
+							v-if="isOpen || !applyDisabled"
+							icon="x"
+							variant="ghost"
+							@click.prevent.stop="resetFilter()"
+						/>
+						<FeatherIcon v-else name="chevron-down" class="mr-2 h-4 w-4" />
+					</div>
 				</div>
 			</template>
 			<template #body="{ togglePopover }">
