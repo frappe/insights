@@ -110,7 +110,7 @@
 
 <script setup>
 import { Autocomplete, FeatherIcon, FormControl } from 'frappe-ui'
-import { computed, h, onUpdated, ref } from 'vue'
+import { computed, h, onUpdated, ref, watch } from 'vue'
 import FilterIcon from './FilterIcon.vue'
 import NestedPopover from './NestedPopover.vue'
 import SearchComplete from './SearchComplete.vue'
