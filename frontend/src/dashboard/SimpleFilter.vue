@@ -197,7 +197,7 @@ function isValueSelected(value) {
 			<template #target="{ togglePopover, isOpen }">
 				<div class="flex w-full rounded bg-white shadow">
 					<button
-						class="flex flex-1 flex-shrink-0 items-center justify-between gap-1.5 overflow-hidden rounded bg-white p-0.5 pl-3 text-base font-medium leading-5 text-gray-900"
+						class="flex flex-1 flex-shrink-0 items-center gap-1.5 overflow-hidden rounded bg-white p-0.5 pl-3 text-base font-medium leading-5 text-gray-900"
 						@click="togglePopover"
 					>
 						<span v-if="!filter.column" class="font-normal text-gray-600">
