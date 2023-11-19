@@ -195,9 +195,9 @@ function isValueSelected(value) {
 	<div class="w-full [&:first-child]:w-full">
 		<Popover class="w-full" @close="applyFilter">
 			<template #target="{ togglePopover, isOpen }">
-				<div class="flex w-full rounded bg-white shadow">
+				<div class="flex h-8 w-full rounded bg-white shadow">
 					<button
-						class="flex flex-1 flex-shrink-0 items-center gap-1.5 overflow-hidden rounded bg-white p-0.5 pl-3 text-base font-medium leading-5 text-gray-900"
+						class="flex flex-1 flex-shrink-0 items-center gap-1.5 overflow-hidden rounded bg-white p-1 pl-3 text-base font-medium leading-5 text-gray-900"
 						@click="togglePopover"
 					>
 						<span v-if="!filter.column" class="font-normal text-gray-600">
@@ -217,7 +217,7 @@ function isValueSelected(value) {
 							{{ valueLabel }}
 						</span>
 					</button>
-					<div class="flex h-7 items-center rounded">
+					<div class="flex h-8 items-center rounded">
 						<Button
 							v-if="isOpen || !applyDisabled"
 							icon="x"
