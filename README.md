@@ -1,6 +1,7 @@
 <div align="center" markdown="1">
 
-<img src=".github/logo.png" alt="Frappe Insights logo" width="384" style="margin-bottom: 8px"/>
+<img src=".github/new-logo.svg" alt="Frappe Insights logo" width="124"/>
+<h1>Frappe Insights</h1>
 
 **Simple. Crafted. Powerful. Data Analysis.**
 
