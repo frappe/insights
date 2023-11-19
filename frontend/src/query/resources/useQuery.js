@@ -31,6 +31,7 @@ function makeQuery(name) {
 		chart: {},
 		formattedResults: [],
 		resultColumns: [],
+		sourceSchema: {},
 	})
 
 	const run = createTaskRunner()
@@ -159,11 +160,21 @@ function makeQuery(name) {
 		state.classicQueryInitialized = true
 	})
 
+	state.convertToNative = async () => {
+		if (state.doc.is_native_query) return
+		setLoading(true)
+		return run(() => {
+			return resource.setValue
+				.submit({ is_native_query: 1, is_assisted_query: 0, is_script_query: 0 })
+				.finally(() => setLoading(false))
+		})
+	}
+
 	// native query
-	state.updateSQL = debounce(async (sql) => {
+	state.updateSQL = debounce((sql) => {
 		if (sql === state.doc.sql) return
 		setLoading(true)
-		await run(() =>
+		return run(() =>
 			resource.setValue
 				.submit({ sql })
 				.then(() => autoExecuteEnabled && state.execute())
@@ -172,10 +183,10 @@ function makeQuery(name) {
 	}, 500)
 
 	// script query
-	state.updateScript = debounce(async (script) => {
+	state.updateScript = debounce((script) => {
 		if (script === state.doc.script) return
 		setLoading(true)
-		await run(() =>
+		return run(() =>
 			resource.setValue
 				.submit({ script })
 				.then(() => autoExecuteEnabled && state.execute())
@@ -183,10 +194,10 @@ function makeQuery(name) {
 		)
 	}, 500)
 
-	state.updateScriptVariables = debounce(async (script_variables) => {
+	state.updateScriptVariables = debounce((script_variables) => {
 		if (variables === state.doc.variables) return
 		setLoading(true)
-		await run(() =>
+		return run(() =>
 			resource.setValue
 				.submit({ variables })
 				.then(() => autoExecuteEnabled && state.execute())

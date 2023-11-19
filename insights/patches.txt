@@ -42,3 +42,4 @@ insights.insights.doctype.insights_table.patches.delete_unused_query_based_table
 insights.insights.doctype.insights_query.patches.flatten_columns_in_query_json
 insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_query_structure
 insights.insights.doctype.insights_table.patches.sync_table_links
+insights.insights.doctype.insights_notebook_page.patches.replace_query_builder_with_editor

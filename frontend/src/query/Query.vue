@@ -4,7 +4,7 @@ import Tabs from '@/components/Tabs.vue'
 import { provide, ref, watchEffect } from 'vue'
 import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
-import NativeQueryEditor from './NativeQueryEditor.vue'
+import NativeQueryBuilder from './NativeQueryBuilder.vue'
 import QueryHeader from './QueryHeader.vue'
 import ScriptQueryEditor from './ScriptQueryEditor.vue'
 import useQuery from './resources/useQuery'
@@ -52,7 +52,7 @@ watchEffect(() => {
 		</div>
 		<div v-if="activeTab == 'Query'" class="flex flex-1 flex-shrink-0 overflow-hidden">
 			<VisualQueryBuilder v-if="query.doc.is_assisted_query"></VisualQueryBuilder>
-			<NativeQueryEditor v-else-if="query.doc.is_native_query"></NativeQueryEditor>
+			<NativeQueryBuilder v-else-if="query.doc.is_native_query"></NativeQueryBuilder>
 			<ScriptQueryEditor v-else-if="query.doc.is_script_query"></ScriptQueryEditor>
 			<ClassicQueryBuilder
 				v-else-if="
