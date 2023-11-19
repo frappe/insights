@@ -2,7 +2,7 @@
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import useDashboard from '@/dashboard/useDashboard'
 import BaseLayout from '@/layouts/BaseLayout.vue'
-import ContentEditable from '@/notebook/ContentEditable.vue'
+import ContentEditable from '@/components/ContentEditable.vue'
 import { updateDocumentTitle } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { debounce } from 'frappe-ui'

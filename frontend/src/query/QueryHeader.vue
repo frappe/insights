@@ -1,5 +1,5 @@
 <script setup lang="jsx">
-import ContentEditable from '@/notebook/ContentEditable.vue'
+import ContentEditable from '@/components/ContentEditable.vue'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import { watchDebounced } from '@vueuse/core'
 import { Component as ComponentIcon } from 'lucide-vue-next'
