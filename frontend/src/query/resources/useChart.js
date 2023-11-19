@@ -1,21 +1,31 @@
-import { getChartResource } from '@/query/useChart'
-import { areDeeplyEqual, createTaskRunner } from '@/utils'
+import { areDeeplyEqual, createTaskRunner, safeJSONParse } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
-import { useStorage, watchDebounced } from '@vueuse/core'
-import { computed, reactive } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { createDocumentResource } from 'frappe-ui'
+import { computed, reactive, unref } from 'vue'
+import useQuery from './useQuery'
 
-export default async function useChart(query) {
-	const chartName = await getChartName(query)
-	const resource = getChartResource(chartName)
+export default async function useChart(chart_name, query_results) {
+	const resource = getChartResource(chart_name)
 	await resource.get.fetch()
 
 	const chart = reactive({
 		doc: resource.doc,
-		data: computed(() => convertResultToObjects(query.formattedResults)),
+		data: [],
 		togglePublicAccess,
 		addToDashboard,
 		getGuessedChart,
+		resetOptions,
+		delete: deleteChart,
 	})
+
+	if (query_results) {
+		chart.data = computed(() => convertResultToObjects(query_results))
+	} else {
+		const query = useQuery(chart.doc.query)
+		chart.data = computed(() => query.formattedResults)
+		chart.doc.options.title = chart.doc.options.title || query.doc.title
+	}
 
 	const run = createTaskRunner()
 	watchDebounced(
@@ -28,11 +38,7 @@ export default async function useChart(query) {
 		{ deep: true, debounce: 1000 }
 	)
 	async function _updateDoc(newDoc) {
-		if (newDoc.chart_type == 'Auto')
-			newDoc.options = {
-				title: newDoc.title,
-				query: query.doc.name,
-			}
+		if (newDoc.chart_type == 'Auto') newDoc.options = { title: newDoc.title }
 
 		const ogDoc = resource.originalDoc
 		if (
@@ -56,12 +62,10 @@ export default async function useChart(query) {
 	}
 
 	function getGuessedChart(chart_type) {
-		const recommendedChart = guessChart(query.formattedResults, chart_type)
+		const recommendedChart = guessChart(query_results, chart_type)
 		return {
 			chart_type: recommendedChart?.type,
 			options: {
-				title: query.doc.title,
-				query: query.doc.name,
 				...recommendedChart?.options,
 			},
 		}
@@ -88,14 +92,28 @@ export default async function useChart(query) {
 		resource.addingToDashboard = false
 	}
 
+	function resetOptions() {
+		state.doc.chart_type = undefined
+		state.doc.options = {}
+	}
+
+	async function deleteChart() {
+		state.deleting = true
+		return run(() => resource.delete.submit().then(() => (state.deleting = false)))
+	}
+
 	return chart
 }
 
-const chartNameCache = useStorage('insights:chart_name_cache', {})
-function getChartName(query) {
-	if (chartNameCache[query.doc.name]) return chartNameCache[query.doc.name]
-	return query.getChartName().then((name) => {
-		chartNameCache[query.doc.name] = name
-		return name
+export function getChartResource(chartName) {
+	return createDocumentResource({
+		doctype: 'Insights Chart',
+		name: chartName,
+		auto: false,
+		transform: (doc) => {
+			doc.chart_type = doc.chart_type
+			doc.options = safeJSONParse(doc.options)
+			return doc
+		},
 	})
 }

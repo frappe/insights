@@ -15,7 +15,7 @@ from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
-from insights.utils import InsightsSettings, InsightsTable, ResultColumn
+from insights.utils import InsightsChart, InsightsSettings, InsightsTable, ResultColumn
 
 from ..insights_data_source.sources.query_store import store_query
 from .insights_assisted_query import InsightsAssistedQueryController
@@ -46,7 +46,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.variant_controller.before_save()
 
     def on_update(self):
-        self.create_default_chart()
         self.update_linked_docs()
 
     def on_trash(self):
@@ -83,6 +82,11 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         return InsightsLegacyQueryController(self)
 
     def validate(self):
+        chart_name = InsightsChart.get_name(query=self.name)
+        if not chart_name:
+            self.create_default_chart()
+        if not self.chart and chart_name:
+            self.chart = chart_name
         self.variant_controller.validate()
 
     def reset(self):
@@ -105,11 +109,10 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.variant_controller.after_reset()
 
     def create_default_chart(self):
-        if frappe.db.exists("Insights Chart", {"query": self.name}):
-            return
         chart = frappe.new_doc("Insights Chart")
         chart.query = self.name
         chart.save(ignore_permissions=True)
+        self.chart = chart.name
         return chart
 
     def update_insights_table(self, force=False):

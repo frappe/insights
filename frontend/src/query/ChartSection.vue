@@ -30,7 +30,7 @@ const chart = computed(() => {
 	const guessedChart = query.chart.getGuessedChart(chart_type)
 	const options = Object.assign({}, guessedChart.options, query.chart.doc.options)
 	return {
-		type: chart_type,
+		type: guessedChart.chart_type,
 		data: query.chart.data,
 		options: chart_type == 'Auto' ? guessedChart.options : options,
 		component: widgets.getComponent(guessedChart.chart_type),

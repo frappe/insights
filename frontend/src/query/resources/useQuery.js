@@ -49,7 +49,9 @@ function makeQuery(name) {
 		setLoading(true)
 		return resource.get
 			.fetch()
-			.then(() => useChart(state))
+			.then(() => {
+				return useChart(state.doc.chart, state.formattedResults)
+			})
 			.then((chart) => (state.chart = chart))
 			.finally(() => setLoading(false))
 	}
@@ -87,11 +89,6 @@ function makeQuery(name) {
 		state.executing = false
 		setLoading(false)
 	}, 500)
-
-	state.getChartName = async () => {
-		const response = await resource.get_chart_name.fetch()
-		return response.message
-	}
 
 	state.updateTransforms = debounce(async (transforms) => {
 		if (!transforms) return
