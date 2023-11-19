@@ -33,7 +33,7 @@ provide('assistedQuery', assistedQuery)
 			<div class="flex flex-[3] flex-shrink-0 flex-col overflow-hidden">
 				<ChartSection></ChartSection>
 			</div>
-			<div class="flex flex-[2] flex-shrink-0 flex-col overflow-hidden rounded border">
+			<div class="flex flex-[2] flex-shrink-0 flex-col overflow-hidden">
 				<ResultSection>
 					<template #columnActions="{ column }">
 						<ResultColumnActions :column="column" />
