@@ -1,10 +1,9 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
-import { AlignCenter, Calendar, CalendarClock, CaseUpper, Combine, Hash, X } from 'lucide-vue-next'
-import { computed, inject, provide, ref } from 'vue'
+import { Combine, X } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
 import ColumnEditor from './ColumnEditor.vue'
 import { NEW_COLUMN } from './constants'
-import { fieldtypesToIcon, makeColumnOption } from '@/utils'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -45,6 +44,23 @@ function onAddColumnExpression() {
 function isValidColumn(column) {
 	const isExpression = column.expression?.raw
 	return column.label && column.type && (isExpression || (column.table && column.column))
+}
+
+const aggregationToAbbr = {
+	min: 'MIN',
+	max: 'MAX',
+	sum: 'SUM',
+	avg: 'AVG',
+	count: 'CNT',
+	distinct: 'UDST',
+	distinct_count: 'DCNT',
+	'group by': 'UNQ',
+	'cumulative count': 'CCNT',
+	'cumulative sum': 'CSUM',
+}
+function getAbbreviation(column) {
+	if (column.expression?.raw) return 'EXPR'
+	return aggregationToAbbr[column.aggregation] || 'UNQ'
 }
 </script>
 
@@ -91,11 +107,15 @@ function isValidColumn(column) {
 				@click="activeColumnIdx = columns.indexOf(column)"
 			>
 				<div class="flex w-full items-center overflow-hidden">
-					<div class="flex w-full space-x-2 truncate" v-if="isValidColumn(column)">
-						<component
-							:is="fieldtypesToIcon[column.type]"
-							class="h-4 w-4 text-gray-600"
-						/>
+					<div
+						class="flex w-full items-center space-x-1.5 truncate"
+						v-if="isValidColumn(column)"
+					>
+						<div
+							class="rounded border border-violet-400 py-0.5 px-1 font-mono text-xs tracking-wider text-violet-700"
+						>
+							{{ getAbbreviation(column) }}
+						</div>
 						<div>{{ column.label }}</div>
 					</div>
 					<div v-else class="text-gray-600">Select a column</div>
