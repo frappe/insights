@@ -38,8 +38,8 @@
 </template>
 
 <script setup>
-import FilterExpressionPicker from '@/query/Filter/FilterExpressionPicker.vue'
-import SimpleFilterPicker from '@/query/Filter/SimpleFilterPicker.vue'
+import FilterExpressionPicker from './FilterExpressionPicker.vue'
+import SimpleFilterPicker from './SimpleFilterPicker.vue'
 
 import { ref } from 'vue'
 

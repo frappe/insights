@@ -14,8 +14,8 @@
 </template>
 
 <script setup>
-import BinaryExpression from '@/query/Filter/BinaryExpression.vue'
-import CallExpression from '@/query/Filter/CallExpression.vue'
+import BinaryExpression from './BinaryExpression.vue'
+import CallExpression from './CallExpression.vue'
 import { inject, reactive, unref } from 'vue'
 
 defineEmits(['edit', 'remove'])

@@ -76,9 +76,7 @@ import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
 import JoinInnerIcon from '@/components/Icons/JoinInnerIcon.vue'
 import JoinFullIcon from '@/components/Icons/JoinFullIcon.vue'
-
 import TableJoiner from './TableJoiner.vue'
-
 import { inject, ref, watch } from 'vue'
 
 const query = inject('query')

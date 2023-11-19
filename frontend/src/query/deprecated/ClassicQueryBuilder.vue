@@ -14,13 +14,13 @@
 </template>
 
 <script setup>
-import ColumnPanel from '@/query/Column/ColumnPanel.vue'
-import FilterPanel from '@/query/Filter/FilterPanel.vue'
 import ResultSection from '@/query/ResultSection.vue'
-import TablePanel from '@/query/Table/TablePanel.vue'
 import { updateDocumentTitle } from '@/utils'
 import { computed, inject } from 'vue'
+import ColumnPanel from './Column/ColumnPanel.vue'
+import FilterPanel from './Filter/FilterPanel.vue'
 import LimitsAndOrder from './LimitsAndOrder.vue'
+import TablePanel from './Table/TablePanel.vue'
 
 const query = inject('query')
 

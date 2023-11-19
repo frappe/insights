@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import ExpressionTerm from '@/query/Filter/ExpressionTerm.vue'
+import ExpressionTerm from './ExpressionTerm.vue'
 
 const props = defineProps({
 	expression: {

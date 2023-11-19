@@ -60,7 +60,7 @@ import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'
 import { computed, inject, reactive, ref, watchEffect } from 'vue'
-import ExpressionHelpDialog from '../ExpressionHelpDialog.vue'
+import ExpressionHelpDialog from '@/query/ExpressionHelpDialog.vue'
 
 const query = inject('query')
 

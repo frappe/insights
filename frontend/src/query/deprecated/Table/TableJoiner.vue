@@ -70,7 +70,6 @@
 
 <script setup>
 import { inject, ref, watch } from 'vue'
-
 import LinkIcon from '@/components/Controls/LinkIcon.vue'
 import { getQueryLink } from '@/utils'
 

@@ -17,9 +17,9 @@
 </template>
 
 <script setup>
-import ColumnList from '@/query/Column/ColumnList.vue'
-import ColumnPicker from '@/query/Column/ColumnPicker.vue'
-import ColumnEditor from '@/query/Column/ColumnEditor.vue'
+import ColumnEditor from './ColumnEditor.vue'
+import ColumnList from './ColumnList.vue'
+import ColumnPicker from './ColumnPicker.vue'
 
 import { ref } from 'vue'
 

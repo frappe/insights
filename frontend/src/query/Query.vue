@@ -7,9 +7,9 @@ import ChartSection from './ChartSection.vue'
 import NativeQueryBuilder from './NativeQueryBuilder.vue'
 import QueryHeader from './QueryHeader.vue'
 import ScriptQueryEditor from './ScriptQueryEditor.vue'
+import ClassicQueryBuilder from './deprecated/ClassicQueryBuilder.vue'
 import useQuery from './resources/useQuery'
 import VisualQueryBuilder from './visual/VisualQueryBuilder.vue'
-import ClassicQueryBuilder from './ClassicQueryBuilder.vue'
 
 const props = defineProps({ name: String })
 const query = useQuery(props.name)
