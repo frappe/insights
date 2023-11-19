@@ -15,7 +15,10 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 
 <template>
 	<div class="flex h-full w-full flex-col overflow-hidden">
-		<div v-if="!query.formattedResults.length" class="flex flex-1 items-center justify-center">
+		<div
+			v-if="!query.formattedResults.length"
+			class="flex flex-1 items-center justify-center rounded border"
+		>
 			<div class="flex flex-1 flex-col items-center justify-center gap-2">
 				<Filter class="h-10 w-10 text-gray-300" />
 				<span class="text-gray-500"> No results found </span>

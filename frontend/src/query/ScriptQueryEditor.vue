@@ -115,7 +115,7 @@ results = fetch_data_from_url()`
 				</div>
 			</transition>
 		</div>
-		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden rounded border py-4">
+		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden py-4">
 			<ResultSection></ResultSection>
 		</div>
 	</div>

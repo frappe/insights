@@ -15,7 +15,7 @@ const nativeQuery = ref(query.doc.sql)
 		<div class="flex flex-1 flex-shrink-0 overflow-hidden rounded border">
 			<NativeQueryEditor />
 		</div>
-		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden rounded border py-4">
+		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden py-4">
 			<ResultSection></ResultSection>
 		</div>
 	</div>
