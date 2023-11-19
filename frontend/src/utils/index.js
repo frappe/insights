@@ -4,7 +4,7 @@ import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { call } from 'frappe-ui'
 import { Baseline, Calendar, CalendarClock, Clock, Hash, Type } from 'lucide-vue-next'
-import { computed, watch } from 'vue'
+import { computed, unref, watch } from 'vue'
 
 export const fieldtypesToIcon = {
 	Integer: Hash,
@@ -98,18 +98,16 @@ export function getOperatorOptions(columnType) {
 }
 
 // a function to resolve the promise when a ref has a value
-export async function whenHasValue(ref) {
+export async function whenHasValue(refOrGetter) {
 	return new Promise((resolve) => {
-		const unwatch = watch(
-			ref,
-			(value) => {
-				if (value) {
-					resolve(value)
-					unwatch()
-				}
-			},
-			{ immediate: true, deep: true }
-		)
+		function onValue(value) {
+			if (!value) return
+			resolve(value)
+			unwatch()
+		}
+		const unwatch = watch(refOrGetter, onValue, { deep: true })
+		const value = typeof refOrGetter === 'function' ? refOrGetter() : unref(refOrGetter)
+		onValue(value)
 	})
 }
 

@@ -69,6 +69,12 @@ const routes = [
 	},
 	{
 		props: true,
+		name: 'DataSourceRelationships',
+		path: '/data-source/:name/relationships',
+		component: () => import('@/datasource/DataSourceRelationships.vue'),
+	},
+	{
+		props: true,
 		name: 'DataSourceTable',
 		path: '/data-source/:name/:table',
 		component: () => import('@/datasource/DataSourceTable.vue'),

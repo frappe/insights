@@ -1,5 +1,5 @@
 <template>
-	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5 shadow">
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
 		<PageBreadcrumbs
 			class="h-7"
 			:items="[
@@ -9,17 +9,62 @@
 		/>
 	</header>
 
-	<div class="flex h-full w-full overflow-hidden">
-		<TableRelationshipEditor v-if="dataSource.doc.name" />
-	</div>
+	<ListView
+		:columns="[
+			{ label: 'Table', name: 'label' },
+			{ label: 'Status', name: 'status' },
+		]"
+		:rows="dataSource.tableList.filter((table) => !table.is_query_based)"
+	>
+		<template #actions>
+			<Button
+				variant="outline"
+				iconLeft="link-2"
+				@click="$router.push(`/data-source/${dataSource.doc.name}/relationships`)"
+			>
+				Manage Relationships
+			</Button>
+			<Dropdown
+				placement="left"
+				:button="{ icon: 'more-horizontal', variant: 'outline' }"
+				:options="dropdownActions"
+			/>
+		</template>
+
+		<template #list-row="{ row: table }">
+			<ListRow
+				as="router-link"
+				:row="table"
+				:to="{
+					name: 'DataSourceTable',
+					params: { name: dataSource.doc.name, table: table.name },
+				}"
+			>
+				<ListRowItem> {{ table.label }} </ListRowItem>
+				<ListRowItem class="space-x-2">
+					<IndicatorIcon :class="table.hidden ? 'text-gray-500' : 'text-green-500'" />
+					<span> {{ table.hidden ? 'Disabled' : 'Enabled' }} </span>
+				</ListRowItem>
+			</ListRow>
+		</template>
+
+		<template #emptyState>
+			<div class="text-xl font-medium">No tables.</div>
+			<div class="mt-1 text-base text-gray-600">No tables to display.</div>
+			<Button class="mt-4" label="Sync Tables" variant="solid" @click="syncTables" />
+		</template>
+	</ListView>
 </template>
 
 <script setup lang="jsx">
+import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
+import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import useDataSource from '@/datasource/useDataSource'
+import useDataSource from './useDataSource'
+import { ListRow, ListRowItem } from 'frappe-ui'
+import { Link } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import TableRelationshipEditor from './TableRelationshipEditor.vue'
 
 const props = defineProps({
 	name: {
@@ -30,9 +75,20 @@ const props = defineProps({
 
 const router = useRouter()
 const dataSource = useDataSource(props.name)
+provide('dataSource', dataSource)
 dataSource.fetchTables()
 
-provide('dataSource', dataSource)
+const searchQuery = ref('')
+const filteredList = computed(() => {
+	if (!searchQuery.value) {
+		return dataSource.tableList.filter((table) => !table.is_query_based)
+	}
+	return dataSource.tableList.filter(
+		(table) =>
+			!table.is_query_based &&
+			table.label.toLowerCase().includes(searchQuery.value.toLowerCase())
+	)
+})
 
 const dropdownActions = computed(() => {
 	return [
