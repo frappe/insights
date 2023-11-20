@@ -15,7 +15,10 @@ const activeColumnIdx = ref(null)
 
 function onColumnSelect(column) {
 	if (!column) return
-	if (columns.value.find((c) => c.table === column.table && c.column === column.column)) {
+	const columnAlreadyExists = columns.value.find(
+		(c) => c.table === column.table && c.column === column.column && c.label === column.label
+	)
+	if (columnAlreadyExists) {
 		return
 	}
 	assistedQuery.addColumns([column])
