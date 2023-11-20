@@ -24,7 +24,7 @@ def execute():
 
 def convert_classic_to_assisted(old_query):
     if not old_query.sql or not old_query.tables or not old_query.tables[0].table:
-        return
+        return "{}"
     return frappe.as_json(
         {
             "table": get_table(old_query),
