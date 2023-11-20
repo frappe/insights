@@ -9,7 +9,7 @@ export default function useResizer({
 	disabled,
 	start,
 	stop,
-	resize,
+	onResize,
 }) {
 	const isDragging = ref(false)
 	const startX = ref(0)
@@ -31,7 +31,7 @@ export default function useResizer({
 			return
 		}
 
-		e.preventDefault()
+		// e.preventDefault()
 
 		start && start()
 		isDragging.value = true
@@ -81,7 +81,7 @@ export default function useResizer({
 		document.removeEventListener('mouseup', onMouseUp)
 
 		stop && stop()
-		resize && resize(state.newWidth, state.newHeight)
+		onResize && onResize(state.newWidth, state.newHeight)
 	}
 
 	unref(handle).addEventListener('mousedown', onMouseDown)
