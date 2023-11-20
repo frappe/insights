@@ -42,11 +42,22 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         if not self.title and self.name:
             self.title = self.name.replace("-", " ").replace("QRY", "Query")
 
+    def after_insert(self):
+        self.link_chart()
+
     def before_save(self):
         self.variant_controller.before_save()
 
     def on_update(self):
+        self.link_chart()
         self.update_linked_docs()
+
+    def link_chart(self):
+        chart_name = InsightsChart.get_name(query=self.name)
+        if not chart_name:
+            self.create_default_chart()
+        if not self.chart and chart_name:
+            self.db_set("chart", chart_name)
 
     def on_trash(self):
         self.delete_default_chart()
@@ -82,11 +93,6 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         return InsightsLegacyQueryController(self)
 
     def validate(self):
-        chart_name = InsightsChart.get_name(query=self.name)
-        if not chart_name:
-            self.create_default_chart()
-        if not self.chart and chart_name:
-            self.chart = chart_name
         self.variant_controller.validate()
 
     def reset(self):
@@ -112,7 +118,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         chart = frappe.new_doc("Insights Chart")
         chart.query = self.name
         chart.save(ignore_permissions=True)
-        self.chart = chart.name
+        self.db_set("chart", chart.name, update_modified=False)
         return chart
 
     def update_insights_table(self, force=False):
