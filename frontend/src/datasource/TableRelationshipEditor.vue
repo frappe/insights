@@ -30,6 +30,10 @@ const state = reactive({
 		state.highlightedColumn = column
 	},
 	createRelationship(fromColumn, toColumn) {
+		if (!fromColumn.table || !fromColumn.column || !toColumn.table || !toColumn.column) {
+			console.warn('Invalid relationship')
+			return
+		}
 		const newEdge = {
 			id: `${fromColumn.table}.${fromColumn.column} -> ${toColumn.table}.${toColumn.column}`,
 			source: fromColumn.table,

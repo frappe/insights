@@ -39,7 +39,15 @@ watch(
 
 function onColumnDragStart(event, column) {
 	if (event.dataTransfer) {
-		event.dataTransfer.setData('dragging-column', JSON.stringify(column))
+		event.dataTransfer.setData(
+			'dragging-column',
+			JSON.stringify({
+				table: table.doc.table,
+				column: column.column,
+				label: column.label,
+				type: column.type,
+			})
+		)
 		event.dataTransfer.effectAllowed = 'move'
 	}
 }
@@ -60,7 +68,12 @@ function onColumnDrop(event, column) {
 	const fromColumn = JSON.parse(data)
 	if (fromColumn.table === table.doc.table) return
 
-	const toColumn = column
+	const toColumn = {
+		table: table.doc.table,
+		column: column.column,
+		label: column.label,
+		type: column.type,
+	}
 	state.createRelationship(fromColumn, toColumn)
 }
 
