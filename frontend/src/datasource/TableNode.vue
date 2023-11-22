@@ -1,5 +1,6 @@
 <script setup>
 import useDataSourceTable from '@/datasource/useDataSourceTable'
+import { fieldtypesToIcon } from '@/utils'
 import { Handle, Position } from '@vue-flow/core'
 import { inject, ref, watch } from 'vue'
 
@@ -85,7 +86,7 @@ function getTopOffset(idx) {
 			<div
 				v-for="(column, idx) in columns"
 				:key="column.column"
-				class="nodrag group relative flex cursor-pointer items-center border-b px-4 py-2 text-sm hover:bg-gray-50"
+				class="nodrag group relative flex cursor-pointer items-center border-b px-3 py-2 text-sm hover:bg-gray-50"
 				:draggable="true"
 				@dragover="onColumnDragOver"
 				@dragstart="onColumnDragStart($event, column)"
@@ -93,7 +94,10 @@ function getTopOffset(idx) {
 				@dragenter="state.highlightColumn(column)"
 				:class="isHighlighted(column) ? 'bg-gray-100' : ''"
 			>
-				<span class="mr-2 text-gray-500"> # </span>
+				<component
+					:is="fieldtypesToIcon[column.type]"
+					class="mr-2 h-4 w-4 text-gray-500"
+				></component>
 				<span class="truncate">{{ column.label }}</span>
 				<Handle
 					class="invisible"
