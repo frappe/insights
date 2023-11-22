@@ -1,11 +1,40 @@
 <script setup>
 import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { Handle, Position } from '@vue-flow/core'
-import { inject } from 'vue'
+import { inject, ref, watch } from 'vue'
 
 const state = inject('state')
+const edges = inject('edges')
 const props = defineProps({ tablename: { type: String, required: true } })
 const table = await useDataSourceTable({ name: props.tablename })
+
+const columns = ref([...table.doc.columns])
+watch(
+	edges,
+	() => {
+		if (!edges.value?.length) return
+		// based on the current edges, move the columns that are in the edges to the top
+		const columnsInEdges = edges.value
+			.filter(
+				(edge) =>
+					edge.data.primary_table === table.doc.table ||
+					edge.data.foreign_table === table.doc.table
+			)
+			.map((edge) =>
+				edge.data.primary_table === table.doc.table
+					? edge.data.primary_column
+					: edge.data.foreign_column
+			)
+		const newColumns = [...table.doc.columns]
+		newColumns.sort((a, b) => {
+			if (columnsInEdges.includes(a.column) && !columnsInEdges.includes(b.column)) return -1
+			if (!columnsInEdges.includes(a.column) && columnsInEdges.includes(b.column)) return 1
+			return 0
+		})
+		columns.value = newColumns
+	},
+	{ immediate: true }
+)
 
 function onColumnDragStart(event, column) {
 	if (event.dataTransfer) {
@@ -54,7 +83,7 @@ function getTopOffset(idx) {
 		</div>
 		<div class="nowheel flex max-h-72 flex-col overflow-y-scroll">
 			<div
-				v-for="(column, idx) in table.columns"
+				v-for="(column, idx) in columns"
 				:key="column.column"
 				class="nodrag group relative flex cursor-pointer items-center border-b px-4 py-2 text-sm hover:bg-gray-50"
 				:draggable="true"

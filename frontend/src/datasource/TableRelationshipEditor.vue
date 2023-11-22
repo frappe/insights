@@ -68,6 +68,8 @@ const canvas = useVueFlow({ nodes: [] })
 
 const storedNodes = useStorage(`insights:${dataSource.doc.name}:nodes`, [])
 const nodes = computed(() => canvas.nodes.value)
+const edges = computed(() => canvas.edges.value)
+provide('edges', edges)
 
 // load locally stored nodes
 if (storedNodes.value.length) {
