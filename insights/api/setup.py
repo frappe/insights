@@ -45,8 +45,9 @@ def import_demo_queries_and_dashboards():
             dashboard_doc = frappe.new_doc("Insights Dashboard")
             dashboard_doc.update(dashboard)
             dashboard_doc.save(ignore_permissions=True)
-    except BaseException:
+    except BaseException as e:
         frappe.log_error("Failed to create Demo Queries and Dashboards")
+        print(e)
 
 
 @frappe.whitelist()
