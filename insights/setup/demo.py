@@ -36,6 +36,7 @@ def setup():
 
 
 def update_progress(message, progress):
+    print(message, progress)
     frappe.publish_realtime(
         event="insights_demo_setup_progress",
         message={
@@ -81,6 +82,7 @@ class DemoDataFactory:
             data_source.database_name = "insights_demo_data"
             data_source.allow_imports = 1
             data_source.save(ignore_permissions=True)
+            frappe.db.commit()
 
         self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
         if frappe.flags.in_test or os.environ.get("CI"):
@@ -182,6 +184,14 @@ class DemoDataFactory:
 
     def import_data(self):
         for filename in self.file_schema.keys():
+            if frappe.db.exists(
+                "Insights Table",
+                {
+                    "table": frappe.scrub(filename),
+                    "data_source": self.data_source.name,
+                },
+            ):
+                continue
             table_import = frappe.new_doc("Insights Table Import")
             table_import.data_source = self.data_source.name
             table_import.table_name = frappe.scrub(filename)
@@ -202,6 +212,8 @@ class DemoDataFactory:
                 )
             table_import.save(ignore_permissions=True)
             table_import.submit()
+            frappe.db.commit()
+            update_progress(f"Importing {filename}...", 30 + (45 / len(self.file_schema)))
 
     def cleanup(self):
         if os.path.exists(os.path.join(self.files_folder, self.tar_filename)):
@@ -251,7 +263,7 @@ class DemoDataFactory:
             "Products": ["product_id"],
             "Sellers": ["seller_id"],
         }
-        db_conn = self.data_source.db.connect()
+        db_conn = self.data_source._db.connect()
         for table in indexes.keys():
             table_name = frappe.scrub(table)
             index_name = f"idx_{table_name}_{'_'.join(indexes[table])}"
@@ -263,14 +275,7 @@ class DemoDataFactory:
     def create_table_links(self):
         # TODO: refactor table links, create a new table for table links
         foreign_key_relations = {
-            "Customers": [
-                ["customer_id", "Orders", "customer_id"],
-                [
-                    "customer_zip_code_prefix",
-                    "Geolocation",
-                    "geolocation_zip_code_prefix",
-                ],
-            ],
+            "Customers": [["customer_id", "Orders", "customer_id"]],
             "Geolocation": [
                 [
                     "geolocation_zip_code_prefix",
@@ -283,19 +288,7 @@ class DemoDataFactory:
                     "supplier_zip_code_prefix",
                 ],
             ],
-            "OrderItems": [
-                ["order_id", "Orders", "order_id"],
-                ["product_id", "Products", "product_id"],
-                ["seller_id", "Sellers", "seller_id"],
-            ],
-            "OrderPayments": [
-                ["order_id", "Orders", "order_id"],
-            ],
-            "OrderReviews": [
-                ["order_id", "Orders", "order_id"],
-            ],
             "Orders": [
-                ["customer_id", "Customers", "customer_id"],
                 ["order_id", "OrderItems", "order_id"],
                 ["order_id", "OrderPayments", "order_id"],
                 ["order_id", "OrderReviews", "order_id"],
@@ -304,11 +297,6 @@ class DemoDataFactory:
                 ["product_id", "OrderItems", "product_id"],
             ],
             "Sellers": [
-                [
-                    "seller_zip_code_prefix",
-                    "Geolocation",
-                    "geolocation_zip_code_prefix",
-                ],
                 ["seller_id", "OrderItems", "seller_id"],
             ],
         }
@@ -325,6 +313,7 @@ class DemoDataFactory:
                         "foreign_key": link[2],
                         "foreign_table": frappe.scrub(link[1]),
                         "foreign_table_label": link[1],
+                        "cardinality": "1:N",
                     },
                 )
             doc.save(ignore_permissions=True)
