@@ -81,6 +81,7 @@ function makeQuery(name) {
 	}
 
 	state.execute = debounce(async () => {
+		if (!state.doc?.data_source) return
 		setLoading(true)
 		state.executing = true
 		await run(() => resource.run.submit().catch(() => {}))
