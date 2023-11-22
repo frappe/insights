@@ -54,7 +54,7 @@ onMounted(() => {
 				:style="chartContainerHeight >= 0 ? `height: ${chartContainerHeight}px` : ''"
 			>
 				<ChartSection
-					v-if="chartContainerHeight === undefined || chartContainerHeight > 50"
+					v-if="isNaN(chartContainerHeight) || chartContainerHeight >= 50"
 				></ChartSection>
 			</div>
 			<div
