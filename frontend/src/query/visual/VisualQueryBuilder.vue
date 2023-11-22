@@ -53,7 +53,9 @@ onMounted(() => {
 				class="flex h-[60%] !max-h-[60%] flex-shrink-0 flex-col overflow-hidden"
 				:style="chartContainerHeight >= 0 ? `height: ${chartContainerHeight}px` : ''"
 			>
-				<ChartSection v-if="chartContainerHeight > 50"></ChartSection>
+				<ChartSection
+					v-if="chartContainerHeight === undefined || chartContainerHeight > 50"
+				></ChartSection>
 			</div>
 			<div
 				ref="resizeHandle"
