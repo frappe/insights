@@ -93,6 +93,7 @@ function parsePills(cell) {
 						<td
 							v-for="column in props.options.columns"
 							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 pr-4 text-gray-600 hover:text-gray-800"
+							:class="guessColumnValueType(column) == 'number' ? 'text-right' : ''"
 							scope="col"
 						>
 							{{ column }}
@@ -104,7 +105,11 @@ function parsePills(cell) {
 						<td v-if="props.options.index" class="w-10 whitespace-nowrap bg-white py-2">
 							{{ index + 1 }}
 						</td>
-						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2 pr-4">
+						<td
+							v-for="cell in row"
+							class="whitespace-nowrap bg-white py-2 pr-4"
+							:class="typeof cell == 'number' ? 'text-right' : ''"
+						>
 							<component :is="getFormattedCellComponent(cell)" />
 						</td>
 					</tr>
@@ -115,7 +120,10 @@ function parsePills(cell) {
 						>
 							Total
 						</td>
-						<td v-for="column in props.options.columns">
+						<td
+							v-for="column in props.options.columns"
+							:class="guessColumnValueType(column) == 'number' ? 'text-right' : ''"
+						>
 							{{ guessColumnValueType(column) == 'number' ? total(column) : '' }}
 						</td>
 					</tr>
