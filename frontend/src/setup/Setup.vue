@@ -78,31 +78,29 @@ function handlePrev() {
 	<div class="flex h-full w-full bg-white pt-[7rem] text-lg">
 		<div class="mx-auto flex w-[40rem] flex-col overflow-hidden">
 			<div class="mx-auto w-fit">
-				<div class="flex items-center space-x-2">
+				<div class="flex items-center space-x-2 py-1">
 					<template v-for="(step, index) in steps">
 						<div
-							class="flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-gray-300"
-							:class="
-								currentStep === index
-									? 'border-gray-800  font-bold text-gray-800'
-									: ''
-							"
-						>
-							{{ index + 1 }}
-						</div>
+							class="flex h-3 w-3 cursor-default items-center justify-center rounded-full transition-all"
+							:class="[
+								currentStep < index ? 'bg-gray-200' : 'bg-gray-800',
+								currentStep === index ? 'ring-4 ring-gray-400' : '',
+							]"
+						></div>
 						<div
 							v-if="index !== steps.length - 1"
-							class="w-7 border-b border-gray-300"
+							class="w-7 border-b transition-all"
+							:class="currentStep - 1 < index ? 'border-gray-400' : 'border-gray-800'"
 						></div>
 					</template>
 				</div>
 			</div>
 
 			<div class="mt-8">
-				<div class="text-[24px] font-bold text-gray-900">
+				<div class="text-3xl font-bold leading-9 text-gray-900">
 					{{ steps[currentStep].title }}
 				</div>
-				<div class="mt-1 text-gray-700">
+				<div class="text-base leading-4 text-gray-700">
 					{{ steps[currentStep].description }}
 				</div>
 			</div>

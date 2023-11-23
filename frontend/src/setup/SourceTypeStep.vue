@@ -61,18 +61,18 @@ function validateAndContinue() {
 <template>
 	<div class="mt-6">
 		<!-- card for each source (erpnext, database, file) -->
-		<div class="grid grid-cols-2 gap-4">
+		<div class="grid grid-cols-2 gap-4 px-1">
 			<div
 				v-for="(option, index) in options"
 				class="col-span-1 flex cursor-pointer items-center rounded border border-gray-300 px-4 py-3 transition-all"
 				:class="
 					selectedOption === index
-						? 'border-blue-500 bg-blue-50'
+						? ' border-gray-500 ring-2 ring-gray-400'
 						: 'hover:border-gray-500'
 				"
 				@click="selectedOption = index"
 			>
-				<div v-if="option.img" class="mr-3 flex w-12 items-center justify-center">
+				<div v-if="option.img" class="mr-2 flex w-10 items-center justify-center">
 					<img v-if="option.img === 'SheetIcon.png'" src="../assets/SheetIcon.png" />
 					<img v-if="option.img === 'ERPNextIcon.png'" src="../assets/ERPNextIcon.png" />
 					<img v-if="option.img === 'MariaDBIcon.png'" src="../assets/MariaDBIcon.png" />
@@ -86,10 +86,10 @@ function validateAndContinue() {
 					/>
 				</div>
 				<div>
-					<div class="font-bold text-gray-900">
+					<div class="font-bold leading-6 text-gray-900">
 						{{ option.title }}
 					</div>
-					<div class="text-base text-gray-700">{{ option.description }}</div>
+					<div class="text-sm text-gray-700">{{ option.description }}</div>
 				</div>
 			</div>
 		</div>
