@@ -702,7 +702,7 @@ class SQLQueryBuilder:
             if column.is_expression():
                 _column = self.expression_processor.process(column.expression.ast)
 
-            if column.is_aggregate():
+            if column.is_aggregate() and column.aggregation.lower() != "group by":
                 _column = self.aggregations.apply(column.aggregation, _column)
 
             if column.has_granularity() and not for_filter:
@@ -714,8 +714,12 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
+                if fltr.expression:
+                    _filter = self.expression_processor.process(fltr.expression.ast)
+                    filters.append(_filter)
+                    continue
                 _column = make_sql_column(fltr.column, for_filter=True)
-                filter_value = fltr.value.value
+                filter_value = fltr.value.value or ""
                 operator = fltr.operator.value
 
                 if BinaryOperations.is_binary_operator(operator):
@@ -724,14 +728,17 @@ class SQLQueryBuilder:
                 elif "set" in operator:  # is set, is not set
                     _filter = Functions.apply(operator, _column)
                 elif operator == "is":
-                    fn = "is_set" if filter_value == "set" else "is_not_set"
+                    fn = "is_set" if filter_value.lower() == "set" else "is_not_set"
                     _filter = Functions.apply(fn, _column)
                 else:
                     args = [filter_value]
                     if operator == "between":
                         args = filter_value.split(",")
                     elif operator == "in" or operator == "not_in":
-                        args = [val["value"] for val in filter_value]
+                        if filter_value and isinstance(filter_value[0], dict):
+                            args = [val["value"] for val in filter_value]
+                        else:
+                            args = filter_value
                     _filter = Functions.apply(operator, _column, *args)
 
                 filters.append(_filter)
@@ -740,34 +747,23 @@ class SQLQueryBuilder:
         for column in assisted_query.columns:
             if not column.is_valid():
                 continue
-            self._columns.append(make_sql_column(column))
-
-        # don't select calculated columns
-        # since they are used as variables in measures, dimensions, filters, etc
-
-        for measure in assisted_query.measures:
-            if not measure.is_valid():
-                continue
-            self._measures.append(make_sql_column(measure))
-
-        for dimension in assisted_query.dimensions:
-            if not dimension.is_valid():
-                continue
-            self._dimensions.append(make_sql_column(dimension))
-
-        for order in assisted_query.orders:
-            if not order.is_valid():
-                continue
-            _column = make_sql_column(order)
-            self._order_by_columns.append(
-                _column.asc() if order.order == "asc" else _column.desc()
-            )
+            if column.is_measure():
+                self._measures.append(make_sql_column(column))
+            if column.is_dimension():
+                self._dimensions.append(make_sql_column(column))
+            if column.order:
+                _column = make_sql_column(column)
+                self._order_by_columns.append(
+                    _column.asc() if column.order == "asc" else _column.desc()
+                )
 
         self._limit = assisted_query.limit or None
 
-        columns = self._columns + self._dimensions + self._measures
+        columns = self._dimensions + self._measures
         if not columns:
             columns = [text("t0.*")]
+
+        # TODO: validate if all column tables are selected
 
         query = select(*columns).select_from(main_table)
         for join in self._joins:

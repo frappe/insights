@@ -23,7 +23,7 @@ interface Session {
 
 type ListResourceParams = {
 	type?: 'list'
-	url: string
+	url?: string
 	auto?: boolean
 	doctype: string
 	filters: any
@@ -68,12 +68,15 @@ type DocumentResource = {
 	loading: boolean
 	get: Resource
 	delete: Resource
-	fetchIfNeeded: () => void
+	fetchIfNeeded: () => Promise<any>
 }
 
 interface DataSourceResource extends DocumentResource {
 	get_tables: Resource
+	get_queries: Resource
 	enqueue_sync_tables: Resource
+	update_table_link: Resource
+	delete_table_link: Resource
 }
 
 interface TableResource extends DocumentResource {
@@ -98,4 +101,20 @@ interface DataSourceTableListItem {
 	table: string
 	label: string
 	hidden: boolean
+	is_query_based: boolean
+}
+
+type GroupedDropdownOption = {
+	group: string
+	items: DropdownOption[]
+}
+
+interface DataSourceTableGroupedOption extends GroupedDropdownOption {
+	items: DataSourceTableOption[]
+}
+
+interface QueryAsTableListItem {
+	name: string
+	title: string
+	data_source: string
 }

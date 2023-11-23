@@ -38,7 +38,7 @@
 								<FormControl
 									type="select"
 									:modelValue="filter.operator"
-									@update:modelValue="filter.operator = $event.value"
+									@update:modelValue="filter.operator = $event"
 									:options="getOperators(filter.field.fieldtype)"
 									placeholder="Operator"
 								/>
@@ -50,8 +50,8 @@
 										['=', '!='].includes(filter.operator)
 									"
 									:doctype="filter.field.options"
-									:value="filter.value"
-									@change="filter.value = $event.value"
+									:modelValue="filter.value"
+									@update:modelValue="filter.value = $event"
 									placeholder="Value"
 								/>
 								<component

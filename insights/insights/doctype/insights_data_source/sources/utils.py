@@ -46,7 +46,8 @@ def create_insights_table(table, force=False):
     doc_before = None
     if docname := exists:
         doc = frappe.get_doc("Insights Table", docname)
-        doc_before = doc.get_doc_before_save()
+        # using doc.get_doc_before_save() doesn't work here
+        doc_before = frappe.get_cached_doc("Insights Table", docname)
     else:
         doc = frappe.get_doc(
             {
@@ -138,22 +139,16 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
 
     # parse the sql to get the tables
     sql_tables = parse_sql_tables(sql)
-
-    # get the list of query name that are saved as tables
-    query_tables = frappe.get_all(
-        "Insights Table",
-        filters={
-            "table": ("in", sql_tables),
-            "data_source": data_source,
-            "is_query_based": 1,
-        },
-        pluck="table",
-    )
+    if not sql_tables:
+        return None
 
     # get the sql for the queries
     queries = frappe.get_all(
         "Insights Query",
-        filters={"name": ("in", query_tables)},
+        filters={
+            "name": ("in", sql_tables),
+            "data_source": data_source,
+        },
         fields=["name", "sql", "data_source"],
     )
     if not queries:

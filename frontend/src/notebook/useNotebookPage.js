@@ -57,7 +57,7 @@ export default function useNotebookPage(page_name) {
 	}
 
 	state.addQuery = async (queryType, queryName) => {
-		const validTypes = ['query-builder', 'query-editor']
+		const validTypes = ['query-editor']
 		if (!validTypes.includes(queryType)) {
 			throw new Error(`Invalid query type: ${queryType}`)
 		}

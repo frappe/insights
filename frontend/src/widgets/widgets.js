@@ -4,10 +4,12 @@ import {
 	BarChart3,
 	BatteryMedium,
 	DollarSign,
+	GitBranch,
 	LineChart,
 	ListFilter,
 	PieChart,
 	ScatterChart,
+	Sparkles,
 	Table,
 	TextCursorInput,
 	TrendingUp,
@@ -25,6 +27,7 @@ export const VALID_CHARTS = [
 	'Funnel',
 	'Trend',
 	'Mixed Axis',
+	'Pivot Table',
 ]
 
 const WIDGETS = {
@@ -136,6 +139,15 @@ const WIDGETS = {
 		defaultWidth: 8,
 		defaultHeight: 2,
 	},
+	'Pivot Table': {
+		type: 'Pivot Table',
+		icon: GitBranch,
+		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
+		options: {},
+		defaultWidth: 16,
+		defaultHeight: 14,
+	},
 }
 
 const UnknownWidget = {
@@ -168,6 +180,7 @@ function getChartOptions() {
 
 export function getChartIcon(itemType) {
 	if (!itemType) return
+	if (itemType == 'Auto') return Sparkles
 	if (!VALID_CHARTS.includes(itemType)) return
 	return get(itemType).icon
 }

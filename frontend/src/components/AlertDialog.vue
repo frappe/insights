@@ -1,9 +1,9 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
-import { useQuery } from '@/utils/query'
+import useQuery from '@/query/resources/useQuery'
 import { createResource } from 'frappe-ui'
 import { TextEditor } from 'frappe-ui'
-import { computed, reactive } from 'vue'
+import { computed, reactive, inject } from 'vue'
 
 const emit = defineEmits(['update:show'])
 const props = defineProps({
@@ -18,7 +18,8 @@ const show = computed({
 	},
 })
 
-const query = useQuery(props.queryName)
+let query = inject('query')
+if (!query) query = useQuery(props.queryName)
 const alert = reactive({
 	title: '',
 	query: props.queryName,
@@ -153,7 +154,13 @@ function testSendAlert() {
 							type="select"
 							class="flex-1"
 							v-model="alert.condition.left"
-							:options="query.results.allColumnOptions"
+							:options="
+								query.resultColumns.map((c) => ({
+									label: c.label,
+									value: c.label,
+									description: c.type,
+								}))
+							"
 						/>
 						<Input
 							type="select"

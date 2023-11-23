@@ -32,16 +32,20 @@
 					</div>
 				</slot>
 			</template>
-			<template #body="{ isOpen }">
+			<template #body="{ isOpen, togglePopover }">
 				<div v-show="isOpen">
-					<div class="mt-1 rounded-lg bg-white text-base shadow-2xl" :class="bodyClasses">
+					<div
+						class="relative mt-1 rounded-lg bg-white text-base shadow-2xl"
+						:class="bodyClasses"
+					>
 						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
 							<div
 								v-if="!hideSearch"
-								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white pt-1.5"
+								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white py-1.5"
 							>
 								<div class="relative w-full">
 									<ComboboxInput
+										ref="searchInput"
 										class="form-input w-full"
 										type="text"
 										@change="
@@ -62,14 +66,13 @@
 								</div>
 							</div>
 							<div
-								class="mt-1.5"
 								v-for="group in groups"
 								:key="group.key"
 								v-show="group.items.length > 0"
 							>
 								<div
 									v-if="group.group && !group.hideLabel"
-									class="px-2.5 py-1.5 text-sm font-medium text-gray-600"
+									class="sticky top-10 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
 								>
 									{{ group.group }}
 								</div>
@@ -131,7 +134,7 @@
 						</ComboboxOptions>
 
 						<div v-if="$slots.footer" class="border-t p-1">
-							<slot name="footer"></slot>
+							<slot name="footer" v-bind="{ togglePopover }"></slot>
 						</div>
 					</div>
 				</div>
@@ -141,6 +144,7 @@
 </template>
 
 <script>
+import { fuzzySearch } from '@/utils'
 import {
 	Combobox,
 	ComboboxButton,
@@ -149,6 +153,7 @@ import {
 	ComboboxOptions,
 } from '@headlessui/vue'
 import { Popover } from 'frappe-ui'
+import { nextTick } from 'vue'
 
 export default {
 	name: 'Autocomplete',
@@ -160,6 +165,7 @@ export default {
 		'multiple',
 		'returnValue',
 		'hideSearch',
+		'autoFocus',
 	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
@@ -180,7 +186,7 @@ export default {
 		selectedValue: {
 			get() {
 				if (!this.multiple) {
-					return this.returnValue ? this.findOption(this.modelValue) : this.modelValue
+					return this.findOption(this.modelValue)
 				}
 				// in case of `multiple`, modelValue is an array of values
 				// and if returnValue is true, we need to return the value of the options
@@ -224,14 +230,21 @@ export default {
 		query(q) {
 			this.$emit('update:query', q)
 		},
+		showOptions(val) {
+			if (val) nextTick(() => this.$refs.searchInput?.$el?.focus())
+		},
 	},
 	methods: {
-		findOption(value) {
-			return this.allOptions.find((o) => o.value === value)
+		findOption(option) {
+			if (!option) return option
+			return this.allOptions.find((o) => o.value === (option.value || option))
 		},
 		filterOptions(options) {
 			if (!this.query) return options
-			return betterSearch(this.query, { items: options })
+			return fuzzySearch(options, {
+				term: this.query,
+				keys: ['label', 'value'],
+			})
 		},
 		displayValue(option) {
 			if (!option) return ''
@@ -266,36 +279,5 @@ export default {
 			})
 		},
 	},
-}
-
-function betterSearch(query, options) {
-	const results = []
-	const keysToSearch = options.keys || ['label', 'value']
-	const queryWords = query.toLowerCase().split(' ')
-
-	options.items.forEach((item) => {
-		const itemWords = keysToSearch
-			.map((key) => (item[key] || '').toLowerCase())
-			.join(' ')
-			.split(' ')
-
-		const score = queryWords.reduce((acc, queryWord) => {
-			const wordScore = itemWords.reduce((acc, itemWord) => {
-				if (itemWord.startsWith(queryWord)) {
-					return acc + 100
-				}
-				if (itemWord.includes(queryWord)) {
-					return acc + 10
-				}
-				return acc
-			}, 0)
-			return acc + wordScore
-		}, 0)
-
-		if (score > 0) {
-			results.push({ item, score })
-		}
-	})
-	return results.sort((a, b) => b.score - a.score).map((result) => result.item)
 }
 </script>

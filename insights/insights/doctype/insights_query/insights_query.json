@@ -15,6 +15,7 @@
   "is_script_query",
   "column_break_3",
   "data_source",
+  "chart",
   "is_stored",
   "section_break_3",
   "tables",
@@ -248,11 +249,18 @@
    "fieldtype": "Text",
    "label": "Script Log",
    "read_only": 1
+  },
+  {
+   "fieldname": "chart",
+   "fieldtype": "Link",
+   "label": "Chart",
+   "options": "Insights Chart",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-18 14:02:16.395180",
+ "modified": "2023-11-19 14:50:17.428924",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

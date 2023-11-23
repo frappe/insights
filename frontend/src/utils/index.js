@@ -2,8 +2,9 @@ import sessionStore from '@/stores/sessionStore'
 import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { call } from 'frappe-ui'
 import { Baseline, Calendar, CalendarClock, Clock, Hash, Type } from 'lucide-vue-next'
-import { computed, watch } from 'vue'
+import { computed, unref, watch } from 'vue'
 
 export const fieldtypesToIcon = {
 	Integer: Hash,
@@ -13,12 +14,101 @@ export const fieldtypesToIcon = {
 	Time: Clock,
 	Text: Type,
 	String: Baseline,
+	'Long Text': Type,
 }
 
 export const FIELDTYPES = {
 	NUMBER: ['Integer', 'Decimal'],
 	TEXT: ['Text', 'String'],
 	DATE: ['Date', 'Datetime', 'Time'],
+}
+
+export const AGGREGATIONS = [
+	{ label: 'Unique', value: 'group by' },
+	{ label: 'Count of Records', value: 'count' },
+	{ label: 'Sum of', value: 'sum' },
+	{ label: 'Average of', value: 'avg' },
+	{ label: 'Cumulative Count of Records', value: 'cumulative count' },
+	{ label: 'Cumulative Sum of', value: 'cumulative sum' },
+	{ label: 'Unique values of', value: 'distinct' },
+	{ label: 'Unique count of', value: 'distinct_count' },
+	{ label: 'Minimum of', value: 'min' },
+	{ label: 'Maximum of', value: 'max' },
+]
+
+export const GRANULARITIES = [
+	{ label: 'Minute', value: 'Minute', description: 'January 12, 2020 1:14 PM' },
+	{ label: 'Hour', value: 'Hour', description: 'January 12, 2020 1:00 PM' },
+	{ label: 'Hour of Day', value: 'Hour of Day', description: '1:00 PM' },
+	{ label: 'Day', value: 'Day', description: '12th January, 2020' },
+	{ label: 'Day Short', value: 'Day Short', description: '12th Jan, 20' },
+	{ label: 'Week', value: 'Week', description: '12th January, 2020' },
+	{ label: 'Month', value: 'Month', description: 'January, 2020' },
+	{ label: 'Mon', value: 'Mon', description: 'Jan 20' },
+	{ label: 'Quarter', value: 'Quarter', description: 'Q1, 2020' },
+	{ label: 'Year', value: 'Year', description: '2020' },
+	{ label: 'Day of Week', value: 'Day of Week', description: 'Monday' },
+	{ label: 'Month of Year', value: 'Month of Year', description: 'January' },
+	{ label: 'Quarter of Year', value: 'Quarter of Year', description: 'Q1' },
+]
+
+export function getOperatorOptions(columnType) {
+	let options = [
+		{ label: 'equals', value: '=' },
+		{ label: 'not equals', value: '!=' },
+		{ label: 'is', value: 'is' },
+	]
+
+	if (!columnType) {
+		return options
+	}
+
+	if (FIELDTYPES.TEXT.includes(columnType)) {
+		options = options.concat([
+			{ label: 'contains', value: 'contains' },
+			{ label: 'not contains', value: 'not_contains' },
+			{ label: 'starts with', value: 'starts_with' },
+			{ label: 'ends with', value: 'ends_with' },
+			{ label: 'one of', value: 'in' },
+			{ label: 'not one of', value: 'not_in' },
+		])
+	}
+	if (FIELDTYPES.NUMBER.includes(columnType)) {
+		options = options.concat([
+			{ label: 'one of', value: 'in' },
+			{ label: 'not one of', value: 'not_in' },
+			{ label: 'greater than', value: '>' },
+			{ label: 'smaller than', value: '<' },
+			{ label: 'greater than equal to', value: '>=' },
+			{ label: 'smaller than equal to', value: '<=' },
+			{ label: 'between', value: 'between' },
+		])
+	}
+	if (FIELDTYPES.DATE.includes(columnType)) {
+		options = options.concat([
+			{ label: 'greater than', value: '>' },
+			{ label: 'smaller than', value: '<' },
+			{ label: 'greater than equal to', value: '>=' },
+			{ label: 'smaller than equal to', value: '<=' },
+			{ label: 'between', value: 'between' },
+			{ label: 'within', value: 'timespan' },
+		])
+	}
+	return options
+}
+
+// a function to resolve the promise when a ref has a value
+export async function whenHasValue(refOrGetter) {
+	return new Promise((resolve) => {
+		function onValue(value) {
+			if (!value) return
+			resolve(value)
+			unwatch()
+		}
+		const unwatch = watch(refOrGetter, onValue, { deep: true })
+		const value = typeof refOrGetter === 'function' ? refOrGetter() : unref(refOrGetter)
+		onValue(value)
+	})
 }
 
 export function isDimensionColumn(column) {
@@ -319,6 +409,52 @@ export function areDeeplyEqual(obj1, obj2) {
 	}
 
 	return false
+}
+
+export function createTaskRunner() {
+	const queue = []
+	let running = false
+	const run = async () => {
+		if (running) return
+		running = true
+		while (queue.length) {
+			await queue.shift()()
+		}
+		running = false
+	}
+	return async (fn) => {
+		queue.push(fn)
+		await run()
+	}
+}
+
+// a util function that is similar to watch but only runs the callback when the value is truthy and changes
+export function wheneverChanges(getter, callback, options = {}) {
+	let prevValue = null
+	function onChange(value) {
+		if (areDeeplyEqual(value, prevValue)) return
+		if (!value) return
+		prevValue = value
+		callback(value)
+	}
+	return watch(getter, onChange, options)
+}
+
+export async function run_doc_method(method, doc, args = {}) {
+	return call('run_doc_method', {
+		method,
+		dt: doc.doctype,
+		dn: doc.name,
+		args: args,
+	})
+}
+
+export function makeColumnOption(column) {
+	return {
+		...column,
+		description: column.type,
+		value: `${column.table}.${column.column}`,
+	}
 }
 
 export default {

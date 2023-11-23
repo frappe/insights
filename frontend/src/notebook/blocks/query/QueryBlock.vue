@@ -1,25 +1,25 @@
 <script setup>
+import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
+import QueryResult from '@/query/ResultSection.vue'
+import useQuery from '@/query/resources/useQuery'
 import useQueryStore from '@/stores/queryStore'
 import { provide, reactive } from 'vue'
 import QueryBlockHeader from './QueryBlockHeader.vue'
-import QueryEditor from './QueryEditor.vue'
-import QueryResult from './QueryResult.vue'
-import QueryBuilder from './builder/QueryBuilder.vue'
-import useQuery from './useQuery'
 
 const emit = defineEmits(['setQuery', 'remove'])
-const props = defineProps({ query: String, is_native: Boolean })
+const props = defineProps({ query: String })
 
 let query = null
 if (!props.query) {
 	const queryDoc = await useQueryStore().create()
 	emit('setQuery', queryDoc.name)
 	query = useQuery(queryDoc.name)
-	props.is_native ? await query.convertToNative() : await query.convertToAssisted()
+	await query.reload()
 } else {
 	query = useQuery(props.query)
 	await query.reload()
 }
+await query.convertToNative()
 
 provide('query', query)
 
@@ -51,8 +51,7 @@ state.removeQuery = () => {
 				v-show="state.query.doc.name && !state.minimizeQuery"
 				class="mb-2 w-full flex-1 overflow-hidden"
 			>
-				<QueryEditor v-if="props.is_native" />
-				<QueryBuilder v-else :name="state.query.doc.name" />
+				<NativeQueryEditor></NativeQueryEditor>
 			</div>
 		</transition>
 

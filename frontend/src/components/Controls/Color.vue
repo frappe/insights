@@ -85,7 +85,7 @@
 								type="text"
 								placeholder="Custom Hex"
 								:class="inputClass"
-								class="col-span-5 -mt-1 flex h-8 items-center rounded border-0 bg-gray-100 px-3 text-base placeholder-gray-500 focus:outline-none"
+								class="col-span-5 -mt-1 flex h-7 items-center rounded border-0 bg-gray-100 px-3 text-base placeholder-gray-500 focus:outline-none"
 								@change="(e) => setColorValue(e.target.value)"
 							/>
 						</div>

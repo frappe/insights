@@ -1,11 +1,11 @@
 <script setup lang="jsx">
 import useDataSourceStore from '@/stores/dataSourceStore'
-import { Component } from 'lucide-vue-next'
 import { copyToClipboard } from '@/utils'
 import { debounce } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import ResizeableInput from './builder/ResizeableInput.vue'
+import ResizeableInput from '@/components/ResizeableInput.vue'
+import { Component as ComponentIcon } from 'lucide-vue-next'
 
 const state = inject('state')
 const debouncedUpdateTitle = debounce(async (title) => {
@@ -24,7 +24,7 @@ const router = useRouter()
 function duplicateQuery() {
 	state.query.duplicate().then((name) => {
 		if (page?.addQuery) {
-			page.addQuery(state.query.doc.is_native_query ? 'query-editor' : 'query-builder', name)
+			page.addQuery('query-editor', name)
 		} else {
 			router.push(`/query/build/${name}`)
 		}
@@ -73,8 +73,8 @@ function changeDataSource(sourceName) {
 <template>
 	<div class="flex h-9 items-center justify-between rounded-t-lg pl-3 pr-1 text-base">
 		<div class="flex items-center font-mono">
-			<div v-if="state.query.doc.is_saved_as_table" class="mr-1">
-				<Component class="h-3 w-3 text-gray-600" fill="currentColor" />
+			<div v-if="state.query.doc.is_stored" class="mr-1">
+				<ComponentIcon class="h-3 w-3 text-gray-600" fill="currentColor" />
 			</div>
 			<ResizeableInput
 				v-model="state.query.doc.title"
@@ -110,13 +110,6 @@ function changeDataSource(sourceName) {
 						icon: state.minimizeResult ? 'maximize-2' : 'minimize-2',
 						onClick: () => (state.minimizeResult = !state.minimizeResult),
 					},
-					!state.query.doc.is_saved_as_table
-						? {
-								label: 'Save as Table',
-								icon: 'bookmark',
-								onClick: () => state.query.saveAsTable(),
-						  }
-						: null,
 					{
 						label: 'Duplicate',
 						icon: 'copy',

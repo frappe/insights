@@ -5,10 +5,10 @@
 	>
 		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
-				<img src="../assets/insights-logo.svg" class="h-7" />
+				<img src="../assets/insights-logo-new.svg" class="h-7" />
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
-				<img src="../assets/insights-icon.svg" class="rounded" />
+				<img src="../assets/insights-logo-new.svg" class="rounded" />
 			</router-link>
 
 			<div class="mt-4 flex flex-col">

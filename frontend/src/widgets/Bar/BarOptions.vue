@@ -16,6 +16,10 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
+if (!Array.isArray(options.value.yAxis)) {
+	options.value.yAxis = typeof options.value.yAxis === 'string' ? [options.value.yAxis] : []
+}
+
 const indexOptions = computed(() => {
 	return props.columns
 		?.filter((column) => !FIELDTYPES.NUMBER.includes(column.type))
@@ -61,8 +65,9 @@ const valueOptions = computed(() => {
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
 			<Autocomplete
-				v-model="options.referenceLine"
+				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
+				@update:modelValue="options.referenceLine = $event.value"
 			/>
 		</div>
 

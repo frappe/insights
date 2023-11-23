@@ -71,7 +71,7 @@
 						</div>
 						<div
 							v-if="filteredOptions.length === 0"
-							class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
+							class="flex h-7 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
 						>
 							No results found
 						</div>
@@ -91,7 +91,7 @@
 							v-slot="{ active }"
 						>
 							<div
-								class="flex h-8 w-full cursor-pointer items-center justify-between rounded px-3 text-base"
+								class="flex h-7 w-full cursor-pointer items-center justify-between rounded px-3 text-base"
 								:class="{
 									'bg-gray-100 text-gray-800': active,
 									'bg-white': !active,

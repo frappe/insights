@@ -1,11 +1,8 @@
 <script setup>
-import Checkbox from '@/components/Controls/Checkbox.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import Color from '@/components/Controls/Color.vue'
-import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
+import Checkbox from '@/components/Controls/Checkbox.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
-import Draggable from 'vuedraggable'
 import SeriesOption from '../SeriesOption.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -105,8 +102,9 @@ const areAllColumnsSelected = computed(() => {
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
 			<Autocomplete
-				v-model="options.referenceLine"
+				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
+				@update:modelValue="options.referenceLine = $event.value"
 			/>
 		</div>
 	</div>

@@ -71,3 +71,23 @@ def create_chart():
     chart = frappe.new_doc("Insights Chart")
     chart.save()
     return chart.name
+
+
+@frappe.whitelist()
+def apply_pivot_transform(data, rows, columns, values):
+    import pandas as pd
+
+    # create a dataframe
+    df = pd.DataFrame(data[1:], columns=data[0])
+
+    # create a pivot table
+    pivot = pd.pivot_table(
+        df, index=rows, columns=columns, values=values, sort=False, fill_value=0, aggfunc="sum"
+    )
+    csv = pivot.to_csv(sep=";")
+
+    out = []
+    _rows = csv.split("\n")
+    for row in _rows:
+        out.append(row.split(";"))
+    return out

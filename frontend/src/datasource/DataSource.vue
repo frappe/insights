@@ -17,9 +17,16 @@
 		:rows="dataSource.tableList.filter((table) => !table.is_query_based)"
 	>
 		<template #actions>
+			<Button
+				variant="outline"
+				iconLeft="link-2"
+				@click="$router.push(`/data-source/${dataSource.doc.name}/relationships`)"
+			>
+				Manage Relationships
+			</Button>
 			<Dropdown
 				placement="left"
-				:button="{ icon: 'more-horizontal', variant: 'ghost' }"
+				:button="{ icon: 'more-horizontal', variant: 'outline' }"
 				:options="dropdownActions"
 			/>
 		</template>
@@ -53,9 +60,10 @@
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import useDataSource from '@/datasource/useDataSource'
+import useDataSource from './useDataSource'
 import { ListRow, ListRowItem } from 'frappe-ui'
-import { computed, inject, ref } from 'vue'
+import { Link } from 'lucide-vue-next'
+import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -67,6 +75,7 @@ const props = defineProps({
 
 const router = useRouter()
 const dataSource = useDataSource(props.name)
+provide('dataSource', dataSource)
 dataSource.fetchTables()
 
 const searchQuery = ref('')

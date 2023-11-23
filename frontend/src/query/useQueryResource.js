@@ -11,6 +11,7 @@ export const API_METHODS = {
 	fetchTables: 'fetch_tables',
 	fetchColumns: 'fetch_columns',
 	fetchColumnValues: 'fetch_column_values',
+	fetch_related_tables: 'fetch_related_tables',
 
 	// table methods
 	addTable: 'add_table',
@@ -29,15 +30,14 @@ export const API_METHODS = {
 
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
-	get_chart_name: 'get_chart_name',
 
 	run: 'run',
-	get_chart_name: 'get_chart_name',
 	convert_to_native: 'convert_to_native',
 	convert_to_assisted: 'convert_to_assisted',
 	get_tables_columns: 'get_tables_columns',
 	save_as_table: 'save_as_table',
 	delete_linked_table: 'delete_linked_table',
+	switch_query_type: 'switch_query_type',
 }
 
 export function useQueryResource(name) {
@@ -55,6 +55,10 @@ export function useQueryResource(name) {
 			doc.json = safeJSONParse(doc.json, defaultQueryJSON)
 			doc.results = safeJSONParse(doc.results, [])
 			resource.resultColumns = doc.results[0]
+			doc.transforms = doc.transforms.map((t) => {
+				t.options = safeJSONParse(t.options, {})
+				return t
+			})
 			return doc
 		},
 	})

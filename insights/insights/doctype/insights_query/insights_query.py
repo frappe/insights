@@ -3,6 +3,7 @@
 
 
 import time
+from contextlib import suppress
 from functools import cached_property
 
 import frappe
@@ -14,7 +15,7 @@ from insights.decorators import log_error
 from insights.insights.doctype.insights_data_source.sources.utils import (
     create_insights_table,
 )
-from insights.utils import InsightsSettings, InsightsTable, ResultColumn
+from insights.utils import InsightsChart, InsightsSettings, InsightsTable, ResultColumn
 
 from ..insights_data_source.sources.query_store import store_query
 from .insights_assisted_query import InsightsAssistedQueryController
@@ -41,12 +42,22 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         if not self.title and self.name:
             self.title = self.name.replace("-", " ").replace("QRY", "Query")
 
+    def after_insert(self):
+        self.link_chart()
+
     def before_save(self):
         self.variant_controller.before_save()
 
     def on_update(self):
-        self.create_default_chart()
+        self.link_chart()
         self.update_linked_docs()
+
+    def link_chart(self):
+        chart_name = InsightsChart.get_name(query=self.name)
+        if not chart_name:
+            self.create_default_chart()
+        if not self.chart and chart_name:
+            self.db_set("chart", chart_name)
 
     def on_trash(self):
         self.delete_default_chart()
@@ -59,7 +70,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def results(self):
-        fetch_if_not_cached = self.status == Status.SUCCESS.value
+        fetch_if_not_cached = False
         limit = InsightsSettings.get("query_result_limit") or 1000
         try:
             results = self.retrieve_results(fetch_if_not_cached)
@@ -69,7 +80,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def results_row_count(self):
-        return len(self.retrieve_results())
+        return len(self.retrieve_results()) - 1
 
     @cached_property
     def variant_controller(self):
@@ -104,17 +115,18 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.variant_controller.after_reset()
 
     def create_default_chart(self):
-        if frappe.db.exists("Insights Chart", {"query": self.name}):
-            return
         chart = frappe.new_doc("Insights Chart")
         chart.query = self.name
         chart.save(ignore_permissions=True)
+        self.db_set("chart", chart.name, update_modified=False)
         return chart
 
-    def update_insights_table(self, force=False):
-        if not self.is_saved_as_table and not force:
-            return
-        query_table = _dict(
+    def update_query_based_table(self, force=False):
+        with suppress(Exception):
+            create_insights_table(self.make_table())
+
+    def make_table(self):
+        return _dict(
             table=self.name,
             label=self.title,
             is_query_based=1,
@@ -122,8 +134,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             columns=InsightsTableColumn.from_dicts(
                 self.get_columns(),
             ),
+            table_links=[],
         )
-        create_insights_table(query_table)
 
     def get_columns(self):
         return self.get_columns_from_results(self.retrieve_results())
@@ -150,6 +162,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         frappe.db.delete("Insights Chart", {"query": self.name})
 
     def retrieve_results(self, fetch_if_not_cached=False):
+        if hasattr(self, "_results"):
+            return self._results
         if not CachedResults.exists(self.name):
             if fetch_if_not_cached:
                 return self.fetch_results()
@@ -184,8 +198,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             # custom results for dashboard is cached by dashboard
             if not additional_filters:
                 CachedResults.set(self.name, self._results)
+                self.update_query_based_table()
                 self.is_stored and store_query(self, self._results)
-                self.update_insights_table()
         return self._results
 
     def before_fetch(self):
@@ -217,6 +231,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 return apply_unpivot_transform(results, transform.options)
             if transform.type == "Transpose":
                 return apply_transpose_transform(results, transform.options)
+        return results
 
     def validate_transforms(self):
         pivot_transforms = [t for t in self.transforms if t.type == "Pivot"]

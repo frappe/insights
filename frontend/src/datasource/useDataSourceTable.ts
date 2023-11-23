@@ -1,5 +1,6 @@
 import { fetchTableName, getDocumentResource } from '@/api'
 import useCacheStore from '@/stores/cacheStore'
+import { whenHasValue } from '@/utils'
 import { useStorage } from '@vueuse/core'
 import { UnwrapRef, computed, reactive } from 'vue'
 
@@ -18,6 +19,8 @@ async function useDataSourceTable(params: GetTableParams) {
 	}
 
 	const resource: TableResource = getDocumentResource('Insights Table', name)
+	await resource.fetchIfNeeded()
+	await whenHasValue(() => resource.doc)
 
 	const doc = computed<any>({
 		get: () => resource.doc || {},
@@ -60,6 +63,12 @@ async function useDataSourceTable(params: GetTableParams) {
 
 const today = new Date().toISOString().split('T')[0]
 const dailyCacheKey = `insights:table-name-cache-{${today}}`
+
+for (const key of Object.keys(localStorage)) {
+	if (key.startsWith('insights:table-name-cache-')) {
+		localStorage.removeItem(key)
+	}
+}
 
 type TableNameCache = Record<string, string>
 const tableNameCache = useStorage<TableNameCache>(dailyCacheKey, {})

@@ -10,6 +10,7 @@ import useQueryStore from '@/stores/queryStore'
 import sessionStore from '@/stores/sessionStore'
 import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getChartIcon } from '@/widgets/widgets'
+import { useStorage } from '@vueuse/core'
 import { ListRow, ListRowItem } from 'frappe-ui'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
@@ -64,7 +65,6 @@ async function openQueryEditor(type) {
 	}
 	const new_query = {}
 	if (type === 'visual') new_query.is_assisted_query = 1
-	if (type === 'classic') new_query.is_assisted_query = 0
 	if (type === 'sql') new_query.is_native_query = 1
 	if (type === 'script') new_query.is_script_query = 1
 	const query = await queryStore.create(new_query)
@@ -89,12 +89,6 @@ const queryBuilderTypes = ref([
 		onClick: () => openQueryEditor('visual'),
 	},
 	{
-		label: 'Classic',
-		description: 'Create a query using the classic interface',
-		icon: 'layout',
-		onClick: () => openQueryEditor('classic'),
-	},
-	{
 		label: 'SQL',
 		description: 'Create a query using SQL',
 		icon: 'code',
@@ -109,16 +103,17 @@ const queryBuilderTypes = ref([
 	},
 ])
 
-const filters = ref({
-	owner: ['=', sessionStore().user.user_id],
+const user_id = sessionStore().user.user_id
+const filters = useStorage('insights:query-list-filters', {
+	owner: ['=', user_id],
 })
 const queries = computed(() => {
-	console.log(filters.value)
 	if (isEmptyObj(filters.value)) {
 		return queryStore.list
 	}
 	return queryStore.list.filter((query) => {
 		for (const [fieldname, [operator, value]] of Object.entries(filters.value)) {
+			if (!fieldname || !operator || !value) continue
 			const field_value = query[fieldname]
 			if (operator === '=') return field_value === value
 			if (operator === '!=') return field_value !== value

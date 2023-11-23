@@ -1,6 +1,6 @@
 <script setup lang="jsx">
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import ContentEditable from '@/notebook/ContentEditable.vue'
+import ContentEditable from '@/components/ContentEditable.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebookPage from '@/notebook/useNotebookPage'
 import { updateDocumentTitle } from '@/utils'

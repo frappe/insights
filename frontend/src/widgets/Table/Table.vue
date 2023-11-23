@@ -1,6 +1,7 @@
 <script setup>
 import { ellipsis, formatNumber } from '@/utils'
-import { computed } from 'vue'
+import { Badge } from 'frappe-ui'
+import { computed, h } from 'vue'
 
 const props = defineProps({
 	data: { type: Object, required: true },
@@ -34,6 +35,33 @@ function total(column) {
 	const values = rows.value.map((row) => parseInt(row[index]))
 	const total = values.reduce((a, b) => a + b, 0)
 	return formatNumber(Number(total))
+}
+
+function getFormattedCellComponent(cell) {
+	const parsedPills = parsePills(cell)
+	if (parsedPills) {
+		return h(
+			'div',
+			parsedPills.map((item) => h(Badge, { label: item }))
+		)
+	}
+	const isNumber = typeof cell == 'number'
+	return h('span', isNumber ? formatNumber(cell) : ellipsis(cell, 100))
+}
+function parsePills(cell) {
+	try {
+		const parsedPills = JSON.parse(cell)
+		if (
+			!Array.isArray(parsedPills) ||
+			!parsedPills.length ||
+			!parsedPills.every((item) => typeof item == 'string')
+		) {
+			return undefined
+		}
+		return parsedPills
+	} catch (e) {
+		return undefined
+	}
 }
 </script>
 
@@ -77,7 +105,7 @@ function total(column) {
 							{{ index + 1 }}
 						</td>
 						<td v-for="cell in row" class="whitespace-nowrap bg-white py-2 pr-4">
-							{{ typeof cell == 'number' ? formatNumber(cell) : ellipsis(cell, 100) }}
+							<component :is="getFormattedCellComponent(cell)" />
 						</td>
 					</tr>
 					<tr v-if="props.options.showTotal" class="border-b font-medium">

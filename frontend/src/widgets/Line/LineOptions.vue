@@ -40,7 +40,7 @@ const deprecatedOptions = computed(() => {
 	return options.value?.yAxis?.every((item) => typeof item === 'string')
 })
 function convertDeprecatedOptions() {
-	options.value.yAxis = options.value.yAxis.map((item) => ({ column: item }))
+	return options.value.yAxis.map((item) => ({ column: item }))
 }
 
 const yAxis = computed({
@@ -111,8 +111,9 @@ const areAllColumnsSelected = computed(() => {
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
 			<Autocomplete
-				v-model="options.referenceLine"
+				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
+				@update:modelValue="options.referenceLine = $event.value"
 			/>
 		</div>
 

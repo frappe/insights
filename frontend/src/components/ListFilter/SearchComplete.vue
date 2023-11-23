@@ -4,14 +4,15 @@
 		:options="options"
 		:modelValue="selection"
 		@update:query="(q) => onUpdateQuery(q)"
-		@update:modelValue="(v) => (selection = v)"
+		@update:modelValue="(v) => (selection = v.value)"
 	/>
 </template>
 
 <script setup>
 import { Autocomplete, createListResource } from 'frappe-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 
+const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
 	value: {
 		type: String,
@@ -52,15 +53,17 @@ watch(
 	}
 )
 
+const selection = computed({
+	get: () => props.value,
+	set: (value) => emit('update:modelValue', value),
+})
 const r = createListResource({
 	doctype: props.doctype,
 	pageLength: props.pageLength,
 	cache: ['link_doctype', props.doctype],
 	auto: true,
 	fields: [props.labelField, props.searchField, props.valueField],
-	onSuccess: () => {
-		selection.value = props.value ? options.value.find((o) => o.value === props.value) : null
-	},
+	onSuccess: () => {},
 })
 const options = computed(() => {
 	const allOptions =
@@ -69,12 +72,14 @@ const options = computed(() => {
 			value: result[props.valueField],
 		})) || []
 
-	if (selection.value && !allOptions.find((o) => o.value === selection.value.value)) {
-		allOptions.push(selection.value)
+	if (selection.value && !allOptions.find((o) => o.value === selection.value)) {
+		allOptions.push({
+			label: selection.value,
+			value: selection.value,
+		})
 	}
 	return allOptions
 })
-const selection = ref(null)
 
 function onUpdateQuery(query) {
 	r.update({

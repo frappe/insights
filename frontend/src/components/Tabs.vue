@@ -15,11 +15,20 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
+const emit = defineEmits(['switch', 'update:modelValue'])
 const props = defineProps({
-	modelValue: { type: Object, required: false },
+	modelValue: { required: false },
 	tabs: { type: Array, required: true },
 })
-const emit = defineEmits(['switch', 'update:modelValue'])
+
+const tabs = computed(() => {
+	if (typeof props.tabs?.[0] == 'string') {
+		return props.tabs.map((label) => ({ label, value: label }))
+	}
+	return props.tabs
+})
 function handleClick(tab) {
 	if (tab.disabled) return
 	emit('switch', tab)
