@@ -80,6 +80,7 @@ class QueryStore(SQLiteDB):
                 connection.execute(text(f"DROP TABLE IF EXISTS '{query.name}'"))
                 return
 
+        create_insights_table(self.table_factory.make_table(query), force=True)
         columns = [col["label"] for col in results[0]]
         df = pd.DataFrame(results[1:], columns=columns, dtype=str)
         df.to_sql(query.name, self.engine, if_exists="replace", index=False)

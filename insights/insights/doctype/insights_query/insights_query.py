@@ -121,7 +121,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
         self.db_set("chart", chart.name, update_modified=False)
         return chart
 
-    def update_insights_table(self, force=False):
+    def update_query_based_table(self, force=False):
         with suppress(Exception):
             create_insights_table(self.make_table())
 
@@ -198,7 +198,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             # custom results for dashboard is cached by dashboard
             if not additional_filters:
                 CachedResults.set(self.name, self._results)
-                self.update_insights_table()
+                self.update_query_based_table()
                 self.is_stored and store_query(self, self._results)
         return self._results
 
