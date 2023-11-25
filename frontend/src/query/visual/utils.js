@@ -101,7 +101,7 @@ export async function inferJoinForTable(newTable, assistedQuery) {
 	// find a relation with any other joined table
 	let relationWithJoinedTable = null
 	for (const join of assistedQuery.joins) {
-		const relation = await getRelation(join.left_table, newTable.table, data_source)
+		const relation = await getRelation(join.right_table.table, newTable.table, data_source)
 		if (relation) {
 			return makeJoinFromRelation(relation)
 		}
