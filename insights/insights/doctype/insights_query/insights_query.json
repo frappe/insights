@@ -62,6 +62,7 @@
   },
   {
    "default": "{\n\t\"type\": \"LogicalExpression\",\n\t\"operator\": \"&&\",\n\t\"level\": 1,\n\t\"position\": 1,\n\t\"conditions\": []\n}",
+   "depends_on": "eval: !doc.is_assisted_query && !doc.is_native_query && !doc.is_script_query",
    "fieldname": "filters",
    "fieldtype": "JSON",
    "label": "Filters"
@@ -75,6 +76,7 @@
   },
   {
    "default": "500",
+   "depends_on": "eval: !doc.is_assisted_query && !doc.is_native_query && !doc.is_script_query",
    "fieldname": "limit",
    "fieldtype": "Int",
    "label": "Limit"
@@ -104,6 +106,7 @@
    "label": "Query"
   },
   {
+   "depends_on": "eval: !doc.is_assisted_query && !doc.is_native_query && !doc.is_script_query",
    "fieldname": "tables",
    "fieldtype": "Table",
    "label": "Tables",
@@ -260,7 +263,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-19 14:50:17.428924",
+ "modified": "2023-11-25 13:53:47.641923",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",
