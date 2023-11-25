@@ -74,21 +74,25 @@ onMounted(() => {
 		</div>
 
 		<div
-			class="flex w-[21rem] flex-shrink-0 flex-col space-y-4 overflow-y-scroll border-r bg-white p-4 pl-1"
+			class="relative flex w-[21rem] flex-shrink-0 flex-col overflow-y-scroll border-r bg-white p-4 pt-0 pl-1"
 		>
-			<Tabs v-model="activeTab" class="w-full flex-shrink-0" :tabs="tabs" />
-			<template v-if="activeTab === 'Build'">
-				<TableSection></TableSection>
-				<hr class="border-gray-200" />
-				<FilterSection></FilterSection>
-				<hr class="border-gray-200" />
-				<ColumnSection></ColumnSection>
-				<hr class="border-gray-200" />
-				<TransformSection></TransformSection>
-			</template>
-			<template v-if="activeTab === 'Visualize'">
-				<ChartOptions></ChartOptions>
-			</template>
+			<div class="sticky top-0 w-full flex-shrink-0 bg-white py-4">
+				<Tabs v-model="activeTab" class="w-full" :tabs="tabs" />
+			</div>
+			<div class="space-y-4">
+				<template v-if="activeTab === 'Build'">
+					<TableSection></TableSection>
+					<hr class="border-gray-200" />
+					<FilterSection></FilterSection>
+					<hr class="border-gray-200" />
+					<ColumnSection></ColumnSection>
+					<hr class="border-gray-200" />
+					<TransformSection></TransformSection>
+				</template>
+				<template v-if="activeTab === 'Visualize'">
+					<ChartOptions></ChartOptions>
+				</template>
+			</div>
 		</div>
 	</div>
 </template>
