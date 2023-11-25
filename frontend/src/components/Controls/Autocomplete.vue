@@ -97,12 +97,7 @@
 												/>
 											</div>
 											<span class="flex-1 truncate">
-												{{
-													option?.label ||
-													option?.value ||
-													option ||
-													'No label'
-												}}
+												{{ getLabel(option) }}
 											</span>
 										</div>
 
@@ -251,10 +246,10 @@ export default {
 
 			if (!this.multiple) {
 				if (typeof option === 'object') {
-					return option?.label
+					return this.getLabel(option)
 				}
 				let selectedOption = this.allOptions.find((o) => o.value === option)
-				return selectedOption?.label || option
+				return this.getLabel(selectedOption)
 			}
 
 			if (!Array.isArray(option)) return ''
@@ -264,12 +259,16 @@ export default {
 			return option
 				.map((v) => {
 					if (typeof v === 'object') {
-						return v?.label
+						return this.getLabel(v)
 					}
 					let selectedOption = this.allOptions.find((o) => o.value === v)
-					return selectedOption?.label || v
+					return this.getLabel(selectedOption)
 				})
 				.join(', ')
+		},
+		getLabel(option) {
+			if (typeof option !== 'object') return option
+			return option?.label || option?.value || 'No label'
 		},
 		sanitizeOptions(options) {
 			if (!options) return []
