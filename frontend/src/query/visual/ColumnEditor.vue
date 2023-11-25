@@ -34,6 +34,7 @@ function onColumnChange(option) {
 	column.label = option.label
 	column.alias = option.alias || option.label
 	column.type = option.type
+	column.value = option.value
 }
 
 const isValidColumn = computed(() => {
