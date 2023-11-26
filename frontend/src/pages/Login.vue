@@ -1,21 +1,34 @@
 <template>
-	<LoginBox title="Log in to your account">
-		<form class="flex flex-col space-y-3" @submit.prevent="makeLoginRequest">
-			<Input
+	<LoginBox class="bg-gray-50" title="Log in to your account">
+		<form class="flex flex-col" @submit.prevent="makeLoginRequest">
+			<FormControl
 				label="Email"
-				v-model="email"
 				placeholder="johndoe@mail.com"
+				v-model="email"
+				name="email"
+				autocomplete="email"
 				:type="email !== 'Administrator' ? 'email' : 'text'"
+				required
 			/>
-			<Input label="Password" type="password" placeholder="•••••" v-model="password" />
+			<FormControl
+				class="mt-4"
+				label="Password"
+				type="password"
+				placeholder="•••••"
+				v-model="password"
+				name="password"
+				autocomplete="current-password"
+				required
+			/>
 			<ErrorMessage :error="errorMessage" class="!mt-2" />
 			<Button
+				class="mt-4"
 				variant="solid"
 				:disabled="loggingIn"
 				:loading="loggingIn"
 				@click="makeLoginRequest"
 			>
-				Submit
+				Log in with email
 			</Button>
 		</form>
 	</LoginBox>

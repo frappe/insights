@@ -1,7 +1,7 @@
 <template>
 	<div class="flex h-screen w-screen bg-white antialiased">
 		<RouterView v-if="isGuestView" />
-		<Suspense>
+		<Suspense v-else>
 			<AppShell />
 		</Suspense>
 		<Toasts />
