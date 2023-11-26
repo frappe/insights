@@ -4,6 +4,7 @@ import { computed, markRaw, provide, reactive, ref } from 'vue'
 import SetupQuestions from './SetupQuestions.vue'
 import SourceConnectionStep from './SourceConnectionStep.vue'
 import SourceTypeStep from './SourceTypeStep.vue'
+import { useRouter } from 'vue-router'
 
 const setupState = reactive({
 	sourceType: null, // 'erpnext', 'mariadb', 'postgresql', 'file', 'sample'
@@ -58,10 +59,14 @@ const steps = ref([
 ])
 
 const currentStep = ref(0)
+const settings = settingsStore()
+const router = useRouter()
 async function handleNext() {
 	if (currentStep.value === steps.value.length - 1) {
-		await settingsStore().update({ setup_complete: 1 }, false)
-		window.location.reload()
+		settings.settings.setup_complete = 1
+		await settings.update({ setup_complete: 1 }, false)
+		router.push({ path: '/' })
+		return
 	}
 	currentStep.value += 1
 }
