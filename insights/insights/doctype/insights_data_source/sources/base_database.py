@@ -34,7 +34,8 @@ class BaseDatabase:
 
     def test_connection(self):
         with self.connect() as connection:
-            return connection.execute(text("SELECT 1"))
+            res = connection.execute(text("SELECT 1"))
+            return res.fetchone() and res.fetchone()[0] == 1
 
     def connect(self):
         try:
