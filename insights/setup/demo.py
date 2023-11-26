@@ -6,6 +6,10 @@ import os
 import frappe
 from sqlalchemy import text
 
+from insights.insights.doctype.insights_data_source.sources.utils import (
+    create_insights_table,
+)
+
 
 def setup():
     factory = DemoDataFactory()
@@ -22,9 +26,6 @@ def setup():
 
     update_progress("Inserting a lot of entries...", 30)
     factory.import_data()
-
-    update_progress("Optimizing reads...", 75)
-    factory.create_indexes()
 
     update_progress("Building relations...", 80)
     factory.create_table_links()
@@ -60,22 +61,28 @@ class DemoDataFactory:
         factory.download_demo_data()
         factory.extract_demo_data()
         factory.import_data()
-        factory.create_indexes()
         factory.create_table_links()
         factory.cleanup()
         return factory
 
     def initialize(self):
         self.data_url = (
-            "https://drive.google.com/u/1/uc?id=1OyqgwpqaxFY9lLnFpk2pZmihQng0ipk6&export=download"
+            "https://drive.google.com/u/0/uc?id=11EpftRVNilAtMVMX9cNFVd1QFmqx7MYF&export=download"
         )
         self.files_folder = frappe.get_site_path("private", "files")
-        self.tar_filename = "insights_demo_data.tar"
-        self.folder_name = "insights_demo_data"
+        self.tar_filename = "insights_demo_data.sqlite.tar"
         self.local_filename = os.path.join(self.files_folder, self.tar_filename)
         self.file_schema = self.get_schema()
         self.table_names = [frappe.scrub(table) for table in self.file_schema.keys()]
 
+        self.create_demo_data_source()
+        self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
+        if frappe.flags.in_test or os.environ.get("CI"):
+            self.local_filename = os.path.join(
+                os.path.dirname(__file__), "test_sqlite_db.sqlite.tar"
+            )
+
+    def create_demo_data_source(self):
         if not frappe.db.exists("Insights Data Source", "Demo Data"):
             data_source = frappe.new_doc("Insights Data Source")
             data_source.title = "Demo Data"
@@ -84,10 +91,6 @@ class DemoDataFactory:
             data_source.allow_imports = 1
             data_source.save(ignore_permissions=True)
             frappe.db.commit()
-
-        self.data_source = frappe.get_doc("Insights Data Source", "Demo Data")
-        if frappe.flags.in_test or os.environ.get("CI"):
-            self.local_filename = os.path.join(os.path.dirname(__file__), "test_demo_data.tar")
 
     def demo_data_exists(self):
         res = frappe.get_all(
@@ -193,27 +196,26 @@ class DemoDataFactory:
                 },
             ):
                 continue
-            table_import = frappe.new_doc("Insights Table Import")
-            table_import.data_source = self.data_source.name
-            table_import.table_name = frappe.scrub(filename)
-            table_import.table_label = frappe.unscrub(filename)
-            table_import.if_exists = "Overwrite"
-            table_import._filepath = os.path.join(
-                self.files_folder, self.folder_name, filename + ".csv"
-            )
-            table_import.columns = []
-            for column in self.file_schema[filename]["columns"].keys():
-                table_import.append(
-                    "columns",
+            create_insights_table(
+                frappe._dict(
                     {
-                        "column": frappe.scrub(column),
-                        "label": frappe.unscrub(column),
-                        "type": self.file_schema[filename]["columns"][column],
-                    },
-                )
-            table_import.save(ignore_permissions=True)
-            table_import.submit()
-            frappe.db.commit()
+                        "data_source": self.data_source.name,
+                        "table": frappe.scrub(filename),
+                        "label": frappe.unscrub(filename),
+                        "columns": [
+                            frappe._dict(
+                                {
+                                    "column": frappe.scrub(column),
+                                    "label": frappe.unscrub(column),
+                                    "type": self.file_schema[filename]["columns"][column],
+                                }
+                            )
+                            for column in self.file_schema[filename]["columns"].keys()
+                        ],
+                    }
+                ),
+                force=True,
+            )
             progress = 30 + (idx + 1) * 45 / len(self.file_schema.keys())
             update_progress(f"{filename} imported", progress)
 
