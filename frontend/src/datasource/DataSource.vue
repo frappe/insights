@@ -54,17 +54,38 @@
 			<Button class="mt-4" label="Sync Tables" variant="solid" @click="syncTables" />
 		</template>
 	</ListView>
+
+	<Dialog
+		v-model="showDeleteDialog"
+		:dismissable="true"
+		:options="{
+			title: 'Delete Data Source',
+			message: 'Are you sure you want to delete this data source?',
+			icon: { name: 'trash', appearance: 'danger' },
+			actions: [
+				{
+					label: 'Delete',
+					variant: 'solid',
+					theme: 'red',
+					onClick: async () => {
+						await dataSource.delete()
+						router.push({ name: 'DataSourceList' })
+					},
+				},
+			],
+		}"
+	>
+	</Dialog>
 </template>
 
 <script setup lang="jsx">
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import useDataSource from './useDataSource'
 import { ListRow, ListRowItem } from 'frappe-ui'
-import { Link } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import useDataSource from './useDataSource'
 
 const props = defineProps({
 	name: {
@@ -90,6 +111,7 @@ const filteredList = computed(() => {
 	)
 })
 
+const showDeleteDialog = ref(false)
 const dropdownActions = computed(() => {
 	return [
 		{
@@ -100,10 +122,7 @@ const dropdownActions = computed(() => {
 		{
 			label: 'Delete',
 			icon: 'trash',
-			onClick: async () => {
-				await dataSource.delete()
-				router.push({ name: 'DataSourceList' })
-			},
+			onClick: () => (showDeleteDialog.value = true),
 		},
 	]
 })
