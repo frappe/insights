@@ -39,6 +39,7 @@ def update_progress(message, progress):
     print(message, progress)
     frappe.publish_realtime(
         event="insights_demo_setup_progress",
+        user=frappe.session.user,
         message={
             "message": message,
             "progress": progress,
@@ -110,15 +111,15 @@ class DemoDataFactory:
                     "customer_state": "String",
                 },
             },
-            "Geolocation": {
-                "columns": {
-                    "geolocation_zip_code_prefix": "String",
-                    "geolocation_lat": "String",
-                    "geolocation_lng": "String",
-                    "geolocation_city": "String",
-                    "geolocation_state": "String",
-                }
-            },
+            # "Geolocation": {
+            #     "columns": {
+            #         "geolocation_zip_code_prefix": "String",
+            #         "geolocation_lat": "String",
+            #         "geolocation_lng": "String",
+            #         "geolocation_city": "String",
+            #         "geolocation_state": "String",
+            #     }
+            # },
             "OrderItems": {
                 "columns": {
                     "order_id": "String",
@@ -183,7 +184,7 @@ class DemoDataFactory:
         }
 
     def import_data(self):
-        for filename in self.file_schema.keys():
+        for idx, filename in enumerate(self.file_schema.keys()):
             if frappe.db.exists(
                 "Insights Table",
                 {
@@ -213,7 +214,8 @@ class DemoDataFactory:
             table_import.save(ignore_permissions=True)
             table_import.submit()
             frappe.db.commit()
-            update_progress(f"Importing {filename}...", 30 + (45 / len(self.file_schema)))
+            progress = 30 + (idx + 1) * 45 / len(self.file_schema.keys())
+            update_progress(f"{filename} imported", progress)
 
     def cleanup(self):
         if os.path.exists(os.path.join(self.files_folder, self.tar_filename)):
@@ -255,7 +257,7 @@ class DemoDataFactory:
         # TODO: refactor creating indexes on local db tables
         indexes = {
             "Customers": ["customer_id"],
-            "Geolocation": ["geolocation_zip_code_prefix"],
+            # "Geolocation": ["geolocation_zip_code_prefix"],
             "OrderItems": ["order_id", "product_id", "seller_id"],
             "OrderPayments": ["order_id"],
             "OrderReviews": ["review_id", "order_id"],
@@ -276,18 +278,18 @@ class DemoDataFactory:
         # TODO: refactor table links, create a new table for table links
         foreign_key_relations = {
             "Customers": [["customer_id", "Orders", "customer_id"]],
-            "Geolocation": [
-                [
-                    "geolocation_zip_code_prefix",
-                    "Customers",
-                    "customer_zip_code_prefix",
-                ],
-                [
-                    "geolocation_zip_code_prefix",
-                    "Suppliers",
-                    "supplier_zip_code_prefix",
-                ],
-            ],
+            # "Geolocation": [
+            #     [
+            #         "geolocation_zip_code_prefix",
+            #         "Customers",
+            #         "customer_zip_code_prefix",
+            #     ],
+            #     [
+            #         "geolocation_zip_code_prefix",
+            #         "Suppliers",
+            #         "supplier_zip_code_prefix",
+            #     ],
+            # ],
             "Orders": [
                 ["order_id", "OrderItems", "order_id"],
                 ["order_id", "OrderPayments", "order_id"],
