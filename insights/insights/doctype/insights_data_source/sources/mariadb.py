@@ -40,7 +40,8 @@ class MariaDBTableFactory:
         for tablename, columns in self.columns_by_tables.items():
             table = self.get_table(tablename)
             table.columns = columns
-            table.table_links = self.get_table_links(table.label)
+            # infer table links from foreign key constraints
+            # table.table_links = self.get_table_links(table.label)
             create_insights_table(table, force=force)
 
     def get_table(self, table_name):
