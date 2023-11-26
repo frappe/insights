@@ -230,7 +230,7 @@ export function ellipsis(value, length) {
 export function getShortNumber(number, precision = 0) {
 	const session = sessionStore()
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
-	let formatted = new Intl.NumberFormat(locale, {
+	let formatted = new Intl.NumberFormat(locale || 'en-US', {
 		notation: 'compact',
 		maximumFractionDigits: precision,
 	}).format(number)
@@ -245,7 +245,7 @@ export function formatNumber(number, precision = 0) {
 	precision = precision || guessPrecision(number)
 	const session = sessionStore()
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
-	return new Intl.NumberFormat(locale, {
+	return new Intl.NumberFormat(locale || 'en-US', {
 		maximumFractionDigits: precision,
 	}).format(number)
 }
