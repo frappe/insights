@@ -1,13 +1,12 @@
 <script setup>
-import DragHandleIcon from '@/components/Icons/DragHandleIcon.vue'
 import { whenHasValue } from '@/utils'
 import { MarkerType, VueFlow, useVueFlow } from '@vue-flow/core'
 import { useStorage, watchDebounced } from '@vueuse/core'
+import { Grip } from 'lucide-vue-next'
 import { computed, inject, nextTick, provide, reactive, ref, watch } from 'vue'
 import TableEdge from './TableEdge.vue'
 import TableNode from './TableNode.vue'
 import useDataSourceTable from './useDataSourceTable'
-import { Grip } from 'lucide-vue-next'
 
 const dataSource = inject('dataSource')
 const searchQuery = ref('')
@@ -70,7 +69,10 @@ provide('state', state)
 
 const canvas = useVueFlow({ nodes: [] })
 
-const storedNodes = useStorage(`insights:${dataSource.doc.name}:nodes`, [])
+const storedNodes = useStorage(
+	`insights:${dataSource.doc.name}:${dataSource.doc.creation}:nodes`,
+	[]
+)
 const nodes = computed(() => canvas.nodes.value)
 const edges = computed(() => canvas.edges.value)
 provide('edges', edges)
