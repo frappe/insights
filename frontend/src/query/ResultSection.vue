@@ -14,7 +14,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col overflow-hidden">
+	<div class="relative flex h-full w-full flex-col overflow-hidden">
 		<div
 			v-if="!query.formattedResults.length"
 			class="flex flex-1 items-center justify-center rounded border"
@@ -26,7 +26,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 		</div>
 		<template v-if="query.formattedResults.length">
 			<div
-				class="relative flex-1 flex-shrink-0 rounded border"
+				class="flex-1 flex-shrink-0 rounded border"
 				:class="needsExecution ? 'overflow-hidden' : 'overflow-scroll'"
 			>
 				<table class="border-separate border-spacing-0">

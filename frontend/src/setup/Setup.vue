@@ -65,7 +65,7 @@ async function handleNext() {
 	if (currentStep.value === steps.value.length - 1) {
 		settings.settings.setup_complete = 1
 		await settings.update({ setup_complete: 1 }, false)
-		router.push({ path: '/' })
+		router.replace({ path: '/' })
 		return
 	}
 	currentStep.value += 1
