@@ -2,7 +2,7 @@
 import UsePopover from '@/components/UsePopover.vue'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
-import { watchDebounced, whenever } from '@vueuse/shared'
+import { whenever } from '@vueuse/shared'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 
@@ -22,25 +22,28 @@ if (isChart) {
 		},
 	})
 	// load chart data
-	whenever(query, () => chartData.load(query.value), { immediate: true })
+	whenever(
+		query,
+		async () => {
+			await chartData.load(query.value)
+			setGuessedChart()
+		},
+		{ immediate: true }
+	)
 	dashboard.onRefresh(() => chartData.load(query.value))
-	dashboard.refreshChartFilters(props.item.item_id)
-	watch(chartFilters, () => chartData.load(props.item.options.query))
 
-	// set initial chart options
-	watchDebounced(() => chartData.recommendedChart, setInitialChartOptions, {
-		deep: true,
-		debounce: 500,
-	})
+	dashboard.refreshChartFilters(props.item.item_id)
+	watch(chartFilters, () => chartData.load(query.value))
 }
 
 const itemRef = ref(null) // used for popover
 const widget = ref(null)
 provide('widgetRef', widget)
 
-function setInitialChartOptions() {
+function setGuessedChart() {
 	if (!props.item.options.query) return
 	if (props.item.options.title) return
+	if (!props.item.item_type) return
 	if (
 		props.item.options.query == dashboard.currentItem?.options.query &&
 		!props.item.options.title
@@ -48,10 +51,11 @@ function setInitialChartOptions() {
 		props.item.options.title = dashboard.currentItem.query.doc.title
 	}
 
-	if (props.item.item_type !== chartData.recommendedChart.type) return
+	const guessedChart = chartData.getGuessedChart(props.item.item_type)
+	if (props.item.item_type !== guessedChart.type) return
 	props.item.options = {
 		...props.item.options,
-		...chartData.recommendedChart.options,
+		...guessedChart.options,
 	}
 }
 

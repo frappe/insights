@@ -21,6 +21,7 @@ export default function useChartData(options = {}) {
 	const state = reactive({
 		query: null,
 		data: [],
+		rawData: [],
 		recommendedChart: {},
 		loading: false,
 		error: null,
@@ -29,11 +30,10 @@ export default function useChartData(options = {}) {
 	function load(query) {
 		if (!query) return
 		state.loading = true
-		options.resultsFetcher().then((results) => {
+		return options.resultsFetcher().then((results) => {
 			state.loading = false
-			const formattedResults = getFormattedResult(results)
-			state.data = convertResultToObjects(formattedResults)
-			state.recommendedChart = guessChart(formattedResults)
+			state.rawData = getFormattedResult(results)
+			state.data = convertResultToObjects(state.rawData)
 		})
 	}
 
@@ -41,8 +41,13 @@ export default function useChartData(options = {}) {
 		load(options.query)
 	}
 
+	function getGuessedChart(chart_type) {
+		return guessChart(state.rawData, chart_type)
+	}
+
 	return Object.assign(state, {
 		load,
+		getGuessedChart,
 	})
 }
 
