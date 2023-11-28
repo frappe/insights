@@ -56,7 +56,7 @@ function downloadChart() {
 				class="mt-1 flex-shrink-0"
 				:class="['mx-3', subtitle ? 'h-11' : 'h-6']"
 			>
-				<div class="text-lg font-normal leading-6 text-gray-800">
+				<div class="text-lg font-medium leading-6 text-gray-800">
 					{{ title }}
 				</div>
 				<div v-if="subtitle" class="text-base font-light">
