@@ -1,10 +1,15 @@
 <script setup>
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, computed } from 'vue'
 import ResultSection from './ResultSection.vue'
+import ResultFooter from './visual/ResultFooter.vue'
 import NativeQueryEditor from './NativeQueryEditor.vue'
 
 const query = inject('query')
 const nativeQuery = ref(query.doc.sql)
+
+const executionTime = computed(() => query.doc.execution_time)
+const queriedRowCount = computed(() => query.doc.results_row_count)
+const displayedRowCount = computed(() => Math.min(query.MAX_ROWS, queriedRowCount.value))
 </script>
 
 <template>
@@ -16,7 +21,19 @@ const nativeQuery = ref(query.doc.sql)
 			<NativeQueryEditor />
 		</div>
 		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden py-4">
-			<ResultSection></ResultSection>
+			<ResultSection>
+				<template #footer>
+					<div v-if="queriedRowCount >= 0" class="flex items-center space-x-1">
+						<span class="text-gray-600">Showing</span>
+						<span class="font-mono"> {{ displayedRowCount }}</span>
+						<span class="text-gray-600">out of</span>
+						<span class="font-mono">{{ queriedRowCount }}</span>
+						<span class="text-gray-600">rows in</span>
+						<span class="font-mono">{{ executionTime }}</span>
+						<span class="text-gray-600">seconds</span>
+					</div>
+				</template>
+			</ResultSection>
 		</div>
 	</div>
 </template>
