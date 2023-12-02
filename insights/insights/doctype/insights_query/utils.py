@@ -203,7 +203,7 @@ def apply_cumulative_sum(columns, results):
     results_df = pd.DataFrame(results[1:], columns=column_names)
 
     for column in columns:
-        results_df[column.label] = results_df[column.label].cumsum()
+        results_df[column.get("label")] = results_df[column.get("label")].cumsum().fillna(0)
 
     return [results[0]] + results_df.values.tolist()
 

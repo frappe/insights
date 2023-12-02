@@ -1,6 +1,7 @@
 <script setup>
 import { isEmptyObj } from '@/utils'
 import { computed, defineProps, inject, reactive } from 'vue'
+import CumulativeSumTransformFields from './CumulativeSumTransformFields.vue'
 import PivotTransformFields from './PivotTransformFields.vue'
 import { NEW_TRANSFORM } from './constants'
 
@@ -22,6 +23,7 @@ const transformTypes = [
 	{ label: 'Pivot', value: 'Pivot' },
 	// { label: 'Unpivot', value: 'Unpivot' },
 	// { label: 'Transpose', value: 'Transpose' },
+	{ label: 'Cumulative Sum', value: 'CumulativeSum' },
 ]
 
 const isValidTransform = computed(
@@ -41,11 +43,14 @@ const isValidTransform = computed(
 				@update:modelValue="activeTransform.options = {}"
 			/>
 		</div>
-		<template v-if="activeTransform.type == 'Pivot'">
-			<PivotTransformFields
-				v-model:transformOptions="activeTransform.options"
-			></PivotTransformFields>
-		</template>
+		<PivotTransformFields
+			v-if="activeTransform.type == 'Pivot'"
+			v-model:transformOptions="activeTransform.options"
+		></PivotTransformFields>
+		<CumulativeSumTransformFields
+			v-else-if="activeTransform.type == 'CumulativeSum'"
+			v-model:transformOptions="activeTransform.options"
+		></CumulativeSumTransformFields>
 		<div class="flex justify-between">
 			<Button variant="outline" @click="emit(isValidTransform ? 'discard' : 'remove')">
 				Discard

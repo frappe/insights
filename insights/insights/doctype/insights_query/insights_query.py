@@ -30,6 +30,7 @@ from .utils import (
     CachedResults,
     InsightsTableColumn,
     Status,
+    apply_cumulative_sum,
     apply_pivot_transform,
     apply_transpose_transform,
     apply_unpivot_transform,
@@ -231,6 +232,16 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 return apply_unpivot_transform(results, transform.options)
             if transform.type == "Transpose":
                 return apply_transpose_transform(results, transform.options)
+
+        cumulative_sum_transforms = [t for t in self.transforms if t.type == "CumulativeSum"]
+        if cumulative_sum_transforms:
+            columns = []
+            for transform in cumulative_sum_transforms:
+                options = frappe.parse_json(transform.options)
+                if not options.get("column") or options.get("column") in columns:
+                    continue
+                columns.append(options.get("column"))
+            return apply_cumulative_sum([{"label": c} for c in columns], results)
         return results
 
     def validate_transforms(self):

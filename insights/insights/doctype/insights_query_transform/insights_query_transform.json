@@ -15,7 +15,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Pivot\nUnpivot\nTranspose"
+   "options": "Pivot\nUnpivot\nTranspose\nCumulativeSum"
   },
   {
    "default": "{}",
@@ -29,7 +29,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-11-06 23:43:11.514503",
+ "modified": "2023-12-02 14:08:17.355102",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Transform",

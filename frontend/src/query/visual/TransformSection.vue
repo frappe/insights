@@ -4,6 +4,7 @@ import { isEmptyObj } from '@/utils'
 import { CornerLeftDown, CornerRightUp, Crop, Option, X } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import TransformEditor from './TransformEditor.vue'
+import { Sigma } from 'lucide-vue-next'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -15,11 +16,13 @@ const transformTypeToIcon = {
 	Pivot: CornerRightUp,
 	Unpivot: CornerLeftDown,
 	Transpose: Crop,
+	CumulativeSum: Sigma,
 }
 const transformTypeToLabel = {
 	Pivot: 'Convert Row to Column',
 	Unpivot: 'Convert Column to Row',
 	Transpose: 'Transpose',
+	CumulativeSum: 'Cumulative Sum',
 }
 
 function onAddTransform() {
