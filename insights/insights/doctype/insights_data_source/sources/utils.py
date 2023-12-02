@@ -67,20 +67,24 @@ def create_insights_table(table, force=False):
         if not doc.get("table_links", table_link):
             doc.append("table_links", table_link)
 
+    column_added = False
     for column in table.columns or []:
         # do not overwrite existing columns, since type or label might have been changed
         if any(doc_column.column == column.column for doc_column in doc.columns):
             continue
         doc.append("columns", column)
+        column_added = True
 
+    column_removed = False
     column_names = [c.column for c in table.columns]
     for column in doc.columns:
         if column.column not in column_names:
-            doc.remove(column)
+            doc.columns.remove(column)
+            column_removed = True
 
     version = frappe.new_doc("Version")
     # if there's some update to store only then save the doc
-    doc_changed = version.update_version_info(doc_before, doc)
+    doc_changed = version.update_version_info(doc_before, doc) or column_added or column_removed
     is_new = not exists
     if is_new or doc_changed or force:
         # need to ignore permissions when creating/updating a table in query store
