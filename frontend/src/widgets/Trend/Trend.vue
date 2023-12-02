@@ -94,7 +94,7 @@ const trendLineOptions = computed(() => {
 		>
 			<div class="flex w-full justify-between space-x-4">
 				<div
-					class="overflow-hidden text-ellipsis whitespace-nowrap leading-6 text-gray-600"
+					class="overflow-hidden text-ellipsis whitespace-nowrap font-medium leading-6 text-gray-600"
 				>
 					{{ options.title }}
 				</div>

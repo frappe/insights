@@ -70,7 +70,7 @@ function parsePills(cell) {
 		v-if="options?.columns?.length || rows?.length"
 		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded px-4 py-2"
 	>
-		<div v-if="props.options.title" class="text-lg font-normal leading-6 text-gray-800">
+		<div v-if="props.options.title" class="text-lg font-medium leading-6 text-gray-800">
 			{{ props.options.title }}
 		</div>
 		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
@@ -116,11 +116,12 @@ function parsePills(cell) {
 					<tr v-if="props.options.showTotal" class="border-b font-medium">
 						<td
 							v-if="props.options.index"
-							class="w-10 whitespace-nowrap bg-white px-2.5 py-2 text-gray-600"
+							class="w-10 whitespace-nowrap bg-white py-2 pr-4 text-gray-600"
 						>
 							Total
 						</td>
 						<td
+							class="py-2 pr-4"
 							v-for="column in props.options.columns"
 							:class="guessColumnValueType(column) == 'number' ? 'text-right' : ''"
 						>
