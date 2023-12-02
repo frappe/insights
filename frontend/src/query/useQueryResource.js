@@ -4,6 +4,7 @@ import { createDocumentResource } from 'frappe-ui'
 export const API_METHODS = {
 	run: 'run',
 	store: 'store',
+	unstore: 'unstore',
 	convert: 'convert',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',

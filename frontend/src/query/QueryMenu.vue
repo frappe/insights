@@ -10,7 +10,11 @@
 							icon: 'bookmark',
 							onClick: storeQuery,
 					  }
-					: null,
+					: {
+							label: 'Unstore Query',
+							icon: BookmarkMinus,
+							onClick: unstoreQuery,
+					  },
 				{
 					label: 'Execute (⌘+E)',
 					icon: 'play',
@@ -153,9 +157,9 @@ import settingsStore from '@/stores/settingsStore'
 import { copyToClipboard } from '@/utils'
 import { useMagicKeys } from '@vueuse/core'
 import { Dialog, Dropdown } from 'frappe-ui'
+import { BookmarkMinus } from 'lucide-vue-next'
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-
 const settings = settingsStore().settings
 
 const props = defineProps(['query'])
@@ -193,6 +197,15 @@ function storeQuery() {
 		$notify({
 			variant: 'success',
 			title: 'Query Stored',
+		})
+	})
+}
+
+function unstoreQuery() {
+	query.unstore().then((res) => {
+		$notify({
+			variant: 'success',
+			title: 'Query Unstored',
 		})
 	})
 }

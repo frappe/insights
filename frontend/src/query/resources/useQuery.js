@@ -115,7 +115,11 @@ function makeQuery(name) {
 
 	state.store = () => {
 		setLoading(true)
-		run(() => resource.store.submit().finally(() => setLoading(false)))
+		return run(() => resource.store.submit().finally(() => setLoading(false)))
+	}
+	state.unstore = () => {
+		setLoading(true)
+		return run(() => resource.unstore.submit().finally(() => setLoading(false)))
 	}
 	state.switchQueryBuilder = () => {
 		return run(() => {

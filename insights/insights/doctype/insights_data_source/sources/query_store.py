@@ -94,3 +94,9 @@ def sync_query_store(tables=None, force=False):
 def store_query(query, results):
     query_store = QueryStore()
     query_store.store_query(query, results)
+
+
+def remove_stored_query(query):
+    query_store = QueryStore()
+    query_store.store_query(query, [])
+    frappe.db.delete("Insights Table", {"table": query.name, "data_source": "Query Store"})

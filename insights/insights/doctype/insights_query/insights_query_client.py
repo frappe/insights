@@ -5,6 +5,9 @@
 import frappe
 from frappe.utils import cint
 
+from insights.insights.doctype.insights_data_source.sources.query_store import (
+    remove_stored_query,
+)
 from insights.insights.doctype.insights_query.insights_assisted_query import (
     DEFAULT_JSON,
 )
@@ -62,6 +65,12 @@ class InsightsQueryClient:
     @frappe.whitelist()
     def store(self):
         self.is_stored = 1
+        self.save()
+
+    @frappe.whitelist()
+    def unstore(self):
+        remove_stored_query(self)
+        self.is_stored = 0
         self.save()
 
     @frappe.whitelist()
