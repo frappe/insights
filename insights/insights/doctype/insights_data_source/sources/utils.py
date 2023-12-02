@@ -146,10 +146,10 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
     queries = frappe.get_all(
         "Insights Query",
         filters={
-            "name": ("in", sql_tables),
+            "name": ("in", set(sql_tables)),
             "data_source": data_source,
         },
-        fields=["name", "sql", "data_source"],
+        fields=["name", "sql", "data_source", "is_native_query"],
     )
     if not queries:
         return None
@@ -167,6 +167,9 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
             frappe.throw("Cannot use queries from different data sources in a single query")
 
         stored_query_sql[sql.name] = sql.sql
+        if not sql.is_native_query:
+            # non native queries are already processed and stored in the db
+            continue
         sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source)
         # sub_stored_query_sql = { 'QRY-004': 'SELECT name FROM `Item`' }
         if not sub_stored_query_sql:
@@ -185,10 +188,6 @@ def process_cte(main_query, data_source=None):
     """
     Replaces stored queries in the main query with the actual query using CTE
     """
-
-    processed_comment = "/* query tables processed as CTE */"
-    if processed_comment in main_query:
-        return main_query
 
     stored_query_sql = get_stored_query_sql(main_query, data_source)
     if not stored_query_sql:
@@ -224,7 +223,7 @@ def process_cte(main_query, data_source=None):
     for query_name, sql in stored_query_sql.items():
         cte += f" `{query_name}` AS ({sql}),"
     cte = cte[:-1]
-    return f"{processed_comment} {cte} {main_query}"
+    return f"{cte} {main_query}"
 
 
 def strip_quotes(table):
