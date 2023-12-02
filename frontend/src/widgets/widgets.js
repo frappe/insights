@@ -10,6 +10,7 @@ import {
 	PieChart,
 	ScatterChart,
 	Sparkles,
+	Square,
 	Table,
 	TextCursorInput,
 	TrendingUp,
@@ -178,10 +179,10 @@ function getChartOptions() {
 	}))
 }
 
-export function getChartIcon(itemType) {
+export function getIcon(itemType) {
 	if (!itemType) return
 	if (itemType == 'Auto') return Sparkles
-	if (!VALID_CHARTS.includes(itemType)) return
+	if (!get(itemType)) return Square
 	return get(itemType).icon
 }
 
@@ -192,5 +193,5 @@ export default {
 	getComponent,
 	getOptionComponent,
 	getChartOptions,
-	getChartIcon,
+	getIcon,
 }

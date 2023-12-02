@@ -9,7 +9,7 @@ import useDataSourceStore from '@/stores/dataSourceStore'
 import useQueryStore from '@/stores/queryStore'
 import sessionStore from '@/stores/sessionStore'
 import { isEmptyObj, updateDocumentTitle } from '@/utils'
-import { getChartIcon } from '@/widgets/widgets'
+import { getIcon } from '@/widgets/widgets'
 import { useStorage } from '@vueuse/core'
 import { ListRow, ListRowItem } from 'frappe-ui'
 import { PlusIcon } from 'lucide-vue-next'
@@ -179,7 +179,7 @@ const queries = computed(() => {
 				<ListRowItem class="flex-1 space-x-2">
 					<component
 						v-if="query.chart_type"
-						:is="getChartIcon(query.chart_type)"
+						:is="getIcon(query.chart_type)"
 						class="h-4 w-4 text-gray-700"
 					/>
 					<span> {{ query.chart_type }} </span>

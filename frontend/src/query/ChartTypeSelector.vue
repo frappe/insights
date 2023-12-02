@@ -22,7 +22,7 @@ const chartOptions = computed(() => {
 			<Button variant="outline" @click="togglePopover">
 				<div class="flex items-center gap-2">
 					<component
-						:is="widgets.getChartIcon(currentChartType)"
+						:is="widgets.getIcon(currentChartType)"
 						class="h-4 w-4 text-gray-600"
 					/>
 					<span class="truncate">{{ currentChartType }}</span>
@@ -32,7 +32,7 @@ const chartOptions = computed(() => {
 		</template>
 
 		<template #item-prefix="{ option }">
-			<component :is="widgets.getChartIcon(option.value)" class="h-4 w-4 text-gray-600" />
+			<component :is="widgets.getIcon(option.value)" class="h-4 w-4 text-gray-600" />
 		</template>
 		<template #item-suffix="{ selected }">
 			<CheckIcon v-if="selected" class="h-4 w-4 text-gray-600" />
