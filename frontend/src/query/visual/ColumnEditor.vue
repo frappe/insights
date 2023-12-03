@@ -96,7 +96,13 @@ const isValidColumn = computed(() => {
 		</div>
 		<div class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Label</span>
-			<Input type="text" class="w-full" v-model="column.label" placeholder="Label" />
+			<Input
+				type="text"
+				class="w-full"
+				v-model="column.label"
+				placeholder="Label"
+				@update:modelValue="(val) => (column.alias = val)"
+			/>
 		</div>
 		<div class="flex justify-between">
 			<Button variant="outline" @click="emit('discard')"> Discard </Button>
