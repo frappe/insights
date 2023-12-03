@@ -28,13 +28,14 @@ if (column.expression?.ast) {
 }
 
 function onColumnChange(option) {
-	column.table = option.table
-	column.table_label = option.table_label
-	column.column = option.column
-	column.label = option.label
-	column.alias = option.label
-	column.type = option.type
-	column.value = option.value
+	const selectedOption = { ...option }
+	column.table = selectedOption.table
+	column.table_label = selectedOption.table_label
+	column.column = selectedOption.column
+	column.label = selectedOption.label
+	column.alias = selectedOption.label
+	column.type = selectedOption.type
+	column.value = selectedOption.value
 }
 
 const isValidColumn = computed(() => {
@@ -92,6 +93,10 @@ const isValidColumn = computed(() => {
 				:options="GRANULARITIES"
 				@update:modelValue="(op) => (column.granularity = op.value)"
 			/>
+		</div>
+		<div class="space-y-1">
+			<span class="text-sm font-medium text-gray-700">Label</span>
+			<Input type="text" class="w-full" v-model="column.label" placeholder="Label" />
 		</div>
 		<div class="flex justify-between">
 			<Button variant="outline" @click="emit('discard')"> Discard </Button>
