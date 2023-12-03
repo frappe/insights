@@ -6,7 +6,7 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 		return {}
 	}
 
-	const colors = options.colors || getColors()
+	const colors = options.colors.length ? options.colors : getColors()
 
 	return {
 		animation: false,
