@@ -115,14 +115,14 @@ const COLUMN_TYPES = [
 			</div>
 		</div>
 
-		<Input
+		<FormControl
 			type="text"
 			label="Label"
 			class="w-full"
 			v-model="column.label"
 			placeholder="Label"
 		/>
-		<Input
+		<FormControl
 			label="Type"
 			type="select"
 			class="w-full"

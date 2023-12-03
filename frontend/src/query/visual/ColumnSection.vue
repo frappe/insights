@@ -1,6 +1,6 @@
 <script setup>
 import { Combine, GripVertical } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, nextTick, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import ColumnEditor from './ColumnEditor.vue'
 import ColumnListItem from './ColumnListItem.vue'
@@ -43,7 +43,9 @@ function onAddColumnExpression() {
 			},
 		},
 	])
-	activeColumnIdx.value = columns.value.length - 1
+	nextTick(() => {
+		activeColumnIdx.value = columns.value.length - 1
+	})
 }
 
 function onColumnSort(e) {
@@ -109,6 +111,7 @@ function onColumnSort(e) {
 							</template>
 							<template #body>
 								<div
+									v-if="activeColumnIdx === idx"
 									class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
 								>
 									<ColumnEditor

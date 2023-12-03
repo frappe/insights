@@ -84,6 +84,16 @@ const isValidColumn = computed(() => {
 					@update:query="assistedQuery.fetchColumnOptions"
 				/>
 			</div>
+			<div class="space-y-1">
+				<span class="text-sm font-medium text-gray-700">Label</span>
+				<FormControl
+					type="text"
+					class="w-full"
+					v-model="column.label"
+					placeholder="Label"
+					@update:modelValue="(val) => (column.alias = val)"
+				/>
+			</div>
 		</template>
 		<div v-if="FIELDTYPES.DATE.includes(column.type)" class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Date Format</span>
@@ -92,16 +102,6 @@ const isValidColumn = computed(() => {
 				placeholder="Date Format"
 				:options="GRANULARITIES"
 				@update:modelValue="(op) => (column.granularity = op.value)"
-			/>
-		</div>
-		<div class="space-y-1">
-			<span class="text-sm font-medium text-gray-700">Label</span>
-			<Input
-				type="text"
-				class="w-full"
-				v-model="column.label"
-				placeholder="Label"
-				@update:modelValue="(val) => (column.alias = val)"
 			/>
 		</div>
 		<div class="flex justify-between">
