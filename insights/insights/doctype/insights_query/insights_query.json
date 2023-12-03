@@ -257,13 +257,13 @@
    "fieldname": "chart",
    "fieldtype": "Link",
    "label": "Chart",
-   "options": "Insights Chart",
-   "read_only": 1
+   "no_copy": 1,
+   "options": "Insights Chart"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-25 13:53:47.641923",
+ "modified": "2023-12-02 15:39:33.048337",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",
