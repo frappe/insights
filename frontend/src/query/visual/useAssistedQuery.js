@@ -40,6 +40,7 @@ export default function useAssistedQuery(query) {
 		addColumns,
 		removeColumnAt,
 		updateColumnAt,
+		moveColumn,
 		addFilter,
 		removeFilterAt,
 		updateFilterAt,
@@ -148,6 +149,10 @@ export default function useAssistedQuery(query) {
 	function updateColumnAt(updatedColumnIdx, newColumn) {
 		state.columns.splice(updatedColumnIdx, 1, newColumn)
 		state.joinAssistEnabled && inferJoins()
+	}
+
+	function moveColumn(oldIndex, newIndex) {
+		state.columns.splice(newIndex, 0, state.columns.splice(oldIndex, 1)[0])
 	}
 
 	function addFilter() {

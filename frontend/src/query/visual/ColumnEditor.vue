@@ -94,9 +94,7 @@ const isValidColumn = computed(() => {
 			/>
 		</div>
 		<div class="flex justify-between">
-			<Button variant="outline" @click="emit(isValidColumn ? 'discard' : 'remove')">
-				Discard
-			</Button>
+			<Button variant="outline" @click="emit('discard')"> Discard </Button>
 			<div class="flex gap-2">
 				<Button variant="outline" theme="red" @click="emit('remove')">Remove</Button>
 				<Button variant="solid" :disabled="!isValidColumn" @click="emit('save', column)">

@@ -1,8 +1,9 @@
 <script setup>
-import UsePopover from '@/components/UsePopover.vue'
-import { Combine, X } from 'lucide-vue-next'
+import { Combine, GripVertical } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import Draggable from 'vuedraggable'
 import ColumnEditor from './ColumnEditor.vue'
+import ColumnListItem from './ColumnListItem.vue'
 import { NEW_COLUMN } from './constants'
 
 const query = inject('query')
@@ -44,26 +45,11 @@ function onAddColumnExpression() {
 	])
 	activeColumnIdx.value = columns.value.length - 1
 }
-function isValidColumn(column) {
-	const isExpression = column.expression?.raw
-	return column.label && column.type && (isExpression || (column.table && column.column))
-}
 
-const aggregationToAbbr = {
-	min: 'MIN',
-	max: 'MAX',
-	sum: 'SUM',
-	avg: 'AVG',
-	count: 'CNT',
-	distinct: 'UDST',
-	distinct_count: 'DCNT',
-	'group by': 'UNQ',
-	'cumulative count': 'CCNT',
-	'cumulative sum': 'CSUM',
-}
-function getAbbreviation(column) {
-	if (column.expression?.raw) return 'EXPR'
-	return aggregationToAbbr[column.aggregation] || 'UNQ'
+function onColumnSort(e) {
+	if (e.oldIndex != e.newIndex) {
+		assistedQuery.moveColumn(e.oldIndex, e.newIndex)
+	}
 }
 </script>
 
@@ -96,57 +82,43 @@ function getAbbreviation(column) {
 				</template>
 			</Autocomplete>
 		</div>
-		<div class="space-y-2">
-			<div
-				ref="columnRefs"
-				v-for="(column, idx) in columns"
-				:key="idx"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
-				:class="
-					activeColumnIdx === idx
-						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
-						: ''
-				"
-				@click="activeColumnIdx = columns.indexOf(column)"
-			>
-				<div class="flex w-full items-center overflow-hidden">
-					<div
-						class="flex w-full items-center space-x-1.5 truncate"
-						v-if="isValidColumn(column)"
-					>
-						<div
-							class="rounded border border-violet-400 py-0.5 px-1 font-mono text-xs tracking-wider text-violet-700"
-						>
-							{{ getAbbreviation(column) }}
-						</div>
-						<div>{{ column.label }}</div>
+		<Draggable
+			class="w-full"
+			:model-value="columns"
+			group="columns"
+			item-key="label"
+			handle=".handle"
+			@sort="onColumnSort"
+		>
+			<template #item="{ element: column, index: idx }">
+				<div class="mb-2 flex items-center gap-1">
+					<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
+					<div class="flex-1">
+						<Popover :show="activeColumnIdx === idx" placement="right-start">
+							<template #target>
+								<ColumnListItem
+									:column="column"
+									:isActive="activeColumnIdx === idx"
+									@edit-column="activeColumnIdx = idx"
+									@remove-column="assistedQuery.removeColumnAt(idx)"
+								/>
+							</template>
+							<template #body>
+								<div
+									class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
+								>
+									<ColumnEditor
+										:column="column"
+										@discard="activeColumnIdx = null"
+										@remove="onRemoveColumn"
+										@save="onSaveColumn"
+									/>
+								</div>
+							</template>
+						</Popover>
 					</div>
-					<div v-else class="text-gray-600">Select a column</div>
 				</div>
-				<div class="flex items-center space-x-2">
-					<X
-						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-						@click.prevent.stop="assistedQuery.removeColumnAt(idx)"
-					/>
-				</div>
-			</div>
-		</div>
+			</template>
+		</Draggable>
 	</div>
-
-	<UsePopover
-		v-if="columnRefs?.[activeColumnIdx]"
-		:show="activeColumnIdx !== null"
-		@update:show="activeColumnIdx = null"
-		:target-element="columnRefs[activeColumnIdx]"
-		placement="right-start"
-	>
-		<div class="w-[20rem] rounded bg-white text-base shadow-2xl">
-			<ColumnEditor
-				:column="columns[activeColumnIdx]"
-				@discard="activeColumnIdx = null"
-				@remove="onRemoveColumn"
-				@save="onSaveColumn"
-			/>
-		</div>
-	</UsePopover>
 </template>
