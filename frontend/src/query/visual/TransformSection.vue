@@ -90,6 +90,7 @@ function isValidTransform(transform) {
 		:show="activeTransformIdx !== null"
 		@update:show="activeTransformIdx = null"
 		:target-element="transformRefs[activeTransformIdx]"
+		placement="right-start"
 	>
 		<div class="w-[20rem] rounded bg-white text-base shadow-2xl">
 			<TransformEditor

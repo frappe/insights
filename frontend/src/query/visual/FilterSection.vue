@@ -94,6 +94,7 @@ function isValidFilter(filter) {
 		:show="activeFilterIdx !== null"
 		@update:show="activeFilterIdx = null"
 		:target-element="filterRefs[activeFilterIdx]"
+		placement="right-start"
 	>
 		<div class="w-[20rem] rounded bg-white text-base shadow-2xl">
 			<FilterEditor

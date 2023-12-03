@@ -138,6 +138,7 @@ function getAbbreviation(column) {
 		:show="activeColumnIdx !== null"
 		@update:show="activeColumnIdx = null"
 		:target-element="columnRefs[activeColumnIdx]"
+		placement="right-start"
 	>
 		<div class="w-[20rem] rounded bg-white text-base shadow-2xl">
 			<ColumnEditor

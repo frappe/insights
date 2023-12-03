@@ -120,6 +120,7 @@ function onTableLinkClick(table) {
 		:show="activeJoinIdx !== null"
 		@update:show="activeJoinIdx = null"
 		:target-element="joinRefs[activeJoinIdx]"
+		placement="right-start"
 	>
 		<div class="min-w-[24rem] rounded bg-white text-base shadow-2xl">
 			<TableJoinEditor
