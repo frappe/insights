@@ -31,7 +31,7 @@ function getAbbreviation(column) {
 	<div
 		class="group flex h-8 flex-1 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 		:class="isActive ? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400' : ''"
-		@click="$emit('edit-column', column)"
+		@click.prevent.stop="$emit('edit-column', column)"
 	>
 		<div class="flex w-full items-center overflow-hidden">
 			<div class="flex w-full items-center space-x-1.5 truncate" v-if="isValidColumn(column)">
