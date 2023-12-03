@@ -143,7 +143,6 @@ export default function useAssistedQuery(query) {
 
 	function removeColumnAt(removedColumnIdx) {
 		state.columns.splice(removedColumnIdx, 1)
-		state.joinAssistEnabled && inferJoins()
 	}
 
 	function updateColumnAt(updatedColumnIdx, newColumn) {
@@ -156,7 +155,6 @@ export default function useAssistedQuery(query) {
 	}
 	function removeFilterAt(removedFilterIdx) {
 		state.filters.splice(removedFilterIdx, 1)
-		state.joinAssistEnabled && inferJoins()
 	}
 	function updateFilterAt(updatedFilterIdx, newFilter) {
 		state.filters.splice(updatedFilterIdx, 1, newFilter)
