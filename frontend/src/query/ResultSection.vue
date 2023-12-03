@@ -40,7 +40,6 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 								:key="index"
 								scope="col"
 								class="max-w-[15rem] border-b border-r bg-gray-100 px-3 py-2 font-normal"
-								:class="isNumberColumn(index) ? 'text-right' : 'text-left'"
 							>
 								<div class="flex justify-between gap-5 overflow-hidden">
 									<span class="flex-1 truncate">{{ column.label }}</span>
