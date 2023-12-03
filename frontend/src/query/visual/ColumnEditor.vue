@@ -32,7 +32,7 @@ function onColumnChange(option) {
 	column.table_label = option.table_label
 	column.column = option.column
 	column.label = option.label
-	column.alias = option.alias || option.label
+	column.alias = option.label
 	column.type = option.type
 	column.value = option.value
 }
