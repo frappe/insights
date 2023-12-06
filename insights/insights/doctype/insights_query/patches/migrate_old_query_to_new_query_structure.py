@@ -98,7 +98,7 @@ def get_filters(old_query):
                     }
                 }
             )
-        if is_simple_filter(condition):
+        elif is_simple_filter(condition):
             simple_filter = convert_into_simple_filter(condition)
             filters.append(
                 {
