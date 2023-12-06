@@ -87,39 +87,43 @@ export function guessChart(dataset, chart_type) {
 
 	const hasAtLeastOneStringAndNumberColumn =
 		stringColumns.length >= 1 && numberColumns.length >= 1
-	if (hasAtLeastOneStringAndNumberColumn) {
-		const stringColIndex = columns.findIndex((col) => FIELDTYPES.TEXT.includes(col.type))
-		const uniqueValuesCount = new Set(rows.map((row) => row[stringColIndex])).size
-		// if there is only one string column and one number column,
-		// and there are less than 10 unique values, it's a pie chart
-		const hasLessThan10UniqueValues = uniqueValuesCount <= 10
-		const hasOnlyOneStringAndNumberColumn =
-			stringColumns.length === 1 && numberColumns.length === 1
-		const autoGuessPieChart =
-			chart_type === 'Auto' && hasOnlyOneStringAndNumberColumn && hasLessThan10UniqueValues
-		const shouldGuessPieChart = chart_type === 'Pie'
-		if (autoGuessPieChart || shouldGuessPieChart) {
-			return {
-				type: 'Pie',
-				options: {
-					xAxis: stringColumns[0].label,
-					yAxis: numberColumns[0].label,
-				},
-			}
+	const stringColIndex = columns.findIndex((col) => FIELDTYPES.TEXT.includes(col.type))
+	const uniqueValuesCount = new Set(rows.map((row) => row[stringColIndex])).size
+	// if there is only one string column and one number column,
+	// and there are less than 10 unique values, it's a pie chart
+	const hasLessThan10UniqueValues = uniqueValuesCount <= 10
+	const hasOnlyOneStringAndNumberColumn = stringColumns.length === 1 && numberColumns.length === 1
+	const autoGuessPieChart =
+		chart_type === 'Auto' && hasOnlyOneStringAndNumberColumn && hasLessThan10UniqueValues
+	const shouldGuessPieChart = chart_type === 'Pie'
+	if (autoGuessPieChart || shouldGuessPieChart) {
+		return {
+			type: 'Pie',
+			options: {
+				xAxis: stringColumns[0]?.label,
+				yAxis: numberColumns[0]?.label,
+			},
 		}
+	}
 
-		// if there is at least one string column and one number column, it's a bar chart
-		const autoGuessBarChart = chart_type === 'Auto' && hasAtLeastOneStringAndNumberColumn
-		const shouldGuessBarChart = chart_type === 'Bar'
-		if (autoGuessBarChart || shouldGuessBarChart) {
-			return {
-				type: 'Bar',
-				options: {
-					xAxis: stringColumns[0].label,
-					yAxis: numberColumns.map((col) => col.label),
-					rotateLabels: uniqueValuesCount > 10 ? '90' : '0',
-				},
-			}
+	// if there is at least one string column and one number column, it's a bar chart
+	const hasAtLeastOneDateOrStringColumn = dateColumns.length >= 1 || stringColumns.length >= 1
+	const autoGuessBarChart = chart_type === 'Auto' && hasAtLeastOneDateOrStringColumn
+	const shouldGuessBarChart = chart_type === 'Bar'
+	if (autoGuessBarChart || shouldGuessBarChart) {
+		const xAxis = stringColumns.length
+			? stringColumns[0].label
+			: dateColumns.length
+			? dateColumns[0].label
+			: ''
+		const uniqueXValuesCount = new Set(rows.map((row) => row[xAxis])).size
+		return {
+			type: 'Bar',
+			options: {
+				xAxis: xAxis,
+				yAxis: numberColumns.map((col) => col.label),
+				rotateLabels: uniqueXValuesCount > 10 ? '90' : '0',
+			},
 		}
 	}
 

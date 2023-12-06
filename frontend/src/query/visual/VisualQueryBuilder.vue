@@ -76,7 +76,7 @@ onMounted(() => {
 		<div
 			class="relative flex w-[23rem] flex-shrink-0 flex-col overflow-y-scroll border-r bg-white p-4 pt-0 pl-1"
 		>
-			<div class="sticky top-0 w-full flex-shrink-0 bg-white py-4">
+			<div class="sticky top-0 z-10 w-full flex-shrink-0 bg-white py-4">
 				<Tabs v-model="activeTab" class="w-full" :tabs="tabs" />
 			</div>
 			<div class="space-y-4">

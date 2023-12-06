@@ -34,26 +34,38 @@ export default async function useChart(chart_name) {
 		{ deep: true, debounce: 1000 }
 	)
 	async function _updateDoc(newDoc) {
-		if (newDoc.chart_type == 'Auto') newDoc.options = { title: newDoc.title }
+		newDoc.options.query = query.doc.name
+		if (newDoc.chart_type == 'Auto') {
+			newDoc.options = { title: newDoc.title }
+		}
 
 		const ogDoc = resource.originalDoc
+		const chartTypeChanged = newDoc.chart_type != ogDoc.chart_type
 		if (
+			!chartTypeChanged &&
 			newDoc.title == ogDoc.title &&
-			newDoc.chart_type == ogDoc.chart_type &&
+			newDoc.options.query == ogDoc.options.query &&
 			areDeeplyEqual(newDoc.options, ogDoc.options)
 		)
 			return
+
+		if (chartTypeChanged && newDoc.chart_type != 'Auto') {
+			const guessedChart = getGuessedChart(newDoc.chart_type)
+			newDoc.options = { ...guessedChart.options, ...newDoc.options }
+		}
 
 		_save(newDoc)
 	}
 
 	function _save(chart) {
 		return run(() =>
-			resource.setValue.submit({
-				title: chart.title,
-				chart_type: chart.chart_type,
-				options: chart.options,
-			})
+			resource.setValue
+				.submit({
+					title: chart.title,
+					chart_type: chart.chart_type,
+					options: chart.options,
+				})
+				.then(() => (chart.doc = resource.doc))
 		)
 	}
 
