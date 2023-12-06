@@ -90,13 +90,13 @@ const queryBuilderTypes = ref([
 	},
 	{
 		label: 'SQL',
-		description: 'Create a query using SQL',
+		description: 'Create a query by writing native query',
 		icon: 'code',
 		onClick: () => openQueryEditor('sql'),
 	},
 	{
 		label: 'Script',
-		description: 'Create a query using a script',
+		description: 'Create a query by writing a python script',
 		icon: 'code',
 		tag: 'beta',
 		onClick: () => openQueryEditor('script'),
