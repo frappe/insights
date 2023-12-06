@@ -2,6 +2,7 @@
 import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import useDashboards from '@/dashboard/useDashboards'
 import { computed, inject, ref, watch } from 'vue'
+import { downloadImage } from '@/utils'
 
 const query = inject('query')
 
@@ -28,11 +29,18 @@ const addChartToDashboard = async () => {
 }
 
 watch(showDashboardDialog, (val) => val && dashboards.reload(), { immediate: true })
+
+const chartRef = inject('chartRef')
+function downloadChartImage() {
+	const title = query.chart.doc.options.title || query.doc.title
+	downloadImage(chartRef.value.$el, `${title}.png`)
+}
 </script>
 
 <template>
 	<div class="flex gap-2">
 		<Button variant="outline" @click="showDashboardDialog = true"> Add to Dashboard </Button>
+		<Button variant="outline" @click="downloadChartImage"> Download </Button>
 		<Button variant="outline" @click="showShareDialog = true"> Share </Button>
 	</div>
 

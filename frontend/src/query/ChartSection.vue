@@ -1,11 +1,13 @@
 <script setup>
 import widgets from '@/widgets/widgets'
-import { computed, inject } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import ChartActionButtons from './ChartActionButtons.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ChartTypeSelector from './ChartTypeSelector.vue'
 
 const query = inject('query')
+const chartRef = ref(null)
+provide('chartRef', chartRef)
 
 const showChart = computed(() => {
 	return (
@@ -55,7 +57,7 @@ const chart = computed(() => {
 			<div class="flex w-full flex-1 overflow-hidden rounded border">
 				<component
 					v-if="chart.type"
-					ref="widget"
+					ref="chartRef"
 					:is="chart.component"
 					:options="chart.options"
 					:data="chart.data"
