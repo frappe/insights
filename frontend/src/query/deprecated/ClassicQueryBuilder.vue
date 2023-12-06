@@ -5,7 +5,7 @@
 			<ColumnPanel />
 			<FilterPanel />
 		</div>
-		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden rounded border py-4">
+		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden rounded py-4">
 			<ResultSection>
 				<template #footer> <LimitsAndOrder /> </template>
 			</ResultSection>
