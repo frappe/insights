@@ -41,9 +41,9 @@ const chart = computed(() => {
 </script>
 
 <template>
-	<div v-if="query.chart.doc?.name" class="flex flex-1 flex-col gap-4 overflow-hidden">
+	<div class="flex flex-1 flex-col gap-4 overflow-hidden">
 		<div
-			v-if="!showChart"
+			v-if="query.chart.doc?.name && !showChart"
 			class="flex flex-1 flex-col items-center justify-center rounded border"
 		>
 			<ChartSectionEmptySvg></ChartSectionEmptySvg>
