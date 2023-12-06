@@ -51,8 +51,8 @@ const exampleCode = `def fetch_data_from_url():
 				log("An error occurred:", str(e))
 				return None
 
-# Call the function to execute the script and get the data as a Pandas DataFrame
-# set it to results
+# Call the function to execute the script and
+# then convert the data into a Pandas DataFrame or a List of lists with first row as column names
 results = fetch_data_from_url()`
 </script>
 

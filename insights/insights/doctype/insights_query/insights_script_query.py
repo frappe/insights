@@ -82,7 +82,9 @@ class InsightsScriptQueryController:
 
     def validate_and_sanitize_results(self, results):
         if not results:
-            notify("The script should declare a variable named 'results'.")
+            notify(
+                "The script should declare a variable named 'results' that contains column header and row data."
+            )
             return []
 
         if isinstance(results, pd.DataFrame):
@@ -97,10 +99,6 @@ class InsightsScriptQueryController:
         if all(isinstance(col, str) for col in results[0]):
             new_columns = [ResultColumn.from_args(col) for col in results[0]]
             return [new_columns] + results[1:]
-
-        if not all(isinstance(col, dict) and "label" in col for col in results[0]):
-            notify("All columns should be a dictionary with a 'label' key.")
-            return []
 
         return results
 
