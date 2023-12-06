@@ -49,8 +49,8 @@ function makeQuery(name) {
 		setLoading(true)
 		return resource.get
 			.fetch()
-			.then(() => useChart(state.doc.chart))
-			.then((chart) => (state.chart = chart))
+			.then(() => state.doc.chart && useChart(state.doc.chart))
+			.then((chart) => (state.chart = chart || {}))
 			.finally(() => setLoading(false))
 	}
 
