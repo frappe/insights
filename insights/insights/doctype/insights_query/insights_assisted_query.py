@@ -121,6 +121,7 @@ class InsightsAssistedQueryController:
         return tables + join_tables
 
     def before_fetch(self):
+        update_sql(self.doc)
         self.validate_if_all_column_tables_are_selected()
         if self.doc.data_source != "Query Store":
             return

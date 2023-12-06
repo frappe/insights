@@ -14,7 +14,6 @@ from insights.insights.doctype.insights_query.insights_assisted_query import (
 from insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_query_structure import (
     convert_classic_to_assisted,
 )
-from insights.utils import InsightsChart
 
 
 class InsightsQueryClient:
