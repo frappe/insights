@@ -70,6 +70,7 @@ function changeDataSource(sourceName) {
 				:options="dataSourceOptions"
 			/>
 			<Button
+				v-if="!query.doc.is_native_query"
 				class="mr-2"
 				variant="outline"
 				icon="play"
