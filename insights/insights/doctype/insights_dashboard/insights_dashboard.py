@@ -11,7 +11,7 @@ from frappe.model.document import Document
 from insights import notify
 from insights.api.permissions import is_private
 from insights.api.telemetry import track
-from insights.cache_utils import get_or_set_cache, make_digest
+from insights.cache_utils import make_digest
 from insights.insights.doctype.insights_query.utils import QUERY_RESULT_CACHE_PREFIX
 
 from .utils import guess_layout_for_chart

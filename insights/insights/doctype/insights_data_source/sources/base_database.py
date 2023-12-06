@@ -2,8 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -37,6 +37,12 @@ class BaseDatabase:
             res = connection.execute(text("SELECT 1"))
             return res.fetchone()
 
+    @retry(
+        retry=retry_if_exception_type((DatabaseConnectionError,)),
+        stop=stop_after_attempt(5),
+        wait=wait_fixed(1),
+        reraise=True,
+    )
     def connect(self):
         try:
             return self.engine.connect()
