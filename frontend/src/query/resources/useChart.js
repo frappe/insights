@@ -1,7 +1,7 @@
 import { areDeeplyEqual, createTaskRunner, safeJSONParse } from '@/utils'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced } from '@vueuse/core'
-import { createDocumentResource } from 'frappe-ui'
+import { call, createDocumentResource } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import useQuery from './useQuery'
 
