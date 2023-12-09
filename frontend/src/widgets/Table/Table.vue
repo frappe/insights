@@ -1,43 +1,76 @@
 <script setup>
 import { ellipsis, formatNumber } from '@/utils'
-import { Badge } from 'frappe-ui'
-import { computed, h } from 'vue'
+import {
+	FlexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getSortedRowModel,
+	useVueTable,
+} from '@tanstack/vue-table'
+import { Badge, debounce } from 'frappe-ui'
+import { computed, h, ref } from 'vue'
 
 const props = defineProps({
 	data: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const MAX_ROWS = 100
-const rows = computed(() => {
-	if (!props.data?.length || !props.options.columns?.length) return []
-	const resultRows = props.data.map((row) => {
-		return props.options.columns.map((column) => row[column])
+const _data = computed(() => props.data)
+const numberColumns = computed(() => {
+	if (!props.options.columns?.length || !props.data?.length) return []
+	return props.options.columns.filter((column) => props.data.every((row) => !isNaN(row[column])))
+})
+const tanstackColumns = computed(() => {
+	if (!props.options.columns?.length) return []
+	return props.options.columns.map((column) => {
+		return {
+			id: column,
+			header: column,
+			accessorKey: column,
+			cell: (props) => getFormattedCell(props.getValue()),
+			footer: (props) => (numberColumns.value.includes(column) ? total(column) : ''),
+		}
 	})
-	if (resultRows.length > MAX_ROWS) {
-		return resultRows.slice(0, MAX_ROWS)
-	}
-	return resultRows
 })
 
-function guessColumnValueType(column) {
-	const index = props.options.columns.indexOf(column)
-	const values = rows.value.map((row) => row[index])
-	const isNumber = values.every((value) => !isNaN(value))
-	if (isNumber) {
-		return 'number'
-	}
-	return 'string'
-}
+const columnFilters = ref([])
+const sorting = ref([])
+const table = useVueTable({
+	get data() {
+		return _data.value
+	},
+	get columns() {
+		return tanstackColumns.value
+	},
+	state: {
+		get sorting() {
+			return sorting.value
+		},
+		get columnFilters() {
+			return columnFilters.value
+		},
+	},
+	getCoreRowModel: getCoreRowModel(),
+	getFilteredRowModel: getFilteredRowModel(),
+	getSortedRowModel: getSortedRowModel(),
+	onColumnFiltersChange: debounce((updaterOrValue) => {
+		columnFilters.value =
+			typeof updaterOrValue == 'function'
+				? updaterOrValue(columnFilters.value)
+				: updaterOrValue
+	}, 500),
+	onSortingChange: debounce((updaterOrValue) => {
+		sorting.value =
+			typeof updaterOrValue == 'function' ? updaterOrValue(sorting.value) : updaterOrValue
+	}, 500),
+})
 
 function total(column) {
-	const index = props.options.columns.indexOf(column)
-	const values = rows.value.map((row) => parseInt(row[index]))
-	const total = values.reduce((a, b) => a + b, 0)
+	const total = props.data.map((row) => Number(row[column]) || 0).reduce((a, b) => a + b, 0)
 	return formatNumber(Number(total))
 }
 
-function getFormattedCellComponent(cell) {
+function getFormattedCell(cell) {
 	const parsedPills = parsePills(cell)
 	if (parsedPills) {
 		return h(
@@ -46,19 +79,15 @@ function getFormattedCellComponent(cell) {
 		)
 	}
 	const isNumber = typeof cell == 'number'
-	return h('span', isNumber ? formatNumber(cell) : ellipsis(cell, 100))
+	const cellValue = isNumber ? formatNumber(cell) : ellipsis(cell, 100)
+	return h('div', { class: isNumber ? 'text-right tnum' : '' }, cellValue)
 }
 function parsePills(cell) {
 	try {
 		const parsedPills = JSON.parse(cell)
-		if (
-			!Array.isArray(parsedPills) ||
-			!parsedPills.length ||
-			!parsedPills.every((item) => typeof item == 'string')
-		) {
-			return undefined
+		if (Array.isArray(parsedPills) && parsedPills.length) {
+			return parsedPills
 		}
-		return parsedPills
 	} catch (e) {
 		return undefined
 	}
@@ -67,69 +96,123 @@ function parsePills(cell) {
 
 <template>
 	<div
-		v-if="options?.columns?.length || rows?.length"
-		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded px-4 py-2"
+		v-if="props.options?.columns?.length || rows?.length"
+		class="flex h-full w-full flex-col overflow-hidden rounded"
 	>
-		<div v-if="props.options.title" class="text-lg font-medium leading-6 text-gray-800">
+		<div
+			v-if="props.options.title"
+			class="px-4 py-2 text-lg font-medium leading-6 text-gray-800"
+		>
 			{{ props.options.title }}
 		</div>
 		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
 			<div
-				v-if="rows.length == 0"
+				v-if="props.data?.length == 0"
 				class="absolute top-0 flex h-full w-full items-center justify-center text-lg text-gray-600"
 			>
 				<span>No Data</span>
 			</div>
-			<table v-if="props.options.columns">
+			<table v-if="props.options.columns" class="border-separate border-spacing-0">
 				<thead class="sticky top-0">
-					<tr>
+					<tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
 						<td
 							v-if="props.options.index"
-							class="w-10 whitespace-nowrap border-b bg-white py-1.5 text-gray-600"
-							scope="col"
+							class="w-10 border-y border-r bg-white py-2 px-3"
 						>
 							#
 						</td>
 						<td
-							v-for="column in props.options.columns"
-							class="cursor-pointer whitespace-nowrap border-b bg-white py-1.5 pr-4 text-gray-600 hover:text-gray-800"
-							:class="guessColumnValueType(column) == 'number' ? 'text-right' : ''"
-							scope="col"
+							v-for="header in headerGroup.headers"
+							:key="header.id"
+							:colSpan="header.colSpan"
+							class="min-w-[6rem] border-y border-r bg-white"
 						>
-							{{ column }}
+							<div
+								class="cursor-pointer truncate py-2 px-3 text-gray-600"
+								:class="[
+									numberColumns.includes(header.column.id) ? 'text-right' : '',
+									header.column.getCanSort() ? 'hover:text-gray-800' : '',
+								]"
+								@click.prevent="header.column.getToggleSortingHandler()?.($event)"
+							>
+								<FlexRender
+									v-if="!header.isPlaceholder"
+									:render="header.column.columnDef.header"
+									:props="header.getContext()"
+								/>
+								<span class="ml-2 text-[10px] text-gray-400">
+									{{
+										header.column.getIsSorted() == 'desc'
+											? '▼'
+											: header.column.getIsSorted() == 'asc'
+											? '▲'
+											: ''
+									}}
+								</span>
+							</div>
+							<div class="border-t p-1">
+								<FormControl
+									v-if="header.column.getCanFilter()"
+									type="text"
+									:modelValue="header.column.getFilterValue()"
+									@update:modelValue="header.column.setFilterValue($event)"
+								/>
+							</div>
 						</td>
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="(row, index) in rows" class="border-b">
-						<td v-if="props.options.index" class="w-10 whitespace-nowrap bg-white py-2">
+					<tr v-for="(row, index) in table.getRowModel().rows" :key="row.id">
+						<td
+							v-if="props.options.index"
+							class="w-10 border-b border-r bg-white py-2 px-3"
+						>
 							{{ index + 1 }}
 						</td>
 						<td
-							v-for="cell in row"
-							class="whitespace-nowrap bg-white py-2 pr-4"
-							:class="typeof cell == 'number' ? 'text-right' : ''"
+							v-for="cell in row.getVisibleCells()"
+							:key="cell.id"
+							class="min-w-[6rem] truncate border-b border-r bg-white py-2 px-3"
 						>
-							<component :is="getFormattedCellComponent(cell)" />
-						</td>
-					</tr>
-					<tr v-if="props.options.showTotal" class="border-b font-medium">
-						<td
-							v-if="props.options.index"
-							class="w-10 whitespace-nowrap bg-white py-2 pr-4 text-gray-600"
-						>
-							Total
-						</td>
-						<td
-							class="py-2 pr-4"
-							v-for="column in props.options.columns"
-							:class="guessColumnValueType(column) == 'number' ? 'text-right' : ''"
-						>
-							{{ guessColumnValueType(column) == 'number' ? total(column) : '' }}
+							<FlexRender
+								:render="cell.column.columnDef.cell"
+								:props="cell.getContext()"
+							/>
 						</td>
 					</tr>
 				</tbody>
+				<tfoot v-if="props.options.showTotal" class="sticky bottom-0 bg-white">
+					<tr v-for="footerGroup in table.getFooterGroups()" :key="footerGroup.id">
+						<th
+							v-if="props.options.index"
+							class="w-10 border-y border-r bg-white py-2 px-3 font-medium"
+						>
+							Total
+						</th>
+						<th
+							v-for="header in footerGroup.headers"
+							:key="header.id"
+							:colSpan="header.colSpan"
+							class="min-w-[6rem] truncate border-y border-r bg-white py-2 px-3 font-medium"
+							:class="
+								numberColumns.includes(header.column.id) ? 'tnum text-right' : ''
+							"
+						>
+							<FlexRender
+								v-if="!header.isPlaceholder"
+								:render="header.column.columnDef.footer"
+								:props="header.getContext()"
+							/>
+						</th>
+					</tr>
+				</tfoot>
 			</table>
 		</div>
 	</div>
 </template>
+
+<style>
+.tnum {
+	font-feature-settings: 'tnum';
+}
+</style>
