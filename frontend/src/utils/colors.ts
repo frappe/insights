@@ -1,6 +1,6 @@
 export const COLOR_MAP = {
-	pink: '#F683AE',
 	blue: '#318AD8',
+	pink: '#F683AE',
 	green: '#48BB74',
 	red: '#F56B6B',
 	yellow: '#FACF7A',

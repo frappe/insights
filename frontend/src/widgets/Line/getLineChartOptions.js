@@ -1,5 +1,6 @@
 import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
+import { graphic } from 'echarts/core'
 import { inject } from 'vue'
 
 export default function getLineChartOptions(labels, datasets, options) {
@@ -21,9 +22,11 @@ export default function getLineChartOptions(labels, datasets, options) {
 		  }
 		: {}
 
+	const colors = options.colors.length ? options.colors : getColors()
+
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		grid: {
 			top: 30,
 			bottom: 35,
@@ -57,7 +60,16 @@ export default function getLineChartOptions(labels, datasets, options) {
 			smoothMonotone: 'x',
 			showSymbol: dataset.options.showPoints || options.showPoints,
 			markLine: markLine,
-			areaStyle: { opacity: dataset.options.showArea || options.showArea ? 0.1 : 0 },
+			areaStyle:
+				dataset.options.showArea || options.showArea
+					? {
+							color: new graphic.LinearGradient(0, 0, 0, 1, [
+								{ offset: 0, color: colors[index] },
+								{ offset: 1, color: '#fff' },
+							]),
+							opacity: 0.2,
+					  }
+					: undefined,
 		})),
 		legend: {
 			icon: 'circle',
