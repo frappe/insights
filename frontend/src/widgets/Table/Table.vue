@@ -1,5 +1,5 @@
 <script setup>
-import { ellipsis, formatNumber } from '@/utils'
+import { formatNumber } from '@/utils'
 import {
 	FlexRender,
 	getCoreRowModel,
@@ -7,8 +7,11 @@ import {
 	getSortedRowModel,
 	useVueTable,
 } from '@tanstack/vue-table'
-import { Badge, debounce } from 'frappe-ui'
-import { computed, h, ref } from 'vue'
+import { debounce } from 'frappe-ui'
+import { computed, provide, ref } from 'vue'
+import TableColumnFilter from './TableColumnFilter.vue'
+import TableEmptySection from './TableEmptySection.vue'
+import { filterFunction, getFormattedCell } from './utils'
 
 const props = defineProps({
 	data: { type: Object, required: true },
@@ -20,17 +23,36 @@ const numberColumns = computed(() => {
 	if (!props.options.columns?.length || !props.data?.length) return []
 	return props.options.columns.filter((column) => props.data.every((row) => !isNaN(row[column])))
 })
+provide('numberColumns', numberColumns)
+
 const tanstackColumns = computed(() => {
 	if (!props.options.columns?.length) return []
-	return props.options.columns.map((column) => {
+	const indexColumn = {
+		id: 'index',
+		header: '#',
+		accessorKey: 'index',
+		enableColumnFilter: false,
+		cell: (props) => props.row.index + 1,
+		footer: 'Total',
+	}
+	const cols = props.options.columns.map((column) => {
 		return {
 			id: column,
 			header: column,
 			accessorKey: column,
+			filterFn: 'filterFunction',
+			isNumber: numberColumns.value.includes(column),
 			cell: (props) => getFormattedCell(props.getValue()),
-			footer: (props) => (numberColumns.value.includes(column) ? total(column) : ''),
+			footer: (props) => {
+				const isNumberColumn = numberColumns.value.includes(column)
+				if (!isNumberColumn) return ''
+				const filteredRows = props.table.getFilteredRowModel().rows
+				const values = filteredRows.map((row) => row.getValue(column))
+				return formatNumber(values.reduce((acc, curr) => acc + curr, 0))
+			},
 		}
 	})
+	return props.options.index ? [indexColumn, ...cols] : cols
 })
 
 const columnFilters = ref([])
@@ -50,6 +72,7 @@ const table = useVueTable({
 			return columnFilters.value
 		},
 	},
+	filterFns: { filterFunction },
 	getCoreRowModel: getCoreRowModel(),
 	getFilteredRowModel: getFilteredRowModel(),
 	getSortedRowModel: getSortedRowModel(),
@@ -64,39 +87,11 @@ const table = useVueTable({
 			typeof updaterOrValue == 'function' ? updaterOrValue(sorting.value) : updaterOrValue
 	}, 500),
 })
-
-function total(column) {
-	const total = props.data.map((row) => Number(row[column]) || 0).reduce((a, b) => a + b, 0)
-	return formatNumber(Number(total))
-}
-
-function getFormattedCell(cell) {
-	const parsedPills = parsePills(cell)
-	if (parsedPills) {
-		return h(
-			'div',
-			parsedPills.map((item) => h(Badge, { label: item }))
-		)
-	}
-	const isNumber = typeof cell == 'number'
-	const cellValue = isNumber ? formatNumber(cell) : ellipsis(cell, 100)
-	return h('div', { class: isNumber ? 'text-right tnum' : '' }, cellValue)
-}
-function parsePills(cell) {
-	try {
-		const parsedPills = JSON.parse(cell)
-		if (Array.isArray(parsedPills) && parsedPills.length) {
-			return parsedPills
-		}
-	} catch (e) {
-		return undefined
-	}
-}
 </script>
 
 <template>
 	<div
-		v-if="props.options?.columns?.length || rows?.length"
+		v-if="props.options?.columns?.length || props.data?.length"
 		class="flex h-full w-full flex-col overflow-hidden rounded"
 	>
 		<div
@@ -106,21 +101,10 @@ function parsePills(cell) {
 			{{ props.options.title }}
 		</div>
 		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
-			<div
-				v-if="props.data?.length == 0"
-				class="absolute top-0 flex h-full w-full items-center justify-center text-lg text-gray-600"
-			>
-				<span>No Data</span>
-			</div>
-			<table v-if="props.options.columns" class="border-separate border-spacing-0">
+			<TableEmptySection v-if="props.data?.length == 0" />
+			<table v-else-if="props.options.columns" class="border-separate border-spacing-0">
 				<thead class="sticky top-0">
 					<tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-						<td
-							v-if="props.options.index"
-							class="w-10 border-y border-r bg-white py-2 px-3"
-						>
-							#
-						</td>
 						<td
 							v-for="header in headerGroup.headers"
 							:key="header.id"
@@ -150,10 +134,9 @@ function parsePills(cell) {
 									}}
 								</span>
 							</div>
-							<div class="border-t p-1">
-								<FormControl
-									v-if="header.column.getCanFilter()"
-									type="text"
+							<div class="border-t p-1" v-if="header.column.getCanFilter()">
+								<TableColumnFilter
+									:isNumber="numberColumns.includes(header.column.id)"
 									:modelValue="header.column.getFilterValue()"
 									@update:modelValue="header.column.setFilterValue($event)"
 								/>
@@ -163,12 +146,6 @@ function parsePills(cell) {
 				</thead>
 				<tbody>
 					<tr v-for="(row, index) in table.getRowModel().rows" :key="row.id">
-						<td
-							v-if="props.options.index"
-							class="w-10 border-b border-r bg-white py-2 px-3"
-						>
-							{{ index + 1 }}
-						</td>
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
@@ -184,19 +161,13 @@ function parsePills(cell) {
 				<tfoot v-if="props.options.showTotal" class="sticky bottom-0 bg-white">
 					<tr v-for="footerGroup in table.getFooterGroups()" :key="footerGroup.id">
 						<th
-							v-if="props.options.index"
-							class="w-10 border-y border-r bg-white py-2 px-3 font-medium"
-						>
-							Total
-						</th>
-						<th
 							v-for="header in footerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="min-w-[6rem] truncate border-y border-r bg-white py-2 px-3 font-medium"
-							:class="
-								numberColumns.includes(header.column.id) ? 'tnum text-right' : ''
-							"
+							class="truncate border-y border-r bg-white py-2 px-3 text-left font-medium"
+							:class="[
+								numberColumns.includes(header.column.id) ? 'tnum text-right' : '',
+							]"
 						>
 							<FlexRender
 								v-if="!header.isPlaceholder"
