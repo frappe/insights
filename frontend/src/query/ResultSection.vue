@@ -75,7 +75,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 							<div class="flex w-full">
 								<span
 									class="w-full truncate"
-									:class="isNumberColumn(j) ? 'text-right' : ''"
+									:class="isNumberColumn(j) ? 'tnum text-right' : ''"
 								>
 									{{
 										typeof cell == 'number'

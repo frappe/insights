@@ -184,9 +184,3 @@ const table = useVueTable({
 		</div>
 	</div>
 </template>
-
-<style>
-.tnum {
-	font-feature-settings: 'tnum';
-}
-</style>

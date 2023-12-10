@@ -18,6 +18,9 @@
 	@apply !font-mono;
 }
 
+.tnum {
+	font-feature-settings: 'tnum';
+}
 /* Code Control */
 .cm-editor {
 	user-select: text;
