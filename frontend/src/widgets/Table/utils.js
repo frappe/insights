@@ -1,4 +1,5 @@
 import { ellipsis, formatNumber } from '@/utils'
+import { Badge } from 'frappe-ui'
 import { h } from 'vue'
 
 export function filterFunction(row, columnId, filterValue) {
