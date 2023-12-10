@@ -171,13 +171,13 @@ function makeQuery(name) {
 	}
 
 	// native query
-	state.updateSQL = debounce((sql) => {
-		if (sql === state.doc.sql) return
+	state.executeSQL = debounce((sql) => {
+		if (!sql || sql === state.doc.sql) return state.execute()
 		setLoading(true)
 		return run(() =>
 			resource.setValue
 				.submit({ sql })
-				.then(() => autoExecuteEnabled && state.execute())
+				.then(() => state.execute())
 				.finally(() => setLoading(false))
 		)
 	}, 500)
@@ -186,23 +186,13 @@ function makeQuery(name) {
 	state.updateScript = debounce((script) => {
 		if (script === state.doc.script) return
 		setLoading(true)
-		return run(() =>
-			resource.setValue
-				.submit({ script })
-				.then(() => autoExecuteEnabled && state.execute())
-				.finally(() => setLoading(false))
-		)
+		return run(() => resource.setValue.submit({ script }).finally(() => setLoading(false)))
 	}, 500)
 
 	state.updateScriptVariables = debounce((script_variables) => {
 		if (variables === state.doc.variables) return
 		setLoading(true)
-		return run(() =>
-			resource.setValue
-				.submit({ variables })
-				.then(() => autoExecuteEnabled && state.execute())
-				.finally(() => setLoading(false))
-		)
+		return run(() => resource.setValue.submit({ variables }).finally(() => setLoading(false)))
 	}, 500)
 
 	return state

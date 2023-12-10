@@ -43,7 +43,7 @@ onMounted(() => {
 	<div class="relative flex h-full w-full flex-row-reverse overflow-hidden border-t">
 		<div
 			v-if="query.loading"
-			class="absolute inset-0 z-10 flex items-center justify-center bg-gray-100/50"
+			class="absolute inset-0 z-[100] flex items-center justify-center bg-gray-100/50"
 		>
 			<LoadingIndicator class="w-10 text-gray-600" />
 		</div>

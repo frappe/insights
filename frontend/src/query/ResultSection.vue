@@ -24,79 +24,74 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 				<span class="text-gray-500"> No results found </span>
 			</div>
 		</div>
-		<template v-if="query.formattedResults.length">
-			<div
-				class="flex-1 flex-shrink-0 rounded border"
-				:class="needsExecution ? 'overflow-hidden' : 'overflow-scroll'"
-			>
-				<table class="border-separate border-spacing-0">
-					<thead class="sticky top-0">
-						<tr>
-							<th class="border-b bg-gray-100 px-3 py-2 font-normal" scope="col">
-								#
-							</th>
-							<th
-								v-for="(column, index) in resultColumns"
-								:key="index"
-								scope="col"
-								class="max-w-[15rem] border-b border-r bg-gray-100 px-3 py-2 text-left font-normal"
-							>
-								<div class="flex justify-between gap-5 overflow-hidden">
-									<span class="flex-1 truncate">{{ column.label }}</span>
-									<div v-if="$slots.columnActions" class="flex-shrink-0">
-										<slot name="columnActions" v-bind="{ column }"></slot>
-									</div>
-								</div>
-							</th>
-							<th class="border-b bg-gray-100 px-3 py-2" scope="col" width="99%"></th>
-						</tr>
-					</thead>
-					<tbody>
-						<div
-							v-if="needsExecution || query.executing"
-							class="absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+		<div
+			v-if="needsExecution || query.executing"
+			class="absolute top-8 z-[100] flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+		>
+			<div class="flex flex-1 flex-col items-center justify-center gap-2">
+				<Button
+					class="shadow-2xl"
+					variant="solid"
+					@click="query.execute()"
+					:loading="query.executing"
+				>
+					Execute Query
+				</Button>
+			</div>
+		</div>
+		<div
+			v-if="query.formattedResults.length"
+			class="flex-1 flex-shrink-0 rounded border"
+			:class="needsExecution ? 'overflow-hidden' : 'overflow-scroll'"
+		>
+			<table class="border-separate border-spacing-0">
+				<thead class="sticky top-0">
+					<tr>
+						<th class="border-b bg-gray-100 px-3 py-2 font-normal" scope="col">#</th>
+						<th
+							v-for="(column, index) in resultColumns"
+							:key="index"
+							scope="col"
+							class="max-w-[15rem] border-b border-r bg-gray-100 px-3 py-2 text-left font-normal"
 						>
-							<!-- this needs to be here instead of above table because when sorting by a column -->
-							<!-- we had to execute after every sort -->
-							<div class="flex flex-1 flex-col items-center justify-center gap-2">
-								<Button
-									class="shadow-2xl"
-									variant="solid"
-									@click="query.execute()"
-									:loading="query.executing"
-								>
-									Execute Query
-								</Button>
-							</div>
-						</div>
-						<tr v-for="(row, i) in rows" :key="i">
-							<td class="border-b border-r px-3 py-2 text-gray-700">{{ i + 1 }}</td>
-							<td
-								v-for="(cell, j) in row"
-								:key="j"
-								class="max-w-[15rem] border-b border-r px-3 py-2 text-gray-700"
-							>
-								<div class="flex w-full">
-									<span
-										class="w-full truncate"
-										:class="isNumberColumn(j) ? 'text-right' : ''"
-									>
-										{{
-											typeof cell == 'number'
-												? formatNumber(cell)
-												: ellipsis(cell, 100)
-										}}
-									</span>
+							<div class="flex justify-between gap-5 overflow-hidden">
+								<span class="flex-1 truncate">{{ column.label }}</span>
+								<div v-if="$slots.columnActions" class="flex-shrink-0">
+									<slot name="columnActions" v-bind="{ column }"></slot>
 								</div>
-							</td>
-							<td class="border-b px-3 py-2" width="99%"></td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-			<div class="mt-2">
-				<slot name="footer"></slot>
-			</div>
-		</template>
+							</div>
+						</th>
+						<th class="border-b bg-gray-100 px-3 py-2" scope="col" width="99%"></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="(row, i) in rows" :key="i">
+						<td class="border-b border-r px-3 py-2 text-gray-700">{{ i + 1 }}</td>
+						<td
+							v-for="(cell, j) in row"
+							:key="j"
+							class="max-w-[15rem] border-b border-r px-3 py-2 text-gray-700"
+						>
+							<div class="flex w-full">
+								<span
+									class="w-full truncate"
+									:class="isNumberColumn(j) ? 'text-right' : ''"
+								>
+									{{
+										typeof cell == 'number'
+											? formatNumber(cell)
+											: ellipsis(cell, 100)
+									}}
+								</span>
+							</div>
+						</td>
+						<td class="border-b px-3 py-2" width="99%"></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div v-if="query.formattedResults.length" class="mt-2">
+			<slot name="footer"></slot>
+		</div>
 	</div>
 </template>

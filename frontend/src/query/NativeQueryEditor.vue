@@ -40,10 +40,6 @@ watch(
 	() => query.doc.sql,
 	(value) => (nativeQuery.value = value)
 )
-async function onExecuteQuery() {
-	await query.updateSQL(nativeQuery.value)
-	await query.execute()
-}
 </script>
 
 <template>
@@ -68,7 +64,7 @@ async function onExecuteQuery() {
 				<Button
 					variant="solid"
 					icon="play"
-					@click="onExecuteQuery"
+					@click="query.executeSQL(nativeQuery)"
 					:loading="query.loading"
 				>
 				</Button>
