@@ -22,7 +22,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 		  }
 		: {}
 
-	const colors = options.colors.length ? options.colors : getColors()
+	const colors = options.colors?.length ? options.colors : getColors()
 
 	return {
 		animation: false,
