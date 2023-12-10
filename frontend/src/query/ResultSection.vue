@@ -26,7 +26,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 		</div>
 		<div
 			v-if="needsExecution || query.executing"
-			class="absolute top-8 z-[100] flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+			class="absolute top-8 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
 		>
 			<div class="flex flex-1 flex-col items-center justify-center gap-2">
 				<Button
