@@ -23,7 +23,6 @@ const numberColumns = computed(() => {
 	if (!props.options.columns?.length || !props.data?.length) return []
 	return props.options.columns.filter((column) => props.data.every((row) => !isNaN(row[column])))
 })
-provide('numberColumns', numberColumns)
 
 const tanstackColumns = computed(() => {
 	if (!props.options.columns?.length) return []
