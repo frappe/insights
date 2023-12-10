@@ -42,5 +42,6 @@ const columnOptions = computed(() => {
 		</div>
 		<Checkbox v-model="options.index" label="Show Index" />
 		<Checkbox v-model="options.showTotal" label="Show Total" />
+		<Checkbox v-model="options.filtersEnabled" label="Enable Filters" />
 	</div>
 </template>

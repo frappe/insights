@@ -134,7 +134,10 @@ const table = useVueTable({
 									}}
 								</span>
 							</div>
-							<div class="border-t p-1" v-if="header.column.getCanFilter()">
+							<div
+								class="border-t p-1"
+								v-if="props.options.filtersEnabled && header.column.getCanFilter()"
+							>
 								<TableColumnFilter
 									:isNumber="numberColumns.includes(header.column.id)"
 									:modelValue="header.column.getFilterValue()"
