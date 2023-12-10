@@ -12,7 +12,7 @@ const columnTypes = ['String', 'Integer', 'Decimal', 'Date', 'Datetime']
 const table = reactive({
 	label: '',
 	name: '',
-	data_source: '',
+	data_source: 'Query Store',
 	file: null,
 	ifExists: 'Overwrite',
 })
