@@ -26,7 +26,7 @@ const columnOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<Input
+		<FormControl
 			type="text"
 			label="Title"
 			class="w-full"

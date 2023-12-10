@@ -32,7 +32,7 @@ if (!options.value.targetType) {
 
 <template>
 	<div class="space-y-4">
-		<Input
+		<FormControl
 			type="text"
 			label="Title"
 			class="w-full"

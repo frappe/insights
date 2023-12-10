@@ -14,7 +14,7 @@ function resetOptions() {
 <template>
 	<div class="flex h-full flex-col space-y-4 overflow-y-scroll pr-4">
 		<!-- Widget Options -->
-		<Input
+		<FormControl
 			type="select"
 			label="Chart Type"
 			class="w-full"
