@@ -147,7 +147,10 @@ const table = useVueTable({
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="(row, index) in table.getRowModel().rows" :key="row.id">
+					<tr
+						v-for="(row, index) in table.getRowModel().rows.slice(0, 300)"
+						:key="row.id"
+					>
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
