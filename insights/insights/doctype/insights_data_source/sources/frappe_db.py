@@ -186,9 +186,12 @@ class FrappeTableFactory:
             if df.issingle:
                 dynamic_link_map.setdefault(df.parent, []).append(df)
             else:
-                links = self.db_conn.execute(
-                    text(f"""select distinct {df.options} from `tab{df.parent}`""")
-                ).fetchall()
+                try:
+                    links = self.db_conn.execute(
+                        text(f"""select distinct {df.options} from `tab{df.parent}`""")
+                    ).fetchall()
+                except BaseException:
+                    continue
                 links = [l[0] for l in links]
                 for doctype in links:
                     dynamic_link_map.setdefault(doctype, []).append(df)
