@@ -24,7 +24,7 @@ class StoredQueryTableFactory:
         if not result:
             return
         columns = [col["label"] for col in result[0]]
-        df = pd.DataFrame(result[1:], columns=columns)
+        df = pd.DataFrame(result[1:], columns=columns, dtype=str)
         df.to_sql(query.name, self.connection, if_exists="replace", index=False)
 
     def sync_tables(self, connection, tables=None, force=False):
