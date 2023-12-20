@@ -54,7 +54,7 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 		})
 		columnValues.value = values.map((value) => ({ label: value, value }))
 		// prepend the selected value to the list
-		if (Array.isArray(_filter.value.value)) {
+		if (Array.isArray(_filter.value?.value)) {
 			// _filter.value = {label: '2 selected', value: [{ label: '', value: ''}, ...]}
 			_filter.value.value.forEach((selectedOption) => {
 				if (!columnValues.value.find((v) => v.value === selectedOption.value)) {
@@ -91,7 +91,7 @@ function onOptionSelect(value) {
 		v-if="selectorType === 'combobox'"
 		placeholder="Value"
 		:multiple="isMultiValue"
-		:modelValue="filter.value.value"
+		:modelValue="filter.value?.value"
 		:options="columnValues"
 		@update:query="checkAndFetchColumnValues"
 		@update:modelValue="onOptionSelect"
@@ -103,13 +103,13 @@ function onOptionSelect(value) {
 	/>
 	<DateRangePicker
 		v-if="selectorType === 'datepickerrange'"
-		:value="filter.value.value"
+		:value="filter.value?.value"
 		:formatter="formatDate"
 		@change="onDateRangeChange($event)"
 	/>
 	<DatePicker
 		v-if="selectorType === 'datepicker'"
-		:value="filter.value.value"
+		:value="filter.value?.value"
 		:formatter="formatDate"
 		@change="onDateChange($event)"
 	/>
@@ -118,7 +118,7 @@ function onOptionSelect(value) {
 		type="text"
 		autocomplete="off"
 		placeholder="Value"
-		:modelValue="filter.value.value"
+		:modelValue="filter.value?.value"
 		@update:modelValue="filter.value.value = $event"
 	/>
 </template>
