@@ -1,6 +1,6 @@
 <script setup>
-import { X } from 'lucide-vue-next'
 import { computed } from 'vue'
+import DraggableList from './DraggableList.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -47,20 +47,12 @@ const columnOptions = computed(() => {
 				</Autocomplete>
 			</div>
 
-			<div
-				v-for="(row, idx) in options.rows"
-				:key="idx"
-				class="group form-input flex h-7 cursor-pointer items-center justify-between px-2"
+			<DraggableList
+				v-model:items="options.rows"
+				group="columnOptions"
+				empty-text="No rows selected"
 			>
-				<div class="flex items-center space-x-2">
-					<div>{{ row.label }}</div>
-				</div>
-				<div class="flex items-center space-x-2">
-					<X
-						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-					/>
-				</div>
-			</div>
+			</DraggableList>
 		</div>
 
 		<div>
@@ -75,20 +67,12 @@ const columnOptions = computed(() => {
 				</Autocomplete>
 			</div>
 
-			<div
-				v-for="(col, idx) in options.columns"
-				:key="idx"
-				class="group form-input flex h-7 cursor-pointer items-center justify-between px-2"
+			<DraggableList
+				v-model:items="options.columns"
+				group="columnOptions"
+				emtpy-text="No columns selected"
 			>
-				<div class="flex items-center space-x-2">
-					<div>{{ col.label }}</div>
-				</div>
-				<div class="flex items-center space-x-2">
-					<X
-						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-					/>
-				</div>
-			</div>
+			</DraggableList>
 		</div>
 
 		<div>
@@ -101,20 +85,12 @@ const columnOptions = computed(() => {
 				</Autocomplete>
 			</div>
 
-			<div
-				v-for="(val, idx) in options.values"
-				:key="idx"
-				class="group form-input mb-2 flex h-7 cursor-pointer items-center justify-between px-2"
+			<DraggableList
+				v-model:items="options.values"
+				group="columnOptions"
+				emtpy-text="No values selected"
 			>
-				<div class="flex items-center space-x-2">
-					<div>{{ val.label }}</div>
-				</div>
-				<div class="flex items-center space-x-2">
-					<X
-						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
-					/>
-				</div>
-			</div>
+			</DraggableList>
 		</div>
 	</div>
 </template>

@@ -74,20 +74,51 @@ def create_chart():
 
 
 @frappe.whitelist()
-def apply_pivot_transform(data, rows, columns, values):
+def pivot(data, indexes: list[str] = None, columns: list[str] = None, values: list[str] = None):
+    indexes = indexes or []
+    columns = columns or []
+    values = values or []
+    if not data or not (indexes + columns + values):
+        return []
+
     import pandas as pd
 
-    # create a dataframe
-    df = pd.DataFrame(data[1:], columns=data[0])
+    df = pd.DataFrame(data)
+    for value_column in values:
+        df[value_column] = df[value_column].astype(float).fillna(0).round(2)
 
-    # create a pivot table
     pivot = pd.pivot_table(
-        df, index=rows, columns=columns, values=values, sort=False, fill_value=0, aggfunc="sum"
+        df, index=indexes, columns=columns, values=values, sort=False, fill_value=0, aggfunc="sum"
     )
-    csv = pivot.to_csv(sep=";")
+    pivot = pivot.reset_index()
+    pivot = pivot.to_dict("records")
 
-    out = []
-    _rows = csv.split("\n")
-    for row in _rows:
-        out.append(row.split(";"))
-    return out
+    return flatten_column_keys(pivot)
+
+
+def flatten_column_keys(pivoted_records: list[dict]):
+    """
+    - Move the values to the bottom level
+    - Flatten the column names
+
+    Input:
+    df = [{ ("Date", "", ""): "2018-01-01", ("Region", "", ""): "A", ("Price", "OK", "No"): 100, ...}]
+
+    Output:
+    df = [{ "Date": "2018-01-01", "Region": "A", "OK___No__Price": 100, ...}]
+    """
+    new_records = []
+    for row in pivoted_records:
+        new_row = {}
+        cols = list(row.keys())
+        if type(cols[0]) != tuple:
+            new_records.append(row)
+            continue
+        for keys in cols:
+            first_key = keys[0]
+            new_keys = list(keys[1:]) + [first_key]
+            new_keys = [key for key in new_keys if key]
+            new_key = "___".join(new_keys)
+            new_row[new_key] = row[keys]
+        new_records.append(new_row)
+    return new_records

@@ -24,7 +24,8 @@ export function getFormattedDate(date, dateFormat) {
 	}
 
 	if (dateFormat === 'Month of Year') {
-		return date
+		if (isNaN(date)) return date
+		return dayjs(date, 'MM').format('MMMM')
 	}
 
 	if (dateFormat === 'Quarter of Year') {

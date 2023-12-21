@@ -1,136 +1,139 @@
 <script setup>
-import { ellipsis, formatNumber } from '@/utils'
+import {
+	FlexRender,
+	createColumnHelper,
+	getCoreRowModel,
+	getExpandedRowModel,
+	getGroupedRowModel,
+	useVueTable,
+} from '@tanstack/vue-table'
 import { call } from 'frappe-ui'
-import { computed, ref, watchEffect } from 'vue'
+import { ChevronDown, ChevronRight } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import TableEmptySection from '../Table/TableEmptySection.vue'
+import { convertToNestedObject, convertToTanstackColumns } from './utils'
 
 const props = defineProps({
 	data: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const resultColumns = computed(() => Object.keys(props.data[0]))
-function createPivotTable(rows, columns, values) {
-	const resultRows = props.data.map((row) => {
-		return resultColumns.value.map((column) => row[column])
-	})
-	return call('insights.api.queries.apply_pivot_transform', {
-		data: [resultColumns.value, ...resultRows],
-		rows: rows.map((row) => row.label),
-		columns: columns.map((column) => column.label),
-		values: values.map((value) => value.label),
-	})
-}
+const _data = computed(() => props.data)
+const indexColumns = computed(() => props.options.rows?.map((column) => column.value) || [])
+const pivotColumns = computed(() => props.options.columns?.map((column) => column.value) || [])
+const valueColumns = computed(() => props.options.values?.map((column) => column.value) || [])
 
 const pivotedData = ref([])
-watchEffect(async () => {
-	if (
-		!props.data?.length ||
-		!props.options?.rows?.length ||
-		!props.options?.columns?.length ||
-		!props.options?.values?.length
+call('insights.api.queries.pivot', {
+	data: _data.value,
+	indexes: indexColumns.value,
+	columns: pivotColumns.value,
+	values: valueColumns.value,
+}).then((data) => (pivotedData.value = data))
+
+const tanstackColumns = computed(() => {
+	if (!pivotedData.value.length) return []
+
+	const firstPivotedRow = pivotedData.value[0]
+	if (!firstPivotedRow) return []
+
+	const nestedRowObject = convertToNestedObject(firstPivotedRow)
+	const columns = convertToTanstackColumns(nestedRowObject)
+	const indexTanstackColumns = columns
+		.filter((column) => indexColumns.value.includes(column.accessorKey))
+		.sort(
+			(a, b) =>
+				indexColumns.value.indexOf(a.accessorKey) -
+				indexColumns.value.indexOf(b.accessorKey)
+		)
+	const otherTanstackColumns = columns.filter(
+		(column) => !indexColumns.value.includes(column.accessorKey)
 	)
-		return
-
-	const data = await createPivotTable(
-		props.options.rows,
-		props.options.columns,
-		props.options.values
-	)
-	pivotedData.value = mergeCells(data)
+	return [...indexTanstackColumns, ...otherTanstackColumns]
 })
 
-const columns = computed(() => {
-	if (!pivotedData.value?.length) return []
-	return pivotedData.value[0]
+const grouping = ref([])
+const columnHelper = createColumnHelper()
+const table = useVueTable({
+	get data() {
+		return pivotedData.value
+	},
+	get columns() {
+		return tanstackColumns.value
+	},
+	state: {
+		get grouping() {
+			return grouping.value
+		},
+	},
+	getCoreRowModel: getCoreRowModel(),
+	getExpandedRowModel: getExpandedRowModel(),
+	getGroupedRowModel: getGroupedRowModel(),
 })
-const rows = computed(() => {
-	if (!pivotedData.value?.length) return []
-	return pivotedData.value.slice(1)
-})
-function isNumber(value) {
-	if (!value) return false
-	return !isNaN(value)
-}
-
-function mergeCells(data) {
-	// we need to merge cells with same value
-	// look for same values one after the other in each row
-	// or one below the other in each column
-	// and merge them with colspan or rowspan
-	const mergedData = []
-	for (let i = 0; i < data.length; i++) {
-		const row = data[i]
-		const mergedRow = []
-		for (let j = 0; j < row.length; j++) {
-			const cell = row[j]
-			if (cell === '<<skip>>') continue
-			const mergedCell = { value: cell }
-			if (mergedCell.colspan || mergedCell.rowspan) {
-				mergedRow.push(mergedCell)
-				continue
-			}
-			// look for same value in next cells
-			let colspan = 1
-			for (let k = j + 1; k < row.length; k++) {
-				const nextCell = row[k]
-				if (nextCell === '<<skip>>') continue
-				if (nextCell === cell && cell != 0) {
-					colspan++
-					row[k] = '<<skip>>'
-				} else {
-					break
-				}
-			}
-			mergedCell.colspan = colspan
-			mergedRow.push(mergedCell)
-		}
-		mergedData.push(mergedRow)
-	}
-	return mergedData
-}
 </script>
 
 <template>
 	<div
-		v-if="pivotedData?.length"
-		class="flex h-full w-full flex-col space-y-2 overflow-hidden rounded"
+		v-if="props.options?.columns?.length || props.data?.length"
+		class="flex h-full w-full flex-col overflow-hidden rounded"
 	>
-		<div v-if="props.options.title" class="text-lg font-normal leading-6 text-gray-800">
+		<div
+			v-if="props.options.title"
+			class="px-4 py-2 text-lg font-medium leading-6 text-gray-800"
+		>
 			{{ props.options.title }}
 		</div>
 		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
-			<div
-				v-if="rows.length == 0"
-				class="absolute top-0 flex h-full w-full items-center justify-center text-lg text-gray-600"
-			>
-				<span>No Data</span>
-			</div>
-			<table v-if="rows.length" class="w-full">
-				<thead>
-					<tr>
+			<TableEmptySection v-if="props.data?.length == 0" />
+			<table v-else-if="props.options.columns" class="border-separate border-spacing-0">
+				<thead class="sticky top-0">
+					<tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
 						<td
-							v-for="column in columns"
-							class="truncate border-b border-r bg-white py-2 px-3 text-center"
-							scope="col"
-							:colspan="column.colspan"
+							v-for="header in headerGroup.headers"
+							:key="header.id"
+							:colSpan="header.colSpan"
+							class="min-w-[6rem] border-y border-r bg-white py-2 px-3 text-gray-800 first:pl-4"
 						>
-							{{ column.value }}
+							<div class="truncate">
+								<FlexRender
+									v-if="!header.isPlaceholder"
+									:render="header.column.columnDef.header"
+									:props="header.getContext()"
+								/>
+							</div>
 						</td>
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="(row, index) in rows" :key="index">
+					<tr v-for="(row, index) in table.getRowModel().rows" :key="row.id">
 						<td
-							v-for="cell in row"
-							class="truncate border-b border-r bg-white py-2 px-3"
-							:class="isNumber(cell.value) ? 'text-right' : ''"
-							:colspan="cell.colspan"
+							v-for="cell in row.getVisibleCells()"
+							:key="cell.id"
+							class="min-w-[6rem] truncate border-b border-r bg-white py-2 px-3 first:pl-4"
+							:class="cell.column.columnDef.isNumber ? 'tnum text-right' : ''"
 						>
-							{{
-								isNumber(cell.value)
-									? formatNumber(cell.value)
-									: ellipsis(cell.value, 100)
-							}}
+							<div v-if="cell.getIsGrouped()" class="flex gap-1">
+								<ChevronDown
+									v-if="row.getIsExpanded()"
+									class="h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-800"
+									@click="row.getToggleExpandedHandler()?.($event)"
+								/>
+								<ChevronRight
+									v-else
+									class="h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-800"
+									@click="row.getToggleExpandedHandler()?.($event)"
+								/>
+								<FlexRender
+									:render="cell.column.columnDef.cell"
+									:props="cell.getContext()"
+								/>
+							</div>
+							<div v-else-if="!cell.getIsPlaceholder()">
+								<FlexRender
+									:render="cell.column.columnDef.cell"
+									:props="cell.getContext()"
+								/>
+							</div>
 						</td>
 					</tr>
 				</tbody>
