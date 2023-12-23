@@ -10,7 +10,7 @@ import {
 	useVueTable,
 } from '@tanstack/vue-table'
 import { debounce } from 'frappe-ui'
-import { ChevronDown, ChevronRight } from 'lucide-vue-next'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import TableColumnFilter from './TableColumnFilter.vue'
 import TableEmpty from './TableEmpty.vue'
@@ -37,11 +37,13 @@ const table = useVueTable({
 	get columns() {
 		return props.columns
 	},
-	state: {
+	initialState: {
 		pagination: {
-			pageSize: 300,
+			pageSize: 100,
 			pageIndex: 0,
 		},
+	},
+	state: {
 		get sorting() {
 			return sorting.value
 		},
@@ -201,10 +203,10 @@ const totalRows = computed(() => props.data.length)
 				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }}
 			</p>
 			<div class="flex gap-2">
-				<Button @click="() => table.previousPage()" :disabled="!table.getCanPreviousPage()">
+				<Button @click="table.previousPage()" :disabled="!table.getCanPreviousPage()">
 					<ChevronLeft class="h-4 w-4 text-gray-600" />
 				</Button>
-				<Button @click="() => table.nextPage()" :disabled="!table.getCanNextPage()">
+				<Button @click="table.nextPage()" :disabled="!table.getCanNextPage()">
 					<ChevronRight class="h-4 w-4 text-gray-600" />
 				</Button>
 			</div>
