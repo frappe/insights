@@ -5,12 +5,13 @@ import {
 	getExpandedRowModel,
 	getFilteredRowModel,
 	getGroupedRowModel,
+	getPaginationRowModel,
 	getSortedRowModel,
 	useVueTable,
 } from '@tanstack/vue-table'
 import { debounce } from 'frappe-ui'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import TableColumnFilter from './TableColumnFilter.vue'
 import TableEmpty from './TableEmpty.vue'
 import { filterFunction } from './utils'
@@ -37,6 +38,10 @@ const table = useVueTable({
 		return props.columns
 	},
 	state: {
+		pagination: {
+			pageSize: 300,
+			pageIndex: 0,
+		},
 		get sorting() {
 			return sorting.value
 		},
@@ -53,17 +58,29 @@ const table = useVueTable({
 	getGroupedRowModel: getGroupedRowModel(),
 	getFilteredRowModel: getFilteredRowModel(),
 	getSortedRowModel: getSortedRowModel(),
+	getPaginationRowModel: getPaginationRowModel(),
 	onColumnFiltersChange: debounce((updaterOrValue) => {
 		columnFilters.value =
 			typeof updaterOrValue == 'function'
 				? updaterOrValue(columnFilters.value)
 				: updaterOrValue
-	}, 500),
+	}, 300),
 	onSortingChange: debounce((updaterOrValue) => {
 		sorting.value =
 			typeof updaterOrValue == 'function' ? updaterOrValue(sorting.value) : updaterOrValue
-	}, 500),
+	}, 300),
 })
+
+const pageLength = computed(() => table.getState().pagination.pageSize)
+const currPage = computed(() => table.getState().pagination.pageIndex + 1)
+const totalPage = computed(() => table.getPageCount())
+
+const pageStart = computed(() => (currPage.value - 1) * pageLength.value + 1)
+const pageEnd = computed(() => {
+	const end = currPage.value * pageLength.value
+	return end > props.data.length ? props.data.length : end
+})
+const totalRows = computed(() => props.data.length)
 </script>
 
 <template>
@@ -122,10 +139,9 @@ const table = useVueTable({
 						</td>
 					</tr>
 				</thead>
-				<!-- alternate rows will be bg-gray-50 -->
 				<tbody>
 					<tr
-						v-for="(row, index) in table.getRowModel().rows.slice(0, 300)"
+						v-for="(row, index) in table.getRowModel().rows"
 						class="even:bg-gray-50"
 						:key="row.id"
 					>
@@ -178,6 +194,20 @@ const table = useVueTable({
 					</tr>
 				</tfoot>
 			</table>
+		</div>
+
+		<div class="flex flex-shrink-0 items-center justify-end gap-3 p-1.5">
+			<p class="tnum text-sm text-gray-600">
+				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }}
+			</p>
+			<div class="flex gap-2">
+				<Button @click="() => table.previousPage()" :disabled="!table.getCanPreviousPage()">
+					<ChevronLeft class="h-4 w-4 text-gray-600" />
+				</Button>
+				<Button @click="() => table.nextPage()" :disabled="!table.getCanNextPage()">
+					<ChevronRight class="h-4 w-4 text-gray-600" />
+				</Button>
+			</div>
 		</div>
 	</div>
 </template>
