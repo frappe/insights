@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/vue-table'
-import { getFormattedCell } from '../Table/utils'
+import { getFormattedCell } from '@/components/Table/utils'
 /**
  * A recursive function to convert a flat dict to a nested dict
  * Input: {

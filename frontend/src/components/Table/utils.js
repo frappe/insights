@@ -49,6 +49,7 @@ export function getFormattedCell(cell) {
 	const cellValue = isNumber ? formatNumber(cell) : ellipsis(cell, 100)
 	return h('div', { class: isNumber ? 'text-right tnum' : '' }, cellValue)
 }
+
 function parsePills(cell) {
 	try {
 		const parsedPills = JSON.parse(cell)
