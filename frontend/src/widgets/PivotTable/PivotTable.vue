@@ -1,9 +1,9 @@
 <script setup>
 import ChartTitle from '@/components/Charts/ChartTitle.vue'
+import TanstackTable from '@/components/Table/TanstackTable.vue'
 import { call } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { convertToNestedObject, convertToTanstackColumns } from './utils'
-import TanstackTable from '@/components/Table/TanstackTable.vue'
 
 const props = defineProps({
 	data: { type: Object, required: true },
@@ -21,7 +21,18 @@ call('insights.api.queries.pivot', {
 	indexes: indexColumns.value,
 	columns: pivotColumns.value,
 	values: valueColumns.value,
-}).then((data) => (pivotedData.value = data))
+}).then((data) => (pivotedData.value = sortIndexKeys(data)))
+
+function sortIndexKeys(data) {
+	// move the index columns (keys) to the front of the object
+	return data.map((row) => {
+		const indexKeyValues = indexColumns.value.reduce((acc, key) => {
+			acc[key] = row[key]
+			return acc
+		}, {})
+		return { ...indexKeyValues, ...row }
+	})
+}
 
 const tanstackColumns = computed(() => {
 	if (!pivotedData.value.length) return []
@@ -30,18 +41,7 @@ const tanstackColumns = computed(() => {
 	if (!firstPivotedRow) return []
 
 	const nestedRowObject = convertToNestedObject(firstPivotedRow)
-	const columns = convertToTanstackColumns(nestedRowObject)
-	const indexTanstackColumns = columns
-		.filter((column) => indexColumns.value.includes(column.accessorKey))
-		.sort(
-			(a, b) =>
-				indexColumns.value.indexOf(a.accessorKey) -
-				indexColumns.value.indexOf(b.accessorKey)
-		)
-	const otherTanstackColumns = columns.filter(
-		(column) => !indexColumns.value.includes(column.accessorKey)
-	)
-	return [...indexTanstackColumns, ...otherTanstackColumns]
+	return convertToTanstackColumns(nestedRowObject)
 })
 </script>
 
