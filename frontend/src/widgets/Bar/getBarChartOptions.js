@@ -49,10 +49,10 @@ export default function getBarChartOptions(labels, datasets, options) {
 		animation: false,
 		color: options.colors || getColors(),
 		grid: {
-			top: 25,
+			top: 15,
 			bottom: 35,
-			left: 20,
-			right: 30,
+			left: 25,
+			right: 35,
 			containLabel: true,
 		},
 		xAxis: options.invertAxis ? axes[1] : axes[0],

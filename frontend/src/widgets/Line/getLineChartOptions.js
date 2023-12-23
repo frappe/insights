@@ -28,10 +28,10 @@ export default function getLineChartOptions(labels, datasets, options) {
 		animation: false,
 		color: colors,
 		grid: {
-			top: 30,
+			top: 15,
 			bottom: 35,
-			left: 20,
-			right: 30,
+			left: 25,
+			right: 35,
 			containLabel: true,
 		},
 		xAxis: {
