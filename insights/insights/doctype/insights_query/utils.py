@@ -306,10 +306,8 @@ class Column(frappe._dict):
         return self.type in ["String", "Text"]
 
     def is_measure(self):
-        return (
-            self.aggregation != "group by"
-            and self.is_numeric_type()
-            and (self.is_aggregate() or self.is_expression())
+        return self.aggregation != "group by" and (
+            self.is_numeric_type() or self.is_aggregate() or self.is_expression()
         )
 
     def is_dimension(self):
