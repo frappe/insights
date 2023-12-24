@@ -32,7 +32,7 @@ watchEffect(() => {
 
 <template>
 	<header
-		class="sticky top-0 z-10 flex w-full items-center justify-between border-b bg-white px-5 py-2.5"
+		class="sticky top-0 z-10 flex w-full items-center justify-between border-b bg-white px-4 py-2.5"
 	>
 		<PageBreadcrumbs
 			class="h-7"
@@ -48,7 +48,7 @@ watchEffect(() => {
 	</header>
 	<div
 		v-if="query.doc?.name"
-		class="flex h-full w-full flex-col space-y-4 overflow-hidden bg-white px-6"
+		class="flex h-full w-full flex-col space-y-4 overflow-hidden bg-white px-4"
 	>
 		<div v-if="activeTab == 0" class="flex flex-1 flex-shrink-0 overflow-hidden">
 			<VisualQueryBuilder v-if="query.doc.is_assisted_query"></VisualQueryBuilder>

@@ -59,7 +59,7 @@ onMounted(() => {
 			</div>
 			<div
 				ref="resizeHandle"
-				class="my-2 mx-auto w-20 cursor-ns-resize rounded-full bg-gray-100 py-1 transition-all"
+				class="my-2 mx-auto w-20 cursor-ns-resize rounded-full bg-gray-100 pt-1.5 transition-all"
 			></div>
 			<div class="flex flex-1 flex-shrink-0 flex-col overflow-hidden">
 				<ResultSection>
@@ -73,9 +73,7 @@ onMounted(() => {
 			</div>
 		</div>
 
-		<div
-			class="relative flex w-[23rem] flex-shrink-0 flex-col overflow-y-scroll border-r bg-white p-4 pt-0 pl-0"
-		>
+		<div class="relative flex w-[23rem] flex-shrink-0 flex-col overflow-y-scroll bg-white">
 			<div class="sticky top-0 z-10 w-full flex-shrink-0 bg-white py-4">
 				<Tabs v-model="activeTab" class="w-full" :tabs="tabs" />
 			</div>
