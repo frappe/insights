@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-shrink-0 space-x-2">
 		<Dropdown
-			placement="left"
+			placement="right"
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
 				!query.doc.is_stored

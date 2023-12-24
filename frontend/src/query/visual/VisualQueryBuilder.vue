@@ -40,7 +40,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="relative flex h-full w-full flex-row-reverse overflow-hidden border-t">
+	<div class="relative flex h-full w-full flex-row-reverse overflow-hidden">
 		<div
 			v-if="query.loading"
 			class="absolute inset-0 z-[100] flex items-center justify-center bg-gray-100/50"
@@ -74,7 +74,7 @@ onMounted(() => {
 		</div>
 
 		<div
-			class="relative flex w-[23rem] flex-shrink-0 flex-col overflow-y-scroll border-r bg-white p-4 pt-0 pl-1"
+			class="relative flex w-[23rem] flex-shrink-0 flex-col overflow-y-scroll border-r bg-white p-4 pt-0 pl-0"
 		>
 			<div class="sticky top-0 z-10 w-full flex-shrink-0 bg-white py-4">
 				<Tabs v-model="activeTab" class="w-full" :tabs="tabs" />

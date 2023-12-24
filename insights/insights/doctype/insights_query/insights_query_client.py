@@ -104,6 +104,8 @@ class InsightsQueryClient:
         if self.is_assisted_query:
             self.is_assisted_query = 0
         else:
+            self.is_native_query = 0
+            self.is_script_query = 0
             self.is_assisted_query = 1
             self.json = convert_classic_to_assisted(self) or self.json
         self.save()

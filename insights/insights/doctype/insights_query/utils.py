@@ -65,12 +65,13 @@ class Status(Enum):
 
 
 def update_sql(query):
+    query.status = Status.SUCCESS.value
     if not query.data_source:
         return
     data_source = InsightsDataSource.get_doc(query.data_source)
     sql = data_source.build_query(query)
     sql = format_query(sql)
-    if query.sql == sql:
+    if not sql or query.sql == sql:
         return
     query.sql = sql
     query.status = Status.PENDING.value

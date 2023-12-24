@@ -1,5 +1,5 @@
 <template>
-	<div v-if="query.doc?.name" class="flex h-full w-full flex-col">
+	<div v-if="query.doc?.name" class="flex h-full w-full flex-col pt-4">
 		<div class="flex flex-1 flex-shrink-0 gap-4 overflow-y-scroll">
 			<TablePanel />
 			<ColumnPanel />

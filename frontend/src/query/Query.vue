@@ -6,6 +6,7 @@ import ChartOptions from './ChartOptions.vue'
 import ChartSection from './ChartSection.vue'
 import NativeQueryBuilder from './NativeQueryBuilder.vue'
 import QueryHeader from './QueryHeader.vue'
+import QueryHeaderTitle from './QueryHeaderTitle.vue'
 import ScriptQueryEditor from './ScriptQueryEditor.vue'
 import ClassicQueryBuilder from './deprecated/ClassicQueryBuilder.vue'
 import useQuery from './resources/useQuery'
@@ -16,8 +17,11 @@ const query = useQuery(props.name)
 await query.reload()
 provide('query', query)
 
-const activeTab = ref('Query')
-const tabs = ['Query', 'Visualize']
+const activeTab = ref(0)
+const tabs = ref([
+	{ label: 'Query', value: 0 },
+	{ label: 'Visualize', value: 1 },
+])
 
 watchEffect(() => {
 	if (query.doc?.name) {
@@ -27,30 +31,26 @@ watchEffect(() => {
 </script>
 
 <template>
-	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+	<header
+		class="sticky top-0 z-10 flex w-full items-center justify-between border-b bg-white px-5 py-2.5"
+	>
 		<PageBreadcrumbs
 			class="h-7"
 			:items="[
 				{ label: 'Queries', route: { path: '/query' } },
-				{
-					label: props.name,
-					route: { path: `/query/build/${props.name}` },
-				},
+				{ component: QueryHeaderTitle },
 			]"
 		/>
+		<div class="flex gap-2">
+			<QueryHeader></QueryHeader>
+			<Tabs v-if="!query.doc.is_assisted_query" v-model="activeTab" :tabs="tabs" />
+		</div>
 	</header>
 	<div
 		v-if="query.doc?.name"
-		class="flex h-full w-full flex-col space-y-4 overflow-hidden bg-white px-6 pt-2"
+		class="flex h-full w-full flex-col space-y-4 overflow-hidden bg-white px-6"
 	>
-		<div class="w-full flex-shrink-0">
-			<QueryHeader>
-				<template v-if="!query.doc.is_assisted_query" #right-actions>
-					<Tabs v-model="activeTab" :tabs="tabs" />
-				</template>
-			</QueryHeader>
-		</div>
-		<div v-if="activeTab == 'Query'" class="flex flex-1 flex-shrink-0 overflow-hidden">
+		<div v-if="activeTab == 0" class="flex flex-1 flex-shrink-0 overflow-hidden">
 			<VisualQueryBuilder v-if="query.doc.is_assisted_query"></VisualQueryBuilder>
 			<NativeQueryBuilder v-else-if="query.doc.is_native_query"></NativeQueryBuilder>
 			<ScriptQueryEditor v-else-if="query.doc.is_script_query"></ScriptQueryEditor>
@@ -63,8 +63,8 @@ watchEffect(() => {
 			/>
 		</div>
 		<div
-			v-if="activeTab == 'Visualize' && query.chart.doc?.name"
-			class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden"
+			v-if="activeTab == 1 && query.chart.doc?.name"
+			class="flex flex-1 flex-shrink-0 gap-4 overflow-hidden pt-4"
 		>
 			<div class="w-[21rem] flex-shrink-0">
 				<ChartOptions></ChartOptions>

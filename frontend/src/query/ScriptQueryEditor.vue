@@ -57,7 +57,7 @@ results = fetch_data_from_url()`
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col">
+	<div class="flex h-full w-full flex-col pt-2">
 		<div class="flex-shrink-0 uppercase leading-7 tracking-wide text-gray-600">
 			Script Query
 		</div>

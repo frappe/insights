@@ -49,6 +49,7 @@ def create_query(**query):
     doc = frappe.new_doc("Insights Query")
     doc.title = query.get("title")
     doc.data_source = query.get("data_source")
+    doc.status = "Execution Successful"
     doc.is_assisted_query = query.get("is_assisted_query")
     doc.is_native_query = query.get("is_native_query")
     doc.is_script_query = query.get("is_script_query")

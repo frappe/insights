@@ -1,10 +1,12 @@
 <template>
-	<div class="flex h-8 w-full cursor-pointer select-none items-center rounded bg-gray-100 p-1">
+	<div
+		class="flex h-7.5 w-full cursor-pointer select-none items-center rounded bg-gray-100 p-0.5"
+	>
 		<div
 			v-for="tab in tabs"
-			class="flex h-full flex-1 items-center justify-center px-4 text-sm transition-all"
+			class="flex h-full flex-1 items-center justify-center truncate px-4 transition-all"
 			:class="{
-				'rounded bg-white shadow': tab.active || (modelValue && modelValue === tab.value),
+				'rounded bg-white shadow': tab.active || modelValue === tab.value,
 				'cursor-not-allowed': tab.disabled,
 			}"
 			@click="handleClick(tab)"
