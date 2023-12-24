@@ -3,7 +3,9 @@ import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import useDashboards from '@/dashboard/useDashboards'
 import { computed, inject, ref, watch } from 'vue'
 import { downloadImage } from '@/utils'
+import { FullscreenIcon } from 'lucide-vue-next'
 
+const emit = defineEmits(['fullscreen'])
 const query = inject('query')
 
 const showShareDialog = ref(false)
@@ -51,6 +53,9 @@ function downloadChartImage() {
 
 <template>
 	<div class="flex gap-2">
+		<Button variant="outline" @click="emit('fullscreen')">
+			<template #icon> <FullscreenIcon class="h-4 w-4" /> </template>
+		</Button>
 		<Button variant="outline" @click="onAddToDashboard()"> Add to Dashboard </Button>
 		<Button variant="outline" @click="downloadChartImage"> Download </Button>
 		<Button variant="outline" @click="showShareDialog = true"> Share </Button>

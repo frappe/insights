@@ -30,6 +30,7 @@ const emptyMessage = computed(() => {
 const chart = computed(() => {
 	const chart_type = query.chart.doc.chart_type
 	const guessedChart = query.chart.getGuessedChart(chart_type)
+	if (!guessedChart) return {}
 	const options = Object.assign({}, guessedChart.options, query.chart.doc.options)
 	return {
 		type: guessedChart.chart_type,
@@ -38,6 +39,11 @@ const chart = computed(() => {
 		component: widgets.getComponent(guessedChart.chart_type),
 	}
 })
+
+const fullscreenDialog = ref(false)
+function showInFullscreenDialog() {
+	fullscreenDialog.value = true
+}
 </script>
 
 <template>
@@ -52,9 +58,23 @@ const chart = computed(() => {
 		<template v-else>
 			<div class="flex w-full flex-shrink-0 justify-between">
 				<ChartTypeSelector></ChartTypeSelector>
-				<ChartActionButtons></ChartActionButtons>
+				<ChartActionButtons @fullscreen="showInFullscreenDialog"></ChartActionButtons>
 			</div>
 			<div class="flex w-full flex-1 overflow-hidden rounded border">
+				<component
+					v-if="chart.type"
+					:is="chart.component"
+					:options="chart.options"
+					:data="chart.data"
+					:key="JSON.stringify(query.chart.doc)"
+				/>
+			</div>
+		</template>
+	</div>
+
+	<Dialog v-if="chart.type" v-model="fullscreenDialog" :options="{ size: '7xl' }">
+		<template #body>
+			<div class="flex h-[84vh] w-full p-1">
 				<component
 					v-if="chart.type"
 					ref="chartRef"
@@ -65,5 +85,5 @@ const chart = computed(() => {
 				/>
 			</div>
 		</template>
-	</div>
+	</Dialog>
 </template>
