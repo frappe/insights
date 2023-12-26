@@ -13,6 +13,7 @@ from frappe.utils.data import (
     get_last_day_of_week,
     get_quarter_ending,
     get_quarter_start,
+    get_start_of_week_index,
     get_year_ending,
     get_year_start,
     getdate,
@@ -70,9 +71,26 @@ class ColumnFormatter:
         if format == "Day" or format == "Day Short":
             return func.date_format(column, "%Y-%m-%d 00:00")
         if format == "Week":
-            # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
-            date = func.date_format(column, "%Y-%m-%d")
-            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({column}) - 1) DAY"))
+            week_starts_from_index = get_start_of_week_index()
+            # dayofweek returns 1 for sunday we need to make it so that it returns 7 for sunday and 1 for monday
+            # db: 1 2 3 4 5 6 7
+            # py: 7 1 2 3 4 5 6
+            # eg. dayofweek = 1 = week_starts_from_index then 7
+            # eg. dayofweek = 2 -> 2 - week_starts_from_index = 1
+            # eg. dayofweek = 7 -> 7 - week_starts_from_index = 6
+
+            date = func.date_format(column, "%Y-%m-%d 00:00")
+            dayofweek = func.dayofweek(column)
+            dayofweek = case(
+                (dayofweek == 1, 7),
+                else_=dayofweek - week_starts_from_index,
+            )
+            return func.date_sub(
+                date,
+                text(
+                    f"INTERVAL (CASE WHEN DAYOFWEEK({column}) = 1 THEN 7 ELSE DAYOFWEEK({column}) - {week_starts_from_index} END) - 1 DAY"
+                ),
+            )
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":
@@ -122,7 +140,6 @@ def get_descendants(node, tree, include_self=False):
 class Functions:
     @classmethod
     def apply(cls, function, *args):
-
         # no args functions
 
         if function == "now":
@@ -779,6 +796,15 @@ class SQLQueryBuilder:
             query = query.where(self._filters)
         if self._dimensions:
             query = query.group_by(*self._dimensions)
+        if self._order_by_columns:
+            query = query.order_by(*self._order_by_columns)
+        if self._limit:
+            query = query.limit(self._limit)
+        if not columns:
+            # if select * query then limit to 50 rows
+            query = query.limit(50)
+
+        return self.compile(query)
         if self._order_by_columns:
             query = query.order_by(*self._order_by_columns)
         if self._limit:
