@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from frappe.utils.data import get_start_of_week_index
 from sqlalchemy import Column
 from sqlalchemy.sql import func
 
@@ -18,9 +17,8 @@ class SQLiteColumnFormatter(ColumnFormatter):
         if format == "Day" or format == "Day Short":
             return func.strftime("%Y-%m-%d 00:00", column)
         if format == "Week":
-            week_starts_from_index = get_start_of_week_index()
             date = func.strftime("%Y-%m-%d", column)
-            return func.date(date, "-1 day", f"weekday {week_starts_from_index}")
+            return func.date(date, "-1 day", "weekday 0")
         if format == "Month" or format == "Mon":
             return func.strftime("%Y-%m-01", column)
         if format == "Year":
