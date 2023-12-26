@@ -74,7 +74,7 @@ function showInFullscreenDialog() {
 
 	<Dialog v-if="chart.type" v-model="fullscreenDialog" :options="{ size: '7xl' }">
 		<template #body>
-			<div class="flex h-[84vh] w-full p-1">
+			<div class="flex h-[40rem] w-full p-1">
 				<component
 					v-if="chart.type"
 					ref="chartRef"
