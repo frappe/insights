@@ -20,10 +20,11 @@ const props = defineProps({
 	columns: { type: Array, required: true },
 	data: { type: Array, required: true },
 	showFilters: { type: Boolean, required: false, default: true },
+	showFooter: { type: Boolean, required: false, default: true },
 })
 
-const hasFooterOptions = computed(() => {
-	return props.columns.some((column) => column.footer)
+const showFooter = computed(() => {
+	return props.columns.some((column) => column.footer) && props.showFooter
 })
 
 const sorting = ref([])
@@ -178,7 +179,7 @@ const totalRows = computed(() => props.data.length)
 						</td>
 					</tr>
 				</tbody>
-				<tfoot v-if="hasFooterOptions" class="sticky bottom-0 bg-white">
+				<tfoot v-if="showFooter" class="sticky bottom-0 bg-white">
 					<tr v-for="footerGroup in table.getFooterGroups()" :key="footerGroup.id">
 						<td
 							v-for="header in footerGroup.headers"

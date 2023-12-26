@@ -56,6 +56,7 @@ const tanstackColumns = computed(() => {
 			:data="props.data"
 			:columns="tanstackColumns"
 			:showFilters="props.options.filtersEnabled"
+			:showFooter="props.options.showTotal"
 		/>
 	</div>
 </template>
