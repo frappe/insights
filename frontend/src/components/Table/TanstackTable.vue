@@ -198,15 +198,23 @@ const totalRows = computed(() => props.data.length)
 			</table>
 		</div>
 
-		<div class="flex flex-shrink-0 items-center justify-end gap-3 p-1.5">
+		<div class="flex flex-shrink-0 items-center justify-end gap-3 p-1">
 			<p class="tnum text-sm text-gray-600">
-				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }}
+				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 			</p>
 			<div class="flex gap-2">
-				<Button @click="table.previousPage()" :disabled="!table.getCanPreviousPage()">
+				<Button
+					variant="ghost"
+					@click="table.previousPage()"
+					:disabled="!table.getCanPreviousPage()"
+				>
 					<ChevronLeft class="h-4 w-4 text-gray-600" />
 				</Button>
-				<Button @click="table.nextPage()" :disabled="!table.getCanNextPage()">
+				<Button
+					variant="ghost"
+					@click="table.nextPage()"
+					:disabled="!table.getCanNextPage()"
+				>
 					<ChevronRight class="h-4 w-4 text-gray-600" />
 				</Button>
 			</div>
