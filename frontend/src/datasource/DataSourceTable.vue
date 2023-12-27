@@ -18,7 +18,7 @@
 			]"
 		/>
 		<div v-if="dataSourceTable.doc" class="ml-2 flex items-center space-x-2.5">
-			<Badge :theme="hidden ? 'yellow' : 'green'" size="md">
+			<Badge variant="subtle" :theme="hidden ? 'gray' : 'green'" size="md">
 				{{ hidden ? 'Disabled' : 'Enabled' }}
 			</Badge>
 			<Dropdown
