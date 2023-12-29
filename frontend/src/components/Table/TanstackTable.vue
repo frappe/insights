@@ -143,11 +143,7 @@ const totalRows = computed(() => props.data.length)
 					</tr>
 				</thead>
 				<tbody>
-					<tr
-						v-for="(row, index) in table.getRowModel().rows"
-						class="even:bg-gray-50"
-						:key="row.id"
-					>
+					<tr v-for="(row, index) in table.getRowModel().rows" :key="row.id">
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"

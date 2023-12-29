@@ -1,27 +1,47 @@
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
 
 const query = inject('query')
-const chartOptions = [{ label: 'Select a chart type', value: undefined, disabled: true }].concat(
-	widgets.getChartOptions()
-)
 function resetOptions() {
 	query.chart.doc.options = {}
 }
 </script>
 
 <template>
-	<div class="flex h-full flex-col space-y-4 overflow-y-scroll pr-4">
-		<!-- Widget Options -->
-		<FormControl
-			type="select"
-			label="Chart Type"
-			class="w-full"
-			v-model="query.chart.doc.chart_type"
-			:options="chartOptions"
-			@update:modelValue="query.chart.doc.options = {}"
-		/>
+	<div class="flex h-full flex-col space-y-4 overflow-y-scroll p-0.5">
+		<div>
+			<label class="mb-1.5 block text-xs text-gray-600">Chart type</label>
+			<Autocomplete
+				type="select"
+				label="Chart Type"
+				class="w-full"
+				:modelValue="query.chart.doc.chart_type"
+				:options="widgets.getChartOptions()"
+				@update:modelValue="
+					(option) => {
+						query.chart.doc.chart_type = option.value
+						query.chart.doc.options = {}
+					}
+				"
+			>
+				<template #prefix>
+					<component
+						:is="widgets.getIcon(query.chart.doc.chart_type)"
+						class="mr-1 h-4 w-4"
+						stroke-width="1.5"
+					/>
+				</template>
+				<template #item-prefix="{ option }">
+					<component
+						:is="widgets.getIcon(option.label)"
+						class="h-4 w-4"
+						stroke-width="1.5"
+					/>
+				</template>
+			</Autocomplete>
+		</div>
 
 		<component
 			v-if="query.chart.doc.chart_type"

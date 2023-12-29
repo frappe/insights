@@ -12,7 +12,7 @@ const props = defineProps({
 })
 const items = computed({
 	get: () => props.items,
-	set: (value) => emit('update:items', value),
+	set: (value) => emit('update:items', value || []),
 })
 
 function onChange(e) {
@@ -46,17 +46,18 @@ function onChange(e) {
 							class="group form-input flex h-7 flex-1 cursor-pointer items-center justify-between px-2"
 						>
 							<div class="flex items-center space-x-2">
-								<div>{{ item.label }}</div>
+								<div>{{ typeof item === 'object' ? item[itemKey] : item }}</div>
 							</div>
 							<div class="flex items-center space-x-2">
 								<X
-									@click.stop="items.splice(idx, 1)"
+									@click.prevent.stop="items.splice(idx, 1)"
 									class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
 								/>
 							</div>
 						</div>
 					</slot>
 				</div>
+				<slot name="item-suffix" :item="item" :index="idx" />
 			</div>
 		</template>
 		<template v-if="!items?.length" #footer>

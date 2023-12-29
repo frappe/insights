@@ -1,7 +1,7 @@
 <script setup>
 import ChartTitle from '@/components/Charts/ChartTitle.vue'
 import TanstackTable from '@/components/Table/TanstackTable.vue'
-import { getFormattedCell } from '@/components/Table/utils'
+import { getCellComponent } from '@/components/Table/utils'
 import { formatNumber } from '@/utils'
 import { computed } from 'vue'
 
@@ -10,15 +10,27 @@ const props = defineProps({
 	options: { type: Object, required: true },
 })
 
+const columns = computed(() => {
+	if (!props.options.columns?.length) return []
+	if (typeof props.options.columns[0] === 'string') {
+		return props.options.columns.map((column) => ({
+			label: column,
+			value: column,
+			column_options: {},
+		}))
+	}
+	return props.options.columns
+})
+
 const numberColumns = computed(() => {
-	if (!props.options.columns?.length || !props.data?.length) return []
-	return props.options.columns.filter((column) =>
-		props.data.every((row) => typeof row[column] == 'number')
+	if (!columns.value?.length || !props.data?.length) return []
+	return columns.value.filter((column) =>
+		props.data.every((row) => typeof row[column.value] == 'number')
 	)
 })
 
 const tanstackColumns = computed(() => {
-	if (!props.options.columns?.length) return []
+	if (!columns.value?.length) return []
 	const indexColumn = {
 		id: 'index',
 		header: '#',
@@ -27,19 +39,19 @@ const tanstackColumns = computed(() => {
 		cell: (props) => props.row.index + 1,
 		footer: 'Total',
 	}
-	const cols = props.options.columns.map((column) => {
+	const cols = columns.value.map((column) => {
 		return {
-			id: column,
-			header: column,
-			accessorKey: column,
+			id: column.value,
+			header: column.value,
+			accessorKey: column.value,
 			filterFn: 'filterFunction',
-			isNumber: numberColumns.value.includes(column),
-			cell: (props) => getFormattedCell(props.getValue()),
+			isNumber: numberColumns.value.includes(column.value),
+			cell: (props) => getCellComponent(props, column),
 			footer: (props) => {
-				const isNumberColumn = numberColumns.value.includes(column)
+				const isNumberColumn = numberColumns.value.includes(column.value)
 				if (!isNumberColumn) return ''
 				const filteredRows = props.table.getFilteredRowModel().rows
-				const values = filteredRows.map((row) => row.getValue(column))
+				const values = filteredRows.map((row) => row.getValue(column.value))
 				return formatNumber(values.reduce((acc, curr) => acc + curr, 0))
 			},
 		}
@@ -52,7 +64,7 @@ const tanstackColumns = computed(() => {
 	<div class="flex h-full w-full flex-col">
 		<ChartTitle :title="props.options.title" />
 		<TanstackTable
-			v-if="props.options?.columns?.length || props.data?.length"
+			v-if="columns.length || props.data?.length"
 			:data="props.data"
 			:columns="tanstackColumns"
 			:showFilters="props.options.filtersEnabled"

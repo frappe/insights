@@ -1,7 +1,9 @@
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
-import ListPicker from '@/components/Controls/ListPicker.vue'
 import { computed } from 'vue'
+import DraggableList from '../PivotTable/DraggableList.vue'
+import TableColumnOptions from './TableColumnOptions.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -14,6 +16,17 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
+if (!options.value.columns) {
+	options.value.columns = []
+}
+if (Array.isArray(options.value.columns) && typeof options.value.columns[0] === 'string') {
+	options.value.columns = options.value.columns.map((column) => ({
+		label: column,
+		value: column,
+		column_options: {},
+	}))
+}
+
 const columnOptions = computed(() => {
 	return props.columns?.map((column) => ({
 		label: column.label,
@@ -21,27 +34,67 @@ const columnOptions = computed(() => {
 		description: column.type,
 	}))
 })
+
+function updateColumns(columns) {
+	options.value.columns = columns.map((col) => {
+		const column_options =
+			options.value.columns.find((c) => c.label === col.label)?.column_options || {}
+		return { ...col, column_options }
+	})
+}
 </script>
 
 <template>
-	<div class="space-y-4">
-		<FormControl
-			type="text"
-			label="Title"
-			class="w-full"
-			v-model="options.title"
-			placeholder="Title"
-		/>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Columns</span>
-			<ListPicker
+	<div>
+		<div class="mb-1 flex items-center justify-between">
+			<label class="block text-xs text-gray-600">Columns</label>
+			<Autocomplete
+				:multiple="true"
 				:options="columnOptions"
-				:value="options.columns"
-				@change="options.columns = $event.map((item) => item.value)"
-			/>
+				:modelValue="options.columns"
+				@update:model-value="updateColumns"
+			>
+				<template #target="{ togglePopover }">
+					<Button variant="ghost" icon="plus" @click="togglePopover"></Button>
+				</template>
+			</Autocomplete>
 		</div>
-		<Checkbox v-model="options.index" label="Show Index" />
-		<Checkbox v-model="options.showTotal" label="Show Total" />
-		<Checkbox v-model="options.filtersEnabled" label="Enable Filters" />
+
+		<DraggableList
+			group="columns"
+			item-key="value"
+			empty-text="No columns selected"
+			v-model:items="options.columns"
+		>
+			<template #item-suffix="{ item, index }">
+				<Popover placement="right-start">
+					<template #target="{ togglePopover }">
+						<Button icon="more-horizontal" @click="togglePopover"></Button>
+					</template>
+					<template #body>
+						<div
+							class="relative ml-2 max-h-[26rem] w-[16rem] overflow-y-scroll rounded-lg bg-white p-3 text-base shadow-2xl"
+						>
+							<TableColumnOptions
+								:model-value="item.column_options"
+								:column="props.columns.find((col) => col.label === item.label)"
+								@update:model-value="options.columns[index].column_options = $event"
+							/>
+						</div>
+					</template>
+				</Popover>
+			</template>
+		</DraggableList>
 	</div>
+
+	<FormControl
+		type="text"
+		label="Title"
+		class="w-full"
+		v-model="options.title"
+		placeholder="Title"
+	/>
+	<Checkbox v-model="options.index" label="Show Index Row" />
+	<Checkbox v-model="options.showTotal" label="Show Total Row" />
+	<Checkbox v-model="options.filtersEnabled" label="Show Filter Row" />
 </template>

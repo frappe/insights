@@ -1,6 +1,6 @@
 import { ellipsis, formatNumber } from '@/utils'
 import { Badge } from 'frappe-ui'
-import { h } from 'vue'
+import { defineAsyncComponent, h } from 'vue'
 
 export function filterFunction(row, columnId, filterValue) {
 	const column = columnId
@@ -48,6 +48,43 @@ export function getFormattedCell(cell) {
 	const isNumber = typeof cell == 'number'
 	const cellValue = isNumber ? formatNumber(cell) : ellipsis(cell, 100)
 	return h('div', { class: isNumber ? 'text-right tnum' : '' }, cellValue)
+}
+
+export function getCellComponent(cell, column) {
+	const value = cell.getValue()
+
+	const parsedPills = parsePills(value)
+	if (parsedPills) {
+		return h(
+			'div',
+			parsedPills.map((item) => h(Badge, { label: item }))
+		)
+	}
+
+	if (column.column_options.column_type == 'Link') {
+		const comp = defineAsyncComponent(() => import('@/components/Table/TableLinkCell.vue'))
+		return h(comp, {
+			label: value,
+			url: column.column_options.link_url.replace('{{value}}', value),
+		})
+	}
+
+	if (column.column_options.column_type == 'Number') {
+		const comp = defineAsyncComponent(() => import('@/components/Table/TableNumberCell.vue'))
+		const allValues = cell.table.getCoreRowModel().rows.map((r) => r.getValue(column.label))
+		return h(comp, {
+			value: value,
+			prefix: column.column_options.prefix,
+			suffix: column.column_options.suffix,
+			decimals: column.column_options.decimals,
+			minValue: Math.min(...allValues),
+			maxValue: Math.max(...allValues),
+			showInlineBarChart: column.column_options.show_inline_bar_chart,
+		})
+	}
+
+	const isNumber = typeof value == 'number'
+	return h('div', { class: isNumber ? 'text-right tnum' : '' }, value)
 }
 
 function parsePills(cell) {

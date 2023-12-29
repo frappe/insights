@@ -90,11 +90,23 @@
 										]"
 									>
 										<div class="flex flex-1 gap-2 overflow-hidden">
-											<div v-if="$slots['item-prefix']" class="flex-shrink-0">
+											<div
+												v-if="$slots['item-prefix'] || $props.multiple"
+												class="flex-shrink-0"
+											>
 												<slot
 													name="item-prefix"
 													v-bind="{ active, selected, option }"
-												/>
+												>
+													<Square
+														v-if="!isOptionSelected(option)"
+														class="h-4 w-4 text-gray-700"
+													/>
+													<CheckSquare
+														v-else
+														class="h-4 w-4 text-gray-700"
+													/>
+												</slot>
 											</div>
 											<span class="flex-1 truncate">
 												{{ getLabel(option) }}
@@ -128,8 +140,20 @@
 							</li>
 						</ComboboxOptions>
 
-						<div v-if="$slots.footer" class="border-t p-1">
-							<slot name="footer" v-bind="{ togglePopover }"></slot>
+						<div v-if="$slots.footer || multiple" class="border-t p-1">
+							<slot name="footer" v-bind="{ togglePopover }">
+								<div v-if="multiple" class="flex items-center justify-end">
+									<Button
+										v-if="!areAllOptionsSelected"
+										label="Select All"
+										@click.stop="selectAll"
+									/>
+									<Button
+										v-if="areAllOptionsSelected"
+										label="Clear All"
+										@click.stop="clearAll"
+									/></div
+							></slot>
 						</div>
 					</div>
 				</div>
@@ -149,6 +173,8 @@ import {
 } from '@headlessui/vue'
 import { Popover } from 'frappe-ui'
 import { nextTick } from 'vue'
+import { CheckSquare } from 'lucide-vue-next'
+import { Square } from 'lucide-vue-next'
 
 export default {
 	name: 'Autocomplete',
@@ -170,6 +196,8 @@ export default {
 		ComboboxOptions,
 		ComboboxOption,
 		ComboboxButton,
+		CheckSquare,
+		Square,
 	},
 	data() {
 		return {
@@ -219,6 +247,10 @@ export default {
 		},
 		allOptions() {
 			return this.groups.flatMap((group) => group.items)
+		},
+		areAllOptionsSelected() {
+			if (!this.multiple) return false
+			return this.allOptions.length === this.selectedValue?.length
 		},
 	},
 	watch: {
@@ -276,6 +308,18 @@ export default {
 			return options.map((option) => {
 				return typeof option === 'object' ? option : { label: option, value: option }
 			})
+		},
+		isOptionSelected(option) {
+			if (!this.multiple) {
+				return this.selectedValue?.value === option.value
+			}
+			return this.selectedValue?.find((v) => v.value === option.value)
+		},
+		selectAll() {
+			this.selectedValue = this.allOptions
+		},
+		clearAll() {
+			this.selectedValue = []
 		},
 	},
 }
