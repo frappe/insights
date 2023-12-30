@@ -199,6 +199,7 @@ export default {
 		CheckSquare,
 		Square,
 	},
+	expose: ['togglePopover'],
 	data() {
 		return {
 			query: '',
@@ -262,6 +263,9 @@ export default {
 		},
 	},
 	methods: {
+		togglePopover(val) {
+			this.showOptions = val ?? !this.showOptions
+		},
 		findOption(option) {
 			if (!option) return option
 			return this.allOptions.find((o) => o.value === (option.value || option))

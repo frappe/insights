@@ -33,6 +33,7 @@ export default function useAssistedQuery(query) {
 		joinAssistEnabled: true,
 		columnOptions: [],
 		groupedColumnOptions: [],
+		setDataSource,
 		addTable,
 		resetMainTable,
 		removeJoinAt,
@@ -95,6 +96,11 @@ export default function useAssistedQuery(query) {
 		})
 		state.columnOptions = res.message.map(makeColumnOption)
 		state.groupedColumnOptions = makeGroupedColumnOptions(res.message)
+	}
+
+	async function setDataSource(dataSource) {
+		if (!dataSource || query.doc.data_source) return
+		return query.changeDataSource(dataSource)
 	}
 
 	async function addTable(newTable) {
