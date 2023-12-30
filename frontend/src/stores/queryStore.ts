@@ -11,6 +11,7 @@ type QueryListItem = {
 	is_assisted_query: boolean
 	is_native_query: boolean
 	data_source: string
+	data_source_title: string
 	creation: string
 	created_from_now: string
 	owner: string

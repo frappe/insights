@@ -16,6 +16,7 @@ def get_queries():
 
     Query = frappe.qb.DocType("Insights Query")
     QueryChart = frappe.qb.DocType("Insights Chart")
+    DataSource = frappe.qb.DocType("Insights Data Source")
     User = frappe.qb.DocType("User")
     return (
         frappe.qb.from_(Query)
@@ -23,6 +24,8 @@ def get_queries():
         .on(QueryChart.query == Query.name)
         .left_join(User)
         .on(Query.owner == User.name)
+        .left_join(DataSource)
+        .on(Query.data_source == DataSource.name)
         .select(
             Query.name,
             Query.title,
@@ -35,6 +38,7 @@ def get_queries():
             User.full_name.as_("owner_name"),
             User.user_image.as_("owner_image"),
             QueryChart.chart_type,
+            DataSource.title.as_("data_source_title"),
         )
         .where(Query.name.isin(allowed_queries))
         .groupby(Query.name)
