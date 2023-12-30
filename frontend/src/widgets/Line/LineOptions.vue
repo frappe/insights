@@ -19,9 +19,7 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-if (!options.value.yAxis) {
-	options.value.yAxis = []
-}
+if (!options.value.yAxis) options.value.yAxis = []
 if (Array.isArray(options.value.yAxis) && typeof options.value.yAxis[0] === 'string') {
 	options.value.yAxis = options.value.yAxis.map((column) => ({ column }))
 }
@@ -51,7 +49,7 @@ function updateYAxis(columnOptions) {
 		return
 	}
 	options.value.yAxis = columnOptions.map((option) => {
-		const existingColumn = options.value.yAxis.find((c) => c.column === option.value)
+		const existingColumn = options.value.yAxis?.find((c) => c.column === option.value)
 		const series_options = existingColumn ? existingColumn.series_options : {}
 		return { column: option.value, series_options }
 	})
@@ -77,7 +75,7 @@ function updateYAxis(columnOptions) {
 				<Autocomplete
 					:multiple="true"
 					:options="valueOptions"
-					:modelValue="options.yAxis.map((item) => item.column)"
+					:modelValue="options.yAxis?.map((item) => item.column) || []"
 					@update:model-value="updateYAxis"
 				>
 					<template #target="{ togglePopover }">

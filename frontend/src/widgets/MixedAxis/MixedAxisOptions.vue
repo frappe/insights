@@ -4,7 +4,7 @@ import Checkbox from '@/components/Controls/Checkbox.vue'
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { FIELDTYPES } from '@/utils'
-import { computed } from 'vue'
+import { computed, onUpdated } from 'vue'
 import SeriesOption from '../SeriesOption.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -45,7 +45,7 @@ function updateYAxis(columnOptions) {
 		return
 	}
 	options.value.yAxis = columnOptions.map((option) => {
-		const existingColumn = options.value.yAxis.find((c) => c.column === option.value)
+		const existingColumn = options.value.yAxis?.find((c) => c.column === option.value)
 		const series_options = existingColumn ? existingColumn.series_options : {}
 		return { column: option.value, series_options }
 	})
@@ -72,7 +72,7 @@ function updateYAxis(columnOptions) {
 				<Autocomplete
 					:multiple="true"
 					:options="valueOptions"
-					:modelValue="options.yAxis.map((item) => item.column)"
+					:modelValue="options.yAxis?.map((item) => item.column) || []"
 					@update:model-value="updateYAxis"
 				>
 					<template #target="{ togglePopover }">

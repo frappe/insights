@@ -48,7 +48,7 @@ function updateYAxis(columnOptions) {
 		return
 	}
 	options.value.yAxis = columnOptions.map((option) => {
-		const existingColumn = options.value.yAxis.find((c) => c.column === option.value)
+		const existingColumn = options.value.yAxis?.find((c) => c.column === option.value)
 		const series_options = existingColumn ? existingColumn.series_options : {}
 		return { column: option.value, series_options }
 	})
@@ -75,7 +75,7 @@ function updateYAxis(columnOptions) {
 				<Autocomplete
 					:multiple="true"
 					:options="valueOptions"
-					:modelValue="options.yAxis.map((item) => item.column)"
+					:modelValue="options.yAxis?.map((item) => item.column) || []"
 					@update:model-value="updateYAxis"
 				>
 					<template #target="{ togglePopover }">
