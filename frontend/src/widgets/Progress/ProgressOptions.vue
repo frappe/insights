@@ -40,11 +40,11 @@ if (!options.value.targetType) {
 			placeholder="Title"
 		/>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Progress</span>
+			<label class="mb-1.5 block text-xs text-gray-600">Progress Column</label>
 			<Autocomplete v-model="options.progress" :returnValue="true" :options="valueOptions" />
 		</div>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Target</span>
+			<label class="mb-1.5 block text-xs text-gray-600">Target</label>
 			<InputWithTabs
 				:value="options.targetType"
 				:tabs="{
@@ -62,7 +62,7 @@ if (!options.value.targetType) {
 							placeholder="Select a column..."
 							:options="valueOptions"
 						/>
-						<Input
+						<FormControl
 							v-if="options.targetType === 'Value'"
 							v-model="options.target"
 							placeholder="Enter a value..."
@@ -72,18 +72,24 @@ if (!options.value.targetType) {
 				</template>
 			</InputWithTabs>
 		</div>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Prefix</span>
-			<Input type="text" v-model="options.prefix" placeholder="Enter a prefix..." />
-		</div>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Suffix</span>
-			<Input type="text" v-model="options.suffix" placeholder="Enter a suffix..." />
-		</div>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Decimals</span>
-			<Input type="number" v-model="options.decimals" placeholder="Enter a number..." />
-		</div>
+		<FormControl
+			label="Prefix"
+			type="text"
+			v-model="options.prefix"
+			placeholder="Enter a prefix..."
+		/>
+		<FormControl
+			label="Suffix"
+			type="text"
+			v-model="options.suffix"
+			placeholder="Enter a suffix..."
+		/>
+		<FormControl
+			label="Decimals"
+			type="number"
+			v-model="options.decimals"
+			placeholder="Enter a number..."
+		/>
 		<Checkbox v-model="options.shorten" label="Shorten Numbers" />
 	</div>
 </template>

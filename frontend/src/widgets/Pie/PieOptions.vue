@@ -45,17 +45,17 @@ const valueOptions = computed(() => {
 			placeholder="Title"
 		/>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Label Column</span>
+			<label class="mb-1.5 block text-xs text-gray-600">Label Column</label>
 			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
 		</div>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Value Column</span>
+			<label class="mb-1.5 block text-xs text-gray-600">Value Column</label>
 			<Autocomplete v-model="options.yAxis" :returnValue="true" :options="valueOptions" />
 		</div>
 
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Maximum Slices</span>
-			<Input v-model="options.maxSlices" type="number" min="1" />
+			<label class="mb-1.5 block text-xs text-gray-600">Max Slices</label>
+			<FormControl v-model="options.maxSlices" type="number" min="1" />
 		</div>
 
 		<Color
@@ -66,7 +66,7 @@ const valueOptions = computed(() => {
 		/>
 
 		<div v-show="!options.inlineLabels">
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Label Position</span>
+			<label class="mb-1.5 block text-xs text-gray-600">Label Position</label>
 			<Autocomplete
 				v-model="options.labelPosition"
 				:options="['Top', 'Left', 'Bottom', 'Right']"

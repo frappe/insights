@@ -37,9 +37,7 @@ const columnOptions = computed(() => {
 
 		<div>
 			<div class="mb-1 flex items-center justify-between">
-				<div class="flex items-center space-x-1.5">
-					<span class="block text-sm leading-4 text-gray-700">Rows</span>
-				</div>
+				<label class="block text-xs text-gray-600">Rows</label>
 				<Autocomplete :multiple="true" v-model="options.rows" :options="columnOptions">
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover"></Button>
@@ -57,9 +55,7 @@ const columnOptions = computed(() => {
 
 		<div>
 			<div class="mb-1 flex items-center justify-between">
-				<div class="flex items-center space-x-1.5">
-					<span class="block text-sm leading-4 text-gray-700">Columns</span>
-				</div>
+				<label class="block text-xs text-gray-600">Columns</label>
 				<Autocomplete :multiple="true" v-model="options.columns" :options="columnOptions">
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover"></Button>
@@ -77,7 +73,7 @@ const columnOptions = computed(() => {
 
 		<div>
 			<div class="mb-1 flex items-center justify-between">
-				<span class="block text-sm leading-4 text-gray-700">Values</span>
+				<label class="block text-xs text-gray-600">Values</label>
 				<Autocomplete :multiple="true" v-model="options.values" :options="columnOptions">
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover"></Button>

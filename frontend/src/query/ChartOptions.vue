@@ -14,9 +14,6 @@ function resetOptions() {
 		<div>
 			<label class="mb-1.5 block text-xs text-gray-600">Chart type</label>
 			<Autocomplete
-				type="select"
-				label="Chart Type"
-				class="w-full"
 				:modelValue="query.chart.doc.chart_type"
 				:options="widgets.getChartOptions()"
 				@update:modelValue="
@@ -29,7 +26,7 @@ function resetOptions() {
 				<template #prefix>
 					<component
 						:is="widgets.getIcon(query.chart.doc.chart_type)"
-						class="mr-1 h-4 w-4"
+						class="mr-1.5 h-4 w-4 text-gray-600"
 						stroke-width="1.5"
 					/>
 				</template>
