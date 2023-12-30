@@ -22,6 +22,9 @@ const options = computed({
 if (!Array.isArray(options.value.yAxis)) {
 	options.value.yAxis = typeof options.value.yAxis === 'string' ? [options.value.yAxis] : []
 }
+if (Array.isArray(options.value.yAxis) && typeof options.value.yAxis[0] === 'string') {
+	options.value.yAxis = options.value.yAxis.map((column) => ({ column }))
+}
 
 const indexOptions = computed(() => {
 	return props.columns
