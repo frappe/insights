@@ -66,6 +66,7 @@ function updateYAxis(columnOptions) {
 			placeholder="Title"
 		/>
 		<div>
+			<label class="mb-1.5 block text-xs text-gray-600">X Axis</label>
 			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
 		</div>
 
