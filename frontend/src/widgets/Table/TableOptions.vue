@@ -1,8 +1,9 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
+import DraggableList from '@/components/DraggableList.vue'
+import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { computed } from 'vue'
-import DraggableList from '../PivotTable/DraggableList.vue'
 import TableColumnOptions from './TableColumnOptions.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -19,6 +20,7 @@ const options = computed({
 if (!options.value.columns) {
 	options.value.columns = []
 }
+// handle legacy columns format
 if (Array.isArray(options.value.columns) && typeof options.value.columns[0] === 'string') {
 	options.value.columns = options.value.columns.map((column) => ({
 		label: column,
@@ -37,8 +39,8 @@ const columnOptions = computed(() => {
 
 function updateColumns(columns) {
 	options.value.columns = columns.map((col) => {
-		const column_options =
-			options.value.columns.find((c) => c.label === col.label)?.column_options || {}
+		const existingColumn = options.value.columns.find((c) => c.label === col.label)
+		const column_options = existingColumn ? existingColumn.column_options : {}
 		return { ...col, column_options }
 	})
 }
@@ -67,22 +69,13 @@ function updateColumns(columns) {
 			v-model:items="options.columns"
 		>
 			<template #item-suffix="{ item, index }">
-				<Popover placement="right-start">
-					<template #target="{ togglePopover }">
-						<Button icon="more-horizontal" @click="togglePopover"></Button>
-					</template>
-					<template #body>
-						<div
-							class="relative ml-2 max-h-[26rem] w-[16rem] overflow-y-scroll rounded-lg bg-white p-3 text-base shadow-2xl"
-						>
-							<TableColumnOptions
-								:model-value="item.column_options"
-								:column="props.columns.find((col) => col.label === item.label)"
-								@update:model-value="options.columns[index].column_options = $event"
-							/>
-						</div>
-					</template>
-				</Popover>
+				<DraggableListItemMenu>
+					<TableColumnOptions
+						:model-value="item.column_options"
+						:column="props.columns.find((col) => col.label === item.label)"
+						@update:model-value="options.columns[index].column_options = $event"
+					/>
+				</DraggableListItemMenu>
 			</template>
 		</DraggableList>
 	</div>

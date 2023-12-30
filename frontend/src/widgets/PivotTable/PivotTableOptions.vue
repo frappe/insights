@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import DraggableList from './DraggableList.vue'
+import DraggableList from '@/components/DraggableList.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
