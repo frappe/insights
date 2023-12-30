@@ -28,7 +28,7 @@ const datasets = computed(() => {
 				return {
 					label: column,
 					data: props.data.map((d) => d[column]),
-					options: series,
+					series_options: series.series_options || {},
 				}
 			})
 	)

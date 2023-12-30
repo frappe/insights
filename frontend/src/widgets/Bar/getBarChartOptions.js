@@ -67,6 +67,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 			},
 			markLine: markLine,
 			stack: options.stack ? 'stack' : null,
+			color: dataset.series_options.color,
 		})),
 		tooltip: {
 			trigger: 'axis',

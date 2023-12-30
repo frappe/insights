@@ -14,8 +14,8 @@ const columns = computed(() => {
 	if (!props.options.columns?.length) return []
 	if (typeof props.options.columns[0] === 'string') {
 		return props.options.columns.map((column) => ({
-			label: column,
-			value: column,
+			column,
+			type: 'String',
 			column_options: {},
 		}))
 	}
@@ -25,7 +25,7 @@ const columns = computed(() => {
 const numberColumns = computed(() => {
 	if (!columns.value?.length || !props.data?.length) return []
 	return columns.value.filter((column) =>
-		props.data.every((row) => typeof row[column.value] == 'number')
+		props.data.every((row) => typeof row[column.column] == 'number')
 	)
 })
 
@@ -41,17 +41,17 @@ const tanstackColumns = computed(() => {
 	}
 	const cols = columns.value.map((column) => {
 		return {
-			id: column.value,
-			header: column.value,
-			accessorKey: column.value,
+			id: column.column,
+			header: column.column,
+			accessorKey: column.column,
 			filterFn: 'filterFunction',
-			isNumber: numberColumns.value.includes(column.value),
+			isNumber: numberColumns.value.includes(column.column),
 			cell: (props) => getCellComponent(props, column),
 			footer: (props) => {
-				const isNumberColumn = numberColumns.value.includes(column.value)
+				const isNumberColumn = numberColumns.value.includes(column.column)
 				if (!isNumberColumn) return ''
 				const filteredRows = props.table.getFilteredRowModel().rows
-				const values = filteredRows.map((row) => row.getValue(column.value))
+				const values = filteredRows.map((row) => row.getValue(column.column))
 				return formatNumber(values.reduce((acc, curr) => acc + curr, 0))
 			},
 		}
@@ -67,8 +67,8 @@ const tanstackColumns = computed(() => {
 			v-if="columns.length || props.data?.length"
 			:data="props.data"
 			:columns="tanstackColumns"
-			:showFilters="props.options.filtersEnabled"
 			:showFooter="props.options.showTotal"
+			:showFilters="Boolean(props.options.filtersEnabled)"
 		/>
 	</div>
 </template>

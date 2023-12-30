@@ -20,11 +20,10 @@ const datasets = computed(() => {
 			// to exclude the columns that might be removed from the query but not the chart
 			.filter((series) => props.data[0].hasOwnProperty(series.column))
 			.map((series) => {
-				const column = series.column || series
 				return {
-					label: column,
-					data: props.data.map((d) => d[column]),
-					options: series,
+					label: series.column,
+					data: props.data.map((d) => d[series.column]),
+					series_options: series.series_options || {},
 				}
 			})
 	)

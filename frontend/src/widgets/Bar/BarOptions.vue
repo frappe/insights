@@ -1,9 +1,12 @@
 <script setup>
+import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
-import ListPicker from '@/components/Controls/ListPicker.vue'
+import DraggableList from '@/components/DraggableList.vue'
+import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
+import SeriesOption from '../SeriesOption.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -38,6 +41,18 @@ const valueOptions = computed(() => {
 			description: column.type,
 		}))
 })
+
+function updateYAxis(columnOptions) {
+	if (!columnOptions) {
+		options.value.yAxis = []
+		return
+	}
+	options.value.yAxis = columnOptions.map((option) => {
+		const existingColumn = options.value.yAxis.find((c) => c.column === option.value)
+		const series_options = existingColumn ? existingColumn.series_options : {}
+		return { column: option.value, series_options }
+	})
+}
 </script>
 
 <template>
@@ -50,20 +65,44 @@ const valueOptions = computed(() => {
 			placeholder="Title"
 		/>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
+			<label class="mb-1.5 block text-xs text-gray-600">X Axis</label>
 			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
-		</div>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<ListPicker
-				:value="options.yAxis"
-				:options="valueOptions"
-				@update:modelValue="options.yAxis = $event.map((item) => item.value)"
-			/>
 		</div>
 
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
+			<div class="mb-1 flex items-center justify-between">
+				<label class="block text-xs text-gray-600">Y Axis</label>
+				<Autocomplete
+					:multiple="true"
+					:options="valueOptions"
+					:modelValue="options.yAxis.map((item) => item.column)"
+					@update:model-value="updateYAxis"
+				>
+					<template #target="{ togglePopover }">
+						<Button variant="ghost" icon="plus" @click="togglePopover" />
+					</template>
+				</Autocomplete>
+			</div>
+			<DraggableList
+				group="yAxis"
+				item-key="column"
+				empty-text="No columns selected"
+				v-model:items="options.yAxis"
+			>
+				<template #item-suffix="{ item, index }">
+					<DraggableListItemMenu>
+						<SeriesOption
+							seriesType="bar"
+							:modelValue="item.series_options || {}"
+							@update:modelValue="options.yAxis[index].series_options = $event"
+						/>
+					</DraggableListItemMenu>
+				</template>
+			</DraggableList>
+		</div>
+
+		<div>
+			<label class="mb-1.5 block text-xs text-gray-600">Reference Line</label>
 			<Autocomplete
 				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
@@ -73,7 +112,7 @@ const valueOptions = computed(() => {
 
 		<Color label="Colors" v-model="options.colors" :max="options.yAxis?.length || 1" multiple />
 
-		<Input
+		<FormControl
 			type="select"
 			label="Rotate Labels"
 			v-model="options.rotateLabels"
@@ -81,7 +120,6 @@ const valueOptions = computed(() => {
 		/>
 
 		<Checkbox v-model="options.stack" label="Stack Values" />
-
 		<Checkbox v-model="options.invertAxis" label="Switch X and Y Axis" />
 	</div>
 </template>

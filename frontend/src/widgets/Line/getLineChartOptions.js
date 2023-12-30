@@ -55,13 +55,13 @@ export default function getLineChartOptions(labels, datasets, options) {
 			data: dataset.data,
 			type: 'line',
 			yAxisIndex: options.splitYAxis ? index : 0,
-			color: dataset.options.color,
-			smooth: dataset.options.smoothLines || options.smoothLines ? 0.4 : false,
+			color: dataset.series_options.color,
+			smooth: dataset.series_options.smoothLines || options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
-			showSymbol: dataset.options.showPoints || options.showPoints,
+			showSymbol: dataset.series_options.showPoints || options.showPoints,
 			markLine: markLine,
 			areaStyle:
-				dataset.options.showArea || options.showArea
+				dataset.series_options.showArea || options.showArea
 					? {
 							color: new graphic.LinearGradient(0, 0, 0, 1, [
 								{ offset: 0, color: colors[index] },

@@ -23,8 +23,7 @@ if (!options.value.columns) {
 // handle legacy columns format
 if (Array.isArray(options.value.columns) && typeof options.value.columns[0] === 'string') {
 	options.value.columns = options.value.columns.map((column) => ({
-		label: column,
-		value: column,
+		column,
 		column_options: {},
 	}))
 }
@@ -37,11 +36,15 @@ const columnOptions = computed(() => {
 	}))
 })
 
-function updateColumns(columns) {
-	options.value.columns = columns.map((col) => {
-		const existingColumn = options.value.columns.find((c) => c.label === col.label)
+function updateColumns(columnOptions) {
+	options.value.columns = columnOptions.map((option) => {
+		const existingColumn = options.value.columns.find((c) => c.label === option.value)
 		const column_options = existingColumn ? existingColumn.column_options : {}
-		return { ...col, column_options }
+		return {
+			column: option.value,
+			type: option.description,
+			column_options,
+		}
 	})
 }
 </script>
@@ -64,7 +67,7 @@ function updateColumns(columns) {
 
 		<DraggableList
 			group="columns"
-			item-key="value"
+			item-key="column"
 			empty-text="No columns selected"
 			v-model:items="options.columns"
 		>
@@ -72,7 +75,7 @@ function updateColumns(columns) {
 				<DraggableListItemMenu>
 					<TableColumnOptions
 						:model-value="item.column_options"
-						:column="props.columns.find((col) => col.label === item.label)"
+						:column="props.columns.find((col) => col.label === item.column)"
 						@update:model-value="options.columns[index].column_options = $event"
 					/>
 				</DraggableListItemMenu>

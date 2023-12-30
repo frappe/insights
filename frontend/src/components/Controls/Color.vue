@@ -1,14 +1,12 @@
 <template>
 	<div>
-		<div class="mb-1 text-sm text-gray-600" v-if="label">
-			{{ label }}
-		</div>
+		<label v-if="label" class="mb-1.5 block text-xs text-gray-600">{{ label }}</label>
 		<Popover placement="bottom-start" class="w-full">
 			<template #target="{ togglePopover }">
 				<div
 					tabindex="0"
 					:class="inputClass"
-					class="form-input relative block w-full items-center rounded border-gray-400 bg-gray-100 placeholder-gray-500 focus:outline-none"
+					class="h-7 w-full rounded border border-gray-100 bg-gray-100 py-1.5 pl-2 pr-2 text-base text-gray-800 placeholder-gray-500 transition-colors hover:border-gray-200 hover:bg-gray-200 focus:border-gray-500 focus:bg-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 					@click="togglePopover()"
 					readonly
 				>

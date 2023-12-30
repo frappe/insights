@@ -2,6 +2,8 @@
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
+import DraggableList from '@/components/DraggableList.vue'
+import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
 import SeriesOption from '../SeriesOption.vue'
@@ -16,6 +18,13 @@ const options = computed({
 	get: () => props.modelValue,
 	set: (value) => emit('update:modelValue', value),
 })
+
+if (!options.value.yAxis) {
+	options.value.yAxis = []
+}
+if (Array.isArray(options.value.yAxis) && typeof options.value.yAxis[0] === 'string') {
+	options.value.yAxis = options.value.yAxis.map((column) => ({ column }))
+}
 
 const indexOptions = computed(() => {
 	return props.columns
@@ -36,20 +45,17 @@ const valueOptions = computed(() => {
 		}))
 })
 
-const deprecatedOptions = computed(() => {
-	return options.value?.yAxis?.every((item) => typeof item === 'string')
-})
-function convertDeprecatedOptions() {
-	return options.value.yAxis.map((item) => ({ column: item }))
+function updateYAxis(columnOptions) {
+	if (!columnOptions) {
+		options.value.yAxis = []
+		return
+	}
+	options.value.yAxis = columnOptions.map((option) => {
+		const existingColumn = options.value.yAxis.find((c) => c.column === option.value)
+		const series_options = existingColumn ? existingColumn.series_options : {}
+		return { column: option.value, series_options }
+	})
 }
-
-const yAxis = computed({
-	get: () => (deprecatedOptions.value ? convertDeprecatedOptions() : options.value.yAxis),
-	set: (value) => (options.value.yAxis = value),
-})
-const areAllColumnsSelected = computed(() => {
-	return yAxis.value?.length && yAxis.value?.length === valueOptions.value?.length
-})
 </script>
 
 <template>
@@ -62,54 +68,47 @@ const areAllColumnsSelected = computed(() => {
 			placeholder="Title"
 		/>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
 			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
 		</div>
-		<div class="relative max-h-[15rem] space-y-2 overflow-hidden overflow-y-scroll">
-			<div class="sticky top-0 -mt-1 flex items-center justify-between bg-white">
-				<span class="block text-sm leading-4 text-gray-700">Y Axis</span>
+
+		<div>
+			<div class="mb-1 flex items-center justify-between">
+				<label class="block text-xs text-gray-600">Y Axis</label>
 				<Autocomplete
-					:modelValue="yAxis?.map((item) => item.column)"
 					:multiple="true"
-					:returnValue="true"
 					:options="valueOptions"
-					@update:model-value="yAxis = $event.map((item) => ({ column: item }))"
+					:modelValue="options.yAxis.map((item) => item.column)"
+					@update:model-value="updateYAxis"
 				>
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover" />
 					</template>
-					<template #footer>
-						<div class="flex items-center justify-end">
-							<Button
-								v-if="!areAllColumnsSelected"
-								variant="subtle"
-								@click="
-									yAxis = valueOptions.map((item) => ({ column: item.value }))
-								"
-							>
-								Select All
-							</Button>
-						</div>
-					</template>
 				</Autocomplete>
 			</div>
-			<div class="flex w-full flex-col space-y-2">
-				<div class="flex flex-1" v-for="(series, index) in yAxis" :key="index">
-					<SeriesOption
-						seriesType="line"
-						:modelValue="series"
-						@remove="yAxis.splice(yAxis.indexOf(series), 1)"
-					/>
-				</div>
-			</div>
+			<DraggableList
+				group="yAxis"
+				item-key="column"
+				empty-text="No columns selected"
+				v-model:items="options.yAxis"
+			>
+				<template #item-suffix="{ item, index }">
+					<DraggableListItemMenu>
+						<SeriesOption
+							seriesType="line"
+							:modelValue="item.series_options || {}"
+							@update:modelValue="options.yAxis[index].series_options = $event"
+						/>
+					</DraggableListItemMenu>
+				</template>
+			</DraggableList>
 		</div>
 
-		<div v-if="yAxis?.length == 2" class="space-y-2 text-gray-600">
+		<div v-if="options.yAxis?.length == 2" class="space-y-2 text-gray-600">
 			<Checkbox v-model="options.splitYAxis" label="Split Y Axis" />
 		</div>
 
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Reference Line</span>
+			<label class="mb-1.5 block text-xs text-gray-600">Reference Line</label>
 			<Autocomplete
 				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
