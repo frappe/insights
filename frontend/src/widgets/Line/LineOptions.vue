@@ -23,6 +23,9 @@ if (!options.value.yAxis) options.value.yAxis = []
 if (Array.isArray(options.value.yAxis) && typeof options.value.yAxis[0] === 'string') {
 	options.value.yAxis = options.value.yAxis.map((column) => ({ column }))
 }
+options.value.yAxis.forEach((item) => {
+	if (!item.series_options) item.series_options = {}
+})
 
 const indexOptions = computed(() => {
 	return props.columns
@@ -111,7 +114,7 @@ function updateYAxis(columnOptions) {
 			<Autocomplete
 				:modelValue="options.referenceLine"
 				:options="['Average', 'Median', 'Min', 'Max']"
-				@update:modelValue="options.referenceLine = $event.value"
+				@update:modelValue="options.referenceLine = $event?.value"
 			/>
 		</div>
 

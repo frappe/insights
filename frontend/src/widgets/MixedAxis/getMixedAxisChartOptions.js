@@ -53,7 +53,7 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
 			data: dataset.data,
-			type: dataset.series_options.type,
+			type: dataset.series_options.type || 'line',
 			color: dataset.series_options.color,
 			yAxisIndex: options.splitYAxis ? index : 0,
 			smooth: dataset.series_options.smoothLines ? 0.4 : false,

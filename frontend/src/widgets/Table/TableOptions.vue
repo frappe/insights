@@ -27,6 +27,9 @@ if (Array.isArray(options.value.columns) && typeof options.value.columns[0] === 
 		column_options: {},
 	}))
 }
+options.value.columns.forEach((item) => {
+	if (!item.column_options) item.column_options = {}
+})
 
 const columnOptions = computed(() => {
 	return props.columns?.map((column) => ({

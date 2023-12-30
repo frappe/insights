@@ -64,7 +64,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 				dataset.series_options.showArea || options.showArea
 					? {
 							color: new graphic.LinearGradient(0, 0, 0, 1, [
-								{ offset: 0, color: colors[index] },
+								{ offset: 0, color: dataset.series_options.color || colors[index] },
 								{ offset: 1, color: '#fff' },
 							]),
 							opacity: 0.2,
