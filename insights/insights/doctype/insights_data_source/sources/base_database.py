@@ -24,6 +24,14 @@ class DatabaseConnectionError(frappe.ValidationError):
     pass
 
 
+class DatabaseCredentialsError(frappe.ValidationError):
+    pass
+
+
+class DatabaseParallelConnectionError(frappe.ValidationError):
+    pass
+
+
 class BaseDatabase:
     def __init__(self):
         self.engine = None
@@ -38,7 +46,7 @@ class BaseDatabase:
             return res.fetchone()
 
     @retry(
-        retry=retry_if_exception_type((DatabaseConnectionError,)),
+        retry=retry_if_exception_type((DatabaseParallelConnectionError,)),
         stop=stop_after_attempt(5),
         wait=wait_fixed(1),
         reraise=True,
@@ -48,7 +56,10 @@ class BaseDatabase:
             return self.engine.connect()
         except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
-            raise DatabaseConnectionError(e)
+            self.handle_db_exception(e)
+
+    def handle_db_exception(self, e):
+        raise DatabaseCredentialsError(e)
 
     def build_query(self, query):
         """Used to update the sql in insights query"""

@@ -11,7 +11,12 @@ from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
-from .base_database import BaseDatabase
+from .base_database import (
+    BaseDatabase,
+    DatabaseConnectionError,
+    DatabaseCredentialsError,
+    DatabaseParallelConnectionError,
+)
 from .utils import create_insights_table, get_sqlalchemy_engine
 
 MARIADB_TO_GENERIC_TYPES = {
@@ -102,6 +107,13 @@ class MariaDB(BaseDatabase):
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
+
+    def handle_db_exception(self, e):
+        if "Access denied" in str(e):
+            raise DatabaseCredentialsError()
+        if "Packet sequence number wrong" in str(e):
+            raise DatabaseParallelConnectionError()
+        super().handle_db_exception(e)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
