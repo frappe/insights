@@ -3,6 +3,7 @@ import UsePopover from '@/components/UsePopover.vue'
 import { ListFilter, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import FilterEditor from './FilterEditor.vue'
+import { fieldtypesToIcon } from '@/utils'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -63,9 +64,13 @@ function isValidFilter(filter) {
 							<span class="truncate font-mono">{{ filter.expression.raw }}</span>
 						</template>
 						<template v-else>
-							<span class="max-w-[40%] flex-shrink-0 truncate">
+							<div class="flex max-w-[40%] flex-shrink-0 gap-1 truncate">
+								<component
+									:is="fieldtypesToIcon[filter.column.type]"
+									class="h-4 w-4 text-gray-600"
+								/>
 								{{ filter.column.label || filter.column.column }}
-							</span>
+							</div>
 							<span class="flex-shrink-0 font-medium text-green-600">
 								{{ filter.operator.value }}
 							</span>

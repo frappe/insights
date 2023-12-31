@@ -1,5 +1,6 @@
 <script setup>
 import { X } from 'lucide-vue-next'
+import { fieldtypesToIcon } from '@/utils'
 
 defineProps(['column', 'isActive'])
 defineEmits(['edit-column', 'remove-column'])
@@ -35,11 +36,12 @@ function getAbbreviation(column) {
 	>
 		<div class="flex w-full items-center overflow-hidden">
 			<div class="flex w-full items-center space-x-1.5 truncate" v-if="isValidColumn(column)">
-				<div
+				<!-- <div
 					class="rounded border border-violet-400 py-0.5 px-1 font-mono text-xs tracking-wider text-violet-700"
 				>
 					{{ getAbbreviation(column) }}
-				</div>
+				</div> -->
+				<component :is="fieldtypesToIcon[column.type]" class="h-4 w-4 text-gray-600" />
 				<div>{{ column.label }}</div>
 			</div>
 			<div v-else class="text-gray-600">Select a column</div>

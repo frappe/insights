@@ -12,6 +12,7 @@ import { ExternalLink, Sheet, X } from 'lucide-vue-next'
 import { computed, inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TableJoinEditor from './TableJoinEditor.vue'
+import { Table2, GanttChartSquare } from 'lucide-vue-next'
 
 const assistedQuery = inject('assistedQuery')
 
@@ -94,7 +95,15 @@ async function handleDataSourceChange(option) {
 				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
 			>
 				<div class="flex items-center space-x-2">
-					<div class="flex flex-1 items-center gap-2">
+					<div class="flex flex-1 items-center gap-1">
+						<component
+							:is="
+								assistedQuery.table.table.startsWith('QRY-')
+									? GanttChartSquare
+									: Table2
+							"
+							class="h-4 w-4 text-gray-600"
+						/>
 						<span class="truncate">{{ assistedQuery.table.label }}</span>
 						<ExternalLink
 							class="h-3 w-3 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
@@ -121,7 +130,11 @@ async function handleDataSourceChange(option) {
 				"
 				@click="activeJoinIdx = idx"
 			>
-				<div class="flex flex-1 items-center gap-2">
+				<div class="flex flex-1 items-center gap-1">
+					<component
+						:is="join.right_table.table.startsWith('QRY-') ? GanttChartSquare : Table2"
+						class="h-4 w-4 text-gray-600"
+					/>
 					<span class="truncate">{{ join.right_table.label }}</span>
 					<ExternalLink
 						class="h-3 w-3 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
