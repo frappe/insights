@@ -71,7 +71,7 @@ function openQueryInNewTab() {
 			class="group relative flex h-full rounded"
 			:class="{
 				' bg-white shadow': dashboard.isChart(item),
-				'ring-2 ring-blue-300 ring-offset-1':
+				'ring-2 ring-gray-700 ring-offset-2':
 					item.item_id === dashboard.currentItem?.item_id,
 				'cursor-grab': dashboard.editing,
 			}"
