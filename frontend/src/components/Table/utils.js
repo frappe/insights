@@ -71,7 +71,9 @@ export function getCellComponent(cell, column) {
 
 	if (column.column_options.column_type == 'Number') {
 		const comp = defineAsyncComponent(() => import('@/components/Table/TableNumberCell.vue'))
-		const allValues = cell.table.getCoreRowModel().rows.map((r) => r.getValue(column.label))
+		const allValues = cell.table
+			.getCoreRowModel()
+			.rows.map((r) => r.getValue(column.column || column.label))
 		return h(comp, {
 			value: value,
 			prefix: column.column_options.prefix,

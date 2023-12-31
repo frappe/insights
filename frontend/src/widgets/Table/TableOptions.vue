@@ -28,6 +28,7 @@ if (Array.isArray(options.value.columns) && typeof options.value.columns[0] === 
 	}))
 }
 options.value.columns.forEach((item) => {
+	if (!item.column) item.column = item.label || item.value
 	if (!item.column_options) item.column_options = {}
 })
 

@@ -19,7 +19,11 @@ const columns = computed(() => {
 			column_options: {},
 		}))
 	}
-	return props.options.columns
+	return props.options.columns.map((column) => ({
+		type: column.type || 'String',
+		column: column.column || column.label || column.value,
+		column_options: column.column_options || {},
+	}))
 })
 
 const numberColumns = computed(() => {
@@ -40,6 +44,9 @@ const tanstackColumns = computed(() => {
 		footer: 'Total',
 	}
 	const cols = columns.value.map((column) => {
+		if (!column.column) {
+			throw new Error(`Column ${column} is missing a column name`)
+		}
 		return {
 			id: column.column,
 			header: column.column,

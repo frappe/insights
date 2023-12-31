@@ -23,6 +23,7 @@ const options = computed({
 })
 
 const columnTypeOptions = computed(() => {
+	if (!props.column?.type) return []
 	if (FIELDTYPES.NUMBER.includes(props.column.type)) {
 		return ['Number', 'Text', 'Link']
 	}
