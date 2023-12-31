@@ -46,7 +46,6 @@ function updateColumns(columnOptions) {
 		const column_options = existingColumn ? existingColumn.column_options : {}
 		return {
 			column: option.value,
-			type: option.description,
 			column_options,
 		}
 	})

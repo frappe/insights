@@ -1,6 +1,8 @@
 import { ellipsis, formatNumber } from '@/utils'
 import { Badge } from 'frappe-ui'
-import { defineAsyncComponent, h } from 'vue'
+import { h } from 'vue'
+import TableLinkCell from './TableLinkCell.vue'
+import TableNumberCell from './TableNumberCell.vue'
 
 export function filterFunction(row, columnId, filterValue) {
 	const column = columnId
@@ -62,19 +64,17 @@ export function getCellComponent(cell, column) {
 	}
 
 	if (column.column_options.column_type == 'Link') {
-		const comp = defineAsyncComponent(() => import('@/components/Table/TableLinkCell.vue'))
-		return h(comp, {
+		return h(TableLinkCell, {
 			label: value,
 			url: column.column_options.link_url.replace('{{value}}', value),
 		})
 	}
 
 	if (column.column_options.column_type == 'Number') {
-		const comp = defineAsyncComponent(() => import('@/components/Table/TableNumberCell.vue'))
 		const allValues = cell.table
 			.getCoreRowModel()
 			.rows.map((r) => r.getValue(column.column || column.label))
-		return h(comp, {
+		return h(TableNumberCell, {
 			value: value,
 			prefix: column.column_options.prefix,
 			suffix: column.column_options.suffix,

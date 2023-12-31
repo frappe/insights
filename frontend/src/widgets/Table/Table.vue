@@ -15,12 +15,10 @@ const columns = computed(() => {
 	if (typeof props.options.columns[0] === 'string') {
 		return props.options.columns.map((column) => ({
 			column,
-			type: 'String',
 			column_options: {},
 		}))
 	}
 	return props.options.columns.map((column) => ({
-		type: column.type || 'String',
 		column: column.column || column.label || column.value,
 		column_options: column.column_options || {},
 	}))
@@ -28,9 +26,9 @@ const columns = computed(() => {
 
 const numberColumns = computed(() => {
 	if (!columns.value?.length || !props.data?.length) return []
-	return columns.value.filter((column) =>
-		props.data.every((row) => typeof row[column.column] == 'number')
-	)
+	return columns.value
+		.filter((column) => props.data.every((row) => typeof row[column.column] == 'number'))
+		.map((column) => column.column)
 })
 
 const tanstackColumns = computed(() => {
