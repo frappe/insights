@@ -1,5 +1,6 @@
 <script setup>
 import { formatNumber } from '@/utils'
+import { COLOR_MAP } from '@/utils/colors'
 
 const props = defineProps({
 	value: { type: Number, required: true },
@@ -25,15 +26,21 @@ const props = defineProps({
 			<div v-if="minValue < 0" class="h-2 flex-1 bg-red-200">
 				<div
 					v-if="value < 0"
-					class="float-right h-full bg-red-500"
-					:style="{ width: `${(Math.abs(value) / maxValue) * 100}%` }"
+					class="float-right h-full"
+					:style="{
+						width: `${(Math.abs(value) / maxValue) * 100}%`,
+						backgroundColor: COLOR_MAP.red,
+					}"
 				></div>
 			</div>
 			<div class="h-2 flex-1 bg-blue-200">
 				<div
 					v-if="value > 0"
 					class="h-full bg-blue-500"
-					:style="{ width: `${(value / maxValue) * 100}%` }"
+					:style="{
+						width: `${(value / maxValue) * 100}%`,
+						backgroundColor: COLOR_MAP.blue,
+					}"
 				></div>
 			</div>
 		</div>
