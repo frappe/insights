@@ -14,6 +14,9 @@ const props = defineProps({
 
 <template>
 	<div class="flex items-center gap-2">
+		<div class="tnum flex-1 flex-shrink-0 text-right">
+			{{ prefix }}{{ formatNumber(value, decimals) }}{{ suffix }}
+		</div>
 		<div
 			v-if="showInlineBarChart"
 			class="flex overflow-hidden rounded-full"
@@ -33,9 +36,6 @@ const props = defineProps({
 					:style="{ width: `${(value / maxValue) * 100}%` }"
 				></div>
 			</div>
-		</div>
-		<div class="tnum flex-1 flex-shrink-0 text-right">
-			{{ prefix }}{{ formatNumber(value, decimals) }}{{ suffix }}
 		</div>
 	</div>
 </template>
