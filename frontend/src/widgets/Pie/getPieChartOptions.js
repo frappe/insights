@@ -25,7 +25,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 	if (!options.inlineLabels && options.labelPosition) {
 		const position = options.labelPosition
-		updateLegendOptions(position)
+		updateLegendOptions(position.value ?? position)
 	}
 
 	function updateLegendOptions(position) {
@@ -93,7 +93,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: options.colors?.length ? options.colors : undefined,
 		series: [
 			{
 				type: 'pie',
