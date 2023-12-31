@@ -70,20 +70,20 @@ function showInFullscreenDialog() {
 				/>
 			</div>
 		</template>
-	</div>
 
-	<Dialog v-if="chart.type" v-model="fullscreenDialog" :options="{ size: '7xl' }">
-		<template #body>
-			<div class="flex h-[40rem] w-full p-1">
-				<component
-					v-if="chart.type"
-					ref="chartRef"
-					:is="chart.component"
-					:options="chart.options"
-					:data="chart.data"
-					:key="JSON.stringify(query.chart.doc)"
-				/>
-			</div>
-		</template>
-	</Dialog>
+		<Dialog v-if="chart.type" v-model="fullscreenDialog" :options="{ size: '7xl' }">
+			<template #body>
+				<div class="flex h-[40rem] w-full p-1">
+					<component
+						v-if="chart.type"
+						ref="chartRef"
+						:is="chart.component"
+						:options="chart.options"
+						:data="chart.data"
+						:key="JSON.stringify(query.chart.doc)"
+					/>
+				</div>
+			</template>
+		</Dialog>
+	</div>
 </template>
