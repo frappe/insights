@@ -1,8 +1,8 @@
 <script setup>
+import ContentEditable from '@/components/ContentEditable.vue'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import useDashboard from '@/dashboard/useDashboard'
 import BaseLayout from '@/layouts/BaseLayout.vue'
-import ContentEditable from '@/components/ContentEditable.vue'
 import { updateDocumentTitle } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { debounce } from 'frappe-ui'
@@ -150,11 +150,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
 						:columns="dashboard.currentItem.query?.resultColumns"
-						:key="
-							dashboard.currentItem.item_id &&
-							dashboard.isChart(dashboard.currentItem) &&
-							JSON.stringify(dashboard.currentItem.options)
-						"
+						:key="dashboard.currentItem.item_id && dashboard.currentItem.item_type"
 					/>
 
 					<div class="flex space-x-2">
