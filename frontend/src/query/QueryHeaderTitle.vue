@@ -10,7 +10,7 @@ watchDebounced(title, query.updateTitle, { debounce: 500 })
 </script>
 
 <template>
-	<div v-if="query.doc.is_stored" class="mr-2">
+	<div v-if="query.doc.is_stored" class="mr-1">
 		<ComponentIcon class="h-4 w-4 text-gray-600" fill="currentColor" />
 	</div>
 	<ContentEditable
