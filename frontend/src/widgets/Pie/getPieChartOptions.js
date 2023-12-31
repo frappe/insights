@@ -24,7 +24,11 @@ export default function getPieChartOptions(labels, dataset, options) {
 		}
 	})
 	if (otherSlices) {
-		data.push({ name: 'Others', value: otherSlices })
+		data.push({
+			name: 'Others',
+			value: otherSlices,
+			itemStyle: { color: colors[slices.length] },
+		})
 	}
 
 	const legendOptions = { type: 'plain', bottom: 0 }
