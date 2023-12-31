@@ -45,9 +45,11 @@ export default function getBarChartOptions(labels, datasets, options) {
 		},
 	]
 
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
+
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		grid: {
 			top: 15,
 			bottom: 35,
@@ -57,7 +59,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 		},
 		xAxis: options.invertAxis ? axes[1] : axes[0],
 		yAxis: options.invertAxis ? axes[0] : axes[1],
-		series: datasets.map((dataset) => ({
+		series: datasets.map((dataset, index) => ({
 			type: 'bar',
 			name: dataset.label,
 			barMaxWidth: 50,
@@ -67,7 +69,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 			},
 			markLine: markLine,
 			stack: options.stack ? 'stack' : null,
-			color: dataset.series_options.color,
+			color: dataset.series_options.color || colors[index],
 		})),
 		tooltip: {
 			trigger: 'axis',

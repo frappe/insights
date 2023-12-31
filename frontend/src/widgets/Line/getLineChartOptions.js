@@ -22,7 +22,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 		  }
 		: {}
 
-	const colors = options.colors?.length ? options.colors : getColors()
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
 
 	return {
 		animation: false,
@@ -55,7 +55,7 @@ export default function getLineChartOptions(labels, datasets, options) {
 			data: dataset.data,
 			type: 'line',
 			yAxisIndex: options.splitYAxis ? index : 0,
-			color: dataset.series_options.color,
+			color: dataset.series_options.color || colors[index],
 			smooth: dataset.series_options.smoothLines || options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
 			showSymbol: dataset.series_options.showPoints || options.showPoints,

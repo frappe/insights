@@ -6,7 +6,7 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 		return {}
 	}
 
-	const colors = options.colors.length ? options.colors : getColors()
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
 
 	return {
 		animation: false,
@@ -53,8 +53,9 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 				gap: 14,
 				data: dataset.data?.map((value, index) => ({
 					name: labels[index],
-					value,
+					value: value,
 					itemStyle: {
+						color: colors[index],
 						borderColor: colors[index],
 						borderWidth: 10,
 						borderCap: 'round',

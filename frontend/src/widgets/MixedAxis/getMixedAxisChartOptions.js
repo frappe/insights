@@ -21,9 +21,11 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 		  }
 		: {}
 
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
+
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		grid: {
 			top: 15,
 			bottom: 35,
@@ -54,13 +56,22 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 			name: dataset.label,
 			data: dataset.data,
 			type: dataset.series_options.type || 'line',
-			color: dataset.series_options.color,
+			color: dataset.series_options.color || colors[index],
 			yAxisIndex: options.splitYAxis ? index : 0,
 			smooth: dataset.series_options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
 			showSymbol: dataset.series_options.showPoints,
 			markLine: markLine,
-			areaStyle: { opacity: dataset.series_options.showArea ? 0.1 : 0 },
+			areaStyle:
+				dataset.series_options.showArea || options.showArea
+					? {
+							color: new graphic.LinearGradient(0, 0, 0, 1, [
+								{ offset: 0, color: dataset.series_options.color || colors[index] },
+								{ offset: 1, color: '#fff' },
+							]),
+							opacity: 0.2,
+					  }
+					: undefined,
 			itemStyle: {
 				borderRadius: options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
 			},
