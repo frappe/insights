@@ -67,7 +67,7 @@ const isValidColumn = computed(() => {
 			<div class="space-y-1">
 				<span class="text-sm font-medium text-gray-700">Aggregation</span>
 				<Autocomplete
-					:modelValue="column.aggregation"
+					:modelValue="column.aggregation.toLowerCase()"
 					placeholder="Aggregation"
 					:options="AGGREGATIONS"
 					@update:modelValue="(op) => (column.aggregation = op.value)"
