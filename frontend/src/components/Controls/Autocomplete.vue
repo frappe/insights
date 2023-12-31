@@ -317,7 +317,7 @@ export default {
 			if (!this.multiple) {
 				return this.selectedValue?.value === option.value
 			}
-			return this.selectedValue?.find((v) => v.value === option.value)
+			return this.selectedValue?.find((v) => v && v.value === option.value)
 		},
 		selectAll() {
 			this.selectedValue = this.allOptions
