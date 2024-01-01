@@ -106,17 +106,17 @@ function completeOnboarding() {
 					<video autoplay loop muted class="h-full w-full">
 						<source
 							v-if="steps[currentStep].name === 'connect_data'"
-							src="../assets/add-data-source.mp4"
+							src="../assets/add-data-source-new.mp4"
 							type="video/mp4"
 						/>
 						<source
 							v-if="steps[currentStep].name === 'build_query'"
-							src="../assets/build-first-query.mp4"
+							src="../assets/build-first-query-new.mp4"
 							type="video/mp4"
 						/>
 						<source
 							v-if="steps[currentStep].name === 'create_dashboard'"
-							src="../assets/create-first-dashboard.mp4"
+							src="../assets/create-first-dashboard-new.mp4"
 							type="video/mp4"
 						/>
 						Your browser does not support the video tag.
