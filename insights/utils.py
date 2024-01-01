@@ -3,9 +3,10 @@
 
 import pathlib
 from typing import List, Union
-import chardet
 
+import chardet
 import frappe
+from frappe.model.base_document import BaseDocument
 
 
 class ResultColumn:
@@ -36,7 +37,7 @@ class ResultColumn:
         return [cls.from_dict(d) for d in data]
 
 
-class DoctypeBase:
+class DoctypeBase(BaseDocument):
     doctype: str
 
     @classmethod
@@ -48,11 +49,15 @@ class DoctypeBase:
         return cls.get_name(*args, **kwargs) is not None
 
     @classmethod
-    def get_doc(cls, *args, **kwargs):
+    def get_doc(cls, *args, **kwargs) -> "DoctypeBase":
         return frappe.get_doc(cls.doctype, args[0] if len(args) > 0 else kwargs)
 
     @classmethod
-    def new_doc(cls):
+    def get_cached_doc(cls, *args, **kwargs) -> "DoctypeBase":
+        return frappe.get_cached_doc(cls.doctype, args[0] if len(args) > 0 else kwargs)
+
+    @classmethod
+    def new_doc(cls) -> "DoctypeBase":
         return frappe.new_doc(cls.doctype)
 
 
@@ -80,6 +85,6 @@ class InsightsSettings:
 
 def detect_encoding(file_path: str):
     file_path: pathlib.Path = pathlib.Path(file_path)
-    with open(file_path, 'rb') as file:
+    with open(file_path, "rb") as file:
         result = chardet.detect(file.read())
-    return result['encoding']
+    return result["encoding"]

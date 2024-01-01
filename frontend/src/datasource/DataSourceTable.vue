@@ -18,7 +18,7 @@
 			]"
 		/>
 		<div v-if="dataSourceTable.doc" class="ml-2 flex items-center space-x-2.5">
-			<Badge :theme="hidden ? 'yellow' : 'green'" size="md">
+			<Badge variant="subtle" :theme="hidden ? 'gray' : 'green'" size="md">
 				{{ hidden ? 'Disabled' : 'Enabled' }}
 			</Badge>
 			<Dropdown
@@ -172,7 +172,7 @@ const hidden = computed({
 })
 
 const getTableOptions = createResource({
-	url: 'insights.api.get_tables',
+	url: 'insights.api.data_sources.get_tables',
 	params: {
 		data_source: props.name,
 	},
@@ -187,7 +187,7 @@ const tableOptions = computed(() =>
 )
 
 const getForeignKeyOptions = createResource({
-	url: 'insights.api.get_table_columns',
+	url: 'insights.api.data_sources.get_table_columns',
 	initialData: [],
 })
 watch(
@@ -229,7 +229,7 @@ const createLinkDisabled = computed(() => {
 
 const $notify = inject('$notify')
 const createLinkResource = createResource({
-	url: 'insights.api.create_table_link',
+	url: 'insights.api.data_sources.create_table_link',
 	onSuccess() {
 		newLink.table = ''
 		newLink.primaryKey = ''

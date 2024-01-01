@@ -1,119 +1,169 @@
 <template>
-	<Combobox v-model="selectedValue" nullable v-slot="{ open: isComboboxOpen }">
+	<Combobox
+		v-model="selectedValue"
+		:multiple="multiple"
+		nullable
+		v-slot="{ open: isComboboxOpen }"
+	>
 		<Popover class="w-full" v-model:show="showOptions">
 			<template #target="{ open: openPopover, togglePopover }">
-				<div class="w-full">
-					<button
-						class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
-						:class="{ 'bg-gray-200': isComboboxOpen }"
-						@click="() => togglePopover()"
-					>
-						<div class="flex items-center overflow-hidden">
-							<slot name="prefix" />
-							<span
-								class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
-								v-if="selectedValue?.value"
-							>
-								{{ displayValue(selectedValue) }}
-							</span>
-							<span class="text-base leading-5 text-gray-600" v-else>
-								{{ placeholder || '' }}
-							</span>
-						</div>
-						<FeatherIcon
-							name="chevron-down"
-							class="h-4 w-4 text-gray-600"
-							aria-hidden="true"
-						/>
-					</button>
-				</div>
+				<slot name="target" v-bind="{ open: openPopover, togglePopover }">
+					<div class="w-full">
+						<button
+							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
+							:class="{ 'bg-gray-200': isComboboxOpen }"
+							@click="() => togglePopover()"
+						>
+							<div class="flex items-center overflow-hidden">
+								<slot name="prefix" />
+								<span class="truncate text-base leading-5" v-if="selectedValue">
+									{{ displayValue(selectedValue) }}
+								</span>
+								<span class="text-base leading-5 text-gray-600" v-else>
+									{{ placeholder || '' }}
+								</span>
+							</div>
+							<FeatherIcon
+								name="chevron-down"
+								class="h-4 w-4 text-gray-600"
+								aria-hidden="true"
+							/>
+						</button>
+					</div>
+				</slot>
 			</template>
-			<template #body="{ isOpen }">
+			<template #body="{ isOpen, togglePopover }">
 				<div v-show="isOpen">
-					<ComboboxOptions
-						class="mt-1 max-h-[15rem] overflow-y-auto rounded-lg bg-white px-1.5 pb-1.5 shadow-2xl"
-						static
+					<div
+						class="relative mt-1 rounded-lg bg-white text-base shadow-2xl"
+						:class="bodyClasses"
 					>
-						<div
-							class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white pt-1.5"
-						>
-							<div class="relative w-full">
-								<ComboboxInput
-									class="form-input w-full"
-									type="text"
-									@change="
-										(e) => {
-											query = e.target.value
-										}
-									"
-									:value="query"
-									autocomplete="off"
-									placeholder="Search"
-								/>
-								<button
-									class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
-									@click="selectedValue = null"
-								>
-									<FeatherIcon name="x" class="w-4" />
-								</button>
-							</div>
-						</div>
-						<div
-							class="mt-1.5"
-							v-for="group in groups"
-							:key="group.key"
-							v-show="group.items.length > 0"
-						>
+						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
 							<div
-								v-if="group.group && !group.hideLabel"
-								class="px-2.5 py-1.5 text-sm font-medium text-gray-600"
+								v-if="!hideSearch"
+								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white py-1.5"
 							>
-								{{ group.group }}
+								<div class="relative w-full">
+									<ComboboxInput
+										ref="searchInput"
+										class="form-input w-full"
+										type="text"
+										@change="
+											(e) => {
+												query = e.target.value
+											}
+										"
+										:value="query"
+										autocomplete="off"
+										placeholder="Search"
+									/>
+									<button
+										class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
+										@click="selectedValue = null"
+									>
+										<FeatherIcon name="x" class="w-4" />
+									</button>
+								</div>
 							</div>
-							<ComboboxOption
-								as="template"
-								v-for="(option, idx) in group.items.slice(0, 50)"
-								:key="option?.value || idx"
-								:value="option"
-								v-slot="{ active, selected }"
+							<div
+								v-for="group in groups"
+								:key="group.key"
+								v-show="group.items.length > 0"
 							>
-								<li
-									:class="[
-										'flex items-center justify-between rounded px-2.5 py-1.5 text-base',
-										{ 'bg-gray-100': active },
-									]"
+								<div
+									v-if="group.group && !group.hideLabel"
+									class="sticky top-10 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
 								>
-									<div>
-										<slot
-											name="item-prefix"
-											v-bind="{ active, selected, option }"
-										/>
-										{{ option?.label || option?.value || option || 'No label' }}
-									</div>
-									<slot name="item-suffix" v-bind="{ active, selected, option }">
-										<div
-											v-if="option?.description"
-											class="text-sm text-gray-600"
-										>
-											{{ option.description }}
+									{{ group.group }}
+								</div>
+								<ComboboxOption
+									as="template"
+									v-for="(option, idx) in group.items.slice(0, 50)"
+									:key="option?.value || idx"
+									:value="option"
+									v-slot="{ active, selected }"
+								>
+									<li
+										:class="[
+											'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base',
+											{ 'bg-gray-100': active },
+										]"
+									>
+										<div class="flex flex-1 gap-2 overflow-hidden">
+											<div
+												v-if="$slots['item-prefix'] || $props.multiple"
+												class="flex-shrink-0"
+											>
+												<slot
+													name="item-prefix"
+													v-bind="{ active, selected, option }"
+												>
+													<Square
+														v-if="!isOptionSelected(option)"
+														class="h-4 w-4 text-gray-700"
+													/>
+													<CheckSquare
+														v-else
+														class="h-4 w-4 text-gray-700"
+													/>
+												</slot>
+											</div>
+											<span class="flex-1 truncate">
+												{{ getLabel(option) }}
+											</span>
 										</div>
-									</slot>
-								</li>
-							</ComboboxOption>
+
+										<div
+											v-if="$slots['item-suffix'] || option?.description"
+											class="ml-2 flex-shrink-0"
+										>
+											<slot
+												name="item-suffix"
+												v-bind="{ active, selected, option }"
+											>
+												<div
+													v-if="option?.description"
+													class="text-sm text-gray-600"
+												>
+													{{ option.description }}
+												</div>
+											</slot>
+										</div>
+									</li>
+								</ComboboxOption>
+							</div>
+							<li
+								v-if="groups.length == 0"
+								class="rounded-md px-2.5 py-1.5 text-base text-gray-600"
+							>
+								No results found
+							</li>
+						</ComboboxOptions>
+
+						<div v-if="$slots.footer || multiple" class="border-t p-1">
+							<slot name="footer" v-bind="{ togglePopover }">
+								<div v-if="multiple" class="flex items-center justify-end">
+									<Button
+										v-if="!areAllOptionsSelected"
+										label="Select All"
+										@click.stop="selectAll"
+									/>
+									<Button
+										v-if="areAllOptionsSelected"
+										label="Clear All"
+										@click.stop="clearAll"
+									/></div
+							></slot>
 						</div>
-						<li
-							v-if="groups.length == 0"
-							class="rounded-md px-2.5 py-1.5 text-base text-gray-600"
-						>
-							No results found
-						</li>
-					</ComboboxOptions>
+					</div>
 				</div>
 			</template>
 		</Popover>
 	</Combobox>
 </template>
+
 <script>
+import { fuzzySearch } from '@/utils'
 import {
 	Combobox,
 	ComboboxButton,
@@ -122,10 +172,22 @@ import {
 	ComboboxOptions,
 } from '@headlessui/vue'
 import { Popover } from 'frappe-ui'
+import { nextTick } from 'vue'
+import { CheckSquare } from 'lucide-vue-next'
+import { Square } from 'lucide-vue-next'
 
 export default {
 	name: 'Autocomplete',
-	props: ['modelValue', 'options', 'placeholder'],
+	props: [
+		'modelValue',
+		'options',
+		'placeholder',
+		'bodyClasses',
+		'multiple',
+		'returnValue',
+		'hideSearch',
+		'autoFocus',
+	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
 		Popover,
@@ -134,7 +196,10 @@ export default {
 		ComboboxOptions,
 		ComboboxOption,
 		ComboboxButton,
+		CheckSquare,
+		Square,
 	},
+	expose: ['togglePopover'],
 	data() {
 		return {
 			query: '',
@@ -142,28 +207,25 @@ export default {
 		}
 	},
 	computed: {
-		valuePropPassed() {
-			return 'value' in this.$attrs
-		},
-		valueIsOption() {
-			// to make autocomplete's value work with primitive types like string & number
-			const val = this.valuePropPassed ? this.$attrs.value : this.modelValue
-			return typeof val === 'object'
-		},
 		selectedValue: {
 			get() {
-				const val = this.valuePropPassed ? this.$attrs.value : this.modelValue
-				return this.valueIsOption ? val : this.findOption(val)
+				if (!this.multiple) {
+					return this.findOption(this.modelValue)
+				}
+				// in case of `multiple`, modelValue is an array of values
+				// and if returnValue is true, we need to return the value of the options
+				return this.returnValue || typeof this.modelValue?.[0] !== 'object'
+					? this.modelValue?.map((v) => this.findOption(v))
+					: this.modelValue
 			},
 			set(val) {
 				this.query = ''
-				if (val) {
-					this.showOptions = false
+				if (val && !this.multiple) this.showOptions = false
+				if (!this.multiple) {
+					this.$emit('update:modelValue', this.returnValue ? val?.value : val)
+					return
 				}
-				this.$emit(
-					this.valuePropPassed ? 'change' : 'update:modelValue',
-					this.valueIsOption ? val : val?.value
-				)
+				this.$emit('update:modelValue', this.returnValue ? val?.map((v) => v.value) : val)
 			},
 		},
 		groups() {
@@ -171,7 +233,7 @@ export default {
 
 			let groups = this.options[0]?.group
 				? this.options
-				: [{ group: '', items: this.options }]
+				: [{ group: '', items: this.sanitizeOptions(this.options) }]
 
 			return groups
 				.map((group, i) => {
@@ -179,7 +241,7 @@ export default {
 						key: i,
 						group: group.group,
 						hideLabel: group.hideLabel || false,
-						items: this.filterOptions(this.getValidOptions(group.items)),
+						items: this.filterOptions(this.sanitizeOptions(group.items)),
 					}
 				})
 				.filter((group) => group.items.length > 0)
@@ -187,46 +249,81 @@ export default {
 		allOptions() {
 			return this.groups.flatMap((group) => group.items)
 		},
+		areAllOptionsSelected() {
+			if (!this.multiple) return false
+			return this.allOptions.length === this.selectedValue?.length
+		},
 	},
 	watch: {
 		query(q) {
 			this.$emit('update:query', q)
 		},
+		showOptions(val) {
+			if (val) nextTick(() => this.$refs.searchInput?.$el?.focus())
+		},
 	},
 	methods: {
-		findOption(value) {
-			if (typeof value === 'object') {
-				return value
-			}
-			return this.allOptions.find((o) => o.value === value)
+		togglePopover(val) {
+			this.showOptions = val ?? !this.showOptions
+		},
+		findOption(option) {
+			if (!option) return option
+			return this.allOptions.find((o) => o.value === (option.value || option))
 		},
 		filterOptions(options) {
-			if (!this.query) {
-				return options
-			}
-			return options.filter((option) => {
-				let searchTexts = [option.label, option.value]
-				return searchTexts.some((text) =>
-					(text || '').toString().toLowerCase().includes(this.query.toLowerCase())
-				)
+			if (!this.query) return options
+			return fuzzySearch(options, {
+				term: this.query,
+				keys: ['label', 'value'],
 			})
 		},
 		displayValue(option) {
-			if (typeof option === 'string') {
-				let selectedOption = this.allOptions.find((o) => o.value === option)
-				return selectedOption?.label || option
-			}
-			return option?.label
-		},
-		getValidOptions(options) {
-			// to make autocomplete's value work with primitive type options
-			// i.e array of strings instead of array of objects
-			return options.map((option) => {
-				if (typeof option === 'string') {
-					return { label: option, value: option }
+			if (!option) return ''
+
+			if (!this.multiple) {
+				if (typeof option === 'object') {
+					return this.getLabel(option)
 				}
-				return option
+				let selectedOption = this.allOptions.find((o) => o.value === option)
+				return this.getLabel(selectedOption)
+			}
+
+			if (!Array.isArray(option)) return ''
+
+			// in case of `multiple`, option is an array of values
+			// so the display value should be comma separated labels
+			return option
+				.map((v) => {
+					if (typeof v === 'object') {
+						return this.getLabel(v)
+					}
+					let selectedOption = this.allOptions.find((o) => o.value === v)
+					return this.getLabel(selectedOption)
+				})
+				.join(', ')
+		},
+		getLabel(option) {
+			if (typeof option !== 'object') return option
+			return option?.label || option?.value || 'No label'
+		},
+		sanitizeOptions(options) {
+			if (!options) return []
+			// in case the options are just strings, convert them to objects
+			return options.map((option) => {
+				return typeof option === 'object' ? option : { label: option, value: option }
 			})
+		},
+		isOptionSelected(option) {
+			if (!this.multiple) {
+				return this.selectedValue?.value === option.value
+			}
+			return this.selectedValue?.find((v) => v && v.value === option.value)
+		},
+		selectAll() {
+			this.selectedValue = this.allOptions
+		},
+		clearAll() {
+			this.selectedValue = []
 		},
 	},
 }

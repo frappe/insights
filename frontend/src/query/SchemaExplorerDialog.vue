@@ -55,12 +55,15 @@ watch(
 	{ immediate: true }
 )
 
+const fetchingColumns = ref(false)
 watch(
 	currentTable,
 	async () => {
 		if (!currentTable.value) return
 		currentColumns.value = []
+		fetchingColumns.value = true
 		const table = await useDataSourceTable({ name: currentTable.value.name })
+		fetchingColumns.value = false
 		currentColumns.value = table.columns.map((c) => {
 			return {
 				label: c.label,
@@ -142,17 +145,23 @@ function toggleTable(table) {
 								</div>
 								<div
 									v-if="currentTable?.name == table.name"
-									class="mt-1 ml-4 mb-1 flex flex-col gap-2"
+									class="mt-1 ml-4 mb-1 flex items-center justify-center"
 								>
-									<div v-for="column in currentColumns" :key="column.column">
-										<div class="flex items-center space-x-2 pl-2">
-											<FeatherIcon
-												name="type"
-												class="h-4 w-4 text-gray-600"
-											/>
-											<p class="font-medium leading-6 text-gray-900">
-												{{ column.label }}
-											</p>
+									<LoadingIndicator
+										v-if="fetchingColumns"
+										class="w-6 text-gray-600"
+									/>
+									<div v-else class="w-full space-y-2">
+										<div v-for="column in currentColumns" :key="column.column">
+											<div class="flex items-center space-x-2 pl-2">
+												<FeatherIcon
+													name="type"
+													class="h-4 w-4 text-gray-600"
+												/>
+												<p class="font-medium leading-6 text-gray-900">
+													{{ column.label }}
+												</p>
+											</div>
 										</div>
 									</div>
 								</div>

@@ -6,7 +6,7 @@
 		>
 			<HomeIcon class="w-4" />
 		</router-link>
-		<span class="mx-1 text-base text-gray-500"> / </span>
+		<span class="mx-1 text-base text-gray-500"> <ChevronRight class="w-4" /> </span>
 		<template v-if="dropdownItems.length">
 			<Dropdown class="h-7" :options="dropdownItems">
 				<Button variant="ghost">
@@ -19,7 +19,9 @@
 		</template>
 		<div class="flex min-w-0 items-center overflow-hidden text-ellipsis whitespace-nowrap">
 			<template v-for="(item, i) in linkItems" :key="item.label">
+				<component v-if="item.component" :is="item.component" />
 				<component
+					v-else
 					:is="item.route ? 'router-link' : 'div'"
 					class="flex items-center rounded px-0.5 py-1 text-lg font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
 					:class="[
@@ -35,7 +37,7 @@
 					</span>
 				</component>
 				<span v-if="i != linkItems.length - 1" class="mx-1 text-base text-gray-500">
-					/
+					<ChevronRight class="w-4" />
 				</span>
 			</template>
 		</div>
@@ -44,6 +46,7 @@
 <script setup>
 import { useWindowSize } from '@vueuse/core'
 import { Dropdown } from 'frappe-ui'
+import { ChevronRight } from 'lucide-vue-next'
 import { HomeIcon, MoreHorizontal } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'

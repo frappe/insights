@@ -17,7 +17,7 @@ export default function useNotebook(name) {
 	state.reload = async () => {
 		state.loading = true
 		state.doc = await resource.get.fetch()
-		state.pages = await call('insights.api.get_notebook_pages', {
+		state.pages = await call('insights.api.notebooks.get_notebook_pages', {
 			notebook: name,
 		})
 		state.pages = state.pages.map((page) => {
@@ -30,7 +30,7 @@ export default function useNotebook(name) {
 	state.reload()
 
 	state.createPage = async () => {
-		return call('insights.api.create_notebook_page', {
+		return call('insights.api.notebooks.create_notebook_page', {
 			notebook: name,
 		})
 	}

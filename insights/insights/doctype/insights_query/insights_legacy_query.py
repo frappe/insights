@@ -7,7 +7,7 @@ from json import dumps
 import frappe
 from frappe.utils.data import cstr
 
-from insights.api import fetch_column_values, get_tables
+from insights.api.data_sources import fetch_column_values, get_tables
 from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable
 
 from ..insights_data_source.sources.query_store import sync_query_store
@@ -335,7 +335,9 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def before_fetch(self):
         if self.doc.data_source != "Query Store":
             return
-        sub_stored_queries = [t.table for t in self.doc.tables if t.table != self.doc.name]
+        sub_stored_queries = [
+            t.table for t in self.get_selected_tables() if t.table != self.doc.name
+        ]
         sync_query_store(sub_stored_queries)
 
     def after_fetch(self, results):

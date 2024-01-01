@@ -1,11 +1,11 @@
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
-import { safeJSONParse } from '@/utils'
+import { areDeeplyEqual, safeJSONParse } from '@/utils'
+import { createToast } from '@/utils/toasts'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
-import { createToast } from '@/utils/toasts'
 
 const session = sessionStore()
 
@@ -61,6 +61,7 @@ export default function useDashboard(name) {
 		state.currentItem = undefined
 		state.loading = false
 		state.editing = false
+		window.location.reload()
 	}
 
 	async function deleteDashboard() {
@@ -112,6 +113,7 @@ export default function useDashboard(name) {
 					value: value.value,
 			  }
 			: undefined
+		if (areDeeplyEqual(filterState, state.filterStates[item_id])) return
 		saveLocal(getFilterStateKey(item_id), filterState).then(() => {
 			state.filterStates[item_id] = filterState
 			refreshLinkedCharts(item_id)
@@ -158,23 +160,6 @@ export default function useDashboard(name) {
 		return state.filtersByChart[chart_id]
 	}
 
-	const fetchChartDataQueue = []
-	async function fetchChartData(args) {
-		// a wrapper around the fetch_chart_data method
-		// to make sure that there's a 1 second gap between
-		// two consecutive calls
-		// this is to avoid hitting the rate limit
-		const lastCall = fetchChartDataQueue.at(-1)
-		if (lastCall) {
-			const diff = new Date() - lastCall
-			if (diff < 1000) {
-				await new Promise((resolve) => setTimeout(resolve, 1000 - diff))
-			}
-		}
-		fetchChartDataQueue.push(new Date())
-		return resource.fetch_chart_data.submit(args).then((res) => res.message)
-	}
-
 	async function getChartResults(itemId, queryName) {
 		if (!queryName)
 			state.doc.items.some((item) => {
@@ -187,12 +172,13 @@ export default function useDashboard(name) {
 			throw new Error(`Query not found for item ${itemId}`)
 		}
 		const filters = await getChartFilters(itemId)
-		const results = await fetchChartData({
-			item_id: itemId,
-			query_name: queryName,
-			filters,
-		})
-		return results
+		return resource.fetch_chart_data
+			.submit({
+				item_id: itemId,
+				query_name: queryName,
+				filters,
+			})
+			.then((res) => res.message)
 	}
 
 	function refreshFilter(filter_id) {

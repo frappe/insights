@@ -2,8 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -24,6 +24,14 @@ class DatabaseConnectionError(frappe.ValidationError):
     pass
 
 
+class DatabaseCredentialsError(frappe.ValidationError):
+    pass
+
+
+class DatabaseParallelConnectionError(frappe.ValidationError):
+    pass
+
+
 class BaseDatabase:
     def __init__(self):
         self.engine = None
@@ -33,14 +41,25 @@ class BaseDatabase:
         self.table_factory = None
 
     def test_connection(self):
-        return self.execute_query("SELECT 1")
+        with self.connect() as connection:
+            res = connection.execute(text("SELECT 1"))
+            return res.fetchone()
 
+    @retry(
+        retry=retry_if_exception_type((DatabaseParallelConnectionError,)),
+        stop=stop_after_attempt(5),
+        wait=wait_fixed(1),
+        reraise=True,
+    )
     def connect(self):
         try:
             return self.engine.connect()
         except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
-            raise DatabaseConnectionError(e)
+            self.handle_db_exception(e)
+
+    def handle_db_exception(self, e):
+        raise DatabaseCredentialsError(e)
 
     def build_query(self, query):
         """Used to update the sql in insights query"""

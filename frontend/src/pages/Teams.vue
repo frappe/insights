@@ -117,7 +117,7 @@ function getAvatars(members) {
 	return members
 		.map((member) => ({
 			label: member.full_name,
-			imageURL: member.user_image,
+			image: member.user_image,
 		}))
 		.slice(0, 3)
 		.concat(members.length > 3 ? [{ label: `${members.length - 3}` }] : [])

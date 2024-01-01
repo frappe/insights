@@ -12,7 +12,7 @@ const show = computed({
 <template>
 	<Dialog v-model="show" :options="{ title: 'Connect to MySQL' }">
 		<template #body-content>
-			<MariaDBForm />
+			<MariaDBForm @submit="show = false" />
 		</template>
 	</Dialog>
 </template>

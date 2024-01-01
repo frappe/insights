@@ -1,5 +1,5 @@
-import { getColors } from '@/utils/colors'
 import { ellipsis } from '@/utils'
+import { getColors } from '@/utils/colors'
 
 export default function getPieChartOptions(labels, dataset, options) {
 	const MAX_SLICES = 9
@@ -8,15 +8,27 @@ export default function getPieChartOptions(labels, dataset, options) {
 		return {}
 	}
 
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
+
 	const slices = dataset.data.slice(0, parseInt(options.maxSlices) || MAX_SLICES)
 	const otherSlices = dataset.data
 		.slice(parseInt(options.maxSlices) || 9)
 		.reduce((a, b) => a + b, 0)
 	const data = slices.map((value, index) => {
-		return { name: labels[index], value: value }
+		return {
+			name: labels[index],
+			value: value,
+			itemStyle: {
+				color: colors[index],
+			},
+		}
 	})
 	if (otherSlices) {
-		data.push({ name: 'Others', value: otherSlices })
+		data.push({
+			name: 'Others',
+			value: otherSlices,
+			itemStyle: { color: colors[slices.length] },
+		})
 	}
 
 	const legendOptions = { type: 'plain', bottom: 0 }
@@ -25,7 +37,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 	if (!options.inlineLabels && options.labelPosition) {
 		const position = options.labelPosition
-		updateLegendOptions(position)
+		updateLegendOptions(position.value ?? position)
 	}
 
 	function updateLegendOptions(position) {
@@ -93,7 +105,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		series: [
 			{
 				type: 'pie',

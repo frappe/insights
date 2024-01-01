@@ -3,7 +3,7 @@
 
 import frappe
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from insights.insights.doctype.insights_data_source.sources.sqlite import SQLiteDB
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (
@@ -19,29 +19,17 @@ class StoredQueryTableFactory:
     def __init__(self) -> None:
         self.data_source = "Query Store"
 
-    def import_query(self, query):
-        result = query.fetch_results()
-        if not result:
-            return
-        columns = [col["label"] for col in result[0]]
-        df = pd.DataFrame(result[1:], columns=columns, dtype=str)
-        df.to_sql(query.name, self.connection, if_exists="replace", index=False)
-
     def sync_tables(self, connection, tables=None, force=False):
         self.connection = connection
-        for table in self.get_tables(tables):
-            create_insights_table(table, force=force)
-
-    def get_tables(self, tables=None):
-        _tables = []
         to_sync = self.get_stored_queries() if tables is None else tables
-        # create table object from the stored queries
         for docname in to_sync:
+            if not frappe.db.exists("Insights Query", docname):
+                continue
             doc = frappe.get_doc("Insights Query", docname)
-            # since we already have doc here, we can use it to import query result
-            self.import_query(doc)
-            _tables.append(self.make_table(doc))
-        return _tables
+            # fetch results internally imports them into the db
+            # also updates the insights table
+            doc.fetch_results()
+            force and create_insights_table(self.make_table(doc), force=True)
 
     def make_table(self, query):
         return frappe._dict(
@@ -86,7 +74,29 @@ class QueryStore(SQLiteDB):
         query = frappe.get_doc("Insights Query", table)
         return query.get_columns()
 
+    def store_query(self, query, results):
+        if not results:
+            with self.engine.begin() as connection:
+                connection.execute(text(f"DROP TABLE IF EXISTS '{query.name}'"))
+                return
+
+        create_insights_table(self.table_factory.make_table(query), force=True)
+        columns = [col["label"] for col in results[0]]
+        df = pd.DataFrame(results[1:], columns=columns, dtype=str)
+        df.to_sql(query.name, self.engine, if_exists="replace", index=False)
+
 
 def sync_query_store(tables=None, force=False):
     query_store = QueryStore()
     query_store.sync_tables(tables, force)
+
+
+def store_query(query, results):
+    query_store = QueryStore()
+    query_store.store_query(query, results)
+
+
+def remove_stored_query(query):
+    query_store = QueryStore()
+    query_store.store_query(query, [])
+    frappe.db.delete("Insights Table", {"table": query.name, "data_source": "Query Store"})

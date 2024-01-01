@@ -3,7 +3,6 @@ import {
 	FeatherIcon,
 	Input,
 	onOutsideClickDirective,
-	Popover,
 	Dialog,
 	ErrorMessage,
 	Dropdown,
@@ -11,9 +10,11 @@ import {
 	Avatar,
 	Tooltip,
 	LoadingIndicator,
+	FormControl,
 } from 'frappe-ui'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
+import Popover from '@/components/Popover.vue'
 
 import utils from './utils'
 import { createToast } from './utils/toasts'
@@ -29,6 +30,7 @@ export function registerGlobalComponents(app) {
 	app.component('Tooltip', Tooltip)
 	app.component('Checkbox', Checkbox)
 	app.component('Dropdown', Dropdown)
+	app.component('FormControl', FormControl)
 	app.component('LoadingIndicator', LoadingIndicator)
 	app.component('Autocomplete', Autocomplete)
 	app.component('ErrorMessage', ErrorMessage)

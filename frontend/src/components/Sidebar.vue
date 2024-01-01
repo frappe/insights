@@ -5,10 +5,10 @@
 	>
 		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
-				<img src="../assets/insights-logo.svg" class="h-7" />
+				<img src="../assets/insights-logo-new.svg" class="h-7" />
 			</div>
 			<router-link to="/" class="rg:hidden flex cursor-pointer">
-				<img src="../assets/insights-icon.svg" class="rounded" />
+				<img src="../assets/insights-logo-new.svg" class="rounded" />
 			</router-link>
 
 			<div class="mt-4 flex flex-col">
@@ -96,7 +96,7 @@
 							<Avatar
 								size="xl"
 								:label="session.user.full_name"
-								:imageURL="session.user.user_image"
+								:image="session.user.user_image"
 							/>
 							<span
 								class="rg:inline ml-2 hidden overflow-hidden text-ellipsis whitespace-nowrap"
@@ -183,7 +183,7 @@ const sidebarItems = ref([
 ])
 
 watch(
-	() => session.user.is_admin && settings.enable_permissions,
+	() => session.user.is_admin && settings?.enable_permissions,
 	(isAdmin) => {
 		if (isAdmin) {
 			// add users & teams item after settings item

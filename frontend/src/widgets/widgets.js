@@ -4,17 +4,20 @@ import {
 	BarChart3,
 	BatteryMedium,
 	DollarSign,
+	GitBranch,
 	LineChart,
 	ListFilter,
 	PieChart,
 	ScatterChart,
+	Sparkles,
+	Square,
 	Table,
 	TextCursorInput,
 	TrendingUp,
 } from 'lucide-vue-next'
 import { defineAsyncComponent } from 'vue'
 
-const VALID_CHARTS = [
+export const VALID_CHARTS = [
 	'Number',
 	'Line',
 	'Bar',
@@ -25,6 +28,7 @@ const VALID_CHARTS = [
 	'Funnel',
 	'Trend',
 	'Mixed Axis',
+	'Pivot Table',
 ]
 
 const WIDGETS = {
@@ -136,6 +140,15 @@ const WIDGETS = {
 		defaultWidth: 8,
 		defaultHeight: 2,
 	},
+	'Pivot Table': {
+		type: 'Pivot Table',
+		icon: GitBranch,
+		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
+		options: {},
+		defaultWidth: 16,
+		defaultHeight: 14,
+	},
 }
 
 const UnknownWidget = {
@@ -166,9 +179,10 @@ function getChartOptions() {
 	}))
 }
 
-export function getChartIcon(itemType) {
+export function getIcon(itemType) {
 	if (!itemType) return
-	if (!VALID_CHARTS.includes(itemType)) return
+	if (itemType == 'Auto') return Sparkles
+	if (!get(itemType)) return Square
 	return get(itemType).icon
 }
 
@@ -179,5 +193,5 @@ export default {
 	getComponent,
 	getOptionComponent,
 	getChartOptions,
-	getChartIcon,
+	getIcon,
 }

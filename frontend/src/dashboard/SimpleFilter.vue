@@ -1,13 +1,12 @@
 <script setup>
-import { formatDate, isEmptyObj } from '@/utils'
-import { getOperatorOptions } from '@/utils/query/columns'
-import { call, debounce } from 'frappe-ui'
-import { computed, reactive, ref, watch } from 'vue'
-
 import DatePickerFlat from '@/components/Controls/DatePickerFlat.vue'
 import DateRangePickerFlat from '@/components/Controls/DateRangePickerFlat.vue'
 import TimespanPickerFlat from '@/components/Controls/TimespanPickerFlat.vue'
+import { fieldtypesToIcon, formatDate, isEmptyObj } from '@/utils'
+import { getOperatorOptions } from '@/utils/'
 import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/vue'
+import { call, debounce } from 'frappe-ui'
+import { computed, inject, reactive, ref, watch } from 'vue'
 
 const emit = defineEmits(['apply', 'reset'])
 const props = defineProps({
@@ -50,11 +49,11 @@ watch(
 	{ immediate: true }
 )
 
+const isOpen = ref(false)
 const applyDisabled = computed(() => {
 	return isEmptyObj(filter.column) || isEmptyObj(filter.operator) || isEmptyObj(filter.value)
 })
 function applyFilter() {
-	if (filter.value?.value == props.value?.value) return
 	if (applyDisabled.value) return
 	emit('apply', filter)
 }
@@ -82,6 +81,8 @@ const showValuePicker = computed(
 		filter.column?.type == 'String'
 )
 
+const dashboard = inject('dashboard')
+const item_id = inject('item_id')
 const columnValues = ref([])
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	if (
@@ -92,13 +93,21 @@ const checkAndFetchColumnValues = debounce(async function (search_text = '') {
 	}
 
 	if (filter.column?.type == 'String') {
-		// prettier-ignore
-		columnValues.value = await call('insights.api.fetch_column_values', {
+		let method = 'insights.api.data_sources.fetch_column_values'
+		let params = {
 			data_source: filter.column.data_source,
 			table: filter.column.table,
 			column: filter.column.column,
 			search_text,
-		})
+		}
+		if (dashboard.isPublic) {
+			method = 'insights.api.public.fetch_column_values_public'
+			params = {
+				public_key: dashboard.doc.public_key,
+				item_id: item_id,
+			}
+		}
+		columnValues.value = await call(method, params)
 	}
 }, 300)
 
@@ -119,17 +128,14 @@ watch(
 )
 
 const operatorLabel = computed(() => {
-	if (['between', 'timespan'].includes(filter.operator?.value)) {
-		return ':'
-	}
-	return filter.operator?.value
+	// if (['between', 'timespan'].includes(filter.operator?.value)) {
+	// 	return ':'
+	// }
+	// if (['in', 'not_in'].includes(filter.operator?.value)) {
+	// 	return filter.operator?.label
+	// }
+	return filter.operator?.label
 })
-
-const valueLabel = computed(() =>
-	filter.value?.length > 1
-		? `${filter.value?.length} values`
-		: filter.value[0]?.label || filter.value?.label
-)
 
 function resetFilter() {
 	filter.column = props.disableColumns ? filter.column : null
@@ -137,48 +143,89 @@ function resetFilter() {
 	filter.value = null
 	emit('reset')
 }
+
+const valueLabel = computed(() => filter.value?.label || filter.value?.value)
+const isMultiple = computed(() => ['in', 'not_in'].includes(filter.operator?.value))
+if (isMultiple.value && Array.isArray(filter.value)) {
+	// for backward compatibility
+	const values = filter.value[0]?.value ? filter.value.map((v) => v.value) : filter.value
+	filter.value = {
+		label: `${filter.value?.length} values`,
+		value: values,
+	}
+}
+const comboboxModelValue = computed({
+	get: () => {
+		return !isMultiple.value
+			? filter.value
+			: filter.value?.value?.map((value) => {
+					return { label: value, value }
+			  })
+	},
+	set: (value) => {
+		if (!isMultiple.value) {
+			filter.value = value
+			return
+		}
+
+		const values = value
+			?.map((v) => v.value)
+			.reduce((acc, value) => {
+				// remove the ones which appear more than once
+				// since clicking on same value adds it twice
+				if (acc.includes(value)) {
+					return acc.filter((v) => v !== value)
+				}
+				return [...acc, value]
+			}, [])
+		const multipleValueLabel = values?.length > 1 ? `${values.length} values` : values?.[0]
+		filter.value = { label: multipleValueLabel, value: values }
+	},
+})
+function onComboboxValueChange(value, togglePopover) {}
+function isValueSelected(value) {
+	if (isMultiple.value) {
+		return filter.value?.value?.includes(value)
+	}
+	return filter.value?.value === value
+}
 </script>
 
 <template>
 	<div class="w-full [&:first-child]:w-full">
 		<Popover class="w-full" @close="applyFilter">
 			<template #target="{ togglePopover, isOpen }">
-				<div class="flex w-full">
+				<div class="flex h-8 w-full rounded bg-white shadow">
 					<button
-						class="flex w-full items-center rounded border border-gray-100 bg-white px-3 py-1 text-base leading-5 text-gray-900 shadow"
+						class="flex flex-1 flex-shrink-0 items-center gap-1.5 overflow-hidden rounded bg-white p-1 pl-3 text-base font-medium leading-5 text-gray-900"
 						@click="togglePopover"
 					>
-						<span v-if="!filter.column" class="text-gray-600">Select a filter...</span>
-						<span
-							v-else
-							class="overflow-hidden text-ellipsis whitespace-nowrap"
-							:class="{ 'text-gray-600': !filter.operator }"
-						>
-							{{ filter.label || filter.column.label }}
+						<span v-if="!filter.column" class="font-normal text-gray-600">
+							Select a filter...
 						</span>
-						<span v-if="filter.operator" class="ml-1">{{ operatorLabel }}</span>
-						<span
-							v-if="filter.value"
-							class="ml-1 flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap"
-						>
+						<div class="flex flex-shrink-0 items-center gap-1">
+							<component
+								:is="fieldtypesToIcon[filter.column.type]"
+								class="h-4 w-4 flex-shrink-0 text-gray-600"
+							/>
+							<span class="truncate">{{ filter.column.label }}</span>
+						</div>
+						<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
+							{{ operatorLabel }}
+						</span>
+						<span v-if="filter.value" class="flex-shrink-0 truncate">
 							{{ valueLabel }}
 						</span>
-						<div class="ml-auto flex items-center pl-2">
-							<div
-								v-if="isOpen || !applyDisabled"
-								class="-my-1 -mr-2 rounded p-1 hover:bg-blue-50 hover:text-blue-600"
-								@click.prevent.stop="resetFilter()"
-							>
-								<FeatherIcon name="x" class="h-3.5 w-3.5" />
-							</div>
-							<FeatherIcon
-								v-else
-								name="chevron-down"
-								class="h-3.5 w-3.5"
-								@click.prevent.stop="togglePopover(true)"
-							/>
-						</div>
 					</button>
+					<div class="flex h-8 items-center rounded">
+						<Button
+							v-if="isOpen || !applyDisabled"
+							icon="x"
+							variant="ghost"
+							@click.prevent.stop="resetFilter()"
+						/>
+						<FeatherIcon v-else name="chevron-down" class="mr-2 h-4 w-4" />
+					</div>
 				</div>
 			</template>
 			<template #body="{ togglePopover }">
@@ -220,12 +267,10 @@ function resetFilter() {
 					<Combobox
 						v-if="showValuePicker"
 						as="div"
-						v-model="filter.value"
 						nullable
-						:multiple="['in', 'not_in'].includes(filter.operator?.value)"
-						@update:model-value="
-							!filter.operator?.value.includes('in') && togglePopover(false)
-						"
+						:multiple="isMultiple"
+						v-model="comboboxModelValue"
+						@update:model-value="!isMultiple && togglePopover(false)"
 					>
 						<ComboboxInput
 							v-if="filter.operator?.value != 'is'"
@@ -241,7 +286,7 @@ function resetFilter() {
 									v-for="value in values"
 									:key="value.value"
 									:value="value"
-									v-slot="{ active, selected }"
+									v-slot="{ active }"
 								>
 									<div
 										class="flex cursor-pointer items-center rounded px-2 py-1.5 hover:bg-gray-100"
@@ -249,7 +294,7 @@ function resetFilter() {
 									>
 										<span>{{ value.label }}</span>
 										<FeatherIcon
-											v-if="selected"
+											v-if="isValueSelected(value.value)"
 											name="check"
 											class="ml-auto h-3.5 w-3.5"
 										/>
@@ -295,22 +340,14 @@ function resetFilter() {
 							}
 						"
 					/>
-
-					<input
-						v-else
-						type="text"
-						placeholder="Enter a value"
-						:value="filter.value?.value"
-						@input="
-							(event) => {
-								filter.value = {
-									value: event.target.value,
-									label: event.target.value,
-								}
-							}
-						"
-						class="form-input block h-7 w-full select-none rounded border-gray-400 placeholder-gray-500"
-					/>
+					<div v-else class="flex items-center gap-2">
+						<Input
+							:model-value="filter.value?.value"
+							@update:model-value="filter.value = { value: $event, label: $event }"
+							placeholder="Enter a value"
+						/>
+						<Button variant="solid" icon="check" @click="togglePopover(false)" />
+					</div>
 				</div>
 			</template>
 		</Popover>

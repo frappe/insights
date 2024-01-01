@@ -9,14 +9,16 @@ export default function getScatterChartOptions(labels, datasets, options) {
 		return {}
 	}
 
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
+
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		grid: {
-			top: 25,
+			top: 15,
 			bottom: 35,
-			left: 20,
-			right: 30,
+			left: 25,
+			right: 35,
 			containLabel: true,
 		},
 		xAxis: {
@@ -39,9 +41,10 @@ export default function getScatterChartOptions(labels, datasets, options) {
 				formatter: (value, index) => $utils.getShortNumber(value, 1),
 			},
 		},
-		series: datasets.map((dataset) => ({
+		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
 			data: dataset.data,
+			color: colors[index],
 			type: 'scatter',
 			symbolSize: 10,
 		})),

@@ -1,5 +1,6 @@
 import { formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
+import { graphic } from 'echarts/core'
 import { inject } from 'vue'
 
 export default function getLineChartOptions(labels, datasets, options) {
@@ -21,14 +22,16 @@ export default function getLineChartOptions(labels, datasets, options) {
 		  }
 		: {}
 
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
+
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		grid: {
-			top: 30,
+			top: 15,
 			bottom: 35,
-			left: 20,
-			right: 30,
+			left: 25,
+			right: 35,
 			containLabel: true,
 		},
 		xAxis: {
@@ -52,12 +55,21 @@ export default function getLineChartOptions(labels, datasets, options) {
 			data: dataset.data,
 			type: 'line',
 			yAxisIndex: options.splitYAxis ? index : 0,
-			color: dataset.options.color,
-			smooth: dataset.options.smoothLines || options.smoothLines ? 0.4 : false,
+			color: dataset.series_options.color || colors[index],
+			smooth: dataset.series_options.smoothLines || options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
-			showSymbol: dataset.options.showPoints || options.showPoints,
+			showSymbol: dataset.series_options.showPoints || options.showPoints,
 			markLine: markLine,
-			areaStyle: { opacity: dataset.options.showArea || options.showArea ? 0.1 : 0 },
+			areaStyle:
+				dataset.series_options.showArea || options.showArea
+					? {
+							color: new graphic.LinearGradient(0, 0, 0, 1, [
+								{ offset: 0, color: dataset.series_options.color || colors[index] },
+								{ offset: 1, color: '#fff' },
+							]),
+							opacity: 0.2,
+					  }
+					: undefined,
 		})),
 		legend: {
 			icon: 'circle',

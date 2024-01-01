@@ -12,13 +12,13 @@ const columnTypes = ['String', 'Integer', 'Decimal', 'Date', 'Datetime']
 const table = reactive({
 	label: '',
 	name: '',
-	data_source: '',
+	data_source: 'Query Store',
 	file: null,
 	ifExists: 'Overwrite',
 })
 const columns = ref([])
 const getColumns = createResource({
-	url: 'insights.api.get_columns_from_uploaded_file',
+	url: 'insights.api.data_sources.get_columns_from_uploaded_file',
 	initialData: [],
 	onSuccess: (data) => {
 		columns.value = data?.map((c) => {
@@ -55,7 +55,7 @@ function scrubName(name) {
 	return name?.toLocaleLowerCase().replace(/[^a-zA-Z0-9]/g, '_')
 }
 const import_csv = createResource({
-	url: 'insights.api.import_csv',
+	url: 'insights.api.data_sources.import_csv',
 })
 
 const dataSourceStore = useDataSourceStore()
@@ -122,6 +122,7 @@ function reset() {
 					<span class="mb-2 block text-sm leading-4 text-gray-700">Data Source</span>
 					<Autocomplete
 						v-model="table.data_source"
+						:returnValue="true"
 						:options="dataSourceStore.getDropdownOptions({ allow_imports: 1 })"
 						placeholder="Select Data Source"
 					/>

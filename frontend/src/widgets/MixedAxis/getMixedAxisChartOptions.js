@@ -21,14 +21,16 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 		  }
 		: {}
 
+	const colors = options.colors?.length ? [...options.colors, ...getColors()] : getColors()
+
 	return {
 		animation: false,
-		color: options.colors || getColors(),
+		color: colors,
 		grid: {
-			top: 30,
+			top: 15,
 			bottom: 35,
-			left: 20,
-			right: 30,
+			left: 25,
+			right: 35,
 			containLabel: true,
 		},
 		xAxis: {
@@ -53,14 +55,23 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
 			data: dataset.data,
-			type: dataset.options.type,
-			color: dataset.options.color,
+			type: dataset.series_options.type || 'line',
+			color: dataset.series_options.color || colors[index],
 			yAxisIndex: options.splitYAxis ? index : 0,
-			smooth: dataset.options.smoothLines ? 0.4 : false,
+			smooth: dataset.series_options.smoothLines ? 0.4 : false,
 			smoothMonotone: 'x',
-			showSymbol: dataset.options.showPoints,
+			showSymbol: dataset.series_options.showPoints,
 			markLine: markLine,
-			areaStyle: { opacity: dataset.options.showArea ? 0.1 : 0 },
+			areaStyle:
+				dataset.series_options.showArea || options.showArea
+					? {
+							color: new graphic.LinearGradient(0, 0, 0, 1, [
+								{ offset: 0, color: dataset.series_options.color || colors[index] },
+								{ offset: 1, color: '#fff' },
+							]),
+							opacity: 0.2,
+					  }
+					: undefined,
 			itemStyle: {
 				borderRadius: options.invertAxis ? [0, 4, 4, 0] : [4, 4, 0, 0],
 			},

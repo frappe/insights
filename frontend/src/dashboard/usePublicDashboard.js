@@ -1,4 +1,4 @@
-import { safeJSONParse } from '@/utils'
+import { areDeeplyEqual, safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { createResource } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
@@ -7,6 +7,7 @@ import { reactive } from 'vue'
 export default function usePublicDashboard(public_key) {
 	const resource = getPublicDashboard(public_key)
 	const state = reactive({
+		isPublic: true,
 		doc: {
 			doctype: 'Insights Dashboard',
 			name: undefined,
@@ -48,6 +49,7 @@ export default function usePublicDashboard(public_key) {
 					value: value.value,
 			  }
 			: undefined
+		if (areDeeplyEqual(filterState, state.filterStates[item_id])) return
 		saveLocal(getFilterStateKey(item_id), filterState).then(() => {
 			state.filterStates[item_id] = filterState
 			refreshLinkedCharts(item_id)
@@ -163,7 +165,7 @@ export default function usePublicDashboard(public_key) {
 
 function getPublicDashboard(public_key) {
 	const resource = createResource({
-		url: 'insights.api.get_public_dashboard',
+		url: 'insights.api.public.get_public_dashboard',
 		params: { public_key },
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)
@@ -171,7 +173,7 @@ function getPublicDashboard(public_key) {
 		},
 	})
 	resource.fetch_chart_data = createResource({
-		url: 'insights.api.get_public_dashboard_chart_data',
+		url: 'insights.api.public.get_public_dashboard_chart_data',
 	})
 	return resource
 }

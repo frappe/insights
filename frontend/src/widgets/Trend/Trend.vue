@@ -94,7 +94,7 @@ const trendLineOptions = computed(() => {
 		>
 			<div class="flex w-full justify-between space-x-4">
 				<div
-					class="overflow-hidden text-ellipsis whitespace-nowrap leading-6 text-gray-600"
+					class="overflow-hidden text-ellipsis whitespace-nowrap font-medium leading-6 text-gray-600"
 				>
 					{{ options.title }}
 				</div>
@@ -112,13 +112,12 @@ const trendLineOptions = computed(() => {
 				<div
 					class="flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[28px] font-medium leading-10"
 				>
-					{{ options.prefix }} {{ formatNumber(currentValue, 2) }} {{ options.suffix }}
+					{{ options.prefix }}{{ formatNumber(currentValue, 2) }}{{ options.suffix }}
 				</div>
 				<div
 					class="flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] text-sm leading-5 text-gray-600"
 				>
-					from {{ options.prefix }} {{ formatNumber(previousValue, 2) }}
-					{{ options.suffix }}
+					from {{ options.prefix }}{{ formatNumber(previousValue, 2) }}{{ options.suffix }}
 				</div>
 			</div>
 			<BaseChart v-if="options.showTrendLine" class="!px-0" :options="trendLineOptions" />

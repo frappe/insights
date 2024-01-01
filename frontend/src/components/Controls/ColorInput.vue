@@ -8,7 +8,9 @@
 					:style="{
 						background: value
 							? value
-							: `url(/assets/website_builder/frontend/color-circle.png) center / contain`,
+							: `linear-gradient(217deg, rgba(255,0,0,.8), rgba(255,0,0,0) 70.71%),
+									linear-gradient(127deg, rgba(0,255,0,.8), rgba(0,255,0,0) 70.71%),
+									linear-gradient(336deg, rgba(0,0,255,.8), rgba(0,0,255,0) 70.71%)`,
 					}"
 				></div>
 				<Input
@@ -43,8 +45,8 @@
 
 <script setup>
 import { getRGB } from '@/utils/colors'
-import ColorPicker from './ColorPicker.vue'
 import { computed } from 'vue'
+import ColorPicker from './ColorPicker.vue'
 
 const props = defineProps({ modelValue: String, placement: String })
 const emit = defineEmits(['update:modelValue'])
@@ -54,5 +56,7 @@ const value = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-const handleColorChange = (v) => (value.value = getRGB(v))
+const handleColorChange = (v) => {
+	value.value = getRGB(v)
+}
 </script>

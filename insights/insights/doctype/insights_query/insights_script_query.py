@@ -8,6 +8,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.safe_exec import safe_exec
 
 from insights import notify
+from insights.utils import ResultColumn
 
 from .utils import get_columns_with_inferred_types
 
@@ -60,7 +61,7 @@ class InsightsScriptQueryController:
                 title="Insights Script Query Error",
             )
 
-        results = self.validate_results(results)
+        results = self.validate_and_sanitize_results(results)
         return results
 
     def reset_script_log(self):
@@ -79,20 +80,26 @@ class InsightsScriptQueryController:
             update_modified=False,
         )
 
-    def validate_results(self, results):
+    def validate_and_sanitize_results(self, results):
         if not results:
-            notify("The script should declare a variable named 'results'.")
+            notify(
+                "The script should declare a variable named 'results' that contains column header and row data."
+            )
             return []
 
-        if not isinstance(results[0], list):
-            notify("Results should be a list of lists.")
-            return []
+        if isinstance(results, pd.DataFrame):
+            columns = [ResultColumn.from_args(col) for col in results.columns]
+            values = results.values.tolist()
+            return [columns] + values
 
         if not all(isinstance(row, list) for row in results):
             notify("All rows should be lists.")
             return []
 
-        results[0] = [{"label": col} for col in results[0]]
+        if all(isinstance(col, str) for col in results[0]):
+            new_columns = [ResultColumn.from_args(col) for col in results[0]]
+            return [new_columns] + results[1:]
+
         return results
 
     def before_fetch(self):

@@ -35,7 +35,7 @@ const valueOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<Input
+		<FormControl
 			type="text"
 			label="Title"
 			class="w-full"
@@ -43,21 +43,29 @@ const valueOptions = computed(() => {
 			placeholder="Title"
 		/>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Date Column</span>
-			<Autocomplete v-model="options.dateColumn" :options="dateOptions" />
+			<label class="mb-1.5 block text-xs text-gray-600">Date Column</label>
+			<Autocomplete v-model="options.dateColumn" :returnValue="true" :options="dateOptions" />
 		</div>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Value Column</span>
-			<Autocomplete v-model="options.valueColumn" :options="valueOptions" />
+			<label class="mb-1.5 block text-xs text-gray-600">Value Column</label>
+			<Autocomplete
+				v-model="options.valueColumn"
+				:returnValue="true"
+				:options="valueOptions"
+			/>
 		</div>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Prefix</span>
-			<Input type="text" v-model="options.prefix" placeholder="Enter a prefix..." />
-		</div>
-		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Suffix</span>
-			<Input type="text" v-model="options.suffix" placeholder="Enter a suffix..." />
-		</div>
+		<FormControl
+			label="Prefix"
+			type="text"
+			v-model="options.prefix"
+			placeholder="Enter a prefix..."
+		/>
+		<FormControl
+			label="Suffix"
+			type="text"
+			v-model="options.suffix"
+			placeholder="Enter a suffix..."
+		/>
 		<Checkbox v-model="options.showTrendLine" label="Show Trend Line" />
 		<Checkbox v-model="options.shorten" label="Shorten Numbers" />
 	</div>

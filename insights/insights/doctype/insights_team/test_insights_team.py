@@ -4,13 +4,9 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from insights.api import (
-    get_dashboard_list,
-    get_data_sources,
-    get_queries,
-    get_table_columns,
-    get_tables,
-)
+from insights.api.dashboards import get_dashboard_list
+from insights.api.data_sources import get_data_sources, get_table_columns, get_tables
+from insights.api.queries import get_queries
 
 from .insights_team_client import get_teams
 

@@ -31,21 +31,29 @@ class InsightsTableColumn:
         return [InsightsTableColumn.from_dict(obj) for obj in objs]
 
 
+QUERY_RESULT_CACHE_PREFIX = "insights_query_results"
+
+
 class CachedResults:
     @classmethod
+    def exists(cls, query):
+        key = f"{QUERY_RESULT_CACHE_PREFIX}:{query}"
+        return frappe.cache().exists(key)
+
+    @classmethod
     def get(cls, query):
-        key = f"insights_query_results:{query}"
+        key = f"{QUERY_RESULT_CACHE_PREFIX}:{query}"
         results_str = frappe.cache().get_value(key)
         if not results_str:
-            return []
+            return None
         results = frappe.parse_json(results_str)
         if not results:
-            return []
+            return None
         return results
 
     @classmethod
     def set(cls, query, results):
-        key = f"insights_query_results:{query}"
+        key = f"{QUERY_RESULT_CACHE_PREFIX}:{query}"
         results_str = frappe.as_json(results)
         frappe.cache().set_value(key, results_str)
 
@@ -57,12 +65,13 @@ class Status(Enum):
 
 
 def update_sql(query):
+    query.status = Status.SUCCESS.value
     if not query.data_source:
         return
     data_source = InsightsDataSource.get_doc(query.data_source)
     sql = data_source.build_query(query)
     sql = format_query(sql)
-    if query.sql == sql:
+    if not sql or query.sql == sql:
         return
     query.sql = sql
     query.status = Status.PENDING.value
@@ -83,6 +92,9 @@ def format_query(query):
 
 def apply_pivot_transform(results, options):
     options = frappe.parse_json(options)
+    if not (options.get("column") and options.get("index") and options.get("value")):
+        return results
+
     pivot_column = [c for c in results[0] if c["label"] == options.get("column")]
     index_column = [c for c in results[0] if c["label"] == options.get("index")]
     value_column = [c for c in results[0] if c["label"] == options.get("value")]
@@ -115,6 +127,8 @@ def apply_pivot_transform(results, options):
         columns=pivot_column["label"],
         values=value_column["label"],
         aggfunc="sum",
+        fill_value=0,
+        sort=False,
     )
 
     pivoted = pivoted.reset_index()
@@ -190,7 +204,9 @@ def apply_cumulative_sum(columns, results):
     results_df = pd.DataFrame(results[1:], columns=column_names)
 
     for column in columns:
-        results_df[column.label] = results_df[column.label].cumsum()
+        results_df[column.get("label")] = (
+            results_df[column.get("label")].astype(float).cumsum().fillna(0)
+        )
 
     return [results[0]] + results_df.values.tolist()
 
@@ -267,7 +283,12 @@ class Column(frappe._dict):
         return self.aggregation and self.aggregation != "custom"
 
     def is_expression(self):
-        return self.expression.get("raw") and self.expression.get("ast") and self.alias
+        return (
+            self.expression
+            and self.expression.get("raw")
+            and self.expression.get("ast")
+            and self.alias
+        )
 
     def is_formatted(self):
         return self.format
@@ -283,6 +304,14 @@ class Column(frappe._dict):
 
     def is_string_type(self):
         return self.type in ["String", "Text"]
+
+    def is_measure(self):
+        return self.aggregation.lower() != "group by" and (
+            self.is_numeric_type() or self.is_aggregate() or self.is_expression()
+        )
+
+    def is_dimension(self):
+        return not self.is_measure()
 
 
 @dataclass
@@ -305,14 +334,25 @@ class Table(frappe._dict):
         return bool(self.table)
 
 
+class JoinColumn(frappe._dict):
+    def __init__(self, *args, **kwargs):
+        self.table = kwargs.get("table")
+        self.column = kwargs.get("column")
+        self.value = kwargs.get("column")
+        self.label = kwargs.get("label") or kwargs.get("column")
+
+    def is_valid(self):
+        return bool(self.table and self.column)
+
+
 @dataclass
 class Join(frappe._dict):
     def __init__(self, *args, **kwargs):
         self.left_table = Table(**kwargs.get("left_table"))
         self.right_table = Table(**kwargs.get("right_table"))
         self.join_type = LabelValue(**kwargs.get("join_type"))
-        self.left_column = Column(**kwargs.get("left_column"))
-        self.right_column = Column(**kwargs.get("right_column"))
+        self.left_column = JoinColumn(**kwargs.get("left_column"))
+        self.right_column = JoinColumn(**kwargs.get("right_column"))
 
     def is_valid(self):
         return (
@@ -331,13 +371,15 @@ class Join(frappe._dict):
 @dataclass
 class Filter(frappe._dict):
     def __init__(self, *args, **kwargs):
-        self.column = Column(**kwargs.get("column"))
-        self.operator = LabelValue(**kwargs.get("operator"))
-        self.value = LabelValue(**kwargs.get("value"))
+        self.column = Column(**(kwargs.get("column") or {}))
+        self.operator = LabelValue(**(kwargs.get("operator") or {}))
+        self.value = LabelValue(**(kwargs.get("value") or {}))
+        self.expression = frappe.parse_json(kwargs.get("expression", {}))
 
     def is_valid(self):
-        is_unary = self.operator.value in ["is_set", "is_not_set"]
-        if is_unary:
+        if self.expression.get("raw") and self.expression.get("ast"):
+            return True
+        if self.operator.value in ["is_set", "is_not_set"]:
             return self.column.is_valid() and self.operator.is_valid()
         return self.column.is_valid() and self.operator.is_valid() and self.value.is_valid()
 
@@ -367,9 +409,9 @@ class Query(frappe._dict):
         return self.table.is_valid()
 
     def add_filter(self, column, operator, value):
-        if isinstance(value, str):
+        if not isinstance(value, dict):
             value = {"value": value}
-        if isinstance(operator, str):
+        if not isinstance(operator, dict):
             operator = {"value": operator}
         if not column or not isinstance(column, dict):
             frappe.throw("Invalid Column")

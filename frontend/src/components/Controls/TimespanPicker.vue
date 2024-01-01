@@ -7,7 +7,7 @@
 				:value="_value"
 				:placeholder="placeholder"
 				@focus="togglePopover()"
-				class="form-input block h-8 w-full cursor-text select-none rounded border-gray-400 text-sm placeholder-gray-500"
+				class="form-input block h-7 w-full cursor-text select-none rounded border-gray-400 text-sm placeholder-gray-500"
 			/>
 		</template>
 		<template #body="{ togglePopover }">

@@ -6,17 +6,17 @@ import pandas as pd
 from sqlalchemy import column as Column
 from sqlalchemy import create_engine
 from sqlalchemy import table as Table
+from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (
     SQLiteQueryBuilder,
 )
+from insights.utils import detect_encoding
 
 from ...insights_table_import.insights_table_import import InsightsTableImport
 from .base_database import BaseDatabase
 from .utils import create_insights_table
-
-from insights.utils import detect_encoding
 
 
 class SQLiteTableFactory:
@@ -60,7 +60,7 @@ class SQLiteTableFactory:
         )
 
     def get_table_columns(self, table_name):
-        columns = self.db_conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+        columns = self.db_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
         return [
             frappe._dict(
                 {
@@ -96,8 +96,8 @@ class SQLiteDB(BaseDatabase):
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(f"""select * from `{table}` limit {limit}""", cached=True)
-        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[0][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
+        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
             "data": data or [],
             "length": length or 0,

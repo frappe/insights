@@ -37,7 +37,9 @@ const progressPercent = computed(() => {
 	<div class="flex h-full w-full items-center justify-center rounded p-6">
 		<div class="h-fit w-full max-w-[22rem]">
 			<div>
-				<div class="w-full overflow-hidden text-ellipsis whitespace-nowrap leading-6">
+				<div
+					class="w-full overflow-hidden text-ellipsis whitespace-nowrap font-medium leading-6"
+				>
 					{{ props.options.title }}
 				</div>
 				<div class="text-[28px] font-medium leading-8">

@@ -8,12 +8,8 @@ const props = defineProps({
 })
 
 const options = computed({
-	get() {
-		return props.modelValue
-	},
-	set(value) {
-		emit('update:modelValue', value)
-	},
+	get: () => props.modelValue,
+	set: (value) => emit('update:modelValue', value),
 })
 if (!options.value.links) options.value.links = {}
 if (!options.value.column) options.value.column = {}
@@ -22,14 +18,12 @@ function updateOptions(key, value) {
 }
 
 const dashboard = inject('dashboard')
-const charts = dashboard.doc.items.filter((item) => {
-	return item.item_type !== 'Filter' && item.item_type !== 'Text' && item.options.query
-})
+const charts = dashboard.doc.items.filter((item) => dashboard.isChart(item))
 const queries = charts.map((i) => i.options.query)
 
-const columnOptions = ref([])
+const filterColumnOptions = ref([])
 getQueriesColumn(queries).then((columns) => {
-	columnOptions.value = columns.map((column) => {
+	filterColumnOptions.value = columns.map((column) => {
 		return {
 			label: column.label,
 			column: column.column,
@@ -48,12 +42,22 @@ charts.forEach((chart) => {
 	}
 })
 
-function handleCheck(checked, chartItem) {
+async function handleCheck(checked, chartItem) {
 	const links = options.value.links
 	if (checked) {
 		links[chartItem.item_id] = {}
 		if (!chartColumnOptions[chartItem.options.query]) {
-			setColumnOptions(chartItem)
+			// fetch and set the column options for this chart
+			await setColumnOptions(chartItem)
+		}
+		// if there is a column named the same as the filter column, select it
+		const column = chartColumnOptions[chartItem.options.query]?.find(
+			(c) =>
+				c.column?.toLowerCase() === options.value.column.column?.toLowerCase() &&
+				c.table?.toLowerCase() === options.value.column.table?.toLowerCase()
+		)
+		if (column) {
+			links[chartItem.item_id] = column
 		}
 	} else {
 		delete links[chartItem.item_id]
@@ -79,6 +83,25 @@ async function setColumnOptions(chartItem) {
 		}
 	})
 }
+
+// watch(() => options.value.column?.column, () => {
+// 	// select all the charts that have this column
+// 	const links = options.value.links
+// 	const column = options.value.column
+// 	if (!column?.column) return
+// 	debugger
+// 	charts.forEach((chart) => {
+// 		if (chart.options.query && chartColumnOptions[chart.options.query]) {
+// 			const chartColumn = chartColumnOptions[chart.options.query].find(
+// 				(c) => c.column === column.column
+// 			)
+// 			if (chartColumn) {
+// 				links[chart.item_id] = chartColumn
+// 			}
+// 		}
+// 	})
+// 	updateOptions('links', links)
+// })
 </script>
 
 <template>
@@ -94,16 +117,22 @@ async function setColumnOptions(chartItem) {
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Column</span>
 			<Autocomplete
 				v-model="options.column"
-				:options="columnOptions"
+				:options="filterColumnOptions"
 				placeholder="Select a column"
 			></Autocomplete>
 		</div>
 
 		<div v-if="options.column?.column">
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Links</span>
+			<div class="mb-2 space-y-1">
+				<span class="block text-sm leading-4 text-gray-700">Links</span>
+				<span class="block text-xs leading-4 text-gray-600">
+					Select charts to link to this filter. The filter will be applied to the selected
+					column in the linked charts.
+				</span>
+			</div>
 			<div class="max-h-[20rem] space-y-2 overflow-y-scroll">
 				<div
-					class="flex h-8 w-full items-center text-gray-600"
+					class="flex h-8 w-full items-center"
 					v-for="chartItem in charts"
 					:key="chartItem.item_id"
 				>
@@ -114,7 +143,7 @@ async function setColumnOptions(chartItem) {
 						:value="options.links[chartItem.item_id]"
 					></Input>
 					<span
-						class="mx-2 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium"
+						class="mx-2 flex-1 truncate text-base font-medium"
 						:class="[
 							options.links[chartItem.item_id]
 								? 'text-gray-900'
@@ -124,7 +153,7 @@ async function setColumnOptions(chartItem) {
 						{{ chartItem.options.title }}
 					</span>
 					<Autocomplete
-						v-if="options.links[chartItem.item_id]"
+						v-if="options.links[chartItem.item_id] && chartItem.options.query"
 						class="w-28 flex-shrink-0"
 						placeholder="Select Column"
 						:options="chartColumnOptions[chartItem.options.query]"

@@ -1,9 +1,9 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
-import { useQuery } from '@/utils/query'
+import useQuery from '@/query/resources/useQuery'
 import { createResource } from 'frappe-ui'
 import { TextEditor } from 'frappe-ui'
-import { computed, reactive } from 'vue'
+import { computed, reactive, inject } from 'vue'
 
 const emit = defineEmits(['update:show'])
 const props = defineProps({
@@ -18,7 +18,8 @@ const show = computed({
 	},
 })
 
-const query = useQuery(props.queryName)
+let query = inject('query')
+if (!query) query = useQuery(props.queryName)
 const alert = reactive({
 	title: '',
 	query: props.queryName,
@@ -57,12 +58,12 @@ const createAlertDisabled = computed(() => {
 	if (alert.channel === 'Email' && !alert.recipients) return true
 	if (alert.channel === 'Telegram' && !alert.telegram_chat_id) return true
 	if (alert.condition.isAdvanced && !alert.condition.advanceCondition) return true
-	if (!alert.condition.left) return true
-	if (!alert.condition.operator) return true
-	if (!alert.condition.right) return true
+	if (!alert.condition.isAdvanced && !alert.condition.left) return true
+	if (!alert.condition.isAdvanced && !alert.condition.operator) return true
+	if (!alert.condition.isAdvanced && !alert.condition.right) return true
 	return false
 })
-const createAlertResource = createResource({ url: 'insights.api.create_alert' })
+const createAlertResource = createResource({ url: 'insights.api.alerts.create_alert' })
 function makeCondition() {
 	return alert.condition.isAdvanced
 		? alert.condition.advanceCondition
@@ -81,7 +82,7 @@ function createAlert() {
 			show.value = false
 		})
 }
-const testAlertResource = createResource({ url: 'insights.api.test_alert' })
+const testAlertResource = createResource({ url: 'insights.api.alerts.test_alert' })
 function testSendAlert() {
 	if (createAlertDisabled.value) return
 	const _alert = { ...alert }
@@ -153,7 +154,13 @@ function testSendAlert() {
 							type="select"
 							class="flex-1"
 							v-model="alert.condition.left"
-							:options="query.results.allColumnOptions"
+							:options="
+								query.resultColumns.map((c) => ({
+									label: c.label,
+									value: c.label,
+									description: c.type,
+								}))
+							"
 						/>
 						<Input
 							type="select"
@@ -169,10 +176,12 @@ function testSendAlert() {
 						/>
 					</div>
 					<div v-else class="!mt-2">
-						<Code
-							v-model="alert.condition.advanceCondition"
-							placeholder="Write a python expression..."
-						/>
+						<div class="form-textarea h-20">
+							<Code
+								v-model="alert.condition.advanceCondition"
+								placeholder="Write a python expression..."
+							/>
+						</div>
 						<p class="font-code mt-1 text-sm text-gray-600">
 							Example: results["Count of Records"][0] > 100
 						</p>

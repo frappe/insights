@@ -9,7 +9,7 @@ import { reactive } from 'vue'
 const charts = {}
 
 export async function createChart() {
-	return call('insights.api.create_chart')
+	return call('insights.api.queries.create_chart')
 }
 
 export default function useChart(name) {
@@ -127,7 +127,7 @@ function getChart(chartName) {
 	async function addToDashboard(dashboardName) {
 		if (!dashboardName || !state.doc.name || state.addingToDashboard) return
 		state.addingToDashboard = true
-		await call('insights.api.add_chart_to_dashboard', {
+		await call('insights.api.dashboards.add_chart_to_dashboard', {
 			dashboard: dashboardName,
 			chart: state.doc.name,
 		})
@@ -152,7 +152,7 @@ function getChart(chartName) {
 	})
 }
 
-function getChartResource(chartName) {
+export function getChartResource(chartName) {
 	return createDocumentResource({
 		doctype: 'Insights Chart',
 		name: chartName,

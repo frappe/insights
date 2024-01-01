@@ -1,6 +1,8 @@
 <script setup>
+import { areDeeplyEqual } from '@/utils'
 import * as echarts from 'echarts'
 import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
+import ChartTitle from './ChartTitle.vue'
 
 const props = defineProps({
 	title: { type: String, required: false },
@@ -21,7 +23,13 @@ onMounted(() => {
 
 watch(
 	() => props.options,
-	() => eChart && eChart.setOption(props.options),
+	(newOptions, oldOptions) => {
+		if (!eChart) return
+		if (JSON.stringify(newOptions) === JSON.stringify(oldOptions)) return
+		if (areDeeplyEqual(newOptions, oldOptions)) return
+		eChart.clear()
+		eChart.setOption(props.options)
+	},
 	{ deep: true }
 )
 
@@ -39,25 +47,12 @@ function downloadChart() {
 	link.download = `${props.title}.${type}`
 	link.click()
 }
-
-onUpdated(() => eChart && eChart.resize())
 </script>
 
 <template>
-	<div class="h-full w-full rounded p-2">
+	<div class="h-full w-full rounded pb-3">
 		<div class="flex h-full w-full flex-col">
-			<div
-				v-if="title"
-				class="mt-1 flex-shrink-0"
-				:class="['mx-3', subtitle ? 'h-11' : 'h-6']"
-			>
-				<div class="text-lg font-normal leading-6 text-gray-800">
-					{{ title }}
-				</div>
-				<div v-if="subtitle" class="text-base font-light">
-					{{ subtitle }}
-				</div>
-			</div>
+			<ChartTitle :title="title" />
 			<div ref="chartRef" class="w-full flex-1 overflow-hidden">
 				<slot></slot>
 			</div>

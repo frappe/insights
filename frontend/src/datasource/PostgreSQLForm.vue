@@ -86,8 +86,17 @@ const testing = ref(false)
 const testConnection = async () => {
 	database['type'] = 'PostgreSQL'
 	testing.value = true
-	connected.value = await sources.testConnection({ database })
-	testing.value = false
+	sources
+		.testConnection({ database })
+		.then((result) => {
+			connected.value = result
+		})
+		.catch((error) => {
+			connected.value = false
+		})
+		.finally(() => {
+			testing.value = false
+		})
 }
 
 const creating = ref(false)

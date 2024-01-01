@@ -3,7 +3,6 @@
 		<Suspense>
 			<QueryBlock
 				:query="props.node.attrs.query"
-				:is_native="props.node.type.name === 'query-editor'"
 				@setQuery="props.updateAttributes({ query: $event })"
 				@remove="props.deleteNode()"
 			/>

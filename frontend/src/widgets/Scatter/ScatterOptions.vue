@@ -38,7 +38,7 @@ const valueOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<Input
+		<FormControl
 			type="text"
 			label="Title"
 			class="w-full"
@@ -46,15 +46,16 @@ const valueOptions = computed(() => {
 			placeholder="Title"
 		/>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">X Axis</span>
-			<Autocomplete v-model="options.xAxis" :options="indexOptions" />
+			<label class="mb-1.5 block text-xs text-gray-600">X Axis</label>
+			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
 		</div>
 		<div>
-			<span class="mb-2 block text-sm leading-4 text-gray-700">Y Axis</span>
-			<ListPicker
-				:value="options.yAxis"
+			<label class="mb-1.5 block text-xs text-gray-600">Y Axis</label>
+			<Autocomplete
+				:multiple="true"
 				:options="valueOptions"
-				@change="options.yAxis = $event.map((item) => item.value)"
+				:modelValue="options.yAxis"
+				@update:modelValue="options.yAxis = $event.map((item) => item.value)"
 			/>
 		</div>
 

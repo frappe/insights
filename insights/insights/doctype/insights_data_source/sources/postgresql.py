@@ -114,7 +114,7 @@ class PostgresDatabase(BaseDatabase):
                 database=kwargs.pop("database_name"),
                 host=kwargs.pop("host"),
                 port=kwargs.pop("port"),
-                sslmode="require" if kwargs.pop("use_ssl") else None,
+                sslmode="require" if kwargs.pop("use_ssl") else "disable",
             )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
         self.table_factory: PostgresTableFactory = PostgresTableFactory(self.data_source)

@@ -1,5 +1,6 @@
 import operator
 from contextlib import suppress
+from datetime import date, datetime
 
 import frappe
 from frappe import _dict, parse_json
@@ -106,12 +107,12 @@ class ColumnFormatter:
 
 def get_descendants(node, tree, include_self=False):
     Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
-    lft_rgt = select([Tree.c.lft, Tree.c.rgt]).where(Tree.c.name == node).alias("lft_rgt")
+    lft_rgt = select(Tree.c.lft, Tree.c.rgt).where(Tree.c.name == node).alias("lft_rgt")
     return (
-        (select([Tree.c.name]).where(Tree.c.lft > lft_rgt.c.lft).where(Tree.c.rgt < lft_rgt.c.rgt))
+        (select(Tree.c.name).where(Tree.c.lft > lft_rgt.c.lft).where(Tree.c.rgt < lft_rgt.c.rgt))
         if not include_self
         else (
-            select([Tree.c.name])
+            select(Tree.c.name)
             .where(Tree.c.lft >= lft_rgt.c.lft)
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
         )
@@ -157,7 +158,7 @@ class Functions:
             return args[0].is_(None)
 
         if function == "count_if":
-            return func.sum(case([(args[0], 1)], else_=0))
+            return func.sum(case((args[0], 1), else_=0))
 
         if function == "distinct":
             return distinct(args[0])
@@ -191,12 +192,13 @@ class Functions:
             return func.ifnull(args[0], args[1])
 
         if function == "sum_if":
-            return func.sum(case([(args[0], args[1])], else_=0))
+            return func.sum(case((args[0], args[1]), else_=0))
 
         # three arg functions
 
         if function == "between":
-            return args[0].between(args[1], args[2])
+            dates = add_start_and_end_time([args[1], args[2]])
+            return args[0].between(*dates)
 
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
@@ -215,7 +217,8 @@ class Functions:
             conditions = []
             for i in range(0, len(_args), 2):
                 conditions.append((_args[i], _args[i + 1]))
-            return case(conditions, else_=default)
+            # return case(conditions, else_=default)
+            return case(*conditions, else_=default)
 
         if function == "timespan":
             column = args[0]
@@ -236,8 +239,8 @@ class Functions:
             dates = get_date_range(timespan)
             if not dates:
                 raise Exception(f"Invalid timespan {args[1]}")
-
-            return column.between(get_date_str(dates[0]), get_date_str(dates[1]))
+            dates_str = add_start_and_end_time(dates)
+            return column.between(*dates_str)
 
         if function == "time_elapsed":
             VALID_UNITS = [
@@ -387,6 +390,15 @@ def get_date_range(timespan, include_current=False):
             dates[1] = max(dates[1], current_dates[1])
 
         return dates
+
+
+def add_start_and_end_time(dates):
+    if not dates:
+        return dates
+    if type(dates[0]) == str:
+        return [dates[0] + " 00:00:00", dates[1] + " 23:59:59"]
+    if type(dates[0]) == datetime or type(dates[0]) == date:
+        return [dates[0].strftime("%Y-%m-%d 00:00:00"), dates[1].strftime("%Y-%m-%d 23:59:59")]
 
 
 class BinaryOperations:
@@ -690,7 +702,7 @@ class SQLQueryBuilder:
             if column.is_expression():
                 _column = self.expression_processor.process(column.expression.ast)
 
-            if column.is_aggregate():
+            if column.is_aggregate() and column.aggregation.lower() != "group by":
                 _column = self.aggregations.apply(column.aggregation, _column)
 
             if column.has_granularity() and not for_filter:
@@ -702,8 +714,12 @@ class SQLQueryBuilder:
             for fltr in assisted_query.filters:
                 if not fltr.is_valid():
                     continue
+                if fltr.expression:
+                    _filter = self.expression_processor.process(fltr.expression.ast)
+                    filters.append(_filter)
+                    continue
                 _column = make_sql_column(fltr.column, for_filter=True)
-                filter_value = fltr.value.value
+                filter_value = fltr.value.value or ""
                 operator = fltr.operator.value
 
                 if BinaryOperations.is_binary_operator(operator):
@@ -712,14 +728,17 @@ class SQLQueryBuilder:
                 elif "set" in operator:  # is set, is not set
                     _filter = Functions.apply(operator, _column)
                 elif operator == "is":
-                    fn = "is_set" if filter_value == "set" else "is_not_set"
+                    fn = "is_set" if filter_value.lower() == "set" else "is_not_set"
                     _filter = Functions.apply(fn, _column)
                 else:
                     args = [filter_value]
                     if operator == "between":
                         args = filter_value.split(",")
                     elif operator == "in" or operator == "not_in":
-                        args = [val["value"] for val in filter_value]
+                        if filter_value and isinstance(filter_value[0], dict):
+                            args = [val["value"] for val in filter_value]
+                        else:
+                            args = filter_value
                     _filter = Functions.apply(operator, _column, *args)
 
                 filters.append(_filter)
@@ -728,34 +747,23 @@ class SQLQueryBuilder:
         for column in assisted_query.columns:
             if not column.is_valid():
                 continue
-            self._columns.append(make_sql_column(column))
-
-        # don't select calculated columns
-        # since they are used as variables in measures, dimensions, filters, etc
-
-        for measure in assisted_query.measures:
-            if not measure.is_valid():
-                continue
-            self._measures.append(make_sql_column(measure))
-
-        for dimension in assisted_query.dimensions:
-            if not dimension.is_valid():
-                continue
-            self._dimensions.append(make_sql_column(dimension))
-
-        for order in assisted_query.orders:
-            if not order.is_valid():
-                continue
-            _column = make_sql_column(order)
-            self._order_by_columns.append(
-                _column.asc() if order.order == "asc" else _column.desc()
-            )
+            if column.is_measure():
+                self._measures.append(make_sql_column(column))
+            if column.is_dimension():
+                self._dimensions.append(make_sql_column(column))
+            if column.order:
+                _column = make_sql_column(column)
+                self._order_by_columns.append(
+                    _column.asc() if column.order == "asc" else _column.desc()
+                )
 
         self._limit = assisted_query.limit or None
 
-        columns = self._columns + self._dimensions + self._measures
+        columns = self._dimensions + self._measures
         if not columns:
             columns = [text("t0.*")]
+
+        # TODO: validate if all column tables are selected
 
         query = select(*columns).select_from(main_table)
         for join in self._joins:
