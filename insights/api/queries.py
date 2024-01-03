@@ -90,7 +90,10 @@ def pivot(data, indexes: list[str] = None, columns: list[str] = None, values: li
 
     df = pd.DataFrame(data)
     for value_column in values:
-        df[value_column] = df[value_column].astype(float).fillna(0).round(2)
+        try:
+            df[value_column] = df[value_column].astype(float).fillna(0).round(2)
+        except BaseException:
+            df[value_column] = df[value_column].apply(lambda x: 1)
 
     pivot = pd.pivot_table(
         df, index=indexes, columns=columns, values=values, sort=False, fill_value=0, aggfunc="sum"
