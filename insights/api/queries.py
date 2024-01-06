@@ -92,7 +92,9 @@ def pivot(data, indexes: list[str] = None, columns: list[str] = None, values: li
     for value_column in values:
         try:
             df[value_column] = df[value_column].astype(float).fillna(0).round(2)
-        except BaseException:
+        except ValueError:
+            # if the value is not a number, then convert it to 1
+            # this will show the count of records
             df[value_column] = df[value_column].apply(lambda x: 1)
 
     pivot = pd.pivot_table(
