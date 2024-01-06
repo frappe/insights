@@ -188,4 +188,9 @@ export const FUNCTIONS = {
 		description: 'Lists all descendants and self of the given value.',
 		example: 'descendants_and_self("India", "tabTerritory", `territory`)',
 	},
+	sql: {
+		syntax: 'sql("query")',
+		description: 'Write raw SQL queries.',
+		example: 'sql("MONTH(invoice.posting_date)")',
+	},
 }

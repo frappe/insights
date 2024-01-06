@@ -18,7 +18,7 @@ from frappe.utils.data import (
     getdate,
     nowdate,
 )
-from sqlalchemy import Column
+from sqlalchemy import Column, TextClause
 from sqlalchemy import column as sa_column
 from sqlalchemy import select, table
 from sqlalchemy.engine import Dialect
@@ -132,6 +132,10 @@ class Functions:
             return func.date(func.now())
 
         # single arg functions
+
+        if function == "sql":
+            assert isinstance(args[0], str)
+            return text(args[0])
 
         if function == "abs":
             return func.abs(args[0])
@@ -536,7 +540,7 @@ class SQLQueryBuilder:
         if not hasattr(self, "_tables"):
             self._tables = {}
         if name not in self._tables:
-            self._tables[name] = table(name).alias(f"t{len(self._tables)}")
+            self._tables[name] = table(name).alias(f"{name}")
         return self._tables[name]
 
     def make_column(self, columnname, tablename):
@@ -616,14 +620,15 @@ class SQLQueryBuilder:
         if not self.query.tables:
             return
 
+        main_table = self.query.tables[0].table
+
         sql = None
         if not self._columns:
             # hack: to avoid duplicate columns error if tables have same column names
-            sql = select(text("t0.*"))
+            sql = select(text(f"`{main_table}`.*"))
         else:
             sql = select(*self._columns)
 
-        main_table = self.query.tables[0].table
         sql = sql.select_from(self.make_table(main_table))
 
         if self._joins:
@@ -707,6 +712,10 @@ class SQLQueryBuilder:
 
             if column.has_granularity() and not for_filter:
                 _column = self.column_formatter.format_date(column.granularity, _column)
+
+            if isinstance(_column, TextClause):
+                return _column
+
             return _column.label(column.alias)
 
         if assisted_query.filters:
@@ -761,7 +770,7 @@ class SQLQueryBuilder:
 
         columns = self._dimensions + self._measures
         if not columns:
-            columns = [text("t0.*")]
+            columns = [text(f"`{main_table.name}`.*")]
 
         # TODO: validate if all column tables are selected
 
