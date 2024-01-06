@@ -28,7 +28,7 @@ export default function getBarChartOptions(labels, datasets, options) {
 			axisTick: false,
 			axisLabel: {
 				rotate: options.rotateLabels,
-				interval: 0,
+				// interval: 0,
 				formatter: (value, index) =>
 					!isNaN(value) ? $utils.getShortNumber(value, 1) : $utils.ellipsis(value, 20),
 			},
