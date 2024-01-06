@@ -23,13 +23,13 @@ provide('dashboard', dashboard)
 			<div class="h-full w-full overflow-y-scroll bg-white px-4 py-2">
 				<div
 					ref="gridLayout"
-					class="relative flex h-fit min-h-screen w-full flex-1 flex-col"
+					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
 				>
 					<VueGridLayout
 						class="h-fit w-full"
 						:items="dashboard.doc.items"
 						:disabled="true"
-						:layouts="dashboard.itemLayouts"
+						v-model:layouts="dashboard.itemLayouts"
 					>
 						<template #item="{ item }">
 							<PublicDashboardItem :item="item" :key="item.item_id" />
