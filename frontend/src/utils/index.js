@@ -3,7 +3,16 @@ import { createToast } from '@/utils/toasts'
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { call } from 'frappe-ui'
-import { Baseline, Calendar, CalendarClock, Clock, Hash, Type } from 'lucide-vue-next'
+import {
+	Baseline,
+	Calendar,
+	CalendarClock,
+	Clock,
+	Hash,
+	ShieldQuestion,
+	ToggleLeft,
+	Type,
+} from 'lucide-vue-next'
 import { computed, unref, watch } from 'vue'
 
 export const fieldtypesToIcon = {
@@ -15,6 +24,15 @@ export const fieldtypesToIcon = {
 	Text: Type,
 	String: Baseline,
 	'Long Text': Type,
+}
+
+export const returnTypesToIcon = {
+	number: Hash,
+	string: Type,
+	boolean: ToggleLeft,
+	date: Calendar,
+	datetime: CalendarClock,
+	any: ShieldQuestion,
 }
 
 export const FIELDTYPES = {

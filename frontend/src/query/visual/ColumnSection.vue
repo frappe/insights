@@ -3,6 +3,7 @@ import { Combine, GripVertical } from 'lucide-vue-next'
 import { computed, inject, nextTick, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import ColumnEditor from './ColumnEditor.vue'
+import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import ColumnListItem from './ColumnListItem.vue'
 import { NEW_COLUMN } from './constants'
 
@@ -13,6 +14,18 @@ const assistedQuery = inject('assistedQuery')
 const columns = computed(() => assistedQuery.columns)
 const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
+const showExpressionEditor = computed(() => {
+	if (activeColumnIdx.value === null) return false
+	const activeColumn = columns.value[activeColumnIdx.value]
+	return (
+		activeColumn.expression.hasOwnProperty('raw') ||
+		activeColumn.expression.hasOwnProperty('ast')
+	)
+})
+const showColumnEditor = computed(() => {
+	if (activeColumnIdx.value === null) return false
+	return !showExpressionEditor.value
+})
 
 function onColumnSelect(column) {
 	if (!column) return
@@ -97,7 +110,7 @@ function onColumnSort(e) {
 					<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
 					<div class="flex-1">
 						<Popover
-							:show="activeColumnIdx === idx"
+							:show="showColumnEditor"
 							@close="activeColumnIdx = null"
 							placement="right-start"
 						>
@@ -111,14 +124,14 @@ function onColumnSort(e) {
 							</template>
 							<template #body>
 								<div
-									v-if="activeColumnIdx === idx"
+									v-if="showColumnEditor"
 									class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
 								>
 									<ColumnEditor
 										:column="column"
-										@discard="activeColumnIdx = null"
 										@remove="onRemoveColumn"
 										@save="onSaveColumn"
+										@discard="activeColumnIdx = null"
 									/>
 								</div>
 							</template>
@@ -128,4 +141,28 @@ function onColumnSort(e) {
 			</template>
 		</Draggable>
 	</div>
+
+	<Dialog
+		:modelValue="showExpressionEditor"
+		@close="activeColumnIdx = null"
+		:options="{
+			title: 'Expression',
+			size: '3xl',
+			actions: [
+				{ label: 'Discard', variant: 'outline', onClick: () => (activeColumnIdx = null) },
+				{
+					label: 'Save',
+					variant: 'solid',
+					onClick: () => onSaveColumn(columns[activeColumnIdx]),
+				},
+			],
+		}"
+	>
+		<template #body-content>
+			<ColumnExpressionEditor
+				v-if="showExpressionEditor"
+				:column="columns[activeColumnIdx]"
+			/>
+		</template>
+	</Dialog>
 </template>
