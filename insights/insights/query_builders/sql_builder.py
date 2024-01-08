@@ -21,6 +21,7 @@ from frappe.utils.data import (
 from sqlalchemy import Column, TextClause
 from sqlalchemy import column as sa_column
 from sqlalchemy import select, table
+from sqlalchemy.dialects import mysql
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
@@ -72,7 +73,8 @@ class ColumnFormatter:
         if format == "Week":
             # DATE_FORMAT(install_date, '%Y-%m-%d') - INTERVAL (DAYOFWEEK(install_date) - 1) DAY,
             date = func.date_format(column, "%Y-%m-%d")
-            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({column}) - 1) DAY"))
+            compiled = column.compile(dialect=mysql.dialect())
+            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({compiled}) - 1) DAY"))
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":
