@@ -23,14 +23,23 @@ const displayedRowCount = computed(() => Math.min(query.MAX_ROWS, queriedRowCoun
 		<div class="flex w-full flex-1 flex-shrink-0 overflow-hidden py-4">
 			<ResultSection>
 				<template #footer>
-					<div v-if="queriedRowCount >= 0" class="flex items-center space-x-1">
-						<span class="text-gray-600">Showing</span>
-						<span class="font-mono"> {{ displayedRowCount }}</span>
-						<span class="text-gray-600">out of</span>
-						<span class="font-mono">{{ queriedRowCount }}</span>
-						<span class="text-gray-600">rows in</span>
-						<span class="font-mono">{{ executionTime }}</span>
-						<span class="text-gray-600">seconds</span>
+					<div class="flex justify-between">
+						<div v-if="queriedRowCount >= 0" class="flex items-center space-x-1">
+							<span class="text-gray-600">Showing</span>
+							<span class="font-mono"> {{ displayedRowCount }}</span>
+							<span class="text-gray-600">out of</span>
+							<span class="font-mono">{{ queriedRowCount }}</span>
+							<span class="text-gray-600">rows in</span>
+							<span class="font-mono">{{ executionTime }}</span>
+							<span class="text-gray-600">seconds</span>
+						</div>
+						<Button
+							variant="ghost"
+							class="ml-1"
+							icon="download"
+							@click="query.downloadResults"
+						>
+						</Button>
 					</div>
 				</template>
 			</ResultSection>
