@@ -2,9 +2,9 @@
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
 import usePublicDashboard from '@/dashboard/usePublicDashboard'
 import BaseLayout from '@/layouts/BaseLayout.vue'
+import { provide } from 'vue'
 import DashboardEmptyState from './DashboardEmptyState.vue'
 import PublicDashboardItem from './PublicDashboardItem.vue'
-import { provide } from 'vue'
 
 const props = defineProps({ public_key: String })
 const dashboard = usePublicDashboard(props.public_key)
@@ -26,6 +26,7 @@ provide('dashboard', dashboard)
 					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
 				>
 					<VueGridLayout
+						:key="JSON.stringify(dashboard.itemLayouts)"
 						class="h-fit w-full"
 						:items="dashboard.doc.items"
 						:disabled="true"
