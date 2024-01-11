@@ -38,7 +38,8 @@ def track(event):
 
 @frappe.whitelist()
 def track_active_site():
-    if frappe.conf.developer_mode or not should_track_active_status():
+    is_frappe_cloud_site = frappe.conf.get("sk_insights")
+    if frappe.conf.developer_mode or not should_track_active_status() or not is_frappe_cloud_site:
         return
 
     with suppress(Exception):
