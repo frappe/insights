@@ -1,13 +1,13 @@
 <script setup>
 import widgets from '@/widgets/widgets'
-import { computed, inject, provide, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import ChartActionButtons from './ChartActionButtons.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ChartTypeSelector from './ChartTypeSelector.vue'
+import { downloadImage } from '@/utils'
 
 const query = inject('query')
 const chartRef = ref(null)
-provide('chartRef', chartRef)
 
 const showChart = computed(() => {
 	return (
@@ -44,6 +44,17 @@ const fullscreenDialog = ref(false)
 function showInFullscreenDialog() {
 	fullscreenDialog.value = true
 }
+function downloadChartImage() {
+	if (!chartRef.value) {
+		$notify({
+			variant: 'error',
+			title: 'Chart container reference not found',
+		})
+		return
+	}
+	const title = query.chart.doc.options.title || query.doc.title
+	downloadImage(chartRef.value.$el, `${title}.png`)
+}
 </script>
 
 <template>
@@ -71,9 +82,15 @@ function showInFullscreenDialog() {
 			</div>
 		</template>
 
-		<Dialog v-if="chart.type" v-model="fullscreenDialog" :options="{ size: '7xl' }">
+		<Dialog
+			v-if="chart.type"
+			v-model="fullscreenDialog"
+			:options="{
+				size: '7xl',
+			}"
+		>
 			<template #body>
-				<div class="flex h-[40rem] w-full p-1">
+				<div class="relative flex h-[40rem] w-full p-1">
 					<component
 						v-if="chart.type"
 						ref="chartRef"
@@ -82,6 +99,10 @@ function showInFullscreenDialog() {
 						:data="chart.data"
 						:key="JSON.stringify(query.chart.doc)"
 					/>
+					<div class="absolute top-0 right-0 p-2">
+						<Button variant="outline" @click="downloadChartImage" icon="download">
+						</Button>
+					</div>
 				</div>
 			</template>
 		</Dialog>

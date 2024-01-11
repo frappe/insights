@@ -1,6 +1,7 @@
 <script setup>
 import ChartTitle from '@/components/Charts/ChartTitle.vue'
 import TanstackTable from '@/components/Table/TanstackTable.vue'
+import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, ref } from 'vue'
 import { convertToNestedObject, convertToTanstackColumns } from './utils'
@@ -16,12 +17,27 @@ const pivotColumns = computed(() => props.options.columns?.map((column) => colum
 const valueColumns = computed(() => props.options.values?.map((column) => column.value) || [])
 
 const pivotedData = ref([])
-call('insights.api.queries.pivot', {
-	data: _data.value,
-	indexes: indexColumns.value,
-	columns: pivotColumns.value,
-	values: valueColumns.value,
-}).then((data) => (pivotedData.value = sortIndexKeys(data)))
+watchDebounced(
+	[indexColumns, pivotColumns, valueColumns],
+	(newVal, oldVal) => {
+		if (JSON.stringify(newVal) == JSON.stringify(oldVal)) return
+		reloadPivotData()
+	},
+	{
+		deep: true,
+		immediate: true,
+		debounce: 500,
+	}
+)
+
+function reloadPivotData() {
+	call('insights.api.queries.pivot', {
+		data: _data.value,
+		indexes: indexColumns.value,
+		columns: pivotColumns.value,
+		values: valueColumns.value,
+	}).then((data) => (pivotedData.value = sortIndexKeys(data)))
+}
 
 function sortIndexKeys(data) {
 	// move the index columns (keys) to the front of the object

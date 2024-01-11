@@ -23,7 +23,7 @@
 			<span class="font-mono">{{ executionTime }}</span>
 			<span class="text-gray-600">seconds</span>
 		</div>
-		<div class="ml-auto flex items-center space-x-1">
+		<div class="ml-auto flex items-center gap-1">
 			<span class="text-gray-600">Limit to</span>
 			<input
 				type="text"
@@ -35,11 +35,14 @@
 				@keydown.esc.stop="$refs.limitInput.blur()"
 			/>
 			<span class="text-gray-600">rows</span>
+			<Button variant="ghost" class="ml-1" icon="download" @click="query.downloadResults">
+			</Button>
 		</div>
 	</div>
 </template>
 
 <script setup>
+import { Download } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 
 const query = inject('query')

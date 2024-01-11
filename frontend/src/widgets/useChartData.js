@@ -127,6 +127,20 @@ export function guessChart(dataset, chart_type) {
 		}
 	}
 
+	const shouldGuessPivotChart = chart_type === 'Pivot Table'
+	if (shouldGuessPivotChart) {
+		return {
+			type: 'Pivot Table',
+			options: {
+				rows: [...dateColumns, ...stringColumns].map((col) => ({
+					label: col.label,
+					value: col.label,
+				})),
+				values: [...numberColumns].map((col) => ({ label: col.label, value: col.label })),
+			},
+		}
+	}
+
 	const autoGuessTableChart = chart_type === 'Auto'
 	const shouldGuessTableChart = chart_type === 'Table'
 	if (autoGuessTableChart || shouldGuessTableChart) {

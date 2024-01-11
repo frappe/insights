@@ -1,9 +1,9 @@
 <script setup>
 import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import useDashboards from '@/dashboard/useDashboards'
-import { computed, inject, ref, watch } from 'vue'
 import { downloadImage } from '@/utils'
-import { FullscreenIcon, Maximize } from 'lucide-vue-next'
+import { Maximize } from 'lucide-vue-next'
+import { computed, inject, ref, watch } from 'vue'
 
 const emit = defineEmits(['fullscreen'])
 const query = inject('query')
@@ -43,12 +43,6 @@ const addChartToDashboard = async () => {
 }
 
 watch(showDashboardDialog, (val) => val && dashboards.reload(), { immediate: true })
-
-const chartRef = inject('chartRef')
-function downloadChartImage() {
-	const title = query.chart.doc.options.title || query.doc.title
-	downloadImage(chartRef.value.$el, `${title}.png`)
-}
 </script>
 
 <template>
@@ -57,7 +51,6 @@ function downloadChartImage() {
 			<template #icon> <Maximize class="h-4 w-4" /> </template>
 		</Button>
 		<Button variant="outline" @click="onAddToDashboard()"> Add to Dashboard </Button>
-		<Button variant="outline" @click="downloadChartImage"> Download </Button>
 		<Button variant="outline" @click="showShareDialog = true"> Share </Button>
 	</div>
 

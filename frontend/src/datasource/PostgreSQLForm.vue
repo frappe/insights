@@ -22,9 +22,9 @@ const fields = computed(() => [
 		label: 'Port',
 		name: 'port',
 		type: 'number',
-		placeholder: '3306',
+		placeholder: '5432',
 		required: !database.connection_string,
-		defaultValue: 3306,
+		defaultValue: 5432,
 	},
 	{
 		label: 'Database Name',
