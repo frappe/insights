@@ -7,6 +7,7 @@ import App from './App.vue'
 import './index.css'
 import router from './router'
 import { createToast } from './utils/toasts'
+import { autoAnimatePlugin } from '@formkit/auto-animate/vue'
 
 import { registerControllers, registerGlobalComponents } from './globals'
 
@@ -29,6 +30,7 @@ setConfig('resourceFetcher', (options) => {
 })
 
 app.use(router)
+app.use(autoAnimatePlugin)
 app.component('grid-layout', GridLayout)
 app.component('grid-item', GridItem)
 app.provide(
