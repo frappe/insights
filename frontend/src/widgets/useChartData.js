@@ -30,11 +30,17 @@ export default function useChartData(options = {}) {
 	function load(query) {
 		if (!query) return
 		state.loading = true
-		return options.resultsFetcher().then((results) => {
-			state.loading = false
-			state.rawData = getFormattedResult(results)
-			state.data = convertResultToObjects(state.rawData)
-		})
+		return options
+			.resultsFetcher()
+			.then((results) => {
+				state.loading = false
+				state.rawData = getFormattedResult(results)
+				state.data = convertResultToObjects(state.rawData)
+			})
+			.error((error) => {
+				state.loading = false
+				state.error = error
+			})
 	}
 
 	if (options.query) {

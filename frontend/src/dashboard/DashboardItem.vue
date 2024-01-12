@@ -93,7 +93,7 @@ function openQueryInNewTab() {
 				:options="item.options"
 			/>
 
-			<div class="absolute right-3 top-3 z-10 flex items-center">
+			<div class="absolute right-3 top-3 z-[10001] flex items-center">
 				<div v-if="chartFilters?.length">
 					<Tooltip :text="chartFilters.map((c) => c.label || c.column?.label).join(', ')">
 						<div
