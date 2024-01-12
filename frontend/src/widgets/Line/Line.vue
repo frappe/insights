@@ -14,9 +14,12 @@ const labels = computed(() => {
 })
 
 const datasets = computed(() => {
-	if (!props.data?.length || !props.options.yAxis) return []
+	let yAxis = props.options.yAxis
+	if (!props.data?.length || !yAxis) return []
+	if (typeof yAxis === 'string') yAxis = [yAxis]
+
 	return (
-		props.options.yAxis
+		yAxis
 			// to exclude the columns that might be removed from the query but not the chart
 			.filter(
 				(series) =>
