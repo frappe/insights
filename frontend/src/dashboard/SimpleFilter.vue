@@ -205,10 +205,10 @@ function isValueSelected(value) {
 						</span>
 						<div class="flex flex-shrink-0 items-center gap-1">
 							<component
-								:is="fieldtypesToIcon[filter.column.type]"
+								:is="fieldtypesToIcon[filter.column?.type || 'String']"
 								class="h-4 w-4 flex-shrink-0 text-gray-600"
 							/>
-							<span class="truncate">{{ filter.column.label }}</span>
+							<span class="truncate">{{ filter.column?.label }}</span>
 						</div>
 						<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
 							{{ operatorLabel }}

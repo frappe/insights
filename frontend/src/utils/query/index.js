@@ -80,6 +80,11 @@ export const FUNCTIONS = {
 		example: 'replace(`category`, "_", "-")',
 		returnType: 'string',
 	},
+	substring: {
+		syntax: 'substring(column_name, start, end)',
+		description: 'Extracts part of the column value.',
+		example: 'substring(`customer`, 0, 5)',
+	},
 
 	// Arithmetic Functions
 	abs: {

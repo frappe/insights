@@ -10,7 +10,7 @@ export default async function useChart(chart_name) {
 	await resource.get.fetch()
 
 	const chart = reactive({
-		doc: resource.doc,
+		doc: computed(() => resource.doc),
 		data: [],
 		togglePublicAccess,
 		addToDashboard,

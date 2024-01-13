@@ -5,6 +5,7 @@ import { computed, inject, ref } from 'vue'
 import FilterEditor from './FilterEditor.vue'
 import { fieldtypesToIcon } from '@/utils'
 import SectionHeader from './SectionHeader.vue'
+import { Sigma } from 'lucide-vue-next'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -61,10 +62,10 @@ function isValidFilter(filter) {
 							<span class="truncate font-mono">{{ filter.expression.raw }}</span>
 						</template>
 						<template v-else>
-							<div class="flex max-w-[40%] flex-shrink-0 gap-1 truncate">
+							<div class="flex max-w-[60%] flex-shrink-0 gap-1 truncate">
 								<component
-									:is="fieldtypesToIcon[filter.column.type]"
-									class="h-4 w-4 text-gray-600"
+									:is="fieldtypesToIcon[filter.column.type] || Sigma"
+									class="h-4 w-4 flex-shrink-0 text-gray-600"
 								/>
 								{{ filter.column.label || filter.column.column }}
 							</div>

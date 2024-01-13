@@ -280,7 +280,11 @@ class Column(frappe._dict):
         return [Column(**d) for d in dicts]
 
     def is_aggregate(self):
-        return self.aggregation and self.aggregation != "custom"
+        return (
+            self.aggregation
+            and self.aggregation.lower() != "custom"
+            and self.aggregation.lower() != "group by"
+        )
 
     def is_expression(self):
         return (
@@ -306,8 +310,11 @@ class Column(frappe._dict):
         return self.type in ["String", "Text"]
 
     def is_measure(self):
-        return self.aggregation.lower() != "group by" and (
-            self.is_numeric_type() or self.is_aggregate() or self.is_expression()
+        # TODO: if is_expression and is_aggregate then it is a measure (can't determine if aggregation is set)
+        return (
+            self.is_numeric_type()
+            or self.is_aggregate()
+            or (self.is_expression() and self.is_numeric_type())
         )
 
     def is_dimension(self):

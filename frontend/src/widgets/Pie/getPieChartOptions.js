@@ -33,7 +33,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 	const legendOptions = { type: 'plain', bottom: 0 }
 	let center = ['50%', '50%']
-	let radius = '70%'
+	let radius = ['40%', '70%']
 
 	if (!options.inlineLabels && options.labelPosition) {
 		const position = options.labelPosition
@@ -47,28 +47,28 @@ export default function getPieChartOptions(labels, dataset, options) {
 
 		switch (position) {
 			case 'Top':
-				radius = '70%'
+				radius = ['40%', '70%']
 				legendOptions.top = 0
 				legendOptions.left = 'center'
 				center = ['50%', '60%']
 				legendOptions.padding = 20
 				break
 			case 'Bottom':
-				radius = '70%'
+				radius = ['40%', '70%']
 				legendOptions.bottom = 0
 				legendOptions.left = 'center'
 				center = ['50%', '43%']
 				legendOptions.padding = [20, 20, 10, 20]
 				break
 			case 'Right':
-				radius = '80%'
+				radius = ['45%', '80%']
 				center = ['33%', '50%']
 				legendOptions.left = '63%'
 				legendOptions.top = 'middle'
 				legendOptions.padding = [20, 0, 20, 0]
 				break
 			case 'Left':
-				radius = '80%'
+				radius = ['45%', '80%']
 				center = ['67%', '50%']
 				legendOptions.right = '63%'
 				legendOptions.top = 'middle'

@@ -47,7 +47,7 @@
 				{
 					label: 'Download CSV',
 					icon: 'download',
-					onClick: downloadCSV,
+					onClick: query.downloadResults,
 				},
 				{
 					label: query.doc.is_assisted_query
@@ -208,21 +208,5 @@ function unstoreQuery() {
 			title: 'Query Unstored',
 		})
 	})
-}
-
-function downloadCSV() {
-	let data = query.doc.results
-	if (data.length === 0) return
-	data[0] = data[0].map((d) => d.label)
-	const csvString = data.map((row) => row.join(',')).join('\n')
-	const blob = new Blob([csvString], { type: 'text/csv' })
-	const url = window.URL.createObjectURL(blob)
-	const a = document.createElement('a')
-	a.setAttribute('hidden', '')
-	a.setAttribute('href', url)
-	a.setAttribute('download', `${query.doc.title || 'data'}.csv`)
-	document.body.appendChild(a)
-	a.click()
-	document.body.removeChild(a)
 }
 </script>

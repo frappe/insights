@@ -195,5 +195,22 @@ function makeQuery(name) {
 		return run(() => resource.setValue.submit({ variables }).finally(() => setLoading(false)))
 	}, 500)
 
+	state.downloadResults = () => {
+		if (!state.doc.results) return
+		let data = [...state.doc.results]
+		if (data.length === 0) return
+		data[0] = data[0].map((d) => d.label)
+		const csvString = data.map((row) => row.join(',')).join('\n')
+		const blob = new Blob([csvString], { type: 'text/csv' })
+		const url = window.URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.setAttribute('hidden', '')
+		a.setAttribute('href', url)
+		a.setAttribute('download', `${state.doc.title || 'data'}.csv`)
+		document.body.appendChild(a)
+		a.click()
+		document.body.removeChild(a)
+	}
+
 	return state
 }
