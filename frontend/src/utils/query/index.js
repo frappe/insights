@@ -84,6 +84,7 @@ export const FUNCTIONS = {
 		syntax: 'substring(column_name, start, end)',
 		description: 'Extracts part of the column value.',
 		example: 'substring(`customer`, 0, 5)',
+		returnType: 'string',
 	},
 
 	// Arithmetic Functions
