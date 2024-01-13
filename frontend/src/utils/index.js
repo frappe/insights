@@ -15,6 +15,16 @@ import {
 } from 'lucide-vue-next'
 import { computed, unref, watch } from 'vue'
 
+export const COLUMN_TYPES = [
+	{ label: 'String', value: 'String' },
+	{ label: 'Integer', value: 'Integer' },
+	{ label: 'Decimal', value: 'Decimal' },
+	{ label: 'Text', value: 'Text' },
+	{ label: 'Datetime', value: 'Datetime' },
+	{ label: 'Date', value: 'Date' },
+	{ label: 'Time', value: 'Time' },
+]
+
 export const fieldtypesToIcon = {
 	Integer: Hash,
 	Decimal: Hash,

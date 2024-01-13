@@ -1,6 +1,12 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
-import { FIELDTYPES, GRANULARITIES, fieldtypesToIcon, returnTypesToIcon } from '@/utils'
+import {
+	COLUMN_TYPES,
+	FIELDTYPES,
+	GRANULARITIES,
+	fieldtypesToIcon,
+	returnTypesToIcon,
+} from '@/utils'
 import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'
@@ -34,16 +40,6 @@ const isValid = computed(() => {
 	if (!column.expression.raw) return false
 	return true
 })
-
-const COLUMN_TYPES = [
-	{ label: 'String', value: 'String' },
-	{ label: 'Integer', value: 'Integer' },
-	{ label: 'Decimal', value: 'Decimal' },
-	{ label: 'Text', value: 'Text' },
-	{ label: 'Datetime', value: 'Datetime' },
-	{ label: 'Date', value: 'Date' },
-	{ label: 'Time', value: 'Time' },
-]
 
 const focused = ref(false)
 const codeEditor = ref(null)
