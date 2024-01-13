@@ -12,9 +12,13 @@ const props = defineProps({
 	columnOptions: Array,
 })
 
-const expression = computed({
-	get: () => props.modelValue,
-	set: (value) => emit('update:modelValue', value),
+const rawExpression = computed({
+	get: () => props.modelValue?.raw || '',
+	set: (value) =>
+		emit('update:modelValue', {
+			raw: value,
+			ast: parse(value).ast,
+		}),
 })
 
 const focused = ref(false)
@@ -29,9 +33,9 @@ const suggestionContext = reactive({
 const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 	functionHelp.value = null
 
-	if (!expression.value?.raw) return
+	if (!rawExpression.value) return
 
-	const tokens = parse(expression.value.raw).tokens
+	const tokens = parse(rawExpression.value).tokens
 	const token = tokens
 		.filter((t) => t.type == 'FUNCTION' && t.start < _cursorPos && t.end > _cursorPos)
 		.at(-1)
@@ -45,7 +49,7 @@ const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 }, 100)
 
 function onSuggestionSelect(item) {
-	const raw = expression.value.raw || ''
+	const raw = rawExpression.value || ''
 	const start = suggestionContext.from
 	const end = suggestionContext.to
 
@@ -54,8 +58,7 @@ function onSuggestionSelect(item) {
 		const textAfterToken = raw.slice(end)
 		let newText = `${item.label}`
 		if (!textAfterToken.trim().startsWith('(')) newText += '()'
-		expression.value.raw = `${textBeforeToken}${newText}${textAfterToken}`
-		expression.value.ast = parse(expression.value.raw).ast
+		rawExpression.value = `${textBeforeToken}${newText}${textAfterToken}`
 
 		const newCursorPos = start + newText.length - 1
 		nextTick(() => {
@@ -71,8 +74,7 @@ function onSuggestionSelect(item) {
 		let newText = `${item.table}.${item.column}`
 		if (!textBefore.trim().endsWith('`')) newText = '`' + newText
 		if (!textAfter.trim().startsWith('`')) newText += '`'
-		expression.value.raw = `${textBefore}${newText}${textAfter}`
-		expression.value.ast = parse(expression.value.raw).ast
+		rawExpression.value = `${textBefore}${newText}${textAfter}`
 
 		const newCursorPos = start + newText.length
 		nextTick(() => {
@@ -151,18 +153,12 @@ const onGetCodeCompletion = (context) => {
 		>
 			<Code
 				ref="codeEditor"
-				:modelValue="expression.raw"
+				v-model="rawExpression"
 				:completions="onGetCodeCompletion"
 				placeholder="Write an expression"
 				@focus="focused = true"
 				@blur="focused = false"
 				@viewUpdate="codeViewUpdate"
-				@update:modelValue="
-					expression = {
-						raw: $event,
-						ast: parse($event).ast,
-					}
-				"
 			></Code>
 		</div>
 		<div
