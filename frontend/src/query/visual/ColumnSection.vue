@@ -139,18 +139,15 @@ function onColumnSort(e) {
 		:options="{
 			title: 'Expression',
 			size: '3xl',
-			actions: [
-				{ label: 'Discard', variant: 'outline', onClick: () => (activeColumnIdx = null) },
-				{
-					label: 'Save',
-					variant: 'solid',
-					onClick: () => onSaveColumn(columns[activeColumnIdx]),
-				},
-			],
 		}"
 	>
 		<template #body-content>
-			<ColumnExpressionEditor :column="columns[activeColumnIdx]" />
+			<ColumnExpressionEditor
+				:column="columns[activeColumnIdx]"
+				@remove="onRemoveColumn"
+				@save="onSaveColumn"
+				@discard="activeColumnIdx = null"
+			/>
 		</template>
 	</Dialog>
 </template>
