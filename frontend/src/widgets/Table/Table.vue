@@ -33,6 +33,8 @@ const numberColumns = computed(() => {
 
 const tanstackColumns = computed(() => {
 	if (!columns.value?.length) return []
+	if (columns.value.some((c) => !c.column)) return []
+
 	const indexColumn = {
 		id: 'index',
 		header: '#',
@@ -42,9 +44,6 @@ const tanstackColumns = computed(() => {
 		footer: 'Total',
 	}
 	const cols = columns.value.map((column) => {
-		if (!column.column) {
-			throw new Error(`Column ${column} is missing a column name`)
-		}
 		return {
 			id: column.column,
 			header: column.column,
@@ -57,7 +56,10 @@ const tanstackColumns = computed(() => {
 				if (!isNumberColumn) return ''
 				const filteredRows = props.table.getFilteredRowModel().rows
 				const values = filteredRows.map((row) => row.getValue(column.column))
-				return formatNumber(values.reduce((acc, curr) => acc + curr, 0))
+				return formatNumber(
+					values.reduce((acc, curr) => acc + curr, 0),
+					2
+				)
 			},
 		}
 	})
