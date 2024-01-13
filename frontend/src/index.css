@@ -27,13 +27,12 @@
 	padding: 0px !important;
 	position: relative !important;
 }
-.cm-gutters {
+/* .cm-gutters {
 	display: none !important;
-}
+} */
 .cm-gutters {
-	@apply !border-none !bg-transparent pl-1 !text-sm !leading-6;
+	@apply !border-r !bg-transparent !text-sm !leading-6 !text-gray-600;
 }
-/* hide fold bar */
 .cm-foldGutter span {
 	@apply !opacity-0;
 }
@@ -41,7 +40,7 @@
 	@apply !bg-transparent;
 }
 .cm-activeLineGutter {
-	@apply !bg-transparent !font-medium text-gray-900;
+	@apply !bg-transparent text-gray-600;
 }
 .cm-editor {
 	height: 100%;
@@ -52,7 +51,7 @@
 }
 
 .cm-placeholder {
-	@apply !leading-6 !text-gray-600;
+	@apply !leading-6 !text-gray-500;
 }
 .cm-content {
 	padding: 6px 0px !important;

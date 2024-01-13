@@ -1,9 +1,11 @@
 <script setup>
-import { Combine, GripVertical } from 'lucide-vue-next'
+import DraggableList from '@/components/DraggableList.vue'
+import { Combine } from 'lucide-vue-next'
 import { computed, inject, nextTick, ref } from 'vue'
-import Draggable from 'vuedraggable'
-import ColumnEditor from './ColumnEditor.vue'
+import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import ColumnListItem from './ColumnListItem.vue'
+import SectionHeader from './SectionHeader.vue'
+import SimpleColumnEditor from './SimpleColumnEditor.vue'
 import { NEW_COLUMN } from './constants'
 
 const query = inject('query')
@@ -13,6 +15,18 @@ const assistedQuery = inject('assistedQuery')
 const columns = computed(() => assistedQuery.columns)
 const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
+const showExpressionEditor = computed(() => {
+	if (activeColumnIdx.value === null) return false
+	const activeColumn = columns.value[activeColumnIdx.value]
+	return (
+		activeColumn.expression.hasOwnProperty('raw') ||
+		activeColumn.expression.hasOwnProperty('ast')
+	)
+})
+const showSimpleColumnEditor = computed(() => {
+	if (activeColumnIdx.value === null) return false
+	return !showExpressionEditor.value
+})
 
 function onColumnSelect(column) {
 	if (!column) return
@@ -57,11 +71,7 @@ function onColumnSort(e) {
 
 <template>
 	<div>
-		<div class="mb-2 flex items-center justify-between">
-			<div class="flex items-center space-x-1.5">
-				<Combine class="h-4 w-4 text-gray-600" />
-				<p class="font-medium">Summarize</p>
-			</div>
+		<SectionHeader title="Summarize" :icon="Combine">
 			<Autocomplete
 				:modelValue="columns"
 				bodyClasses="w-[18rem]"
@@ -83,49 +93,61 @@ function onColumnSort(e) {
 					</Button>
 				</template>
 			</Autocomplete>
-		</div>
-		<Draggable
-			class="w-full"
-			:model-value="columns"
+		</SectionHeader>
+		<DraggableList
+			:items="columns"
 			group="columns"
 			item-key="label"
-			handle=".handle"
+			empty-text="No columns selected"
 			@sort="onColumnSort"
 		>
-			<template #item="{ element: column, index: idx }">
-				<div class="mb-2 flex items-center gap-1">
-					<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
-					<div class="flex-1">
-						<Popover
-							:show="activeColumnIdx === idx"
-							@close="activeColumnIdx = null"
-							placement="right-start"
+			<template #item="{ item: column, index: idx }">
+				<Popover
+					:show="showSimpleColumnEditor && activeColumnIdx === idx"
+					@close="activeColumnIdx = null"
+					placement="right-start"
+				>
+					<template #target="{ togglePopover }">
+						<ColumnListItem
+							:column="column"
+							:isActive="activeColumnIdx === idx"
+							@edit-column="activeColumnIdx = idx"
+							@remove-column="assistedQuery.removeColumnAt(idx)"
+						/>
+					</template>
+					<template #body>
+						<div
+							v-if="showSimpleColumnEditor && activeColumnIdx === idx"
+							class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
 						>
-							<template #target="{ togglePopover }">
-								<ColumnListItem
-									:column="column"
-									:isActive="activeColumnIdx === idx"
-									@edit-column="activeColumnIdx = idx"
-									@remove-column="assistedQuery.removeColumnAt(idx)"
-								/>
-							</template>
-							<template #body>
-								<div
-									v-if="activeColumnIdx === idx"
-									class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
-								>
-									<ColumnEditor
-										:column="column"
-										@discard="activeColumnIdx = null"
-										@remove="onRemoveColumn"
-										@save="onSaveColumn"
-									/>
-								</div>
-							</template>
-						</Popover>
-					</div>
-				</div>
+							<SimpleColumnEditor
+								:column="column"
+								@remove="onRemoveColumn"
+								@save="onSaveColumn"
+								@discard="activeColumnIdx = null"
+							/>
+						</div>
+					</template>
+				</Popover>
 			</template>
-		</Draggable>
+		</DraggableList>
 	</div>
+
+	<Dialog
+		:modelValue="showExpressionEditor"
+		@close="activeColumnIdx = null"
+		:options="{
+			title: 'Column Expression',
+			size: '3xl',
+		}"
+	>
+		<template #body-content>
+			<ColumnExpressionEditor
+				:column="columns[activeColumnIdx]"
+				@remove="onRemoveColumn"
+				@save="onSaveColumn"
+				@discard="activeColumnIdx = null"
+			/>
+		</template>
+	</Dialog>
 </template>

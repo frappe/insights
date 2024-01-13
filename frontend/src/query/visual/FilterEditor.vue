@@ -1,9 +1,10 @@
 <script setup>
 import { FIELDTYPES, getOperatorOptions } from '@/utils'
 import { computed, defineProps, inject, reactive, ref, watch } from 'vue'
-import FilterExpressionEditor from './FilterExpressionEditor.vue'
+import ExpressionBuilder from './ExpressionBuilder.vue'
 import FilterValueSelector from './FilterValueSelector.vue'
 import { NEW_FILTER } from './constants'
+import { getSelectedTables } from './useAssistedQuery'
 
 const emit = defineEmits(['save', 'discard', 'remove'])
 const props = defineProps({ filter: Object })
@@ -83,6 +84,11 @@ function isValidExpression(c) {
 	if (!c) return false
 	return c.expression?.raw && c.expression?.ast
 }
+
+const expressionColumnOptions = computed(() => {
+	const selectedTables = getSelectedTables(assistedQuery)
+	return assistedQuery.columnOptions.filter((c) => selectedTables.includes(c.table)) || []
+})
 </script>
 
 <template>
@@ -100,7 +106,10 @@ function isValidExpression(c) {
 			</div>
 		</div>
 		<template v-if="activeTab == 'Expression'">
-			<FilterExpressionEditor v-model:filter="filter" />
+			<ExpressionBuilder
+				v-model="filter.expression"
+				:columnOptions="expressionColumnOptions"
+			/>
 		</template>
 		<template v-if="activeTab == 'Simple'">
 			<div class="space-y-1">

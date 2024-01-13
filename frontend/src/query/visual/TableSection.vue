@@ -13,6 +13,7 @@ import { computed, inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TableJoinEditor from './TableJoinEditor.vue'
 import { Table2, GanttChartSquare } from 'lucide-vue-next'
+import SectionHeader from './SectionHeader.vue'
 
 const assistedQuery = inject('assistedQuery')
 
@@ -65,11 +66,7 @@ async function handleDataSourceChange(option) {
 
 <template>
 	<div>
-		<div class="mb-2 flex items-center justify-between">
-			<div class="flex items-center space-x-1.5">
-				<Sheet class="h-4 w-4 text-gray-600" />
-				<p class="font-medium">Data</p>
-			</div>
+		<SectionHeader title="Data" :icon="Sheet">
 			<!-- Show Data Source Selector first then show Table Selector -->
 			<Autocomplete
 				ref="selector"
@@ -88,7 +85,7 @@ async function handleDataSourceChange(option) {
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
 				</template>
 			</Autocomplete>
-		</div>
+		</SectionHeader>
 		<div class="space-y-2">
 			<div
 				v-if="assistedQuery.table.table"

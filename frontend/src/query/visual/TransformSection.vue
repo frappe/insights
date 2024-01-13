@@ -5,6 +5,7 @@ import { CornerLeftDown, CornerRightUp, Crop, Option, X } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import TransformEditor from './TransformEditor.vue'
 import { Sigma } from 'lucide-vue-next'
+import SectionHeader from './SectionHeader.vue'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -44,13 +45,9 @@ function isValidTransform(transform) {
 
 <template>
 	<div>
-		<div class="mb-2 flex items-center justify-between">
-			<div class="flex items-center space-x-1.5">
-				<Option class="h-3.5 w-3.5 text-gray-600" />
-				<p class="font-medium">Transform</p>
-			</div>
+		<SectionHeader title="Transform" :icon="Option">
 			<Button variant="outline" icon="plus" @click.prevent.stop="onAddTransform"></Button>
-		</div>
+		</SectionHeader>
 		<div class="space-y-2">
 			<div
 				ref="transformRefs"
