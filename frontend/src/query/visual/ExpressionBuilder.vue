@@ -55,6 +55,7 @@ function onSuggestionSelect(item) {
 		let newText = `${item.label}`
 		if (!textAfterToken.trim().startsWith('(')) newText += '()'
 		expression.value.raw = `${textBeforeToken}${newText}${textAfterToken}`
+		expression.value.ast = parse(expression.value.raw).ast
 
 		const newCursorPos = start + newText.length - 1
 		nextTick(() => {
@@ -71,6 +72,7 @@ function onSuggestionSelect(item) {
 		if (!textBefore.trim().endsWith('`')) newText = '`' + newText
 		if (!textAfter.trim().startsWith('`')) newText += '`'
 		expression.value.raw = `${textBefore}${newText}${textAfter}`
+		expression.value.ast = parse(expression.value.raw).ast
 
 		const newCursorPos = start + newText.length
 		nextTick(() => {
@@ -139,7 +141,7 @@ const onGetCodeCompletion = (context) => {
 </script>
 
 <template>
-	<div>
+	<div class="min-w-[32rem]">
 		<span class="mb-2 block text-sm leading-4 text-gray-700">Expression</span>
 		<div
 			class="h-fit min-h-[2.5rem] rounded rounded-b-none border border-transparent bg-gray-100 p-0 px-1 transition-all"
@@ -167,7 +169,7 @@ const onGetCodeCompletion = (context) => {
 			class="-mt-1 flex h-[14rem] divide-x divide-gray-300 rounded rounded-t-none border border-t border-gray-300"
 		>
 			<div
-				class="relative flex flex-[2] flex-col overflow-hidden overflow-y-scroll"
+				class="relative flex flex-1 flex-col overflow-hidden overflow-y-scroll"
 				v-auto-animate
 			>
 				<template v-for="group in filteredGroupedOptions">
@@ -206,7 +208,7 @@ const onGetCodeCompletion = (context) => {
 					</div>
 				</template>
 			</div>
-			<div class="flex flex-[3] flex-col overflow-hidden pb-2" v-auto-animate>
+			<div class="flex flex-1 flex-col overflow-hidden pb-2" v-auto-animate>
 				<div
 					class="flex-shrink-0 truncate bg-gray-50 px-2.5 py-1.5 text-sm font-medium text-gray-600"
 				>
