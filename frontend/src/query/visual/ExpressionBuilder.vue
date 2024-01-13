@@ -45,7 +45,7 @@ const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 }, 100)
 
 function onSuggestionSelect(item) {
-	const raw = expression.value.raw
+	const raw = expression.value.raw || ''
 	const start = suggestionContext.from
 	const end = suggestionContext.to
 
