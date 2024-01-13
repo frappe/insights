@@ -1,12 +1,12 @@
 <script setup>
+import DraggableList from '@/components/DraggableList.vue'
 import { Combine } from 'lucide-vue-next'
 import { computed, inject, nextTick, ref } from 'vue'
 import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
-import SectionHeader from './SectionHeader.vue'
-import { NEW_COLUMN } from './constants'
-import DraggableList from '@/components/DraggableList.vue'
-import ColumnEditor from './ColumnEditor.vue'
 import ColumnListItem from './ColumnListItem.vue'
+import SectionHeader from './SectionHeader.vue'
+import SimpleColumnEditor from './SimpleColumnEditor.vue'
+import { NEW_COLUMN } from './constants'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -23,7 +23,7 @@ const showExpressionEditor = computed(() => {
 		activeColumn.expression.hasOwnProperty('ast')
 	)
 })
-const showColumnEditor = computed(() => {
+const showSimpleColumnEditor = computed(() => {
 	if (activeColumnIdx.value === null) return false
 	return !showExpressionEditor.value
 })
@@ -103,7 +103,7 @@ function onColumnSort(e) {
 		>
 			<template #item="{ item: column, index: idx }">
 				<Popover
-					:show="showColumnEditor && activeColumnIdx === idx"
+					:show="showSimpleColumnEditor && activeColumnIdx === idx"
 					@close="activeColumnIdx = null"
 					placement="right-start"
 				>
@@ -117,10 +117,10 @@ function onColumnSort(e) {
 					</template>
 					<template #body>
 						<div
-							v-if="showColumnEditor && activeColumnIdx === idx"
+							v-if="showSimpleColumnEditor && activeColumnIdx === idx"
 							class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
 						>
-							<ColumnEditor
+							<SimpleColumnEditor
 								:column="column"
 								@remove="onRemoveColumn"
 								@save="onSaveColumn"
@@ -150,10 +150,7 @@ function onColumnSort(e) {
 		}"
 	>
 		<template #body-content>
-			<ColumnExpressionEditor
-				v-if="showExpressionEditor"
-				:column="columns[activeColumnIdx]"
-			/>
+			<ColumnExpressionEditor :column="columns[activeColumnIdx]" />
 		</template>
 	</Dialog>
 </template>

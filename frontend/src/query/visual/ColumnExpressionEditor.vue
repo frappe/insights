@@ -6,6 +6,7 @@ import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'
 import { computed, inject, nextTick, ref } from 'vue'
 import { getSelectedTables } from './useAssistedQuery'
+import { NEW_COLUMN } from './constants'
 
 const COLUMN_TYPES = [
 	{ label: 'String', value: 'String' },
@@ -21,8 +22,15 @@ const assistedQuery = inject('assistedQuery')
 const emit = defineEmits(['update:column'])
 const props = defineProps({ column: Object })
 
+const emptyExpressionColumn = {
+	...NEW_COLUMN,
+	expression: {
+		raw: '',
+		ast: {},
+	},
+}
 const column = computed({
-	get: () => props.column,
+	get: () => props.column || emptyExpressionColumn,
 	set: (val) => emit('update:column', val),
 })
 
