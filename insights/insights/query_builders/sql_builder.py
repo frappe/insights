@@ -712,7 +712,7 @@ class SQLQueryBuilder:
             if column.is_expression():
                 _column = self.expression_processor.process(column.expression.ast)
 
-            if column.is_aggregate() and column.aggregation.lower() != "group by":
+            if column.is_aggregate():
                 _column = self.aggregations.apply(column.aggregation, _column)
 
             if column.has_granularity() and not for_filter:
