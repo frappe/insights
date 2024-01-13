@@ -67,6 +67,11 @@ export const FUNCTIONS = {
 		description: 'Replaces occurrences in the column.',
 		example: 'replace(`category`, "_", "-")',
 	},
+	substring: {
+		syntax: 'substring(column_name, start, end)',
+		description: 'Extracts part of the column value.',
+		example: 'substring(`customer`, 0, 5)',
+	},
 
 	// Arithmetic Functions
 	abs: {

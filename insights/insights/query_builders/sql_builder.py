@@ -209,6 +209,9 @@ class Functions:
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
 
+        if function == "substring":
+            return func.substring(args[0], args[1], args[2])
+
         if function == "concat":
             return func.concat(*args)
 
