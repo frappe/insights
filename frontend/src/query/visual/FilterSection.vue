@@ -4,6 +4,7 @@ import { ListFilter, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import FilterEditor from './FilterEditor.vue'
 import { fieldtypesToIcon } from '@/utils'
+import SectionHeader from './SectionHeader.vue'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -38,13 +39,9 @@ function isValidFilter(filter) {
 
 <template>
 	<div>
-		<div class="mb-2 flex items-center justify-between">
-			<div class="flex items-center space-x-1.5">
-				<ListFilter class="h-4 w-4 text-gray-600" />
-				<p class="font-medium">Filter</p>
-			</div>
+		<SectionHeader title="Filter" :icon="ListFilter">
 			<Button variant="outline" icon="plus" @click.prevent.stop="onAddFilter"></Button>
-		</div>
+		</SectionHeader>
 		<div class="space-y-2">
 			<div
 				ref="filterRefs"

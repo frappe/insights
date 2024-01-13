@@ -5,6 +5,7 @@ import Draggable from 'vuedraggable'
 import ColumnEditor from './ColumnEditor.vue'
 import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
 import ColumnListItem from './ColumnListItem.vue'
+import SectionHeader from './SectionHeader.vue'
 import { NEW_COLUMN } from './constants'
 
 const query = inject('query')
@@ -70,11 +71,7 @@ function onColumnSort(e) {
 
 <template>
 	<div>
-		<div class="mb-2 flex items-center justify-between">
-			<div class="flex items-center space-x-1.5">
-				<Combine class="h-4 w-4 text-gray-600" />
-				<p class="font-medium">Summarize</p>
-			</div>
+		<SectionHeader title="Summarize" :icon="Combine">
 			<Autocomplete
 				:modelValue="columns"
 				bodyClasses="w-[18rem]"
@@ -96,7 +93,7 @@ function onColumnSort(e) {
 					</Button>
 				</template>
 			</Autocomplete>
-		</div>
+		</SectionHeader>
 		<Draggable
 			class="w-full"
 			:model-value="columns"
