@@ -27,14 +27,17 @@
 	padding: 0px !important;
 	position: relative !important;
 }
-/* .cm-gutters {
-	display: none !important;
-} */
+.cm-gutters {
+	@apply !border-r !bg-transparent !text-sm !leading-6 !text-gray-600 !px-1 !text-center;
+}
 .cm-gutters {
 	@apply !border-r !bg-transparent !text-sm !leading-6 !text-gray-600;
 }
 .cm-foldGutter span {
-	@apply !opacity-0;
+	@apply !opacity-0 !hidden;
+}
+.cm-gutterElement {
+	@apply !text-center;
 }
 .cm-activeLine {
 	@apply !bg-transparent;
