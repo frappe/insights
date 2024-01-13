@@ -137,7 +137,7 @@ function onColumnSort(e) {
 		:modelValue="showExpressionEditor"
 		@close="activeColumnIdx = null"
 		:options="{
-			title: 'Expression',
+			title: 'Column Expression',
 			size: '3xl',
 		}"
 	>
