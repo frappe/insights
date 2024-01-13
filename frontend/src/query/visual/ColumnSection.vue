@@ -1,12 +1,12 @@
 <script setup>
-import { Combine, GripVertical } from 'lucide-vue-next'
+import { Combine } from 'lucide-vue-next'
 import { computed, inject, nextTick, ref } from 'vue'
-import Draggable from 'vuedraggable'
-import ColumnEditor from './ColumnEditor.vue'
 import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
-import ColumnListItem from './ColumnListItem.vue'
 import SectionHeader from './SectionHeader.vue'
 import { NEW_COLUMN } from './constants'
+import DraggableList from '@/components/DraggableList.vue'
+import ColumnEditor from './ColumnEditor.vue'
+import ColumnListItem from './ColumnListItem.vue'
 
 const query = inject('query')
 const assistedQuery = inject('assistedQuery')
@@ -94,49 +94,43 @@ function onColumnSort(e) {
 				</template>
 			</Autocomplete>
 		</SectionHeader>
-		<Draggable
-			class="w-full"
-			:model-value="columns"
+		<DraggableList
+			:items="columns"
 			group="columns"
 			item-key="label"
-			handle=".handle"
+			empty-text="No columns selected"
 			@sort="onColumnSort"
 		>
-			<template #item="{ element: column, index: idx }">
-				<div class="mb-2 flex items-center gap-1">
-					<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
-					<div class="flex-1">
-						<Popover
-							:show="showColumnEditor"
-							@close="activeColumnIdx = null"
-							placement="right-start"
+			<template #item="{ item: column, index: idx }">
+				<Popover
+					:show="showColumnEditor && activeColumnIdx === idx"
+					@close="activeColumnIdx = null"
+					placement="right-start"
+				>
+					<template #target="{ togglePopover }">
+						<ColumnListItem
+							:column="column"
+							:isActive="activeColumnIdx === idx"
+							@edit-column="activeColumnIdx = idx"
+							@remove-column="assistedQuery.removeColumnAt(idx)"
+						/>
+					</template>
+					<template #body>
+						<div
+							v-if="showColumnEditor && activeColumnIdx === idx"
+							class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
 						>
-							<template #target="{ togglePopover }">
-								<ColumnListItem
-									:column="column"
-									:isActive="activeColumnIdx === idx"
-									@edit-column="activeColumnIdx = idx"
-									@remove-column="assistedQuery.removeColumnAt(idx)"
-								/>
-							</template>
-							<template #body>
-								<div
-									v-if="showColumnEditor"
-									class="ml-2 w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl"
-								>
-									<ColumnEditor
-										:column="column"
-										@remove="onRemoveColumn"
-										@save="onSaveColumn"
-										@discard="activeColumnIdx = null"
-									/>
-								</div>
-							</template>
-						</Popover>
-					</div>
-				</div>
+							<ColumnEditor
+								:column="column"
+								@remove="onRemoveColumn"
+								@save="onSaveColumn"
+								@discard="activeColumnIdx = null"
+							/>
+						</div>
+					</template>
+				</Popover>
 			</template>
-		</Draggable>
+		</DraggableList>
 	</div>
 
 	<Dialog

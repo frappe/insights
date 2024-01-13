@@ -41,7 +41,7 @@ function onChange(e) {
 			<div class="mb-2 flex items-center gap-1">
 				<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
 				<div class="flex-1">
-					<slot :item="item" :index="idx">
+					<slot name="item" :item="item" :index="idx">
 						<div
 							class="group form-input flex h-7 flex-1 cursor-pointer items-center justify-between px-2"
 						>
