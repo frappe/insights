@@ -1,4 +1,4 @@
-import { ellipsis } from '@/utils'
+import { ellipsis, formatNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
 
 export default function getPieChartOptions(labels, dataset, options) {
@@ -100,7 +100,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 	function appendPercentage(value) {
 		let total = dataset.data.reduce((a, b) => a + b, 0)
 		const percent = (value / total) * 100
-		return `${value} (${percent.toFixed(0)}%)`
+		return `${formatNumber(value, 2)} (${percent.toFixed(0)}%)`
 	}
 
 	return {
