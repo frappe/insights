@@ -98,8 +98,8 @@ function onColumnSort(e) {
 			:items="columns"
 			group="columns"
 			item-key="label"
-			empty-text="No columns selected"
 			@sort="onColumnSort"
+			:showEmptyState="true"
 		>
 			<template #item="{ item: column, index: idx }">
 				<Popover

@@ -9,6 +9,7 @@ const props = defineProps({
 	group: { type: String, required: true },
 	itemKey: { type: String, default: 'value' },
 	emptyText: { type: String, default: 'No items' },
+	showEmptyState: { type: Boolean, default: true },
 })
 const items = computed({
 	get: () => props.items,
@@ -60,7 +61,7 @@ function onChange(e) {
 				<slot name="item-suffix" :item="item" :index="idx" />
 			</div>
 		</template>
-		<template v-if="!items?.length" #footer>
+		<template v-if="showEmptyState && !items?.length">
 			<div
 				class="flex h-16 items-center justify-center rounded border border-dashed text-sm text-gray-600"
 			>
