@@ -105,7 +105,7 @@ class MariaDB(BaseDatabase):
             charset="utf8mb4",
             use_unicode=True,
         )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
 
     def handle_db_exception(self, e):

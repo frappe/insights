@@ -121,7 +121,8 @@ class SQLiteFunctions(Functions):
 
 
 class SQLiteQueryBuilder(SQLQueryBuilder):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.engine = engine
         self.functions = SQLiteFunctions
         self.column_formatter = SQLiteColumnFormatter

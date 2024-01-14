@@ -63,12 +63,12 @@ class BaseDatabase:
 
     def build_query(self, query):
         """Used to update the sql in insights query"""
-        query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        query_str = self.query_builder.build(query)
         query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
         return query_str
 
     def run_query(self, query):
-        sql = self.query_builder.build(query, dialect=self.engine.dialect)
+        sql = self.query_builder.build(query)
         sql = self.escape_special_characters(sql) if query.is_native_query else sql
         return self.execute_query(sql, return_columns=True)
 

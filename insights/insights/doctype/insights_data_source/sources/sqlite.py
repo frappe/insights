@@ -89,7 +89,7 @@ class SQLiteDB(BaseDatabase):
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)
-        self.query_builder = SQLiteQueryBuilder()
+        self.query_builder = SQLiteQueryBuilder(self.engine)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:

@@ -64,7 +64,7 @@ class QueryStore(SQLiteDB):
         database_path = frappe.get_site_path("private", "files", "insights_query_store.sqlite")
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.table_factory = StoredQueryTableFactory()
-        self.query_builder = SQLiteQueryBuilder()
+        self.query_builder = SQLiteQueryBuilder(self.engine)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:

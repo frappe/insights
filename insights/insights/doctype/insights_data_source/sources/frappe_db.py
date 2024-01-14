@@ -215,7 +215,7 @@ class FrappeDB(BaseDatabase):
             charset="utf8mb4",
             use_unicode=True,
         )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
     def test_connection(self):
@@ -264,7 +264,7 @@ class SiteDB(FrappeDB):
             charset="utf8mb4",
             use_unicode=True,
         )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
 
