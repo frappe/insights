@@ -52,7 +52,7 @@ watch(
 			:tables="completions.tables"
 			placeholder="Type your query here"
 		></Code>
-		<div class="sticky bottom-0 flex gap-2 bg-white p-2">
+		<div class="sticky bottom-0 flex gap-2 border-t bg-white p-2">
 			<div>
 				<Button
 					variant="subtle"

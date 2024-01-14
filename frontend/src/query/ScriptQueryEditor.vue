@@ -65,7 +65,7 @@ results = fetch_data_from_url()`
 			<div class="relative flex flex-1 flex-col overflow-y-scroll">
 				<Code language="python" v-model="script" placeholder="Enter your script here...">
 				</Code>
-				<div class="sticky bottom-0 flex justify-between bg-white p-2">
+				<div class="sticky bottom-0 flex justify-between border-t bg-white p-2">
 					<div class="flex gap-2">
 						<Button variant="outline" icon="help-circle" @click="showHelp = true" />
 						<Button
