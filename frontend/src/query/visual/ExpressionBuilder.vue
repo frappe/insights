@@ -33,7 +33,12 @@ const suggestionContext = reactive({
 const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 	functionHelp.value = null
 
-	if (!rawExpression.value) return
+	if (!rawExpression.value) {
+		suggestionContext.from = null
+		suggestionContext.to = null
+		suggestionContext.text = null
+		return
+	}
 
 	const tokens = parse(rawExpression.value).tokens
 	const token = tokens

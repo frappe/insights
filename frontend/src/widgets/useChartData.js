@@ -37,7 +37,7 @@ export default function useChartData(options = {}) {
 				state.rawData = getFormattedResult(results)
 				state.data = convertResultToObjects(state.rawData)
 			})
-			.error((error) => {
+			.catch((error) => {
 				state.loading = false
 				state.error = error
 			})
