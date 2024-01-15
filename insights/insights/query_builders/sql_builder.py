@@ -66,7 +66,6 @@ class SQLQueryBuilder:
         self.process_joins(assisted_query.joins)
         self.process_filters(assisted_query.filters)
         self.process_columns(assisted_query.columns)
-        self.validate_tables(assisted_query)
 
         self._limit = assisted_query.limit or None
 
@@ -157,22 +156,6 @@ class SQLQueryBuilder:
                 self._order_by_columns.append(
                     _column.asc() if column.order == "asc" else _column.desc()
                 )
-
-    def validate_tables(self, assisted_query: AssistedQuery):
-        main_table_name = assisted_query.table.table
-        joined_table_names = [
-            join.right_table.table for join in assisted_query.joins if join.is_valid()
-        ]
-
-        allowed_tables = [main_table_name, *joined_table_names]
-        evaluated_tables = [table_name for table_name in self._tables.keys() if table_name]
-
-        invalid_tables = list(set(evaluated_tables) - set(allowed_tables))
-        if invalid_tables:
-            invalid_tables = ", ".join([table_name for table_name in invalid_tables if table_name])
-            raise Exception(
-                f"Invalid table(s) {invalid_tables}. Please check if {invalid_tables} is included in joins."
-            )
 
     def _build(self, assisted_query):
         main_table = assisted_query.table.table
