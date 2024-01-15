@@ -57,61 +57,6 @@ def replace_column_names(raw_expression):
     return raw_expression
 
 
-def get_eval_globals():
-    from .sql_functions import call_function
-
-    function_list = [
-        "now",
-        "today",
-        "sql",
-        "abs",
-        "floor",
-        "lower",
-        "upper",
-        "ceil",
-        "round",
-        "is_set",
-        "is_not_set",
-        "count_if",
-        "distinct",
-        "distinct_count",
-        "in_",
-        "not_in",
-        "contains",
-        "not_contains",
-        "ends_with",
-        "starts_with",
-        "if_null",
-        "sum_if",
-        "between",
-        "replace",
-        "concat",
-        "coalesce",
-        "case",
-        "timespan",
-        "time_elapsed",
-        "descendants",
-        "descendants_and_self",
-        "date_format",
-        "start_of",
-        "sum",
-        "min",
-        "max",
-        "avg",
-        "count",
-        "distinct",
-        "distinct_count",
-        "and_",
-        "or_",
-    ]
-
-    eval_globals = {}
-    for fn in function_list:
-        eval_globals[fn] = lambda *args, fn=fn: call_function(fn, *args)
-
-    return eval_globals
-
-
 def process_raw_expression(raw_expression):
     # to replace `=` with `==`
     # we need to make sure that `!=` is not replaced with `!==`

@@ -417,6 +417,60 @@ class BinaryOperations:
         )
 
 
+def get_eval_globals():
+    function_list = [
+        "now",
+        "today",
+        "sql",
+        "abs",
+        "floor",
+        "lower",
+        "upper",
+        "ceil",
+        "round",
+        "is_set",
+        "is_not_set",
+        "count_if",
+        "distinct",
+        "distinct_count",
+        "in_",
+        "not_in",
+        "contains",
+        "not_contains",
+        "ends_with",
+        "starts_with",
+        "if_null",
+        "sum_if",
+        "between",
+        "replace",
+        "concat",
+        "coalesce",
+        "case",
+        "timespan",
+        "time_elapsed",
+        "descendants",
+        "descendants_and_self",
+        "date_format",
+        "start_of",
+        "substring",
+        "sum",
+        "min",
+        "max",
+        "avg",
+        "count",
+        "distinct",
+        "distinct_count",
+        "and_",
+        "or_",
+    ]
+
+    eval_globals = {}
+    for fn in function_list:
+        eval_globals[fn] = lambda *args, fn=fn: call_function(fn, *args)
+
+    return eval_globals
+
+
 def call_function(function, *args):
     if not function:
         return None

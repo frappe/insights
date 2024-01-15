@@ -19,8 +19,9 @@ from .sql_functions import (
     ColumnFormatter,
     Functions,
     call_function,
+    get_eval_globals,
 )
-from .utils import get_eval_globals, process_raw_expression
+from .utils import process_raw_expression
 
 
 class SQLQueryBuilder:
