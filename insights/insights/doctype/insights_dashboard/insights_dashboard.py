@@ -77,12 +77,8 @@ class InsightsDashboard(Document):
             return frappe.cache().get_value(key)
 
         query = frappe.get_cached_doc("Insights Query", query_name)
-        new_results = (
-            query.retrieve_results(fetch_if_not_cached=True)
-            if not additional_filters
-            # TODO: if 3 charts with same query results is fetched, it will be fetched 3 times
-            else query.fetch_results(additional_filters=additional_filters)
-        )
+        # TODO: if 3 charts with same query results is fetched, it will be fetched 3 times
+        new_results = query.fetch_results(additional_filters=additional_filters)
 
         query_result_expiry = frappe.db.get_single_value(
             "Insights Settings", "query_result_expiry"
