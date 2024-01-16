@@ -99,9 +99,9 @@ const trendLineOptions = computed(() => {
 					{{ options.title }}
 				</div>
 				<Badge
-					:theme="delta > 0 ? 'green' : 'red'"
+					:theme="delta >= 0 ? 'green' : 'red'"
 					:label="
-						delta > 0
+						delta >= 0
 							? `+${formatNumber(percentDelta, 2)}%`
 							: `${formatNumber(percentDelta, 2)}%`
 					"
@@ -117,7 +117,8 @@ const trendLineOptions = computed(() => {
 				<div
 					class="flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] text-sm leading-5 text-gray-600"
 				>
-					from {{ options.prefix }}{{ formatNumber(previousValue, 2) }}{{ options.suffix }}
+					from {{ options.prefix }}{{ formatNumber(previousValue, 2)
+					}}{{ options.suffix }}
 				</div>
 			</div>
 			<BaseChart v-if="options.showTrendLine" class="!px-0" :options="trendLineOptions" />
