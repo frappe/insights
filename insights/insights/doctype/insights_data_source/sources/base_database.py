@@ -59,7 +59,7 @@ class BaseDatabase:
             self.handle_db_exception(e)
 
     def handle_db_exception(self, e):
-        raise DatabaseCredentialsError(e)
+        raise DatabaseConnectionError(e)
 
     def build_query(self, query):
         """Used to update the sql in insights query"""

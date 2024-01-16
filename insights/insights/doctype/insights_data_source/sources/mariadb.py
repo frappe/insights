@@ -13,7 +13,6 @@ from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
 from .base_database import (
     BaseDatabase,
-    DatabaseConnectionError,
     DatabaseCredentialsError,
     DatabaseParallelConnectionError,
 )

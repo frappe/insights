@@ -11,7 +11,11 @@ from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
-from .base_database import BaseDatabase
+from .base_database import (
+    BaseDatabase,
+    DatabaseCredentialsError,
+    DatabaseParallelConnectionError,
+)
 from .mariadb import MARIADB_TO_GENERIC_TYPES
 from .utils import create_insights_table, get_sqlalchemy_engine
 
@@ -220,6 +224,13 @@ class FrappeDB(BaseDatabase):
 
     def test_connection(self):
         return self.execute_query("select name from tabDocType limit 1", pluck=True)
+
+    def handle_db_exception(self, e):
+        if "Access denied" in str(e):
+            raise DatabaseCredentialsError()
+        if "Packet sequence number wrong" in str(e):
+            raise DatabaseParallelConnectionError()
+        super().handle_db_exception(e)
 
     def sync_tables(self, tables=None, force=False):
         # "begin" ensures that the connection is committed and closed
