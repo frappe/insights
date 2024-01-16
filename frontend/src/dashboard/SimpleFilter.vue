@@ -208,7 +208,7 @@ function isValueSelected(value) {
 								:is="fieldtypesToIcon[filter.column?.type || 'String']"
 								class="h-4 w-4 flex-shrink-0 text-gray-600"
 							/>
-							<span class="truncate">{{ filter.column?.label }}</span>
+							<span class="truncate">{{ props.label || filter.column?.label }}</span>
 						</div>
 						<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
 							{{ operatorLabel }}
