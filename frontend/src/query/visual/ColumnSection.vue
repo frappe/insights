@@ -135,6 +135,7 @@ function onColumnSort(e) {
 
 	<Dialog
 		:modelValue="showExpressionEditor"
+		:dismissable="false"
 		@close="activeColumnIdx = null"
 		:options="{
 			title: 'Column Expression',
