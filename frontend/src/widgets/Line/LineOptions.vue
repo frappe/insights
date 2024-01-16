@@ -19,9 +19,14 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-if (!options.value.yAxis) options.value.yAxis = []
-if (Array.isArray(options.value.yAxis) && typeof options.value.yAxis[0] === 'string') {
-	options.value.yAxis = options.value.yAxis.map((column) => ({ column }))
+for (let item of ['xAxis', 'yAxis']) {
+	if (!options.value[item]) options.value[item] = []
+	if (typeof options.value[item] === 'string') {
+		options.value[item] = [{ column: options.value[item] }]
+	}
+	if (Array.isArray(options.value[item]) && typeof options.value[item][0] === 'string') {
+		options.value[item] = options.value[item].map((column) => ({ column }))
+	}
 }
 options.value.yAxis.forEach((item) => {
 	if (!item.series_options) item.series_options = {}
@@ -57,6 +62,16 @@ function updateYAxis(columnOptions) {
 		return { column: option.value, series_options }
 	})
 }
+
+function updateXAxis(columnOptions) {
+	if (!columnOptions) {
+		options.value.xAxis = []
+		return
+	}
+	options.value.xAxis = columnOptions.map((option) => {
+		return { column: option.value }
+	})
+}
 </script>
 
 <template>
@@ -69,8 +84,25 @@ function updateYAxis(columnOptions) {
 			placeholder="Title"
 		/>
 		<div>
-			<label class="mb-1.5 block text-xs text-gray-600">X Axis</label>
-			<Autocomplete v-model="options.xAxis" :returnValue="true" :options="indexOptions" />
+			<div class="mb-1 flex items-center justify-between">
+				<label class="block text-xs text-gray-600">X Axis</label>
+				<Autocomplete
+					:multiple="true"
+					:options="indexOptions"
+					:modelValue="options.xAxis?.map((item) => item.column) || []"
+					@update:model-value="updateXAxis"
+				>
+					<template #target="{ togglePopover }">
+						<Button variant="ghost" icon="plus" @click="togglePopover" />
+					</template>
+				</Autocomplete>
+			</div>
+			<DraggableList
+				group="xAxis"
+				item-key="column"
+				empty-text="No columns selected"
+				v-model:items="options.xAxis"
+			/>
 		</div>
 
 		<div>
