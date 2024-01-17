@@ -25,12 +25,12 @@ const hideChart = ref(false)
 
 <template>
 	<div class="relative flex h-full w-full flex-row-reverse overflow-hidden">
-		<div
+		<!-- <div
 			v-if="query.loading"
 			class="absolute inset-0 z-[100] flex items-center justify-center bg-gray-100/50"
 		>
 			<LoadingIndicator class="w-10 text-gray-600" />
-		</div>
+		</div> -->
 		<div class="flex h-full w-full flex-col overflow-hidden p-4 pt-0 pr-0" v-auto-animate>
 			<div
 				v-if="!hideChart"
