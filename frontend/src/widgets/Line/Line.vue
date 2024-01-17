@@ -72,7 +72,7 @@ const datasets = computed(() => {
 			for (let axis of uniqueAxisData) {
 				const data = props.data.filter((d) => d[xAxis] === axis).map((d) => d[column])
 				datasets.push({
-					label: `${column} (${axis})`,
+					label: axis,
 					data,
 					name: axis,
 					series_options: seriesOptions,
