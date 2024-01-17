@@ -56,8 +56,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Line/Line.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Line/LineOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Scatter: {
 		type: 'Scatter',
@@ -65,8 +65,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Scatter/Scatter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Scatter/ScatterOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Bar: {
 		type: 'Bar',
@@ -74,8 +74,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Bar/Bar.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Bar/BarOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Pie: {
 		type: 'Pie',
@@ -83,8 +83,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Pie/Pie.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Pie/PieOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Funnel: {
 		type: 'Funnel',
@@ -92,8 +92,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Funnel/Funnel.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Funnel/FunnelOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Table: {
 		type: 'Table',
@@ -101,8 +101,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Table/Table.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Table/TableOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Progress: {
 		type: 'Progress',
@@ -119,8 +119,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./MixedAxis/MixedAxis.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./MixedAxis/MixedAxisOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 	Filter: {
 		type: 'Filter',
@@ -146,8 +146,8 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		defaultWidth: 10,
+		defaultHeight: 10,
 	},
 }
 
