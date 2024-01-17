@@ -143,13 +143,13 @@ def get_columns_from_uploaded_file(filename):
 
 
 def create_data_source_for_csv():
-    if not frappe.db.exists("Insights Data Source", "File Uploads"):
+    if not frappe.db.exists("Insights Data Source", {"title": "File Uploads"}):
         data_source = frappe.new_doc("Insights Data Source")
         data_source.database_type = "SQLite"
         data_source.database_name = "file_uploads"
         data_source.title = "File Uploads"
         data_source.allow_imports = 1
-        data_source.save(ignore_permissions=True)
+        data_source.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
