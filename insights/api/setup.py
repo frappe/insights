@@ -28,6 +28,9 @@ def setup_sample_data(dataset):
 
 
 def import_demo_queries_and_dashboards():
+    demo_dashboard_exists = frappe.db.exists("Insights Dashboard", {"title": "eCommerce"})
+    if demo_dashboard_exists:
+        return
     try:
         setup_fixture_path = frappe.get_app_path("insights", "setup")
         with open(setup_fixture_path + "/demo_queries.json", "r") as f:
