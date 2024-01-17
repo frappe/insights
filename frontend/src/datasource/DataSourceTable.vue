@@ -164,9 +164,7 @@ const hidden = computed({
 	},
 	set(value) {
 		if (value !== dataSourceTable.hidden) {
-			dataSourceTable.updateVisibility.submit({
-				hidden: value,
-			})
+			dataSourceTable.updateVisibility(Boolean(value))
 		}
 	},
 })
