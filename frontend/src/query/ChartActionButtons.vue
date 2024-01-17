@@ -1,7 +1,6 @@
 <script setup>
 import PublicShareDialog from '@/components/PublicShareDialog.vue'
 import useDashboards from '@/dashboard/useDashboards'
-import { downloadImage } from '@/utils'
 import { Maximize } from 'lucide-vue-next'
 import { computed, inject, ref, watch } from 'vue'
 
@@ -43,6 +42,22 @@ const addChartToDashboard = async () => {
 }
 
 watch(showDashboardDialog, (val) => val && dashboards.reload(), { immediate: true })
+
+const showNewDashboardDialog = ref(false)
+function onCreateDashboard() {
+	showNewDashboardDialog.value = true
+	showDashboardDialog.value = false
+}
+const newDashboardTitle = ref('')
+const creatingDashboard = ref(false)
+async function createNewDashboard() {
+	if (!newDashboardTitle.value) return
+	creatingDashboard.value = true
+	await dashboards.create(newDashboardTitle.value)
+	creatingDashboard.value = false
+	showNewDashboardDialog.value = false
+	showDashboardDialog.value = true
+}
 </script>
 
 <template>
@@ -64,17 +79,63 @@ watch(showDashboardDialog, (val) => val && dashboards.reload(), { immediate: tru
 		@togglePublicAccess="query.chart.togglePublicAccess"
 	/>
 
-	<Dialog :options="{ title: 'Add to Dashboard' }" v-model="showDashboardDialog">
+	<Dialog
+		:options="{
+			title: 'Add to Dashboard',
+			actions: [
+				{
+					label: 'Add',
+					variant: 'solid',
+					disabled: !toDashboard,
+					onClick: addChartToDashboard,
+					loading: addingToDashboard,
+				},
+			],
+		}"
+		v-model="showDashboardDialog"
+	>
 		<template #body-content>
 			<div class="text-base">
 				<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard</span>
-				<Autocomplete :options="dashboardOptions" v-model="toDashboard" />
+				<Autocomplete :options="dashboardOptions" v-model="toDashboard">
+					<template #footer="{ togglePopover }">
+						<Button
+							class="w-full"
+							variant="ghost"
+							iconLeft="plus"
+							@click="onCreateDashboard() || togglePopover()"
+						>
+							Create New
+						</Button>
+					</template>
+				</Autocomplete>
 			</div>
 		</template>
-		<template #actions>
-			<Button variant="solid" @click="addChartToDashboard" :loading="addingToDashboard">
-				Add
-			</Button>
+	</Dialog>
+	<Dialog
+		:options="{
+			title: 'Create New Dashboard',
+			actions: [
+				{
+					label: 'Create',
+					variant: 'solid',
+					onClick: createNewDashboard,
+					loading: creatingDashboard,
+				},
+			],
+		}"
+		v-model="showNewDashboardDialog"
+	>
+		<template #body-content>
+			<div class="text-base">
+				<span class="mb-2 block text-sm leading-4 text-gray-700">Dashboard Title</span>
+				<FormControl
+					v-model="newDashboardTitle"
+					placeholder="Enter title"
+					class="w-full"
+					autocomplete="off"
+				/>
+			</div>
 		</template>
 	</Dialog>
 </template>
