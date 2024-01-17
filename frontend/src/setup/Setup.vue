@@ -105,7 +105,7 @@ function handlePrev() {
 				<div class="text-3xl font-bold leading-9 text-gray-900">
 					{{ steps[currentStep].title }}
 				</div>
-				<div class="text-base leading-4 text-gray-700">
+				<div class="text-base leading-5 text-gray-700">
 					{{ steps[currentStep].description }}
 				</div>
 			</div>
