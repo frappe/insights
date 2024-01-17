@@ -85,7 +85,7 @@ export function guessChart(dataset, chart_type) {
 		return {
 			type: 'Line',
 			options: {
-				xAxis: dateColumns[0].label,
+				xAxis: [{ column: dateColumns[0].label }],
 				yAxis: numberColumns.map((col) => ({ column: col.label })),
 			},
 		}
