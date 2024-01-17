@@ -8,12 +8,11 @@ import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import { whenever } from '@vueuse/core'
-import { ExternalLink, Sheet, X } from 'lucide-vue-next'
+import { ExternalLink, GanttChartSquare, Sheet, Table2, X } from 'lucide-vue-next'
 import { computed, inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import TableJoinEditor from './TableJoinEditor.vue'
-import { Table2, GanttChartSquare } from 'lucide-vue-next'
 import SectionHeader from './SectionHeader.vue'
+import TableJoinEditor from './TableJoinEditor.vue'
 
 const assistedQuery = inject('assistedQuery')
 
@@ -89,26 +88,22 @@ async function handleDataSourceChange(option) {
 		<div class="space-y-2">
 			<div
 				v-if="assistedQuery.table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				class="group flex h-8 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 hover:shadow"
 			>
-				<div class="flex items-center space-x-2">
-					<div class="flex flex-1 items-center gap-1">
-						<component
-							:is="
-								assistedQuery.table.table.startsWith('QRY-')
-									? GanttChartSquare
-									: Table2
-							"
-							class="h-4 w-4 text-gray-600"
-						/>
-						<span class="truncate">{{ assistedQuery.table.label }}</span>
-						<ExternalLink
-							class="h-3 w-3 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
-							@click.prevent.stop="onTableLinkClick(assistedQuery.table.table)"
-						/>
-					</div>
+				<div class="flex flex-1 items-center gap-1 overflow-hidden">
+					<component
+						:is="
+							assistedQuery.table.table.startsWith('QRY-') ? GanttChartSquare : Table2
+						"
+						class="h-4 w-4 flex-shrink-0 text-gray-600"
+					/>
+					<span class="flex-1 truncate">{{ assistedQuery.table.label }}</span>
+					<ExternalLink
+						class="h-3 w-3 flex-shrink-0 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
+						@click.prevent.stop="onTableLinkClick(assistedQuery.table.table)"
+					/>
 				</div>
-				<div class="flex items-center space-x-2">
+				<div class="ml-2 flex items-center space-x-2">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
 						@click="assistedQuery.resetMainTable()"
