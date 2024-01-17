@@ -97,11 +97,13 @@ async function handleDataSourceChange(option) {
 						"
 						class="h-4 w-4 flex-shrink-0 text-gray-600"
 					/>
-					<span class="flex-1 truncate">{{ assistedQuery.table.label }}</span>
-					<ExternalLink
-						class="h-3 w-3 flex-shrink-0 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
-						@click.prevent.stop="onTableLinkClick(assistedQuery.table.table)"
-					/>
+					<div class="flex flex-1 items-center gap-1 overflow-hidden">
+						<span class="truncate">{{ assistedQuery.table.label }}</span>
+						<ExternalLink
+							class="h-3 w-3 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
+							@click.prevent.stop="onTableLinkClick(assistedQuery.table.table)"
+						/>
+					</div>
 				</div>
 				<div class="ml-2 flex items-center space-x-2">
 					<X
