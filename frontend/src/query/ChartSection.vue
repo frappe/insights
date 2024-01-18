@@ -1,10 +1,10 @@
 <script setup>
+import { downloadImage } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { computed, inject, ref } from 'vue'
 import ChartActionButtons from './ChartActionButtons.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ChartTypeSelector from './ChartTypeSelector.vue'
-import { downloadImage } from '@/utils'
 
 const query = inject('query')
 const chartRef = ref(null)
@@ -44,6 +44,7 @@ const fullscreenDialog = ref(false)
 function showInFullscreenDialog() {
 	fullscreenDialog.value = true
 }
+const downloading = ref(false)
 function downloadChartImage() {
 	if (!chartRef.value) {
 		$notify({
@@ -52,8 +53,11 @@ function downloadChartImage() {
 		})
 		return
 	}
+	downloading.value = true
 	const title = query.chart.doc.options.title || query.doc.title
-	downloadImage(chartRef.value.$el, `${title}.png`)
+	downloadImage(chartRef.value.$el, `${title}.png`).then(() => {
+		downloading.value = false
+	})
 }
 </script>
 
@@ -100,7 +104,12 @@ function downloadChartImage() {
 						:key="JSON.stringify(query.chart.doc)"
 					/>
 					<div class="absolute top-0 right-0 p-2">
-						<Button variant="outline" @click="downloadChartImage" icon="download">
+						<Button
+							variant="outline"
+							@click="downloadChartImage"
+							:loading="downloading"
+							icon="download"
+						>
 						</Button>
 					</div>
 				</div>
