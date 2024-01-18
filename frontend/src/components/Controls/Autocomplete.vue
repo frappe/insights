@@ -171,7 +171,7 @@ import {
 	ComboboxOption,
 	ComboboxOptions,
 } from '@headlessui/vue'
-import { Popover } from 'frappe-ui'
+import Popover from '../Popover.vue'
 import { nextTick } from 'vue'
 import { CheckSquare } from 'lucide-vue-next'
 import { Square } from 'lucide-vue-next'
