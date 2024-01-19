@@ -117,7 +117,7 @@ export default {
 			}
 
 			const reference = this.$refs.reference
-			const popoverBody = this.$refs.body
+			const popoverBody = this.$refs.popover
 			const insideClick =
 				clickedElement === reference ||
 				reference?.contains(clickedElement) ||
