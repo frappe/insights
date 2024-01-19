@@ -127,9 +127,14 @@ export default {
 				return
 			}
 
+			const bodyClass = `.${this.popoverContainerClass}`
+			const clickedElementBody = clickedElement?.closest(bodyClass)
+			const currentPopoverBody = reference?.closest(bodyClass)
 			const isSiblingClicked =
-				clickedElement?.closest(this.popoverContainerClass) ===
-				reference?.closest(this.popoverContainerClass)
+				clickedElementBody &&
+				currentPopoverBody &&
+				clickedElementBody === currentPopoverBody
+
 			if (isSiblingClicked) {
 				this.close()
 			}
