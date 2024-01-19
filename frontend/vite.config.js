@@ -17,6 +17,7 @@ export default defineConfig({
 		outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
 		emptyOutDir: true,
 		target: 'es2015',
+		sourcemap: true,
 		rollupOptions: {
 			output: {
 				manualChunks: {
