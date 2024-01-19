@@ -120,6 +120,7 @@ export default {
 			const popoverBody = this.$refs.popover
 			const insideClick =
 				clickedElement === reference ||
+				clickedElement === popoverBody ||
 				reference?.contains(clickedElement) ||
 				popoverBody?.contains(clickedElement)
 			if (insideClick) {
