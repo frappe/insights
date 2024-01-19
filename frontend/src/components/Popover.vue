@@ -110,12 +110,6 @@ export default {
 	mounted() {
 		this.listener = (e) => {
 			const clickedElement = e.target
-			const root = document.getElementById('frappeui-popper-root')
-			const insidePopoverRoot = root.contains(clickedElement)
-			if (!insidePopoverRoot) {
-				return this.close()
-			}
-
 			const reference = this.$refs.reference
 			const popoverBody = this.$refs.popover
 			const insideClick =
@@ -125,6 +119,12 @@ export default {
 				popoverBody?.contains(clickedElement)
 			if (insideClick) {
 				return
+			}
+
+			const root = document.getElementById('frappeui-popper-root')
+			const insidePopoverRoot = root.contains(clickedElement)
+			if (!insidePopoverRoot) {
+				return this.close()
 			}
 
 			const bodyClass = `.${this.popoverContainerClass}`
