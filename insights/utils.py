@@ -86,7 +86,7 @@ def get_data_source_schema(data_source, **filters):
 @redis_cache(ttl=60 * 60 * 24 * 7)
 def get_data_source_dialect(data_source):
     data_source = frappe.get_cached_doc("Insights Data Source", data_source)
-    return data_source.db.engine.dialect.name
+    return data_source._db.engine.dialect.name
 
 
 class DoctypeBase(BaseDocument):

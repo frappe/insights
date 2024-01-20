@@ -131,7 +131,7 @@ class SchemaStore:
         for table in tables:
             query = f"SELECT * FROM `{table.table}` LIMIT 3"
             try:
-                results = doc.db.execute_query(query, return_columns=True)
+                results = doc._db.execute_query(query, return_columns=True)
             except BaseException:
                 continue
 
@@ -311,7 +311,7 @@ class SQLCopilot:
             source = InsightsDataSource.get(self.data_source)
             limited_query = add_limit_to_sql(query, limit=self.max_query_limit)
             try:
-                results = source.db.execute_query(limited_query)
+                results = source._db.execute_query(limited_query)
                 if not results:
                     return "The query didn't return any results. Try writing a different query."
                 return "Results:\n\n" + str(results)
