@@ -46,7 +46,7 @@ function onSaveFilter(filter) {
 			<template v-for="(filter, idx) in filters" :key="idx">
 				<Popover
 					:show="activeFilterIdx === idx"
-					@close="activeFilterIdx = null"
+					@close="activeFilterIdx === idx ? (activeFilterIdx = null) : null"
 					placement="right-start"
 				>
 					<template #target="{ togglePopover }">

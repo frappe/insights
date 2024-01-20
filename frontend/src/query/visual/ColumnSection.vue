@@ -112,6 +112,7 @@ function onColumnSort(e) {
 				<Popover
 					v-else
 					:show="showSimpleColumnEditor && activeColumnIdx === idx"
+					@close="activeColumnIdx === idx ? (activeColumnIdx = null) : null"
 					placement="right-start"
 				>
 					<template #target="{ togglePopover }">
