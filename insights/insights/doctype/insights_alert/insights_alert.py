@@ -47,11 +47,7 @@ class InsightsAlert(Document):
 
     def evaluate_condition(self, for_validate=False):
         query = frappe.get_doc("Insights Query", self.query)
-        results = (
-            query.fetch_results()
-            if not for_validate
-            else frappe.parse_json(query.results)
-        )
+        results = query.fetch_results() if not for_validate else query.retrieve_results()
 
         if not results:
             return False
@@ -59,9 +55,7 @@ class InsightsAlert(Document):
         column_names = [d.get("label") for d in results[0]]
         results = DataFrame(results[1:], columns=column_names)
 
-        return frappe.safe_eval(
-            self.condition, eval_locals=frappe._dict(results=results, any=any)
-        )
+        return frappe.safe_eval(self.condition, eval_locals=frappe._dict(results=results, any=any))
 
     def evaluate_message(self):
         query = frappe.get_doc("Insights Query", self.query)
@@ -115,9 +109,7 @@ def send_alerts():
 
 class Telegram:
     def __init__(self, chat_id: str = None):
-        self.token = frappe.get_single("Insights Settings").get_password(
-            "telegram_api_token"
-        )
+        self.token = frappe.get_single("Insights Settings").get_password("telegram_api_token")
         if not self.token:
             frappe.throw("Telegram Bot Token not set in Insights Settings")
 
@@ -128,9 +120,7 @@ class Telegram:
         try:
             text = message[: telegram.MAX_MESSAGE_LENGTH]
             parse_mode = telegram.ParseMode.MARKDOWN
-            return self.bot.send_message(
-                chat_id=self.chat_id, text=text, parse_mode=parse_mode
-            )
+            return self.bot.send_message(chat_id=self.chat_id, text=text, parse_mode=parse_mode)
         except Exception:
             frappe.log_error("Telegram Bot Error")
             raise
