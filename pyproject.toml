@@ -9,6 +9,7 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "langchain==0.1.1",
+    "langchain-openai==0.0.3",
     "pydantic==1.10.9",
     "tiktoken==0.3.3",
     "chromadb==0.3.21",

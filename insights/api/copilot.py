@@ -6,10 +6,9 @@ import hashlib
 import frappe
 import tiktoken
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.schema import AIMessage, FunctionMessage, HumanMessage, SystemMessage
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from insights.decorators import check_role
 from insights.insights.doctype.insights_data_source.sources.utils import (
@@ -31,7 +30,7 @@ def create_new_chat():
     return new_chat.name
 
 
-OPENAI_MODEL = "gpt-3.5-turbo-0613"
+OPENAI_MODEL = "gpt-3.5-turbo-1106"
 
 
 class OpenAI:
