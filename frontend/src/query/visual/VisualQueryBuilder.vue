@@ -39,7 +39,7 @@ const hideChart = ref(false)
 				<ChartSection></ChartSection>
 			</div>
 			<div
-				class="my-1.5 mx-auto w-20 rounded-full bg-gray-100 pt-1 transition-all hover:bg-gray-400"
+				class="my-1.5 mx-auto w-2 rounded-full bg-gray-200 pt-1 transition-all hover:bg-gray-400"
 				:class="hideChart ? 'cursor-s-resize' : 'cursor-n-resize'"
 				@click="hideChart = !hideChart"
 			></div>
