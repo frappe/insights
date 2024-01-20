@@ -9,7 +9,7 @@ import { useQueryTables } from '@/utils/query/tables'
 import { whenever } from '@vueuse/core'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import useChart from './useChart'
+import useQueryChart from './useQueryChart'
 
 const session = sessionStore()
 
@@ -49,7 +49,11 @@ function makeQuery(name) {
 		setLoading(true)
 		return resource.get
 			.fetch()
-			.then(() => state.doc.chart && useChart(state.doc.chart))
+			.then(
+				() =>
+					state.doc.chart &&
+					useQueryChart(state.doc.chart, state.doc.title, state.formattedResults)
+			)
 			.then((chart) => (state.chart = chart || {}))
 			.finally(() => setLoading(false))
 	}

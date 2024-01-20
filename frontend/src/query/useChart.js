@@ -12,7 +12,7 @@ export async function createChart() {
 	return call('insights.api.queries.create_chart')
 }
 
-export default function useChart(name) {
+export default function useChartOld(name) {
 	if (!charts[name]) {
 		charts[name] = getChart(name)
 	}
