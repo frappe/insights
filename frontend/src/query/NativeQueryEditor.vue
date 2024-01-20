@@ -4,6 +4,10 @@ import { call } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import SchemaExplorerDialog from './SchemaExplorerDialog.vue'
 
+const props = defineProps({
+	showToolbar: { type: Boolean, default: true },
+})
+
 const query = inject('query')
 if (query.doc.data_source) {
 	call('insights.api.data_sources.get_source_schema', {
@@ -52,7 +56,7 @@ watch(
 			:tables="completions.tables"
 			placeholder="Type your query here"
 		></Code>
-		<div class="sticky bottom-0 flex gap-2 border-t bg-white p-2">
+		<div v-if="props.showToolbar" class="sticky bottom-0 flex gap-2 border-t bg-white p-2">
 			<div>
 				<Button
 					variant="subtle"

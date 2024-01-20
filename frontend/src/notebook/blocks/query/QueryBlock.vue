@@ -49,9 +49,9 @@ state.removeQuery = () => {
 		<transition name="fade" mode="out-in">
 			<div
 				v-show="state.query.doc.name && !state.minimizeQuery"
-				class="mb-2 w-full flex-1 overflow-hidden"
+				class="w-full flex-1 overflow-hidden border-t"
 			>
-				<NativeQueryEditor></NativeQueryEditor>
+				<NativeQueryEditor :showToolbar="false"></NativeQueryEditor>
 			</div>
 		</transition>
 
