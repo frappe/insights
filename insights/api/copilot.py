@@ -15,7 +15,7 @@ from insights.decorators import check_role
 from insights.insights.doctype.insights_data_source.sources.utils import (
     add_limit_to_sql,
 )
-from insights.utils import DataSource, Table, get_data_source_dialect
+from insights.utils import InsightsDataSource, get_data_source_dialect
 
 
 @frappe.whitelist()
@@ -116,7 +116,8 @@ class SchemaStore:
         - Metadata: The Table name and the number of rows in the table.
         """
 
-        tables = Table.get_all(
+        tables = frappe.get_all(
+            "Insights Table",
             filters={
                 "data_source": self.data_source,
                 "is_query_based": 0,
@@ -126,7 +127,7 @@ class SchemaStore:
         )
 
         data = []
-        doc = DataSource.get(self.data_source)
+        doc = InsightsDataSource.get_doc(self.data_source)
         for table in tables:
             query = f"SELECT * FROM `{table.table}` LIMIT 3"
             try:
@@ -307,7 +308,7 @@ class SQLCopilot:
             return "Relevant tables:\n\n" + tables
 
         def execute_sql_query(query):
-            source = DataSource.get(self.data_source)
+            source = InsightsDataSource.get(self.data_source)
             limited_query = add_limit_to_sql(query, limit=self.max_query_limit)
             try:
                 results = source.db.execute_query(limited_query)
