@@ -216,7 +216,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 "results_row_count": len(results) - 1,
             }
         )
-        query_result.db_update()
+        with suppress(frappe.exceptions.UniqueValidationError):
+            query_result.db_update()
 
     def before_fetch(self):
         if hasattr(self.variant_controller, "before_fetch"):
