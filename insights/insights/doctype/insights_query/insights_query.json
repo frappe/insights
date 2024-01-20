@@ -27,16 +27,15 @@
   "limit",
   "section_break_cnma",
   "json",
+  "sql",
+  "section_break_byvw",
   "script",
   "script_log",
-  "query_and_result_tab",
-  "section_break_11",
-  "sql",
-  "results_row_count",
-  "results",
-  "section_break_17",
+  "section_break_qcue",
   "execution_time",
-  "column_break_19",
+  "result_name",
+  "results_row_count",
+  "column_break_dluz",
   "last_execution",
   "transform_tab",
   "section_break_18",
@@ -50,6 +49,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval: !doc.is_assisted_query && !doc.is_native_query && !doc.is_script_query",
    "fieldname": "columns",
    "fieldtype": "Table",
    "label": "Columns",
@@ -82,10 +82,6 @@
    "label": "Limit"
   },
   {
-   "fieldname": "section_break_11",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
   },
@@ -94,11 +90,6 @@
    "fieldtype": "Code",
    "label": "SQL",
    "read_only": 1
-  },
-  {
-   "fieldname": "query_and_result_tab",
-   "fieldtype": "Tab Break",
-   "label": "Result"
   },
   {
    "fieldname": "tab_break_1",
@@ -152,14 +143,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "section_break_17",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_19",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "Pending Execution",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -181,20 +164,6 @@
    "fieldtype": "Table",
    "label": "Transforms",
    "options": "Insights Query Transform"
-  },
-  {
-   "fieldname": "results",
-   "fieldtype": "Long Text",
-   "is_virtual": 1,
-   "label": "Results",
-   "read_only": 1
-  },
-  {
-   "fieldname": "results_row_count",
-   "fieldtype": "Int",
-   "is_virtual": 1,
-   "label": "Row Count",
-   "read_only": 1
   },
   {
    "default": "0",
@@ -259,11 +228,37 @@
    "label": "Chart",
    "no_copy": 1,
    "options": "Insights Chart"
+  },
+  {
+   "fieldname": "section_break_qcue",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_dluz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_byvw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "result_name",
+   "fieldtype": "Data",
+   "is_virtual": 1,
+   "label": "Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "results_row_count",
+   "fieldtype": "Int",
+   "is_virtual": 1,
+   "label": "Result Row Count",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-02 15:39:33.048337",
+ "modified": "2024-01-20 14:05:43.181668",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query",

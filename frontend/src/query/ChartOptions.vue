@@ -45,7 +45,7 @@ function resetOptions() {
 			:is="widgets.getOptionComponent(query.chart.doc.chart_type)"
 			:key="query.chart.doc.chart_type"
 			v-model="query.chart.doc.options"
-			:columns="query.resultColumns"
+			:columns="query.results.columns"
 		/>
 
 		<Button variant="subtle" @click="resetOptions"> Reset Options </Button>

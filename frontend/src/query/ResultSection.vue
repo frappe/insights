@@ -4,10 +4,10 @@ import { Filter } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 
 const query = inject('query')
-const resultColumns = computed(() => query.formattedResults?.[0] || [])
-const rows = computed(() => query.formattedResults?.slice(1, query.MAX_ROWS) || [])
+const hasResults = computed(() => query.results.formattedResults?.length)
+const rows = computed(() => query.results.formattedResults?.slice(1, query.MAX_ROWS) || [])
 const numberColumnIndexes = computed(() =>
-	query.resultColumns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
+	query.results.columns.map((c) => FIELDTYPES.NUMBER.includes(c.type))
 )
 const isNumberColumn = (index) => numberColumnIndexes.value[index]
 const needsExecution = computed(() => query.doc.status == 'Pending Execution')
@@ -15,10 +15,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 
 <template>
 	<div class="relative flex h-full w-full flex-col overflow-hidden">
-		<div
-			v-if="!query.formattedResults.length"
-			class="flex flex-1 items-center justify-center rounded border"
-		>
+		<div v-if="!hasResults" class="flex flex-1 items-center justify-center rounded border">
 			<div class="flex flex-1 flex-col items-center justify-center gap-2">
 				<Filter class="h-10 w-10 text-gray-300" />
 				<span class="text-gray-500"> No results found </span>
@@ -40,7 +37,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 			</div>
 		</div>
 		<div
-			v-if="query.formattedResults.length"
+			v-if="hasResults"
 			class="flex-1 flex-shrink-0 rounded border"
 			:class="needsExecution ? 'overflow-hidden' : 'overflow-scroll'"
 		>
@@ -49,7 +46,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 					<tr>
 						<th class="border-b bg-gray-100 px-3 py-2 font-normal" scope="col">#</th>
 						<th
-							v-for="(column, index) in resultColumns"
+							v-for="(column, index) in query.results.columns"
 							:key="index"
 							scope="col"
 							class="max-w-[15rem] border-b border-r bg-gray-100 px-3 py-2 text-left font-normal"
@@ -90,7 +87,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 				</tbody>
 			</table>
 		</div>
-		<div v-if="query.formattedResults.length" class="mt-2">
+		<div v-if="hasResults" class="mt-2">
 			<slot name="footer"></slot>
 		</div>
 	</div>

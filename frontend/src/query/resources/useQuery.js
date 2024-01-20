@@ -4,12 +4,12 @@ import settingsStore from '@/stores/settingsStore'
 import { areDeeplyEqual, createTaskRunner } from '@/utils'
 import { useQueryColumns } from '@/utils/query/columns'
 import { useQueryFilters } from '@/utils/query/filters'
-import { getFormattedResult } from '@/utils/query/results'
 import { useQueryTables } from '@/utils/query/tables'
 import { whenever } from '@vueuse/core'
 import { debounce } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import useQueryChart from './useQueryChart'
+import useQueryResults from './useQueryResults'
 
 const session = sessionStore()
 
@@ -29,8 +29,7 @@ function makeQuery(name) {
 		executing: false,
 		doc: {},
 		chart: {},
-		formattedResults: [],
-		resultColumns: [],
+		results: {},
 		sourceSchema: {},
 	})
 
@@ -41,21 +40,23 @@ function makeQuery(name) {
 
 	// Results
 	state.MAX_ROWS = 100
-	state.formattedResults = computed(() => getFormattedResult(resource.doc.results))
-	state.resultColumns = computed(() => resource.doc.results?.[0])
 	state.isOwner = computed(() => resource.doc?.owner === session.user.user_id)
 
 	state.reload = () => {
 		setLoading(true)
 		return resource.get
 			.fetch()
-			.then(
-				() =>
-					state.doc.chart &&
-					useQueryChart(state.doc.chart, state.doc.title, state.formattedResults)
-			)
-			.then((chart) => (state.chart = chart || {}))
+			.then(() => initChartAndResults())
 			.finally(() => setLoading(false))
+	}
+
+	async function initChartAndResults() {
+		if (state.doc.result_name) {
+			state.results = useQueryResults(state.doc.result_name)
+		}
+		if (state.doc.chart) {
+			state.chart = useQueryChart(state.doc.chart, state.doc.title, state.results)
+		}
 	}
 
 	state.updateTitle = (title) => {
@@ -89,6 +90,7 @@ function makeQuery(name) {
 		setLoading(true)
 		state.executing = true
 		await run(() => resource.run.submit().catch(() => {}))
+		await state.results.reload()
 		state.executing = false
 		setLoading(false)
 	}, 500)

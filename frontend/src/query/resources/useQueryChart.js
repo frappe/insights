@@ -3,26 +3,20 @@ import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced } from '@vueuse/core'
 import { call, createDocumentResource } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import useQuery from './useQuery'
 
-export default async function useQueryChart(chart_name, queryTitle, queryResults) {
-	const resource = getChartResource(chart_name)
-	await resource.get.fetch()
+export default function useQueryChart(chartName, queryTitle, queryResults) {
+	const resource = getChartResource(chartName)
+	resource.get.fetch()
 
 	const chart = reactive({
-		doc: computed(() => resource.doc),
-		data: [],
+		doc: computed(() => resource.doc || {}),
+		data: computed(() => convertResultToObjects(queryResults.formattedResults)),
 		togglePublicAccess,
 		addToDashboard,
 		getGuessedChart,
 		resetOptions,
 		delete: deleteChart,
 	})
-
-	chart.data = computed(() => convertResultToObjects(queryResults))
-	if (!resource.doc.options?.title) {
-		resource.doc.options.title = queryTitle
-	}
 
 	const run = createTaskRunner()
 	watchDebounced(
@@ -48,24 +42,22 @@ export default async function useQueryChart(chart_name, queryTitle, queryResults
 			const guessedChart = getGuessedChart(newDoc.chart_type)
 			newOptions = { ...guessedChart.options, ...newOptions }
 		}
-		debugger
-		_save(newDoc)
+		_save({ chart_type: newDoc.chart_type, options: newOptions })
 	}
 
-	function _save(chart) {
+	function _save(chartDoc) {
 		return run(() =>
-			resource.setValue
-				.submit({
-					chart_type: chart.chart_type,
-					options: chart.options,
-				})
-				.then(() => (chart.doc = resource.doc))
+			resource.setValue.submit({
+				title: chartDoc.options.title || queryTitle,
+				chart_type: chartDoc.chart_type,
+				options: chartDoc.options,
+			})
 		)
 	}
 
 	function getGuessedChart(chart_type) {
-		if (!queryResults.length) return
-		const recommendedChart = guessChart(queryResults, chart_type)
+		if (!queryResults.formattedResults.length) return
+		const recommendedChart = guessChart(queryResults.formattedResults, chart_type)
 		return {
 			chart_type: recommendedChart?.type,
 			options: {

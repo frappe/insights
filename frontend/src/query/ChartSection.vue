@@ -12,7 +12,7 @@ const chartRef = ref(null)
 const showChart = computed(() => {
 	return (
 		query.chart.doc?.name &&
-		query.formattedResults?.length &&
+		query.results.formattedResults?.length &&
 		query.doc.status !== 'Pending Execution'
 	)
 })
@@ -21,7 +21,7 @@ const emptyMessage = computed(() => {
 	if (query.doc.status == 'Pending Execution') {
 		return 'Execute the query to see the chart'
 	}
-	if (!query.formattedResults?.length) {
+	if (!query.results.formattedResults?.length) {
 		return 'No results found'
 	}
 	return 'Pick a chart type to get started'
