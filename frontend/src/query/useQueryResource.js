@@ -4,6 +4,7 @@ import { createDocumentResource } from 'frappe-ui'
 export const API_METHODS = {
 	run: 'run',
 	store: 'store',
+	unstore: 'unstore',
 	convert: 'convert',
 	setLimit: 'set_limit',
 	duplicate: 'duplicate',
@@ -11,6 +12,7 @@ export const API_METHODS = {
 	fetchTables: 'fetch_tables',
 	fetchColumns: 'fetch_columns',
 	fetchColumnValues: 'fetch_column_values',
+	fetch_related_tables: 'fetch_related_tables',
 
 	// table methods
 	addTable: 'add_table',
@@ -29,17 +31,14 @@ export const API_METHODS = {
 
 	addTransform: 'add_transform',
 	resetTransforms: 'reset_transforms',
-	getSourceSchema: 'get_source_schema',
-	get_chart_name: 'get_chart_name',
 
 	run: 'run',
-	get_source_schema: 'get_source_schema',
-	get_chart_name: 'get_chart_name',
 	convert_to_native: 'convert_to_native',
 	convert_to_assisted: 'convert_to_assisted',
 	get_tables_columns: 'get_tables_columns',
 	save_as_table: 'save_as_table',
 	delete_linked_table: 'delete_linked_table',
+	switch_query_type: 'switch_query_type',
 }
 
 export function useQueryResource(name) {
@@ -47,6 +46,7 @@ export function useQueryResource(name) {
 	const resource = createDocumentResource({
 		doctype: 'Insights Query',
 		name: name,
+		auto: false,
 		whitelistedMethods: API_METHODS,
 		transform(doc) {
 			doc.columns = doc.columns.map((c) => {
@@ -54,8 +54,10 @@ export function useQueryResource(name) {
 				return c
 			})
 			doc.json = safeJSONParse(doc.json, defaultQueryJSON)
-			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0]
+			doc.transforms = doc.transforms.map((t) => {
+				t.options = safeJSONParse(t.options, {})
+				return t
+			})
 			return doc
 		},
 	})

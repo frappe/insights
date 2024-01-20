@@ -1,6 +1,6 @@
 <template>
 	<div class="flex h-full w-full flex-col bg-gray-50">
-		<div class="flex h-14 items-center justify-between border-b bg-white px-3 shadow-sm">
+		<div class="flex items-center justify-between bg-white px-5 py-2.5 shadow-sm">
 			<slot name="navbar"></slot>
 		</div>
 		<div class="flex flex-1 overflow-hidden">

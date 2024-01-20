@@ -1,103 +1,94 @@
 <script setup>
-import Chart from '@/components/Charts/Chart.vue'
-import ChartAxis from '@/components/Charts/ChartAxis.vue'
-import ChartGrid from '@/components/Charts/ChartGrid.vue'
-import ChartLegend from '@/components/Charts/ChartLegend.vue'
-import ChartSeries from '@/components/Charts/ChartSeries.vue'
-import ChartTooltip from '@/components/Charts/ChartTooltip.vue'
+import BaseChart from '@/components/Charts/BaseChart.vue'
 import { computed } from 'vue'
+import getLineChartOptions from './getLineChartOptions'
 
 const props = defineProps({
-	chartData: { type: Object, required: true },
+	data: { type: Object, required: true },
 	options: { type: Object, required: true },
 })
 
-const results = computed(() => props.chartData.data)
+const xAxis = computed(() => {
+	let xAxis = props.options.xAxis
+	if (!xAxis) return []
+	if (typeof xAxis === 'string') xAxis = [{ column: xAxis }]
+	if (Array.isArray(xAxis) && xAxis.length) xAxis = xAxis.map(({ column }) => column)
+	// remove the columns that might be removed from the query but not the chart
+	xAxis = xAxis.filter((column) => props.data[0].hasOwnProperty(column))
+	return xAxis
+})
+
 const labels = computed(() => {
-	if (!results.value?.length || !props.options.xAxis) return []
-	const columns = results.value[0].map((d) => d.label)
-	const columnIndex = columns.indexOf(props.options.xAxis)
-	return results.value.slice(1).map((d) => d[columnIndex])
+	if (!props.data?.length) return []
+	let firstAxis = xAxis.value[0]
+	if (typeof firstAxis !== 'string') return console.warn('xAxis must be a string')
+
+	const labels = props.data.map((d) => d[firstAxis])
+	const uniqueLabels = [...new Set(labels)]
+	return uniqueLabels
 })
 
 const datasets = computed(() => {
-	if (!results.value?.length || !props.options.yAxis) return []
-	return props.options.yAxis.map((column) => {
-		const columns = results.value[0].map((d) => d.label)
-		const columnIndex = columns.indexOf(column)
-		return {
-			label: column,
-			data: results.value.slice(1).map((d) => d[columnIndex]),
+	let yAxis = props.options.yAxis
+	if (!props.data?.length || !yAxis) return []
+	if (typeof yAxis === 'string') yAxis = [yAxis]
+
+	const validSeries = yAxis
+		// to exclude the columns that might be removed from the query but not the chart
+		.filter(
+			(series) =>
+				props.data[0].hasOwnProperty(series?.column) || props.data[0].hasOwnProperty(series)
+		)
+
+	if (xAxis.value.length == 1) {
+		// even if data has multiple points for each yAxis series
+		// for eg. Month Oct has 3 points for each Price, we need to combine them into one point by summing them up
+		return validSeries.map((series) => {
+			const column = series.column || series
+			const seriesOptions = series.series_options || {}
+			const data = labels.value.map((label) => {
+				const points = props.data.filter((d) => d[xAxis.value[0]] === label)
+				const sum = points.reduce((acc, curr) => acc + curr[column], 0)
+				return sum
+			})
+			return {
+				label: column,
+				data,
+				series_options: seriesOptions,
+			}
+		})
+	}
+
+	const datasets = []
+	const firstAxis = xAxis.value[0]
+	const otherAxes = xAxis.value.slice(1)
+
+	for (let series of validSeries) {
+		const column = series.column || series
+		const seriesOptions = series.series_options || {}
+		for (let xAxis of otherAxes) {
+			const axisData = props.data.map((d) => d[xAxis])
+			const uniqueAxisData = [...new Set(axisData)]
+			for (let axis of uniqueAxisData) {
+				const data = props.data.filter((d) => d[xAxis] === axis).map((d) => d[column])
+				datasets.push({
+					label: axis,
+					data,
+					name: axis,
+					series_options: seriesOptions,
+				})
+			}
 		}
-	})
+	}
+
+	return datasets
 })
 
-const shouldRender = computed(() => {
-	return !!labels.value.length && !!datasets.value.length
+const lineChartOptions = computed(() => {
+	return getLineChartOptions(labels.value, datasets.value, props.options)
 })
-
-const markLine = computed(() =>
-	props.options.referenceLine
-		? {
-				data: [
-					{
-						name: props.options.referenceLine,
-						type: props.options.referenceLine.toLowerCase(),
-						label: { position: 'middle', formatter: '{b}: {c}' },
-					},
-				],
-		  }
-		: {}
-)
 </script>
 
 <template>
-	<Chart
-		v-if="shouldRender"
-		ref="eChart"
-		:options="{
-			chartTitle: props.options.title,
-			chartSubtitle: props.options.subtitle,
-			color: props.options.colors,
-		}"
-	>
-		<ChartGrid>
-			<ChartLegend :options="{ type: 'scroll', bottom: 'bottom' }" />
-			<ChartAxis
-				:options="{ axisType: 'xAxis', type: 'category', axisTick: false, data: labels }"
-			/>
-			<ChartAxis
-				:options="{
-					axisType: 'yAxis',
-					type: 'value',
-					splitLine: {
-						lineStyle: {
-							type: 'dashed',
-						},
-					},
-				}"
-			/>
-			<ChartSeries
-				v-for="dataset in datasets"
-				:options="{
-					name: dataset.label,
-					data: dataset.data,
-					type: 'line',
-					smooth: props.options.smoothLines ? 0.4 : false,
-					smoothMonotone: 'x',
-					showSymbol: props.options.showPoints,
-					markLine: markLine,
-					areaStyle: { opacity: props.options.showArea ? 0.1 : 0 },
-				}"
-			/>
-			<ChartTooltip
-				:options="{
-					valueFormatter: (value) => (isNaN(value) ? value : value.toLocaleString()),
-				}"
-			/>
-		</ChartGrid>
-	</Chart>
-	<template v-else>
-		<slot name="placeholder"></slot>
-	</template>
+	<BaseChart :title="props.options.title" :options="lineChartOptions" />
 </template>

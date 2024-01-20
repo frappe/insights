@@ -61,10 +61,13 @@ onMounted(() => {
 
 const handleClickOutside = (e) => {
 	const insidePopover = popover.value.contains(e.target)
+	if (insidePopover) return
 	const insideTarget = props.targetElement.contains(e.target)
+	if (insideTarget) return
 	const popoverRoot = document.getElementById('frappeui-popper-root')
 	const insidePopoverRoot = popoverRoot.contains(e.target)
-	!insidePopover && !insideTarget && !insidePopoverRoot && close()
+	if (insidePopoverRoot) return
+	close()
 }
 
 const updatePosition = () => show.value && popper?.update()
@@ -84,7 +87,7 @@ defineExpose({ toggle, open, close, isOpen: show })
 
 <template>
 	<teleport to="#frappeui-popper-root">
-		<div ref="popover">
+		<div ref="popover" class="z-[100]">
 			<transition v-bind="transition">
 				<div v-show="show">
 					<slot v-bind="{ toggle }"> </slot>

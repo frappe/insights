@@ -1,6 +1,7 @@
 <script setup>
+import sessionStore from '@/stores/sessionStore'
 import { call } from 'frappe-ui'
-import { ref, inject } from 'vue'
+import { inject, ref } from 'vue'
 
 const emit = defineEmits(['submit'])
 const selectedDataset = ref(null)
@@ -31,6 +32,18 @@ async function setupSampleData() {
 	settingUpSampleData.value = false
 	emit('submit')
 }
+
+const session = sessionStore()
+const $socket = inject('$socket')
+const progressLabel = ref('Continue')
+$socket.on('insights_demo_setup_progress', (data) => {
+	if (data.user == session.user.user_id) {
+		progressLabel.value = `${data.progress.toFixed(0)}% complete...`
+		if (data.progress == 100) {
+			progressLabel.value = 'Continue'
+		}
+	}
+})
 </script>
 
 <template>
@@ -60,7 +73,7 @@ async function setupSampleData() {
 			:loading="settingUpSampleData"
 			:disabled="settingUpSampleData || selectedDataset === null"
 		>
-			Continue
+			{{ progressLabel }}
 		</Button>
 	</div>
 </template>

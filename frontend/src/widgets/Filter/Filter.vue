@@ -1,11 +1,12 @@
 <script setup>
 import SimpleFilter from '@/dashboard/SimpleFilter.vue'
-import { inject, computed } from 'vue'
+import { computed, inject, provide } from 'vue'
 
 const props = defineProps({
 	item_id: { required: true },
 	options: { type: Object, required: true },
 })
+provide('item_id', props.item_id)
 
 const dashboard = inject('dashboard')
 const filterState = computed(() => dashboard.filterStates[props.item_id])

@@ -5,3 +5,4 @@ langchain==0.0.207
 tiktoken==0.3.3
 chromadb==0.3.21
 python-telegram-bot==12.8
+chardet==4.0.0

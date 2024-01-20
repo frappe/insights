@@ -3,6 +3,7 @@
 
 import frappe
 from sqlalchemy.sql import text
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -23,6 +24,14 @@ class DatabaseConnectionError(frappe.ValidationError):
     pass
 
 
+class DatabaseCredentialsError(frappe.ValidationError):
+    pass
+
+
+class DatabaseParallelConnectionError(frappe.ValidationError):
+    pass
+
+
 class BaseDatabase:
     def __init__(self):
         self.engine = None
@@ -32,23 +41,34 @@ class BaseDatabase:
         self.table_factory = None
 
     def test_connection(self):
-        return self.execute_query("SELECT 1")
+        with self.connect() as connection:
+            res = connection.execute(text("SELECT 1"))
+            return res.fetchone()
 
+    @retry(
+        retry=retry_if_exception_type((DatabaseParallelConnectionError,)),
+        stop=stop_after_attempt(5),
+        wait=wait_fixed(1),
+        reraise=True,
+    )
     def connect(self):
         try:
             return self.engine.connect()
         except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
-            raise DatabaseConnectionError(e)
+            self.handle_db_exception(e)
+
+    def handle_db_exception(self, e):
+        raise DatabaseConnectionError(e)
 
     def build_query(self, query):
         """Used to update the sql in insights query"""
-        query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        query_str = self.query_builder.build(query)
         query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
         return query_str
 
     def run_query(self, query):
-        sql = self.query_builder.build(query, dialect=self.engine.dialect)
+        sql = self.query_builder.build(query)
         sql = self.escape_special_characters(sql) if query.is_native_query else sql
         return self.execute_query(sql, return_columns=True)
 
@@ -60,6 +80,8 @@ class BaseDatabase:
         cached=False,
     ):
         if sql is None:
+            return []
+        if isinstance(sql, str) and not sql.strip():
             return []
 
         sql = self.compile_query(sql)
@@ -100,9 +122,9 @@ class BaseDatabase:
 
     def set_row_limit(self, sql):
         # set a hard max limit to prevent long running queries
-        # there's no use case to view more than 1000 rows in the UI
-        # TODO: while exporting, we can remove this limit
-        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 1000
+        # there's no use case to view more than 500 rows in the UI
+        # TODO: while exporting as csv, we can remove this limit
+        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
         return add_limit_to_sql(sql, max_rows)
 
     def validate_native_sql(self, query):

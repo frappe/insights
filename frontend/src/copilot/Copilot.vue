@@ -1,12 +1,11 @@
 <script setup>
-import { ref, computed, watchEffect, onMounted, watch, inject, onBeforeUnmount } from 'vue'
-import auth from '@/utils/auth'
 import Sparkles from '@/components/Icons/Sparkles.vue'
-import ContentEditable from '@/notebook/ContentEditable.vue'
-import { TextEditor } from 'frappe-ui'
 import useCopilotChat from '@/copilot/useCopilotChat'
+import auth from '@/utils/auth'
+import { TextEditor } from 'frappe-ui'
+import { markdownToHTML } from 'frappe-ui/src/utils/markdown'
+import { inject, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { markdownToHTML, htmlToMarkdown } from 'frappe-ui/src/utils/markdown'
 
 const props = defineProps({ chat_id: String })
 const chat = useCopilotChat()

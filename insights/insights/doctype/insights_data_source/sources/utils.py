@@ -46,7 +46,8 @@ def create_insights_table(table, force=False):
     doc_before = None
     if docname := exists:
         doc = frappe.get_doc("Insights Table", docname)
-        doc_before = frappe.get_doc("Insights Table", docname)
+        # using doc.get_doc_before_save() doesn't work here
+        doc_before = frappe.get_cached_doc("Insights Table", docname)
     else:
         doc = frappe.get_doc(
             {
@@ -69,20 +70,24 @@ def create_insights_table(table, force=False):
         if not doc.get("table_links", table_link):
             doc.append("table_links", table_link)
 
+    column_added = False
     for column in table.columns or []:
         # do not overwrite existing columns, since type or label might have been changed
         if any(doc_column.column == column.column for doc_column in doc.columns):
             continue
         doc.append("columns", column)
+        column_added = True
 
+    column_removed = False
     column_names = [c.column for c in table.columns]
     for column in doc.columns:
         if column.column not in column_names:
-            doc.remove(column)
+            doc.columns.remove(column)
+            column_removed = True
 
     version = frappe.new_doc("Version")
     # if there's some update to store only then save the doc
-    doc_changed = version.update_version_info(doc_before, doc)
+    doc_changed = version.update_version_info(doc_before, doc) or column_added or column_removed
     is_new = not exists
     if is_new or doc_changed or force:
         # need to ignore permissions when creating/updating a table in query store
@@ -140,23 +145,17 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
 
     # parse the sql to get the tables
     sql_tables = parse_sql_tables(sql)
-
-    # get the list of query name that are saved as tables
-    query_tables = frappe.get_all(
-        "Insights Table",
-        filters={
-            "table": ("in", sql_tables),
-            "data_source": data_source,
-            "is_query_based": 1,
-        },
-        pluck="table",
-    )
+    if not sql_tables:
+        return None
 
     # get the sql for the queries
     queries = frappe.get_all(
         "Insights Query",
-        filters={"name": ("in", query_tables)},
-        fields=["name", "sql", "data_source"],
+        filters={
+            "name": ("in", set(sql_tables)),
+            "data_source": data_source,
+        },
+        fields=["name", "sql", "data_source", "is_native_query"],
     )
     if not queries:
         return None
@@ -174,6 +173,9 @@ def get_stored_query_sql(sql, data_source=None, verbose=False):
             frappe.throw("Cannot use queries from different data sources in a single query")
 
         stored_query_sql[sql.name] = sql.sql
+        if not sql.is_native_query:
+            # non native queries are already processed and stored in the db
+            continue
         sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source)
         # sub_stored_query_sql = { 'QRY-004': 'SELECT name FROM `Item`' }
         if not sub_stored_query_sql:
@@ -192,10 +194,6 @@ def process_cte(main_query, data_source=None):
     """
     Replaces stored queries in the main query with the actual query using CTE
     """
-
-    processed_comment = "/* query tables processed as CTE */"
-    if processed_comment in main_query:
-        return main_query
 
     stored_query_sql = get_stored_query_sql(main_query, data_source)
     if not stored_query_sql:
@@ -231,7 +229,7 @@ def process_cte(main_query, data_source=None):
     for query_name, sql in stored_query_sql.items():
         cte += f" `{query_name}` AS ({sql}),"
     cte = cte[:-1]
-    return f"{processed_comment} {cte} {main_query}"
+    return f"{cte} {main_query}"
 
 
 def strip_quotes(table):
@@ -265,7 +263,7 @@ def compile_query(query, dialect=None):
 
 def execute_and_log(conn, sql, data_source):
     with Timer() as t:
-        result = conn.execute(sql)
+        result = conn.exec_driver_sql(sql)
     create_execution_log(sql, data_source, t.elapsed)
     return result
 

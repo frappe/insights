@@ -1,18 +1,19 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import { safeJSONParse } from '@/utils'
+import { safeJSONParse, whenHasValue } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
-import { guessChart } from '@/widgets/useChartData'
+import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, createDocumentResource, debounce } from 'frappe-ui'
 import { reactive } from 'vue'
+import useQuery from './resources/useQuery'
 
 const charts = {}
 
 export async function createChart() {
-	return call('insights.api.create_chart')
+	return call('insights.api.queries.create_chart')
 }
 
-export default function useChart(name) {
+export default function useChartOld(name) {
 	if (!charts[name]) {
 		charts[name] = getChart(name)
 	}
@@ -53,16 +54,17 @@ function getChart(chartName) {
 
 	function updateChartData() {
 		state.loading = true
-		const _query = useQueryResource(state.doc.query)
-		_query.get.fetch()
+		const _query = useQuery(state.doc.query)
+		_query.reload()
 		watchOnce(
-			() => _query.doc,
+			() => _query.results.doc,
 			() => {
 				if (!_query.doc) return
-				state.data = getFormattedResult(_query.doc.results)
-				state.columns = state.data[0]
+				state.columns = _query.results.columns
+				const formattedResults = _query.results.formattedResults
+				state.data = convertResultToObjects(formattedResults)
 				if (!state.doc.chart_type) {
-					const recommendedChart = guessChart(state.data)
+					const recommendedChart = guessChart(formattedResults)
 					state.doc.chart_type = recommendedChart?.type
 					state.doc.options = recommendedChart?.options
 					state.doc.options.title = _query.doc.title
@@ -126,11 +128,16 @@ function getChart(chartName) {
 	async function addToDashboard(dashboardName) {
 		if (!dashboardName || !state.doc.name || state.addingToDashboard) return
 		state.addingToDashboard = true
-		await call('insights.api.add_chart_to_dashboard', {
+		await call('insights.api.dashboards.add_chart_to_dashboard', {
 			dashboard: dashboardName,
 			chart: state.doc.name,
 		})
 		state.addingToDashboard = false
+	}
+
+	function resetOptions() {
+		state.doc.chart_type = undefined
+		state.doc.options = {}
 	}
 
 	return Object.assign(state, {
@@ -141,11 +148,12 @@ function getChart(chartName) {
 		enableAutoSave,
 		disableAutoSave,
 		addToDashboard,
+		resetOptions,
 		delete: deleteChart,
 	})
 }
 
-function getChartResource(chartName) {
+export function getChartResource(chartName) {
 	return createDocumentResource({
 		doctype: 'Insights Chart',
 		name: chartName,

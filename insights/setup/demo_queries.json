@@ -1,512 +1,102 @@
 [
     {
+        "name": "QRY-0001",
         "status": "Execution Successful",
         "title": "Total Customers",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n\t\"type\": \"LogicalExpression\",\n\t\"operator\": \"&&\",\n\t\"level\": 1,\n\t\"position\": 1,\n\t\"conditions\": []\n}",
-        "limit": 5,
-        "sql": "SELECT COUNT(*) `No. of Customers`\n  FROM `Customers`\n LIMIT 5",
-        "results_row_count": 2,
-        "results": "[\n [\n  \"No. of Customers::Integer\"\n ],\n [\n  99441\n ]\n]",
-        "execution_time": 0.014,
-        "last_execution": "2023-03-01 13:55:56.685065",
-        "tables": [
-            {
-                "label": "Customers",
-                "table": "Customers",
-                "parent": "QRY-0004",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "No. of Customers",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "Customers",
-                "table_label": "Customers",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "parent": "QRY-0004",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"No. of Customers\",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"No. of Customers\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Customers\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [],\n \"limit\": 5,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"Customers\",\n  \"table\": \"Customers\"\n }\n}"
     },
     {
+        "name": "QRY-0002",
         "status": "Execution Successful",
         "title": "Orders Delivered",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": [\n    {\n      \"type\": \"BinaryExpression\",\n      \"operator\": \"=\",\n      \"left\": {\n        \"type\": \"Column\",\n        \"value\": {\n          \"column\": \"order_status\",\n          \"table\": \"Orders\"\n        }\n      },\n      \"right\": {\n        \"type\": \"String\",\n        \"value\": \"delivered\"\n      }\n    }\n  ]\n}",
-        "limit": 1,
-        "sql": "SELECT COUNT(*) `Orders Delivered`\n  FROM `Orders`\n WHERE `order_status`='delivered'\n LIMIT 1",
-        "results_row_count": 2,
-        "results": "[\n [\n  \"Orders Delivered::Integer\"\n ],\n [\n  96478\n ]\n]",
-        "execution_time": 0.045,
-        "last_execution": "2023-02-16 11:57:51.159245",
-        "tables": [
-            {
-                "label": "Orders",
-                "table": "Orders",
-                "parent": "QRY-0008",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Orders Delivered",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "Orders",
-                "table_label": "Orders",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0008",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"Orders Delivered\",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Orders Delivered\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Orders\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [\n  {\n   \"column\": {\n    \"aggregation\": null,\n    \"alias\": \"order_status\",\n    \"column\": \"order_status\",\n    \"expression\": {},\n    \"format\": null,\n    \"granularity\": null,\n    \"label\": \"order_status\",\n    \"meta\": null,\n    \"order\": null,\n    \"table\": \"Orders\",\n    \"type\": \"String\"\n   },\n   \"expression\": {},\n   \"operator\": {\n    \"label\": \"equals\",\n    \"value\": \"=\"\n   },\n   \"value\": {\n    \"label\": \"delivered\",\n    \"value\": \"delivered\"\n   }\n  }\n ],\n \"joins\": [],\n \"limit\": 1,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"Orders\",\n  \"table\": \"Orders\"\n }\n}"
     },
     {
+        "name": "QRY-0003",
         "status": "Execution Successful",
         "title": "Total Sellers",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": []\n}",
-        "limit": 5,
-        "sql": "SELECT COUNT(*) `No. of Sellers`\n  FROM `Sellers`\n LIMIT 5",
-        "results_row_count": 2,
-        "results": "[\n [\n  \"No. of Sellers::Integer\"\n ],\n [\n  3095\n ]\n]",
-        "execution_time": 0.013,
-        "last_execution": "2023-03-02 19:01:17.086434",
-        "tables": [
-            {
-                "label": "Sellers",
-                "table": "Sellers",
-                "parent": "QRY-0010",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "No. of Sellers",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "Sellers",
-                "table_label": "Sellers",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0010",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"No. of Sellers\",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"No. of Sellers\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Sellers\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [],\n \"limit\": 5,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"Sellers\",\n  \"table\": \"Sellers\"\n }\n}"
     },
     {
+        "name": "QRY-0004",
         "status": "Execution Successful",
         "title": "Average Order Value",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": []\n}",
-        "limit": 10,
-        "sql": "SELECT AVG(`price`+`freight_value`) `Order Value`\n  FROM `OrderItems`\n LIMIT 10",
-        "results_row_count": 2,
-        "results": "[\n [\n  \"Order Value::Decimal\"\n ],\n [\n  140.64405894361948\n ]\n]",
-        "execution_time": 0.047,
-        "last_execution": "2023-02-16 12:01:04.786801",
-        "tables": [
-            {
-                "label": "OrderItems",
-                "table": "OrderItems",
-                "join": "",
-                "parent": "QRY-0013",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Order Value",
-                "type": "Decimal",
-                "is_expression": 1,
-                "expression": "{\n  \"raw\": \"avg(`OrderItems.price` + `OrderItems.freight_value`)\",\n  \"ast\": {\n    \"type\": \"CallExpression\",\n    \"function\": \"avg\",\n    \"arguments\": [\n      {\n        \"type\": \"BinaryExpression\",\n        \"operator\": \"+\",\n        \"left\": {\n          \"type\": \"Column\",\n          \"value\": {\n            \"table\": \"OrderItems\",\n            \"column\": \"price\"\n          }\n        },\n        \"right\": {\n          \"type\": \"Column\",\n          \"value\": {\n            \"table\": \"OrderItems\",\n            \"column\": \"freight_value\"\n          }\n        }\n      }\n    ]\n  }\n}",
-                "aggregation": "",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0013",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"\",\n   \"alias\": \"Order Value\",\n   \"column\": null,\n   \"expression\": {\n    \"ast\": {\n     \"arguments\": [\n      {\n       \"left\": {\n        \"type\": \"Column\",\n        \"value\": {\n         \"column\": \"price\",\n         \"table\": \"OrderItems\"\n        }\n       },\n       \"operator\": \"+\",\n       \"right\": {\n        \"type\": \"Column\",\n        \"value\": {\n         \"column\": \"freight_value\",\n         \"table\": \"OrderItems\"\n        }\n       },\n       \"type\": \"BinaryExpression\"\n      }\n     ],\n     \"function\": \"avg\",\n     \"type\": \"CallExpression\"\n    },\n    \"raw\": \"avg(`OrderItems.price` + `OrderItems.freight_value`)\"\n   },\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Order Value\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": null,\n   \"type\": \"Decimal\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [],\n \"limit\": 10,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"OrderItems\",\n  \"table\": \"OrderItems\"\n }\n}"
     },
     {
+        "name": "QRY-0005",
         "status": "Execution Successful",
         "title": "Payments",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": [\n    {\n      \"type\": \"BinaryExpression\",\n      \"operator\": \"!=\",\n      \"left\": {\n        \"type\": \"Column\",\n        \"value\": {\n          \"column\": \"payment_type\",\n          \"table\": \"OrderPayments\"\n        }\n      },\n      \"right\": {\n        \"type\": \"String\",\n        \"value\": \"not_defined\"\n      }\n    }\n  ]\n}",
-        "limit": 10,
-        "sql": "SELECT replace(t0.payment_type, '_', ' ') AS \"Payment Type\",\n       count(*) AS \"Count of records \",\n       sum(t0.payment_value) AS \"Received\"\n  FROM \"OrderPayments\" AS t0\n  LEFT OUTER JOIN orders AS t1\n    ON t0.order_id = t1.order_id\n WHERE t0.payment_type != 'not_defined'\n GROUP BY replace(t0.payment_type, '_', ' ')\n ORDER BY count(*) DESC\n LIMIT 10\nOFFSET 0",
-        "results_row_count": 5,
-        "results": "[\n [\n  \"Payment Type::String\",\n  \"Count of records ::Integer\",\n  \"Received::Decimal\"\n ],\n [\n  \"credit card\",\n  76795,\n  12542084.189999327\n ],\n [\n  \"boleto\",\n  19784,\n  2869361.2699999753\n ],\n [\n  \"voucher\",\n  5775,\n  379436.8700000007\n ],\n [\n  \"debit card\",\n  1529,\n  217989.7900000001\n ]\n]",
-        "execution_time": 0.253,
-        "last_execution": "2023-01-10 21:26:46.578814",
-        "tables": [
-            {
-                "label": "OrderPayments",
-                "table": "OrderPayments",
-                "join": "{\n  \"with\": {\n    \"name\": \"d1d109eef7\",\n    \"table\": \"orders\",\n    \"label\": \"Orders\",\n    \"value\": \"orders\"\n  },\n  \"condition\": {\n    \"left\": {\n      \"label\": \"Order Id\",\n      \"value\": \"order_id\"\n    },\n    \"right\": {\n      \"label\": \"Order Id\",\n      \"value\": \"order_id\"\n    }\n  },\n  \"type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n  }\n}",
-                "parent": "QRY-0015",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Payment Type",
-                "type": "String",
-                "is_expression": 1,
-                "expression": "{\n  \"raw\": \"replace(`OrderPayments.payment_type`, \\\"_\\\", \\\" \\\")\",\n  \"ast\": {\n    \"type\": \"CallExpression\",\n    \"function\": \"replace\",\n    \"arguments\": [\n      {\n        \"type\": \"Column\",\n        \"value\": {\n          \"table\": \"OrderPayments\",\n          \"column\": \"payment_type\"\n        }\n      },\n      {\n        \"type\": \"String\",\n        \"value\": \"_\"\n      },\n      {\n        \"type\": \"String\",\n        \"value\": \" \"\n      }\n    ]\n  }\n}",
-                "aggregation": "Group By",
-                "format_option": "{}",
-                "parent": "QRY-0015",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Count of records ",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "OrderPayments",
-                "table_label": "OrderPayments",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "desc",
-                "parent": "QRY-0015",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Received",
-                "column": "payment_value",
-                "type": "Decimal",
-                "is_expression": 0,
-                "table": "OrderPayments",
-                "table_label": "OrderPayments",
-                "expression": "null",
-                "aggregation": "Sum",
-                "format_option": "{}",
-                "parent": "QRY-0015",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"group by\",\n   \"alias\": \"Payment Type\",\n   \"column\": null,\n   \"expression\": {\n    \"ast\": {\n     \"arguments\": [\n      {\n       \"type\": \"Column\",\n       \"value\": {\n        \"column\": \"payment_type\",\n        \"table\": \"OrderPayments\"\n       }\n      },\n      {\n       \"type\": \"String\",\n       \"value\": \"_\"\n      },\n      {\n       \"type\": \"String\",\n       \"value\": \" \"\n      }\n     ],\n     \"function\": \"replace\",\n     \"type\": \"CallExpression\"\n    },\n    \"raw\": \"replace(`OrderPayments.payment_type`, \\\"_\\\", \\\" \\\")\"\n   },\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Payment Type\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": null,\n   \"type\": \"String\"\n  },\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"Count of records \",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Count of records \",\n   \"meta\": null,\n   \"order\": \"desc\",\n   \"table\": \"OrderPayments\",\n   \"type\": \"Integer\"\n  },\n  {\n   \"aggregation\": \"sum\",\n   \"alias\": \"Received\",\n   \"column\": \"payment_value\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Received\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"OrderPayments\",\n   \"type\": \"Decimal\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [\n  {\n   \"column\": {\n    \"aggregation\": null,\n    \"alias\": \"payment_type\",\n    \"column\": \"payment_type\",\n    \"expression\": {},\n    \"format\": null,\n    \"granularity\": null,\n    \"label\": \"payment_type\",\n    \"meta\": null,\n    \"order\": null,\n    \"table\": \"OrderPayments\",\n    \"type\": \"String\"\n   },\n   \"expression\": {},\n   \"operator\": {\n    \"label\": \"not equals\",\n    \"value\": \"!=\"\n   },\n   \"value\": {\n    \"label\": \"not_defined\",\n    \"value\": \"not_defined\"\n   }\n  }\n ],\n \"joins\": [\n  {\n   \"join_type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n   },\n   \"left_column\": {\n    \"column\": \"order_id\",\n    \"label\": \"Order Id\",\n    \"table\": \"OrderPayments\",\n    \"value\": \"order_id\"\n   },\n   \"left_table\": {\n    \"label\": \"OrderPayments\",\n    \"table\": \"OrderPayments\"\n   },\n   \"right_column\": {\n    \"column\": \"order_id\",\n    \"label\": \"Order Id\",\n    \"table\": \"orders\",\n    \"value\": \"order_id\"\n   },\n   \"right_table\": {\n    \"label\": \"Orders\",\n    \"table\": \"orders\"\n   }\n  }\n ],\n \"limit\": 10,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"OrderPayments\",\n  \"table\": \"OrderPayments\"\n }\n}"
     },
     {
+        "name": "QRY-0006",
         "status": "Execution Successful",
         "title": "Customers by State",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": []\n}",
-        "limit": 10,
-        "sql": "SELECT t0.customer_state AS \"State\",\n       count(*) AS \"No. of Customers\"\n  FROM \"Customers\" AS t0\n GROUP BY t0.customer_state\n ORDER BY count(*) DESC\n LIMIT 10\nOFFSET 0",
-        "results_row_count": 11,
-        "results": "[\n [\n  \"State::String\",\n  \"No. of Customers::Integer\"\n ],\n [\n  \"SP\",\n  41746\n ],\n [\n  \"RJ\",\n  12852\n ],\n [\n  \"MG\",\n  11635\n ],\n [\n  \"RS\",\n  5466\n ],\n [\n  \"PR\",\n  5045\n ],\n [\n  \"SC\",\n  3637\n ],\n [\n  \"BA\",\n  3380\n ],\n [\n  \"DF\",\n  2140\n ],\n [\n  \"ES\",\n  2033\n ],\n [\n  \"GO\",\n  2020\n ]\n]",
-        "execution_time": 0.108,
-        "last_execution": "2023-03-22 12:15:49.400502",
-        "tables": [
-            {
-                "label": "Customers",
-                "table": "Customers",
-                "parent": "QRY-0001",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "State",
-                "column": "customer_state",
-                "type": "String",
-                "is_expression": 0,
-                "table": "Customers",
-                "table_label": "Customers",
-                "expression": "null",
-                "aggregation": "Group By",
-                "format_option": "{}",
-                "parent": "QRY-0001",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "No. of Customers",
-                "column": "count",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "Customers",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "desc",
-                "parent": "QRY-0001",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"group by\",\n   \"alias\": \"State\",\n   \"column\": \"customer_state\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"State\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Customers\",\n   \"type\": \"String\"\n  },\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"No. of Customers\",\n   \"column\": \"count\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"No. of Customers\",\n   \"meta\": null,\n   \"order\": \"desc\",\n   \"table\": \"Customers\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [],\n \"limit\": 10,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"Customers\",\n  \"table\": \"Customers\"\n }\n}"
     },
     {
+        "name": "QRY-0007",
         "status": "Execution Successful",
         "title": "Orders by Month",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": []\n}",
-        "limit": 15000,
-        "sql": "SELECT strftime('%Y-%m-01', t0.order_purchase_timestamp) AS \"Month\",\n       count(*) AS \"Orders\"\n  FROM \"Orders\" AS t0\n  LEFT OUTER JOIN orderitems AS t1\n    ON t0.order_id = t1.order_id\n  LEFT OUTER JOIN products AS t2\n    ON t1.product_id = t2.product_id\n GROUP BY strftime('%Y-%m-01', t0.order_purchase_timestamp)\n ORDER BY strftime('%Y-%m-01', t0.order_purchase_timestamp) ASC\n LIMIT 15000\nOFFSET 0",
-        "results_row_count": 26,
-        "results": "[\n [\n  \"Month::Datetime\",\n  \"Orders::Integer\"\n ],\n [\n  \"2016-09-01\",\n  7\n ],\n [\n  \"2016-10-01\",\n  379\n ],\n [\n  \"2016-12-01\",\n  1\n ],\n [\n  \"2017-01-01\",\n  966\n ],\n [\n  \"2017-02-01\",\n  1998\n ],\n [\n  \"2017-03-01\",\n  3041\n ],\n [\n  \"2017-04-01\",\n  2697\n ],\n [\n  \"2017-05-01\",\n  4176\n ],\n [\n  \"2017-06-01\",\n  3611\n ],\n [\n  \"2017-07-01\",\n  4576\n ],\n [\n  \"2017-08-01\",\n  4948\n ],\n [\n  \"2017-09-01\",\n  4873\n ],\n [\n  \"2017-10-01\",\n  5385\n ],\n [\n  \"2017-11-01\",\n  8758\n ],\n [\n  \"2017-12-01\",\n  6357\n ],\n [\n  \"2018-01-01\",\n  8257\n ],\n [\n  \"2018-02-01\",\n  7706\n ],\n [\n  \"2018-03-01\",\n  8240\n ],\n [\n  \"2018-04-01\",\n  7980\n ],\n [\n  \"2018-05-01\",\n  7945\n ],\n [\n  \"2018-06-01\",\n  7085\n ],\n [\n  \"2018-07-01\",\n  7111\n ],\n [\n  \"2018-08-01\",\n  7308\n ],\n [\n  \"2018-09-01\",\n  16\n ],\n [\n  \"2018-10-01\",\n  4\n ]\n]",
-        "execution_time": 0.274,
-        "last_execution": "2023-03-01 14:57:12.403702",
-        "tables": [
-            {
-                "label": "Orders",
-                "table": "Orders",
-                "join": "{\n  \"with\": {\n    \"name\": \"401a3e4929\",\n    \"table\": \"orderitems\",\n    \"label\": \"Orderitems\",\n    \"value\": \"orderitems\"\n  },\n  \"condition\": {\n    \"left\": {\n      \"label\": \"Order Id\",\n      \"value\": \"order_id\"\n    },\n    \"right\": {\n      \"label\": \"Order Id\",\n      \"value\": \"order_id\"\n    }\n  },\n  \"type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n  }\n}",
-                "parent": "QRY-0007",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Orderitems",
-                "table": "orderitems",
-                "join": "{\n  \"with\": {\n    \"name\": \"f21171a952\",\n    \"table\": \"products\",\n    \"label\": \"Products\",\n    \"value\": \"products\"\n  },\n  \"condition\": {\n    \"left\": {\n      \"label\": \"Product Id\",\n      \"value\": \"product_id\"\n    },\n    \"right\": {\n      \"label\": \"Product Id\",\n      \"value\": \"product_id\"\n    }\n  },\n  \"type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n  }\n}",
-                "parent": "QRY-0007",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Month",
-                "column": "order_purchase_timestamp",
-                "type": "Datetime",
-                "is_expression": 0,
-                "table": "Orders",
-                "table_label": "Orders",
-                "expression": "null",
-                "aggregation": "Group By",
-                "format_option": "{\n  \"date_format\": \"Mon\"\n}",
-                "order_by": "asc",
-                "parent": "QRY-0007",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Orders",
-                "column": "count",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "Orders",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0007",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"group by\",\n   \"alias\": \"Month\",\n   \"column\": \"order_purchase_timestamp\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"Mon\",\n   \"label\": \"Month\",\n   \"meta\": null,\n   \"order\": \"asc\",\n   \"table\": \"Orders\",\n   \"type\": \"Datetime\"\n  },\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"Orders\",\n   \"column\": \"count\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Orders\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Orders\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [\n  {\n   \"join_type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n   },\n   \"left_column\": {\n    \"column\": \"order_id\",\n    \"label\": \"Order Id\",\n    \"table\": \"Orders\",\n    \"value\": \"order_id\"\n   },\n   \"left_table\": {\n    \"label\": \"Orders\",\n    \"table\": \"Orders\"\n   },\n   \"right_column\": {\n    \"column\": \"order_id\",\n    \"label\": \"Order Id\",\n    \"table\": \"orderitems\",\n    \"value\": \"order_id\"\n   },\n   \"right_table\": {\n    \"label\": \"Orderitems\",\n    \"table\": \"orderitems\"\n   }\n  },\n  {\n   \"join_type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n   },\n   \"left_column\": {\n    \"column\": \"product_id\",\n    \"label\": \"Product Id\",\n    \"table\": \"orderitems\",\n    \"value\": \"product_id\"\n   },\n   \"left_table\": {\n    \"label\": \"Orderitems\",\n    \"table\": \"orderitems\"\n   },\n   \"right_column\": {\n    \"column\": \"product_id\",\n    \"label\": \"Product Id\",\n    \"table\": \"products\",\n    \"value\": \"product_id\"\n   },\n   \"right_table\": {\n    \"label\": \"Products\",\n    \"table\": \"products\"\n   }\n  }\n ],\n \"limit\": 15000,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"Orders\",\n  \"table\": \"Orders\"\n }\n}"
     },
     {
-        "status": "Pending Execution",
+        "name": "QRY-0008",
+        "status": "Execution Successful",
         "title": "Complete vs Incomplete Orders",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": []\n}",
-        "limit": 5,
-        "sql": "SELECT CASE WHEN `order_status`='delivered' THEN 'Complete'\n            ELSE 'Incomplete'\n             END `Status`,\n       COUNT(*) `Count`\n  FROM `Orders`\n GROUP BY `Status`\n LIMIT 5",
-        "results_row_count": 3,
-        "results": "[\n [\n  \"Status::String\",\n  \"Count::Integer\"\n ],\n [\n  \"Complete\",\n  96478\n ],\n [\n  \"Incomplete\",\n  2963\n ]\n]",
-        "execution_time": 0.047,
-        "last_execution": "2022-11-01 11:36:01.720493",
-        "tables": [
-            {
-                "label": "Orders",
-                "table": "Orders",
-                "parent": "QRY-0014",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Status",
-                "type": "String",
-                "is_expression": 1,
-                "expression": "{\n  \"raw\": \"case(`Orders.order_status` = \\\"delivered\\\", \\\"Complete\\\", \\\"Incomplete\\\")\",\n  \"ast\": {\n    \"type\": \"CallExpression\",\n    \"function\": \"case\",\n    \"arguments\": [\n      {\n        \"type\": \"BinaryExpression\",\n        \"operator\": \"=\",\n        \"left\": {\n          \"type\": \"Column\",\n          \"value\": {\n            \"table\": \"Orders\",\n            \"column\": \"order_status\"\n          }\n        },\n        \"right\": {\n          \"type\": \"String\",\n          \"value\": \"delivered\"\n        }\n      },\n      {\n        \"type\": \"String\",\n        \"value\": \"Complete\"\n      },\n      {\n        \"type\": \"String\",\n        \"value\": \"Incomplete\"\n      }\n    ]\n  }\n}",
-                "aggregation": "Group By",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0014",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Count",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "Orders",
-                "table_label": "Orders",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0014",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"group by\",\n   \"alias\": \"Status\",\n   \"column\": null,\n   \"expression\": {\n    \"ast\": {\n     \"arguments\": [\n      {\n       \"left\": {\n        \"type\": \"Column\",\n        \"value\": {\n         \"column\": \"order_status\",\n         \"table\": \"Orders\"\n        }\n       },\n       \"operator\": \"=\",\n       \"right\": {\n        \"type\": \"String\",\n        \"value\": \"delivered\"\n       },\n       \"type\": \"BinaryExpression\"\n      },\n      {\n       \"type\": \"String\",\n       \"value\": \"Complete\"\n      },\n      {\n       \"type\": \"String\",\n       \"value\": \"Incomplete\"\n      }\n     ],\n     \"function\": \"case\",\n     \"type\": \"CallExpression\"\n    },\n    \"raw\": \"case(`Orders.order_status` = \\\"delivered\\\", \\\"Complete\\\", \\\"Incomplete\\\")\"\n   },\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Status\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": null,\n   \"type\": \"String\"\n  },\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"Count\",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Count\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Orders\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [],\n \"limit\": 5,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"Orders\",\n  \"table\": \"Orders\"\n }\n}"
     },
     {
+        "name": "QRY-0009",
         "status": "Execution Successful",
         "title": "Product Categories",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": []\n}",
-        "limit": 10,
-        "sql": "SELECT `Products`.`product_category_name` `Category`,\n       COUNT(*) `Products Sold`\n  FROM `OrderItems`\n  LEFT JOIN `Products`\n    ON `OrderItems`.`product_id`=`Products`.`product_id`\n GROUP BY `Category`\n ORDER BY COUNT(*) DESC\n LIMIT 10",
-        "results_row_count": 11,
-        "results": "[\n [\n  \"Category::String\",\n  \"Products Sold::Integer\"\n ],\n [\n  \"bed_bath_table\",\n  11115\n ],\n [\n  \"health_beauty\",\n  9670\n ],\n [\n  \"sports_leisure\",\n  8641\n ],\n [\n  \"furniture_decor\",\n  8334\n ],\n [\n  \"computers_accessories\",\n  7827\n ],\n [\n  \"housewares\",\n  6964\n ],\n [\n  \"watches_gifts\",\n  5991\n ],\n [\n  \"telephony\",\n  4545\n ],\n [\n  \"garden_tools\",\n  4347\n ],\n [\n  \"auto\",\n  4235\n ]\n]",
-        "execution_time": 0.253,
-        "last_execution": "2023-02-19 19:12:23.029476",
-        "tables": [
-            {
-                "label": "OrderItems",
-                "table": "OrderItems",
-                "join": "{\n \"condition\": {\n  \"left\": {\n   \"label\": \"product_id\",\n   \"value\": \"product_id\"\n  },\n  \"right\": {\n   \"label\": \"product_id\",\n   \"value\": \"product_id\"\n  }\n },\n \"type\": {\n  \"label\": \"Left\",\n  \"value\": \"left\"\n },\n \"with\": {\n  \"label\": \"Products\",\n  \"value\": \"Products\"\n }\n}",
-                "parent": "QRY-0057",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Category",
-                "column": "product_category_name",
-                "type": "String",
-                "is_expression": 0,
-                "table": "Products",
-                "table_label": "Products",
-                "expression": "null",
-                "aggregation": "Group By",
-                "format_option": "{}",
-                "order_by": "",
-                "parent": "QRY-0057",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Products Sold",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "OrderItems",
-                "table_label": "OrderItems",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "desc",
-                "parent": "QRY-0057",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"group by\",\n   \"alias\": \"Category\",\n   \"column\": \"product_category_name\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Category\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": \"Products\",\n   \"type\": \"String\"\n  },\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"Products Sold\",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Products Sold\",\n   \"meta\": null,\n   \"order\": \"desc\",\n   \"table\": \"OrderItems\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [],\n \"joins\": [\n  {\n   \"join_type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n   },\n   \"left_column\": {\n    \"column\": \"product_id\",\n    \"label\": \"product_id\",\n    \"table\": \"OrderItems\",\n    \"value\": \"product_id\"\n   },\n   \"left_table\": {\n    \"label\": \"OrderItems\",\n    \"table\": \"OrderItems\"\n   },\n   \"right_column\": {\n    \"column\": \"product_id\",\n    \"label\": \"product_id\",\n    \"table\": \"Products\",\n    \"value\": \"product_id\"\n   },\n   \"right_table\": {\n    \"label\": \"Products\",\n    \"table\": \"Products\"\n   }\n  }\n ],\n \"limit\": 10,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"OrderItems\",\n  \"table\": \"OrderItems\"\n }\n}"
     },
     {
+        "name": "QRY-0010",
         "status": "Execution Successful",
         "title": "Top 5 Product Categories",
-        "is_native_query": 0,
         "data_source": "Demo Data",
         "is_stored": 0,
-        "filters": "{\n  \"type\": \"LogicalExpression\",\n  \"operator\": \"&&\",\n  \"level\": 1,\n  \"position\": 1,\n  \"conditions\": [\n    {\n      \"type\": \"BinaryExpression\",\n      \"operator\": \"!=\",\n      \"left\": {\n        \"type\": \"Column\",\n        \"value\": {\n          \"column\": \"order_id\",\n          \"table\": \"OrderItems\"\n        }\n      },\n      \"right\": {\n        \"type\": \"String\",\n        \"value\": \"001021efaa8636c29475e7734483457d\"\n      }\n    }\n  ]\n}",
-        "limit": 10,
-        "sql": "SELECT replace(t1.product_category_name, '_', ' ') AS \"Category Title\",\n       count(*) AS \"Products Sold\"\n  FROM \"OrderItems\" AS t0\n  LEFT OUTER JOIN \"Products\" AS t1\n    ON t0.product_id = t1.product_id\n WHERE t0.order_id != '001021efaa8636c29475e7734483457d'\n GROUP BY replace(t1.product_category_name, '_', ' ')\n ORDER BY count(*) DESC\n LIMIT 10\nOFFSET 0",
-        "results_row_count": 11,
-        "results": "[\n [\n  \"Category Title::String\",\n  \"Products Sold::Integer\"\n ],\n [\n  \"bed bath table\",\n  11115\n ],\n [\n  \"health beauty\",\n  9670\n ],\n [\n  \"sports leisure\",\n  8641\n ],\n [\n  \"furniture decor\",\n  8334\n ],\n [\n  \"computers accessories\",\n  7827\n ],\n [\n  \"housewares\",\n  6964\n ],\n [\n  \"watches gifts\",\n  5991\n ],\n [\n  \"telephony\",\n  4545\n ],\n [\n  \"garden tools\",\n  4347\n ],\n [\n  \"auto\",\n  4235\n ]\n]",
-        "execution_time": 0.268,
-        "last_execution": "2023-03-01 20:17:28.678365",
-        "tables": [
-            {
-                "label": "OrderItems",
-                "table": "OrderItems",
-                "join": "{\n \"condition\": {\n  \"left\": {\n   \"label\": \"product_id\",\n   \"value\": \"product_id\"\n  },\n  \"right\": {\n   \"label\": \"product_id\",\n   \"value\": \"product_id\"\n  }\n },\n \"type\": {\n  \"label\": \"Left\",\n  \"value\": \"left\"\n },\n \"with\": {\n  \"label\": \"Products\",\n  \"value\": \"Products\"\n }\n}",
-                "parent": "QRY-0012",
-                "parentfield": "tables",
-                "parenttype": "Insights Query"
-            }
-        ],
-        "transforms": [],
-        "columns": [
-            {
-                "label": "Category Title",
-                "column": "Category_Title",
-                "type": "String",
-                "is_expression": 1,
-                "expression": "{\n  \"raw\": \"replace(`Products.product_category_name`, '_', ' ')\",\n  \"ast\": {\n    \"type\": \"CallExpression\",\n    \"function\": \"replace\",\n    \"arguments\": [\n      {\n        \"type\": \"Column\",\n        \"value\": {\n          \"table\": \"Products\",\n          \"column\": \"product_category_name\"\n        }\n      },\n      {\n        \"type\": \"String\",\n        \"value\": \"_\"\n      },\n      {\n        \"type\": \"String\",\n        \"value\": \" \"\n      }\n    ]\n  }\n}",
-                "aggregation": "Group By",
-                "format_option": "{}",
-                "parent": "QRY-0012",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            },
-            {
-                "label": "Products Sold",
-                "column": "*",
-                "type": "Integer",
-                "is_expression": 0,
-                "table": "OrderItems",
-                "table_label": "OrderItems",
-                "expression": "null",
-                "aggregation": "Count",
-                "format_option": "{}",
-                "order_by": "desc",
-                "parent": "QRY-0012",
-                "parentfield": "columns",
-                "parenttype": "Insights Query"
-            }
-        ]
+        "is_native_query": 0,
+        "is_assisted_query": 1,
+        "json": "{\n \"calculations\": [],\n \"columns\": [\n  {\n   \"aggregation\": \"group by\",\n   \"alias\": \"Category Title\",\n   \"column\": \"Category_Title\",\n   \"expression\": {\n    \"ast\": {\n     \"arguments\": [\n      {\n       \"type\": \"Column\",\n       \"value\": {\n        \"column\": \"product_category_name\",\n        \"table\": \"Products\"\n       }\n      },\n      {\n       \"type\": \"String\",\n       \"value\": \"_\"\n      },\n      {\n       \"type\": \"String\",\n       \"value\": \" \"\n      }\n     ],\n     \"function\": \"replace\",\n     \"type\": \"CallExpression\"\n    },\n    \"raw\": \"replace(`Products.product_category_name`, '_', ' ')\"\n   },\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Category Title\",\n   \"meta\": null,\n   \"order\": \"\",\n   \"table\": null,\n   \"type\": \"String\"\n  },\n  {\n   \"aggregation\": \"count\",\n   \"alias\": \"Products Sold\",\n   \"column\": \"*\",\n   \"expression\": {},\n   \"format\": null,\n   \"granularity\": \"\",\n   \"label\": \"Products Sold\",\n   \"meta\": null,\n   \"order\": \"desc\",\n   \"table\": \"OrderItems\",\n   \"type\": \"Integer\"\n  }\n ],\n \"dimensions\": [],\n \"filters\": [\n  {\n   \"column\": {\n    \"aggregation\": null,\n    \"alias\": \"order_id\",\n    \"column\": \"order_id\",\n    \"expression\": {},\n    \"format\": null,\n    \"granularity\": null,\n    \"label\": \"order_id\",\n    \"meta\": null,\n    \"order\": null,\n    \"table\": \"OrderItems\",\n    \"type\": \"String\"\n   },\n   \"expression\": {},\n   \"operator\": {\n    \"label\": \"not equals\",\n    \"value\": \"!=\"\n   },\n   \"value\": {\n    \"label\": \"001021efaa8636c29475e7734483457d\",\n    \"value\": \"001021efaa8636c29475e7734483457d\"\n   }\n  }\n ],\n \"joins\": [\n  {\n   \"join_type\": {\n    \"label\": \"Left\",\n    \"value\": \"left\"\n   },\n   \"left_column\": {\n    \"column\": \"product_id\",\n    \"label\": \"product_id\",\n    \"table\": \"OrderItems\",\n    \"value\": \"product_id\"\n   },\n   \"left_table\": {\n    \"label\": \"OrderItems\",\n    \"table\": \"OrderItems\"\n   },\n   \"right_column\": {\n    \"column\": \"product_id\",\n    \"label\": \"product_id\",\n    \"table\": \"Products\",\n    \"value\": \"product_id\"\n   },\n   \"right_table\": {\n    \"label\": \"Products\",\n    \"table\": \"Products\"\n   }\n  }\n ],\n \"limit\": 10,\n \"measures\": [],\n \"orders\": [],\n \"table\": {\n  \"label\": \"OrderItems\",\n  \"table\": \"OrderItems\"\n }\n}"
     }
 ]

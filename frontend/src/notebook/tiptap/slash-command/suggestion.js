@@ -114,15 +114,6 @@ export default {
 				},
 				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
 			},
-			{
-				title: 'Visual SQL',
-				icon: markRaw(ChevronRightSquare),
-				command: ({ editor, range }) => {
-					const element = '<query-builder></query-builder>'
-					editor.chain().focus().deleteRange(range).insertContent(element).run()
-				},
-				disabled: (editor) => !editor.isActive('paragraph') || editor.isActive('table'),
-			},
 		].filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
 	},
 

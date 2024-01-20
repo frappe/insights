@@ -34,6 +34,8 @@ def complete_setup_wizard():
 
 
 def delete_all_records():
+    frappe.db.delete("Version", {"ref_doctype": ("like", "Insights%")})
+    frappe.db.delete("View Log", {"reference_doctype": ("like", "Insights%")})
     for doctype in frappe.get_all(
         "DocType", filters={"module": "Insights", "issingle": 0}, pluck="name"
     ):
@@ -93,7 +95,7 @@ def import_todo_table(db):
     df = pd.DataFrame(data[1:], columns=data[0])
     df.to_sql(
         name="tabToDo",
-        con=db.db.engine,
+        con=db._db.engine,
         index=False,
         if_exists="replace",
     )

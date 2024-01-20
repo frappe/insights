@@ -1,233 +1,330 @@
 <template>
-	<Combobox as="div" v-model="selectedOption" v-slot="{ open: isComboBoxOpen }" nullable>
-		<ComboboxLabel v-if="label">{{ label }}</ComboboxLabel>
-		<Popover ref="popover" class="relative flex w-full [&>div:first-child]:w-full">
-			<template #target="{ togglePopover }">
-				<ComboboxInput
-					ref="input"
-					autocomplete="off"
-					:placeholder="placeholder"
-					@click="togglePopover(true)"
-					@blur="handleBlur($event, togglePopover)"
-					@change="filterQuery = $event.target.value"
-					:displayValue="(option) => option?.label"
-					class="form-input block w-full border-gray-400 placeholder-gray-500"
-				>
-				</ComboboxInput>
-				<div v-if="loading" class="absolute right-2 flex h-full items-center">
-					<LoadingIndicator class="h-3 w-3" />
-				</div>
-			</template>
-			<template #body="{ isOpen: isPopoverOpen }">
-				<transition
-					enter-active-class="transition duration-100 ease-out"
-					enter-from-class="transform scale-95 opacity-0"
-					enter-to-class="transform scale-100 opacity-100"
-					leave-active-class="transition duration-75 ease-out"
-					leave-from-class="transform scale-100 opacity-100"
-					leave-to-class="transform scale-95 opacity-0"
-				>
-					<div v-show="!loading && (isComboBoxOpen || isPopoverOpen)">
-						<ComboboxOptions
-							static
-							class="max-h-48 w-full origin-top overflow-y-scroll rounded border bg-white p-1 shadow"
+	<Combobox
+		v-model="selectedValue"
+		:multiple="multiple"
+		nullable
+		v-slot="{ open: isComboboxOpen }"
+	>
+		<Popover class="w-full" v-model:show="showOptions">
+			<template #target="{ open: openPopover, togglePopover }">
+				<slot name="target" v-bind="{ open: openPopover, togglePopover }">
+					<div class="w-full">
+						<button
+							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
+							:class="{ 'bg-gray-200': isComboboxOpen }"
+							@click="() => togglePopover()"
 						>
-							<div
-								v-if="filteredOptions.length === 0 && !$props.allowCreate"
-								class="flex h-8 w-full items-center rounded bg-gray-50 px-3 text-sm font-light"
-							>
-								{{ emptyText }}
+							<div class="flex items-center overflow-hidden">
+								<slot name="prefix" />
+								<span class="truncate text-base leading-5" v-if="selectedValue">
+									{{ displayValue(selectedValue) }}
+								</span>
+								<span class="text-base leading-5 text-gray-600" v-else>
+									{{ placeholder || '' }}
+								</span>
 							</div>
-							<ComboboxOption
-								v-if="$props.allowCreate"
-								class="flex h-9 w-full cursor-pointer items-center rounded px-3 text-base text-blue-600 hover:bg-gray-100"
-								@click="createOption"
+							<FeatherIcon
+								name="chevron-down"
+								class="h-4 w-4 text-gray-600"
+								aria-hidden="true"
+							/>
+						</button>
+					</div>
+				</slot>
+			</template>
+			<template #body="{ isOpen, togglePopover }">
+				<div v-show="isOpen">
+					<div
+						class="relative mt-1 rounded-lg bg-white text-base shadow-2xl"
+						:class="bodyClasses"
+					>
+						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
+							<div
+								v-if="!hideSearch"
+								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white py-1.5"
 							>
-								<FeatherIcon name="plus" class="mr-1 h-3.5 w-3.5" />
-								Create New
-							</ComboboxOption>
-
-							<ComboboxOption
-								v-for="(option, idx) in filteredOptions"
-								:key="idx"
-								:value="option"
-								:disabled="option.disabled"
-								v-slot="{ active, selected }"
+								<div class="relative w-full">
+									<ComboboxInput
+										ref="searchInput"
+										class="form-input w-full"
+										type="text"
+										@change="
+											(e) => {
+												query = e.target.value
+											}
+										"
+										:value="query"
+										autocomplete="off"
+										placeholder="Search"
+									/>
+									<button
+										class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
+										@click="selectedValue = null"
+									>
+										<FeatherIcon name="x" class="w-4" />
+									</button>
+								</div>
+							</div>
+							<div
+								v-for="group in groups"
+								:key="group.key"
+								v-show="group.items.length > 0"
 							>
 								<div
-									class="flex h-9 w-full cursor-pointer items-center justify-between rounded px-3 text-base"
-									:class="{
-										'bg-gray-100 text-gray-800': active,
-										'bg-white': !active,
-										'cursor-not-allowed !opacity-50': option.disabled,
-									}"
+									v-if="group.group && !group.hideLabel"
+									class="sticky top-10 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
 								>
-									<div class="flex items-baseline space-x-2">
-										<span>{{ option.label }}</span>
-										<span
-											v-if="option.description"
-											class="text-sm font-light text-gray-600"
-										>
-											{{ option.description }}
-										</span>
-									</div>
-									<FeatherIcon name="check" class="h-4 w-4" v-show="selected" />
+									{{ group.group }}
 								</div>
-							</ComboboxOption>
+								<ComboboxOption
+									as="template"
+									v-for="(option, idx) in group.items.slice(0, 50)"
+									:key="option?.value || idx"
+									:value="option"
+									v-slot="{ active, selected }"
+								>
+									<li
+										:class="[
+											'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base',
+											{ 'bg-gray-100': active },
+										]"
+									>
+										<div class="flex flex-1 gap-2 overflow-hidden">
+											<div
+												v-if="$slots['item-prefix'] || $props.multiple"
+												class="flex-shrink-0"
+											>
+												<slot
+													name="item-prefix"
+													v-bind="{ active, selected, option }"
+												>
+													<Square
+														v-if="!isOptionSelected(option)"
+														class="h-4 w-4 text-gray-700"
+													/>
+													<CheckSquare
+														v-else
+														class="h-4 w-4 text-gray-700"
+													/>
+												</slot>
+											</div>
+											<span class="flex-1 truncate">
+												{{ getLabel(option) }}
+											</span>
+										</div>
+
+										<div
+											v-if="$slots['item-suffix'] || option?.description"
+											class="ml-2 flex-shrink-0"
+										>
+											<slot
+												name="item-suffix"
+												v-bind="{ active, selected, option }"
+											>
+												<div
+													v-if="option?.description"
+													class="text-sm text-gray-600"
+												>
+													{{ option.description }}
+												</div>
+											</slot>
+										</div>
+									</li>
+								</ComboboxOption>
+							</div>
+							<li
+								v-if="groups.length == 0"
+								class="rounded-md px-2.5 py-1.5 text-base text-gray-600"
+							>
+								No results found
+							</li>
 						</ComboboxOptions>
+
+						<div v-if="$slots.footer || multiple" class="border-t p-1">
+							<slot name="footer" v-bind="{ togglePopover }">
+								<div v-if="multiple" class="flex items-center justify-end">
+									<Button
+										v-if="!areAllOptionsSelected"
+										label="Select All"
+										@click.stop="selectAll"
+									/>
+									<Button
+										v-if="areAllOptionsSelected"
+										label="Clear All"
+										@click.stop="clearAll"
+									/></div
+							></slot>
+						</div>
 					</div>
-				</transition>
+				</div>
 			</template>
 		</Popover>
 	</Combobox>
 </template>
 
-<script setup>
+<script>
+import { fuzzySearch } from '@/utils'
 import {
 	Combobox,
+	ComboboxButton,
 	ComboboxInput,
-	ComboboxLabel,
 	ComboboxOption,
 	ComboboxOptions,
 } from '@headlessui/vue'
-import { LoadingIndicator } from 'frappe-ui'
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import Popover from '../Popover.vue'
+import { nextTick } from 'vue'
+import { CheckSquare } from 'lucide-vue-next'
+import { Square } from 'lucide-vue-next'
 
-const $utils = inject('$utils')
+export default {
+	name: 'Autocomplete',
+	props: [
+		'modelValue',
+		'options',
+		'placeholder',
+		'bodyClasses',
+		'multiple',
+		'returnValue',
+		'hideSearch',
+		'autoFocus',
+	],
+	emits: ['update:modelValue', 'update:query', 'change'],
+	components: {
+		Popover,
+		Combobox,
+		ComboboxInput,
+		ComboboxOptions,
+		ComboboxOption,
+		ComboboxButton,
+		CheckSquare,
+		Square,
+	},
+	expose: ['togglePopover'],
+	data() {
+		return {
+			query: '',
+			showOptions: false,
+		}
+	},
+	computed: {
+		selectedValue: {
+			get() {
+				if (!this.multiple) {
+					return this.findOption(this.modelValue)
+				}
+				// in case of `multiple`, modelValue is an array of values
+				// and if returnValue is true, we need to return the value of the options
+				return this.returnValue || typeof this.modelValue?.[0] !== 'object'
+					? this.modelValue?.map((v) => this.findOption(v))
+					: this.modelValue
+			},
+			set(val) {
+				this.query = ''
+				if (val && !this.multiple) this.showOptions = false
+				if (!this.multiple) {
+					this.$emit('update:modelValue', this.returnValue ? val?.value : val)
+					return
+				}
+				this.$emit('update:modelValue', this.returnValue ? val?.map((v) => v.value) : val)
+			},
+		},
+		groups() {
+			if (!this.options || this.options.length == 0) return []
 
-const emit = defineEmits(['update:modelValue', 'inputChange', 'change', 'blur', 'createOption'])
-const props = defineProps({
-	label: {
-		type: String,
-		default: '',
-	},
-	placeholder: {
-		type: String,
-		default: '',
-	},
-	emptyText: {
-		type: String,
-		default: 'No results found',
-	},
-	value: {},
-	valueModifiers: {
-		type: Object,
-		default: () => ({}),
-	},
-	modelValue: {},
-	modelModifiers: {
-		type: Object,
-		default: () => ({}),
-	},
-	options: {
-		type: Array,
-		default: () => [],
-		required: true,
-		validate: (value) => {
-			return value.every((option) => {
-				return typeof option.label === 'string' && typeof option.value === 'string'
-			})
+			let groups = this.options[0]?.group
+				? this.options
+				: [{ group: '', items: this.sanitizeOptions(this.options) }]
+
+			return groups
+				.map((group, i) => {
+					return {
+						key: i,
+						group: group.group,
+						hideLabel: group.hideLabel || false,
+						items: this.filterOptions(this.sanitizeOptions(group.items)),
+					}
+				})
+				.filter((group) => group.items.length > 0)
+		},
+		allOptions() {
+			return this.groups.flatMap((group) => group.items)
+		},
+		areAllOptionsSelected() {
+			if (!this.multiple) return false
+			return this.allOptions.length === this.selectedValue?.length
 		},
 	},
-	allowCreate: {
-		type: Boolean,
-		default: false,
+	watch: {
+		query(q) {
+			this.$emit('update:query', q)
+		},
+		showOptions(val) {
+			if (val) nextTick(() => this.$refs.searchInput?.$el?.focus())
+		},
 	},
-	autofocus: {
-		type: Boolean,
-		default: true,
-	},
-	loading: {
-		type: Boolean,
-		default: false,
-	},
-})
+	methods: {
+		togglePopover(val) {
+			this.showOptions = val ?? !this.showOptions
+		},
+		findOption(option) {
+			if (!option) return option
+			return this.allOptions.find((o) => o.value === (option.value || option))
+		},
+		filterOptions(options) {
+			if (!this.query) return options
+			return fuzzySearch(options, {
+				term: this.query,
+				keys: ['label', 'value'],
+			})
+		},
+		displayValue(option) {
+			if (!option) return ''
 
-const input = ref(null)
-const popover = ref(null)
-defineExpose({ input })
-
-const blur = () => (input.value.$el.blur(), popover.value.close(), emit('blur'))
-const focus = () => (input.value.$el.focus(), popover.value.open())
-onMounted(() => {
-	if (props.autofocus == false) {
-		setTimeout(blur, 0)
-	}
-})
-
-const filterQuery = ref('')
-const valueProp = props.modelValue ? 'modelValue' : 'value'
-const options = computed(() => {
-	if (typeof props.options[0] !== 'object') {
-		return props.options.map((option) => {
-			return {
-				label: option,
-				value: option,
+			if (!this.multiple) {
+				if (typeof option === 'object') {
+					return this.getLabel(option)
+				}
+				let selectedOption = this.allOptions.find((o) => o.value === option)
+				return this.getLabel(selectedOption)
 			}
-		})
-	}
-	return props.options
-})
-const returnValues = computed(() => {
-	// if v-model.value is set, then return the value of the option
-	return props.valueModifiers?.value || props.modelModifiers?.value
-})
-const selectedOption = computed({
-	get() {
-		return returnValues.value
-			? options.value.find((option) => option.value === props[valueProp])
-			: props[valueProp]
-	},
-	set(newOption) {
-		if (newOption) blur()
-		const _value = returnValues.value ? newOption?.value : newOption
-		emit('update:modelValue', _value)
-		emit('change', _value)
-	},
-})
-const uniqueOptions = computed(() => {
-	return options.value.filter((option, index, self) => {
-		return (
-			self.findIndex(
-				(t) =>
-					t.value === option.value &&
-					t.label === option.label &&
-					t.description === option.description
-			) === index
-		)
-	})
-})
-const filteredOptions = computed(() => {
-	return !filterQuery.value
-		? uniqueOptions.value.slice(0, 50)
-		: $utils
-				.fuzzySearch(uniqueOptions.value, {
-					term: filterQuery.value,
-					keys: ['label', 'value', 'description'],
+
+			if (!Array.isArray(option)) return ''
+
+			// in case of `multiple`, option is an array of values
+			// so the display value should be comma separated labels
+			return option
+				.map((v) => {
+					if (typeof v === 'object') {
+						return this.getLabel(v)
+					}
+					let selectedOption = this.allOptions.find((o) => o.value === v)
+					return this.getLabel(selectedOption)
 				})
-				.slice(0, 50)
-})
-
-watch(filterQuery, (newValue, oldValue) => {
-	if (newValue === oldValue) return
-	emit('inputChange', newValue)
-	focus()
-})
-
-function createOption() {
-	emit('createOption', filterQuery.value)
-	filterQuery.value = ''
-	blur()
-}
-
-function handleBlur(event, close) {
-	// on clicking the list item, the blur event is fired,
-	// and the popover is closed before the list item is selected
-	// so, we need to check if the click was on the list item and prevent closing
-	// closing will be handled by the list item click event
-	const shouldClose = event.relatedTarget?.classList.contains('form-input')
-	if (shouldClose) {
-		setTimeout(blur, 0)
-	}
+				.join(', ')
+		},
+		getLabel(option) {
+			if (typeof option !== 'object') return option
+			return option?.label || option?.value || 'No label'
+		},
+		sanitizeOptions(options) {
+			if (!options) return []
+			// in case the options are just strings, convert them to objects
+			return options.map((option) => {
+				return typeof option === 'object' ? option : { label: option, value: option }
+			})
+		},
+		isOptionSelected(option) {
+			if (!this.multiple) {
+				return this.selectedValue?.value === option.value
+			}
+			return this.selectedValue?.find((v) => v && v.value === option.value)
+		},
+		selectAll() {
+			this.selectedValue = this.allOptions
+		},
+		clearAll() {
+			this.selectedValue = []
+		},
+	},
 }
 </script>

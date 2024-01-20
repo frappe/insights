@@ -13,10 +13,6 @@ const options = computed({
 	set: (value) => emit('update:modelValue', value),
 })
 
-if (!options.hasOwnProperty('shorten')) {
-	options.value.shorten = true
-}
-
 const columnOptions = computed(() => {
 	return props.columns
 		?.filter((column) => FIELDTYPES.NUMBER.includes(column.type))
@@ -30,7 +26,7 @@ const columnOptions = computed(() => {
 
 <template>
 	<div class="space-y-4">
-		<Input
+		<FormControl
 			type="text"
 			label="Title"
 			class="w-full"
@@ -39,7 +35,7 @@ const columnOptions = computed(() => {
 		/>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Number Column</span>
-			<Autocomplete v-model.value="options.column" :options="columnOptions" />
+			<Autocomplete v-model="options.column" :returnValue="true" :options="columnOptions" />
 		</div>
 		<div>
 			<span class="mb-2 block text-sm leading-4 text-gray-700">Prefix</span>

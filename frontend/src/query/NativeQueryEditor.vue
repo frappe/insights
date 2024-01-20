@@ -1,10 +1,22 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
-import { computed, inject, ref, watch } from 'vue'
 import TextToSQLDialog from '@/components/TextToSQLDialog.vue'
+import { call } from 'frappe-ui'
+import { computed, inject, ref, watch } from 'vue'
+import SchemaExplorerDialog from './SchemaExplorerDialog.vue'
+
+const props = defineProps({
+	showToolbar: { type: Boolean, default: true },
+})
 
 const query = inject('query')
-query.getSourceSchema.submit()
+if (query.doc.data_source) {
+	call('insights.api.data_sources.get_source_schema', {
+		data_source: query.doc.data_source,
+	}).then((response) => {
+		query.sourceSchema = response
+	})
+}
 const completions = computed(() => {
 	if (!query.sourceSchema) return { schema: {}, tables: [] }
 
@@ -27,41 +39,47 @@ const completions = computed(() => {
 	}
 })
 
+const openAIDialog = ref(false)
+const showDataExplorer = ref(false)
 const nativeQuery = ref(query.doc.sql)
 watch(
 	() => query.doc.sql,
-	(value) => {
-		nativeQuery.value = value
-	}
+	(value) => (nativeQuery.value = value)
 )
-function runQuery() {
-	query.setValue.submit({ sql: nativeQuery.value }).then(() => {
-		query.run.submit()
-	})
-}
-
-const openAIDialog = ref(false)
 </script>
 
 <template>
-	<div class="flex w-full flex-1 flex-shrink-0 flex-col">
-		<div class="flex-shrink-0 text-sm uppercase leading-7 tracking-wide text-gray-600">
-			Native Query
-		</div>
-		<div class="flex flex-1 overflow-y-scroll rounded border p-2">
-			<Code
-				:key="completions.tables.length"
-				language="sql"
-				v-model="nativeQuery"
-				:schema="completions.schema"
-				:tables="completions.tables"
-			></Code>
-		</div>
-		<div class="mt-2 flex-shrink-0 space-x-2">
-			<Button iconLeft="play" variant="outline" @click="runQuery"> Run </Button>
-			<Button variant="outline" @click="openAIDialog = true"> OpenAI </Button>
+	<div class="relative flex flex-1 flex-col overflow-y-scroll">
+		<Code
+			:key="completions.tables.length"
+			language="sql"
+			v-model="nativeQuery"
+			:schema="completions.schema"
+			:tables="completions.tables"
+			placeholder="Type your query here"
+		></Code>
+		<div v-if="props.showToolbar" class="sticky bottom-0 flex gap-2 border-t bg-white p-2">
+			<div>
+				<Button
+					variant="subtle"
+					icon="book-open"
+					@click="showDataExplorer = !showDataExplorer"
+				></Button>
+			</div>
+			<div>
+				<Button
+					variant="solid"
+					icon="play"
+					@click="query.executeSQL(nativeQuery)"
+					:loading="query.loading"
+				>
+				</Button>
+			</div>
+			<div>
+				<Button variant="outline" @click="openAIDialog = true"> OpenAI </Button>
+			</div>
 		</div>
 	</div>
-
+	<SchemaExplorerDialog v-model:show="showDataExplorer" />
 	<TextToSQLDialog v-model:show="openAIDialog" :dataSource="query.doc.data_source" />
 </template>

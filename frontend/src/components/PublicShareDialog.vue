@@ -91,7 +91,7 @@ const isPublic = computed({
 	},
 })
 const getPublicKey = createResource({
-	url: 'insights.api.get_public_key',
+	url: 'insights.api.public.get_public_key',
 	params: {
 		resource_type: props.resourceType,
 		resource_name: props.resourceName,

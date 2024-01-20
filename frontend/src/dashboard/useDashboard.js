@@ -1,10 +1,14 @@
-import { safeJSONParse } from '@/utils'
-import auth from '@/utils/auth'
+import useQuery from '@/query/resources/useQuery'
+import { useQueryResource } from '@/query/useQueryResource'
+import sessionStore from '@/stores/sessionStore'
+import { areDeeplyEqual, safeJSONParse } from '@/utils'
+import { createToast } from '@/utils/toasts'
 import widgets from '@/widgets/widgets'
-import { createDocumentResource } from 'frappe-ui'
+import { createDocumentResource, debounce } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
 import { reactive } from 'vue'
-import { useQueryResource } from '@/query/useQueryResource'
+
+const session = sessionStore()
 
 export default function useDashboard(name) {
 	const resource = getDashboardResource(name)
@@ -39,8 +43,8 @@ export default function useDashboard(name) {
 		await resource.get.fetch()
 		state.doc = resource.doc
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
-		state.isOwner = state.doc.owner == auth.user.user_id
-		state.canShare = state.isOwner || auth.user.is_admin
+		state.isOwner = state.doc.owner == session.user.user_id
+		state.canShare = state.isOwner || session.user.is_admin
 		resource.is_private.fetch().then((res) => {
 			state.isPrivate = res.message
 		})
@@ -58,6 +62,7 @@ export default function useDashboard(name) {
 		state.currentItem = undefined
 		state.loading = false
 		state.editing = false
+		window.location.reload()
 	}
 
 	async function deleteDashboard() {
@@ -109,6 +114,7 @@ export default function useDashboard(name) {
 					value: value.value,
 			  }
 			: undefined
+		if (areDeeplyEqual(filterState, state.filterStates[item_id])) return
 		saveLocal(getFilterStateKey(item_id), filterState).then(() => {
 			state.filterStates[item_id] = filterState
 			refreshLinkedCharts(item_id)
@@ -120,14 +126,14 @@ export default function useDashboard(name) {
 			if (item.item_id === filter_id) {
 				const charts = Object.keys(item.options.links) || []
 				charts.forEach((chart) => {
-					updateChartFilters(chart)
+					refreshChartFilters(chart)
 				})
 				return true
 			}
 		})
 	}
 
-	async function updateChartFilters(chart_id) {
+	async function refreshChartFilters(chart_id) {
 		const promises = state.doc.items
 			.filter((item) => item.item_type === 'Filter')
 			.map(async (filter) => {
@@ -150,7 +156,7 @@ export default function useDashboard(name) {
 
 	async function getChartFilters(chart_id) {
 		if (!state.filtersByChart[chart_id]) {
-			await updateChartFilters(chart_id)
+			await refreshChartFilters(chart_id)
 		}
 		return state.filtersByChart[chart_id]
 	}
@@ -167,12 +173,13 @@ export default function useDashboard(name) {
 			throw new Error(`Query not found for item ${itemId}`)
 		}
 		const filters = await getChartFilters(itemId)
-		const { message: results } = await resource.fetch_chart_data.submit({
-			item_id: itemId,
-			query_name: queryName,
-			filters,
-		})
-		return results
+		return resource.fetch_chart_data
+			.submit({
+				item_id: itemId,
+				query_name: queryName,
+				filters,
+			})
+			.then((res) => res.message)
 	}
 
 	function refreshFilter(filter_id) {
@@ -197,17 +204,10 @@ export default function useDashboard(name) {
 		state.refreshCallbacks.push(fn)
 	}
 
-	async function updateTitle(title) {
+	const updateTitle = debounce(function (title) {
 		if (!title || !state.editing) return
-		resource.setValue.submit({ title }).then(() => {
-			$notify({
-				title: 'Dashboard title updated',
-				variant: 'success',
-			})
-			state.doc.title = title
-		})
-		reload()
-	}
+		state.doc.title = title
+	}, 500)
 
 	function makeLayoutObject(item) {
 		return {
@@ -240,7 +240,7 @@ export default function useDashboard(name) {
 	function togglePublicAccess(isPublic) {
 		if (state.doc.is_public === isPublic) return
 		resource.setValue.submit({ is_public: isPublic }).then(() => {
-			$notify({
+			createToast({
 				title: 'Dashboard access updated',
 				variant: 'success',
 			})
@@ -250,8 +250,8 @@ export default function useDashboard(name) {
 
 	function loadCurrentItemQuery(query) {
 		if (!query || !state.currentItem) return
-		state.currentItem.query = useQueryResource(query)
-		state.currentItem.query.get.fetch()
+		state.currentItem.query = useQuery(query)
+		state.currentItem.query.reload()
 	}
 
 	const edit = () => ((state.editing = true), (state.currentItem = undefined))
@@ -261,6 +261,11 @@ export default function useDashboard(name) {
 	const toggleSidebar = () => (state.sidebar.open = !state.sidebar.open)
 	const setSidebarPosition = (position) => (state.sidebar.position = position)
 	const isChart = (item) => !['Filter', 'Text'].includes(item.item_type)
+	const resetOptions = (item) => {
+		item.options = {
+			query: item.options.query,
+		}
+	}
 
 	return Object.assign(state, {
 		reload,
@@ -273,7 +278,7 @@ export default function useDashboard(name) {
 		getFilterState,
 		setFilterState,
 		refreshFilter,
-		updateChartFilters,
+		refreshChartFilters,
 		edit,
 		discardChanges,
 		toggleSidebar,
@@ -285,6 +290,7 @@ export default function useDashboard(name) {
 		isChart,
 		togglePublicAccess,
 		loadCurrentItemQuery,
+		resetOptions,
 	})
 }
 
@@ -293,7 +299,6 @@ function getDashboardResource(name) {
 		doctype: 'Insights Dashboard',
 		name: name,
 		whitelistedMethods: {
-			savestate: 'savestate',
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
 			is_private: 'is_private',

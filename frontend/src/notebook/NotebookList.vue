@@ -1,8 +1,10 @@
 <script setup lang="jsx">
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ListView from '@/components/ListView.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
+import { ListRow, ListRowItem } from 'frappe-ui'
+import { PlusIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -16,11 +18,6 @@ const TitleWithIcon = (props) => (
 		<span class="ml-3">{props.row.title}</span>
 	</div>
 )
-const columns = [
-	{ label: 'Title', key: 'title', cellComponent: TitleWithIcon },
-	{ label: 'Created', key: 'created_from_now' },
-	{ label: 'Modified', key: 'modified_from_now' },
-]
 
 const new_notebook_dialog = ref(false)
 const new_notebook_title = ref('')
@@ -47,30 +44,53 @@ updateDocumentTitle(pageMeta)
 </script>
 
 <template>
-	<div class="h-full w-full bg-white px-6 py-4">
-		<Breadcrumbs :items="[{ label: 'Notebooks', href: '/notebook' }]"></Breadcrumbs>
-		<ListView
-			title="Notebooks"
-			:actions="[
-				{
-					label: 'Notebook',
-					variant: 'solid',
-					iconLeft: 'plus',
-					onClick: () => (new_notebook_dialog = true),
-				},
-				{
-					label: 'Notebook Page',
-					variant: 'solid',
-					iconLeft: 'plus',
-					onClick: () => createNotebookPage(),
-				},
-			]"
-			:columns="columns"
-			:data="notebooks.list"
-			:rowClick="({ name }) => router.push({ name: 'Notebook', params: { notebook: name } })"
-		>
-		</ListView>
-	</div>
+	<header class="sticky top-0 z-10 flex items-center justify-between bg-white px-5 py-2.5">
+		<PageBreadcrumbs class="h-7" :items="[{ label: 'Notebooks' }]" />
+		<div class="space-x-2.5">
+			<Button label="New Notebook" variant="solid" @click="new_notebook_dialog = true">
+				<template #prefix>
+					<PlusIcon class="w-4" />
+				</template>
+			</Button>
+		</div>
+	</header>
+	<ListView
+		:columns="[
+			{ label: 'Title', key: 'title' },
+			{ label: 'Created', key: 'created_from_now' },
+			{ label: 'Modified', key: 'modified_from_now' },
+		]"
+		:rows="notebooks.list"
+	>
+		<template #list-row="{ row: notebook }">
+			<ListRow
+				as="router-link"
+				:row="notebook"
+				:to="{
+					name: 'Notebook',
+					params: { notebook: notebook.name },
+				}"
+			>
+				<ListRowItem>
+					<FeatherIcon name="file-text" class="h-4 w-4 text-gray-600" />
+					<span class="ml-3">{{ notebook.title }}</span>
+				</ListRowItem>
+				<ListRowItem> {{ notebook.created_from_now }} </ListRowItem>
+				<ListRowItem> {{ notebook.modified_from_now }} </ListRowItem>
+			</ListRow>
+		</template>
+
+		<template #emptyState>
+			<div class="text-xl font-medium">No notebooks.</div>
+			<div class="mt-1 text-base text-gray-600">No notebooks to display.</div>
+			<Button
+				class="mt-4"
+				label="New Notebook"
+				variant="solid"
+				@click="new_notebook_dialog = true"
+			/>
+		</template>
+	</ListView>
 
 	<Dialog :options="{ title: 'New Notebook' }" v-model="new_notebook_dialog">
 		<template #body-content>

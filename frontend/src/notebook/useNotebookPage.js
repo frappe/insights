@@ -57,7 +57,7 @@ export default function useNotebookPage(page_name) {
 	}
 
 	state.addQuery = async (queryType, queryName) => {
-		const validTypes = ['query-builder', 'query-editor']
+		const validTypes = ['query-editor']
 		if (!validTypes.includes(queryType)) {
 			throw new Error(`Invalid query type: ${queryType}`)
 		}
@@ -77,8 +77,8 @@ export default function useNotebookPage(page_name) {
 }
 
 function appendLastParagraph(content) {
-	if (!content) return {}
 	if (typeof content == 'string') content = safeJSONParse(content)
+	if (!content.content?.length) return {}
 	const lastBlock = content.content?.at(-1)
 	if (lastBlock?.type != 'paragraph') {
 		content.content.push({

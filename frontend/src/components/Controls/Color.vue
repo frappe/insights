@@ -1,14 +1,12 @@
 <template>
 	<div>
-		<div class="mb-1 text-sm text-gray-600" v-if="label">
-			{{ label }}
-		</div>
+		<label v-if="label" class="mb-1.5 block text-xs text-gray-600">{{ label }}</label>
 		<Popover placement="bottom-start" class="w-full">
 			<template #target="{ togglePopover }">
 				<div
 					tabindex="0"
 					:class="inputClass"
-					class="form-input block w-full items-center rounded border-gray-400 bg-gray-100 placeholder-gray-500 focus:outline-none"
+					class="h-7 w-full rounded border border-gray-100 bg-gray-100 py-1.5 pl-2 pr-2 text-base text-gray-800 placeholder-gray-500 transition-colors hover:border-gray-200 hover:bg-gray-200 focus:border-gray-500 focus:bg-white focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400"
 					@click="togglePopover()"
 					readonly
 				>
@@ -34,6 +32,16 @@
 						<span class="text-gray-500" v-else>
 							{{ placeholder || label }}
 						</span>
+						<div
+							v-if="selectedColorLabel"
+							class="absolute inset-y-0 right-0 z-10 flex cursor-pointer items-center rounded p-1"
+							@click.prevent.stop="resetColor()"
+						>
+							<FeatherIcon
+								class="h-4 w-4 text-gray-500 hover:text-gray-800"
+								name="x"
+							></FeatherIcon>
+						</div>
 					</div>
 				</div>
 			</template>
@@ -75,7 +83,7 @@
 								type="text"
 								placeholder="Custom Hex"
 								:class="inputClass"
-								class="col-span-5 -mt-1 flex h-8 items-center rounded border-0 bg-gray-100 px-3 text-base placeholder-gray-500 focus:outline-none"
+								class="col-span-5 -mt-1 flex h-7 items-center rounded border-0 bg-gray-100 px-3 text-base placeholder-gray-500 focus:outline-none"
 								@change="(e) => setColorValue(e.target.value)"
 							/>
 						</div>
@@ -161,6 +169,9 @@ export default {
 				this.$emit('update:modelValue', value)
 			}
 		},
+		resetColor() {
+			this.$emit('update:modelValue', null)
+		},
 	},
 	computed: {
 		value: {
@@ -179,6 +190,7 @@ export default {
 			return this.options || Object.values(COLOR_MAP)
 		},
 		selectedColorLabel() {
+			if (!this.value || !this.modelValue) return null
 			return this.multiple
 				? this.modelValue.length > 1
 					? `${this.modelValue.length} colors`

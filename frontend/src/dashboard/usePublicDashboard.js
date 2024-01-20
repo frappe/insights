@@ -1,4 +1,4 @@
-import { safeJSONParse } from '@/utils'
+import { areDeeplyEqual, safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { createResource } from 'frappe-ui'
 import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
@@ -7,6 +7,7 @@ import { reactive } from 'vue'
 export default function usePublicDashboard(public_key) {
 	const resource = getPublicDashboard(public_key)
 	const state = reactive({
+		isPublic: true,
 		doc: {
 			doctype: 'Insights Dashboard',
 			name: undefined,
@@ -48,6 +49,7 @@ export default function usePublicDashboard(public_key) {
 					value: value.value,
 			  }
 			: undefined
+		if (areDeeplyEqual(filterState, state.filterStates[item_id])) return
 		saveLocal(getFilterStateKey(item_id), filterState).then(() => {
 			state.filterStates[item_id] = filterState
 			refreshLinkedCharts(item_id)
@@ -59,14 +61,14 @@ export default function usePublicDashboard(public_key) {
 			if (item.item_id === filter_id) {
 				const charts = Object.keys(item.options.links) || []
 				charts.forEach((chart) => {
-					updateChartFilters(chart)
+					refreshChartFilters(chart)
 				})
 				return true
 			}
 		})
 	}
 
-	async function updateChartFilters(chart_id) {
+	async function refreshChartFilters(chart_id) {
 		const promises = state.doc.items
 			.filter((item) => item.item_type === 'Filter')
 			.map(async (filter) => {
@@ -89,7 +91,7 @@ export default function usePublicDashboard(public_key) {
 
 	async function getChartFilters(chart_id) {
 		if (!state.filtersByChart[chart_id]) {
-			await updateChartFilters(chart_id)
+			await refreshChartFilters(chart_id)
 		}
 		return state.filtersByChart[chart_id]
 	}
@@ -154,7 +156,7 @@ export default function usePublicDashboard(public_key) {
 		getFilterState,
 		setFilterState,
 		refreshFilter,
-		updateChartFilters,
+		refreshChartFilters,
 		refresh,
 		onRefresh,
 		isChart,
@@ -163,7 +165,7 @@ export default function usePublicDashboard(public_key) {
 
 function getPublicDashboard(public_key) {
 	const resource = createResource({
-		url: 'insights.api.get_public_dashboard',
+		url: 'insights.api.public.get_public_dashboard',
 		params: { public_key },
 		transform(doc) {
 			doc.items = doc.items.map(transformItem)
@@ -171,7 +173,7 @@ function getPublicDashboard(public_key) {
 		},
 	})
 	resource.fetch_chart_data = createResource({
-		url: 'insights.api.get_public_dashboard_chart_data',
+		url: 'insights.api.public.get_public_dashboard_chart_data',
 	})
 	return resource
 }

@@ -1,10 +1,11 @@
 <script setup>
-import DashboardTitle from '@/dashboard/DashboardTitle.vue'
-import useDashboard from '@/dashboard/useDashboard'
+import ContentEditable from '@/components/ContentEditable.vue'
 import VueGridLayout from '@/dashboard/VueGridLayout.vue'
+import useDashboard from '@/dashboard/useDashboard'
 import BaseLayout from '@/layouts/BaseLayout.vue'
 import { updateDocumentTitle } from '@/utils'
 import widgets from '@/widgets/widgets'
+import { debounce } from 'frappe-ui'
 import { computed, provide, ref } from 'vue'
 import DashboardEmptyState from './DashboardEmptyState.vue'
 import DashboardItem from './DashboardItem.vue'
@@ -50,22 +51,27 @@ function calcInitialXY({ x, y }) {
 
 const pageMeta = computed(() => {
 	return {
-		title: props.name,
+		title: dashboard.doc.title || props.name,
 		subtitle: 'Dashboard',
 	}
 })
 updateDocumentTitle(pageMeta)
+
+const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 500)
 </script>
 
 <template>
 	<BaseLayout v-if="dashboard.doc.name">
 		<template #navbar>
 			<div class="flex flex-shrink-0 items-center space-x-4">
-				<DashboardTitle
-					:title="dashboard.doc.title"
+				<ContentEditable
+					class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+					:class="[dashboard.editing ? '' : 'cursor-default']"
+					:value="dashboard.doc.title"
 					:disabled="!dashboard.editing"
-					@update="dashboard.updateTitle"
-				/>
+					@change="dashboard.updateTitle($event)"
+					placeholder="Untitled Dashboard"
+				></ContentEditable>
 			</div>
 			<DashboardNavbarButtons />
 		</template>
@@ -74,7 +80,7 @@ updateDocumentTitle(pageMeta)
 			<div class="h-full w-full overflow-y-scroll p-2">
 				<div
 					ref="gridLayout"
-					class="relative flex h-fit min-h-screen w-full flex-1 flex-col"
+					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
 				>
 					<UseDropZone
 						v-if="dashboard.editing && draggingWidget"
@@ -143,21 +149,27 @@ updateDocumentTitle(pageMeta)
 						v-if="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
-						:columns="dashboard.currentItem.query?.resultColumns"
-						:key="
-							dashboard.currentItem.item_id &&
-							JSON.stringify(dashboard.currentItem.options)
-						"
+						:columns="dashboard.currentItem.query?.results.columns"
+						:key="dashboard.currentItem.item_id && dashboard.currentItem.item_type"
 					/>
 
-					<Button
-						iconLeft="trash"
-						variant="outline"
-						class="ml-auto text-red-500"
-						@click="dashboard.removeItem(dashboard.currentItem)"
-					>
-						Delete Widget
-					</Button>
+					<div class="flex space-x-2">
+						<Button
+							iconLeft="refresh-ccw"
+							variant="outline"
+							@click="dashboard.resetOptions(dashboard.currentItem)"
+						>
+							Reset Options
+						</Button>
+						<Button
+							iconLeft="trash"
+							variant="outline"
+							class="ml-auto text-red-500"
+							@click="dashboard.removeItem(dashboard.currentItem)"
+						>
+							Delete Widget
+						</Button>
+					</div>
 				</div>
 			</div>
 		</template>

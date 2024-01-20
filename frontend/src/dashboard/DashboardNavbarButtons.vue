@@ -24,7 +24,9 @@ whenever(cmdD, dashboard.discardChanges)
 			Cancel
 		</Button>
 		<Button v-if="!dashboard.editing" variant="outline" @click="dashboard.edit"> Edit </Button>
-		<Button v-else variant="solid" @click="dashboard.save"> Save </Button>
+		<Button v-else variant="solid" @click="dashboard.save" :loading="dashboard.loading">
+			Save
+		</Button>
 		<DashboardMenuButton />
 	</div>
 </template>

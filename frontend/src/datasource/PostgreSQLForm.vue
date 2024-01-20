@@ -1,7 +1,7 @@
 <script setup>
+import useDataSourceStore from '@/stores/dataSourceStore'
 import { computed, reactive, ref } from 'vue'
 import Form from '../pages/Form.vue'
-import useDataSources from './useDataSources'
 
 const props = defineProps({ submitLabel: String })
 const emit = defineEmits(['submit'])
@@ -22,9 +22,9 @@ const fields = computed(() => [
 		label: 'Port',
 		name: 'port',
 		type: 'number',
-		placeholder: '3306',
+		placeholder: '5432',
 		required: !database.connection_string,
-		defaultValue: 3306,
+		defaultValue: 5432,
 	},
 	{
 		label: 'Database Name',
@@ -50,7 +50,7 @@ const fields = computed(() => [
 	{ label: 'Use secure connection (SSL)?', name: 'useSSL', type: 'checkbox' },
 ])
 
-const sources = useDataSources()
+const sources = useDataSourceStore()
 const areRequiredFieldsFilled = computed(() => {
 	return Boolean(
 		fields.value.filter((field) => field.required).every((field) => database[field.name]) ||
@@ -86,15 +86,24 @@ const testing = ref(false)
 const testConnection = async () => {
 	database['type'] = 'PostgreSQL'
 	testing.value = true
-	connected.value = await sources.testConnection({ database })
-	testing.value = false
+	sources
+		.testConnection({ database })
+		.then((result) => {
+			connected.value = result
+		})
+		.catch((error) => {
+			connected.value = false
+		})
+		.finally(() => {
+			testing.value = false
+		})
 }
 
 const creating = ref(false)
 const createNewDatabase = async () => {
 	database['type'] = 'PostgreSQL'
 	creating.value = true
-	await sources.createDatabase({ database })
+	await sources.create({ database })
 	creating.value = false
 	emit('submit')
 }

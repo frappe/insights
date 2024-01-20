@@ -87,7 +87,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-29 22:13:21.336557",
+ "modified": "2023-10-09 20:00:47.546059",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table",
@@ -123,6 +123,5 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "label",
- "track_changes": 1
+ "title_field": "label"
 }

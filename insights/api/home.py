@@ -3,6 +3,7 @@
 
 
 import frappe
+from pypika.functions import Max
 
 
 @frappe.whitelist()
@@ -13,40 +14,32 @@ def create_last_viewed_log(record_type, record_name):
         "NotebookPage": "Insights Notebook Page",
     }
     try:
-        comment = frappe.get_doc(
-            {
-                "doctype": "Comment",
-                "comment_type": "Comment",
-                "comment_email": frappe.session.user,
-                "reference_doctype": recordToDoctype.get(record_type),
-                "reference_name": record_name,
-                "content": "Last Viewed",
-            }
-        )
-        comment.insert(ignore_permissions=True)
+        doc = frappe.get_doc(recordToDoctype[record_type], record_name)
+        doc.add_viewed(force=True)
     except BaseException:
         pass
 
 
 @frappe.whitelist()
 def get_last_viewed_records():
-    Comment = frappe.qb.DocType("Comment")
+    ViewLog = frappe.qb.DocType("View Log")
     TRACKED_DOCTYPES = ["Insights Query", "Insights Dashboard", "Insights Notebook Page"]
     records = (
-        frappe.qb.from_(Comment)
-        .select(Comment.reference_doctype, Comment.reference_name, Comment.creation)
-        .where(
-            (Comment.comment_email == frappe.session.user)
-            & Comment.reference_doctype.isin(TRACKED_DOCTYPES)
-            & (Comment.comment_type == "Comment")
-            & (Comment.content == "Last Viewed")
+        frappe.qb.from_(ViewLog)
+        .select(
+            ViewLog.reference_doctype,
+            ViewLog.reference_name,
+            Max(ViewLog.modified).as_("creation"),
         )
-        .orderby(Comment.creation, order=frappe.qb.desc)
-        .groupby(Comment.reference_doctype, Comment.reference_name)
-        .limit(10)
+        .where(
+            (ViewLog.viewed_by == frappe.session.user)
+            & ViewLog.reference_doctype.isin(TRACKED_DOCTYPES)
+        )
+        .groupby(ViewLog.reference_doctype, ViewLog.reference_name)
+        .orderby(Max(ViewLog.modified).as_("creation"), order=frappe.qb.desc)
+        .limit(20)
         .run(as_dict=True)
     )
-
     fetch_titles(records)
     fetch_notebook_names(records)
 

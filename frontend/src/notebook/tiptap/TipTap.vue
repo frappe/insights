@@ -8,15 +8,11 @@
 			shouldShow: (opts) => {
 				// Don't show when the selection is empty
 				if (opts.from === opts.to) return false
-				return (
-					!opts.editor.isActive('query-builder') &&
-					!opts.editor.isActive('query-editor') &&
-					!opts.editor.isActive('chart')
-				)
+				return !opts.editor.isActive('query-editor') && !opts.editor.isActive('chart')
 			},
 		}"
 		:placeholder="placeholderByNode"
-		:extensions="[SlashCommand.configure({ suggestion }), QueryBuilder, QueryEditor, Chart]"
+		:extensions="[SlashCommand.configure({ suggestion }), QueryEditor, Chart]"
 	></TextEditor>
 </template>
 
@@ -26,7 +22,6 @@ import { TextEditor } from 'frappe-ui'
 import { Code, RemoveFormatting, Strikethrough } from 'lucide-vue-next'
 import { onMounted, ref, watch } from 'vue'
 import Chart from './extensions/Chart'
-import QueryBuilder from './extensions/QueryBuilder'
 import QueryEditor from './extensions/QueryEditor'
 import SlashCommand from './slash-command/commands'
 import suggestion from './slash-command/suggestion'

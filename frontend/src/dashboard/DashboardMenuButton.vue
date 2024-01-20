@@ -1,4 +1,5 @@
 <script setup>
+import { downloadImage } from '@/utils'
 import { inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -10,6 +11,11 @@ async function handleDelete() {
 	showDeleteDialog.value = false
 	router.push({ name: 'Dashboards' })
 }
+
+async function downloadDashboardImage() {
+	const $el = document.querySelector('.dashboard')
+	await downloadImage($el, `${dashboard.doc.title}.png`)
+}
 </script>
 
 <template>
@@ -19,9 +25,14 @@ async function handleDelete() {
 		:button="{ icon: 'more-vertical', variant: 'outline' }"
 		:options="[
 			{
+				label: 'Export as PNG',
+				variant: 'outline',
+				icon: 'download',
+				onClick: () => downloadDashboardImage(),
+			},
+			{
 				label: 'Delete',
 				variant: 'outline',
-				theme: 'red',
 				icon: 'trash-2',
 				onClick: () => (showDeleteDialog = true),
 			},

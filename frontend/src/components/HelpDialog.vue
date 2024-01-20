@@ -41,12 +41,15 @@ function close() {
 	isCritical.value = false
 }
 const $notify = inject('$notify')
+const sending = ref(false)
 async function submit() {
+	sending.value = true
 	await call('insights.api.contact_team', {
 		message_type: tabs[selectedTabIndex.value].label,
 		message_content: content.value,
 		is_critical: isCritical.value,
 	})
+	sending.value = false
 	close()
 	$notify({
 		title: 'Message Sent',
@@ -100,6 +103,7 @@ async function submit() {
 					/>
 					<Button
 						variant="solid"
+						:loading="sending"
 						:label="selectedTabIndex === 2 ? 'Report Bug' : 'Send'"
 						@click="submit"
 					/>

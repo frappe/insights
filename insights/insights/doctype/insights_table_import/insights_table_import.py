@@ -9,6 +9,8 @@ import frappe
 from frappe import task
 from frappe.model.document import Document
 
+from insights.utils import detect_encoding
+
 
 class InsightsTableImport(Document):
     def __init__(self, *args, **kwargs):
@@ -24,10 +26,7 @@ class InsightsTableImport(Document):
             frappe.throw("Data source does not allow imports")
         if self.source and not self.source.endswith(".csv"):
             frappe.throw("Please attach a CSV file")
-        if (
-            self._data_source.db.table_exists(self.table_name)
-            and self.if_exists == "Fail"
-        ):
+        if self._data_source._db.table_exists(self.table_name) and self.if_exists == "Fail":
             frappe.throw("Table already exists. Enter a new different table name")
 
     def before_save(self):
@@ -42,12 +41,13 @@ class InsightsTableImport(Document):
             self.set_columns_and_no_of_rows()
 
     def set_columns_and_no_of_rows(self):
-        column_names = []
-        with open(self._filepath, "r") as f:
+        encoding = detect_encoding(self._filepath)
+        with open(self._filepath, "r", encoding=encoding, errors="replace") as f:
             # read only the first line to get the column names
-            reader = csv.reader(f)
-            column_names = next(reader)
-            no_of_rows = sum(1 for _ in reader)
+            csv_reader = csv.DictReader(f)
+            column_names = csv_reader.fieldnames
+            rows = list(csv_reader)
+            no_of_rows = len(rows)
 
         self.db_set("rows", no_of_rows)
         for column in column_names:
@@ -77,15 +77,12 @@ class InsightsTableImport(Document):
         table_import = frappe.get_doc("Insights Table Import", name)
         table_import._filepath = filepath or table_import._filepath
         table_import.db_set("status", "Started")
+
         try:
-            table_import._data_source.db.import_table(table_import)
+            table_import._data_source._db.import_table(table_import)
             table_import.db_set("status", "Success")
         except BaseException as e:
             print(f"Error importing table {table_import.table_name}", e)
-            frappe.log_error(
-                title=f"Insights: Failed to import table - {table_import.table_name}"
-            )
+            frappe.log_error(title=f"Insights: Failed to import table - {table_import.table_name}")
             table_import.db_set("status", "Failed")
-            table_import.db_set(
-                "error", "Failed to import table. Check error log for details"
-            )
+            table_import.db_set("error", "Failed to import table. Check error log for details")

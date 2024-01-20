@@ -2,11 +2,14 @@
 # For license information, please see license.txt
 
 
-__version__ = "1.0.0"
+__version__ = "1.1.3"
 
 
-def notify(**kwargs):
+def notify(*args, **kwargs):
     import frappe
+
+    if len(args) == 1:
+        kwargs["message"] = args[0]
 
     frappe.publish_realtime(
         event="insights_notification",

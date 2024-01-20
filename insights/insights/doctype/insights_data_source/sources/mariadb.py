@@ -11,7 +11,11 @@ from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
-from .base_database import BaseDatabase
+from .base_database import (
+    BaseDatabase,
+    DatabaseCredentialsError,
+    DatabaseParallelConnectionError,
+)
 from .utils import create_insights_table, get_sqlalchemy_engine
 
 MARIADB_TO_GENERIC_TYPES = {
@@ -34,39 +38,15 @@ class MariaDBTableFactory:
         self.db_conn: Connection
         self.data_source = data_source
 
-    def sync_tables(self, connection, tables, force=False):
+    def sync_tables(self, connection, tablenames, force=False):
         self.db_conn = connection
-        for table in self.get_tables(table_names=tables):
-            # when force is true, it will overwrite the existing columns & links
+        self.columns_by_tables = self.get_columns_by_tables(tablenames)
+        for tablename, columns in self.columns_by_tables.items():
+            table = self.get_table(tablename)
+            table.columns = columns
+            # infer table links from foreign key constraints
+            # table.table_links = self.get_table_links(table.label)
             create_insights_table(table, force=force)
-
-    def get_tables(self, table_names=None):
-        tables = []
-        for table in self.get_db_tables(table_names):
-            table.columns = self.get_table_columns(table.table)
-            # TODO: process foreign keys as links
-            tables.append(table)
-        return tables
-
-    def get_db_tables(self, table_names=None):
-        t = Table(
-            "tables",
-            Column("table_name"),
-            Column("table_schema"),
-            Column("table_type"),
-            schema="information_schema",
-        )
-
-        query = (
-            t.select()
-            .where(t.c.table_schema == text("DATABASE()"))
-            .where(t.c.table_type == "BASE TABLE")
-        )
-        if table_names:
-            query = query.where(t.c.table_name.in_(table_names))
-
-        tables = self.db_conn.execute(query).fetchall()
-        return [self.get_table(table[0]) for table in tables if not table[0].startswith("__")]
 
     def get_table(self, table_name):
         return frappe._dict(
@@ -77,7 +57,7 @@ class MariaDBTableFactory:
             }
         )
 
-    def get_all_columns(self):
+    def get_columns_by_tables(self, tablenames=None):
         t = Table(
             "columns",
             Column("table_name"),
@@ -88,16 +68,15 @@ class MariaDBTableFactory:
         )
 
         query = t.select().where(t.c.table_schema == text("DATABASE()"))
-        columns = self.db_conn.execute(query).fetchall()
-        columns_by_table = {}
-        for col in columns:
-            columns_by_table.setdefault(col[0], []).append(self.get_column(col[1], col[2]))
-        return columns_by_table
+        if tablenames:
+            query = query.where(t.c.table_name.in_(tablenames))
 
-    def get_table_columns(self, table):
-        if not hasattr(self, "_all_columns") or not self._all_columns:
-            self._all_columns = self.get_all_columns()
-        return self._all_columns.get(table, [])
+        columns = self.db_conn.execute(query).fetchall()
+
+        schema = {}
+        for [table_name, column_name, data_type, _] in columns:
+            schema.setdefault(table_name, []).append(self.get_column(column_name, data_type))
+        return schema
 
     def get_column(self, column_name, column_type):
         return frappe._dict(
@@ -125,8 +104,15 @@ class MariaDB(BaseDatabase):
             charset="utf8mb4",
             use_unicode=True,
         )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
+
+    def handle_db_exception(self, e):
+        if "Access denied" in str(e):
+            raise DatabaseCredentialsError()
+        if "Packet sequence number wrong" in str(e):
+            raise DatabaseParallelConnectionError()
+        super().handle_db_exception(e)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:

@@ -95,7 +95,8 @@ function isLogicalOperator(char) {
 
 export default function tokenize(expression, offset = 0) {
 	// remove tabs, form-feed, carriage returns, and newlines
-	expression = expression.replace(/\t\f\r\n/g, '')
+	expression = expression?.replace(/\t\f\r\n/g, '')
+	if (!expression) return []
 
 	let cursor = 0
 	let tokens = []

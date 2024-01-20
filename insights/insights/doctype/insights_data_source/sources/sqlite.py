@@ -1,17 +1,18 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-
 import frappe
 import pandas as pd
 from sqlalchemy import column as Column
 from sqlalchemy import create_engine
 from sqlalchemy import table as Table
+from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (
     SQLiteQueryBuilder,
 )
+from insights.utils import detect_encoding
 
 from ...insights_table_import.insights_table_import import InsightsTableImport
 from .base_database import BaseDatabase
@@ -59,7 +60,7 @@ class SQLiteTableFactory:
         )
 
     def get_table_columns(self, table_name):
-        columns = self.db_conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+        columns = self.db_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
         return [
             frappe._dict(
                 {
@@ -88,15 +89,15 @@ class SQLiteDB(BaseDatabase):
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)
-        self.query_builder = SQLiteQueryBuilder()
+        self.query_builder = SQLiteQueryBuilder(self.engine)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(f"""select * from `{table}` limit {limit}""", cached=True)
-        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[0][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""")
+        length = self.execute_query(f"""select count(*) from `{table}`""")[0][0]
         return {
             "data": data or [],
             "length": length or 0,
@@ -121,9 +122,12 @@ class SQLiteDB(BaseDatabase):
         )
 
     def import_table(self, import_doc: InsightsTableImport):
-        df = pd.read_csv(import_doc._filepath)
+        encoding = detect_encoding(import_doc._filepath)
+        df = pd.read_csv(import_doc._filepath, encoding=encoding)
+
         df.columns = [frappe.scrub(c) for c in df.columns]
         columns_to_import = [c.column for c in import_doc.columns]
+
         df = df[columns_to_import]
         table = import_doc.table_name
         df.to_sql(
