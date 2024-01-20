@@ -42,7 +42,7 @@ const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 
 	const tokens = parse(rawExpression.value).tokens
 	const token = tokens
-		.filter((t) => t.type == 'FUNCTION' && t.start < _cursorPos && t.end > _cursorPos)
+		.filter((t) => t.type == 'FUNCTION' && t.start < _cursorPos && t.end >= _cursorPos)
 		.at(-1)
 
 	if (token) {
@@ -55,8 +55,10 @@ const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 
 function onSuggestionSelect(item) {
 	const raw = rawExpression.value || ''
-	const start = suggestionContext.from
-	const end = suggestionContext.to
+	const start = isNaN(suggestionContext.from)
+		? codeEditor.value.cursorPos
+		: suggestionContext.from
+	const end = isNaN(suggestionContext.to) ? codeEditor.value.cursorPos : suggestionContext.to
 
 	if (item.suggestionType === 'function') {
 		const textBeforeToken = raw.slice(0, start)
