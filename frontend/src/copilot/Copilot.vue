@@ -1,7 +1,7 @@
 <script setup>
 import Sparkles from '@/components/Icons/Sparkles.vue'
 import useCopilotChat from '@/copilot/useCopilotChat'
-import auth from '@/utils/auth'
+import sessionStore from '@/stores/sessionStore'
 import { TextEditor } from 'frappe-ui'
 import { markdownToHTML } from 'frappe-ui/src/utils/markdown'
 import { inject, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
@@ -12,6 +12,7 @@ const chat = useCopilotChat()
 props.chat_id ? await chat.load(props.chat_id) : await chat.createNewChat()
 
 const router = useRouter()
+const session = sessionStore()
 if (!props.chat_id) {
 	router.replace({
 		params: { chat_id: chat.chat_id },
@@ -38,7 +39,6 @@ onMounted(() => {
 
 const streamOutput = ref('...')
 const $socket = inject('$socket')
-const $auth = inject('$auth')
 $socket.on('llm_stream_output', (data) => {
 	if (!data) return
 	if (streamOutput.value == '...') streamOutput.value = ''
@@ -97,8 +97,8 @@ onBeforeUnmount(() => {
 								</div>
 								<div class="flex-shrink-0" v-else-if="message.role === 'user'">
 									<Avatar
-										:label="auth.user.full_name"
-										:imageURL="auth.user.user_image"
+										:label="session.user.full_name"
+										:imageURL="session.user.user_image"
 										size="md"
 									/>
 								</div>
