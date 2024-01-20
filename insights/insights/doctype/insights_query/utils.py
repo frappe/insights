@@ -71,10 +71,11 @@ def update_sql(query):
     data_source = InsightsDataSource.get_doc(query.data_source)
     sql = data_source.build_query(query)
     sql = format_query(sql)
-    if not sql or query.sql == sql:
+    if query.sql == sql:
         return
     query.sql = sql
-    query.status = Status.PENDING.value
+    query.update_query_results([])
+    query.status = Status.PENDING.value if sql else Status.SUCCESS.value
 
 
 def format_query(query):
