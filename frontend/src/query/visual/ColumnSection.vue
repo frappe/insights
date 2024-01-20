@@ -18,15 +18,15 @@ const activeColumnIdx = ref(null)
 const showExpressionEditor = computed(() => {
 	if (activeColumnIdx.value === null) return false
 	const activeColumn = columns.value[activeColumnIdx.value]
-	return (
-		activeColumn.expression.hasOwnProperty('raw') ||
-		activeColumn.expression.hasOwnProperty('ast')
-	)
+	return isExpressionColumn(activeColumn)
 })
 const showSimpleColumnEditor = computed(() => {
 	if (activeColumnIdx.value === null) return false
 	return !showExpressionEditor.value
 })
+function isExpressionColumn(column) {
+	return column.expression.hasOwnProperty('raw') || column.expression.hasOwnProperty('ast')
+}
 
 function onColumnSelect(column) {
 	if (!column) return
@@ -102,9 +102,16 @@ function onColumnSort(e) {
 			:showEmptyState="true"
 		>
 			<template #item="{ item: column, index: idx }">
+				<ColumnListItem
+					v-if="isExpressionColumn(column)"
+					:column="column"
+					:isActive="activeColumnIdx === idx"
+					@edit-column="activeColumnIdx = idx"
+					@remove-column="assistedQuery.removeColumnAt(idx)"
+				/>
 				<Popover
+					v-else
 					:show="showSimpleColumnEditor && activeColumnIdx === idx"
-					@close="activeColumnIdx = null"
 					placement="right-start"
 				>
 					<template #target="{ togglePopover }">
@@ -135,8 +142,6 @@ function onColumnSort(e) {
 
 	<Dialog
 		:modelValue="showExpressionEditor"
-		:dismissable="false"
-		@close="activeColumnIdx = null"
 		:options="{
 			title: 'Column Expression',
 			size: '3xl',
