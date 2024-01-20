@@ -51,7 +51,7 @@ function calcInitialXY({ x, y }) {
 
 const pageMeta = computed(() => {
 	return {
-		title: props.name,
+		title: dashboard.doc.title || props.name,
 		subtitle: 'Dashboard',
 	}
 })

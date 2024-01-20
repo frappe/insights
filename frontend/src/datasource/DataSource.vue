@@ -83,7 +83,7 @@ import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import { ListRow, ListRowItem } from 'frappe-ui'
-import { computed, inject, provide, ref } from 'vue'
+import { computed, inject, provide, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import useDataSource from './useDataSource'
 
@@ -133,4 +133,11 @@ function syncTables() {
 		.syncTables()
 		.catch((err) => $notify({ title: 'Error Syncing Tables', variant: 'error' }))
 }
+
+watchEffect(() => {
+	if (dataSource.doc?.name) {
+		const title = dataSource.doc.title || dataSource.doc.name
+		document.title = `${title} - Frappe Insights`
+	}
+})
 </script>

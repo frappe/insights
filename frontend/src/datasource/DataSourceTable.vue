@@ -133,7 +133,7 @@ import Grid from '@/components/Grid.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { Badge, Dropdown, LoadingIndicator, createResource } from 'frappe-ui'
-import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { computed, inject, nextTick, reactive, ref, watch, watchEffect } from 'vue'
 import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 
 const props = defineProps({
@@ -267,6 +267,13 @@ watch(addLinkDialog, async (val) => {
 			$autocomplete.value.input.$el.blur()
 			$autocomplete.value.input.$el.focus()
 		}, 500)
+	}
+})
+
+watchEffect(() => {
+	if (dataSourceTable.doc?.label) {
+		const title = dataSourceTable.doc.title || dataSourceTable.doc.label
+		document.title = `${title} - Frappe Insights`
 	}
 })
 </script>
