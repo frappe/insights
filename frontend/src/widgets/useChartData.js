@@ -82,11 +82,28 @@ export function guessChart(dataset, chart_type) {
 	const autoGuessLineChart = chart_type === 'Auto' && hasAtLeastOneDateAndNumberColumn
 	const shouldGuessLineChart = chart_type === 'Line' && hasAtLeastOneDateAndNumberColumn
 	if (autoGuessLineChart || shouldGuessLineChart) {
+		let splitYAxis = false
+		if (numberColumns.length === 2) {
+			try {
+				const numberColumnIndexes = numberColumns.map((col) =>
+					columns.findIndex((c) => c === col)
+				)
+				const maxValue1 = Math.max(...rows.map((row) => row[numberColumnIndexes[0]]))
+				const maxValue2 = Math.max(...rows.map((row) => row[numberColumnIndexes[1]]))
+				// if maxValue1 is 10 times bigger than maxValue2, then split the y-axis
+				const biggerMaxValue = Math.max(maxValue1, maxValue2)
+				const smallerMaxValue = Math.min(maxValue1, maxValue2)
+				splitYAxis = Boolean(biggerMaxValue / smallerMaxValue > 10)
+			} catch (e) {
+				console.log(e)
+			}
+		}
 		return {
 			type: 'Line',
 			options: {
 				xAxis: [{ column: dateColumns[0].label }],
 				yAxis: numberColumns.map((col) => ({ column: col.label })),
+				splitYAxis: splitYAxis,
 			},
 		}
 	}
