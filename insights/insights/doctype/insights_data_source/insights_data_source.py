@@ -178,7 +178,16 @@ class InsightsDataSource(Document):
 
     @task(queue="short")
     def sync_tables(self, *args, **kwargs):
-        return self._db.sync_tables(*args, **kwargs)
+        try:
+            notify(
+                title="Syncing Data Source",
+                message="This may take a while. Please wait...",
+                type="info",
+            )
+            return self._db.sync_tables(*args, **kwargs)
+        except Exception as e:
+            notify(title="Error", message=str(e), type="error")
+            raise
 
     @frappe.whitelist()
     def enqueue_sync_tables(self):
