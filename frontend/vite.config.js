@@ -3,7 +3,6 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import frappeui from 'frappe-ui/vite'
 import path from 'path'
 import { defineConfig } from 'vite'
-import { webserver_port } from '../../../sites/common_site_config.json'
 
 export default defineConfig({
 	plugins: [frappeui(), vue(), vueJsx()],
