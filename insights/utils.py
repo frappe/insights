@@ -74,6 +74,10 @@ class DoctypeBase(BaseDocument):
     def get_value(cls, *args, **kwargs):
         return frappe.db.get_value(cls.doctype, *args, **kwargs)
 
+    @classmethod
+    def delete_doc(cls, name):
+        return frappe.delete_doc(cls.doctype, name)
+
 
 class InsightsChart(DoctypeBase):
     doctype = "Insights Chart"

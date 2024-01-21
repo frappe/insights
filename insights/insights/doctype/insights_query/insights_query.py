@@ -66,6 +66,7 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def on_trash(self):
         self.delete_default_chart()
+        self.delete_query_results()
         self.delete_insights_table()
 
     @property
@@ -165,6 +166,9 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def delete_default_chart(self):
         frappe.db.delete("Insights Chart", {"query": self.name})
+
+    def delete_query_results(self):
+        InsightsQueryResult.delete_doc(self.result_name)
 
     def retrieve_results(self, fetch_if_not_cached=False):
         if hasattr(self, "_results"):
