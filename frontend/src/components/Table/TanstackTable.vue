@@ -84,6 +84,7 @@ const pageEnd = computed(() => {
 	return end > props.data.length ? props.data.length : end
 })
 const totalRows = computed(() => props.data.length)
+const showPagination = computed(() => totalRows.value > pageLength.value)
 </script>
 
 <template>
@@ -195,7 +196,7 @@ const totalRows = computed(() => props.data.length)
 			</table>
 		</div>
 
-		<div class="flex flex-shrink-0 items-center justify-end gap-3 p-1">
+		<div v-if="showPagination" class="flex flex-shrink-0 items-center justify-end gap-3 p-1">
 			<p class="tnum text-sm text-gray-600">
 				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 			</p>
