@@ -61,6 +61,7 @@ export default function useQueryChart(chartName, queryTitle, queryResults) {
 		return {
 			chart_type: recommendedChart?.type,
 			options: {
+				title: recommendedChart?.title || queryTitle,
 				...recommendedChart?.options,
 			},
 		}
