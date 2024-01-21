@@ -71,6 +71,9 @@ def process_raw_expression(raw_expression):
     # replace `in()` with `in_()`
     regex = r"in\s*\("
     raw_expression = re.sub(regex, "in_(", raw_expression)
+    # the above regex also replaces `not_in()` with `not_in_()` which is not required
+    # so we replace `not_in_()` with `not_in()` again
+    raw_expression = raw_expression.replace("not_in_(", "not_in(")
 
     raw_expression = raw_expression.replace("&&", " and ")
     raw_expression = raw_expression.replace("||", " or ")
