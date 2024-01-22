@@ -43,12 +43,24 @@ def replace_and_or_expressions(source_code):
     return ast.unparse(modified_tree)
 
 
+def replace_equals_with_double_equals(code):
+    code = code.replace("=", "==")
+    code = code.replace("===", "==")
+    code = code.replace("!==", "!=")
+    code = code.replace(">==", ">=")
+    code = code.replace("<==", "<=")
+    return code
+
+
 def replace_column_names(raw_expression):
     # all the columns are referred as `table_name.column_name`
     # we need to replace them with column(table_name, column_name)
     # so that we can use them in frappe.safe_eval
     # eg. `tabSales Order.name` -> column("tabSales Order", "name")
-    match_pattern = r"`(.*?)\.(.*?)`"
+    # we have to make sure this doesn't replaces `tabSales Order`.`name` with `column("tabSales Order", "name")`
+    # match only `xxx.xxx` and not `xxx`.`xxx`
+    # where x can be any character except `
+    match_pattern = r"`([^\`]+)\.([^\`]+)`"
     matches = re.findall(match_pattern, raw_expression)
     for match in matches:
         raw_expression = raw_expression.replace(
@@ -58,14 +70,11 @@ def replace_column_names(raw_expression):
 
 
 def process_raw_expression(raw_expression):
-    # to replace `=` with `==`
-    # we need to make sure that `!=` is not replaced with `!==`
-    # so we replace `!=` with ` <> ` temporarily
-    raw_expression = raw_expression.replace("!=", " <> ")
-    raw_expression = raw_expression.replace("=", " == ")
-    raw_expression = raw_expression.replace("<>", " != ")
+    # replace `=` with `==` without affecting other operators
+    raw_expression = replace_equals_with_double_equals(raw_expression)
 
     # replace column names with column function
+    # eg. `tabSales Order.name` -> column("tabSales Order", "name")
     raw_expression = replace_column_names(raw_expression)
 
     # replace `in()` with `in_()`

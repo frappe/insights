@@ -46,6 +46,7 @@ export default function useQueryChart(chartName, queryTitle, queryResults) {
 	}
 
 	function _save(chartDoc) {
+		chartDoc.options.query = chart.doc.query
 		return run(() =>
 			resource.setValue.submit({
 				title: chartDoc.options.title || queryTitle,
@@ -57,11 +58,13 @@ export default function useQueryChart(chartName, queryTitle, queryResults) {
 
 	function getGuessedChart(chart_type) {
 		if (!queryResults.formattedResults.length) return
+		chart_type = chart_type || chart.doc.chart_type
 		const recommendedChart = guessChart(queryResults.formattedResults, chart_type)
 		return {
 			chart_type: recommendedChart?.type,
 			options: {
 				...recommendedChart?.options,
+				title: recommendedChart?.options?.title || queryTitle,
 			},
 		}
 	}
@@ -80,6 +83,13 @@ export default function useQueryChart(chartName, queryTitle, queryResults) {
 	async function addToDashboard(dashboardName) {
 		if (!dashboardName || !resource.doc.name || resource.addingToDashboard) return
 		resource.addingToDashboard = true
+		if (chart.doc.chart_type == 'Auto') {
+			const guessedChart = getGuessedChart()
+			await _save({
+				chart_type: guessedChart.chart_type,
+				options: guessedChart.options,
+			})
+		}
 		await call('insights.api.dashboards.add_chart_to_dashboard', {
 			dashboard: dashboardName,
 			chart: resource.doc.name,

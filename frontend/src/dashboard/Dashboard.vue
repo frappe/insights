@@ -150,7 +150,11 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
 						:columns="dashboard.currentItem.query?.results.columns"
-						:key="dashboard.currentItem.item_id && dashboard.currentItem.item_type"
+						:key="
+							dashboard.currentItem.item_id &&
+							dashboard.currentItem.item_type &&
+							dashboard.currentItem.query?.doc?.name
+						"
 					/>
 
 					<div class="flex space-x-2">

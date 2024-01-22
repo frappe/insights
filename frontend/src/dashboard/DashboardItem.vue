@@ -56,6 +56,7 @@ function setGuessedChart() {
 	props.item.options = {
 		...props.item.options,
 		...guessedChart.options,
+		title: props.item.options.title,
 	}
 }
 

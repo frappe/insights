@@ -20,14 +20,6 @@ const dashboardOptions = computed(() => {
 
 const $notify = inject('$notify')
 function onAddToDashboard() {
-	if (query.chart.doc.chart_type == 'Auto') {
-		$notify({
-			variant: 'warning',
-			title: 'Choose a chart type',
-			message: "Chart type cannot be 'Auto' to add to dashboard",
-		})
-		return
-	}
 	showDashboardDialog.value = true
 }
 const addChartToDashboard = async () => {

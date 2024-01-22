@@ -137,7 +137,7 @@ def get_columns_from_uploaded_file(filename):
     columns = df.columns.tolist()
     columns_with_types = []
     for column in columns:
-        column_type = infer_type_from_list(df[column].tolist())
+        column_type = infer_type_from_list(df[column].dropna().head(1000).tolist())
         columns_with_types.append({"label": column, "type": column_type})
     return columns_with_types
 

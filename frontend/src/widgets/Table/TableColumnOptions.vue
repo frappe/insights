@@ -9,9 +9,9 @@ const props = defineProps({
 })
 
 if (!props.modelValue.column_type) {
-	props.modelValue.column_type = FIELDTYPES.NUMBER.includes(props.column.type)
+	props.modelValue.column_type = FIELDTYPES.NUMBER.includes(props.column?.type)
 		? 'Number'
-		: FIELDTYPES.DATE.includes(props.column.type)
+		: FIELDTYPES.DATE.includes(props.column?.type)
 		? 'Date'
 		: 'Text'
 }
@@ -24,13 +24,13 @@ const options = computed({
 
 const columnTypeOptions = computed(() => {
 	if (!props.column?.type) return []
-	if (FIELDTYPES.NUMBER.includes(props.column.type)) {
+	if (FIELDTYPES.NUMBER.includes(props.column?.type)) {
 		return ['Number', 'Text', 'Link']
 	}
-	if (FIELDTYPES.TEXT.includes(props.column.type)) {
+	if (FIELDTYPES.TEXT.includes(props.column?.type)) {
 		return ['Text', 'Link']
 	}
-	if (FIELDTYPES.DATE.includes(props.column.type)) {
+	if (FIELDTYPES.DATE.includes(props.column?.type)) {
 		return ['Text', 'Date']
 	}
 	return []

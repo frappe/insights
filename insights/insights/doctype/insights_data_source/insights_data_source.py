@@ -343,18 +343,14 @@ def get_data_source_schema(data_source):
 
 def _sync_data_source(data_source):
     notify(
-        **{
-            "title": "Info",
-            "message": "Syncing Data Source",
-            "type": "info",
-        }
+        type="info",
+        title="Syncing Data Source",
+        message="This may take a while. Please wait...",
     )
     source = frappe.get_doc("Insights Data Source", data_source)
     source.sync_tables()
     notify(
-        **{
-            "title": "Success",
-            "message": "Data Source Synced",
-            "type": "success",
-        }
+        type="success",
+        title="Syncing Data Source",
+        message="Syncing completed.",
     )
