@@ -57,7 +57,10 @@ def replace_column_names(raw_expression):
     # we need to replace them with column(table_name, column_name)
     # so that we can use them in frappe.safe_eval
     # eg. `tabSales Order.name` -> column("tabSales Order", "name")
-    match_pattern = r"`(.*?)\.(.*?)`"
+    # we have to make sure this doesn't replaces `tabSales Order`.`name` with `column("tabSales Order", "name")`
+    # match only `xxx.xxx` and not `xxx`.`xxx`
+    # where x can be any character except `
+    match_pattern = r"`([^\`]+)\.([^\`]+)`"
     matches = re.findall(match_pattern, raw_expression)
     for match in matches:
         raw_expression = raw_expression.replace(
