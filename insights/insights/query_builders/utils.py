@@ -43,6 +43,26 @@ def replace_and_or_expressions(source_code):
     return ast.unparse(modified_tree)
 
 
+class ReplaceEquals(ast.NodeTransformer):
+    """
+    Replace `=` with `==` in the given source code.
+    """
+
+    def visit_Assign(self, node):
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                new_node = ast.Compare(left=target, ops=[ast.Eq()], comparators=[node.value])
+                return ast.Expr(value=new_node)
+        return node
+
+
+def replace_equals_with_double_equals(code):
+    tree = ast.parse(code, mode="exec")
+    tree = ReplaceEquals().visit(tree)
+    modified_code = ast.unparse(tree)
+    return modified_code
+
+
 def replace_column_names(raw_expression):
     # all the columns are referred as `table_name.column_name`
     # we need to replace them with column(table_name, column_name)
@@ -58,14 +78,11 @@ def replace_column_names(raw_expression):
 
 
 def process_raw_expression(raw_expression):
-    # to replace `=` with `==`
-    # we need to make sure that `!=` is not replaced with `!==`
-    # so we replace `!=` with ` <> ` temporarily
-    raw_expression = raw_expression.replace("!=", " <> ")
-    raw_expression = raw_expression.replace("=", " == ")
-    raw_expression = raw_expression.replace("<>", " != ")
+    # replace `=` with `==`
+    raw_expression = replace_equals_with_double_equals(raw_expression)
 
     # replace column names with column function
+    # eg. `tabSales Order.name` -> column("tabSales Order", "name")
     raw_expression = replace_column_names(raw_expression)
 
     # replace `in()` with `in_()`
