@@ -78,9 +78,6 @@ def replace_column_names(raw_expression):
 
 
 def process_raw_expression(raw_expression):
-    # replace `=` with `==`
-    raw_expression = replace_equals_with_double_equals(raw_expression)
-
     # replace column names with column function
     # eg. `tabSales Order.name` -> column("tabSales Order", "name")
     raw_expression = replace_column_names(raw_expression)
@@ -95,5 +92,7 @@ def process_raw_expression(raw_expression):
     raw_expression = raw_expression.replace("&&", " and ")
     raw_expression = raw_expression.replace("||", " or ")
     raw_expression = replace_and_or_expressions(raw_expression)
+
+    raw_expression = replace_equals_with_double_equals(raw_expression)
 
     return raw_expression
