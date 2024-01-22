@@ -43,24 +43,13 @@ def replace_and_or_expressions(source_code):
     return ast.unparse(modified_tree)
 
 
-class ReplaceEquals(ast.NodeTransformer):
-    """
-    Replace `=` with `==` in the given source code.
-    """
-
-    def visit_Assign(self, node):
-        for target in node.targets:
-            if isinstance(target, ast.Name):
-                new_node = ast.Compare(left=target, ops=[ast.Eq()], comparators=[node.value])
-                return ast.Expr(value=new_node)
-        return node
-
-
 def replace_equals_with_double_equals(code):
-    tree = ast.parse(code, mode="exec")
-    tree = ReplaceEquals().visit(tree)
-    modified_code = ast.unparse(tree)
-    return modified_code
+    code = code.replace("=", "==")
+    code = code.replace("===", "==")
+    code = code.replace("!==", "!=")
+    code = code.replace(">==", ">=")
+    code = code.replace("<==", "<=")
+    return code
 
 
 def replace_column_names(raw_expression):
@@ -78,6 +67,9 @@ def replace_column_names(raw_expression):
 
 
 def process_raw_expression(raw_expression):
+    # replace `=` with `==` without affecting other operators
+    raw_expression = replace_equals_with_double_equals(raw_expression)
+
     # replace column names with column function
     # eg. `tabSales Order.name` -> column("tabSales Order", "name")
     raw_expression = replace_column_names(raw_expression)
@@ -92,7 +84,5 @@ def process_raw_expression(raw_expression):
     raw_expression = raw_expression.replace("&&", " and ")
     raw_expression = raw_expression.replace("||", " or ")
     raw_expression = replace_and_or_expressions(raw_expression)
-
-    raw_expression = replace_equals_with_double_equals(raw_expression)
 
     return raw_expression
