@@ -12,7 +12,7 @@ dependencies = [
     "langchain-openai==0.0.3",
     "pydantic==1.10.9",
     "tiktoken==0.3.3",
-    "chromadb==0.3.21",
+    "chromadb==0.4.22",
     "pandas==2.1.1",
     "SQLAlchemy==2.0.22",
     "python-telegram-bot==12.8",

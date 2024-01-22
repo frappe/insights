@@ -6,15 +6,31 @@ import hashlib
 import frappe
 import tiktoken
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain.schema import AIMessage, FunctionMessage, HumanMessage, SystemMessage
 from langchain_community.vectorstores import Chroma
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from openai import OpenAI
 
 from insights.decorators import check_role
 from insights.insights.doctype.insights_data_source.sources.utils import (
     add_limit_to_sql,
 )
 from insights.utils import InsightsDataSource, get_data_source_dialect
+
+
+def SystemMessage(content):
+    return {"role": "system", "content": content}
+
+
+def AIMessage(content):
+    return {"role": "assistant", "content": content}
+
+
+def UserMessage(content):
+    return {"role": "user", "content": content}
+
+
+def FunctionMessage(tool_call_id, name, content):
+    return {"role": "tool", "tool_call_id": tool_call_id, "name": name, "content": content}
 
 
 @frappe.whitelist()
@@ -31,21 +47,6 @@ def create_new_chat():
 
 
 OPENAI_MODEL = "gpt-3.5-turbo-1106"
-
-
-class OpenAI:
-    @staticmethod
-    def get_key():
-        return frappe.conf.get("openai_api_key")
-
-    @staticmethod
-    def get_chatgpt():
-        return ChatOpenAI(
-            openai_api_key=OpenAI.get_key(),
-            model_name=OPENAI_MODEL,
-            temperature=0.0,
-            streaming=True,
-        )
 
 
 def count_token(messages, model=OPENAI_MODEL):
@@ -73,7 +74,9 @@ class SchemaStore:
             self._vector_store = Chroma(
                 collection_name=self.collection_name,
                 persist_directory=self.vector_store_path,
-                embedding_function=OpenAIEmbeddings(openai_api_key=OpenAI.get_key()),
+                embedding_function=OpenAIEmbeddings(
+                    openai_api_key=frappe.conf.get("openai_api_key"),
+                ),
             )
 
         return self._vector_store
@@ -103,7 +106,9 @@ class SchemaStore:
             metadatas=metadata,
             collection_name=self.collection_name,
             persist_directory=self.vector_store_path,
-            embedding=OpenAIEmbeddings(openai_api_key=OpenAI.get_key()),
+            embedding=OpenAIEmbeddings(
+                openai_api_key=frappe.conf.get("openai_api_key"),
+            ),
         )
         self._vector_store.persist()
 
@@ -215,6 +220,9 @@ class SQLCopilot:
         self.max_query_limit = 20
         self._function_messages = []
         self.prepare_schema()
+        self.client = OpenAI(
+            api_key=frappe.conf.get("openai_api_key"),
+        )
 
     def prepare_schema(self):
         self.schema_store = SchemaStore(
@@ -228,21 +236,28 @@ class SQLCopilot:
             )
 
     def ask(self, question, stream=False):
+        usage = 0
         max_iterations, iteration = 5, 0
         while True:
             messages = self.prepare_messages(question)
-            chatgpt = OpenAI.get_chatgpt()
-            response = chatgpt.predict_messages(
-                messages,
-                functions=self.get_functions(),
-                callbacks=[StreamOutputCallback()] if stream else [],
+            self.verbose and print(messages)
+            response = self.client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=messages,
+                tools=self.get_functions(),
+                tool_choice="auto",
+                temperature=0.1,
             )
+            usage += response.usage.total_tokens
             if not self.is_function_call(response) or iteration >= max_iterations:
                 break
             self.handle_function_call(response)
+            iteration += 1
 
-        self.history.append({"role": "assistant", "message": response.content})
-        return response.content
+        final_response = response.choices[0].message.content
+        self.history.append(AIMessage(content=final_response))
+        self.verbose and print("Usage:", usage, "Cost:", usage / 1000 * 0.0013)
+        return final_response
 
     def prepare_messages(self, question):
         messages = []
@@ -252,7 +267,7 @@ class SQLCopilot:
         )
         messages.append(SystemMessage(content=system_prompt))
         messages += self.get_history_messages()
-        messages.append(HumanMessage(content=question))
+        messages.append(UserMessage(content=question))
         if self._function_messages:
             messages += self._function_messages
         return messages
@@ -266,39 +281,62 @@ class SQLCopilot:
             if message["role"] == "assistant":
                 messages.append(AIMessage(content=message["message"]))
             else:
-                messages.append(HumanMessage(content=message["message"]))
+                messages.append(UserMessage(content=message["message"]))
         return messages
 
     def get_functions(self):
         return [
             {
-                "name": "get_relevant_db_tables",
-                "description": "A function useful for finding the tables that are relevant to generate a sql query.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "question": {
-                            "type": "string",
-                            "description": "The user's question",
+                "type": "function",
+                "function": {
+                    "name": "get_relevant_tables",
+                    "description": "A function useful for finding the tables that are relevant to generate a sql query.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "question": {
+                                "type": "string",
+                                "description": "The user's question",
+                            },
                         },
+                        "required": ["question"],
                     },
-                    "required": ["question"],
                 },
             },
             {
-                "name": "execute_sql_query",
-                "description": "A function useful for executing a sql query.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "A syntactically correct sql query",
+                "type": "function",
+                "function": {
+                    "name": "validate_sql_query",
+                    "description": "A function useful for validating a sql query.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "A syntactically correct sql query",
+                            },
                         },
+                        "required": ["query"],
                     },
-                    "required": ["query"],
                 },
             },
+            # {
+            #     "type": "function",
+            #     "function": {
+            #         "name": "execute_sql_query",
+            #         "description": "A function useful for executing a sql query.",
+            #         "parameters": {
+            #             "type": "object",
+            #             "properties": {
+            #                 "query": {
+            #                     "type": "string",
+            #                     "description": "A syntactically correct sql query",
+            #                 },
+            #             },
+            #             "required": ["query"],
+            #         },
+            #     },
+            # },
         ]
 
     def run_function(self, function_name, arguments):
@@ -307,7 +345,7 @@ class SQLCopilot:
             return "Relevant tables:\n\n" + tables
 
         def execute_sql_query(query):
-            source = InsightsDataSource.get(self.data_source)
+            source = InsightsDataSource.get_doc(self.data_source)
             limited_query = add_limit_to_sql(query, limit=self.max_query_limit)
             try:
                 results = source._db.execute_query(limited_query)
@@ -316,32 +354,57 @@ class SQLCopilot:
                 return "Results:\n\n" + str(results)
 
             except BaseException as e:
-                return f"It threw an error. Error: {e}. Look for corrections and try again."
+                return f"ERROR: {e}. Look for corrections and try again."
+
+        def validate_sql_query(query):
+            if "SELECT" not in query.upper():
+                return "The query is not a SELECT query. Try writing a SELECT query."
+
+            source = InsightsDataSource.get_doc(self.data_source)
+            limited_query = add_limit_to_sql(query, limit=10)
+            try:
+                source._db.execute_query(limited_query)
+                self.learn_query(query)
+                return "The query is valid."
+            except BaseException as e:
+                return f"ERROR: {e}. Look for corrections and try again."
 
         try:
-            if function_name == "get_relevant_db_tables":
+            if function_name == "get_relevant_tables":
                 return _get_relevant_tables(**arguments)
+            elif function_name == "validate_sql_query":
+                return validate_sql_query(**arguments)
             elif function_name == "execute_sql_query":
                 return execute_sql_query(**arguments)
         except BaseException as e:
-            return f"It threw an error. Error: {e}. Look for corrections and try again."
+            return f"ERROR: {e}. Look for corrections and try again."
 
     def is_function_call(self, response):
-        return (
-            not response.content
-            and response.additional_kwargs
-            and response.additional_kwargs["function_call"]
-        )
+        response_message = response.choices[0].message
+        tool_calls = response_message.tool_calls
+        return bool(tool_calls)
 
     def handle_function_call(self, response):
-        function_call = response.additional_kwargs["function_call"]
-        function_name = function_call["name"]
-        arguments = function_call["arguments"]
-        arguments = frappe.parse_json(arguments)
-        function_response = self.run_function(function_name, arguments)
-        self._function_messages.append(
-            FunctionMessage(name=function_name, content=function_response)
-        )
+        response_message = response.choices[0].message
+        tool_calls = response_message.tool_calls
+        self._function_messages.append(response_message)
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            function_args = frappe.parse_json(tool_call.function.arguments)
+            function_response = self.run_function(function_name, function_args)
+            self._function_messages.append(
+                FunctionMessage(
+                    tool_call_id=tool_call.id,
+                    name=function_name,
+                    content=function_response,
+                )
+            )
+
+    def learn_query(self, query):
+        # generate a question from the query
+        # store the pair of question and query in the vector store
+        # use the vector store to find the relevant queries for a question
+        pass
 
 
 class StreamOutputCallback(BaseCallbackHandler):
