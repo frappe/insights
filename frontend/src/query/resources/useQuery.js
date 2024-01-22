@@ -13,16 +13,7 @@ import useQueryResults from './useQueryResults'
 
 const session = sessionStore()
 
-const queries = {}
-
 export default function useQuery(name) {
-	if (!queries[name]) {
-		queries[name] = makeQuery(name)
-	}
-	return queries[name]
-}
-
-function makeQuery(name) {
 	const resource = useQueryResource(name)
 	const state = reactive({
 		loading: true,

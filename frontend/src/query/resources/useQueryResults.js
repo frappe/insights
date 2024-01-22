@@ -3,16 +3,7 @@ import { createDocumentResource } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { getFormattedResult } from '@/utils/query/results'
 
-const queryResults = {}
-
-export default function useQueryResults(name) {
-	if (!queryResults[name]) {
-		queryResults[name] = makeQueryResults(name)
-	}
-	return queryResults[name]
-}
-
-function makeQueryResults(result_name) {
+export default function useQueryResults(result_name) {
 	const resource = getResultResource(result_name)
 	resource.get.fetch()
 	return reactive({
