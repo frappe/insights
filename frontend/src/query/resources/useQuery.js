@@ -193,8 +193,9 @@ export default function useQuery(name) {
 	}, 500)
 
 	state.downloadResults = () => {
-		if (!state.doc.results) return
-		let data = [...state.doc.results]
+		const results = state.results?.data
+		if (!results || results.length === 0) return
+		let data = [...results]
 		if (data.length === 0) return
 		data[0] = data[0].map((d) => d.label)
 		const csvString = data.map((row) => row.join(',')).join('\n')
