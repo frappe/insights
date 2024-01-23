@@ -11,6 +11,14 @@ import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getIcon } from '@/widgets/widgets'
 import { useStorage } from '@vueuse/core'
 import { ListRow, ListRowItem } from 'frappe-ui'
+import { AppWindow } from 'lucide-vue-next'
+import { FileTerminal } from 'lucide-vue-next'
+import { Square } from 'lucide-vue-next'
+import { AlignVerticalJustifyEnd } from 'lucide-vue-next'
+import { AlignStartVertical } from 'lucide-vue-next'
+import { GanttChartSquare } from 'lucide-vue-next'
+import { Book } from 'lucide-vue-next'
+import { Code } from 'lucide-vue-next'
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -106,6 +114,13 @@ const queries = computed(() => {
 		return true
 	})
 })
+
+function getQueryTypeIcon(query) {
+	if (query.is_assisted_query) return AlignStartVertical
+	if (query.is_native_query) return GanttChartSquare
+	if (query.is_script_query) return FileTerminal
+	return Square
+}
 </script>
 
 <template>
@@ -141,7 +156,13 @@ const queries = computed(() => {
 				:row="query"
 				:to="{ name: 'Query', params: { name: query.name } }"
 			>
-				<ListRowItem class="flex-[3]"> {{ query.title }} </ListRowItem>
+				<ListRowItem class="flex-[3]">
+					<component
+						:is="getQueryTypeIcon(query)"
+						class="h-4 w-4 text-gray-500"
+					></component>
+					<span> {{ query.title }} </span>
+				</ListRowItem>
 				<ListRowItem class="flex-[2] space-x-2">
 					<IndicatorIcon
 						:class="

@@ -10,6 +10,7 @@ type QueryListItem = {
 	status: string
 	is_assisted_query: boolean
 	is_native_query: boolean
+	is_script_query: boolean
 	data_source: string
 	data_source_title: string
 	creation: string
@@ -112,6 +113,12 @@ const FIELDS = [
 		label: 'Is Native Query',
 		value: 'is_native_query',
 		fieldname: 'is_native_query',
+		fieldtype: 'Check',
+	},
+	{
+		label: 'Is Script Query',
+		value: 'is_script_query',
+		fieldname: 'is_script_query',
 		fieldtype: 'Check',
 	},
 	{
