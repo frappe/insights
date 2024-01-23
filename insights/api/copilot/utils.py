@@ -4,11 +4,21 @@
 import hashlib
 
 import tiktoken
+from frappe import _dict
 
-DEFAULT_MODEL = "gpt-3.5-turbo-1106"
+MODELS = _dict(
+    GPT_4=_dict(
+        name="gpt-4-1106-preview",
+        cost=0.02,
+    ),
+    GPT_3_5=_dict(
+        name="gpt-3.5-turbo-1106",
+        cost=0.0013,
+    ),
+)
 
 
-def count_token(messages, model=DEFAULT_MODEL):
+def count_token(messages, model=MODELS.GPT_3_5.name):
     if not isinstance(messages, list):
         messages = [messages]
     return sum((len(tiktoken.encoding_for_model(model).encode(m)) for m in messages))

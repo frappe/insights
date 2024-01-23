@@ -11,7 +11,7 @@ from insights.insights.doctype.insights_data_source.sources.utils import (
 from insights.utils import InsightsDataSource, get_data_source_dialect
 
 from .schema_store import SchemaStore
-from .utils import DEFAULT_MODEL, get_function_definitions, get_message
+from .utils import MODELS, get_function_definitions, get_message
 
 SQL_GEN_INSTRUCTIONS = """
 You are expert in writing {dialect} SQL queries. Given a question and schema of the database,
@@ -28,6 +28,7 @@ About writing SQL queries:
 - DO NOT write any other type of query. write only SELECT queries.
 - 90% of the time, users will a query with GROUP BY clause.
 - ALWAYS add a LIMIT clause to the query. The max limit can be 1000.
+- Make sure the aliases of the tables, columns & CTEs are meaningful.
 
 About answer format:
 - DO NOT explain the generated query.
@@ -45,6 +46,7 @@ class SQLCopilot:
         chat_history=None,
         verbose=False,
     ):
+        self.model = MODELS.GPT_3_5
         self.data_source = data_source
         self.chat_history = chat_history or []
         self.verbose = verbose
@@ -73,7 +75,7 @@ class SQLCopilot:
                 "-----------------------Iteration:", iteration, "-----------------------"
             )
             response = self.client.chat.completions.create(
-                model=DEFAULT_MODEL,
+                model=self.model.name,
                 messages=messages,
                 temperature=0.1,
                 tools=get_function_definitions(),
@@ -90,7 +92,7 @@ class SQLCopilot:
 
         final_response = response.choices[0].message.content
         self.verbose and print("Final response:", final_response)
-        self.verbose and print("Usage:", usage, "Cost:", usage / 1000 * 0.0013)
+        self.verbose and print("Usage:", usage, "Cost:", usage / 1000 * self.model.cost)
         return final_response
 
     def prepare_messages(self, question):
