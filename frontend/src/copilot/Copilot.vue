@@ -11,6 +11,12 @@ const props = defineProps({ chat_id: String })
 const chat = useCopilotChat()
 props.chat_id ? await chat.load(props.chat_id) : await chat.createNewChat()
 
+const editingMessageId = ref(null)
+const updatedMessage = ref('')
+function isBeingEdited(message) {
+	return editingMessageId.value === message.id
+}
+
 const router = useRouter()
 const session = sessionStore()
 if (!props.chat_id) {
@@ -31,7 +37,6 @@ const chatContainer = ref(null)
 const observer = new ResizeObserver(() => {
 	chatContainer.value.scrollTop = chatContainer.value.scrollHeight
 	const preTags = chatContainer.value?.querySelectorAll('pre > code.language-sql')
-	console.log(preTags)
 })
 onMounted(() => {
 	observer.observe(chatContainer.value)
@@ -53,6 +58,7 @@ onBeforeUnmount(() => {
 	$socket.off('llm_stream_output')
 })
 </script>
+
 <template>
 	<div class="h-full w-full bg-white px-6 py-4">
 		<div class="h-full w-full bg-white py-16 text-base">
@@ -69,77 +75,109 @@ onBeforeUnmount(() => {
 								{
 									label: 'Clear Chat',
 									icon: 'x-square',
-									handler: () => chat.clear(),
+									onClick: () => chat.clear(),
 								},
 								{
 									label: 'Open Sidebar',
 									icon: 'sidebar',
-									handler: () => {},
+									onClick: () => {},
 								},
 							]"
 						/>
 					</div>
 				</div>
 				<div ref="chatContainer" class="flex-1 overflow-y-scroll pb-6">
-					<div class="flex flex-col space-y-6">
-						<transition-group name="fade">
+					<div class="flex flex-col space-y-6 p-0.5" v-auto-animate>
+						<div
+							v-for="message in chat.history"
+							:key="message.id"
+							class="group relative flex gap-4"
+						>
+							<div class="flex-shrink-0" v-if="message.role === 'assistant'">
+								<Avatar size="xl">
+									<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
+								</Avatar>
+							</div>
+							<div class="flex-shrink-0" v-else-if="message.role === 'user'">
+								<Avatar
+									size="xl"
+									:label="session.user.full_name"
+									:image="session.user.user_image"
+								/>
+							</div>
 							<div
-								v-for="message in chat.history"
-								:key="message.id"
-								class="group relative flex gap-4"
+								class="relative flex-1 rounded bg-white text-base transition-all"
+								:class="
+									isBeingEdited(message)
+										? '-ml-1.5 pl-1.5 ring-2 ring-gray-700'
+										: 'ring-0 ring-transparent '
+								"
 							>
-								<div class="flex-shrink-0" v-if="message.role === 'assistant'">
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
-									>
-										<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
-									</div>
-								</div>
-								<div class="flex-shrink-0" v-else-if="message.role === 'user'">
-									<Avatar
-										:label="session.user.full_name"
-										:imageURL="session.user.user_image"
-										size="md"
-									/>
-								</div>
-								<div class="relative flex-1 rounded-md bg-white text-base">
-									<TextEditor
-										editor-class="h-fit custom-prose flex flex-col justify-end max-w-full"
-										:content="markdownToHTML(message.message)"
-										:editable="false"
-									/>
-								</div>
+								<TextEditor
+									editor-class="h-fit custom-prose flex flex-col justify-end max-w-full"
+									:content="markdownToHTML(message.message)"
+									:editable="isBeingEdited(message)"
+									@change="updatedMessage = $event"
+								/>
+							</div>
 
+							<div
+								v-if="message.role === 'user' && !chat.sending"
+								class="absolute right-0 top-0 flex h-full items-center justify-center gap-1 pr-0.5 opacity-0 transition-all group-hover:opacity-100"
+							>
+								<Button
+									v-if="isBeingEdited(message)"
+									icon="x"
+									variant="outline"
+									@click="editingMessageId = null"
+								></Button>
+								<Button
+									v-if="isBeingEdited(message)"
+									icon="check"
+									variant="solid"
+									@click="
+										() => {
+											chat.updateMessage(message.id, updatedMessage)
+											editingMessageId = null
+											updatedMessage = ''
+										}
+									"
+								></Button>
+								<Button
+									v-else
+									icon="edit"
+									variant="subtle"
+									@click="
+										() => {
+											editingMessageId = message.id
+											updatedMessage = message.message
+										}
+									"
+								></Button>
+							</div>
+						</div>
+
+						<div v-if="chat.sending" class="flex gap-4">
+							<div class="flex-shrink-0">
 								<div
-									class="absolute right-0 top-0 opacity-0 transition-opacity group-hover:opacity-100"
-									v-if="message.role === 'user'"
+									class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
 								>
-									<Button icon="edit" appearance="minimal"></Button>
+									<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
 								</div>
 							</div>
-
-							<div v-if="chat.sending" class="flex gap-4">
-								<div class="flex-shrink-0">
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50"
-									>
-										<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>
-									</div>
-								</div>
-								<div class="relative flex-1 rounded-md bg-white text-base">
-									<TextEditor
-										editor-class="h-fit custom-prose flex flex-col justify-end max-w-full"
-										:content="markdownToHTML(streamOutput)"
-										:editable="false"
-									/>
-								</div>
+							<div class="relative flex-1 rounded bg-white text-base">
+								<TextEditor
+									editor-class="h-fit custom-prose flex flex-col justify-end max-w-full"
+									:content="markdownToHTML(streamOutput)"
+									:editable="false"
+								/>
 							</div>
-						</transition-group>
+						</div>
 					</div>
 				</div>
 				<div class="sticky bottom-0 flex flex-shrink-0 space-x-4">
 					<div
-						class="flex flex-1 items-start overflow-hidden rounded-md border bg-white p-2 pl-4 text-base shadow"
+						class="flex flex-1 items-start overflow-hidden rounded border bg-white p-2 pl-4 text-base shadow"
 					>
 						<div class="mr-4 flex h-full items-center">
 							<Sparkles class="h-4 w-4 text-blue-500"></Sparkles>

@@ -21,6 +21,7 @@ export default function useCopilotChat() {
 		load,
 		clear,
 		sendMessage,
+		updateMessage,
 		createNewChat,
 	})
 	async function load(chat_name: string) {
@@ -36,6 +37,19 @@ export default function useCopilotChat() {
 	async function sendMessage(message: string) {
 		const id = Math.floor(Math.random() * 1000000)
 		chat.history.push({ id, role: 'user', message: message })
+		chat.sending = true
+		await resource.setValue.submit({
+			history: JSON.stringify(chat.history),
+		})
+		await load(chat.name)
+		chat.sending = false
+	}
+
+	async function updateMessage(id: number, message: string) {
+		const msgIndex = chat.history.findIndex((msg) => msg.id === id)
+		chat.history[msgIndex].message = message
+		// delete all messages after the edited message
+		chat.history.splice(msgIndex + 1)
 		chat.sending = true
 		await resource.setValue.submit({
 			history: JSON.stringify(chat.history),
