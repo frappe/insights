@@ -32,7 +32,9 @@ const previousValue = computed(() => {
 })
 const delta = computed(() => {
 	if (!currentValue.value || !previousValue.value) return
-	return currentValue.value - previousValue.value
+	return props.options.reverseDelta
+		? previousValue.value - currentValue.value
+		: currentValue.value - previousValue.value
 })
 const percentDelta = computed(() => {
 	if (!currentValue.value || !previousValue.value) return
@@ -98,24 +100,27 @@ const trendLineOptions = computed(() => {
 				>
 					{{ options.title }}
 				</div>
-				<Badge
-					:theme="delta >= 0 ? 'green' : 'red'"
-					:label="
-						delta >= 0
-							? `+${formatNumber(percentDelta, 2)}%`
-							: `${formatNumber(percentDelta, 2)}%`
-					"
-					size="md"
-				/>
+				<Badge :theme="delta >= 0 ? 'green' : 'red'" size="md">
+					<span class="-mr-1">{{
+						delta >= 0 && props.options.reverseDelta ? '-' : '+'
+					}}</span>
+					<span class="tnum">
+						{{
+							delta >= 0
+								? `${formatNumber(percentDelta, 2)}%`
+								: `${formatNumber(percentDelta, 2)}%`
+						}}
+					</span>
+				</Badge>
 			</div>
 			<div class="flex items-baseline space-x-2">
 				<div
-					class="flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[28px] font-medium leading-10"
+					class="tnum flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[28px] font-medium leading-10"
 				>
 					{{ options.prefix }}{{ formatNumber(currentValue, 2) }}{{ options.suffix }}
 				</div>
 				<div
-					class="flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] text-sm leading-5 text-gray-600"
+					class="tnum flex-shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] text-sm leading-5 text-gray-600"
 				>
 					from {{ options.prefix }}{{ formatNumber(previousValue, 2)
 					}}{{ options.suffix }}
