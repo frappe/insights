@@ -39,11 +39,12 @@ class SchemaStore:
 
     def ingest_schema(self, reset=False):
         schema = self.get_schema()
-        schema = self.skip_ingested_tables(schema)
 
-        if not schema and not reset:
-            self.verbose and print("No new data to ingest")
-            return
+        if not reset:
+            schema = self.skip_ingested_tables(schema)
+            if not schema:
+                self.verbose and print("No new data to ingest")
+                return
 
         self.verbose and print(f"Ingesting {len(schema)} rows of data")
 
@@ -89,7 +90,7 @@ class SchemaStore:
         data = []
         doc = InsightsDataSource.get_doc(self.data_source)
         for table in tables:
-            query = f"SELECT * FROM `{table.table}` LIMIT 3"
+            query = f"SELECT * FROM `{table.table}` LIMIT 2"
             try:
                 results = doc._db.execute_query(query, return_columns=True)
             except BaseException:
@@ -121,7 +122,10 @@ class SchemaStore:
         ret += ", ".join(cols)
         for row in results[1:]:
             ret += "\n      "
-            ret += ", ".join(str(col)[:20] for col in row)
+            for col in row:
+                trimmed = str(col)[:7]
+                trimmed = trimmed + "..." if len(trimmed) >= 7 else trimmed
+                ret += f"{trimmed}, "
         return ret
 
     def get_metadata_for_table(self, table):

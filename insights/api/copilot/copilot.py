@@ -31,6 +31,7 @@ About writing SQL queries:
 
 About answer format:
 - DO NOT explain the generated query.
+- Always validate the sql query using `validate_sql_query` function.
 - Use markdown formatting to format the answer.
 
 STRICTLY follow the each and every instruction above.
@@ -45,7 +46,7 @@ class SQLCopilot:
         verbose=False,
     ):
         self.data_source = data_source
-        self.message_log = chat_history or []
+        self.chat_history = chat_history or []
         self.verbose = verbose
         self._function_messages = []
         self.client = OpenAI(
@@ -67,8 +68,10 @@ class SQLCopilot:
         messages = self.prepare_messages(question)
 
         for iteration in range(max_iterations):
-            self.verbose and print(messages)
             is_final_iteration = iteration == max_iterations - 1
+            self.verbose and print(
+                "-----------------------Iteration:", iteration, "-----------------------"
+            )
             response = self.client.chat.completions.create(
                 model=DEFAULT_MODEL,
                 messages=messages,
@@ -77,12 +80,16 @@ class SQLCopilot:
                 tool_choice="none" if is_final_iteration else "auto",
             )
             usage += response.usage.total_tokens
-            if not self.is_function_call(response) or is_final_iteration:
+            is_function_call = self.is_function_call(response)
+            if not is_function_call or is_final_iteration:
+                self.verbose and is_final_iteration and print("Final iteration: breaking")
                 break
-            self.message_log = self.handle_function_and_add_context(response)
+
+            self.verbose and is_function_call and print("Function call: calling function")
+            messages = self.handle_function_and_add_context(messages, response)
 
         final_response = response.choices[0].message.content
-        self.message_log.append({"role": "assistant", "message": final_response})
+        self.verbose and print("Final response:", final_response)
         self.verbose and print("Usage:", usage, "Cost:", usage / 1000 * 0.0013)
         return final_response
 
@@ -104,9 +111,9 @@ class SQLCopilot:
         return messages
 
     def add_previous_messages(self, messages):
-        if not self.message_log:
+        if not self.chat_history:
             return messages
-        for message in self.message_log:
+        for message in self.chat_history:
             messages.append(get_message(message))
         return messages
 
@@ -115,15 +122,18 @@ class SQLCopilot:
         tool_calls = response_message.tool_calls
         return bool(tool_calls)
 
-    def handle_function_and_add_context(self, response):
+    def handle_function_and_add_context(self, messages, response):
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
-        self.message_log.append(response_message)
+        messages.append(response_message)
+        self.verbose and print(
+            "Tool calls:", [tool_call.function.name for tool_call in tool_calls]
+        )
         for tool_call in tool_calls:
             function_name = tool_call.function.name
             function_args = frappe.parse_json(tool_call.function.arguments)
             function_response = self.run_function(function_name, function_args)
-            self.message_log.append(
+            messages.append(
                 {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
@@ -131,7 +141,8 @@ class SQLCopilot:
                     "content": function_response,
                 }
             )
-        return self.message_log
+            self.verbose and print(f"Function {function_name} response:", function_response)
+        return messages
 
     def run_function(self, function_name, arguments):
         def _get_relevant_tables(question):

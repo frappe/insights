@@ -15,11 +15,7 @@ class InsightsCopilotChat(Document):
         if not history:
             return
 
-        copilot = SQLCopilot(
-            data_source="Demo Data",
-            chat_history=history[:-1],
-            verbose=True,
-        )
+        copilot = SQLCopilot(data_source="Demo Data", chat_history=history[:-1], verbose=True)
         last_message = history[-1]["message"]
         answer = copilot.ask(question=last_message, stream=True)
         history.append(
