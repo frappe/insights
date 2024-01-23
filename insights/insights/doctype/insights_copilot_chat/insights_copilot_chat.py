@@ -6,7 +6,7 @@ from random import randint
 import frappe
 from frappe.model.document import Document
 
-from insights.api.copilot import SQLCopilot
+from insights.api.copilot.copilot import SQLCopilot
 
 
 class InsightsCopilotChat(Document):
@@ -17,11 +17,11 @@ class InsightsCopilotChat(Document):
 
         copilot = SQLCopilot(
             data_source="Demo Data",
-            history=history[:-1],
+            chat_history=history[:-1],
             verbose=True,
         )
-        answer = copilot.ask(question=history[-1]["message"], stream=True)
-        self.last_message_id = history[-1]["id"]
+        last_message = history[-1]["message"]
+        answer = copilot.ask(question=last_message, stream=True)
         history.append(
             {
                 "id": randint(1, 100000),
