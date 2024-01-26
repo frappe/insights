@@ -47,7 +47,7 @@ watch(
 </script>
 
 <template>
-	<div class="relative flex flex-1 flex-col overflow-y-scroll">
+	<div class="relative flex flex-1 flex-col overflow-y-auto">
 		<Code
 			:key="completions.tables.length"
 			language="sql"

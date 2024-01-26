@@ -250,7 +250,7 @@ function onEdgeChange(args) {
 		<div class="flex-1 overflow-hidden">
 			<div
 				v-if="filteredList.length"
-				class="flex h-full flex-col gap-2 overflow-x-hidden overflow-y-scroll"
+				class="flex h-full flex-col gap-2 overflow-y-auto overflow-x-hidden"
 			>
 				<div
 					v-for="table in filteredList"

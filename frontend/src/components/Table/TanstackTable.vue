@@ -92,7 +92,7 @@ const showPagination = computed(() => totalRows.value > pageLength.value)
 		v-if="props?.columns?.length || props.data?.length"
 		class="flex h-full w-full flex-col overflow-hidden"
 	>
-		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
+		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<TableEmpty v-if="props.data?.length == 0" />
 			<table v-else class="border-separate border-spacing-0">
 				<thead class="sticky top-0 bg-white">

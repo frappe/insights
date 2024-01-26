@@ -41,7 +41,7 @@ function addMembers(members) {
 			></ListPicker>
 		</div>
 		<div
-			class="flex-1 divide-y overflow-y-scroll text-gray-800"
+			class="flex-1 divide-y overflow-y-auto text-gray-800"
 			v-if="team.members && team.members.length"
 		>
 			<div

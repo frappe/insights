@@ -10,7 +10,7 @@ function resetOptions() {
 </script>
 
 <template>
-	<div class="flex h-full flex-col space-y-4 overflow-y-scroll p-0.5">
+	<div class="flex h-full flex-col space-y-4 overflow-y-auto p-0.5">
 		<div>
 			<label class="mb-1.5 block text-xs text-gray-600">Chart type</label>
 			<Autocomplete

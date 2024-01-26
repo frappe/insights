@@ -68,7 +68,7 @@ function addResources(resources) {
 			></ListPicker>
 		</div>
 
-		<div class="flex-1 space-y-3 overflow-y-scroll pl-1">
+		<div class="flex-1 space-y-3 overflow-y-auto pl-1">
 			<div class="divide-y" v-if="accessibleResources && accessibleResources.length">
 				<div
 					class="flex h-10 items-center justify-between"

@@ -39,7 +39,7 @@ const needsExecution = computed(() => query.doc.status == 'Pending Execution')
 		<div
 			v-if="hasResults"
 			class="flex-1 flex-shrink-0 rounded border"
-			:class="needsExecution ? 'overflow-hidden' : 'overflow-scroll'"
+			:class="needsExecution ? 'overflow-hidden' : 'overflow-auto'"
 		>
 			<table class="border-separate border-spacing-0">
 				<thead class="sticky top-0">

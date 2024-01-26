@@ -15,7 +15,7 @@
 		</div>
 	</header>
 	<div class="flex flex-1 space-y-4 overflow-hidden bg-white px-6 py-2">
-		<div class="-m-1 flex flex-1 flex-col space-y-6 overflow-scroll p-1">
+		<div class="-m-1 flex flex-1 flex-col space-y-6 overflow-auto p-1">
 			<div class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">General</div>
