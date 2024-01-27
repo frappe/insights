@@ -59,7 +59,7 @@ import ColorPicker from './ColorPicker.vue'
 const colors = defineModel()
 
 const paletteColors = {
-	default: getColors(),
+	default: getColors().slice(0, 10),
 }
 const colorPaletteOptions = [
 	{ label: 'Default', value: 'default' },
@@ -78,7 +78,7 @@ function getPaletteColors(palette) {
 	if (palette === 'custom') {
 		return colors.value?.length ? colors.value : getPaletteColors('default')
 	}
-	return paletteColors[palette]?.slice(0, 10) ?? []
+	return paletteColors[palette] ?? []
 }
 function isDefaultPalette(colors) {
 	if (!colors) return true
