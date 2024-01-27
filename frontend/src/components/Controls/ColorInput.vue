@@ -59,4 +59,7 @@ const value = computed({
 const handleColorChange = (v) => {
 	value.value = getRGB(v)
 }
+const clearValue = () => {
+	value.value = ''
+}
 </script>
