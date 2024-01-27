@@ -1,5 +1,4 @@
 <script setup>
-import Checkbox from '@/components/Controls/Checkbox.vue'
 import AxisChartOptions from '@/widgets/AxisChart/AxisChartOptions.vue'
 
 const options = defineModel()

@@ -1,5 +1,4 @@
 <script setup>
-import Checkbox from '@/components/Controls/Checkbox.vue'
 import Color from '@/components/Controls/Color.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'

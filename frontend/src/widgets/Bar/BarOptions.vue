@@ -1,6 +1,6 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import Checkbox from '@/components/Controls/Checkbox.vue'
+
 import Color from '@/components/Controls/Color.vue'
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
