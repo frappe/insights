@@ -100,6 +100,7 @@ function onColumnSort(e) {
 			item-key="label"
 			@sort="onColumnSort"
 			:showEmptyState="true"
+			:showHandle="false"
 		>
 			<template #item="{ item: column, index: idx }">
 				<ColumnListItem

@@ -1,6 +1,6 @@
 <script setup>
-import { X } from 'lucide-vue-next'
 import { fieldtypesToIcon } from '@/utils'
+import { X } from 'lucide-vue-next'
 
 defineProps(['column', 'isActive'])
 defineEmits(['edit-column', 'remove-column'])
@@ -30,10 +30,11 @@ function getAbbreviation(column) {
 
 <template>
 	<div
-		class="group flex h-8 flex-1 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+		class="group relative flex h-8 flex-1 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 pl-2.5 hover:shadow"
 		:class="isActive ? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400' : ''"
 		@click.prevent.stop="$emit('edit-column', column)"
 	>
+		<div class="absolute left-0 h-full w-1 flex-shrink-0 bg-blue-500"></div>
 		<div class="flex w-full items-center overflow-hidden">
 			<div class="flex w-full items-center space-x-1.5 truncate" v-if="isValidColumn(column)">
 				<!-- <div

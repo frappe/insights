@@ -22,10 +22,11 @@ function isValidFilter(filter) {
 
 <template>
 	<div
-		class="group flex h-8 w-full cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+		class="group relative flex h-8 w-full cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 pl-2.5 hover:shadow"
 		:class="isActive ? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400' : ''"
 		@click.prevent.stop="$emit('edit')"
 	>
+		<div class="absolute left-0 h-full w-1 flex-shrink-0 bg-green-600"></div>
 		<div class="flex w-full items-center overflow-hidden">
 			<div class="flex w-full space-x-2" v-if="isValidFilter(filter)">
 				<template v-if="filter.expression?.raw">

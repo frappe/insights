@@ -88,8 +88,9 @@ async function handleDataSourceChange(option) {
 		<div class="space-y-2">
 			<div
 				v-if="assistedQuery.table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 hover:shadow"
+				class="group relative flex h-8 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 pl-2.5 hover:shadow"
 			>
+				<div class="absolute left-0 h-full w-1 flex-shrink-0 bg-orange-500"></div>
 				<div class="flex flex-1 items-center gap-1 overflow-hidden">
 					<component
 						:is="
@@ -116,7 +117,7 @@ async function handleDataSourceChange(option) {
 				ref="joinRefs"
 				v-for="(join, idx) in joins"
 				:key="join.right_table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				class="group relative flex h-8 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 pl-2.5 hover:shadow"
 				:class="
 					idx === activeJoinIdx
 						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
@@ -124,6 +125,7 @@ async function handleDataSourceChange(option) {
 				"
 				@click="activeJoinIdx = idx"
 			>
+				<div class="absolute left-0 h-full w-1 flex-shrink-0 bg-orange-500"></div>
 				<div class="flex flex-1 items-center gap-1">
 					<component
 						:is="join.right_table.table.startsWith('QRY-') ? GanttChartSquare : Table2"

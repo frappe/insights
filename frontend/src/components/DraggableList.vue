@@ -10,6 +10,7 @@ const props = defineProps({
 	itemKey: { type: String, default: 'value' },
 	emptyText: { type: String, default: 'No items' },
 	showEmptyState: { type: Boolean, default: true },
+	showHandle: { type: Boolean, default: true },
 })
 const items = computed({
 	get: () => props.items,
@@ -40,7 +41,10 @@ function onChange(e) {
 	>
 		<template #item="{ element: item, index: idx }">
 			<div class="mb-2 flex items-center gap-1">
-				<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
+				<GripVertical
+					v-if="props.showHandle"
+					class="h-4 w-4 flex-shrink-0 cursor-grab text-gray-500"
+				/>
 				<div class="flex-1">
 					<slot name="item" :item="item" :index="idx">
 						<div
