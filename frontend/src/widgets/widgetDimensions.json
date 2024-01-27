@@ -19,6 +19,10 @@
 		"defaultWidth": 10,
 		"defaultHeight": 10
 	},
+	"Row": {
+		"defaultWidth": 10,
+		"defaultHeight": 15
+	},
 	"Pie": {
 		"defaultWidth": 10,
 		"defaultHeight": 10

@@ -2,6 +2,7 @@ import ComboChartIcon from '@/components/Icons/ComboChartIcon.vue'
 import {
 	AlignLeft,
 	BarChart3,
+	BarChartHorizontal,
 	BatteryMedium,
 	DollarSign,
 	GitBranch,
@@ -22,6 +23,7 @@ export const VALID_CHARTS = [
 	'Number',
 	'Line',
 	'Bar',
+	'Row',
 	'Pie',
 	'Table',
 	'Progress',
@@ -72,6 +74,14 @@ const WIDGETS = {
 		optionsComponent: defineAsyncComponent(() => import('./Bar/BarOptions.vue')),
 		options: {},
 		...widgetDimensions.Bar,
+	},
+	Row: {
+		type: 'Row',
+		icon: BarChartHorizontal,
+		component: defineAsyncComponent(() => import('./Row/Row.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Row/RowOptions.vue')),
+		options: {},
+		...widgetDimensions.Row,
 	},
 	Pie: {
 		type: 'Pie',

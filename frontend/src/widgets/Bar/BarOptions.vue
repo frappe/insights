@@ -26,6 +26,5 @@ const props = defineProps({
 		/>
 
 		<Checkbox v-model="options.stack" label="Stack Values" />
-		<Checkbox v-model="options.invertAxis" label="Switch X and Y Axis" />
 	</div>
 </template>
