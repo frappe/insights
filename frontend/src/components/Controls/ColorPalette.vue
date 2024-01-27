@@ -18,7 +18,8 @@
 				>
 					<template #target="{ togglePopover }">
 						<div
-							class="h-5 w-5 cursor-pointer rounded-sm"
+							class="h-5 w-5 rounded-sm"
+							:class="selectedPalette.value === 'custom' ? 'cursor-pointer' : ''"
 							:style="{ backgroundColor: color }"
 							@click="togglePopover"
 							@click.meta="removeColor(index)"
@@ -51,9 +52,8 @@
 ; ;;
 <script setup>
 import { getColors } from '@/utils/colors'
-import { debounce } from 'frappe-ui'
 import { Plus } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import ColorPicker from './ColorPicker.vue'
 
 const colors = defineModel()
@@ -66,6 +66,10 @@ const colorPaletteOptions = [
 	{ label: 'Custom', value: 'custom' },
 ]
 const selectedPalette = ref()
+watch(selectedPalette, () => (colors.value = currentColors.value))
+const currentColors = computed(() => {
+	return getPaletteColors(selectedPalette.value.value)
+})
 if (colors.value?.length === 0) {
 	selectedPalette.value = colorPaletteOptions[0]
 } else if (isDefaultPalette(colors.value)) {
@@ -87,9 +91,10 @@ function isDefaultPalette(colors) {
 
 function handleColorChange(color, index) {
 	if (selectedPalette.value.value !== 'custom') {
-		const currentColors = [...getPaletteColors(selectedPalette.value.value)]
 		selectedPalette.value = colorPaletteOptions[1]
-		colors.value = currentColors.length ? currentColors : getPaletteColors('default')
+		colors.value = currentColors.value.length
+			? currentColors.value
+			: getPaletteColors('default')
 	}
 	colors.value[index] = color
 }
