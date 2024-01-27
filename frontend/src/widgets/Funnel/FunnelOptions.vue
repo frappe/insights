@@ -1,7 +1,7 @@
 <script setup>
-import Color from '@/components/Controls/Color.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
+import ColorPalette from '@/components/Controls/ColorPalette.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -52,11 +52,6 @@ const valueOptions = computed(() => {
 			<Autocomplete v-model="options.yAxis" :returnValue="true" :options="valueOptions" />
 		</div>
 
-		<Color
-			label="Colors"
-			v-model="options.colors"
-			:max="parseInt(options.maxSlices) + 1"
-			multiple
-		/>
+		<ColorPalette v-model="options.colors" />
 	</div>
 </template>

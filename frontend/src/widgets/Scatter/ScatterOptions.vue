@@ -1,5 +1,5 @@
 <script setup>
-import Color from '@/components/Controls/Color.vue'
+import ColorPalette from '@/components/Controls/ColorPalette.vue'
 import AxisChartOptions from '@/widgets/AxisChart/AxisChartOptions.vue'
 
 const emit = defineEmits(['update:modelValue'])

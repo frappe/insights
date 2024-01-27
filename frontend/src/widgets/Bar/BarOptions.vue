@@ -1,7 +1,7 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 
-import Color from '@/components/Controls/Color.vue'
+import ColorPalette from '@/components/Controls/ColorPalette.vue'
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { FIELDTYPES } from '@/utils'

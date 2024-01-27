@@ -1,7 +1,6 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-
-import Color from '@/components/Controls/Color.vue'
+import ColorPalette from '@/components/Controls/ColorPalette.vue'
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { FIELDTYPES } from '@/utils'
@@ -154,5 +153,5 @@ function updateXAxis(columnOptions) {
 		/>
 	</div>
 
-	<Color label="Colors" v-model="options.colors" :max="options.yAxis?.length || 1" multiple />
+	<ColorPalette v-model="options.colors" />
 </template>

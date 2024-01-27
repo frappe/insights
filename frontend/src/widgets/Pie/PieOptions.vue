@@ -1,7 +1,7 @@
 <script setup>
-import Color from '@/components/Controls/Color.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
+import ColorPalette from '@/components/Controls/ColorPalette.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -57,12 +57,7 @@ const valueOptions = computed(() => {
 			<FormControl v-model="options.maxSlices" type="number" min="1" />
 		</div>
 
-		<Color
-			label="Colors"
-			v-model="options.colors"
-			:max="parseInt(options.maxSlices) + 1"
-			multiple
-		/>
+		<ColorPalette v-model="options.colors" />
 
 		<div v-show="!options.inlineLabels">
 			<label class="mb-1.5 block text-xs text-gray-600">Label Position</label>

@@ -14,14 +14,18 @@
 							:class="{ 'bg-gray-200': isComboboxOpen }"
 							@click="() => togglePopover()"
 						>
-							<div class="flex items-center overflow-hidden">
+							<div class="flex flex-1 items-center overflow-hidden">
 								<slot name="prefix" />
-								<span class="truncate text-base leading-5" v-if="selectedValue">
+								<span
+									v-if="selectedValue"
+									class="flex-1 truncate text-left text-base leading-5"
+								>
 									{{ displayValue(selectedValue) }}
 								</span>
-								<span class="text-base leading-5 text-gray-600" v-else>
+								<span v-else class="text-base leading-5 text-gray-600">
 									{{ placeholder || '' }}
 								</span>
+								<slot name="suffix" />
 							</div>
 							<FeatherIcon
 								name="chevron-down"
@@ -171,10 +175,9 @@ import {
 	ComboboxOption,
 	ComboboxOptions,
 } from '@headlessui/vue'
-import Popover from '../Popover.vue'
+import { CheckSquare, Square } from 'lucide-vue-next'
 import { nextTick } from 'vue'
-import { CheckSquare } from 'lucide-vue-next'
-import { Square } from 'lucide-vue-next'
+import Popover from '../Popover.vue'
 
 export default {
 	name: 'Autocomplete',
