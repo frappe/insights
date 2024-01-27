@@ -71,7 +71,7 @@ function onColumnSort(e) {
 
 <template>
 	<div>
-		<SectionHeader title="Summarize" :icon="Combine">
+		<SectionHeader title="Columns" :icon="Combine">
 			<Autocomplete
 				:modelValue="columns"
 				bodyClasses="w-[18rem]"
