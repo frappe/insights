@@ -4818,6 +4818,11 @@ vue-router@*, vue-router@^4.0.12, vue-router@^4.1.6:
   dependencies:
     "@vue/devtools-api" "^6.5.0"
 
+vue-sonner@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/vue-sonner/-/vue-sonner-1.0.3.tgz#6d94c4e299c1a1da87cca7cc561bdd3078516a48"
+  integrity sha512-uJPvtcftMjmiXfpsMtB77+TkzWn8gEPI0l5sN+X+UqYuAOVacf0dk7ONqRsc5DWy1ilJtLexz/wSggwjimkYKA==
+
 vue-template-compiler@^2.7.14:
   version "2.7.14"
   resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.7.14.tgz#4545b7dfb88090744c1577ae5ac3f964e61634b1"

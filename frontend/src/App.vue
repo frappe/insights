@@ -4,16 +4,16 @@
 		<Suspense v-else>
 			<AppShell />
 		</Suspense>
-		<Toasts />
+		<Toaster :visible-toasts="2" :rich-colors="true" position="bottom-right" />
 	</div>
 </template>
 
 <script setup>
 import AppShell from '@/components/AppShell.vue'
-import Toasts from '@/utils/toasts'
-import { inject, onBeforeUnmount, computed } from 'vue'
-import { useRoute } from 'vue-router'
 import sessionStore from '@/stores/sessionStore'
+import { computed, inject, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import { Toaster } from 'vue-sonner'
 
 const route = useRoute()
 const isGuestView = computed(() => route.meta.isGuestView)

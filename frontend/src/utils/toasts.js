@@ -1,19 +1,13 @@
-import { h, reactive, ref } from 'vue'
-import Toast from '@/components/Toast.vue'
-
-let toasts = ref([])
-
-export default {
-	name: 'Toasts',
-	render() {
-		return toasts.value.map((toast) => h(Toast, toast))
-	},
-}
+import { toast } from 'vue-sonner'
 
 export function createToast(toastOptions) {
-	let toast = reactive({
-		key: 'toast-' + toasts.value.length,
-		...toastOptions,
-	})
-	toasts.value.push(toast)
+	const { title, variant, message } = toastOptions
+	const variantToFnMap = {
+		info: toast.info,
+		error: toast.error,
+		warning: toast.warning,
+		success: toast.success,
+	}
+	const toastFn = variantToFnMap[variant]
+	toastFn(message || title)
 }
