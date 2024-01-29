@@ -177,6 +177,7 @@ export function guessChart(dataset, chart_type) {
 }
 
 export function convertResultToObjects(results) {
+	if (!results?.length) return []
 	// results first row is an list of dicts with label and type
 	// return list of plain objects with first row's labels as keys
 	// return [{ label1: value1, label2: value2 }, ...}]

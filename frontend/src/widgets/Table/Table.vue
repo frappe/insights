@@ -69,7 +69,7 @@ const tanstackColumns = computed(() => {
 
 <template>
 	<div class="flex h-full w-full flex-col">
-		<ChartTitle :title="props.options.title" />
+		<ChartTitle v-if="props.options.title" :title="props.options.title" />
 		<TanstackTable
 			v-if="columns.length || props.data?.length"
 			:data="props.data"
