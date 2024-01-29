@@ -1,4 +1,5 @@
 <script setup>
+import { isEmptyObj } from '@/utils'
 import { CornerLeftDown, CornerRightUp, Crop, Sigma, X } from 'lucide-vue-next'
 
 defineEmits(['edit', 'remove'])
