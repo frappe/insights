@@ -16,6 +16,7 @@ import { FileTerminal } from 'lucide-vue-next'
 import { Square } from 'lucide-vue-next'
 import { AlignVerticalJustifyEnd } from 'lucide-vue-next'
 import { AlignStartVertical } from 'lucide-vue-next'
+import { ComponentIcon } from 'lucide-vue-next'
 import { GanttChartSquare } from 'lucide-vue-next'
 import { Book } from 'lucide-vue-next'
 import { Code } from 'lucide-vue-next'
@@ -138,7 +139,7 @@ function getQueryTypeIcon(query) {
 	<ListView
 		:columns="[
 			{ label: 'Title', name: 'title', class: 'flex-[3]' },
-			{ label: 'Status', name: 'status', class: 'flex-[2]' },
+			{ label: 'Execution Status', name: 'status', class: 'flex-[2]' },
 			{ label: 'Chart Type', name: 'chart_type', class: 'flex-1' },
 			{ label: 'Data Source', name: 'data_source', class: 'flex-1' },
 			{ label: 'ID', name: 'name', class: 'flex-1' },
@@ -157,10 +158,11 @@ function getQueryTypeIcon(query) {
 				:to="{ name: 'Query', params: { name: query.name } }"
 			>
 				<ListRowItem class="flex-[3]">
-					<component
-						:is="getQueryTypeIcon(query)"
-						class="h-4 w-4 text-gray-500"
-					></component>
+					<ComponentIcon
+						v-if="query.is_stored"
+						class="h-4 w-4 text-gray-600"
+						fill="currentColor"
+					/>
 					<span> {{ query.title }} </span>
 				</ListRowItem>
 				<ListRowItem class="flex-[2] space-x-2">
@@ -173,7 +175,7 @@ function getQueryTypeIcon(query) {
 							}[query.status] || 'text-gray-500'
 						"
 					/>
-					<span> {{ query.status }} </span>
+					<span> {{ query.status.replace('Execution', '') }} </span>
 				</ListRowItem>
 				<ListRowItem class="flex-1 space-x-2">
 					<component

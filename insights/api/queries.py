@@ -32,6 +32,7 @@ def get_queries():
             Query.status,
             Query.is_assisted_query,
             Query.is_native_query,
+            Query.is_stored,
             Query.data_source,
             Query.creation,
             Query.owner,
