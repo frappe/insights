@@ -8,18 +8,9 @@ const props = defineProps({
 	options: { type: Object, required: true },
 })
 
-const dateValues = computed(() => {
-	if (!props.data?.length) return
-	if (!props.options.dateColumn) return
-	const dateValues = props.data.map((row) => row[props.options.dateColumn])
-	return dateValues
-})
-
 const values = computed(() => {
-	if (!props.data?.length) return
 	if (!props.options.valueColumn) return
-	const values = props.data.map((row) => row[props.options.valueColumn])
-	return values
+	return props.data.map((row) => row[props.options.valueColumn])
 })
 
 const currentValue = computed(() => {
@@ -31,13 +22,13 @@ const previousValue = computed(() => {
 	return values.value[values.value.length - 2]
 })
 const delta = computed(() => {
-	if (!currentValue.value || !previousValue.value) return
+	if (currentValue.value === undefined || previousValue.value === undefined) return
 	return props.options.reverseDelta
 		? previousValue.value - currentValue.value
 		: currentValue.value - previousValue.value
 })
 const percentDelta = computed(() => {
-	if (!currentValue.value || !previousValue.value) return
+	if (currentValue.value === undefined || previousValue.value === undefined) return
 	return (delta.value / previousValue.value) * 100
 })
 
@@ -48,6 +39,10 @@ const formatNumber = (val, decimals = 0) => {
 	return $utils.formatNumber(val, decimals)
 }
 
+const dateValues = computed(() => {
+	if (!props.options.dateColumn) return
+	return props.data.map((row) => row[props.options.dateColumn])
+})
 const trendLineOptions = computed(() => {
 	return {
 		animation: false,
@@ -87,7 +82,7 @@ const trendLineOptions = computed(() => {
 
 <template>
 	<div
-		v-if="values"
+		v-if="props.data?.length"
 		class="flex h-full w-full items-center justify-center overflow-hidden py-4 px-6"
 	>
 		<div
@@ -101,16 +96,10 @@ const trendLineOptions = computed(() => {
 					{{ options.title }}
 				</div>
 				<Badge :theme="delta >= 0 ? 'green' : 'red'" size="md">
-					<span class="-mr-1">{{
-						delta >= 0 && props.options.reverseDelta ? '-' : '+'
-					}}</span>
-					<span class="tnum">
-						{{
-							delta >= 0
-								? `${formatNumber(percentDelta, 2)}%`
-								: `${formatNumber(percentDelta, 2)}%`
-						}}
+					<span class="-mr-1">
+						{{ delta >= 0 ? '+' : '-' }}
 					</span>
+					<span class="tnum"> {{ formatNumber(Math.abs(percentDelta), 2) }}% </span>
 				</Badge>
 			</div>
 			<div class="flex items-baseline space-x-2">
