@@ -17,6 +17,7 @@
   "is_subscribed",
   "integrations_section",
   "telegram_api_token",
+  "enable_openai_integration",
   "query_section",
   "fiscal_year_start"
  ],
@@ -79,6 +80,13 @@
   },
   {
    "default": "0",
+   "fieldname": "enable_openai_integration",
+   "fieldtype": "Check",
+   "is_virtual": 1,
+   "label": "Enable OpenAI Integration",
+   "read_only": 1
+  },
+  {
    "fieldname": "is_subscribed",
    "fieldtype": "Check",
    "is_virtual": 1,

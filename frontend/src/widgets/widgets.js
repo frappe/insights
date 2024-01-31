@@ -147,6 +147,15 @@ const WIDGETS = {
 		options: {},
 		...widgetDimensions['Pivot Table'],
 	},
+	'Pivot Table': {
+		type: 'Pivot Table',
+		icon: GitBranch,
+		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
+		options: {},
+		defaultWidth: 10,
+		defaultHeight: 10,
+	},
 }
 
 const UnknownWidget = {

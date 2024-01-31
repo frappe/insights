@@ -318,7 +318,7 @@ def get_data_source_schema(data_source):
         )
         .left_join(TableColumn)
         .on(Table.name == TableColumn.parent)
-        .where((Table.data_source == data_source) & (Table.hidden == 0))
+        .where(Table.data_source == data_source)
         .run(as_dict=True)
     )
     schema = {}

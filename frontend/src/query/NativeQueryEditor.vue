@@ -1,5 +1,6 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
+import TextToSQLDialog from '@/components/TextToSQLDialog.vue'
 import { call } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import SchemaExplorerDialog from './SchemaExplorerDialog.vue'
@@ -38,6 +39,7 @@ const completions = computed(() => {
 	}
 })
 
+const openAIDialog = ref(false)
 const showDataExplorer = ref(false)
 const nativeQuery = ref(query.doc.sql)
 watch(
@@ -73,7 +75,11 @@ watch(
 				>
 				</Button>
 			</div>
+			<div>
+				<Button variant="outline" @click="openAIDialog = true"> OpenAI </Button>
+			</div>
 		</div>
 	</div>
 	<SchemaExplorerDialog v-model:show="showDataExplorer" />
+	<TextToSQLDialog v-model:show="openAIDialog" :dataSource="query.doc.data_source" />
 </template>

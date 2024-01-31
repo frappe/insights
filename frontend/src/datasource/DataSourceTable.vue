@@ -76,8 +76,16 @@
 			v-else
 			class="mt-2 flex h-full w-full flex-col items-center justify-center rounded bg-gray-50"
 		>
-			<LoadingIndicator class="mb-2 w-8 text-gray-500" />
-			<div class="text-lg text-gray-600">Syncing columns from database...</div>
+			<LoadingIndicator class="mb-2 w-8 text-gray-400" />
+			<div class="text-lg text-gray-500">
+				{{
+					dataSourceTable.syncTable.loading
+						? 'Syncing columns from database...'
+						: dataSourceTable.getPreview.loading
+						? 'Loading preview...'
+						: 'No data'
+				}}
+			</div>
 		</div>
 	</div>
 

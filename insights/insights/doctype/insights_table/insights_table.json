@@ -8,9 +8,10 @@
   "table",
   "label",
   "is_query_based",
+  "hidden",
   "column_break_3",
   "data_source",
-  "hidden",
+  "metadata",
   "section_break_6",
   "columns",
   "links_section",
@@ -76,6 +77,12 @@
    "fieldname": "is_query_based",
    "fieldtype": "Check",
    "label": "Is Query Based"
+  },
+  {
+   "default": "{}",
+   "fieldname": "metadata",
+   "fieldtype": "JSON",
+   "label": "Metadata"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -26,6 +26,10 @@ class InsightsSettings(Document):
         self.save()
 
     @property
+    def enable_openai_integration(self):
+        return 1 if frappe.conf.get("openai_api_key") else 0
+
+    @property
     def is_subscribed(self):
         try:
             return 1 if frappe.conf.sk_insights else 0

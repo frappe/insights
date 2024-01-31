@@ -130,6 +130,7 @@ import {
 	Settings,
 	User,
 	Users,
+	Bot,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -171,6 +172,13 @@ const sidebarItems = ref([
 		label: 'Notebook',
 		icon: Book,
 		name: 'Notebook',
+		current: false,
+	},
+	{
+		path: '/copilot',
+		label: 'Insights Copilot',
+		icon: Bot,
+		name: 'Copilot',
 		current: false,
 	},
 	{
