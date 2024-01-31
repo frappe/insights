@@ -3,8 +3,7 @@ import Code from '@/components/Controls/Code.vue'
 import { fieldtypesToIcon, returnTypesToIcon } from '@/utils'
 import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
-import { debounce } from 'frappe-ui'
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -29,8 +28,15 @@ const suggestionContext = reactive({
 	to: null,
 	text: null,
 })
+watch(rawExpression, (val) => {
+	if (!val.length) {
+		suggestionContext.from = null
+		suggestionContext.to = null
+		suggestionContext.text = null
+	}
+})
 
-const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
+const codeViewUpdate = function ({ cursorPos: _cursorPos }) {
 	functionHelp.value = null
 
 	if (!rawExpression.value) {
@@ -51,7 +57,7 @@ const codeViewUpdate = debounce(function ({ cursorPos: _cursorPos }) {
 			functionHelp.value = FUNCTIONS[value]
 		}
 	}
-}, 100)
+}
 
 function onSuggestionSelect(item) {
 	const raw = rawExpression.value || ''
@@ -143,9 +149,10 @@ const filteredGroupedOptions = computed(() => {
 
 const onGetCodeCompletion = (context) => {
 	const _context = context.matchBefore(/\w*/)
-	suggestionContext.from = _context?.from
-	suggestionContext.to = _context?.to
-	suggestionContext.text = _context?.text
+	if (!_context) return
+	suggestionContext.from = _context.from
+	suggestionContext.to = _context.to
+	suggestionContext.text = _context.text
 }
 </script>
 
