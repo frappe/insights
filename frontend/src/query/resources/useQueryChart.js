@@ -41,6 +41,7 @@ export default function useQueryChart(chartName, queryTitle, queryResults) {
 		if (chartTypeChanged && newDoc.chart_type != 'Auto') {
 			const guessedChart = getGuessedChart(newDoc.chart_type)
 			newOptions = { ...guessedChart.options, ...newOptions }
+			newOptions.title = queryTitle
 		}
 		_save({ chart_type: newDoc.chart_type, options: newOptions })
 	}

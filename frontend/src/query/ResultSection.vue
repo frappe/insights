@@ -53,7 +53,6 @@ const tanstackColumns = computed(() => {
 		</div>
 
 		<TanstackTable
-			v-if="hasResults"
 			:class="needsExecution ? 'pointer-events-none' : ''"
 			:data="data"
 			:columns="tanstackColumns"

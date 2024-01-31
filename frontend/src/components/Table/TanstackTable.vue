@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import TableColumnFilter from './TableColumnFilter.vue'
 import TableEmpty from './TableEmpty.vue'
+import TableGroupedCell from './TableGroupedCell.vue'
 import { filterFunction } from './utils'
 
 const props = defineProps({
@@ -85,17 +86,19 @@ const pageEnd = computed(() => {
 	return end > props.data.length ? props.data.length : end
 })
 const totalRows = computed(() => props.data.length)
-const showPagination = computed(() => props.showPagination && totalRows.value > pageLength.value)
+const showPagination = computed(
+	() => props.showPagination && props.data?.length && totalRows.value > pageLength.value
+)
 </script>
 
 <template>
-	<div
-		v-if="props?.columns?.length || props.data?.length"
-		class="flex h-full w-full flex-col overflow-hidden"
-	>
+	<div class="flex h-full w-full flex-col overflow-hidden">
 		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<TableEmpty v-if="props.data?.length == 0" />
-			<table v-else class="border-separate border-spacing-0">
+			<table
+				v-if="props?.columns?.length || props.data?.length"
+				class="border-separate border-spacing-0"
+			>
 				<thead class="sticky top-0 bg-gray-50">
 					<tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
 						<td
