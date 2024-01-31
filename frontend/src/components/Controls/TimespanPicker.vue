@@ -14,14 +14,7 @@
 			<div
 				class="my-2 flex w-[18rem] select-none flex-col space-y-3 rounded border bg-white p-3 text-base shadow-md"
 			>
-				<Tabs
-					:tabs="[
-						{ label: 'Last', active: span == 'Last' },
-						{ label: 'Current', active: span == 'Current' },
-						{ label: 'Next', active: span == 'Next' },
-					]"
-					@switch="(tab) => (span = tab.label)"
-				></Tabs>
+				<Tabs :tabs="['Last', 'Current', 'Next']" v-model="span"></Tabs>
 
 				<div class="flex space-x-2">
 					<Input
