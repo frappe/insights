@@ -11,16 +11,14 @@ import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getIcon } from '@/widgets/widgets'
 import { useStorage } from '@vueuse/core'
 import { ListRow, ListRowItem } from 'frappe-ui'
-import { AppWindow } from 'lucide-vue-next'
-import { FileTerminal } from 'lucide-vue-next'
-import { Square } from 'lucide-vue-next'
-import { AlignVerticalJustifyEnd } from 'lucide-vue-next'
-import { AlignStartVertical } from 'lucide-vue-next'
-import { ComponentIcon } from 'lucide-vue-next'
-import { GanttChartSquare } from 'lucide-vue-next'
-import { Book } from 'lucide-vue-next'
-import { Code } from 'lucide-vue-next'
-import { PlusIcon } from 'lucide-vue-next'
+import {
+	AlignStartVertical,
+	ComponentIcon,
+	FileTerminal,
+	GanttChartSquare,
+	PlusIcon,
+	Square,
+} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -63,23 +61,24 @@ async function openQueryEditor(type) {
 
 const queryBuilderTypes = ref([
 	{
-		label: 'Notebook',
-		description: 'Create a query using the notebook interface',
-		icon: 'book',
-		tag: 'beta',
-		onClick: () => openQueryEditor('notebook'),
-	},
-	{
 		label: 'Visual',
 		description: 'Create a query using the visual interface',
-		icon: 'box',
+		icon: 'bar-chart-2',
 		onClick: () => openQueryEditor('visual'),
 	},
+
 	{
 		label: 'SQL',
 		description: 'Create a query by writing native query',
 		icon: 'code',
 		onClick: () => openQueryEditor('sql'),
+	},
+	{
+		label: 'Notebook',
+		description: 'Create a query using the notebook interface',
+		icon: 'book',
+		tag: 'beta',
+		onClick: () => openQueryEditor('notebook'),
 	},
 	{
 		label: 'Script',
