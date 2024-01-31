@@ -6,7 +6,6 @@ import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
 import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
-import useDataSourceStore from '@/stores/dataSourceStore'
 import { whenever } from '@vueuse/core'
 import { ExternalLink, GanttChartSquare, Sheet, Table2, X } from 'lucide-vue-next'
 import { computed, inject, reactive, ref } from 'vue'
@@ -48,19 +47,6 @@ function onTableLinkClick(table) {
 		: router.resolve({ name: 'DataSource', params: { name: assistedQuery.data_source } })
 	window.open(route.href, '_blank')
 }
-
-const sources = useDataSourceStore()
-const dataSourceOptions = computed(() => {
-	return sources.list.map((source) => ({
-		label: source.title,
-		value: source.name,
-	}))
-})
-const selector = ref(null)
-async function handleDataSourceChange(option) {
-	await assistedQuery.setDataSource(option.value)
-	selector.value?.togglePopover(true)
-}
 </script>
 
 <template>
@@ -70,19 +56,10 @@ async function handleDataSourceChange(option) {
 			title="Tables"
 			info="Select the tables you want to extract data from."
 		>
-			<!-- Show Data Source Selector first then show Table Selector -->
 			<Autocomplete
-				ref="selector"
-				:key="assistedQuery.data_source"
 				bodyClasses="w-[18rem]"
-				:options="
-					assistedQuery.data_source ? dataSource.groupedTableOptions : dataSourceOptions
-				"
-				@update:modelValue="
-					assistedQuery.data_source
-						? $event && assistedQuery.addTable($event)
-						: handleDataSourceChange($event)
-				"
+				:options="dataSource.groupedTableOptions"
+				@update:modelValue="$event && assistedQuery.addTable($event)"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
