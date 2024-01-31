@@ -16,11 +16,11 @@ def has_permission(doc, ptype, user):
         "Insights Query",
         "Insights Dashboard",
     ]:
-        return
+        return True
 
     # only check if doc exists
     if not doc.name:
-        return
+        return True
 
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return True
