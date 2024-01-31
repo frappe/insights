@@ -55,7 +55,10 @@
 				</nav>
 			</div>
 
-			<div class="mt-auto flex items-center text-base text-gray-600">
+			<div class="mt-auto flex flex-col items-center gap-2 text-base text-gray-600">
+				<Button variant="ghost" @click="open('https://docs.frappeinsights.com')">
+					<BookOpen class="h-4 text-gray-600" />
+				</Button>
 				<Dropdown
 					placement="left"
 					:options="[
@@ -130,6 +133,7 @@ import {
 	Settings,
 	User,
 	Users,
+	BookOpen,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
