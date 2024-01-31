@@ -31,7 +31,7 @@ function onSaveTransform(transform) {
 
 <template>
 	<div>
-		<SectionHeader title="Transform" :icon="Option">
+		<SectionHeader title="Transform" :icon="Option" info="Apply transforms to the results.">
 			<Button variant="outline" icon="plus" @click.prevent.stop="onAddTransform"></Button>
 		</SectionHeader>
 		<div class="space-y-2">

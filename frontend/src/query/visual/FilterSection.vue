@@ -39,7 +39,11 @@ function onSaveFilter(filter) {
 
 <template>
 	<div>
-		<SectionHeader title="Filter" :icon="ListFilter">
+		<SectionHeader
+			title="Filters"
+			:icon="ListFilter"
+			info="Apply filters to narrow down the results."
+		>
 			<Button variant="outline" icon="plus" @click.prevent.stop="onAddFilter"></Button>
 		</SectionHeader>
 		<div class="space-y-2">

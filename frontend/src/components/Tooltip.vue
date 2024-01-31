@@ -6,7 +6,8 @@
 		<template #body>
 			<slot name="body">
 				<div
-					class="w-fit rounded border border-gray-100 bg-gray-800 px-2 py-1 text-center text-xs text-white shadow-xl"
+					class="w-fit rounded bg-gray-800 px-2 py-1 text-center text-xs text-white shadow-xl"
+					:class="bodyClasses"
 				>
 					{{ text }}
 				</div>
@@ -25,6 +26,10 @@ export default {
 			default: 'bottom',
 		},
 		text: {
+			type: String,
+			default: '',
+		},
+		bodyClasses: {
 			type: String,
 			default: '',
 		},

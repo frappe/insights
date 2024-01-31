@@ -71,7 +71,11 @@ function onColumnSort(e) {
 
 <template>
 	<div>
-		<SectionHeader title="Columns" :icon="Combine">
+		<SectionHeader
+			title="Columns"
+			:icon="Combine"
+			info="Select the columns you want to see in the results."
+		>
 			<Autocomplete
 				:modelValue="columns"
 				bodyClasses="w-[18rem]"

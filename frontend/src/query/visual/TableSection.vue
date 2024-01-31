@@ -65,7 +65,11 @@ async function handleDataSourceChange(option) {
 
 <template>
 	<div>
-		<SectionHeader title="Data" :icon="Sheet">
+		<SectionHeader
+			:icon="Sheet"
+			title="Tables"
+			info="Select the tables you want to extract data from."
+		>
 			<!-- Show Data Source Selector first then show Table Selector -->
 			<Autocomplete
 				ref="selector"
