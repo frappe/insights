@@ -1,6 +1,6 @@
 <script setup>
 import Tabs from '@/components/Tabs.vue'
-import { LoadingIndicator } from 'frappe-ui'
+import { ChevronDown, Database } from 'lucide-vue-next'
 import { inject, provide, ref } from 'vue'
 import ChartOptions from '../ChartOptions.vue'
 import ChartSection from '../ChartSection.vue'
@@ -12,6 +12,7 @@ import ResultFooter from './ResultFooter.vue'
 import TableSection from './TableSection.vue'
 import TransformSection from './TransformSection.vue'
 import useAssistedQuery from './useAssistedQuery'
+import QueryDataSourceSelector from '../QueryDataSourceSelector.vue'
 
 const activeTab = ref('Build')
 const tabs = ['Build', 'Visualize']
@@ -61,6 +62,14 @@ const hideChart = ref(false)
 			</div>
 			<div class="space-y-4">
 				<template v-if="activeTab === 'Build'">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center space-x-1.5">
+							<Database class="h-4 w-4 text-gray-600" />
+							<p class="font-medium">Data Source</p>
+						</div>
+						<QueryDataSourceSelector></QueryDataSourceSelector>
+					</div>
+					<hr class="border-gray-200" />
 					<TableSection></TableSection>
 					<hr class="border-gray-200" />
 					<FilterSection></FilterSection>
