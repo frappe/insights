@@ -102,7 +102,7 @@ const showPagination = computed(() => props.showPagination && totalRows.value > 
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-y border-r text-gray-800"
+							class="border-b border-r text-gray-800"
 							:class="header.id !== 'index' ? 'min-w-[6rem] ' : ''"
 						>
 							<div
@@ -154,7 +154,7 @@ const showPagination = computed(() => props.showPagination && totalRows.value > 
 								/>
 							</div>
 						</td>
-						<td width="99%" class="border-y"></td>
+						<td width="99%" class="border-b"></td>
 					</tr>
 				</thead>
 				<tbody>
@@ -176,7 +176,7 @@ const showPagination = computed(() => props.showPagination && totalRows.value > 
 								/>
 							</div>
 						</td>
-						<td width="99%" class="border-y"></td>
+						<td width="99%" class="border-b"></td>
 					</tr>
 					<tr height="99%" class="border-b"></tr>
 				</tbody>

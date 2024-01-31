@@ -99,7 +99,7 @@ function getTopOffset(idx) {
 			<div
 				v-for="(column, idx) in columns"
 				:key="column.column"
-				class="nodrag group relative flex cursor-pointer items-center border-b px-3 py-2 text-sm hover:bg-gray-50"
+				class="nodrag group relative flex cursor-grab items-center border-b px-3 py-2 text-sm hover:bg-gray-50"
 				:draggable="true"
 				@dragover="onColumnDragOver"
 				@dragstart="onColumnDragStart($event, column)"
