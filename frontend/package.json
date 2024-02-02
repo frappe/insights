@@ -41,9 +41,7 @@
 		"vue-router": "^4.0.12",
 		"vue-sonner": "^1.0.3",
 		"vue-tsc": "^1.6.5",
-		"vuedraggable": "^4.1.0"
-	},
-	"devDependencies": {
+		"vuedraggable": "^4.1.0",
 		"@playwright/test": "^1.32.1",
 		"autoprefixer": "^10.4.7",
 		"eslint": "^8.19.0",
