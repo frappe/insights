@@ -50,7 +50,7 @@ function onTableLinkClick(table) {
 </script>
 
 <template>
-	<div>
+	<div :key="assistedQuery.data_source">
 		<SectionHeader
 			:icon="Sheet"
 			title="Tables"

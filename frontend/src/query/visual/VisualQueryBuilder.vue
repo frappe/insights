@@ -1,19 +1,17 @@
 <script setup>
 import Tabs from '@/components/Tabs.vue'
-import { DatabaseIcon } from 'lucide-vue-next'
 import { inject, provide, ref } from 'vue'
 import ChartOptions from '../ChartOptions.vue'
 import ChartSection from '../ChartSection.vue'
-import QueryDataSourceSelector from '../QueryDataSourceSelector.vue'
 import ResultSection from '../ResultSection.vue'
 import ColumnSection from './ColumnSection.vue'
 import FilterSection from './FilterSection.vue'
 import ResultColumnActions from './ResultColumnActions.vue'
 import ResultFooter from './ResultFooter.vue'
+import SourceSection from './SourceSection.vue'
 import TableSection from './TableSection.vue'
 import TransformSection from './TransformSection.vue'
 import useAssistedQuery from './useAssistedQuery'
-import SectionHeader from './SectionHeader.vue'
 
 const activeTab = ref('Build')
 const tabs = ['Build', 'Visualize']
@@ -63,15 +61,9 @@ const hideChart = ref(false)
 			</div>
 			<div class="space-y-4">
 				<template v-if="activeTab === 'Build'">
-					<SectionHeader
-						:icon="DatabaseIcon"
-						title="Data Source"
-						info="Select the data source you want to query."
-					>
-						<QueryDataSourceSelector></QueryDataSourceSelector>
-					</SectionHeader>
+					<SourceSection></SourceSection>
 					<hr class="border-gray-200" />
-					<TableSection :key="assistedQuery.data_source"></TableSection>
+					<TableSection></TableSection>
 					<hr class="border-gray-200" />
 					<FilterSection></FilterSection>
 					<hr class="border-gray-200" />
