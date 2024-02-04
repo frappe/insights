@@ -6,6 +6,7 @@ from typing import List, Union
 
 import chardet
 import frappe
+import pandas as pd
 from frappe.model.base_document import BaseDocument
 
 
@@ -110,3 +111,25 @@ def detect_encoding(file_path: str):
     with open(file_path, "rb") as file:
         result = chardet.detect(file.read())
     return result["encoding"]
+
+
+def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
+    """
+    Anonymizes the data in the specified columns of a DataFrame.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the data to be anonymized.
+        columns_to_anonymize (list): A list of column names to be anonymized.
+        prefix_by_column (dict, optional): A dictionary mapping column names to prefixes.
+            If provided, the anonymized values will be prefixed with the corresponding value.
+            Defaults to None.
+
+    Returns:
+        pandas.DataFrame: The DataFrame with the anonymized data.
+    """
+    for column in columns_to_anonymize:
+        codes = pd.factorize(df[column])[0] + 1
+        prefix = prefix_by_column[column] if prefix_by_column else column
+        df[column] = prefix + pd.Series(codes).astype(str)
+
+    return df
