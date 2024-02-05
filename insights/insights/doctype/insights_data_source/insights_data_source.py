@@ -160,18 +160,7 @@ class InsightsDataSource(Document):
         return self._db.build_query(query)
 
     def run_query(self, query: InsightsQuery):
-        try:
-            return self._db.run_query(query)
-        except Exception as e:
-            frappe.log_error("Running query failed")
-            notify(
-                **{
-                    "type": "error",
-                    "title": "Failed to run query",
-                    "message": str(e),
-                }
-            )
-            raise
+        return self._db.run_query(query)
 
     def execute_query(self, query: str, **kwargs):
         return self._db.execute_query(query, **kwargs)

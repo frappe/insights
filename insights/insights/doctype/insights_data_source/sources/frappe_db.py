@@ -225,12 +225,12 @@ class FrappeDB(BaseDatabase):
     def test_connection(self):
         return self.execute_query("select name from tabDocType limit 1", pluck=True)
 
-    def handle_db_exception(self, e):
+    def handle_db_connection_error(self, e):
         if "Access denied" in str(e):
             raise DatabaseCredentialsError()
         if "Packet sequence number wrong" in str(e):
             raise DatabaseParallelConnectionError()
-        super().handle_db_exception(e)
+        super().handle_db_connection_error(e)
 
     def sync_tables(self, tables=None, force=False):
         # "begin" ensures that the connection is committed and closed

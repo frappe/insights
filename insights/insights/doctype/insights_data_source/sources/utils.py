@@ -261,9 +261,23 @@ def compile_query(query, dialect=None):
 
 def execute_and_log(conn, sql, data_source):
     with Timer() as t:
-        result = conn.exec_driver_sql(sql)
+        try:
+            result = conn.exec_driver_sql(sql)
+        except Exception as e:
+            handle_query_execution_error(e)
     create_execution_log(sql, data_source, t.elapsed)
     return result
+
+
+def handle_query_execution_error(e):
+    err_lower = str(e).lower()
+    if "duplicate column name" in err_lower:
+        frappe.throw("Duplicate column name. Please make sure the column labels are unique.")
+    if "syntax" in err_lower and "error" in err_lower:
+        frappe.throw(
+            "Syntax error in the query. Please check the browser console for more details."
+        )
+    raise e
 
 
 def cache_results(sql, data_source, results):
