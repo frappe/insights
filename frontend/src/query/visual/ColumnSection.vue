@@ -70,7 +70,7 @@ function onColumnSort(e) {
 </script>
 
 <template>
-	<div>
+	<div class="space-y-2">
 		<SectionHeader
 			title="Columns"
 			:icon="Combine"
@@ -99,6 +99,7 @@ function onColumnSort(e) {
 			</Autocomplete>
 		</SectionHeader>
 		<DraggableList
+			v-if="columns.length"
 			:items="columns"
 			group="columns"
 			item-key="label"

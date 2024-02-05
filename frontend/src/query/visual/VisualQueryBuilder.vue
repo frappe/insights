@@ -6,6 +6,7 @@ import ChartSection from '../ChartSection.vue'
 import ResultSection from '../ResultSection.vue'
 import ColumnSection from './ColumnSection.vue'
 import FilterSection from './FilterSection.vue'
+import LimitSection from './LimitSection.vue'
 import ResultColumnActions from './ResultColumnActions.vue'
 import ResultFooter from './ResultFooter.vue'
 import SourceSection from './SourceSection.vue'
@@ -25,12 +26,6 @@ const hideChart = ref(false)
 
 <template>
 	<div class="relative flex h-full w-full flex-row-reverse overflow-hidden">
-		<!-- <div
-			v-if="query.loading"
-			class="absolute inset-0 z-[100] flex items-center justify-center bg-gray-100/50"
-		>
-			<LoadingIndicator class="w-10 text-gray-600" />
-		</div> -->
 		<div class="flex h-full w-full flex-col overflow-hidden p-4 pt-0 pr-0" v-auto-animate>
 			<div
 				v-if="!hideChart"
@@ -56,12 +51,12 @@ const hideChart = ref(false)
 		</div>
 
 		<div
-			class="relative flex w-[22rem] flex-shrink-0 flex-col overflow-y-hidden bg-white hover:overflow-y-auto"
+			class="relative flex w-[22rem] flex-shrink-0 flex-col overflow-y-hidden bg-white px-0.5 hover:overflow-y-auto"
 		>
 			<div class="sticky top-0 z-10 w-full flex-shrink-0 bg-white py-4">
 				<Tabs v-model="activeTab" class="w-full" :tabs="tabs" />
 			</div>
-			<div class="space-y-4">
+			<div class="flex flex-1 flex-col gap-4 pb-4">
 				<template v-if="activeTab === 'Build'">
 					<SourceSection></SourceSection>
 					<hr class="border-gray-200" />
@@ -72,6 +67,8 @@ const hideChart = ref(false)
 					<ColumnSection></ColumnSection>
 					<hr class="border-gray-200" />
 					<TransformSection></TransformSection>
+					<hr class="border-gray-200" />
+					<LimitSection></LimitSection>
 				</template>
 				<template v-if="activeTab === 'Visualize'">
 					<ChartOptions></ChartOptions>

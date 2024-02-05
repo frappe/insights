@@ -67,7 +67,7 @@ const tanstackColumns = computed(() => {
 			</template>
 		</TanstackTable>
 
-		<div v-if="$slots.footer && hasResults" class="border-t p-1.5">
+		<div v-if="$slots.footer && hasResults" class="border-t p-1">
 			<slot name="footer"></slot>
 		</div>
 	</div>

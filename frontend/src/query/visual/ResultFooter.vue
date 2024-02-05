@@ -1,42 +1,16 @@
 <template>
 	<div class="flex items-center justify-between rounded-b-md px-1 text-base">
-		<!-- <div v-if="orderByColumns.length" class="flex items-center space-x-1">
-			<span class="text-gray-600">Sorted by</span>
-			<div class="flex items-center space-x-1">
-				<span
-					v-for="(column, index) in orderByColumns"
-					:key="index"
-					class="flex items-center space-x-1 font-medium"
-				>
-					<span>{{ column.label }}</span>
-					<span class="text-gray-600">{{ getOrder(column.label) }}</span>
-					<span v-if="index < orderByColumns.length - 1" class="text-gray-600">,</span>
-				</span>
-			</div>
-		</div> -->
 		<div v-if="queriedRowCount >= 0" class="flex items-center space-x-1">
 			<span class="text-gray-600">Showing</span>
-			<span class="font-mono"> {{ displayedRowCount }}</span>
+			<span class="tnum"> {{ displayedRowCount }}</span>
 			<span class="text-gray-600">out of</span>
-			<span class="font-mono">{{ queriedRowCount }}</span>
+			<span class="tnum">{{ queriedRowCount }}</span>
 			<span class="text-gray-600">rows in</span>
-			<span class="font-mono">{{ executionTime }}</span>
+			<span class="tnum">{{ executionTime }}</span>
 			<span class="text-gray-600">seconds</span>
 		</div>
 		<div class="ml-auto flex items-center gap-1">
-			<span class="text-gray-600">Limit to</span>
-			<input
-				type="text"
-				ref="limitInput"
-				v-model.number="limit"
-				:size="String(limit).length"
-				class="form-input"
-				@keydown.enter.stop="$refs.limitInput.blur()"
-				@keydown.esc.stop="$refs.limitInput.blur()"
-			/>
-			<span class="text-gray-600">rows</span>
-			<Button variant="ghost" class="ml-1" icon="download" @click="query.downloadResults">
-			</Button>
+			<Button variant="ghost" icon="download" @click="query.downloadResults"> </Button>
 		</div>
 	</div>
 </template>

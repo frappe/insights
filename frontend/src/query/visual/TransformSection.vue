@@ -30,11 +30,11 @@ function onSaveTransform(transform) {
 </script>
 
 <template>
-	<div>
+	<div class="space-y-2">
 		<SectionHeader title="Transform" :icon="Option" info="Apply transforms to the results.">
 			<Button variant="outline" icon="plus" @click.prevent.stop="onAddTransform"></Button>
 		</SectionHeader>
-		<div class="space-y-2">
+		<div class="space-y-2" v-if="assistedQuery.transforms.length">
 			<template v-for="(transform, idx) in assistedQuery.transforms" :key="idx">
 				<Popover
 					:show="activeTransformIdx === idx"

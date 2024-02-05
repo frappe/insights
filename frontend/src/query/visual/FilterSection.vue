@@ -38,7 +38,7 @@ function onSaveFilter(filter) {
 </script>
 
 <template>
-	<div>
+	<div class="space-y-2">
 		<SectionHeader
 			title="Filters"
 			:icon="ListFilter"
@@ -46,7 +46,7 @@ function onSaveFilter(filter) {
 		>
 			<Button variant="outline" icon="plus" @click.prevent.stop="onAddFilter"></Button>
 		</SectionHeader>
-		<div class="space-y-2">
+		<div class="space-y-2" v-if="filters.length">
 			<template v-for="(filter, idx) in filters" :key="idx">
 				<Popover
 					:show="activeFilterIdx === idx"
