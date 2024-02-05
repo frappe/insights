@@ -55,7 +55,9 @@ const hideChart = ref(false)
 			</div>
 		</div>
 
-		<div class="relative flex w-[22rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
+		<div
+			class="relative flex w-[22rem] flex-shrink-0 flex-col overflow-y-hidden bg-white hover:overflow-y-auto"
+		>
 			<div class="sticky top-0 z-10 w-full flex-shrink-0 bg-white py-4">
 				<Tabs v-model="activeTab" class="w-full" :tabs="tabs" />
 			</div>

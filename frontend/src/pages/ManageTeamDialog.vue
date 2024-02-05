@@ -6,7 +6,7 @@
 					@change="currentSidebarItem = $event"
 					@delete-team="show = false"
 				></ManageTeamSidebar>
-				<div class="flex w-3/4 space-y-4 overflow-y-auto p-5">
+				<div class="flex w-3/4 space-y-4 overflow-y-hidden p-5 hover:overflow-y-auto">
 					<ManageTeamMembers v-if="currentSidebarItem == 'Members'" />
 					<ManageTeamResourceAccess
 						v-if="currentSidebarItem != 'Members'"

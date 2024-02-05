@@ -170,7 +170,7 @@ function reset() {
 				<span class="flex-1"> Column Name </span>
 				<span class="flex-1"> Column Type </span>
 			</div>
-			<div class="flex flex-col overflow-y-auto">
+			<div class="flex flex-col overflow-y-hidden hover:overflow-y-auto">
 				<Draggable class="w-full" v-model="columns" group="columns" item-key="column">
 					<template #item="{ element: column }">
 						<div

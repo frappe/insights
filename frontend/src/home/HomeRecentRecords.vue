@@ -49,7 +49,7 @@ function openRecord(row) {
 			<!-- list of recent records -->
 			<ul
 				v-if="recent_records?.length > 0"
-				class="relative flex flex-1 flex-col overflow-y-auto"
+				class="relative flex flex-1 flex-col overflow-y-hidden hover:overflow-y-auto"
 			>
 				<li class="border-b"></li>
 				<li

@@ -12,7 +12,7 @@
 	<div class="flex flex-1 space-y-4 overflow-hidden bg-white px-5 py-2">
 		<div
 			v-if="dashboards?.list?.length"
-			class="flex flex-1 flex-col space-y-6 overflow-y-auto p-1"
+			class="flex flex-1 flex-col space-y-6 overflow-y-hidden p-1 hover:overflow-y-auto"
 		>
 			<DashboardsGroup
 				v-if="favorites.length > 0"

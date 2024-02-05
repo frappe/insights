@@ -77,7 +77,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 		</template>
 
 		<template #content>
-			<div class="h-full w-full overflow-y-auto p-2">
+			<div class="h-full w-full overflow-y-hidden p-2 hover:overflow-y-auto">
 				<div
 					ref="gridLayout"
 					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
@@ -114,7 +114,9 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 		</template>
 
 		<template #sidebar v-if="dashboard.editing && dashboard.sidebar.open">
-			<div class="w-[21rem] overflow-auto border-l bg-white p-3 px-4 shadow-sm">
+			<div
+				class="w-[21rem] overflow-hidden border-l bg-white p-3 px-4 shadow-sm hover:overflow-auto"
+			>
 				<div v-if="!dashboard.currentItem">
 					<div class="mb-3 font-semibold text-gray-800">Widgets</div>
 					<DashboardSidebarWidgets @dragChange="draggingWidget = $event" />

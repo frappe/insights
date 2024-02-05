@@ -30,7 +30,7 @@ async function updateERPNextSourceTitle() {
 
 <template>
 	<div class="mt-4 flex flex-col overflow-hidden">
-		<div class="flex flex-1 flex-col overflow-y-auto">
+		<div class="flex flex-1 flex-col overflow-y-hidden hover:overflow-y-auto">
 			<div v-if="setupState.sourceType == 'erpnext'">
 				<Input v-model="erpnextSiteTitle" label="Title" />
 				<div class="mt-6 flex flex-shrink-0 justify-end space-x-3">

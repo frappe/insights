@@ -42,7 +42,10 @@
 						class="relative mt-1 rounded-lg bg-white text-base shadow-2xl"
 						:class="bodyClasses"
 					>
-						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
+						<ComboboxOptions
+							class="max-h-[15rem] overflow-y-hidden px-1.5 pb-1.5 hover:overflow-y-auto"
+							static
+						>
 							<div
 								v-if="!hideSearch"
 								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white py-1.5"

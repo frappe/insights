@@ -3,7 +3,7 @@
 		class="rg:w-60 flex w-14 flex-shrink-0 flex-col border-r border-gray-300 bg-white"
 		v-if="currentRoute"
 	>
-		<div class="flex flex-grow flex-col overflow-y-auto p-2.5">
+		<div class="flex flex-grow flex-col overflow-y-hidden p-2.5 hover:overflow-y-auto">
 			<div class="rg:flex hidden flex-shrink-0 items-end text-sm text-gray-600">
 				<img src="../assets/insights-logo-new.svg" class="h-7" />
 			</div>

@@ -93,7 +93,9 @@ const showPagination = computed(
 
 <template>
 	<div class="flex h-full w-full flex-col overflow-hidden">
-		<div class="relative flex flex-1 flex-col overflow-hidden text-base hover:overflow-auto">
+		<div
+			class="relative flex flex-1 flex-col overflow-hidden text-base hover:overflow-auto hover:overflow-hidden"
+		>
 			<TableEmpty v-if="props.data?.length == 0" />
 			<table
 				v-if="props?.columns?.length || props.data?.length"

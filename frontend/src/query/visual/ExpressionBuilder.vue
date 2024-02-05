@@ -179,7 +179,7 @@ const onGetCodeCompletion = (context) => {
 			class="-mt-1 flex h-[14rem] divide-x divide-gray-300 rounded rounded-t-none border border-t border-gray-300"
 		>
 			<div
-				class="relative flex flex-1 flex-col overflow-hidden overflow-y-auto"
+				class="relative flex flex-1 flex-col overflow-hidden overflow-y-hidden hover:overflow-y-auto"
 				v-auto-animate
 			>
 				<template v-for="group in filteredGroupedOptions">

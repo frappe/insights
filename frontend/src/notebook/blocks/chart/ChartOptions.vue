@@ -24,7 +24,7 @@ const chartOptions = [
 		</div>
 		<div
 			v-if="chart?.doc.chart_type"
-			class="flex w-full flex-1 flex-col gap-4 overflow-y-auto pt-0 !text-base"
+			class="flex w-full flex-1 flex-col gap-4 overflow-y-hidden pt-0 !text-base hover:overflow-y-auto"
 		>
 			<!-- Widget Options -->
 			<Input

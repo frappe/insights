@@ -95,7 +95,7 @@ function getTopOffset(idx) {
 		<div class="flex items-center border-b bg-gray-50 px-4 py-2">
 			<span class="truncate font-medium">{{ table.doc.label }}</span>
 		</div>
-		<div class="nowheel flex max-h-72 flex-col overflow-y-auto">
+		<div class="nowheel flex max-h-72 flex-col overflow-y-hidden hover:overflow-y-auto">
 			<div
 				v-for="(column, idx) in columns"
 				:key="column.column"

@@ -24,7 +24,9 @@ const variables = computed({
 				<code class="text-sm text-gray-800">print(api_key)</code>
 			</p>
 			<div class="flex flex-col overflow-hidden">
-				<div class="relative flex max-h-[10rem] flex-col overflow-y-auto">
+				<div
+					class="relative flex max-h-[10rem] flex-col overflow-y-hidden hover:overflow-y-auto"
+				>
 					<div
 						class="sticky top-0 flex gap-x-2 border-b py-2 text-sm uppercase text-gray-600"
 					>
