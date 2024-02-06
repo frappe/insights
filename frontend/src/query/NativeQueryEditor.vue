@@ -56,20 +56,23 @@ watch(
 			:tables="completions.tables"
 			placeholder="Type your query here"
 		></Code>
-		<div v-if="props.showToolbar" class="sticky bottom-0 flex gap-2 border-t bg-white p-2">
+		<div v-if="props.showToolbar" class="sticky bottom-0 flex gap-1 border-t bg-white p-1">
 			<div>
 				<Button
-					variant="subtle"
-					icon="book-open"
+					variant="outline"
+					iconLeft="book-open"
 					@click="showDataExplorer = !showDataExplorer"
-				></Button>
+					label="Tables"
+				>
+				</Button>
 			</div>
 			<div>
 				<Button
-					variant="solid"
-					icon="play"
+					:variant="query.doc.status !== 'Execution Successful' ? 'solid' : 'outline'"
+					iconLeft="play"
 					@click="query.executeSQL(nativeQuery)"
 					:loading="query.loading"
+					label="Run"
 				>
 				</Button>
 			</div>

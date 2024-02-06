@@ -16,24 +16,10 @@
 </template>
 
 <script setup>
-import { Download } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject } from 'vue'
 
 const query = inject('query')
 const executionTime = computed(() => query.doc.execution_time)
 const queriedRowCount = computed(() => query.doc.results_row_count)
 const displayedRowCount = computed(() => Math.min(query.MAX_ROWS, queriedRowCount.value))
-
-const assistedQuery = inject('assistedQuery')
-const limitInput = ref(null)
-const limit = computed({
-	get: () => assistedQuery.limit,
-	set: (value) => (assistedQuery.limit = value || 100),
-})
-const orderByColumns = computed(() => {
-	return assistedQuery.columns.filter((c) => c.order)
-})
-function getOrder(columnLabel) {
-	return assistedQuery.columns.find((c) => c.label == columnLabel)?.order
-}
 </script>

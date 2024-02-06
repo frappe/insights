@@ -1,16 +1,15 @@
 <script setup lang="jsx">
+import ResizeableInput from '@/components/ResizeableInput.vue'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import { copyToClipboard } from '@/utils'
 import { debounce } from 'frappe-ui'
+import { Component as ComponentIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import ResizeableInput from '@/components/ResizeableInput.vue'
-import { Component as ComponentIcon } from 'lucide-vue-next'
+import QueryDataSourceSelector from '@/query/QueryDataSourceSelector.vue'
 
 const state = inject('state')
-const debouncedUpdateTitle = debounce(async (title) => {
-	await state.query.updateDoc({ title })
-}, 1500)
+const debouncedUpdateTitle = debounce((title) => state.query.updateTitle(title), 1500)
 
 const show_sql_dialog = ref(false)
 const formattedSQL = computed(() => {
@@ -60,7 +59,7 @@ const dataSourceOptions = computed(() => {
 })
 
 function changeDataSource(sourceName) {
-	state.query.updateDoc({ data_source: sourceName }).then(() => {
+	state.query.changeDataSource(sourceName).then(() => {
 		$notify({
 			title: 'Data source updated',
 			variant: 'success',
@@ -71,8 +70,8 @@ function changeDataSource(sourceName) {
 </script>
 
 <template>
-	<div class="flex h-9 items-center justify-between rounded-t-lg pl-3 pr-1 text-base">
-		<div class="flex items-center font-mono">
+	<div class="flex items-center justify-between rounded-t-lg p-1 pl-3 text-base">
+		<div class="flex items-center font-mono text-sm">
 			<div v-if="state.query.doc.is_stored" class="mr-1">
 				<ComponentIcon class="h-3 w-3 text-gray-600" fill="currentColor" />
 			</div>
@@ -83,22 +82,8 @@ function changeDataSource(sourceName) {
 			></ResizeableInput>
 			<p class="text-gray-600">({{ state.query.doc.name }})</p>
 		</div>
-		<div class="flex items-center space-x-2">
-			<Dropdown
-				:button="{
-					iconLeft: 'database',
-					variant: 'outline',
-					label: currentSource?.title || 'Select data source',
-				}"
-				:options="dataSourceOptions"
-			/>
-			<Button
-				variant="outline"
-				icon="play"
-				label="Execute"
-				:onClick="() => state.query.execute() || (state.minimizeResult = false)"
-				:loading="state.query.executing"
-			/>
+		<div class="flex items-center space-x-1">
+			<QueryDataSourceSelector></QueryDataSourceSelector>
 			<Dropdown
 				:button="{
 					icon: 'more-vertical',
@@ -147,7 +132,7 @@ function changeDataSource(sourceName) {
 				></p>
 				<Button
 					icon="copy"
-					variant="outline"
+					variant="ghost"
 					class="absolute bottom-2 right-2"
 					@click="copyToClipboard(state.query.doc.sql)"
 				></Button>

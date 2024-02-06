@@ -1,6 +1,7 @@
 <script setup>
 import NativeQueryEditor from '@/query/NativeQueryEditor.vue'
-import QueryResult from '@/query/ResultSection.vue'
+import ResultSection from '@/query/ResultSection.vue'
+import ResultFooter from '@/query/visual/ResultFooter.vue'
 import useQuery from '@/query/resources/useQuery'
 import useQueryStore from '@/stores/queryStore'
 import { provide, reactive } from 'vue'
@@ -49,9 +50,9 @@ state.removeQuery = () => {
 		<transition name="fade" mode="out-in">
 			<div
 				v-show="state.query.doc.name && !state.minimizeQuery"
-				class="w-full flex-1 overflow-hidden border-t"
+				class="flex min-h-[10rem] w-full flex-1 overflow-hidden border-t"
 			>
-				<NativeQueryEditor :showToolbar="false"></NativeQueryEditor>
+				<NativeQueryEditor></NativeQueryEditor>
 			</div>
 		</transition>
 
@@ -59,7 +60,11 @@ state.removeQuery = () => {
 			v-if="state.query.results?.formattedResults?.length > 1 && !state.minimizeResult"
 			class="group relative flex max-h-80 flex-col overflow-hidden border-t bg-white"
 		>
-			<QueryResult />
+			<ResultSection>
+				<template #footer>
+					<ResultFooter></ResultFooter>
+				</template>
+			</ResultSection>
 		</div>
 	</div>
 	<div v-else class="flex h-20 w-full flex-col items-center justify-center">
