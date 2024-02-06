@@ -4,7 +4,7 @@
 		<Suspense v-else>
 			<AppShell />
 		</Suspense>
-		<Toaster :visible-toasts="2" :rich-colors="true" position="bottom-right" />
+		<Toaster :visible-toasts="2" position="bottom-right" />
 	</div>
 </template>
 
