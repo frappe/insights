@@ -121,7 +121,8 @@ class BaseDatabase:
 
     def escape_special_characters(self, sql):
         # to fix special characters in query like %
-        sql = re.sub(r"(%{1,})", r"%%", sql)
+        if self.engine.dialect.name == "mysql":
+            sql = re.sub(r"(%{1,})", r"%%", sql)
         return sql
 
     def replace_template_tags(self, sql):
