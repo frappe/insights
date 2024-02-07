@@ -20,7 +20,7 @@ provide('dashboard', dashboard)
 		</template>
 
 		<template #content>
-			<div class="h-full w-full overflow-y-hidden bg-white px-4 py-2 hover:overflow-y-auto">
+			<div class="h-full w-full overflow-y-auto bg-white px-4 py-2">
 				<div
 					ref="gridLayout"
 					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"

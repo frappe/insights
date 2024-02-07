@@ -130,7 +130,7 @@ async function setColumnOptions(chartItem) {
 					column in the linked charts.
 				</span>
 			</div>
-			<div class="max-h-[20rem] space-y-2 overflow-y-hidden hover:overflow-y-auto">
+			<div class="max-h-[20rem] space-y-2 overflow-y-auto">
 				<div
 					class="flex h-8 w-full items-center"
 					v-for="chartItem in charts"

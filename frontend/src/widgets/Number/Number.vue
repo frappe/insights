@@ -27,7 +27,7 @@ const formattedValue = computed(() => {
 		class="flex h-full w-full items-center justify-center overflow-hidden px-8 py-4"
 	>
 		<div
-			class="mx-auto flex h-full max-h-[10rem] w-full min-w-40 max-w-[20rem] flex-col justify-center overflow-y-hidden hover:overflow-y-auto"
+			class="mx-auto flex h-full max-h-[10rem] w-full min-w-40 max-w-[20rem] flex-col justify-center overflow-y-auto"
 		>
 			<div class="w-full">
 				<span class="truncate font-medium leading-6">{{ props.options.title }}</span>

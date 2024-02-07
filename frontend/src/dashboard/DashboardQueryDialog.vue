@@ -22,11 +22,7 @@ function openQueryInNewTab() {
 
 <template>
 	<TransitionRoot as="template" :show="show">
-		<HDialog
-			as="div"
-			class="fixed inset-0 z-10 overflow-y-hidden hover:overflow-y-auto"
-			@close="show = false"
-		>
+		<HDialog as="div" class="fixed inset-0 z-10 overflow-y-auto" @close="show = false">
 			<div class="flex h-full min-h-screen flex-col items-center p-10">
 				<TransitionChild
 					as="template"

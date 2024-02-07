@@ -41,10 +41,7 @@
 			</template>
 			<template #body="{ close: closePopover }">
 				<div v-show="isComboboxOpen" class="rounded rounded-t-none bg-white px-1.5 shadow">
-					<ComboboxOptions
-						static
-						class="max-h-[20rem] overflow-y-hidden hover:overflow-y-auto"
-					>
+					<ComboboxOptions static class="max-h-[20rem] overflow-y-auto">
 						<div
 							class="sticky top-0 mb-1.5 flex items-stretch space-x-1.5 bg-white pt-1.5"
 						>

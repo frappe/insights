@@ -61,7 +61,7 @@
 				{{ dataSourceTable.doc.columns.length }} Columns -
 				{{ dataSourceTable.rows.length }} Rows
 			</div> -->
-			<div class="flex flex-1 overflow-hidden hover:overflow-auto">
+			<div class="flex flex-1 overflow-auto">
 				<Grid :header="true" :rows="dataSourceTable.rows.data">
 					<template #header>
 						<DataSourceTableColumnHeader

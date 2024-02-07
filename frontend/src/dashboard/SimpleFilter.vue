@@ -281,7 +281,7 @@ function isValueSelected(value) {
 						/>
 						<ComboboxOptions static class="flex max-h-[20rem] flex-col overflow-hidden">
 							<div class="mb-1 px-1 text-sm text-gray-500">Select an option</div>
-							<div class="flex-1 overflow-y-hidden hover:overflow-y-auto">
+							<div class="flex-1 overflow-y-auto">
 								<ComboboxOption
 									v-for="value in values"
 									:key="value.value"
