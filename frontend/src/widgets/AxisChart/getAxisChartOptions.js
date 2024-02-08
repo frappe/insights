@@ -164,7 +164,10 @@ function makeOptions(chartType, labels, datasets, options) {
 					: undefined,
 			// bar styles
 			itemStyle: {
-				borderRadius: [4, 4, 0, 0],
+				borderRadius:
+					options.roundedBars != undefined && index == datasets.length - 1
+						? [4, 4, 0, 0]
+						: 0,
 			},
 			barMaxWidth: 50,
 			stack: options.stack ? 'stack' : null,

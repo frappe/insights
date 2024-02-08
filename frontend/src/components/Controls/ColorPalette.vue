@@ -49,33 +49,42 @@
 		</div>
 	</div>
 </template>
-; ;;
+
 <script setup>
-import { getColors } from '@/utils/colors'
+import { generateColorPalette, getColors } from '@/utils/colors'
 import { Plus } from 'lucide-vue-next'
-import { ref, watch, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ColorPicker from './ColorPicker.vue'
 
-const colors = defineModel()
-
-const paletteColors = {
-	default: getColors().slice(0, 10),
-}
 const colorPaletteOptions = [
 	{ label: 'Default', value: 'default' },
+	{ label: 'Blues', value: 'blue' },
+	{ label: 'Greens', value: 'green' },
+	{ label: 'Yellows', value: 'yellow' },
+	{ label: 'Teals', value: 'teal' },
 	{ label: 'Custom', value: 'custom' },
 ]
+const paletteColors = colorPaletteOptions.reduce((acc, option) => {
+	if (option.value !== 'custom') {
+		acc[option.value] = generateColorPalette(option.value)
+	}
+	if (option.value === 'default') {
+		acc[option.value] = getColors().slice(0, 10)
+	}
+	return acc
+}, {})
+
 const selectedPalette = ref()
-watch(selectedPalette, () => (colors.value = currentColors.value))
-const currentColors = computed(() => {
-	return getPaletteColors(selectedPalette.value.value)
-})
+watch(selectedPalette, () => (colors.value = selectedPaletteColors.value))
+const selectedPaletteColors = computed(() => getPaletteColors(selectedPalette.value.value))
+
+const colors = defineModel()
 if (colors.value?.length === 0) {
-	selectedPalette.value = colorPaletteOptions[0]
-} else if (isDefaultPalette(colors.value)) {
-	selectedPalette.value = colorPaletteOptions[0]
+	selectedPalette.value = colorPaletteOptions.at(0)
+} else if (isCustomPalette(colors.value)) {
+	selectedPalette.value = colorPaletteOptions.at(-1)
 } else {
-	selectedPalette.value = colorPaletteOptions[1]
+	selectedPalette.value = guessPredefinedPalette(colors.value)
 }
 
 function getPaletteColors(palette) {
@@ -84,16 +93,23 @@ function getPaletteColors(palette) {
 	}
 	return paletteColors[palette] ?? []
 }
-function isDefaultPalette(colors) {
-	if (!colors) return true
-	return colors.every((color, index) => color === paletteColors.default[index])
+
+function guessPredefinedPalette(colors) {
+	if (!colors?.length) return false
+	return colorPaletteOptions.find((palette) =>
+		colors.every((color) => paletteColors[palette.value].includes(color))
+	)
+}
+function isCustomPalette(colors) {
+	const isPredefinedPalette = guessPredefinedPalette(colors)
+	return !isPredefinedPalette && colors.length > 0
 }
 
 function handleColorChange(color, index) {
 	if (selectedPalette.value.value !== 'custom') {
 		selectedPalette.value = colorPaletteOptions[1]
-		colors.value = currentColors.value.length
-			? currentColors.value
+		colors.value = selectedPaletteColors.value.length
+			? selectedPaletteColors.value
 			: getPaletteColors('default')
 	}
 	colors.value[index] = color
