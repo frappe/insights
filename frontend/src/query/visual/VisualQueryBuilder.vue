@@ -64,9 +64,9 @@ const hideChart = ref(false)
 					<hr class="border-gray-200" />
 					<ColumnSection></ColumnSection>
 					<hr class="border-gray-200" />
-					<TransformSection></TransformSection>
-					<hr class="border-gray-200" />
 					<LimitSection></LimitSection>
+					<hr class="border-gray-200" />
+					<TransformSection></TransformSection>
 				</template>
 				<template v-if="activeTab === 'Visualize'">
 					<ChartOptions></ChartOptions>
