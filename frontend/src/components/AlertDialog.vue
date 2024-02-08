@@ -155,7 +155,7 @@ function testSendAlert() {
 							class="flex-1"
 							v-model="alert.condition.left"
 							:options="
-								query.resultColumns.map((c) => ({
+								query.results.columns.map((c) => ({
 									label: c.label,
 									value: c.label,
 									description: c.type,

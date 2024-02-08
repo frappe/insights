@@ -37,7 +37,7 @@
 					<ul
 						role="list"
 						v-if="teams.list?.length > 0"
-						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-scroll"
+						class="flex flex-1 flex-col divide-y divide-gray-200 overflow-y-auto"
 					>
 						<li
 							v-for="team in teams.list"

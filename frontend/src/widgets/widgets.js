@@ -2,6 +2,7 @@ import ComboChartIcon from '@/components/Icons/ComboChartIcon.vue'
 import {
 	AlignLeft,
 	BarChart3,
+	BarChartHorizontal,
 	BatteryMedium,
 	DollarSign,
 	GitBranch,
@@ -16,11 +17,13 @@ import {
 	TrendingUp,
 } from 'lucide-vue-next'
 import { defineAsyncComponent } from 'vue'
+import widgetDimensions from './widgetDimensions.json'
 
 export const VALID_CHARTS = [
 	'Number',
 	'Line',
 	'Bar',
+	'Row',
 	'Pie',
 	'Table',
 	'Progress',
@@ -38,8 +41,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Number/Number.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
 		options: {},
-		defaultWidth: 4,
-		defaultHeight: 4,
+		...widgetDimensions.Number,
 	},
 	Trend: {
 		type: 'Trend',
@@ -47,8 +49,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Trend/Trend.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Trend/TrendOptions.vue')),
 		options: {},
-		defaultWidth: 5,
-		defaultHeight: 5,
+		...widgetDimensions.Trend,
 	},
 	Line: {
 		type: 'Line',
@@ -56,8 +57,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Line/Line.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Line/LineOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions.Line,
 	},
 	Scatter: {
 		type: 'Scatter',
@@ -65,8 +65,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Scatter/Scatter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Scatter/ScatterOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions.Scatter,
 	},
 	Bar: {
 		type: 'Bar',
@@ -74,8 +73,15 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Bar/Bar.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Bar/BarOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions.Bar,
+	},
+	Row: {
+		type: 'Row',
+		icon: BarChartHorizontal,
+		component: defineAsyncComponent(() => import('./Row/Row.vue')),
+		optionsComponent: defineAsyncComponent(() => import('./Row/RowOptions.vue')),
+		options: {},
+		...widgetDimensions.Row,
 	},
 	Pie: {
 		type: 'Pie',
@@ -83,8 +89,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Pie/Pie.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Pie/PieOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions.Pie,
 	},
 	Funnel: {
 		type: 'Funnel',
@@ -92,8 +97,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Funnel/Funnel.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Funnel/FunnelOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions.Funnel,
 	},
 	Table: {
 		type: 'Table',
@@ -101,8 +105,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Table/Table.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Table/TableOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions.Table,
 	},
 	Progress: {
 		type: 'Progress',
@@ -110,8 +113,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Progress/Progress.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Progress/ProgressOptions.vue')),
 		options: {},
-		defaultWidth: 5,
-		defaultHeight: 4,
+		...widgetDimensions.Progress,
 	},
 	'Mixed Axis': {
 		type: 'Mixed Axis',
@@ -119,8 +121,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./MixedAxis/MixedAxis.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./MixedAxis/MixedAxisOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions['Mixed Axis'],
 	},
 	Filter: {
 		type: 'Filter',
@@ -128,8 +129,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Filter/Filter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Filter/FilterOptions.vue')),
 		options: {},
-		defaultWidth: 5,
-		defaultHeight: 2,
+		...widgetDimensions.Filter,
 	},
 	Text: {
 		type: 'Text',
@@ -137,8 +137,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Text/Text.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Text/TextOptions.vue')),
 		options: {},
-		defaultWidth: 8,
-		defaultHeight: 2,
+		...widgetDimensions.Text,
 	},
 	'Pivot Table': {
 		type: 'Pivot Table',
@@ -146,8 +145,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
 		options: {},
-		defaultWidth: 16,
-		defaultHeight: 14,
+		...widgetDimensions['Pivot Table'],
 	},
 }
 

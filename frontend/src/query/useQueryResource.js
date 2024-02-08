@@ -54,8 +54,6 @@ export function useQueryResource(name) {
 				return c
 			})
 			doc.json = safeJSONParse(doc.json, defaultQueryJSON)
-			doc.results = safeJSONParse(doc.results, [])
-			resource.resultColumns = doc.results[0]
 			doc.transforms = doc.transforms.map((t) => {
 				t.options = safeJSONParse(t.options, {})
 				return t

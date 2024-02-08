@@ -13,7 +13,6 @@ from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
 from .base_database import (
     BaseDatabase,
-    DatabaseConnectionError,
     DatabaseCredentialsError,
     DatabaseParallelConnectionError,
 )
@@ -105,15 +104,15 @@ class MariaDB(BaseDatabase):
             charset="utf8mb4",
             use_unicode=True,
         )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
 
-    def handle_db_exception(self, e):
+    def handle_db_connection_error(self, e):
         if "Access denied" in str(e):
             raise DatabaseCredentialsError()
         if "Packet sequence number wrong" in str(e):
             raise DatabaseParallelConnectionError()
-        super().handle_db_exception(e)
+        super().handle_db_connection_error(e)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:

@@ -51,7 +51,7 @@ function calcInitialXY({ x, y }) {
 
 const pageMeta = computed(() => {
 	return {
-		title: props.name,
+		title: dashboard.doc.title || props.name,
 		subtitle: 'Dashboard',
 	}
 })
@@ -77,7 +77,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 		</template>
 
 		<template #content>
-			<div class="h-full w-full overflow-y-scroll p-2">
+			<div class="h-full w-full overflow-y-auto p-2">
 				<div
 					ref="gridLayout"
 					class="dashboard relative flex h-fit min-h-screen w-full flex-1 flex-col"
@@ -114,7 +114,7 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 		</template>
 
 		<template #sidebar v-if="dashboard.editing && dashboard.sidebar.open">
-			<div class="w-[21rem] overflow-scroll border-l bg-white p-3 px-4 shadow-sm">
+			<div class="w-[21rem] overflow-y-auto border-l bg-white p-3 px-4 shadow-sm">
 				<div v-if="!dashboard.currentItem">
 					<div class="mb-3 font-semibold text-gray-800">Widgets</div>
 					<DashboardSidebarWidgets @dragChange="draggingWidget = $event" />
@@ -149,8 +149,12 @@ const debouncedUpdateTitle = debounce((value) => dashboard.updateTitle(value), 5
 						v-if="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						:is="widgets.getOptionComponent(dashboard.currentItem.item_type)"
 						v-model="dashboard.currentItem.options"
-						:columns="dashboard.currentItem.query?.resultColumns"
-						:key="dashboard.currentItem.item_id && dashboard.currentItem.item_type"
+						:columns="dashboard.currentItem.query?.results.columns"
+						:key="
+							dashboard.currentItem.item_id &&
+							dashboard.currentItem.item_type &&
+							dashboard.currentItem.query?.doc?.name
+						"
 					/>
 
 					<div class="flex space-x-2">

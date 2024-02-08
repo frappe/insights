@@ -116,7 +116,7 @@ class PostgresDatabase(BaseDatabase):
                 port=kwargs.pop("port"),
                 sslmode="require" if kwargs.pop("use_ssl") else "disable",
             )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder()
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: PostgresTableFactory = PostgresTableFactory(self.data_source)
 
     def sync_tables(self, tables=None, force=False):

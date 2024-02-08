@@ -27,7 +27,7 @@ const sortOrderToIcon = {
 }
 </script>
 <template>
-	<div class="space-x-1">
+	<div class="flex items-center space-x-1">
 		<Dropdown :options="sortOptions">
 			<component
 				:is="sortOrderToIcon[getOrder(column.label)] || ArrowDownUp"

@@ -44,7 +44,7 @@ export function useQueryColumns(query) {
 	watch(options, updateColumnOptionsCache)
 
 	const indexOptions = computed(() => {
-		return query.resultColumns
+		return query.results.columns
 			.filter((c) => !FIELDTYPES.NUMBER.includes(c.type))
 			.map((c) => {
 				return {
@@ -54,7 +54,7 @@ export function useQueryColumns(query) {
 			})
 	})
 	const valueOptions = computed(() => {
-		return query.resultColumns
+		return query.results.columns
 			.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 			.map((c) => {
 				return {

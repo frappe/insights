@@ -3,15 +3,14 @@ import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced } from '@vueuse/core'
 import { call, createDocumentResource } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import useQuery from './useQuery'
 
-export default async function useChart(chart_name) {
-	const resource = getChartResource(chart_name)
-	await resource.get.fetch()
+export default function useQueryChart(chartName, queryTitle, queryResults) {
+	const resource = getChartResource(chartName)
+	resource.get.fetch()
 
 	const chart = reactive({
-		doc: computed(() => resource.doc),
-		data: [],
+		doc: computed(() => resource.doc || {}),
+		data: computed(() => convertResultToObjects(queryResults.formattedResults)),
 		togglePublicAccess,
 		addToDashboard,
 		getGuessedChart,
@@ -19,14 +18,9 @@ export default async function useChart(chart_name) {
 		delete: deleteChart,
 	})
 
-	const query = useQuery(chart.doc.query)
-	chart.data = computed(() => convertResultToObjects(query.formattedResults))
-	chart.doc.options.title = chart.doc.options?.title || query.doc?.title
-
 	const run = createTaskRunner()
 	watchDebounced(
 		() => ({
-			title: chart.doc.title,
 			chart_type: chart.doc.chart_type,
 			options: chart.doc.options,
 		}),
@@ -34,48 +28,44 @@ export default async function useChart(chart_name) {
 		{ deep: true, debounce: 1000 }
 	)
 	async function _updateDoc(newDoc) {
-		newDoc.options.query = query.doc.name
-		if (newDoc.chart_type == 'Auto') {
-			newDoc.options = { title: newDoc.title }
-		}
-
 		const ogDoc = resource.originalDoc
 		const chartTypeChanged = newDoc.chart_type != ogDoc.chart_type
-		if (
-			!chartTypeChanged &&
-			newDoc.title == ogDoc.title &&
-			newDoc.options.query == ogDoc.options.query &&
-			areDeeplyEqual(newDoc.options, ogDoc.options)
-		)
-			return
+		const optionsChanged = !areDeeplyEqual(newDoc.options, ogDoc.options)
+		if (!chartTypeChanged && !optionsChanged) return
+
+		let newOptions = { ...newDoc.options }
+		if (!newOptions.query) {
+			newOptions.query = chart.doc.query
+		}
 
 		if (chartTypeChanged && newDoc.chart_type != 'Auto') {
 			const guessedChart = getGuessedChart(newDoc.chart_type)
-			newDoc.options = { ...guessedChart.options, ...newDoc.options }
+			newOptions = { ...guessedChart.options, ...newOptions }
+			newOptions.title = queryTitle
 		}
-
-		_save(newDoc)
+		_save({ chart_type: newDoc.chart_type, options: newOptions })
 	}
 
-	function _save(chart) {
+	function _save(chartDoc) {
+		chartDoc.options.query = chart.doc.query
 		return run(() =>
-			resource.setValue
-				.submit({
-					title: chart.title,
-					chart_type: chart.chart_type,
-					options: chart.options,
-				})
-				.then(() => (chart.doc = resource.doc))
+			resource.setValue.submit({
+				title: chartDoc.options.title || queryTitle,
+				chart_type: chartDoc.chart_type,
+				options: chartDoc.options,
+			})
 		)
 	}
 
 	function getGuessedChart(chart_type) {
-		if (!query.formattedResults.length) return
-		const recommendedChart = guessChart(query.formattedResults, chart_type)
+		if (!queryResults.formattedResults.length) return
+		chart_type = chart_type || chart.doc.chart_type
+		const recommendedChart = guessChart(queryResults.formattedResults, chart_type)
 		return {
 			chart_type: recommendedChart?.type,
 			options: {
 				...recommendedChart?.options,
+				title: recommendedChart?.options?.title || queryTitle,
 			},
 		}
 	}
@@ -94,6 +84,13 @@ export default async function useChart(chart_name) {
 	async function addToDashboard(dashboardName) {
 		if (!dashboardName || !resource.doc.name || resource.addingToDashboard) return
 		resource.addingToDashboard = true
+		if (chart.doc.chart_type == 'Auto') {
+			const guessedChart = getGuessedChart()
+			await _save({
+				chart_type: guessedChart.chart_type,
+				options: guessedChart.options,
+			})
+		}
 		await call('insights.api.dashboards.add_chart_to_dashboard', {
 			dashboard: dashboardName,
 			chart: resource.doc.name,

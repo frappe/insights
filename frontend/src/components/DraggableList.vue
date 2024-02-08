@@ -9,6 +9,8 @@ const props = defineProps({
 	group: { type: String, required: true },
 	itemKey: { type: String, default: 'value' },
 	emptyText: { type: String, default: 'No items' },
+	showEmptyState: { type: Boolean, default: true },
+	showHandle: { type: Boolean, default: true },
 })
 const items = computed({
 	get: () => props.items,
@@ -39,9 +41,12 @@ function onChange(e) {
 	>
 		<template #item="{ element: item, index: idx }">
 			<div class="mb-2 flex items-center gap-1">
-				<GripVertical class="handle h-4 w-4 flex-shrink-0 cursor-grab text-gray-500" />
+				<GripVertical
+					v-if="props.showHandle"
+					class="h-4 w-4 flex-shrink-0 cursor-grab text-gray-500"
+				/>
 				<div class="flex-1">
-					<slot :item="item" :index="idx">
+					<slot name="item" :item="item" :index="idx">
 						<div
 							class="group form-input flex h-7 flex-1 cursor-pointer items-center justify-between px-2"
 						>
@@ -60,7 +65,7 @@ function onChange(e) {
 				<slot name="item-suffix" :item="item" :index="idx" />
 			</div>
 		</template>
-		<template v-if="!items?.length" #footer>
+		<template v-if="showEmptyState && !items?.length">
 			<div
 				class="flex h-16 items-center justify-center rounded border border-dashed text-sm text-gray-600"
 			>

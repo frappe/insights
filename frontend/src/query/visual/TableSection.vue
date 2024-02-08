@@ -6,13 +6,12 @@ import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
 import UsePopover from '@/components/UsePopover.vue'
 import useDataSource from '@/datasource/useDataSource'
-import useDataSourceStore from '@/stores/dataSourceStore'
 import { whenever } from '@vueuse/core'
-import { ExternalLink, Sheet, X } from 'lucide-vue-next'
+import { ExternalLink, GanttChartSquare, Sheet, Table2, X } from 'lucide-vue-next'
 import { computed, inject, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import SectionHeader from './SectionHeader.vue'
 import TableJoinEditor from './TableJoinEditor.vue'
-import { Table2, GanttChartSquare } from 'lucide-vue-next'
 
 const assistedQuery = inject('assistedQuery')
 
@@ -48,62 +47,39 @@ function onTableLinkClick(table) {
 		: router.resolve({ name: 'DataSource', params: { name: assistedQuery.data_source } })
 	window.open(route.href, '_blank')
 }
-
-const sources = useDataSourceStore()
-const dataSourceOptions = computed(() => {
-	return sources.list.map((source) => ({
-		label: source.title,
-		value: source.name,
-	}))
-})
-const selector = ref(null)
-async function handleDataSourceChange(option) {
-	await assistedQuery.setDataSource(option.value)
-	selector.value?.togglePopover(true)
-}
 </script>
 
 <template>
-	<div>
-		<div class="mb-2 flex items-center justify-between">
-			<div class="flex items-center space-x-1.5">
-				<Sheet class="h-4 w-4 text-gray-600" />
-				<p class="font-medium">Data</p>
-			</div>
-			<!-- Show Data Source Selector first then show Table Selector -->
+	<div :key="assistedQuery.data_source" class="space-y-2">
+		<SectionHeader
+			:icon="Sheet"
+			title="Tables"
+			info="Select the tables you want to extract data from."
+		>
 			<Autocomplete
-				ref="selector"
-				:key="assistedQuery.data_source"
 				bodyClasses="w-[18rem]"
-				:options="
-					assistedQuery.data_source ? dataSource.groupedTableOptions : dataSourceOptions
-				"
-				@update:modelValue="
-					assistedQuery.data_source
-						? $event && assistedQuery.addTable($event)
-						: handleDataSourceChange($event)
-				"
+				:options="dataSource.groupedTableOptions"
+				@update:modelValue="$event && assistedQuery.addTable($event)"
 			>
 				<template #target="{ togglePopover }">
 					<Button variant="outline" icon="plus" @click="togglePopover"></Button>
 				</template>
 			</Autocomplete>
-		</div>
+		</SectionHeader>
 		<div class="space-y-2">
 			<div
 				v-if="assistedQuery.table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				class="group relative flex h-8 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 pl-2.5 hover:shadow"
 			>
-				<div class="flex items-center space-x-2">
-					<div class="flex flex-1 items-center gap-1">
-						<component
-							:is="
-								assistedQuery.table.table.startsWith('QRY-')
-									? GanttChartSquare
-									: Table2
-							"
-							class="h-4 w-4 text-gray-600"
-						/>
+				<div class="absolute left-0 h-full w-1 flex-shrink-0 bg-orange-500"></div>
+				<div class="flex flex-1 items-center gap-1 overflow-hidden">
+					<component
+						:is="
+							assistedQuery.table.table.startsWith('QRY-') ? GanttChartSquare : Table2
+						"
+						class="h-4 w-4 flex-shrink-0 text-gray-600"
+					/>
+					<div class="flex flex-1 items-center gap-1 overflow-hidden">
 						<span class="truncate">{{ assistedQuery.table.label }}</span>
 						<ExternalLink
 							class="h-3 w-3 text-gray-600 opacity-0 transition-all hover:text-gray-800 group-hover:opacity-100"
@@ -111,7 +87,7 @@ async function handleDataSourceChange(option) {
 						/>
 					</div>
 				</div>
-				<div class="flex items-center space-x-2">
+				<div class="ml-2 flex items-center space-x-2">
 					<X
 						class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
 						@click="assistedQuery.resetMainTable()"
@@ -122,7 +98,7 @@ async function handleDataSourceChange(option) {
 				ref="joinRefs"
 				v-for="(join, idx) in joins"
 				:key="join.right_table.table"
-				class="group flex h-8 cursor-pointer items-center justify-between rounded border border-gray-300 bg-white px-2 hover:shadow"
+				class="group relative flex h-8 cursor-pointer items-center justify-between overflow-hidden rounded border border-gray-300 bg-white px-2 pl-2.5 hover:shadow"
 				:class="
 					idx === activeJoinIdx
 						? 'border-gray-500 bg-white shadow-sm ring-1 ring-gray-400'
@@ -130,6 +106,7 @@ async function handleDataSourceChange(option) {
 				"
 				@click="activeJoinIdx = idx"
 			>
+				<div class="absolute left-0 h-full w-1 flex-shrink-0 bg-orange-500"></div>
 				<div class="flex flex-1 items-center gap-1">
 					<component
 						:is="join.right_table.table.startsWith('QRY-') ? GanttChartSquare : Table2"

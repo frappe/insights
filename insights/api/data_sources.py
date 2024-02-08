@@ -137,19 +137,19 @@ def get_columns_from_uploaded_file(filename):
     columns = df.columns.tolist()
     columns_with_types = []
     for column in columns:
-        column_type = infer_type_from_list(df[column].tolist())
+        column_type = infer_type_from_list(df[column].dropna().head(1000).tolist())
         columns_with_types.append({"label": column, "type": column_type})
     return columns_with_types
 
 
 def create_data_source_for_csv():
-    if not frappe.db.exists("Insights Data Source", "File Uploads"):
+    if not frappe.db.exists("Insights Data Source", {"title": "File Uploads"}):
         data_source = frappe.new_doc("Insights Data Source")
         data_source.database_type = "SQLite"
         data_source.database_name = "file_uploads"
         data_source.title = "File Uploads"
         data_source.allow_imports = 1
-        data_source.save(ignore_permissions=True)
+        data_source.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()

@@ -6,7 +6,7 @@
 		>
 			<span>No Data</span>
 		</div>
-		<div class="flex flex-1 flex-col overflow-scroll text-base">
+		<div class="flex flex-1 flex-col overflow-auto text-base">
 			<table>
 				<thead class="sticky top-0" v-if="props.header">
 					<tr>

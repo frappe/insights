@@ -86,7 +86,11 @@ export function getCellComponent(cell, column) {
 	}
 
 	const isNumber = typeof value == 'number'
-	return h('div', { class: isNumber ? 'text-right tnum' : '' }, value)
+	return h(
+		'div',
+		{ class: isNumber ? 'text-right tnum' : '' },
+		isNumber ? formatNumber(value) : value
+	)
 }
 
 function parsePills(cell) {

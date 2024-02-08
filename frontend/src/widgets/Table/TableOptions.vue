@@ -1,6 +1,6 @@
 <script setup>
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import Checkbox from '@/components/Controls/Checkbox.vue'
+
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { computed } from 'vue'
@@ -77,6 +77,7 @@ function updateColumns(columnOptions) {
 			<template #item-suffix="{ item, index }">
 				<DraggableListItemMenu>
 					<TableColumnOptions
+						v-if="item.column_options && props.columns"
 						:model-value="item.column_options"
 						:column="props.columns.find((col) => col.label === item.column)"
 						@update:model-value="options.columns[index].column_options = $event"

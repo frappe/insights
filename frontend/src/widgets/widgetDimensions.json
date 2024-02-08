@@ -1,0 +1,58 @@
+{
+	"Number": {
+		"defaultWidth": 4,
+		"defaultHeight": 4
+	},
+	"Trend": {
+		"defaultWidth": 4,
+		"defaultHeight": 4
+	},
+	"Line": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Scatter": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Bar": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Row": {
+		"defaultWidth": 10,
+		"defaultHeight": 15
+	},
+	"Pie": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Funnel": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Table": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Progress": {
+		"defaultWidth": 5,
+		"defaultHeight": 4
+	},
+	"Mixed Axis": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	},
+	"Filter": {
+		"defaultWidth": 5,
+		"defaultHeight": 2
+	},
+	"Text": {
+		"defaultWidth": 8,
+		"defaultHeight": 2
+	},
+	"Pivot Table": {
+		"defaultWidth": 10,
+		"defaultHeight": 10
+	}
+}

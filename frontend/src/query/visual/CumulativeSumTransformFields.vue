@@ -12,8 +12,8 @@ const options = computed({
 })
 
 const valueOptions = computed(() => {
-	if (!query.resultColumns) return []
-	return query.resultColumns
+	if (!query.results.columns) return []
+	return query.results.columns
 		.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 		.map((c) => ({ label: c.label, value: c.label, description: c.type }))
 })

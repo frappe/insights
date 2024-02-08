@@ -62,10 +62,10 @@ results = fetch_data_from_url()`
 			Script Query
 		</div>
 		<div class="flex flex-1 flex-shrink-0 overflow-hidden rounded border">
-			<div class="relative flex flex-1 flex-col overflow-y-scroll">
+			<div class="relative flex flex-1 flex-col overflow-y-auto">
 				<Code language="python" v-model="script" placeholder="Enter your script here...">
 				</Code>
-				<div class="sticky bottom-0 flex justify-between bg-white p-2">
+				<div class="sticky bottom-0 flex justify-between border-t bg-white p-2">
 					<div class="flex gap-2">
 						<Button variant="outline" icon="help-circle" @click="showHelp = true" />
 						<Button
@@ -106,7 +106,7 @@ results = fetch_data_from_url()`
 					class="flex h-full w-[30rem] flex-col overflow-hidden bg-gray-50 p-3"
 				>
 					<div class="text-sm uppercase tracking-wide text-gray-600">Logs</div>
-					<div class="mt-2 flex w-full flex-col gap-2 overflow-scroll font-mono">
+					<div class="mt-2 flex w-full flex-col gap-2 overflow-y-auto font-mono">
 						<div v-for="(log, index) in scriptLogs" :key="index" class="flex gap-2">
 							<div class="text-gray-400">[{{ index + 1 }}]</div>
 							<div class="text-gray-500">{{ log }}</div>

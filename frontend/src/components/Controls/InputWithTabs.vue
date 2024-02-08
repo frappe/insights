@@ -32,7 +32,11 @@ function getLabel() {
 			<div
 				class="my-2 flex select-none flex-col space-y-3 rounded border bg-white p-3 text-base shadow-md"
 			>
-				<Tabs :tabs="tabs" @switch="$emit('tab-change', $event.label)" />
+				<Tabs
+					:tabs="tabs"
+					:model-value="getLabel()"
+					@update:model-value="$emit('tab-change', $event.label)"
+				/>
 				<slot name="inputs"></slot>
 				<div class="flex w-full justify-end">
 					<Button variant="solid" @click="togglePopover()"> Done </Button>

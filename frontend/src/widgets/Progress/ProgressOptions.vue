@@ -1,5 +1,4 @@
 <script setup>
-import Checkbox from '@/components/Controls/Checkbox.vue'
 import InputWithTabs from '@/components/Controls/InputWithTabs.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'

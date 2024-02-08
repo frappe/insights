@@ -11,18 +11,19 @@
 		@update="onUpdate"
 		@focus="emit('focus')"
 		@blur="emit('blur')"
+		@ready="codeMirror = $event"
 	/>
 </template>
 
 <script setup>
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { javascript } from '@codemirror/lang-javascript'
-import { MySQL, sql } from '@codemirror/lang-sql'
 import { python } from '@codemirror/lang-python'
+import { MySQL, sql } from '@codemirror/lang-sql'
 import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
 import { EditorView } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 
 const props = defineProps({
@@ -65,6 +66,7 @@ const onUpdate = (viewUpdate) => {
 	})
 }
 
+const codeMirror = ref(null)
 const code = computed({
 	get: () => (props.modelValue ? props.modelValue || '' : props.value || ''),
 	set: (value) => emit('update:modelValue', value),
@@ -174,4 +176,15 @@ const getHighlighterStyle = () =>
 	])
 
 extensions.push(syntaxHighlighting(getHighlighterStyle()))
+
+defineExpose({
+	get cursorPos() {
+		return codeMirror.value.view.state.selection.ranges[0].to
+	},
+	focus: () => codeMirror.value.view.focus(),
+	setCursorPos: (pos) => {
+		const _pos = Math.min(pos, code.value.length)
+		codeMirror.value.view.dispatch({ selection: { anchor: _pos, head: _pos } })
+	},
+})
 </script>

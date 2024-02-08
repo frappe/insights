@@ -25,7 +25,8 @@ const tabs = ref([
 
 watchEffect(() => {
 	if (query.doc?.name) {
-		document.title = `${query.doc.name} - Frappe Insights`
+		const title = query.doc.title || query.doc.name
+		document.title = `${title} - Frappe Insights`
 	}
 })
 </script>

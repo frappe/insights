@@ -205,10 +205,10 @@ function isValueSelected(value) {
 						</span>
 						<div class="flex flex-shrink-0 items-center gap-1">
 							<component
-								:is="fieldtypesToIcon[filter.column.type]"
+								:is="fieldtypesToIcon[filter.column?.type || 'String']"
 								class="h-4 w-4 flex-shrink-0 text-gray-600"
 							/>
-							<span class="truncate">{{ filter.column.label }}</span>
+							<span class="truncate">{{ props.label || filter.column?.label }}</span>
 						</div>
 						<span v-if="filter.operator" class="flex-shrink-0 text-green-700">
 							{{ operatorLabel }}
@@ -281,7 +281,7 @@ function isValueSelected(value) {
 						/>
 						<ComboboxOptions static class="flex max-h-[20rem] flex-col overflow-hidden">
 							<div class="mb-1 px-1 text-sm text-gray-500">Select an option</div>
-							<div class="flex-1 overflow-y-scroll">
+							<div class="flex-1 overflow-y-auto">
 								<ComboboxOption
 									v-for="value in values"
 									:key="value.value"

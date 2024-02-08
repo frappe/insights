@@ -49,6 +49,9 @@ async function useDataSourceTable(params: GetTableParams) {
 		syncing: resource.syncTable.loading,
 		sync: () => resource.syncTable.submit(),
 		fetchPreview: () => resource.getPreview.submit(),
+		updateVisibility: (hidden: boolean) => {
+			return resource.updateVisibility.submit({ hidden })
+		},
 		updateColumnType: (column: any) => {
 			return resource.update_column_type.submit({
 				column: column.column,
@@ -97,4 +100,5 @@ export type DataSourceTable = UnwrapRef<{
 	sync: () => Promise<any>
 	fetchPreview: () => Promise<any>
 	updateColumnType: (column: any) => Promise<any>
+	updateVisibility: (hidden: boolean) => Promise<any>
 }>

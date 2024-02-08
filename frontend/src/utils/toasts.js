@@ -1,19 +1,29 @@
-import { h, reactive, ref } from 'vue'
 import Toast from '@/components/Toast.vue'
-
-let toasts = ref([])
-
-export default {
-	name: 'Toasts',
-	render() {
-		return toasts.value.map((toast) => h(Toast, toast))
-	},
-}
+import { h, markRaw } from 'vue'
+import { toast } from 'vue-sonner'
 
 export function createToast(toastOptions) {
-	let toast = reactive({
-		key: 'toast-' + toasts.value.length,
-		...toastOptions,
-	})
-	toasts.value.push(toast)
+	const options = {}
+	if (toastOptions.message && toastOptions.title) {
+		options.message = toastOptions.message
+		options.title = toastOptions.title
+	} else if (toastOptions.message && !toastOptions.title) {
+		options.message = toastOptions.message
+		options.title = titleCase(toastOptions.variant)
+	} else if (!toastOptions.message && toastOptions.title) {
+		options.message = ''
+		options.title = toastOptions.title
+	}
+	const component = h(Toast, { ...toastOptions, ...options })
+	toast(markRaw(component))
+}
+
+function titleCase(str) {
+	return str
+		.toLowerCase()
+		.split(' ')
+		.map(function (word) {
+			return word.charAt(0).toUpperCase() + word.slice(1)
+		})
+		.join(' ')
 }

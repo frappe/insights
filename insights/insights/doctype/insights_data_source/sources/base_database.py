@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
+
 import frappe
 from sqlalchemy.sql import text
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
@@ -56,20 +58,19 @@ class BaseDatabase:
             return self.engine.connect()
         except BaseException as e:
             frappe.log_error(title="Error connecting to database", message=e)
-            self.handle_db_exception(e)
+            self.handle_db_connection_error(e)
 
-    def handle_db_exception(self, e):
-        raise DatabaseCredentialsError(e)
+    def handle_db_connection_error(self, e):
+        raise DatabaseConnectionError(e)
 
     def build_query(self, query):
         """Used to update the sql in insights query"""
-        query_str = self.query_builder.build(query, dialect=self.engine.dialect)
+        query_str = self.query_builder.build(query)
         query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
         return query_str
 
     def run_query(self, query):
-        sql = self.query_builder.build(query, dialect=self.engine.dialect)
-        sql = self.escape_special_characters(sql) if query.is_native_query else sql
+        sql = self.query_builder.build(query)
         return self.execute_query(sql, return_columns=True)
 
     def execute_query(
@@ -87,6 +88,8 @@ class BaseDatabase:
         sql = self.compile_query(sql)
         sql = self.process_subquery(sql)
         sql = self.set_row_limit(sql)
+        sql = self.replace_template_tags(sql)
+        sql = self.escape_special_characters(sql)
 
         self.validate_native_sql(sql)
 
@@ -118,7 +121,32 @@ class BaseDatabase:
 
     def escape_special_characters(self, sql):
         # to fix special characters in query like %
-        return text(sql.replace("%%", "%"))
+        if self.engine.dialect.name == "mysql":
+            sql = re.sub(r"(%{1,})", r"%%", sql)
+        return sql
+
+    def replace_template_tags(self, sql):
+        # replace template tags with actual values
+        # {{ QRY_1203 }} -> SELECT * FROM `tabSales Invoice`
+        # find all the template tags in the query
+        # match all character between {{ and }}
+        matches = re.findall(r"{{(.*?)}}", sql)
+        if not matches:
+            return sql
+        context = {}
+        for match in matches:
+            query_name = match.strip().replace("_", "-")
+            if (
+                not query_name
+                or not query_name.startswith("QRY")
+                or not frappe.db.exists("Insights Query", query_name)
+            ):
+                continue
+            query = frappe.get_doc("Insights Query", query_name)
+            key = query_name.replace("-", "_")
+            context[key] = self.build_query(query)
+        sql = frappe.render_template(sql, context)
+        return sql
 
     def set_row_limit(self, sql):
         # set a hard max limit to prevent long running queries

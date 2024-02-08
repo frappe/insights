@@ -30,11 +30,17 @@ export default function useChartData(options = {}) {
 	function load(query) {
 		if (!query) return
 		state.loading = true
-		return options.resultsFetcher().then((results) => {
-			state.loading = false
-			state.rawData = getFormattedResult(results)
-			state.data = convertResultToObjects(state.rawData)
-		})
+		return options
+			.resultsFetcher()
+			.then((results) => {
+				state.loading = false
+				state.rawData = getFormattedResult(results)
+				state.data = convertResultToObjects(state.rawData)
+			})
+			.catch((error) => {
+				state.loading = false
+				state.error = error
+			})
 	}
 
 	if (options.query) {
@@ -76,11 +82,28 @@ export function guessChart(dataset, chart_type) {
 	const autoGuessLineChart = chart_type === 'Auto' && hasAtLeastOneDateAndNumberColumn
 	const shouldGuessLineChart = chart_type === 'Line' && hasAtLeastOneDateAndNumberColumn
 	if (autoGuessLineChart || shouldGuessLineChart) {
+		let splitYAxis = false
+		if (numberColumns.length === 2) {
+			try {
+				const numberColumnIndexes = numberColumns.map((col) =>
+					columns.findIndex((c) => c === col)
+				)
+				const maxValue1 = Math.max(...rows.map((row) => row[numberColumnIndexes[0]]))
+				const maxValue2 = Math.max(...rows.map((row) => row[numberColumnIndexes[1]]))
+				// if maxValue1 is 10 times bigger than maxValue2, then split the y-axis
+				const biggerMaxValue = Math.max(maxValue1, maxValue2)
+				const smallerMaxValue = Math.min(maxValue1, maxValue2)
+				splitYAxis = Boolean(biggerMaxValue / smallerMaxValue > 10)
+			} catch (e) {
+				console.log(e)
+			}
+		}
 		return {
 			type: 'Line',
 			options: {
-				xAxis: dateColumns[0].label,
+				xAxis: [{ column: dateColumns[0].label }],
 				yAxis: numberColumns.map((col) => ({ column: col.label })),
+				splitYAxis: splitYAxis,
 			},
 		}
 	}
@@ -154,6 +177,7 @@ export function guessChart(dataset, chart_type) {
 }
 
 export function convertResultToObjects(results) {
+	if (!results?.length) return []
 	// results first row is an list of dicts with label and type
 	// return list of plain objects with first row's labels as keys
 	// return [{ label1: value1, label2: value2 }, ...}]

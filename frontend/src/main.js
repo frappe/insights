@@ -1,11 +1,12 @@
-import { frappeRequest, initSocket, setConfig } from 'frappe-ui'
+import { autoAnimatePlugin } from '@formkit/auto-animate/vue'
+import { frappeRequest, setConfig } from 'frappe-ui'
+import { GridItem, GridLayout } from 'grid-layout-plus'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
-import { GridLayout, GridItem } from 'grid-layout-plus'
-import { socketio_port } from '../../../../sites/common_site_config.json'
 import App from './App.vue'
 import './index.css'
 import router from './router'
+import { initSocket } from './socket'
 import { createToast } from './utils/toasts'
 
 import { registerControllers, registerGlobalComponents } from './globals'
@@ -29,14 +30,10 @@ setConfig('resourceFetcher', (options) => {
 })
 
 app.use(router)
+app.use(autoAnimatePlugin)
 app.component('grid-layout', GridLayout)
 app.component('grid-item', GridItem)
-app.provide(
-	'$socket',
-	initSocket({
-		port: socketio_port,
-	})
-)
+app.provide('$socket', initSocket())
 
 registerGlobalComponents(app)
 registerControllers(app)

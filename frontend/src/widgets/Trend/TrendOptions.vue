@@ -1,5 +1,6 @@
 <script setup>
 import { FIELDTYPES } from '@/utils'
+import { Check } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -68,5 +69,6 @@ const valueOptions = computed(() => {
 		/>
 		<Checkbox v-model="options.showTrendLine" label="Show Trend Line" />
 		<Checkbox v-model="options.shorten" label="Shorten Numbers" />
+		<Checkbox v-model="options.reverseDelta" label="Reverse Colors" />
 	</div>
 </template>

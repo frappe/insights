@@ -95,11 +95,11 @@ function getTopOffset(idx) {
 		<div class="flex items-center border-b bg-gray-50 px-4 py-2">
 			<span class="truncate font-medium">{{ table.doc.label }}</span>
 		</div>
-		<div class="nowheel flex max-h-72 flex-col overflow-y-scroll">
+		<div class="nowheel flex max-h-72 flex-col overflow-y-auto">
 			<div
 				v-for="(column, idx) in columns"
 				:key="column.column"
-				class="nodrag group relative flex cursor-pointer items-center border-b px-3 py-2 text-sm hover:bg-gray-50"
+				class="nodrag group relative flex cursor-grab items-center border-b px-3 py-2 text-sm hover:bg-gray-50"
 				:draggable="true"
 				@dragover="onColumnDragOver"
 				@dragstart="onColumnDragStart($event, column)"

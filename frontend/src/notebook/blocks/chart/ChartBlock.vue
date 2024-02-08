@@ -1,6 +1,6 @@
 <script setup lang="jsx">
 import useDashboards from '@/dashboard/useDashboards'
-import { createChart, default as useChart } from '@/query/useChart'
+import { createChart, default as useChartOld } from '@/query/useChart'
 import useQueryStore from '@/stores/queryStore'
 import InvalidWidget from '@/widgets/InvalidWidget.vue'
 import widgets from '@/widgets/widgets'
@@ -19,9 +19,9 @@ let chart = null
 if (!props.chartName) {
 	const chartName = await createChart()
 	emit('setChartName', chartName)
-	chart = useChart(chartName)
+	chart = useChartOld(chartName)
 } else {
-	chart = useChart(props.chartName)
+	chart = useChartOld(props.chartName)
 }
 chart.enableAutoSave()
 provide('chart', chart)

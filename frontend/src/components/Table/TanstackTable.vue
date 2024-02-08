@@ -10,17 +10,19 @@ import {
 	useVueTable,
 } from '@tanstack/vue-table'
 import { debounce } from 'frappe-ui'
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import TableColumnFilter from './TableColumnFilter.vue'
 import TableEmpty from './TableEmpty.vue'
+import TableGroupedCell from './TableGroupedCell.vue'
 import { filterFunction } from './utils'
 
 const props = defineProps({
 	columns: { type: Array, required: true },
 	data: { type: Array, required: true },
-	showFilters: { type: Boolean, required: false, default: true },
-	showFooter: { type: Boolean, required: false, default: true },
+	showFilters: { type: Boolean, required: false, default: false },
+	showFooter: { type: Boolean, required: false, default: false },
+	showPagination: { type: Boolean, required: false, default: true },
 })
 
 const showFooter = computed(() => {
@@ -84,29 +86,35 @@ const pageEnd = computed(() => {
 	return end > props.data.length ? props.data.length : end
 })
 const totalRows = computed(() => props.data.length)
+const showPagination = computed(
+	() => props.showPagination && props.data?.length && totalRows.value > pageLength.value
+)
 </script>
 
 <template>
-	<div
-		v-if="props?.columns?.length || props.data?.length"
-		class="flex h-full w-full flex-col overflow-hidden"
-	>
-		<div class="relative flex flex-1 flex-col overflow-scroll text-base">
+	<div class="flex h-full w-full flex-col overflow-hidden">
+		<div class="relative flex flex-1 flex-col overflow-auto text-base">
 			<TableEmpty v-if="props.data?.length == 0" />
-			<table v-else class="border-separate border-spacing-0">
-				<thead class="sticky top-0 bg-white">
+			<table
+				v-if="props?.columns?.length || props.data?.length"
+				class="border-separate border-spacing-0"
+			>
+				<thead class="sticky top-0 bg-gray-50">
 					<tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
 						<td
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="min-w-[6rem] border-y border-r text-gray-800"
+							class="border-b border-r text-gray-800"
+							:class="header.id !== 'index' ? 'min-w-[6rem] ' : ''"
 						>
 							<div
-								class="cursor-pointer truncate py-2 px-3"
+								class="flex items-center gap-2 truncate py-2 px-3"
 								:class="[
 									header.column.columnDef.isNumber ? 'text-right' : '',
-									header.column.getCanSort() ? 'hover:text-gray-800' : '',
+									header.column.getCanSort()
+										? 'cursor-pointer hover:text-gray-800'
+										: '',
 								]"
 								@click.prevent="header.column.getToggleSortingHandler()?.($event)"
 							>
@@ -115,7 +123,10 @@ const totalRows = computed(() => props.data.length)
 									:render="header.column.columnDef.header"
 									:props="header.getContext()"
 								/>
-								<span class="ml-2 text-[10px] text-gray-400">
+								<span
+									v-if="header.column.getIsSorted()"
+									class="text-[10px] text-gray-400"
+								>
 									{{
 										header.column.getIsSorted() == 'desc'
 											? '▼'
@@ -124,6 +135,12 @@ const totalRows = computed(() => props.data.length)
 											: ''
 									}}
 								</span>
+								<div v-if="$slots.columnActions" class="ml-4">
+									<slot
+										name="columnActions"
+										:column="header.column.columnDef"
+									></slot>
+								</div>
 							</div>
 							<div
 								class="border-t p-1"
@@ -140,6 +157,7 @@ const totalRows = computed(() => props.data.length)
 								/>
 							</div>
 						</td>
+						<td width="99%" class="border-b"></td>
 					</tr>
 				</thead>
 				<tbody>
@@ -147,25 +165,13 @@ const totalRows = computed(() => props.data.length)
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
-							class="min-w-[6rem] truncate border-b border-r py-2 px-3"
-							:class="cell.column.columnDef.isNumber ? 'tnum text-right' : ''"
+							class="truncate border-b border-r py-2 px-3"
+							:class="[
+								cell.column.columnDef.isNumber ? 'tnum text-right' : '',
+								cell.column.columnDef.id !== 'index' ? 'min-w-[6rem] ' : '',
+							]"
 						>
-							<div v-if="cell.getIsGrouped()" class="flex gap-1">
-								<ChevronDown
-									v-if="row.getIsExpanded()"
-									class="h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-800"
-									@click="row.getToggleExpandedHandler()?.($event)"
-								/>
-								<ChevronRight
-									v-else
-									class="h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-800"
-									@click="row.getToggleExpandedHandler()?.($event)"
-								/>
-								<FlexRender
-									:render="cell.column.columnDef.cell"
-									:props="cell.getContext()"
-								/>
-							</div>
+							<TableGroupedCell v-if="cell.getIsGrouped()" :row="row" :cell="cell" />
 							<div v-else-if="!cell.getIsPlaceholder()">
 								<FlexRender
 									:render="cell.column.columnDef.cell"
@@ -173,7 +179,9 @@ const totalRows = computed(() => props.data.length)
 								/>
 							</div>
 						</td>
+						<td width="99%" class="border-b"></td>
 					</tr>
+					<tr height="99%" class="border-b"></tr>
 				</tbody>
 				<tfoot v-if="showFooter" class="sticky bottom-0 bg-white">
 					<tr v-for="footerGroup in table.getFooterGroups()" :key="footerGroup.id">
@@ -195,7 +203,7 @@ const totalRows = computed(() => props.data.length)
 			</table>
 		</div>
 
-		<div class="flex flex-shrink-0 items-center justify-end gap-3 p-1">
+		<div v-if="showPagination" class="flex flex-shrink-0 items-center justify-end gap-3 p-1">
 			<p class="tnum text-sm text-gray-600">
 				{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
 			</p>

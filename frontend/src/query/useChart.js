@@ -1,10 +1,11 @@
 import { useQueryResource } from '@/query/useQueryResource'
-import { safeJSONParse } from '@/utils'
+import { safeJSONParse, whenHasValue } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
 import { convertResultToObjects, guessChart } from '@/widgets/useChartData'
 import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call, createDocumentResource, debounce } from 'frappe-ui'
 import { reactive } from 'vue'
+import useQuery from './resources/useQuery'
 
 const charts = {}
 
@@ -12,7 +13,7 @@ export async function createChart() {
 	return call('insights.api.queries.create_chart')
 }
 
-export default function useChart(name) {
+export default function useChartOld(name) {
 	if (!charts[name]) {
 		charts[name] = getChart(name)
 	}
@@ -53,14 +54,14 @@ function getChart(chartName) {
 
 	function updateChartData() {
 		state.loading = true
-		const _query = useQueryResource(state.doc.query)
-		_query.get.fetch()
+		const _query = useQuery(state.doc.query)
+		_query.reload()
 		watchOnce(
-			() => _query.doc,
+			() => _query.results.doc,
 			() => {
 				if (!_query.doc) return
-				const formattedResults = getFormattedResult(_query.doc.results)
-				state.columns = formattedResults[0]
+				state.columns = _query.results.columns
+				const formattedResults = _query.results.formattedResults
 				state.data = convertResultToObjects(formattedResults)
 				if (!state.doc.chart_type) {
 					const recommendedChart = guessChart(formattedResults)

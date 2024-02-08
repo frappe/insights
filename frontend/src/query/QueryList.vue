@@ -11,7 +11,14 @@ import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getIcon } from '@/widgets/widgets'
 import { useStorage } from '@vueuse/core'
 import { ListRow, ListRowItem } from 'frappe-ui'
-import { PlusIcon } from 'lucide-vue-next'
+import {
+	AlignStartVertical,
+	ComponentIcon,
+	FileTerminal,
+	GanttChartSquare,
+	PlusIcon,
+	Square,
+} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -54,23 +61,24 @@ async function openQueryEditor(type) {
 
 const queryBuilderTypes = ref([
 	{
-		label: 'Notebook',
-		description: 'Create a query using the notebook interface',
-		icon: 'book',
-		tag: 'beta',
-		onClick: () => openQueryEditor('notebook'),
-	},
-	{
 		label: 'Visual',
 		description: 'Create a query using the visual interface',
-		icon: 'box',
+		icon: 'bar-chart-2',
 		onClick: () => openQueryEditor('visual'),
 	},
+
 	{
 		label: 'SQL',
 		description: 'Create a query by writing native query',
 		icon: 'code',
 		onClick: () => openQueryEditor('sql'),
+	},
+	{
+		label: 'Notebook',
+		description: 'Create a query using the notebook interface',
+		icon: 'book',
+		tag: 'beta',
+		onClick: () => openQueryEditor('notebook'),
 	},
 	{
 		label: 'Script',
@@ -106,6 +114,13 @@ const queries = computed(() => {
 		return true
 	})
 })
+
+function getQueryTypeIcon(query) {
+	if (query.is_assisted_query) return AlignStartVertical
+	if (query.is_native_query) return GanttChartSquare
+	if (query.is_script_query) return FileTerminal
+	return Square
+}
 </script>
 
 <template>
@@ -123,7 +138,7 @@ const queries = computed(() => {
 	<ListView
 		:columns="[
 			{ label: 'Title', name: 'title', class: 'flex-[3]' },
-			{ label: 'Status', name: 'status', class: 'flex-[2]' },
+			{ label: 'Execution Status', name: 'status', class: 'flex-[2]' },
 			{ label: 'Chart Type', name: 'chart_type', class: 'flex-1' },
 			{ label: 'Data Source', name: 'data_source', class: 'flex-1' },
 			{ label: 'ID', name: 'name', class: 'flex-1' },
@@ -141,7 +156,14 @@ const queries = computed(() => {
 				:row="query"
 				:to="{ name: 'Query', params: { name: query.name } }"
 			>
-				<ListRowItem class="flex-[3]"> {{ query.title }} </ListRowItem>
+				<ListRowItem class="flex-[3]">
+					<ComponentIcon
+						v-if="query.is_stored"
+						class="h-4 w-4 text-gray-600"
+						fill="currentColor"
+					/>
+					<span> {{ query.title }} </span>
+				</ListRowItem>
 				<ListRowItem class="flex-[2] space-x-2">
 					<IndicatorIcon
 						:class="
@@ -152,7 +174,7 @@ const queries = computed(() => {
 							}[query.status] || 'text-gray-500'
 						"
 					/>
-					<span> {{ query.status }} </span>
+					<span> {{ query.status.replace('Execution', '') }} </span>
 				</ListRowItem>
 				<ListRowItem class="flex-1 space-x-2">
 					<component

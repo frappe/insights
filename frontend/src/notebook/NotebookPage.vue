@@ -48,9 +48,9 @@ updateDocumentTitle(pageMeta)
 	<div class="flex flex-1 overflow-hidden bg-white px-6 py-2">
 		<div
 			v-if="page.doc.name"
-			class="h-full w-full overflow-y-scroll bg-white pb-96 pt-16 text-base"
+			class="h-full w-full overflow-y-auto bg-white pb-96 pt-16 text-base scrollbar-hide"
 		>
-			<div class="w-full px-[6rem] lg:mx-auto lg:max-w-[65rem]">
+			<div class="w-full px-[6rem] lg:mx-auto lg:max-w-[62rem]">
 				<div class="flex items-center">
 					<ContentEditable
 						class="flex-1 text-[36px] font-bold"

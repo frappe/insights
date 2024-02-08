@@ -9,7 +9,7 @@
 				class="form-input block w-full border-gray-400 placeholder-gray-500"
 			/>
 			<div
-				class="mt-4 flex max-h-[30rem] flex-col space-y-1 divide-y overflow-y-scroll text-base"
+				class="mt-4 flex max-h-[30rem] flex-col space-y-1 divide-y overflow-y-auto text-base"
 			>
 				<div v-for="func in filteredList" :key="func.name" class="flex">
 					<div class="flex-1 space-y-1 py-2">

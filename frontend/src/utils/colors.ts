@@ -60,6 +60,27 @@ export const getColors = (num = Object.keys(COLOR_MAP).length) => {
 	return colors
 }
 
+export const generateColorPalette = (shade: string, num = 5) => {
+	const colors = []
+	const hueByShade: { [key: string]: number } = {
+		blue: 200,
+		green: 140,
+		teal: 180,
+		yellow: 60,
+	};
+
+	const hue = hueByShade[shade];
+	const minLightness = 30;
+	const maxLightness = 70;
+	const lightnessStep = (maxLightness - minLightness) / num;
+	// generate light to dark colors
+	for (let i = 0; i < num; i++) {
+		const lightness = minLightness + lightnessStep * i;
+		colors.push(`hsl(${hue}, 65%, ${lightness}%)`);
+	}
+	return colors.reverse();
+}
+
 export function getRGB(color: HashString | RGBString | string | null): HashString {
 	if (!color) {
 		return '#ffffff'

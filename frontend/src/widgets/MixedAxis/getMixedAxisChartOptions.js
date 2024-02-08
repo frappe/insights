@@ -1,10 +1,7 @@
-import { formatNumber } from '@/utils'
+import { formatNumber, getShortNumber } from '@/utils'
 import { getColors } from '@/utils/colors'
-import { inject } from 'vue'
 
 export default function getMixedAxisChartOptions(labels, datasets, options) {
-	const $utils = inject('$utils')
-
 	if (!datasets || !datasets.length) {
 		return {}
 	}
@@ -49,7 +46,7 @@ export default function getMixedAxisChartOptions(labels, datasets, options) {
 				lineStyle: { type: 'dashed' },
 			},
 			axisLabel: {
-				formatter: (value, index) => $utils.getShortNumber(value, 1),
+				formatter: (value, index) => getShortNumber(value, 1),
 			},
 		})),
 		series: datasets.map((dataset, index) => ({

@@ -10,7 +10,6 @@ const props = defineProps({ column: Object })
 const assistedQuery = inject('assistedQuery')
 const query = inject('query')
 
-const activeTab = ref('Simple')
 const column = reactive({
 	...NEW_COLUMN,
 	...props.column,
@@ -18,12 +17,7 @@ const column = reactive({
 if (column.table && column.column && !column.value) {
 	column.value = `${column.table}.${column.column}`
 }
-// `ast` is checked here, because when adding new expression column
-// `ast` is set to {} to open the expression editor instead of the simple editor
-// since setting it to `null` will open the simple editor
-if (column.expression?.ast) {
-	activeTab.value = 'Expression'
-} else if (!column.aggregation) {
+if (!column.aggregation) {
 	column.aggregation = 'group by'
 }
 
@@ -40,7 +34,6 @@ function onColumnChange(option) {
 
 const isValidColumn = computed(() => {
 	if (!column.label || !column.type) return false
-	if (column.expression?.raw && column.expression?.ast) return true
 	if (column.table && column.column) return true
 	return false
 })
@@ -48,53 +41,36 @@ const isValidColumn = computed(() => {
 
 <template>
 	<div class="flex flex-col gap-4 p-4">
-		<div
-			class="flex h-8 w-full cursor-pointer select-none items-center rounded bg-gray-100 p-1"
-		>
-			<div
-				v-for="(tab, idx) in ['Simple', 'Expression']"
-				class="flex h-full flex-1 items-center justify-center px-4 text-sm transition-all"
-				:class="activeTab === tab ? 'rounded bg-white shadow' : ''"
-				@click.prevent.stop="activeTab = tab"
-			>
-				{{ tab }}
-			</div>
+		<div class="space-y-1">
+			<span class="text-sm font-medium text-gray-700">Aggregation</span>
+			<Autocomplete
+				:modelValue="column.aggregation.toLowerCase()"
+				placeholder="Aggregation"
+				:options="AGGREGATIONS"
+				@update:modelValue="(op) => (column.aggregation = op.value)"
+			/>
 		</div>
-		<template v-if="activeTab == 'Expression'">
-			<ColumnExpressionEditor v-model:column="column" />
-		</template>
-		<template v-if="activeTab == 'Simple'">
-			<div class="space-y-1">
-				<span class="text-sm font-medium text-gray-700">Aggregation</span>
-				<Autocomplete
-					:modelValue="column.aggregation.toLowerCase()"
-					placeholder="Aggregation"
-					:options="AGGREGATIONS"
-					@update:modelValue="(op) => (column.aggregation = op.value)"
-				/>
-			</div>
-			<div class="space-y-1">
-				<span class="text-sm font-medium text-gray-700">Column</span>
-				<Autocomplete
-					:modelValue="column"
-					bodyClasses="w-[18rem]"
-					placeholder="Column"
-					@update:modelValue="onColumnChange"
-					:options="assistedQuery.groupedColumnOptions"
-					@update:query="assistedQuery.fetchColumnOptions"
-				/>
-			</div>
-			<div class="space-y-1">
-				<span class="text-sm font-medium text-gray-700">Label</span>
-				<FormControl
-					type="text"
-					class="w-full"
-					v-model="column.label"
-					placeholder="Label"
-					@update:modelValue="(val) => (column.alias = val)"
-				/>
-			</div>
-		</template>
+		<div class="space-y-1">
+			<span class="text-sm font-medium text-gray-700">Column</span>
+			<Autocomplete
+				:modelValue="column"
+				bodyClasses="w-[18rem]"
+				placeholder="Column"
+				@update:modelValue="onColumnChange"
+				:options="assistedQuery.groupedColumnOptions"
+				@update:query="assistedQuery.fetchColumnOptions"
+			/>
+		</div>
+		<div class="space-y-1">
+			<span class="text-sm font-medium text-gray-700">Label</span>
+			<FormControl
+				type="text"
+				class="w-full"
+				v-model="column.label"
+				placeholder="Label"
+				@update:modelValue="(val) => (column.alias = val)"
+			/>
+		</div>
 		<div v-if="FIELDTYPES.DATE.includes(column.type)" class="space-y-1">
 			<span class="text-sm font-medium text-gray-700">Date Format</span>
 			<Autocomplete

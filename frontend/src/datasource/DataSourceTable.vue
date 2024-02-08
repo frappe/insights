@@ -61,7 +61,7 @@
 				{{ dataSourceTable.doc.columns.length }} Columns -
 				{{ dataSourceTable.rows.length }} Rows
 			</div> -->
-			<div class="flex flex-1 overflow-scroll">
+			<div class="flex flex-1 overflow-auto">
 				<Grid :header="true" :rows="dataSourceTable.rows.data">
 					<template #header>
 						<DataSourceTableColumnHeader
@@ -133,7 +133,7 @@ import Grid from '@/components/Grid.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { Badge, Dropdown, LoadingIndicator, createResource } from 'frappe-ui'
-import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { computed, inject, nextTick, reactive, ref, watch, watchEffect } from 'vue'
 import DataSourceTableColumnHeader from './DataSourceTableColumnHeader.vue'
 
 const props = defineProps({
@@ -164,9 +164,7 @@ const hidden = computed({
 	},
 	set(value) {
 		if (value !== dataSourceTable.hidden) {
-			dataSourceTable.updateVisibility.submit({
-				hidden: value,
-			})
+			dataSourceTable.updateVisibility(Boolean(value))
 		}
 	},
 })
@@ -269,6 +267,13 @@ watch(addLinkDialog, async (val) => {
 			$autocomplete.value.input.$el.blur()
 			$autocomplete.value.input.$el.focus()
 		}, 500)
+	}
+})
+
+watchEffect(() => {
+	if (dataSourceTable.doc?.label) {
+		const title = dataSourceTable.doc.title || dataSourceTable.doc.label
+		document.title = `${title} - Frappe Insights`
 	}
 })
 </script>

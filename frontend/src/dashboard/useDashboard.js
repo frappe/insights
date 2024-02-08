@@ -1,3 +1,4 @@
+import useQuery from '@/query/resources/useQuery'
 import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
 import { areDeeplyEqual, safeJSONParse } from '@/utils'
@@ -249,8 +250,8 @@ export default function useDashboard(name) {
 
 	function loadCurrentItemQuery(query) {
 		if (!query || !state.currentItem) return
-		state.currentItem.query = useQueryResource(query)
-		state.currentItem.query.get.fetch()
+		state.currentItem.query = useQuery(query)
+		state.currentItem.query.reload()
 	}
 
 	const edit = () => ((state.editing = true), (state.currentItem = undefined))

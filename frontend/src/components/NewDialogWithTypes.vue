@@ -30,7 +30,12 @@ const show = computed({
 						<div
 							class="rounded border p-4 text-gray-500 shadow-sm transition-all group-hover:scale-105"
 						>
-							<FeatherIcon :name="type.icon" class="h-6 w-6 text-gray-500" />
+							<FeatherIcon
+								v-if="type.icon"
+								:name="type.icon"
+								class="h-6 w-6 text-gray-500"
+							/>
+							<img v-if="type.imgSrc" :src="type.imgSrc" class="h-6 w-6" />
 						</div>
 						<div>
 							<div class="flex items-center space-x-2">
