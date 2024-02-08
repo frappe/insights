@@ -1,6 +1,6 @@
 <script setup>
 import { Option } from 'lucide-vue-next'
-import { inject, nextTick, ref } from 'vue'
+import { inject, ref } from 'vue'
 import SectionHeader from './SectionHeader.vue'
 import TransformEditor from './TransformEditor.vue'
 import TransformListItem from './TransformListItem.vue'
@@ -12,12 +12,9 @@ const activeTransformIdx = ref(null)
 
 async function onAddTransform() {
 	assistedQuery.addTransform()
-	await nextTick()
-	activeTransformIdx.value = assistedQuery.transforms.length - 1
-	await nextTick()
-	activeTransformIdx.value = null
-	await nextTick()
-	activeTransformIdx.value = assistedQuery.transforms.length - 1
+	setTimeout(() => {
+		activeTransformIdx.value = assistedQuery.transforms.length - 1
+	}, 500)
 }
 function onRemoveTransform() {
 	assistedQuery.removeTransformAt(activeTransformIdx.value)
