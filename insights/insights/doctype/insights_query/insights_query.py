@@ -52,6 +52,12 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     def before_save(self):
         self.variant_controller.before_save()
+        self.handle_transform_change()
+
+    def handle_transform_change(self):
+        if self.has_value_changed("transforms"):
+            self.update_query_results()
+            self.status = Status.PENDING.value
 
     def on_update(self):
         self.link_chart()
@@ -212,7 +218,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
                 self.is_stored and store_query(self, self._results)
         return self._results
 
-    def update_query_results(self, results):
+    def update_query_results(self, results=None):
+        results = results or []
         query_result: Document = InsightsQueryResult.get_or_create_doc(query=self.name)
         query_result.update(
             {
