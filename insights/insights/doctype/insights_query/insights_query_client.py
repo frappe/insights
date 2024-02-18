@@ -18,6 +18,11 @@ from insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_q
 
 class InsightsQueryClient:
     @frappe.whitelist()
+    def set_status(self, status):
+        # since status is auto set based on the sql, we need some way to override it
+        self.db_set("status", status)
+
+    @frappe.whitelist()
     def duplicate(self):
         new_query = frappe.copy_doc(self)
         new_query.save()

@@ -74,7 +74,7 @@ def update_sql(query):
     if query.sql == sql:
         return
     query.sql = sql
-    query.update_query_results([])
+    query.update_query_results()
     query.status = Status.PENDING.value if sql else Status.SUCCESS.value
 
 

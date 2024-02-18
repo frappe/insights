@@ -24,7 +24,7 @@ export default function useQuery(name) {
 		sourceSchema: {},
 	})
 
-	const run = createTaskRunner()
+	const queue = createTaskRunner()
 	state.doc = computed(() => resource.doc)
 
 	const setLoading = (value) => (state.loading = value)
@@ -52,11 +52,11 @@ export default function useQuery(name) {
 
 	state.updateTitle = (title) => {
 		setLoading(true)
-		return run(() => resource.setValue.submit({ title }).finally(() => setLoading(false)))
+		return queue(() => resource.setValue.submit({ title }).finally(() => setLoading(false)))
 	}
 	state.changeDataSource = (data_source) => {
 		setLoading(true)
-		return run(() => resource.setValue.submit({ data_source }).then(() => setLoading(false)))
+		return queue(() => resource.setValue.submit({ data_source }).then(() => setLoading(false)))
 	}
 
 	const autoExecuteEnabled = settingsStore().settings.auto_execute_query
@@ -66,7 +66,7 @@ export default function useQuery(name) {
 
 		setLoading(true)
 		return new Promise((resolve) =>
-			run(() =>
+			queue(() =>
 				resource.setValue
 					.submit({ json: JSON.stringify(newQuery, null, 2) })
 					.then(() => autoExecuteEnabled && state.execute())
@@ -80,7 +80,7 @@ export default function useQuery(name) {
 		if (!state.doc?.data_source) return
 		setLoading(true)
 		state.executing = true
-		await run(() => resource.run.submit().catch(() => {}))
+		await queue(() => resource.run.submit().catch(() => {}))
 		await state.results.reload()
 		state.executing = false
 		setLoading(false)
@@ -89,37 +89,40 @@ export default function useQuery(name) {
 	state.updateTransforms = debounce(async (transforms) => {
 		if (!transforms) return
 		setLoading(true)
-		return run(() =>
-			resource.setValue
-				.submit({ transforms, status: 'Pending Execution' })
-				.then(() => autoExecuteEnabled && state.execute())
+		const updateTransform = () => resource.setValue.submit({ transforms })
+		const updateStatus = () => resource.set_status.submit({ status: 'Pending Execution' })
+		const autoExecute = () => autoExecuteEnabled && state.execute()
+		return queue(() =>
+			updateTransform()
+				.then(updateStatus)
+				.then(autoExecute)
 				.finally(() => setLoading(false))
 		)
 	}, 500)
 
 	state.duplicate = async () => {
 		state.duplicating = true
-		await run(() => resource.duplicate.submit())
+		await queue(() => resource.duplicate.submit())
 		state.duplicating = false
 		return resource.duplicate.data.message
 	}
 
 	state.delete = async () => {
 		state.deleting = true
-		await run(() => resource.delete.submit())
+		await queue(() => resource.delete.submit())
 		state.deleting = false
 	}
 
 	state.store = () => {
 		setLoading(true)
-		return run(() => resource.store.submit().finally(() => setLoading(false)))
+		return queue(() => resource.store.submit().finally(() => setLoading(false)))
 	}
 	state.unstore = () => {
 		setLoading(true)
-		return run(() => resource.unstore.submit().finally(() => setLoading(false)))
+		return queue(() => resource.unstore.submit().finally(() => setLoading(false)))
 	}
 	state.switchQueryBuilder = () => {
-		return run(() => {
+		return queue(() => {
 			return resource.switch_query_type.submit().then(() => {
 				window.location.reload()
 			})
@@ -160,7 +163,7 @@ export default function useQuery(name) {
 	state.convertToNative = async () => {
 		if (state.doc.is_native_query) return
 		setLoading(true)
-		return run(() => {
+		return queue(() => {
 			return resource.setValue
 				.submit({ is_native_query: 1, is_assisted_query: 0, is_script_query: 0 })
 				.finally(() => setLoading(false))
@@ -171,7 +174,7 @@ export default function useQuery(name) {
 	state.executeSQL = debounce((sql) => {
 		if (!sql || sql === state.doc.sql) return state.execute()
 		setLoading(true)
-		return run(() =>
+		return queue(() =>
 			resource.setValue
 				.submit({ sql })
 				.then(() => state.execute())
@@ -183,13 +186,13 @@ export default function useQuery(name) {
 	state.updateScript = debounce((script) => {
 		if (script === state.doc.script) return
 		setLoading(true)
-		return run(() => resource.setValue.submit({ script }).finally(() => setLoading(false)))
+		return queue(() => resource.setValue.submit({ script }).finally(() => setLoading(false)))
 	}, 500)
 
 	state.updateScriptVariables = debounce((script_variables) => {
 		if (variables === state.doc.variables) return
 		setLoading(true)
-		return run(() => resource.setValue.submit({ variables }).finally(() => setLoading(false)))
+		return queue(() => resource.setValue.submit({ variables }).finally(() => setLoading(false)))
 	}, 500)
 
 	state.downloadResults = () => {
