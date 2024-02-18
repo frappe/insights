@@ -7,6 +7,7 @@ export const API_METHODS = {
 	unstore: 'unstore',
 	convert: 'convert',
 	setLimit: 'set_limit',
+	set_status: 'set_status',
 	duplicate: 'duplicate',
 	reset: 'reset_and_save',
 	fetchTables: 'fetch_tables',
