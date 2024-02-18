@@ -1,14 +1,16 @@
 <script setup>
 import { watchDebounced } from '@vueuse/core'
 import { Infinity } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { inject, ref, watch } from 'vue'
 import SectionHeader from './SectionHeader.vue'
 
 const assistedQuery = inject('assistedQuery')
 const limit = ref(assistedQuery.limit)
-watchDebounced(limit, (value) => (assistedQuery.limit = value || assistedQuery.limit), {
-	debounce: 300,
-})
+watchDebounced(limit, assistedQuery.setLimit, { debounce: 300 })
+watch(
+	() => assistedQuery.limit,
+	(val) => (limit.value = val)
+)
 </script>
 
 <template>

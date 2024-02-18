@@ -46,6 +46,7 @@ export default function useAssistedQuery(query) {
 		removeFilterAt,
 		updateFilterAt,
 		setOrderBy,
+		setLimit,
 		addTransform,
 		removeTransformAt,
 		updateTransformAt,
@@ -179,6 +180,11 @@ export default function useAssistedQuery(query) {
 				return true
 			}
 		})
+	}
+
+	function setLimit(limit) {
+		if (limit === state.limit) return
+		state.limit = limit
 	}
 
 	function addTransform() {
