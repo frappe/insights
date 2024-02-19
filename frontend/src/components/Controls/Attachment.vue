@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col text-base">
+	<div class="flex flex-col overflow-hidden text-base">
 		<span class="mb-2 block text-sm leading-4 text-gray-700">
 			{{ label || 'Attach File' }}
 		</span>
@@ -14,14 +14,14 @@
 		/>
 
 		<!-- Upload Button -->
-		<Button v-if="!file?.name" class="form-input h-7" @click="upload" :loading="uploading">
+		<Button v-if="!file?.name" @click="upload" :loading="uploading">
 			<FeatherIcon name="upload" class="mr-1 inline-block h-3 w-3" />
 			{{ placeholder || 'Upload a file' }}
 		</Button>
 
 		<!-- Clear Button -->
-		<Button v-else class="form-input h-7" iconRight="x" @click="clear">
-			{{ file.file_name }}
+		<Button v-else iconRight="x" @click="clear">
+			<span class="truncate">{{ file.file_name }}</span>
 		</Button>
 	</div>
 </template>
