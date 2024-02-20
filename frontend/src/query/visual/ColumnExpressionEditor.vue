@@ -15,7 +15,7 @@ const emptyExpressionColumn = {
 }
 
 const assistedQuery = inject('assistedQuery')
-const emit = defineEmits(['save', 'discard', 'remove'])
+const emit = defineEmits(['save', 'remove'])
 const props = defineProps({ column: Object })
 
 const propsColumn = props.column || emptyExpressionColumn
@@ -83,12 +83,9 @@ function onSave() {
 			</div>
 		</div>
 
-		<div class="flex flex-col justify-between gap-2 lg:flex-row">
-			<Button variant="outline" @click="emit('discard')"> Discard </Button>
-			<div class="flex flex-col gap-2 lg:flex-row">
-				<Button variant="outline" theme="red" @click="emit('remove')">Remove</Button>
-				<Button variant="solid" :disabled="!isValid" @click="onSave"> Save </Button>
-			</div>
+		<div class="flex flex-col justify-end gap-2 lg:flex-row">
+			<Button variant="outline" theme="red" @click="emit('remove')">Remove</Button>
+			<Button variant="solid" :disabled="!isValid" @click="onSave"> Save </Button>
 		</div>
 	</div>
 </template>
