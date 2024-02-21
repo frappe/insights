@@ -147,20 +147,21 @@ function onColumnSort(e) {
 		</DraggableList>
 	</div>
 
-	<Dialog
-		:modelValue="showExpressionEditor"
-		:options="{
-			title: 'Column Expression',
-			size: '3xl',
-		}"
-	>
-		<template #body-content>
-			<ColumnExpressionEditor
-				:column="columns[activeColumnIdx]"
-				@remove="onRemoveColumn"
-				@save="onSaveColumn"
-				@discard="activeColumnIdx = null"
-			/>
+	<Dialog :modelValue="showExpressionEditor" :options="{ size: '3xl' }">
+		<template #body>
+			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+				<div class="flex items-center justify-between pb-4">
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+						Column Expression
+					</h3>
+					<Button variant="ghost" @click="activeColumnIdx = null" icon="x"> </Button>
+				</div>
+				<ColumnExpressionEditor
+					:column="columns[activeColumnIdx]"
+					@remove="onRemoveColumn"
+					@save="onSaveColumn"
+				/>
+			</div>
 		</template>
 	</Dialog>
 </template>

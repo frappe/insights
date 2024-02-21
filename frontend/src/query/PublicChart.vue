@@ -14,15 +14,5 @@ const chart = usePublicChart(props.public_key)
 		:data="chart.data"
 		:options="chart.doc.options"
 		:key="JSON.stringify(chart.doc.options)"
-	>
-		<template #placeholder>
-			<InvalidWidget
-				class="absolute"
-				title="Insufficient options"
-				message="Please check the options for this chart"
-				icon="settings"
-				icon-class="text-gray-500"
-			/>
-		</template>
-	</component>
+	/>
 </template>
