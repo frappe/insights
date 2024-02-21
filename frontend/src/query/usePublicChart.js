@@ -1,5 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { getFormattedResult } from '@/utils/query/results'
+import { convertResultToObjects } from '@/widgets/useChartData'
 import { createResource } from 'frappe-ui'
 import { reactive } from 'vue'
 
@@ -22,7 +23,8 @@ export default function usePublicChart(publicKey) {
 	async function load() {
 		state.loading = true
 		state.doc = await resource.fetch()
-		state.data = getFormattedResult(state.doc.data)
+		const results = getFormattedResult(state.doc.data)
+		state.data = convertResultToObjects(results)
 		state.loading = false
 	}
 	load()

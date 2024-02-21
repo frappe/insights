@@ -1,7 +1,7 @@
 <script setup>
 import { areDeeplyEqual } from '@/utils'
 import * as echarts from 'echarts'
-import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ChartTitle from './ChartTitle.vue'
 
 const props = defineProps({
