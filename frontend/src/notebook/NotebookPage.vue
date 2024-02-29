@@ -1,28 +1,17 @@
 <script setup lang="jsx">
-import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import ContentEditable from '@/components/ContentEditable.vue'
+import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebookPage from '@/notebook/useNotebookPage'
 import { updateDocumentTitle } from '@/utils'
-import { computed, provide, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, provide } from 'vue'
+import NotebookPageDropdown from './NotebookPageDropdown.vue'
 import TipTap from './tiptap/TipTap.vue'
 
-const props = defineProps({
-	notebook: String,
-	name: String,
-})
+const props = defineProps({ notebook: String, name: String })
 const page = useNotebookPage(props.name)
 const notebook = useNotebook(props.notebook)
 provide('page', page)
-
-const show_delete_dialog = ref(false)
-const router = useRouter()
-function deletePage() {
-	page.delete().then(() => {
-		router.push(`/notebook/${notebook.doc.name}`)
-	})
-}
 
 const pageMeta = computed(() => ({
 	title: page.doc?.title,
@@ -57,42 +46,10 @@ updateDocumentTitle(pageMeta)
 						v-model="page.doc.title"
 						placeholder="Untitled Analysis"
 					></ContentEditable>
-					<Dropdown
-						:button="{ icon: 'more-horizontal', variant: 'ghost' }"
-						:options="[
-							{
-								label: 'Clear',
-								icon: 'x-square',
-								onClick: () => (page.doc.content = {}),
-							},
-							{
-								label: 'Delete',
-								icon: 'trash',
-								onClick: () => (show_delete_dialog = true),
-							},
-						]"
-					/>
+					<NotebookPageDropdown />
 				</div>
 				<TipTap class="my-6" v-model:content="page.doc.content" />
 			</div>
 		</div>
 	</div>
-
-	<Dialog
-		:options="{
-			title: 'Delete Page',
-			icon: { name: 'trash', variant: 'solid', theme: 'red' },
-		}"
-		v-model="show_delete_dialog"
-		:dismissable="true"
-	>
-		<template #body-content>
-			<p class="text-base text-gray-600">Are you sure you want to delete this page?</p>
-		</template>
-		<template #actions>
-			<Button variant="solid" theme="red" :loading="page.delete.loading" @click="deletePage">
-				Yes
-			</Button>
-		</template>
-	</Dialog>
 </template>
