@@ -157,7 +157,6 @@ const showPagination = computed(
 								/>
 							</div>
 						</td>
-						<td width="99%" class="border-b"></td>
 					</tr>
 				</thead>
 				<tbody>
@@ -179,7 +178,6 @@ const showPagination = computed(
 								/>
 							</div>
 						</td>
-						<td width="99%" class="border-b"></td>
 					</tr>
 					<tr height="99%" class="border-b"></tr>
 				</tbody>
