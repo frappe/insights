@@ -34,7 +34,48 @@ class DatabaseParallelConnectionError(frappe.ValidationError):
     pass
 
 
-class BaseDatabase:
+class Database:
+    def test_connection(self):
+        raise NotImplementedError
+
+    def connect(self):
+        raise NotImplementedError
+
+    def build_query(self, query):
+        raise NotImplementedError
+
+    def run_query(self, query):
+        raise NotImplementedError
+
+    def execute_query(self):
+        raise NotImplementedError
+
+    def sync_tables(self):
+        raise NotImplementedError
+
+    def get_table_columns(self):
+        raise NotImplementedError
+
+    def get_column_options(self):
+        raise NotImplementedError
+
+    def get_table_preview(self):
+        raise NotImplementedError
+
+    def table_exists(self, table: str):
+        """
+        While importing a csv file, check if the table exists in the database
+        """
+        raise NotImplementedError
+
+    def import_table(self, import_doc: InsightsTableImport):
+        """
+        Imports the table into the database
+        """
+        raise NotImplementedError
+
+
+class BaseDatabase(Database):
     def __init__(self):
         self.engine = None
         self.data_source = None
@@ -159,27 +200,3 @@ class BaseDatabase:
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
         if not select_or_with:
             frappe.throw("Only SELECT and WITH queries are allowed")
-
-    def table_exists(self, table: str):
-        """
-        While importing a table, check if the table exists in the database
-        """
-        raise NotImplementedError
-
-    def import_table(self, import_doc: InsightsTableImport):
-        """
-        Imports the table into the database
-        """
-        raise NotImplementedError
-
-    def sync_tables(self):
-        raise NotImplementedError
-
-    def get_table_columns(self, table):
-        raise NotImplementedError
-
-    def get_column_options(self, table, column, search_text=None, limit=50):
-        raise NotImplementedError
-
-    def get_table_preview(self):
-        raise NotImplementedError
