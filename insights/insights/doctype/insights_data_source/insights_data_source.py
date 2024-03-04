@@ -204,20 +204,7 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
         if self.database_type == "SQLite":
             return SQLiteDB(data_source=self.name, database_name=self.database_name)
 
-        password = None
-        with suppress(BaseException):
-            password = self.get_password()
-
-        conn_args = {
-            "data_source": self.name,
-            "host": self.host,
-            "port": self.port,
-            "use_ssl": self.use_ssl,
-            "username": self.username,
-            "password": password,
-            "database_name": self.database_name,
-            "connection_string": self.connection_string,
-        }
+        conn_args = self.get_db_credentials()
 
         if is_frappe_db(conn_args):
             return FrappeDB(**conn_args)
@@ -229,6 +216,25 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
             return PostgresDatabase(**conn_args)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
+
+    def get_db_credentials(self):
+        password = None
+        with suppress(BaseException):
+            password = self.get_password()
+
+        conn_args = frappe._dict(
+            {
+                "data_source": self.name,
+                "host": self.host,
+                "port": self.port,
+                "use_ssl": self.use_ssl,
+                "username": self.username,
+                "password": password,
+                "database_name": self.database_name,
+                "connection_string": self.connection_string,
+            }
+        )
+        return conn_args
 
     def test_connection(self, raise_exception=False):
         try:

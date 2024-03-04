@@ -1,4 +1,6 @@
 import frappe
+import ibis
+from ibis import _
 
 from insights.api.telemetry import track
 from insights.decorators import check_role
@@ -133,3 +135,205 @@ def flatten_column_keys(pivoted_records: list[dict]):
             new_row[new_key] = row[keys]
         new_records.append(new_row)
     return new_records
+
+
+def deep_convert_dict_to_dict(d):
+    if isinstance(d, dict):
+        new_dict = frappe._dict()
+        for k, v in d.items():
+            new_dict[k] = deep_convert_dict_to_dict(v)
+        return new_dict
+
+    if isinstance(d, list):
+        new_list = []
+        for v in d:
+            new_list.append(deep_convert_dict_to_dict(v))
+        return new_list
+
+    return d
+
+
+_dict = deep_convert_dict_to_dict
+
+
+@frappe.whitelist()
+def execute_query_pipeline(query_pipeline, data_source=None):
+    doc = frappe.get_doc("Insights Data Source", data_source or "frappe.cloud")
+
+    args = doc.get_db_credentials()
+    db = ibis.mysql.connect(
+        host=args.get("host"),
+        port=args.get("port"),
+        user=args.get("username"),
+        password=args.get("password"),
+        database=args.get("database_name"),
+    )
+
+    translator = QueryPipelineTranslator(query_pipeline, backend=db)
+    translated = translator.translate()
+    sql = ibis.to_sql(translated, dialect="mysql")
+
+    data = doc.execute_query(sql, return_columns=True)
+    return data
+
+
+class QueryPipelineTranslator:
+    def __init__(self, pipeline_steps, backend=None):
+        self.query = None
+        self.db_backend = backend
+        self.pipeline_steps = pipeline_steps
+
+    def translate(self):
+        self.query = None
+        for step in self.pipeline_steps:
+            handler = self.get_step_handler(step)
+            self.query = handler(self.query)
+
+        return self.query.head(100)
+
+    def get_table(self, table_name):
+        # VUL: Any table can be accessed
+        return self.db_backend.table(table_name)
+
+    def get_step_handler(self, step):
+        step = _dict(step)
+        handler = lambda query: query
+        if step.type == "source":
+            handler = self.translate_source(step)
+        elif step.type == "join":
+            handler = self.translate_join(step)
+        elif step.type == "filter":
+            handler = self.translate_filter(step)
+        elif step.type == "mutate":
+            handler = self.translate_mutate(step)
+        elif step.type == "summarize":
+            handler = self.translate_summary(step)
+        # elif step.type == "group_by":
+        #     handler = self.translate_group_by(step)
+        elif step.type == "order_by":
+            handler = self.translate_order_by(step)
+        elif step.type == "limit":
+            handler = self.translate_limit(step)
+        elif step.type == "pivot_wider":
+            handler = self.translate_pivot(step, "wider")
+        return handler
+
+    def translate_source(self, source_args):
+        table = self.get_table(source_args.table.table_name)
+        return lambda _: table.select(table)
+
+    def translate_join(self, join_args):
+        right_table = self.get_table(join_args.table.table_name)
+        left_column = getattr(_, join_args.left_column.column_name)
+        right_column = getattr(right_table, join_args.right_column.column_name)
+        join_on = left_column == right_column
+        return lambda query: query.join(right_table, join_on)
+
+    def translate_filter(self, filter_args):
+        left = getattr(_, filter_args.column.column_name)
+        right = (
+            getattr(_, filter_args.value.column_name)
+            if isinstance(filter_args.value, dict) and filter_args.value.type == "column"
+            else filter_args.value
+        )
+        operator = self.get_operator(filter_args.operator)
+        return lambda query: query.filter(operator(left, right))
+
+    def get_operator(self, operator):
+        return {
+            ">": lambda x, y: x > y,
+            "<": lambda x, y: x < y,
+            "==": lambda x, y: x == y,
+            "!=": lambda x, y: x != y,
+            ">=": lambda x, y: x >= y,
+            "<=": lambda x, y: x <= y,
+        }[operator]
+
+    def translate_mutate(self, mutate_args):
+        label = mutate_args.label
+        new_column = self.translate_col_expression(mutate_args.mutation)
+        return lambda query: query.mutate(**{label: new_column})
+
+    def translate_summary(self, summarize_args):
+        metrics_by_name = summarize_args.metrics
+        group_bys = summarize_args.by
+        aggregates = {
+            label: self.translate_col_expression(metric)
+            for label, metric in metrics_by_name.items()
+        }
+        group_bys = [self.translate_col_expression(by) for by in group_bys]
+        return lambda query: query.aggregate(**aggregates, by=group_bys)
+
+    # def translate_group_by(self, group_by_args):
+    #     return self.translate_aggregate(group_by_args)
+
+    def translate_order_by(self, order_by_args):
+        column = self.translate_col_expression(order_by_args.column)
+        column = column.asc() if order_by_args.direction == "asc" else column.desc()
+        return lambda query: query.order_by(column)
+
+    def translate_limit(self, limit_args):
+        return lambda query: query.limit(limit_args.limit)
+
+    def translate_pivot(self, pivot_args, pivot_type):
+        # if not ibis.options.default_backend:
+        #     raise ValueError("No backend set")
+
+        # id_cols = self.translate_col_expression(pivot_args.id_cols)
+        # names_from = self.translate_col_expression(pivot_args.names_from)
+        # values_from = self.translate_col_expression(pivot_args.values_from)
+        # values_agg = pivot_args.values_agg
+        if pivot_type == "wider":
+            return lambda query: query.pivot_wider(
+                id_cols=pivot_args.id_cols.colum_name,
+                names_from=pivot_args.names_from.column_name,
+                values_from=pivot_args.values_from.column_name,
+                values_agg=pivot_args.values_agg,
+            )
+        return lambda query: query
+
+    def translate_col_expression(self, expr):
+        expr = frappe._dict(expr)
+
+        if expr.type == "column":
+            column = getattr(_, expr.column_name)
+            if not expr.options:
+                return column
+            if expr.options.granularity:
+                column = self.apply_granularity(column, expr.options.granularity)
+            if expr.options.date_format:
+                column = column.strftime(expr.options.date_format)
+            if expr.options.aggregate:
+                column = self.apply_aggregate(column, expr.options.aggregate)
+            return column
+
+        if expr.type == "expression":
+            return self.evaluate_expression(expr.expression)
+
+        # if expr.type == "window_operation":
+        #     return self.translate_window_operation(expr)
+
+        raise ValueError(f"Unknown expression type {expr.type}")
+
+    def apply_aggregate(self, column, aggregate_function):
+        return {
+            "sum": column.sum(),
+            "avg": column.mean(),
+            "count": column.count(),
+        }[aggregate_function]
+
+    def apply_granularity(self, column, granularity):
+        return {
+            "day": column.day(),
+            "month": column.month(),
+            "year": column.year(),
+        }[granularity]
+
+    def evaluate_expression(self, expression):
+        context = frappe._dict(
+            q=_,
+            case=ibis.case,
+            row_number=ibis.row_number,
+        )
+        stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
+        return frappe.safe_eval(stripped_expression, context)
