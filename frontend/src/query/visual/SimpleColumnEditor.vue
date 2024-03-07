@@ -1,7 +1,6 @@
 <script setup>
 import { AGGREGATIONS, FIELDTYPES, GRANULARITIES } from '@/utils'
-import { computed, defineProps, inject, reactive, ref } from 'vue'
-import ColumnExpressionEditor from './ColumnExpressionEditor.vue'
+import { computed, defineProps, inject, reactive } from 'vue'
 import { NEW_COLUMN } from './constants'
 
 const emit = defineEmits(['save', 'discard', 'remove'])
@@ -37,6 +36,24 @@ const isValidColumn = computed(() => {
 	if (column.table && column.column) return true
 	return false
 })
+
+function onAggregationChange(aggregation) {
+	column.aggregation = aggregation.value
+	const number_agg = [
+		'count',
+		'sum',
+		'avg',
+		'cumulative sum',
+		'cumulative count',
+		'distinct',
+		'distinct_count',
+		'min',
+		'max',
+	]
+	if (number_agg.includes(aggregation.value)) {
+		column.type = 'Decimal'
+	}
+}
 </script>
 
 <template>
@@ -47,7 +64,7 @@ const isValidColumn = computed(() => {
 				:modelValue="column.aggregation.toLowerCase()"
 				placeholder="Aggregation"
 				:options="AGGREGATIONS"
-				@update:modelValue="(op) => (column.aggregation = op.value)"
+				@update:modelValue="onAggregationChange"
 			/>
 		</div>
 		<div class="space-y-1">
