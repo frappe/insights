@@ -229,8 +229,8 @@ function makeGroupedColumnOptions(options) {
 			table: columns[0].table,
 			column: 'count',
 			type: 'Integer',
-			label: `${table_label} Count`,
-			alias: `${table_label} Count`,
+			label: 'Count of Rows',
+			alias: 'Count of Rows',
 			aggregation: 'count',
 		})
 		return {
