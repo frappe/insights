@@ -12,7 +12,6 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.api.telemetry import track
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_query.utils import QUERY_RESULT_CACHE_PREFIX
 
 from .utils import guess_layout_for_chart
 
@@ -54,7 +53,7 @@ class InsightsDashboard(Document):
             options = frappe.parse_json(row.options)
             if not options.query:
                 continue
-            frappe.cache().delete_keys(f"*{QUERY_RESULT_CACHE_PREFIX}:{options.query}*")
+            frappe.cache().delete_keys(f"*insights_query_results:{options.query}*")
         notify(**{"type": "success", "title": "Cache Cleared"})
 
     @frappe.whitelist()
