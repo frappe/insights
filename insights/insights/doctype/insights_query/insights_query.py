@@ -56,6 +56,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def on_update(self):
         self.link_chart()
         self.update_linked_docs()
+        if self.is_stored and self.has_value_changed("is_stored"):
+            store_query(self, self.retrieve_results())
 
     def link_chart(self):
         chart_name = InsightsChart.get_name(query=self.name)
