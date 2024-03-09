@@ -48,6 +48,8 @@ class SQLiteColumnFormatter(ColumnFormatter):
                 date,
                 ("-" + func.mod((month - 1), 3) + " months"),
             )
+        else:
+            return func.strftime(format, column)
 
         return column
 

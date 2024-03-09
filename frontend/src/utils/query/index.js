@@ -156,6 +156,12 @@ export const FUNCTIONS = {
 		example: '`invoice.posting_date` = today()',
 		returnType: 'date',
 	},
+	format_date: {
+		syntax: 'format_date(date, "format")',
+		description: 'Formats date to the given format.',
+		example: 'format_date(`invoice.posting_date`, "DD-MM-YYYY")',
+		returnType: 'string',
+	},
 	start_of: {
 		syntax: 'start_of(unit, date)',
 		description: 'Finds start of the given unit (e.g., Month, Year).',
