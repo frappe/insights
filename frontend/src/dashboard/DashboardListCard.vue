@@ -23,7 +23,7 @@ function toggleFavourite() {
 				<div class="flex flex-col space-y-3">
 					<div class="flex items-center justify-between">
 						<div class="flex h-6 items-center">
-							<div class="flex-shrink-0 text-xl font-medium text-gray-800">
+							<div class="flex-shrink-0 text-xl font-medium text-gray-800 overflow-hidden whitespace-nowrap text-ellipsis">
 								{{ dashboard.title }}
 							</div>
 							<span
