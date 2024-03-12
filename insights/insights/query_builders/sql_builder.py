@@ -157,13 +157,16 @@ class SQLQueryBuilder:
                     _column.asc() if column.order == "asc" else _column.desc()
                 )
 
+    def quote_identifier(self, identifier):
+        return self.engine.dialect.identifier_preparer.quote_identifier(identifier)
+
     def _build(self, assisted_query):
         main_table = assisted_query.table.table
         main_table = self.make_table(main_table)
 
         columns = self._dimensions + self._measures
         if not columns:
-            columns = [text(f"`{main_table.name}`.*")]
+            columns = [text(f"{self.quote_identifier(main_table.name)}.*")]
 
         query = select(*columns).select_from(main_table)
         for join in self._joins:

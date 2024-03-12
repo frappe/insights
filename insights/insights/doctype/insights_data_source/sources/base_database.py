@@ -158,7 +158,7 @@ class BaseDatabase(Database):
     def process_subquery(self, sql):
         allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         if allow_subquery:
-            sql = replace_query_tables_with_cte(sql, self.data_source)
+            sql = replace_query_tables_with_cte(sql, self.data_source, self.engine.dialect)
         return sql
 
     def escape_special_characters(self, sql):
