@@ -141,13 +141,26 @@ export default function useDashboard(name) {
 				if (!chart_column) return
 
 				const filter_state = await getFilterState(filter.item_id)
-				if (!filter_state || !filter_state.value?.value) return
-				return {
-					label: filter.options.label,
-					column: chart_column,
-					value: filter_state.value.value,
-					operator: filter_state.operator.value,
-					column_type: chart_column.type,
+				if (filter_state && filter_state.value?.value) {
+					return {
+						label: filter.options.label,
+						column: chart_column,
+						value: filter_state.value.value,
+						operator: filter_state.operator.value,
+						column_type: chart_column.type,
+					}
+				}
+
+				const default_operator = filter.options.defaultOperator
+				const default_value = filter.options.defaultValue
+				if (default_operator?.value && default_value?.value) {
+					return {
+						label: filter.options.label,
+						column: chart_column,
+						value: default_value.value,
+						operator: default_operator.value,
+						column_type: chart_column.type,
+					}
 				}
 			})
 		const filters = await Promise.all(promises)
