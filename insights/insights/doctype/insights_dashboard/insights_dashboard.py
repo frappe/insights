@@ -3,6 +3,7 @@
 
 
 import random
+from contextlib import suppress
 from json import dumps
 
 import frappe
@@ -103,9 +104,19 @@ def get_queries_column(query_names):
     columns = []
     for data_source in table_by_datasource.values():
         for table in data_source.values():
-            doc = frappe.get_cached_doc(
-                "Insights Table", {"table": table.table, "data_source": doc.data_source}
-            )
+            doc = None
+            with suppress(frappe.DoesNotExistError):
+                doc = frappe.get_cached_doc(
+                    "Insights Table",
+                    {
+                        "table": table.table,
+                        "data_source": doc.data_source,
+                    },
+                )
+
+            if not doc:
+                continue
+
             _columns = doc.get_columns()
             for column in _columns:
                 columns.append(
