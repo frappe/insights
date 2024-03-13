@@ -163,7 +163,7 @@ class BaseDatabase(Database):
 
     def escape_special_characters(self, sql):
         # to fix special characters in query like %
-        if self.engine.dialect.name == "mysql":
+        if self.engine.dialect.name in ("mysql", "postgresql"):
             sql = re.sub(r"(%{1,})", r"%%", sql)
         return sql
 
