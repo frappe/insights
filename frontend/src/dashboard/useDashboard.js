@@ -1,5 +1,4 @@
 import useQuery from '@/query/resources/useQuery'
-import { useQueryResource } from '@/query/useQueryResource'
 import sessionStore from '@/stores/sessionStore'
 import { areDeeplyEqual, safeJSONParse } from '@/utils'
 import { createToast } from '@/utils/toasts'
@@ -45,9 +44,7 @@ export default function useDashboard(name) {
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
 		state.isOwner = state.doc.owner == session.user.user_id
 		state.canShare = state.isOwner || session.user.is_admin
-		resource.is_private.fetch().then((res) => {
-			state.isPrivate = res.message
-		})
+		resource.is_private.fetch().then((res) => (state.isPrivate = res))
 		state.loading = false
 	}
 	reload()
@@ -186,13 +183,11 @@ export default function useDashboard(name) {
 			throw new Error(`Query not found for item ${itemId}`)
 		}
 		const filters = await getChartFilters(itemId)
-		return resource.fetch_chart_data
-			.submit({
-				item_id: itemId,
-				query_name: queryName,
-				filters,
-			})
-			.then((res) => res.message)
+		return resource.fetch_chart_data.submit({
+			item_id: itemId,
+			query_name: queryName,
+			filters,
+		})
 	}
 
 	function refreshFilter(filter_id) {

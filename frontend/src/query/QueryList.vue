@@ -1,7 +1,5 @@
 <script setup lang="jsx">
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
-import ListFilter from '@/components/ListFilter/ListFilter.vue'
-import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebooks from '@/notebook/useNotebooks'
@@ -10,13 +8,14 @@ import sessionStore from '@/stores/sessionStore'
 import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getIcon } from '@/widgets/widgets'
 import { useStorage } from '@vueuse/core'
-import { ListRow, ListRowItem } from 'frappe-ui'
+import { Avatar, ListFilter, ListView } from 'frappe-ui'
 import {
 	AlignStartVertical,
 	ComponentIcon,
 	FileTerminal,
 	GanttChartSquare,
 	PlusIcon,
+	SearchIcon,
 	Square,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -121,6 +120,66 @@ function getQueryTypeIcon(query) {
 	if (query.is_script_query) return FileTerminal
 	return Square
 }
+
+const queryListColumns = [
+	{
+		label: 'Title',
+		key: 'title',
+		width: 2,
+		prefix: ({ row }) => {
+			if (!row.is_stored) return null
+			return <ComponentIcon class="h-4 w-4 text-gray-600" fill="currentColor" />
+		},
+	},
+	{
+		label: 'Execution Status',
+		key: 'status',
+		width: 1,
+		getLabel: ({ row }) => row.status.replace('Execution', ''),
+		prefix: ({ row }) => {
+			let color = 'text-gray-500'
+			if (row.status === 'Pending Execution') color = 'text-yellow-500'
+			if (row.status === 'Execution Successful') color = 'text-green-500'
+			if (row.status === 'Execution Failed') color = 'text-red-500'
+			return <IndicatorIcon class={color} />
+		},
+	},
+	{
+		label: 'Chart Type',
+		key: 'chart_type',
+		width: 1,
+		prefix: ({ row }) => {
+			if (!row.chart_type) return null
+			const Icon = getIcon(row.chart_type)
+			return <Icon class="h-4 w-4 text-gray-700" />
+		},
+	},
+	{
+		label: 'Data Source',
+		key: 'data_source',
+		width: 1,
+		getLabel: ({ row }) => row.data_source_title || row.data_source,
+	},
+	{
+		label: 'ID',
+		key: 'name',
+		width: 1,
+	},
+	{
+		label: 'Created By',
+		key: 'owner_name',
+		width: 1,
+		prefix: ({ row }) => {
+			return <Avatar image={row.owner_image} label={row.owner_name} size="md" />
+		},
+	},
+	{
+		label: 'Created',
+		key: 'created_from_now',
+		width: 1,
+		align: 'right',
+	},
+]
 </script>
 
 <template>
@@ -135,75 +194,40 @@ function getQueryTypeIcon(query) {
 		</div>
 	</header>
 
-	<ListView
-		:columns="[
-			{ label: 'Title', name: 'title', class: 'flex-[3]' },
-			{ label: 'Execution Status', name: 'status', class: 'flex-[2]' },
-			{ label: 'Chart Type', name: 'chart_type', class: 'flex-1' },
-			{ label: 'Data Source', name: 'data_source', class: 'flex-1' },
-			{ label: 'ID', name: 'name', class: 'flex-1' },
-			{ label: 'Created By', name: 'owner_name', class: 'flex-1' },
-			{ label: 'Created', name: 'created_from_now', class: 'flex-1 text-right' },
-		]"
-		:rows="queries"
-	>
-		<template #actions>
-			<ListFilter v-model="filters" :docfields="queryStore.getFilterableFields()" />
-		</template>
-		<template #list-row="{ row: query }">
-			<ListRow
-				as="router-link"
-				:row="query"
-				:to="{ name: 'Query', params: { name: query.name } }"
+	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+		<div class="flex gap-2 overflow-visible py-1">
+			<FormControl
+				placeholder="Search by Title"
+				:modelValue="filters.title?.[1]"
+				@update:modelValue="filters.title = ['like', $event]"
+				:debounce="300"
 			>
-				<ListRowItem class="flex-[3]">
-					<ComponentIcon
-						v-if="query.is_stored"
-						class="h-4 w-4 text-gray-600"
-						fill="currentColor"
-					/>
-					<span> {{ query.title }} </span>
-				</ListRowItem>
-				<ListRowItem class="flex-[2] space-x-2">
-					<IndicatorIcon
-						:class="
-							{
-								'Pending Execution': 'text-yellow-500',
-								'Execution Successful': 'text-green-500',
-								'Execution Failed': 'text-red-500',
-							}[query.status] || 'text-gray-500'
-						"
-					/>
-					<span> {{ query.status.replace('Execution', '') }} </span>
-				</ListRowItem>
-				<ListRowItem class="flex-1 space-x-2">
-					<component
-						v-if="query.chart_type"
-						:is="getIcon(query.chart_type)"
-						class="h-4 w-4 text-gray-700"
-					/>
-					<span> {{ query.chart_type }} </span>
-				</ListRowItem>
-				<ListRowItem class="flex-1">
-					{{ query.data_source_title || query.data_source }}
-				</ListRowItem>
-				<ListRowItem class="flex-1"> {{ query.name }} </ListRowItem>
-				<ListRowItem class="flex-1 space-x-2">
-					<Avatar :image="query.owner_image" :label="query.owner_name" size="md" />
-					<span> {{ query.owner_name }} </span>
-				</ListRowItem>
-				<ListRowItem class="flex-1 justify-end">
-					{{ query.created_from_now }}
-				</ListRowItem>
-			</ListRow>
-		</template>
-
-		<template #emptyState>
-			<div class="text-xl font-medium">No Query Created.</div>
-			<div class="mt-1 text-base text-gray-600">Create a new query to get started.</div>
-			<Button class="mt-3" label="New Query" variant="solid" @click="new_dialog = true" />
-		</template>
-	</ListView>
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" />
+				</template>
+			</FormControl>
+			<ListFilter v-model="filters" :docfields="queryStore.getFilterableFields()" />
+		</div>
+		<ListView
+			:columns="queryListColumns"
+			:rows="queries"
+			:row-key="'name'"
+			:options="{
+				showTooltip: false,
+				getRowRoute: (query) => ({ name: 'Query', params: { name: query.name } }),
+				emptyState: {
+					title: 'No Query Created.',
+					description: 'Create a new query to get started.',
+					button: {
+						label: 'New Query',
+						variant: 'solid',
+						onClick: () => (new_dialog = true),
+					},
+				},
+			}"
+		>
+		</ListView>
+	</div>
 
 	<NewDialogWithTypes
 		v-model:show="new_dialog"

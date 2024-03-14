@@ -9,49 +9,38 @@
 			</Button>
 		</div>
 	</header>
-	<ListView
-		:columns="[
-			{ label: 'Title', name: 'title' },
-			{ label: 'Status', name: 'status' },
-			{ label: 'Database Type', name: 'database_type' },
-			{ label: 'Created', name: 'created_from_now' },
-		]"
-		:rows="sources.list"
-	>
-		<template #list-row="{ row: dataSource }">
-			<ListRow
-				as="router-link"
-				:row="dataSource"
-				:to="{
+
+	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+		<div class="flex gap-2 overflow-visible py-1">
+			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" />
+				</template>
+			</FormControl>
+		</div>
+		<ListView
+			:columns="dataSourceListColumns"
+			:rows="filteredSourceList"
+			:row-key="'name'"
+			:options="{
+				showTooltip: false,
+				getRowRoute: (dataSource) => ({
 					name: 'DataSource',
 					params: { name: dataSource.name },
-				}"
-			>
-				<ListRowItem> {{ dataSource.title }} </ListRowItem>
-				<ListRowItem class="space-x-2">
-					<IndicatorIcon
-						:class="
-							dataSource.status == 'Inactive' ? 'text-gray-500' : 'text-green-500'
-						"
-					/>
-					<span> {{ dataSource.status }} </span>
-				</ListRowItem>
-				<ListRowItem> {{ dataSource.database_type }} </ListRowItem>
-				<ListRowItem> {{ dataSource.created_from_now }} </ListRowItem>
-			</ListRow>
-		</template>
-
-		<template #emptyState>
-			<div class="text-xl font-medium">No data sources.</div>
-			<div class="mt-1 text-base text-gray-600">No data sources to display.</div>
-			<Button
-				class="mt-4"
-				label="New Data Source"
-				variant="solid"
-				@click="new_dialog = true"
-			/>
-		</template>
-	</ListView>
+				}),
+				emptyState: {
+					title: 'No Data Sources.',
+					description: 'No data sources to display.',
+					button: {
+						label: 'New Data Source',
+						variant: 'solid',
+						onClick: () => (new_dialog = true),
+					},
+				},
+			}"
+		>
+		</ListView>
+	</div>
 
 	<NewDialogWithTypes
 		v-model:show="new_dialog"
@@ -66,7 +55,6 @@
 
 <script setup lang="jsx">
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
-import ListView from '@/components/ListView.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import ConnectMariaDBDialog from '@/datasource/ConnectMariaDBDialog.vue'
@@ -74,9 +62,9 @@ import ConnectPostgreDBDialog from '@/datasource/ConnectPostgreDBDialog.vue'
 import UploadCSVFileDialog from '@/datasource/UploadCSVFileDialog.vue'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import { updateDocumentTitle } from '@/utils'
-import { ListRow, ListRowItem } from 'frappe-ui'
-import { PlusIcon } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { ListView } from 'frappe-ui'
+import { PlusIcon, SearchIcon } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const new_dialog = ref(false)
@@ -87,11 +75,15 @@ if (route.hash == '#new') {
 }
 
 const sources = useDataSourceStore()
-
-const StatusCell = (props) => (
-	<Badge theme={props.row.status == 'Inactive' ? 'orange' : 'green'}>{props.row.status}</Badge>
-)
-const columns = []
+const searchQuery = ref('')
+const filteredSourceList = computed(() => {
+	if (searchQuery.value) {
+		return sources.list.filter((source) => {
+			return source.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+		})
+	}
+	return sources.list
+})
 
 const router = useRouter()
 const showConnectMariaDBDialog = ref(false)
@@ -126,6 +118,20 @@ const databaseTypes = ref([
 		},
 	},
 ])
+
+const dataSourceListColumns = [
+	{ label: 'Title', key: 'title' },
+	{
+		label: 'Status',
+		key: 'status',
+		prefix: ({ row }) => {
+			const color = row.status == 'Inactive' ? 'text-gray-500' : 'text-green-500'
+			return <IndicatorIcon class={color} />
+		},
+	},
+	{ label: 'Database Type', key: 'database_type' },
+	{ label: 'Created', key: 'created_from_now' },
+]
 
 const pageMeta = ref({ title: 'Data Sources' })
 updateDocumentTitle(pageMeta)
