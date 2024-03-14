@@ -1,5 +1,6 @@
 <script setup lang="jsx">
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
+import ListFilter from '@/components/ListFilter/ListFilter.vue'
 import NewDialogWithTypes from '@/components/NewDialogWithTypes.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebooks from '@/notebook/useNotebooks'
@@ -8,7 +9,7 @@ import sessionStore from '@/stores/sessionStore'
 import { isEmptyObj, updateDocumentTitle } from '@/utils'
 import { getIcon } from '@/widgets/widgets'
 import { useStorage } from '@vueuse/core'
-import { Avatar, ListFilter, ListView } from 'frappe-ui'
+import { Avatar, ListView } from 'frappe-ui'
 import {
 	AlignStartVertical,
 	ComponentIcon,
