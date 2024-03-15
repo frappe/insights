@@ -205,8 +205,7 @@ def make_wrap_table_fn(
     elif data_source:
         quote = (
             "`"
-            if data_source
-            and frappe.get_cached_value("Insights Data Source", data_source, "database_type")
+            if frappe.get_cached_value("Insights Data Source", data_source, "database_type")
             == "MariaDB"
             else '"'
         )
