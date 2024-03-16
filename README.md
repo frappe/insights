@@ -68,7 +68,7 @@ docker-compose up
 ```
 
 Wait for sometime until the setup script creates a site. After that you can
-Open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
+Open the URL `http://insights.localhost:8000/insights` in your browser, you should see the app running
 should show up.
 
 ### Local
