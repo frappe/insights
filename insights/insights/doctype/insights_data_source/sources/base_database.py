@@ -112,7 +112,7 @@ class BaseDatabase(Database):
 
     def run_query(self, query):
         sql = self.query_builder.build(query)
-        return self.execute_query(sql, return_columns=True)
+        return self.execute_query(sql, return_columns=True, query_name=query.name)
 
     def execute_query(
         self,
@@ -120,6 +120,7 @@ class BaseDatabase(Database):
         pluck=False,
         return_columns=False,
         cached=False,
+        query_name=None,
     ):
         if sql is None:
             return []
@@ -140,7 +141,7 @@ class BaseDatabase(Database):
                 return cached_results
 
         with self.connect() as connection:
-            res = execute_and_log(connection, sql, self.data_source)
+            res = execute_and_log(connection, sql, self.data_source, query_name)
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows

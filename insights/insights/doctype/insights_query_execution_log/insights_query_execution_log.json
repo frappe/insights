@@ -9,6 +9,9 @@
  "engine": "MyISAM",
  "field_order": [
   "data_source",
+  "column_break_zzqc",
+  "query",
+  "section_break_pkwk",
   "sql",
   "time_taken"
  ],
@@ -30,11 +33,25 @@
    "fieldtype": "Float",
    "label": "Time Taken (Seconds)",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zzqc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "query",
+   "fieldtype": "Data",
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_pkwk",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-02 17:00:02.474538",
+ "modified": "2024-03-18 18:13:29.212361",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Execution Log",
