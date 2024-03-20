@@ -24,55 +24,12 @@ from .sql_functions import (
 from .utils import process_raw_expression
 
 
-class PostgresColumnFormatter(ColumnFormatter):
-    @classmethod
-    def format_date(cls, format, column: Column):
-        if format == "Minute":
-            return func.to_char(column, "YYYY-MM-DD HH24:MI")
-        if format == "Hour":
-            return func.to_char(column, "YYYY-MM-DD HH24:00")
-        if format == "Day" or format == "Day Short":
-            return func.to_char(column, "YYYY-MM-DD 00:00")
-        if format == "Week":
-            return func.date_trunc("week", column)
-        if format == "Month" or format == "Mon":
-            return func.to_char(column, "YYYY-MM-01")
-        if format == "Year":
-            return func.to_char(column, "YYYY-01-01")
-        if format == "Minute of Hour":
-            return func.to_char(column, "00:MI")
-        if format == "Hour of Day":
-            return func.to_char(column, "HH:00")
-        if format == "Day of Week":
-            return func.to_char(column, "Day")
-        if format == "Day of Month":
-            return func.to_char(column, "DD")
-        if format == "Day of Year":
-            return func.to_char(column, "DDD")
-        if format == "Month of Year":
-            return func.to_char(column, "MM")
-        if format == "Quarter of Year":
-            return func.date_part("quarter", column)
-        if format == "Quarter":
-            return func.to_date(
-                func.concat(
-                    func.extract("year", column),
-                    "-",
-                    (func.extract("quarter", column) * 3) - 2,
-                    "-01",
-                ),
-                "YYYY-MM-DD",
-            )
-        else:
-            return func.to_char(column, format)
-
-
 class SQLQueryBuilder:
     def __init__(self, engine) -> None:
         self.engine = engine
         self.functions = Functions
         self.aggregations = Aggregations
-        self.column_formatter = PostgresColumnFormatter
+        self.column_formatter = ColumnFormatter
 
     def build(self, query):
         if query.is_native_query:

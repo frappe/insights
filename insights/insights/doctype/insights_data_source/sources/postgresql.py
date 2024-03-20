@@ -12,7 +12,7 @@ from sqlalchemy import table as Table
 from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 
-from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+from insights.insights.query_builders.postgresql.builder import PostgresQueryBuilder
 
 from .base_database import BaseDatabase
 from .utils import create_insights_table, get_sqlalchemy_engine
@@ -116,7 +116,7 @@ class PostgresDatabase(BaseDatabase):
                 port=kwargs.pop("port"),
                 sslmode="require" if kwargs.pop("use_ssl") else "disable",
             )
-        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
+        self.query_builder: PostgresQueryBuilder = PostgresQueryBuilder(self.engine)
         self.table_factory: PostgresTableFactory = PostgresTableFactory(self.data_source)
 
     def sync_tables(self, tables=None, force=False):
