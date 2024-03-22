@@ -119,7 +119,7 @@ class BaseDatabase(Database):
         sql,  # can be a string or a sqlalchemy query object or text object
         pluck=False,
         return_columns=False,
-        cached=False,
+        cached=True,
     ):
         if sql is None:
             return []
@@ -134,19 +134,25 @@ class BaseDatabase(Database):
 
         self.validate_native_sql(sql)
 
+        def process_kwargs(results):
+            cols = results[0]
+            rows = results[1:]
+            rows = [r[0] for r in rows] if pluck else rows
+            ret = [cols] + rows if return_columns else rows
+            return ret
+
         if cached:
             cached_results = get_cached_results(sql, self.data_source)
             if cached_results:
-                return cached_results
+                return process_kwargs(cached_results)
 
         with self.connect() as connection:
             res = execute_and_log(connection, sql, self.data_source)
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
-            rows = [r[0] for r in rows] if pluck else rows
-            ret = [cols] + rows if return_columns else rows
-            cached and cache_results(sql, self.data_source, ret)
-            return ret
+            results = [cols] + rows
+            cached and cache_results(sql, self.data_source, results)
+            return process_kwargs(results)
 
     def compile_query(self, query):
         if hasattr(query, "compile"):

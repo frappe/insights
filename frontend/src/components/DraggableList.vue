@@ -40,12 +40,12 @@ function onChange(e) {
 		@change="onChange"
 	>
 		<template #item="{ element: item, index: idx }">
-			<div class="mb-2 flex items-center gap-1">
+			<div class="mb-2 flex items-center gap-1 last:mb-0">
 				<GripVertical
 					v-if="props.showHandle"
 					class="h-4 w-4 flex-shrink-0 cursor-grab text-gray-500"
 				/>
-				<div class="flex-1">
+				<div class="flex flex-1 flex-col justify-center">
 					<slot name="item" :item="item" :index="idx">
 						<div
 							class="group form-input flex h-7 flex-1 cursor-pointer items-center justify-between px-2"

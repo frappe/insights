@@ -4,9 +4,13 @@ from ibis import _
 
 from insights.api.telemetry import track
 from insights.decorators import check_role
+from insights.insights.doctype.insights_query.utils import (
+    get_columns_with_inferred_types,
+)
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
 )
+from insights.insights.query_builders.sql_functions import handle_timespan
 
 
 @frappe.whitelist()
@@ -157,24 +161,54 @@ _dict = deep_convert_dict_to_dict
 
 
 @frappe.whitelist()
-def execute_query_pipeline(query_pipeline, data_source=None):
-    doc = frappe.get_doc("Insights Data Source", data_source or "frappe.cloud")
+def execute_query_pipeline(data_source, query_pipeline):
+    doc = frappe.get_doc("Insights Data Source", data_source)
 
-    args = doc.get_db_credentials()
-    db = ibis.mysql.connect(
-        host=args.get("host"),
-        port=args.get("port"),
-        user=args.get("username"),
-        password=args.get("password"),
-        database=args.get("database_name"),
-    )
-
-    translator = QueryPipelineTranslator(query_pipeline, backend=db)
-    translated = translator.translate()
-    sql = ibis.to_sql(translated, dialect="mysql")
+    conn = doc.get_ibis_connection()
+    translator = QueryPipelineTranslator(query_pipeline, backend=conn)
+    query = translator.translate()
+    sql = ibis.to_sql(query.head(100), dialect="mysql")
 
     data = doc.execute_query(sql, return_columns=True)
+    data[0] = get_columns_with_inferred_types(data)
     return data
+
+
+@frappe.whitelist()
+def get_distinct_column_values(data_source, query_pipeline, column_name, search_term=None):
+    doc = frappe.get_doc("Insights Data Source", data_source)
+
+    conn = doc.get_ibis_connection()
+    translator = QueryPipelineTranslator(query_pipeline, backend=conn)
+    query = translator.translate()
+    values_query = (
+        query.select(column_name)
+        .filter(
+            getattr(_, column_name).notnull()
+            if not search_term
+            else getattr(_, column_name).like(f"%{search_term}%")
+        )
+        .distinct()
+        .head(20)
+    )
+    sql = ibis.to_sql(values_query)
+    values = doc.execute_query(sql, pluck=True)
+    return values
+
+
+@frappe.whitelist()
+def get_min_max(data_source, query_pipeline, column_name):
+    doc = frappe.get_doc("Insights Data Source", data_source)
+
+    conn = doc.get_ibis_connection()
+    translator = QueryPipelineTranslator(query_pipeline, backend=conn)
+    query = translator.translate()
+    values_query = query.select(column_name).aggregate(
+        min=getattr(_, column_name).min(), max=getattr(_, column_name).max()
+    )
+    sql = ibis.to_sql(values_query)
+    values = doc.execute_query(sql)
+    return values[0]
 
 
 class QueryPipelineTranslator:
@@ -188,8 +222,7 @@ class QueryPipelineTranslator:
         for step in self.pipeline_steps:
             handler = self.get_step_handler(step)
             self.query = handler(self.query)
-
-        return self.query.head(100)
+        return self.query
 
     def get_table(self, table_name):
         # VUL: Any table can be accessed
@@ -204,8 +237,16 @@ class QueryPipelineTranslator:
             handler = self.translate_join(step)
         elif step.type == "filter":
             handler = self.translate_filter(step)
+        elif step.type == "select":
+            handler = self.translate_select(step)
+        elif step.type == "rename":
+            handler = self.translate_rename(step)
+        elif step.type == "remove":
+            handler = self.translate_remove(step)
         elif step.type == "mutate":
             handler = self.translate_mutate(step)
+        elif step.type == "cast":
+            handler = self.translate_cast(step)
         elif step.type == "summarize":
             handler = self.translate_summary(step)
         # elif step.type == "group_by":
@@ -230,24 +271,67 @@ class QueryPipelineTranslator:
         return lambda query: query.join(right_table, join_on)
 
     def translate_filter(self, filter_args):
-        left = getattr(_, filter_args.column.column_name)
-        right = (
-            getattr(_, filter_args.value.column_name)
-            if isinstance(filter_args.value, dict) and filter_args.value.type == "column"
-            else filter_args.value
+        filter_column = filter_args.column
+        filter_operator = filter_args.operator
+        filter_value = filter_args.value
+
+        left = getattr(_, filter_column.column_name)
+        operator_fn = self.get_operator(filter_operator)
+
+        right_column = (
+            getattr(_, filter_value.column_name) if hasattr(filter_value, "column_name") else None
         )
-        operator = self.get_operator(filter_args.operator)
-        return lambda query: query.filter(operator(left, right))
+
+        right_value = right_column or filter_value
+        return lambda query: query.filter(operator_fn(left, right_value))
 
     def get_operator(self, operator):
         return {
             ">": lambda x, y: x > y,
             "<": lambda x, y: x < y,
-            "==": lambda x, y: x == y,
+            "=": lambda x, y: x == y,
             "!=": lambda x, y: x != y,
             ">=": lambda x, y: x >= y,
             "<=": lambda x, y: x <= y,
+            "between": lambda x, y: x.between(y[0], y[1]),
+            "contains": lambda x, y: x.like(y),
+            "not_contains": lambda x, y: ~x.like(y),
+            "in": lambda x, y: x.isin(y),
+            "not_in": lambda x, y: ~x.isin(y),
+            "is_set": lambda x, y: x.notnull(),
+            "is_not_set": lambda x, y: x.isnull(),
+            "within": lambda x, y: handle_timespan(x, y),
         }[operator]
+
+    def translate_select(self, select_args):
+        select_args = _dict(select_args)
+        if select_args.column_names:
+            columns = [getattr(_, col.column_name) for col in select_args.column_names]
+            return lambda query: query[columns]
+        if select_args.expression:
+            expression = self.translate_col_expression(select_args.expression)
+            return lambda query: query.select(expression)
+        raise ValueError("Select must have either column_names or expression")
+
+    def translate_rename(self, rename_args):
+        old_name = rename_args.column.column_name
+        return lambda query: query.rename(**{rename_args.new_name: old_name})
+
+    def translate_remove(self, remove_args):
+        return lambda query: query.drop(*remove_args.column_names)
+
+    def translate_cast(self, cast_args):
+        col_name = cast_args.column.column_name
+        dtype = {
+            "String": "string",
+            "Integer": "int64",
+            "Decimal": "float64",
+            "Date": "date",
+            "Datetime": "timestamp",
+            "Time": "time",
+            "Text": "string",
+        }[cast_args.data_type]
+        return lambda query: query.cast({col_name: dtype})
 
     def translate_mutate(self, mutate_args):
         label = mutate_args.label
@@ -332,6 +416,7 @@ class QueryPipelineTranslator:
     def evaluate_expression(self, expression):
         context = frappe._dict(
             q=_,
+            columns=ibis.selectors.c,
             case=ibis.case,
             row_number=ibis.row_number,
         )

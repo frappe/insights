@@ -4,11 +4,14 @@ import { whenHasValue } from '@/utils'
 import { useStorage } from '@vueuse/core'
 import { UnwrapRef, computed, reactive } from 'vue'
 
-export type GetTableParams = {
-	name: string
-	table: string
-	data_source: string
-}
+export type GetTableParams =
+	| {
+			name: string
+	  }
+	| {
+			table: string
+			data_source: string
+	  }
 
 async function useDataSourceTable(params: GetTableParams) {
 	const name = await getTableName(params)

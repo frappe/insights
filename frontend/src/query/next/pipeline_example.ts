@@ -30,7 +30,6 @@ pipeline.addFilter({
 	value: column('free_credits'),
 })
 
-// pipeline.addJoin(table('tabTeam'), column('team'), column('name'))
 pipeline.addJoin({
 	table: table('tabTeam'),
 	left_column: column('team'),

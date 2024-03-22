@@ -134,6 +134,7 @@ import {
 	User,
 	Users,
 	BookOpen,
+	SparkleIcon,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -143,6 +144,13 @@ const settings = settingsStore().settings
 
 const showHelpDialog = ref(false)
 const sidebarItems = ref([
+	{
+		path: '/analysis',
+		label: 'Analysis',
+		icon: SparkleIcon,
+		name: 'Analysis',
+		current: false,
+	},
 	{
 		path: '/',
 		label: 'Home',

@@ -91,12 +91,6 @@ const routes = [
 		component: () => import('@/query/Query.vue'),
 	},
 	{
-		props: true,
-		name: 'QueryNext',
-		path: '/query-next/build/:name',
-		component: () => import('@/query/next/Query.vue'),
-	},
-	{
 		path: '/users',
 		name: 'Users',
 		component: () => import('@/pages/Users.vue'),
@@ -137,6 +131,11 @@ const routes = [
 		path: '/settings',
 		name: 'Settings',
 		component: () => import('@/pages/Settings.vue'),
+	},
+	{
+		path: '/analysis',
+		name: 'Analysis',
+		component: () => import('@/analysis/Analysis.vue'),
 	},
 	{
 		path: '/no-permission',

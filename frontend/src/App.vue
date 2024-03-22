@@ -5,6 +5,7 @@
 			<AppShell />
 		</Suspense>
 		<Toaster :visible-toasts="2" position="bottom-right" />
+		<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 	</div>
 </template>
 
@@ -14,6 +15,7 @@ import sessionStore from '@/stores/sessionStore'
 import { computed, inject, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
+import { dialogs } from '@/utils/components'
 
 const route = useRoute()
 const isGuestView = computed(() => route.meta.isGuestView)

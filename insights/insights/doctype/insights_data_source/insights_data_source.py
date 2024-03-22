@@ -2,10 +2,12 @@
 # For license information, please see license.txt
 
 
+import os
 from contextlib import suppress
 from functools import cached_property, lru_cache
 
 import frappe
+import ibis
 from frappe.model.document import Document
 from frappe.utils.caching import redis_cache
 
@@ -235,6 +237,26 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
             }
         )
         return conn_args
+
+    def get_ibis_connection(self):
+        if self.database_type == "SQLite":
+            database_name = self.database_name
+            database_path = frappe.get_site_path("private", "files", f"{database_name}.sqlite")
+            database_path = os.path.abspath(database_path)
+            database_path = database_path.lstrip("/")
+            return ibis.connect(f"sqlite:///{database_path}")
+
+        if self.database_type == "MariaDB":
+            args = self.get_db_credentials()
+            return ibis.mysql.connect(
+                host=args.get("host"),
+                port=args.get("port"),
+                user=args.get("username"),
+                password=args.get("password"),
+                database=args.get("database_name"),
+            )
+
+        frappe.throw(f"Unsupported database type: {self.database_type}")
 
     def test_connection(self, raise_exception=False):
         try:

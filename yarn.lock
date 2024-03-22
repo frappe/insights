@@ -3367,10 +3367,10 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-lucide-vue-next@^0.300.0:
-  version "0.300.0"
-  resolved "https://registry.yarnpkg.com/lucide-vue-next/-/lucide-vue-next-0.300.0.tgz#61de4048799d18e66f2ec900712ea4ec201dc98c"
-  integrity sha512-vhXSuZ3yYpeeDCQjOYBUTEb9itYfvUGLQf3ONGL3o340r3l9eG20Gh9XCYnc1IYQKYOvMtDRDYeykvbq/ymhhw==
+lucide-vue-next@^0.358.0:
+  version "0.358.0"
+  resolved "https://registry.yarnpkg.com/lucide-vue-next/-/lucide-vue-next-0.358.0.tgz#3c3f65a117b6aa3e498895199d6ce2fcce9283be"
+  integrity sha512-XLC5kLwpcSSv16xrJ1WA6rxt5eyDRGw0EYBUjUBbrynSdspmiGL2z8az79pvli4pto/trcAF/KlxptlF03M2nw==
 
 magic-string@^0.30.0:
   version "0.30.3"

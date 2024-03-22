@@ -5,9 +5,12 @@
 		nullable
 		v-slot="{ open: isComboboxOpen }"
 	>
-		<Popover class="w-full" v-model:show="showOptions">
+		<Popover class="w-full" v-model:show="showOptions" :placement="placement">
 			<template #target="{ open: openPopover, togglePopover }">
-				<slot name="target" v-bind="{ open: openPopover, togglePopover }">
+				<slot
+					name="target"
+					v-bind="{ open: openPopover, togglePopover, isOpen: isComboboxOpen }"
+				>
 					<div class="w-full">
 						<button
 							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
@@ -39,7 +42,7 @@
 			<template #body="{ isOpen, togglePopover }">
 				<div v-show="isOpen">
 					<div
-						class="relative mt-1 rounded-lg bg-white text-base shadow-2xl"
+						class="relative mt-1 overflow-hidden rounded-lg bg-white text-base shadow-2xl"
 						:class="bodyClasses"
 					>
 						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
@@ -190,6 +193,7 @@ export default {
 		'returnValue',
 		'hideSearch',
 		'autoFocus',
+		'placement',
 	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {

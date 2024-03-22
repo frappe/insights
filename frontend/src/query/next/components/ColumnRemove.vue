@@ -1,0 +1,21 @@
+<script setup lang="ts">
+import { Trash } from 'lucide-vue-next'
+import { QueryPipelineResultColumn } from '../useQueryPipeline'
+
+const emit = defineEmits(['remove'])
+
+const props = defineProps<{ column: QueryPipelineResultColumn }>()
+</script>
+
+<template>
+	<Button theme="red" variant="ghost" @click="emit('remove')" class="w-full !justify-start">
+		<template #icon>
+			<div class="flex w-full items-center gap-2 px-1.5 text-base">
+				<Trash class="h-4 w-4 flex-shrink-0" />
+				<div class="flex flex-1 items-center justify-between">
+					<span class="truncate">Remove</span>
+				</div>
+			</div>
+		</template>
+	</Button>
+</template>
