@@ -97,7 +97,7 @@ class BaseDatabase(Database):
     def connect(self):
         try:
             return self.engine.connect()
-        except BaseException as e:
+        except Exception as e:
             frappe.log_error(title="Error connecting to database", message=e)
             self.handle_db_connection_error(e)
 

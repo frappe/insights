@@ -55,7 +55,7 @@ def log_error(raise_exc=False):
         def wrapper(*args, **kwargs):
             try:
                 return function(*args, **kwargs)
-            except BaseException as e:
+            except Exception as e:
                 frappe.log_error("Insights Error")
                 print(f"Error in {function.__name__}", e)
                 if raise_exc:

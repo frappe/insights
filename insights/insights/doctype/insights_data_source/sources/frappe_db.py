@@ -194,7 +194,7 @@ class FrappeTableFactory:
                     links = self.db_conn.execute(
                         text(f"""select distinct {df.options} from `tab{df.parent}`""")
                     ).fetchall()
-                except BaseException:
+                except Exception:
                     continue
                 links = [l[0] for l in links]
                 for doctype in links:
@@ -285,9 +285,8 @@ from insights.cache_utils import get_or_set_cache, make_digest
 def is_frappe_db(db_params):
     def _is_frappe_db():
         try:
-            db = FrappeDB(**db_params)
-            return db.test_connection()
-        except BaseException:
+            FrappeDB(**db_params).test_connection()
+        except Exception:
             return False
 
     key = make_digest("is_frappe_db", db_params)

@@ -8,7 +8,7 @@ from frappe.integrations.utils import make_post_request
 def get_subscription_key():
     try:
         return frappe.conf.sk_insights
-    except BaseException:
+    except Exception:
         return None
 
 
@@ -22,7 +22,7 @@ def get_subscription_info():
             data={"secret_key": secret_key},
         )
         return res["message"]
-    except BaseException:
+    except Exception:
         return None
 
 
@@ -47,5 +47,5 @@ def trial_expired():
 #             data={"secret_key": secret_key},
 #         )
 #         return res["message"]
-#     except BaseException:
+#     except Exception:
 #         return None
