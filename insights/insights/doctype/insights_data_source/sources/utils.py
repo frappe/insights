@@ -311,9 +311,7 @@ def handle_query_execution_error(e):
         frappe.throw(
             "Syntax error in the query. Please check the browser console for more details."
         )
-    frappe.throw(
-        "An error occurred while executing the query. Please check the browser console for more details."
-    )
+    frappe.throw(str(e).splitlines()[0])
 
 
 def cache_results(sql, data_source, results):
