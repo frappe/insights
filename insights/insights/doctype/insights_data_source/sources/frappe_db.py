@@ -218,6 +218,7 @@ class FrappeDB(BaseDatabase):
             ssl_verify_cert=True,
             charset="utf8mb4",
             use_unicode=True,
+            connect_args={"connect_timeout": 1, "read_timeout": 1, "write_timeout": 1},
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)

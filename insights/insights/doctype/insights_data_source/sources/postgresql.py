@@ -102,9 +102,13 @@ class PostgresTableFactory:
 
 class PostgresDatabase(BaseDatabase):
     def __init__(self, **kwargs):
+        connect_args = {"connect_timeout": 1}
+
         self.data_source = kwargs.pop("data_source")
         if connection_string := kwargs.pop("connection_string", None):
-            self.engine = get_sqlalchemy_engine(connection_string=connection_string)
+            self.engine = get_sqlalchemy_engine(
+                connection_string=connection_string, connect_args=connect_args
+            )
         else:
             self.engine = get_sqlalchemy_engine(
                 dialect="postgresql",
@@ -115,6 +119,7 @@ class PostgresDatabase(BaseDatabase):
                 host=kwargs.pop("host"),
                 port=kwargs.pop("port"),
                 sslmode="require" if kwargs.pop("use_ssl") else "disable",
+                connect_args=connect_args,
             )
         self.query_builder: PostgresQueryBuilder = PostgresQueryBuilder(self.engine)
         self.table_factory: PostgresTableFactory = PostgresTableFactory(self.data_source)

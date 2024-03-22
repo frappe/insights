@@ -18,9 +18,16 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import Dialect
 
 
-def get_sqlalchemy_engine(**kwargs) -> Engine:
+def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
+    connect_args = connect_args or {}
+
     if kwargs.get("connection_string"):
-        return create_engine(kwargs.get("connection_string"), poolclass=NullPool)
+        return create_engine(
+            kwargs.pop("connection_string"),
+            poolclass=NullPool,
+            connect_args=connect_args,
+            **kwargs,
+        )
 
     dialect = kwargs.pop("dialect")
     driver = kwargs.pop("driver")
@@ -29,12 +36,12 @@ def get_sqlalchemy_engine(**kwargs) -> Engine:
     database = kwargs.pop("database")
     host = kwargs.pop("host", "localhost")
     port = kwargs.pop("port") or 3306
-    extra_params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
+    extra_params = "&".join(f"{k}={v}" for k, v in kwargs.items())
 
     uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
 
     # TODO: cache the engine by uri
-    return create_engine(uri, poolclass=NullPool)
+    return create_engine(uri, poolclass=NullPool, connect_args=connect_args)
 
 
 def create_insights_table(table, force=False):
