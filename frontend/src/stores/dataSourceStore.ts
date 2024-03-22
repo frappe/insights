@@ -19,6 +19,7 @@ const useDataSourceStore = defineStore('insights:data_sources', () => {
 			'allow_imports',
 		],
 		orderBy: 'creation desc',
+		pageLength: 100,
 		auto: true,
 	})
 
