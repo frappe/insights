@@ -91,11 +91,11 @@ class BaseDatabase(Database):
         try:
             return self.engine.connect()
         except Exception as e:
-            frappe.log_error(title="Error connecting to database", message=e)
+            frappe.log_error("Error connecting to database")
             self.handle_db_connection_error(e)
 
     def handle_db_connection_error(self, e):
-        raise DatabaseConnectionError(e)
+        raise DatabaseConnectionError(e) from e
 
     def build_query(self, query):
         """Used to update the sql in insights query"""
