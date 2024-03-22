@@ -52,7 +52,6 @@ const isMultiValue = computed(() => ['in', 'not_in'].includes(operator.value))
 const columnValues = ref([])
 const fetchingColumnValues = ref(false)
 const checkAndFetchColumnValues = debounce(async function (search_text = '') {
-	debugger
 	if (!props.column || !operator.value) return
 	if (!['=', '!=', 'in', 'not_in'].includes(operator.value)) return
 	if (!props.column.table || !props.column.column || !props.dataSource) return
@@ -141,7 +140,12 @@ function onOptionSelect(value) {
 			autocomplete="off"
 			placeholder="Value"
 			:modelValue="filterValue?.value"
-			@update:modelValue="filterValue = $event"
+			@update:modelValue="
+				filterValue = {
+					value: $event,
+					label: $event,
+				}
+			"
 		/>
 	</div>
 </template>
