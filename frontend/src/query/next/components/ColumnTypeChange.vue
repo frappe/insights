@@ -1,49 +1,46 @@
 <script setup lang="ts">
 import { COLUMN_TYPES, fieldtypesToIcon } from '@/utils'
-import { ChevronRight } from 'lucide-vue-next'
 import { QueryPipelineResultColumn } from '../useQueryPipeline'
 
 const emit = defineEmits({
 	typeChange: (newType: ColumnType) => true,
 })
 const props = defineProps<{ column: QueryPipelineResultColumn }>()
+function onTypeChange(newType: ColumnType, togglePopover: () => void) {
+	emit('typeChange', newType)
+	togglePopover()
+}
 </script>
 
 <template>
-	<Popover placement="right-start">
+	<Popover placement="bottom-start">
 		<template #target="{ togglePopover, isOpen }">
 			<Button
 				variant="ghost"
+				class="rounded-sm"
 				@click="togglePopover"
-				class="w-full !justify-start"
-				:class="{ ' !bg-gray-100': isOpen }"
+				:class="isOpen ? '!bg-gray-100' : ''"
 			>
 				<template #icon>
-					<div class="flex w-full items-center gap-2 px-1.5 text-base">
-						<component
-							:is="fieldtypesToIcon[props.column.type]"
-							class="h-4 w-4 text-gray-700"
-						/>
-						<div class="flex flex-1 items-center justify-between">
-							<span class="truncate">Change Type</span>
-							<ChevronRight class="h-4 w-4" />
-						</div>
-					</div>
+					<component
+						:is="fieldtypesToIcon[props.column.type]"
+						class="h-4 w-4 text-gray-700"
+					/>
 				</template>
 			</Button>
 		</template>
-		<template #body-main="{ togglePopover }">
-			<div class="flex min-w-[10rem] flex-col p-1.5">
+		<template #body-main="{ togglePopover, isOpen }">
+			<div v-if="isOpen" class="flex min-w-[10rem] flex-col p-1.5">
 				<Button
 					v-for="type in COLUMN_TYPES"
 					:key="type.value"
 					variant="ghost"
 					class="w-full !justify-start"
-					@click=";[togglePopover(), emit('typeChange', type.value as ColumnType)]"
+					@click="onTypeChange(type.value as ColumnType, togglePopover)"
 				>
 					<template #prefix>
 						<component
-							:is="fieldtypesToIcon[props.column.type]"
+							:is="fieldtypesToIcon[type.value as ColumnType]"
 							class="h-4 w-4 text-gray-700"
 						/>
 					</template>

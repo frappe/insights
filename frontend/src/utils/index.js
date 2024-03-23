@@ -17,12 +17,12 @@ import { computed, unref, watch } from 'vue'
 
 export const COLUMN_TYPES = [
 	{ label: 'String', value: 'String' },
+	{ label: 'Text', value: 'Text' },
 	{ label: 'Integer', value: 'Integer' },
 	{ label: 'Decimal', value: 'Decimal' },
-	{ label: 'Text', value: 'Text' },
-	{ label: 'Datetime', value: 'Datetime' },
 	{ label: 'Date', value: 'Date' },
 	{ label: 'Time', value: 'Time' },
+	{ label: 'Datetime', value: 'Datetime' },
 ]
 
 export const fieldtypesToIcon = {

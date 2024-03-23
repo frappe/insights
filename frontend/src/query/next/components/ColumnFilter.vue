@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
-import { ChevronRight, Filter } from 'lucide-vue-next'
+import { ChevronRight, ListFilter } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
 import { QueryPipelineResultColumn } from '../useQueryPipeline'
 import ColumnFilterTypeDate from './ColumnFilterTypeDate.vue'
@@ -84,11 +84,11 @@ function addFilter() {
 				:class="{ ' !bg-gray-100': isOpen }"
 			>
 				<template #icon>
-					<div class="flex w-full items-center gap-2 px-1.5 text-base">
-						<Filter class="h-4 w-4 flex-shrink-0" />
+					<div class="flex h-7 w-full items-center gap-2 pl-2 pr-1.5 text-base">
+						<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
 						<div class="flex flex-1 items-center justify-between">
 							<span class="truncate">Filter</span>
-							<ChevronRight class="h-4 w-4" />
+							<ChevronRight class="h-4 w-4" stroke-width="1.5" />
 						</div>
 					</div>
 				</template>
