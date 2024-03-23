@@ -17,6 +17,7 @@ import SourceSelectorDialog from './SourceSelectorDialog.vue'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
+import JoinSelectorDialog from './JoinSelectorDialog.vue'
 import { QueryPipeline } from './useQueryPipeline'
 
 const queryPipeline = inject('queryPipeline') as QueryPipeline
@@ -24,6 +25,7 @@ const showSourceSelectorDialog = ref(false)
 const showColumnsSelectorDialog = ref(false)
 const showFiltersSelectorDialog = ref(false)
 const showNewColumnSelectorDialog = ref(false)
+const showJoinSelectorDialog = ref(false)
 const actions = [
 	{
 		label: 'Change Source',
@@ -43,11 +45,12 @@ const actions = [
 	{
 		label: 'Join Table',
 		icon: h(BlendIcon, { class: '-rotate-45' }),
+		onClick: () => (showJoinSelectorDialog.value = true),
 	},
-	{
-		label: 'Sort Rows',
-		icon: ArrowUpDown,
-	},
+	// {
+	// 	label: 'Sort Rows',
+	// 	icon: ArrowUpDown,
+	// },
 	{
 		label: 'Create Columns',
 		icon: Sigma,
@@ -117,4 +120,5 @@ const actions = [
 		v-model="showNewColumnSelectorDialog"
 		@select="queryPipeline.addMutate($event)"
 	/>
+	<JoinSelectorDialog v-model="showJoinSelectorDialog" @select="queryPipeline.addJoin($event)" />
 </template>

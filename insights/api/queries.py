@@ -268,7 +268,9 @@ class QueryPipelineTranslator:
         left_column = getattr(_, join_args.left_column.column_name)
         right_column = getattr(right_table, join_args.right_column.column_name)
         join_on = left_column == right_column
-        return lambda query: query.join(right_table, join_on)
+        join_type = join_args.join_type
+        join_type = "outer" if join_type == "full" else join_type
+        return lambda query: query.join(right_table, join_on, how=join_type)
 
     def translate_filter(self, filter_args):
         if hasattr(filter_args, "expression"):

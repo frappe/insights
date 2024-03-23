@@ -56,7 +56,8 @@ type Remove = { type: 'remove' } & RemoveArgs
 type CastArgs = { column: Column; data_type: string }
 type Cast = { type: 'cast' } & CastArgs
 
-type JoinArgs = { table: Table; left_column: Column; right_column: Column }
+type JoinType = 'inner' | 'left' | 'right' | 'full'
+type JoinArgs = { join_type: JoinType, table: Table; left_column: Column; right_column: Column }
 type Join = { type: 'join' } & JoinArgs
 
 type Mutation = Column | Expression | WindowOperation
