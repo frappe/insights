@@ -16,12 +16,14 @@ import { h, inject, ref } from 'vue'
 import SourceSelectorDialog from './SourceSelectorDialog.vue'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
+import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import { QueryPipeline } from './useQueryPipeline'
 
 const queryPipeline = inject('queryPipeline') as QueryPipeline
 const showSourceSelectorDialog = ref(false)
 const showColumnsSelectorDialog = ref(false)
 const showFiltersSelectorDialog = ref(false)
+const showNewColumnSelectorDialog = ref(false)
 const actions = [
 	{
 		label: 'Change Source',
@@ -49,6 +51,7 @@ const actions = [
 	{
 		label: 'Create Columns',
 		icon: Sigma,
+		onClick: () => (showNewColumnSelectorDialog.value = true),
 	},
 	{
 		label: 'Summarize',
@@ -109,5 +112,9 @@ const actions = [
 	<FiltersSelectorDialog
 		v-model="showFiltersSelectorDialog"
 		@select="queryPipeline.addFilter($event)"
+	/>
+	<NewColumnSelectorDialog
+		v-model="showNewColumnSelectorDialog"
+		@select="queryPipeline.addMutate($event)"
 	/>
 </template>

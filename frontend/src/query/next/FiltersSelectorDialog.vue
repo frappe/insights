@@ -68,11 +68,7 @@ function confirmSelection() {
 		v-if="showDialog"
 		:modelValue="showDialog"
 		@after-leave="filters = []"
-		:options="{
-			size: '2xl',
-			title: 'Filter Rows',
-			actions: [],
-		}"
+		:options="{ size: '2xl' }"
 	>
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">

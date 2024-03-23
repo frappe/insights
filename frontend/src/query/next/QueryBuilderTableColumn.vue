@@ -62,7 +62,7 @@ function onFilter(
 			<ContentEditable
 				:modelValue="props.column.name"
 				placeholder="Column Name"
-				class="flex h-6 items-center rounded-sm px-0.5 text-base focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
+				class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-base focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
 				@returned="onRename"
 				@blur="onRename"
 			/>

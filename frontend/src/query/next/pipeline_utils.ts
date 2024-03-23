@@ -126,7 +126,7 @@ export const pipeline_step_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: MutateArgs): Mutate => ({ type: 'mutate', ...args }),
 		getStepLabel: (step: Mutate) => {
-			return step.label
+			return step.column_name
 		},
 	},
 	summarize: {

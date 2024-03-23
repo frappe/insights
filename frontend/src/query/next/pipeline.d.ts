@@ -60,7 +60,7 @@ type JoinArgs = { table: Table; left_column: Column; right_column: Column }
 type Join = { type: 'join' } & JoinArgs
 
 type Mutation = Column | Expression | WindowOperation
-type MutateArgs = { label: string; mutation: Mutation }
+type MutateArgs = { column_name: string; column_type: ColumnType, mutation: Mutation }
 type Mutate = { type: 'mutate' } & MutateArgs
 
 type SummarizeArgs = { metrics: Record<string, Column | Expression>; by: Column[] }

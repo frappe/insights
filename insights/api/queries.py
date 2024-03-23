@@ -335,9 +335,10 @@ class QueryPipelineTranslator:
         return lambda query: query.cast({col_name: dtype})
 
     def translate_mutate(self, mutate_args):
-        label = mutate_args.label
+        column_name = mutate_args.column_name
+        # column_type = mutate_args.column_type
         new_column = self.translate_col_expression(mutate_args.mutation)
-        return lambda query: query.mutate(**{label: new_column})
+        return lambda query: query.mutate(**{column_name: new_column})
 
     def translate_summary(self, summarize_args):
         metrics_by_name = summarize_args.metrics
