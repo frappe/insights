@@ -112,6 +112,9 @@ export const pipeline_step_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: FilterArgs): Filter => ({ type: 'filter', ...args }),
 		getStepLabel: (step: Filter) => {
+			// @ts-ignore
+			if (step.expression) return step.expression.expression
+			// @ts-ignore
 			return `${step.column.column_name} ${step.operator} ${step.value}`
 		},
 	},

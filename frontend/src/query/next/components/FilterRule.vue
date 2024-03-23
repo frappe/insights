@@ -2,11 +2,11 @@
 import { FIELDTYPES } from '@/utils'
 import { debounce } from 'frappe-ui'
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { FilterCondition } from '../FiltersSelectorDialog.vue'
+import { FilterRule } from '../FiltersSelectorDialog.vue'
 import { QueryPipeline } from '../useQueryPipeline'
 import DatePickerControl from './DatePickerControl.vue'
 
-const filter = defineModel<FilterCondition>({ required: true })
+const filter = defineModel<FilterRule>({ required: true })
 
 onMounted(() => {
 	if (valueSelectorType.value === 'select') fetchColumnValues()
@@ -172,13 +172,13 @@ watch(
 			<FormControl
 				v-if="valueSelectorType === 'text'"
 				v-model="filter.value"
-				placeholder="eg. foo"
+				placeholder="Value"
 			/>
 			<FormControl
 				v-else-if="valueSelectorType === 'number'"
 				type="number"
 				:modelValue="filter.value"
-				placeholder="eg. 42"
+				placeholder="Value"
 				@update:modelValue="filter.value = Number($event)"
 			/>
 			<DatePickerControl

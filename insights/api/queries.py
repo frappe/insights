@@ -271,6 +271,11 @@ class QueryPipelineTranslator:
         return lambda query: query.join(right_table, join_on)
 
     def translate_filter(self, filter_args):
+        if hasattr(filter_args, "expression"):
+            return lambda query: query.filter(
+                self.translate_col_expression(filter_args.expression)
+            )
+
         filter_column = filter_args.column
         filter_operator = filter_args.operator
         filter_value = filter_args.value
@@ -293,13 +298,15 @@ class QueryPipelineTranslator:
             "!=": lambda x, y: x != y,
             ">=": lambda x, y: x >= y,
             "<=": lambda x, y: x <= y,
-            "between": lambda x, y: x.between(y[0], y[1]),
-            "contains": lambda x, y: x.like(y),
-            "not_contains": lambda x, y: ~x.like(y),
             "in": lambda x, y: x.isin(y),
             "not_in": lambda x, y: ~x.isin(y),
             "is_set": lambda x, y: x.notnull(),
             "is_not_set": lambda x, y: x.isnull(),
+            "contains": lambda x, y: x.like(y),
+            "not_contains": lambda x, y: ~x.like(y),
+            "starts_with": lambda x, y: x.like(f"{y}%"),
+            "ends_with": lambda x, y: x.like(f"%{y}"),
+            "between": lambda x, y: x.between(y[0], y[1]),
             "within": lambda x, y: handle_timespan(x, y),
         }[operator]
 
