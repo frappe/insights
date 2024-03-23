@@ -261,7 +261,7 @@ class QueryPipelineTranslator:
 
     def translate_source(self, source_args):
         table = self.get_table(source_args.table.table_name)
-        return lambda _: table.select(table)
+        return lambda _: table
 
     def translate_join(self, join_args):
         right_table = self.get_table(join_args.table.table_name)
@@ -305,13 +305,7 @@ class QueryPipelineTranslator:
 
     def translate_select(self, select_args):
         select_args = _dict(select_args)
-        if select_args.column_names:
-            columns = [getattr(_, col.column_name) for col in select_args.column_names]
-            return lambda query: query[columns]
-        if select_args.expression:
-            expression = self.translate_col_expression(select_args.expression)
-            return lambda query: query.select(expression)
-        raise ValueError("Select must have either column_names or expression")
+        return lambda query: query.select(select_args.column_names)
 
     def translate_rename(self, rename_args):
         old_name = rename_args.column.column_name

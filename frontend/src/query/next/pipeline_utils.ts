@@ -9,7 +9,7 @@ import {
 	Sigma,
 	Table,
 	TextCursorInput,
-	XSquareIcon
+	XSquareIcon,
 } from 'lucide-vue-next'
 
 export const table = (table_name: string): Table => ({
@@ -63,12 +63,7 @@ export const pipeline_step_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SelectArgs): Select => ({ type: 'select', ...args }),
 		getStepLabel: (step: Select) => {
-			if (step.column_names && step.column_names.length > 1) {
-				return `${step.column_names.length} columns`
-			}
-			if (step.expression) {
-				return step.expression.expression
-			}
+			return `${step.column_names.length} columns`
 		},
 	},
 	remove: {

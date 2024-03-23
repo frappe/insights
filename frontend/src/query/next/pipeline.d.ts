@@ -36,7 +36,7 @@ type Source = { type: 'source' } & SourceArgs
 type FilterArgs = { column: Column; operator: FilterOperator; value: FilterValue | Column }
 type Filter = { type: 'filter' } & FilterArgs
 
-type SelectArgs = { column_names?: string[]; expression?: Expression }
+type SelectArgs = { column_names: string[] }
 type Select = { type: 'select' } & SelectArgs
 
 type RenameArgs = { column: Column; new_name: string }

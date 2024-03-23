@@ -14,11 +14,12 @@ import {
 } from 'lucide-vue-next'
 import { h, inject, ref } from 'vue'
 import SourceSelectorDialog from './SourceSelectorDialog.vue'
-import ColumnsSelector from './ColumnsSelector.vue'
+import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
 import { QueryPipeline } from './useQueryPipeline'
 
 const queryPipeline = inject('queryPipeline') as QueryPipeline
 const showSourceSelectorDialog = ref(false)
+const showColumnsSelectorDialog = ref(false)
 const actions = [
 	{
 		label: 'Change Source',
@@ -28,7 +29,7 @@ const actions = [
 	{
 		label: 'Select Columns',
 		icon: ColumnsIcon,
-		component: ColumnsSelector,
+		onClick: () => (showColumnsSelectorDialog.value = true),
 	},
 	{
 		label: 'Filter Rows',
@@ -70,14 +71,9 @@ const actions = [
 			:hover-delay="0.1"
 			:text="action.label"
 		>
-			<component v-if="action.component" :is="action.component" />
-			<Button
-				v-else
-				:variant="'ghost'"
-				@click="action.onClick"
-				size="lg"
-				class="rounded-none"
-			>
+			<!-- <component v-if="action.component" :is="action.component" /> -->
+			<!-- v-else -->
+			<Button :variant="'ghost'" @click="action.onClick" size="lg" class="rounded-none">
 				<template #icon>
 					<component :is="action.icon" class="h-5 w-5 text-gray-700" stroke-width="1.5" />
 				</template>
@@ -102,5 +98,9 @@ const actions = [
 	<SourceSelectorDialog
 		v-model="showSourceSelectorDialog"
 		@select="queryPipeline.setSource($event)"
+	/>
+	<ColumnsSelectorDialog
+		v-model="showColumnsSelectorDialog"
+		@select="queryPipeline.selectColumns($event)"
 	/>
 </template>

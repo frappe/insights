@@ -53,6 +53,7 @@ function useQueryPipeline() {
 		removeOrderBy,
 		addLimit,
 		addPivotWider,
+		selectColumns,
 		renameColumn,
 		removeColumn,
 		changeColumnType,
@@ -173,6 +174,10 @@ function useQueryPipeline() {
 		pipeline.steps.push(pivot_wider(args))
 	}
 
+	function selectColumns(columns: string[]) {
+		pipeline.steps.push(select({ column_names: columns }))
+	}
+
 	function renameColumn(oldName: string, newName: string) {
 		pipeline.steps.push(
 			rename({
@@ -182,8 +187,9 @@ function useQueryPipeline() {
 		)
 	}
 
-	function removeColumn(column_name: string) {
-		pipeline.steps.push(remove({ column_names: [column_name] }))
+	function removeColumn(column_names: string | string[]) {
+		if (!Array.isArray(column_names)) column_names = [column_names]
+		pipeline.steps.push(remove({ column_names }))
 	}
 
 	function changeColumnType(column_name: string, newType: string) {
