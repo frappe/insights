@@ -5,19 +5,18 @@ import { computed, reactive, watch } from 'vue'
 import {
 	cast,
 	column,
-	expression,
 	filter,
 	join,
 	limit,
 	mutate,
 	order_by,
 	pivot_wider,
+	remove,
 	rename,
 	select,
-	remove,
 	source,
 	summarize,
-	table,
+	table
 } from './pipeline_utils'
 
 export type QueryPipelineResultColumn = { name: string; type: keyof typeof fieldtypesToIcon }
@@ -126,8 +125,9 @@ function useQueryPipeline() {
 		pipeline.steps.push(join(args))
 	}
 
-	function addFilter(args: FilterArgs) {
-		pipeline.steps.push(filter(args))
+	function addFilter(args: FilterArgs | FilterArgs[]) {
+		if (!Array.isArray(args)) args = [args]
+		args.forEach((arg) => pipeline.steps.push(filter(arg)))
 	}
 
 	function addMutate(args: MutateArgs) {

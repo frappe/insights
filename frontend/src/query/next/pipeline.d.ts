@@ -16,12 +16,18 @@ type ColumnOptions = {
 type FilterOperator =
 	| '='
 	| '!='
+	| '>'
 	| '>='
+	| '<'
 	| '<='
+	| 'in'
+	| 'not_in'
 	| 'between'
 	| 'within'
 	| 'contains'
 	| 'not_contains'
+	| 'starts_with'
+	| 'ends_with'
 	| 'is_set'
 	| 'is_not_set'
 type FilterValue = string | number | boolean | any[] | string[] | undefined

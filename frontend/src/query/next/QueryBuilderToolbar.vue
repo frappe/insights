@@ -15,11 +15,13 @@ import {
 import { h, inject, ref } from 'vue'
 import SourceSelectorDialog from './SourceSelectorDialog.vue'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
+import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import { QueryPipeline } from './useQueryPipeline'
 
 const queryPipeline = inject('queryPipeline') as QueryPipeline
 const showSourceSelectorDialog = ref(false)
 const showColumnsSelectorDialog = ref(false)
+const showFiltersSelectorDialog = ref(false)
 const actions = [
 	{
 		label: 'Change Source',
@@ -34,6 +36,7 @@ const actions = [
 	{
 		label: 'Filter Rows',
 		icon: FilterIcon,
+		onClick: () => (showFiltersSelectorDialog.value = true),
 	},
 	{
 		label: 'Join Table',
@@ -102,5 +105,9 @@ const actions = [
 	<ColumnsSelectorDialog
 		v-model="showColumnsSelectorDialog"
 		@select="queryPipeline.selectColumns($event)"
+	/>
+	<FiltersSelectorDialog
+		v-model="showFiltersSelectorDialog"
+		@select="queryPipeline.addFilter($event)"
 	/>
 </template>

@@ -6,8 +6,19 @@
 			<Button @click="nextMonth" icon="chevron-right" />
 		</div>
 		<div class="flex gap-2">
-			<FormControl v-model="fromDateTxt" autocomplete="off"></FormControl>
-			<FormControl v-model="toDateTxt" autocomplete="off"></FormControl>
+			<FormControl
+				class="flex-1"
+				placeholder="Enter date"
+				v-model="fromDateTxt"
+				autocomplete="off"
+			></FormControl>
+			<FormControl
+				v-if="range"
+				class="flex-1"
+				placeholder="Enter date"
+				v-model="toDateTxt"
+				autocomplete="off"
+			></FormControl>
 		</div>
 		<div class="tnum flex flex-col items-center justify-center text-base">
 			<div class="grid w-full grid-cols-7">
@@ -37,7 +48,7 @@
 					</div>
 				</template>
 			</div>
-			<p class="mt-1 text-xs leading-4 text-gray-600">
+			<p v-if="range" class="mt-1 text-xs leading-4 text-gray-600">
 				{{ description }}
 			</p>
 		</div>
@@ -47,6 +58,12 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue'
 
+const props = defineProps({
+	range: {
+		type: Boolean,
+		default: true,
+	},
+})
 const selectedDates = defineModel<string[]>({
 	type: Array,
 	default: () => [],
@@ -162,6 +179,11 @@ function formatDate(date: Date, options: { year?: boolean } = {}) {
 }
 
 function handleDateClick(date: Date) {
+	if (!props.range) {
+		fromDateTxt.value = toValue(date)
+		selectDates()
+		return
+	}
 	if (fromDateTxt.value && toDateTxt.value) {
 		fromDateTxt.value = toValue(date)
 		toDateTxt.value = ''
@@ -190,8 +212,13 @@ function swapDatesIfNecessary() {
 }
 
 function selectDates() {
+	if (!props.range) {
+		selectedDates.value = [fromDateTxt.value]
+		return
+	}
 	if (!fromDateTxt.value && !toDateTxt.value) {
-		return (selectedDates.value = [])
+		selectedDates.value = []
+		return
 	}
 	selectedDates.value = [fromDateTxt.value, toDateTxt.value]
 }

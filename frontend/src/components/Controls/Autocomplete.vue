@@ -297,17 +297,18 @@ export default {
 
 			if (!Array.isArray(option)) return ''
 
+			return option.length ? `${option.length} selected` : ''
 			// in case of `multiple`, option is an array of values
 			// so the display value should be comma separated labels
-			return option
-				.map((v) => {
-					if (typeof v === 'object') {
-						return this.getLabel(v)
-					}
-					let selectedOption = this.allOptions.find((o) => o.value === v)
-					return this.getLabel(selectedOption)
-				})
-				.join(', ')
+			// return option
+			// 	.map((v) => {
+			// 		if (typeof v === 'object') {
+			// 			return this.getLabel(v)
+			// 		}
+			// 		let selectedOption = this.allOptions.find((o) => o.value === v)
+			// 		return this.getLabel(selectedOption)
+			// 	})
+			// 	.join(', ')
 		},
 		getLabel(option) {
 			if (typeof option !== 'object') return option
