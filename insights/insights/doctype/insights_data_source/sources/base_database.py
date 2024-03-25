@@ -82,16 +82,16 @@ class BaseDatabase(Database):
         self.query_builder = None
         self.table_factory = None
 
-    def test_connection(self):
-        with self.connect() as connection:
+    def test_connection(self, log_errors=True):
+        with self.connect(log_errors=log_errors) as connection:
             res = connection.execute(text("SELECT 1"))
             return res.fetchone()
 
-    def connect(self):
+    def connect(self, *, log_errors=True):
         try:
             return self.engine.connect()
         except Exception as e:
-            frappe.log_error("Error connecting to database")
+            log_errors and frappe.log_error("Error connecting to database")
             self.handle_db_connection_error(e)
 
     def handle_db_connection_error(self, e):
@@ -114,6 +114,7 @@ class BaseDatabase(Database):
         return_columns=False,
         cached=False,
         query_name=None,
+        log_errors=True,
     ):
         if sql is None:
             return []
@@ -133,7 +134,7 @@ class BaseDatabase(Database):
             if cached_results:
                 return cached_results
 
-        with self.connect() as connection:
+        with self.connect(log_errors=log_errors) as connection:
             res = execute_and_log(connection, sql, self.data_source, query_name)
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
