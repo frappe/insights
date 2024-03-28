@@ -37,6 +37,6 @@ class TestQueryStoreDataSource(unittest.TestCase):
         data = frappe.parse_json(store_query.results)[1:]
         self.assertEqual(len(data), frappe.db.count("User"))
         # Temporary table should be dropped on closing the connection
-        with self.assertRaises(BaseException) as error:
+        with self.assertRaises(Exception) as error:
             frappe.db.sql(f"SELECT * FROM `{db_query.name}`")
         self.assertTrue("doesn't exist" in str(error.exception))

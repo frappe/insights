@@ -103,6 +103,7 @@ class MariaDB(BaseDatabase):
             ssl_verify_cert=use_ssl,
             charset="utf8mb4",
             use_unicode=True,
+            connect_args={"connect_timeout": 1},
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)

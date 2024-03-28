@@ -29,7 +29,7 @@ class InsightsSettings(Document):
     def is_subscribed(self):
         try:
             return 1 if frappe.conf.sk_insights else 0
-        except BaseException:
+        except Exception:
             return None
 
     @frappe.whitelist()

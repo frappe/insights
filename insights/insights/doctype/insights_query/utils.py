@@ -173,12 +173,12 @@ def infer_type(value):
         if val % 1 == 0:
             return "Integer"
         return "Decimal"
-    except BaseException:
+    except Exception:
         try:
             # test if datetime
             pd.to_datetime(value)
             return "Datetime"
-        except BaseException:
+        except Exception:
             return "String"
 
 

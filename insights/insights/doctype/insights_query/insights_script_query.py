@@ -54,7 +54,7 @@ class InsightsScriptQueryController:
             )
             self.update_script_log()
             results = _locals["results"]
-        except BaseException as e:
+        except Exception as e:
             frappe.log_error(title="Insights Script Query Error")
             frappe.throw(
                 f"Error while executing script: {e}",

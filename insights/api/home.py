@@ -16,7 +16,7 @@ def create_last_viewed_log(record_type, record_name):
     try:
         doc = frappe.get_doc(recordToDoctype[record_type], record_name)
         doc.add_viewed(force=True)
-    except BaseException:
+    except Exception:
         pass
 
 

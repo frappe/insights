@@ -2,12 +2,11 @@
 # For license information, please see license.txt
 
 
-from contextlib import suppress
-from functools import cached_property, lru_cache
+from functools import cached_property
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils.caching import redis_cache
+from frappe.utils.caching import redis_cache, site_cache
 
 from insights import notify
 from insights.api.telemetry import track
@@ -204,9 +203,7 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
         if self.database_type == "SQLite":
             return SQLiteDB(data_source=self.name, database_name=self.database_name)
 
-        password = None
-        with suppress(BaseException):
-            password = self.get_password()
+        password = self.get_password(raise_exception=False)
 
         conn_args = {
             "data_source": self.name,
@@ -273,7 +270,7 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
         return self._db.get_table_preview(table, limit)
 
 
-@lru_cache(maxsize=128)
+@site_cache(maxsize=128)
 def get_data_source_schema(data_source):
     Table = frappe.qb.DocType("Insights Table")
     TableColumn = frappe.qb.DocType("Insights Table Column")
