@@ -8,7 +8,7 @@ else
     echo "Creating new bench..."
 fi
 
-bench init --skip-redis-config-generation frappe-bench
+bench init --skip-redis-config-generation frappe-bench --version version-15
 
 cd frappe-bench
 
@@ -22,7 +22,7 @@ bench set-redis-socketio-host redis:6379
 sed -i '/redis/d' ./Procfile
 sed -i '/watch/d' ./Procfile
 
-bench get-app insights
+bench get-app insights --branch main
 
 bench new-site insights.localhost \
 --force \

@@ -79,7 +79,7 @@ watch(selectedPalette, () => (colors.value = selectedPaletteColors.value))
 const selectedPaletteColors = computed(() => getPaletteColors(selectedPalette.value.value))
 
 const colors = defineModel()
-if (colors.value?.length === 0) {
+if (!colors.value?.length) {
 	selectedPalette.value = colorPaletteOptions.at(0)
 } else if (isCustomPalette(colors.value)) {
 	selectedPalette.value = colorPaletteOptions.at(-1)

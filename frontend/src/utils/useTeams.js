@@ -37,8 +37,8 @@ export function useTeam(teamname) {
 		},
 	})
 	team.get_members_and_resources.fetch()
-	team.members = computed(() => team.get_members_and_resources.data?.message.members)
-	team.resources = computed(() => team.get_members_and_resources.data?.message.resources)
+	team.members = computed(() => team.get_members_and_resources.data?.members)
+	team.resources = computed(() => team.get_members_and_resources.data?.resources)
 
 	team.searchMembers = debounce((query) => {
 		if (!query && query !== '') {
@@ -46,7 +46,7 @@ export function useTeam(teamname) {
 			return
 		}
 		return team.search_team_members.submit({ query }).then((data) => {
-			team.memberOptions = data.message || []
+			team.memberOptions = data || []
 		})
 	}, 500)
 	team.searchMembers('')
@@ -89,7 +89,7 @@ export function useTeam(teamname) {
 			return
 		}
 		return team.search_team_resources.submit({ resource_type, query }).then((data) => {
-			team.resourceOptions = data.message || []
+			team.resourceOptions = data || []
 		})
 	}, 500)
 

@@ -24,8 +24,8 @@ function useDataSource(name: string) {
 	async function fetchTables() {
 		const promises = [resource.get_tables.submit(), resource.get_queries.submit()]
 		const responses = await Promise.all(promises)
-		tableList.value = responses[0].message
-		queryList.value = responses[1].message
+		tableList.value = responses[0]
+		queryList.value = responses[1]
 		dropdownOptions.value = makeDropdownOptions()
 		groupedTableOptions.value = makeGroupedTableOptions()
 		return tableList.value

@@ -259,13 +259,13 @@ def compile_query(query, dialect=None):
     return compiled
 
 
-def execute_and_log(conn, sql, data_source):
+def execute_and_log(conn, sql, data_source, query_name):
     with Timer() as t:
         try:
             result = conn.exec_driver_sql(sql)
         except Exception as e:
             handle_query_execution_error(e)
-    create_execution_log(sql, data_source, t.elapsed)
+    create_execution_log(sql, data_source, t.elapsed, query_name)
     return result
 
 
@@ -298,11 +298,12 @@ def get_cached_results(sql, data_source):
     )
 
 
-def create_execution_log(sql, data_source, time_taken=0):
+def create_execution_log(sql, data_source, time_taken=0, query_name=None):
     frappe.get_doc(
         {
             "doctype": "Insights Query Execution Log",
             "data_source": data_source,
+            "query": query_name,
             "sql": sqlparse.format(str(sql), reindent=True, keyword_case="upper"),
             "time_taken": time_taken,
         }

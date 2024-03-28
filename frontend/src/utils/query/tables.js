@@ -14,8 +14,8 @@ export function useQueryTables(query) {
 		})
 	)
 	const sourceTables = computed(() =>
-		query.fetchTables.data?.message
-			.filter((t) => t.table != query.doc.name)
+		query.fetchTables.data
+			?.filter((t) => t.table != query.doc.name)
 			.map((table) => ({
 				...table,
 				value: table.table,

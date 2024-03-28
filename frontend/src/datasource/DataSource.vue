@@ -9,18 +9,17 @@
 		/>
 	</header>
 
-	<ListView
-		:columns="[
-			{ label: 'Table', name: 'label' },
-			{ label: 'Status', name: 'status' },
-		]"
-		:rows="dataSource.tableList.filter((table) => !table.is_query_based)"
-	>
-		<template #actions>
+	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+		<div class="flex gap-2 overflow-visible py-1">
+			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" />
+				</template>
+			</FormControl>
 			<Button
 				variant="outline"
 				iconLeft="link-2"
-				@click="$router.push(`/data-source/${dataSource.doc.name}/relationships`)"
+				@click="router.push(`/data-source/${dataSource.doc.name}/relationships`)"
 			>
 				Manage Relationships
 			</Button>
@@ -29,31 +28,30 @@
 				:button="{ icon: 'more-horizontal', variant: 'outline' }"
 				:options="dropdownActions"
 			/>
-		</template>
-
-		<template #list-row="{ row: table }">
-			<ListRow
-				as="router-link"
-				:row="table"
-				:to="{
+		</div>
+		<ListView
+			:columns="tableListColumns"
+			:rows="filteredTableList"
+			:row-key="'name'"
+			:options="{
+				showTooltip: false,
+				getRowRoute: (table) => ({
 					name: 'DataSourceTable',
 					params: { name: dataSource.doc.name, table: table.name },
-				}"
-			>
-				<ListRowItem> {{ table.label }} </ListRowItem>
-				<ListRowItem class="space-x-2">
-					<IndicatorIcon :class="table.hidden ? 'text-gray-500' : 'text-green-500'" />
-					<span> {{ table.hidden ? 'Disabled' : 'Enabled' }} </span>
-				</ListRowItem>
-			</ListRow>
-		</template>
-
-		<template #emptyState>
-			<div class="text-xl font-medium">No tables.</div>
-			<div class="mt-1 text-base text-gray-600">No tables to display.</div>
-			<Button class="mt-4" label="Sync Tables" variant="solid" @click="syncTables" />
-		</template>
-	</ListView>
+				}),
+				emptyState: {
+					title: 'No tables.',
+					description: 'No tables to display.',
+					button: {
+						label: 'Sync Tables',
+						variant: 'solid',
+						onClick: syncTables,
+					},
+				},
+			}"
+		>
+		</ListView>
+	</div>
 
 	<Dialog
 		v-model="showDeleteDialog"
@@ -80,9 +78,9 @@
 
 <script setup lang="jsx">
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
-import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import { ListRow, ListRowItem } from 'frappe-ui'
+import { ListView } from 'frappe-ui'
+import { SearchIcon } from 'lucide-vue-next'
 import { computed, inject, provide, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import useDataSource from './useDataSource'
@@ -100,15 +98,13 @@ provide('dataSource', dataSource)
 dataSource.fetchTables()
 
 const searchQuery = ref('')
-const filteredList = computed(() => {
-	if (!searchQuery.value) {
-		return dataSource.tableList.filter((table) => !table.is_query_based)
-	}
-	return dataSource.tableList.filter(
-		(table) =>
-			!table.is_query_based &&
-			table.label.toLowerCase().includes(searchQuery.value.toLowerCase())
-	)
+const filteredTableList = computed(() => {
+	const tableList = dataSource.tableList.filter((t) => !t.is_query_based)
+	if (!tableList.length) return []
+	if (!searchQuery.value) return tableList
+	return tableList.filter((table) => {
+		return table.label.toLowerCase().includes(searchQuery.value.toLowerCase())
+	})
 })
 
 const showDeleteDialog = ref(false)
@@ -140,4 +136,17 @@ watchEffect(() => {
 		document.title = `${title} - Frappe Insights`
 	}
 })
+
+const tableListColumns = [
+	{ label: 'Table', key: 'label' },
+	{
+		label: 'Status',
+		key: 'status',
+		getLabel: ({ row }) => (row.hidden ? 'Disabled' : 'Enabled'),
+		prefix: ({ row }) => {
+			const color = row.hidden ? 'text-gray-500' : 'text-green-500'
+			return <IndicatorIcon class={color} />
+		},
+	},
+]
 </script>

@@ -10,10 +10,12 @@ const props = defineProps({
 
 const query = inject('query')
 if (query.doc.data_source) {
-	call('insights.api.data_sources.get_source_schema', {
-		data_source: query.doc.data_source,
+	call('run_doc_method', {
+		method: 'get_schema',
+		dt: 'Insights Data Source',
+		dn: query.doc.data_source,
 	}).then((response) => {
-		query.sourceSchema = response
+		query.sourceSchema = response.message
 	})
 }
 const completions = computed(() => {

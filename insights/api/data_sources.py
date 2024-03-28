@@ -229,11 +229,6 @@ def fetch_column_values(data_source, table, column, search_text=None):
 
 
 @frappe.whitelist()
-def get_source_schema(data_source):
-    return frappe.get_doc("Insights Data Source", data_source).get_schema()
-
-
-@frappe.whitelist()
 def get_relation(data_source, table_one, table_two):
     table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
     if not table_one_doc:

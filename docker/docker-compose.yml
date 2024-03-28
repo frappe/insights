@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   mariadb:
-    image: mariadb:10.6
+    image: mariadb:10.8
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci

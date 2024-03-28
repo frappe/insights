@@ -62,24 +62,6 @@ watch(() => filter.operator.value, (newVal, oldVal) => {
 	}
 })
 
-const operator = computed(() => filter.operator?.value)
-const isExpression = computed(() => filter.column?.expression?.raw)
-const isString = computed(() => filter.column?.type === 'String')
-const isDate = computed(() => FIELDTYPES.DATE.includes(filter.column?.type))
-const isEqualityCheck = computed(() => ['=', '!=', 'in', 'not_in'].includes(operator.value))
-const isNullCheck = computed(() => ['is_set', 'is_not_set'].includes(operator.value))
-
-const selectorType = computed(() => {
-	if (isNullCheck.value) return 'none'
-
-	if (isDate.value && operator.value === 'between') return 'datepickerrange'
-	if (isDate.value && operator.value === 'timespan') return 'timespanpicker'
-	if (isDate.value) return 'datepicker'
-
-	if (!isExpression.value && isString.value && isEqualityCheck.value) return 'combobox'
-	return 'text'
-})
-
 function isValidExpression(c) {
 	if (!c) return false
 	return c.expression?.raw && c.expression?.ast
@@ -143,12 +125,13 @@ const expressionColumnOptions = computed(() => {
 					@update:modelValue="filter.operator = $event"
 				/>
 			</div>
-			<div v-if="selectorType !== 'none'" class="space-y-1">
-				<span class="text-sm font-medium text-gray-700"> Value </span>
+			<div>
 				<FilterValueSelector
-					:filter="filter"
-					:selector-type="selectorType"
-					@update:filter="filter.value = $event.value"
+					:column="filter.column"
+					:operator="filter.operator"
+					:modelValue="filter.value"
+					:data-source="assistedQuery.data_source"
+					@update:modelValue="filter.value = $event"
 				/>
 			</div>
 		</template>

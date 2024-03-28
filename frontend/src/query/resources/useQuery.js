@@ -104,7 +104,7 @@ export default function useQuery(name) {
 		state.duplicating = true
 		await queue(() => resource.duplicate.submit())
 		state.duplicating = false
-		return resource.duplicate.data.message
+		return resource.duplicate.data
 	}
 
 	state.delete = async () => {

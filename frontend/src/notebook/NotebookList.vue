@@ -1,16 +1,16 @@
 <script setup lang="jsx">
-import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
-import { ListRow, ListRowItem } from 'frappe-ui'
-import { PlusIcon } from 'lucide-vue-next'
+import { ListView } from 'frappe-ui'
+import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const notebooks = useNotebooks()
 notebooks.reload()
+const searchQuery = ref('')
 
 const TitleWithIcon = (props) => (
 	<div class="flex items-center">
@@ -54,43 +54,42 @@ updateDocumentTitle(pageMeta)
 			</Button>
 		</div>
 	</header>
-	<ListView
-		:columns="[
-			{ label: 'Title', key: 'title' },
-			{ label: 'Created', key: 'created_from_now' },
-			{ label: 'Modified', key: 'modified_from_now' },
-		]"
-		:rows="notebooks.list"
-	>
-		<template #list-row="{ row: notebook }">
-			<ListRow
-				as="router-link"
-				:row="notebook"
-				:to="{
+
+	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+		<div class="flex gap-2 overflow-visible py-1">
+			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" />
+				</template>
+			</FormControl>
+		</div>
+		<ListView
+			:columns="[
+				{ label: 'Title', key: 'title' },
+				{ label: 'Created', key: 'created_from_now' },
+				{ label: 'Modified', key: 'modified_from_now' },
+			]"
+			:rows="notebooks.list"
+			:row-key="'name'"
+			:options="{
+				showTooltip: false,
+				getRowRoute: (notebook) => ({
 					name: 'Notebook',
 					params: { notebook: notebook.name },
-				}"
-			>
-				<ListRowItem>
-					<FeatherIcon name="file-text" class="h-4 w-4 text-gray-600" />
-					<span class="ml-3">{{ notebook.title }}</span>
-				</ListRowItem>
-				<ListRowItem> {{ notebook.created_from_now }} </ListRowItem>
-				<ListRowItem> {{ notebook.modified_from_now }} </ListRowItem>
-			</ListRow>
-		</template>
-
-		<template #emptyState>
-			<div class="text-xl font-medium">No notebooks.</div>
-			<div class="mt-1 text-base text-gray-600">No notebooks to display.</div>
-			<Button
-				class="mt-4"
-				label="New Notebook"
-				variant="solid"
-				@click="new_notebook_dialog = true"
-			/>
-		</template>
-	</ListView>
+				}),
+				emptyState: {
+					title: 'No notebooks.',
+					description: 'No notebooks to display.',
+					button: {
+						label: 'New Notebook',
+						variant: 'solid',
+						onClick: () => (new_notebook_dialog = true),
+					},
+				},
+			}"
+		>
+		</ListView>
+	</div>
 
 	<Dialog :options="{ title: 'New Notebook' }" v-model="new_notebook_dialog">
 		<template #body-content>
