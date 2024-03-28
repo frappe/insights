@@ -6,7 +6,7 @@ authors = [
 description = "Open Source ERP"
 requires-python = ">=3.10"
 readme = "README.md"
-dynamic = ["version"]
+version = "1.1.3"
 dependencies = [
     "pandas==2.1.1",
     "SQLAlchemy==2.0.22",
