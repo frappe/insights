@@ -16,7 +16,7 @@ from .base_database import (
     DatabaseCredentialsError,
     DatabaseParallelConnectionError,
 )
-from .mariadb import MARIADB_TO_GENERIC_TYPES
+from .mariadb import MARIADB_TO_GENERIC_TYPES, MariaDB
 from .utils import create_insights_table, get_sqlalchemy_engine
 
 
@@ -203,7 +203,7 @@ class FrappeTableFactory:
         return dynamic_link_map
 
 
-class FrappeDB(BaseDatabase):
+class FrappeDB(MariaDB):
     def __init__(self, data_source, host, port, username, password, database_name, use_ssl, **_):
         self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
