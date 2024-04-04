@@ -8,7 +8,7 @@ from urllib import parse
 import frappe
 import sqlparse
 from frappe.utils.data import flt
-from sqlalchemy import StaticPool, create_engine
+from sqlalchemy import NullPool, create_engine
 from sqlalchemy.engine.base import Engine
 
 from insights.cache_utils import make_digest
@@ -23,7 +23,7 @@ def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
     if kwargs.get("connection_string"):
         return create_engine(
             kwargs.pop("connection_string"),
-            poolclass=StaticPool,
+            poolclass=NullPool,
             connect_args=connect_args,
             **kwargs,
         )
@@ -40,7 +40,7 @@ def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
     uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
 
     # TODO: cache the engine by uri
-    return create_engine(uri, poolclass=StaticPool, connect_args={})
+    return create_engine(uri, poolclass=NullPool, connect_args={})
 
 
 def create_insights_table(table, force=False):
