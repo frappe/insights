@@ -40,7 +40,7 @@ def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
     uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
 
     # TODO: cache the engine by uri
-    return create_engine(uri, poolclass=StaticPool, connect_args=connect_args)
+    return create_engine(uri, poolclass=StaticPool, connect_args={})
 
 
 def create_insights_table(table, force=False):
