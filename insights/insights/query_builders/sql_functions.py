@@ -105,6 +105,8 @@ class ColumnFormatter:
                 ),
                 "%Y-%m-%d",
             )
+        else:
+            return func.date_format(column, format)
 
 
 class Functions:

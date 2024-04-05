@@ -5,7 +5,6 @@ import re
 
 import frappe
 from sqlalchemy.sql import text
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -83,26 +82,20 @@ class BaseDatabase(Database):
         self.query_builder = None
         self.table_factory = None
 
-    def test_connection(self):
-        with self.connect() as connection:
+    def test_connection(self, log_errors=True):
+        with self.connect(log_errors=log_errors) as connection:
             res = connection.execute(text("SELECT 1"))
             return res.fetchone()
 
-    @retry(
-        retry=retry_if_exception_type((DatabaseParallelConnectionError,)),
-        stop=stop_after_attempt(5),
-        wait=wait_fixed(1),
-        reraise=True,
-    )
-    def connect(self):
+    def connect(self, *, log_errors=True):
         try:
             return self.engine.connect()
-        except BaseException as e:
-            frappe.log_error(title="Error connecting to database", message=e)
+        except Exception as e:
+            log_errors and frappe.log_error("Error connecting to database")
             self.handle_db_connection_error(e)
 
     def handle_db_connection_error(self, e):
-        raise DatabaseConnectionError(e)
+        raise DatabaseConnectionError(e) from e
 
     def build_query(self, query):
         """Used to update the sql in insights query"""
@@ -112,7 +105,7 @@ class BaseDatabase(Database):
 
     def run_query(self, query):
         sql = self.query_builder.build(query)
-        return self.execute_query(sql, return_columns=True)
+        return self.execute_query(sql, return_columns=True, query_name=query.name)
 
     def execute_query(
         self,
@@ -120,6 +113,8 @@ class BaseDatabase(Database):
         pluck=False,
         return_columns=False,
         cached=True,
+        query_name=None,
+        log_errors=True,
     ):
         if sql is None:
             return []
@@ -146,8 +141,8 @@ class BaseDatabase(Database):
             if cached_results:
                 return process_kwargs(cached_results)
 
-        with self.connect() as connection:
-            res = execute_and_log(connection, sql, self.data_source)
+        with self.connect(log_errors=log_errors) as connection:
+            res = execute_and_log(connection, sql, self.data_source, query_name)
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             results = [cols] + rows
@@ -163,12 +158,12 @@ class BaseDatabase(Database):
     def process_subquery(self, sql):
         allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         if allow_subquery:
-            sql = replace_query_tables_with_cte(sql, self.data_source)
+            sql = replace_query_tables_with_cte(sql, self.data_source, self.engine.dialect)
         return sql
 
     def escape_special_characters(self, sql):
         # to fix special characters in query like %
-        if self.engine.dialect.name == "mysql":
+        if self.engine.dialect.name in ("mysql", "postgresql"):
             sql = re.sub(r"(%{1,})", r"%%", sql)
         return sql
 

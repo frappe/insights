@@ -106,7 +106,7 @@ const showPagination = computed(
 							:key="header.id"
 							:colSpan="header.colSpan"
 							class="border-b border-r text-gray-800"
-							:class="header.id !== 'index' ? 'min-w-[6rem] ' : ''"
+							:width="header.column.columnDef.id === 'index' ? '6rem' : 'auto'"
 						>
 							<div
 								class="flex items-center gap-2 truncate py-2 px-3"

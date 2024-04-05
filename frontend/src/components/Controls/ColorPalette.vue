@@ -97,7 +97,7 @@ function getPaletteColors(palette) {
 function guessPredefinedPalette(colors) {
 	if (!colors?.length) return false
 	return colorPaletteOptions.find((palette) =>
-		colors.every((color) => paletteColors[palette.value].includes(color))
+		colors.every((color) => paletteColors[palette.value]?.includes(color))
 	)
 }
 function isCustomPalette(colors) {

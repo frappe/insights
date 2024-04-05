@@ -1,6 +1,8 @@
 <script setup>
 import { getQueriesColumn, getQueryColumns } from '@/dashboard/useDashboards'
-import { computed, inject, reactive, ref } from 'vue'
+import FilterValueSelector from '@/query/visual/FilterValueSelector.vue'
+import { getOperatorOptions } from '@/utils'
+import { computed, inject, reactive, ref, watch } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -84,6 +86,22 @@ async function setColumnOptions(chartItem) {
 	})
 }
 
+const operatorOptions = computed(() => {
+	const _options = getOperatorOptions(options.value.column?.type)
+	return _options
+		.filter((option) => option.value !== 'is')
+		.concat([
+			{ label: 'is set', value: 'is_set' },
+			{ label: 'is not set', value: 'is_not_set' },
+		])
+})
+// prettier-ignore
+watch(() => options.value.defaultOperator?.value, (newVal, oldVal) => {
+	if (newVal !== oldVal) {
+		options.value.defaultValue = {}
+	}
+})
+
 // watch(() => options.value.column?.column, () => {
 // 	// select all the charts that have this column
 // 	const links = options.value.links
@@ -120,6 +138,26 @@ async function setColumnOptions(chartItem) {
 				:options="filterColumnOptions"
 				placeholder="Select a column"
 			></Autocomplete>
+		</div>
+
+		<div>
+			<span class="mb-2 block text-sm leading-4 text-gray-700">Default Operator</span>
+			<Autocomplete
+				v-model="options.defaultOperator"
+				placeholder="Default Operator"
+				:options="operatorOptions"
+			></Autocomplete>
+		</div>
+
+		<div v-if="options.column?.value">
+			<FilterValueSelector
+				label="Default Value"
+				:column="options.column"
+				:operator="options.defaultOperator"
+				:modelValue="options.defaultValue"
+				:data-source="options.column?.data_source"
+				@update:modelValue="options.defaultValue = $event"
+			/>
 		</div>
 
 		<div v-if="options.column?.column">

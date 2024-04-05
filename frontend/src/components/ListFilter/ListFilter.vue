@@ -76,9 +76,9 @@
 					</div>
 					<div class="flex items-center justify-between gap-2">
 						<Autocomplete
-							value=""
+							:modelValue="''"
 							:options="fields"
-							@change="(field) => addFilter(field.value)"
+							@update:modelValue="(field) => addFilter(field.value)"
 							placeholder="Filter by..."
 						>
 							<template #target="{ togglePopover }">
@@ -110,7 +110,7 @@
 
 <script setup>
 import { Autocomplete, FeatherIcon, FormControl } from 'frappe-ui'
-import { computed, h, onUpdated, ref, watch } from 'vue'
+import { computed, h, ref, watch } from 'vue'
 import FilterIcon from './FilterIcon.vue'
 import NestedPopover from './NestedPopover.vue'
 import SearchComplete from './SearchComplete.vue'
@@ -158,12 +158,16 @@ const fields = computed(() => {
 
 const filters = ref(makeFiltersList(props.modelValue))
 watch(filters, (value) => emits('update:modelValue', makeFiltersDict(value)), { deep: true })
-onUpdated(() => {
-	const newFilters = makeFiltersList(props.modelValue)
-	if (JSON.stringify(filters.value) !== JSON.stringify(newFilters)) {
-		filters.value = newFilters
-	}
-})
+watch(
+	() => props.modelValue,
+	(value) => {
+		const newFilters = makeFiltersList(value)
+		if (JSON.stringify(filters.value) !== JSON.stringify(newFilters)) {
+			filters.value = newFilters
+		}
+	},
+	{ deep: true }
+)
 
 function makeFiltersList(filtersDict) {
 	return Object.entries(filtersDict).map(([fieldname, [operator, value]]) => {

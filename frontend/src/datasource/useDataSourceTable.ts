@@ -47,7 +47,7 @@ async function useDataSourceTable(params: GetTableParams) {
 	const table: DataSourceTable = reactive({
 		doc,
 		columns,
-		rows: computed(() => resource.getPreview.data?.message),
+		rows: computed(() => resource.getPreview.data),
 		loading: resource.loading,
 		syncing: resource.syncTable.loading,
 		sync: () => resource.syncTable.submit(),

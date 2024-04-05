@@ -81,7 +81,7 @@ class InsightsTableImport(Document):
         try:
             table_import._data_source._db.import_table(table_import)
             table_import.db_set("status", "Success")
-        except BaseException as e:
+        except Exception as e:
             print(f"Error importing table {table_import.table_name}", e)
             frappe.log_error(title=f"Insights: Failed to import table - {table_import.table_name}")
             table_import.db_set("status", "Failed")

@@ -1,11 +1,10 @@
 <script setup lang="jsx">
-import ListView from '@/components/ListView.vue'
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
 import useNotebook from '@/notebook/useNotebook'
 import useNotebooks from '@/notebook/useNotebooks'
 import { updateDocumentTitle } from '@/utils'
-import { ListRow, ListRowItem } from 'frappe-ui'
-import { PlusIcon } from 'lucide-vue-next'
+import { ListView } from 'frappe-ui'
+import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -13,6 +12,7 @@ const props = defineProps({ notebook: String })
 const router = useRouter()
 const notebook = useNotebook(props.notebook)
 notebook.reload()
+const searchQuery = ref('')
 
 async function createNotebookPage() {
 	const page_name = await notebook.createPage(props.notebook)
@@ -54,15 +54,14 @@ updateDocumentTitle(pageMeta)
 			</Button>
 		</div>
 	</header>
-	<ListView
-		:columns="[
-			{ label: 'Title', name: 'title' },
-			{ label: 'Created', name: 'created_from_now' },
-			{ label: 'Modified', name: 'modified_from_now' },
-		]"
-		:rows="notebook.pages"
-	>
-		<template #actions>
+
+	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+		<div class="flex gap-2 overflow-visible py-1">
+			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" />
+				</template>
+			</FormControl>
 			<Dropdown
 				placement="left"
 				:button="{ icon: 'more-horizontal', variant: 'ghost' }"
@@ -74,37 +73,34 @@ updateDocumentTitle(pageMeta)
 					},
 				]"
 			/>
-		</template>
-
-		<template #list-row="{ row: page }">
-			<ListRow
-				as="router-link"
-				:row="page"
-				:to="{
+		</div>
+		<ListView
+			:columns="[
+				{ label: 'Title', key: 'title' },
+				{ label: 'Created', key: 'created_from_now' },
+				{ label: 'Modified', key: 'modified_from_now' },
+			]"
+			:rows="notebook.pages"
+			:row-key="'name'"
+			:options="{
+				showTooltip: false,
+				getRowRoute: (page) => ({
 					name: 'NotebookPage',
 					params: { notebook: notebook.doc.name, name: page.name },
-				}"
-			>
-				<ListRowItem>
-					<FeatherIcon name="file-text" class="h-4 w-4 text-gray-600" />
-					<span class="ml-3">{{ page.title }}</span>
-				</ListRowItem>
-				<ListRowItem> {{ page.created_from_now }} </ListRowItem>
-				<ListRowItem> {{ page.modified_from_now }} </ListRowItem>
-			</ListRow>
-		</template>
-
-		<template #emptyState>
-			<div class="text-xl font-medium">No pages.</div>
-			<div class="mt-1 text-base text-gray-600">No pages to display.</div>
-			<Button
-				class="mt-4"
-				label="New Page"
-				variant="solid"
-				@click="() => createNotebookPage()"
-			/>
-		</template>
-	</ListView>
+				}),
+				emptyState: {
+					title: 'No pages.',
+					description: 'No pages to display.',
+					button: {
+						label: 'New Page',
+						variant: 'solid',
+						onClick: () => createNotebookPage(),
+					},
+				},
+			}"
+		>
+		</ListView>
+	</div>
 
 	<Dialog
 		:options="{
