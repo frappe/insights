@@ -1,13 +1,26 @@
 <script setup lang="ts">
-import QueryBuilder from '@/query/next/QueryBuilder.vue'
+import ModelBuilder from '@/datamodel/ModelBuilder.vue'
+import { provide } from 'vue'
+import ChartBuilder from './components/ChartBuilder.vue'
 import Footer from './components/Footer.vue'
 import Header from './components/Header.vue'
+import useAnalysis, { analysisKey } from './useAnalysis'
+
+const analysis = useAnalysis('new-analysis-1', 'new-model-1')
+provide(analysisKey, analysis)
 </script>
 
 <template>
 	<div class="flex h-full flex-col">
 		<Header />
-		<QueryBuilder />
+		<div class="flex-1 overflow-hidden">
+			<ModelBuilder v-if="analysis.activeTabIdx === -1" :model="analysis.model" />
+			<ChartBuilder
+				v-else
+				:key="analysis.activeTabIdx"
+				:chart-name="analysis.charts[analysis.activeTabIdx].name"
+			/>
+		</div>
 		<Footer />
 	</div>
 </template>

@@ -1,13 +1,13 @@
 <script setup>
 import useDataSourceStore from '@/stores/dataSourceStore'
-import { ChevronDown, Database } from 'lucide-vue-next'
+import { ChevronDown, Database, ListFilter } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 const currentSourceName = defineModel()
 const props = defineProps({
 	placeholder: {
 		type: String,
-		default: 'Select data source',
+		default: 'Data source',
 	},
 })
 
@@ -31,13 +31,15 @@ const dataSourceOptions = computed(() => {
 	>
 		<template #target="{ togglePopover }">
 			<Button variant="outline" @click="togglePopover">
-				<div class="flex max-w-[12rem] items-center gap-2">
-					<Database class="h-4 w-4 flex-shrink-0 text-gray-600" />
-					<span class="flex-1 truncate">
-						{{ currentSource?.title || placeholder }}
-					</span>
-					<ChevronDown class="h-4 w-4 flex-shrink-0 text-gray-600" />
-				</div>
+				<template #prefix>
+					<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
+				</template>
+				<span class="flex-1 truncate">
+					{{ currentSource?.title || placeholder }}
+				</span>
+				<template #suffix>
+					<ChevronDown class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
+				</template>
 			</Button>
 		</template>
 	</Autocomplete>

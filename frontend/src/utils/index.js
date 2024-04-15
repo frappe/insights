@@ -45,10 +45,18 @@ export const returnTypesToIcon = {
 	any: ShieldQuestion,
 }
 
+const NumberTypes = ['Integer', 'Decimal']
+const TextTypes = ['Text', 'String']
+const DateTypes = ['Date', 'Datetime', 'Time']
+
 export const FIELDTYPES = {
-	NUMBER: ['Integer', 'Decimal'],
-	TEXT: ['Text', 'String'],
-	DATE: ['Date', 'Datetime', 'Time'],
+	NUMBER: NumberTypes,
+	TEXT: TextTypes,
+	DATE: DateTypes,
+	MEASURE: NumberTypes,
+	DIMENSION: TextTypes.concat(DateTypes),
+	DISCRETE: TextTypes,
+	CONTINUOUS: NumberTypes.concat(DateTypes),
 }
 
 export const AGGREGATIONS = [

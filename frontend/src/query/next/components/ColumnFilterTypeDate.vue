@@ -2,10 +2,10 @@
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import dayjs from '@/utils/dayjs'
 import { ref } from 'vue'
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 import DatePicker from './DatePicker.vue'
 
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 const filter = defineModel<{ operator: FilterOperator; value: FilterValue }>({
 	type: Object,
 	default: () => ({ operator: '=', value: [] }),

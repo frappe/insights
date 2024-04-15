@@ -6,8 +6,8 @@ import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
 import useDataSource from '@/datasource/useDataSource'
 import useDataSourceTable from '@/datasource/useDataSourceTable'
 import { computed, inject, ref, watch } from 'vue'
-import { QueryPipeline } from './useQueryPipeline'
-import { column, table } from './pipeline_utils'
+import { Query } from './useQuery'
+import { column, table } from './query_utils'
 
 const emit = defineEmits({
 	select: (join: JoinArgs) => true,
@@ -21,9 +21,9 @@ const join = ref({
 	rightColumn: '',
 })
 
-const queryPipeline = inject('queryPipeline') as QueryPipeline
+const query = inject('query') as Query
 
-const dataSource = useDataSource(queryPipeline.dataSource)
+const dataSource = useDataSource(query.dataSource)
 dataSource.fetchTables()
 const tableOptions = computed(() => {
 	const tableGroup = dataSource.groupedTableOptions.find((group) => group.group == 'Tables')
@@ -39,7 +39,7 @@ watch(
 		if (!newTable) return
 		if (newTable === oldTable) return
 		const rightTable = await useDataSourceTable({
-			data_source: queryPipeline.dataSource,
+			data_source: query.dataSource,
 			table: newTable,
 		})
 		tableColumnOptions.value = rightTable.columns.map((c) => ({
@@ -50,9 +50,21 @@ watch(
 		if (join.value.rightColumn) {
 			join.value.rightColumn = ''
 		}
+		autoMatchColumns()
 	},
 	{ immediate: true }
 )
+
+function autoMatchColumns() {
+	if (!join.value.table) return
+	const leftColumns = query.result.columnOptions
+	const rightColumns = tableColumnOptions.value
+	const matchingColumns = leftColumns.filter((l) => rightColumns.some((r) => r.value === l.value))
+	if (matchingColumns.length) {
+		join.value.leftColumn = matchingColumns[0].value
+		join.value.rightColumn = matchingColumns[0].value
+	}
+}
 
 const joinTypes = [
 	{
@@ -108,7 +120,6 @@ function reset() {
 
 <template>
 	<Dialog
-		v-if="showDialog"
 		v-model="showDialog"
 		@after-leave="reset"
 		:options="{
@@ -140,7 +151,7 @@ function reset() {
 						<div class="flex-1">
 							<Autocomplete
 								placeholder="Column"
-								:options="queryPipeline.results.columnOptions"
+								:options="query.result.columnOptions"
 								:modelValue="join.leftColumn"
 								@update:modelValue="join.leftColumn = $event.value"
 							/>

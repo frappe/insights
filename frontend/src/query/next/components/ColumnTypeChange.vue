@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { COLUMN_TYPES, fieldtypesToIcon } from '@/utils'
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 
 const emit = defineEmits({
-	typeChange: (newType: ColumnType) => true,
+	typeChange: (newType: ColumnDataType) => true,
 })
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
-function onTypeChange(newType: ColumnType, togglePopover: () => void) {
+const props = defineProps<{ column: QueryResultColumn }>()
+function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 	emit('typeChange', newType)
 	togglePopover()
 }
@@ -36,11 +36,11 @@ function onTypeChange(newType: ColumnType, togglePopover: () => void) {
 					:key="type.value"
 					variant="ghost"
 					class="w-full !justify-start"
-					@click="onTypeChange(type.value as ColumnType, togglePopover)"
+					@click="onTypeChange(type.value as ColumnDataType, togglePopover)"
 				>
 					<template #prefix>
 						<component
-							:is="fieldtypesToIcon[type.value as ColumnType]"
+							:is="fieldtypesToIcon[type.value as ColumnDataType]"
 							class="h-4 w-4 text-gray-700"
 						/>
 					</template>

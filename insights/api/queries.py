@@ -1,12 +1,12 @@
 import frappe
 import ibis
-from ibis import _
+from ibis import BaseBackend, _
+from ibis import selectors as s
+from pandas import DataFrame
 
 from insights.api.telemetry import track
 from insights.decorators import check_role
-from insights.insights.doctype.insights_query.utils import (
-    get_columns_with_inferred_types,
-)
+from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
 )
@@ -164,14 +164,35 @@ _dict = deep_convert_dict_to_dict
 def execute_query_pipeline(data_source, query_pipeline):
     doc = frappe.get_doc("Insights Data Source", data_source)
 
-    conn = doc.get_ibis_connection()
-    translator = QueryPipelineTranslator(query_pipeline, backend=conn)
+    conn: BaseBackend = doc.get_ibis_connection()
+    translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
-    sql = ibis.to_sql(query.head(100), dialect="mysql")
+    data: DataFrame = conn.execute(query, limit=100)
+    total_row_count = conn.execute(query.count())
+    return {
+        "columns": get_columns_from_dataframe(data),
+        "rows": data.to_dict(orient="records"),
+        "total_row_count": int(total_row_count),
+        "sql": ibis.to_sql(query),
+    }
 
-    data = doc.execute_query(sql, return_columns=True)
-    data[0] = get_columns_with_inferred_types(data)
-    return data
+
+def get_columns_from_dataframe(df):
+    type_map = {
+        "int64": "Integer",
+        "float64": "Decimal",
+        "object": "String",
+        "datetime64": "Datetime",
+        "bool": "Boolean",
+    }
+    columns = []
+    sample = df.head(100)
+    for col in df.columns:
+        inferred_type = type_map.get(df[col].dtype.name, "String")
+        if inferred_type == "String":
+            inferred_type = infer_type_from_list(sample[col])
+        columns.append({"name": col, "type": inferred_type})
+    return columns
 
 
 @frappe.whitelist()
@@ -179,7 +200,7 @@ def get_distinct_column_values(data_source, query_pipeline, column_name, search_
     doc = frappe.get_doc("Insights Data Source", data_source)
 
     conn = doc.get_ibis_connection()
-    translator = QueryPipelineTranslator(query_pipeline, backend=conn)
+    translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
     values_query = (
         query.select(column_name)
@@ -201,7 +222,7 @@ def get_min_max(data_source, query_pipeline, column_name):
     doc = frappe.get_doc("Insights Data Source", data_source)
 
     conn = doc.get_ibis_connection()
-    translator = QueryPipelineTranslator(query_pipeline, backend=conn)
+    translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
     values_query = query.select(column_name).aggregate(
         min=getattr(_, column_name).min(), max=getattr(_, column_name).max()
@@ -211,16 +232,136 @@ def get_min_max(data_source, query_pipeline, column_name):
     return values[0]
 
 
-class QueryPipelineTranslator:
-    def __init__(self, pipeline_steps, backend=None):
+@frappe.whitelist()
+def execute_analytical_query(model, query):
+    query = _dict(query)
+    model = _dict(model)
+    dataset_by_name = {dataset.name: dataset for dataset in model.datasets}
+
+    # first find all the dataset names from the columns referenced in the query
+    dataset_names = set()
+    for column in query.measures + query.dimensions:
+        dataset_names.add(column.dataset)
+
+    # make dataset objects
+    datasets = {}
+    for dataset_name in dataset_names:
+        dataset = dataset_by_name.get(dataset_name)
+        doc = frappe.get_doc("Insights Data Source", dataset.data_source)
+        conn: BaseBackend = doc.get_ibis_connection()
+        translator = QueryTranslator(dataset.operations, backend=conn)
+        expression = translator.translate()
+        datasets[dataset_name] = expression
+
+    # join the datasets based on model.relationships
+    joined_dataset = None
+    for dataset_name, dataset in datasets.items():
+        joined_dataset = dataset
+        for relationship in model.relationships:
+            if dataset_name == relationship.leftDataset:
+                rightDataset = datasets[relationship.rightDataset]
+                left_column = getattr(dataset, relationship.leftColumn)
+                right_column = getattr(rightDataset, relationship.rightColumn)
+                joined_dataset = dataset.join(
+                    rightDataset, left_column == right_column, how="left"
+                ).select(~s.endswith("right"))
+            if dataset_name == relationship.rightDataset:
+                leftDataset = datasets[relationship.leftDataset]
+                left_column = getattr(leftDataset, relationship.leftColumn)
+                right_column = getattr(dataset, relationship.rightColumn)
+                joined_dataset = leftDataset.join(
+                    dataset, left_column == right_column, how="left"
+                ).select(~s.endswith("right"))
+
+    # group by the dimensions
+    group_by_columns = [
+        getattr(joined_dataset, dimension.column_name) for dimension in query.dimensions
+    ]
+
+    # aggregate the measures
+    aggregates = {}
+    for measure in query.measures:
+        aggregates[measure.column_name] = getattr(joined_dataset, measure.column_name).sum()
+
+    # apply the group by and aggregates
+    query = joined_dataset.aggregate(**aggregates, by=group_by_columns)
+
+    # # apply the order by
+    if query.order_by:
+        column = getattr(joined_dataset, query.order_by.column)
+        column = column.asc() if query.order_by.direction == "asc" else column.desc()
+        query = query.order_by(column)
+
+    # # apply the limit
+    if query.limit:
+        query = query.limit(query.limit)
+
+    # execute the query
+    data: DataFrame = query.head(100).execute()
+    return {
+        "columns": get_columns_from_dataframe(data),
+        "rows": data.to_dict(orient="records"),
+        "sql": ibis.to_sql(query),
+    }
+
+
+@frappe.whitelist()
+def execute_analysis_query(model, query):
+    query = _dict(query)
+    model = _dict(model)
+
+    doc = frappe.get_doc("Insights Data Source", model.query.dataSource)
+    conn: BaseBackend = doc.get_ibis_connection()
+    translator = QueryTranslator(model.query.operations, backend=conn)
+    expression = translator.translate()
+    base_data = expression
+
+    # TODO: add calculated dimensions & measures
+
+    # group by the dimensions
+    group_by_columns = [base_data[dimension.column_name] for dimension in query.dimensions]
+
+    # aggregate the measures
+    aggregates = {}
+    for measure in query.measures:
+        column = base_data[measure.column_name]
+        agg_function_name = measure.aggregation
+        if agg_function_name == "count":
+            aggregates[measure.column_name] = column.count()
+        elif agg_function_name == "sum":
+            aggregates[measure.column_name] = column.sum()
+        elif agg_function_name == "avg":
+            aggregates[measure.column_name] = column.mean()
+        elif agg_function_name == "min":
+            aggregates[measure.column_name] = column.min()
+        elif agg_function_name == "max":
+            aggregates[measure.column_name] = column.max()
+
+    if not aggregates:
+        aggregates = {"count": base_data.count()}
+
+    # apply the group by and aggregates
+    query = base_data.aggregate(**aggregates, by=group_by_columns)
+
+    # execute the query
+    data: DataFrame = query.head(100).execute()
+    return {
+        "columns": get_columns_from_dataframe(data),
+        "rows": data.to_dict(orient="records"),
+        "sql": ibis.to_sql(query),
+    }
+
+
+class QueryTranslator:
+    def __init__(self, query_operations, backend=None):
         self.query = None
         self.db_backend = backend
-        self.pipeline_steps = pipeline_steps
+        self.query_operations = query_operations
 
     def translate(self):
         self.query = None
-        for step in self.pipeline_steps:
-            handler = self.get_step_handler(step)
+        for operation in self.query_operations:
+            handler = self.get_operation_handler(operation)
             self.query = handler(self.query)
         return self.query
 
@@ -228,35 +369,35 @@ class QueryPipelineTranslator:
         # VUL: Any table can be accessed
         return self.db_backend.table(table_name)
 
-    def get_step_handler(self, step):
-        step = _dict(step)
+    def get_operation_handler(self, operation):
+        operation = _dict(operation)
         handler = lambda query: query
-        if step.type == "source":
-            handler = self.translate_source(step)
-        elif step.type == "join":
-            handler = self.translate_join(step)
-        elif step.type == "filter":
-            handler = self.translate_filter(step)
-        elif step.type == "select":
-            handler = self.translate_select(step)
-        elif step.type == "rename":
-            handler = self.translate_rename(step)
-        elif step.type == "remove":
-            handler = self.translate_remove(step)
-        elif step.type == "mutate":
-            handler = self.translate_mutate(step)
-        elif step.type == "cast":
-            handler = self.translate_cast(step)
-        elif step.type == "summarize":
-            handler = self.translate_summary(step)
-        # elif step.type == "group_by":
-        #     handler = self.translate_group_by(step)
-        elif step.type == "order_by":
-            handler = self.translate_order_by(step)
-        elif step.type == "limit":
-            handler = self.translate_limit(step)
-        elif step.type == "pivot_wider":
-            handler = self.translate_pivot(step, "wider")
+        if operation.type == "source":
+            handler = self.translate_source(operation)
+        elif operation.type == "join":
+            handler = self.translate_join(operation)
+        elif operation.type == "filter":
+            handler = self.translate_filter(operation)
+        elif operation.type == "select":
+            handler = self.translate_select(operation)
+        elif operation.type == "rename":
+            handler = self.translate_rename(operation)
+        elif operation.type == "remove":
+            handler = self.translate_remove(operation)
+        elif operation.type == "mutate":
+            handler = self.translate_mutate(operation)
+        elif operation.type == "cast":
+            handler = self.translate_cast(operation)
+        elif operation.type == "summarize":
+            handler = self.translate_summary(operation)
+        # elif operation.type == "group_by":
+        #     handler = self.translate_group_by(operation)
+        elif operation.type == "order_by":
+            handler = self.translate_order_by(operation)
+        elif operation.type == "limit":
+            handler = self.translate_limit(operation)
+        elif operation.type == "pivot_wider":
+            handler = self.translate_pivot(operation, "wider")
         return handler
 
     def translate_source(self, source_args):
@@ -270,10 +411,12 @@ class QueryPipelineTranslator:
         join_on = left_column == right_column
         join_type = join_args.join_type
         join_type = "outer" if join_type == "full" else join_type
-        return lambda query: query.join(right_table, join_on, how=join_type)
+        return lambda query: query.join(right_table, join_on, how=join_type).select(
+            ~s.endswith("right")
+        )
 
     def translate_filter(self, filter_args):
-        if hasattr(filter_args, "expression"):
+        if hasattr(filter_args, "expression") and filter_args.expression:
             return lambda query: query.filter(
                 self.translate_col_expression(filter_args.expression)
             )
@@ -337,10 +480,10 @@ class QueryPipelineTranslator:
         return lambda query: query.cast({col_name: dtype})
 
     def translate_mutate(self, mutate_args):
-        column_name = mutate_args.column_name
-        # column_type = mutate_args.column_type
+        new_name = mutate_args.new_name
+        # data_type = mutate_args.data_type
         new_column = self.translate_col_expression(mutate_args.mutation)
-        return lambda query: query.mutate(**{column_name: new_column})
+        return lambda query: query.mutate(**{new_name: new_column})
 
     def translate_summary(self, summarize_args):
         metrics_by_name = summarize_args.metrics

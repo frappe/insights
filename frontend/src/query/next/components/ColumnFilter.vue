@@ -2,7 +2,7 @@
 import { FIELDTYPES } from '@/utils'
 import { ChevronRight, ListFilter } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 import ColumnFilterTypeDate from './ColumnFilterTypeDate.vue'
 import ColumnFilterTypeNumber from './ColumnFilterTypeNumber.vue'
 import ColumnFilterTypeText from './ColumnFilterTypeText.vue'
@@ -10,7 +10,7 @@ import ColumnFilterTypeText from './ColumnFilterTypeText.vue'
 const emit = defineEmits({
 	filter: (operator: FilterOperator, value: FilterValue) => true,
 })
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 
 const isText = computed(() => FIELDTYPES.TEXT.includes(props.column.type))
 const isNumber = computed(() => FIELDTYPES.NUMBER.includes(props.column.type))
@@ -39,11 +39,12 @@ const isValidFilter = computed(() => {
 
 function processFilter(operator: FilterOperator, value: FilterValue) {
 	if (isNumber.value && Array.isArray(value)) {
-		value = value.map((v) => (v ? Number(v) : v))
-		if (operator === '=' && value[0] === value[1]) return ['=', value[0]]
-		if (operator === '>=' && value[0] && !value[1]) return ['>=', value[0]]
-		if (operator === '<=' && !value[0] && value[1]) return ['<=', value[1]]
-		if (operator === 'between' && value[0] && value[1]) return ['between', [value[0], value[1]]]
+		value = value.map((v) => (!isNaN(v) ? String(v) : v))
+		if (operator === '=' && value[0] === value[1]) return ['=', Number(value[0])]
+		if (operator === '>=' && value[0] && !value[1]) return ['>=', Number(value[0])]
+		if (operator === '<=' && !value[0] && value[1]) return ['<=', Number(value[1])]
+		if (operator === 'between' && value[0] && value[1])
+			return ['between', Number(value[0]), Number(value[1])]
 	}
 
 	if (isText.value) {

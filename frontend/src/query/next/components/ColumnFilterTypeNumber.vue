@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 const filter = defineModel<{ operator: FilterOperator; value: any }>({
 	type: Object,
 	default: () => ({ operator: '=', value: [0, 0] }),
 })
 
-// const queryPipeline = inject('queryPipeline') as QueryPipeline
+// const query = inject('query') as Query
 // onMounted(() => {
 // 	if (!filter.value.value?.[0] && !filter.value.value?.[1]) {
-// 		queryPipeline.getMinAndMax(props.column.name).then((minMax: number[]) => {
+// 		query.getMinAndMax(props.column.name).then((minMax: number[]) => {
 // 			console.log(minMax)
 // 			if (typeof minMax[0] === 'number' && typeof minMax[1] === 'number') {
 // 				filter.value.value = minMax

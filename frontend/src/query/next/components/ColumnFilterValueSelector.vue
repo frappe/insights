@@ -3,15 +3,15 @@ import { watchDebounced } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { CheckSquare, SearchIcon, Square } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
-import { QueryPipeline, QueryPipelineResultColumn } from '../useQueryPipeline'
+import { Query, QueryResultColumn } from '../useQuery'
 
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 const selectedValues = defineModel<any[]>({
 	type: Array,
 	default: () => [],
 })
 
-const queryPipeline = inject('queryPipeline') as QueryPipeline
+const query = inject('query') as Query
 const distinctColumnValues = ref<any[]>([])
 const searchInput = ref('')
 const fetchingValues = ref(false)
@@ -19,7 +19,7 @@ watchDebounced(
 	() => searchInput.value,
 	(value) => {
 		fetchingValues.value = true
-		queryPipeline
+		query
 			.getDistinctColumnValues(props.column.name, value)
 			.then((values: string[]) => (distinctColumnValues.value = values))
 			.finally(() => (fetchingValues.value = false))

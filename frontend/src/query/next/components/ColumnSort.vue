@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 
 const emit = defineEmits({
 	sort: (value: 'asc' | 'desc' | '') => true,
 })
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 </script>
 
 <template>

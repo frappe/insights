@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Trash } from 'lucide-vue-next'
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 
 const emit = defineEmits(['remove'])
 
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 </script>
 
 <template>

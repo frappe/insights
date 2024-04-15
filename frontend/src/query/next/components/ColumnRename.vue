@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ChevronRight, TextCursorInput } from 'lucide-vue-next'
 import { ref } from 'vue'
-import { QueryPipelineResultColumn } from '../useQueryPipeline'
+import { QueryResultColumn } from '../useQuery'
 
 const emit = defineEmits({
 	rename: (newName: string) => true,
 })
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 const newName = ref('')
 function onRename() {
 	emit('rename', newName.value)

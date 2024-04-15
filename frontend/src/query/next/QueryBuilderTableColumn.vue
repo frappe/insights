@@ -6,35 +6,35 @@ import ColumnFilter from './components/ColumnFilter.vue'
 import ColumnRemove from './components/ColumnRemove.vue'
 import ColumnSort from './components/ColumnSort.vue'
 import ColumnTypeChange from './components/ColumnTypeChange.vue'
-import { column } from './pipeline_utils'
-import { QueryPipeline, QueryPipelineResultColumn } from './useQueryPipeline'
+import { column } from './query_utils'
+import { Query, QueryResultColumn } from './useQuery'
 
-const props = defineProps<{ column: QueryPipelineResultColumn }>()
+const props = defineProps<{ column: QueryResultColumn }>()
 
-const queryPipeline = inject('queryPipeline') as QueryPipeline
+const query = inject('query') as Query
 
 function onRename(new_name: string) {
 	if (new_name === props.column.name) return
-	queryPipeline.renameColumn(props.column.name, new_name)
+	query.renameColumn(props.column.name, new_name)
 }
 
-function onTypeChange(new_type: ColumnType) {
+function onTypeChange(new_type: ColumnDataType) {
 	if (new_type === props.column.type) return
-	queryPipeline.changeColumnType(props.column.name, new_type)
+	query.changeColumnType(props.column.name, new_type)
 }
 
 function onRemove(togglePopover: () => void) {
-	queryPipeline.removeColumn(props.column.name)
+	query.removeColumn(props.column.name)
 	togglePopover()
 }
 
 function onSort(sort_order: 'asc' | 'desc' | '', togglePopover: () => void) {
 	if (!sort_order) {
-		queryPipeline.removeOrderBy(props.column.name)
+		query.removeOrderBy(props.column.name)
 		togglePopover()
 		return
 	}
-	queryPipeline.addOrderBy({
+	query.addOrderBy({
 		column: column(props.column.name),
 		direction: sort_order,
 	})
@@ -46,7 +46,7 @@ function onFilter(
 	filter_value: FilterValue,
 	togglePopover: () => void
 ) {
-	queryPipeline.addFilter({
+	query.addFilter({
 		column: column(props.column.name),
 		operator: filter_operator,
 		value: filter_value,

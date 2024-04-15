@@ -1,54 +1,54 @@
-import { column, expression, table } from './pipeline_utils'
-import useQueryPipeline from './useQueryPipeline'
+import { column, expression, table } from './query_utils'
+import useQuery from './useQuery'
 
-const pipeline = useQueryPipeline()
-pipeline.addSource({ table: table('tabInvoice') })
+const query = useQuery()
+query.addSource({ table: table('tabInvoice') })
 
-pipeline.addFilter({
+query.addFilter({
 	column: column('status'),
 	operator: '==',
 	value: 'Paid',
 })
-pipeline.addFilter({
+query.addFilter({
 	column: column('docstatus'),
 	operator: '==',
 	value: 1,
 })
-pipeline.addFilter({
+query.addFilter({
 	column: column('type'),
 	operator: '==',
 	value: 'Subscription',
 })
-pipeline.addFilter({
+query.addFilter({
 	column: column('due_date'),
 	operator: '>=',
 	value: '2023-04-01',
 })
-pipeline.addFilter({
+query.addFilter({
 	column: column('total'),
 	operator: '!=',
 	value: column('free_credits'),
 })
 
-pipeline.addJoin({
+query.addJoin({
 	table: table('tabTeam'),
 	left_column: column('team'),
 	right_column: column('name'),
 })
 
-pipeline.addMutate({
+query.addMutate({
 	label: 'month',
 	mutation: column('due_date', { date_format: '%Y-%m-01' }),
 })
-pipeline.addMutate({
+query.addMutate({
 	label: 'territory',
 	mutation: column('custom_territory'),
 })
-pipeline.addMutate({
+query.addMutate({
 	label: 'is_partner',
 	mutation: column('erpnext_partner'),
 })
-pipeline.addMutate({
+query.addMutate({
 	label: 'total_usd',
 	mutation: expression(`
 		case()
@@ -58,31 +58,31 @@ pipeline.addMutate({
 	`),
 })
 
-pipeline.addSummarize({
+query.addSummarize({
 	metrics: { total_sales: column('total_usd', { aggregate: 'sum' }) },
 	by: [column('team'), column('month'), column('user'), column('territory'), column('is_partner')],
 })
 
-pipeline.addOrderBy({
+query.addOrderBy({
 	direction: 'asc',
 	column: column('month'),
 })
 
-pipeline.addMutate({
+query.addMutate({
 	label: 'mrr',
 	mutation: expression(`q.total_sales.sum().over(group_by="month")`),
 })
-pipeline.addMutate({
+query.addMutate({
 	label: 'amount_change',
 	mutation: expression(
 		`q.total_sales - q.total_sales.lag().over(group_by="user", order_by="month")`
 	),
 })
-pipeline.addMutate({
+query.addMutate({
 	label: 'invoice_no',
 	mutation: expression(`row_number().over(group_by="user", order_by="month")`),
 })
-pipeline.addMutate({
+query.addMutate({
 	label: 'change_type',
 	mutation: expression(`
 		case()
@@ -94,7 +94,7 @@ pipeline.addMutate({
 	`),
 })
 
-pipeline.addSummarize({
+query.addSummarize({
 	metrics: {
 		total_sales: expression(`(
 				case()
@@ -107,12 +107,12 @@ pipeline.addSummarize({
 	by: [column('month'), column('change_type')],
 })
 
-pipeline.addPivotWider({
+query.addPivotWider({
 	id_cols: column('month'),
 	names_from: column('change_type'),
 	values_from: column('total_sales'),
 	values_agg: 'sum',
 })
-pipeline.addLimit(20)
+query.addLimit(20)
 
-export default pipeline
+export default query

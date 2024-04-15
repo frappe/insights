@@ -2,12 +2,12 @@
 import Code from '@/components/Controls/Code.vue'
 import { COLUMN_TYPES } from '@/utils'
 import { computed, ref } from 'vue'
-import { expression } from './pipeline_utils'
+import { expression } from './query_utils'
 
 const emit = defineEmits({ select: (column: MutateArgs) => true })
 const showDialog = defineModel()
 
-const columnTypes = COLUMN_TYPES.map((t) => t.value as ColumnType)
+const columnTypes = COLUMN_TYPES.map((t) => t.value as ColumnDataType)
 
 const newColumn = ref({
 	name: 'New Column',
@@ -22,8 +22,8 @@ const isValid = computed(() => {
 function confirmCalculation() {
 	if (!isValid.value) return
 	emit('select', {
-		column_name: newColumn.value.name,
-		column_type: newColumn.value.type,
+		new_name: newColumn.value.name,
+		data_type: newColumn.value.type,
 		mutation: expression(newColumn.value.expression),
 	})
 	resetNewColumn()
@@ -39,7 +39,7 @@ function resetNewColumn() {
 </script>
 
 <template>
-	<Dialog v-if="showDialog" :modelValue="showDialog" @after-leave="resetNewColumn">
+	<Dialog :modelValue="showDialog" @after-leave="resetNewColumn">
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">

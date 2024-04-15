@@ -1,48 +1,22 @@
 <script setup lang="tsx">
-import { getFormattedResult } from '@/utils/query/results'
-import { convertResultToObjects } from '@/widgets/useChartData'
 import { LoadingIndicator } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Table2Icon } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { Table2Icon } from 'lucide-vue-next'
+import { computed, inject } from 'vue'
 import QueryBuilderTableColumn from './QueryBuilderTableColumn.vue'
-import { QueryPipeline } from './useQueryPipeline'
+import { Query } from './useQuery'
 
-const queryPipeline = inject('queryPipeline') as QueryPipeline
+const query = inject('query') as Query
 
-const columns = computed(() => queryPipeline.results.columns)
-const rows = computed(() => {
-	return convertResultToObjects(
-		getFormattedResult([queryPipeline.results.columns, ...queryPipeline.results.rows])
-	)
-})
-
-const pageLength = ref(100)
-const currPage = ref(1)
-const pageStart = computed(() => (currPage.value - 1) * pageLength.value + 1)
-const pageEnd = computed(() => {
-	const end = currPage.value * pageLength.value
-	return end > rows.value.length ? rows.value.length : end
-})
-const totalRows = computed(() => rows.value.length)
-const showPagination = computed(() => rows.value?.length && totalRows.value > pageLength.value)
-
-const hasPrevPage = computed(() => currPage.value === 1)
-const hasNextPage = computed(() => pageEnd.value < totalRows.value)
-
-const prevPage = () => {
-	if (hasPrevPage.value) return
-	currPage.value--
-}
-const nextPage = () => {
-	if (hasNextPage.value) return
-	currPage.value++
-}
+const columns = computed(() => query.result.columns)
+const rows = computed(() => query.result.rows)
+const previewRowCount = computed(() => query.result.rows.length.toLocaleString())
+const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString())
 </script>
 
 <template>
 	<div class="relative flex w-full flex-1 flex-col overflow-hidden">
 		<div
-			v-if="queryPipeline.executing"
+			v-if="query.executing"
 			class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
 		>
 			<LoadingIndicator class="h-8 w-8 text-gray-700" />
@@ -70,6 +44,7 @@ const nextPage = () => {
 								v-for="(value, idx2) in Object.values(row)"
 								:key="idx2"
 								class="truncate border-b border-r py-2 px-3 text-gray-800"
+								:class="isNaN(value) ? '' : 'text-right'"
 							>
 								{{ value }}
 							</td>
@@ -78,21 +53,10 @@ const nextPage = () => {
 					</tbody>
 				</table>
 			</div>
-			<div
-				v-if="showPagination"
-				class="flex flex-shrink-0 items-center justify-end gap-3 p-1"
-			>
+			<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
 				<p class="tnum text-sm text-gray-600">
-					{{ pageStart }} - {{ pageEnd }} of {{ totalRows }} rows
+					Showing {{ previewRowCount }} of {{ totalRowCount }} rows
 				</p>
-				<div class="flex gap-2">
-					<Button variant="ghost" @click="prevPage" :disabled="hasPrevPage">
-						<ChevronLeft class="h-4 w-4 text-gray-600" />
-					</Button>
-					<Button variant="ghost" @click="nextPage" :disabled="hasNextPage">
-						<ChevronRight class="h-4 w-4 text-gray-600" />
-					</Button>
-				</div>
 			</div>
 		</template>
 

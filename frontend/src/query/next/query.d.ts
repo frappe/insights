@@ -5,14 +5,15 @@ type Table = {
 type Column = {
 	type: 'column'
 	column_name: string
-	options?: ColumnOptions
 }
-type ColumnType = 'String' | 'Integer' | 'Decimal' | 'Date' | 'Datetime' | 'Time' | 'Text'
 
-type ColumnOptions = {
-	date_format?: string
-	aggregate?: string
-}
+type ColumnDataType = 'String' | 'Integer' | 'Decimal' | 'Date' | 'Datetime' | 'Time' | 'Text'
+type MeasureDataType = 'String' | 'Integer' | 'Decimal'
+type DimensionDataType = 'String' | 'Date' | 'Datetime' | 'Time'
+type AggregationType = 'sum' | 'count' | 'avg' | 'min' | 'max'
+type GranularityType = 'day' | 'week' | 'month' | 'quarter' | 'year'
+type DataFormat = 'currency' | 'percent'
+
 type FilterOperator =
 	| '='
 	| '!='
@@ -53,31 +54,28 @@ type Rename = { type: 'rename' } & RenameArgs
 type RemoveArgs = { column_names: string[] }
 type Remove = { type: 'remove' } & RemoveArgs
 
-type CastArgs = { column: Column; data_type: string }
+type CastArgs = { column: Column; data_type: ColumnDataType }
 type Cast = { type: 'cast' } & CastArgs
 
 type JoinType = 'inner' | 'left' | 'right' | 'full'
-type JoinArgs = { join_type: JoinType, table: Table; left_column: Column; right_column: Column }
+type JoinArgs = { join_type: JoinType; table: Table; left_column: Column; right_column: Column }
 type Join = { type: 'join' } & JoinArgs
 
 type Mutation = Column | Expression | WindowOperation
-type MutateArgs = { column_name: string; column_type: ColumnType, mutation: Mutation }
+type MutateArgs = { new_name: string; data_type: ColumnDataType; mutation: Mutation }
 type Mutate = { type: 'mutate' } & MutateArgs
 
-type SummarizeArgs = { metrics: Record<string, Column | Expression>; by: Column[] }
+type SummarizeArgs = { metrics: Record<string, Column>; by: Column[] }
 type Summarize = { type: 'summarize' } & SummarizeArgs
 
-type OrderByArgs = { direction: 'asc' | 'desc'; column: Column }
+type OrderByArgs = { column: Column; direction: 'asc' | 'desc' }
 type OrderBy = { type: 'order_by' } & OrderByArgs
 
-type Limit = {
-	type: 'limit'
-	limit: number
-}
+type Limit = { type: 'limit'; limit: number }
 
 type WindowOperationType = 'sum' | 'lag_difference' | 'row_number'
 type WindowOperationArgs = {
-	operation: WindowOperationType
+	op: WindowOperationType
 	column: Column
 	partition_by?: Column
 	order_by?: Column
@@ -92,7 +90,7 @@ type PivotWiderArgs = {
 }
 type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 
-type PipelineStep =
+type Operation =
 	| Source
 	| Filter
 	| Select

@@ -3,6 +3,7 @@ import dayjs from '@/utils/dayjs'
 import { createListResource, ListView } from 'frappe-ui'
 import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, ref, watch } from 'vue'
+import DataSourceSelector from './DataSourceSelector.vue'
 
 const emit = defineEmits(['select'])
 const showDialog = defineModel()
@@ -30,6 +31,15 @@ const tableSearchQuery = ref('')
 watch(tableSearchQuery, (query: any) => {
 	const filters: any = { ...defaultFilters }
 	if (query) filters.label = ['like', `%${query}%`]
+	tables.update({ filters })
+	tables.reload()
+})
+
+const dataSourceFilter = ref('')
+watch(dataSourceFilter, (data_source: any) => {
+	const filters: any = { ...defaultFilters }
+	if (data_source) filters.data_source = data_source
+	if (tableSearchQuery.value) filters.label = ['like', `%${tableSearchQuery.value}%`]
 	tables.update({ filters })
 	tables.reload()
 })
@@ -102,6 +112,7 @@ function onConfirm() {
 							<SearchIcon class="h-4 w-4 text-gray-500" />
 						</template>
 					</FormControl>
+					<DataSourceSelector v-model="dataSourceFilter"> </DataSourceSelector>
 				</div>
 				<ListView
 					:columns="listColumns"

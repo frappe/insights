@@ -16,10 +16,10 @@ export const table = (table_name: string): Table => ({
 	type: 'table',
 	table_name,
 })
-export const column = (column_name: string, options?: ColumnOptions): Column => ({
+export const column = (column_name: string, options = {}): Column => ({
 	type: 'column',
 	column_name,
-	options,
+	...options,
 })
 export const operator = (operator: FilterOperator): FilterOperator => operator
 export const value = (value: FilterValue): FilterValue => value
@@ -28,15 +28,15 @@ export const expression = (expression: string): Expression => ({
 	expression,
 })
 
-export const window_operation = (options: WindowOperationArgs): WindowOperation => ({
-	type: 'window_operation',
-	operation: options.operation,
-	column: options.column,
-	partition_by: options.partition_by,
-	order_by: options.order_by,
-})
+// export const window_operation = (options: WindowOperationArgs): WindowOperation => ({
+// 	type: 'window_operation',
+// 	operation: options.operation,
+// 	column: options.column,
+// 	partition_by: options.partition_by,
+// 	order_by: options.order_by,
+// })
 
-export const pipeline_step_types = {
+export const query_operation_types = {
 	source: {
 		label: 'Table',
 		type: 'source',
@@ -44,7 +44,7 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
-		getStepLabel: (step: Source) => step.table.table_name,
+		getLabel: (op: Source) => `Source: ${op.table.table_name}`,
 	},
 	join: {
 		label: 'Join',
@@ -53,7 +53,7 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: JoinArgs): Join => ({ type: 'join', ...args }),
-		getStepLabel: (step: Join) => step.table.table_name,
+		getLabel: (op: Join) => `Merge: ${op.table.table_name}`,
 	},
 	select: {
 		label: 'Select',
@@ -62,8 +62,8 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SelectArgs): Select => ({ type: 'select', ...args }),
-		getStepLabel: (step: Select) => {
-			return `${step.column_names.length} columns`
+		getLabel: (op: Select) => {
+			return `Select: ${op.column_names.length} columns`
 		},
 	},
 	remove: {
@@ -73,13 +73,11 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: RemoveArgs): Remove => ({ type: 'remove', ...args }),
-		getStepLabel: (step: Remove) => {
-			if (step.column_names && step.column_names.length > 1) {
-				return `Remove ${step.column_names.length} columns`
+		getLabel: (op: Remove) => {
+			if (op.column_names.length === 1) {
+				return `Remove: ${op.column_names[0]}`
 			}
-			if (step.column_names && step.column_names.length === 1) {
-				return `Remove ${step.column_names[0]}`
-			}
+			return `Remove: ${op.column_names.length} columns`
 		},
 	},
 	rename: {
@@ -89,8 +87,8 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: RenameArgs): Rename => ({ type: 'rename', ...args }),
-		getStepLabel: (step: Rename) => {
-			return `${step.column.column_name} -> ${step.new_name}`
+		getLabel: (op: Rename) => {
+			return `Rename: ${op.column.column_name} -> ${op.new_name}`
 		},
 	},
 	cast: {
@@ -100,8 +98,8 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CastArgs): Cast => ({ type: 'cast', ...args }),
-		getStepLabel: (step: Cast) => {
-			return `${step.column.column_name} -> ${step.data_type}`
+		getLabel: (op: Cast) => {
+			return `Change Type: ${op.column.column_name} -> ${op.data_type}`
 		},
 	},
 	filter: {
@@ -111,11 +109,11 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: FilterArgs): Filter => ({ type: 'filter', ...args }),
-		getStepLabel: (step: Filter) => {
+		getLabel: (op: Filter) => {
 			// @ts-ignore
-			if (step.expression) return step.expression.expression
+			if (op.expression) return `Filter: custom expression`
 			// @ts-ignore
-			return `${step.column.column_name} ${step.operator} ${step.value}`
+			return `Filter: ${op.column.column_name}`
 		},
 	},
 	mutate: {
@@ -125,8 +123,8 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: MutateArgs): Mutate => ({ type: 'mutate', ...args }),
-		getStepLabel: (step: Mutate) => {
-			return step.column_name
+		getLabel: (op: Mutate) => {
+			return `Calculate: ${op.new_name}`
 		},
 	},
 	summarize: {
@@ -136,8 +134,8 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SummarizeArgs): Summarize => ({ type: 'summarize', ...args }),
-		getStepLabel: (step: Summarize) => {
-			return `${Object.keys(step.metrics).join(', ')} BY ${step.by
+		getLabel: (op: Summarize) => {
+			return `Summarize: ${Object.keys(op.metrics).join(', ')} BY ${op.by
 				.map((g) => g.column_name)
 				.join(', ')}`
 		},
@@ -149,7 +147,7 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: PivotWiderArgs): PivotWider => ({ type: 'pivot_wider', ...args }),
-		getStepLabel: (step: PivotWider) => {
+		getLabel: (op: PivotWider) => {
 			return 'Pivot Wider'
 		},
 	},
@@ -160,8 +158,8 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: OrderByArgs): OrderBy => ({ type: 'order_by', ...args }),
-		getStepLabel: (step: OrderBy) => {
-			return `${step.column.column_name} ${step.direction}`
+		getLabel: (op: OrderBy) => {
+			return `Sort: ${op.column.column_name} ${op.direction}`
 		},
 	},
 	limit: {
@@ -171,21 +169,21 @@ export const pipeline_step_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (limit: number): Limit => ({ type: 'limit', limit }),
-		getStepLabel: (step: Limit) => {
-			return `Limit ${step.limit}`
+		getLabel: (op: Limit) => {
+			return `Limit: ${op.limit}`
 		},
 	},
 }
 
-export const source = pipeline_step_types.source.init
-export const join = pipeline_step_types.join.init
-export const select = pipeline_step_types.select.init
-export const rename = pipeline_step_types.rename.init
-export const remove = pipeline_step_types.remove.init
-export const cast = pipeline_step_types.cast.init
-export const filter = pipeline_step_types.filter.init
-export const mutate = pipeline_step_types.mutate.init
-export const summarize = pipeline_step_types.summarize.init
-export const pivot_wider = pipeline_step_types.pivot_wider.init
-export const order_by = pipeline_step_types.order_by.init
-export const limit = pipeline_step_types.limit.init
+export const source = query_operation_types.source.init
+export const join = query_operation_types.join.init
+export const select = query_operation_types.select.init
+export const rename = query_operation_types.rename.init
+export const remove = query_operation_types.remove.init
+export const cast = query_operation_types.cast.init
+export const filter = query_operation_types.filter.init
+export const mutate = query_operation_types.mutate.init
+export const summarize = query_operation_types.summarize.init
+export const pivot_wider = query_operation_types.pivot_wider.init
+export const order_by = query_operation_types.order_by.init
+export const limit = query_operation_types.limit.init

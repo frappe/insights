@@ -3,7 +3,7 @@ import { FIELDTYPES } from '@/utils'
 import { debounce } from 'frappe-ui'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { FilterRule } from '../FiltersSelectorDialog.vue'
-import { QueryPipeline } from '../useQueryPipeline'
+import { Query } from '../useQuery'
 import DatePickerControl from './DatePickerControl.vue'
 
 const filter = defineModel<FilterRule>({ required: true })
@@ -61,7 +61,7 @@ function onOperatorChange(operator: FilterOperator) {
 }
 
 const columnType = computed(() => {
-	const col = queryPipeline.results.columns.find((c) => c.name === filter.value.column_name)
+	const col = query.result.columns.find((c) => c.name === filter.value.column_name)
 	if (!col) return 'String'
 	return col.type
 })
@@ -81,12 +81,12 @@ const valueSelectorType = computed(() => {
 	return 'text'
 })
 
-const queryPipeline = inject('queryPipeline') as QueryPipeline
+const query = inject('query') as Query
 const distinctColumnValues = ref<any[]>([])
 const fetchingValues = ref(false)
 const fetchColumnValues = debounce((query: string) => {
 	fetchingValues.value = true
-	queryPipeline
+	query
 		.getDistinctColumnValues(filter.value.column_name, query)
 		.then((values: string[]) => (distinctColumnValues.value = values))
 		.finally(() => (fetchingValues.value = false))
@@ -155,7 +155,7 @@ watch(
 			<Autocomplete
 				placeholder="Column"
 				:modelValue="filter.column_name"
-				:options="queryPipeline.results.columnOptions"
+				:options="query.result.columnOptions"
 				@update:modelValue="onColumnChange($event.value)"
 			/>
 		</div>

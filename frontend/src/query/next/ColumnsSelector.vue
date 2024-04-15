@@ -3,9 +3,9 @@ import Checkbox from '@/components/Controls/Checkbox.vue'
 import DraggableList from '@/components/DraggableList.vue'
 import { BoxSelectIcon, CheckSquare, ColumnsIcon, LayoutList, ListChecks } from 'lucide-vue-next'
 import { inject } from 'vue'
-import { QueryPipeline } from './useQueryPipeline'
+import { Query } from './useQuery'
 
-const queryPipeline = inject('queryPipeline') as QueryPipeline
+const query = inject('query') as Query
 </script>
 
 <template>
@@ -36,7 +36,7 @@ const queryPipeline = inject('queryPipeline') as QueryPipeline
 				</div>
 
 				<DraggableList
-					:items="queryPipeline.results.columns"
+					:items="query.result.columns"
 					empty-text="No columns selected"
 					group="columns"
 					@update:items="() => {}"

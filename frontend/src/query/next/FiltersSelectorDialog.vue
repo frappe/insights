@@ -3,7 +3,7 @@ import { PlusIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import FilterExpression from './components/FilterExpression.vue'
 import FilterRule from './components/FilterRule.vue'
-import { column, expression } from './pipeline_utils'
+import { column, expression } from './query_utils'
 
 const emit = defineEmits({ select: (filters: FilterArgs[]) => true })
 const showDialog = defineModel()
@@ -64,12 +64,7 @@ function confirmSelection() {
 </script>
 
 <template>
-	<Dialog
-		v-if="showDialog"
-		:modelValue="showDialog"
-		@after-leave="filters = []"
-		:options="{ size: '2xl' }"
-	>
+	<Dialog :modelValue="showDialog" @after-leave="filters = []" :options="{ size: '2xl' }">
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
