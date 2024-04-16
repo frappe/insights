@@ -33,7 +33,7 @@ export function useQueryColumns(query) {
 	watch(tables, fetchColumns, { immediate: true })
 
 	const options = computed(() =>
-		query.fetchColumns.data?.message.map((c) => {
+		query.fetchColumns.data?.map((c) => {
 			return {
 				...c,
 				value: c.column, // calc value key for autocomplete options

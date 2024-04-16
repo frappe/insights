@@ -13,7 +13,7 @@ export default defineConfig({
 		},
 	},
 	build: {
-		outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
+		outDir: `../insights/public/frontend`,
 		emptyOutDir: true,
 		target: 'es2015',
 		sourcemap: true,

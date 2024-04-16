@@ -5,7 +5,6 @@ import re
 
 import frappe
 from sqlalchemy.sql import text
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from insights.insights.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
@@ -34,7 +33,48 @@ class DatabaseParallelConnectionError(frappe.ValidationError):
     pass
 
 
-class BaseDatabase:
+class Database:
+    def test_connection(self):
+        raise NotImplementedError
+
+    def connect(self):
+        raise NotImplementedError
+
+    def build_query(self, query):
+        raise NotImplementedError
+
+    def run_query(self, query):
+        raise NotImplementedError
+
+    def execute_query(self):
+        raise NotImplementedError
+
+    def sync_tables(self):
+        raise NotImplementedError
+
+    def get_table_columns(self):
+        raise NotImplementedError
+
+    def get_column_options(self):
+        raise NotImplementedError
+
+    def get_table_preview(self):
+        raise NotImplementedError
+
+    def table_exists(self, table: str):
+        """
+        While importing a csv file, check if the table exists in the database
+        """
+        raise NotImplementedError
+
+    def import_table(self, import_doc: InsightsTableImport):
+        """
+        Imports the table into the database
+        """
+        raise NotImplementedError
+
+
+class BaseDatabase(Database):
     def __init__(self):
         self.engine = None
         self.data_source = None
@@ -42,26 +82,20 @@ class BaseDatabase:
         self.query_builder = None
         self.table_factory = None
 
-    def test_connection(self):
-        with self.connect() as connection:
+    def test_connection(self, log_errors=True):
+        with self.connect(log_errors=log_errors) as connection:
             res = connection.execute(text("SELECT 1"))
             return res.fetchone()
 
-    @retry(
-        retry=retry_if_exception_type((DatabaseParallelConnectionError,)),
-        stop=stop_after_attempt(5),
-        wait=wait_fixed(1),
-        reraise=True,
-    )
-    def connect(self):
+    def connect(self, *, log_errors=True):
         try:
             return self.engine.connect()
-        except BaseException as e:
-            frappe.log_error(title="Error connecting to database", message=e)
+        except Exception as e:
+            log_errors and frappe.log_error("Error connecting to database")
             self.handle_db_connection_error(e)
 
     def handle_db_connection_error(self, e):
-        raise DatabaseConnectionError(e)
+        raise DatabaseConnectionError(e) from e
 
     def build_query(self, query):
         """Used to update the sql in insights query"""
@@ -71,7 +105,7 @@ class BaseDatabase:
 
     def run_query(self, query):
         sql = self.query_builder.build(query)
-        return self.execute_query(sql, return_columns=True)
+        return self.execute_query(sql, return_columns=True, query_name=query.name)
 
     def execute_query(
         self,
@@ -79,6 +113,8 @@ class BaseDatabase:
         pluck=False,
         return_columns=False,
         cached=False,
+        query_name=None,
+        log_errors=True,
     ):
         if sql is None:
             return []
@@ -98,8 +134,8 @@ class BaseDatabase:
             if cached_results:
                 return cached_results
 
-        with self.connect() as connection:
-            res = execute_and_log(connection, sql, self.data_source)
+        with self.connect(log_errors=log_errors) as connection:
+            res = execute_and_log(connection, sql, self.data_source, query_name)
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
@@ -116,12 +152,12 @@ class BaseDatabase:
     def process_subquery(self, sql):
         allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         if allow_subquery:
-            sql = replace_query_tables_with_cte(sql, self.data_source)
+            sql = replace_query_tables_with_cte(sql, self.data_source, self.engine.dialect)
         return sql
 
     def escape_special_characters(self, sql):
         # to fix special characters in query like %
-        if self.engine.dialect.name == "mysql":
+        if self.engine.dialect.name in ("mysql", "postgresql"):
             sql = re.sub(r"(%{1,})", r"%%", sql)
         return sql
 
@@ -159,27 +195,3 @@ class BaseDatabase:
         select_or_with = str(query).strip().lower().startswith(("select", "with"))
         if not select_or_with:
             frappe.throw("Only SELECT and WITH queries are allowed")
-
-    def table_exists(self, table: str):
-        """
-        While importing a table, check if the table exists in the database
-        """
-        raise NotImplementedError
-
-    def import_table(self, import_doc: InsightsTableImport):
-        """
-        Imports the table into the database
-        """
-        raise NotImplementedError
-
-    def sync_tables(self):
-        raise NotImplementedError
-
-    def get_table_columns(self, table):
-        raise NotImplementedError
-
-    def get_column_options(self, table, column, search_text=None, limit=50):
-        raise NotImplementedError
-
-    def get_table_preview(self):
-        raise NotImplementedError

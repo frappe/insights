@@ -2,13 +2,11 @@
 # For license information, please see license.txt
 
 
-from contextlib import suppress
-from functools import cached_property, lru_cache
+from functools import cached_property
 
 import frappe
-from frappe import task
 from frappe.model.document import Document
-from frappe.utils.caching import redis_cache
+from frappe.utils.caching import redis_cache, site_cache
 
 from insights import notify
 from insights.api.telemetry import track
@@ -25,19 +23,52 @@ from .sources.postgresql import PostgresDatabase
 from .sources.query_store import QueryStore
 from .sources.sqlite import SQLiteDB
 
-SOURCE_STATUS = frappe._dict(
-    {
-        "Active": "Active",
-        "Inactive": "Inactive",
-    }
-)
 
-
-class InsightsDataSource(Document):
+class InsightsDataSourceDocument:
     def before_insert(self):
         if self.is_site_db and frappe.db.exists("Insights Data Source", {"is_site_db": 1}):
             frappe.throw("Only one site database can be configured")
 
+    def before_save(self: "InsightsDataSource"):
+        self.status = "Active" if self.test_connection() else "Inactive"
+
+    def on_trash(self):
+        if self.is_site_db:
+            frappe.throw("Cannot delete the site database. It is needed for Insights.")
+        if self.name == "Query Store":
+            frappe.throw("Cannot delete the Query Store. It is needed for Insights.")
+
+        linked_doctypes = ["Insights Table"]
+        for doctype in linked_doctypes:
+            for name in frappe.db.get_all(doctype, {"data_source": self.name}, pluck="name"):
+                frappe.delete_doc(doctype, name)
+
+        track("delete_data_source")
+
+    def validate(self):
+        if self.is_site_db or self.name == "Query Store":
+            return
+        if self.database_type == "SQLite":
+            self.validate_sqlite_fields()
+        else:
+            self.validate_remote_db_fields()
+
+    def validate_sqlite_fields(self):
+        mandatory = ("database_name",)
+        for field in mandatory:
+            if not self.get(field):
+                frappe.throw(f"{field} is mandatory for SQLite")
+
+    def validate_remote_db_fields(self):
+        if self.connection_string:
+            return
+        mandatory = ("host", "port", "username", "password", "database_name")
+        for field in mandatory:
+            if not self.get(field):
+                frappe.throw(f"{field} is mandatory for Database")
+
+
+class InsightsDataSourceClient:
     @frappe.whitelist()
     @redis_cache(ttl=60 * 60 * 24)
     def get_tables(self):
@@ -73,19 +104,96 @@ class InsightsDataSource(Document):
             ],
         )
 
-    def on_trash(self):
-        if self.is_site_db:
-            frappe.throw("Cannot delete the site database. It is needed for Insights.")
-        if self.name == "Query Store":
-            frappe.throw("Cannot delete the Query Store. It is needed for Insights.")
+    @frappe.whitelist()
+    def get_schema(self):
+        return get_data_source_schema(self.name)
 
-        linked_doctypes = ["Insights Table"]
-        for doctype in linked_doctypes:
-            for name in frappe.db.get_all(doctype, {"data_source": self.name}, pluck="name"):
-                frappe.delete_doc(doctype, name)
+    @frappe.whitelist()
+    def enqueue_sync_tables(self):
+        from frappe.utils.scheduler import is_scheduler_inactive
 
-        track("delete_data_source")
+        if is_scheduler_inactive():
+            notify(
+                **{
+                    "title": "Error",
+                    "message": "Scheduler is inactive",
+                    "type": "error",
+                }
+            )
 
+        frappe.enqueue_doc(
+            doctype=self.doctype,
+            name=self.name,
+            method="sync_tables",
+            job_name="sync_data_source",
+            queue="long",
+            timeout=3600,
+            now=True,
+        )
+
+    @frappe.whitelist()
+    def update_table_link(self, data):
+        data = frappe._dict(data)
+        data_source = self.name
+        primary_table = data.primary_table
+        foreign_table = data.foreign_table
+        primary_column = data.primary_column
+        foreign_column = data.foreign_column
+        cardinality = data.cardinality
+
+        check_table_permission(data_source, primary_table)
+        doc = frappe.get_doc(
+            "Insights Table",
+            {
+                "data_source": data_source,
+                "table": primary_table,
+            },
+        )
+
+        link = {
+            "primary_key": primary_column,
+            "foreign_key": foreign_column,
+            "foreign_table": foreign_table,
+        }
+        existing_link = doc.get("table_links", link)
+        if not existing_link:
+            link["cardinality"] = cardinality
+            doc.append("table_links", link)
+            doc.save()
+        elif existing_link[0].cardinality != cardinality:
+            existing_link[0].cardinality = cardinality
+            doc.save()
+
+    @frappe.whitelist()
+    def delete_table_link(self, data):
+        data = frappe._dict(data)
+        data_source = self.name
+
+        primary_table = data.primary_table
+        foreign_table = data.foreign_table
+        primary_column = data.primary_column
+        foreign_column = data.foreign_column
+
+        check_table_permission(data_source, primary_table)
+        doc = frappe.get_doc(
+            "Insights Table",
+            {
+                "data_source": data_source,
+                "table": primary_table,
+            },
+        )
+        for link in doc.table_links:
+            if (
+                link.primary_key == primary_column
+                and link.foreign_key == foreign_column
+                and link.foreign_table == foreign_table
+            ):
+                doc.remove(link)
+                doc.save()
+                break
+
+
+class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, Document):
     @cached_property
     def _db(self) -> BaseDatabase:
         if self.is_site_db:
@@ -95,9 +203,7 @@ class InsightsDataSource(Document):
         if self.database_type == "SQLite":
             return SQLiteDB(data_source=self.name, database_name=self.database_name)
 
-        password = None
-        with suppress(BaseException):
-            password = self.get_password()
+        password = self.get_password(raise_exception=False)
 
         conn_args = {
             "data_source": self.name,
@@ -121,31 +227,6 @@ class InsightsDataSource(Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
-    def validate(self):
-        if self.is_site_db or self.name == "Query Store":
-            return
-        if self.database_type == "SQLite":
-            self.validate_sqlite_fields()
-        else:
-            self.validate_remote_db_fields()
-
-    def validate_sqlite_fields(self):
-        mandatory = ("database_name",)
-        for field in mandatory:
-            if not self.get(field):
-                frappe.throw(f"{field} is mandatory for SQLite")
-
-    def validate_remote_db_fields(self):
-        if self.connection_string:
-            return
-        mandatory = ("host", "port", "username", "password", "database_name")
-        for field in mandatory:
-            if not self.get(field):
-                frappe.throw(f"{field} is mandatory for Database")
-
-    def before_save(self):
-        self.status = SOURCE_STATUS.Active if self.test_connection() else SOURCE_STATUS.Inactive
-
     def test_connection(self, raise_exception=False):
         try:
             return self._db.test_connection()
@@ -156,6 +237,19 @@ class InsightsDataSource(Document):
             if raise_exception:
                 raise e
 
+    def sync_tables(self, tables=None, force=False):
+        notify(
+            type="info",
+            title="Syncing Data Source",
+            message="This may take a while. Please wait...",
+        )
+        self._db.sync_tables(tables=tables, force=force)
+        notify(
+            type="success",
+            title="Syncing Data Source",
+            message="Syncing completed.",
+        )
+
     def build_query(self, query: InsightsQuery):
         return self._db.build_query(query)
 
@@ -165,33 +259,8 @@ class InsightsDataSource(Document):
     def execute_query(self, query: str, **kwargs):
         return self._db.execute_query(query, **kwargs)
 
-    @task(queue="short")
-    def sync_tables(self, *args, **kwargs):
-        return self._db.sync_tables(*args, **kwargs)
-
-    @frappe.whitelist()
-    def enqueue_sync_tables(self):
-        from frappe.utils.scheduler import is_scheduler_inactive
-
-        if is_scheduler_inactive():
-            notify(
-                **{
-                    "title": "Error",
-                    "message": "Scheduler is inactive",
-                    "type": "error",
-                }
-            )
-
-        frappe.enqueue(
-            _sync_data_source,
-            data_source=self.name,
-            job_name="sync_data_source",
-            queue="long",
-            timeout=3600,
-            now=True,
-        )
-
     def get_table_columns(self, table):
+        # TODO: deprecate this method, used only once in insights_table.py
         return self._db.get_table_columns(table)
 
     def get_column_options(self, table, column, search_text=None, limit=50):
@@ -200,98 +269,8 @@ class InsightsDataSource(Document):
     def get_table_preview(self, table, limit=100):
         return self._db.get_table_preview(table, limit)
 
-    def get_schema(self):
-        return get_data_source_schema(self.name)
 
-    @frappe.whitelist()
-    def update_table_link(self, data):
-        data = frappe._dict(data)
-        data_source = self.name
-        check_table_permission(data_source, data.primary_table)
-
-        update_table_link(
-            data_source,
-            primary_table=data.primary_table,
-            foreign_table=data.foreign_table,
-            primary_column=data.primary_column,
-            foreign_column=data.foreign_column,
-            cardinality=data.cardinality,
-        )
-
-    @frappe.whitelist()
-    def delete_table_link(self, data):
-        data = frappe._dict(data)
-        data_source = self.name
-        check_table_permission(data_source, data.primary_table)
-
-        delete_table_link(
-            data_source,
-            primary_table=data.primary_table,
-            foreign_table=data.foreign_table,
-            primary_column=data.primary_column,
-            foreign_column=data.foreign_column,
-        )
-
-
-def update_table_link(
-    data_source,
-    primary_table,
-    foreign_table,
-    primary_column,
-    foreign_column,
-    cardinality,
-):
-    check_table_permission(data_source, primary_table)
-    doc = frappe.get_doc(
-        "Insights Table",
-        {
-            "data_source": data_source,
-            "table": primary_table,
-        },
-    )
-
-    link = {
-        "primary_key": primary_column,
-        "foreign_key": foreign_column,
-        "foreign_table": foreign_table,
-    }
-    existing_link = doc.get("table_links", link)
-    if not existing_link:
-        link["cardinality"] = cardinality
-        doc.append("table_links", link)
-        doc.save()
-    elif existing_link[0].cardinality != cardinality:
-        existing_link[0].cardinality = cardinality
-        doc.save()
-
-
-def delete_table_link(
-    data_source,
-    primary_table,
-    foreign_table,
-    primary_column,
-    foreign_column,
-):
-    check_table_permission(data_source, primary_table)
-    doc = frappe.get_doc(
-        "Insights Table",
-        {
-            "data_source": data_source,
-            "table": primary_table,
-        },
-    )
-    for link in doc.table_links:
-        if (
-            link.primary_key == primary_column
-            and link.foreign_key == foreign_column
-            and link.foreign_table == foreign_table
-        ):
-            doc.remove(link)
-            doc.save()
-            break
-
-
-@lru_cache(maxsize=128)
+@site_cache(maxsize=128)
 def get_data_source_schema(data_source):
     Table = frappe.qb.DocType("Insights Table")
     TableColumn = frappe.qb.DocType("Insights Table Column")
@@ -328,18 +307,3 @@ def get_data_source_schema(data_source):
             }
         )
     return schema
-
-
-def _sync_data_source(data_source):
-    notify(
-        type="info",
-        title="Syncing Data Source",
-        message="This may take a while. Please wait...",
-    )
-    source = frappe.get_doc("Insights Data Source", data_source)
-    source.sync_tables()
-    notify(
-        type="success",
-        title="Syncing Data Source",
-        message="Syncing completed.",
-    )

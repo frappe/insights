@@ -20,7 +20,7 @@ def make_digest(*args):
 def get_or_set_cache(key, func, force=False, expiry=EXPIRY):
     key = f"insights|{key}"
     cached_value = frappe.cache().get_value(key)
-    if cached_value and not force:
+    if cached_value is not None and not force:
         return cached_value
 
     value = func()

@@ -23,12 +23,11 @@ import { MySQL, sql } from '@codemirror/lang-sql'
 import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
 import { EditorView } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 
 const props = defineProps({
 	modelValue: String,
-	value: String,
 	readOnly: {
 		type: Boolean,
 		default: false,
@@ -58,7 +57,7 @@ const props = defineProps({
 		default: () => ({}),
 	},
 })
-const emit = defineEmits(['update:modelValue', 'inputChange', 'viewUpdate', 'focus', 'blur'])
+const emit = defineEmits(['inputChange', 'viewUpdate', 'focus', 'blur'])
 
 const onUpdate = (viewUpdate) => {
 	emit('viewUpdate', {
@@ -67,10 +66,7 @@ const onUpdate = (viewUpdate) => {
 }
 
 const codeMirror = ref(null)
-const code = computed({
-	get: () => (props.modelValue ? props.modelValue || '' : props.value || ''),
-	set: (value) => emit('update:modelValue', value),
-})
+const code = defineModel()
 watch(code, (value, oldValue) => {
 	if (value !== oldValue) {
 		emit('inputChange', value)

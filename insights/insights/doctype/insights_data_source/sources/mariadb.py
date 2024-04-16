@@ -8,6 +8,7 @@ from sqlalchemy import select as Select
 from sqlalchemy import table as Table
 from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
@@ -103,9 +104,19 @@ class MariaDB(BaseDatabase):
             ssl_verify_cert=use_ssl,
             charset="utf8mb4",
             use_unicode=True,
+            connect_args={"connect_timeout": 1},
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
+
+    @retry(
+        retry=retry_if_exception_type((DatabaseParallelConnectionError,)),
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(1),
+        reraise=True,
+    )
+    def connect(self, *args, **kwargs):
+        return super().connect(*args, **kwargs)
 
     def handle_db_connection_error(self, e):
         if "Access denied" in str(e):

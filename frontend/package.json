@@ -29,7 +29,7 @@
 		"dom-to-image": "^2.6.0",
 		"echarts": "^5.4.0",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "0.1.5",
+		"frappe-ui": "0.1.50",
 		"grid-layout-plus": "^1.0.2",
 		"lucide-vue-next": "^0.300.0",
 		"pinia": "^2.0.30",

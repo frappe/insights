@@ -52,16 +52,20 @@ export const FIELDTYPES = {
 }
 
 export const AGGREGATIONS = [
-	{ label: 'Unique', value: 'group by' },
-	{ label: 'Count of Records', value: 'count' },
-	{ label: 'Sum of', value: 'sum' },
-	{ label: 'Average of', value: 'avg' },
-	{ label: 'Cumulative Count of Records', value: 'cumulative count' },
-	{ label: 'Cumulative Sum of', value: 'cumulative sum' },
-	{ label: 'Unique values of', value: 'distinct' },
-	{ label: 'Unique count of', value: 'distinct_count' },
-	{ label: 'Minimum of', value: 'min' },
-	{ label: 'Maximum of', value: 'max' },
+	{ label: 'Unique', value: 'group by', description: 'Group by' },
+	{ label: 'Count of Records', value: 'count', description: 'Count' },
+	{ label: 'Sum of', value: 'sum', description: 'Sum' },
+	{ label: 'Average of', value: 'avg', description: 'Average' },
+	{
+		label: 'Cumulative Count of Records',
+		value: 'cumulative count',
+		description: 'Cumulative Count',
+	},
+	{ label: 'Cumulative Sum of', value: 'cumulative sum', description: 'Cumulative Sum' },
+	{ label: 'Unique values of', value: 'distinct', description: 'Distinct' },
+	{ label: 'Unique count of', value: 'distinct_count', description: 'Distinct Count' },
+	{ label: 'Minimum of', value: 'min', description: 'Minimum' },
+	{ label: 'Maximum of', value: 'max', description: 'Maximum' },
 ]
 
 export const GRANULARITIES = [
