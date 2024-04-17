@@ -336,6 +336,11 @@ def get_directional_date_range(direction, unit, number_of_unit):
             get_fiscal_year_ending(add_to_date(today, years=direction)),
         ]
 
+    if isinstance(dates[0], str):
+        dates[0] = getdate(dates[0])
+    if isinstance(dates[1], str):
+        dates[1] = getdate(dates[1])
+
     if dates[0] > dates[1]:
         dates.reverse()
     return dates
