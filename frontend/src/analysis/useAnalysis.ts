@@ -1,6 +1,6 @@
 import useDataModel from '@/datamodel/useDataModel'
-import { useStorage, watchDebounced } from '@vueuse/core'
 import { InjectionKey, reactive } from 'vue'
+import storeLocally from './storeLocally'
 
 export default function useAnalysis(name: string, modelName: string) {
 	const analysis = reactive({
@@ -26,14 +26,15 @@ export default function useAnalysis(name: string, modelName: string) {
 		},
 	})
 
-	const storedAnalysis = useStorage(`insights:analysis:${name}`, {} as AnalysisSerialized)
+	const storedAnalysis = storeLocally<AnalysisSerialized>({
+		key: 'name',
+		namespace: 'insights:analysis:',
+		serializeFn: analysis.serialize,
+		defaultValue: {} as AnalysisSerialized,
+	})
 	if (storedAnalysis.value.name === name) {
 		Object.assign(analysis, storedAnalysis.value)
 	}
-	watchDebounced(analysis, () => (storedAnalysis.value = analysis.serialize()), {
-		deep: true,
-		debounce: 1000,
-	})
 
 	function setCurrentTab(index: number) {
 		analysis.activeTabIdx = index

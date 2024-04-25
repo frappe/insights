@@ -12,9 +12,6 @@ const analysis = inject(analysisKey)
 		v-if="analysis"
 		class="sticky bottom-0 z-10 flex h-10 w-full flex-shrink-0 items-center divide-x border-t bg-white"
 	>
-		<div class="flex h-full w-10 items-center justify-center">
-			<Button variant="subtle" icon="plus" @click="analysis?.addChart()"> </Button>
-		</div>
 		<div
 			class="flex h-full cursor-pointer items-center gap-1.5 border-t-2 px-3 transition-all hover:bg-gray-100"
 			:class="analysis.activeTabIdx === -1 ? ' border-t-gray-700' : 'border-t-transparent'"
@@ -42,6 +39,9 @@ const analysis = inject(analysisKey)
 			<div v-if="analysis.activeTabIdx === idx" class="transition-colors hover:text-gray-900">
 				<XIcon class="h-4 w-4" stroke-width="1.5" @click="analysis?.removeChart(idx)" />
 			</div>
+		</div>
+		<div class="flex h-full w-10 items-center justify-center">
+			<Button variant="subtle" icon="plus" @click="analysis?.addChart()"> </Button>
 		</div>
 	</footer>
 </template>

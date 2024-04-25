@@ -11,7 +11,10 @@
 					name="target"
 					v-bind="{ open: openPopover, togglePopover, isOpen: isComboboxOpen }"
 				>
-					<div class="w-full">
+					<div class="w-full space-y-1.5">
+						<label v-if="$props.label" class="block text-xs text-gray-600">{{
+							$props.label
+						}}</label>
 						<button
 							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
 							:class="{ 'bg-gray-200': isComboboxOpen }"
@@ -185,6 +188,7 @@ import Popover from '../Popover.vue'
 export default {
 	name: 'Autocomplete',
 	props: [
+		'label',
 		'modelValue',
 		'options',
 		'placeholder',
@@ -297,7 +301,9 @@ export default {
 
 			if (!Array.isArray(option)) return ''
 
-			return option.length ? `${option.length} selected` : ''
+			if (option.length === 0) return ''
+			if (option.length === 1) return this.getLabel(option[0])
+			return `${option.length} selected`
 			// in case of `multiple`, option is an array of values
 			// so the display value should be comma separated labels
 			// return option

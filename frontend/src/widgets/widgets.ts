@@ -17,7 +17,7 @@ import {
 	TrendingUp,
 } from 'lucide-vue-next'
 import { defineAsyncComponent } from 'vue'
-import widgetDimensions from './widgetDimensions.json'
+import defaultWidgetDimensions from './widgetDimensions.json'
 
 export const VALID_CHARTS = [
 	'Number',
@@ -30,18 +30,25 @@ export const VALID_CHARTS = [
 	'Scatter',
 	'Funnel',
 	'Trend',
-	'Mixed Axis',
+	'Mixed',
 	'Pivot Table',
-]
+] as const
 
 const WIDGETS = {
+	Auto: {
+		type: 'Auto',
+		icon: Sparkles,
+		component: undefined,
+		optionsComponent: undefined,
+		options: {},
+	},
 	Number: {
 		type: 'Number',
 		icon: DollarSign,
 		component: defineAsyncComponent(() => import('./Number/Number.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Number/NumberOptions.vue')),
 		options: {},
-		...widgetDimensions.Number,
+		...defaultWidgetDimensions.Number,
 	},
 	Trend: {
 		type: 'Trend',
@@ -49,7 +56,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Trend/Trend.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Trend/TrendOptions.vue')),
 		options: {},
-		...widgetDimensions.Trend,
+		...defaultWidgetDimensions.Trend,
 	},
 	Line: {
 		type: 'Line',
@@ -57,7 +64,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Line/Line.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Line/LineOptions.vue')),
 		options: {},
-		...widgetDimensions.Line,
+		...defaultWidgetDimensions.Line,
 	},
 	Scatter: {
 		type: 'Scatter',
@@ -65,7 +72,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Scatter/Scatter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Scatter/ScatterOptions.vue')),
 		options: {},
-		...widgetDimensions.Scatter,
+		...defaultWidgetDimensions.Scatter,
 	},
 	Bar: {
 		type: 'Bar',
@@ -73,7 +80,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Bar/Bar.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Bar/BarOptions.vue')),
 		options: {},
-		...widgetDimensions.Bar,
+		...defaultWidgetDimensions.Bar,
 	},
 	Row: {
 		type: 'Row',
@@ -81,7 +88,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Row/Row.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Row/RowOptions.vue')),
 		options: {},
-		...widgetDimensions.Row,
+		...defaultWidgetDimensions.Row,
 	},
 	Pie: {
 		type: 'Pie',
@@ -89,7 +96,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Pie/Pie.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Pie/PieOptions.vue')),
 		options: {},
-		...widgetDimensions.Pie,
+		...defaultWidgetDimensions.Pie,
 	},
 	Funnel: {
 		type: 'Funnel',
@@ -97,7 +104,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Funnel/Funnel.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Funnel/FunnelOptions.vue')),
 		options: {},
-		...widgetDimensions.Funnel,
+		...defaultWidgetDimensions.Funnel,
 	},
 	Table: {
 		type: 'Table',
@@ -105,7 +112,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Table/Table.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Table/TableOptions.vue')),
 		options: {},
-		...widgetDimensions.Table,
+		...defaultWidgetDimensions.Table,
 	},
 	Progress: {
 		type: 'Progress',
@@ -113,15 +120,15 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Progress/Progress.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Progress/ProgressOptions.vue')),
 		options: {},
-		...widgetDimensions.Progress,
+		...defaultWidgetDimensions.Progress,
 	},
-	'Mixed Axis': {
-		type: 'Mixed Axis',
+	'Mixed': {
+		type: 'Mixed',
 		icon: ComboChartIcon,
 		component: defineAsyncComponent(() => import('./MixedAxis/MixedAxis.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./MixedAxis/MixedAxisOptions.vue')),
 		options: {},
-		...widgetDimensions['Mixed Axis'],
+		...defaultWidgetDimensions['Mixed'],
 	},
 	Filter: {
 		type: 'Filter',
@@ -129,7 +136,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Filter/Filter.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Filter/FilterOptions.vue')),
 		options: {},
-		...widgetDimensions.Filter,
+		...defaultWidgetDimensions.Filter,
 	},
 	Text: {
 		type: 'Text',
@@ -137,7 +144,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./Text/Text.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./Text/TextOptions.vue')),
 		options: {},
-		...widgetDimensions.Text,
+		...defaultWidgetDimensions.Text,
 	},
 	'Pivot Table': {
 		type: 'Pivot Table',
@@ -145,7 +152,7 @@ const WIDGETS = {
 		component: defineAsyncComponent(() => import('./PivotTable/PivotTable.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./PivotTable/PivotTableOptions.vue')),
 		options: {},
-		...widgetDimensions['Pivot Table'],
+		...defaultWidgetDimensions['Pivot Table'],
 	},
 }
 
@@ -158,15 +165,18 @@ const UnknownWidget = {
 	defaultHeight: 4,
 }
 
-function get(itemType) {
+export type WidgetType = keyof typeof WIDGETS
+export type ChartType = typeof VALID_CHARTS[number]
+
+function get(itemType: WidgetType) {
 	return WIDGETS[itemType] || UnknownWidget
 }
 
-function getComponent(itemType) {
+function getComponent(itemType: WidgetType) {
 	return get(itemType).component
 }
 
-function getOptionComponent(itemType) {
+function getOptionComponent(itemType: WidgetType) {
 	return get(itemType).optionsComponent
 }
 
@@ -177,10 +187,7 @@ function getChartOptions() {
 	}))
 }
 
-export function getIcon(itemType) {
-	if (!itemType) return
-	if (itemType == 'Auto') return Sparkles
-	if (!get(itemType)) return Square
+export function getIcon(itemType: WidgetType) {
 	return get(itemType).icon
 }
 

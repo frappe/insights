@@ -19,9 +19,10 @@ import {
 	table,
 } from './query_utils'
 import { useStorage, watchDebounced } from '@vueuse/core'
+import storeLocally from '@/analysis/storeLocally'
 
 export type QueryResultColumn = { name: string; type: ColumnDataType }
-export type QueryResultRow = any[]
+export type QueryResultRow = Record<string, any>
 export type QueryResult = {
 	executedSQL: string
 	totalRowCount: number
@@ -95,14 +96,15 @@ function useQuery(name: string) {
 		},
 	})
 
-	const storedQuery = useStorage(`insights:query:${name}`, {} as QuerySerialized)
-	if (storedQuery.value.name === name) {
+	const storedQuery = storeLocally<QuerySerialized>({
+		key: 'name',
+		namespace: 'insights:query:',
+		serializeFn: query.serialize,
+		defaultValue: {} as QuerySerialized,
+	})
+	if (storedQuery.value.name === query.name) {
 		Object.assign(query, storedQuery.value)
 	}
-	watchDebounced(query, () => (storedQuery.value = query.serialize()), {
-		deep: true,
-		debounce: 1000,
-	})
 
 	// @ts-ignore
 	query.currentOperations = computed(() => {

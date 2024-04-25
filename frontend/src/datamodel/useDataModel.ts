@@ -1,6 +1,6 @@
+import storeLocally from '@/analysis/storeLocally'
 import useQuery from '@/query/next/useQuery'
 import { FIELDTYPES } from '@/utils'
-import { useStorage, watchDebounced } from '@vueuse/core'
 import { computed, reactive } from 'vue'
 
 export default function useDataModel(name: string) {
@@ -11,6 +11,13 @@ export default function useDataModel(name: string) {
 		dimensions: computed(() => [] as Dimension[]),
 		measures: computed(() => [] as Measure[]),
 
+		getDimension(name: string) {
+			return dataModel.dimensions.find((d) => d.column_name === name)
+		},
+		getMeasure(name: string) {
+			return dataModel.measures.find((m) => m.column_name === name)
+		},
+
 		serialize() {
 			return {
 				name: dataModel.name,
@@ -19,16 +26,17 @@ export default function useDataModel(name: string) {
 		},
 	})
 
-	const storedModel = useStorage(`insights:data-model:${name}`, {} as DataModelSerialized)
+	const storedModel = storeLocally<DataModelSerialized>({
+		key: 'name',
+		namespace: 'insights:data-model:',
+		serializeFn: dataModel.serialize,
+		defaultValue: {} as DataModelSerialized,
+	})
 	if (storedModel.value.name === name) {
 		Object.assign(dataModel, {
 			query: useQuery(storedModel.value.queryName),
 		})
 	}
-	watchDebounced(dataModel, () => (storedModel.value = dataModel.serialize()), {
-		deep: true,
-		debounce: 1000,
-	})
 
 	// @ts-ignore
 	dataModel.dimensions = computed(() => {
@@ -47,13 +55,21 @@ export default function useDataModel(name: string) {
 	dataModel.measures = computed(() => {
 		// TODO: append calculated measures
 		const resultColumns = dataModel.query.result.columns
-		return resultColumns
-			.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
-			.map((c) => ({
-				column_name: c.name,
-				data_type: c.type as MeasureDataType,
-				aggregation: 'sum',
-			}))
+		const countMeasure: Measure = {
+			column_name: 'count',
+			data_type: 'Integer',
+			aggregation: 'count',
+		}
+		return [
+			countMeasure,
+			...resultColumns
+				.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+				.map((c) => ({
+					column_name: c.name,
+					data_type: c.type as MeasureDataType,
+					aggregation: 'sum',
+				})),
+		]
 	})
 
 	return dataModel

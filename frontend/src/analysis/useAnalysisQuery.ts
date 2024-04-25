@@ -1,37 +1,40 @@
 import { DataModel, Dimension, Measure } from '@/datamodel/useDataModel'
 import { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
-import { useStorage, watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive } from 'vue'
+import storeLocally from './storeLocally'
 
 export function useAnalysisQuery(name: string, dataModel: DataModel) {
 	const query = reactive({
 		name,
 		title: '',
-		measures: [] as Measure[],
-		dimensions: [] as Dimension[],
+		rows: [] as Dimension[],
+		columns: [] as Dimension[],
+		values: [] as Measure[],
 		filters: [],
 		sort_order: [],
 		limit: 100,
-
-		addMeasure,
-		addDimension,
-		remove,
-
-		executing: false,
-		execute,
 
 		result: {
 			columns: [] as QueryResultColumn[],
 			rows: [] as QueryResultRow[],
 		},
 
+		addRow,
+		addColumn,
+		addValue,
+		reset,
+
+		executing: false,
+		execute,
+
 		serialize() {
 			return {
 				name: query.name,
 				title: query.title,
-				measures: query.measures,
-				dimensions: query.dimensions,
+				rows: query.rows,
+				columns: query.columns,
+				values: query.values,
 				filters: query.filters,
 				sort_order: query.sort_order,
 				limit: query.limit,
@@ -40,39 +43,44 @@ export function useAnalysisQuery(name: string, dataModel: DataModel) {
 		},
 	})
 
-	const storedQuery = useStorage(
-		`insights:analysis-query:${query.name}`,
-		{} as AnalysisQuerySerialized
-	)
+
+	const storedQuery = storeLocally<AnalysisQuerySerialized>({
+		key: 'name',
+		namespace: 'insights:analysis-query:',
+		serializeFn: query.serialize,
+		defaultValue: {} as AnalysisQuerySerialized,
+	})
 	if (storedQuery.value.name === query.name) {
 		Object.assign(query, storedQuery.value)
 	}
-	watchDebounced(query, () => (storedQuery.value = query.serialize()), {
-		deep: true,
-		debounce: 1000,
-	})
 
-	function addMeasure(measure: Measure) {
-		const existing = query.measures.find((m) => m.column_name === measure.column_name)
+	function addRow(dimension: Dimension) {
+		const existing = query.rows.find((d) => d.column_name === dimension.column_name)
 		if (existing) return
-		query.measures.push(measure)
-		execute()
+		query.rows.push(dimension)
 	}
 
-	function addDimension(dimension: Dimension) {
-		const existing = query.dimensions.find((d) => d.column_name === dimension.column_name)
+	function addColumn(dimension: Dimension) {
+		const existing = query.columns.find((d) => d.column_name === dimension.column_name)
 		if (existing) return
-		query.dimensions.push(dimension)
-		execute()
+		query.columns.push(dimension)
 	}
 
-	function remove(measureOrDimension: Measure | Dimension) {
-		if ('aggregation' in measureOrDimension) {
-			query.measures = query.measures.filter((m) => m !== measureOrDimension)
-		} else {
-			query.dimensions = query.dimensions.filter((d) => d !== measureOrDimension)
-		}
-		execute()
+	function addValue(measure: Measure) {
+		const existing = query.values.find((m) => m.column_name === measure.column_name)
+		if (existing) return
+		query.values.push(measure)
+	}
+
+	function reset() {
+		query.rows = []
+		query.columns = []
+		query.values = []
+		query.filters = []
+		query.sort_order = []
+		query.limit = 100
+		query.result.columns = []
+		query.result.rows = []
 	}
 
 	function execute() {

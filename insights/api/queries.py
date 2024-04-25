@@ -307,7 +307,6 @@ def execute_analytical_query(model, query):
 
 @frappe.whitelist()
 def execute_analysis_query(model, query):
-    query = _dict(query)
     model = _dict(model)
 
     doc = frappe.get_doc("Insights Data Source", model.query.dataSource)
@@ -316,39 +315,49 @@ def execute_analysis_query(model, query):
     expression = translator.translate()
     base_data = expression
 
-    # TODO: add calculated dimensions & measures
+    # TODO: add calculated dimensions & measures to the model
 
-    # group by the dimensions
-    group_by_columns = [base_data[dimension.column_name] for dimension in query.dimensions]
+    query = _dict(query)
+    rows = [row.column_name for row in query["rows"]]
+    columns = [column.column_name for column in query["columns"]]
+    values = [value.column_name for value in query["values"] if value.column_name != "count"]
 
-    # aggregate the measures
-    aggregates = {}
-    for measure in query.measures:
-        column = base_data[measure.column_name]
-        agg_function_name = measure.aggregation
-        if agg_function_name == "count":
-            aggregates[measure.column_name] = column.count()
-        elif agg_function_name == "sum":
-            aggregates[measure.column_name] = column.sum()
-        elif agg_function_name == "avg":
-            aggregates[measure.column_name] = column.mean()
-        elif agg_function_name == "min":
-            aggregates[measure.column_name] = column.min()
-        elif agg_function_name == "max":
-            aggregates[measure.column_name] = column.max()
-
-    if not aggregates:
-        aggregates = {"count": base_data.count()}
-
-    # apply the group by and aggregates
-    query = base_data.aggregate(**aggregates, by=group_by_columns)
+    if rows and columns and values:
+        expression = base_data.pivot_wider(
+            id_cols=rows,
+            names_from=columns,
+            values_from=values,
+            values_agg="sum",
+            values_fill=0,
+        )
+    elif rows and columns:
+        # default to count if no values are provided
+        expression = base_data.pivot_wider(
+            id_cols=rows,
+            names_from=columns,
+            values_from=rows[0],
+            values_agg="count",
+            values_fill=0,
+        )
+    elif rows and values:
+        group_by_columns = [getattr(base_data, row) for row in rows]
+        aggregates = {value: getattr(base_data, value).sum() for value in values}
+        expression = base_data.aggregate(**aggregates, by=group_by_columns)
+    elif rows:
+        expression = base_data.aggregate(count=getattr(base_data, rows[0]).count(), by=rows)
+    elif columns and values:
+        frappe.throw("Columns and Values without Rows is not supported")
+    elif columns:
+        frappe.throw("Columns without Rows is not supported")
+    elif values:
+        frappe.throw("Values without Rows is not supported")
 
     # execute the query
-    data: DataFrame = query.head(100).execute()
+    data: DataFrame = expression.head(100).execute()
     return {
         "columns": get_columns_from_dataframe(data),
         "rows": data.to_dict(orient="records"),
-        "sql": ibis.to_sql(query),
+        "sql": ibis.to_sql(expression),
     }
 
 
