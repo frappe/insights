@@ -171,7 +171,7 @@ def execute_query_pipeline(data_source, query_pipeline):
     total_row_count = conn.execute(query.count())
     return {
         "columns": get_columns_from_dataframe(data),
-        "rows": data.to_dict(orient="records"),
+        "rows": data.fillna("").to_dict(orient="records"),
         "total_row_count": int(total_row_count),
         "sql": ibis.to_sql(query),
     }
