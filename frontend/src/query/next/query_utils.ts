@@ -38,22 +38,22 @@ export const expression = (expression: string): Expression => ({
 
 export const query_operation_types = {
 	source: {
-		label: 'Table',
+		label: 'Source',
 		type: 'source',
 		icon: Table,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
-		getLabel: (op: Source) => `Source: ${op.table.table_name}`,
+		getDescription: (op: Source) => `${op.table.table_name}`,
 	},
 	join: {
-		label: 'Join',
+		label: 'Merge',
 		type: 'join',
 		icon: Merge,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: JoinArgs): Join => ({ type: 'join', ...args }),
-		getLabel: (op: Join) => `Merge: ${op.table.table_name}`,
+		getDescription: (op: Join) => `${op.table.table_name}`,
 	},
 	select: {
 		label: 'Select',
@@ -62,8 +62,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SelectArgs): Select => ({ type: 'select', ...args }),
-		getLabel: (op: Select) => {
-			return `Select: ${op.column_names.length} columns`
+		getDescription: (op: Select) => {
+			return `${op.column_names.length} columns`
 		},
 	},
 	remove: {
@@ -73,11 +73,11 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: RemoveArgs): Remove => ({ type: 'remove', ...args }),
-		getLabel: (op: Remove) => {
-			if (op.column_names.length === 1) {
-				return `Remove: ${op.column_names[0]}`
+		getDescription: (op: Remove) => {
+			if (op.column_names.length < 3) {
+				return `${op.column_names.join(', ')}`
 			}
-			return `Remove: ${op.column_names.length} columns`
+			return `${op.column_names.length} columns`
 		},
 	},
 	rename: {
@@ -87,8 +87,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: RenameArgs): Rename => ({ type: 'rename', ...args }),
-		getLabel: (op: Rename) => {
-			return `Rename: ${op.column.column_name} -> ${op.new_name}`
+		getDescription: (op: Rename) => {
+			return `${op.column.column_name} -> ${op.new_name}`
 		},
 	},
 	cast: {
@@ -98,8 +98,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CastArgs): Cast => ({ type: 'cast', ...args }),
-		getLabel: (op: Cast) => {
-			return `Change Type: ${op.column.column_name} -> ${op.data_type}`
+		getDescription: (op: Cast) => {
+			return `${op.column.column_name} -> ${op.data_type}`
 		},
 	},
 	filter: {
@@ -109,11 +109,11 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: FilterArgs): Filter => ({ type: 'filter', ...args }),
-		getLabel: (op: Filter) => {
+		getDescription: (op: Filter) => {
 			// @ts-ignore
-			if (op.expression) return `Filter: custom expression`
+			if (op.expression) return `custom expression`
 			// @ts-ignore
-			return `Filter: ${op.column.column_name}`
+			return `${op.column.column_name}`
 		},
 	},
 	mutate: {
@@ -123,8 +123,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: MutateArgs): Mutate => ({ type: 'mutate', ...args }),
-		getLabel: (op: Mutate) => {
-			return `Calculate: ${op.new_name}`
+		getDescription: (op: Mutate) => {
+			return `${op.new_name}`
 		},
 	},
 	summarize: {
@@ -134,8 +134,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SummarizeArgs): Summarize => ({ type: 'summarize', ...args }),
-		getLabel: (op: Summarize) => {
-			return `Summarize: ${Object.keys(op.metrics).join(', ')} BY ${op.by
+		getDescription: (op: Summarize) => {
+			return `${Object.keys(op.metrics).join(', ')} BY ${op.by
 				.map((g) => g.column_name)
 				.join(', ')}`
 		},
@@ -147,7 +147,7 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: PivotWiderArgs): PivotWider => ({ type: 'pivot_wider', ...args }),
-		getLabel: (op: PivotWider) => {
+		getDescription: (op: PivotWider) => {
 			return 'Pivot Wider'
 		},
 	},
@@ -158,8 +158,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: OrderByArgs): OrderBy => ({ type: 'order_by', ...args }),
-		getLabel: (op: OrderBy) => {
-			return `Sort: ${op.column.column_name} ${op.direction}`
+		getDescription: (op: OrderBy) => {
+			return `${op.column.column_name} ${op.direction}`
 		},
 	},
 	limit: {
@@ -169,8 +169,8 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (limit: number): Limit => ({ type: 'limit', limit }),
-		getLabel: (op: Limit) => {
-			return `Limit: ${op.limit}`
+		getDescription: (op: Limit) => {
+			return `${op.limit}`
 		},
 	},
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { XIcon } from 'lucide-vue-next'
+import { CircleDotIcon, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { query_operation_types } from './query_utils'
 import { Query } from './useQuery'
@@ -10,29 +10,32 @@ const query = inject('query') as Query
 <template>
 	<div v-if="query.operations.length" class="flex flex-col gap-2 p-3">
 		<div class="text-[11px] uppercase text-gray-600">Operations</div>
-		<div class="flex flex-col gap-1 font-mono">
+		<div class="relative ml-1 mt-1 border-l border-gray-300 font-mono text-xs">
 			<div
 				v-for="(op, idx) in query.operations"
 				:key="idx"
-				class="group relative flex items-center justify-between"
+				class="group relative ml-3 mb-3 cursor-pointer last:mb-0"
+				:class="idx <= query.activeOperationIdx ? 'opacity-100' : 'opacity-40'"
+				@click="query.setActiveStep(idx)"
 			>
-				<Button
-					variant="outline"
-					class="w-full !justify-start truncate text-left text-xs"
-					:class="idx <= query.activeOperationIdx ? 'opacity-100' : 'opacity-50'"
-					@click="query.setActiveStep(idx)"
-				>
-					{{ query_operation_types[op.type].getLabel(op as any) }}
-				</Button>
-				<Button
-					class="absolute right-0 z-10 !rounded-l-none !border-l-0 opacity-0 transition-all group-hover:opacity-100"
-					variant="outline"
-					@click="query.removeStep(idx)"
-				>
-					<template #icon>
-						<XIcon class="h-3.5 w-3.5 text-gray-500" />
-					</template>
-				</Button>
+				<CircleDotIcon class="absolute -left-4 top-1 h-2 w-2 bg-white text-gray-600" />
+				<div class="flex items-center justify-between gap-2 overflow-hidden">
+					<div class="flex flex-1 flex-col gap-1 overflow-hidden">
+						<div class="font-medium text-gray-900">
+							{{ query_operation_types[op.type].label }}
+						</div>
+						<div class="text-gray-700" data-state="closed">
+							{{ query_operation_types[op.type].getDescription(op as any) }}
+						</div>
+					</div>
+					<div class="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+						<Button variant="ghost" @click="query.removeStep(idx)">
+							<template #icon>
+								<XIcon class="h-3.5 w-3.5 text-gray-500" />
+							</template>
+						</Button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
