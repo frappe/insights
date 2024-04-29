@@ -3,7 +3,7 @@ import ChartTitle from '@/components/Charts/ChartTitle.vue'
 import TanstackTable from '@/components/Table/TanstackTable.vue'
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { convertToNestedObject, convertToTanstackColumns } from './utils'
 
 const props = defineProps({
@@ -12,6 +12,8 @@ const props = defineProps({
 })
 
 const _data = computed(() => props.data)
+watch(_data, reloadPivotData, { deep: true })
+
 const indexColumns = computed(() => props.options.rows?.map((column) => column.value) || [])
 const pivotColumns = computed(() => props.options.columns?.map((column) => column.value) || [])
 const valueColumns = computed(() => props.options.values?.map((column) => column.value) || [])
