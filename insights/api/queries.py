@@ -308,10 +308,10 @@ def execute_analytical_query(model, query):
 @frappe.whitelist()
 def execute_analysis_query(model, query):
     model = _dict(model)
-
-    doc = frappe.get_doc("Insights Data Source", model.query.dataSource)
+    model_query = model.queries[0]
+    doc = frappe.get_doc("Insights Data Source", model_query.dataSource)
     conn: BaseBackend = doc.get_ibis_connection()
-    translator = QueryTranslator(model.query.operations, backend=conn)
+    translator = QueryTranslator(model_query.operations, backend=conn)
     expression = translator.translate()
     base_data = expression
 
@@ -358,6 +358,35 @@ def execute_analysis_query(model, query):
         "columns": get_columns_from_dataframe(data),
         "rows": data.to_dict(orient="records"),
         "sql": ibis.to_sql(expression),
+    }
+
+
+@frappe.whitelist()
+def get_measure_values(model, measures):
+    model = _dict(model)
+    model_query = model.queries[0]
+    doc = frappe.get_doc("Insights Data Source", model_query.dataSource)
+    conn: BaseBackend = doc.get_ibis_connection()
+    translator = QueryTranslator(model_query.operations, backend=conn)
+    expression = translator.translate()
+
+    _measures = {}
+    for measure in measures:
+        agg = measure.get("aggregation", "sum")
+        column = measure.get("column_name")
+        if agg == "count":
+            _measures[column] = expression.count()
+        elif agg == "sum":
+            _measures[column] = getattr(expression, column).sum()
+        else:
+            frappe.throw(f"Aggregation {agg} is not supported")
+
+    query = expression.aggregate(**_measures, by=[])
+    data: DataFrame = query.head(100).execute()
+    return {
+        "columns": get_columns_from_dataframe(data),
+        "rows": data.to_dict(orient="records"),
+        "sql": ibis.to_sql(query),
     }
 
 

@@ -1,15 +1,19 @@
 import storeLocally from '@/analysis/storeLocally'
-import useQuery from '@/query/next/useQuery'
-import { FIELDTYPES } from '@/utils'
+import useQuery, { Query } from '@/query/next/useQuery'
+import { FIELDTYPES, wheneverChanges } from '@/utils'
+import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
 export default function useDataModel(name: string) {
 	const dataModel = reactive({
 		name,
-		query: useQuery('new-query-1'),
+		queries: [useQuery('new-query-1')],
+		activeQueryIdx: 0,
+		activeQuery: computed(() => ({} as Query)),
 
 		dimensions: computed(() => [] as Dimension[]),
 		measures: computed(() => [] as Measure[]),
+		measureValues: {} as Record<string, any>,
 
 		getDimension(name: string) {
 			return dataModel.dimensions.find((d) => d.column_name === name)
@@ -18,10 +22,18 @@ export default function useDataModel(name: string) {
 			return dataModel.measures.find((m) => m.column_name === name)
 		},
 
+		fetchMeasureValues() {
+			if (!dataModel.measures.length) return
+			return call('insights.api.queries.get_measure_values', {
+				model: dataModel,
+				measures: dataModel.measures,
+			}).then((res: any) => (dataModel.measureValues = res.rows[0]))
+		},
+
 		serialize() {
 			return {
 				name: dataModel.name,
-				queryName: dataModel.query.name,
+				queryNames: dataModel.queries.map((q) => q.name),
 			}
 		},
 	})
@@ -34,14 +46,17 @@ export default function useDataModel(name: string) {
 	})
 	if (storedModel.value.name === name) {
 		Object.assign(dataModel, {
-			query: useQuery(storedModel.value.queryName),
+			queries: storedModel.value.queryNames.map((queryName) => useQuery(queryName)),
 		})
 	}
 
 	// @ts-ignore
+	dataModel.activeQuery = computed(() => dataModel.queries[dataModel.activeQueryIdx])
+
+	// @ts-ignore
 	dataModel.dimensions = computed(() => {
 		// TODO: append calculated dimensions
-		const resultColumns = dataModel.query.result.columns
+		const resultColumns = dataModel.queries.flatMap((q) => q.result.columns)
 		return resultColumns
 			.filter((c) => !FIELDTYPES.NUMBER.includes(c.type))
 			.map((c) => ({
@@ -54,7 +69,7 @@ export default function useDataModel(name: string) {
 	// @ts-ignore
 	dataModel.measures = computed(() => {
 		// TODO: append calculated measures
-		const resultColumns = dataModel.query.result.columns
+		const resultColumns = dataModel.queries.flatMap((q) => q.result.columns)
 		const countMeasure: Measure = {
 			column_name: 'count',
 			data_type: 'Integer',
@@ -72,11 +87,17 @@ export default function useDataModel(name: string) {
 		]
 	})
 
+	wheneverChanges(() => dataModel.measures, dataModel.fetchMeasureValues, {
+		deep: true,
+		immediate: true,
+	})
+
 	return dataModel
 }
 
 export type DataModel = ReturnType<typeof useDataModel>
 export type DataModelSerialized = ReturnType<DataModel['serialize']>
+export const dataModelKey = Symbol('dataModel')
 
 export type Measure = {
 	column_name: string
