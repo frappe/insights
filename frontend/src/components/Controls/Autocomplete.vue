@@ -150,7 +150,7 @@
 							</li>
 						</ComboboxOptions>
 
-						<div v-if="$slots.footer || multiple" class="border-t p-1">
+						<div v-if="$slots.footer || showFooter || multiple" class="border-t p-1">
 							<slot name="footer" v-bind="{ togglePopover }">
 								<div v-if="multiple" class="flex items-center justify-end">
 									<Button
@@ -162,8 +162,12 @@
 										v-if="areAllOptionsSelected"
 										label="Clear All"
 										@click.stop="clearAll"
-									/></div
-							></slot>
+									/>
+								</div>
+								<div v-else class="flex items-center justify-end">
+									<Button label="Clear" @click.stop="selectedValue = null" />
+								</div>
+							</slot>
 						</div>
 					</div>
 				</div>
@@ -198,6 +202,7 @@ export default {
 		'hideSearch',
 		'autoFocus',
 		'placement',
+		'showFooter',
 	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
