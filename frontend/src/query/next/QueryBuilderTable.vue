@@ -1,4 +1,5 @@
 <script setup lang="tsx">
+import { FIELDTYPES, formatNumber } from '@/utils'
 import { LoadingIndicator } from 'frappe-ui'
 import { Table2Icon } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
@@ -11,6 +12,10 @@ const columns = computed(() => query.result.columns)
 const rows = computed(() => query.result.rows)
 const previewRowCount = computed(() => query.result.rows.length.toLocaleString())
 const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString())
+const numberColumns = computed(() =>
+	query.result.columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type)).map((c) => c.name)
+)
+const isNumberColumn = (name: string) => numberColumns.value.includes(name)
 </script>
 
 <template>
@@ -41,12 +46,11 @@ const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString()
 						<tr v-for="(row, idx) in rows" :key="idx">
 							<td class="border-b border-r px-3">{{ idx + 1 }}</td>
 							<td
-								v-for="(value, idx2) in Object.values(row)"
-								:key="idx2"
+								v-for="[key, value] in Object.entries(row)"
 								class="truncate border-b border-r py-2 px-3 text-gray-800"
-								:class="isNaN(value) ? '' : 'text-right'"
+								:class="isNumberColumn(key) ? 'text-right' : 'text-left'"
 							>
-								{{ value }}
+								{{ isNumberColumn(key) ? formatNumber(value) : value }}
 							</td>
 						</tr>
 						<tr height="99%" class="border-b"></tr>
