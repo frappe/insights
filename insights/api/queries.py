@@ -1,5 +1,6 @@
 import frappe
 import ibis
+import ibis.expr.types
 from ibis import BaseBackend, _
 from ibis import selectors as s
 from pandas import DataFrame
@@ -167,14 +168,31 @@ def execute_query_pipeline(data_source, query_pipeline):
     conn: BaseBackend = doc.get_ibis_connection()
     translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
+    query_schema: ibis.Schema = query.schema()
     data: DataFrame = conn.execute(query, limit=100)
     total_row_count = conn.execute(query.count())
     return {
-        "columns": get_columns_from_dataframe(data),
+        "columns": get_columns_from_schema(query_schema),
         "rows": data.fillna("").to_dict(orient="records"),
         "total_row_count": int(total_row_count),
         "sql": ibis.to_sql(query),
     }
+
+
+def get_columns_from_schema(schema):
+    type_map = {
+        "int64": "Integer",
+        "float64": "Decimal",
+        "object": "String",
+        "bool": "Boolean",
+        "string": "String",
+        "timestamp": "Datetime",
+        "date": "Date",
+    }
+    columns = []
+    for name, dtype in schema.items():
+        columns.append({"name": name, "type": type_map.get(str(dtype))})
+    return columns
 
 
 def get_columns_from_dataframe(df):
@@ -299,8 +317,8 @@ def execute_analytical_query(model, query):
     # execute the query
     data: DataFrame = query.head(100).execute()
     return {
-        "columns": get_columns_from_dataframe(data),
-        "rows": data.to_dict(orient="records"),
+        "columns": get_columns_from_schema(query.schema()),
+        "rows": data.fillna("").to_dict(orient="records"),
         "sql": ibis.to_sql(query),
     }
 
@@ -313,7 +331,7 @@ def execute_analysis_query(model, query):
     conn: BaseBackend = doc.get_ibis_connection()
     translator = QueryTranslator(model_query.operations, backend=conn)
     expression = translator.translate()
-    base_data = expression
+    base_data: ibis.expr.types.Table = expression
 
     # TODO: add calculated dimensions & measures to the model
 
@@ -328,21 +346,13 @@ def execute_analysis_query(model, query):
     columns = [column.column_name for column in query["columns"]]
     values = [value.column_name for value in query["values"] if value.column_name != "count"]
 
-    if rows and columns and values:
+    if rows and columns:
+        # TODO: check distinct values of the selected columns and prevent pivot if the values are too many
         expression = base_data.pivot_wider(
             id_cols=rows,
             names_from=columns,
-            values_from=values,
-            values_agg="sum",
-            values_fill=0,
-        )
-    elif rows and columns:
-        # default to count if no values are provided
-        expression = base_data.pivot_wider(
-            id_cols=rows,
-            names_from=columns,
-            values_from=rows[0],
-            values_agg="count",
+            values_from=values if values else rows[0],
+            values_agg="sum" if values else "count",
             values_fill=0,
         )
     elif rows and values:
@@ -361,8 +371,8 @@ def execute_analysis_query(model, query):
     # execute the query
     data: DataFrame = expression.head(100).execute()
     return {
-        "columns": get_columns_from_dataframe(data),
-        "rows": data.to_dict(orient="records"),
+        "columns": get_columns_from_schema(expression.schema()),
+        "rows": data.fillna("").to_dict(orient="records"),
         "sql": ibis.to_sql(expression),
     }
 
@@ -390,8 +400,8 @@ def get_measure_values(model, measures):
     query = expression.aggregate(**_measures, by=[])
     data: DataFrame = query.head(100).execute()
     return {
-        "columns": get_columns_from_dataframe(data),
-        "rows": data.to_dict(orient="records"),
+        "columns": get_columns_from_schema(query.schema()),
+        "rows": data.fillna("").to_dict(orient="records"),
         "sql": ibis.to_sql(query),
     }
 
