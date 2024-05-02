@@ -41,7 +41,7 @@ const eChartOptions = computed(() => {
 			<div class="flex flex-1 flex-shrink-0 overflow-hidden p-4">
 				<BaseChart v-if="eChartOptions" :options="eChartOptions" />
 			</div>
-			<div v-if="false" class="flex max-h-[18rem] min-h-[5rem] flex-1 flex-shrink-0 flex-col">
+			<div v-if="true" class="flex max-h-[16rem] min-h-[5rem] flex-1 flex-shrink-0 flex-col">
 				<DataTable :columns="analysisChart.data.columns" :rows="analysisChart.data.rows" />
 			</div>
 		</div>
