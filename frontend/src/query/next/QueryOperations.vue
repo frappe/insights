@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleDotIcon, XIcon } from 'lucide-vue-next'
+import { ChevronDown, CircleDotIcon, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { query_operation_types } from './query_utils'
 import { Query } from './useQuery'
@@ -8,9 +8,12 @@ const query = inject('query') as Query
 </script>
 
 <template>
-	<div v-if="query.operations.length" class="flex flex-col gap-2 p-3">
-		<div class="text-[11px] uppercase text-gray-600">Operations</div>
-		<div class="relative ml-1 mt-1 border-l border-gray-300 font-mono text-xs">
+	<div v-if="query.operations.length" class="flex flex-col gap-2 p-2.5">
+		<div class="flex cursor-pointer items-center gap-1">
+			<ChevronDown class="h-4 w-4" stroke-width="1.5" />
+			<div class="text-[11px] font-medium uppercase">Query Operations</div>
+		</div>
+		<div class="relative ml-1.5 mt-1 border-l border-gray-300 font-mono text-xs">
 			<div
 				v-for="(op, idx) in query.operations"
 				:key="idx"

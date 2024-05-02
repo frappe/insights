@@ -30,6 +30,23 @@ export default function useDataModel(name: string) {
 			}).then((res: any) => (dataModel.measureValues = res.rows[0]))
 		},
 
+		addQuery() {
+			const queryCount = dataModel.queries.length
+			const newQuery = useQuery('new-query-' + (queryCount + 1))
+			dataModel.queries.push(newQuery)
+			dataModel.activeQueryIdx = dataModel.queries.length - 1
+		},
+
+		removeQuery(queryName: string) {
+			const queryIdx = dataModel.queries.findIndex((q) => q.name === queryName)
+			dataModel.queries.splice(queryIdx, 1)
+			dataModel.activeQueryIdx = Math.min(queryIdx, dataModel.queries.length - 1)
+		},
+
+		setActiveQuery(queryName: string) {
+			dataModel.activeQueryIdx = dataModel.queries.findIndex((q) => q.name === queryName)
+		},
+
 		serialize() {
 			return {
 				name: dataModel.name,
@@ -87,10 +104,10 @@ export default function useDataModel(name: string) {
 		]
 	})
 
-	wheneverChanges(() => dataModel.measures, dataModel.fetchMeasureValues, {
-		deep: true,
-		immediate: true,
-	})
+	// wheneverChanges(() => dataModel.measures, dataModel.fetchMeasureValues, {
+	// 	deep: true,
+	// 	immediate: true,
+	// })
 
 	return dataModel
 }

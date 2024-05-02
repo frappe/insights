@@ -19,7 +19,7 @@ const analysis = inject(analysisKey)
 		>
 			<Box class="h-4 w-4" stroke-width="1.5" />
 			<div class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-base">
-				Data Model
+				Data
 			</div>
 		</div>
 		<div
@@ -36,7 +36,7 @@ const analysis = inject(analysisKey)
 				placeholder="Enter Title"
 				class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-base focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
 			/>
-			<div v-if="analysis.activeTabIdx === idx" class="transition-colors hover:text-gray-900">
+			<div class="transition-colors hover:text-gray-900">
 				<XIcon class="h-4 w-4" stroke-width="1.5" @click="analysis?.removeChart(idx)" />
 			</div>
 		</div>

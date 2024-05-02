@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { COLUMN_TYPES, fieldtypesToIcon } from '@/utils'
+import { COLUMN_TYPES } from '@/utils'
 import { QueryResultColumn } from '../useQuery'
+import DataTypeIcon from './DataTypeIcon.vue'
 
 const emit = defineEmits({
 	typeChange: (newType: ColumnDataType) => true,
@@ -22,10 +23,7 @@ function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 				:class="isOpen ? '!bg-gray-100' : ''"
 			>
 				<template #icon>
-					<component
-						:is="fieldtypesToIcon[props.column.type]"
-						class="h-4 w-4 text-gray-700"
-					/>
+					<DataTypeIcon :columnType="column.type" />
 				</template>
 			</Button>
 		</template>
@@ -39,10 +37,7 @@ function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 					@click="onTypeChange(type.value as ColumnDataType, togglePopover)"
 				>
 					<template #prefix>
-						<component
-							:is="fieldtypesToIcon[type.value as ColumnDataType]"
-							class="h-4 w-4 text-gray-700"
-						/>
+						<DataTypeIcon :columnType="(type.value as ColumnDataType)" />
 					</template>
 					<span class="truncate">{{ type.label }}</span>
 				</Button>

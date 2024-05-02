@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { fieldtypesToIcon } from '@/utils'
-import { CheckSquare, Circle, SearchIcon, SquareCheck, SquareIcon } from 'lucide-vue-next'
+import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import DataTypeIcon from './components/DataTypeIcon.vue'
 import { Query, QueryResultColumn } from './useQuery'
 
 const emit = defineEmits({
@@ -95,11 +95,7 @@ function confirmSelection() {
 							@click="toggleColumn(column)"
 						>
 							<div class="flex items-center gap-1.5">
-								<component
-									:is="fieldtypesToIcon[column.type]"
-									class="h-4 w-4 text-gray-700"
-									stroke-width="1.5"
-								/>
+								<DataTypeIcon :columnType="column.type" />
 								<span>{{ column.name }}</span>
 							</div>
 							<component

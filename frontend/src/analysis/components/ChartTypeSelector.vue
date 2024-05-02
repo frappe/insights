@@ -5,7 +5,7 @@ const chartType = defineModel<ChartType>()
 
 <template>
 	<div class="flex flex-col gap-2 p-3">
-		<div class="text-[11px] uppercase text-gray-600">Chart Type</div>
+		<div class="text-[11px] font-medium uppercase">Chart Type</div>
 		<div class="grid grid-cols-2 gap-2">
 			<Button
 				v-for="item in widgets.getChartOptions()"
