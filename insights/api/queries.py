@@ -318,6 +318,12 @@ def execute_analysis_query(model, query):
     # TODO: add calculated dimensions & measures to the model
 
     query = _dict(query)
+    if query["rows"]:
+        for row in query["rows"]:
+            if row.data_type in ["Date", "Datetime"] and row.granularity == "month":
+                col = getattr(base_data, row.column_name).cast("date")
+                base_data = base_data.mutate(**{row.column_name: col.strftime("%Y-%m-01")})
+
     rows = [row.column_name for row in query["rows"]]
     columns = [column.column_name for column in query["columns"]]
     values = [value.column_name for value in query["values"] if value.column_name != "count"]
