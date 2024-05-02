@@ -32,22 +32,24 @@ const measures = props.measures.map((measure) => ({
 	<div class="flex flex-col gap-3 p-3">
 		<Autocomplete
 			label="X Axis"
+			:showFooter="true"
 			:options="dimensions"
 			:modelValue="axisChartFormData.x_axis"
-			@update:modelValue="axisChartFormData.x_axis = $event.value"
+			@update:modelValue="axisChartFormData.x_axis = $event?.value"
 		/>
 		<Autocomplete
 			label="Y Axis"
 			:multiple="true"
 			:options="measures"
 			:modelValue="axisChartFormData.y_axis"
-			@update:modelValue="axisChartFormData.y_axis = $event.map((v: any) => v.value)"
+			@update:modelValue="axisChartFormData.y_axis = $event?.map((v: any) => v.value)"
 		/>
 		<Autocomplete
 			label="Split By"
+			:showFooter="true"
 			:options="dimensions"
 			:modelValue="axisChartFormData.split_by"
-			@update:modelValue="axisChartFormData.split_by = $event.value"
+			@update:modelValue="axisChartFormData.split_by = $event?.value"
 		/>
 	</div>
 </template>
