@@ -61,6 +61,7 @@ function useQuery(name: string) {
 		showFiltersSelectorDialog: false,
 		showNewColumnSelectorDialog: false,
 		showJoinSelectorDialog: false,
+		showViewSQLDialog: false,
 
 		execute,
 		setOperations,
