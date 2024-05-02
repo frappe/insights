@@ -133,3 +133,15 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
         df[column] = prefix + pd.Series(codes).astype(str)
 
     return df
+
+
+def xls_to_df(file_path: str) -> List[pd.DataFrame]:
+    file_extension = file_path.split(".")[-1].lower()
+    if file_extension != "xlsx" or file_extension != "xls":
+        frappe.throw(f"Unsupported file extension: {file_extension}")
+
+    sheets = {}
+    excel_file = pd.ExcelFile(file_path)
+    for sheet_name in excel_file.sheet_names:
+        sheets[sheet_name] = excel_file.parse(sheet_name)
+    return sheets
