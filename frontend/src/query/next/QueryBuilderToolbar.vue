@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Tooltip } from 'frappe-ui'
-import { BlendIcon, ColumnsIcon, Database, FilterIcon, Sigma } from 'lucide-vue-next'
+import { BlendIcon, CodeIcon, ColumnsIcon, Database, FilterIcon, Sigma } from 'lucide-vue-next'
 import { h, inject } from 'vue'
 
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
@@ -8,6 +8,7 @@ import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import JoinSelectorDialog from './JoinSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import SourceSelectorDialog from './SourceSelectorDialog.vue'
+import ViewSQLDialog from './ViewSQLDialog.vue'
 import { Query } from './useQuery'
 
 const emit = defineEmits(['change-source'])
@@ -55,6 +56,11 @@ const actions = [
 	// 	label: 'Unpivot',
 	// 	icon: GitMerge,
 	// },
+	{
+		label: 'View SQL',
+		icon: CodeIcon,
+		onClick: () => (query.showViewSQLDialog = true),
+	},
 ]
 </script>
 
@@ -102,4 +108,6 @@ const actions = [
 		v-model="query.showNewColumnSelectorDialog"
 		@select="query.addMutate($event)"
 	/>
+
+	<ViewSQLDialog v-if="query.showViewSQLDialog" v-model="query.showViewSQLDialog" />
 </template>
