@@ -6,6 +6,16 @@ type Column = {
 	type: 'column'
 	column_name: string
 }
+type Measure = {
+	column_name: string
+	data_type: MeasureDataType
+	aggregation: AggregationType
+}
+type Dimension = {
+	column_name: string
+	data_type: DimensionDataType
+	granularity?: GranularityType
+}
 
 type ColumnDataType = 'String' | 'Integer' | 'Decimal' | 'Date' | 'Datetime' | 'Time' | 'Text'
 type MeasureDataType = 'String' | 'Integer' | 'Decimal'
@@ -61,11 +71,11 @@ type JoinType = 'inner' | 'left' | 'right' | 'full'
 type JoinArgs = { join_type: JoinType; table: Table; left_column: Column; right_column: Column }
 type Join = { type: 'join' } & JoinArgs
 
-type Mutation = Column | Expression | WindowOperation
+type Mutation = Expression
 type MutateArgs = { new_name: string; data_type: ColumnDataType; mutation: Mutation }
 type Mutate = { type: 'mutate' } & MutateArgs
 
-type SummarizeArgs = { metrics: Record<string, Column>; by: Column[] }
+type SummarizeArgs = { measures: Measure[]; dimensions: Dimension[] }
 type Summarize = { type: 'summarize' } & SummarizeArgs
 
 type OrderByArgs = { column: Column; direction: 'asc' | 'desc' }
@@ -83,10 +93,9 @@ type WindowOperationArgs = {
 type WindowOperation = { type: 'window_operation' } & WindowOperationArgs
 
 type PivotWiderArgs = {
-	id_cols: Column
-	names_from: Column
-	values_from: Column
-	values_agg: 'sum' | 'count' | 'avg' | 'min' | 'max'
+	rows: Dimension[]
+	columns: Dimension[]
+	values: Measure[]
 }
 type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 

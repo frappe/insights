@@ -1,9 +1,9 @@
 import { DataModel } from '@/datamodel/useDataModel'
-import { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
+import { count } from '@/query/next/query_utils'
+import useQuery, { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
 import { ChartType } from '@/widgets/widgets'
 import { reactive, unref, watch } from 'vue'
 import storeLocally from './storeLocally'
-import { useAnalysisQuery } from './useAnalysisQuery'
 
 const AXIS_CHART_TYPES = ['Bar', 'Line', 'Mixed']
 export type AxisChartFormData = {
@@ -47,9 +47,6 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		async () => {
 			if (AXIS_CHART_TYPES.includes(chart.type)) {
 				const _options = unref(chart.options) as AxisChartFormData
-				if (!_options.x_axis || !_options.y_axis || !_options.y_axis.length) {
-					return
-				}
 				fetchAxisChartData(_options)
 			}
 		},
@@ -57,24 +54,42 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	)
 
 	function fetchAxisChartData(options: AxisChartFormData) {
-		const xDim = model.getDimension(options.x_axis)
-		const splitByDim = model.getDimension(options.split_by)
-		const yMeasures = options.y_axis.map((y) => model.getMeasure(y))
+		const row = model.getDimension(options.x_axis)
+		if (!row) return
 
-		if (!xDim || !yMeasures.length || yMeasures.some((m) => !m)) {
-			return
-		}
+		const column = model.getDimension(options.split_by)
+		const values = options.y_axis
+			? options.y_axis.map((y) => model.getMeasure(y)).filter(Boolean)
+			: []
 
-		const query = useAnalysisQuery(Math.random().toString(), model)
-		query.reset()
-		query.addRow(xDim)
-		splitByDim && query.addColumn(splitByDim)
-		yMeasures.forEach((m) => m && query.addValue(m))
-
+		const query = prepareQuery(row, column, values as Measure[])
 		query.execute().then(() => {
 			chart.data.columns = query.result.columns
 			chart.data.rows = query.result.rows
 		})
+	}
+
+	function prepareQuery(row: Dimension, column: Dimension | undefined, values: Measure[]) {
+		const modelQuery = model.queries[0]
+		const query = useQuery(Math.random().toString())
+		query.loadFrom(modelQuery.serialize())
+
+		values = values.length ? values : [count()]
+
+		if (column) {
+			// query.addPivotWider({
+			// 	rows: [row],
+			// 	columns: [column],
+			// 	values: values,
+			// })
+		} else {
+			query.addSummarize({
+				measures: values,
+				dimensions: [row],
+			})
+		}
+
+		return query
 	}
 
 	return chart

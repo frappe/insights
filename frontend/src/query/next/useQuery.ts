@@ -1,3 +1,4 @@
+import storeLocally from '@/analysis/storeLocally'
 import { wheneverChanges } from '@/utils'
 import { confirmDialog } from '@/utils/components'
 import { call } from 'frappe-ui'
@@ -5,7 +6,9 @@ import { computed, reactive } from 'vue'
 import {
 	cast,
 	column,
+	expression,
 	filter,
+	getDateFormat,
 	join,
 	limit,
 	mutate,
@@ -18,8 +21,6 @@ import {
 	summarize,
 	table,
 } from './query_utils'
-import { useStorage, watchDebounced } from '@vueuse/core'
-import storeLocally from '@/analysis/storeLocally'
 
 export type QueryResultColumn = { name: string; type: ColumnDataType }
 export type QueryResultRow = Record<string, any>
@@ -82,6 +83,9 @@ function useQuery(name: string) {
 		renameColumn,
 		removeColumn,
 		changeColumnType,
+		changeDateGranularity,
+
+		loadFrom,
 
 		getDistinctColumnValues,
 		getMinAndMax,
@@ -252,6 +256,12 @@ function useQuery(name: string) {
 	}
 
 	function addPivotWider(args: PivotWiderArgs) {
+		addOperation(
+			summarize({
+				measures: args.values,
+				dimensions: args.rows.concat(args.columns),
+			})
+		)
 		addOperation(pivot_wider(args))
 	}
 
@@ -282,9 +292,25 @@ function useQuery(name: string) {
 		)
 	}
 
+	function changeDateGranularity(column_name: string, newGranularity: GranularityType) {
+		const dateFormat = getDateFormat(newGranularity)
+		addOperation(
+			mutate({
+				data_type: 'Date',
+				new_name: column_name,
+				mutation: expression(`q.${column_name}.strftime('${dateFormat}')`),
+			})
+		)
+	}
+
 	function setOperations(newOperations: Operation[]) {
 		query.operations = newOperations
 		query.activeOperationIdx = newOperations.length - 1
+	}
+
+	function loadFrom(other: QuerySerialized) {
+		query.setDataSource(other.dataSource)
+		query.setOperations([...other.operations])
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '') {

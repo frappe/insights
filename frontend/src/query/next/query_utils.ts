@@ -21,6 +21,11 @@ export const column = (column_name: string, options = {}): Column => ({
 	column_name,
 	...options,
 })
+export const count = (): Measure => ({
+	column_name: 'count',
+	data_type: 'Integer',
+	aggregation: 'count',
+})
 export const operator = (operator: FilterOperator): FilterOperator => operator
 export const value = (value: FilterValue): FilterValue => value
 export const expression = (expression: string): Expression => ({
@@ -35,6 +40,23 @@ export const expression = (expression: string): Expression => ({
 // 	partition_by: options.partition_by,
 // 	order_by: options.order_by,
 // })
+
+export function getDateFormat(granularity: GranularityType): string {
+	switch (granularity) {
+		case 'day':
+			return '%Y-%m-%d'
+		case 'week':
+			return '%Y-%W'
+		case 'month':
+			return '%Y-%m-01'
+		case 'quarter':
+			return '%Y-%m-01'
+		case 'year':
+			return '%Y-01-01'
+		default:
+			throw new Error(`Unknown granularity: ${granularity}`)
+	}
+}
 
 export const query_operation_types = {
 	source: {
@@ -135,9 +157,9 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SummarizeArgs): Summarize => ({ type: 'summarize', ...args }),
 		getDescription: (op: Summarize) => {
-			return `${Object.keys(op.metrics).join(', ')} BY ${op.by
-				.map((g) => g.column_name)
-				.join(', ')}`
+			const measures = op.measures.map((m) => `${m.aggregation}(${m.column_name})`).join(', ')
+			const dimensions = op.dimensions.map((g) => g.column_name).join(', ')
+			return `${measures} BY ${dimensions}`
 		},
 	},
 	pivot_wider: {

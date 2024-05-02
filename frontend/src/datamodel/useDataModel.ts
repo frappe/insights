@@ -116,16 +116,6 @@ export type DataModel = ReturnType<typeof useDataModel>
 export type DataModelSerialized = ReturnType<DataModel['serialize']>
 export const dataModelKey = Symbol('dataModel')
 
-export type Measure = {
-	column_name: string
-	data_type: MeasureDataType
-	aggregation: AggregationType
-}
-export type Dimension = {
-	column_name: string
-	data_type: DimensionDataType
-	granularity?: GranularityType
-}
 export enum DatasetRelationType {
 	OneToOne = 'one-to-one',
 	OneToMany = 'one-to-many',

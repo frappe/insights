@@ -162,15 +162,15 @@ _dict = deep_convert_dict_to_dict
 
 
 @frappe.whitelist()
-def execute_query_pipeline(data_source, query_pipeline):
+def execute_query_pipeline(data_source, query_pipeline, limit=100):
     doc = frappe.get_doc("Insights Data Source", data_source)
 
     conn: BaseBackend = doc.get_ibis_connection()
     translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
     query_schema: ibis.Schema = query.schema()
-    data: DataFrame = conn.execute(query, limit=100)
-    total_row_count = conn.execute(query.count())
+    data: DataFrame = conn.execute(query, limit=limit)
+    total_row_count = conn.execute(query.count()) if limit else data.shape[0]
     return {
         "columns": get_columns_from_schema(query_schema),
         "rows": data.fillna("").to_dict(orient="records"),
@@ -193,217 +193,6 @@ def get_columns_from_schema(schema):
     for name, dtype in schema.items():
         columns.append({"name": name, "type": type_map.get(str(dtype))})
     return columns
-
-
-def get_columns_from_dataframe(df):
-    type_map = {
-        "int64": "Integer",
-        "float64": "Decimal",
-        "object": "String",
-        "datetime64": "Datetime",
-        "bool": "Boolean",
-    }
-    columns = []
-    sample = df.head(100)
-    for col in df.columns:
-        inferred_type = type_map.get(df[col].dtype.name, "String")
-        if inferred_type == "String":
-            inferred_type = infer_type_from_list(sample[col])
-        columns.append({"name": col, "type": inferred_type})
-    return columns
-
-
-@frappe.whitelist()
-def get_distinct_column_values(data_source, query_pipeline, column_name, search_term=None):
-    doc = frappe.get_doc("Insights Data Source", data_source)
-
-    conn = doc.get_ibis_connection()
-    translator = QueryTranslator(query_pipeline, backend=conn)
-    query = translator.translate()
-    values_query = (
-        query.select(column_name)
-        .filter(
-            getattr(_, column_name).notnull()
-            if not search_term
-            else getattr(_, column_name).like(f"%{search_term}%")
-        )
-        .distinct()
-        .head(20)
-    )
-    sql = ibis.to_sql(values_query)
-    values = doc.execute_query(sql, pluck=True)
-    return values
-
-
-@frappe.whitelist()
-def get_min_max(data_source, query_pipeline, column_name):
-    doc = frappe.get_doc("Insights Data Source", data_source)
-
-    conn = doc.get_ibis_connection()
-    translator = QueryTranslator(query_pipeline, backend=conn)
-    query = translator.translate()
-    values_query = query.select(column_name).aggregate(
-        min=getattr(_, column_name).min(), max=getattr(_, column_name).max()
-    )
-    sql = ibis.to_sql(values_query)
-    values = doc.execute_query(sql)
-    return values[0]
-
-
-@frappe.whitelist()
-def execute_analytical_query(model, query):
-    query = _dict(query)
-    model = _dict(model)
-    dataset_by_name = {dataset.name: dataset for dataset in model.datasets}
-
-    # first find all the dataset names from the columns referenced in the query
-    dataset_names = set()
-    for column in query.measures + query.dimensions:
-        dataset_names.add(column.dataset)
-
-    # make dataset objects
-    datasets = {}
-    for dataset_name in dataset_names:
-        dataset = dataset_by_name.get(dataset_name)
-        doc = frappe.get_doc("Insights Data Source", dataset.data_source)
-        conn: BaseBackend = doc.get_ibis_connection()
-        translator = QueryTranslator(dataset.operations, backend=conn)
-        expression = translator.translate()
-        datasets[dataset_name] = expression
-
-    # join the datasets based on model.relationships
-    joined_dataset = None
-    for dataset_name, dataset in datasets.items():
-        joined_dataset = dataset
-        for relationship in model.relationships:
-            if dataset_name == relationship.leftDataset:
-                rightDataset = datasets[relationship.rightDataset]
-                left_column = getattr(dataset, relationship.leftColumn)
-                right_column = getattr(rightDataset, relationship.rightColumn)
-                joined_dataset = dataset.join(
-                    rightDataset, left_column == right_column, how="left"
-                ).select(~s.endswith("right"))
-            if dataset_name == relationship.rightDataset:
-                leftDataset = datasets[relationship.leftDataset]
-                left_column = getattr(leftDataset, relationship.leftColumn)
-                right_column = getattr(dataset, relationship.rightColumn)
-                joined_dataset = leftDataset.join(
-                    dataset, left_column == right_column, how="left"
-                ).select(~s.endswith("right"))
-
-    # group by the dimensions
-    group_by_columns = [
-        getattr(joined_dataset, dimension.column_name) for dimension in query.dimensions
-    ]
-
-    # aggregate the measures
-    aggregates = {}
-    for measure in query.measures:
-        aggregates[measure.column_name] = getattr(joined_dataset, measure.column_name).sum()
-
-    # apply the group by and aggregates
-    query = joined_dataset.aggregate(**aggregates, by=group_by_columns)
-
-    # # apply the order by
-    if query.order_by:
-        column = getattr(joined_dataset, query.order_by.column)
-        column = column.asc() if query.order_by.direction == "asc" else column.desc()
-        query = query.order_by(column)
-
-    # # apply the limit
-    if query.limit:
-        query = query.limit(query.limit)
-
-    # execute the query
-    data: DataFrame = query.head(100).execute()
-    return {
-        "columns": get_columns_from_schema(query.schema()),
-        "rows": data.fillna("").to_dict(orient="records"),
-        "sql": ibis.to_sql(query),
-    }
-
-
-@frappe.whitelist()
-def execute_analysis_query(model, query):
-    model = _dict(model)
-    model_query = model.queries[0]
-    doc = frappe.get_doc("Insights Data Source", model_query.dataSource)
-    conn: BaseBackend = doc.get_ibis_connection()
-    translator = QueryTranslator(model_query.operations, backend=conn)
-    expression = translator.translate()
-    base_data: ibis.expr.types.Table = expression
-
-    # TODO: add calculated dimensions & measures to the model
-
-    query = _dict(query)
-    if query["rows"]:
-        for row in query["rows"]:
-            if row.data_type in ["Date", "Datetime"] and row.granularity == "month":
-                col = getattr(base_data, row.column_name).cast("date")
-                base_data = base_data.mutate(**{row.column_name: col.strftime("%Y-%m-01")})
-
-    rows = [row.column_name for row in query["rows"]]
-    columns = [column.column_name for column in query["columns"]]
-    values = [value.column_name for value in query["values"] if value.column_name != "count"]
-
-    if rows and columns:
-        # TODO: check distinct values of the selected columns and prevent pivot if the values are too many
-        expression = base_data.pivot_wider(
-            id_cols=rows,
-            names_from=columns,
-            values_from=values if values else rows[0],
-            values_agg="sum" if values else "count",
-            values_fill=0,
-        )
-    elif rows and values:
-        group_by_columns = [getattr(base_data, row) for row in rows]
-        aggregates = {value: getattr(base_data, value).sum() for value in values}
-        expression = base_data.aggregate(**aggregates, by=group_by_columns)
-    elif rows:
-        expression = base_data.aggregate(count=getattr(base_data, rows[0]).count(), by=rows)
-    elif columns and values:
-        frappe.throw("Columns and Values without Rows is not supported")
-    elif columns:
-        frappe.throw("Columns without Rows is not supported")
-    elif values:
-        frappe.throw("Values without Rows is not supported")
-
-    # execute the query
-    data: DataFrame = expression.head(100).execute()
-    return {
-        "columns": get_columns_from_schema(expression.schema()),
-        "rows": data.fillna("").to_dict(orient="records"),
-        "sql": ibis.to_sql(expression),
-    }
-
-
-@frappe.whitelist()
-def get_measure_values(model, measures):
-    model = _dict(model)
-    model_query = model.queries[0]
-    doc = frappe.get_doc("Insights Data Source", model_query.dataSource)
-    conn: BaseBackend = doc.get_ibis_connection()
-    translator = QueryTranslator(model_query.operations, backend=conn)
-    expression = translator.translate()
-
-    _measures = {}
-    for measure in measures:
-        agg = measure.get("aggregation", "sum")
-        column = measure.get("column_name")
-        if agg == "count":
-            _measures[column] = expression.count()
-        elif agg == "sum":
-            _measures[column] = getattr(expression, column).sum()
-        else:
-            frappe.throw(f"Aggregation {agg} is not supported")
-
-    query = expression.aggregate(**_measures, by=[])
-    data: DataFrame = query.head(100).execute()
-    return {
-        "columns": get_columns_from_schema(query.schema()),
-        "rows": data.fillna("").to_dict(orient="records"),
-        "sql": ibis.to_sql(query),
-    }
 
 
 class QueryTranslator:
@@ -444,8 +233,6 @@ class QueryTranslator:
             handler = self.translate_cast(operation)
         elif operation.type == "summarize":
             handler = self.translate_summary(operation)
-        # elif operation.type == "group_by":
-        #     handler = self.translate_group_by(operation)
         elif operation.type == "order_by":
             handler = self.translate_order_by(operation)
         elif operation.type == "limit":
@@ -471,9 +258,7 @@ class QueryTranslator:
 
     def translate_filter(self, filter_args):
         if hasattr(filter_args, "expression") and filter_args.expression:
-            return lambda query: query.filter(
-                self.translate_col_expression(filter_args.expression)
-            )
+            return lambda query: query.filter(self.evaluate_expression(filter_args.expression))
 
         filter_column = filter_args.column
         filter_operator = filter_args.operator
@@ -522,7 +307,11 @@ class QueryTranslator:
 
     def translate_cast(self, cast_args):
         col_name = cast_args.column.column_name
-        dtype = {
+        dtype = self.get_ibis_dtype(cast_args.data_type)
+        return lambda query: query.cast({col_name: dtype})
+
+    def get_ibis_dtype(self, data_type):
+        return {
             "String": "string",
             "Integer": "int64",
             "Decimal": "float64",
@@ -530,30 +319,23 @@ class QueryTranslator:
             "Datetime": "timestamp",
             "Time": "time",
             "Text": "string",
-        }[cast_args.data_type]
-        return lambda query: query.cast({col_name: dtype})
+        }[data_type]
 
     def translate_mutate(self, mutate_args):
         new_name = mutate_args.new_name
-        # data_type = mutate_args.data_type
-        new_column = self.translate_col_expression(mutate_args.mutation)
+        dtype = self.get_ibis_dtype(mutate_args.data_type)
+        new_column = self.evaluate_expression(mutate_args.mutation.expression).cast(dtype)
         return lambda query: query.mutate(**{new_name: new_column})
 
     def translate_summary(self, summarize_args):
-        metrics_by_name = summarize_args.metrics
-        group_bys = summarize_args.by
-        aggregates = {
-            label: self.translate_col_expression(metric)
-            for label, metric in metrics_by_name.items()
-        }
-        group_bys = [self.translate_col_expression(by) for by in group_bys]
+        measures = summarize_args.measures
+        dimensions = summarize_args.dimensions
+        aggregates = {measure.column_name: self.translate_measure(measure) for measure in measures}
+        group_bys = [self.translate_dimension(dimension) for dimension in dimensions]
         return lambda query: query.aggregate(**aggregates, by=group_bys)
 
-    # def translate_group_by(self, group_by_args):
-    #     return self.translate_aggregate(group_by_args)
-
     def translate_order_by(self, order_by_args):
-        column = self.translate_col_expression(order_by_args.column)
+        column = getattr(_, order_by_args.column.column_name)
         column = column.asc() if order_by_args.direction == "asc" else column.desc()
         return lambda query: query.order_by(column)
 
@@ -577,28 +359,18 @@ class QueryTranslator:
             )
         return lambda query: query
 
-    def translate_col_expression(self, expr):
-        expr = frappe._dict(expr)
+    def translate_measure(self, measure):
+        if measure.column_name == "count" and measure.aggregation == "count":
+            return _.count()
 
-        if expr.type == "column":
-            column = getattr(_, expr.column_name)
-            if not expr.options:
-                return column
-            if expr.options.granularity:
-                column = self.apply_granularity(column, expr.options.granularity)
-            if expr.options.date_format:
-                column = column.strftime(expr.options.date_format)
-            if expr.options.aggregate:
-                column = self.apply_aggregate(column, expr.options.aggregate)
-            return column
+        column = getattr(_, measure.column_name)
+        return self.apply_aggregate(column, measure.aggregation)
 
-        if expr.type == "expression":
-            return self.evaluate_expression(expr.expression)
-
-        # if expr.type == "window_operation":
-        #     return self.translate_window_operation(expr)
-
-        raise ValueError(f"Unknown expression type {expr.type}")
+    def translate_dimension(self, dimension):
+        col = getattr(_, dimension.column_name)
+        if dimension.granularity:
+            col = self.apply_granularity(col, dimension.granularity)
+        return col
 
     def apply_aggregate(self, column, aggregate_function):
         return {
@@ -608,11 +380,16 @@ class QueryTranslator:
         }[aggregate_function]
 
     def apply_granularity(self, column, granularity):
-        return {
-            "day": column.day(),
-            "month": column.month(),
-            "year": column.year(),
-        }[granularity]
+        format_str = {
+            "day": "%Y-%m-%d",
+            "month": "%Y-%m-01",
+            "year": "%Y-01-01",
+        }
+        if not format_str.get(granularity):
+            raise ValueError(f"Granularity {granularity} is not supported")
+        if column.type() not in ["date", "timestamp"]:
+            column = column.cast("date")
+        return column.strftime(format_str[granularity])
 
     def evaluate_expression(self, expression):
         context = frappe._dict(
@@ -623,3 +400,87 @@ class QueryTranslator:
         )
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)
+
+
+# unused methods
+
+
+def get_distinct_column_values(data_source, query_pipeline, column_name, search_term=None):
+    doc = frappe.get_doc("Insights Data Source", data_source)
+
+    conn = doc.get_ibis_connection()
+    translator = QueryTranslator(query_pipeline, backend=conn)
+    query = translator.translate()
+    values_query = (
+        query.select(column_name)
+        .filter(
+            getattr(_, column_name).notnull()
+            if not search_term
+            else getattr(_, column_name).like(f"%{search_term}%")
+        )
+        .distinct()
+        .head(20)
+    )
+    sql = ibis.to_sql(values_query)
+    values = doc.execute_query(sql, pluck=True)
+    return values
+
+
+def get_min_max(data_source, query_pipeline, column_name):
+    doc = frappe.get_doc("Insights Data Source", data_source)
+
+    conn = doc.get_ibis_connection()
+    translator = QueryTranslator(query_pipeline, backend=conn)
+    query = translator.translate()
+    values_query = query.select(column_name).aggregate(
+        min=getattr(_, column_name).min(), max=getattr(_, column_name).max()
+    )
+    sql = ibis.to_sql(values_query)
+    values = doc.execute_query(sql)
+    return values[0]
+
+
+def get_measure_values(model, measures):
+    model = _dict(model)
+    model_query = model.queries[0]
+    doc = frappe.get_doc("Insights Data Source", model_query.dataSource)
+    conn: BaseBackend = doc.get_ibis_connection()
+    translator = QueryTranslator(model_query.operations, backend=conn)
+    expression = translator.translate()
+
+    _measures = {}
+    for measure in measures:
+        agg = measure.get("aggregation", "sum")
+        column = measure.get("column_name")
+        if agg == "count":
+            _measures[column] = expression.count()
+        elif agg == "sum":
+            _measures[column] = getattr(expression, column).sum()
+        else:
+            frappe.throw(f"Aggregation {agg} is not supported")
+
+    query = expression.aggregate(**_measures, by=[])
+    data: DataFrame = query.head(100).execute()
+    return {
+        "columns": get_columns_from_schema(query.schema()),
+        "rows": data.fillna("").to_dict(orient="records"),
+        "sql": ibis.to_sql(query),
+    }
+
+
+def get_columns_from_dataframe(df):
+    type_map = {
+        "int64": "Integer",
+        "float64": "Decimal",
+        "object": "String",
+        "datetime64": "Datetime",
+        "bool": "Boolean",
+    }
+    columns = []
+    sample = df.head(100)
+    for col in df.columns:
+        inferred_type = type_map.get(df[col].dtype.name, "String")
+        if inferred_type == "String":
+            inferred_type = infer_type_from_list(sample[col])
+        columns.append({"name": col, "type": inferred_type})
+    return columns
