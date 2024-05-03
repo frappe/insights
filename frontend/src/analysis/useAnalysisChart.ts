@@ -17,11 +17,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		name,
 		type: 'Bar' as ChartType,
 		options: {} as AxisChartFormData,
-
-		data: {
-			columns: [] as QueryResultColumn[],
-			rows: [] as QueryResultRow[],
-		},
+		query: useQuery(name),
 
 		serialize() {
 			return {
@@ -50,7 +46,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 				fetchAxisChartData(_options)
 			}
 		},
-		{ deep: true, immediate: true }
+		{ deep: true }
 	)
 
 	function fetchAxisChartData(options: AxisChartFormData) {
@@ -62,31 +58,28 @@ export function useAnalysisChart(name: string, model: DataModel) {
 			? options.y_axis.map((y) => model.getMeasure(y)).filter(Boolean)
 			: []
 
-		const query = prepareQuery(row, column, values as Measure[])
-		query.execute().then(() => {
-			chart.data.columns = query.result.columns
-			chart.data.rows = query.result.rows
-		})
+		prepareQuery(row, column, values as Measure[])
+		chart.query.execute()
 	}
 
 	function prepareQuery(row: Dimension, column: Dimension | undefined, values: Measure[]) {
 		values = values.length ? values : [count()]
-		const query = model.queries[0].duplicate()
+		const modelQuery = model.queries[0]
+		chart.query.setDataSource(modelQuery.dataSource)
+		chart.query.setOperations([...modelQuery.operations])
 
 		if (column) {
-			query.addPivotWider({
+			chart.query.addPivotWider({
 				rows: [row],
 				columns: [column],
 				values: values,
 			})
 		} else {
-			query.addSummarize({
+			chart.query.addSummarize({
 				measures: values,
 				dimensions: [row],
 			})
 		}
-
-		return query
 	}
 
 	return chart
