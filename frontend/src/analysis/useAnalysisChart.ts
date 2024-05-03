@@ -54,6 +54,10 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		if (!row) return
 
 		const column = model.getDimension(options.split_by)
+		if (column && row.column_name === column.column_name) {
+			throw new Error('X-axis and split-by cannot be the same')
+		}
+
 		const values = options.y_axis
 			? options.y_axis.map((y) => model.getMeasure(y)).filter(Boolean)
 			: []

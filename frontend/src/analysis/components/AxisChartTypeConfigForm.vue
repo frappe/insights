@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Dimension, Measure } from '@/datamodel/useDataModel'
 import { ChartType } from '@/widgets/widgets'
 import { AxisChartFormData } from '../useAnalysisChart'
 
