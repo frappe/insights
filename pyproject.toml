@@ -11,6 +11,7 @@ dependencies = [
     "pandas==2.1.1",
     "SQLAlchemy==2.0.22",
     "python-telegram-bot==12.8",
+    "ibis-framework==9.0.0",
 ]
 
 [build-system]
