@@ -70,18 +70,15 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	}
 
 	function prepareQuery(row: Dimension, column: Dimension | undefined, values: Measure[]) {
-		const modelQuery = model.queries[0]
-		const query = useQuery(Math.random().toString())
-		query.loadFrom(modelQuery.serialize())
-
 		values = values.length ? values : [count()]
+		const query = model.queries[0].duplicate()
 
 		if (column) {
-			// query.addPivotWider({
-			// 	rows: [row],
-			// 	columns: [column],
-			// 	values: values,
-			// })
+			query.addPivotWider({
+				rows: [row],
+				columns: [column],
+				values: values,
+			})
 		} else {
 			query.addSummarize({
 				measures: values,

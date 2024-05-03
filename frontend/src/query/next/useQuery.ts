@@ -85,7 +85,7 @@ function useQuery(name: string) {
 		changeColumnType,
 		changeDateGranularity,
 
-		loadFrom,
+		duplicate,
 
 		getDistinctColumnValues,
 		getMinAndMax,
@@ -256,12 +256,6 @@ function useQuery(name: string) {
 	}
 
 	function addPivotWider(args: PivotWiderArgs) {
-		addOperation(
-			summarize({
-				measures: args.values,
-				dimensions: args.rows.concat(args.columns),
-			})
-		)
 		addOperation(pivot_wider(args))
 	}
 
@@ -308,9 +302,11 @@ function useQuery(name: string) {
 		query.activeOperationIdx = newOperations.length - 1
 	}
 
-	function loadFrom(other: QuerySerialized) {
-		query.setDataSource(other.dataSource)
-		query.setOperations([...other.operations])
+	function duplicate() {
+		const newQuery = useQuery(Date.now().toString())
+		newQuery.setDataSource(query.dataSource)
+		newQuery.setOperations([...query.operations])
+		return newQuery
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '') {

@@ -168,11 +168,10 @@ def execute_query_pipeline(data_source, query_pipeline, limit=100):
     conn: BaseBackend = doc.get_ibis_connection()
     translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
-    query_schema: ibis.Schema = query.schema()
     data: DataFrame = conn.execute(query, limit=limit)
     total_row_count = conn.execute(query.count()) if limit else data.shape[0]
     return {
-        "columns": get_columns_from_schema(query_schema),
+        "columns": get_columns_from_schema(query.schema()),
         "rows": data.fillna("").to_dict(orient="records"),
         "total_row_count": int(total_row_count),
         "sql": ibis.to_sql(query),
@@ -343,20 +342,40 @@ class QueryTranslator:
         return lambda query: query.limit(limit_args.limit)
 
     def translate_pivot(self, pivot_args, pivot_type):
-        # if not ibis.options.default_backend:
-        #     raise ValueError("No backend set")
+        rows = {
+            dimension.column_name: self.translate_dimension(dimension)
+            for dimension in pivot_args["rows"]
+        }
+        columns = {
+            dimension.column_name: self.translate_dimension(dimension)
+            for dimension in pivot_args["columns"]
+        }
+        values = {
+            measure.column_name: self.translate_measure(measure)
+            for measure in pivot_args["values"]
+        }
 
-        # id_cols = self.translate_col_expression(pivot_args.id_cols)
-        # names_from = self.translate_col_expression(pivot_args.names_from)
-        # values_from = self.translate_col_expression(pivot_args.values_from)
-        # values_agg = pivot_args.values_agg
-        if pivot_type == "wider":
-            return lambda query: query.pivot_wider(
-                id_cols=pivot_args.id_cols.colum_name,
-                names_from=pivot_args.names_from.column_name,
-                values_from=pivot_args.values_from.column_name,
-                values_agg=pivot_args.values_agg,
+        def _pivot_wider(query):
+            # unique_column_values = query.select(columns.values()).distinct().execute()
+            # if len(unique_column_values) > 15:
+            #     return frappe.throw(
+            #         "Too many output columns. Please select a different pivot column."
+            #     )
+
+            return (
+                query.group_by(*rows.values(), *columns.values())
+                .aggregate(**values)
+                .pivot_wider(
+                    id_cols=rows.keys(),
+                    names_from=columns.keys(),
+                    # names=unique_column_values,
+                    values_from=values.keys(),
+                )
             )
+
+        if pivot_type == "wider":
+            return _pivot_wider
+
         return lambda query: query
 
     def translate_measure(self, measure):
