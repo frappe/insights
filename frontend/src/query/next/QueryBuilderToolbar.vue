@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Tooltip } from 'frappe-ui'
-import { BlendIcon, CodeIcon, ColumnsIcon, Database, FilterIcon, Sigma } from 'lucide-vue-next'
+import {
+	BlendIcon,
+	CodeIcon,
+	ColumnsIcon,
+	Database,
+	FilterIcon,
+	PlayIcon,
+	Sigma,
+} from 'lucide-vue-next'
 import { h, inject } from 'vue'
 
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
@@ -60,6 +68,11 @@ const actions = [
 		label: 'View SQL',
 		icon: CodeIcon,
 		onClick: () => (query.showViewSQLDialog = true),
+	},
+	{
+		label: 'Execute',
+		icon: PlayIcon,
+		onClick: () => query.execute(),
 	},
 ]
 </script>
