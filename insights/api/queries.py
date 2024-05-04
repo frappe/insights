@@ -1,8 +1,8 @@
 import frappe
 import ibis
-import ibis.expr.types
 from ibis import BaseBackend, _
 from ibis import selectors as s
+from ibis.expr.datatypes import DataType
 from pandas import DataFrame
 
 from insights.api.telemetry import track
@@ -168,30 +168,41 @@ def execute_query_pipeline(data_source, query_pipeline, limit=100):
     conn: BaseBackend = doc.get_ibis_connection()
     translator = QueryTranslator(query_pipeline, backend=conn)
     query = translator.translate()
+    sql = ibis.to_sql(query)
     data: DataFrame = conn.execute(query, limit=limit)
     total_row_count = conn.execute(query.count()) if limit else data.shape[0]
     return {
+        "sql": sql,
         "columns": get_columns_from_schema(query.schema()),
         "rows": data.fillna("").to_dict(orient="records"),
         "total_row_count": int(total_row_count),
-        "sql": ibis.to_sql(query),
     }
 
 
-def get_columns_from_schema(schema):
-    type_map = {
-        "int64": "Integer",
-        "float64": "Decimal",
-        "object": "String",
-        "bool": "Boolean",
-        "string": "String",
-        "timestamp": "Datetime",
-        "date": "Date",
-    }
-    columns = []
-    for name, dtype in schema.items():
-        columns.append({"name": name, "type": type_map.get(str(dtype))})
-    return columns
+def get_columns_from_schema(schema: ibis.Schema):
+    return [
+        {
+            "name": col,
+            "type": to_insights_type(dtype),
+        }
+        for col, dtype in schema.items()
+    ]
+
+
+def to_insights_type(dtype: DataType):
+    if dtype.is_string():
+        return "String"
+    if dtype.is_integer():
+        return "Integer"
+    if dtype.is_decimal():
+        return "Decimal"
+    if dtype.is_timestamp():
+        return "Datetime"
+    if dtype.is_date():
+        return "Date"
+    if dtype.is_time():
+        return "Time"
+    frappe.throw(f"Cannot infer data type for: {dtype}")
 
 
 class QueryTranslator:
@@ -401,7 +412,7 @@ class QueryTranslator:
             "year": "%Y-01-01",
         }
         if not format_str.get(granularity):
-            raise ValueError(f"Granularity {granularity} is not supported")
+            frappe.throw(f"Granularity {granularity} is not supported")
         if column.type() not in ["date", "timestamp"]:
             column = column.cast("date")
         return column.strftime(format_str[granularity])
