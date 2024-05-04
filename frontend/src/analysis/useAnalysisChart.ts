@@ -1,8 +1,9 @@
 import { DataModel } from '@/datamodel/useDataModel'
 import { count } from '@/query/next/query_utils'
-import useQuery, { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
+import useQuery from '@/query/next/useQuery'
 import { ChartType } from '@/widgets/widgets'
-import { reactive, unref, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { reactive, unref } from 'vue'
 import storeLocally from './storeLocally'
 
 const AXIS_CHART_TYPES = ['Bar', 'Line', 'Mixed']
@@ -38,7 +39,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		Object.assign(chart, storedChart.value)
 	}
 
-	watch(
+	watchDebounced(
 		() => chart.options,
 		async () => {
 			if (AXIS_CHART_TYPES.includes(chart.type)) {
@@ -46,7 +47,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 				fetchAxisChartData(_options)
 			}
 		},
-		{ deep: true }
+		{ deep: true, debounce: 500 }
 	)
 
 	function fetchAxisChartData(options: AxisChartFormData) {
@@ -69,6 +70,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	function prepareQuery(row: Dimension, column: Dimension | undefined, values: Measure[]) {
 		values = values.length ? values : [count()]
 		const modelQuery = model.queries[0]
+		chart.query.autoExecute = false
 		chart.query.setDataSource(modelQuery.dataSource)
 		chart.query.setOperations([...modelQuery.operations])
 

@@ -48,6 +48,7 @@ function useQuery(name: string) {
 		activeOperationIdx: -1,
 		currentOperations: computed(() => [] as Operation[]),
 
+		autoExecute: true,
 		executing: false,
 		result: {
 			executedSQL: '',
@@ -120,7 +121,11 @@ function useQuery(name: string) {
 		return operations
 	})
 
-	wheneverChanges(() => query.currentOperations, execute, { deep: true })
+	wheneverChanges(
+		() => query.currentOperations,
+		() => query.autoExecute && execute(),
+		{ deep: true }
+	)
 	function execute() {
 		if (!query.dataSource) throw new Error('Data source not set')
 		if (!query.operations.length) {
