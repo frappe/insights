@@ -356,20 +356,14 @@ class QueryTranslator:
         }
 
         def _pivot_wider(query):
-            # unique_column_values = query.select(columns.values()).distinct().execute()
-            # if len(unique_column_values) > 15:
-            #     return frappe.throw(
-            #         "Too many output columns. Please select a different pivot column."
-            #     )
-
             return (
                 query.group_by(*rows.values(), *columns.values())
                 .aggregate(**values)
                 .pivot_wider(
                     id_cols=rows.keys(),
                     names_from=columns.keys(),
-                    # names=unique_column_values,
                     values_from=values.keys(),
+                    values_agg="sum",
                 )
             )
 
