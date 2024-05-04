@@ -74,7 +74,14 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 after_install = "insights.setup.after_install"
 # after_migrate = ["insights.migrate.after_migrate"]
 
-fixtures = ["Insights Data Source"]
+fixtures = [
+    {
+        "dt": "Insights Data Source",
+        "filters": {
+            "name": ("in", ["Site DB", "Query Store"])
+        },
+    }
+]
 
 # Uninstallation
 # ------------
