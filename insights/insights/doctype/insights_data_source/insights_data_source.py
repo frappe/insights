@@ -247,7 +247,7 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
             args = self.get_db_credentials()
             return ibis.mysql.connect(
                 host=args.get("host"),
-                port=args.get("port"),
+                port=int(args.get("port")),
                 user=args.get("username"),
                 password=args.get("password"),
                 database=args.get("database_name"),
