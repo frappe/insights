@@ -245,13 +245,20 @@ class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, D
 
         if self.database_type == "MariaDB":
             args = self.get_db_credentials()
-            return ibis.mysql.connect(
+            conn = ibis.mysql.connect(
                 host=args.get("host"),
                 port=int(args.get("port")),
                 user=args.get("username"),
                 password=args.get("password"),
                 database=args.get("database_name"),
+                ssl=True,
+                ssl_verify_cert=True,
+                charset="utf8mb4",
+                use_unicode=True,
             )
+            # conn.raw_sql("SET SESSION time_zone='+00:00'")
+            conn.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
+            return conn
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
