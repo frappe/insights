@@ -2,13 +2,9 @@
 import { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
 import { FIELDTYPES, formatNumber } from '@/utils'
 import { Table2Icon } from 'lucide-vue-next'
-import { computed } from 'vue'
 
 const props = defineProps<{ columns: QueryResultColumn[]; rows: QueryResultRow[] }>()
-const numberColumns = computed(() =>
-	props.columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type)).map((c) => c.name)
-)
-const isNumberColumn = (name: string) => numberColumns.value.includes(name)
+const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
 </script>
 
 <template>
@@ -21,7 +17,7 @@ const isNumberColumn = (name: string) => numberColumns.value.includes(name)
 				<tr>
 					<td class="border-b border-r py-2 px-3"></td>
 					<td
-						v-for="(column, idx) in columns"
+						v-for="(column, idx) in props.columns"
 						:key="idx"
 						class="truncate border-b border-r py-2 px-3"
 						:class="
@@ -34,14 +30,14 @@ const isNumberColumn = (name: string) => numberColumns.value.includes(name)
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="(row, idx) in rows.slice(0, 100)" :key="idx">
+				<tr v-for="(row, idx) in props.rows.slice(0, 100)" :key="idx">
 					<td class="border-b border-r px-3">{{ idx + 1 }}</td>
 					<td
-						v-for="[key, value] in Object.entries(row)"
+						v-for="col in props.columns"
 						class="truncate border-b border-r py-2 px-3 text-gray-800"
-						:class="isNumberColumn(key) ? 'text-right' : 'text-left'"
+						:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
 					>
-						{{ isNumberColumn(key) ? formatNumber(value) : value }}
+						{{ isNumberColumn(col) ? formatNumber(row[col.name]) : row[col.name] }}
 					</td>
 				</tr>
 				<tr height="99%" class="border-b"></tr>

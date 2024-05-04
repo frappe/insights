@@ -4,7 +4,7 @@ import { LoadingIndicator } from 'frappe-ui'
 import { Table2Icon } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import QueryBuilderTableColumn from './QueryBuilderTableColumn.vue'
-import { Query } from './useQuery'
+import { Query, QueryResultColumn } from './useQuery'
 
 const query = inject('query') as Query
 
@@ -12,10 +12,7 @@ const columns = computed(() => query.result.columns)
 const rows = computed(() => query.result.rows)
 const previewRowCount = computed(() => query.result.rows.length.toLocaleString())
 const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString())
-const numberColumns = computed(() =>
-	query.result.columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type)).map((c) => c.name)
-)
-const isNumberColumn = (name: string) => numberColumns.value.includes(name)
+const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
 </script>
 
 <template>
@@ -43,14 +40,18 @@ const isNumberColumn = (name: string) => numberColumns.value.includes(name)
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(row, idx) in rows" :key="idx">
+						<tr v-for="(row, idx) in rows.slice(0, 100)" :key="idx">
 							<td class="border-b border-r px-3">{{ idx + 1 }}</td>
 							<td
-								v-for="[key, value] in Object.entries(row)"
+								v-for="col in columns"
 								class="truncate border-b border-r py-2 px-3 text-gray-800"
-								:class="isNumberColumn(key) ? 'text-right' : 'text-left'"
+								:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
 							>
-								{{ isNumberColumn(key) ? formatNumber(value) : value }}
+								{{
+									isNumberColumn(col)
+										? formatNumber(row[col.name])
+										: row[col.name]
+								}}
 							</td>
 						</tr>
 						<tr height="99%" class="border-b"></tr>
