@@ -16,14 +16,14 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	const chart = reactive({
 		name,
 		type: 'Bar' as ChartType,
-		options: {} as ChartConfig,
+		config: {} as ChartConfig,
 		query: useQuery(name),
 
 		serialize() {
 			return {
 				name: chart.name,
 				type: chart.type,
-				options: chart.options,
+				config: chart.config,
 			}
 		},
 	})
@@ -39,42 +39,42 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	}
 
 	watchDebounced(
-		() => chart.options,
+		() => chart.config,
 		async () => {
 			if (AXIS_CHARTS.includes(chart.type)) {
-				const _options = unref(chart.options as AxisChartConfig)
-				fetchAxisChartData(_options)
+				const _config = unref(chart.config as AxisChartConfig)
+				fetchAxisChartData(_config)
 			}
 			if (chart.type === 'Metric') {
-				const _options = unref(chart.options as MetricChartConfig)
-				fetchMetricChartData(_options)
+				const _config = unref(chart.config as MetricChartConfig)
+				fetchMetricChartData(_config)
 			}
 		},
 		{ deep: true, debounce: 500 }
 	)
 
-	function fetchAxisChartData(options: AxisChartConfig) {
-		if (!options.x_axis) {
+	function fetchAxisChartData(config: AxisChartConfig) {
+		if (!config.x_axis) {
 			throw new Error('X-axis is required')
 		}
-		if (options.x_axis === options.split_by) {
+		if (config.x_axis === config.split_by) {
 			throw new Error('X-axis and split-by cannot be the same')
 		}
 
-		const row = model.getDimension(options.x_axis)
+		const row = model.getDimension(config.x_axis)
 		if (!row) {
 			throw new Error('X-axis column not found')
 		}
 
-		const column = model.getDimension(options.split_by)
-		const values = options.y_axis?.map((y) => model.getMeasure(y)).filter(Boolean) as Measure[]
+		const column = model.getDimension(config.split_by)
+		const values = config.y_axis?.map((y) => model.getMeasure(y)).filter(Boolean) as Measure[]
 
 		prepareAxisChartQuery(row, column, values)
 		chart.query.execute()
 	}
 
-	function prepareAxisChartQuery(row: Dimension, column: Dimension | undefined, values: Measure[]) {
-		values = values.length ? values : [count()]
+	function prepareAxisChartQuery(row: Dimension, column?: Dimension, values?: Measure[]) {
+		values = values?.length ? values : [count()]
 		const modelQuery = model.queries[0]
 		chart.query.autoExecute = false
 		chart.query.setDataSource(modelQuery.dataSource)
@@ -94,26 +94,26 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		}
 	}
 
-	function fetchMetricChartData(options: MetricChartConfig) {
-		if (options.target_value && options.target_column) {
+	function fetchMetricChartData(config: MetricChartConfig) {
+		if (config.target_value && config.target_column) {
 			throw new Error('Target value and target column cannot be used together')
 		}
-		if (options.metric_column === options.target_column) {
+		if (config.metric_column === config.target_column) {
 			throw new Error('Metric and target cannot be the same')
 		}
-		if (options.target_column && options.date_column) {
+		if (config.target_column && config.date_column) {
 			throw new Error('Target and date cannot be used together')
 		}
 
-		const metric = model.getMeasure(options.metric_column)
+		const metric = model.getMeasure(config.metric_column)
 		if (!metric) {
 			throw new Error('Metric column not found')
 		}
 
-		const date = model.getDimension(options.date_column as string)
-		const target = options.target_value
-			? Number(options.target_value)
-			: model.getMeasure(options.target_column as string)
+		const date = model.getDimension(config.date_column as string)
+		const target = config.target_value
+			? Number(config.target_value)
+			: model.getMeasure(config.target_column as string)
 
 		prepareMetricQuery(metric, target, date)
 		chart.query.execute()

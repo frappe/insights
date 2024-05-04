@@ -24,6 +24,11 @@ export type MetricChartConfig = {
 	suffix?: string
 }
 
+export type DountChartConfig = {
+	label_column: string
+	value_column: string
+}
+
 export type ChartConfig = AxisChartConfig | MetricChartConfig
 
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {

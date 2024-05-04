@@ -6,7 +6,7 @@ import { getShortNumber, formatNumber } from '@/utils'
 
 const props = defineProps<{ chart: AnalysisChart }>()
 
-const config = computed(() => props.chart.options as MetricChartConfig)
+const config = computed(() => props.chart.config as MetricChartConfig)
 const formattedValue = computed(() => {
 	const rows = props.chart.query.result.rows
 	if (!rows.length) return

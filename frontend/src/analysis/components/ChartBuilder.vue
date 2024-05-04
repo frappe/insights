@@ -47,7 +47,7 @@ const eChartOptions = computed(() => {
 			<hr class="my-1 border-t border-gray-200" />
 			<MetricChartConfigForm
 				v-if="analysisChart.type == 'Metric'"
-				v-model="(analysisChart.options as MetricChartConfig)"
+				v-model="(analysisChart.config as MetricChartConfig)"
 				:dimensions="analysis.model.dimensions"
 				:measures="analysis.model.measures"
 			/>
@@ -56,7 +56,7 @@ const eChartOptions = computed(() => {
 			<TableChartConfigForm /> -->
 			<AxisChartConfigForm
 				v-if="AXIS_CHARTS.includes(analysisChart.type)"
-				v-model="(analysisChart.options as AxisChartConfig)"
+				v-model="(analysisChart.config as AxisChartConfig)"
 				:chart-type="analysisChart.type"
 				:dimensions="analysis.model.dimensions"
 				:measures="analysis.model.measures"
