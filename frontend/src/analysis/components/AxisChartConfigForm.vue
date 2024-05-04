@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ChartType } from '@/widgets/widgets'
-import { AxisChartFormData } from '../useAnalysisChart'
+import { AxisChartConfig } from '../useAnalysisChart'
+import { AxisChartType } from './chart_utils'
 
 const props = defineProps<{
-	chartType: ChartType
+	chartType: AxisChartType
 	dimensions: Dimension[]
 	measures: Measure[]
 }>()
 
-const axisChartFormData = defineModel<AxisChartFormData>({
+const config = defineModel<AxisChartConfig>({
 	required: true,
 	default: () => ({
 		x_axis: '',
@@ -33,22 +33,22 @@ const measures = props.measures.map((measure) => ({
 			label="X Axis"
 			:showFooter="true"
 			:options="dimensions"
-			:modelValue="axisChartFormData.x_axis"
-			@update:modelValue="axisChartFormData.x_axis = $event?.value"
+			:modelValue="config.x_axis"
+			@update:modelValue="config.x_axis = $event?.value"
 		/>
 		<Autocomplete
 			label="Y Axis"
 			:multiple="true"
 			:options="measures"
-			:modelValue="axisChartFormData.y_axis"
-			@update:modelValue="axisChartFormData.y_axis = $event?.map((v: any) => v.value)"
+			:modelValue="config.y_axis"
+			@update:modelValue="config.y_axis = $event?.map((v: any) => v.value)"
 		/>
 		<Autocomplete
 			label="Split By"
 			:showFooter="true"
 			:options="dimensions"
-			:modelValue="axisChartFormData.split_by"
-			@update:modelValue="axisChartFormData.split_by = $event?.value"
+			:modelValue="config.split_by"
+			@update:modelValue="config.split_by = $event?.value"
 		/>
 	</div>
 </template>

@@ -1,6 +1,31 @@
 import { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
 
+export const AXIS_CHARTS = ['Bar', 'Line', 'Row', 'Scatter', 'Area']
+export type AxisChartType = (typeof AXIS_CHARTS)[number]
+
+export const CHARTS = [...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Metric']
+export type ChartType = (typeof CHARTS)[number]
+
+export type AxisChartConfig = {
+	x_axis: string
+	y_axis: string[]
+	split_by: string
+}
+
+export type MetricChartConfig = {
+	metric_column: string
+	target_value?: number
+	target_column?: string
+	date_column?: string
+	shorten_numbers?: boolean
+	precision?: number
+	prefix?: string
+	suffix?: string
+}
+
+export type ChartConfig = AxisChartConfig | MetricChartConfig
+
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	// categorize the columns into dimensions and measures and then into discrete and continuous
 	const dimensions = columns.filter((c) => FIELDTYPES.DIMENSION.includes(c.type))

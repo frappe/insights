@@ -4,10 +4,17 @@ import BaseChart from '@/components/Charts/BaseChart.vue'
 import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject } from 'vue'
 import { useAnalysisChart } from '../useAnalysisChart'
-import AxisChartTypeConfigForm from './AxisChartTypeConfigForm.vue'
+import AxisChartConfigForm from './AxisChartConfigForm.vue'
 import ChartTypeSelector from './ChartTypeSelector.vue'
 import DataTable from './DataTable.vue'
-import { getLineOrBarChartOptions } from './chart_utils'
+import MetricChart from './MetricChart.vue'
+import MetricChartConfigForm from './MetricChartConfigForm.vue'
+import {
+	AXIS_CHARTS,
+	AxisChartConfig,
+	MetricChartConfig,
+	getLineOrBarChartOptions,
+} from './chart_utils'
 
 const props = defineProps<{ chartName: string }>()
 const analysis = inject(analysisKey) as Analysis
@@ -38,9 +45,18 @@ const eChartOptions = computed(() => {
 		<div class="relative flex w-[16rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
 			<ChartTypeSelector v-model="analysisChart.type" />
 			<hr class="my-1 border-t border-gray-200" />
-			<AxisChartTypeConfigForm
-				v-if="analysisChart.type"
-				v-model="analysisChart.options"
+			<MetricChartConfigForm
+				v-if="analysisChart.type == 'Metric'"
+				v-model="(analysisChart.options as MetricChartConfig)"
+				:dimensions="analysis.model.dimensions"
+				:measures="analysis.model.measures"
+			/>
+			<!-- <DonutChartConfigForm />
+			<FunnelChartConfigForm />
+			<TableChartConfigForm /> -->
+			<AxisChartConfigForm
+				v-if="AXIS_CHARTS.includes(analysisChart.type)"
+				v-model="(analysisChart.options as AxisChartConfig)"
 				:chart-type="analysisChart.type"
 				:dimensions="analysis.model.dimensions"
 				:measures="analysis.model.measures"
@@ -53,8 +69,11 @@ const eChartOptions = computed(() => {
 			>
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
-			<div class="flex flex-1 flex-shrink-0 overflow-hidden p-4">
+			<div class="flex flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-4">
 				<BaseChart v-if="eChartOptions" :options="eChartOptions" />
+				<div class="rounded border">
+					<MetricChart v-if="analysisChart.type == 'Metric'" :chart="analysisChart" />
+				</div>
 			</div>
 			<div v-if="true" class="flex max-h-[16rem] min-h-[5rem] flex-1 flex-shrink-0 flex-col">
 				<DataTable
