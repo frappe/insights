@@ -10,6 +10,7 @@ import {
 	ChartType,
 	DountChartConfig,
 	MetricChartConfig,
+	TableChartConfig,
 } from './components/chart_utils'
 import storeLocally from './storeLocally'
 
@@ -53,6 +54,10 @@ export function useAnalysisChart(name: string, model: DataModel) {
 			if (chart.type === 'Donut') {
 				const _config = unref(chart.config as DountChartConfig)
 				fetchDonutChartData(_config)
+			}
+			if (chart.type === 'Table') {
+				const _config = unref(chart.config as TableChartConfig)
+				fetchTableChartData(_config)
 			}
 		},
 		{ deep: true, debounce: 500 }
@@ -195,6 +200,39 @@ export function useAnalysisChart(name: string, model: DataModel) {
 			column: column(value.column_name),
 			direction: 'desc',
 		})
+	}
+
+	function fetchTableChartData(config: TableChartConfig) {
+		if (!config.rows.length) {
+			throw new Error('Rows are required')
+		}
+		const rows = config.rows.map((r) => model.getDimension(r)).filter(Boolean) as Dimension[]
+		const columns = config.columns.map((c) => model.getDimension(c)).filter(Boolean) as Dimension[]
+		const values = config.values.map((v) => model.getMeasure(v)).filter(Boolean) as Measure[]
+
+		prepareTableQuery(rows, columns, values)
+		chart.query.execute()
+	}
+
+	function prepareTableQuery(rows: Dimension[], columns: Dimension[], values: Measure[]) {
+		const modelQuery = model.queries[0]
+		chart.query.autoExecute = false
+		chart.query.setDataSource(modelQuery.dataSource)
+		chart.query.setOperations([...modelQuery.operations])
+
+		if (!columns.length) {
+			chart.query.addSummarize({
+				measures: values,
+				dimensions: rows,
+			})
+		}
+		if (columns.length) {
+			chart.query.addPivotWider({
+				rows: rows,
+				columns: columns,
+				values: values,
+			})
+		}
 	}
 
 	return chart

@@ -10,7 +10,7 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 <template>
 	<div
 		v-if="columns?.length || rows?.length"
-		class="flex w-full flex-1 overflow-y-auto font-mono text-sm"
+		class="flex h-full w-full overflow-y-auto font-mono text-sm"
 	>
 		<table class="border-separate border-spacing-0">
 			<thead class="sticky top-0 bg-white">

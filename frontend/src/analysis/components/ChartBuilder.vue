@@ -7,14 +7,16 @@ import { useAnalysisChart } from '../useAnalysisChart'
 import AxisChartConfigForm from './AxisChartConfigForm.vue'
 import ChartTypeSelector from './ChartTypeSelector.vue'
 import DataTable from './DataTable.vue'
+import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import MetricChart from './MetricChart.vue'
 import MetricChartConfigForm from './MetricChartConfigForm.vue'
-import DonutChartConfigForm from './DonutChartConfigForm.vue'
+import TableChartConfigForm from './TableChartConfigForm.vue'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
 	DountChartConfig,
 	MetricChartConfig,
+	TableChartConfig,
 	getBarChartOptions,
 	getDonutChartOptions,
 	getLineChartOptions,
@@ -72,9 +74,12 @@ const eChartOptions = computed(() => {
 				:dimensions="analysis.model.dimensions"
 				:measures="analysis.model.measures"
 			/>
-			<!-- 
-			<FunnelChartConfigForm />
-			<TableChartConfigForm /> -->
+			<TableChartConfigForm
+				v-if="analysisChart.type == 'Table'"
+				v-model="(analysisChart.config as TableChartConfig)"
+				:dimensions="analysis.model.dimensions"
+				:measures="analysis.model.measures"
+			/>
 			<AxisChartConfigForm
 				v-if="AXIS_CHARTS.includes(analysisChart.type)"
 				v-model="(analysisChart.config as AxisChartConfig)"
@@ -90,13 +95,21 @@ const eChartOptions = computed(() => {
 			>
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
-			<div class="flex flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-4">
+			<div class="flex flex-1 flex-shrink-0 items-center justify-center overflow-hidden">
 				<BaseChart v-if="eChartOptions" :options="eChartOptions" />
-				<div class="rounded border">
-					<MetricChart v-if="analysisChart.type == 'Metric'" :chart="analysisChart" />
+				<div v-if="analysisChart.type == 'Metric'" class="rounded border">
+					<MetricChart :chart="analysisChart" />
 				</div>
+				<DataTable
+					v-if="analysisChart.type == 'Table'"
+					:columns="analysisChart.query.result.columns"
+					:rows="analysisChart.query.result.rows"
+				/>
 			</div>
-			<div v-if="true" class="flex max-h-[16rem] min-h-[5rem] flex-1 flex-shrink-0 flex-col">
+			<div
+				v-if="analysisChart.type != 'Table'"
+				class="flex max-h-[16rem] min-h-[5rem] flex-1 flex-shrink-0 flex-col"
+			>
 				<DataTable
 					:columns="analysisChart.query.result.columns"
 					:rows="analysisChart.query.result.rows"

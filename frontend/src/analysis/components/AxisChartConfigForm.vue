@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { AxisChartConfig } from '../useAnalysisChart'
-import { AxisChartType } from './chart_utils'
+import { AxisChartConfig, AxisChartType } from './chart_utils'
 
 const props = defineProps<{
 	chartType: AxisChartType

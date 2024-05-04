@@ -29,7 +29,13 @@ export type DountChartConfig = {
 	value_column: string
 }
 
-export type ChartConfig = AxisChartConfig | MetricChartConfig | DountChartConfig
+export type TableChartConfig = {
+	rows: string[]
+	columns: string[]
+	values: string[]
+}
+
+export type ChartConfig = AxisChartConfig | MetricChartConfig | DountChartConfig | TableChartConfig
 
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	// categorize the columns into dimensions and measures and then into discrete and continuous
