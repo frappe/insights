@@ -257,7 +257,9 @@ class QueryTranslator:
 
     def translate_filter(self, filter_args):
         if hasattr(filter_args, "expression") and filter_args.expression:
-            return lambda query: query.filter(self.evaluate_expression(filter_args.expression))
+            return lambda query: query.filter(
+                self.evaluate_expression(filter_args.expression.expression)
+            )
 
         filter_column = filter_args.column
         filter_operator = filter_args.operator
