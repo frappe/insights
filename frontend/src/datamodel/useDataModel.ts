@@ -1,4 +1,5 @@
 import storeLocally from '@/analysis/storeLocally'
+import { count } from '@/query/next/query_utils'
 import useQuery, { Query } from '@/query/next/useQuery'
 import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { call } from 'frappe-ui'
@@ -87,11 +88,7 @@ export default function useDataModel(name: string) {
 	dataModel.measures = computed(() => {
 		// TODO: append calculated measures
 		const resultColumns = dataModel.queries.flatMap((q) => q.result.columns)
-		const countMeasure: Measure = {
-			column_name: 'count',
-			data_type: 'Integer',
-			aggregation: 'count',
-		}
+		const countMeasure: Measure = count()
 		return [
 			countMeasure,
 			...resultColumns

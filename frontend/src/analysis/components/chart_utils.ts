@@ -1,10 +1,10 @@
 import { QueryResultColumn, QueryResultRow } from '@/query/next/useQuery'
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
 
-export const AXIS_CHARTS = ['Bar', 'Line', 'Row', 'Scatter', 'Area']
+export const AXIS_CHARTS = ['Bar', 'Line', 'Row'] //, 'Scatter', 'Area']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = [...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Metric']
+export const CHARTS = ['Metric', ...AXIS_CHARTS, 'Donut', 'Table'] // 'Funnel',
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -29,7 +29,7 @@ export type DountChartConfig = {
 	value_column: string
 }
 
-export type ChartConfig = AxisChartConfig | MetricChartConfig
+export type ChartConfig = AxisChartConfig | MetricChartConfig | DountChartConfig
 
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	// categorize the columns into dimensions and measures and then into discrete and continuous
@@ -47,28 +47,10 @@ export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[])
 	if (discreteDimensions.length > 1 && measures.length) return 'table'
 }
 
-export function getLineOrBarChartOptions(
-	columns: QueryResultColumn[],
-	rows: QueryResultRow[],
-	lineOrBar = 'bar'
-) {
-	const columnNames = columns.map((c) => c.name)
-	const data = [
-		columns.map((c) => c.name),
-		...rows.map((r) => columnNames.map((c) => r[c as keyof QueryResultRow])),
-	]
-	const maxColumnLabelLength = Math.max(
-		...columns.filter((c) => FIELDTYPES.MEASURE.includes(c.type)).map((c) => c.name.length)
-	)
-	const rightOffset = maxColumnLabelLength * 15
+export function getLineChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+	const data = getData(columns, rows)
 	return {
-		grid: {
-			top: 10,
-			left: 10,
-			right: rightOffset,
-			bottom: 10,
-			containLabel: true,
-		},
+		grid: getGrid(),
 		dataset: { source: data },
 		xAxis: { type: 'category' },
 		yAxis: {
@@ -78,18 +60,102 @@ export function getLineOrBarChartOptions(
 		},
 		series: columns
 			.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
-			.map((c) => ({ type: lineOrBar, stack: 'stack' })),
-		tooltip: {
-			trigger: 'axis',
-			confine: true,
-			appendToBody: false,
-			valueFormatter: (value: any) => (isNaN(value) ? value : formatNumber(value)),
+			.map((c) => ({ type: 'line' })),
+		tooltip: getTooltip(),
+		legend: getLegend(),
+	}
+}
+
+export function getRowChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+	const data = getData(columns, rows)
+	return {
+		grid: getGrid(),
+		dataset: { source: data },
+		xAxis: { type: 'value' },
+		yAxis: { type: 'category' },
+		series: columns
+			.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
+			.map((c) => ({ type: 'bar', stack: 'stack' })),
+		tooltip: getTooltip(),
+		legend: getLegend(),
+	}
+}
+
+export function getBarChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+	const data = getData(columns, rows)
+	return {
+		grid: getGrid(),
+		dataset: { source: data.reverse() },
+		xAxis: { type: 'category' },
+		yAxis: {
+			type: 'value',
+			splitLine: { lineStyle: { type: 'dashed' } },
+			axisLabel: { formatter: (value: Number) => getShortNumber(value, 1) },
 		},
-		legend: {
-			icon: 'circle',
-			right: 0,
-			orient: 'vertical',
-			top: 'top',
-		},
+		series: columns
+			.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
+			.map((c) => ({ type: 'bar', stack: 'stack' })),
+		tooltip: getTooltip(),
+		legend: getLegend(),
+	}
+}
+
+export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+	const data = getData(columns, rows)
+	return {
+		dataset: { source: data },
+		series: [
+			{
+				type: 'pie',
+				center: ['50%', '45%'],
+				radius: ['40%', '70%'],
+				labelLine: { show: false },
+				label: { show: false },
+				emphasis: {
+					scaleSize: 5,
+				},
+			},
+		],
+		tooltip: getTooltip(),
+		legend: getLegend(),
+	}
+}
+
+function getData(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+	type RowKey = keyof QueryResultRow
+	const columnNames = columns.map((c) => c.name) as RowKey[]
+	return [columnNames, ...rows.map((r) => columnNames.map((c) => r[c]))]
+}
+
+function getGrid() {
+	return {
+		top: 10,
+		bottom: 35,
+		left: 10,
+		right: 10,
+		containLabel: true,
+	}
+}
+
+function getTooltip() {
+	return {
+		trigger: 'axis',
+		confine: true,
+		appendToBody: false,
+		valueFormatter: (value: any) => (isNaN(value) ? value : formatNumber(value)),
+	}
+}
+
+function getLegend() {
+	return {
+		icon: 'circle',
+		type: 'scroll',
+		orient: 'horizontal',
+		bottom: 'bottom',
+		pageIconSize: 12,
+		pageIconColor: '#64748B',
+		pageIconInactiveColor: '#C0CCDA',
+		pageFormatter: '{current}',
+		pageButtonItemGap: 2,
 	}
 }

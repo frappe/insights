@@ -9,11 +9,16 @@ import ChartTypeSelector from './ChartTypeSelector.vue'
 import DataTable from './DataTable.vue'
 import MetricChart from './MetricChart.vue'
 import MetricChartConfigForm from './MetricChartConfigForm.vue'
+import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
+	DountChartConfig,
 	MetricChartConfig,
-	getLineOrBarChartOptions,
+	getBarChartOptions,
+	getDonutChartOptions,
+	getLineChartOptions,
+	getRowChartOptions,
 } from './chart_utils'
 
 const props = defineProps<{ chartName: string }>()
@@ -24,17 +29,27 @@ const analysisChart = useAnalysisChart(props.chartName, analysis.model)
 const eChartOptions = computed(() => {
 	if (!analysisChart.query.result.columns?.length) return
 	if (analysisChart.type === 'Bar') {
-		return getLineOrBarChartOptions(
+		return getBarChartOptions(
 			analysisChart.query.result.columns,
-			analysisChart.query.result.rows,
-			'bar'
+			analysisChart.query.result.rows
 		)
 	}
 	if (analysisChart.type === 'Line') {
-		return getLineOrBarChartOptions(
+		return getLineChartOptions(
 			analysisChart.query.result.columns,
-			analysisChart.query.result.rows,
-			'line'
+			analysisChart.query.result.rows
+		)
+	}
+	if (analysisChart.type === 'Row') {
+		return getRowChartOptions(
+			analysisChart.query.result.columns,
+			analysisChart.query.result.rows
+		)
+	}
+	if (analysisChart.type === 'Donut') {
+		return getDonutChartOptions(
+			analysisChart.query.result.columns,
+			analysisChart.query.result.rows
 		)
 	}
 })
@@ -51,7 +66,13 @@ const eChartOptions = computed(() => {
 				:dimensions="analysis.model.dimensions"
 				:measures="analysis.model.measures"
 			/>
-			<!-- <DonutChartConfigForm />
+			<DonutChartConfigForm
+				v-if="analysisChart.type == 'Donut'"
+				v-model="(analysisChart.config as DountChartConfig)"
+				:dimensions="analysis.model.dimensions"
+				:measures="analysis.model.measures"
+			/>
+			<!-- 
 			<FunnelChartConfigForm />
 			<TableChartConfigForm /> -->
 			<AxisChartConfigForm

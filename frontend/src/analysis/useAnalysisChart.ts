@@ -1,5 +1,5 @@
 import { DataModel } from '@/datamodel/useDataModel'
-import { count, expression, mutate } from '@/query/next/query_utils'
+import { column, count, expression, mutate } from '@/query/next/query_utils'
 import useQuery from '@/query/next/useQuery'
 import { watchDebounced } from '@vueuse/core'
 import { reactive, unref } from 'vue'
@@ -8,6 +8,7 @@ import {
 	AxisChartConfig,
 	ChartConfig,
 	ChartType,
+	DountChartConfig,
 	MetricChartConfig,
 } from './components/chart_utils'
 import storeLocally from './storeLocally'
@@ -48,6 +49,10 @@ export function useAnalysisChart(name: string, model: DataModel) {
 			if (chart.type === 'Metric') {
 				const _config = unref(chart.config as MetricChartConfig)
 				fetchMetricChartData(_config)
+			}
+			if (chart.type === 'Donut') {
+				const _config = unref(chart.config as DountChartConfig)
+				fetchDonutChartData(_config)
 			}
 		},
 		{ deep: true, debounce: 500 }
@@ -153,6 +158,43 @@ export function useAnalysisChart(name: string, model: DataModel) {
 				dimensions: [],
 			})
 		}
+	}
+
+	function fetchDonutChartData(config: DountChartConfig) {
+		if (!config.label_column) {
+			throw new Error('Label is required')
+		}
+		if (!config.value_column) {
+			throw new Error('Value is required')
+		}
+
+		const label = model.getDimension(config.label_column)
+		const value = model.getMeasure(config.value_column)
+		if (!label) {
+			throw new Error('Label column not found')
+		}
+		if (!value) {
+			throw new Error('Value column not found')
+		}
+
+		prepareDonutQuery(label, value)
+		chart.query.execute()
+	}
+
+	function prepareDonutQuery(label: Dimension, value: Measure) {
+		const modelQuery = model.queries[0]
+		chart.query.autoExecute = false
+		chart.query.setDataSource(modelQuery.dataSource)
+		chart.query.setOperations([...modelQuery.operations])
+
+		chart.query.addSummarize({
+			measures: [value],
+			dimensions: [label],
+		})
+		chart.query.addOrderBy({
+			column: column(value.column_name),
+			direction: 'desc',
+		})
 	}
 
 	return chart
