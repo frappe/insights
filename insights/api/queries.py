@@ -194,6 +194,8 @@ def to_insights_type(dtype: DataType):
         return "String"
     if dtype.is_integer():
         return "Integer"
+    if dtype.is_floating():
+        return "Decimal"
     if dtype.is_decimal():
         return "Decimal"
     if dtype.is_timestamp():
@@ -413,9 +415,7 @@ class QueryTranslator:
         }
         if not format_str.get(granularity):
             frappe.throw(f"Granularity {granularity} is not supported")
-        if column.type() not in ["date", "timestamp"]:
-            column = column.cast("date")
-        return column.strftime(format_str[granularity])
+        return column.strftime(format_str[granularity]).name(column.get_name())
 
     def evaluate_expression(self, expression):
         context = frappe._dict(
@@ -423,6 +423,7 @@ class QueryTranslator:
             columns=ibis.selectors.c,
             case=ibis.case,
             row_number=ibis.row_number,
+            literal=ibis.literal,
         )
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)
