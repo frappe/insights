@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ContentEditable from '@/components/ContentEditable.vue'
-import { BarChartIcon, Box, XIcon } from 'lucide-vue-next'
+import { BarChartIcon, Box, LayoutPanelTop, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { analysisKey } from '../useAnalysis'
 
@@ -40,8 +40,32 @@ const analysis = inject(analysisKey)
 				<XIcon class="h-4 w-4" stroke-width="1.5" @click="analysis?.removeChart(idx)" />
 			</div>
 		</div>
-		<div class="flex h-full w-10 items-center justify-center">
-			<Button variant="subtle" icon="plus" @click="analysis?.addChart()"> </Button>
+		<div
+			v-if="analysis.dashboardName"
+			class="flex h-full cursor-pointer items-center gap-1.5 border-t-2 px-3 transition-all hover:bg-gray-100"
+			:class="
+				analysis.activeTabIdx === Infinity ? ' border-t-gray-700' : 'border-t-transparent'
+			"
+			@click="analysis?.setCurrentTab(Infinity)"
+		>
+			<LayoutPanelTop class="h-4 w-4" stroke-width="1.5" />
+			<div class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-base">
+				Dashboard
+			</div>
+		</div>
+		<div class="flex h-full items-center justify-center gap-2 px-2">
+			<Button @click="analysis?.addChart()">
+				<template #prefix>
+					<BarChartIcon class="h-4 w-4" stroke-width="1.5" />
+				</template>
+				New Chart
+			</Button>
+			<Button v-if="!analysis.dashboardName" @click="analysis?.createDashboard()">
+				<template #prefix>
+					<LayoutPanelTop class="h-4 w-4" stroke-width="1.5" />
+				</template>
+				New Dashboard
+			</Button>
 		</div>
 	</footer>
 </template>

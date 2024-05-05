@@ -50,9 +50,9 @@ type Expression = {
 type SourceArgs = { table: Table }
 type Source = { type: 'source' } & SourceArgs
 
-type FilterArgs =
-	| { column: Column; operator: FilterOperator; value: FilterValue | Column }
-	| { expression: Expression }
+type FilterRule = { column: Column; operator: FilterOperator; value: FilterValue | Column }
+type FilterExpression = { expression: Expression }
+type FilterArgs = FilterRule | FilterExpression
 type Filter = { type: 'filter' } & FilterArgs
 
 type SelectArgs = { column_names: string[] }

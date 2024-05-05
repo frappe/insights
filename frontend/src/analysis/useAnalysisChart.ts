@@ -10,7 +10,7 @@ import {
 	ChartType,
 	DountChartConfig,
 	MetricChartConfig,
-	TableChartConfig,
+	TableChartConfig
 } from './components/chart_utils'
 import storeLocally from './storeLocally'
 
@@ -20,6 +20,12 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		type: 'Bar' as ChartType,
 		config: {} as ChartConfig,
 		query: useQuery(name),
+		filters: [] as FilterArgs[],
+
+		refresh: refreshChart,
+		setFilters(filters: FilterArgs[]) {
+			chart.filters = filters
+		},
 
 		serialize() {
 			return {
@@ -40,28 +46,31 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		Object.assign(chart, storedChart.value)
 	}
 
-	watchDebounced(
-		() => chart.config,
-		async () => {
-			if (AXIS_CHARTS.includes(chart.type)) {
-				const _config = unref(chart.config as AxisChartConfig)
-				fetchAxisChartData(_config)
-			}
-			if (chart.type === 'Metric') {
-				const _config = unref(chart.config as MetricChartConfig)
-				fetchMetricChartData(_config)
-			}
-			if (chart.type === 'Donut') {
-				const _config = unref(chart.config as DountChartConfig)
-				fetchDonutChartData(_config)
-			}
-			if (chart.type === 'Table') {
-				const _config = unref(chart.config as TableChartConfig)
-				fetchTableChartData(_config)
-			}
-		},
-		{ deep: true, debounce: 500 }
-	)
+	watchDebounced(() => model.queries[0].currentOperations, refreshChart, {
+		deep: true,
+		debounce: 500,
+	})
+
+	watchDebounced(() => chart.config, refreshChart, { deep: true, debounce: 500 })
+
+	async function refreshChart() {
+		if (AXIS_CHARTS.includes(chart.type)) {
+			const _config = unref(chart.config as AxisChartConfig)
+			fetchAxisChartData(_config)
+		}
+		if (chart.type === 'Metric') {
+			const _config = unref(chart.config as MetricChartConfig)
+			fetchMetricChartData(_config)
+		}
+		if (chart.type === 'Donut') {
+			const _config = unref(chart.config as DountChartConfig)
+			fetchDonutChartData(_config)
+		}
+		if (chart.type === 'Table') {
+			const _config = unref(chart.config as TableChartConfig)
+			fetchTableChartData(_config)
+		}
+	}
 
 	function fetchAxisChartData(config: AxisChartConfig) {
 		if (!config.x_axis) {
@@ -85,10 +94,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 
 	function prepareAxisChartQuery(row: Dimension, column?: Dimension, values?: Measure[]) {
 		values = values?.length ? values : [count()]
-		const modelQuery = model.queries[0]
-		chart.query.autoExecute = false
-		chart.query.setDataSource(modelQuery.dataSource)
-		chart.query.setOperations([...modelQuery.operations])
+		resetQuery()
 
 		if (column) {
 			chart.query.addPivotWider({
@@ -130,10 +136,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	}
 
 	function prepareMetricQuery(metric: Measure, target?: Measure | Number, date?: Dimension) {
-		const modelQuery = model.queries[0]
-		chart.query.autoExecute = false
-		chart.query.setDataSource(modelQuery.dataSource)
-		chart.query.setOperations([...modelQuery.operations])
+		resetQuery()
 
 		if (typeof target === 'number' && target > 0) {
 			chart.query.addSummarize({
@@ -187,10 +190,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	}
 
 	function prepareDonutQuery(label: Dimension, value: Measure) {
-		const modelQuery = model.queries[0]
-		chart.query.autoExecute = false
-		chart.query.setDataSource(modelQuery.dataSource)
-		chart.query.setOperations([...modelQuery.operations])
+		resetQuery()
 
 		chart.query.addSummarize({
 			measures: [value],
@@ -215,10 +215,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 	}
 
 	function prepareTableQuery(rows: Dimension[], columns: Dimension[], values: Measure[]) {
-		const modelQuery = model.queries[0]
-		chart.query.autoExecute = false
-		chart.query.setDataSource(modelQuery.dataSource)
-		chart.query.setOperations([...modelQuery.operations])
+		resetQuery()
 
 		if (!columns.length) {
 			chart.query.addSummarize({
@@ -232,6 +229,16 @@ export function useAnalysisChart(name: string, model: DataModel) {
 				columns: columns,
 				values: values,
 			})
+		}
+	}
+
+	function resetQuery() {
+		const modelQuery = model.queries[0]
+		chart.query.autoExecute = false
+		chart.query.setDataSource(modelQuery.dataSource)
+		chart.query.setOperations([...modelQuery.operations])
+		if (chart.filters.length) {
+			chart.query.addFilter(chart.filters)
 		}
 	}
 

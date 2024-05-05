@@ -2,6 +2,7 @@
 import ModelBuilder from '@/datamodel/ModelBuilder.vue'
 import { provide } from 'vue'
 import ChartBuilder from './components/ChartBuilder.vue'
+import DashboardBuilder from './components/DashboardBuilder.vue'
 import Footer from './components/Footer.vue'
 import Header from './components/Header.vue'
 import useAnalysis, { analysisKey } from './useAnalysis'
@@ -14,7 +15,8 @@ provide(analysisKey, analysis)
 	<div class="flex h-full flex-col">
 		<Header />
 		<div class="flex-1 overflow-hidden">
-			<ModelBuilder v-if="analysis.activeTabIdx === -1" :model="analysis.model" />
+			<ModelBuilder v-if="analysis.activeTabIdx === -1" />
+			<DashboardBuilder v-else-if="analysis.activeTabIdx === Infinity" />
 			<ChartBuilder
 				v-else
 				:key="analysis.activeTabIdx"

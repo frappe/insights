@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
 import { debounce } from 'frappe-ui'
-import { computed, inject, onMounted, ref, watch } from 'vue'
-import { FilterRule } from '../FiltersSelectorDialog.vue'
-import { Query } from '../useQuery'
+import { computed, onMounted, ref } from 'vue'
+import { column } from '../query_utils'
 import DatePickerControl from './DatePickerControl.vue'
+import { getValueSelectorType } from './filter_utils'
 
+const props = defineProps<{
+	columnOptions: { label: string; value: string; data_type: ColumnDataType }[]
+	columnValuesProvider: (column_name: string, searchTxt?: string) => Promise<string[]>
+}>()
 const filter = defineModel<FilterRule>({ required: true })
 
 onMounted(() => {
@@ -13,8 +17,8 @@ onMounted(() => {
 })
 
 function onColumnChange(column_name: string) {
-	filter.value.column_name = column_name
-	filter.value.operator = operatorOptions.value[0].value
+	filter.value.column = column(column_name)
+	filter.value.operator = operatorOptions.value[0]?.value
 	filter.value.value = undefined
 	if (valueSelectorType.value === 'select') {
 		filter.value.value = []
@@ -22,8 +26,17 @@ function onColumnChange(column_name: string) {
 	}
 }
 
+const columnType = computed(() => {
+	if (!filter.value.column.column_name) return
+	const col = props.columnOptions.find((c) => c.value === filter.value.column.column_name)
+	if (!col) throw new Error(`Column not found: ${filter.value.column.column_name}`)
+	return col.data_type
+})
+
 const operatorOptions = computed(() => {
 	const type = columnType.value
+	if (!type) return []
+
 	const options = [] as { label: string; value: FilterOperator }[]
 	if (FIELDTYPES.TEXT.includes(type)) {
 		options.push({ label: 'is', value: 'in' }) // value selector
@@ -60,93 +73,19 @@ function onOperatorChange(operator: FilterOperator) {
 	filter.value.value = undefined
 }
 
-const columnType = computed(() => {
-	const col = query.result.columns.find((c) => c.name === filter.value.column_name)
-	if (!col) return 'String'
-	return col.type
-})
+const valueSelectorType = computed(
+	() => columnType.value && getValueSelectorType(filter.value, columnType.value)
+)
 
-const valueSelectorType = computed(() => {
-	if (!filter.value.column_name || !filter.value.operator) return 'text' // default to text
-	if (['is_set', 'is_not_set'].includes(filter.value.operator)) return
-
-	const type = columnType.value
-	if (FIELDTYPES.TEXT.includes(type)) {
-		return ['in', 'not_in'].includes(filter.value.operator) ? 'select' : 'text'
-	}
-	if (FIELDTYPES.NUMBER.includes(type)) return 'number'
-	if (FIELDTYPES.DATE.includes(type)) {
-		return filter.value.operator === 'between' ? 'date_range' : 'date'
-	}
-	return 'text'
-})
-
-const query = inject('query') as Query
 const distinctColumnValues = ref<any[]>([])
 const fetchingValues = ref(false)
-const fetchColumnValues = debounce((query: string) => {
+const fetchColumnValues = debounce((searchTxt: string) => {
 	fetchingValues.value = true
-	query
-		.getDistinctColumnValues(filter.value.column_name, query)
+	props
+		.columnValuesProvider(filter.value.column.column_name, searchTxt)
 		.then((values: string[]) => (distinctColumnValues.value = values))
 		.finally(() => (fetchingValues.value = false))
 }, 300)
-
-watch(
-	() => filter.value.value,
-	(filter_value: FilterValue) => {
-		if (!filter.value.column_name || !filter.value.operator) {
-			filter.value.isValid = false
-			return
-		}
-
-		// if selector type is none, no need to validate
-		if (!valueSelectorType.value) {
-			filter.value.isValid = true
-			return
-		}
-
-		if (!filter_value) {
-			filter.value.isValid = false
-			return
-		}
-
-		// for number, validate if it's a number
-		if (FIELDTYPES.NUMBER.includes(columnType.value)) {
-			filter.value.isValid = !isNaN(filter_value as any)
-		}
-
-		// for text,
-		// if it's a select, validate if it's an array of strings
-		// if it's a text, validate if it's a string
-		if (FIELDTYPES.TEXT.includes(columnType.value)) {
-			if (valueSelectorType.value === 'select') {
-				filter.value.isValid = Boolean(
-					Array.isArray(filter_value) &&
-						filter_value.length &&
-						filter_value.every((v: any) => typeof v === 'string')
-				)
-			} else {
-				filter.value.isValid = typeof filter_value === 'string'
-			}
-		}
-
-		// for date,
-		// if it's a date, validate if it's a date string
-		// if it's a date range, validate if it's an array of 2 date strings
-		if (FIELDTYPES.DATE.includes(columnType.value)) {
-			if (valueSelectorType.value === 'date') {
-				filter.value.isValid = typeof filter_value === 'string'
-			} else if (valueSelectorType.value === 'date_range') {
-				filter.value.isValid = Boolean(
-					Array.isArray(filter_value) &&
-						filter_value.length === 2 &&
-						filter_value.every((v: any) => typeof v === 'string')
-				)
-			}
-		}
-	}
-)
 </script>
 
 <template>
@@ -154,8 +93,8 @@ watch(
 		<div id="column_name" class="!min-w-[140px] flex-1 flex-shrink-0">
 			<Autocomplete
 				placeholder="Column"
-				:modelValue="filter.column_name"
-				:options="query.result.columnOptions"
+				:modelValue="filter.column.column_name"
+				:options="props.columnOptions"
 				@update:modelValue="onColumnChange($event.value)"
 			/>
 		</div>
@@ -163,6 +102,7 @@ watch(
 			<FormControl
 				type="select"
 				placeholder="Operator"
+				:disabled="!columnType"
 				:modelValue="filter.operator"
 				:options="operatorOptions"
 				@update:modelValue="onOperatorChange($event)"
@@ -203,6 +143,7 @@ watch(
 				@update:query="fetchColumnValues"
 				@update:modelValue="filter.value = $event.map((v: any) => v.value)"
 			/>
+			<FormControl v-else disabled />
 		</div>
 	</div>
 </template>

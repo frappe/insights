@@ -91,6 +91,9 @@ type DropdownOption = {
 	value: string
 	description: string
 }
+type ColumnOption = DropdownOption & {
+	data_type: ColumnDataType
+}
 
 interface DataSourceTableOption extends DropdownOption {
 	data_source: string

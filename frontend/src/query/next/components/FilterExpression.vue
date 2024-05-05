@@ -1,26 +1,20 @@
 <script setup lang="ts">
 import Code from '@/components/Controls/Code.vue'
-import { watch } from 'vue'
-import { FilterExpression } from '../FiltersSelectorDialog.vue'
+import { expression } from '../query_utils'
 
-const filter = defineModel<FilterExpression>({
-	default: () => ({
-		expression: '',
-		isValid: false,
-	}),
+const filterExpression = defineModel<FilterExpression>({
+	default: () => ({ expression: expression('') }),
 	required: true,
 })
-watch(
-	() => filter.value.expression,
-	() => {
-		filter.value.isValid = filter.value.expression.length > 0
-	}
-)
 </script>
 
 <template>
 	<div class="min-h-[1.75rem] w-full rounded border text-sm">
-		<Code class="filter-expression" v-model="filter.expression" language="python" />
+		<Code
+			class="filter-expression"
+			v-model="filterExpression.expression.expression"
+			language="python"
+		/>
 	</div>
 </template>
 

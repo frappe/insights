@@ -10,9 +10,11 @@ export default function useAnalysis(name: string, modelName: string) {
 		title: 'Sales Analysis',
 		charts: [] as AnalysisChart[],
 		activeTabIdx: -1,
+		dashboardName: undefined as string | undefined,
 
 		addChart,
 		removeChart,
+		createDashboard,
 		setCurrentTab,
 
 		serialize() {
@@ -21,6 +23,7 @@ export default function useAnalysis(name: string, modelName: string) {
 				title: analysis.title,
 				modelName: analysis.modelName,
 				charts: analysis.charts,
+				dashboardName: analysis.dashboardName,
 				activePageIdx: analysis.activeTabIdx,
 			}
 		},
@@ -54,6 +57,11 @@ export default function useAnalysis(name: string, modelName: string) {
 		if (analysis.activeTabIdx >= analysis.charts.length) {
 			setCurrentTab(analysis.charts.length - 1)
 		}
+	}
+
+	function createDashboard() {
+		analysis.dashboardName = analysis.name + '-dashboard'
+		analysis.activeTabIdx = Infinity
 	}
 
 	return analysis

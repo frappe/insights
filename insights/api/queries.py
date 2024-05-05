@@ -162,6 +162,28 @@ _dict = deep_convert_dict_to_dict
 
 
 @frappe.whitelist()
+def get_distinct_column_values(data_source, query_pipeline, column_name, search_term=None):
+    doc = frappe.get_doc("Insights Data Source", data_source)
+
+    conn = doc.get_ibis_connection()
+    translator = QueryTranslator(query_pipeline, backend=conn)
+    query = translator.translate()
+    values_query = (
+        query.select(column_name)
+        .filter(
+            getattr(_, column_name).notnull()
+            if not search_term
+            else getattr(_, column_name).like(f"%{search_term}%")
+        )
+        .distinct()
+        .head(20)
+    )
+    sql = ibis.to_sql(values_query)
+    values = doc.execute_query(sql, pluck=True)
+    return values
+
+
+@frappe.whitelist()
 def execute_query_pipeline(data_source, query_pipeline, limit=100):
     doc = frappe.get_doc("Insights Data Source", data_source)
 
@@ -430,29 +452,6 @@ class QueryTranslator:
 
 
 # unused methods
-
-
-def get_distinct_column_values(data_source, query_pipeline, column_name, search_term=None):
-    doc = frappe.get_doc("Insights Data Source", data_source)
-
-    conn = doc.get_ibis_connection()
-    translator = QueryTranslator(query_pipeline, backend=conn)
-    query = translator.translate()
-    values_query = (
-        query.select(column_name)
-        .filter(
-            getattr(_, column_name).notnull()
-            if not search_term
-            else getattr(_, column_name).like(f"%{search_term}%")
-        )
-        .distinct()
-        .head(20)
-    )
-    sql = ibis.to_sql(values_query)
-    values = doc.execute_query(sql, pluck=True)
-    return values
-
-
 def get_min_max(data_source, query_pipeline, column_name):
     doc = frappe.get_doc("Insights Data Source", data_source)
 

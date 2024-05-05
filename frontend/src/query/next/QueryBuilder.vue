@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { onBeforeMount, onMounted, provide } from 'vue'
+import { provide } from 'vue'
 import QueryBuilderEmptyState from './QueryBuilderEmptyState.vue'
 import QueryBuilderTable from './QueryBuilderTable.vue'
 import QueryBuilderToolbar from './QueryBuilderToolbar.vue'
 import QueryOperations from './QueryOperations.vue'
-import useQuery, { Query } from './useQuery'
+import { Query } from './useQuery'
 
-type QueryBuilderProps = { queryName: string } | { query: Query }
+type QueryBuilderProps = { query: Query }
 const props = defineProps<QueryBuilderProps>()
-const query = 'query' in props ? props.query : useQuery(props.queryName)
-provide('query', query)
+provide('query', props.query)
 </script>
 
 <template>
-	<QueryBuilderEmptyState v-if="!query.dataSource" />
-	<div v-show="query.dataSource" class="relative flex h-full w-full divide-x overflow-hidden">
+	<QueryBuilderEmptyState v-if="!props.query.dataSource" />
+	<div
+		v-show="props.query.dataSource"
+		class="relative flex h-full w-full divide-x overflow-hidden"
+	>
 		<teleport to="#model-sidebar">
 			<QueryOperations />
 		</teleport>

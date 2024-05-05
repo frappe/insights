@@ -29,7 +29,7 @@ export type QueryResult = {
 	totalRowCount: number
 	rows: QueryResultRow[]
 	columns: QueryResultColumn[]
-	columnOptions: DropdownOption[]
+	columnOptions: ColumnOption[]
 }
 
 export type QuerySerialized = {
@@ -153,6 +153,7 @@ function useQuery(name: string) {
 					label: column.name,
 					value: column.name,
 					description: column.type,
+					data_type: column.type,
 				}))
 			})
 			.finally(() => {
