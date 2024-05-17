@@ -30,9 +30,9 @@ const formattedValue = computed(() => {
 		<div
 			class="mx-auto flex h-full max-h-[10rem] w-full min-w-40 max-w-[20rem] flex-col justify-center overflow-y-auto"
 		>
-			<!-- <div class="w-full">
-				<span class="truncate font-medium leading-6">{{ props.options.title }}</span>
-			</div> -->
+			<div class="w-full">
+				<span class="truncate font-medium leading-6">{{ config.metric_column }}</span>
+			</div>
 			<div class="text-[28px] font-medium leading-10">
 				{{ config.prefix }}{{ formattedValue }}{{ config.suffix }}
 			</div>
