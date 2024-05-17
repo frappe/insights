@@ -107,7 +107,8 @@ export function getBarChartOptions(columns: QueryResultColumn[], rows: QueryResu
 }
 
 export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
-	const data = getData(columns, rows)
+	const MAX_SLICES = 10
+	const data = getDonutChartData(columns, rows, MAX_SLICES)
 	return {
 		dataset: { source: data },
 		series: [
@@ -125,6 +126,43 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 		tooltip: getTooltip(),
 		legend: getLegend(),
 	}
+}
+
+function getDonutChartData(
+	columns: QueryResultColumn[],
+	rows: QueryResultRow[],
+	maxSlices: number
+) {
+	// reduce the number of slices to 10
+	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
+	if (!measureColumn) {
+		throw new Error('No measure column found')
+	}
+
+	const labelColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!labelColumn) {
+		throw new Error('No label column found')
+	}
+
+	const valueByLabel = rows.reduce((acc, row) => {
+		const label = row[labelColumn.name]
+		const value = row[measureColumn.name]
+		if (!acc[label]) acc[label] = 0
+		acc[label] = acc[label] + value
+		return acc
+	}, {} as Record<string, number>)
+
+	const sortedLabels = Object.keys(valueByLabel).sort((a, b) => valueByLabel[b] - valueByLabel[a])
+	const topLabels = sortedLabels.slice(0, maxSlices)
+	const others = sortedLabels.slice(maxSlices)
+	const topData = topLabels.map((label) => [label, valueByLabel[label]])
+	const othersTotal = others.reduce((acc, label) => acc + valueByLabel[label], 0)
+
+	if (othersTotal) {
+		topData.push(['Others', othersTotal])
+	}
+
+	return topData
 }
 
 function getData(columns: QueryResultColumn[], rows: QueryResultRow[]) {
