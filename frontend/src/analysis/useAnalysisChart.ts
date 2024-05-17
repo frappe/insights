@@ -22,7 +22,7 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		query: useQuery(name),
 		filters: [] as FilterArgs[],
 
-		refresh: refreshChart,
+		refresh,
 		setFilters(filters: FilterArgs[]) {
 			chart.filters = filters
 		},
@@ -46,14 +46,14 @@ export function useAnalysisChart(name: string, model: DataModel) {
 		Object.assign(chart, storedChart.value)
 	}
 
-	watchDebounced(() => model.queries[0].currentOperations, refreshChart, {
+	watchDebounced(() => model.queries[0].currentOperations, refresh, {
 		deep: true,
 		debounce: 500,
 	})
 
-	watchDebounced(() => chart.config, refreshChart, { deep: true, debounce: 500 })
+	watchDebounced(() => chart.config, refresh, { deep: true, debounce: 500 })
 
-	async function refreshChart() {
+	async function refresh() {
 		if (AXIS_CHARTS.includes(chart.type)) {
 			const _config = unref(chart.config as AxisChartConfig)
 			fetchAxisChartData(_config)
