@@ -13,14 +13,17 @@ onMounted(() => (mounted.value = true))
 </script>
 
 <template>
-	<div class="relative flex h-full w-full divide-x overflow-hidden">
+	<div class="relative flex h-full w-full overflow-hidden">
 		<div
 			id="model-sidebar"
-			class="relative flex w-[16rem] flex-shrink-0 flex-col overflow-y-auto bg-white"
+			class="relative flex w-[16rem] flex-shrink-0 flex-col overflow-y-auto border-r bg-white"
 		>
 			<ModelQueryList />
 		</div>
-		<div v-if="mounted" class="flex h-full w-full flex-col overflow-hidden pt-0 pr-0">
+		<div
+			v-if="mounted && analysis.model.activeQuery"
+			class="flex h-full w-full flex-col overflow-hidden pt-0 pr-0"
+		>
 			<QueryBuilder
 				:key="analysis.model.activeQuery.name"
 				:query="analysis.model.activeQuery"

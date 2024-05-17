@@ -10,7 +10,6 @@ const query = inject('query') as Query
 <template>
 	<div v-if="query.operations.length" class="flex flex-col gap-2 p-2.5">
 		<div class="flex cursor-pointer items-center gap-1">
-			<ChevronDown class="h-4 w-4" stroke-width="1.5" />
 			<div class="text-[11px] font-medium uppercase">Query Operations</div>
 		</div>
 		<div class="relative ml-1.5 mt-1 border-l border-gray-300 font-mono text-xs">
@@ -21,7 +20,7 @@ const query = inject('query') as Query
 				:class="idx <= query.activeOperationIdx ? 'opacity-100' : 'opacity-40'"
 				@click="query.setActiveStep(idx)"
 			>
-				<CircleDotIcon class="absolute -left-4 top-1 h-2 w-2 bg-white text-gray-600" />
+				<CircleDotIcon class="absolute -left-4 top-0.5 h-2 w-2 bg-white text-gray-600" />
 				<div class="flex items-center justify-between gap-2 overflow-hidden">
 					<div class="flex flex-1 flex-col gap-1 overflow-hidden">
 						<div class="font-medium text-gray-900">
