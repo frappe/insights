@@ -76,7 +76,7 @@ export function getRowChartOptions(columns: QueryResultColumn[], rows: QueryResu
 	const data = getData(columns, rows)
 	return {
 		grid: getGrid(),
-		dataset: { source: data },
+		dataset: { source: data.reverse() },
 		xAxis: { type: 'value' },
 		yAxis: { type: 'category' },
 		series: columns
@@ -91,7 +91,7 @@ export function getBarChartOptions(columns: QueryResultColumn[], rows: QueryResu
 	const data = getData(columns, rows)
 	return {
 		grid: getGrid(),
-		dataset: { source: data.reverse() },
+		dataset: { source: data },
 		xAxis: { type: 'category' },
 		yAxis: {
 			type: 'value',
