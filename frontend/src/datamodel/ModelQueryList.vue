@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { ChevronDown, Table2Icon, XIcon } from 'lucide-vue-next'
+import { Table2Icon, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { DataModel, dataModelKey } from './useDataModel'
 
@@ -21,8 +21,13 @@ const dataModel = inject(dataModelKey) as DataModel
 				class="group relative"
 			>
 				<Button
-					:variant="dataModel.activeQuery.name === query.name ? 'outline' : 'ghost'"
+					variant="outline"
 					class="w-full !justify-start font-mono !text-xs"
+					:class="
+						dataModel.activeQuery.name === query.name
+							? 'border-gray-400 hover:border-gray-400'
+							: 'border-transparent hover:border-transparent'
+					"
 					@click="dataModel.setActiveQuery(query.name)"
 				>
 					<template #prefix>
