@@ -6,9 +6,7 @@ import os
 import frappe
 from sqlalchemy import text
 
-from insights.insights.doctype.insights_data_source.sources.utils import (
-    create_insights_table,
-)
+from insights.insights.doctype.insights_table.insights_table import sync_insights_table
 
 
 def setup():
@@ -66,9 +64,7 @@ class DemoDataFactory:
         return factory
 
     def initialize(self):
-        self.data_url = (
-            "https://drive.google.com/u/0/uc?id=11EpftRVNilAtMVMX9cNFVd1QFmqx7MYF&export=download"
-        )
+        self.data_url = "https://drive.google.com/u/0/uc?id=11EpftRVNilAtMVMX9cNFVd1QFmqx7MYF&export=download"
         self.files_folder = frappe.get_site_path("private", "files")
         self.tar_filename = "insights_demo_data.sqlite.tar"
         self.local_filename = os.path.join(self.files_folder, self.tar_filename)
@@ -196,24 +192,19 @@ class DemoDataFactory:
                 },
             ):
                 continue
-            create_insights_table(
-                frappe._dict(
-                    {
-                        "data_source": self.data_source.name,
-                        "table": frappe.scrub(filename),
-                        "label": frappe.unscrub(filename),
-                        "columns": [
-                            frappe._dict(
-                                {
-                                    "column": frappe.scrub(column),
-                                    "label": frappe.unscrub(column),
-                                    "type": self.file_schema[filename]["columns"][column],
-                                }
-                            )
-                            for column in self.file_schema[filename]["columns"].keys()
-                        ],
-                    }
-                ),
+            sync_insights_table(
+                data_source=self.data_source.name,
+                table_name=filename,
+                columns=[
+                    frappe._dict(
+                        {
+                            "column": frappe.scrub(column),
+                            "label": frappe.unscrub(column),
+                            "type": self.file_schema[filename]["columns"][column],
+                        }
+                    )
+                    for column in self.file_schema[filename]["columns"].keys()
+                ],
                 force=True,
             )
             progress = 30 + (idx + 1) * 45 / len(self.file_schema.keys())
@@ -237,7 +228,9 @@ class DemoDataFactory:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
         except Exception as e:
-            frappe.log_error("Error downloading demo data. Please check your Internet connection.")
+            frappe.log_error(
+                "Error downloading demo data. Please check your Internet connection."
+            )
             update_progress("Error...", -1)
             raise e
 
@@ -273,7 +266,9 @@ class DemoDataFactory:
             index_name = f"idx_{table_name}_{'_'.join(indexes[table])}"
             columns = ", ".join([f"`{c}`" for c in indexes[table]])
             db_conn.execute(
-                text(f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})")
+                text(
+                    f"CREATE INDEX IF NOT EXISTS `{index_name}` ON `{table_name}` ({columns})"
+                )
             )
 
     def create_table_links(self):

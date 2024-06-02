@@ -2,33 +2,44 @@
 # For license information, please see license.txt
 
 
-import os
-from functools import cached_property
+from collections.abc import Generator
+from contextlib import contextmanager
 
 import frappe
 import ibis
 from frappe.model.document import Document
-from frappe.utils.caching import redis_cache, site_cache
+from frappe.utils.caching import site_cache
+from ibis import BaseBackend
 
-from insights import notify
 from insights.api.telemetry import track
-from insights.insights.doctype.insights_query.insights_query import InsightsQuery
-from insights.insights.doctype.insights_team.insights_team import (
-    check_table_permission,
-    get_permission_filter,
+from insights.insights.doctype.insights_data_source.data_warehouse import DataWarehouse
+from insights.insights.doctype.insights_data_source.sources.frappe_db import (
+    get_frappedb_connection_string,
+    get_sitedb_connection_string,
+    is_frappe_db,
 )
-
-from .sources.base_database import BaseDatabase, DatabaseConnectionError
-from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db
-from .sources.mariadb import MariaDB
-from .sources.postgresql import PostgresDatabase
-from .sources.query_store import QueryStore
-from .sources.sqlite import SQLiteDB
+from insights.insights.doctype.insights_data_source.sources.mariadb import (
+    get_mariadb_connection_string,
+)
+from insights.insights.doctype.insights_data_source.sources.postgresql import (
+    get_postgres_connection_string,
+)
+from insights.insights.doctype.insights_data_source.sources.sqlite import (
+    get_query_store_connection_string,
+    get_sqlite_connection_string,
+)
+from insights.insights.doctype.insights_table.insights_table import sync_insights_table
+from insights.insights.doctype.insights_table_column.insights_table_column import (
+    InsightsTableColumn,
+)
+from insights.insights.doctype.insights_team.insights_team import check_table_permission
 
 
 class InsightsDataSourceDocument:
     def before_insert(self):
-        if self.is_site_db and frappe.db.exists("Insights Data Source", {"is_site_db": 1}):
+        if self.is_site_db and frappe.db.exists(
+            "Insights Data Source", {"is_site_db": 1}
+        ):
             frappe.throw("Only one site database can be configured")
 
     def before_save(self: "InsightsDataSource"):
@@ -42,7 +53,9 @@ class InsightsDataSourceDocument:
 
         linked_doctypes = ["Insights Table"]
         for doctype in linked_doctypes:
-            for name in frappe.db.get_all(doctype, {"data_source": self.name}, pluck="name"):
+            for name in frappe.db.get_all(
+                doctype, {"data_source": self.name}, pluck="name"
+            ):
                 frappe.delete_doc(doctype, name)
 
         track("delete_data_source")
@@ -71,68 +84,6 @@ class InsightsDataSourceDocument:
 
 
 class InsightsDataSourceClient:
-    @frappe.whitelist()
-    @redis_cache(ttl=60 * 60 * 24)
-    def get_tables(self):
-        return frappe.get_list(
-            "Insights Table",
-            filters={
-                "data_source": self.name,
-                **get_permission_filter("Insights Table"),
-            },
-            fields=[
-                "name",
-                "table",
-                "label",
-                "hidden",
-                "is_query_based",
-                "data_source",
-            ],
-            order_by="hidden asc, label asc",
-        )
-
-    @frappe.whitelist()
-    def get_queries(self):
-        return frappe.get_list(
-            "Insights Query",
-            filters={
-                "data_source": self.name,
-                **get_permission_filter("Insights Query"),
-            },
-            fields=[
-                "name",
-                "title",
-                "data_source",
-            ],
-        )
-
-    @frappe.whitelist()
-    def get_schema(self):
-        return get_data_source_schema(self.name)
-
-    @frappe.whitelist()
-    def enqueue_sync_tables(self):
-        from frappe.utils.scheduler import is_scheduler_inactive
-
-        if is_scheduler_inactive():
-            notify(
-                **{
-                    "title": "Error",
-                    "message": "Scheduler is inactive",
-                    "type": "error",
-                }
-            )
-
-        frappe.enqueue_doc(
-            doctype=self.doctype,
-            name=self.name,
-            method="sync_tables",
-            job_name="sync_data_source",
-            queue="long",
-            timeout=3600,
-            now=True,
-        )
-
     @frappe.whitelist()
     def update_table_link(self, data):
         data = frappe._dict(data)
@@ -195,150 +146,117 @@ class InsightsDataSourceClient:
                 break
 
 
-class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, Document):
-    @cached_property
-    def _db(self) -> BaseDatabase:
+class InsightsDataSource(InsightsDataSourceDocument, Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        allow_imports: DF.Check
+        connection_string: DF.SmallText | None
+        database_name: DF.Data | None
+        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite"]
+        host: DF.Data | None
+        is_site_db: DF.Check
+        password: DF.Password | None
+        port: DF.Data | None
+        status: DF.Literal["Inactive", "Active"]
+        tables: DF.JSON | None
+        title: DF.Data
+        use_ssl: DF.Check
+        username: DF.Data | None
+    # end: auto-generated types
+
+    @contextmanager
+    def _get_ibis_backend(self) -> Generator[BaseBackend, None, None]:
+        connection_string, extra_args = self.get_connection_string()
+        db = ibis.connect(connection_string, **extra_args)
+
+        if is_frappe_db(self):
+            db.raw_sql("SET SESSION time_zone='+00:00'")
+            db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
+
+        try:
+            yield db
+        finally:
+            db.con.close()
+
+    def get_connection_string(self):
         if self.is_site_db:
-            return SiteDB(data_source=self.name)
+            return get_sitedb_connection_string()
         if self.name == "Query Store":
-            return QueryStore()
+            raise get_query_store_connection_string()
         if self.database_type == "SQLite":
-            return SQLiteDB(data_source=self.name, database_name=self.database_name)
-
-        conn_args = self.get_db_credentials()
-
-        if is_frappe_db(conn_args):
-            return FrappeDB(**conn_args)
-
+            raise get_sqlite_connection_string(self)
+        if is_frappe_db(self):
+            return get_frappedb_connection_string()
         if self.database_type == "MariaDB":
-            return MariaDB(**conn_args)
-
+            return get_mariadb_connection_string(self)
         if self.database_type == "PostgreSQL":
-            return PostgresDatabase(**conn_args)
-
-        frappe.throw(f"Unsupported database type: {self.database_type}")
-
-    def get_db_credentials(self):
-        password = self.get_password(raise_exception=False)
-
-        conn_args = frappe._dict(
-            {
-                "data_source": self.name,
-                "host": self.host,
-                "port": self.port,
-                "use_ssl": self.use_ssl,
-                "username": self.username,
-                "password": password,
-                "database_name": self.database_name,
-                "connection_string": self.connection_string,
-            }
-        )
-        return conn_args
-
-    def get_ibis_connection(self):
-        if self.database_type == "SQLite":
-            database_name = self.database_name
-            database_path = frappe.get_site_path("private", "files", f"{database_name}.sqlite")
-            database_path = os.path.abspath(database_path)
-            database_path = database_path.lstrip("/")
-            return ibis.connect(f"sqlite:///{database_path}")
-
-        if self.database_type == "MariaDB":
-            args = self.get_db_credentials()
-            conn = ibis.mysql.connect(
-                host=args.get("host"),
-                port=int(args.get("port")),
-                user=args.get("username"),
-                password=args.get("password"),
-                database=args.get("database_name"),
-                ssl=True,
-                ssl_verify_cert=True,
-                charset="utf8mb4",
-                use_unicode=True,
-            )
-            # conn.raw_sql("SET SESSION time_zone='+00:00'")
-            conn.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
-            return conn
+            return get_postgres_connection_string(self)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
     def test_connection(self, raise_exception=False):
         try:
-            return self._db.test_connection()
-        except DatabaseConnectionError:
-            return False
+            with self._get_ibis_backend() as db:
+                query = db.sql("SELECT 1")
+                res = db.execute(query)
+                return res.iloc[0, 0] == 1
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:
                 raise e
 
-    def sync_tables(self, tables=None, force=False):
-        notify(
-            type="info",
-            title="Syncing Data Source",
-            message="This may take a while. Please wait...",
+    @frappe.whitelist()
+    def update_table_list(self):
+        blacklist_patterns = ["^_", "^sqlite_"]
+        blacklisted = lambda table: any(table.match(p) for p in blacklist_patterns)
+        with self._get_ibis_backend() as remote_db:
+            tables = remote_db.list_tables()
+            tables = [t for t in tables if not blacklisted(t)]
+            self.tables = frappe.as_json(tables)
+        self.save()
+
+    @frappe.whitelist()
+    def sync_table(self, table_name):
+        table = DataWarehouse().get_table(self.name, table_name, sync=True)
+        columns = InsightsTableColumn.from_ibis_schema(table.schema())
+        sync_insights_table(self.name, table_name, columns=columns)
+
+
+@frappe.whitelist()
+@site_cache
+def get_data_source_tables(data_source=None, table_name_like=None):
+    tables = []
+    for ds in frappe.get_all(
+        "Insights Data Source",
+        filters={
+            "status": "Active",
+            "name": data_source or ["is", "set"],
+        },
+        fields=["name", "tables"],
+    ):
+        if not ds.tables:
+            continue
+        ds_tables = frappe.parse_json(ds.tables)
+        ds_tables = [
+            table
+            for table in ds_tables
+            if not table_name_like or table_name_like in table
+        ]
+        tables.extend(
+            [
+                frappe._dict(
+                    {
+                        "table_name": table_name,
+                        "data_source": ds.name,
+                    }
+                )
+                for table_name in ds_tables
+            ]
         )
-        self._db.sync_tables(tables=tables, force=force)
-        notify(
-            type="success",
-            title="Syncing Data Source",
-            message="Syncing completed.",
-        )
-
-    def build_query(self, query: InsightsQuery):
-        return self._db.build_query(query)
-
-    def run_query(self, query: InsightsQuery):
-        return self._db.run_query(query)
-
-    def execute_query(self, query: str, **kwargs):
-        return self._db.execute_query(query, **kwargs)
-
-    def get_table_columns(self, table):
-        # TODO: deprecate this method, used only once in insights_table.py
-        return self._db.get_table_columns(table)
-
-    def get_column_options(self, table, column, search_text=None, limit=50):
-        return self._db.get_column_options(table, column, search_text, limit)
-
-    def get_table_preview(self, table, limit=100):
-        return self._db.get_table_preview(table, limit)
-
-
-@site_cache(maxsize=128)
-def get_data_source_schema(data_source):
-    Table = frappe.qb.DocType("Insights Table")
-    TableColumn = frappe.qb.DocType("Insights Table Column")
-    schema_list = (
-        frappe.qb.from_(Table)
-        .select(
-            Table.table,
-            Table.label,
-            Table.is_query_based,
-            TableColumn.column,
-            TableColumn.label,
-            TableColumn.type,
-        )
-        .left_join(TableColumn)
-        .on(Table.name == TableColumn.parent)
-        .where((Table.data_source == data_source) & (Table.hidden == 0))
-        .run(as_dict=True)
-    )
-    schema = {}
-    for table in schema_list:
-        schema.setdefault(
-            table.table,
-            {
-                "label": table.label,
-                "is_query_based": table.is_query_based,
-                "columns": [],
-            },
-        )
-        schema[table.table]["columns"].append(
-            {
-                "column": table.column,
-                "label": table.label,
-                "type": table.type,
-            }
-        )
-    return schema
+    return tables

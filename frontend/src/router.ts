@@ -133,11 +133,6 @@ const routes = [
 		component: () => import('@/pages/Settings.vue'),
 	},
 	{
-		path: '/analysis',
-		name: 'Analysis',
-		component: () => import('@/analysis/Analysis.vue'),
-	},
-	{
 		path: '/no-permission',
 		name: 'No Permission',
 		component: () => import('@/pages/NoPermission.vue'),

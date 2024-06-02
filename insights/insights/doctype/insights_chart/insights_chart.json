@@ -11,6 +11,7 @@
   "column_break_nacz",
   "chart_type",
   "section_break_m9st",
+  "config",
   "options",
   "is_public",
   "public_key"
@@ -28,8 +29,7 @@
    "fieldname": "options",
    "fieldtype": "JSON",
    "in_list_view": 1,
-   "label": "Options",
-   "reqd": 1
+   "label": "Options"
   },
   {
    "default": "0",
@@ -55,11 +55,17 @@
   {
    "fieldname": "section_break_m9st",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "JSON",
+   "label": "Config",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-13 12:11:47.615480",
+ "modified": "2024-06-02 22:37:56.167442",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart",

@@ -9,6 +9,8 @@ app_color = "grey"
 app_email = "hello@frappe.io"
 app_license = "GNU GPLv3"
 
+export_python_type_annotations = True
+
 # Includes in <head>
 # ------------------
 

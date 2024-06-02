@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-06-02 11:36:04.571999",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "query"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Query",
+   "options": "Insights Query",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-06-02 11:50:54.005459",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Workbook Query",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
