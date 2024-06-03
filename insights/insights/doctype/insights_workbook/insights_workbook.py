@@ -2,10 +2,17 @@
 # For license information, please see license.txt
 
 # import frappe
-from contextlib import suppress
+
 
 import frappe
 from frappe.model.document import Document
+from ibis import _
+
+from insights.insights.doctype.insights_data_source.ibis_utils import (
+    IbisQueryBuilder,
+    execute_ibis_query,
+    get_columns_from_schema,
+)
 
 
 class InsightsWorkbook(Document):
@@ -33,18 +40,51 @@ class InsightsWorkbook(Document):
         title: DF.Data | None
     # end: auto-generated types
 
-    def on_update(self):
-        self.delete_orphan_queries()
+    def before_save(self):
+        for query in self.queries:
+            operations = frappe.parse_json(query.operations)
+            if operations:
+                ibis_query = IbisQueryBuilder().build(operations)
+                query.sql = ibis_query.compile()
+            else:
+                query.sql = None
 
-    def delete_orphan_queries(self):
-        doc_before_save = self.get_doc_before_save()
-        if not doc_before_save:
-            return
-        queries = [row.query for row in self.queries]
-        queries_before_save = [row.query for row in doc_before_save.queries]
-        queries_to_delete = [
-            query for query in queries_before_save if query not in queries
-        ]
-        for query in queries_to_delete:
-            with suppress(frappe.LinkExistsError):
-                frappe.delete_doc("Insights Query", query, ignore_missing=True)
+
+@frappe.whitelist()
+def fetch_query_results(operations):
+    results = []
+    ibis_query = IbisQueryBuilder().build(operations)
+    if ibis_query is None:
+        return
+
+    columns = get_columns_from_schema(ibis_query.schema())
+    results = execute_ibis_query(ibis_query)
+    results = results.values.tolist()
+
+    count_query = ibis_query.aggregate(count=_.count())
+    count_results = execute_ibis_query(count_query)
+    total_count = count_results["count"][0]
+
+    return {
+        "sql": ibis_query.sql,
+        "columns": columns,
+        "rows": results,
+        "total_row_count": int(total_count),
+    }
+
+
+@frappe.whitelist()
+def get_distinct_column_values(operations, column_name, search_term=None):
+    query = IbisQueryBuilder().build(operations)
+    values_query = (
+        query.select(column_name)
+        .filter(
+            getattr(_, column_name).notnull()
+            if not search_term
+            else getattr(_, column_name).like(f"%{search_term}%")
+        )
+        .distinct()
+        .head(20)
+    )
+    result = execute_ibis_query(values_query)
+    return result[column_name].tolist()

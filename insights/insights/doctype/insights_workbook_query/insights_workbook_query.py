@@ -14,8 +14,16 @@ class InsightsWorkbookQuery(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        execution_time: DF.Float
+        last_execution: DF.Datetime | None
+        operations: DF.JSON
         parent: DF.Data
         parentfield: DF.Data
         parenttype: DF.Data
-        query: DF.Link
+        result_row_count: DF.Int
+        sql: DF.Code | None
+        status: DF.Literal[
+            "Pending Execution", "Execution Successful", "Execution Failed"
+        ]
+        title: DF.Data
     # end: auto-generated types

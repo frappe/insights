@@ -1,7 +1,8 @@
-import { FIELDTYPES, safeJSONParse, wheneverChanges } from '@/utils'
+import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { confirmDialog } from '@/utils/components'
-import { computed, reactive, toRefs } from 'vue'
-import useDocumentResource from '../helpers/resource'
+import { call } from 'frappe-ui'
+import { computed, reactive } from 'vue'
+import { WorkbookQuery } from '../workbook/workbook'
 import {
 	cast,
 	column,
@@ -23,22 +24,19 @@ import {
 
 const queries = new Map<string, Query>()
 
-export default function useQuery(name: string) {
-	const existingQuery = queries.get(name)
+export default function useQuery(workbookQuery: WorkbookQuery) {
+	const existingQuery = queries.get(workbookQuery.name)
 	if (existingQuery) return existingQuery
 
-	const query = makeQuery(name)
-	queries.set(name, query)
+	const query = makeQuery(workbookQuery)
+	queries.set(workbookQuery.name, query)
 	return query
 }
 
-function makeQuery(name: string) {
-	const resource = getQueryResource(name)
-
+function makeQuery(workbookQuery: WorkbookQuery) {
 	const query = reactive({
-		...toRefs(resource),
+		doc: workbookQuery,
 
-		data_source: 'sales',
 		activeOperationIdx: -1,
 		currentOperations: computed(() => [] as Operation[]),
 
@@ -65,8 +63,6 @@ function makeQuery(name: string) {
 		removeColumn,
 		changeColumnType,
 		changeDateGranularity,
-
-		duplicate,
 
 		getDistinctColumnValues,
 
@@ -113,7 +109,7 @@ function makeQuery(name: string) {
 	wheneverChanges(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
-		{ deep: true }
+		{ deep: true, immediate: true }
 	)
 	async function execute() {
 		if (!query.doc.operations.length) {
@@ -128,8 +124,12 @@ function makeQuery(name: string) {
 		}
 
 		query.executing = true
-		return query
-			.call('fetch_results')
+		return call(
+			'insights.insights.doctype.insights_workbook.insights_workbook.fetch_query_results',
+			{
+				operations: query.doc.operations,
+			}
+		)
 			.then((response: any) => {
 				if (!response) return
 				query.result.executedSQL = response.sql
@@ -288,17 +288,15 @@ function makeQuery(name: string) {
 		query.activeOperationIdx = newOperations.length - 1
 	}
 
-	function duplicate() {
-		const newQuery = useQuery(Date.now().toString())
-		newQuery.setOperations([...query.doc.operations])
-		return newQuery
-	}
-
 	function getDistinctColumnValues(column: string, search_term: string = '') {
-		return query.call('get_distinct_column_values', {
-			column_name: column,
-			search_term,
-		})
+		return call(
+			'insights.insights.doctype.insights_workbook.insights_workbook.get_distinct_column_values',
+			{
+				operations: query.doc.operations,
+				column_name: column,
+				search_term,
+			}
+		)
 	}
 
 	function getDimension(column_name: string) {
@@ -313,26 +311,3 @@ function makeQuery(name: string) {
 }
 
 export type Query = ReturnType<typeof makeQuery>
-
-type InsightsQuery = {
-	doctype: 'Insights Query'
-	name: string
-	title: string
-	operations: Operation[]
-}
-
-function getQueryResource(name: string) {
-	const doctype = 'Insights Query'
-	return useDocumentResource<InsightsQuery>(doctype, name, {
-		initialDoc: {
-			doctype,
-			name,
-			title: '',
-			operations: [],
-		},
-		transform(doc: InsightsQuery) {
-			doc.operations = safeJSONParse(doc.operations) || []
-			return doc
-		},
-	})
-}

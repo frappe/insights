@@ -32,22 +32,22 @@ const workbook = inject(workbookKey) as Workbook
 		<div v-else class="flex flex-col">
 			<button
 				v-for="(row, idx) in workbook.doc.queries"
-				:key="row.query"
-				@click="workbook.setActiveTab('query', row.query)"
+				:key="row.name"
+				@click="workbook.setActiveTab('query', idx)"
 				class="group flex w-full cursor-pointer items-center justify-between rounded border border-gray-300 p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
 				:class="
-					workbook.isActiveTab(row.query)
+					workbook.isActiveTab(row.name)
 						? 'border-gray-700 hover:border-gray-700'
 						: 'border-gray-200'
 				"
 			>
 				<div class="flex gap-1.5">
 					<Table2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-					<p>{{ row.query }}</p>
+					<p>{{ row.name }}</p>
 				</div>
 				<button
 					class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"
-					@click.prevent.stop="workbook.removeQuery(row.query)"
+					@click.prevent.stop="workbook.removeQuery(row.name)"
 				>
 					<Tooltip text="Delete Query" :hover-delay="0.5">
 						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />

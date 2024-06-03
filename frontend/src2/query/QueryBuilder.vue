@@ -5,9 +5,10 @@ import QueryBuilderTable from './components/QueryBuilderTable.vue'
 import QueryBuilderToolbar from './components/QueryBuilderToolbar.vue'
 import QueryOperations from './components/QueryOperations.vue'
 import useQuery from './query'
+import { WorkbookQuery } from '../workbook/workbook'
 
-const props = defineProps<{ queryId: string }>()
-const query = useQuery(props.queryId)
+const props = defineProps<{ query: WorkbookQuery }>()
+const query = useQuery(props.query)
 provide('query', query)
 </script>
 

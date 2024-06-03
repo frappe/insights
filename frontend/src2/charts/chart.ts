@@ -1,4 +1,4 @@
-import { wheneverChanges } from '@/utils'
+import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
 import { getUniqueId } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
@@ -9,9 +9,8 @@ import {
 	AxisChartConfig,
 	DountChartConfig,
 	MetricChartConfig,
-	TableChartConfig
+	TableChartConfig,
 } from './helpers'
-import { watchDebounced } from '@vueuse/core'
 
 const charts = new Map<string, Chart>()
 
@@ -30,9 +29,17 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		baseQuery: computed(() => {
 			if (!workbookChart.query) return {} as Query
-			return useQuery(workbookChart.query)
+			return useQuery({
+				name: workbookChart.query,
+				title: '',
+				operations: [],
+			})
 		}),
-		dataQuery: useQuery('new-query-' + getUniqueId()),
+		dataQuery: useQuery({
+			name: 'new-query-' + getUniqueId(),
+			title: '',
+			operations: [],
+		}),
 		filters: [] as FilterArgs[],
 
 		refresh,

@@ -1,3 +1,4 @@
+import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
 import { InjectionKey, reactive, toRefs, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
@@ -5,8 +6,6 @@ import { ChartConfig, ChartType } from '../charts/helpers'
 import { getUniqueId } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
-import useQuery from '../query/query'
-
 export default function useWorkbook(name: string) {
 	const resource = getWorkbookResource(name)
 
@@ -25,7 +24,7 @@ export default function useWorkbook(name: string) {
 			return (
 				(workbook.activeTabType === 'query' &&
 					workbook.doc.queries.length > 0 &&
-					workbook.doc.queries[workbook.activeTabIdx].query === name) ||
+					workbook.doc.queries[workbook.activeTabIdx].name === name) ||
 				(workbook.activeTabType === 'chart' &&
 					workbook.doc.charts.length > 0 &&
 					workbook.doc.charts[workbook.activeTabIdx].name === name) ||
@@ -37,17 +36,20 @@ export default function useWorkbook(name: string) {
 
 		addQuery() {
 			const queryName = 'new-query-' + getUniqueId()
-			workbook.doc.queries.push({ query: queryName })
+			workbook.doc.queries.push({
+				name: queryName,
+				title: `Query ${workbook.doc.queries.length + 1}`,
+				operations: [],
+			})
 			workbook.setActiveTab('query', workbook.doc.queries.length - 1)
 		},
 
 		removeQuery(queryName: string) {
-			const row = workbook.doc.queries.find((row) => row.query === queryName)
-			if (row) {
-				workbook.doc.queries.splice(workbook.doc.queries.indexOf(row), 1)
-				if (workbook.isActiveTab(queryName)) {
-					workbook.setActiveTab('', 0)
-				}
+			const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
+			if (idx === -1) return
+			workbook.doc.queries.splice(idx, 1)
+			if (workbook.isActiveTab(queryName)) {
+				workbook.setActiveTab('', 0)
 			}
 		},
 
@@ -115,12 +117,9 @@ export default function useWorkbook(name: string) {
 	})
 
 	workbook.onBeforeSave(async () => {
-		const queryPromises = workbook.doc.queries.map(async (row) => {
-			const query = await useQuery(row.query).save()
-			row.query = query.name
+		workbook.doc.queries.forEach((row) => {
+			row.name = row.name.startsWith('new-query-') ? '' : row.name
 		})
-		await Promise.all(queryPromises)
-
 		workbook.doc.charts.forEach((row) => {
 			row.name = row.name.startsWith('new-chart-') ? '' : row.name
 		})
@@ -156,6 +155,21 @@ function getWorkbookResource(name: string) {
 			charts: [],
 			dashboards: [],
 		},
+		transform(doc) {
+			doc.queries = doc.queries.map((row) => {
+				row.operations = safeJSONParse(row.operations) || []
+				return row
+			})
+			doc.charts = doc.charts.map((row) => {
+				row.config = safeJSONParse(row.config) || {}
+				return row
+			})
+			doc.dashboards = doc.dashboards.map((row) => {
+				row.items = safeJSONParse(row.items) || []
+				return row
+			})
+			return doc
+		},
 	})
 	return workbook
 }
@@ -164,13 +178,15 @@ type InsightsWorkbook = {
 	doctype: 'Insights Workbook'
 	name: string
 	title: string
-	queries: InsightsWorkbookQuery[]
+	queries: WorkbookQuery[]
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
 }
 
-export type InsightsWorkbookQuery = {
-	query: string
+export type WorkbookQuery = {
+	name: string
+	title: string
+	operations: Operation[]
 }
 
 export type WorkbookChart = {

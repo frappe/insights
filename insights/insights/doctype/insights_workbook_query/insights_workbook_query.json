@@ -5,22 +5,80 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "query"
+  "status",
+  "title",
+  "section_break_lult",
+  "operations",
+  "sql",
+  "section_break_nmzw",
+  "execution_time",
+  "last_execution",
+  "column_break_yhsi",
+  "result_row_count"
  ],
  "fields": [
   {
-   "fieldname": "query",
-   "fieldtype": "Link",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending Execution\nExecution Successful\nExecution Failed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Query",
-   "options": "Insights Query",
+   "label": "Title",
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_lult",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "operations",
+   "fieldtype": "JSON",
+   "in_list_view": 1,
+   "label": "Operations",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sql",
+   "fieldtype": "Code",
+   "label": "SQL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_nmzw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "last_execution",
+   "fieldtype": "Datetime",
+   "label": "Last Execution",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yhsi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "result_row_count",
+   "fieldtype": "Int",
+   "label": "Result Row Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "execution_time",
+   "fieldtype": "Float",
+   "label": "Execution Time (seconds)",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-06-02 11:50:54.005459",
+ "modified": "2024-06-03 23:36:39.863605",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook Query",
