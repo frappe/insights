@@ -12,7 +12,7 @@ import {
 	TableChartConfig,
 } from './helpers'
 import useDocumentResource from '../helpers/resource'
-import { safeJSONParse } from '@/utils'
+import { safeJSONParse, wheneverChanges } from '@/utils'
 import { getUniqueId } from '../helpers'
 
 const charts = new Map<string, Chart>()
@@ -45,27 +45,24 @@ function makeChart(name: string) {
 		},
 	})
 
-	watchDebounced(() => chart.baseQuery?.currentOperations, refresh, {
-		deep: true,
-		debounce: 500,
-	})
 
-	watchDebounced(() => chart.doc.config, refresh, { deep: true, debounce: 500 })
+
+	wheneverChanges(() => chart.doc.config, refresh, { deep: true, debounce: 500 })
 
 	async function refresh() {
-		if (AXIS_CHARTS.includes(chart.doc.type)) {
+		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
 			fetchAxisChartData(_config)
 		}
-		if (chart.doc.type === 'Metric') {
+		if (chart.doc.chart_type === 'Metric') {
 			const _config = unref(chart.doc.config as MetricChartConfig)
 			fetchMetricChartData(_config)
 		}
-		if (chart.doc.type === 'Donut') {
+		if (chart.doc.chart_type === 'Donut') {
 			const _config = unref(chart.doc.config as DountChartConfig)
 			fetchDonutChartData(_config)
 		}
-		if (chart.doc.type === 'Table') {
+		if (chart.doc.chart_type === 'Table') {
 			const _config = unref(chart.doc.config as TableChartConfig)
 			fetchTableChartData(_config)
 		}
@@ -255,8 +252,8 @@ export type Chart = ReturnType<typeof makeChart>
 type InsightsChart = {
 	doctype: 'Insights Chart'
 	name: string
-	type: ChartType
 	query: string
+	chart_type: ChartType
 	config: ChartConfig
 }
 function getChartResource(name: string) {
@@ -265,8 +262,8 @@ function getChartResource(name: string) {
 		initialDoc: {
 			doctype,
 			name,
-			type: 'Bar',
 			query: '',
+			chart_type: 'Bar',
 			config: {} as ChartConfig,
 		},
 		transform(doc: any) {

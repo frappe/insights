@@ -16,16 +16,16 @@ const chart = props.chart
 
 const eChartOptions = computed(() => {
 	if (!chart.dataQuery.result.columns?.length) return
-	if (chart.doc.type === 'Bar') {
+	if (chart.doc.chart_type === 'Bar') {
 		return getBarChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
 	}
-	if (chart.doc.type === 'Line') {
+	if (chart.doc.chart_type === 'Line') {
 		return getLineChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
 	}
-	if (chart.doc.type === 'Row') {
+	if (chart.doc.chart_type === 'Row') {
 		return getRowChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
 	}
-	if (chart.doc.type === 'Donut') {
+	if (chart.doc.chart_type === 'Donut') {
 		return getDonutChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
 	}
 })
@@ -33,11 +33,11 @@ const eChartOptions = computed(() => {
 
 <template>
 	<BaseChart v-if="eChartOptions" class="min-h-[20rem] p-2" :options="eChartOptions" />
-	<div v-if="chart.doc.type == 'Metric'" class="rounded border">
+	<div v-if="chart.doc.chart_type == 'Metric'" class="rounded border">
 		<MetricChart :chart="chart" />
 	</div>
 	<DataTable
-		v-if="chart.doc.type == 'Table'"
+		v-if="chart.doc.chart_type == 'Table'"
 		:columns="chart.dataQuery.result.columns"
 		:rows="chart.dataQuery.result.rows"
 	/>

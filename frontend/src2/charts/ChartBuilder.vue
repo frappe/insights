@@ -40,40 +40,40 @@ provide('chart', chart)
 				</div>
 			</div>
 			<DataTable
-				v-if="chart.doc.type != 'Table'"
+				v-if="chart.doc.chart_type != 'Table'"
 				:columns="chart.dataQuery.result.columns"
 				:rows="chart.dataQuery.result.rows"
 				class="max-h-[17rem] bg-white"
 			/>
 		</div>
 		<div class="relative flex w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
-			<ChartTypeSelector v-model="chart.doc.type" />
+			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<hr class="my-1 border-t border-gray-200" />
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 			<template v-if="chart.baseQuery.doc?.name">
 				<hr class="my-1 border-t border-gray-200" />
 				<MetricChartConfigForm
-					v-if="chart.doc.type == 'Metric'"
+					v-if="chart.doc.chart_type == 'Metric'"
 					v-model="(chart.doc.config as MetricChartConfig)"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
 				<DonutChartConfigForm
-					v-if="chart.doc.type == 'Donut'"
+					v-if="chart.doc.chart_type == 'Donut'"
 					v-model="(chart.doc.config as DountChartConfig)"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
 				<TableChartConfigForm
-					v-if="chart.doc.type == 'Table'"
+					v-if="chart.doc.chart_type == 'Table'"
 					v-model="(chart.doc.config as TableChartConfig)"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
 				<AxisChartConfigForm
-					v-if="AXIS_CHARTS.includes(chart.doc.type)"
+					v-if="AXIS_CHARTS.includes(chart.doc.chart_type)"
 					v-model="(chart.doc.config as AxisChartConfig)"
-					:chart-type="chart.doc.type"
+					:chart-type="chart.doc.chart_type"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
