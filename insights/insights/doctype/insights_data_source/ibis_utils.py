@@ -2,6 +2,8 @@ import time
 
 import frappe
 import ibis
+import numpy as np
+import pandas as pd
 from frappe.utils.data import flt
 from ibis import _
 from ibis import selectors as s
@@ -252,6 +254,8 @@ def execute_ibis_query(query: IbisQuery, query_name=None, limit=100) -> list:
         flt(time.monotonic() - start, 3),
         query_name,
     )
+    if isinstance(res, pd.DataFrame):
+        res = res.replace({pd.NaT: None, np.NaN: None})
     return res
 
 

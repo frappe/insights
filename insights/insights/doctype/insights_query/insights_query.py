@@ -66,7 +66,7 @@ class InsightsQuery(Document):
         start = time.monotonic()
         try:
             results = execute_ibis_query(query, self.name)
-            results = results.fillna("").values.tolist()
+            results = results.values.tolist()
             self.db_set(
                 {
                     "status": "Execution Successful",
