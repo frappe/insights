@@ -41,13 +41,18 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 				</thead>
 				<tbody>
 					<tr v-for="(row, idx) in props.rows?.slice(0, 100)" :key="idx">
-						<td class="whitespace-nowrap border-b border-r px-3" width="1%">
+						<td
+							class="whitespace-nowrap border-b border-r px-3"
+							width="1%"
+							height="30px"
+						>
 							{{ idx + 1 }}
 						</td>
 						<td
 							v-for="col in props.columns"
 							class="truncate border-b border-r py-2 px-3 text-gray-800"
 							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
+							height="30px"
 						>
 							{{ isNumberColumn(col) ? formatNumber(row[col.name]) : row[col.name] }}
 						</td>
