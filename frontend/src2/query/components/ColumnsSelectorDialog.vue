@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
-import DataTypeIcon from './DataTypeIcon.vue'
 import { Query } from '../query'
+import DataTypeIcon from './DataTypeIcon.vue'
 
 const emit = defineEmits({
 	select: (columns: string[]) => true,
@@ -85,7 +85,11 @@ function confirmSelection() {
 						</template>
 					</FormControl>
 					<Button @click="toggleSelectAll">
-						{{ areAllSelected ? 'Deselect All' : 'Select All' }}
+						{{
+							areAllSelected
+								? `Deselect All (${selectedColumns.length})`
+								: `Select All (${selectedColumns.length})`
+						}}
 					</Button>
 				</div>
 				<div class="flex flex-col overflow-y-scroll rounded border p-0.5 text-base">
