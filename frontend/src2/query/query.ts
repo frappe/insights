@@ -23,6 +23,9 @@ import {
 } from './helpers'
 
 const queries = new Map<string, Query>()
+export function getCachedQuery(name: string) {
+	return queries.get(name)
+}
 
 export default function useQuery(workbookQuery: WorkbookQuery) {
 	const existingQuery = queries.get(workbookQuery.name)

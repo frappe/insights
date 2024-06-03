@@ -3,7 +3,6 @@ import { watchOnce } from '@vueuse/core'
 import { InjectionKey, reactive, toRefs, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChartConfig, ChartType } from '../charts/helpers'
-import { getUniqueId } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 export default function useWorkbook(name: string) {
@@ -35,13 +34,13 @@ export default function useWorkbook(name: string) {
 		},
 
 		addQuery() {
-			const queryName = 'new-query-' + getUniqueId()
+			const idx = workbook.doc.queries.length
 			workbook.doc.queries.push({
-				name: queryName,
-				title: `Query ${workbook.doc.queries.length + 1}`,
+				name: `query-${idx + 1}`,
+				title: `Query ${idx + 1}`,
 				operations: [],
 			})
-			workbook.setActiveTab('query', workbook.doc.queries.length - 1)
+			workbook.setActiveTab('query', idx)
 		},
 
 		removeQuery(queryName: string) {
@@ -54,14 +53,14 @@ export default function useWorkbook(name: string) {
 		},
 
 		addChart() {
-			const name = 'new-chart-' + getUniqueId()
+			const idx = workbook.doc.charts.length
 			workbook.doc.charts.push({
-				name,
+				name: `chart-${idx + 1}`,
 				query: '',
 				chart_type: 'Line',
 				config: {} as ChartConfig,
 			})
-			workbook.setActiveTab('chart', workbook.doc.charts.length - 1)
+			workbook.setActiveTab('chart', idx)
 		},
 
 		removeChart(chartName: string) {
@@ -74,10 +73,9 @@ export default function useWorkbook(name: string) {
 		},
 
 		addDashboard() {
-			const name = 'new-dashboard-' + getUniqueId()
 			const idx = workbook.doc.dashboards.length
 			workbook.doc.dashboards.push({
-				name,
+				name: `dashboard-${idx + 1}`,
 				title: `Dashboard ${idx + 1}`,
 				items: [],
 			})
@@ -116,18 +114,6 @@ export default function useWorkbook(name: string) {
 		}
 	})
 
-	workbook.onBeforeSave(async () => {
-		workbook.doc.queries.forEach((row) => {
-			row.name = row.name.startsWith('new-query-') ? '' : row.name
-		})
-		workbook.doc.charts.forEach((row) => {
-			row.name = row.name.startsWith('new-chart-') ? '' : row.name
-		})
-		workbook.doc.dashboards.forEach((row) => {
-			row.name = row.name.startsWith('new-dashboard-') ? '' : row.name
-		})
-	})
-
 	// set first tab as active
 	watchOnce(
 		() => workbook.doc.queries,
@@ -156,18 +142,9 @@ function getWorkbookResource(name: string) {
 			dashboards: [],
 		},
 		transform(doc) {
-			doc.queries = doc.queries.map((row) => {
-				row.operations = safeJSONParse(row.operations) || []
-				return row
-			})
-			doc.charts = doc.charts.map((row) => {
-				row.config = safeJSONParse(row.config) || {}
-				return row
-			})
-			doc.dashboards = doc.dashboards.map((row) => {
-				row.items = safeJSONParse(row.items) || []
-				return row
-			})
+			doc.queries = safeJSONParse(doc.queries) || []
+			doc.charts = safeJSONParse(doc.charts) || []
+			doc.dashboards = safeJSONParse(doc.dashboards) || []
 			return doc
 		},
 	})

@@ -24,30 +24,24 @@ class InsightsWorkbook(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        from insights.insights.doctype.insights_workbook_chart.insights_workbook_chart import (
-            InsightsWorkbookChart,
-        )
-        from insights.insights.doctype.insights_workbook_dashboard.insights_workbook_dashboard import (
-            InsightsWorkbookDashboard,
-        )
-        from insights.insights.doctype.insights_workbook_query.insights_workbook_query import (
-            InsightsWorkbookQuery,
-        )
-
-        charts: DF.Table[InsightsWorkbookChart]
-        dashboards: DF.Table[InsightsWorkbookDashboard]
-        queries: DF.Table[InsightsWorkbookQuery]
+        charts: DF.JSON | None
+        dashboards: DF.JSON | None
+        queries: DF.JSON | None
         title: DF.Data | None
     # end: auto-generated types
 
     def before_save(self):
-        for query in self.queries:
-            operations = frappe.parse_json(query.operations)
-            if operations:
-                ibis_query = IbisQueryBuilder().build(operations)
-                query.sql = ibis_query.compile()
+        queries = frappe.parse_json(self.queries)
+        for query in queries:
+            if query["operations"]:
+                ibis_query = IbisQueryBuilder().build(query["operations"])
+                query["sql"] = ibis_query.compile()
             else:
-                query.sql = None
+                query["sql"] = None
+
+        self.queries = frappe.as_json(queries)
+        self.charts = frappe.as_json(frappe.parse_json(self.charts))
+        self.dashboards = frappe.as_json(frappe.parse_json(self.dashboards))
 
 
 @frappe.whitelist()

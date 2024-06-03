@@ -2,7 +2,7 @@ import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
 import { getUniqueId } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
-import useQuery, { Query } from '../query/query'
+import useQuery, { Query, getCachedQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
 import {
 	AXIS_CHARTS,
@@ -29,11 +29,11 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		baseQuery: computed(() => {
 			if (!workbookChart.query) return {} as Query
-			return useQuery({
-				name: workbookChart.query,
-				title: '',
-				operations: [],
-			})
+			const query = getCachedQuery(workbookChart.query)
+			if (!query) {
+				throw new Error('Query not found')
+			}
+			return query
 		}),
 		dataQuery: useQuery({
 			name: 'new-query-' + getUniqueId(),
@@ -48,7 +48,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		},
 	})
 
-	watchDebounced(() => chart.doc.config, refresh, { deep: true, debounce: 500 })
+	watchDebounced(() => chart.doc.config, refresh, { deep: true, debounce: 500, immediate: true })
 
 	async function refresh() {
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
