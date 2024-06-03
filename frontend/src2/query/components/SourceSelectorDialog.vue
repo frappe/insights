@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { createListResource, createResource, ListView } from 'frappe-ui'
+import { createResource, ListView } from 'frappe-ui'
 import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, ref, watch } from 'vue'
-import dayjs from '../../helpers/dayjs'
 import DataSourceSelector from './DataSourceSelector.vue'
 
 const emit = defineEmits({
@@ -101,6 +100,7 @@ function onConfirm() {
 					<DataSourceSelector v-model="dataSourceFilter"> </DataSourceSelector>
 				</div>
 				<ListView
+					class="h-full"
 					:columns="listColumns"
 					:rows="tables.data"
 					:row-key="'name'"

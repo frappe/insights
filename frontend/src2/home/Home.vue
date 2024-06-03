@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import Navbar from '../components/Navbar.vue'
 import session from '../session'
 import HomeQuickActions from './HomeQuickActions.vue'
+import HomeWorkbookList from './HomeWorkbookList.vue'
 
 const $dayjs = inject('$dayjs')
 // @ts-ignore
@@ -18,5 +18,6 @@ const today = $dayjs().format('dddd, D MMMM')
 			<div class="text-lg text-gray-600">{{ today }}</div>
 		</div>
 		<HomeQuickActions></HomeQuickActions>
+		<HomeWorkbookList></HomeWorkbookList>
 	</div>
 </template>

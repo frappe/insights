@@ -1,11 +1,11 @@
-import { InjectionKey, computed, reactive, toRefs, watch, watchEffect } from 'vue'
+import { watchOnce } from '@vueuse/core'
+import { InjectionKey, reactive, toRefs, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
+import useChart from '../charts/chart'
 import { getUniqueId } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
-import { watchOnce } from '@vueuse/core'
 import useQuery from '../query/query'
-import useChart from '../charts/chart'
 
 export default function useWorkbook(name: string) {
 	const resource = getWorkbookResource(name)

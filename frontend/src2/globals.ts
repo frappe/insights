@@ -16,7 +16,7 @@ import {
 } from 'frappe-ui'
 
 import { App } from 'vue'
-import dayjs from './helpers/dayjs'
+import dayjs from './helpers/dayjs.ts'
 import { createToast } from './helpers/toasts'
 import { initSocket } from './socket.ts'
 

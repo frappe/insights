@@ -23,7 +23,7 @@ export default function useDocumentResource<T>(
 		originalDoc: options.initialDoc,
 		isdirty: computed(() => false),
 		islocal: name.startsWith('new-'),
-		loading: false,
+		loading: !name.startsWith('new-'),
 		saving: false,
 		deleting: false,
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide, watch, watchEffect } from 'vue'
+import { provide, watchEffect } from 'vue'
 import ChartBuilder from '../charts/ChartBuilder.vue'
 import Navbar from '../components/Navbar.vue'
 import QueryBuilder from '../query/QueryBuilder.vue'
@@ -11,11 +11,11 @@ const props = defineProps<{ name: string }>()
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
 
-// if (props.name.startsWith('new-workbook')) {
-// 	window.onbeforeunload = () => {
-// 		return 'Are you sure you want to leave? You have unsaved changes.'
-// 	}
-// }
+if (workbook.islocal && workbook.isdirty) {
+	window.onbeforeunload = () => {
+		return 'Are you sure you want to leave? You have unsaved changes.'
+	}
+}
 
 watchEffect(() => {
 	document.title = `${workbook.doc.name} | Workbook`
@@ -27,7 +27,12 @@ watchEffect(() => {
 		<Navbar>
 			<template #actions>
 				<div class="flex gap-2">
-					<Button variant="outline" icon-left="save" @click="workbook.save()">
+					<Button
+						variant="outline"
+						icon-left="save"
+						:loading="workbook.saving"
+						@click="workbook.save()"
+					>
 						Save
 					</Button>
 				</div>
@@ -46,10 +51,9 @@ watchEffect(() => {
 				:chart-id="workbook.activeTabName"
 				:queries="workbook.doc.queries.map((q) => q.query)"
 			/>
-
 			<div
-				v-if="workbook.loading"
-				class="absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+				class="pointer-events-none absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm transition-all"
+				:class="workbook.loading ? 'opacity-100' : 'opacity-0'"
 			>
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
