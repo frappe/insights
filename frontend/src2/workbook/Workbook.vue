@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { provide, watchEffect } from 'vue'
+import { computed, provide, watch, watchEffect } from 'vue'
 import ChartBuilder from '../charts/ChartBuilder.vue'
+import useChart from '../charts/chart'
 import Navbar from '../components/Navbar.vue'
+import DashboardBuilder from '../dashboard/DashboardBuilder.vue'
 import QueryBuilder from '../query/QueryBuilder.vue'
+import useQuery from '../query/query'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useWorkbook, { workbookKey } from './workbook'
 
@@ -11,10 +14,22 @@ const props = defineProps<{ name: string }>()
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
 
-if (workbook.islocal && workbook.isdirty) {
-	window.onbeforeunload = () => {
-		return 'Are you sure you want to leave? You have unsaved changes.'
-	}
+if (workbook.islocal) {
+	const isDirty = computed(() => {
+		return (
+			workbook.isdirty ||
+			workbook.doc.queries.some((q) => useQuery(q.query).isdirty) ||
+			workbook.doc.charts.some((c) => useChart(c.chart).isdirty)
+		)
+	})
+	const stopWatcher = watch(isDirty, (dirty) => {
+		if (dirty) {
+			window.onbeforeunload = () => {
+				return 'Are you sure you want to leave? You have unsaved changes.'
+			}
+			stopWatcher()
+		}
+	})
 }
 
 watchEffect(() => {
@@ -50,6 +65,11 @@ watchEffect(() => {
 				:key="workbook.activeTabName"
 				:chart-id="workbook.activeTabName"
 				:queries="workbook.doc.queries.map((q) => q.query)"
+			/>
+			<DashboardBuilder
+				v-if="workbook.activeTabType === 'dashboard'"
+				:key="workbook.activeTabIdx"
+				:dashboard="workbook.doc.dashboards[workbook.activeTabIdx]"
 			/>
 			<div
 				class="pointer-events-none absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm transition-all"

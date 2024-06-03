@@ -477,7 +477,7 @@ export function wheneverChanges(getter, callback, options = {}) {
 		prevValue = value
 		callback(value)
 	}
-	return watch(getter, onChange, options)
+	return watchDebounced(getter, onChange, options)
 }
 
 export async function run_doc_method(method, doc, args = {}) {

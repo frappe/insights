@@ -1,8 +1,20 @@
 import { reactive } from 'vue'
 
-export default function useDashboard(name: string) {
+const dashboards = new Map<string, Dashboard>()
+
+export default function useDashboard(workbookDashboard: WorkbookDashboard) {
+	const existingDashboard = dashboards.get(workbookDashboard.name)
+	if (existingDashboard) return existingDashboard
+
+	const dashboard = makeDashboard(workbookDashboard)
+	dashboards.set(workbookDashboard.name, dashboard)
+	return dashboard
+}
+
+function makeDashboard(workbookDashboard: WorkbookDashboard) {
 	const dashboard = reactive({
-		name,
+		doc: workbookDashboard,
+
 		filters: [] as FilterArgs[],
 		charts: [] as string[],
 
@@ -24,4 +36,4 @@ export default function useDashboard(name: string) {
 	return dashboard
 }
 
-export type Dashboard = ReturnType<typeof useDashboard>
+export type Dashboard = ReturnType<typeof makeDashboard>

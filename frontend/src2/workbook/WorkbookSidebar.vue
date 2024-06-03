@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import WorkbookQueryList from './WorkbookQueryList.vue'
 import WorkbookChartList from './WorkbookChartList.vue'
+import WorkbookDashboardList from './WorkbookDashboardList.vue'
 </script>
 
 <template>
@@ -9,5 +10,6 @@ import WorkbookChartList from './WorkbookChartList.vue'
 	>
 		<WorkbookQueryList />
 		<WorkbookChartList />
+		<WorkbookDashboardList />
 	</div>
 </template>

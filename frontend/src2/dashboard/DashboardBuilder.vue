@@ -5,7 +5,20 @@ import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import useDashboard from './dashboard'
 import useChart from '../charts/chart'
 
-const dashboard = useDashboard('new-dashboard')
+const props = defineProps<{ dashboard: WorkbookDashboard }>()
+const dashboard = useDashboard(props.dashboard)
+dashboard.doc.items = [
+	{
+		type: 'chart',
+		chart: 'test',
+		layout: {
+			x: 0,
+			y: 0,
+			w: 6,
+			h: 6,
+		},
+	},
+]
 async function valuesProvider(column_name: string, searchTxt?: string) {
 	return []
 }
@@ -13,10 +26,9 @@ async function valuesProvider(column_name: string, searchTxt?: string) {
 
 <template>
 	<div class="relative flex h-full w-full divide-x overflow-hidden">
-		<div class="relative flex w-[16rem] flex-shrink-0 flex-col overflow-y-auto bg-white"></div>
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<div class="flex h-16 items-center justify-between border-b bg-white px-4">
-				<div class="text-lg font-semibold">Dashboard</div>
+				<div class="text-lg font-semibold">{{ dashboard.doc.name }}</div>
 				<div class="flex gap-2">
 					<Button @click="dashboard.refresh">
 						<template #prefix>
@@ -68,5 +80,6 @@ async function valuesProvider(column_name: string, searchTxt?: string) {
 				</div>
 			</div>
 		</div>
+		<div class="relative flex w-[16rem] flex-shrink-0 flex-col overflow-y-auto bg-white"></div>
 	</div>
 </template>

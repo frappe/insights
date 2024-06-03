@@ -10,13 +10,15 @@ import useQuery from '../query/query'
 export default function useWorkbook(name: string) {
 	const resource = getWorkbookResource(name)
 
+	type ActiveTabType = 'query' | 'chart' | 'dashboard' | ''
 	const workbook = reactive({
 		...toRefs(resource),
 
-		activeTabType: '',
+		activeTabType: '' as ActiveTabType,
 		activeTabName: '',
+		activeTabIdx: 0,
 
-		setActiveTab(type: string, name: string) {
+		setActiveTab(type: ActiveTabType, name: string) {
 			workbook.activeTabType = type
 			workbook.activeTabName = name
 		},
@@ -55,6 +57,31 @@ export default function useWorkbook(name: string) {
 				}
 			}
 		},
+
+		addDashboard() {
+			const name = 'new-dashboard-' + getUniqueId()
+			const idx = workbook.doc.dashboards.length
+			const title = `Dashboard ${idx + 1}`
+			workbook.doc.dashboards.push({ name, title })
+			workbook.activeTabType = 'dashboard'
+			workbook.activeTabIdx = idx
+		},
+
+		removeDashboard(dashboardName: string) {
+			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
+			if (idx === -1) return
+			workbook.doc.dashboards.splice(idx, 1)
+			if (workbook.activeTabIdx === idx) {
+				workbook.activeTabType = ''
+				workbook.activeTabIdx = 0
+			}
+		},
+
+		getDashboard(dashboardName: string) {
+			const row = workbook.doc.dashboards.find((row) => row.name === dashboardName)
+			if (!row) return
+			return row
+		},
 	})
 
 	const router = useRouter()
@@ -79,23 +106,21 @@ export default function useWorkbook(name: string) {
 		}
 	})
 
-	workbook.onBeforeSave(() => {
-		return Promise.all([
-			...workbook.doc.queries.map(async (row) => {
-				return useQuery(row.query)
-					.save()
-					.then((doc) => {
-						row.query = doc ? doc.name : row.query
-					})
-			}),
-			...workbook.doc.charts.map(async (row) => {
-				return useChart(row.chart)
-					.save()
-					.then((doc) => {
-						row.chart = doc ? doc.name : row.chart
-					})
-			}),
-		])
+	workbook.onBeforeSave(async () => {
+		const queryPromises = workbook.doc.queries.map(async (row) => {
+			const query = await useQuery(row.query).save()
+			row.query = query.name
+		})
+		const chartPromises = workbook.doc.charts.map(async (row) => {
+			const chart = await useChart(row.chart).save()
+			row.chart = chart.name
+		})
+		await Promise.all(queryPromises)
+		await Promise.all(chartPromises)
+
+		workbook.doc.dashboards.forEach(
+			(row) => (row.name = row.name.startsWith('new-dashboard-') ? '' : row.name)
+		)
 	})
 
 	// set first tab as active
@@ -118,10 +143,12 @@ function getWorkbookResource(name: string) {
 	const doctype = 'Insights Workbook'
 	const workbook = useDocumentResource<InsightsWorkbook>(doctype, name, {
 		initialDoc: {
+			doctype,
 			name: '',
 			title: '',
 			queries: [],
 			charts: [],
+			dashboards: [],
 		},
 	})
 	return workbook
