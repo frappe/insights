@@ -32,22 +32,22 @@ const workbook = inject(workbookKey) as Workbook
 		<div v-else class="flex flex-col">
 			<button
 				v-for="(row, idx) in workbook.doc.charts"
-				:key="row.chart"
-				@click="workbook.setActiveTab('chart', row.chart)"
+				:key="row.name"
+				@click="workbook.setActiveTab('chart', idx)"
 				class="group flex w-full cursor-pointer items-center justify-between rounded border p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
 				:class="
-					workbook.isActiveTab(row.chart)
+					workbook.isActiveTab(row.name)
 						? 'border-gray-700 hover:border-gray-700'
 						: 'border-gray-200'
 				"
 			>
 				<div class="flex gap-1.5">
 					<BarChart2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-					<p>{{ row.chart }}</p>
+					<p>{{ row.name }}</p>
 				</div>
 				<button
 					class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"
-					@click.prevent.stop="workbook.removeChart(row.chart)"
+					@click.prevent.stop="workbook.removeChart(row.name)"
 				>
 					<Tooltip text="Delete Query" :hover-delay="0.5">
 						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />

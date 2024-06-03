@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, provide, watch, watchEffect } from 'vue'
 import ChartBuilder from '../charts/ChartBuilder.vue'
-import useChart from '../charts/chart'
 import Navbar from '../components/Navbar.vue'
 import DashboardBuilder from '../dashboard/DashboardBuilder.vue'
 import QueryBuilder from '../query/QueryBuilder.vue'
@@ -16,11 +15,7 @@ provide(workbookKey, workbook)
 
 if (workbook.islocal) {
 	const isDirty = computed(() => {
-		return (
-			workbook.isdirty ||
-			workbook.doc.queries.some((q) => useQuery(q.query).isdirty) ||
-			workbook.doc.charts.some((c) => useChart(c.chart).isdirty)
-		)
+		return workbook.isdirty || workbook.doc.queries.some((q) => useQuery(q.query).isdirty)
 	})
 	const stopWatcher = watch(isDirty, (dirty) => {
 		if (dirty) {
@@ -63,7 +58,7 @@ watchEffect(() => {
 			<ChartBuilder
 				v-if="workbook.activeTabType === 'chart'"
 				:key="workbook.activeTabIdx"
-				:chart-id="workbook.doc.charts[workbook.activeTabIdx].chart"
+				:chart="workbook.doc.charts[workbook.activeTabIdx]"
 				:queries="workbook.doc.queries.map((q) => q.query)"
 			/>
 			<DashboardBuilder

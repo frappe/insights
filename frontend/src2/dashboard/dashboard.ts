@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { WorkbookDashboard } from '../workbook/workbook'
 
 const dashboards = new Map<string, Dashboard>()
 

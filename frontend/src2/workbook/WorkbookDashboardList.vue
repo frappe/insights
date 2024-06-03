@@ -33,7 +33,7 @@ const workbook = inject(workbookKey) as Workbook
 			<button
 				v-for="(row, idx) in workbook.doc.dashboards"
 				:key="row.name"
-				@click="workbook.setActiveTab('dashboard', row.name)"
+				@click="workbook.setActiveTab('dashboard', idx)"
 				class="group flex w-full cursor-pointer items-center justify-between rounded border border-gray-300 p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
 				:class="
 					workbook.isActiveTab(row.name)

@@ -1,40 +1,36 @@
-import { watchDebounced } from '@vueuse/core'
-import { computed, reactive, toRefs, unref } from 'vue'
+import { wheneverChanges } from '@/utils'
+import { computed, reactive, unref } from 'vue'
+import { getUniqueId } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
 import useQuery, { Query } from '../query/query'
+import { WorkbookChart } from '../workbook/workbook'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
-	ChartConfig,
-	ChartType,
 	DountChartConfig,
 	MetricChartConfig,
-	TableChartConfig,
+	TableChartConfig
 } from './helpers'
-import useDocumentResource from '../helpers/resource'
-import { safeJSONParse, wheneverChanges } from '@/utils'
-import { getUniqueId } from '../helpers'
+import { watchDebounced } from '@vueuse/core'
 
 const charts = new Map<string, Chart>()
 
-export default function useChart(name: string) {
-	const existingChart = charts.get(name)
+export default function useChart(workbookChart: WorkbookChart) {
+	const existingChart = charts.get(workbookChart.name)
 	if (existingChart) return existingChart
 
-	const chart = makeChart(name)
-	charts.set(name, chart)
+	const chart = makeChart(workbookChart)
+	charts.set(workbookChart.name, chart)
 	return chart
 }
 
-function makeChart(name: string) {
-	const resource = getChartResource(name)
-
+function makeChart(workbookChart: WorkbookChart) {
 	const chart = reactive({
-		...toRefs(resource),
+		doc: workbookChart,
 
 		baseQuery: computed(() => {
-			if (!resource.doc.query) return {} as Query
-			return useQuery(resource.doc.query)
+			if (!workbookChart.query) return {} as Query
+			return useQuery(workbookChart.query)
 		}),
 		dataQuery: useQuery('new-query-' + getUniqueId()),
 		filters: [] as FilterArgs[],
@@ -45,9 +41,7 @@ function makeChart(name: string) {
 		},
 	})
 
-
-
-	wheneverChanges(() => chart.doc.config, refresh, { deep: true, debounce: 500 })
+	watchDebounced(() => chart.doc.config, refresh, { deep: true, debounce: 500 })
 
 	async function refresh() {
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
@@ -248,28 +242,3 @@ function makeChart(name: string) {
 }
 
 export type Chart = ReturnType<typeof makeChart>
-
-type InsightsChart = {
-	doctype: 'Insights Chart'
-	name: string
-	query: string
-	chart_type: ChartType
-	config: ChartConfig
-}
-function getChartResource(name: string) {
-	const doctype = 'Insights Chart'
-	return useDocumentResource<InsightsChart>(doctype, name, {
-		initialDoc: {
-			doctype,
-			name,
-			query: '',
-			chart_type: 'Bar',
-			config: {} as ChartConfig,
-		},
-		transform(doc: any) {
-			doc.type = doc.chart_type
-			doc.config = safeJSONParse(doc.config) || {}
-			return doc
-		},
-	})
-}

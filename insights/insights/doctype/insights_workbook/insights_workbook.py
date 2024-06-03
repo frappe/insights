@@ -35,7 +35,6 @@ class InsightsWorkbook(Document):
 
     def on_update(self):
         self.delete_orphan_queries()
-        self.delete_orphan_charts()
 
     def delete_orphan_queries(self):
         doc_before_save = self.get_doc_before_save()
@@ -49,16 +48,3 @@ class InsightsWorkbook(Document):
         for query in queries_to_delete:
             with suppress(frappe.LinkExistsError):
                 frappe.delete_doc("Insights Query", query, ignore_missing=True)
-
-    def delete_orphan_charts(self):
-        doc_before_save = self.get_doc_before_save()
-        if not doc_before_save:
-            return
-        charts = [row.chart for row in self.charts]
-        charts_before_save = [row.chart for row in doc_before_save.charts]
-        charts_to_delete = [
-            chart for chart in charts_before_save if chart not in charts
-        ]
-        for chart in charts_to_delete:
-            with suppress(frappe.LinkExistsError):
-                frappe.delete_doc("Insights Chart", chart, ignore_missing=True)

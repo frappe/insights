@@ -17,9 +17,10 @@ import {
 	TableChartConfig,
 } from './helpers'
 import { provide } from 'vue'
+import { WorkbookChart } from '../workbook/workbook'
 
-const props = defineProps<{ chartId: string; queries: string[] }>()
-const chart = useChart(props.chartId)
+const props = defineProps<{ chart: WorkbookChart; queries: string[] }>()
+const chart = useChart(props.chart)
 provide('chart', chart)
 </script>
 
