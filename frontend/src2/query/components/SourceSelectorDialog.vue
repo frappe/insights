@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { createResource, ListView } from 'frappe-ui'
+import { ListEmptyState, ListView, createResource } from 'frappe-ui'
 import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, ref, watch } from 'vue'
 import DataSourceSelector from './DataSourceSelector.vue'
@@ -86,7 +86,7 @@ function onConfirm() {
 		}"
 	>
 		<template #body-content>
-			<div class="mb-4 flex h-[20rem] flex-col gap-2 overflow-auto p-0.5">
+			<div class="flex h-[20rem] flex-col gap-2 overflow-auto p-0.5">
 				<div class="flex gap-2 overflow-visible py-1">
 					<FormControl
 						placeholder="Search by Title"
@@ -100,6 +100,7 @@ function onConfirm() {
 					<DataSourceSelector v-model="dataSourceFilter"> </DataSourceSelector>
 				</div>
 				<ListView
+					v-if="tables.data"
 					class="h-full"
 					:columns="listColumns"
 					:rows="tables.data"
@@ -117,6 +118,9 @@ function onConfirm() {
 						},
 					}"
 				>
+					<ListEmptyState v-if="tables.loading">
+						<LoadingIndicator class="h-6 w-6 text-gray-600" />
+					</ListEmptyState>
 				</ListView>
 			</div>
 		</template>
