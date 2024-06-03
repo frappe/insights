@@ -15,21 +15,27 @@ export default function useWorkbook(name: string) {
 		...toRefs(resource),
 
 		activeTabType: '' as ActiveTabType,
-		activeTabName: '',
 		activeTabIdx: 0,
 
-		setActiveTab(type: ActiveTabType, name: string) {
+		setActiveTab(type: ActiveTabType, idx: number) {
 			workbook.activeTabType = type
-			workbook.activeTabName = name
+			workbook.activeTabIdx = idx
 		},
 		isActiveTab(queryOrChartName: string) {
-			return workbook.activeTabName === queryOrChartName
+			return (
+				(workbook.activeTabType === 'query' &&
+					workbook.doc.queries[workbook.activeTabIdx].query === queryOrChartName) ||
+				(workbook.activeTabType === 'chart' &&
+					workbook.doc.charts[workbook.activeTabIdx].chart === queryOrChartName) ||
+				(workbook.activeTabType === 'dashboard' &&
+					workbook.doc.dashboards[workbook.activeTabIdx].name === queryOrChartName)
+			)
 		},
 
 		addQuery() {
 			const queryName = 'new-query-' + getUniqueId()
 			workbook.doc.queries.push({ query: queryName })
-			workbook.setActiveTab('query', queryName)
+			workbook.setActiveTab('query', workbook.doc.queries.length - 1)
 		},
 
 		removeQuery(queryName: string) {
@@ -37,7 +43,7 @@ export default function useWorkbook(name: string) {
 			if (row) {
 				workbook.doc.queries.splice(workbook.doc.queries.indexOf(row), 1)
 				if (workbook.isActiveTab(queryName)) {
-					workbook.setActiveTab('', '')
+					workbook.setActiveTab('', 0)
 				}
 			}
 		},
@@ -45,7 +51,7 @@ export default function useWorkbook(name: string) {
 		addChart() {
 			const name = 'new-chart-' + getUniqueId()
 			workbook.doc.charts.push({ chart: name })
-			workbook.setActiveTab('chart', name)
+			workbook.setActiveTab('chart', workbook.doc.charts.length - 1)
 		},
 
 		removeChart(chartName: string) {
@@ -53,7 +59,7 @@ export default function useWorkbook(name: string) {
 			if (row) {
 				workbook.doc.charts.splice(workbook.doc.charts.indexOf(row), 1)
 				if (workbook.isActiveTab(chartName)) {
-					workbook.setActiveTab('', '')
+					workbook.setActiveTab('', 0)
 				}
 			}
 		},
@@ -63,24 +69,16 @@ export default function useWorkbook(name: string) {
 			const idx = workbook.doc.dashboards.length
 			const title = `Dashboard ${idx + 1}`
 			workbook.doc.dashboards.push({ name, title })
-			workbook.activeTabType = 'dashboard'
-			workbook.activeTabIdx = idx
+			workbook.setActiveTab('dashboard', idx)
 		},
 
 		removeDashboard(dashboardName: string) {
 			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
 			if (idx === -1) return
 			workbook.doc.dashboards.splice(idx, 1)
-			if (workbook.activeTabIdx === idx) {
-				workbook.activeTabType = ''
-				workbook.activeTabIdx = 0
+			if (workbook.isActiveTab(dashboardName)) {
+				workbook.setActiveTab('', 0)
 			}
-		},
-
-		getDashboard(dashboardName: string) {
-			const row = workbook.doc.dashboards.find((row) => row.name === dashboardName)
-			if (!row) return
-			return row
 		},
 	})
 
@@ -128,7 +126,7 @@ export default function useWorkbook(name: string) {
 		() => workbook.doc.queries,
 		() => {
 			if (workbook.doc.queries.length) {
-				workbook.setActiveTab('query', workbook.doc.queries[0].query)
+				workbook.setActiveTab('query', 0)
 			}
 		}
 	)

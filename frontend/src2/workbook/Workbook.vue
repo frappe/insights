@@ -57,13 +57,13 @@ watchEffect(() => {
 			<WorkbookSidebar />
 			<QueryBuilder
 				v-if="workbook.activeTabType === 'query'"
-				:key="workbook.activeTabName"
-				:query-id="workbook.activeTabName"
+				:key="workbook.activeTabIdx"
+				:query-id="workbook.doc.queries[workbook.activeTabIdx].query"
 			/>
 			<ChartBuilder
 				v-if="workbook.activeTabType === 'chart'"
-				:key="workbook.activeTabName"
-				:chart-id="workbook.activeTabName"
+				:key="workbook.activeTabIdx"
+				:chart-id="workbook.doc.charts[workbook.activeTabIdx].chart"
 				:queries="workbook.doc.queries.map((q) => q.query)"
 			/>
 			<DashboardBuilder
