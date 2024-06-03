@@ -1,12 +1,13 @@
 import { call } from 'frappe-ui'
-import { computed, reactive, ref, watchEffect } from 'vue'
+import { computed, reactive } from 'vue'
+import { copy } from './index'
 import { createToast } from './toasts'
 
 type DocumentResourceOptions<T> = {
 	initialDoc: T
 	transform?: (doc: T) => T
 }
-export default function useDocumentResource<T>(
+export default function useDocumentResource<T extends object>(
 	doctype: string,
 	name: string,
 	options: DocumentResourceOptions<T>
@@ -20,10 +21,10 @@ export default function useDocumentResource<T>(
 	const resource = reactive({
 		doctype,
 		doc: options.initialDoc,
-		originalDoc: options.initialDoc,
+		originalDoc: copy(options.initialDoc),
 		isdirty: computed(() => false),
-		islocal: name.startsWith('new-'),
-		loading: !name.startsWith('new-'),
+		islocal: name && name.startsWith('new-'),
+		loading: name && !name.startsWith('new-'),
 		saving: false,
 		deleting: false,
 
@@ -38,7 +39,7 @@ export default function useDocumentResource<T>(
 				},
 			})
 			this.doc = tranformFn({ ...doc })
-			this.originalDoc = JSON.parse(JSON.stringify(this.doc))
+			this.originalDoc = copy(this.doc)
 			this.islocal = false
 			await Promise.all(Array.from(afterInsertFns).map((fn) => fn()))
 			return doc
@@ -49,14 +50,14 @@ export default function useDocumentResource<T>(
 		async save() {
 			if (this.saving) {
 				console.log('Already saving', doctype, name)
-				return
+				return this.doc
 			}
 			if (!this.isdirty && !this.islocal) {
 				createToast({
 					title: 'No changes to save',
 					variant: 'info',
 				})
-				return
+				return this.doc
 			}
 
 			this.saving = true
@@ -71,7 +72,7 @@ export default function useDocumentResource<T>(
 					fieldname: removeMetaFields(this.doc),
 				})
 				this.doc = tranformFn({ ...doc })
-				this.originalDoc = JSON.parse(JSON.stringify(this.doc))
+				this.originalDoc = copy(this.doc)
 			}
 
 			this.islocal = false
@@ -86,7 +87,7 @@ export default function useDocumentResource<T>(
 			this.loading = true
 			const doc = await call('frappe.client.get', { doctype, name })
 			this.doc = tranformFn({ ...doc })
-			this.originalDoc = JSON.parse(JSON.stringify(this.doc))
+			this.originalDoc = copy(this.doc)
 			this.loading = false
 		},
 
@@ -120,7 +121,7 @@ export default function useDocumentResource<T>(
 	return resource
 }
 
-export type DocumentResource<T> = ReturnType<typeof useDocumentResource<T>>
+export type DocumentResource<T extends object> = ReturnType<typeof useDocumentResource<T>>
 
 const metaFields = [
 	'doctype',

@@ -23,7 +23,7 @@ import {
 
 const queries = new Map<string, Query>()
 
-function useQuery(name: string) {
+export default function useQuery(name: string) {
 	const existingQuery = queries.get(name)
 	if (existingQuery) return existingQuery
 
@@ -313,7 +313,6 @@ function makeQuery(name: string) {
 }
 
 export type Query = ReturnType<typeof makeQuery>
-export default useQuery
 
 type InsightsQuery = {
 	doctype: 'Insights Query'

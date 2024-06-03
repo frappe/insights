@@ -12,3 +12,8 @@ export function titleCase(str: string) {
 		})
 		.join(' ')
 }
+
+
+export function copy(obj: object) {
+	return JSON.parse(JSON.stringify(obj))
+}
