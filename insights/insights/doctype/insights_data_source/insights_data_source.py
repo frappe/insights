@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import re
 from collections.abc import Generator
 from contextlib import contextmanager
 
@@ -36,6 +37,9 @@ from insights.insights.doctype.insights_team.insights_team import check_table_pe
 
 
 class InsightsDataSourceDocument:
+    def autoname(self):
+        return frappe.scrub(self.title)
+
     def before_insert(self):
         if self.is_site_db and frappe.db.exists(
             "Insights Data Source", {"is_site_db": 1}
@@ -44,6 +48,28 @@ class InsightsDataSourceDocument:
 
     def before_save(self: "InsightsDataSource"):
         self.status = "Active" if self.test_connection() else "Inactive"
+
+    def on_update(self):
+        if (
+            not self.is_site_db
+            and self.status == "Active"
+            and self.database_type in ["MariaDB", "PostgreSQL"]
+            and self.has_credentials_changed()
+        ):
+            self.db_set("is_frappe_db", is_frappe_db(self))
+            self.update_table_list()
+
+    def has_credentials_changed(self):
+        doc_before = self.get_doc_before_save()
+        if not doc_before:
+            return True
+        return (
+            self.database_name != doc_before.database_name
+            or self.password != doc_before.password
+            or self.username != doc_before.username
+            or self.host != doc_before.host
+            or self.port != doc_before.port
+        )
 
     def on_trash(self):
         if self.is_site_db:
@@ -160,6 +186,7 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
         database_name: DF.Data | None
         database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite"]
         host: DF.Data | None
+        is_frappe_db: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None
         port: DF.Data | None
@@ -175,7 +202,7 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
         connection_string, extra_args = self.get_connection_string()
         db = ibis.connect(connection_string, **extra_args)
 
-        if is_frappe_db(self):
+        if self.is_frappe_db:
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
 
@@ -191,7 +218,7 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
             raise get_query_store_connection_string()
         if self.database_type == "SQLite":
             raise get_sqlite_connection_string(self)
-        if is_frappe_db(self):
+        if self.is_frappe_db:
             return get_frappedb_connection_string()
         if self.database_type == "MariaDB":
             return get_mariadb_connection_string(self)
@@ -214,12 +241,11 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
     @frappe.whitelist()
     def update_table_list(self):
         blacklist_patterns = ["^_", "^sqlite_"]
-        blacklisted = lambda table: any(table.match(p) for p in blacklist_patterns)
+        blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
         with self._get_ibis_backend() as remote_db:
             tables = remote_db.list_tables()
             tables = [t for t in tables if not blacklisted(t)]
-            self.tables = frappe.as_json(tables)
-        self.save()
+            self.db_set("tables", frappe.as_json(tables))
 
     @frappe.whitelist()
     def sync_table(self, table_name):
@@ -230,7 +256,7 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
 
 @frappe.whitelist()
 @site_cache
-def get_data_source_tables(data_source=None, table_name_like=None):
+def get_data_source_tables(data_source=None, table_name_like=None, limit=100):
     tables = []
     for ds in frappe.get_all(
         "Insights Data Source",
@@ -259,4 +285,4 @@ def get_data_source_tables(data_source=None, table_name_like=None):
                 for table_name in ds_tables
             ]
         )
-    return tables
+    return tables[:limit]

@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "field:title",
+ "allow_rename": 1,
  "creation": "2022-02-23 06:14:40.960055",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -14,6 +14,7 @@
   "port",
   "use_ssl",
   "allow_imports",
+  "is_frappe_db",
   "column_break_5",
   "database_name",
   "username",
@@ -118,6 +119,13 @@
    "fieldtype": "JSON",
    "label": "Tables",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_frappe_db",
+   "fieldtype": "Check",
+   "label": "Is Frappe Database",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -127,11 +135,10 @@
    "link_fieldname": "data_source"
   }
  ],
- "modified": "2024-06-01 21:59:57.749694",
+ "modified": "2024-06-03 21:02:37.375121",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source",
- "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

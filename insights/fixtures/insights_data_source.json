@@ -2,6 +2,7 @@
   {
     "doctype": "Insights Data Source",
     "is_site_db": 1,
+    "is_frappe_db": 1,
     "name": "Site DB",
     "title": "Site DB",
     "status": "Active",
