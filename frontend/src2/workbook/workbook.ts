@@ -1,6 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
-import { InjectionKey, reactive, toRefs, watchEffect } from 'vue'
+import { InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
@@ -89,23 +89,12 @@ export default function useWorkbook(name: string) {
 	workbook.onAfterInsert(() => {
 		router.replace(`/workbook/${workbook.doc.name}`)
 	})
-	watchEffect(() => {
-		if (workbook.saving) {
-			createToast({
-				title: 'Saving...',
-				variant: 'info',
-			})
-			watchOnce(
-				() => workbook.saving,
-				() => {
-					createToast({
-						title: 'Saved',
-						variant: 'success',
-					})
-				}
-			)
-		}
-	})
+	workbook.onAfterSave(() =>
+		createToast({
+			title: 'Saved',
+			variant: 'success',
+		})
+	)
 
 	// set first tab as active
 	watchOnce(
@@ -175,24 +164,29 @@ export type WorkbookDashboard = {
 	title: string
 	items: WorkbookDashboardItem[]
 }
-export type WorkbookDashboardItem = {
-	layout: {
-		x: number
-		y: number
-		w: number
-		h: number
-	}
-} & (
-	| {
-			type: 'chart'
-			chart: string
-	  }
-	| {
-			type: 'filter'
-			filter: object
-	  }
-	| {
-			type: 'text'
-			text: string
-	  }
-)
+export type WorkbookDashboardItem =
+	| WorkbookDashboardChart
+	| WorkbookDashboardFilter
+	| WorkbookDashboardText
+export type Layout = {
+	i: string
+	x: number
+	y: number
+	w: number
+	h: number
+}
+export type WorkbookDashboardChart = {
+	type: 'chart'
+	chart: string
+	layout: Layout
+}
+export type WorkbookDashboardFilter = {
+	type: 'filter'
+	filter: object
+	layout: Layout
+}
+export type WorkbookDashboardText = {
+	type: 'text'
+	text: string
+	layout: Layout
+}

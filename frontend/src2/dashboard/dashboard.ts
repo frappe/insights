@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { WorkbookDashboard } from '../workbook/workbook'
+import { getUniqueId } from '../helpers'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -16,11 +17,24 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 	const dashboard = reactive({
 		doc: workbookDashboard,
 
+		editing: true,
 		filters: [] as FilterArgs[],
-		charts: [] as string[],
 
-		addChart(chart: string) {
-			dashboard.charts.push(chart)
+		addChart(chart: string[] | string) {
+			const _chart = Array.isArray(chart) ? chart : [chart]
+			_chart.forEach((chart) => {
+				dashboard.doc.items.push({
+					type: 'chart',
+					chart,
+					layout: {
+						i: getUniqueId(),
+						x: 0,
+						y: 0,
+						w: 4,
+						h: 4,
+					},
+				})
+			})
 		},
 
 		setFilters(filters: FilterArgs[]) {

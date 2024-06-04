@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ContentEditable from '@/components/ContentEditable.vue'
 import { provide, watch, watchEffect } from 'vue'
 import ChartBuilder from '../charts/ChartBuilder.vue'
 import Navbar from '../components/Navbar.vue'
@@ -27,18 +28,25 @@ if (workbook.islocal) {
 }
 
 watchEffect(() => {
-	document.title = `${workbook.doc.name} | Workbook`
+	document.title = `${workbook.doc.title} | Workbook`
 })
 </script>
 
 <template>
 	<div class="flex h-full w-full flex-col">
 		<Navbar>
+			<template #left>
+				<ContentEditable
+					class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+					v-model="workbook.doc.title"
+					placeholder="Untitled Dashboard"
+				></ContentEditable>
+			</template>
 			<template #actions>
 				<div class="flex gap-2">
 					<Button
-						variant="outline"
-						icon-left="save"
+						v-show="workbook.islocal || workbook.isdirty"
+						variant="solid"
 						:loading="workbook.saving"
 						@click="workbook.save()"
 					>
@@ -64,6 +72,7 @@ watchEffect(() => {
 				v-if="workbook.activeTabType === 'dashboard'"
 				:key="workbook.activeTabIdx"
 				:dashboard="workbook.doc.dashboards[workbook.activeTabIdx]"
+				:charts="workbook.doc.charts"
 			/>
 			<div
 				class="pointer-events-none absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm transition-all"

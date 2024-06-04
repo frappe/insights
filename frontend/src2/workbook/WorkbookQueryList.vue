@@ -29,7 +29,7 @@ const workbook = inject(workbookKey) as Workbook
 		>
 			<div class="text-xs text-gray-500">No queries</div>
 		</div>
-		<div v-else class="flex flex-col">
+		<div v-else class="flex flex-col gap-1.5">
 			<button
 				v-for="(row, idx) in workbook.doc.queries"
 				:key="row.name"

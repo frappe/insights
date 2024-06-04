@@ -32,7 +32,7 @@ const eChartOptions = computed(() => {
 </script>
 
 <template>
-	<BaseChart v-if="eChartOptions" class="min-h-[20rem] p-2" :options="eChartOptions" />
+	<BaseChart v-if="eChartOptions" class="p-2" :options="eChartOptions" />
 	<div v-if="chart.doc.chart_type == 'Metric'" class="rounded border">
 		<MetricChart :chart="chart" />
 	</div>

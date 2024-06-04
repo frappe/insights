@@ -5,6 +5,7 @@
 
 
 import frappe
+import frappe.utils
 from frappe.model.document import Document
 from ibis import _
 
@@ -31,6 +32,7 @@ class InsightsWorkbook(Document):
     # end: auto-generated types
 
     def before_save(self):
+        self.title = self.title or get_title(self.name)
         queries = frappe.parse_json(self.queries)
         for query in queries:
             if query["operations"]:
@@ -82,3 +84,8 @@ def get_distinct_column_values(operations, column_name, search_term=None):
     )
     result = execute_ibis_query(values_query)
     return result[column_name].tolist()
+
+
+def get_title(name):
+    number = name.split("-")[1]
+    return f"Workbook {frappe.utils.cint(number)}"

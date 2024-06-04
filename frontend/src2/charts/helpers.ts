@@ -55,6 +55,7 @@ export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[])
 export function getLineChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	const data = getData(columns, rows)
 	return {
+		animation: true,
 		grid: getGrid(),
 		dataset: { source: data },
 		xAxis: { type: 'category' },
@@ -74,6 +75,7 @@ export function getLineChartOptions(columns: QueryResultColumn[], rows: QueryRes
 export function getRowChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	const data = getData(columns, rows.reverse())
 	return {
+		animation: true,
 		grid: getGrid(),
 		dataset: { source: data },
 		xAxis: { type: 'value' },
@@ -89,6 +91,7 @@ export function getRowChartOptions(columns: QueryResultColumn[], rows: QueryResu
 export function getBarChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	const data = getData(columns, rows)
 	return {
+		animation: true,
 		grid: getGrid(),
 		dataset: { source: data },
 		xAxis: { type: 'category' },
@@ -109,6 +112,7 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 	const MAX_SLICES = 10
 	const data = getDonutChartData(columns, rows, MAX_SLICES)
 	return {
+		animation: true,
 		dataset: { source: data },
 		series: [
 			{

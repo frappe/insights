@@ -1,6 +1,5 @@
-
 export function getUniqueId(length = 6) {
-	return Date.now().toString().slice(-length)
+	return (+new Date() * Math.random()).toString(36).substring(0, length)
 }
 
 export function titleCase(str: string) {
@@ -12,7 +11,6 @@ export function titleCase(str: string) {
 		})
 		.join(' ')
 }
-
 
 export function copy(obj: object) {
 	return JSON.parse(JSON.stringify(obj))

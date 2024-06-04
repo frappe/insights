@@ -29,12 +29,12 @@ const workbook = inject(workbookKey) as Workbook
 		>
 			<div class="text-xs text-gray-500">No queries</div>
 		</div>
-		<div v-else class="flex flex-col">
+		<div v-else class="flex flex-col gap-1.5">
 			<button
 				v-for="(row, idx) in workbook.doc.charts"
 				:key="row.name"
 				@click="workbook.setActiveTab('chart', idx)"
-				class="group flex w-full cursor-pointer items-center justify-between rounded border p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
+				class="group flex w-full cursor-pointer items-center justify-between rounded border border-gray-300 p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
 				:class="
 					workbook.isActiveTab('chart', idx)
 						? 'border-gray-700 hover:border-gray-700'

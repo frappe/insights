@@ -22,6 +22,10 @@ export default function useChart(workbookChart: WorkbookChart) {
 	return chart
 }
 
+export function getCachedChart(name: string) {
+	return charts.get(name)
+}
+
 function makeChart(workbookChart: WorkbookChart) {
 	const chart = reactive({
 		doc: workbookChart,
