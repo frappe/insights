@@ -36,7 +36,7 @@ const workbook = inject(workbookKey) as Workbook
 				@click="workbook.setActiveTab('query', idx)"
 				class="group flex w-full cursor-pointer items-center justify-between rounded border border-gray-300 p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
 				:class="
-					workbook.isActiveTab(row.name)
+					workbook.isActiveTab('query', idx)
 						? 'border-gray-700 hover:border-gray-700'
 						: 'border-gray-200'
 				"

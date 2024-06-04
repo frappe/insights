@@ -2,9 +2,12 @@ import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
 import { InjectionKey, reactive, toRefs, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
+import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
+import useDashboard from '../dashboard/dashboard'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
+import useQuery from '../query/query'
 export default function useWorkbook(name: string) {
 	const resource = getWorkbookResource(name)
 
@@ -19,18 +22,8 @@ export default function useWorkbook(name: string) {
 			workbook.activeTabType = type
 			workbook.activeTabIdx = idx
 		},
-		isActiveTab(name: string) {
-			return (
-				(workbook.activeTabType === 'query' &&
-					workbook.doc.queries.length > 0 &&
-					workbook.doc.queries[workbook.activeTabIdx].name === name) ||
-				(workbook.activeTabType === 'chart' &&
-					workbook.doc.charts.length > 0 &&
-					workbook.doc.charts[workbook.activeTabIdx].name === name) ||
-				(workbook.activeTabType === 'dashboard' &&
-					workbook.doc.dashboards.length > 0 &&
-					workbook.doc.dashboards[workbook.activeTabIdx].name === name)
-			)
+		isActiveTab(type: ActiveTabType, idx: number) {
+			return workbook.activeTabType === type && workbook.activeTabIdx === idx
 		},
 
 		addQuery() {
@@ -47,7 +40,7 @@ export default function useWorkbook(name: string) {
 			const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
 			if (idx === -1) return
 			workbook.doc.queries.splice(idx, 1)
-			if (workbook.isActiveTab(queryName)) {
+			if (workbook.isActiveTab('query', idx)) {
 				workbook.setActiveTab('', 0)
 			}
 		},
@@ -67,7 +60,7 @@ export default function useWorkbook(name: string) {
 			const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
 			if (idx === -1) return
 			workbook.doc.charts.splice(idx, 1)
-			if (workbook.isActiveTab(chartName)) {
+			if (workbook.isActiveTab('chart', idx)) {
 				workbook.setActiveTab('', 0)
 			}
 		},
@@ -86,7 +79,7 @@ export default function useWorkbook(name: string) {
 			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
 			if (idx === -1) return
 			workbook.doc.dashboards.splice(idx, 1)
-			if (workbook.isActiveTab(dashboardName)) {
+			if (workbook.isActiveTab('dashboard', idx)) {
 				workbook.setActiveTab('', 0)
 			}
 		},
@@ -116,8 +109,12 @@ export default function useWorkbook(name: string) {
 
 	// set first tab as active
 	watchOnce(
-		() => workbook.doc.queries,
+		() => workbook.doc.name,
 		() => {
+			workbook.doc.queries.forEach((query) => useQuery(query))
+			workbook.doc.charts.forEach((chart) => useChart(chart))
+			workbook.doc.dashboards.forEach((dashboard) => useDashboard(dashboard))
+
 			if (workbook.doc.queries.length) {
 				workbook.setActiveTab('query', 0)
 			}
