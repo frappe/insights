@@ -77,9 +77,7 @@ const dashboards = useDashboards()
 dashboards.reload()
 const sortedDashboards = computed(() => {
 	// sort alphabetically
-	return dashboards.list.sort((a, b) => {
-		return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
-	})
+	return dashboards.list.sort((a, b) => a.title.localeCompare(b.title))
 })
 const favorites = computed(() => {
 	return dashboards.list.filter((dashboard) => dashboard.is_favourite)
