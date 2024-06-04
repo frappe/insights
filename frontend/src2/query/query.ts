@@ -6,6 +6,7 @@ import { WorkbookQuery } from '../workbook/workbook'
 import {
 	cast,
 	column,
+	count,
 	expression,
 	filter,
 	get_date_format,
@@ -89,13 +90,17 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 	// @ts-ignore
 	query.measures = computed(() => {
 		if (!query.result.columns?.length) return []
-		return query.result.columns
-			.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
-			.map((column) => ({
-				column_name: column.name,
-				data_type: column.type as MeasureDataType,
-				aggregation: 'sum',
-			}))
+		const count_measure = count()
+		return [
+			count_measure,
+			...query.result.columns
+				.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
+				.map((column) => ({
+					column_name: column.name,
+					data_type: column.type as MeasureDataType,
+					aggregation: 'sum',
+				})),
+		]
 	})
 
 	// @ts-ignore
@@ -174,6 +179,7 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 			query.addSource({
 				table: table(args.data_source, args.table),
 			})
+			query.doc.title = args.table
 		}
 		if (!query.doc.operations.length) {
 			_setSource()

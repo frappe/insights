@@ -1,6 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
-import { getUniqueId } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
 import useQuery, { Query, getCachedQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
@@ -35,11 +34,7 @@ function makeChart(workbookChart: WorkbookChart) {
 			}
 			return query
 		}),
-		dataQuery: useQuery({
-			name: 'new-query-' + getUniqueId(),
-			title: '',
-			operations: [],
-		}),
+		dataQuery: {} as Query,
 		filters: [] as FilterArgs[],
 
 		refresh,
@@ -48,9 +43,14 @@ function makeChart(workbookChart: WorkbookChart) {
 		},
 	})
 
-	watchDebounced(() => chart.doc.config, refresh, { deep: true, debounce: 500, immediate: true })
+	watchDebounced(() => chart.doc.config, refresh, {
+		deep: true,
+		debounce: 500,
+		immediate: true,
+	})
 
 	async function refresh() {
+		resetQuery()
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
 			fetchAxisChartData(_config)
@@ -238,6 +238,11 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function resetQuery() {
+		chart.dataQuery = useQuery({
+			name: new Date().toISOString(),
+			title: 'Chart Data',
+			operations: [],
+		})
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
 		if (chart.filters.length) {
