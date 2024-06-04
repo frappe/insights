@@ -1,5 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
-import { computed, reactive, unref } from 'vue'
+import { computed, reactive, unref, watch } from 'vue'
 import { column, count, expression, mutate } from '../query/helpers'
 import useQuery, { Query, getCachedQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
@@ -41,6 +41,11 @@ function makeChart(workbookChart: WorkbookChart) {
 		setFilters(filters: FilterArgs[]) {
 			chart.filters = filters
 		},
+	})
+
+	watch(() => workbookChart.query, () => {
+		console.log('workbookChart.query changed')
+		debugger
 	})
 
 	watchDebounced(() => chart.doc.config, refresh, {
@@ -169,10 +174,12 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function fetchDonutChartData(config: DountChartConfig) {
 		if (!config.label_column) {
-			throw new Error('Label is required')
+			// throw new Error('Label is required')
+			return
 		}
 		if (!config.value_column) {
-			throw new Error('Value is required')
+			// throw new Error('Value is required')
+			return
 		}
 
 		const label = chart.baseQuery.getDimension(config.label_column)

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { LoadingIndicator } from 'frappe-ui'
+import { provide } from 'vue'
 import DataTable from '../components/DataTable.vue'
+import { WorkbookChart } from '../workbook/workbook'
+import useChart from './chart'
 import AxisChartConfigForm from './components/AxisChartConfigForm.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
@@ -8,7 +11,6 @@ import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import DonutChartConfigForm from './components/DonutChartConfigForm.vue'
 import MetricChartConfigForm from './components/MetricChartConfigForm.vue'
 import TableChartConfigForm from './components/TableChartConfigForm.vue'
-import useChart from './chart'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
@@ -16,8 +18,6 @@ import {
 	MetricChartConfig,
 	TableChartConfig,
 } from './helpers'
-import { provide } from 'vue'
-import { WorkbookChart } from '../workbook/workbook'
 
 const props = defineProps<{ chart: WorkbookChart; queries: string[] }>()
 const chart = useChart(props.chart)
@@ -51,7 +51,7 @@ provide('chart', chart)
 			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<hr class="my-1 border-t border-gray-200" />
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
-			<template v-if="chart.baseQuery.doc?.name">
+			<template v-if="chart.baseQuery">
 				<hr class="my-1 border-t border-gray-200" />
 				<MetricChartConfigForm
 					v-if="chart.doc.chart_type == 'Metric'"

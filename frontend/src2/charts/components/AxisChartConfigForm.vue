@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { AxisChartConfig, AxisChartType } from '../helpers'
 
 const props = defineProps<{
@@ -16,14 +17,18 @@ const config = defineModel<AxisChartConfig>({
 	}),
 })
 
-const dimensions = props.dimensions.map((dimension) => ({
-	label: dimension.column_name,
-	value: dimension.column_name,
-}))
-const measures = props.measures.map((measure) => ({
-	label: measure.column_name,
-	value: measure.column_name,
-}))
+const dimensions = computed(() =>
+	props.dimensions.map((dimension) => ({
+		label: dimension.column_name,
+		value: dimension.column_name,
+	}))
+)
+const measures = computed(() =>
+	props.measures.map((measure) => ({
+		label: measure.column_name,
+		value: measure.column_name,
+	}))
+)
 </script>
 
 <template>

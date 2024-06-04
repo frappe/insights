@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
+import { computed } from 'vue'
 import { MetricChartConfig } from '../helpers'
 
 const props = defineProps<{
@@ -17,16 +18,20 @@ const config = defineModel<MetricChartConfig>({
 	}),
 })
 
-const date_dimensions = props.dimensions
-	.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
-	.map((dimension) => ({
-		label: dimension.column_name,
-		value: dimension.column_name,
+const date_dimensions = computed(() =>
+	props.dimensions
+		.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
+		.map((dimension) => ({
+			label: dimension.column_name,
+			value: dimension.column_name,
+		}))
+)
+const measures = computed(() =>
+	props.measures.map((measure) => ({
+		label: measure.column_name,
+		value: measure.column_name,
 	}))
-const measures = props.measures.map((measure) => ({
-	label: measure.column_name,
-	value: measure.column_name,
-}))
+)
 </script>
 
 <template>
