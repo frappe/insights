@@ -165,9 +165,8 @@ class IbisQueryBuilder:
         return lambda query: query.aggregate(**aggregates, by=group_bys)
 
     def translate_order_by(self, order_by_args):
-        column = getattr(_, order_by_args.column.column_name)
-        column = column.asc() if order_by_args.direction == "asc" else column.desc()
-        return lambda query: query.order_by(column)
+        order_fn = ibis.asc if order_by_args.direction == "asc" else ibis.desc
+        return lambda query: query.order_by(order_fn(order_by_args.column.column_name))
 
     def translate_limit(self, limit_args):
         return lambda query: query.limit(limit_args.limit)
