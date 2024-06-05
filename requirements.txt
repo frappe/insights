@@ -1,5 +1,0 @@
-# frappe -- https://github.com/frappe/frappe is installed via 'bench init'
-pandas==1.5.1
-SQLAlchemy==1.4.43
-python-telegram-bot==12.8
-chardet==4.0.0
