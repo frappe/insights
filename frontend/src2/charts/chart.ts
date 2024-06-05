@@ -47,11 +47,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		},
 	})
 
-	watch(() => workbookChart.query, () => {
-		console.log('workbookChart.query changed')
-		debugger
-	})
-
 	watchDebounced(() => chart.doc.config, refresh, {
 		deep: true,
 		debounce: 500,
