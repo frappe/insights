@@ -15,7 +15,9 @@
   {
    "fieldname": "title",
    "fieldtype": "Data",
-   "label": "Title"
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
   },
   {
    "fieldname": "queries",
@@ -35,7 +37,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-04 00:51:59.483036",
+ "modified": "2024-06-06 00:49:09.195750",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
@@ -55,7 +57,9 @@
    "write": 1
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "title"
 }

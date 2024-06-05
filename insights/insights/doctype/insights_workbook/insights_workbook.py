@@ -28,7 +28,7 @@ class InsightsWorkbook(Document):
         charts: DF.JSON | None
         dashboards: DF.JSON | None
         queries: DF.JSON | None
-        title: DF.Data | None
+        title: DF.Data
     # end: auto-generated types
 
     def before_save(self):
