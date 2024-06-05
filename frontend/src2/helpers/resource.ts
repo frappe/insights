@@ -1,3 +1,4 @@
+import { confirmDialog } from '@/utils/components'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy } from './index'
@@ -81,6 +82,14 @@ export default function useDocumentResource<T extends object>(
 			return this.doc
 		},
 		onAfterSave: (fn: Function) => afterSaveFns.add(fn),
+
+		discard() {
+			confirmDialog({
+				title: 'Discard Changes',
+				message: 'Are you sure you want to discard changes?',
+				onSuccess: () => (this.doc = copy(this.originalDoc)),
+			})
+		},
 
 		async load() {
 			if (this.islocal) return
