@@ -28,7 +28,7 @@ function getItem(index: number) {
 	<div class="relative flex h-full w-full divide-x overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<div class="flex h-16 items-center justify-between border-b bg-white px-4">
-				<div class="text-lg font-semibold">{{ dashboard.doc.name }}</div>
+				<div class="text-lg font-semibold">{{ dashboard.doc.title }}</div>
 				<div class="flex gap-2">
 					<Button variant="outline" @click="dashboard.refresh" icon-left="refresh-ccw">
 						Refresh
