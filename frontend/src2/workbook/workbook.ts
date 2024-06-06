@@ -8,6 +8,7 @@ import useDashboard from '../dashboard/dashboard'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import useQuery from '../query/query'
+import { getUniqueId } from '../helpers'
 export default function useWorkbook(name: string) {
 	const resource = getWorkbookResource(name)
 
@@ -29,7 +30,7 @@ export default function useWorkbook(name: string) {
 		addQuery() {
 			const idx = workbook.doc.queries.length
 			workbook.doc.queries.push({
-				name: `query-${idx + 1}`,
+				name: getUniqueId(),
 				title: `Query ${idx + 1}`,
 				operations: [],
 			})
@@ -48,7 +49,7 @@ export default function useWorkbook(name: string) {
 		addChart() {
 			const idx = workbook.doc.charts.length
 			workbook.doc.charts.push({
-				name: `chart-${idx + 1}`,
+				name: getUniqueId(),
 				query: '',
 				chart_type: 'Line',
 				config: {} as ChartConfig,
@@ -68,7 +69,7 @@ export default function useWorkbook(name: string) {
 		addDashboard() {
 			const idx = workbook.doc.dashboards.length
 			workbook.doc.dashboards.push({
-				name: `dashboard-${idx + 1}`,
+				name: getUniqueId(),
 				title: `Dashboard ${idx + 1}`,
 				items: [],
 			})

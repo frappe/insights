@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 
-export function getUniqueId(length = 6) {
+export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
 }
 
