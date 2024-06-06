@@ -5,7 +5,6 @@ import { Table2Icon } from 'lucide-vue-next'
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
 	rows: QueryResultRow[] | undefined
-	onColumnClick?: (column: QueryResultColumn) => void
 }>()
 const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
 </script>
@@ -24,16 +23,10 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="border-b border-r"
+							:class="isNumberColumn(column) ? 'text-right' : 'text-left'"
 						>
 							<slot name="column-header" :column="column">
-								<div
-									class="truncate py-2 px-3"
-									:class="[
-										isNumberColumn(column) ? 'text-right' : 'text-left',
-										props.onColumnClick ? 'cursor-pointer hover:underline' : '',
-									]"
-									@click="props.onColumnClick?.(column)"
-								>
+								<div class="truncate py-2 px-3">
 									{{ column.name }}
 								</div>
 							</slot>

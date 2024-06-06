@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LoadingIndicator } from 'frappe-ui'
+import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { provide } from 'vue'
 import DataTable from '../components/DataTable.vue'
 import { WorkbookChart } from '../workbook/workbook'
@@ -45,8 +46,26 @@ provide('chart', chart)
 				class="max-h-[17rem] bg-white"
 				:columns="chart.dataQuery.result.columns"
 				:rows="chart.dataQuery.result.rows"
-				:onColumnClick="(column) => chart.sortByColumn(column.name)"
-			/>
+			>
+				<template #column-header="{ column }">
+					<div
+						class="flex cursor-pointer items-center gap-2 truncate py-2 px-3 hover:underline"
+						@click="chart.sortByColumn(column.name)"
+					>
+						<span>{{ column.name }}</span>
+						<ChevronDown
+							v-if="chart.sortOrder[column.name] === 'desc'"
+							class="h-4 w-4 text-gray-700"
+							stroke-width="1.5"
+						/>
+						<ChevronUp
+							v-if="chart.sortOrder[column.name] === 'asc'"
+							class="h-4 w-4 text-gray-700"
+							stroke-width="1.5"
+						/>
+					</div>
+				</template>
+			</DataTable>
 		</div>
 		<div class="relative flex w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
 			<ChartTypeSelector v-model="chart.doc.chart_type" />
