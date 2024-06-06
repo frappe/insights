@@ -42,16 +42,17 @@ provide('chart', chart)
 			</div>
 			<DataTable
 				v-if="chart.doc.chart_type != 'Table'"
+				class="max-h-[17rem] bg-white"
 				:columns="chart.dataQuery.result.columns"
 				:rows="chart.dataQuery.result.rows"
-				class="max-h-[17rem] bg-white"
+				:onColumnClick="(column) => chart.sortByColumn(column.name)"
 			/>
 		</div>
 		<div class="relative flex w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
 			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<hr class="my-1 border-t border-gray-200" />
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
-			<template v-if="chart.baseQuery">
+			<template v-if="chart.doc.query">
 				<hr class="my-1 border-t border-gray-200" />
 				<MetricChartConfigForm
 					v-if="chart.doc.chart_type == 'Metric'"

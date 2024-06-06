@@ -1,5 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
-import { computed, reactive, unref, watch } from 'vue'
+import { computed, reactive, unref } from 'vue'
 import { column, count, expression, mutate } from '../query/helpers'
 import useQuery, { Query, getCachedQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
@@ -38,12 +38,25 @@ function makeChart(workbookChart: WorkbookChart) {
 			}
 			return query
 		}),
-		dataQuery: {} as Query,
+		dataQuery: useQuery({
+			name: new Date().toISOString(),
+			title: 'Chart Data',
+			operations: [],
+		}),
 		filters: [] as FilterArgs[],
+		sortOrder: {} as Record<string, 'asc' | 'desc' | undefined>,
 
 		refresh,
 		setFilters(filters: FilterArgs[]) {
 			chart.filters = filters
+		},
+
+		sortByColumn(column: string) {
+			const existingDirection = chart.sortOrder[column]
+			chart.sortOrder = {
+				[column]: !existingDirection ? 'asc' : existingDirection === 'asc' ? 'desc' : undefined,
+			}
+			refresh()
 		},
 	})
 
@@ -54,6 +67,8 @@ function makeChart(workbookChart: WorkbookChart) {
 	})
 
 	async function refresh() {
+		if (!workbookChart.query) return
+
 		resetQuery()
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
@@ -92,6 +107,7 @@ function makeChart(workbookChart: WorkbookChart) {
 			.filter(Boolean) as Measure[]
 
 		prepareAxisChartQuery(row, column, values)
+		applySortOrder()
 		chart.dataQuery.execute()
 	}
 
@@ -135,6 +151,7 @@ function makeChart(workbookChart: WorkbookChart) {
 			: chart.baseQuery.getMeasure(config.target_column as string)
 
 		prepareMetricQuery(metric, target, date)
+		applySortOrder()
 		chart.dataQuery.execute()
 	}
 
@@ -191,6 +208,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 
 		prepareDonutQuery(label, value)
+		applySortOrder()
 		chart.dataQuery.execute()
 	}
 
@@ -222,6 +240,7 @@ function makeChart(workbookChart: WorkbookChart) {
 			.filter(Boolean) as Measure[]
 
 		prepareTableQuery(rows, columns, values)
+		applySortOrder()
 		chart.dataQuery.execute()
 	}
 
@@ -241,6 +260,17 @@ function makeChart(workbookChart: WorkbookChart) {
 				values: values,
 			})
 		}
+	}
+
+	function applySortOrder() {
+		Object.entries(chart.sortOrder).forEach(([column_name, direction]) => {
+			if (direction) {
+				chart.dataQuery.addOrderBy({
+					column: column(column_name),
+					direction,
+				})
+			}
+		})
 	}
 
 	function resetQuery() {
