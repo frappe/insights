@@ -5,7 +5,7 @@ import { Query } from '../query'
 import SourceSelectorDialog from './SourceSelectorDialog.vue'
 
 const query = inject('query') as Query
-const showSourceSelectorDialog = ref(false)
+const showSourceSelectorDialog = ref(true)
 </script>
 
 <template>
