@@ -6,6 +6,7 @@
 
 import frappe
 import frappe.utils
+import ibis
 from frappe.model.document import Document
 from ibis import _
 
@@ -62,7 +63,7 @@ def fetch_query_results(operations):
     total_count = count_results["count"][0]
 
     return {
-        "sql": ibis_query.sql,
+        "sql": ibis.to_sql(ibis_query),
         "columns": columns,
         "rows": results,
         "total_row_count": int(total_count),

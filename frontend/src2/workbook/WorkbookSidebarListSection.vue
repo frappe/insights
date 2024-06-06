@@ -47,7 +47,7 @@ const section = defineProps<{
 			>
 				<div class="flex gap-1.5">
 					<slot name="item-icon" :item="row" />
-					<p>{{ row.name }}</p>
+					<p>{{ row.title }}</p>
 				</div>
 				<button
 					class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"

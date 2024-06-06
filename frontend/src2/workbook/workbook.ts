@@ -5,10 +5,11 @@ import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
+import { getUniqueId } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import useQuery from '../query/query'
-import { getUniqueId } from '../helpers'
+
 export default function useWorkbook(name: string) {
 	const resource = getWorkbookResource(name)
 
@@ -50,6 +51,7 @@ export default function useWorkbook(name: string) {
 			const idx = workbook.doc.charts.length
 			workbook.doc.charts.push({
 				name: getUniqueId(),
+				title: `Chart ${idx + 1}`,
 				query: '',
 				chart_type: 'Line',
 				config: {} as ChartConfig,
@@ -155,6 +157,7 @@ export type WorkbookQuery = {
 
 export type WorkbookChart = {
 	name: string
+	title: string
 	query: string
 	chart_type: ChartType
 	config: ChartConfig

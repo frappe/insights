@@ -22,6 +22,7 @@ import {
 	summarize,
 	table,
 } from './helpers'
+import { copy } from '../helpers'
 
 const queries = new Map<string, Query>()
 export function getCachedQuery(name: string) {
@@ -74,6 +75,14 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 		measures: computed(() => ({} as Measure[])),
 		getDimension,
 		getMeasure,
+
+		reset() {
+			query.doc = copy(workbookQuery)
+			query.activeOperationIdx = -1
+			query.autoExecute = true
+			query.executing = false
+			query.result = {} as QueryResult
+		}
 	})
 
 	// @ts-ignore

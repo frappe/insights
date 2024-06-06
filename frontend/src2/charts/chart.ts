@@ -1,5 +1,7 @@
+import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
+import { getUniqueId } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
 import useQuery, { Query, getCachedQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
@@ -34,12 +36,13 @@ function makeChart(workbookChart: WorkbookChart) {
 			if (!workbookChart.query) return {} as Query
 			const query = getCachedQuery(workbookChart.query)
 			if (!query) {
-				throw new Error('Query not found')
+				console.warn('Query not found')
+				return {} as Query
 			}
 			return query
 		}),
 		dataQuery: useQuery({
-			name: new Date().toISOString(),
+			name: getUniqueId(),
 			title: 'Chart Data',
 			operations: [],
 		}),
@@ -58,6 +61,11 @@ function makeChart(workbookChart: WorkbookChart) {
 			}
 			refresh()
 		},
+	})
+
+	wheneverChanges(() => chart.baseQuery?.currentOperations, refresh, {
+		deep: true,
+		debounce: 500,
 	})
 
 	watchDebounced(() => chart.doc.config, refresh, {
@@ -90,15 +98,18 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function fetchAxisChartData(config: AxisChartConfig) {
 		if (!config.x_axis) {
-			throw new Error('X-axis is required')
+			console.warn('X-axis is required')
+			return
 		}
 		if (config.x_axis === config.split_by) {
-			throw new Error('X-axis and split-by cannot be the same')
+			console.warn('X-axis and split-by cannot be the same')
+			return
 		}
 
 		const row = chart.baseQuery.getDimension(config.x_axis)
 		if (!row) {
-			throw new Error('X-axis column not found')
+			console.warn('X-axis column not found')
+			return
 		}
 
 		const column = chart.baseQuery.getDimension(config.split_by)
@@ -131,18 +142,22 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function fetchMetricChartData(config: MetricChartConfig) {
 		if (config.target_value && config.target_column) {
-			throw new Error('Target value and target column cannot be used together')
+			console.warn('Target value and target column cannot be used together')
+			return
 		}
 		if (config.metric_column === config.target_column) {
-			throw new Error('Metric and target cannot be the same')
+			console.warn('Metric and target cannot be the same')
+			return
 		}
 		if (config.target_column && config.date_column) {
-			throw new Error('Target and date cannot be used together')
+			console.warn('Target and date cannot be used together')
+			return
 		}
 
 		const metric = chart.baseQuery.getMeasure(config.metric_column)
 		if (!metric) {
-			throw new Error('Metric column not found')
+			console.warn('Metric column not found')
+			return
 		}
 
 		const date = chart.baseQuery.getDimension(config.date_column as string)
@@ -190,21 +205,23 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function fetchDonutChartData(config: DountChartConfig) {
 		if (!config.label_column) {
-			// throw new Error('Label is required')
+			console.warn('Label is required')
 			return
 		}
 		if (!config.value_column) {
-			// throw new Error('Value is required')
+			console.warn('Value is required')
 			return
 		}
 
 		const label = chart.baseQuery.getDimension(config.label_column)
 		const value = chart.baseQuery.getMeasure(config.value_column)
 		if (!label) {
-			throw new Error('Label column not found')
+			console.warn('Label column not found')
+			return
 		}
 		if (!value) {
-			throw new Error('Value column not found')
+			console.warn('Value column not found')
+			return
 		}
 
 		prepareDonutQuery(label, value)
@@ -227,7 +244,8 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function fetchTableChartData(config: TableChartConfig) {
 		if (!config.rows.length) {
-			throw new Error('Rows are required')
+			console.warn('Rows are required')
+			return
 		}
 		const rows = config.rows
 			.map((r) => chart.baseQuery.getDimension(r))
@@ -274,13 +292,9 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function resetQuery() {
-		chart.dataQuery = useQuery({
-			name: new Date().toISOString(),
-			title: 'Chart Data',
-			operations: [],
-		})
+		chart.dataQuery.reset()
 		chart.dataQuery.autoExecute = false
-		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
+		chart.dataQuery.setOperations([...chart.baseQuery.currentOperations])
 		if (chart.filters.length) {
 			chart.dataQuery.addFilter(chart.filters)
 		}

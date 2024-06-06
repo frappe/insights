@@ -19,7 +19,7 @@ const workbook = inject(workbookKey) as Workbook
 			itemKey: 'name',
 			isActive: (idx: number) => workbook.isActiveTab('query', idx),
 			add: workbook.addQuery,
-			remove: workbook.removeQuery,
+			remove: (query) => workbook.removeQuery(query.name),
 			itemClick: (idx: number) => workbook.setActiveTab('query', idx),
 		}"
 		>
@@ -36,7 +36,7 @@ const workbook = inject(workbookKey) as Workbook
 			itemKey: 'name',
 			isActive: (idx: number) => workbook.isActiveTab('chart', idx),
 			add: workbook.addChart,
-			remove: workbook.removeChart,
+			remove: (chart) => workbook.removeChart(chart.name),
 			itemClick: (idx: number) => workbook.setActiveTab('chart', idx),
 		}"
 		>
@@ -53,7 +53,7 @@ const workbook = inject(workbookKey) as Workbook
 			itemKey: 'name',
 			isActive: (idx: number) => workbook.isActiveTab('dashboard', idx),
 			add: workbook.addDashboard,
-			remove: workbook.removeDashboard,
+			remove: (dashboard) => workbook.removeDashboard(dashboard.name),
 			itemClick: (idx: number) => workbook.setActiveTab('dashboard', idx),
 		}"
 		>
