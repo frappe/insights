@@ -1,15 +1,65 @@
 <script setup lang="ts">
-import WorkbookQueryList from './WorkbookQueryList.vue'
-import WorkbookChartList from './WorkbookChartList.vue'
-import WorkbookDashboardList from './WorkbookDashboardList.vue'
+import { BarChart2, Layout, Table2 } from 'lucide-vue-next'
+import { inject } from 'vue'
+import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
+import { Workbook, workbookKey } from './workbook'
+
+const workbook = inject(workbookKey) as Workbook
 </script>
 
 <template>
 	<div
 		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto border-r bg-white shadow-sm"
 	>
-		<WorkbookQueryList />
-		<WorkbookChartList />
-		<WorkbookDashboardList />
+		<WorkbookSidebarListSection
+			v-bind="{
+			title: 'Queries',
+			emptyMessage: 'No queries',
+			items: workbook.doc.queries,
+			itemKey: 'name',
+			isActive: (idx: number) => workbook.isActiveTab('query', idx),
+			add: workbook.addQuery,
+			remove: workbook.removeQuery,
+			itemClick: (idx: number) => workbook.setActiveTab('query', idx),
+		}"
+		>
+			<template #item-icon>
+				<Table2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
+		</WorkbookSidebarListSection>
+
+		<WorkbookSidebarListSection
+			v-bind="{
+			title: 'Charts',
+			emptyMessage: 'No charts',
+			items: workbook.doc.charts,
+			itemKey: 'name',
+			isActive: (idx: number) => workbook.isActiveTab('chart', idx),
+			add: workbook.addChart,
+			remove: workbook.removeChart,
+			itemClick: (idx: number) => workbook.setActiveTab('chart', idx),
+		}"
+		>
+			<template #item-icon>
+				<BarChart2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
+		</WorkbookSidebarListSection>
+
+		<WorkbookSidebarListSection
+			v-bind="{
+			title: 'Dashboards',
+			emptyMessage: 'No dashboards',
+			items: workbook.doc.dashboards,
+			itemKey: 'name',
+			isActive: (idx: number) => workbook.isActiveTab('dashboard', idx),
+			add: workbook.addDashboard,
+			remove: workbook.removeDashboard,
+			itemClick: (idx: number) => workbook.setActiveTab('dashboard', idx),
+		}"
+		>
+			<template #item-icon>
+				<Layout class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
+		</WorkbookSidebarListSection>
 	</div>
 </template>
