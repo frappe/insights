@@ -38,7 +38,7 @@ from insights.insights.doctype.insights_team.insights_team import check_table_pe
 
 class InsightsDataSourceDocument:
     def autoname(self):
-        return frappe.scrub(self.title)
+        self.name = frappe.scrub(self.title)
 
     def before_insert(self):
         if self.is_site_db and frappe.db.exists(
@@ -57,6 +57,8 @@ class InsightsDataSourceDocument:
             and self.has_credentials_changed()
         ):
             self.db_set("is_frappe_db", is_frappe_db(self))
+
+        if self.status == "Active":
             self.update_table_list()
 
     def has_credentials_changed(self):
@@ -215,9 +217,9 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
         if self.is_site_db:
             return get_sitedb_connection_string()
         if self.name == "Query Store":
-            raise get_query_store_connection_string()
+            return get_query_store_connection_string()
         if self.database_type == "SQLite":
-            raise get_sqlite_connection_string(self)
+            return get_sqlite_connection_string(self)
         if self.is_frappe_db:
             return get_frappedb_connection_string()
         if self.database_type == "MariaDB":
