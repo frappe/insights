@@ -3,7 +3,7 @@ import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
 import { getUniqueId } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
-import useQuery, { Query, getCachedQuery } from '../query/query'
+import { Query, getCachedQuery, makeQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
 import {
 	AXIS_CHARTS,
@@ -41,9 +41,9 @@ function makeChart(workbookChart: WorkbookChart) {
 			}
 			return query
 		}),
-		dataQuery: useQuery({
+		dataQuery: makeQuery({
 			name: getUniqueId(),
-			title: 'Chart Data',
+			title: '',
 			operations: [],
 		}),
 		filters: [] as FilterArgs[],

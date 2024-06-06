@@ -2,6 +2,7 @@ import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { confirmDialog } from '@/utils/components'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
+import { copy } from '../helpers'
 import { WorkbookQuery } from '../workbook/workbook'
 import {
 	cast,
@@ -22,7 +23,6 @@ import {
 	summarize,
 	table,
 } from './helpers'
-import { copy } from '../helpers'
 
 const queries = new Map<string, Query>()
 export function getCachedQuery(name: string) {
@@ -38,7 +38,7 @@ export default function useQuery(workbookQuery: WorkbookQuery) {
 	return query
 }
 
-function makeQuery(workbookQuery: WorkbookQuery) {
+export function makeQuery(workbookQuery: WorkbookQuery) {
 	const query = reactive({
 		doc: workbookQuery,
 
@@ -76,13 +76,7 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 		getDimension,
 		getMeasure,
 
-		reset() {
-			query.doc = copy(workbookQuery)
-			query.activeOperationIdx = -1
-			query.autoExecute = true
-			query.executing = false
-			query.result = {} as QueryResult
-		}
+		reset,
 	})
 
 	// @ts-ignore
@@ -128,6 +122,7 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 		() => query.autoExecute && execute(),
 		{ deep: true, immediate: true }
 	)
+
 	async function execute() {
 		if (!query.doc.operations.length) {
 			query.result = {
@@ -322,6 +317,15 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function getMeasure(column_name: string) {
 		return query.measures.find((m) => m.column_name === column_name)
+	}
+
+	const originalQuery = copy(workbookQuery)
+	function reset() {
+		query.doc = copy(originalQuery)
+		query.activeOperationIdx = -1
+		query.autoExecute = true
+		query.executing = false
+		query.result = {} as QueryResult
 	}
 
 	return query

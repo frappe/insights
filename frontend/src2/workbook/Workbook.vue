@@ -14,19 +14,17 @@ const props = defineProps<{ name: string }>()
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
 
-if (workbook.islocal) {
-	const stopWatcher = watch(
-		() => workbook.isdirty,
-		(dirty) => {
-			if (dirty) {
-				window.onbeforeunload = () => {
-					return 'Are you sure you want to leave? You have unsaved changes.'
-				}
-				stopWatcher()
+const stopWatcher = watch(
+	() => workbook.isdirty,
+	(dirty) => {
+		if (dirty) {
+			window.onbeforeunload = () => {
+				return 'Are you sure you want to leave? You have unsaved changes.'
 			}
+			stopWatcher()
 		}
-	)
-}
+	}
+)
 
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`

@@ -30,8 +30,8 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 						i: getUniqueId(),
 						x: 0,
 						y: 0,
-						w: 4,
-						h: 4,
+						w: 6,
+						h: 12,
 					},
 				})
 			})
