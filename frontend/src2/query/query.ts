@@ -188,7 +188,6 @@ function makeQuery(workbookQuery: WorkbookQuery) {
 			query.addSource({
 				table: table(args.data_source, args.table),
 			})
-			query.doc.title = args.table
 		}
 		if (!query.doc.operations.length) {
 			_setSource()
