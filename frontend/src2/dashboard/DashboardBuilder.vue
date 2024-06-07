@@ -55,7 +55,7 @@ function getChart(index: number) {
 					v-if="dashboard.doc.items.length > 0"
 					class="h-fit w-full"
 					:class="[false ? 'mb-[20rem] ' : '']"
-					:cols="12"
+					:cols="20"
 					:disabled="false"
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
