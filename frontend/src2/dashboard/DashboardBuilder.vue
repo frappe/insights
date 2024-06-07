@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
-import { WorkbookChart, WorkbookDashboard } from '../workbook/workbook'
+import ChartRenderer from '../charts/components/ChartRenderer.vue'
+import { WorkbookChart, WorkbookDashboard, WorkbookDashboardChart } from '../workbook/workbook'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
+import DashboardItemActions from './DashboardItemActions.vue'
 import VueGridLayout from './VueGridLayout.vue'
 import useDashboard from './dashboard'
-import ChartRenderer from '../charts/components/ChartRenderer.vue'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
 	charts: WorkbookChart[]
 }>()
 const dashboard = useDashboard(props.dashboard)
+const selectedCharts = computed(() => {
+	return dashboard.doc.items.filter((item) => item.type == 'chart') as WorkbookDashboardChart[]
+})
 
 const showChartSelectorDialog = ref(false)
-const showFilterCreationDialog = ref(false)
+const showFilterSelectorDialog = ref(false)
 const showTextWidgetCreationDialog = ref(false)
 async function valuesProvider(column_name: string, searchTxt?: string) {
 	return []
 }
 function getItem(index: number) {
 	return dashboard.doc.items[index]
+}
+function getChart(index: number) {
+	const item = getItem(index) as WorkbookDashboardChart
+	return getCachedChart(item.chart) as Chart
 }
 </script>
 
@@ -33,31 +41,13 @@ function getItem(index: number) {
 					<Button variant="outline" @click="dashboard.refresh" icon-left="refresh-ccw">
 						Refresh
 					</Button>
-					<Dropdown
-						placement="right"
-						:button="{
-							iconLeft: 'plus',
-							variant: 'outline',
-							label: 'Add Widget',
-						}"
-						:options="[
-							{
-								icon: 'bar-chart-2',
-								label: 'Chart',
-								onClick: () => (showChartSelectorDialog = true),
-							},
-							{
-								icon: 'filter',
-								label: 'Filter',
-								onClick: () => {},
-							},
-							{
-								icon: 'type',
-								label: 'Text',
-								onClick: () => {},
-							},
-						]"
-					/>
+					<Button
+						variant="outline"
+						icon-left="plus"
+						@click="showChartSelectorDialog = true"
+					>
+						Chart
+					</Button>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-3">
@@ -77,13 +67,26 @@ function getItem(index: number) {
 					"
 				>
 					<template #item="{ index }">
-						<div class="flex h-full w-full p-1.5">
-							<div class="h-full w-full rounded bg-white shadow">
+						<div class="relative flex h-full w-full p-1.5">
+							<div
+								class="h-full w-full rounded bg-white shadow"
+								:class="
+									dashboard.activeItemIdx == index
+										? 'outline outline-gray-700'
+										: ''
+								"
+								@click="dashboard.setActiveItem(index)"
+							>
 								<ChartRenderer
 									v-if="getItem(index).type == 'chart'"
-									:chart="(getCachedChart(getItem(index).chart) as Chart)"
+									:chart="getChart(index)"
 								/>
 							</div>
+							<DashboardItemActions
+								class="absolute right-0 top-1 -mr-7"
+								v-if="dashboard.activeItemIdx == index"
+								@delete="dashboard.removeItem(index)"
+							/>
 						</div>
 					</template>
 				</VueGridLayout>
@@ -93,7 +96,9 @@ function getItem(index: number) {
 
 	<ChartSelectorDialog
 		v-model="showChartSelectorDialog"
-		:options="props.charts"
+		:chartOptions="
+			props.charts.filter((chart) => !selectedCharts.some((c) => c.chart == chart.name))
+		"
 		@select="dashboard.addChart($event)"
 	/>
 </template>

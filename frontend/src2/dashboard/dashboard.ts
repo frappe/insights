@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
-import { WorkbookDashboard } from '../workbook/workbook'
 import { getUniqueId } from '../helpers'
+import { WorkbookDashboard } from '../workbook/workbook'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -20,6 +20,11 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		editing: true,
 		filters: [] as FilterArgs[],
 
+		activeItemIdx: null as number | null,
+		setActiveItem(index: number) {
+			dashboard.activeItemIdx = index
+		},
+
 		addChart(chart: string[] | string) {
 			const _chart = Array.isArray(chart) ? chart : [chart]
 			_chart.forEach((chart) => {
@@ -37,15 +42,16 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			})
 		},
 
+		removeItem(index: number) {
+			dashboard.doc.items.splice(index, 1)
+		},
+
 		setFilters(filters: FilterArgs[]) {
 			dashboard.filters = filters
 			dashboard.refresh()
 		},
 
-		refresh() {
-			// dashboard.charts.forEach(chart => chart.setFilters(dashboard.filters))
-			// dashboard.charts.forEach(chart => chart.refresh())
-		},
+		refresh() {},
 	})
 
 	return dashboard
