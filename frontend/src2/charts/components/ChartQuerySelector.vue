@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { WorkbookQuery } from '../../workbook/workbook'
+
 const query = defineModel()
-const props = defineProps<{ queries: string[] }>()
+const props = defineProps<{ queries: WorkbookQuery[] }>()
 </script>
 
 <template>
@@ -8,7 +10,14 @@ const props = defineProps<{ queries: string[] }>()
 		<Autocomplete
 			label="Query"
 			:showFooter="true"
-			:options="props.queries"
+			:options="
+				props.queries.map((q) => {
+					return {
+						label: q.title,
+						value: q.name,
+					}
+				})
+			"
 			:modelValue="query"
 			@update:modelValue="query = $event?.value"
 		/>

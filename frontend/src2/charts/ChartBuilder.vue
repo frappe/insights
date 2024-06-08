@@ -3,7 +3,7 @@ import { LoadingIndicator } from 'frappe-ui'
 import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { provide } from 'vue'
 import DataTable from '../components/DataTable.vue'
-import { WorkbookChart } from '../workbook/workbook'
+import { WorkbookChart, WorkbookQuery } from '../workbook/workbook'
 import useChart from './chart'
 import AxisChartConfigForm from './components/AxisChartConfigForm.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
@@ -20,7 +20,7 @@ import {
 	TableChartConfig,
 } from './helpers'
 
-const props = defineProps<{ chart: WorkbookChart; queries: string[] }>()
+const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 const chart = useChart(props.chart)
 provide('chart', chart)
 </script>

@@ -77,7 +77,7 @@ watchEffect(() => {
 				v-if="workbook.activeTabType === 'chart'"
 				:key="workbook.activeTabIdx"
 				:chart="workbook.doc.charts[workbook.activeTabIdx]"
-				:queries="workbook.doc.queries.map((q) => q.name)"
+				:queries="workbook.doc.queries"
 			/>
 			<DashboardBuilder
 				v-if="workbook.activeTabType === 'dashboard'"
