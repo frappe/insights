@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart2, Layout, Table2 } from 'lucide-vue-next'
+import { BarChart2, Layout, LayoutPanelTop, Table2 } from 'lucide-vue-next'
 import { inject } from 'vue'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
 import { Workbook, workbookKey } from './workbook'
@@ -58,7 +58,7 @@ const workbook = inject(workbookKey) as Workbook
 		}"
 		>
 			<template #item-icon>
-				<Layout class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<LayoutPanelTop class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
 		</WorkbookSidebarListSection>
 	</div>
