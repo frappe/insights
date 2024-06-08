@@ -1,6 +1,13 @@
 import { reactive } from 'vue'
+import { Chart, getCachedChart } from '../charts/chart'
 import { getUniqueId } from '../helpers'
-import { WorkbookDashboard } from '../workbook/workbook'
+import { column } from '../query/helpers'
+import {
+	DashboardFilterColumn,
+	WorkbookDashboard,
+	WorkbookDashboardChart,
+	WorkbookDashboardFilter,
+} from '../workbook/workbook'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -24,6 +31,9 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		setActiveItem(index: number) {
 			dashboard.activeItemIdx = index
 		},
+		isActiveItem(index: number) {
+			return dashboard.activeItemIdx == index
+		},
 
 		addChart(chart: string[] | string) {
 			const _chart = Array.isArray(chart) ? chart : [chart]
@@ -42,13 +52,38 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			})
 		},
 
+		addFilter(column: DashboardFilterColumn) {
+			dashboard.doc.items.push({
+				type: 'filter',
+				column: column,
+				layout: {
+					i: getUniqueId(),
+					x: 0,
+					y: 0,
+					w: 4,
+					h: 2,
+				},
+			})
+		},
+
 		removeItem(index: number) {
 			dashboard.doc.items.splice(index, 1)
 		},
 
-		setFilters(filters: FilterArgs[]) {
-			dashboard.filters = filters
-			dashboard.refresh()
+		applyFilter(filter: WorkbookDashboardFilter, operator: FilterOperator, value: FilterValue) {
+			const charts = dashboard.doc.items.filter(
+				(i) => i.type == 'chart'
+			) as WorkbookDashboardChart[]
+			charts.forEach((c) => {
+				const chart = getCachedChart(c.chart) as Chart
+				if (chart.doc.query == filter.column.query) {
+					chart.applyFilter({
+						column: column(filter.column.name),
+						operator,
+						value,
+					})
+				}
+			})
 		},
 
 		refresh() {},

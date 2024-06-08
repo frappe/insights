@@ -2,7 +2,10 @@
 import { computed } from 'vue'
 import ColumnFilterValueSelector from './ColumnFilterValueSelector.vue'
 
-const props = defineProps<{ column: QueryResultColumn }>()
+const props = defineProps<{
+	column: QueryResultColumn
+	valuesProvider: (search: string) => Promise<string[]>
+}>()
 const filter = defineModel<{ operator: FilterOperator; value: FilterValue }>({
 	type: Object,
 	default: () => ({ operator: '=', value: [] }),
@@ -43,8 +46,9 @@ const placeholder = computed(() => {
 		/>
 		<ColumnFilterValueSelector
 			v-if="isString && isEqualityCheck && Array.isArray(filter.value)"
-			:column="props.column"
 			v-model="filter.value"
+			:column="props.column"
+			:valuesProvider="props.valuesProvider"
 		/>
 		<FormControl v-else-if="!isNullCheck" :placeholder="placeholder" v-model="filter.value" />
 	</div>

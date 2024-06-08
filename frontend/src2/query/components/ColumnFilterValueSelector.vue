@@ -5,13 +5,15 @@ import { CheckSquare, SearchIcon, Square } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Query } from '../query'
 
-const props = defineProps<{ column: QueryResultColumn }>()
+const props = defineProps<{
+	column: QueryResultColumn
+	valuesProvider: (search: string) => Promise<string[]>
+}>()
 const selectedValues = defineModel<any[]>({
 	type: Array,
 	default: () => [],
 })
 
-const query = inject('query') as Query
 const distinctColumnValues = ref<any[]>([])
 const searchInput = ref('')
 const fetchingValues = ref(false)
@@ -19,8 +21,10 @@ watchDebounced(
 	() => searchInput.value,
 	(value) => {
 		fetchingValues.value = true
-		query
-			.getDistinctColumnValues(props.column.name, value)
+		// query
+		// 	.getDistinctColumnValues(props.column.name, value)
+		props
+			.valuesProvider(value)
 			.then((values: string[]) => (distinctColumnValues.value = values))
 			.finally(() => (fetchingValues.value = false))
 	},

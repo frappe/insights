@@ -46,12 +46,13 @@ function makeChart(workbookChart: WorkbookChart) {
 			title: '',
 			operations: [],
 		}),
-		filters: [] as FilterArgs[],
+		filters: new Set<FilterArgs>(),
 		sortOrder: {} as Record<string, 'asc' | 'desc' | undefined>,
 
 		refresh,
-		setFilters(filters: FilterArgs[]) {
-			chart.filters = filters
+		applyFilter(filter: FilterArgs) {
+			chart.filters.add(filter)
+			refresh()
 		},
 
 		sortByColumn(column: string) {
@@ -295,8 +296,10 @@ function makeChart(workbookChart: WorkbookChart) {
 		chart.dataQuery.reset()
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.currentOperations])
-		if (chart.filters.length) {
-			chart.dataQuery.addFilter(chart.filters)
+		if (chart.filters.size) {
+			chart.filters.forEach((filter) => {
+				chart.dataQuery.addFilter(filter)
+			})
 		}
 	}
 

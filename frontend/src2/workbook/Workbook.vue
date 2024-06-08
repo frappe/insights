@@ -84,6 +84,7 @@ watchEffect(() => {
 				:key="workbook.activeTabIdx"
 				:dashboard="workbook.doc.dashboards[workbook.activeTabIdx]"
 				:charts="workbook.doc.charts"
+				:queries="workbook.doc.queries"
 			/>
 			<div
 				class="pointer-events-none absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm transition-all"

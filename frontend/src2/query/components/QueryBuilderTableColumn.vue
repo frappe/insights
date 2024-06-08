@@ -2,12 +2,12 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { MoreHorizontal } from 'lucide-vue-next'
 import { inject } from 'vue'
+import { column } from '../helpers'
+import { Query } from '../query'
 import ColumnFilter from './ColumnFilter.vue'
 import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
-import { column } from '../helpers'
-import { Query } from '../query'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 
@@ -87,6 +87,7 @@ function onFilter(
 					<ColumnFilter
 						:column="props.column"
 						@filter="(op, val) => onFilter(op, val, togglePopover)"
+						:valuesProvider="(searchTxt: string) => query.getDistinctColumnValues(props.column.name, searchTxt)"
 					/>
 					<ColumnRemove :column="props.column" @remove="onRemove(togglePopover)" />
 				</div>

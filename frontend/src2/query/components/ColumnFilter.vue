@@ -9,7 +9,11 @@ import ColumnFilterTypeText from './ColumnFilterTypeText.vue'
 const emit = defineEmits({
 	filter: (operator: FilterOperator, value: FilterValue) => true,
 })
-const props = defineProps<{ column: QueryResultColumn }>()
+const props = defineProps<{
+	column: QueryResultColumn
+	valuesProvider: (search: string) => Promise<string[]>
+	placement?: string
+}>()
 
 const isText = computed(() => FIELDTYPES.TEXT.includes(props.column.type))
 const isNumber = computed(() => FIELDTYPES.NUMBER.includes(props.column.type))
@@ -63,7 +67,7 @@ function processFilter(operator: FilterOperator, value: FilterValue) {
 	}
 }
 
-function addFilter() {
+function confirmFilter() {
 	const filter = processFilter(newFilter.operator, newFilter.value)
 	if (!filter) {
 		console.error(newFilter.operator, newFilter.value)
@@ -75,44 +79,47 @@ function addFilter() {
 </script>
 
 <template>
-	<Popover placement="right-start">
+	<Popover :placement="props.placement || 'right-start'">
 		<template #target="{ togglePopover, isOpen }">
-			<Button
-				variant="ghost"
-				@click="togglePopover"
-				class="w-full !justify-start"
-				:class="{ ' !bg-gray-100': isOpen }"
-			>
-				<template #icon>
-					<div class="flex h-7 w-full items-center gap-2 pl-2 pr-1.5 text-base">
-						<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
-						<div class="flex flex-1 items-center justify-between">
-							<span class="truncate">Filter</span>
-							<ChevronRight class="h-4 w-4" stroke-width="1.5" />
+			<slot name="target" :togglePopover="togglePopover" :isOpen="isOpen">
+				<Button
+					variant="ghost"
+					@click="togglePopover"
+					class="w-full !justify-start"
+					:class="{ ' !bg-gray-100': isOpen }"
+				>
+					<template #icon>
+						<div class="flex h-7 w-full items-center gap-2 pl-2 pr-1.5 text-base">
+							<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
+							<div class="flex flex-1 items-center justify-between">
+								<span class="truncate">Filter</span>
+								<ChevronRight class="h-4 w-4" stroke-width="1.5" />
+							</div>
 						</div>
-					</div>
-				</template>
-			</Button>
+					</template>
+				</Button>
+			</slot>
 		</template>
 		<template #body-main="{ togglePopover, isOpen }">
 			<div v-if="isOpen" class="flex flex-col gap-2 px-2.5 py-2">
-				<div class="flex items-center text-sm font-medium text-gray-600">
+				<!-- <div class="flex items-center text-sm font-medium text-gray-600">
 					Filter: {{ props.column.name }}
-				</div>
+				</div> -->
 
 				<ColumnFilterTypeNumber
 					v-if="isNumber"
-					class="w-[16rem]"
+					class="w-[15rem]"
 					:column="props.column"
 					:model-value="newFilter"
 					@update:model-value="Object.assign(newFilter, $event)"
 				/>
 				<ColumnFilterTypeText
 					v-else-if="isText"
-					class="w-[16rem]"
+					class="w-[15rem]"
 					:column="props.column"
 					:model-value="newFilter"
 					@update:model-value="Object.assign(newFilter, $event)"
+					:valuesProvider="props.valuesProvider"
 				/>
 				<ColumnFilterTypeDate
 					v-else-if="isDate"
@@ -127,7 +134,7 @@ function addFilter() {
 						variant="solid"
 						icon="check"
 						:disabled="!isValidFilter"
-						@click=";[addFilter(), togglePopover()]"
+						@click=";[confirmFilter(), togglePopover()]"
 					>
 					</Button>
 				</div>

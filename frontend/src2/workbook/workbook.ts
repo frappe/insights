@@ -186,11 +186,16 @@ export type WorkbookDashboardChart = {
 }
 export type WorkbookDashboardFilter = {
 	type: 'filter'
-	filter: object
+	column: DashboardFilterColumn
 	layout: Layout
 }
 export type WorkbookDashboardText = {
 	type: 'text'
 	text: string
 	layout: Layout
+}
+export type DashboardFilterColumn = {
+	query: string
+	name: string
+	type: ColumnDataType
 }
