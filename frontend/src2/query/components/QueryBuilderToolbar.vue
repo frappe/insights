@@ -84,7 +84,7 @@ const actions = [
 </script>
 
 <template>
-	<div class="flex items-center divide-x border-b">
+	<div class="flex items-center gap-2">
 		<Tooltip
 			:key="idx"
 			v-for="(action, idx) in actions"
@@ -92,9 +92,13 @@ const actions = [
 			:hover-delay="0.1"
 			:text="action.label"
 		>
-			<Button :variant="'ghost'" @click="action.onClick" size="lg" class="rounded-none">
+			<Button :variant="'ghost'" @click="action.onClick" class="h-8 w-8 bg-white shadow">
 				<template #icon>
-					<component :is="action.icon" class="h-5 w-5 text-gray-700" stroke-width="1.5" />
+					<component
+						:is="action.icon"
+						class="h-4.5 w-4.5 text-gray-700"
+						stroke-width="1.5"
+					/>
 				</template>
 			</Button>
 		</Tooltip>

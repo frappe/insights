@@ -14,14 +14,14 @@ provide('query', query)
 
 <template>
 	<QueryBuilderSourceSelector v-if="!query.doc.operations.length" />
-	<div v-else class="relative flex h-full w-full divide-x overflow-hidden bg-white">
-		<div class="flex h-full w-full flex-col overflow-hidden pt-0 pr-0">
+	<div v-else class="relative flex h-full w-full divide-x overflow-hidden p-3">
+		<div class="flex h-full w-full flex-col gap-3">
 			<QueryBuilderToolbar></QueryBuilderToolbar>
 			<QueryBuilderTable></QueryBuilderTable>
 		</div>
 	</div>
 	<div
-		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto border-l bg-white"
+		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white shadow-sm"
 	>
 		<QueryOperations />
 	</div>
