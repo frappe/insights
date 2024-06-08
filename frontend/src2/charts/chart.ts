@@ -77,6 +77,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	async function refresh() {
 		if (!workbookChart.query) return
+		if (chart.baseQuery.executing) return
 
 		resetQuery()
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
