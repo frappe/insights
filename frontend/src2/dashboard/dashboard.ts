@@ -24,7 +24,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 	const dashboard = reactive({
 		doc: workbookDashboard,
 
-		editing: true,
+		editing: false,
 		filters: [] as FilterArgs[],
 
 		activeItemIdx: null as number | null,

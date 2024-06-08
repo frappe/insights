@@ -7,11 +7,11 @@ import {
 	WorkbookQuery,
 } from '../workbook/workbook'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
+import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import FilterSelectorDialog from './FilterSelectorDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
 import useDashboard from './dashboard'
-import DashboardItem from './DashboardItem.vue'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -38,6 +38,7 @@ const showTextWidgetCreationDialog = ref(false)
 				<div class="text-lg font-semibold">{{ dashboard.doc.title }}</div>
 				<div class="flex gap-2">
 					<Button
+						v-if="!dashboard.editing"
 						variant="outline"
 						icon-left="refresh-ccw"
 						@click="() => dashboard.refresh()"
@@ -45,28 +46,46 @@ const showTextWidgetCreationDialog = ref(false)
 						Refresh
 					</Button>
 					<Button
+						v-if="!dashboard.editing"
 						variant="outline"
-						icon-left="plus"
-						@click="showChartSelectorDialog = true"
+						icon-left="edit"
+						@click="dashboard.editing = true"
 					>
-						Chart
+						Edit
 					</Button>
 					<Button
+						v-if="dashboard.editing"
 						variant="outline"
-						icon-left="plus"
-						@click="showFilterSelectorDialog = true"
+						icon-left="check"
+						@click="dashboard.editing = false"
 					>
-						Filter
+						Done
 					</Button>
+					<template v-if="dashboard.editing">
+						<Button
+							variant="outline"
+							icon-left="plus"
+							@click="showChartSelectorDialog = true"
+						>
+							Chart
+						</Button>
+						<Button
+							variant="outline"
+							icon-left="plus"
+							@click="showFilterSelectorDialog = true"
+						>
+							Filter
+						</Button>
+					</template>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-3">
 				<VueGridLayout
 					v-if="dashboard.doc.items.length > 0"
 					class="h-fit w-full"
-					:class="[false ? 'mb-[20rem] ' : '']"
+					:class="[dashboard.editing ? 'mb-[20rem] ' : '']"
 					:cols="20"
-					:disabled="false"
+					:disabled="!dashboard.editing"
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {
@@ -80,8 +99,8 @@ const showTextWidgetCreationDialog = ref(false)
 						<div class="relative h-full w-full p-1.5">
 							<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
 							<DashboardItemActions
+								v-if="dashboard.editing && dashboard.isActiveItem(index)"
 								class="absolute right-0 top-1 -mr-7"
-								v-if="dashboard.isActiveItem(index)"
 								@delete="dashboard.removeItem(index)"
 							/>
 						</div>

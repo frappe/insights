@@ -24,7 +24,6 @@
 						{{ { i: layout.i, x: layout.x, y: layout.y, w: layout.w, h: layout.h } }}
 					</pre
 					>
-					;
 				</slot>
 			</grid-item>
 		</template>
@@ -32,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive } from 'vue'
 
 type Layout = {
 	i: string
@@ -50,8 +49,8 @@ const options = reactive({
 	colNum: props.cols || 12,
 	margin: [0, 0],
 	rowHeight: 30,
-	isDraggable: !props.disabled,
-	isResizable: !props.disabled,
+	isDraggable: computed(() => !props.disabled),
+	isResizable: computed(() => !props.disabled),
 	responsive: true,
 	verticalCompact: false,
 	preventCollision: true,
@@ -64,17 +63,6 @@ const options = reactive({
 		xxs: 1,
 	},
 })
-
-watch(
-	() => props.disabled,
-	// @ts-ignore
-	(disable: boolean) => {
-		if (options.isDraggable === !disable && options.isResizable === !disable) return
-		options.isDraggable = !disable
-		options.isResizable = !disable
-	},
-	200
-)
 </script>
 
 <style lang="scss">
