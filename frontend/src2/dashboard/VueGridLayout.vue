@@ -48,7 +48,7 @@ const props = defineProps<{
 const options = reactive({
 	colNum: props.cols || 12,
 	margin: [0, 0],
-	rowHeight: 30,
+	rowHeight: 40,
 	isDraggable: computed(() => !props.disabled),
 	isResizable: computed(() => !props.disabled),
 	responsive: true,
