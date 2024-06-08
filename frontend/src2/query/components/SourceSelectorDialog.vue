@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ListEmptyState, ListView, createResource } from 'frappe-ui'
+import { wheneverChanges } from '@/utils'
+import { ListEmptyState, ListView } from 'frappe-ui'
 import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
-import { computed, h, ref, watch } from 'vue'
+import { computed, h, ref } from 'vue'
+import useTableStore from '../../data_source/tables'
 import DataSourceSelector from './DataSourceSelector.vue'
 
 const emit = defineEmits({
@@ -9,28 +11,16 @@ const emit = defineEmits({
 })
 const showDialog = defineModel()
 
-const tables = createResource({
-	url: 'insights.insights.doctype.insights_data_source.insights_data_source.get_data_source_tables',
-	cache: 'all_tables',
-	auto: true,
-	initialData: [],
-})
+const tableStore = useTableStore()
 
 const tableSearchQuery = ref('')
-watch(tableSearchQuery, (query: any, old_query: any) => {
-	if (query === old_query) return
-	tables.submit({
-		data_source: dataSourceFilter.value,
-		table_name_like: query,
-	})
+wheneverChanges(tableSearchQuery, () => {
+	tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
 })
 
 const dataSourceFilter = ref('')
-watch(dataSourceFilter, (data_source: any) => {
-	tables.submit({
-		data_source: data_source,
-		table_name_like: tableSearchQuery.value,
-	})
+wheneverChanges(dataSourceFilter, () => {
+	tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
 })
 
 const listColumns = [
@@ -55,12 +45,13 @@ const listColumns = [
 ]
 
 const confirmDisabled = computed(() => {
-	if (!tables.data) return true
-	return tables.data.every((table: any) => !table.selected)
+	if (!tableStore.tables) return true
+	return tableStore.tables.every((table: any) => !table.selected)
 })
 function onConfirm() {
 	if (confirmDisabled.value) return
-	const selectedTable = tables.data.find((table: any) => table.selected)
+	const selectedTable = tableStore.tables.find((table: any) => table.selected)
+	if (!selectedTable) return
 	emit('select', {
 		table: selectedTable.table_name,
 		data_source: selectedTable.data_source,
@@ -100,16 +91,16 @@ function onConfirm() {
 					<DataSourceSelector v-model="dataSourceFilter"> </DataSourceSelector>
 				</div>
 				<ListView
-					v-if="tables.data"
+					v-if="tableStore.tables.length"
 					class="h-full"
 					:columns="listColumns"
-					:rows="tables.data"
+					:rows="tableStore.tables"
 					:row-key="'name'"
 					:options="{
 						selectable: false,
 						showTooltip: false,
 						onRowClick: (row: any) => {
-							tables.data.forEach((row: any) => (row.selected = 0))
+							tableStore.tables.forEach((row: any) => (row.selected = 0))
 							row.selected = 1
 						},
 						emptyState: {
@@ -118,7 +109,7 @@ function onConfirm() {
 						},
 					}"
 				>
-					<ListEmptyState v-if="tables.loading">
+					<ListEmptyState v-if="tableStore.loading">
 						<LoadingIndicator class="h-6 w-6 text-gray-600" />
 					</ListEmptyState>
 				</ListView>

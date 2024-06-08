@@ -3,11 +3,11 @@ import JoinFullIcon from '@/components/Icons/JoinFullIcon.vue'
 import JoinInnerIcon from '@/components/Icons/JoinInnerIcon.vue'
 import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
-import useDataSource from '@/datasource/useDataSource'
-import useDataSourceTable from '@/datasource/useDataSourceTable'
-import { computed, inject, ref, watch } from 'vue'
-import { Query } from '../query'
+import { wheneverChanges } from '@/utils'
+import { computed, inject, ref } from 'vue'
+import useTableStore from '../../data_source/tables'
 import { column, table } from '../helpers'
+import { Query } from '../query'
 
 const emit = defineEmits({
 	select: (join: JoinArgs) => true,
@@ -21,40 +21,52 @@ const join = ref({
 	rightColumn: '',
 })
 
-const query = inject('query') as Query
-
-const dataSource = useDataSource(query.data_source)
-dataSource.fetchTables()
-const tableOptions = computed(() => {
-	const tableGroup = dataSource.groupedTableOptions.find((group) => group.group == 'Tables')
-	if (!tableGroup) return []
-	return tableGroup.items
+const tableStore = useTableStore()
+type TableOption = {
+	label: string
+	value: string
+	description: string
+	data_source: string
+	table_name: string
+}
+const tableOptions = computed<TableOption[]>(() => {
+	if (!tableStore.tables.length) return []
+	return tableStore.tables.map((t) => ({
+		table_name: t.table_name,
+		data_source: t.data_source,
+		description: t.data_source,
+		label: t.table_name,
+		value: `${t.data_source}.${t.table_name}`,
+	}))
 })
 
 const tableColumnOptions = ref<DropdownOption[]>([])
-watch(
+wheneverChanges(
 	() => join.value.table,
-	// @ts-ignore
-	async (newTable: string, oldTable: string) => {
-		if (!newTable) return
-		if (newTable === oldTable) return
-		const rightTable = await useDataSourceTable({
-			data_source: query.data_source,
-			table: newTable,
-		})
-		tableColumnOptions.value = rightTable.columns.map((c) => ({
-			label: c.column,
-			value: c.column,
-			description: c.type,
-		}))
-		if (join.value.rightColumn) {
-			join.value.rightColumn = ''
-		}
-		autoMatchColumns()
+	() => {
+		const newTable = join.value.table
+		const tableColumn = tableOptions.value.find((t) => t.value === newTable) as TableOption
+		tableStore
+			.getTableColumns(tableColumn.data_source, tableColumn.table_name)
+			.then((columns) => {
+				tableColumnOptions.value = columns.map((c) => ({
+					label: c.name,
+					value: c.name,
+					description: c.type,
+					data_type: c.type,
+				}))
+
+				if (join.value.rightColumn) {
+					join.value.rightColumn = ''
+				}
+
+				autoMatchColumns()
+			})
 	},
 	{ immediate: true }
 )
 
+const query = inject('query') as Query
 function autoMatchColumns() {
 	if (!join.value.table) return
 	const leftColumns = query.result.columnOptions
@@ -99,8 +111,9 @@ const isValid = computed(() => {
 })
 function confirm() {
 	if (!isValid.value) return
+	const tableOption = tableOptions.value.find((t) => t.value === join.value.table) as TableOption
 	emit('select', {
-		table: table(query.data_source, join.value.table),
+		table: table(tableOption.data_source, tableOption.table_name),
 		left_column: column(join.value.leftColumn),
 		right_column: column(join.value.rightColumn),
 		join_type: join.value.type,

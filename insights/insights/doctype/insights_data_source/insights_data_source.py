@@ -288,3 +288,12 @@ def get_data_source_tables(data_source=None, table_name_like=None, limit=100):
             ]
         )
     return tables[:limit]
+
+
+@frappe.whitelist()
+@site_cache
+def get_table_columns(data_source, table_name):
+    ds = frappe.get_doc("Insights Data Source", data_source)
+    with ds._get_ibis_backend() as db:
+        table = db.table(table_name)
+        return InsightsTableColumn.from_ibis_schema(table.schema())

@@ -1,8 +1,5 @@
-type Table = {
-	type: 'table'
-	data_source: string
-	table_name: string
-}
+type TableArgs = { data_source: string; table_name: string }
+type Table = { type: 'table' } & TableArgs
 type Column = {
 	type: 'column'
 	column_name: string
