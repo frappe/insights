@@ -88,7 +88,7 @@ function confirmSelection() {
 					</Button>
 				</div>
 				<div
-					class="flex h-[20rem] flex-col overflow-y-scroll rounded border p-0.5 text-base"
+					class="flex h-[15rem] flex-col overflow-y-scroll rounded border p-0.5 text-base"
 				>
 					<template v-for="chart in filteredCharts">
 						<div
