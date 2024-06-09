@@ -48,7 +48,7 @@ const props = defineProps<{
 const options = reactive({
 	colNum: props.cols || 12,
 	margin: [0, 0],
-	rowHeight: 40,
+	rowHeight: 48,
 	isDraggable: computed(() => !props.disabled),
 	isResizable: computed(() => !props.disabled),
 	responsive: true,
@@ -68,7 +68,7 @@ const options = reactive({
 <style lang="scss">
 .vgl-layout {
 	--vgl-placeholder-bg: #b1b1b1;
-	--vgl-placeholder-opacity: 10%;
+	--vgl-placeholder-opacity: 15%;
 	--vgl-placeholder-z-index: 2;
 
 	--vgl-item-resizing-z-index: 3;
@@ -87,13 +87,13 @@ const options = reactive({
 	background-color: var(--vgl-placeholder-bg);
 	opacity: var(--vgl-placeholder-opacity);
 	transition-duration: 100ms;
-	border-radius: 1rem;
+	border-radius: 0.5rem;
 }
 
 .vgl-item__resizer {
 	position: absolute;
-	right: 10px;
-	bottom: 10px;
+	right: 12px;
+	bottom: 12px;
 	box-sizing: border-box;
 	width: var(--vgl-resizer-size);
 	height: var(--vgl-resizer-size);

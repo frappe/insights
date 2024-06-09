@@ -61,7 +61,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					x: 0,
 					y: 0,
 					w: 4,
-					h: 2,
+					h: 1,
 				},
 			})
 		},

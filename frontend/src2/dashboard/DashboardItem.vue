@@ -43,35 +43,37 @@ function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 	<div
 		class="flex h-full w-full items-center rounded"
 		:class="[
-			// dashboard.isActiveItem(index) ? 'outline outline-gray-700' : '',
+			dashboard.isActiveItem(index) ? 'outline outline-gray-700' : '',
 			props.item.type == 'chart' ? ' bg-white shadow' : '',
 		]"
 		@click="dashboard.setActiveItem(index)"
 	>
-		<ChartRenderer v-if="chart" :chart="chart" />
+		<div class="h-full w-full" :class="dashboard.editing ? 'pointer-events-none' : ''">
+			<ChartRenderer v-if="chart" :chart="chart" />
 
-		<div v-if="filter" class="flex-1">
-			<ColumnFilter
-				placement="bottom-start"
-				:column="filter.column"
-				:valuesProvider="getDistinctColumnValues"
-				@filter="handleApplyFilter"
-			>
-				<template #target="{ togglePopover }">
-					<div class="mb-1 flex-1">
-						<Button
-							variant="outline"
-							@click="togglePopover"
-							class="h-8 w-full !justify-start border-0 shadow"
-						>
-							<template #prefix>
-								<DataTypeIcon :column-type="filter.column.type" />
-							</template>
-							{{ filter.column.name }}
-						</Button>
-					</div>
-				</template>
-			</ColumnFilter>
+			<div v-if="filter" class="flex-1">
+				<ColumnFilter
+					placement="bottom-start"
+					:column="filter.column"
+					:valuesProvider="getDistinctColumnValues"
+					@filter="handleApplyFilter"
+				>
+					<template #target="{ togglePopover }">
+						<div class="flex-1">
+							<Button
+								variant="outline"
+								@click="togglePopover"
+								class="h-8 w-full !justify-start border-0 shadow"
+							>
+								<template #prefix>
+									<DataTypeIcon :column-type="filter.column.type" />
+								</template>
+								{{ filter.column.name }}
+							</Button>
+						</div>
+					</template>
+				</ColumnFilter>
+			</div>
 		</div>
 	</div>
 </template>

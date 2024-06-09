@@ -43,7 +43,7 @@ provide('chart', chart)
 			</div>
 			<DataTable
 				v-if="chart.doc.chart_type != 'Table'"
-				class="max-h-[17rem] bg-white"
+				class="max-h-[17rem] border-x bg-white"
 				:columns="chart.dataQuery.result.columns"
 				:rows="chart.dataQuery.result.rows"
 			>
