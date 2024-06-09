@@ -23,6 +23,7 @@ import {
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 const chart = useChart(props.chart)
 provide('chart', chart)
+chart.refresh()
 </script>
 
 <template>

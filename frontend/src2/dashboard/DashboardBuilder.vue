@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const dashboard = useDashboard(props.dashboard)
 provide('dashboard', dashboard)
+dashboard.refresh()
 
 const selectedCharts = computed(() => {
 	return dashboard.doc.items.filter((item) => item.type == 'chart') as WorkbookDashboardChart[]

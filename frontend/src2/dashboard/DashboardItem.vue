@@ -35,7 +35,7 @@ function getDistinctColumnValues(searchTxt: string) {
 }
 function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 	if (!filter.value) return
-	dashboard.applyFilter(filter.value, operator, value)
+	dashboard.applyFilter(filter.value.column, operator, value)
 }
 </script>
 
@@ -43,8 +43,8 @@ function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 	<div
 		class="flex h-full w-full items-center rounded"
 		:class="[
-			dashboard.isActiveItem(index) ? 'outline outline-gray-700' : '',
 			props.item.type == 'chart' ? ' bg-white shadow' : '',
+			dashboard.editing && dashboard.isActiveItem(index) ? 'outline outline-gray-700' : '',
 		]"
 		@click="dashboard.setActiveItem(index)"
 	>

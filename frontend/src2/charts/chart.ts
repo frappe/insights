@@ -34,26 +34,16 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		baseQuery: computed(() => {
 			if (!workbookChart.query) return {} as Query
-			const query = getCachedQuery(workbookChart.query)
-			if (!query) {
-				console.warn('Query not found')
-				return {} as Query
-			}
-			return query
+			return getCachedQuery(workbookChart.query) as Query
 		}),
 		dataQuery: makeQuery({
 			name: getUniqueId(),
 			title: '',
 			operations: [],
 		}),
-		filters: new Set<FilterArgs>(),
 		sortOrder: {} as Record<string, 'asc' | 'desc' | undefined>,
 
 		refresh,
-		applyFilter(filter: FilterArgs) {
-			chart.filters.add(filter)
-			refresh()
-		},
 
 		sortByColumn(column: string) {
 			const existingDirection = chart.sortOrder[column]
@@ -64,22 +54,30 @@ function makeChart(workbookChart: WorkbookChart) {
 		},
 	})
 
-	wheneverChanges(() => chart.baseQuery?.currentOperations, refresh, {
-		deep: true,
-		debounce: 500,
-	})
+	wheneverChanges(
+		() => chart.baseQuery?.currentOperations,
+		() => refresh(),
+		{
+			deep: true,
+			debounce: 500,
+		}
+	)
 
-	watchDebounced(() => chart.doc.config, refresh, {
-		deep: true,
-		debounce: 500,
-		immediate: true,
-	})
+	watchDebounced(
+		() => chart.doc.config,
+		() => refresh(),
+		{
+			deep: true,
+			debounce: 500,
+			immediate: true,
+		}
+	)
 
-	async function refresh() {
+	async function refresh(filters?: FilterArgs[]) {
 		if (!workbookChart.query) return
 		if (chart.baseQuery.executing) return
 
-		resetQuery()
+		resetQuery(filters)
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
 			fetchAxisChartData(_config)
@@ -126,7 +124,6 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function prepareAxisChartQuery(row: Dimension, column?: Dimension, values?: Measure[]) {
 		values = values?.length ? values : [count()]
-		resetQuery()
 
 		if (column) {
 			chart.dataQuery.addPivotWider({
@@ -173,8 +170,6 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareMetricQuery(metric: Measure, target?: Measure | Number, date?: Dimension) {
-		resetQuery()
-
 		if (typeof target === 'number' && target > 0) {
 			chart.dataQuery.addSummarize({
 				measures: [metric],
@@ -232,8 +227,6 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareDonutQuery(label: Dimension, value: Measure) {
-		resetQuery()
-
 		chart.dataQuery.addSummarize({
 			measures: [value],
 			dimensions: [label],
@@ -265,8 +258,6 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareTableQuery(rows: Dimension[], columns: Dimension[], values: Measure[]) {
-		resetQuery()
-
 		if (!columns.length) {
 			chart.dataQuery.addSummarize({
 				measures: values,
@@ -293,12 +284,13 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function resetQuery() {
+	function resetQuery(filters?: FilterArgs[]) {
 		chart.dataQuery.reset()
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.currentOperations])
-		if (chart.filters.size) {
-			chart.filters.forEach((filter) => {
+		const _filters = new Set(filters)
+		if (_filters.size) {
+			_filters.forEach((filter) => {
 				chart.dataQuery.addFilter(filter)
 			})
 		}
