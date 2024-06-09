@@ -36,7 +36,7 @@ chart.refresh()
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
 			<div
-				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-6"
+				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
 			>
 				<div class="h-full w-full overflow-hidden rounded bg-white shadow">
 					<ChartRenderer :chart="chart" />

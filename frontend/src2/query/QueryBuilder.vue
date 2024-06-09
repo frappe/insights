@@ -14,8 +14,8 @@ provide('query', query)
 
 <template>
 	<QueryBuilderSourceSelector v-if="!query.doc.operations.length" />
-	<div v-else class="relative flex h-full w-full divide-x overflow-hidden p-3">
-		<div class="flex h-full w-full flex-col gap-3">
+	<div v-else class="relative flex h-full w-full divide-x overflow-hidden p-4">
+		<div class="flex h-full w-full flex-col gap-4">
 			<QueryBuilderToolbar></QueryBuilderToolbar>
 			<QueryBuilderTable></QueryBuilderTable>
 		</div>
