@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
-import { Chart, getCachedChart } from '../charts/chart'
-import { getUniqueId } from '../helpers'
+import { getCachedChart } from '../charts/chart'
+import { getUniqueId, store } from '../helpers'
 import { column as make_column } from '../query/helpers'
 import {
 	DashboardFilterColumn,
@@ -24,7 +24,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		doc: workbookDashboard,
 
 		editing: false,
-		filters: new Map<string, FilterArgs[]>(),
+		filters: {} as Record<string, FilterArgs[]>,
 
 		activeItemIdx: null as number | null,
 		setActiveItem(index: number) {
@@ -70,13 +70,13 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		},
 
 		applyFilter(column: DashboardFilterColumn, operator: FilterOperator, value: FilterValue) {
-			const queryFilters = dashboard.filters.get(column.query) || []
+			const queryFilters = dashboard.filters[column.query] || []
 			queryFilters.push({
 				column: make_column(column.name),
 				operator,
 				value,
 			})
-			dashboard.filters.set(column.query, queryFilters)
+			dashboard.filters[column.query] = queryFilters
 			dashboard.refresh()
 		},
 
@@ -86,11 +86,14 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				.forEach((chartItem) => {
 					const chart = getCachedChart(chartItem.chart)
 					if (!chart || !chart.doc.query) return
-					const filters = dashboard.filters.get(chart.doc.query)
+					const filters = dashboard.filters[chart.doc.query]
 					if (filters?.length) chart.refresh(filters)
 				})
 		},
 	})
+
+	const key = `insights:dashboard-filters-${workbookDashboard.name}`
+	dashboard.filters = store(key, () => dashboard.filters)
 
 	return dashboard
 }

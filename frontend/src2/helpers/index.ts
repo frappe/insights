@@ -1,3 +1,4 @@
+import { watchDebounced } from '@vueuse/core'
 import { watch } from 'vue'
 
 export function getUniqueId(length = 8) {
@@ -31,4 +32,13 @@ export function waitUntil(fn: () => boolean) {
 			}
 		})
 	})
+}
+
+export function store<T>(key: string, value: () => T) {
+	const stored = localStorage.getItem(key)
+	watchDebounced(value, (val) => localStorage.setItem(key, JSON.stringify(val)), {
+		debounce: 500,
+		deep: true,
+	})
+	return stored ? JSON.parse(stored) : value()
 }
