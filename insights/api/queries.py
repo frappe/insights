@@ -1,17 +1,10 @@
 import frappe
-import ibis
-from ibis import BaseBackend, _
-from ibis import selectors as s
-from ibis.expr.datatypes import DataType
-from pandas import DataFrame
 
 from insights.api.telemetry import track
 from insights.decorators import check_role
-from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
 )
-from insights.insights.query_builders.sql_functions import handle_timespan
 
 
 @frappe.whitelist()
@@ -65,8 +58,6 @@ def create_query(**query):
     doc.is_assisted_query = query.get("is_assisted_query")
     doc.is_native_query = query.get("is_native_query")
     doc.is_script_query = query.get("is_script_query")
-    if query.get("is_script_query"):
-        doc.data_source = "Query Store"
     if table := query.get("table") and not doc.is_assisted_query:
         doc.append(
             "tables",

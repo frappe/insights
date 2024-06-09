@@ -3,10 +3,6 @@
 
 frappe.ui.form.on("Insights Data Source", {
 	refresh: function (frm) {
-		if (frm.name == "Query Store") {
-			frm.set_read_only();
-		}
-
 		frm.add_custom_button(__("Import Table"), function () {
 			frm.call("get_db_tables").then(function (r) {
 				if (r.message) {

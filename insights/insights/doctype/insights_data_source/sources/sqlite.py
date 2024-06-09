@@ -36,11 +36,3 @@ def get_sqlite_connection_string(data_source):
     database_path = os.path.abspath(database_path)
     database_path = database_path.lstrip("/")
     return f"sqlite:///{database_path}", {}
-
-
-def get_query_store_connection_string():
-    database_path = get_files_path(is_private=1)
-    database_path = os.path.join(database_path, "insights_query_store.sqlite")
-    database_path = os.path.abspath(database_path)
-    database_path = database_path.lstrip("/")
-    return f"sqlite:///{database_path}", {}

@@ -26,7 +26,6 @@ from insights.insights.doctype.insights_data_source.sources.postgresql import (
     get_postgres_connection_string,
 )
 from insights.insights.doctype.insights_data_source.sources.sqlite import (
-    get_query_store_connection_string,
     get_sqlite_connection_string,
 )
 from insights.insights.doctype.insights_table.insights_table import sync_insights_table
@@ -76,8 +75,6 @@ class InsightsDataSourceDocument:
     def on_trash(self):
         if self.is_site_db:
             frappe.throw("Cannot delete the site database. It is needed for Insights.")
-        if self.name == "Query Store":
-            frappe.throw("Cannot delete the Query Store. It is needed for Insights.")
 
         linked_doctypes = ["Insights Table"]
         for doctype in linked_doctypes:
@@ -89,7 +86,7 @@ class InsightsDataSourceDocument:
         track("delete_data_source")
 
     def validate(self):
-        if self.is_site_db or self.name == "Query Store":
+        if self.is_site_db:
             return
         if self.database_type == "SQLite":
             self.validate_sqlite_fields()
@@ -216,8 +213,6 @@ class InsightsDataSource(InsightsDataSourceDocument, Document):
     def get_connection_string(self):
         if self.is_site_db:
             return get_sitedb_connection_string()
-        if self.name == "Query Store":
-            return get_query_store_connection_string()
         if self.database_type == "SQLite":
             return get_sqlite_connection_string(self)
         if self.is_frappe_db:
