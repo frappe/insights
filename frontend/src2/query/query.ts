@@ -1,5 +1,5 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
-import { confirmDialog } from '@/utils/components'
+import { confirmDialog } from '../helpers/confirm_dialog'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy } from '../helpers'

@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { dialogs } from '@/utils/components'
+import { dialogs } from './helpers/confirm_dialog'
 import { inject, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
