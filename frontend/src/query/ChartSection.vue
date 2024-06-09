@@ -81,7 +81,7 @@ function downloadChartImage() {
 					:is="chart.component"
 					:options="chart.options"
 					:data="chart.data"
-					:key="JSON.stringify(query.chart.doc)"
+					:key="JSON.stringify(query.chart.doc) + JSON.stringify(query.chart.data)"
 				/>
 			</div>
 		</template>

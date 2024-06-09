@@ -1,15 +1,18 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import json
+import os
+
 import frappe
 from frappe.model.document import Document
 
-from insights import notify
-from insights.api.subscription import get_subscription_key
-from insights.decorators import check_role
-
 
 class InsightsSettings(Document):
+    def before_save(self):
+        if self.setup_complete and not self.get_doc_before_save().setup_complete:
+            sync_site_tables()
+
     @frappe.whitelist()
     def update_settings(self, settings):
         settings = frappe.parse_json(settings)
@@ -32,34 +35,22 @@ class InsightsSettings(Document):
         except Exception:
             return None
 
-    @frappe.whitelist()
-    @check_role("Insights User")
-    def send_support_login_link(self):
-        if frappe.session.user == "Administrator":
-            frappe.throw("Administrator cannot access support portal")
 
-        subscription_key = get_subscription_key()
-        if not subscription_key:
-            notify(type="error", title="Subscription Key not found")
-            return
+def sync_site_tables():
+    if frappe.flags.in_test or os.environ.get("CI"):
+        return
 
-        portal_url = "https://frappeinsights.com"
-        remote_method = "/api/method/send-remote-login-link"
-        url = f"{portal_url}{remote_method}"
-        email = frappe.session.user
+    if not frappe.db.exists("Insights Data Source", "Site DB"):
+        create_site_db_data_source()
 
-        try:
-            frappe.integrations.utils.make_post_request(
-                url, data={"subscription_key": subscription_key, "email": email}
-            )
-            notify(
-                title="Login link sent",
-                message=f"Login link sent to - {email}",
-            )
-        except Exception:
-            frappe.log_error(title="Error sending login link to your email")
-            notify(
-                title="Something went wrong",
-                message="Error sending login link to your email",
-                type="error",
-            )
+    doc = frappe.get_doc("Insights Data Source", "Site DB")
+    doc.enqueue_sync_tables()
+
+
+def create_site_db_data_source():
+    data_source_fixture_path = frappe.get_app_path(
+        "insights", "fixtures", "insights_data_source.json"
+    )
+    with open(data_source_fixture_path, "r") as f:
+        site_db = json.load(f)[0]
+        frappe.get_doc(site_db).insert()

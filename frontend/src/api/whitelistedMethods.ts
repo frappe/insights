@@ -1,7 +1,6 @@
 const whitelistedMethods = {
 	'Insights Settings': {
 		update_settings: 'update_settings',
-		send_support_login_link: 'send_support_login_link',
 	},
 	'Insights Data Source': {
 		enqueue_sync_tables: 'enqueue_sync_tables',

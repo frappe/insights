@@ -12,7 +12,10 @@ const query = inject('query')
 const assistedQuery = inject('assistedQuery')
 !assistedQuery.columnOptions.length && assistedQuery.fetchColumnOptions()
 
-const columns = computed(() => assistedQuery.columns)
+const columns = computed({
+	get: () => assistedQuery.columns,
+	set: (value) => (assistedQuery.columns = value),
+})
 const columnRefs = ref(null)
 const activeColumnIdx = ref(null)
 const showExpressionEditor = computed(() => {
@@ -100,10 +103,9 @@ function onColumnSort(e) {
 		</SectionHeader>
 		<DraggableList
 			v-if="columns.length"
-			:items="columns"
+			v-model:items="columns"
 			group="columns"
 			item-key="label"
-			@sort="onColumnSort"
 			:showEmptyState="true"
 			:showHandle="false"
 		>
