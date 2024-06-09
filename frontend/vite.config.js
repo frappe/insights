@@ -18,6 +18,10 @@ export default defineConfig({
 		target: 'es2015',
 		sourcemap: true,
 		rollupOptions: {
+			input: {
+				main: path.resolve(__dirname, 'index.html'),
+				insights_v3: path.resolve(__dirname, 'index-v3.html'),
+			},
 			output: {
 				manualChunks: {
 					'frappe-ui': ['frappe-ui'],
