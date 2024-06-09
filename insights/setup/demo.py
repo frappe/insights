@@ -49,15 +49,15 @@ class DemoDataFactory:
         self.table_names = [frappe.scrub(table) for table in self.file_schema.keys()]
 
         self.create_demo_data_source()
-        self.data_source = frappe.get_doc("Insights Data Source", "demo_data")
+        self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
         if frappe.flags.in_test or os.environ.get("CI"):
             self.local_filename = os.path.join(
                 os.path.dirname(__file__), "test_sqlite_db.sqlite.tar"
             )
 
     def create_demo_data_source(self):
-        if not frappe.db.exists("Insights Data Source", "demo_data"):
-            data_source = frappe.new_doc("Insights Data Source")
+        if not frappe.db.exists("Insights Data Source v3", "demo_data"):
+            data_source = frappe.new_doc("Insights Data Source v3")
             data_source.title = "Demo Data"
             data_source.database_type = "SQLite"
             data_source.database_name = "insights_demo_data"
@@ -224,7 +224,7 @@ class DemoDataFactory:
         }
         for table, links in foreign_key_relations.items():
             doc = frappe.get_doc(
-                "Insights Table",
+                "Insights Table v3",
                 {"table": frappe.scrub(table), "data_source": self.data_source.name},
             )
             for link in links:

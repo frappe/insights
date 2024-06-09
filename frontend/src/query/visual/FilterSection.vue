@@ -64,7 +64,7 @@ function onSaveFilter(filter) {
 					<template #body>
 						<div
 							v-if="activeFilterIdx === idx"
-							class="ml-2 min-w-[20rem] rounded-lg border border-gray-100 bg-white p-4 text-base shadow-xl transition-all"
+							class="ml-2 min-w-[20rem] rounded-lg border border-gray-100 bg-white text-base shadow-xl transition-all"
 						>
 							<FilterEditor
 								:filter="filters[activeFilterIdx]"

@@ -43,7 +43,7 @@ class DataWarehouse:
 
     def create_parquet_file(self, data_source, table_name):
 
-        from insights.insights.doctype.insights_table.insights_table import (
+        from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
             sync_insights_table,
         )
 
@@ -55,7 +55,7 @@ class DataWarehouse:
             )
             return
 
-        ds = frappe.get_doc("Insights Data Source", data_source)
+        ds = frappe.get_doc("Insights Data Source v3", data_source)
         with ds._get_ibis_backend() as remote_db:
             table = remote_db.table(table_name)
             # TODO: check metadata to see if copy is needed

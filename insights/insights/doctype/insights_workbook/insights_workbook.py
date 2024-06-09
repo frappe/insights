@@ -10,7 +10,7 @@ import ibis
 from frappe.model.document import Document
 from ibis import _
 
-from insights.insights.doctype.insights_data_source.ibis_utils import (
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,

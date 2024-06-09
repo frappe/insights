@@ -1,5 +1,5 @@
 <script setup>
-import useDataSourceStore from '@/stores/dataSourceStore'
+import useDataSourceStore from '../../data_source/data_source'
 import { ChevronDown, Database, ListFilter } from 'lucide-vue-next'
 import { computed } from 'vue'
 
@@ -11,12 +11,12 @@ const props = defineProps({
 	},
 })
 
-const sources = useDataSourceStore()
+const dataSourceStore = useDataSourceStore()
 const currentSource = computed(() => {
-	return sources.list.find((source) => source.name === currentSourceName.value)
+	return dataSourceStore.sources.find((source) => source.name === currentSourceName.value)
 })
 const dataSourceOptions = computed(() => {
-	return sources.list.map((source) => ({
+	return dataSourceStore.sources.map((source) => ({
 		label: source.title,
 		value: source.name,
 	}))

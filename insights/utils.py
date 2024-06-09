@@ -2,12 +2,41 @@
 # For license information, please see license.txt
 
 import pathlib
-from typing import List, Union
 
 import chardet
 import frappe
 import pandas as pd
 from frappe.model.base_document import BaseDocument
+
+
+class ResultColumn:
+    label: str
+    type: str | list[str]
+    options: dict = {}
+
+    @staticmethod
+    def from_args(label, type="String", options=None) -> "ResultColumn":
+        return frappe._dict(
+            {
+                "label": label or "Unnamed",
+                "type": type or "String",
+                "options": options or {},
+            }
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ResultColumn":
+        return frappe._dict(
+            label=data.get("alias") or data.get("label") or "Unnamed",
+            type=data.get("type") or "String",
+            options=data.get("format_option")
+            or data.get("options")
+            or data.get("format_options"),
+        )
+
+    @classmethod
+    def from_dicts(cls, data: list[dict]) -> list["ResultColumn"]:
+        return [cls.from_dict(d) for d in data]
 
 
 class DoctypeBase(BaseDocument):
@@ -134,7 +163,7 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     return df
 
 
-def xls_to_df(file_path: str) -> List[pd.DataFrame]:
+def xls_to_df(file_path: str) -> list[pd.DataFrame]:
     file_extension = file_path.split(".")[-1].lower()
     if file_extension != "xlsx" or file_extension != "xls":
         frappe.throw(f"Unsupported file extension: {file_extension}")

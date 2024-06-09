@@ -1,7 +1,7 @@
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 
-const basePath = 'insights.insights.doctype.insights_data_source.insights_data_source.'
+const basePath = 'insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.'
 
 type DataSourceTable = { table_name: string; data_source: string }
 const tables = ref<DataSourceTable[]>([])

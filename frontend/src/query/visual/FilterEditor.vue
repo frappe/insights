@@ -7,7 +7,7 @@ import { NEW_FILTER } from './constants'
 import { getSelectedTables } from './useAssistedQuery'
 
 const emit = defineEmits(['save', 'discard', 'remove'])
-const props = defineProps({ filter: Object, columnOptions: Array })
+const props = defineProps({ filter: Object })
 
 const assistedQuery = inject('assistedQuery')
 
@@ -27,8 +27,6 @@ if (filter.operator?.value == 'is' && filter.value?.value?.toLowerCase().include
 }
 
 const filterColumnOptions = computed(() => {
-	if (props.columnOptions?.length) return props.columnOptions
-	if (!assistedQuery) return []
 	return assistedQuery.groupedColumnOptions.map((group) => {
 		return {
 			group: group.group,
@@ -69,15 +67,13 @@ function isValidExpression(c) {
 }
 
 const expressionColumnOptions = computed(() => {
-	if (props.columnOptions?.length) return props.columnOptions
-	if (!assistedQuery) return []
 	const selectedTables = getSelectedTables(assistedQuery)
 	return assistedQuery.columnOptions.filter((c) => selectedTables.includes(c.table)) || []
 })
 </script>
 
 <template>
-	<div class="flex flex-col gap-4">
+	<div class="flex flex-col gap-4 p-4">
 		<div
 			class="flex h-8 w-full cursor-pointer select-none items-center rounded bg-gray-100 p-1"
 		>
@@ -105,8 +101,8 @@ const expressionColumnOptions = computed(() => {
 					placeholder="Column"
 					:options="filterColumnOptions"
 					@update:modelValue="filter.column = $event || {}"
+					@update:query="assistedQuery.fetchColumnOptions"
 				/>
-				<!-- @update:query="assistedQuery.fetchColumnOptions" -->
 				<FormControl
 					v-else
 					type="textarea"

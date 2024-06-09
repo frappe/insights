@@ -15,7 +15,6 @@ class InsightsChart(Document):
         from frappe.types import DF
 
         chart_type: DF.Data | None
-        config: DF.JSON
         is_public: DF.Check
         options: DF.JSON | None
         public_key: DF.Data | None

@@ -1,4 +1,4 @@
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { VNode, h, ref } from 'vue'
 
 export const dialogs = ref<VNode[]>([])

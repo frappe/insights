@@ -1,5 +1,4 @@
 <script setup lang="tsx">
-import { FIELDTYPES } from '@/utils'
 import { LoadingIndicator } from 'frappe-ui'
 import { computed, inject } from 'vue'
 import DataTable from '../../components/DataTable.vue'

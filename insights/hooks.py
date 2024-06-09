@@ -78,7 +78,11 @@ fixtures = [
     {
         "dt": "Insights Data Source",
         "filters": {"name": ("in", ["Site DB", "Query Store"])},
-    }
+    },
+    {
+        "dt": "Insights Data Source v3",
+        "filters": {"name": ("in", ["Site DB"])},
+    },
 ]
 
 # Uninstallation

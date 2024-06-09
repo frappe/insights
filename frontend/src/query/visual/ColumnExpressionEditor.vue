@@ -16,7 +16,7 @@ const emptyExpressionColumn = {
 
 const assistedQuery = inject('assistedQuery')
 const emit = defineEmits(['save', 'remove'])
-const props = defineProps({ column: Object, columnOptions: Array })
+const props = defineProps({ column: Object })
 
 const propsColumn = props.column || emptyExpressionColumn
 const column = reactive({
@@ -34,8 +34,6 @@ const isValid = computed(() => {
 })
 
 const columnOptions = computed(() => {
-	if (props.columnOptions?.length) return props.columnOptions
-	if (!assistedQuery) return []
 	const selectedTables = getSelectedTables(assistedQuery)
 	return assistedQuery.columnOptions.filter((c) => selectedTables.includes(c.table)) || []
 })

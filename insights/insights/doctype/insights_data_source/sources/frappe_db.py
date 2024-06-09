@@ -3,14 +3,21 @@
 
 
 import frappe
-import ibis
 from frappe import _dict
 from sqlalchemy import column as Column
 from sqlalchemy import table as Table
 from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 
-from insights.cache_utils import get_or_set_cache, make_digest
+from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+
+from .base_database import (
+    BaseDatabase,
+    DatabaseCredentialsError,
+    DatabaseParallelConnectionError,
+)
+from .mariadb import MARIADB_TO_GENERIC_TYPES, MariaDB
+from .utils import create_insights_table, get_sqlalchemy_engine
 
 
 class FrappeTableFactory:
@@ -27,7 +34,7 @@ class FrappeTableFactory:
             table = self.get_table(tablename)
             table.columns = columns
             table.table_links = self.get_table_links(table.label)
-            # create_insights_table(table, force=force)
+            create_insights_table(table, force=force)
 
     def get_columns_by_tables(self, tablenames=None):
         t = Table(
@@ -68,7 +75,7 @@ class FrappeTableFactory:
             {
                 "column": column_name,
                 "label": frappe.unscrub(column_name),
-                "type": {}.get(column_type, "String"),
+                "type": MARIADB_TO_GENERIC_TYPES.get(column_type, "String"),
             }
         )
 
@@ -206,53 +213,101 @@ class FrappeTableFactory:
         return dynamic_link_map
 
 
-def get_frappedb_connection_string(data_source):
-    password = data_source.get_password(raise_exception=False)
-    connection_string = (
-        f"mysql://{data_source.username}:{password}"
-        f"@{data_source.host}:{data_source.port}/{data_source.database_name}"
-    )
-    extra_args = frappe._dict(
-        ssl=data_source.use_ssl,
-        ssl_verify_cert=data_source.use_ssl,
-        charset="utf8mb4",
-        use_unicode=True,
-        connect_args={
-            "connect_timeout": 1,
-            "read_timeout": 1,
-            "write_timeout": 1,
-        },
-    )
-    return connection_string, extra_args
+class FrappeDB(MariaDB):
+    def __init__(
+        self, data_source, host, port, username, password, database_name, use_ssl, **_
+    ):
+        self.data_source = data_source
+        self.engine = get_sqlalchemy_engine(
+            dialect="mysql",
+            driver="pymysql",
+            username=username,
+            password=password,
+            database=database_name,
+            host=host,
+            port=port,
+            ssl=use_ssl,
+            ssl_verify_cert=True,
+            charset="utf8mb4",
+            use_unicode=True,
+            connect_args={"connect_timeout": 1, "read_timeout": 1, "write_timeout": 1},
+        )
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
+        self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
+
+    def test_connection(self, log_errors=True):
+        return self.execute_query(
+            "select name from tabDocType limit 1", pluck=True, log_errors=log_errors
+        )
+
+    def handle_db_connection_error(self, e):
+        if "Access denied" in str(e):
+            raise DatabaseCredentialsError()
+        if "Packet sequence number wrong" in str(e):
+            raise DatabaseParallelConnectionError()
+        super().handle_db_connection_error(e)
+
+    def sync_tables(self, tables=None, force=False):
+        # "begin" ensures that the connection is committed and closed
+        with self.engine.begin() as connection:
+            self.table_factory.sync_tables(connection, tables, force)
+
+    def get_table_preview(self, table, limit=100):
+        data = self.execute_query(
+            f"""select * from `{table}` limit {limit}""", cached=True
+        )
+        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[
+            0
+        ][0]
+        return {
+            "data": data or [],
+            "length": length or 0,
+        }
+
+    def get_table_columns(self, table):
+        with self.connect() as connection:
+            self.table_factory.db_conn = connection
+            return self.table_factory.get_table_columns(table)
+
+    def get_column_options(self, table, column, search_text=None, limit=50):
+        t = Table(table, Column(column))
+        query = t.select().distinct().limit(limit)
+        if search_text:
+            query = query.where(Column(column).like(f"%{search_text}%"))
+        query = self.compile_query(query)
+        return self.execute_query(query, pluck=True)
 
 
-def get_sitedb_connection_string():
-    username = frappe.conf.db_name
-    password = frappe.conf.db_password
-    database = frappe.conf.db_name
-    host = frappe.conf.db_host or "127.0.0.1"
-    port = frappe.conf.db_port or "3306"
-    connection_string = f"mysql://{username}:{password}@{host}:{port}/{database}"
-    extra_args = frappe._dict(
-        ssl=False,
-        ssl_verify_cert=False,
-        charset="utf8mb4",
-        use_unicode=True,
-    )
-    return connection_string, extra_args
+class SiteDB(FrappeDB):
+    def __init__(self, data_source):
+        self.data_source = data_source
+        self.engine = get_sqlalchemy_engine(
+            dialect="mysql",
+            driver="pymysql",
+            username=frappe.conf.db_name,
+            password=frappe.conf.db_password,
+            database=frappe.conf.db_name,
+            host=frappe.conf.db_host or "127.0.0.1",
+            port=frappe.conf.db_port or "3306",
+            ssl=False,
+            ssl_verify_cert=True,
+            charset="utf8mb4",
+            use_unicode=True,
+        )
+        self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
+        self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)
 
 
-def is_frappe_db(data_source):
-    connection_string, extra_args = get_frappedb_connection_string(data_source)
+from insights.cache_utils import get_or_set_cache, make_digest
 
+
+def is_frappe_db(db_params):
     def _is_frappe_db():
         try:
-            db = ibis.connect(connection_string, **extra_args)
-            res = db.execute(db.sql("SELECT name FROM tabDocType LIMIT 1"))
-            db.con.close()
-            return res.shape[0] == 1
+            FrappeDB(**db_params).test_connection(log_errors=False)
         except Exception:
             return False
+        return True
 
-    key = make_digest("is_frappe_db", connection_string)
+    key = make_digest("is_frappe_db", db_params)
     return get_or_set_cache(key, _is_frappe_db, expiry=None)

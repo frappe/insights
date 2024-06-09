@@ -1,0 +1,13 @@
+[
+  {
+    "doctype": "Insights Data Source",
+    "is_site_db": 1,
+    "is_frappe_db": 1,
+    "name": "Site DB",
+    "title": "Site DB",
+    "status": "Active",
+    "database_type": "MariaDB",
+    "modified": "2022-01-01 00:01:00.000000",
+    "creation": "2022-01-01 00:01:00.000000"
+  }
+]
