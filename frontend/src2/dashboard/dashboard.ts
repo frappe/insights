@@ -84,9 +84,10 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			dashboard.doc.items
 				.filter((item): item is WorkbookDashboardChart => item.type === 'chart')
 				.forEach((chartItem) => {
-					const chart = getCachedChart(chartItem.chart) as Chart
+					const chart = getCachedChart(chartItem.chart)
+					if (!chart || !chart.doc.query) return
 					const filters = dashboard.filters.get(chart.doc.query)
-					if (chart && filters?.length) chart.refresh(filters)
+					if (filters?.length) chart.refresh(filters)
 				})
 		},
 	})
