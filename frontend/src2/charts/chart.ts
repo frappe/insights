@@ -69,7 +69,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		{
 			deep: true,
 			debounce: 500,
-			immediate: true,
 		}
 	)
 
