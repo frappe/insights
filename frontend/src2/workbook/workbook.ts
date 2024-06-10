@@ -1,6 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
-import { InjectionKey, computed, reactive, ref, toRefs } from 'vue'
+import { InjectionKey, computed, reactive, ref, toRefs, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
@@ -29,6 +29,19 @@ export default function useWorkbook(name: string) {
 			if (workbook.doc.queries.length) {
 				setActiveTab('query', 0)
 			}
+		}
+	)
+
+	watch(
+		() => workbook.doc,
+		() => {
+			// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
+			// this is because, when the workbook doc is updated,
+			// the reference to the workbook.doc.queries/charts/dashboards is lost
+			// so we need to update the references to the new queries/charts/dashboards
+			workbook.doc.queries.forEach((q) => useQuery(q).doc = q)
+			workbook.doc.charts.forEach((c) => useChart(c).doc = c)
+			workbook.doc.dashboards.forEach((d) => useDashboard(d).doc = d)
 		}
 	)
 
