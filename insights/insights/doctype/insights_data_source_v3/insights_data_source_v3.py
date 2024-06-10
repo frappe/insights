@@ -131,7 +131,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     @contextmanager
     def _get_ibis_backend(self) -> Generator[BaseBackend, None, None]:
         connection_string, extra_args = self.get_connection_string()
-        db = ibis.connect(connection_string, **extra_args)
+        db: BaseBackend = ibis.connect(connection_string, **extra_args)
 
         if self.is_frappe_db:
             db.raw_sql("SET SESSION time_zone='+00:00'")
@@ -159,9 +159,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     def test_connection(self, raise_exception=False):
         try:
             with self._get_ibis_backend() as db:
-                query = db.sql("SELECT 1")
-                res = db.execute(query)
-                return res.iloc[0, 0] == 1
+                res = db.raw_sql("SELECT 1").fetchall()
+                return res[0][0] == 1
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:
