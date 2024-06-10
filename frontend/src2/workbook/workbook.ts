@@ -1,6 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
-import { InjectionKey, reactive, toRefs } from 'vue'
+import { InjectionKey, computed, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
@@ -11,109 +11,125 @@ import { createToast } from '../helpers/toasts'
 import useQuery from '../query/query'
 
 export default function useWorkbook(name: string) {
-	const resource = getWorkbookResource(name)
-
-	type ActiveTabType = 'query' | 'chart' | 'dashboard' | ''
-	const workbook = reactive({
-		...toRefs(resource),
-
-		activeTabType: '' as ActiveTabType,
-		activeTabIdx: 0,
-
-		setActiveTab(type: ActiveTabType, idx: number) {
-			workbook.activeTabType = type
-			workbook.activeTabIdx = idx
-		},
-		isActiveTab(type: ActiveTabType, idx: number) {
-			return workbook.activeTabType === type && workbook.activeTabIdx === idx
-		},
-
-		addQuery() {
-			const idx = workbook.doc.queries.length
-			workbook.doc.queries.push({
-				name: getUniqueId(),
-				title: `Query ${idx + 1}`,
-				operations: [],
-			})
-			workbook.setActiveTab('query', idx)
-		},
-
-		removeQuery(queryName: string) {
-			const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
-			if (idx === -1) return
-			workbook.doc.queries.splice(idx, 1)
-			if (workbook.isActiveTab('query', idx)) {
-				workbook.setActiveTab('', 0)
-			}
-		},
-
-		addChart() {
-			const idx = workbook.doc.charts.length
-			workbook.doc.charts.push({
-				name: getUniqueId(),
-				title: `Chart ${idx + 1}`,
-				query: '',
-				chart_type: 'Line',
-				config: {} as ChartConfig,
-			})
-			workbook.setActiveTab('chart', idx)
-		},
-
-		removeChart(chartName: string) {
-			const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
-			if (idx === -1) return
-			workbook.doc.charts.splice(idx, 1)
-			if (workbook.isActiveTab('chart', idx)) {
-				workbook.setActiveTab('', 0)
-			}
-		},
-
-		addDashboard() {
-			const idx = workbook.doc.dashboards.length
-			workbook.doc.dashboards.push({
-				name: getUniqueId(),
-				title: `Dashboard ${idx + 1}`,
-				items: [],
-			})
-			workbook.setActiveTab('dashboard', idx)
-		},
-
-		removeDashboard(dashboardName: string) {
-			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
-			if (idx === -1) return
-			workbook.doc.dashboards.splice(idx, 1)
-			if (workbook.isActiveTab('dashboard', idx)) {
-				workbook.setActiveTab('', 0)
-			}
-		},
-	})
+	const workbook = getWorkbookResource(name)
 
 	const router = useRouter()
-	workbook.onAfterInsert(() => {
-		router.replace(`/workbook/${workbook.doc.name}`)
-	})
-	workbook.onAfterSave(() =>
-		createToast({
-			title: 'Saved',
-			variant: 'success',
-		})
-	)
+	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.doc.name}`))
+	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 
-	// set first tab as active
 	watchOnce(
 		() => workbook.doc.name,
 		() => {
+			// load & cache queries, charts and dashboards
 			workbook.doc.queries.forEach((query) => useQuery(query))
 			workbook.doc.charts.forEach((chart) => useChart(chart))
 			workbook.doc.dashboards.forEach((dashboard) => useDashboard(dashboard))
 
+			// set first tab as active
 			if (workbook.doc.queries.length) {
-				workbook.setActiveTab('query', 0)
+				setActiveTab('query', 0)
 			}
 		}
 	)
 
-	return workbook
+	type ActiveTabType = 'query' | 'chart' | 'dashboard' | ''
+	const activeTabType = ref<ActiveTabType>('')
+	const activeTabIdx = ref(0)
+	const activeQuery = computed(
+		() => activeTabType.value == 'query' && workbook.doc.queries[activeTabIdx.value]
+	)
+	const activeChart = computed(
+		() => activeTabType.value == 'chart' && workbook.doc.charts[activeTabIdx.value]
+	)
+	const activeDashboard = computed(
+		() => activeTabType.value == 'dashboard' && workbook.doc.dashboards[activeTabIdx.value]
+	)
+
+	function setActiveTab(type: ActiveTabType, idx: number) {
+		activeTabType.value = type
+		activeTabIdx.value = idx
+	}
+	function isActiveTab(type: ActiveTabType, idx: number) {
+		return activeTabType.value === type && activeTabIdx.value === idx
+	}
+
+	function addQuery() {
+		const idx = workbook.doc.queries.length
+		workbook.doc.queries.push({
+			name: getUniqueId(),
+			title: `Query ${idx + 1}`,
+			operations: [],
+		})
+		setActiveTab('query', idx)
+	}
+
+	function removeQuery(queryName: string) {
+		const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
+		if (idx === -1) return
+		workbook.doc.queries.splice(idx, 1)
+		if (isActiveTab('query', idx)) {
+			setActiveTab('', 0)
+		}
+	}
+
+	function addChart() {
+		const idx = workbook.doc.charts.length
+		workbook.doc.charts.push({
+			name: getUniqueId(),
+			title: `Chart ${idx + 1}`,
+			query: '',
+			chart_type: 'Line',
+			config: {} as ChartConfig,
+		})
+		setActiveTab('chart', idx)
+	}
+
+	function removeChart(chartName: string) {
+		const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
+		if (idx === -1) return
+		workbook.doc.charts.splice(idx, 1)
+		if (isActiveTab('chart', idx)) {
+			setActiveTab('', 0)
+		}
+	}
+
+	function addDashboard() {
+		const idx = workbook.doc.dashboards.length
+		workbook.doc.dashboards.push({
+			name: getUniqueId(),
+			title: `Dashboard ${idx + 1}`,
+			items: [],
+		})
+		setActiveTab('dashboard', idx)
+	}
+
+	function removeDashboard(dashboardName: string) {
+		const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
+		if (idx === -1) return
+		workbook.doc.dashboards.splice(idx, 1)
+		if (isActiveTab('dashboard', idx)) {
+			setActiveTab('', 0)
+		}
+	}
+
+	return reactive({
+		...toRefs(workbook),
+
+		activeTabType,
+		activeTabIdx,
+		activeQuery,
+		activeChart,
+		activeDashboard,
+		setActiveTab,
+		isActiveTab,
+
+		addQuery,
+		removeQuery,
+		addChart,
+		removeChart,
+		addDashboard,
+		removeDashboard,
+	})
 }
 
 export type Workbook = ReturnType<typeof useWorkbook>

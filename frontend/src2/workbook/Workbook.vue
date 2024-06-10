@@ -69,20 +69,20 @@ watchEffect(() => {
 		<div class="relative flex flex-1 overflow-hidden bg-gray-50">
 			<WorkbookSidebar />
 			<QueryBuilder
-				v-if="workbook.activeTabType === 'query'"
-				:key="workbook.activeTabIdx"
-				:query="workbook.doc.queries[workbook.activeTabIdx]"
+				v-if="workbook.activeQuery"
+				:key="workbook.activeQuery.name"
+				:query="workbook.activeQuery"
 			/>
 			<ChartBuilder
-				v-if="workbook.activeTabType === 'chart'"
-				:key="workbook.activeTabIdx"
-				:chart="workbook.doc.charts[workbook.activeTabIdx]"
+				v-if="workbook.activeChart"
+				:key="workbook.activeChart.name"
+				:chart="workbook.activeChart"
 				:queries="workbook.doc.queries"
 			/>
 			<DashboardBuilder
-				v-if="workbook.activeTabType === 'dashboard'"
-				:key="workbook.activeTabIdx"
-				:dashboard="workbook.doc.dashboards[workbook.activeTabIdx]"
+				v-if="workbook.activeDashboard"
+				:key="workbook.activeDashboard.name"
+				:dashboard="workbook.activeDashboard"
 				:charts="workbook.doc.charts"
 				:queries="workbook.doc.queries"
 			/>
