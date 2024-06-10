@@ -14,14 +14,22 @@ const showDialog = defineModel()
 const tableStore = useTableStore()
 
 const tableSearchQuery = ref('')
-wheneverChanges(tableSearchQuery, () => {
-	tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
-})
+wheneverChanges(
+	tableSearchQuery,
+	() => {
+		tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
+	},
+	{ debounce: 300 }
+)
 
 const dataSourceFilter = ref('')
-wheneverChanges(dataSourceFilter, () => {
-	tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
-})
+wheneverChanges(
+	dataSourceFilter,
+	() => {
+		tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
+	},
+	{ debounce: 300 }
+)
 
 const listColumns = [
 	{
