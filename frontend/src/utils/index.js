@@ -473,7 +473,6 @@ export function wheneverChanges(getter, callback, options = {}) {
 	let prevValue = null
 	function onChange(value) {
 		if (areDeeplyEqual(value, prevValue)) return
-		if (!value) return
 		prevValue = value
 		callback(value)
 	}
