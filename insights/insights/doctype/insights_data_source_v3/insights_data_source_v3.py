@@ -47,7 +47,6 @@ class InsightsDataSourceDocument:
     def on_update(self):
         if (
             not self.is_site_db
-            and self.status == "Active"
             and self.database_type in ["MariaDB", "PostgreSQL"]
             and self.has_credentials_changed()
         ):

@@ -243,9 +243,9 @@ def is_frappe_db(data_source):
     def _is_frappe_db():
         try:
             db = ibis.connect(connection_string, **extra_args)
-            res = db.execute(db.sql("SELECT name FROM tabDocType LIMIT 1"))
+            res = db.raw_sql("SELECT name FROM tabDocType LIMIT 1").fetchall()
             db.con.close()
-            return res.shape[0] == 1
+            return len(res) > 0
         except Exception:
             return False
 
