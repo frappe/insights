@@ -1,5 +1,4 @@
 import os
-from functools import cached_property
 
 import frappe
 import ibis
@@ -16,7 +15,7 @@ class DataWarehouse:
         self.warehouse_path = get_warehouse_folder_path()
         self.db_path = os.path.join(self.warehouse_path, "insights.duckdb")
 
-    @cached_property
+    @property
     def db(self) -> BaseBackend:
         if not hasattr(frappe.local, "insights_warehouse"):
             frappe.local.insights_warehouse = ibis.duckdb.connect(self.db_path)
@@ -81,3 +80,9 @@ def get_parquet_filepath(data_source, table_name):
     warehouse_path = get_warehouse_folder_path()
     warehouse_table = get_warehouse_table_name(data_source, table_name)
     return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
+
+
+def close_warehouse_connection():
+    if hasattr(frappe.local, "insights_warehouse"):
+        frappe.local.insights_warehouse.disconnect()
+        del frappe.local.insights_warehouse
