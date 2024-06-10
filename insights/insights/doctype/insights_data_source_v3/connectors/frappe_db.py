@@ -217,11 +217,6 @@ def get_frappedb_connection_string(data_source):
         ssl_verify_cert=data_source.use_ssl,
         charset="utf8mb4",
         use_unicode=True,
-        connect_args={
-            "connect_timeout": 1,
-            "read_timeout": 1,
-            "write_timeout": 1,
-        },
     )
     return connection_string, extra_args
 
