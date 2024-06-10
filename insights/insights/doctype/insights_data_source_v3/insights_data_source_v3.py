@@ -194,7 +194,7 @@ def get_data_sources():
 
 @frappe.whitelist()
 @site_cache
-def get_data_source_tables(data_source=None, table_name_like=None, limit=100):
+def get_data_source_tables(data_source=None, search_term=None, limit=100):
     tables = []
     for ds in frappe.get_all(
         "Insights Data Source v3",
@@ -208,9 +208,7 @@ def get_data_source_tables(data_source=None, table_name_like=None, limit=100):
             continue
         ds_tables = frappe.parse_json(ds.tables)
         ds_tables = [
-            table
-            for table in ds_tables
-            if not table_name_like or table_name_like in table
+            table for table in ds_tables if not search_term or search_term in table
         ]
         tables.extend(
             [
