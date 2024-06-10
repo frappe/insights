@@ -30,7 +30,7 @@ export const VALID_CHARTS = [
 	'Scatter',
 	'Funnel',
 	'Trend',
-	'Mixed',
+	'Mixed Axis',
 	'Pivot Table',
 ] as const
 
@@ -122,13 +122,13 @@ const WIDGETS = {
 		options: {},
 		...defaultWidgetDimensions.Progress,
 	},
-	'Mixed': {
-		type: 'Mixed',
+	'Mixed Axis': {
+		type: 'Mixed Axis',
 		icon: ComboChartIcon,
 		component: defineAsyncComponent(() => import('./MixedAxis/MixedAxis.vue')),
 		optionsComponent: defineAsyncComponent(() => import('./MixedAxis/MixedAxisOptions.vue')),
 		options: {},
-		...defaultWidgetDimensions['Mixed'],
+		...defaultWidgetDimensions['Mixed Axis'],
 	},
 	Filter: {
 		type: 'Filter',
