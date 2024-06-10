@@ -148,7 +148,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "SQLite":
             return get_sqlite_connection_string(self)
         if self.is_frappe_db:
-            return get_frappedb_connection_string()
+            return get_frappedb_connection_string(self)
         if self.database_type == "MariaDB":
             return get_mariadb_connection_string(self)
         if self.database_type == "PostgreSQL":
