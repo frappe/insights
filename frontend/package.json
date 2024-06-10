@@ -10,7 +10,7 @@
 		"serve": "vite preview",
 		"build": "vite build --base=/assets/insights/frontend/ && yarn copy-html-entry && yarn copy-html-entry2",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html",
-		"copy-html-entry2": "cp ../insights/public/frontend/index-v3.html ../insights/www/insights-v3.html"
+		"copy-html-entry2": "cp ../insights/public/frontend/index_v3.html ../insights/www/insights_v3.html"
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.0.2",

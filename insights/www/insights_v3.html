@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/assets/insights/frontend/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frappe Insights</title>
+    <script type="text/javascript">
+      !(function (e) {
+        "function" == typeof define && define.amd ? define(e) : e();
+      })(function () {
+        var e,
+          t = [
+            "scroll",
+            "wheel",
+            "touchstart",
+            "touchmove",
+            "touchenter",
+            "touchend",
+            "touchleave",
+            "mouseout",
+            "mouseleave",
+            "mouseup",
+            "mousedown",
+            "mousemove",
+            "mouseenter",
+            "mousewheel",
+            "mouseover",
+          ];
+        if (
+          (function () {
+            var e = !1;
+            try {
+              var t = Object.defineProperty({}, "passive", {
+                get: function () {
+                  e = !0;
+                },
+              });
+              window.addEventListener("test", null, t),
+                window.removeEventListener("test", null, t);
+            } catch (e) {}
+            return e;
+          })()
+        ) {
+          var n = EventTarget.prototype.addEventListener;
+          (e = n),
+            (EventTarget.prototype.addEventListener = function (n, o, r) {
+              var i,
+                s = "object" == typeof r && null !== r,
+                u = s ? r.capture : r;
+              ((r = s
+                ? (function (e) {
+                    var t = Object.getOwnPropertyDescriptor(e, "passive");
+                    return t && !0 !== t.writable && void 0 === t.set
+                      ? Object.assign({}, e)
+                      : e;
+                  })(r)
+                : {}).passive =
+                void 0 !== (i = r.passive) ? i : -1 !== t.indexOf(n) && !0),
+                (r.capture = void 0 !== u && u),
+                e.call(this, n, o, r);
+            }),
+            (EventTarget.prototype.addEventListener._original = e);
+        }
+      });
+    </script>
+    <script
+      type="module"
+      crossorigin
+      src="/assets/insights/frontend/assets/insights_v3-c913525c.js"
+    ></script>
+    <link
+      rel="modulepreload"
+      crossorigin
+      href="/assets/insights/frontend/assets/frappe-ui-71dfb3e6.js"
+    />
+    <link
+      rel="modulepreload"
+      crossorigin
+      href="/assets/insights/frontend/assets/index-56d2e6f3.js"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets/insights/frontend/assets/frappe-ui-0831b670.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets/insights/frontend/assets/index_v3-4b671700.css"
+    />
+  </head>
+  <body class="h-full">
+    <div id="app" class="h-full"></div>
+    <div id="modals"></div>
+    <div id="popovers"></div>
+
+    <script>
+      window.csrf_token = "{{ csrf_token }}";
+      window.site_name = "{{ site_name }}";
+    </script>
+  </body>
+</html>

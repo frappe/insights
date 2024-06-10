@@ -24,7 +24,7 @@ const routes = [
 ]
 
 let router = createRouter({
-	history: createWebHistory('/insights-v3'),
+	history: createWebHistory('/insights_v3'),
 	routes,
 })
 

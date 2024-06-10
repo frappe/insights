@@ -196,5 +196,5 @@ before_tests = "insights.tests.utils.before_tests"
 
 website_route_rules = [
     {"from_route": "/insights/<path:app_path>", "to_route": "insights"},
-    {"from_route": "/insights-v3/<path:app_path>", "to_route": "insights-v3"},
+    {"from_route": "/insights_v3/<path:app_path>", "to_route": "insights_v3"},
 ]
