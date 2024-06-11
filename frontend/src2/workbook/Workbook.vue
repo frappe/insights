@@ -2,10 +2,7 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { Badge } from 'frappe-ui'
 import { provide, watch, watchEffect } from 'vue'
-import ChartBuilder from '../charts/ChartBuilder.vue'
 import Navbar from '../components/Navbar.vue'
-import DashboardBuilder from '../dashboard/DashboardBuilder.vue'
-import QueryBuilder from '../query/QueryBuilder.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useWorkbook, { workbookKey } from './workbook'
 
@@ -68,30 +65,7 @@ watchEffect(() => {
 		</Navbar>
 		<div class="relative flex flex-1 overflow-hidden bg-gray-50">
 			<WorkbookSidebar />
-			<QueryBuilder
-				v-if="workbook.activeQuery"
-				:key="workbook.activeQuery.name"
-				:query="workbook.activeQuery"
-			/>
-			<ChartBuilder
-				v-if="workbook.activeChart"
-				:key="workbook.activeChart.name"
-				:chart="workbook.activeChart"
-				:queries="workbook.doc.queries"
-			/>
-			<DashboardBuilder
-				v-if="workbook.activeDashboard"
-				:key="workbook.activeDashboard.name"
-				:dashboard="workbook.activeDashboard"
-				:charts="workbook.doc.charts"
-				:queries="workbook.doc.queries"
-			/>
-			<div
-				class="pointer-events-none absolute z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm transition-all"
-				:class="workbook.loading ? 'opacity-100' : 'opacity-0'"
-			>
-				<LoadingIndicator class="h-8 w-8 text-gray-700" />
-			</div>
+			<RouterView />
 		</div>
 	</div>
 </template>

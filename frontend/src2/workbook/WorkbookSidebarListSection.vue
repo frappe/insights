@@ -8,7 +8,7 @@ const section = defineProps<{
 	isActive: (idx: number) => boolean
 	add: () => void
 	remove: (item: any) => void
-	itemClick: (idx: number) => void
+	route: (idx: number) => void
 }>()
 </script>
 
@@ -34,10 +34,10 @@ const section = defineProps<{
 			<div class="text-xs text-gray-500">{{ section.emptyMessage }}</div>
 		</div>
 		<div v-else class="flex flex-col gap-1.5">
-			<button
+			<router-link
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				@click="section.itemClick(idx)"
+				:to="route(idx)"
 				class="group flex w-full cursor-pointer items-center justify-between rounded border border-gray-300 p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
 				:class="
 					section.isActive(idx)
@@ -55,7 +55,7 @@ const section = defineProps<{
 				>
 					<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</button>
-			</button>
+			</router-link>
 		</div>
 	</div>
 </template>

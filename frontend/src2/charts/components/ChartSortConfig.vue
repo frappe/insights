@@ -8,7 +8,6 @@ const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const sortColumns = defineModel<OrderByArgs[]>({
 	default: () => [],
 })
-console.log('sortColumns', sortColumns.value)
 
 const listItems = computed(() => {
 	return sortColumns.value.map((order) => ({

@@ -1,6 +1,6 @@
 <template>
 	<div class="flex h-screen w-screen overflow-hidden bg-white text-base antialiased">
-		<RouterView :key="$route.fullPath" />
+		<RouterView />
 		<Toaster :visible-toasts="2" position="bottom-right" />
 		<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 	</div>
