@@ -90,3 +90,10 @@ def get_distinct_column_values(operations, column_name, search_term=None):
 def get_title(name):
     number = name.split("-")[1]
     return f"Workbook {frappe.utils.cint(number)}"
+
+
+@frappe.whitelist()
+def get_workbooks():
+    return frappe.get_all(
+        "Insights Workbook", fields=["name", "title", "creation", "modified"]
+    )

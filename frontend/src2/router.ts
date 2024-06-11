@@ -6,14 +6,18 @@ const routes = [
 		path: '/login',
 		name: 'Login',
 		component: () => import('@/pages/Login.vue'),
-		meta: {
-			isGuestView: true,
-		},
+		meta: { isGuestView: true },
 	},
 	{
 		path: '/',
 		name: 'Home',
+		redirect: '/workbook',
 		component: () => import('./home/Home.vue'),
+	},
+	{
+		path: '/workbook',
+		name: 'WorkbookList',
+		component: () => import('./workbook/WorkbookList.vue'),
 	},
 	{
 		props: true,
@@ -21,6 +25,7 @@ const routes = [
 		path: '/workbook/:name',
 		component: () => import('./workbook/Workbook.vue'),
 		redirect: (to: any) => `/workbook/${to.params.name}/query/0`,
+		meta: { hideSidebar: true },
 		children: [
 			{
 				props: true,
