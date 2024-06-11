@@ -10,8 +10,6 @@ from sqlalchemy import table as Table
 from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 
-from insights.cache_utils import get_or_set_cache, make_digest
-
 
 class FrappeTableFactory:
     """Fetchs tables and columns from database and links from doctype"""
@@ -239,15 +237,12 @@ def get_sitedb_connection_string():
 
 def is_frappe_db(data_source):
     connection_string, extra_args = get_frappedb_connection_string(data_source)
-
-    def _is_frappe_db():
-        try:
-            db = ibis.connect(connection_string, **extra_args)
-            res = db.raw_sql("SELECT name FROM tabDocType LIMIT 1").fetchall()
-            db.con.close()
-            return len(res) > 0
-        except Exception:
-            return False
-
-    key = make_digest("is_frappe_db", connection_string)
-    return get_or_set_cache(key, _is_frappe_db, expiry=None)
+    try:
+        db = ibis.connect(connection_string, **extra_args)
+        db.raw_sql("SET SESSION time_zone='+00:00'")
+        db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
+        res = db.raw_sql("SELECT name FROM tabDocType LIMIT 1").fetchall()
+        db.con.close()
+        return len(res) > 0
+    except Exception:
+        return False
