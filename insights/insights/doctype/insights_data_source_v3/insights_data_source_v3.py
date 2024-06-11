@@ -206,7 +206,9 @@ def get_data_source_tables(data_source=None, search_term=None, limit=100):
             continue
         ds_tables = frappe.parse_json(ds.tables)
         ds_tables = [
-            table for table in ds_tables if not search_term or search_term in table
+            table
+            for table in ds_tables
+            if not search_term or search_term.lower() in table.lower()
         ]
         tables.extend(
             [
