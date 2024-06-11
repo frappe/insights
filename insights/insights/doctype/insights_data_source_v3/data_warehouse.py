@@ -18,7 +18,9 @@ class DataWarehouse:
     @property
     def db(self) -> BaseBackend:
         if not hasattr(frappe.local, "insights_warehouse"):
-            frappe.local.insights_warehouse = ibis.duckdb.connect(self.db_path)
+            frappe.local.insights_warehouse = ibis.duckdb.connect(
+                self.db_path, read_only=True
+            )
         return frappe.local.insights_warehouse
 
     def get_table(self, data_source, table_name, sync=False):
