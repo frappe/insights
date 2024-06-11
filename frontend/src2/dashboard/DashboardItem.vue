@@ -58,8 +58,8 @@ function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 					:valuesProvider="getDistinctColumnValues"
 					@filter="handleApplyFilter"
 				>
-					<template #target="{ togglePopover }">
-						<div class="flex-1">
+					<template #target="{ togglePopover, isOpen }">
+						<div class="relative flex-1">
 							<Button
 								variant="outline"
 								@click="togglePopover"
@@ -70,6 +70,14 @@ function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 								</template>
 								{{ filter.column.name }}
 							</Button>
+							<div class="absolute top-0 right-0.5 flex h-full items-center">
+								<Button
+									variant="ghost"
+									:disabled="!isOpen"
+									:icon="isOpen ? 'x' : 'chevron-down'"
+									@click=""
+								/>
+							</div>
 						</div>
 					</template>
 				</ColumnFilter>
