@@ -41,17 +41,8 @@ function makeChart(workbookChart: WorkbookChart) {
 			title: '',
 			operations: [],
 		}),
-		sortOrder: {} as Record<string, 'asc' | 'desc' | undefined>,
 
 		refresh,
-
-		sortByColumn(column: string) {
-			const existingDirection = chart.sortOrder[column]
-			chart.sortOrder = {
-				[column]: !existingDirection ? 'asc' : existingDirection === 'asc' ? 'desc' : undefined,
-			}
-			refresh()
-		},
 	})
 
 	wheneverChanges(
@@ -273,13 +264,13 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function applySortOrder() {
-		Object.entries(chart.sortOrder).forEach(([column_name, direction]) => {
-			if (direction) {
-				chart.dataQuery.addOrderBy({
-					column: column(column_name),
-					direction,
-				})
-			}
+		if (!chart.doc.config.order_by) return
+		chart.doc.config.order_by.forEach((sort) => {
+			if (!sort.column.column_name || !sort.direction) return
+			chart.dataQuery.addOrderBy({
+				column: column(sort.column.column_name),
+				direction: sort.direction,
+			})
 		})
 	}
 

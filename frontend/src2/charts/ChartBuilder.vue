@@ -8,6 +8,7 @@ import useChart from './chart'
 import AxisChartConfigForm from './components/AxisChartConfigForm.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
+import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import DonutChartConfigForm from './components/DonutChartConfigForm.vue'
 import MetricChartConfigForm from './components/MetricChartConfigForm.vue'
@@ -19,7 +20,6 @@ import {
 	MetricChartConfig,
 	TableChartConfig,
 } from './helpers'
-
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 const chart = useChart(props.chart)
 provide('chart', chart)
@@ -51,10 +51,9 @@ chart.refresh()
 				<template #column-header="{ column }">
 					<div
 						class="flex cursor-pointer items-center gap-2 truncate py-2 px-3 hover:underline"
-						@click="chart.sortByColumn(column.name)"
 					>
 						<span>{{ column.name }}</span>
-						<ChevronDown
+						<!-- <ChevronDown
 							v-if="chart.sortOrder[column.name] === 'desc'"
 							class="h-4 w-4 text-gray-700"
 							stroke-width="1.5"
@@ -63,7 +62,7 @@ chart.refresh()
 							v-if="chart.sortOrder[column.name] === 'asc'"
 							class="h-4 w-4 text-gray-700"
 							stroke-width="1.5"
-						/>
+						/> -->
 					</div>
 				</template>
 			</DataTable>
@@ -98,6 +97,12 @@ chart.refresh()
 					:chart-type="chart.doc.chart_type"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
+				/>
+				<hr class="my-1 border-t border-gray-200" />
+				<ChartSortConfig
+					v-if="chart.dataQuery.result.columnOptions"
+					v-model="chart.doc.config.order_by"
+					:column-options="chart.dataQuery.result.columnOptions"
 				/>
 			</template>
 		</div>

@@ -39,9 +39,9 @@ export default function useWorkbook(name: string) {
 			// this is because, when the workbook doc is updated,
 			// the reference to the workbook.doc.queries/charts/dashboards is lost
 			// so we need to update the references to the new queries/charts/dashboards
-			workbook.doc.queries.forEach((q) => useQuery(q).doc = q)
-			workbook.doc.charts.forEach((c) => useChart(c).doc = c)
-			workbook.doc.dashboards.forEach((d) => useDashboard(d).doc = d)
+			workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
+			workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
+			workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
 		}
 	)
 
@@ -92,7 +92,7 @@ export default function useWorkbook(name: string) {
 			title: `Chart ${idx + 1}`,
 			query: '',
 			chart_type: 'Line',
-			config: {} as ChartConfig,
+			config: {} as WorkbookChart['config'],
 		})
 		setActiveTab('chart', idx)
 	}
@@ -163,6 +163,9 @@ function getWorkbookResource(name: string) {
 			doc.queries = safeJSONParse(doc.queries) || []
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
+			doc.charts.forEach((chart) => {
+				chart.config.order_by = chart.config.order_by || []
+			})
 			return doc
 		},
 	})
@@ -189,7 +192,9 @@ export type WorkbookChart = {
 	title: string
 	query: string
 	chart_type: ChartType
-	config: ChartConfig
+	config: ChartConfig & {
+		order_by: OrderByArgs[]
+	}
 }
 
 export type WorkbookDashboard = {
