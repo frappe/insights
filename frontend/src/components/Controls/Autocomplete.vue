@@ -109,11 +109,11 @@
 													v-bind="{ active, selected, option }"
 												>
 													<Square
-														v-if="!isOptionSelected(option)"
+														v-show="!isOptionSelected(option)"
 														class="h-4 w-4 text-gray-700"
 													/>
 													<CheckSquare
-														v-else
+														v-show="isOptionSelected(option)"
 														class="h-4 w-4 text-gray-700"
 													/>
 												</slot>
