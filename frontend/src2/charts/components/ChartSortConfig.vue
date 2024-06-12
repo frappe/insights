@@ -99,12 +99,10 @@ function moveSortColumn(from: number, to: number) {
 						>
 							<template #target="{ togglePopover }">
 								<Button
-									class="w-full !justify-start truncate rounded-none"
+									class="w-full !justify-start rounded-none [&>span]:truncate"
 									@click="togglePopover"
 								>
-									<span>
-										{{ item.column.column_name }}
-									</span>
+									{{ item.column.column_name }}
 								</Button>
 							</template>
 						</Autocomplete>
