@@ -23,6 +23,7 @@ import {
 	summarize,
 	table,
 } from './helpers'
+import { createToast } from '../helpers/toasts'
 
 const queries = new Map<string, Query>()
 export function getCachedQuery(name: string) {
@@ -156,6 +157,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					description: column.type,
 					data_type: column.type,
 				}))
+			})
+			.catch((err: any) => {
+				const lastLineOfTraceback = err.exc?.split('\n').filter(Boolean).at(-1)
+				createToast({
+					title: 'Error',
+					message: lastLineOfTraceback,
+					variant: 'error',
+				})
 			})
 			.finally(() => {
 				query.executing = false
