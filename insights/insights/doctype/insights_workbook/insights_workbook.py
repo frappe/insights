@@ -28,21 +28,15 @@ class InsightsWorkbook(Document):
 
         charts: DF.JSON | None
         dashboards: DF.JSON | None
+        name: DF.Int | None
         queries: DF.JSON | None
         title: DF.Data
     # end: auto-generated types
 
     def before_save(self):
-        self.title = self.title or get_title(self.name)
-        queries = frappe.parse_json(self.queries)
-        for query in queries:
-            if query["operations"]:
-                ibis_query = IbisQueryBuilder().build(query["operations"])
-                query["sql"] = ibis_query.compile()
-            else:
-                query["sql"] = None
-
-        self.queries = frappe.as_json(queries)
+        self.title = self.title or f"Workbook {frappe.utils.cint(self.name)}"
+        # fix: json field value cannot be a list (see: base_document.py:get_valid_dict)
+        self.queries = frappe.as_json(frappe.parse_json(self.queries))
         self.charts = frappe.as_json(frappe.parse_json(self.charts))
         self.dashboards = frappe.as_json(frappe.parse_json(self.dashboards))
 
@@ -85,11 +79,6 @@ def get_distinct_column_values(operations, column_name, search_term=None):
     )
     result = execute_ibis_query(values_query)
     return result[column_name].tolist()
-
-
-def get_title(name):
-    number = name.split("-")[1]
-    return f"Workbook {frappe.utils.cint(number)}"
 
 
 @frappe.whitelist()

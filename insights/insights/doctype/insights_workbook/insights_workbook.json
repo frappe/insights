@@ -1,7 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "WBK-.#####",
+ "autoname": "autoincrement",
  "creation": "2024-05-28 11:49:18.335351",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -37,11 +36,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-06 00:49:09.195750",
+ "modified": "2024-06-12 20:10:29.798669",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {
