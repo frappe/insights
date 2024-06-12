@@ -1,5 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
 import { watch } from 'vue'
+import { createToast } from './toasts'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -41,4 +42,17 @@ export function store<T>(key: string, value: () => T) {
 		deep: true,
 	})
 	return stored ? JSON.parse(stored) : value()
+}
+
+export function getErrorMessage(err: any) {
+	return err.exc?.split('\n').filter(Boolean).at(-1)
+}
+
+export function showErrorToast(err: Error) {
+	createToast({
+		variant: 'error',
+		title: 'Error',
+		message: getErrorMessage(err),
+	})
+	throw err
 }

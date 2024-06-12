@@ -1,9 +1,8 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import { copy } from '../helpers'
+import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { createToast } from '../helpers/toasts'
 import { WorkbookQuery } from '../workbook/workbook'
 import {
 	cast,
@@ -160,14 +159,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					data_type: column.type,
 				}))
 			})
-			.catch((err: any) => {
-				const lastLineOfTraceback = err.exc?.split('\n').filter(Boolean).at(-1)
-				createToast({
-					title: 'Error',
-					message: lastLineOfTraceback,
-					variant: 'error',
-				})
-			})
+			.catch(showErrorToast)
 			.finally(() => {
 				query.executing = false
 			})

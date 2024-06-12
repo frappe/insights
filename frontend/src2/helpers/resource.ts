@@ -1,7 +1,7 @@
-import { confirmDialog } from '../helpers/confirm_dialog'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import { copy } from './index'
+import { confirmDialog } from '../helpers/confirm_dialog'
+import { copy, showErrorToast } from './index'
 import { createToast } from './toasts'
 
 type DocumentResourceOptions<T> = {
@@ -38,7 +38,7 @@ export default function useDocumentResource<T extends object>(
 					doctype,
 					...removeMetaFields(this.doc),
 				},
-			})
+			}).catch(showErrorToast)
 			this.doc = tranformFn({ ...doc })
 			this.originalDoc = copy(this.doc)
 			this.islocal = false
@@ -65,13 +65,15 @@ export default function useDocumentResource<T extends object>(
 			await Promise.all(Array.from(beforeSaveFns).map((fn) => fn()))
 
 			if (this.islocal) {
-				await this.insert()
+				await this.insert().finally(() => (this.saving = false))
 			} else {
 				const doc = await call('frappe.client.set_value', {
 					doctype,
 					name,
 					fieldname: removeMetaFields(this.doc),
 				})
+					.catch(showErrorToast)
+					.finally(() => (this.saving = false))
 				this.doc = tranformFn({ ...doc })
 				this.originalDoc = copy(this.doc)
 			}
