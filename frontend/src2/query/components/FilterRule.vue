@@ -95,7 +95,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				placeholder="Column"
 				:modelValue="filter.column.column_name"
 				:options="props.columnOptions"
-				@update:modelValue="onColumnChange($event.value)"
+				@update:modelValue="onColumnChange($event?.value)"
 			/>
 		</div>
 		<div id="operator" class="!min-w-[100px] flex-1">
@@ -113,6 +113,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				v-if="valueSelectorType === 'text'"
 				v-model="filter.value"
 				placeholder="Value"
+				autocomplete="off"
 			/>
 			<FormControl
 				v-else-if="valueSelectorType === 'number'"

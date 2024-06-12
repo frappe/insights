@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import FiltersSelector from './FiltersSelector.vue'
 import { Query } from '../query'
+import FiltersSelector from './FiltersSelector.vue'
 
-const emit = defineEmits({ select: (filters: FilterArgs[]) => true })
+const emit = defineEmits({ select: (args: FilterGroupArgs) => true })
 const showDialog = defineModel()
 const query = inject('query') as Query
 </script>

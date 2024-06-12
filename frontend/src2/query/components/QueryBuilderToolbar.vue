@@ -124,7 +124,7 @@ const actions = [
 	<FiltersSelectorDialog
 		v-if="showFiltersSelectorDialog"
 		v-model="showFiltersSelectorDialog"
-		@select="query.addFilter($event)"
+		@select="query.addFilterGroup($event)"
 	/>
 	<NewColumnSelectorDialog
 		v-if="showNewColumnSelectorDialog"

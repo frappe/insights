@@ -48,10 +48,18 @@ type Expression = {
 type SourceArgs = { table: Table }
 type Source = { type: 'source' } & SourceArgs
 
-type FilterRule = { column: Column; operator: FilterOperator; value: FilterValue | Column }
+type LogicalOperator = 'And' | 'Or'
+type FilterRule = {
+	column: Column
+	operator: FilterOperator
+	value: FilterValue | Column
+}
 type FilterExpression = { expression: Expression }
 type FilterArgs = FilterRule | FilterExpression
 type Filter = { type: 'filter' } & FilterArgs
+
+type FilterGroupArgs = { logical_operator: LogicalOperator; filters: FilterArgs[] }
+type FilterGroup = { type: 'filter_group' } & FilterGroupArgs
 
 type SelectArgs = { column_names: string[] }
 type Select = { type: 'select' } & SelectArgs
@@ -100,6 +108,7 @@ type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 type Operation =
 	| Source
 	| Filter
+	| FilterGroup
 	| Select
 	| Rename
 	| Remove

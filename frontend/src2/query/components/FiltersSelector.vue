@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
 import { isFilterExpressionValid, isFilterValid } from './filter_utils'
-import { column, expression } from '../helpers'
 
 const props = defineProps<{
 	filters?: FilterArgs[]
@@ -12,9 +12,10 @@ const props = defineProps<{
 	columnValuesProvider: (column_name: string, searchTxt?: string) => Promise<string[]>
 }>()
 const emit = defineEmits({
-	select: (filters: FilterArgs[]) => true,
+	select: (args: FilterGroupArgs) => true,
 	close: () => true,
 })
+const logicalOperator = ref<LogicalOperator>('And')
 const filters = ref<FilterArgs[]>(
 	props.filters || [
 		{
@@ -46,7 +47,10 @@ const areAllFiltersValid = computed(() => {
 })
 
 function confirmSelection() {
-	emit('select', filters.value)
+	emit('select', {
+		logical_operator: logicalOperator.value,
+		filters: filters.value,
+	})
 	close()
 }
 function close() {
@@ -70,7 +74,13 @@ function close() {
 		>
 			<div class="flex flex-1 items-start gap-2">
 				<div class="flex h-7 w-13 flex-shrink-0 items-center text-base text-gray-600">
-					{{ i == 0 ? 'Where' : 'And' }}
+					<span v-if="i == 0">Where</span>
+					<Button
+						v-else
+						@click="logicalOperator = logicalOperator === 'And' ? 'Or' : 'And'"
+					>
+						{{ logicalOperator }}
+					</Button>
 				</div>
 				<FilterExpression
 					v-if="filters[i].hasOwnProperty('expression')"
@@ -97,6 +107,12 @@ function close() {
 							label: 'Convert to Expression',
 							onClick: () => {
 								filters[i] = { expression: expression('') }
+							},
+						},
+						{
+							label: 'Duplicate',
+							onClick: () => {
+								filters.splice(i + 1, 0, JSON.parse(JSON.stringify(filters[i])))
 							},
 						},
 						{

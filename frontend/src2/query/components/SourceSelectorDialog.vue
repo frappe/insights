@@ -91,6 +91,7 @@ function onConfirm() {
 						placeholder="Search by Title"
 						v-model="tableSearchQuery"
 						:debounce="300"
+						autocomplete="off"
 					>
 						<template #prefix>
 							<SearchIcon class="h-4 w-4 text-gray-500" />

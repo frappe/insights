@@ -139,6 +139,18 @@ export const query_operation_types = {
 			return `${op.column.column_name}`
 		},
 	},
+	filter_group: {
+		label: 'Filter Group',
+		type: 'filter_group',
+		icon: Filter,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: FilterGroupArgs): FilterGroup => ({ type: 'filter_group', ...args }),
+		getDescription: (op: FilterGroup) => {
+			const count = op.filters.length
+			return `${count} condition${count > 1 ? 's' : ''}`
+		},
+	},
 	mutate: {
 		label: 'Calculate',
 		type: 'mutate',
@@ -205,6 +217,7 @@ export const rename = query_operation_types.rename.init
 export const remove = query_operation_types.remove.init
 export const cast = query_operation_types.cast.init
 export const filter = query_operation_types.filter.init
+export const filter_group = query_operation_types.filter_group.init
 export const mutate = query_operation_types.mutate.init
 export const summarize = query_operation_types.summarize.init
 export const pivot_wider = query_operation_types.pivot_wider.init

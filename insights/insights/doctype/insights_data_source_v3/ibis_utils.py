@@ -42,6 +42,8 @@ class IbisQueryBuilder:
             handler = self.translate_join(operation)
         elif operation.type == "filter":
             handler = self.translate_filter(operation)
+        elif operation.type == "filter_group":
+            handler = self.translate_filter_group(operation)
         elif operation.type == "select":
             handler = self.translate_select(operation)
         elif operation.type == "rename":
@@ -78,10 +80,12 @@ class IbisQueryBuilder:
         )
 
     def translate_filter(self, filter_args):
+        condition = self.make_filter_condition(filter_args)
+        return lambda query: query.filter(condition)
+
+    def make_filter_condition(self, filter_args):
         if hasattr(filter_args, "expression") and filter_args.expression:
-            return lambda query: query.filter(
-                self.evaluate_expression(filter_args.expression.expression)
-            )
+            return self.evaluate_expression(filter_args.expression.expression)
 
         filter_column = filter_args.column
         filter_operator = filter_args.operator
@@ -100,7 +104,7 @@ class IbisQueryBuilder:
         )
 
         right_value = right_column or filter_value
-        return lambda query: query.filter(operator_fn(left, right_value))
+        return operator_fn(left, right_value)
 
     def get_operator(self, operator):
         return {
@@ -121,6 +125,18 @@ class IbisQueryBuilder:
             "between": lambda x, y: x.between(y[0], y[1]),
             # "within": lambda x, y: handle_timespan(x, y),
         }[operator]
+
+    def translate_filter_group(self, filter_group_args):
+        filters = filter_group_args.filters
+        logical_operator = filter_group_args.logical_operator
+        conditions = [self.make_filter_condition(filter) for filter in filters]
+
+        if logical_operator == "And":
+            return lambda query: query.filter(ibis.and_(*conditions))
+        elif logical_operator == "Or":
+            return lambda query: query.filter(ibis.or_(*conditions))
+
+        frappe.throw(f"Logical operator {logical_operator} is not supported")
 
     def translate_select(self, select_args):
         select_args = _dict(select_args)

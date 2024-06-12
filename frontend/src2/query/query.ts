@@ -1,8 +1,9 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
-import { confirmDialog } from '../helpers/confirm_dialog'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy } from '../helpers'
+import { confirmDialog } from '../helpers/confirm_dialog'
+import { createToast } from '../helpers/toasts'
 import { WorkbookQuery } from '../workbook/workbook'
 import {
 	cast,
@@ -10,6 +11,7 @@ import {
 	count,
 	expression,
 	filter,
+	filter_group,
 	get_date_format,
 	join,
 	limit,
@@ -23,7 +25,6 @@ import {
 	summarize,
 	table,
 } from './helpers'
-import { createToast } from '../helpers/toasts'
 
 const queries = new Map<string, Query>()
 export function getCachedQuery(name: string) {
@@ -58,6 +59,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		addSource,
 		addJoin,
 		addFilter,
+		addFilterGroup,
 		addMutate,
 		addSummarize,
 		addOrderBy,
@@ -217,9 +219,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		addOperation(join(args))
 	}
 
-	function addFilter(args: FilterArgs | FilterArgs[]) {
-		if (!Array.isArray(args)) args = [args]
-		args.forEach((arg) => addOperation(filter(arg)))
+	function addFilter(args: FilterArgs) {
+		addOperation(filter(args))
+	}
+
+	function addFilterGroup(args: FilterGroupArgs) {
+		addOperation(filter_group(args))
 	}
 
 	function addMutate(args: MutateArgs) {
