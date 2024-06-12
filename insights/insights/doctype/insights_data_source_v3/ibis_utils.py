@@ -270,7 +270,7 @@ def execute_ibis_query(
 
     if cache and has_cached_results(sql):
         res = get_cached_results(sql)
-        res = res.replace({pd.NaT: None, np.NaN: None})
+        res = res.replace({pd.NaT: None, np.NaN: 0})
         return res
 
     db = DataWarehouse().db
@@ -278,7 +278,7 @@ def execute_ibis_query(
     res = db.to_pandas(query)
     create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
 
-    res = res.replace({pd.NaT: None, np.NaN: None})
+    res = res.replace({pd.NaT: None, np.NaN: 0})
     cache and cache_results(sql, res)
     return res
 
