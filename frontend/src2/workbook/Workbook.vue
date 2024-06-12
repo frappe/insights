@@ -2,10 +2,10 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { Badge } from 'frappe-ui'
 import { provide, watch, watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useWorkbook, { workbookKey } from './workbook'
-import { useRoute } from 'vue-router'
 
 const props = defineProps<{ name: string }>()
 const route = useRoute()
@@ -13,14 +13,15 @@ const route = useRoute()
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
 
-const stopWatcher = watch(
+watch(
 	() => workbook.isdirty,
 	(dirty) => {
 		if (dirty) {
 			window.onbeforeunload = () => {
 				return 'Are you sure you want to leave? You have unsaved changes.'
 			}
-			stopWatcher()
+		} else {
+			window.onbeforeunload = null
 		}
 	}
 )
