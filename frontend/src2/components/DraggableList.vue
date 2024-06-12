@@ -41,7 +41,7 @@ function onChange(e) {
 					v-if="props.showHandle"
 					class="h-4 w-4 flex-shrink-0 cursor-grab text-gray-500"
 				/>
-				<div class="flex flex-1 flex-col justify-center">
+				<div class="flex flex-1 flex-col justify-center overflow-hidden">
 					<slot name="item" :item="item" :index="idx">
 						<div
 							class="group form-input flex h-7 flex-1 cursor-pointer items-center justify-between px-2"

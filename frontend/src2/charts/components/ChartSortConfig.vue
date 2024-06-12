@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import DraggableList from '../../components/DraggableList.vue'
 import { Plus, SortAscIcon, SortDescIcon, X } from 'lucide-vue-next'
 import { computed } from 'vue'
+import DraggableList from '../../components/DraggableList.vue'
 import { column } from '../../query/helpers'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
@@ -50,7 +50,7 @@ function moveSortColumn(from: number, to: number) {
 </script>
 
 <template>
-	<div class="p-3 pt-2">
+	<div class="overflow-hidden p-3 pt-2">
 		<div class="mb-1 flex items-center justify-between">
 			<label class="block text-xs text-gray-600">Sort By</label>
 			<div>
@@ -71,14 +71,16 @@ function moveSortColumn(from: number, to: number) {
 		</div>
 		<DraggableList
 			group="sortColumns"
-			:show-empty-state="true"
-			empty-text="Click + to add a sort column"
+			:show-empty-state="false"
 			:items="listItems"
 			@sort="moveSortColumn"
 		>
 			<template #item="{ item, index }">
 				<div class="flex rounded">
-					<Button class="rounded-r-none border-r" @click="toggleSortDirection(index)">
+					<Button
+						class="flex-shrink-0 rounded-r-none border-r"
+						@click="toggleSortDirection(index)"
+					>
 						<template #icon>
 							<SortAscIcon
 								v-if="item.direction == 'asc'"
@@ -88,7 +90,7 @@ function moveSortColumn(from: number, to: number) {
 							<SortDescIcon v-else class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
-					<div class="flex-1">
+					<div class="flex flex-1 overflow-hidden">
 						<Autocomplete
 							:showFooter="true"
 							:options="props.columnOptions"
@@ -97,15 +99,20 @@ function moveSortColumn(from: number, to: number) {
 						>
 							<template #target="{ togglePopover }">
 								<Button
-									class="flex-1 !justify-start rounded-none"
+									class="!justify-start truncate rounded-none"
 									@click="togglePopover"
 								>
-									{{ item.column.column_name }}
+									<span>
+										{{ item.column.column_name }}
+									</span>
 								</Button>
 							</template>
 						</Autocomplete>
 					</div>
-					<Button class="rounded-l-none border-l" @click="removeSortColumn(index)">
+					<Button
+						class="flex-shrink-0 rounded-l-none border-l"
+						@click="removeSortColumn(index)"
+					>
 						<template #icon>
 							<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>
