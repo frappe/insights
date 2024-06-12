@@ -5,8 +5,10 @@ import { provide, watch, watchEffect } from 'vue'
 import Navbar from '../components/Navbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useWorkbook, { workbookKey } from './workbook'
+import { useRoute } from 'vue-router'
 
 const props = defineProps<{ name: string }>()
+const route = useRoute()
 
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
@@ -65,7 +67,7 @@ watchEffect(() => {
 		</Navbar>
 		<div class="relative flex flex-1 overflow-hidden bg-gray-50">
 			<WorkbookSidebar />
-			<RouterView />
+			<RouterView :key="route.fullPath" />
 		</div>
 	</div>
 </template>

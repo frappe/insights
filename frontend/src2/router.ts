@@ -6,7 +6,7 @@ const routes = [
 		path: '/login',
 		name: 'Login',
 		component: () => import('@/pages/Login.vue'),
-		meta: { isGuestView: true },
+		meta: { isGuestView: true, hideSidebar: true },
 	},
 	{
 		path: '/',

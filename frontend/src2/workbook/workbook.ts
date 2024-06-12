@@ -24,11 +24,6 @@ export default function useWorkbook(name: string) {
 			workbook.doc.queries.forEach((query) => useQuery(query))
 			workbook.doc.charts.forEach((chart) => useChart(chart))
 			workbook.doc.dashboards.forEach((dashboard) => useDashboard(dashboard))
-
-			// set first tab as active
-			if (workbook.doc.queries.length) {
-				setActiveTab('query', 0)
-			}
 		}
 	)
 

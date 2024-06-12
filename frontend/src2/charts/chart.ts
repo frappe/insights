@@ -1,7 +1,7 @@
 import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
-import { getUniqueId } from '../helpers'
+import { getUniqueId, waitUntil } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
 import { Query, getCachedQuery, makeQuery } from '../query/query'
 import { WorkbookChart } from '../workbook/workbook'
@@ -65,24 +65,26 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	async function refresh(filters?: FilterArgs[]) {
 		if (!workbookChart.query) return
-		if (chart.baseQuery.executing) return
+		if (chart.baseQuery.executing) {
+			await waitUntil(() => !chart.baseQuery.executing)
+		}
 
 		resetQuery(filters)
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
-			fetchAxisChartData(_config)
+			return fetchAxisChartData(_config)
 		}
 		if (chart.doc.chart_type === 'Metric') {
 			const _config = unref(chart.doc.config as MetricChartConfig)
-			fetchMetricChartData(_config)
+			return fetchMetricChartData(_config)
 		}
 		if (chart.doc.chart_type === 'Donut') {
 			const _config = unref(chart.doc.config as DountChartConfig)
-			fetchDonutChartData(_config)
+			return fetchDonutChartData(_config)
 		}
 		if (chart.doc.chart_type === 'Table') {
 			const _config = unref(chart.doc.config as TableChartConfig)
-			fetchTableChartData(_config)
+			return fetchTableChartData(_config)
 		}
 	}
 
@@ -109,7 +111,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareAxisChartQuery(row, column, values)
 		applySortOrder()
-		chart.dataQuery.execute()
+		return chart.dataQuery.execute()
 	}
 
 	function prepareAxisChartQuery(row: Dimension, column?: Dimension, values?: Measure[]) {
@@ -156,7 +158,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareMetricQuery(metric, target, date)
 		applySortOrder()
-		chart.dataQuery.execute()
+		return chart.dataQuery.execute()
 	}
 
 	function prepareMetricQuery(metric: Measure, target?: Measure | Number, date?: Dimension) {
@@ -213,7 +215,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareDonutQuery(label, value)
 		applySortOrder()
-		chart.dataQuery.execute()
+		return chart.dataQuery.execute()
 	}
 
 	function prepareDonutQuery(label: Dimension, value: Measure) {
@@ -244,7 +246,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareTableQuery(rows, columns, values)
 		applySortOrder()
-		chart.dataQuery.execute()
+		return chart.dataQuery.execute()
 	}
 
 	function prepareTableQuery(rows: Dimension[], columns: Dimension[], values: Measure[]) {
