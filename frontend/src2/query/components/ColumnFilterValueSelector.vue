@@ -2,8 +2,7 @@
 import { watchDebounced } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { CheckSquare, SearchIcon, Square } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
-import { Query } from '../query'
+import { ref } from 'vue'
 
 const props = defineProps<{
 	column: QueryResultColumn
@@ -59,7 +58,7 @@ function toggleValue(value: string) {
 				v-for="(value, idx) in distinctColumnValues.slice(0, 50)"
 				:key="value || idx"
 				class="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-1.5 text-base hover:bg-gray-100"
-				@click="toggleValue(value)"
+				@click.prevent.stop="toggleValue(value)"
 			>
 				<component
 					:is="selectedValues.includes(value) ? CheckSquare : Square"
