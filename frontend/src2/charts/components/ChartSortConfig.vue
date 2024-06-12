@@ -90,7 +90,7 @@ function moveSortColumn(from: number, to: number) {
 							<SortDescIcon v-else class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
-					<div class="flex flex-1 overflow-hidden">
+					<div class="flex-1 overflow-hidden">
 						<Autocomplete
 							:showFooter="true"
 							:options="props.columnOptions"
@@ -99,7 +99,7 @@ function moveSortColumn(from: number, to: number) {
 						>
 							<template #target="{ togglePopover }">
 								<Button
-									class="!justify-start truncate rounded-none"
+									class="w-full !justify-start truncate rounded-none"
 									@click="togglePopover"
 								>
 									<span>
