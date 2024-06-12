@@ -16,7 +16,8 @@ export function createToast(toastOptions: ToastOptions) {
 		options.message = toastOptions.message
 	}
 	const component = h(Toast, {
-		title: options.title as string,
+		title: options.title || '',
+		message: options.message,
 		variant: toastOptions.variant,
 	})
 	toast(markRaw(component))
