@@ -60,7 +60,7 @@ def fetch_query_results(operations):
 
     count_query = ibis_query.aggregate(count=_.count())
     count_results = execute_ibis_query(count_query)
-    total_count = count_results["count"][0]
+    total_count = count_results.values[0][0]
 
     return {
         "sql": ibis.to_sql(ibis_query),

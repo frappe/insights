@@ -1,4 +1,5 @@
 import time
+from io import StringIO
 
 import frappe
 import ibis
@@ -10,6 +11,7 @@ from ibis import selectors as s
 from ibis.expr.datatypes import DataType
 from ibis.expr.types import Table as IbisQuery
 
+from insights.cache_utils import make_digest
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -244,17 +246,24 @@ class IbisQueryBuilder:
         return frappe.safe_eval(stripped_expression, context)
 
 
-def execute_ibis_query(query: IbisQuery, query_name=None, limit=100) -> list:
+def execute_ibis_query(
+    query: IbisQuery, query_name=None, limit=100, cache=True
+) -> pd.DataFrame:
+    query = query.head(limit) if limit else query
+    sql = ibis.to_sql(query)
+
+    if cache and has_cached_results(sql):
+        res = get_cached_results(sql)
+        res = res.replace({pd.NaT: None, np.NaN: None})
+        return res
+
     db = DataWarehouse().db
     start = time.monotonic()
-    res = db.execute(query.head(limit) if limit else query)
-    create_execution_log(
-        ibis.to_sql(query),
-        flt(time.monotonic() - start, 3),
-        query_name,
-    )
-    if isinstance(res, pd.DataFrame):
-        res = res.replace({pd.NaT: None, np.NaN: None})
+    res = db.to_pandas(query)
+    create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
+
+    res = res.replace({pd.NaT: None, np.NaN: None})
+    cache and cache_results(sql, res)
     return res
 
 
@@ -284,3 +293,22 @@ def to_insights_type(dtype: DataType):
     if dtype.is_time():
         return "Time"
     frappe.throw(f"Cannot infer data type for: {dtype}")
+
+
+def cache_results(sql, result: pd.DataFrame):
+    cache_key = make_digest(sql)
+    cache_key = "insights:query_results:" + cache_key
+    frappe.cache().set_value(cache_key, result.to_json(), expires_in_sec=3600)
+
+
+def get_cached_results(sql) -> pd.DataFrame:
+    cache_key = make_digest(sql)
+    cache_key = "insights:query_results:" + cache_key
+    res = frappe.cache().get_value(cache_key)
+    return pd.read_json(StringIO(res)) if res else None
+
+
+def has_cached_results(sql):
+    cache_key = make_digest(sql)
+    cache_key = "insights:query_results:" + cache_key
+    return frappe.cache().get_value(cache_key) is not None
