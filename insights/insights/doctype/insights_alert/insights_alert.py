@@ -47,6 +47,7 @@ class InsightsAlert(Document):
     def evaluate_condition(self, for_validate=False):
         query = frappe.get_doc("Insights Query", self.query)
         results = query.retrieve_results(fetch_if_not_cached=not for_validate)
+        results = DataFrame(results)
 
         if not results.empty:
             return False
