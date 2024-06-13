@@ -4,15 +4,16 @@ import DashboardBuilder from '../dashboard/DashboardBuilder.vue'
 import { Workbook, workbookKey } from './workbook'
 
 const props = defineProps<{ name?: string; index: number | string }>()
+
 const workbook = inject(workbookKey) as Workbook
-workbook.setActiveTab('dashboard', Number(props.index))
+const activeDashboard = computed(() => workbook.doc.dashboards[Number(props.index)])
 </script>
 
 <template>
 	<DashboardBuilder
-		v-if="workbook.activeDashboard"
-		:key="workbook.activeDashboard.name"
-		:dashboard="workbook.activeDashboard"
+		v-if="activeDashboard"
+		:key="activeDashboard.name"
+		:dashboard="activeDashboard"
 		:charts="workbook.doc.charts"
 		:queries="workbook.doc.queries"
 	/>

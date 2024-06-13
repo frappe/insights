@@ -1,6 +1,6 @@
 import { safeJSONParse } from '@/utils'
 import { watchOnce } from '@vueuse/core'
-import { InjectionKey, computed, reactive, ref, toRefs, watch } from 'vue'
+import { InjectionKey, reactive, toRefs, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
@@ -40,25 +40,36 @@ export default function useWorkbook(name: string) {
 		}
 	)
 
-	type ActiveTabType = 'query' | 'chart' | 'dashboard' | ''
-	const activeTabType = ref<ActiveTabType>('')
-	const activeTabIdx = ref(0)
-	const activeQuery = computed(
-		() => activeTabType.value == 'query' && workbook.doc.queries[activeTabIdx.value]
-	)
-	const activeChart = computed(
-		() => activeTabType.value == 'chart' && workbook.doc.charts[activeTabIdx.value]
-	)
-	const activeDashboard = computed(
-		() => activeTabType.value == 'dashboard' && workbook.doc.dashboards[activeTabIdx.value]
-	)
-
-	function setActiveTab(type: ActiveTabType, idx: number) {
-		activeTabType.value = type
-		activeTabIdx.value = idx
+	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
+		const RouteByType = {
+			'': 'Workbook',
+			query: 'WorkbookQuery',
+			chart: 'WorkbookChart',
+			dashboard: 'WorkbookDashboard',
+		}
+		const route = RouteByType[type]
+		if (route) {
+			router.push({
+				name: route,
+				params: {
+					name: workbook.doc.name,
+					index: idx.toString(),
+				},
+			})
+		}
 	}
-	function isActiveTab(type: ActiveTabType, idx: number) {
-		return activeTabType.value === type && activeTabIdx.value === idx
+	function isActiveTab(type: 'query' | 'chart' | 'dashboard', idx: number) {
+		const route = router.currentRoute.value
+		if (route.name === 'WorkbookQuery') {
+			return type === 'query' && route.params.index === idx.toString()
+		}
+		if (route.name === 'WorkbookChart') {
+			return type === 'chart' && route.params.index === idx.toString()
+		}
+		if (route.name === 'WorkbookDashboard') {
+			return type === 'dashboard' && route.params.index === idx.toString()
+		}
+		return false
 	}
 
 	function addQuery() {
@@ -123,12 +134,6 @@ export default function useWorkbook(name: string) {
 	return reactive({
 		...toRefs(workbook),
 
-		activeTabType,
-		activeTabIdx,
-		activeQuery,
-		activeChart,
-		activeDashboard,
-		setActiveTab,
 		isActiveTab,
 
 		addQuery,
