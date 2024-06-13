@@ -22,6 +22,7 @@ export default function useDocumentResource<T extends object>(
 
 	const resource = reactive({
 		doctype,
+		name,
 		doc: options.initialDoc,
 		originalDoc: copy(options.initialDoc),
 		isdirty: computed(() => false),
