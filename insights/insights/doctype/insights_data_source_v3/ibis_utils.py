@@ -268,18 +268,18 @@ def execute_ibis_query(
     query = query.head(limit) if limit else query
     sql = ibis.to_sql(query)
 
-    if cache and has_cached_results(sql):
-        res = get_cached_results(sql)
-        res = res.replace({pd.NaT: None, np.NaN: 0})
-        return res
+    backend = query._find_backend(use_default=True)
+    try:
+        # make sure the connection is open
+        backend.connect()
+    except Exception as e:
+        frappe.throw(f"Error connecting to the database: {e}")
 
-    db = DataWarehouse().db
     start = time.monotonic()
-    res = db.to_pandas(query)
+    res = backend.execute(query)
     create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
 
     res = res.replace({pd.NaT: None, np.NaN: 0})
-    cache and cache_results(sql, res)
     return res
 
 

@@ -16,9 +16,6 @@ from insights.api.telemetry import track
 from insights.insights.doctype.insights_table_column.insights_table_column import (
     InsightsTableColumn,
 )
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
-    sync_insights_table,
-)
 
 from .connectors.frappe_db import (
     get_frappedb_connection_string,
@@ -28,7 +25,6 @@ from .connectors.frappe_db import (
 from .connectors.mariadb import get_mariadb_connection_string
 from .connectors.postgresql import get_postgres_connection_string
 from .connectors.sqlite import get_sqlite_connection_string
-from .data_warehouse import DataWarehouse
 
 
 class InsightsDataSourceDocument:
@@ -142,7 +138,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         try:
             yield db
         finally:
-            db.con.close()
+            db.disconnect()
 
     def get_connection_string(self):
         if self.is_site_db:
@@ -176,12 +172,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             tables = remote_db.list_tables()
             tables = [t for t in tables if not blacklisted(t)]
             self.db_set("tables", frappe.as_json(tables))
-
-    @frappe.whitelist()
-    def sync_table(self, table_name):
-        table = DataWarehouse().get_table(self.name, table_name, sync=True)
-        columns = InsightsTableColumn.from_ibis_schema(table.schema())
-        sync_insights_table(self.name, table_name, columns=columns)
 
 
 @frappe.whitelist()

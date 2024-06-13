@@ -4,6 +4,7 @@ import frappe
 import ibis
 from frappe.utils import get_files_path
 from ibis import BaseBackend
+from ibis.expr.types import Table as IbisTable
 
 from insights.insights.doctype.insights_table_column.insights_table_column import (
     InsightsTableColumn,
@@ -18,36 +19,40 @@ class DataWarehouse:
     @property
     def db(self) -> BaseBackend:
         if not hasattr(frappe.local, "insights_warehouse"):
-            frappe.local.insights_warehouse = ibis.duckdb.connect(
-                self.db_path, read_only=True
-            )
+            ddb = ibis.duckdb.connect(self.db_path, read_only=True)
+            frappe.local.insights_warehouse = ddb
         return frappe.local.insights_warehouse
 
-    def get_table(self, data_source, table_name, sync=False):
+    def get_table(self, data_source, table_name, sync=False, realtime=False):
+        if not realtime:
+            return self.get_warehouse_table(data_source, table_name, sync)
+        else:
+            return self.get_remote_table(data_source, table_name)
+
+    def get_warehouse_table(self, data_source, table_name, sync=False):
         parquet_file = get_parquet_filepath(data_source, table_name)
+        warehouse_table = get_warehouse_table_name(data_source, table_name)
+
         if not os.path.exists(parquet_file):
             if sync:
                 self.create_parquet_file(data_source, table_name)
+                return self.db.read_parquet(parquet_file, table_name=warehouse_table)
             else:
                 frappe.throw(
                     f"{table_name} of {data_source} is not synced to the data warehouse."
                 )
 
-        warehouse_table = get_warehouse_table_name(data_source, table_name)
         if not self.db.list_tables(warehouse_table):
             return self.db.read_parquet(parquet_file, table_name=warehouse_table)
         else:
-            if sync:
-                return self.db.read_parquet(parquet_file, table_name=warehouse_table)
-            else:
-                return self.db.table(warehouse_table)
+            return self.db.table(warehouse_table)
+
+    def get_remote_table(self, data_source, table_name):
+        ds = frappe.get_doc("Insights Data Source v3", data_source)
+        with ds._get_ibis_backend() as remote_db:
+            return remote_db.table(table_name)
 
     def create_parquet_file(self, data_source, table_name):
-
-        from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
-            sync_insights_table,
-        )
-
         path = get_parquet_filepath(data_source, table_name)
         if os.path.exists(path):
             print(
@@ -61,6 +66,11 @@ class DataWarehouse:
             table = remote_db.table(table_name)
             # TODO: check metadata to see if copy is needed
             table.to_parquet(path, compression="snappy")
+
+    def sync_insights_table(self, data_source, table_name, table: IbisTable):
+        from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+            sync_insights_table,
+        )
 
         columns = InsightsTableColumn.from_ibis_schema(table.schema())
         sync_insights_table(data_source, table_name, columns=columns)
