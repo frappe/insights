@@ -8,7 +8,7 @@ import QueryBuilderTableColumn from './QueryBuilderTableColumn.vue'
 const query = inject('query') as Query
 
 const columns = computed(() => query.result.columns)
-const rows = computed(() => query.result.rows)
+const rows = computed(() => query.result.formattedRows)
 const previewRowCount = computed(() => query.result.rows.length.toLocaleString())
 const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString())
 </script>

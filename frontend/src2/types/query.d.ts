@@ -132,6 +132,7 @@ type QueryResult = {
 	executedSQL: string
 	totalRowCount: number
 	rows: QueryResultRow[]
+	formattedRows: QueryResultRow[]
 	columns: QueryResultColumn[]
 	columnOptions: ColumnOption[]
 }

@@ -176,10 +176,10 @@ function getData(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 
 function getGrid() {
 	return {
-		top: 10,
+		top: 20,
 		bottom: 35,
-		left: 10,
-		right: 10,
+		left: 20,
+		right: 20,
 		containLabel: true,
 	}
 }

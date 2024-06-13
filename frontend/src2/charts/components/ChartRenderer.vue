@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { computed } from 'vue'
-import { Chart } from '../chart'
 import DataTable from '../../components/DataTable.vue'
-import MetricChart from './MetricChart.vue'
+import { Chart } from '../chart'
 import {
 	getBarChartOptions,
 	getDonutChartOptions,
 	getLineChartOptions,
 	getRowChartOptions,
 } from '../helpers'
+import MetricChart from './MetricChart.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const chart = props.chart
@@ -17,16 +17,28 @@ const chart = props.chart
 const eChartOptions = computed(() => {
 	if (!chart.dataQuery.result.columns?.length) return
 	if (chart.doc.chart_type === 'Bar') {
-		return getBarChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
+		return getBarChartOptions(
+			chart.dataQuery.result.columns,
+			chart.dataQuery.result.formattedRows
+		)
 	}
 	if (chart.doc.chart_type === 'Line') {
-		return getLineChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
+		return getLineChartOptions(
+			chart.dataQuery.result.columns,
+			chart.dataQuery.result.formattedRows
+		)
 	}
 	if (chart.doc.chart_type === 'Row') {
-		return getRowChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
+		return getRowChartOptions(
+			chart.dataQuery.result.columns,
+			chart.dataQuery.result.formattedRows
+		)
 	}
 	if (chart.doc.chart_type === 'Donut') {
-		return getDonutChartOptions(chart.dataQuery.result.columns, chart.dataQuery.result.rows)
+		return getDonutChartOptions(
+			chart.dataQuery.result.columns,
+			chart.dataQuery.result.formattedRows
+		)
 	}
 })
 </script>

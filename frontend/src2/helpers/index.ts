@@ -16,8 +16,8 @@ export function titleCase(str: string) {
 		.join(' ')
 }
 
-export function copy(obj: object) {
-	return JSON.parse(JSON.stringify(obj))
+export function copy<T>(obj: T) {
+	return JSON.parse(JSON.stringify(obj)) as T
 }
 
 export function waitUntil(fn: () => boolean) {

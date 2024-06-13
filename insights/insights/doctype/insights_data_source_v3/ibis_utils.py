@@ -231,6 +231,8 @@ class IbisQueryBuilder:
         col = getattr(_, dimension.column_name)
         if dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
+            col = col.cast(self.get_ibis_dtype(dimension.data_type))
+            col = col.name(dimension.column_name)
         return col
 
     def apply_aggregate(self, column, aggregate_function):

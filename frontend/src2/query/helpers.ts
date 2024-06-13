@@ -1,3 +1,4 @@
+import dayjs from '@/utils/dayjs'
 import {
 	ArrowUpDown,
 	Combine,
@@ -42,21 +43,21 @@ export const expression = (expression: string): Expression => ({
 // 	order_by: options.order_by,
 // })
 
-export function get_date_format(granularity: GranularityType): string {
-	switch (granularity) {
-		case 'day':
-			return '%Y-%m-%d'
-		case 'week':
-			return '%Y-%W'
-		case 'month':
-			return '%Y-%m-01'
-		case 'quarter':
-			return '%Y-%m-01'
-		case 'year':
-			return '%Y-01-01'
-		default:
-			throw new Error(`Unknown granularity: ${granularity}`)
+export function getFormattedDate(date: string, granularity: GranularityType) {
+	if (!date) return ''
+
+	const dayjsFormat = {
+		minute: 'MMMM D, YYYY h:mm A',
+		hour: 'MMMM D, YYYY h:00 A',
+		day: 'MMMM D, YYYY',
+		week: 'MMM Do, YYYY',
+		month: 'MMMM, YYYY',
+		year: 'YYYY',
+		quarter: '[Q]Q, YYYY',
 	}
+
+	if (!dayjsFormat[granularity]) return date
+	return dayjs(date).format(dayjsFormat[granularity])
 }
 
 export const query_operation_types = {

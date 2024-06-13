@@ -46,7 +46,7 @@ chart.refresh()
 				v-if="chart.doc.chart_type != 'Table'"
 				class="max-h-[17rem] border-x bg-white"
 				:columns="chart.dataQuery.result.columns"
-				:rows="chart.dataQuery.result.rows"
+				:rows="chart.dataQuery.result.formattedRows"
 			>
 				<template #column-header="{ column }">
 					<div

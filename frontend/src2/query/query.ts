@@ -8,10 +8,9 @@ import {
 	cast,
 	column,
 	count,
-	expression,
 	filter,
 	filter_group,
-	get_date_format,
+	getFormattedDate,
 	join,
 	limit,
 	mutate,
@@ -69,7 +68,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		renameColumn,
 		removeColumn,
 		changeColumnType,
-		changeDateGranularity,
 
 		getDistinctColumnValues,
 
@@ -131,6 +129,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				executedSQL: '',
 				totalRowCount: 0,
 				rows: [],
+				formattedRows: [],
 				columns: [],
 				columnOptions: [],
 			}
@@ -151,6 +150,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				query.result.rows = response.rows.map((row: any) =>
 					Object.fromEntries(query.result.columns.map((column, idx) => [column.name, row[idx]]))
 				)
+				query.result.formattedRows = getFormattedRows(query.result)
 				query.result.totalRowCount = response.total_row_count
 				query.result.columnOptions = query.result.columns.map((column) => ({
 					label: column.name,
@@ -163,6 +163,32 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			.finally(() => {
 				query.executing = false
 			})
+	}
+
+	function getFormattedRows(result: QueryResult) {
+		if (!result.rows?.length || !result.columns?.length) return []
+
+		const rows = copy(result.rows)
+		const columns = copy(result.columns)
+		const operations = copy(query.doc.operations)
+		const summarize_step = operations.reverse().find((op) => op.type === 'summarize')
+
+		const getGranularity = (column_name: string) => {
+			const dim = summarize_step?.dimensions.find((dim) => dim.column_name === column_name)
+			return dim ? dim.granularity : null
+		}
+
+		const formattedRows = rows.map((row) => {
+			const formattedRow = { ...row }
+			columns.forEach((column) => {
+				if (FIELDTYPES.DATE.includes(column.type) && getGranularity(column.name)) {
+					const granularity = getGranularity(column.name) as GranularityType
+					formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
+				}
+			})
+			return formattedRow
+		})
+		return formattedRows
 	}
 
 	function setActiveStep(index: number) {
@@ -286,17 +312,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			cast({
 				column: column(column_name),
 				data_type: newType,
-			})
-		)
-	}
-
-	function changeDateGranularity(column_name: string, newGranularity: GranularityType) {
-		const dateFormat = get_date_format(newGranularity)
-		addOperation(
-			mutate({
-				data_type: 'Date',
-				new_name: column_name,
-				mutation: expression(`q.${column_name}.strftime('${dateFormat}')`),
 			})
 		)
 	}
