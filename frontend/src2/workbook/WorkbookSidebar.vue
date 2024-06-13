@@ -20,7 +20,7 @@ const workbook = inject(workbookKey) as Workbook
 			isActive: (idx: number) => workbook.isActiveTab('query', idx),
 			add: workbook.addQuery,
 			remove: (query) => workbook.removeQuery(query.name),
-			route: (idx: number) => ({ name: 'WorkbookQuery', params: { index: idx } }),
+			route: (idx: number) => (`/workbook/${workbook.doc.name}/query/${idx}`),
 		}"
 		>
 			<template #item-icon>
@@ -37,7 +37,7 @@ const workbook = inject(workbookKey) as Workbook
 			isActive: (idx: number) => workbook.isActiveTab('chart', idx),
 			add: workbook.addChart,
 			remove: (chart) => workbook.removeChart(chart.name),
-			route: (idx: number) => ({ name: 'WorkbookChart', params: { index: idx } }),
+			route: (idx: number) => (`/workbook/${workbook.doc.name}/chart/${idx}`),
 		}"
 		>
 			<template #item-icon>
@@ -54,7 +54,7 @@ const workbook = inject(workbookKey) as Workbook
 			isActive: (idx: number) => workbook.isActiveTab('dashboard', idx),
 			add: workbook.addDashboard,
 			remove: (dashboard) => workbook.removeDashboard(dashboard.name),
-			route: (idx: number) => ({ name: 'WorkbookDashboard', params: { index: idx } }),
+			route: (idx: number) => (`/workbook/${workbook.doc.name}/dashboard/${idx}`),
 		}"
 		>
 			<template #item-icon>

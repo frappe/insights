@@ -41,35 +41,12 @@ export default function useWorkbook(name: string) {
 	)
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
-		const RouteByType = {
-			'': 'Workbook',
-			query: 'WorkbookQuery',
-			chart: 'WorkbookChart',
-			dashboard: 'WorkbookDashboard',
-		}
-		const route = RouteByType[type]
-		if (route) {
-			router.push({
-				name: route,
-				params: {
-					name: workbook.doc.name,
-					index: idx.toString(),
-				},
-			})
-		}
+		router.replace(`/workbook/${workbook.doc.name}/${type}/${idx}`)
 	}
 	function isActiveTab(type: 'query' | 'chart' | 'dashboard', idx: number) {
-		const route = router.currentRoute.value
-		if (route.name === 'WorkbookQuery') {
-			return type === 'query' && route.params.index === idx.toString()
-		}
-		if (route.name === 'WorkbookChart') {
-			return type === 'chart' && route.params.index === idx.toString()
-		}
-		if (route.name === 'WorkbookDashboard') {
-			return type === 'dashboard' && route.params.index === idx.toString()
-		}
-		return false
+		const url = router.currentRoute.value.path
+		const regex = new RegExp(`/workbook/${workbook.doc.name}/${type}/${idx}`)
+		return regex.test(url)
 	}
 
 	function addQuery() {
