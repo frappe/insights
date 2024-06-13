@@ -49,7 +49,7 @@ class InsightsAlert(Document):
         results = query.retrieve_results(fetch_if_not_cached=not for_validate)
         results = DataFrame(results)
 
-        if not results.empty:
+        if results.empty:
             return False
 
         column_names = [d.get("label") for d in results[0]]
