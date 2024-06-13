@@ -47,9 +47,8 @@ class InsightsAlert(Document):
     def evaluate_condition(self, for_validate=False):
         query = frappe.get_doc("Insights Query", self.query)
         results = query.retrieve_results(fetch_if_not_cached=not for_validate)
-        results = DataFrame(results)
 
-        if results.empty:
+        if (hasattr(results, "empty") and results.empty) or not results:
             return False
 
         column_names = [d.get("label") for d in results[0]]
