@@ -14,6 +14,7 @@ export default function useDocumentResource<T extends object>(
 	options: DocumentResourceOptions<T>
 ) {
 	const tranformFn = options.transform || ((doc: T) => doc)
+	const afterLoadFns = new Set<Function>()
 	const beforeInsertFns = new Set<Function>()
 	const afterInsertFns = new Set<Function>()
 	const beforeSaveFns = new Set<Function>()
@@ -89,7 +90,7 @@ export default function useDocumentResource<T extends object>(
 			confirmDialog({
 				title: 'Discard Changes',
 				message: 'Are you sure you want to discard changes?',
-				onSuccess: () => (this.doc = copy(this.originalDoc)),
+				onSuccess: resource.load,
 			})
 		},
 
@@ -99,8 +100,10 @@ export default function useDocumentResource<T extends object>(
 			const doc = await call('frappe.client.get', { doctype, name })
 			this.doc = tranformFn({ ...doc })
 			this.originalDoc = copy(this.doc)
+			await Promise.all(Array.from(afterLoadFns).map((fn) => fn(this.doc)))
 			this.loading = false
 		},
+		onAfterLoad: (fn: Function) => afterLoadFns.add(fn),
 
 		async call(method: string, args = {}) {
 			this.loading = true

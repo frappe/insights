@@ -1,6 +1,5 @@
 import { safeJSONParse } from '@/utils'
-import { watchOnce } from '@vueuse/core'
-import { InjectionKey, reactive, toRefs, watch } from 'vue'
+import { InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
@@ -16,29 +15,17 @@ export default function useWorkbook(name: string) {
 	const router = useRouter()
 	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.doc.name}`))
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
+	workbook.onAfterLoad((doc: InsightsWorkbook) => {
+		// load & cache queries, charts and dashboards
 
-	watchOnce(
-		() => workbook.doc.name,
-		() => {
-			// load & cache queries, charts and dashboards
-			workbook.doc.queries.forEach((query) => useQuery(query))
-			workbook.doc.charts.forEach((chart) => useChart(chart))
-			workbook.doc.dashboards.forEach((dashboard) => useDashboard(dashboard))
-		}
-	)
-
-	watch(
-		() => workbook.doc,
-		() => {
-			// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
-			// this is because, when the workbook doc is updated,
-			// the reference to the workbook.doc.queries/charts/dashboards is lost
-			// so we need to update the references to the new queries/charts/dashboards
-			workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
-			workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
-			workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
-		}
-	)
+		// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
+		// this is because, when the workbook doc is updated,
+		// the reference to the workbook.doc.queries/charts/dashboards is lost
+		// so we need to update the references to the new queries/charts/dashboards
+		doc.queries.forEach((q) => (useQuery(q).doc = q))
+		doc.charts.forEach((c) => (useChart(c).doc = c))
+		doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
+	})
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
 		router.replace(`/workbook/${workbook.doc.name}/${type}/${idx}`)
