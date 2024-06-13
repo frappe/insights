@@ -34,6 +34,17 @@ const predefinedRanges = [
 	{ label: 'This Month', value: 'Month', description: thisMonthValue },
 	{ label: 'This Quarter', value: 'Quarter', description: thisQuarterValue },
 	{ label: 'This Year', value: 'Year', description: thisYearValue },
+	// last 7 days
+	// last 30 days
+	// last 90 days
+	// last 3 months
+	// last 6 months
+	// last 12 months
+	// last month
+	// last year
+	// month to date
+	// year to date
+	// all time
 ]
 
 function onPredefinedRangeInput(rangeValue: string) {
