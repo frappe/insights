@@ -13,7 +13,7 @@ export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
 
 	const router = useRouter()
-	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.name}`))
+	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.doc.name}`))
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 	workbook.onAfterLoad((doc: InsightsWorkbook) => {
 		// load & cache queries, charts and dashboards
@@ -28,7 +28,9 @@ export default function useWorkbook(name: string) {
 	})
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
-		router.replace(`/workbook/${workbook.name}/${type}/${idx}`)
+		router.replace(
+			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`
+		)
 	}
 	function isActiveTab(type: 'query' | 'chart' | 'dashboard', idx: number) {
 		const url = router.currentRoute.value.path
