@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ContentEditable from '@/components/ContentEditable.vue'
+import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
 import { provide, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
@@ -13,17 +14,13 @@ const route = useRoute()
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
 
+const keys = useMagicKeys()
+const cmdS = keys['Meta+S']
+whenever(cmdS, () => workbook.save())
+
 watch(
 	() => workbook.isdirty,
-	(dirty) => {
-		if (dirty) {
-			window.onbeforeunload = () => {
-				return 'Are you sure you want to leave? You have unsaved changes.'
-			}
-		} else {
-			window.onbeforeunload = null
-		}
-	}
+	(dirty) => (window.onbeforeunload = dirty ? function () {} : null)
 )
 
 watchEffect(() => {
