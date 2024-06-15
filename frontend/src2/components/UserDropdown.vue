@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { Dropdown } from 'frappe-ui'
 import { ChevronDown } from 'lucide-vue-next'
+import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 
 const props = defineProps<{ isCollapsed: boolean }>()
@@ -55,7 +56,12 @@ const userDropdownOptions = [
 	{
 		icon: 'log-out',
 		label: 'Log out',
-		onClick: () => session.logout(),
+		onClick: () =>
+			confirmDialog({
+				title: 'Log out',
+				message: 'Are you sure you want to log out?',
+				onSuccess: session.logout,
+			}),
 	},
 ]
 </script>
