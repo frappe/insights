@@ -56,10 +56,10 @@ function confirmSelection() {
 		logical_operator: logicalOperator.value,
 		filters: filters.value,
 	})
+	filters.value = []
 	close()
 }
 function close() {
-	filters.value = []
 	emit('close')
 }
 </script>

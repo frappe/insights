@@ -86,6 +86,7 @@ function applyFilters(args: FilterGroupArgs, togglePopover: Function) {
 				:filters="filters"
 				:columnOptions="columnOptions"
 				@select="applyFilters($event, togglePopover)"
+				@close="togglePopover"
 			/>
 		</template>
 	</Popover>
