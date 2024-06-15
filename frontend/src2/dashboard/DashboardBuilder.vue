@@ -29,7 +29,6 @@ const selectedCharts = computed(() => {
 })
 
 const showChartSelectorDialog = ref(false)
-const showFilterSelectorDialog = ref(false)
 const showTextWidgetCreationDialog = ref(false)
 </script>
 
@@ -77,13 +76,6 @@ const showTextWidgetCreationDialog = ref(false)
 							@click="showChartSelectorDialog = true"
 						>
 							Chart
-						</Button>
-						<Button
-							variant="outline"
-							icon-left="plus"
-							@click="showFilterSelectorDialog = true"
-						>
-							Filter
 						</Button>
 					</template>
 				</div>
