@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
 import { debounce } from 'frappe-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { column } from '../helpers'
+import { getCachedQuery } from '../query'
 import DatePickerControl from './DatePickerControl.vue'
 import { getValueSelectorType } from './filter_utils'
 
-const props = defineProps<{
-	columnOptions: { label: string; value: string; data_type: ColumnDataType }[]
-	columnValuesProvider: (column_name: string, searchTxt?: string) => Promise<string[]>
-}>()
 const filter = defineModel<FilterRule>({ required: true })
+const props = defineProps<{
+	columnOptions: {
+		label: string
+		value: string
+		query: string
+		data_type: ColumnDataType
+	}[]
+}>()
 
 onMounted(() => {
 	if (valueSelectorType.value === 'select') fetchColumnValues()
@@ -27,6 +32,7 @@ function onColumnChange(column_name: string) {
 }
 
 const columnType = computed(() => {
+	if (!props.columnOptions?.length) return
 	if (!filter.value.column.column_name) return
 	const col = props.columnOptions.find((c) => c.value === filter.value.column.column_name)
 	if (!col) throw new Error(`Column not found: ${filter.value.column.column_name}`)
@@ -80,9 +86,20 @@ const valueSelectorType = computed(
 const distinctColumnValues = ref<any[]>([])
 const fetchingValues = ref(false)
 const fetchColumnValues = debounce((searchTxt: string) => {
+	const option = props.columnOptions.find((c) => c.value === filter.value.column.column_name)
+	if (!option?.query) {
+		fetchingValues.value = false
+		console.warn('Query not found for column:', filter.value.column.column_name)
+		return
+	}
+	// if column_name is 'query'.'column_name' extract column_name
+	const pattern = /'([^']+)'\.'([^']+)'/g
+	const match = pattern.exec(filter.value.column.column_name)
+	const column_name = match ? match[2] : filter.value.column.column_name
+
 	fetchingValues.value = true
-	props
-		.columnValuesProvider(filter.value.column.column_name, searchTxt)
+	return getCachedQuery(option.query)
+		?.getDistinctColumnValues(column_name, searchTxt)
 		.then((values: string[]) => (distinctColumnValues.value = values))
 		.finally(() => (fetchingValues.value = false))
 }, 300)
@@ -141,6 +158,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				:multiple="true"
 				:modelValue="filter.value || []"
 				:options="distinctColumnValues"
+				:loading="fetchingValues"
 				@update:query="fetchColumnValues"
 				@update:modelValue="filter.value = $event.map((v: any) => v.value)"
 			/>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Edit3, RefreshCcw } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
 import {
 	WorkbookChart,
@@ -7,11 +8,11 @@ import {
 	WorkbookQuery,
 } from '../workbook/workbook'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
+import useDashboard from './dashboard'
+import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
-import FilterSelectorDialog from './FilterSelectorDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
-import useDashboard from './dashboard'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -38,21 +39,28 @@ const showTextWidgetCreationDialog = ref(false)
 			<div class="flex items-center justify-between border-x bg-white py-3 px-4 shadow-sm">
 				<div class="text-lg font-semibold">{{ dashboard.doc.title }}</div>
 				<div class="flex gap-2">
+					<DashboardFilterSelector
+						v-if="!dashboard.editing"
+						:queries="props.queries"
+						:charts="props.charts"
+					/>
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
-						icon-left="refresh-ccw"
 						@click="() => dashboard.refresh()"
 					>
-						Refresh
+						<template #icon>
+							<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						</template>
 					</Button>
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
-						icon-left="edit"
 						@click="dashboard.editing = true"
 					>
-						Edit
+						<template #icon>
+							<Edit3 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						</template>
 					</Button>
 					<Button
 						v-if="dashboard.editing"
@@ -117,12 +125,5 @@ const showTextWidgetCreationDialog = ref(false)
 			props.charts.filter((chart) => !selectedCharts.some((c) => c.chart == chart.name))
 		"
 		@select="dashboard.addChart($event)"
-	/>
-
-	<FilterSelectorDialog
-		v-model="showFilterSelectorDialog"
-		:charts="props.charts"
-		:queries="props.queries"
-		@select="dashboard.addFilter($event)"
 	/>
 </template>

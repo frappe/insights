@@ -69,15 +69,9 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			dashboard.doc.items.splice(index, 1)
 		},
 
-		applyFilter(column: DashboardFilterColumn, operator: FilterOperator, value: FilterValue) {
-			const queryFilters = dashboard.filters[column.query] || []
-			queryFilters.push({
-				column: make_column(column.name),
-				operator,
-				value,
-			})
-			dashboard.filters[column.query] = queryFilters
-			dashboard.refresh()
+		applyFilter(query: string, args: FilterArgs) {
+			if (!dashboard.filters[query]) dashboard.filters[query] = []
+			dashboard.filters[query].push(args)
 		},
 
 		refresh() {
@@ -87,7 +81,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					const chart = getCachedChart(chartItem.chart)
 					if (!chart || !chart.doc.query) return
 					const filters = dashboard.filters[chart.doc.query]
-					if (filters?.length) chart.refresh(filters)
+					chart.refresh(filters)
 				})
 		},
 	})

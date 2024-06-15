@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { copy } from '../../helpers'
 import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
@@ -8,8 +9,12 @@ import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 
 const props = defineProps<{
 	filters?: FilterArgs[]
-	columnOptions: { label: string; value: string; data_type: ColumnDataType }[]
-	columnValuesProvider: (column_name: string, searchTxt?: string) => Promise<string[]>
+	columnOptions: {
+		label: string
+		value: string
+		query: string
+		data_type: ColumnDataType
+	}[]
 }>()
 const emit = defineEmits({
 	select: (args: FilterGroupArgs) => true,
@@ -60,7 +65,7 @@ function close() {
 </script>
 
 <template>
-	<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+	<div class="min-w-[36rem] rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 		<div class="flex items-center justify-between pb-4">
 			<h3 class="text-2xl font-semibold leading-6 text-gray-900">Filter</h3>
 			<Button variant="ghost" @click="close" icon="x" size="md"> </Button>
@@ -89,8 +94,7 @@ function close() {
 				/>
 				<FilterRule
 					v-if="filters[i].hasOwnProperty('column')"
-					:column-options="props.columnOptions"
-					:columnValuesProvider="props.columnValuesProvider"
+					:columnOptions="props.columnOptions"
 					:modelValue="(filters[i] as FilterRule)"
 					@update:modelValue="filters[i] = $event"
 				/>
