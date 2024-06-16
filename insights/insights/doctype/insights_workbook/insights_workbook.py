@@ -84,7 +84,7 @@ def get_distinct_column_values(operations, column_name, search_term=None):
 @frappe.whitelist()
 def get_workbooks():
     return frappe.get_list(
-        "Insights Workbook", fields=["name", "title", "creation", "modified"]
+        "Insights Workbook", fields=["name", "title", "owner", "creation", "modified"]
     )
 
 

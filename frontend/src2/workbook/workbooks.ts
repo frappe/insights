@@ -7,6 +7,7 @@ const basePath = 'insights.insights.doctype.insights_workbook.insights_workbook.
 export type WorkbookListItem = {
 	title: string
 	name: string
+	owner: string
 	creation: string
 	modified: string
 	created_from_now: string

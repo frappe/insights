@@ -54,6 +54,7 @@ watchEffect(() => {
 			class="h-full"
 			:columns="[
 				{ label: 'Title', key: 'title' },
+				{ label: 'Owner', key: 'owner' },
 				{ label: 'Created', key: 'created_from_now' },
 				{ label: 'Modified', key: 'modified_from_now' },
 			]"
