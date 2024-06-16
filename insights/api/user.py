@@ -12,15 +12,25 @@ from insights.insights.doctype.insights_team.insights_team import get_user_teams
 
 @frappe.whitelist()
 @check_role("Insights Admin")
-def get_users():
+def get_users(search_term=None):
     """Returns full_name, email, type, teams, last_active"""
     insights_users = get_users_with_role("Insights User")
     insights_admins = get_users_with_role("Insights Admin")
 
+    additional_filters = {}
+    if search_term:
+        additional_filters = {
+            "full_name": ["like", f"%{search_term}%"],
+            "email": ["like", f"%{search_term}%"],
+        }
+
     users = frappe.get_all(
         "User",
-        fields=["name", "full_name", "email", "last_active"],
-        filters={"name": ["in", list(set(insights_users + insights_admins))]},
+        fields=["name", "full_name", "email", "last_active", "user_image"],
+        filters={
+            "name": ["in", list(set(insights_users + insights_admins))],
+            **additional_filters,
+        },
         order_by="last_active desc",
     )
     for user in users:

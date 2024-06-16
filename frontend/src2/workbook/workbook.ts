@@ -1,5 +1,6 @@
 import { safeJSONParse } from '@/utils'
-import { InjectionKey, reactive, toRefs } from 'vue'
+import { call } from 'frappe-ui'
+import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
@@ -8,6 +9,7 @@ import { getUniqueId } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import useQuery from '../query/query'
+import session from '../session'
 
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
@@ -97,8 +99,40 @@ export default function useWorkbook(name: string) {
 		}
 	}
 
+	async function getSharePermissions(): Promise<WorkbookSharePermission[]> {
+		const method =
+			'insights.insights.doctype.insights_workbook.insights_workbook.get_share_permissions'
+		return call(method, { workbook_name: workbook.name }).then((permissions: any) => {
+			return permissions.map((p: any) => {
+				return {
+					email: p.user,
+					full_name: p.full_name,
+					access: p.read ? (p.write ? 'edit' : 'view') : undefined,
+				}
+			})
+		})
+	}
+
+	async function updateSharePermissions(permissions: WorkbookSharePermission[]) {
+		const method =
+			'insights.insights.doctype.insights_workbook.insights_workbook.update_share_permissions'
+		return call(method, {
+			workbook_name: workbook.name,
+			permissions: permissions.map((p) => {
+				return {
+					user: p.email,
+					read: p.access === 'view',
+					write: p.access === 'edit',
+				}
+			}),
+		})
+	}
+
+	const canShare = computed(() => workbook.doc.owner === session.user?.email)
+
 	return reactive({
 		...toRefs(workbook),
+		canShare,
 
 		isActiveTab,
 
@@ -108,6 +142,9 @@ export default function useWorkbook(name: string) {
 		removeChart,
 		addDashboard,
 		removeDashboard,
+
+		getSharePermissions,
+		updateSharePermissions,
 	})
 }
 
@@ -120,6 +157,7 @@ function getWorkbookResource(name: string) {
 		initialDoc: {
 			doctype,
 			name: '',
+			owner: '',
 			title: '',
 			queries: [],
 			charts: [],
@@ -141,6 +179,7 @@ function getWorkbookResource(name: string) {
 type InsightsWorkbook = {
 	doctype: 'Insights Workbook'
 	name: string
+	owner: string
 	title: string
 	queries: WorkbookQuery[]
 	charts: WorkbookChart[]
@@ -199,3 +238,6 @@ export type DashboardFilterColumn = {
 	name: string
 	type: ColumnDataType
 }
+
+export type ShareAccess = 'view' | 'edit' | undefined
+export type WorkbookSharePermission = { email: string; full_name: string; access: ShareAccess }

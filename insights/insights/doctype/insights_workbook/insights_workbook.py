@@ -83,6 +83,75 @@ def get_distinct_column_values(operations, column_name, search_term=None):
 
 @frappe.whitelist()
 def get_workbooks():
-    return frappe.get_all(
+    return frappe.get_list(
         "Insights Workbook", fields=["name", "title", "creation", "modified"]
     )
+
+
+@frappe.whitelist()
+def get_share_permissions(workbook_name):
+    DocShare = frappe.qb.DocType("DocShare")
+    User = frappe.qb.DocType("User")
+
+    share_permissions = (
+        frappe.qb.from_(DocShare)
+        .left_join(User)
+        .on(DocShare.user == User.name)
+        .select(
+            DocShare.user,
+            DocShare.read,
+            DocShare.write,
+            User.full_name,
+        )
+        .where(DocShare.share_doctype == "Insights Workbook")
+        .where(DocShare.share_name == workbook_name)
+        .run(as_dict=True)
+    )
+    owner = frappe.db.get_value("Insights Workbook", workbook_name, "owner")
+    share_permissions.append(
+        {
+            "user": owner,
+            "full_name": frappe.get_value("User", owner, "full_name"),
+            "read": 1,
+            "write": 1,
+        }
+    )
+    return share_permissions
+
+
+@frappe.whitelist()
+def update_share_permissions(workbook_name, permissions):
+    perm_exists = lambda user: frappe.db.exists(
+        "DocShare",
+        {
+            "share_doctype": "Insights Workbook",
+            "share_name": workbook_name,
+            "user": user,
+        },
+    )
+
+    for permission in permissions:
+        if not perm_exists(permission["user"]):
+            doc = frappe.new_doc("DocShare")
+            doc.update(
+                {
+                    "share_doctype": "Insights Workbook",
+                    "share_name": workbook_name,
+                    "user": permission["user"],
+                    "read": permission["read"],
+                    "write": permission["write"],
+                }
+            )
+            doc.save()
+        else:
+            doc = frappe.get_doc(
+                "DocShare",
+                {
+                    "share_doctype": "Insights Workbook",
+                    "share_name": workbook_name,
+                    "user": permission["user"],
+                },
+            )
+            doc.read = permission["read"]
+            doc.write = permission["write"]
+            doc.save()

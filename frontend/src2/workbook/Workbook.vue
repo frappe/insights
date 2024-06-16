@@ -2,11 +2,14 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { provide, watch, watchEffect } from 'vue'
+import { provide, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
-import WorkbookSidebar from './WorkbookSidebar.vue'
 import useWorkbook, { workbookKey } from './workbook'
+import WorkbookShareDialog from './WorkbookShareDialog.vue'
+import WorkbookSidebar from './WorkbookSidebar.vue'
+
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{ name: string }>()
 const route = useRoute()
@@ -22,6 +25,8 @@ watch(
 	() => workbook.isdirty,
 	(dirty) => (window.onbeforeunload = dirty ? function () {} : null)
 )
+
+const showShareDialog = ref(false)
 
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`
@@ -46,6 +51,13 @@ watchEffect(() => {
 			<template #actions>
 				<div class="flex gap-2">
 					<Button
+						v-if="workbook.canShare"
+						variant="outline"
+						@click="showShareDialog = true"
+					>
+						Share
+					</Button>
+					<Button
 						v-show="!workbook.islocal && workbook.isdirty"
 						variant="outline"
 						@click="workbook.discard()"
@@ -68,4 +80,6 @@ watchEffect(() => {
 			<RouterView :key="route.fullPath" />
 		</div>
 	</div>
+
+	<WorkbookShareDialog v-if="workbook.canShare && showShareDialog" v-model="showShareDialog" />
 </template>
