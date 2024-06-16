@@ -6,10 +6,15 @@
 		v-slot="{ open: isComboboxOpen }"
 	>
 		<Popover class="w-full" v-model:show="showOptions" :placement="placement">
-			<template #target="{ open: openPopover, togglePopover }">
+			<template #target="{ open: openPopover, togglePopover, close: closePopover }">
 				<slot
 					name="target"
-					v-bind="{ open: openPopover, togglePopover, isOpen: isComboboxOpen }"
+					v-bind="{
+						open: openPopover,
+						close: closePopover,
+						togglePopover,
+						isOpen: isComboboxOpen,
+					}"
 				>
 					<div class="w-full space-y-1.5">
 						<label v-if="$props.label" class="block text-xs text-gray-600">{{
@@ -53,99 +58,97 @@
 						class="relative mt-1 overflow-hidden rounded-lg bg-white text-base shadow-2xl"
 						:class="bodyClasses"
 					>
-						<ComboboxOptions class="max-h-[15rem] overflow-y-auto px-1.5 pb-1.5" static>
-							<div
-								v-if="!hideSearch"
-								class="sticky top-0 z-10 flex items-stretch space-x-1.5 bg-white py-1.5"
-							>
-								<div class="relative w-full">
-									<ComboboxInput
-										ref="searchInput"
-										class="form-input w-full"
-										type="text"
-										@change="
-											(e) => {
-												query = e.target.value
-											}
-										"
-										:value="query"
-										autocomplete="off"
-										placeholder="Search"
-									/>
-									<button
-										class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
-										@click="selectedValue = null"
-									>
-										<FeatherIcon name="x" class="w-4" />
-									</button>
-								</div>
+						<ComboboxOptions
+							class="flex max-h-[15rem] flex-col overflow-hidden p-1.5"
+							static
+						>
+							<div v-if="!hideSearch" class="relative mb-1 w-full flex-shrink-0">
+								<ComboboxInput
+									ref="searchInput"
+									class="form-input w-full"
+									type="text"
+									:value="query"
+									@change="query = $event.target.value"
+									autocomplete="off"
+									placeholder="Search"
+								/>
+								<button
+									class="absolute right-0 inline-flex h-7 w-7 items-center justify-center"
+									@click="selectedValue = null"
+								>
+									<FeatherIcon name="x" class="w-4" />
+								</button>
 							</div>
-							<div
-								v-for="group in groups"
-								:key="group.key"
-								v-show="group.items.length > 0"
-							>
+							<div class="w-full flex-1 overflow-y-auto">
 								<div
-									v-if="group.group && !group.hideLabel"
-									class="sticky top-10 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
+									v-for="group in groups"
+									:key="group.key"
+									v-show="group.items.length > 0"
 								>
-									{{ group.group }}
-								</div>
-								<ComboboxOption
-									as="template"
-									v-for="(option, idx) in group.items.slice(0, 50)"
-									:key="option?.value || idx"
-									:value="option"
-									v-slot="{ active, selected }"
-								>
-									<li
-										:class="[
-											'flex cursor-pointer items-center justify-between rounded px-2.5 py-1.5 text-base',
-											{ 'bg-gray-100': active },
-										]"
+									<div
+										v-if="group.group && !group.hideLabel"
+										class="sticky top-10 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
 									>
-										<div class="flex flex-1 gap-2 overflow-hidden">
-											<div
-												v-if="$slots['item-prefix'] || $props.multiple"
-												class="flex-shrink-0"
-											>
-												<slot
-													name="item-prefix"
-													v-bind="{ active, selected, option }"
-												>
-													<Square
-														v-show="!isOptionSelected(option)"
-														class="h-4 w-4 text-gray-700"
-													/>
-													<CheckSquare
-														v-show="isOptionSelected(option)"
-														class="h-4 w-4 text-gray-700"
-													/>
-												</slot>
-											</div>
-											<span class="flex-1 truncate">
-												{{ getLabel(option) }}
-											</span>
-										</div>
-
-										<div
-											v-if="$slots['item-suffix'] || option?.description"
-											class="ml-2 flex-shrink-0"
+										{{ group.group }}
+									</div>
+									<ComboboxOption
+										as="template"
+										v-for="(option, idx) in group.items.slice(0, 50)"
+										:key="option?.value || idx"
+										:value="option"
+										v-slot="{ active, selected }"
+									>
+										<li
+											:class="[
+												'flex h-7 cursor-pointer items-center justify-between rounded px-2.5 text-base',
+												{ 'bg-gray-100': active },
+											]"
 										>
-											<slot
-												name="item-suffix"
-												v-bind="{ active, selected, option }"
+											<div
+												class="flex flex-1 items-center gap-2 overflow-hidden"
 											>
 												<div
-													v-if="option?.description"
-													class="text-sm text-gray-600"
+													v-if="$slots['item-prefix'] || $props.multiple"
+													class="flex-shrink-0"
 												>
-													{{ option.description }}
+													<slot
+														name="item-prefix"
+														v-bind="{ active, selected, option }"
+													>
+														<Square
+															v-show="!isOptionSelected(option)"
+															class="h-4 w-4 text-gray-700"
+														/>
+														<CheckSquare
+															v-show="isOptionSelected(option)"
+															class="h-4 w-4 text-gray-700"
+														/>
+													</slot>
 												</div>
-											</slot>
-										</div>
-									</li>
-								</ComboboxOption>
+												<span class="flex-1 truncate">
+													{{ getLabel(option) }}
+												</span>
+											</div>
+
+											<div
+												v-if="$slots['item-suffix'] || option?.description"
+												class="ml-2 flex-shrink-0"
+											>
+												<slot
+													name="item-suffix"
+													v-bind="{ active, selected, option }"
+												>
+													<div
+														v-if="option?.description"
+														class="text-sm text-gray-600"
+													>
+														{{ option.description }}
+													</div>
+												</slot>
+											</div>
+										</li>
+									</ComboboxOption>
+								</div>
 							</div>
 							<li
 								v-if="groups.length == 0"
