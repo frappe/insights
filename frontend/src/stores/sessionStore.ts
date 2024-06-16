@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 const emptyUser: User = {
-	user_id: '',
+	email: '',
 	first_name: '',
 	last_name: '',
 	full_name: '',
@@ -18,7 +18,7 @@ const sessionStore = defineStore('insights:session', function () {
 	const initialized = ref(false)
 	const user = ref(emptyUser)
 
-	const isLoggedIn = computed(() => user.value.user_id && user.value.user_id !== 'Guest')
+	const isLoggedIn = computed(() => user.value.email && user.value.email !== 'Guest')
 	const isAuthorized = computed(() => user.value.is_admin || user.value.is_user)
 
 	async function initialize(force: boolean = false) {
@@ -82,6 +82,7 @@ function getSessionFromCookies() {
 		.split('; ')
 		.map((c) => c.split('='))
 		.reduce((acc, [key, value]) => {
+			key = key == 'user_id' ? 'email' : key
 			acc[key] = decodeURIComponent(value)
 			return acc
 		}, {} as any)

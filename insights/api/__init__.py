@@ -19,17 +19,25 @@ def get_app_version():
 def get_user_info():
     is_admin = frappe.db.exists(
         "Has Role",
-        {"parent": frappe.session.user, "role": ["in", ("Insights Admin", "System Manager")]},
+        {
+            "parent": frappe.session.user,
+            "role": ["in", ("Insights Admin", "System Manager")],
+        },
     )
     is_user = frappe.db.exists(
         "Has Role",
-        {"parent": frappe.session.user, "role": ["in", ("Insights User", "System Manager")]},
+        {
+            "parent": frappe.session.user,
+            "role": ["in", ("Insights User", "System Manager")],
+        },
     )
 
-    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+    user = frappe.db.get_value(
+        "User", frappe.session.user, ["first_name", "last_name"], as_dict=1
+    )
 
     return {
-        "user_id": frappe.session.user,
+        "email": frappe.session.user,
         "first_name": user.get("first_name"),
         "last_name": user.get("last_name"),
         "is_admin": is_admin or frappe.session.user == "Administrator",

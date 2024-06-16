@@ -89,9 +89,9 @@ const queryBuilderTypes = ref([
 	},
 ])
 
-const user_id = sessionStore().user.user_id
+const email = sessionStore().user.email
 const filters = useStorage('insights:query-list-filters', {
-	owner: ['=', user_id],
+	owner: ['=', email],
 })
 const queries = computed(() => {
 	if (isEmptyObj(filters.value)) {

@@ -2,7 +2,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
 const emptyUser: User = {
-	user_id: '',
+	email: '',
 	first_name: '',
 	last_name: '',
 	full_name: '',
@@ -26,7 +26,7 @@ const session = reactive({
 })
 
 // @ts-ignore
-session.isLoggedIn = computed(() => session.user.user_id && session.user.user_id !== 'Guest')
+session.isLoggedIn = computed(() => session.user.email && session.user.email !== 'Guest')
 // @ts-ignore
 session.isAuthorized = computed(() => session.user.is_admin || session.user.is_user)
 
@@ -71,6 +71,7 @@ function getSessionFromCookies() {
 		.split('; ')
 		.map((c) => c.split('='))
 		.reduce((acc, [key, value]) => {
+			key = key === 'user_id' ? 'email' : key
 			acc[key] = decodeURIComponent(value)
 			return acc
 		}, {} as any)

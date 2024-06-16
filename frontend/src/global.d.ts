@@ -5,7 +5,7 @@ declare type HashString = `#${string}`
 declare type RGBString = `rgb(${number}, ${number}, ${number})`
 
 interface User {
-	user_id: string
+	email: string
 	first_name: string
 	last_name: string
 	full_name: string
