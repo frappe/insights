@@ -43,6 +43,7 @@ export default function useDocumentResource<T extends object>(
 			}).catch(showErrorToast)
 			this.doc = tranformFn({ ...doc })
 			this.originalDoc = copy(this.doc)
+			this.name = doc.name
 			this.islocal = false
 			await Promise.all(Array.from(afterInsertFns).map((fn) => fn()))
 			return doc
