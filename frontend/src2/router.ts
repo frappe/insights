@@ -47,6 +47,11 @@ const routes = [
 			},
 		],
 	},
+	{
+		path: '/:pathMatch(.*)*',
+		component: () => import('@/pages/NotFound.vue'),
+		meta: { hideSidebar: true },
+	}
 ]
 
 let router = createRouter({
