@@ -3,6 +3,7 @@ import { computed, inject, ref } from 'vue'
 import session from '../session'
 import useUserStore from './users'
 import { ShareAccess, Workbook, workbookKey, WorkbookSharePermission } from './workbook'
+import { createToast } from '../helpers/toasts'
 
 const show = defineModel()
 const searchTxt = ref('')
@@ -79,6 +80,10 @@ const saveDisabled = computed(() => {
 function updatePermissions() {
 	workbook.updateSharePermissions(userPermissions.value)
 	show.value = false
+	createToast({
+		title: 'Permissions updated',
+		variant: 'success',
+	})
 }
 </script>
 

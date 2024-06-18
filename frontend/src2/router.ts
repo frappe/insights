@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, RouteLocation } from 'vue-router'
 import session from './session.ts'
 
 const routes = [
@@ -24,7 +24,7 @@ const routes = [
 		name: 'Workbook',
 		path: '/workbook/:name',
 		component: () => import('./workbook/Workbook.vue'),
-		redirect: (to: any) => `/workbook/${to.params.name}/query/0`,
+		redirect: (to: RouteLocation) => `/workbook/${to.params.name}/query/0`,
 		meta: { hideSidebar: true },
 		children: [
 			{
@@ -51,11 +51,12 @@ const routes = [
 		path: '/:pathMatch(.*)*',
 		component: () => import('@/pages/NotFound.vue'),
 		meta: { hideSidebar: true },
-	}
+	},
 ]
 
 let router = createRouter({
 	history: createWebHistory('/insights_v3'),
+	// @ts-ignore
 	routes,
 })
 
