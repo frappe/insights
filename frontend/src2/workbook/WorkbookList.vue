@@ -1,10 +1,11 @@
-<script setup lang="ts">
+<script setup lang="tsx">
 import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import { ListView } from 'frappe-ui'
+import { Avatar, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUniqueId } from '../helpers'
+import useUserStore from './users'
 import useWorkbooks, { WorkbookListItem } from './workbooks'
 
 const router = useRouter()
@@ -17,6 +18,41 @@ const filteredWorkbooks = computed(() => {
 	return workbookStore.workbooks.filter((workbook) =>
 		workbook.title.toLowerCase().includes(searchQuery.value.toLowerCase())
 	)
+})
+
+const userStore = useUserStore()
+const listOptions = ref({
+	columns: [
+		{ label: 'Title', key: 'title' },
+		{
+			label: 'Owner',
+			key: 'owner',
+			prefix: (props: any) => {
+				const workbook = props.row as WorkbookListItem
+				const imageUrl = userStore.getUser(workbook.owner)?.user_image
+				return <Avatar size="sm" label={workbook.owner} image={imageUrl} />
+			},
+		},
+		{ label: 'Created', key: 'created_from_now' },
+		{ label: 'Modified', key: 'modified_from_now' },
+	],
+	rows: filteredWorkbooks,
+	rowKey: 'name',
+	options: {
+		showTooltip: false,
+		getRowRoute: (workbook: WorkbookListItem) => ({
+			path: `/workbook/${workbook.name}`,
+		}),
+		emptyState: {
+			title: 'No workbooks.',
+			description: 'No workbooks to display.',
+			button: {
+				label: 'New Workbook',
+				variant: 'solid',
+				onClick: openNewWorkbook,
+			},
+		},
+	},
 })
 
 function openNewWorkbook() {
@@ -50,33 +86,6 @@ watchEffect(() => {
 				</template>
 			</FormControl>
 		</div>
-		<ListView
-			class="h-full"
-			:columns="[
-				{ label: 'Title', key: 'title' },
-				{ label: 'Owner', key: 'owner' },
-				{ label: 'Created', key: 'created_from_now' },
-				{ label: 'Modified', key: 'modified_from_now' },
-			]"
-			:rows="filteredWorkbooks"
-			:row-key="'name'"
-			:options="{
-				showTooltip: false,
-				getRowRoute: (workbook: WorkbookListItem) => ({
-					name: 'Workbook',
-					params: { name: workbook.name },
-				}),
-				emptyState: {
-					title: 'No workbooks.',
-					description: 'No workbooks to display.',
-					button: {
-						label: 'New Workbook',
-						variant: 'solid',
-						onClick: openNewWorkbook,
-					},
-				},
-			}"
-		>
-		</ListView>
+		<ListView class="h-full" v-bind="listOptions"> </ListView>
 	</div>
 </template>
