@@ -141,17 +141,17 @@ const routes = [
 		},
 	},
 	{
-		path: '/not-found',
-		name: 'Not Found',
-		component: () => import('@/pages/NotFound.vue'),
+		path: '/trial-expired',
+		name: 'Trial Expired',
+		component: () => import('@/pages/TrialExpired.vue'),
 		meta: {
 			hideSidebar: true,
 		},
 	},
 	{
-		path: '/trial-expired',
-		name: 'Trial Expired',
-		component: () => import('@/pages/TrialExpired.vue'),
+		path: '/:pathMatch(.*)*',
+		name: 'Not Found',
+		component: () => import('@/pages/NotFound.vue'),
 		meta: {
 			hideSidebar: true,
 		},
