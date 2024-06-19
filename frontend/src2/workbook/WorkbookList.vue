@@ -70,7 +70,7 @@ watchEffect(() => {
 	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<PageBreadcrumbs class="h-7" :items="[{ label: 'Workbooks' }]" />
 		<div class="flex items-center gap-2">
-			<Button label="New Notebook" variant="solid" @click="openNewWorkbook">
+			<Button label="New Workbook" variant="solid" @click="openNewWorkbook">
 				<template #prefix>
 					<PlusIcon class="w-4" />
 				</template>
