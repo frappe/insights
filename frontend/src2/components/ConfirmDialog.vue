@@ -17,7 +17,14 @@
 		<template #actions>
 			<div class="flex items-center justify-end space-x-2">
 				<Button @click="show = false">Cancel</Button>
-				<Button variant="solid" @click="onConfirm" :loading="isLoading"> Confirm </Button>
+				<Button
+					variant="solid"
+					:theme="$props.theme"
+					@click="onConfirm"
+					:loading="isLoading"
+				>
+					Confirm
+				</Button>
 			</div>
 		</template>
 	</Dialog>
@@ -27,7 +34,7 @@ import { ErrorMessage, FormControl } from 'frappe-ui'
 
 export default {
 	name: 'ConfirmDialog',
-	props: ['title', 'message', 'fields', 'onSuccess'],
+	props: ['title', 'message', 'theme', 'fields', 'onSuccess'],
 	data() {
 		return {
 			show: true,

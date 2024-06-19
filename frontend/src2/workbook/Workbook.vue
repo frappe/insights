@@ -6,7 +6,7 @@ import { provide, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
-import WorkbookShareDialog from './WorkbookShareDialog.vue'
+import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 
 defineOptions({ inheritAttrs: false })
@@ -25,8 +25,6 @@ watch(
 	() => workbook.isdirty,
 	(dirty) => (window.onbeforeunload = dirty ? function () {} : null)
 )
-
-const showShareDialog = ref(false)
 
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`
@@ -49,30 +47,7 @@ watchEffect(() => {
 				</div>
 			</template>
 			<template #actions>
-				<div class="flex gap-2">
-					<Button
-						v-if="workbook.canShare"
-						variant="outline"
-						@click="showShareDialog = true"
-					>
-						Share
-					</Button>
-					<Button
-						v-show="!workbook.islocal && workbook.isdirty"
-						variant="outline"
-						@click="workbook.discard()"
-					>
-						Discard
-					</Button>
-					<Button
-						v-show="workbook.islocal || workbook.isdirty"
-						variant="solid"
-						:loading="workbook.saving"
-						@click="workbook.save()"
-					>
-						Save
-					</Button>
-				</div>
+				<WorkbookNavbarActions />
 			</template>
 		</Navbar>
 		<div class="relative flex flex-1 overflow-hidden bg-gray-50">
@@ -80,6 +55,4 @@ watchEffect(() => {
 			<RouterView :key="route.fullPath" />
 		</div>
 	</div>
-
-	<WorkbookShareDialog v-if="workbook.canShare && showShareDialog" v-model="showShareDialog" />
 </template>

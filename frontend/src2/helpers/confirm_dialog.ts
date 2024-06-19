@@ -6,12 +6,14 @@ export const dialogs = ref<VNode[]>([])
 export function confirmDialog({
 	title = 'Untitled',
 	message = '',
+	theme = '',
 	fields = [],
 	onSuccess = () => {},
 }) {
 	const component = h(ConfirmDialog, {
 		title,
 		message,
+		theme,
 		fields,
 		onSuccess,
 	})

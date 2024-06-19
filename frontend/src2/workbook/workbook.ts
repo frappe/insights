@@ -6,6 +6,7 @@ import useChart from '../charts/chart'
 import { ChartConfig, ChartType } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
 import { getUniqueId } from '../helpers'
+import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import useQuery from '../query/query'
@@ -145,6 +146,18 @@ export default function useWorkbook(name: string) {
 
 		getSharePermissions,
 		updateSharePermissions,
+
+		delete() {
+			confirmDialog({
+				title: 'Delete Workbook',
+				message: 'Are you sure you want to delete this workbook?',
+				theme: 'red',
+				onSuccess: () => {
+					workbook.delete()
+					router.replace('/workbook')
+				},
+			})
+		},
 	})
 }
 
