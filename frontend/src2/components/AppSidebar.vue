@@ -36,13 +36,18 @@
 
 <script setup lang="ts">
 import UserDropdown from './UserDropdown.vue'
-import { Book } from 'lucide-vue-next'
+import { Book, LayoutGrid } from 'lucide-vue-next'
 import { ref } from 'vue'
 import CollapseSidebar from './Icons/CollapseSidebar.vue'
 import SidebarLink from './SidebarLink.vue'
 
 const isSidebarCollapsed = ref(false)
 const links = [
+	{
+		label: 'Dashboards',
+		icon: LayoutGrid,
+		to: 'DashboardList',
+	},
 	{
 		label: 'Workbooks',
 		icon: Book,
