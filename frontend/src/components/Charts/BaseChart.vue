@@ -50,8 +50,8 @@ function downloadChart() {
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col rounded pb-3">
-		<ChartTitle :title="title" />
+	<div class="flex h-full w-full flex-col rounded">
+		<ChartTitle v-if="title" :title="title" />
 		<div ref="chartRef" class="w-full flex-1 overflow-hidden">
 			<slot></slot>
 		</div>

@@ -2,17 +2,13 @@
 import { LoadingIndicator } from 'frappe-ui'
 import { provide } from 'vue'
 import DataTable from '../components/DataTable.vue'
-import { AXIS_CHARTS } from '../types/chart.types'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useChart from './chart'
-import AxisChartConfigForm from './components/AxisChartConfigForm.vue'
+import ChartConfigForm from './components/ChartConfigForm.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
-import DonutChartConfigForm from './components/DonutChartConfigForm.vue'
-import NumberChartConfigForm from './components/NumberChartConfigForm.vue'
-import TableChartConfigForm from './components/TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
@@ -52,16 +48,6 @@ if (!chart.doc.config.order_by) {
 						class="flex cursor-pointer items-center gap-2 truncate py-2 px-3 hover:underline"
 					>
 						<span>{{ column.name }}</span>
-						<!-- <ChevronDown
-							v-if="chart.sortOrder[column.name] === 'desc'"
-							class="h-4 w-4 text-gray-700"
-							stroke-width="1.5"
-						/>
-						<ChevronUp
-							v-if="chart.sortOrder[column.name] === 'asc'"
-							class="h-4 w-4 text-gray-700"
-							stroke-width="1.5"
-						/> -->
 					</div>
 				</template>
 			</DataTable>
@@ -70,39 +56,14 @@ if (!chart.doc.config.order_by) {
 			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<hr class="my-1 border-t border-gray-200" />
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
-			<template v-if="chart.doc.query">
-				<hr class="my-1 border-t border-gray-200" />
-				<NumberChartConfigForm
-					v-if="chart.doc.chart_type == 'Number'"
-					v-model="chart.doc.config"
-					:dimensions="chart.baseQuery.dimensions"
-					:measures="chart.baseQuery.measures"
-				/>
-				<DonutChartConfigForm
-					v-if="chart.doc.chart_type == 'Donut'"
-					v-model="chart.doc.config"
-					:dimensions="chart.baseQuery.dimensions"
-					:measures="chart.baseQuery.measures"
-				/>
-				<TableChartConfigForm
-					v-if="chart.doc.chart_type == 'Table'"
-					v-model="chart.doc.config"
-					:dimensions="chart.baseQuery.dimensions"
-					:measures="chart.baseQuery.measures"
-				/>
-				<AxisChartConfigForm
-					v-if="AXIS_CHARTS.includes(chart.doc.chart_type)"
-					v-model="chart.doc.config"
-					:chart-type="chart.doc.chart_type"
-					:dimensions="chart.baseQuery.dimensions"
-					:measures="chart.baseQuery.measures"
-				/>
-				<hr class="my-1 border-t border-gray-200" />
-				<ChartSortConfig
-					v-model="chart.doc.config.order_by"
-					:column-options="chart.dataQuery.result.columnOptions"
-				/>
-			</template>
+			<hr class="my-1 border-t border-gray-200" />
+			<FormControl class="p-3 pb-0" v-model="chart.doc.title" label="Title" />
+			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
+			<hr class="my-1 border-t border-gray-200" />
+			<ChartSortConfig
+				v-model="chart.doc.config.order_by"
+				:column-options="chart.dataQuery.result.columnOptions"
+			/>
 		</div>
 	</div>
 </template>

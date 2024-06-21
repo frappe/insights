@@ -44,7 +44,7 @@ const eChartOptions = computed(() => {
 </script>
 
 <template>
-	<BaseChart v-if="eChartOptions" class="p-2" :options="eChartOptions" />
+	<BaseChart v-if="eChartOptions" class="p-2" :title="chart.doc.title" :options="eChartOptions" />
 	<div v-if="chart.doc.chart_type == 'Number'" class="h-full w-full">
 		<NumberChart :chart="chart" />
 	</div>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import Checkbox from '@/components/Controls/Checkbox.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
-import { Dimension, Measure } from '../../types/query.types'
 import { NumberChartConfig } from '../../types/chart.types'
+import { Dimension, Measure } from '../../types/query.types'
 
 const props = defineProps<{
 	dimensions: Dimension[]
@@ -13,9 +14,8 @@ const config = defineModel<NumberChartConfig>({
 	required: true,
 	default: () => ({
 		number_column: '',
-		date_column: '',
-		target_column: '',
-		target_value: undefined,
+		comparison: false,
+		sparkline: false,
 	}),
 })
 
@@ -44,20 +44,25 @@ const measures = computed(() =>
 			:modelValue="config.number_column"
 			@update:modelValue="config.number_column = $event?.value"
 		/>
-		<!-- <Autocomplete
+		<Autocomplete
 			label="Date"
 			:showFooter="true"
 			:options="date_dimensions"
 			:modelValue="config.date_column"
 			@update:modelValue="config.date_column = $event?.value"
 		/>
-		<Autocomplete
-			label="Target"
-			:showFooter="true"
-			:options="measures"
-			:modelValue="config.target_column"
-			@update:modelValue="config.target_column = $event?.value"
+
+		<FormControl v-model="config.prefix" label="Prefix" />
+		<FormControl v-model="config.suffix" label="Suffix" />
+		<FormControl v-model="config.precision" label="Precision" type="number" />
+		<Checkbox v-model="config.shorten_numbers" label="Show short numbers" />
+
+		<Checkbox v-if="config.date_column" v-model="config.comparison" label="Show comparison" />
+		<Checkbox
+			v-if="config.comparison"
+			v-model="config.negative_is_better"
+			label="Negative is better"
 		/>
-		<FormControl v-model="config.target_value" label="Target Value" type="number" /> -->
+		<Checkbox v-if="config.date_column" v-model="config.sparkline" label="Show sparkline" />
 	</div>
 </template>

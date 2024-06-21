@@ -12,13 +12,14 @@ export type AxisChartConfig = {
 
 export type NumberChartConfig = {
 	number_column: string
-	target_value?: number
-	target_column?: string
+	comparison: boolean
+	sparkline: boolean
 	date_column?: string
 	shorten_numbers?: boolean
 	precision?: number
 	prefix?: string
 	suffix?: string
+	negative_is_better?: boolean
 }
 
 export type DountChartConfig = {
