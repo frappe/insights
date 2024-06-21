@@ -106,7 +106,6 @@ if (!chart.doc.config.order_by) {
 				/>
 				<hr class="my-1 border-t border-gray-200" />
 				<ChartSortConfig
-					v-if="chart.dataQuery.result.columnOptions"
 					v-model="chart.doc.config.order_by"
 					:column-options="chart.dataQuery.result.columnOptions"
 				/>
