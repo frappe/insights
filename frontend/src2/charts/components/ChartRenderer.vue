@@ -9,7 +9,7 @@ import {
 	getLineChartOptions,
 	getRowChartOptions,
 } from '../helpers'
-import MetricChart from './MetricChart.vue'
+import NumberChart from './NumberChart.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const chart = props.chart
@@ -45,8 +45,8 @@ const eChartOptions = computed(() => {
 
 <template>
 	<BaseChart v-if="eChartOptions" class="p-2" :options="eChartOptions" />
-	<div v-if="chart.doc.chart_type == 'Metric'" class="h-full w-full">
-		<MetricChart :chart="chart" />
+	<div v-if="chart.doc.chart_type == 'Number'" class="h-full w-full">
+		<NumberChart :chart="chart" />
 	</div>
 	<DataTable
 		v-if="chart.doc.chart_type == 'Table'"

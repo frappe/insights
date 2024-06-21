@@ -9,7 +9,7 @@ import {
 	AXIS_CHARTS,
 	AxisChartConfig,
 	DountChartConfig,
-	MetricChartConfig,
+	NumberChartConfig,
 	TableChartConfig,
 } from './helpers'
 
@@ -74,9 +74,9 @@ function makeChart(workbookChart: WorkbookChart) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
 			return fetchAxisChartData(_config)
 		}
-		if (chart.doc.chart_type === 'Metric') {
-			const _config = unref(chart.doc.config as MetricChartConfig)
-			return fetchMetricChartData(_config)
+		if (chart.doc.chart_type === 'Number') {
+			const _config = unref(chart.doc.config as NumberChartConfig)
+			return fetchNumberChartData(_config)
 		}
 		if (chart.doc.chart_type === 'Donut') {
 			const _config = unref(chart.doc.config as DountChartConfig)
@@ -131,13 +131,13 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 	}
 
-	function fetchMetricChartData(config: MetricChartConfig) {
+	function fetchNumberChartData(config: NumberChartConfig) {
 		if (config.target_value && config.target_column) {
 			console.warn('Target value and target column cannot be used together')
 			return
 		}
-		if (config.metric_column === config.target_column) {
-			console.warn('Metric and target cannot be the same')
+		if (config.number_column === config.target_column) {
+			console.warn('Number and target cannot be the same')
 			return
 		}
 		if (config.target_column && config.date_column) {
@@ -145,9 +145,9 @@ function makeChart(workbookChart: WorkbookChart) {
 			return
 		}
 
-		const metric = chart.baseQuery.getMeasure(config.metric_column)
-		if (!metric) {
-			console.warn('Metric column not found')
+		const number = chart.baseQuery.getMeasure(config.number_column)
+		if (!number) {
+			console.warn('Number column not found')
 			return
 		}
 
@@ -156,15 +156,15 @@ function makeChart(workbookChart: WorkbookChart) {
 			? Number(config.target_value)
 			: chart.baseQuery.getMeasure(config.target_column as string)
 
-		prepareMetricQuery(metric, target, date)
+		prepareNumberQuery(number, target, date)
 		applySortOrder()
 		return chart.dataQuery.execute()
 	}
 
-	function prepareMetricQuery(metric: Measure, target?: Measure | Number, date?: Dimension) {
+	function prepareNumberQuery(number: Measure, target?: Measure | Number, date?: Dimension) {
 		if (typeof target === 'number' && target > 0) {
 			chart.dataQuery.addSummarize({
-				measures: [metric],
+				measures: [number],
 				dimensions: [],
 			})
 			chart.dataQuery.addMutate(
@@ -176,17 +176,17 @@ function makeChart(workbookChart: WorkbookChart) {
 			)
 		} else if (typeof target === 'object') {
 			chart.dataQuery.addSummarize({
-				measures: [metric, target] as Measure[],
+				measures: [number, target] as Measure[],
 				dimensions: [],
 			})
 		} else if (date) {
 			chart.dataQuery.addSummarize({
-				measures: [metric],
+				measures: [number],
 				dimensions: [date],
 			})
 		} else {
 			chart.dataQuery.addSummarize({
-				measures: [metric],
+				measures: [number],
 				dimensions: [],
 			})
 		}

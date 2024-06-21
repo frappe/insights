@@ -32,7 +32,7 @@ const icon = computed(() => {
 			return Filter
 		case 'Table':
 			return Table2
-		case 'Metric':
+		case 'Number':
 			return BatteryMedium
 		default:
 			throw new Error(`Unknown chart type: ${props.chartType}`)

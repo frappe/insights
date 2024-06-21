@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
-import { MetricChartConfig } from '../helpers'
+import { NumberChartConfig } from '../helpers'
 
 const props = defineProps<{
 	dimensions: Dimension[]
 	measures: Measure[]
 }>()
 
-const config = defineModel<MetricChartConfig>({
+const config = defineModel<NumberChartConfig>({
 	required: true,
 	default: () => ({
-		metric_column: '',
+		number_column: '',
 		date_column: '',
 		target_column: '',
 		target_value: undefined,
@@ -37,11 +37,11 @@ const measures = computed(() =>
 <template>
 	<div class="flex flex-col gap-3 p-3">
 		<Autocomplete
-			label="Metric"
+			label="Number"
 			:showFooter="true"
 			:options="measures"
-			:modelValue="config.metric_column"
-			@update:modelValue="config.metric_column = $event?.value"
+			:modelValue="config.number_column"
+			@update:modelValue="config.number_column = $event?.value"
 		/>
 		<!-- <Autocomplete
 			label="Date"

@@ -11,13 +11,13 @@ import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import DonutChartConfigForm from './components/DonutChartConfigForm.vue'
-import MetricChartConfigForm from './components/MetricChartConfigForm.vue'
+import NumberChartConfigForm from './components/NumberChartConfigForm.vue'
 import TableChartConfigForm from './components/TableChartConfigForm.vue'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
 	DountChartConfig,
-	MetricChartConfig,
+	NumberChartConfig,
 	TableChartConfig,
 } from './helpers'
 
@@ -79,9 +79,9 @@ if (!chart.doc.config.order_by) {
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 			<template v-if="chart.doc.query">
 				<hr class="my-1 border-t border-gray-200" />
-				<MetricChartConfigForm
-					v-if="chart.doc.chart_type == 'Metric'"
-					v-model="(chart.doc.config as MetricChartConfig)"
+				<NumberChartConfigForm
+					v-if="chart.doc.chart_type == 'Number'"
+					v-model="(chart.doc.config as NumberChartConfig)"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>

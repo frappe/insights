@@ -3,7 +3,7 @@ import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row'] //, 'Scatter', 'Area']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = ['Metric', ...AXIS_CHARTS, 'Donut', 'Table'] // 'Funnel',
+export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Table'] // 'Funnel',
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -12,8 +12,8 @@ export type AxisChartConfig = {
 	split_by: string
 }
 
-export type MetricChartConfig = {
-	metric_column: string
+export type NumberChartConfig = {
+	number_column: string
 	target_value?: number
 	target_column?: string
 	date_column?: string
@@ -34,7 +34,7 @@ export type TableChartConfig = {
 	values: string[]
 }
 
-export type ChartConfig = AxisChartConfig | MetricChartConfig | DountChartConfig | TableChartConfig
+export type ChartConfig = AxisChartConfig | NumberChartConfig | DountChartConfig | TableChartConfig
 
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	// categorize the columns into dimensions and measures and then into discrete and continuous
