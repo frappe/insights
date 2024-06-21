@@ -20,5 +20,5 @@ export function createToast(toastOptions: ToastOptions) {
 		message: options.message,
 		variant: toastOptions.variant,
 	})
-	toast(markRaw(component))
+	toast.custom(markRaw(component))
 }

@@ -8,10 +8,11 @@ const props = defineProps<{ chart: Chart }>()
 
 const config = computed(() => props.chart.doc.config as MetricChartConfig)
 const formattedValue = computed(() => {
-	const rows = props.chart.dataQuery.result.rows
-	if (!rows.length) return
+	if (!config.value.metric_column || !props.chart.dataQuery.result.rows) {
+		return null
+	}
 
-	if (!config.value.metric_column) return
+	const rows = props.chart.dataQuery.result.rows
 	const metric_values = rows.map((row) => row[config.value.metric_column])
 	const _value = metric_values.reduce((a, b) => a + b, 0)
 

@@ -45,7 +45,7 @@ const eChartOptions = computed(() => {
 
 <template>
 	<BaseChart v-if="eChartOptions" class="p-2" :options="eChartOptions" />
-	<div v-if="chart.doc.chart_type == 'Metric'" class="rounded border">
+	<div v-if="chart.doc.chart_type == 'Metric'" class="h-full w-full">
 		<MetricChart :chart="chart" />
 	</div>
 	<DataTable
