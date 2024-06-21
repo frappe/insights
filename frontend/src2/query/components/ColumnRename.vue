@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight, TextCursorInput } from 'lucide-vue-next'
 import { ref } from 'vue'
+import { QueryResultColumn } from '../../types/query.types'
 
 const emit = defineEmits({
 	rename: (newName: string) => true,

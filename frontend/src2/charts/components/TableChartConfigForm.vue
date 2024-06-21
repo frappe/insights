@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { TableChartConfig } from '../helpers'
+import { Dimension, Measure } from '../../types/query.types'
+import { TableChartConfig } from '../../types/chart.types'
 
 const props = defineProps<{
 	dimensions: Dimension[]

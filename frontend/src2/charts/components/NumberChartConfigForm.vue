@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
-import { NumberChartConfig } from '../helpers'
+import { Dimension, Measure } from '../../types/query.types'
+import { NumberChartConfig } from '../../types/chart.types'
 
 const props = defineProps<{
 	dimensions: Dimension[]

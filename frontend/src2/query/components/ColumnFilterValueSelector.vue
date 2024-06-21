@@ -3,6 +3,7 @@ import { watchDebounced } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { CheckSquare, SearchIcon, Square } from 'lucide-vue-next'
 import { ref } from 'vue'
+import { QueryResultColumn } from '../../types/query.types'
 
 const props = defineProps<{
 	column: QueryResultColumn

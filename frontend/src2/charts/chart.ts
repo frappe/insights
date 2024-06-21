@@ -4,14 +4,15 @@ import { computed, reactive, unref } from 'vue'
 import { getUniqueId, waitUntil } from '../helpers'
 import { column, count, expression, mutate } from '../query/helpers'
 import { Query, getCachedQuery, makeQuery } from '../query/query'
-import { WorkbookChart } from '../workbook/workbook'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
 	DountChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
-} from './helpers'
+} from '../types/chart.types'
+import { Dimension, FilterArgs, Measure } from '../types/query.types'
+import { WorkbookChart } from '../types/workbook.types'
 
 const charts = new Map<string, Chart>()
 

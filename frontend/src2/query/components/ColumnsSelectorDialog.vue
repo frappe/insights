@@ -3,6 +3,7 @@ import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { Query } from '../query'
 import DataTypeIcon from './DataTypeIcon.vue'
+import { QueryResultColumn } from '../../types/query.types'
 
 const emit = defineEmits({
 	select: (columns: string[]) => true,

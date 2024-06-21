@@ -1,4 +1,5 @@
 import { FIELDTYPES } from '@/utils'
+import { ColumnDataType, FilterExpression, FilterRule } from '../../types/query.types'
 
 export function getValueSelectorType(filter: FilterRule, columnType: ColumnDataType) {
 	if (!filter.column.column_name || !filter.operator) return 'text' // default to text

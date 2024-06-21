@@ -3,7 +3,6 @@ import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
-import { ChartConfig, ChartType } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
 import { getUniqueId } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
@@ -11,6 +10,11 @@ import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import useQuery from '../query/query'
 import session from '../session'
+import type {
+	InsightsWorkbook,
+	WorkbookChart,
+	WorkbookSharePermission,
+} from '../types/workbook.types'
 
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
@@ -32,7 +36,7 @@ export default function useWorkbook(name: string) {
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
 		router.replace(
-			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`
+			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`,
 		)
 	}
 	function isActiveTab(type: 'query' | 'chart' | 'dashboard', idx: number) {
@@ -188,69 +192,3 @@ function getWorkbookResource(name: string) {
 	})
 	return workbook
 }
-
-type InsightsWorkbook = {
-	doctype: 'Insights Workbook'
-	name: string
-	owner: string
-	title: string
-	queries: WorkbookQuery[]
-	charts: WorkbookChart[]
-	dashboards: WorkbookDashboard[]
-}
-
-export type WorkbookQuery = {
-	name: string
-	title: string
-	operations: Operation[]
-}
-
-export type WorkbookChart = {
-	name: string
-	title: string
-	query: string
-	chart_type: ChartType
-	config: ChartConfig & {
-		order_by: OrderByArgs[]
-	}
-}
-
-export type WorkbookDashboard = {
-	name: string
-	title: string
-	items: WorkbookDashboardItem[]
-}
-export type WorkbookDashboardItem =
-	| WorkbookDashboardChart
-	| WorkbookDashboardFilter
-	| WorkbookDashboardText
-export type Layout = {
-	i: string
-	x: number
-	y: number
-	w: number
-	h: number
-}
-export type WorkbookDashboardChart = {
-	type: 'chart'
-	chart: string
-	layout: Layout
-}
-export type WorkbookDashboardFilter = {
-	type: 'filter'
-	column: DashboardFilterColumn
-	layout: Layout
-}
-export type WorkbookDashboardText = {
-	type: 'text'
-	text: string
-	layout: Layout
-}
-export type DashboardFilterColumn = {
-	query: string
-	name: string
-	type: ColumnDataType
-}
-
-export type ShareAccess = 'view' | 'edit' | undefined
-export type WorkbookSharePermission = { email: string; full_name: string; access: ShareAccess }

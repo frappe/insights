@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { WorkbookQuery } from '../../workbook/workbook'
+import { WorkbookQuery } from '../../types/workbook.types'
 
 const query = defineModel()
 const props = defineProps<{ queries: WorkbookQuery[] }>()

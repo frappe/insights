@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { QueryResultColumn } from '../../types/query.types'
+
 const emit = defineEmits({
 	sort: (value: 'asc' | 'desc' | '') => true,
 })

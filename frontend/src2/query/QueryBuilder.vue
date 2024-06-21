@@ -5,7 +5,7 @@ import QueryBuilderTable from './components/QueryBuilderTable.vue'
 import QueryBuilderToolbar from './components/QueryBuilderToolbar.vue'
 import QueryOperations from './components/QueryOperations.vue'
 import useQuery from './query'
-import { WorkbookQuery } from '../workbook/workbook'
+import { WorkbookQuery } from '../types/workbook.types'
 
 const props = defineProps<{ query: WorkbookQuery }>()
 const query = useQuery(props.query)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ColumnFilterValueSelector from './ColumnFilterValueSelector.vue'
+import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 
 const props = defineProps<{
 	column: QueryResultColumn

@@ -2,8 +2,9 @@
 import { computed, inject, ref } from 'vue'
 import session from '../session'
 import useUserStore from './users'
-import { ShareAccess, Workbook, workbookKey, WorkbookSharePermission } from './workbook'
 import { createToast } from '../helpers/toasts'
+import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
+import { Workbook, workbookKey } from './workbook'
 
 const show = defineModel()
 const searchTxt = ref('')

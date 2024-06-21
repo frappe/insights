@@ -11,7 +11,7 @@ import {
 	Table2,
 } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { ChartType } from '../helpers'
+import { ChartType } from '../../types/chart.types'
 
 const props = defineProps<{ chartType: ChartType }>()
 const icon = computed(() => {

@@ -4,7 +4,8 @@ import { computed, inject } from 'vue'
 import { copy } from '../helpers'
 import FiltersSelector from '../query/components/FiltersSelector.vue'
 import { getCachedQuery } from '../query/query'
-import { WorkbookChart, WorkbookQuery } from '../workbook/workbook'
+import { FilterArgs, FilterGroupArgs, QueryResultColumn } from '../types/query.types'
+import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{
@@ -16,8 +17,8 @@ const columnOptions = computed(() => {
 	return props.queries
 		.map((q) => {
 			const query = getCachedQuery(q.name)
-			const resultColumns = query?.result.columns || []
-			return resultColumns.map((c) => ({
+			if (!query) return []
+			return query.result.columns.map((c) => ({
 				query: q.name,
 				label: c.name,
 				data_type: c.type,

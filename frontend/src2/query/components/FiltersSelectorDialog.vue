@@ -2,6 +2,7 @@
 import { computed, inject } from 'vue'
 import { Query } from '../query'
 import FiltersSelector from './FiltersSelector.vue'
+import { FilterGroupArgs } from '../../types/query.types'
 
 const emit = defineEmits({ select: (args: FilterGroupArgs) => true })
 const showDialog = defineModel()

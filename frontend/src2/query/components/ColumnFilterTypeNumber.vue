@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
+import { FilterOperator, QueryResultColumn } from '../../types/query.types'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 const filter = defineModel<{ operator: FilterOperator; value: any }>({

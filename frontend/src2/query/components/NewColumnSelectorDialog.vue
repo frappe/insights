@@ -3,6 +3,7 @@ import Code from '@/components/Controls/Code.vue'
 import { COLUMN_TYPES } from '@/utils'
 import { computed, ref } from 'vue'
 import { expression } from '../helpers'
+import { ColumnDataType, MutateArgs } from '../../types/query.types'
 
 const emit = defineEmits({ select: (column: MutateArgs) => true })
 const showDialog = defineModel()

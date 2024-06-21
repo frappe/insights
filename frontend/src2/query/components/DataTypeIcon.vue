@@ -9,6 +9,7 @@ import {
 	Type,
 } from 'lucide-vue-next'
 import { computed } from 'vue'
+import { ColumnDataType } from '../../types/query.types'
 
 const props = defineProps<{ columnType: ColumnDataType }>()
 const icon = computed(() => {

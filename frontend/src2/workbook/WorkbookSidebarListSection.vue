@@ -8,7 +8,7 @@ const section = defineProps<{
 	isActive: (idx: number) => boolean
 	add: () => void
 	remove: (item: any) => void
-	route: (idx: number) => void
+	route: (idx: number) => string
 }>()
 </script>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { AxisChartConfig, AxisChartType } from '../helpers'
+import { AxisChartConfig, AxisChartType } from '../../types/chart.types'
+import { Dimension, Measure } from '../../types/query.types'
 
 const props = defineProps<{
 	chartType: AxisChartType

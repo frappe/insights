@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { LoadingIndicator } from 'frappe-ui'
-import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { provide } from 'vue'
 import DataTable from '../components/DataTable.vue'
-import { WorkbookChart, WorkbookQuery } from '../workbook/workbook'
+import { AXIS_CHARTS } from '../types/chart.types'
+import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useChart from './chart'
 import AxisChartConfigForm from './components/AxisChartConfigForm.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
@@ -13,13 +13,6 @@ import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import DonutChartConfigForm from './components/DonutChartConfigForm.vue'
 import NumberChartConfigForm from './components/NumberChartConfigForm.vue'
 import TableChartConfigForm from './components/TableChartConfigForm.vue'
-import {
-	AXIS_CHARTS,
-	AxisChartConfig,
-	DountChartConfig,
-	NumberChartConfig,
-	TableChartConfig,
-} from './helpers'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
@@ -81,25 +74,25 @@ if (!chart.doc.config.order_by) {
 				<hr class="my-1 border-t border-gray-200" />
 				<NumberChartConfigForm
 					v-if="chart.doc.chart_type == 'Number'"
-					v-model="(chart.doc.config as NumberChartConfig)"
+					v-model="chart.doc.config"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
 				<DonutChartConfigForm
 					v-if="chart.doc.chart_type == 'Donut'"
-					v-model="(chart.doc.config as DountChartConfig)"
+					v-model="chart.doc.config"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
 				<TableChartConfigForm
 					v-if="chart.doc.chart_type == 'Table'"
-					v-model="(chart.doc.config as TableChartConfig)"
+					v-model="chart.doc.config"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"
 				/>
 				<AxisChartConfigForm
 					v-if="AXIS_CHARTS.includes(chart.doc.chart_type)"
-					v-model="(chart.doc.config as AxisChartConfig)"
+					v-model="chart.doc.config"
 					:chart-type="chart.doc.chart_type"
 					:dimensions="chart.baseQuery.dimensions"
 					:measures="chart.baseQuery.measures"

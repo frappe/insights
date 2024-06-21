@@ -2,7 +2,7 @@
 import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import ChartIcon from '../charts/components/ChartIcon.vue'
-import { WorkbookChart } from '../workbook/workbook'
+import { WorkbookChart } from '../types/workbook.types'
 
 const showDialog = defineModel()
 const props = defineProps<{ chartOptions: WorkbookChart[] }>()

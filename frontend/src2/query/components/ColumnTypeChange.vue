@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { COLUMN_TYPES } from '@/utils'
 import DataTypeIcon from './DataTypeIcon.vue'
+import { ColumnDataType, QueryResultColumn } from '../../types/query.types'
 
 const emit = defineEmits({
 	typeChange: (newType: ColumnDataType) => true,

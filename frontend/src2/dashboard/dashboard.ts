@@ -1,12 +1,8 @@
 import { reactive } from 'vue'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
-import { column as make_column } from '../query/helpers'
-import {
-	DashboardFilterColumn,
-	WorkbookDashboard,
-	WorkbookDashboardChart,
-} from '../workbook/workbook'
+import { DashboardFilterColumn, WorkbookDashboard, WorkbookDashboardChart } from '../types/workbook.types'
+import { FilterArgs } from '../types/query.types'
 
 const dashboards = new Map<string, Dashboard>()
 

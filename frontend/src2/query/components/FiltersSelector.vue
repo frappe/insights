@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { copy } from '../../helpers'
 import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
 import { isFilterExpressionValid, isFilterValid } from './filter_utils'
+import {
+	ColumnDataType,
+	FilterArgs,
+	FilterGroupArgs,
+	LogicalOperator,
+} from '../../types/query.types'
 
 const props = defineProps<{
 	filters?: FilterArgs[]
@@ -88,14 +93,14 @@ function close() {
 					</Button>
 				</div>
 				<FilterExpression
-					v-if="filters[i].hasOwnProperty('expression')"
-					:modelValue="(filters[i] as FilterExpression)"
+					v-if="'expression' in filters[i]"
+					:modelValue="filters[i]"
 					@update:modelValue="filters[i] = $event"
 				/>
 				<FilterRule
-					v-if="filters[i].hasOwnProperty('column')"
+					v-if="'column' in filters[i]"
+					:modelValue="filters[i]"
 					:columnOptions="props.columnOptions"
-					:modelValue="(filters[i] as FilterRule)"
 					@update:modelValue="filters[i] = $event"
 				/>
 			</div>

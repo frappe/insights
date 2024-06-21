@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Code from '@/components/Controls/Code.vue'
 import { expression } from '../helpers'
+import { FilterExpression } from '../../types/query.types'
 
 const filterExpression = defineModel<FilterExpression>({
 	default: () => ({ expression: expression('') }),

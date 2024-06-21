@@ -3,6 +3,7 @@ import Checkbox from '@/components/Controls/Checkbox.vue'
 import dayjs from '@/utils/dayjs'
 import { ref } from 'vue'
 import DatePicker from './DatePicker.vue'
+import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 const filter = defineModel<{ operator: FilterOperator; value: FilterValue }>({

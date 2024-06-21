@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Trash } from 'lucide-vue-next'
+import { QueryResultColumn } from '../../types/query.types'
 
 const emit = defineEmits(['remove'])
 

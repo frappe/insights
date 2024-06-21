@@ -3,7 +3,8 @@ import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { WorkbookQuery } from '../workbook/workbook'
+import { ColumnDataType, Dimension, DimensionDataType, FilterArgs, FilterGroupArgs, GranularityType, JoinArgs, Measure, MeasureDataType, MutateArgs, Operation, OrderByArgs, PivotWiderArgs, QueryResult, SourceArgs, SummarizeArgs } from '../types/query.types'
+import { WorkbookQuery } from '../types/workbook.types'
 import {
 	cast,
 	column,
@@ -25,7 +26,7 @@ import {
 } from './helpers'
 
 const queries = new Map<string, Query>()
-export function getCachedQuery(name: string) {
+export function getCachedQuery(name: string): Query | undefined {
 	return queries.get(name)
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FIELDTYPES, formatNumber } from '@/utils'
 import { Table2Icon } from 'lucide-vue-next'
+import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined

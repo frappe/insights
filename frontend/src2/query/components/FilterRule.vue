@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
 import { debounce } from 'frappe-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { column } from '../helpers'
 import { getCachedQuery } from '../query'
 import DatePickerControl from './DatePickerControl.vue'
 import { getValueSelectorType } from './filter_utils'
+import { ColumnDataType, FilterOperator, FilterRule } from '../../types/query.types'
 
 const filter = defineModel<FilterRule>({ required: true })
 const props = defineProps<{

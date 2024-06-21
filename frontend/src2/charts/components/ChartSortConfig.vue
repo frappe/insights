@@ -3,6 +3,7 @@ import { Plus, SortAscIcon, SortDescIcon, X } from 'lucide-vue-next'
 import { computed } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { column } from '../../query/helpers'
+import { OrderByArgs, ColumnOption } from '../../types/query.types'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const sortColumns = defineModel<OrderByArgs[]>({

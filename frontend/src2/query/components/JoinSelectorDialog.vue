@@ -8,6 +8,7 @@ import { computed, inject, ref } from 'vue'
 import useTableStore from '../../data_source/tables'
 import { column, table } from '../helpers'
 import { Query } from '../query'
+import { JoinArgs, JoinType } from '../../types/query.types'
 
 const emit = defineEmits({
 	select: (join: JoinArgs) => true,
@@ -49,7 +50,7 @@ wheneverChanges(
 		tableStore
 			.getTableColumns(tableColumn.data_source, tableColumn.table_name)
 			.then((columns) => {
-				tableColumnOptions.value = columns.map((c) => ({
+				tableColumnOptions.value = columns.map((c: any) => ({
 					label: c.name,
 					value: c.name,
 					description: c.type,

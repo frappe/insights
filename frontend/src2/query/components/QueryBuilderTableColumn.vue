@@ -8,6 +8,12 @@ import ColumnFilter from './ColumnFilter.vue'
 import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
+import {
+	ColumnDataType,
+	FilterOperator,
+	FilterValue,
+	QueryResultColumn,
+} from '../../types/query.types'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 

@@ -5,6 +5,7 @@ import { computed, reactive } from 'vue'
 import ColumnFilterTypeDate from './ColumnFilterTypeDate.vue'
 import ColumnFilterTypeNumber from './ColumnFilterTypeNumber.vue'
 import ColumnFilterTypeText from './ColumnFilterTypeText.vue'
+import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 
 const emit = defineEmits({
 	filter: (operator: FilterOperator, value: FilterValue) => true,

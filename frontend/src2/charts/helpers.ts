@@ -1,41 +1,7 @@
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
+import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
-export const AXIS_CHARTS = ['Bar', 'Line', 'Row'] //, 'Scatter', 'Area']
-export type AxisChartType = (typeof AXIS_CHARTS)[number]
-
-export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Table'] // 'Funnel',
-export type ChartType = (typeof CHARTS)[number]
-
-export type AxisChartConfig = {
-	x_axis: string
-	y_axis: string[]
-	split_by: string
-}
-
-export type NumberChartConfig = {
-	number_column: string
-	target_value?: number
-	target_column?: string
-	date_column?: string
-	shorten_numbers?: boolean
-	precision?: number
-	prefix?: string
-	suffix?: string
-}
-
-export type DountChartConfig = {
-	label_column: string
-	value_column: string
-}
-
-export type TableChartConfig = {
-	rows: string[]
-	columns: string[]
-	values: string[]
-}
-
-export type ChartConfig = AxisChartConfig | NumberChartConfig | DountChartConfig | TableChartConfig
-
+// eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	// categorize the columns into dimensions and measures and then into discrete and continuous
 	const dimensions = columns.filter((c) => FIELDTYPES.DIMENSION.includes(c.type))

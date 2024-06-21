@@ -2,7 +2,7 @@
 import { formatNumber, getShortNumber } from '@/utils'
 import { computed } from 'vue'
 import { Chart } from '../chart'
-import { NumberChartConfig } from '../helpers'
+import { NumberChartConfig } from '../../types/chart.types'
 
 const props = defineProps<{ chart: Chart }>()
 
@@ -13,8 +13,8 @@ const formattedValue = computed(() => {
 	}
 
 	const rows = props.chart.dataQuery.result.rows
-	const number_values = rows.map((row) => row[config.value.number_column])
-	const _value = number_values.reduce((a, b) => a + b, 0)
+	const number_values = rows.map((row: any) => row[config.value.number_column])
+	const _value = number_values.reduce((a: number, b: number) => a + b, 0)
 
 	if (config.value.shorten_numbers) {
 		return getShortNumber(_value, config.value.precision)

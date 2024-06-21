@@ -4,12 +4,14 @@ import { Chart, getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import ColumnFilter from '../query/components/ColumnFilter.vue'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
+import { column } from '../query/helpers'
 import { Query, getCachedQuery } from '../query/query'
+import { FilterOperator, FilterValue } from '../types/query.types'
 import {
 	WorkbookDashboardChart,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
-} from '../workbook/workbook'
+} from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{
@@ -35,7 +37,11 @@ function getDistinctColumnValues(searchTxt: string) {
 }
 function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 	if (!filter.value) return
-	dashboard.applyFilter(filter.value.column, operator, value)
+	dashboard.applyFilter(filter.value.column.query, {
+		column: column(filter.value.column.name),
+		operator,
+		value,
+	})
 }
 </script>
 

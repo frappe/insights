@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChartType, CHARTS } from '../helpers'
+import { CHARTS, ChartType } from '../../types/chart.types'
 import ChartIcon from './ChartIcon.vue'
 
 const chartType = defineModel<ChartType>()
