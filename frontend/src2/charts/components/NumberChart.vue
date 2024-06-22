@@ -90,7 +90,7 @@ const percentDelta = computed(() => {
 					<span class="">
 						{{ delta >= 0 ? '+' : '-' }}
 					</span>
-					<span class="tnum"> {{ formatNumber(Math.abs(percentDelta), 2) }}% </span>
+					<span> {{ formatNumber(Math.abs(percentDelta), 2) }}% </span>
 				</div>
 			</div>
 		</div>
