@@ -158,17 +158,17 @@ const sidebarItems = ref([
 		current: false,
 	},
 	{
-		path: '/data-source',
-		label: 'Data Sources',
-		icon: Database,
-		name: 'Data Source',
-	},
-	{
 		path: '/query',
 		label: 'Query',
 		icon: GanttChartSquare,
 		name: 'QueryList',
 		current: false,
+	},
+	{
+		path: '/data-source',
+		label: 'Data Sources',
+		icon: Database,
+		name: 'Data Source',
 	},
 	{
 		path: '/notebook',
