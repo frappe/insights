@@ -2,7 +2,7 @@ import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, unref } from 'vue'
 import { getUniqueId, waitUntil } from '../helpers'
-import { column, count, expression, mutate } from '../query/helpers'
+import { column, count } from '../query/helpers'
 import { Query, getCachedQuery, makeQuery } from '../query/query'
 import {
 	AXIS_CHARTS,
@@ -52,7 +52,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		{
 			deep: true,
 			debounce: 500,
-		}
+		},
 	)
 
 	watchDebounced(
@@ -61,7 +61,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		{
 			deep: true,
 			debounce: 500,
-		}
+		},
 	)
 
 	async function refresh(filters?: FilterArgs[]) {
@@ -105,8 +105,9 @@ function makeChart(workbookChart: WorkbookChart) {
 			return
 		}
 
-		const column = chart.baseQuery.getDimension(config.split_by)
+		const column = chart.baseQuery.getDimension(config.split_by as string)
 		const values = config.y_axis
+			.concat(config.y2_axis)
 			?.map((y) => chart.baseQuery.getMeasure(y))
 			.filter(Boolean) as Measure[]
 
@@ -133,19 +134,6 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function fetchNumberChartData(config: NumberChartConfig) {
-		if (config.target_value && config.target_column) {
-			console.warn('Target value and target column cannot be used together')
-			return
-		}
-		if (config.number_column === config.target_column) {
-			console.warn('Number and target cannot be the same')
-			return
-		}
-		if (config.target_column && config.date_column) {
-			console.warn('Target and date cannot be used together')
-			return
-		}
-
 		const number = chart.baseQuery.getMeasure(config.number_column)
 		if (!number) {
 			console.warn('Number column not found')
@@ -153,34 +141,13 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 
 		const date = chart.baseQuery.getDimension(config.date_column as string)
-		const target = config.target_value
-			? Number(config.target_value)
-			: chart.baseQuery.getMeasure(config.target_column as string)
-
-		prepareNumberQuery(number, target, date)
+		prepareNumberQuery(number, date)
 		applySortOrder()
 		return chart.dataQuery.execute()
 	}
 
-	function prepareNumberQuery(number: Measure, target?: Measure | Number, date?: Dimension) {
-		if (typeof target === 'number' && target > 0) {
-			chart.dataQuery.addSummarize({
-				measures: [number],
-				dimensions: [],
-			})
-			chart.dataQuery.addMutate(
-				mutate({
-					new_name: 'target',
-					data_type: 'Decimal',
-					mutation: expression(`literal(${target})`),
-				})
-			)
-		} else if (typeof target === 'object') {
-			chart.dataQuery.addSummarize({
-				measures: [number, target] as Measure[],
-				dimensions: [],
-			})
-		} else if (date) {
+	function prepareNumberQuery(number: Measure, date?: Dimension) {
+		if (date) {
 			chart.dataQuery.addSummarize({
 				measures: [number],
 				dimensions: [date],

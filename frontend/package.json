@@ -28,7 +28,7 @@
 		"codemirror": "^6.0.1",
 		"dayjs": "^1.11.6",
 		"dom-to-image": "^2.6.0",
-		"echarts": "^5.4.0",
+		"echarts": "^5.5.0",
 		"feather-icons": "^4.28.0",
 		"frappe-ui": "0.1.45",
 		"grid-layout-plus": "^1.0.2",

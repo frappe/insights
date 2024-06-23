@@ -7,7 +7,13 @@ export type ChartType = (typeof CHARTS)[number]
 export type AxisChartConfig = {
 	x_axis: string
 	y_axis: string[]
-	split_by: string
+	y2_axis: string[]
+	y2_axis_type?: 'line' | 'bar'
+	split_by?: string
+	grouping?: 'stacked' | 'grouped'
+	show_data_labels?: boolean
+	swap_axes?: boolean
+	normalize?: boolean
 }
 
 export type NumberChartConfig = {
@@ -16,7 +22,7 @@ export type NumberChartConfig = {
 	sparkline: boolean
 	date_column?: string
 	shorten_numbers?: boolean
-	precision?: number
+	decimal?: number
 	prefix?: string
 	suffix?: string
 	negative_is_better?: boolean

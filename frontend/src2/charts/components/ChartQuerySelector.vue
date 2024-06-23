@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { WorkbookQuery } from '../../types/workbook.types'
 
 const query = defineModel()
@@ -6,9 +7,8 @@ const props = defineProps<{ queries: WorkbookQuery[] }>()
 </script>
 
 <template>
-	<div class="flex flex-col p-3">
+	<InlineFormControlLabel label="Query">
 		<Autocomplete
-			label="Query"
 			:showFooter="true"
 			:options="
 				props.queries.map((q) => {
@@ -21,5 +21,5 @@ const props = defineProps<{ queries: WorkbookQuery[] }>()
 			:modelValue="query"
 			@update:modelValue="query = $event?.value"
 		/>
-	</div>
+	</InlineFormControlLabel>
 </template>

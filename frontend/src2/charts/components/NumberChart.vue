@@ -19,9 +19,9 @@ const formattedValue = computed(() => {
 	const _value = number_values.reduce((a: number, b: number) => a + b, 0)
 
 	if (config.value.shorten_numbers) {
-		return getShortNumber(_value, config.value.precision)
+		return getShortNumber(_value, config.value.decimal)
 	}
-	return formatNumber(_value, config.value.precision)
+	return formatNumber(_value, config.value.decimal)
 })
 
 const dateValues = computed(() => {

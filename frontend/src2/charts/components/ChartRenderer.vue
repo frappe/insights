@@ -17,10 +17,7 @@ const chart = props.chart
 const eChartOptions = computed(() => {
 	if (!chart.dataQuery.result.columns?.length) return
 	if (chart.doc.chart_type === 'Bar') {
-		return getBarChartOptions(
-			chart.dataQuery.result.columns,
-			chart.dataQuery.result.formattedRows
-		)
+		return getBarChartOptions(chart)
 	}
 	if (chart.doc.chart_type === 'Line') {
 		return getLineChartOptions(

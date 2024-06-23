@@ -3,7 +3,7 @@ import { Plus, SortAscIcon, SortDescIcon, X } from 'lucide-vue-next'
 import { computed } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { column } from '../../query/helpers'
-import { OrderByArgs, ColumnOption } from '../../types/query.types'
+import { ColumnOption, OrderByArgs } from '../../types/query.types'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const sortColumns = defineModel<OrderByArgs[]>({
@@ -51,7 +51,7 @@ function moveSortColumn(from: number, to: number) {
 </script>
 
 <template>
-	<div class="overflow-hidden p-3 pt-2">
+	<div>
 		<div class="mb-1 flex items-center justify-between">
 			<label class="block text-xs text-gray-600">Sort By</label>
 			<div>

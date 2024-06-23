@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dimension, Measure } from '../../types/query.types'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { TableChartConfig } from '../../types/chart.types'
+import { Dimension, Measure } from '../../types/query.types'
 
 const props = defineProps<{
 	dimensions: Dimension[]
@@ -32,27 +33,28 @@ const measures = computed(() =>
 </script>
 
 <template>
-	<div class="flex flex-col gap-3 p-3">
+	<InlineFormControlLabel label="Rows">
 		<Autocomplete
-			label="Rows"
 			:multiple="true"
 			:options="dimensions"
 			:modelValue="config.rows"
 			@update:modelValue="config.rows = $event?.map((v: any) => v.value)"
 		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Columns">
 		<Autocomplete
-			label="Columns"
 			:multiple="true"
 			:options="dimensions"
 			:modelValue="config.columns"
 			@update:modelValue="config.columns = $event?.map((v: any) => v.value)"
 		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Values">
 		<Autocomplete
-			label="Values"
 			:multiple="true"
 			:options="measures"
 			:modelValue="config.values"
 			@update:modelValue="config.values = $event?.map((v: any) => v.value)"
 		/>
-	</div>
+	</InlineFormControlLabel>
 </template>

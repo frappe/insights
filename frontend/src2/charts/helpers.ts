@@ -1,5 +1,7 @@
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
-import { QueryResultColumn, QueryResultRow } from '../types/query.types'
+import { AxisChartConfig } from '../types/chart.types'
+import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
+import { Chart } from './chart'
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -54,7 +56,155 @@ export function getRowChartOptions(columns: QueryResultColumn[], rows: QueryResu
 	}
 }
 
-export function getBarChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+export function getBarChartOptions(chart: Chart) {
+	const _config = chart.doc.config as AxisChartConfig
+	const _columns = chart.dataQuery.result.columns
+	const _rows = chart.dataQuery.result.rows
+
+	const measures = _columns.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
+	const total_per_x_value = _rows.reduce(
+		(acc, row) => {
+			const x_value = row[_config.x_axis]
+			if (!acc[x_value]) acc[x_value] = 0
+			measures.forEach((m) => (acc[x_value] += row[m.name]))
+			return acc
+		},
+		{} as Record<string, number>,
+	)
+
+	const show_legend = measures.length > 1
+
+	const xAxisValues = _rows.map((r) => r[_config.x_axis])
+	const xAxis = getXAxis({
+		values: _config.swap_axes ? xAxisValues.reverse() : xAxisValues,
+		column_type: _columns.find((c) => c.name === _config.x_axis)?.type,
+	})
+
+	const leftYAxis = getYAxis({ normalized: _config.normalize })
+	const rightYAxis = getYAxis({ is_secondary: true })
+	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
+
+	const getSeriesData = (column: string) =>
+		_rows.map((r) => {
+			const x_value = r[_config.x_axis]
+			const y_value = r[column]
+			if (!_config.normalize) {
+				return _config.swap_axes ? [y_value, x_value] : [x_value, y_value]
+			}
+
+			const total = total_per_x_value[x_value]
+			const normalized_value = total ? (y_value / total) * 100 : 0
+			return _config.swap_axes ? [normalized_value, x_value] : [x_value, normalized_value]
+		})
+
+	return {
+		animation: true,
+		grid: getGrid({ show_legend }),
+		xAxis: _config.swap_axes ? yAxis : xAxis,
+		yAxis: _config.swap_axes ? xAxis : yAxis,
+		series: measures.map((c, idx) => {
+			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y))
+			const type = is_right_axis ? _config.y2_axis_type : 'bar'
+			return getSeries({
+				type,
+				name: c.name,
+				data: getSeriesData(c.name),
+				stack: type === 'bar' && _config.grouping?.includes('stacked'),
+				on_right_axis: is_right_axis,
+				show_data_label: _config.show_data_labels,
+				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
+			})
+		}),
+		tooltip: getTooltip(),
+		legend: {
+			show: show_legend,
+			icon: 'circle',
+			type: 'scroll',
+			orient: 'horizontal',
+			bottom: 'bottom',
+			itemGap: 16,
+			padding: [5, 30],
+			textStyle: { padding: [0, 0, 0, -4] },
+			data: measures.map((c) => c.name),
+			pageIconSize: 10,
+			pageIconColor: '#64748B',
+			pageIconInactiveColor: '#C0CCDA',
+			pageFormatter: '{current}',
+			pageButtonItemGap: 2,
+		},
+	}
+}
+
+type XAxisCustomizeOptions = {
+	values?: string[]
+	column_type?: ColumnDataType
+}
+function getXAxis(options: XAxisCustomizeOptions = {}) {
+	const xAxisIsDate = options.column_type && FIELDTYPES.DATE.includes(options.column_type)
+	return {
+		type: xAxisIsDate ? 'time' : 'category',
+		data: options.values,
+		z: 2,
+		scale: true,
+		boundaryGap: ['1%', '2%'],
+		splitLine: { show: false },
+		axisLine: { show: true },
+		axisTick: { show: false },
+	}
+}
+
+type YAxisCustomizeOptions = { is_secondary?: boolean; normalized?: boolean }
+function getYAxis(options: YAxisCustomizeOptions = {}) {
+	return {
+		show: true,
+		type: 'value',
+		z: 2,
+		scale: false,
+		alignTicks: true,
+		boundaryGap: ['0%', '1%'],
+		splitLine: { show: true },
+		axisTick: { show: false },
+		axisLine: { show: false, onZero: false },
+		axisLabel: {
+			show: true,
+			hideOverlap: true,
+			margin: 4,
+			formatter: (value: Number) => getShortNumber(value, 1),
+		},
+		min: options.normalized ? 0 : undefined,
+		max: options.normalized ? 100 : undefined,
+	}
+}
+
+type SeriesCustomizationOptions = {
+	type?: 'bar' | 'line'
+	data?: any[]
+	name?: string
+	stack?: boolean
+	show_data_label?: boolean
+	data_label_position?: 'inside' | 'top'
+	on_right_axis?: boolean
+}
+function getSeries(options: SeriesCustomizationOptions = {}) {
+	return {
+		type: options.type || 'bar',
+		stack: options.stack,
+		name: options.name,
+		data: options.data,
+		label: {
+			show: options.show_data_label,
+			position: options.data_label_position || 'top',
+			formatter: (params: any) => getShortNumber(params.value?.[1], 1),
+			fontSize: 11,
+		},
+		labelLayout: { hideOverlap: true },
+		emphasis: { focus: 'series' },
+		barMaxWidth: 60,
+		yAxisIndex: options.on_right_axis ? 1 : 0,
+	}
+}
+
+export function getBarChartOptions2(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	const data = getData(columns, rows)
 	return {
 		animation: true,
@@ -100,7 +250,7 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 function getDonutChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	maxSlices: number
+	maxSlices: number,
 ) {
 	// reduce the number of slices to 10
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
@@ -113,13 +263,16 @@ function getDonutChartData(
 		throw new Error('No label column found')
 	}
 
-	const valueByLabel = rows.reduce((acc, row) => {
-		const label = row[labelColumn.name]
-		const value = row[measureColumn.name]
-		if (!acc[label]) acc[label] = 0
-		acc[label] = acc[label] + value
-		return acc
-	}, {} as Record<string, number>)
+	const valueByLabel = rows.reduce(
+		(acc, row) => {
+			const label = row[labelColumn.name]
+			const value = row[measureColumn.name]
+			if (!acc[label]) acc[label] = 0
+			acc[label] = acc[label] + value
+			return acc
+		},
+		{} as Record<string, number>,
+	)
 
 	const sortedLabels = Object.keys(valueByLabel).sort((a, b) => valueByLabel[b] - valueByLabel[a])
 	const topLabels = sortedLabels.slice(0, maxSlices)
@@ -140,12 +293,12 @@ function getData(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	return [columnNames, ...rows.map((r) => columnNames.map((c) => r[c]))]
 }
 
-function getGrid() {
+function getGrid(options: any = {}) {
 	return {
-		top: 20,
-		bottom: 35,
-		left: 20,
-		right: 20,
+		top: 22,
+		left: 22,
+		right: 22,
+		bottom: options.show_legend ? 32 : 22,
 		containLabel: true,
 	}
 }

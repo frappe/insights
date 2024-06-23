@@ -3,7 +3,24 @@ import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { ColumnDataType, Dimension, DimensionDataType, FilterArgs, FilterGroupArgs, GranularityType, JoinArgs, Measure, MeasureDataType, MutateArgs, Operation, OrderByArgs, PivotWiderArgs, QueryResult, SourceArgs, SummarizeArgs } from '../types/query.types'
+import {
+	ColumnDataType,
+	Dimension,
+	DimensionDataType,
+	FilterArgs,
+	FilterGroupArgs,
+	GranularityType,
+	JoinArgs,
+	Measure,
+	MeasureDataType,
+	MutateArgs,
+	Operation,
+	OrderByArgs,
+	PivotWiderArgs,
+	QueryResult,
+	SourceArgs,
+	SummarizeArgs,
+} from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
 	cast,
@@ -72,8 +89,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		getDistinctColumnValues,
 
-		dimensions: computed(() => ({} as Dimension[])),
-		measures: computed(() => ({} as Measure[])),
+		dimensions: computed(() => ({}) as Dimension[]),
+		measures: computed(() => ({}) as Measure[]),
 		getDimension,
 		getMeasure,
 
@@ -121,7 +138,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	wheneverChanges(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
-		{ deep: true, immediate: true }
+		{ deep: true, immediate: true },
 	)
 
 	async function execute() {
@@ -142,14 +159,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			'insights.insights.doctype.insights_workbook.insights_workbook.fetch_query_results',
 			{
 				operations: query.doc.operations,
-			}
+			},
 		)
 			.then((response: any) => {
 				if (!response) return
 				query.result.executedSQL = response.sql
 				query.result.columns = response.columns
 				query.result.rows = response.rows.map((row: any) =>
-					Object.fromEntries(query.result.columns.map((column, idx) => [column.name, row[idx]]))
+					Object.fromEntries(query.result.columns.map((column, idx) => [column.name, row[idx]])),
 				)
 				query.result.formattedRows = getFormattedRows(query.result)
 				query.result.totalRowCount = response.total_row_count
@@ -259,12 +276,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			(op) =>
 				op.type === 'order_by' &&
 				op.column.column_name === args.column.column_name &&
-				op.direction === args.direction
+				op.direction === args.direction,
 		)
 		if (existingOrderBy) return
 
 		const existingOrderByIndex = query.doc.operations.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
+			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name,
 		)
 		if (existingOrderByIndex > -1) {
 			query.doc.operations[existingOrderByIndex] = order_by(args)
@@ -275,7 +292,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function removeOrderBy(column_name: string) {
 		const index = query.doc.operations.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === column_name
+			(op) => op.type === 'order_by' && op.column.column_name === column_name,
 		)
 		if (index > -1) {
 			query.doc.operations.splice(index, 1)
@@ -299,7 +316,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			rename({
 				column: column(oldName),
 				new_name: newName,
-			})
+			}),
 		)
 	}
 
@@ -313,7 +330,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			cast({
 				column: column(column_name),
 				data_type: newType,
-			})
+			}),
 		)
 	}
 
@@ -329,7 +346,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				operations: query.doc.operations,
 				column_name: column,
 				search_term,
-			}
+			},
 		)
 	}
 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import Tabs from '@/components/Tabs.vue'
 import { computed } from 'vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig, AxisChartType } from '../../types/chart.types'
 import { Dimension, Measure } from '../../types/query.types'
 
@@ -14,7 +16,13 @@ const config = defineModel<AxisChartConfig>({
 	default: () => ({
 		x_axis: '',
 		y_axis: [],
+		y2_axis: [],
+		y2_axis_type: 'line',
 		split_by: '',
+		grouping: 'stacked',
+		show_data_labels: false,
+		swap_axes: false,
+		normalize: false,
 	}),
 })
 
@@ -33,27 +41,84 @@ const measures = computed(() =>
 </script>
 
 <template>
-	<div class="flex flex-col gap-3 p-3">
+	<InlineFormControlLabel label="Bottom">
 		<Autocomplete
-			label="X Axis"
+			class="w-full"
 			:showFooter="true"
 			:options="dimensions"
 			:modelValue="config.x_axis"
 			@update:modelValue="config.x_axis = $event?.value"
 		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Left">
 		<Autocomplete
-			label="Y Axis"
 			:multiple="true"
 			:options="measures"
 			:modelValue="config.y_axis"
 			@update:modelValue="config.y_axis = $event?.map((v: any) => v.value)"
 		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Right">
 		<Autocomplete
-			label="Split By"
+			:multiple="true"
+			:options="measures"
+			:modelValue="config.y2_axis"
+			@update:modelValue="config.y2_axis = $event?.map((v: any) => v.value)"
+		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Right Axis Type" class="!w-1/2">
+		<Tabs
+			v-model="config.y2_axis_type"
+			:tabs="[
+				{ label: 'Bar', value: 'bar', default: true },
+				{ label: 'Line', value: 'line' },
+			]"
+		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Split By">
+		<Autocomplete
 			:showFooter="true"
 			:options="dimensions"
 			:modelValue="config.split_by"
 			@update:modelValue="config.split_by = $event?.value"
 		/>
-	</div>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Grouping">
+		<Autocomplete
+			:hideSearch="true"
+			:options="[
+				{ label: 'Stacked', value: 'stacked' },
+				{ label: 'Grouped', value: 'grouped' },
+			]"
+			:modelValue="config.grouping"
+			@update:modelValue="config.grouping = $event?.value.toLowerCase()"
+		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Normalize Data" class="!w-1/2">
+		<Tabs
+			v-model="config.normalize"
+			:tabs="[
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
+			]"
+		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Show Labels" class="!w-1/2">
+		<Tabs
+			v-model="config.show_data_labels"
+			:tabs="[
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
+			]"
+		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Swap X & Y" class="!w-1/2">
+		<Tabs
+			v-model="config.swap_axes"
+			:tabs="[
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
+			]"
+		/>
+	</InlineFormControlLabel>
 </template>

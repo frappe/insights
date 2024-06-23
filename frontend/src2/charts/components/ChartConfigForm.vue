@@ -1,16 +1,20 @@
 <script setup lang="ts">
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AXIS_CHARTS } from '../../types/chart.types'
 import { Chart } from '../chart'
-import NumberChartConfigForm from './NumberChartConfigForm.vue'
-import DonutChartConfigForm from './DonutChartConfigForm.vue'
-import TableChartConfigForm from './TableChartConfigForm.vue'
 import AxisChartConfigForm from './AxisChartConfigForm.vue'
+import DonutChartConfigForm from './DonutChartConfigForm.vue'
+import NumberChartConfigForm from './NumberChartConfigForm.vue'
+import TableChartConfigForm from './TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const chart = props.chart
 </script>
 
 <template>
+	<InlineFormControlLabel label="Title">
+		<FormControl v-model="chart.doc.title" />
+	</InlineFormControlLabel>
 	<NumberChartConfigForm
 		v-if="chart.doc.chart_type == 'Number'"
 		v-model="chart.doc.config"

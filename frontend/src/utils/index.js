@@ -282,6 +282,7 @@ export function getShortNumber(number, precision = 0) {
 }
 
 export function formatNumber(number, precision = 2) {
+	if (isNaN(number)) return number
 	precision = precision || guessPrecision(number)
 	const session = sessionStore()
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale

@@ -37,12 +37,8 @@ const section = defineProps<{
 			<div
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				class="group w-full cursor-pointer rounded transition-all hover:border-gray-400"
-				:class="
-					section.isActive(idx)
-						? 'border-gray-700 bg-gray-100'
-						: 'border-transparent hover:border-gray-300'
-				"
+				class="group w-full cursor-pointer rounded transition-all hover:bg-gray-50"
+				:class="section.isActive(idx) ? ' bg-gray-100' : ' hover:border-gray-300'"
 			>
 				<router-link
 					:to="route(idx)"

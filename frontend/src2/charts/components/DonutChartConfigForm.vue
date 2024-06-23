@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { DountChartConfig } from '../../types/chart.types'
 import { Dimension, Measure } from '../../types/query.types'
 
@@ -34,20 +35,20 @@ const measures = computed(() =>
 </script>
 
 <template>
-	<div class="flex flex-col gap-3 p-3">
+	<InlineFormControlLabel label="Label">
 		<Autocomplete
-			label="Label"
 			:showFooter="true"
 			:options="discrete_dimensions"
 			:modelValue="config.label_column"
 			@update:modelValue="config.label_column = $event?.value"
 		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Value">
 		<Autocomplete
-			label="Value"
 			:showFooter="true"
 			:options="measures"
 			:modelValue="config.value_column"
 			@update:modelValue="config.value_column = $event?.value"
 		/>
-	</div>
+	</InlineFormControlLabel>
 </template>

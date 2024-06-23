@@ -52,17 +52,17 @@ if (!chart.doc.config.order_by) {
 				</template>
 			</DataTable>
 		</div>
-		<div class="relative flex w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
-			<ChartTypeSelector v-model="chart.doc.chart_type" />
-			<hr class="my-1 border-t border-gray-200" />
+		<div
+			class="relative flex w-[17rem] flex-shrink-0 flex-col gap-2.5 overflow-y-auto bg-white p-3"
+		>
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 			<hr class="my-1 border-t border-gray-200" />
-			<FormControl class="p-3 pb-0" v-model="chart.doc.title" label="Title" />
+			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
 			<hr class="my-1 border-t border-gray-200" />
 			<ChartSortConfig
 				v-model="chart.doc.config.order_by"
-				:column-options="chart.dataQuery.result.columnOptions"
+				:column-options="chart.dataQuery.result.columnOptions || []"
 			/>
 		</div>
 	</div>
