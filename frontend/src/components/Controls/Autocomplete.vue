@@ -25,7 +25,7 @@
 							:class="{ 'bg-gray-200': isComboboxOpen }"
 							@click="() => togglePopover()"
 						>
-							<div class="flex flex-1 items-center overflow-hidden">
+							<div class="flex flex-1 items-center gap-2 overflow-hidden">
 								<slot name="prefix" />
 								<span
 									v-if="selectedValue"
@@ -208,7 +208,6 @@ export default {
 		'bodyClasses',
 		'multiple',
 		'loading',
-		'returnValue',
 		'hideSearch',
 		'autoFocus',
 		'placement',
@@ -238,20 +237,12 @@ export default {
 				if (!this.multiple) {
 					return this.findOption(this.modelValue)
 				}
-				// in case of `multiple`, modelValue is an array of values
-				// and if returnValue is true, we need to return the value of the options
-				return this.returnValue || typeof this.modelValue?.[0] !== 'object'
-					? this.modelValue?.map((v) => this.findOption(v))
-					: this.modelValue
+				return this.modelValue?.map((v) => this.findOption(v))
 			},
 			set(val) {
 				this.query = ''
 				if (val && !this.multiple) this.showOptions = false
-				if (!this.multiple) {
-					this.$emit('update:modelValue', this.returnValue ? val?.value : val)
-					return
-				}
-				this.$emit('update:modelValue', this.returnValue ? val?.map((v) => v.value) : val)
+				this.$emit('update:modelValue', val)
 			},
 		},
 		groups() {
