@@ -13,10 +13,10 @@ const section = defineProps<{
 </script>
 
 <template>
-	<div class="flex flex-col gap-2 px-2.5 py-2">
-		<div class="flex h-6 items-center justify-between">
+	<div class="flex flex-col border-b px-2.5 py-2">
+		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-[11px] uppercase">{{ section.title }}</div>
+				<div class="text-sm font-medium">{{ section.title }}</div>
 			</div>
 			<div>
 				<button
@@ -33,29 +33,33 @@ const section = defineProps<{
 		>
 			<div class="text-xs text-gray-500">{{ section.emptyMessage }}</div>
 		</div>
-		<div v-else class="flex flex-col gap-1.5">
-			<router-link
+		<div v-else class="flex flex-col">
+			<div
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				:to="route(idx)"
-				class="group flex w-full cursor-pointer items-center justify-between rounded border border-gray-300 p-0.5 pl-1.5 text-sm transition-all hover:border-gray-400"
+				class="group w-full cursor-pointer rounded transition-all hover:border-gray-400"
 				:class="
 					section.isActive(idx)
-						? 'border-gray-700 hover:border-gray-700'
-						: 'border-gray-200'
+						? 'border-gray-700 bg-gray-100'
+						: 'border-transparent hover:border-gray-300'
 				"
 			>
-				<div class="flex gap-1.5">
-					<slot name="item-icon" :item="row" />
-					<p>{{ row.title }}</p>
-				</div>
-				<button
-					class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"
-					@click.prevent.stop="section.remove(row)"
+				<router-link
+					:to="route(idx)"
+					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
 				>
-					<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-				</button>
-			</router-link>
+					<div class="flex gap-1.5">
+						<slot name="item-icon" :item="row" />
+						<p>{{ row.title }}</p>
+					</div>
+					<button
+						class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"
+						@click.prevent.stop="section.remove(row)"
+					>
+						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					</button>
+				</router-link>
+			</div>
 		</div>
 	</div>
 </template>
