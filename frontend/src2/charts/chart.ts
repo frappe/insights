@@ -1,3 +1,4 @@
+import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, ref, unref } from 'vue'
 import { copy, getUniqueId, waitUntil } from '../helpers'
@@ -43,6 +44,12 @@ function makeChart(workbookChart: WorkbookChart) {
 		}),
 
 		refresh,
+	})
+
+	wheneverChanges(() => chart.doc.query, () => {
+		chart.doc.config = {} as WorkbookChart['config']
+		chart.doc.config.order_by = []
+		chart.dataQuery.reset()
 	})
 
 	watchDebounced(
