@@ -66,10 +66,10 @@ const operatorOptions = computed(() => {
 	if (FIELDTYPES.DATE.includes(type)) {
 		options.push({ label: 'is', value: '=' }) // date
 		options.push({ label: 'is not', value: '!=' }) // date
-		options.push({ label: 'is before', value: '>' }) // date
-		options.push({ label: 'is on or before', value: '>=' }) // date
-		options.push({ label: 'is after', value: '<' }) // date
-		options.push({ label: 'is on or after', value: '<=' }) // date
+		options.push({ label: 'is before', value: '<' }) // date
+		options.push({ label: 'is after', value: '>' }) // date
+		options.push({ label: 'is on or after', value: '>=' }) // date
+		options.push({ label: 'is on or before', value: '<=' }) // date
 		options.push({ label: 'is between', value: 'between' }) // date range
 	}
 	return options
