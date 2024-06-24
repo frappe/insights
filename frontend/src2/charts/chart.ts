@@ -47,7 +47,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	})
 
 	wheneverChanges(
-		() => chart.baseQuery?.currentOperations,
+		() => chart.baseQuery.doc?.operations,
 		() => refresh(),
 		{
 			deep: true,

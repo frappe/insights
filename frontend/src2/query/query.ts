@@ -158,7 +158,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return call(
 			'insights.insights.doctype.insights_workbook.insights_workbook.fetch_query_results',
 			{
-				operations: query.doc.operations,
+				operations: query.currentOperations,
 			},
 		)
 			.then((response: any) => {
