@@ -4,11 +4,12 @@ import JoinInnerIcon from '@/components/Icons/JoinInnerIcon.vue'
 import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
 import { wheneverChanges } from '@/utils'
+import { watchDebounced } from '@vueuse/core'
 import { computed, inject, ref } from 'vue'
 import useTableStore from '../../data_source/tables'
+import { JoinArgs, JoinType } from '../../types/query.types'
 import { column, table } from '../helpers'
 import { Query } from '../query'
-import { JoinArgs, JoinType } from '../../types/query.types'
 
 const emit = defineEmits({
 	select: (join: JoinArgs) => true,
@@ -39,6 +40,10 @@ const tableOptions = computed<TableOption[]>(() => {
 		label: t.table_name,
 		value: `${t.data_source}.${t.table_name}`,
 	}))
+})
+const tableSearchText = ref('')
+watchDebounced(tableSearchText, () => tableStore.getTables(undefined, tableSearchText.value), {
+	debounce: 300,
 })
 
 const tableColumnOptions = ref<DropdownOption[]>([])
@@ -158,6 +163,8 @@ function reset() {
 						:options="tableOptions"
 						:modelValue="join.table"
 						@update:modelValue="join.table = $event.value"
+						@update:query="tableSearchText = $event"
+						:loading="tableStore.loading"
 					/>
 				</div>
 				<div>

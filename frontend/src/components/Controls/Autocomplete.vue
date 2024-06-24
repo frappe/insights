@@ -17,9 +17,9 @@
 					}"
 				>
 					<div class="w-full space-y-1.5">
-						<label v-if="$props.label" class="block text-xs text-gray-600">{{
-							$props.label
-						}}</label>
+						<label v-if="$props.label" class="block text-xs text-gray-600">
+							{{ $props.label }}
+						</label>
 						<button
 							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
 							:class="{ 'bg-gray-200': isComboboxOpen }"
@@ -234,10 +234,20 @@ export default {
 	computed: {
 		selectedValue: {
 			get() {
+				let _selectedOptions
 				if (!this.multiple) {
-					return this.findOption(this.modelValue)
+					_selectedOptions = this.findOption(this.modelValue)
+					if (!_selectedOptions && this.modelValue) {
+						_selectedOptions = this.sanitizeOptions([this.modelValue])[0]
+					}
+					return _selectedOptions
 				}
-				return this.modelValue?.map((v) => this.findOption(v))
+
+				_selectedOptions = this.modelValue?.map((v) => this.findOption(v))
+				if (!_selectedOptions && this.modelValue) {
+					_selectedOptions = this.sanitizeOptions(this.modelValue)
+				}
+				return _selectedOptions
 			},
 			set(val) {
 				this.query = ''
@@ -330,7 +340,7 @@ export default {
 			if (!options) return []
 			// in case the options are just strings, convert them to objects
 			return options.map((option) => {
-				return typeof option === 'object' ? option : { label: option, value: option }
+				return typeof option === 'string' ? { label: option, value: option } : option
 			})
 		},
 		isOptionSelected(option) {
