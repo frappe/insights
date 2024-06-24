@@ -13,22 +13,12 @@ const showDialog = defineModel()
 
 const tableStore = useTableStore()
 
+const dataSourceFilter = ref('')
 const tableSearchQuery = ref('')
 wheneverChanges(
-	tableSearchQuery,
-	() => {
-		tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
-	},
-	{ debounce: 300 }
-)
-
-const dataSourceFilter = ref('')
-wheneverChanges(
-	dataSourceFilter,
-	() => {
-		tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value)
-	},
-	{ debounce: 300 }
+	() => [tableSearchQuery.value, dataSourceFilter.value],
+	() => tableStore.getTables(dataSourceFilter.value, tableSearchQuery.value),
+	{ debounce: 300, immediate: true }
 )
 
 const listColumns = [
@@ -90,7 +80,6 @@ function onConfirm() {
 					<FormControl
 						placeholder="Search by Title"
 						v-model="tableSearchQuery"
-						:debounce="300"
 						autocomplete="off"
 					>
 						<template #prefix>
