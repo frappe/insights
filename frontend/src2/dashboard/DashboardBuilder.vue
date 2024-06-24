@@ -6,7 +6,7 @@ import {
 	WorkbookDashboard,
 	WorkbookDashboardChart,
 	WorkbookQuery,
-} from '../workbook/workbook'
+} from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
 import DashboardFilterSelector from './DashboardFilterSelector.vue'
@@ -40,6 +40,7 @@ const showTextWidgetCreationDialog = ref(false)
 				<div class="flex gap-2">
 					<DashboardFilterSelector
 						v-if="!dashboard.editing"
+						:dashboard="dashboard"
 						:queries="props.queries"
 						:charts="props.charts"
 					/>

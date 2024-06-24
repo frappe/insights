@@ -4,11 +4,12 @@ import { computed, inject } from 'vue'
 import { copy } from '../helpers'
 import FiltersSelector from '../query/components/FiltersSelector.vue'
 import { getCachedQuery } from '../query/query'
-import { FilterArgs, FilterGroupArgs, QueryResultColumn } from '../types/query.types'
+import { FilterArgs, FilterGroupArgs } from '../types/query.types'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{
+	dashboard: Dashboard
 	charts: WorkbookChart[]
 	queries: WorkbookQuery[]
 }>()
@@ -29,9 +30,8 @@ const columnOptions = computed(() => {
 		.flat()
 })
 
-const dashboard = inject('dashboard') as Dashboard
 const filters = computed(() => {
-	const _filters = copy(dashboard.filters)
+	const _filters = copy(props.dashboard.filters)
 	return Object.entries(_filters)
 		.map(([queryName, filters]) => {
 			return filters.map((filter) => {
@@ -57,8 +57,8 @@ function applyFilters(args: FilterGroupArgs, togglePopover: Function) {
 			filtersByQuery[queryName].push(filter)
 		}
 	})
-	dashboard.filters = filtersByQuery
-	dashboard.refresh()
+	props.dashboard.filters = filtersByQuery
+	props.dashboard.refresh()
 	togglePopover()
 }
 </script>
