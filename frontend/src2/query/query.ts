@@ -343,7 +343,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return call(
 			'insights.insights.doctype.insights_workbook.insights_workbook.get_distinct_column_values',
 			{
-				operations: query.doc.operations,
+				operations: query.currentOperations,
 				column_name: column,
 				search_term,
 			},
