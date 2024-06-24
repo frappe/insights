@@ -49,16 +49,18 @@ export function getLineChartOptions(chart: Chart) {
 		grid: getGrid({ show_legend }),
 		xAxis,
 		yAxis,
-		series: measures.map((c, idx) =>
-			getSeries({
-				type: 'line',
+		series: measures.map((c, idx) => {
+			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y))
+			const type = is_right_axis ? _config.y2_axis_type : 'line'
+			return getSeries({
+				type,
 				name: c.name,
 				data: getSeriesData(c.name),
-				on_right_axis: _config.y2_axis?.includes(c.name),
+				on_right_axis: is_right_axis,
 				show_data_label: _config.show_data_labels,
 				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
-			}),
-		),
+			})
+		}),
 		tooltip: getTooltip(),
 		legend: getLegend(show_legend),
 	}

@@ -37,7 +37,7 @@ const measures = computed(() =>
 </script>
 
 <template>
-	<InlineFormControlLabel label="Bottom">
+	<InlineFormControlLabel label="X Axis">
 		<Autocomplete
 			class="w-full"
 			:showFooter="true"
@@ -46,7 +46,7 @@ const measures = computed(() =>
 			@update:modelValue="config.x_axis = $event?.value"
 		/>
 	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Left">
+	<InlineFormControlLabel label="Left Y Axis">
 		<Autocomplete
 			:multiple="true"
 			:options="measures"
@@ -54,7 +54,7 @@ const measures = computed(() =>
 			@update:modelValue="config.y_axis = $event?.map((v: any) => v.value)"
 		/>
 	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Right">
+	<InlineFormControlLabel label="Right Y Axis">
 		<Autocomplete
 			:multiple="true"
 			:options="measures"
