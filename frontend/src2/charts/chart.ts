@@ -46,15 +46,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		refresh,
 	})
 
-	wheneverChanges(
-		() => chart.baseQuery.doc?.operations,
-		() => refresh(),
-		{
-			deep: true,
-			debounce: 500,
-		},
-	)
-
 	watchDebounced(
 		() => chart.doc.config,
 		() => refresh(),
