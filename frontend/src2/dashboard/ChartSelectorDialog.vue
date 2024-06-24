@@ -42,6 +42,7 @@ const areAllSelected = computed(() => selectedCharts.value.length === props.char
 const areNoneSelected = computed(() => selectedCharts.value.length === 0)
 function confirmSelection() {
 	emit('select', selectedCharts.value)
+	selectedCharts.value = []
 	showDialog.value = false
 }
 </script>
