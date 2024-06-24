@@ -2,10 +2,10 @@
 import { FIELDTYPES } from '@/utils'
 import { ChevronRight, ListFilter } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
+import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import ColumnFilterTypeDate from './ColumnFilterTypeDate.vue'
 import ColumnFilterTypeNumber from './ColumnFilterTypeNumber.vue'
 import ColumnFilterTypeText from './ColumnFilterTypeText.vue'
-import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 
 const emit = defineEmits({
 	filter: (operator: FilterOperator, value: FilterValue) => true,
@@ -43,12 +43,14 @@ const isValidFilter = computed(() => {
 
 function processFilter(operator: FilterOperator, value: FilterValue) {
 	if (isNumber.value && Array.isArray(value)) {
+		// convert to string so that 0 is not considered as falsy
 		value = value.map((v) => (!isNaN(v) ? String(v) : v))
 		if (operator === '=' && value[0] === value[1]) return ['=', Number(value[0])]
 		if (operator === '>=' && value[0] && !value[1]) return ['>=', Number(value[0])]
 		if (operator === '<=' && !value[0] && value[1]) return ['<=', Number(value[1])]
-		if (operator === 'between' && value[0] && value[1])
-			return ['between', Number(value[0]), Number(value[1])]
+		if (operator === 'between' && value[0] && value[1]) {
+			return ['between', [Number(value[0]), Number(value[1])]]
+		}
 	}
 
 	if (isText.value) {
