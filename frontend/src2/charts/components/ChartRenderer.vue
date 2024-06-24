@@ -15,10 +15,7 @@ const eChartOptions = computed(() => {
 		return getBarChartOptions(chart)
 	}
 	if (chart.doc.chart_type === 'Line') {
-		return getLineChartOptions(
-			chart.dataQuery.result.columns,
-			chart.dataQuery.result.formattedRows
-		)
+		return getLineChartOptions(chart)
 	}
 	if (chart.doc.chart_type === 'Donut') {
 		return getDonutChartOptions(

@@ -1,5 +1,5 @@
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
-import { BarChartConfig } from '../types/chart.types'
+import { BarChartConfig, LineChartConfig } from '../types/chart.types'
 import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
 
@@ -20,23 +20,47 @@ export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[])
 	if (discreteDimensions.length > 1 && measures.length) return 'table'
 }
 
-export function getLineChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
-	const data = getData(columns, rows)
+export function getLineChartOptions(chart: Chart) {
+	const _config = chart.doc.config as LineChartConfig
+	const _columns = chart.dataQuery.result.columns
+	const _rows = chart.dataQuery.result.rows
+
+	const measures = _columns.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
+	const show_legend = measures.length > 1
+
+	const xColumn = _columns.find((c) => c.name === _config.x_axis)
+	const xAxis = getXAxis({
+		column_type: xColumn?.type,
+	})
+
+	const leftYAxis = getYAxis()
+	const rightYAxis = getYAxis({ is_secondary: true })
+	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
+
+	const getSeriesData = (column: string) =>
+		_rows.map((r) => {
+			const x_value = r[_config.x_axis]
+			const y_value = r[column]
+			return [x_value, y_value]
+		})
+
 	return {
 		animation: true,
-		grid: getGrid(),
-		dataset: { source: data },
-		xAxis: { type: 'category' },
-		yAxis: {
-			type: 'value',
-			splitLine: { lineStyle: { type: 'dashed' } },
-			axisLabel: { formatter: (value: Number) => getShortNumber(value, 1) },
-		},
-		series: columns
-			.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
-			.map((c) => ({ type: 'line' })),
+		grid: getGrid({ show_legend }),
+		xAxis,
+		yAxis,
+		series: measures.map((c, idx) =>
+			getSeries({
+				type: 'line',
+				name: c.name,
+				data: getSeriesData(c.name),
+				on_right_axis: _config.y2_axis?.includes(c.name),
+				show_data_label: _config.show_data_labels,
+				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
+			}),
+		),
 		tooltip: getTooltip(),
-		legend: getLegend(),
+		legend: getLegend(show_legend),
 	}
 }
 
@@ -58,10 +82,11 @@ export function getBarChartOptions(chart: Chart) {
 
 	const show_legend = measures.length > 1
 
+	const xColumn = _columns.find((c) => c.name === _config.x_axis)
 	const xAxisValues = _rows.map((r) => r[_config.x_axis])
 	const xAxis = getXAxis({
 		values: _config.swap_axes ? xAxisValues.reverse() : xAxisValues,
-		column_type: _columns.find((c) => c.name === _config.x_axis)?.type,
+		column_type: xColumn?.type,
 	})
 
 	const leftYAxis = getYAxis({ normalized: _config.normalize })
@@ -237,12 +262,6 @@ function getDonutChartData(
 	}
 
 	return topData
-}
-
-function getData(columns: QueryResultColumn[], rows: QueryResultRow[]) {
-	type RowKey = keyof QueryResultRow
-	const columnNames = columns.map((c) => c.name) as RowKey[]
-	return [columnNames, ...rows.map((r) => columnNames.map((c) => r[c]))]
 }
 
 function getGrid(options: any = {}) {
