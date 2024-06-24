@@ -47,16 +47,19 @@ function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 
 <template>
 	<div
-		class="flex h-full w-full items-center"
+		class="flex h-full w-full items-center rounded"
 		:class="[
 			dashboard.editing && dashboard.isActiveItem(index) ? 'outline outline-gray-700' : '',
-			dashboard.editing ? 'pointer-events-none' : '',
 		]"
 		@click="dashboard.setActiveItem(index)"
 	>
-		<ChartRenderer v-if="chart" :chart="chart" />
+		<ChartRenderer
+			v-if="chart"
+			:chart="chart"
+			:class="dashboard.editing ? 'pointer-events-none' : ''"
+		/>
 
-		<div v-if="filter" class="flex-1">
+		<div v-if="filter" class="flex-1" :class="dashboard.editing ? 'pointer-events-none' : ''">
 			<ColumnFilter
 				placement="bottom-start"
 				:column="filter.column"
