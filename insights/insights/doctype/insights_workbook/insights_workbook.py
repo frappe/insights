@@ -72,7 +72,7 @@ def get_distinct_column_values(operations, column_name, search_term=None):
         .filter(
             getattr(_, column_name).notnull()
             if not search_term
-            else getattr(_, column_name).like(f"%{search_term}%")
+            else getattr(_, column_name).ilike(f"%{search_term}%")
         )
         .distinct()
         .head(20)

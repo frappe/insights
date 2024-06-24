@@ -19,12 +19,10 @@ const searchInput = ref('')
 const fetchingValues = ref(false)
 watchDebounced(
 	() => searchInput.value,
-	(value) => {
+	(searchTxt) => {
 		fetchingValues.value = true
-		// query
-		// 	.getDistinctColumnValues(props.column.name, value)
 		props
-			.valuesProvider(value)
+			.valuesProvider(searchTxt)
 			.then((values: string[]) => (distinctColumnValues.value = values))
 			.finally(() => (fetchingValues.value = false))
 	},
