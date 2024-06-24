@@ -9,88 +9,78 @@ const props = defineProps<{ chart: Chart }>()
 
 const title = computed(() => props.chart.doc.title)
 const config = computed(() => props.chart.doc.config as NumberChartConfig)
-const formattedValue = computed(() => {
-	if (!config.value.number_column || !props.chart.dataQuery.result.rows) {
-		return null
-	}
-
-	const rows = props.chart.dataQuery.result.rows
-	const number_values = rows.map((row: any) => row[config.value.number_column])
-	const _value = number_values.reduce((a: number, b: number) => a + b, 0)
-
-	if (config.value.shorten_numbers) {
-		return getShortNumber(_value, config.value.decimal)
-	}
-	return formatNumber(_value, config.value.decimal)
-})
 
 const dateValues = computed(() => {
 	if (!config.value.date_column) return []
 	const date_column = config.value.date_column
 	return props.chart.dataQuery.result.rows.map((row: any) => row[date_column])
 })
-const numberValues = computed(() => {
-	if (!config.value.number_column) return []
-	return props.chart.dataQuery.result.rows.map((row: any) => row[config.value.number_column])
+const numberValuesPerColumn = computed(() => {
+	if (!config.value.number_columns?.length) return {}
+	if (!props.chart.dataQuery.result?.rows) return {}
+
+	return config.value.number_columns.reduce((acc: any, column: string) => {
+		acc[column] = props.chart.dataQuery.result.rows.map((row: any) => row[column])
+		return acc
+	}, {})
 })
 
-const currentValue = computed(() => {
-	if (!numberValues.value?.length) return
-	return numberValues.value[numberValues.value.length - 1]
+const cards = computed(() => {
+	if (!config.value.number_columns?.length) return []
+	if (!props.chart.dataQuery.result?.rows) return []
+
+	return config.value.number_columns.map((column: string) => {
+		const numberValues = numberValuesPerColumn.value[column]
+		const currentValue = numberValues[numberValues.length - 1]
+		const previousValue = numberValues[numberValues.length - 2]
+		const delta = config.value.negative_is_better
+			? previousValue - currentValue
+			: currentValue - previousValue
+		const percentDelta = (delta / previousValue) * 100
+		return {
+			column,
+			currentValue: getFormattedValue(currentValue),
+			previousValue: getFormattedValue(previousValue),
+			delta,
+			percentDelta,
+		}
+	})
 })
-const previousValue = computed(() => {
-	if (!numberValues.value?.length) return
-	return numberValues.value[numberValues.value.length - 2]
-})
-const delta = computed(() => {
-	if (currentValue.value === undefined || previousValue.value === undefined) return 0
-	return config.value.negative_is_better
-		? previousValue.value - currentValue.value
-		: currentValue.value - previousValue.value
-})
-const percentDelta = computed(() => {
-	if (currentValue.value === undefined || previousValue.value === undefined) {
-		return 0
+
+const getFormattedValue = (value: number) => {
+	if (config.value.shorten_numbers) {
+		return getShortNumber(value, config.value.decimal)
 	}
-	return (delta.value / previousValue.value) * 100
-})
+	return formatNumber(value, config.value.decimal)
+}
 </script>
 
 <template>
-	<div
-		v-if="formattedValue"
-		class="flex h-full w-full items-center justify-center overflow-hidden p-6"
-	>
+	<div class="grid w-full grid-cols-5 gap-4">
 		<div
-			class="mx-auto flex h-full max-h-[10rem] w-full min-w-[10rem] max-w-[16rem] items-center gap-2 overflow-y-auto"
+			v-for="{ column, currentValue, delta, percentDelta } in cards"
+			:key="column"
+			class="flex h-[140px] items-center gap-2 overflow-y-auto rounded bg-white py-4 text-center shadow"
 		>
-			<div class="flex w-full flex-col">
-				<div class="w-full">
-					<span class="truncate font-medium leading-6">
-						{{ title || config.number_column }}
-					</span>
-				</div>
-				<div class="mb-1 flex items-center justify-between gap-4">
-					<div class="flex-shrink-0 text-[28px] font-medium leading-10">
-						{{ config.prefix }}{{ formattedValue }}{{ config.suffix }}
-					</div>
-					<div class="h-[40px] max-w-[8rem] flex-1">
-						<Sparkline
-							v-if="config.sparkline"
-							:dates="dateValues"
-							:values="numberValues"
-						/>
-					</div>
+			<div class="flex w-full flex-col items-center">
+				<span class="truncate text-sm font-medium">
+					{{ column }}
+				</span>
+				<div class="flex-1 flex-shrink-0 text-[24px] font-semibold leading-10">
+					{{ config.prefix }}{{ currentValue }}{{ config.suffix }}
 				</div>
 				<div
 					v-if="config.comparison"
-					class="flex text-sm"
+					class="flex items-center justify-center text-xs font-medium"
 					:class="delta >= 0 ? 'text-green-500' : 'text-red-500'"
 				>
 					<span class="">
-						{{ delta >= 0 ? '+' : '-' }}
+						{{ delta >= 0 ? '↑' : '↓' }}
 					</span>
 					<span> {{ formatNumber(Math.abs(percentDelta), 2) }}% </span>
+				</div>
+				<div v-if="config.sparkline" class="mt-2 h-[18px] w-[80px]">
+					<Sparkline :dates="dateValues" :values="numberValuesPerColumn[column]" />
 				</div>
 			</div>
 		</div>

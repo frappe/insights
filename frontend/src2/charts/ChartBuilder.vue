@@ -33,9 +33,7 @@ if (!chart.doc.config.order_by) {
 			<div
 				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
 			>
-				<div class="h-full w-full overflow-hidden rounded bg-white shadow">
-					<ChartRenderer :chart="chart" />
-				</div>
+				<ChartRenderer :chart="chart" />
 			</div>
 			<DataTable
 				v-if="chart.doc.chart_type != 'Table'"

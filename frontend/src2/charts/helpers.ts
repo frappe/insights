@@ -1,5 +1,5 @@
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
-import { AxisChartConfig } from '../types/chart.types'
+import { BarChartConfig } from '../types/chart.types'
 import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
 
@@ -40,24 +40,8 @@ export function getLineChartOptions(columns: QueryResultColumn[], rows: QueryRes
 	}
 }
 
-export function getRowChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
-	const data = getData(columns, rows.reverse())
-	return {
-		animation: true,
-		grid: getGrid(),
-		dataset: { source: data },
-		xAxis: { type: 'value' },
-		yAxis: { type: 'category' },
-		series: columns
-			.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
-			.map((c) => ({ type: 'bar', stack: 'stack' })),
-		tooltip: getTooltip(),
-		legend: getLegend(),
-	}
-}
-
 export function getBarChartOptions(chart: Chart) {
-	const _config = chart.doc.config as AxisChartConfig
+	const _config = chart.doc.config as BarChartConfig
 	const _columns = chart.dataQuery.result.columns
 	const _rows = chart.dataQuery.result.rows
 
@@ -116,22 +100,7 @@ export function getBarChartOptions(chart: Chart) {
 			})
 		}),
 		tooltip: getTooltip(),
-		legend: {
-			show: show_legend,
-			icon: 'circle',
-			type: 'scroll',
-			orient: 'horizontal',
-			bottom: 'bottom',
-			itemGap: 16,
-			padding: [5, 30],
-			textStyle: { padding: [0, 0, 0, -4] },
-			data: measures.map((c) => c.name),
-			pageIconSize: 10,
-			pageIconColor: '#64748B',
-			pageIconInactiveColor: '#C0CCDA',
-			pageFormatter: '{current}',
-			pageButtonItemGap: 2,
-		},
+		legend: getLegend(show_legend),
 	}
 }
 
@@ -153,7 +122,10 @@ function getXAxis(options: XAxisCustomizeOptions = {}) {
 	}
 }
 
-type YAxisCustomizeOptions = { is_secondary?: boolean; normalized?: boolean }
+type YAxisCustomizeOptions = {
+	is_secondary?: boolean
+	normalized?: boolean
+}
 function getYAxis(options: YAxisCustomizeOptions = {}) {
 	return {
 		show: true,
@@ -201,26 +173,6 @@ function getSeries(options: SeriesCustomizationOptions = {}) {
 		emphasis: { focus: 'series' },
 		barMaxWidth: 60,
 		yAxisIndex: options.on_right_axis ? 1 : 0,
-	}
-}
-
-export function getBarChartOptions2(columns: QueryResultColumn[], rows: QueryResultRow[]) {
-	const data = getData(columns, rows)
-	return {
-		animation: true,
-		grid: getGrid(),
-		dataset: { source: data },
-		xAxis: { type: 'category' },
-		yAxis: {
-			type: 'value',
-			splitLine: { lineStyle: { type: 'dashed' } },
-			axisLabel: { formatter: (value: Number) => getShortNumber(value, 1) },
-		},
-		series: columns
-			.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
-			.map((c) => ({ type: 'bar', stack: 'stack' })),
-		tooltip: getTooltip(),
-		legend: getLegend(),
 	}
 }
 
@@ -295,10 +247,10 @@ function getData(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 
 function getGrid(options: any = {}) {
 	return {
-		top: 22,
+		top: 18,
 		left: 22,
 		right: 22,
-		bottom: options.show_legend ? 32 : 22,
+		bottom: options.show_legend ? 36 : 22,
 		containLabel: true,
 	}
 }
@@ -312,13 +264,17 @@ function getTooltip() {
 	}
 }
 
-function getLegend() {
+function getLegend(show_legend = true) {
 	return {
+		show: show_legend,
 		icon: 'circle',
 		type: 'scroll',
 		orient: 'horizontal',
 		bottom: 'bottom',
-		pageIconSize: 12,
+		itemGap: 16,
+		padding: [10, 30],
+		textStyle: { padding: [0, 0, 0, -4] },
+		pageIconSize: 10,
 		pageIconColor: '#64748B',
 		pageIconInactiveColor: '#C0CCDA',
 		pageFormatter: '{current}',

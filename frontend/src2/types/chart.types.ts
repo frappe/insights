@@ -20,7 +20,7 @@ export type BarChartConfig = AxisChartConfig & {
 export type LineChartConfig = AxisChartConfig & {}
 
 export type NumberChartConfig = {
-	number_column: string
+	number_columns: string[]
 	comparison: boolean
 	sparkline: boolean
 	date_column?: string

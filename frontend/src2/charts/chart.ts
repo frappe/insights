@@ -7,7 +7,6 @@ import { Query, getCachedQuery, makeQuery } from '../query/query'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
-	BarChartConfig,
 	DountChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
@@ -135,30 +134,31 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function fetchNumberChartData(config: NumberChartConfig) {
-		const number = chart.baseQuery.getMeasure(config.number_column)
-		if (!number) {
+		if (!config.number_columns?.length) {
+			console.warn('Number column is required')
+			return
+		}
+
+		const numbers = config.number_columns
+			?.map((n) => chart.baseQuery.getMeasure(n))
+			.filter(Boolean) as Measure[]
+
+		if (!numbers?.length) {
 			console.warn('Number column not found')
 			return
 		}
 
 		const date = chart.baseQuery.getDimension(config.date_column as string)
-		prepareNumberQuery(number, date)
+		prepareNumberQuery(numbers, date)
 		applySortOrder()
 		return chart.dataQuery.execute()
 	}
 
-	function prepareNumberQuery(number: Measure, date?: Dimension) {
-		if (date) {
-			chart.dataQuery.addSummarize({
-				measures: [number],
-				dimensions: [date],
-			})
-		} else {
-			chart.dataQuery.addSummarize({
-				measures: [number],
-				dimensions: [],
-			})
-		}
+	function prepareNumberQuery(numbers: Measure[], date?: Dimension) {
+		chart.dataQuery.addSummarize({
+			measures: numbers,
+			dimensions: date ? [date] : [],
+		})
 	}
 
 	function fetchDonutChartData(config: DountChartConfig) {

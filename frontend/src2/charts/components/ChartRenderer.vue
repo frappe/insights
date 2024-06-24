@@ -3,12 +3,7 @@ import BaseChart from '@/components/Charts/BaseChart.vue'
 import { computed } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { Chart } from '../chart'
-import {
-	getBarChartOptions,
-	getDonutChartOptions,
-	getLineChartOptions,
-	getRowChartOptions,
-} from '../helpers'
+import { getBarChartOptions, getDonutChartOptions, getLineChartOptions } from '../helpers'
 import NumberChart from './NumberChart.vue'
 
 const props = defineProps<{ chart: Chart }>()
@@ -25,12 +20,6 @@ const eChartOptions = computed(() => {
 			chart.dataQuery.result.formattedRows
 		)
 	}
-	if (chart.doc.chart_type === 'Row') {
-		return getRowChartOptions(
-			chart.dataQuery.result.columns,
-			chart.dataQuery.result.formattedRows
-		)
-	}
 	if (chart.doc.chart_type === 'Donut') {
 		return getDonutChartOptions(
 			chart.dataQuery.result.columns,
@@ -41,10 +30,13 @@ const eChartOptions = computed(() => {
 </script>
 
 <template>
-	<BaseChart v-if="eChartOptions" class="p-2" :title="chart.doc.title" :options="eChartOptions" />
-	<div v-if="chart.doc.chart_type == 'Number'" class="h-full w-full">
-		<NumberChart :chart="chart" />
-	</div>
+	<BaseChart
+		v-if="eChartOptions"
+		class="rounded bg-white py-1 shadow"
+		:title="chart.doc.title"
+		:options="eChartOptions"
+	/>
+	<NumberChart v-if="chart.doc.chart_type == 'Number'" :chart="chart" />
 	<DataTable
 		v-if="chart.doc.chart_type == 'Table'"
 		:columns="chart.dataQuery.result.columns"

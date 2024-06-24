@@ -15,9 +15,9 @@ const gradient = new graphic.LinearGradient(0, 0, 0, 1, [
 <template>
 	<BaseChart
 		:options="{
-			animation: false,
+			animation: true,
 			grid: {
-				top: '30%',
+				top: '20%',
 				left: 0,
 				right: 0,
 				bottom: 0,
@@ -42,10 +42,10 @@ const gradient = new graphic.LinearGradient(0, 0, 0, 1, [
 					type: 'line',
 					showSymbol: false,
 					color: color,
-					// areaStyle: {
-					// 	color: gradient,
-					// 	opacity: 0.2,
-					// },
+					areaStyle: {
+						color: gradient,
+						opacity: 0.3,
+					},
 				},
 			],
 		}"

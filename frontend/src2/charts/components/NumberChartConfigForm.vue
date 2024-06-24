@@ -14,7 +14,7 @@ const props = defineProps<{
 const config = defineModel<NumberChartConfig>({
 	required: true,
 	default: () => ({
-		number_column: '',
+		number_columns: '',
 		comparison: false,
 		sparkline: false,
 	}),
@@ -39,10 +39,11 @@ const measures = computed(() =>
 <template>
 	<InlineFormControlLabel label="Number">
 		<Autocomplete
+			:multiple="true"
 			:showFooter="true"
 			:options="measures"
-			:modelValue="config.number_column"
-			@update:modelValue="config.number_column = $event?.value"
+			:modelValue="config.number_columns"
+			@update:modelValue="config.number_columns = $event?.map((v: any) => v.value)"
 		/>
 	</InlineFormControlLabel>
 
