@@ -46,7 +46,8 @@ wheneverChanges(
 	() => join.value.table,
 	() => {
 		const newTable = join.value.table
-		const tableColumn = tableOptions.value.find((t) => t.value === newTable) as TableOption
+		const tableColumn = tableOptions.value.find((t) => t.value === newTable)
+		if (!tableColumn) return
 		tableStore
 			.getTableColumns(tableColumn.data_source, tableColumn.table_name)
 			.then((columns) => {
@@ -105,7 +106,7 @@ const joinTypes = [
 		value: 'full',
 		description: 'Keep all rows from both tables',
 	},
-]
+] as const
 
 const isValid = computed(() => {
 	return join.value.table && join.value.leftColumn && join.value.rightColumn && join.value.type
@@ -193,6 +194,7 @@ function reset() {
 									? 'border-gray-700'
 									: 'cursor-pointer hover:border-gray-400'
 							"
+							@click="join.type = joinType.value"
 						>
 							<component
 								:is="joinType.icon"
