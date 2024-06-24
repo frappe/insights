@@ -7,6 +7,7 @@ import { Query, getCachedQuery, makeQuery } from '../query/query'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
+	BarChartConfig,
 	DountChartConfig,
 	NumberChartConfig,
 	TableChartConfig,

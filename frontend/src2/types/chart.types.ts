@@ -1,4 +1,4 @@
-export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
+export const AXIS_CHARTS = ['Bar', 'Line']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
 export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Table']
@@ -10,11 +10,14 @@ export type AxisChartConfig = {
 	y2_axis: string[]
 	y2_axis_type?: 'line' | 'bar'
 	split_by?: string
-	grouping?: 'stacked' | 'grouped'
 	show_data_labels?: boolean
-	swap_axes?: boolean
-	normalize?: boolean
 }
+export type BarChartConfig = AxisChartConfig & {
+	grouping?: 'stacked' | 'grouped'
+	normalize?: boolean
+	swap_axes?: boolean
+}
+export type LineChartConfig = AxisChartConfig & {}
 
 export type NumberChartConfig = {
 	number_column: string

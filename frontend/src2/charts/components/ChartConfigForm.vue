@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { AXIS_CHARTS } from '../../types/chart.types'
 import { Chart } from '../chart'
-import AxisChartConfigForm from './AxisChartConfigForm.vue'
+import BarChartConfigForm from './BarChartConfigForm.vue'
+import LineChartConfigForm from './LineChartConfigForm.vue'
 import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import NumberChartConfigForm from './NumberChartConfigForm.vue'
 import TableChartConfigForm from './TableChartConfigForm.vue'
@@ -33,10 +33,15 @@ const chart = props.chart
 		:dimensions="chart.baseQuery.dimensions"
 		:measures="chart.baseQuery.measures"
 	/>
-	<AxisChartConfigForm
-		v-if="AXIS_CHARTS.includes(chart.doc.chart_type)"
+	<BarChartConfigForm
+		v-if="chart.doc.chart_type == 'Bar'"
 		v-model="chart.doc.config"
-		:chart-type="chart.doc.chart_type"
+		:dimensions="chart.baseQuery.dimensions"
+		:measures="chart.baseQuery.measures"
+	/>
+	<LineChartConfigForm
+		v-if="chart.doc.chart_type == 'Line'"
+		v-model="chart.doc.config"
 		:dimensions="chart.baseQuery.dimensions"
 		:measures="chart.baseQuery.measures"
 	/>
