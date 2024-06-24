@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { BarChart3, LayoutPanelTop, Table2 } from 'lucide-vue-next'
+import { LayoutPanelTop, Table2 } from 'lucide-vue-next'
 import { inject } from 'vue'
+import ChartIcon from '../charts/components/ChartIcon.vue'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
 import { Workbook, workbookKey } from './workbook'
 
@@ -40,8 +41,8 @@ const workbook = inject(workbookKey) as Workbook
 				route: (idx: number) => `/workbook/${workbook.name}/chart/${idx}`,
 			}"
 		>
-			<template #item-icon>
-				<BarChart3 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			<template #item-icon="{ item }">
+				<ChartIcon :chart-type="item.chart_type" />
 			</template>
 		</WorkbookSidebarListSection>
 

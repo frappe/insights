@@ -35,7 +35,7 @@ const icon = computed(() => {
 		case 'Number':
 			return BatteryMedium
 		default:
-			throw new Error(`Unknown chart type: ${props.chartType}`)
+			return BarChart3
 	}
 })
 </script>
