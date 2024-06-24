@@ -1,7 +1,6 @@
-import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
-import { computed, reactive, unref } from 'vue'
-import { getUniqueId, waitUntil } from '../helpers'
+import { computed, reactive, ref, unref } from 'vue'
+import { copy, getUniqueId, waitUntil } from '../helpers'
 import { column, count } from '../query/helpers'
 import { Query, getCachedQuery, makeQuery } from '../query/query'
 import {
@@ -11,7 +10,7 @@ import {
 	NumberChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { Dimension, FilterArgs, Measure } from '../types/query.types'
+import { Dimension, FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 
 const charts = new Map<string, Chart>()
@@ -104,7 +103,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareAxisChartQuery(row, column, values)
 		applySortOrder()
-		return chart.dataQuery.execute()
+		return executeQuery()
 	}
 
 	function prepareAxisChartQuery(row: Dimension, column?: Dimension, values?: Measure[]) {
@@ -142,7 +141,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		const date = chart.baseQuery.getDimension(config.date_column as string)
 		prepareNumberQuery(numbers, date)
 		applySortOrder()
-		return chart.dataQuery.execute()
+		return executeQuery()
 	}
 
 	function prepareNumberQuery(numbers: Measure[], date?: Dimension) {
@@ -175,7 +174,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareDonutQuery(label, value)
 		applySortOrder()
-		return chart.dataQuery.execute()
+		return executeQuery()
 	}
 
 	function prepareDonutQuery(label: Dimension, value: Measure) {
@@ -206,7 +205,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		prepareTableQuery(rows, columns, values)
 		applySortOrder()
-		return chart.dataQuery.execute()
+		return executeQuery()
 	}
 
 	function prepareTableQuery(rows: Dimension[], columns: Dimension[], values: Measure[]) {
@@ -237,7 +236,6 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function resetQuery(filters?: FilterArgs[]) {
-		chart.dataQuery.reset()
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.currentOperations])
 		const _filters = new Set(filters)
@@ -246,6 +244,19 @@ function makeChart(workbookChart: WorkbookChart) {
 				chart.dataQuery.addFilter(filter)
 			})
 		}
+	}
+
+	const lastExecutedQueryOperations = ref<Operation[]>([])
+	async function executeQuery() {
+		if (
+			JSON.stringify(lastExecutedQueryOperations.value) ===
+			JSON.stringify(chart.dataQuery.currentOperations)
+		) {
+			return Promise.resolve()
+		}
+		return chart.dataQuery.execute().then(() => {
+			lastExecutedQueryOperations.value = copy(chart.dataQuery.currentOperations)
+		})
 	}
 
 	return chart
