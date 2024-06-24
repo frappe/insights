@@ -60,9 +60,9 @@ const getFormattedValue = (value: number) => {
 		<div
 			v-for="{ column, currentValue, delta, percentDelta } in cards"
 			:key="column"
-			class="flex h-[140px] items-center gap-2 overflow-y-auto rounded bg-white py-4 text-center shadow"
+			class="flex h-[140px] items-center gap-2 overflow-y-auto rounded bg-white py-4 px-6 shadow"
 		>
-			<div class="flex w-full flex-col items-center">
+			<div class="flex w-full flex-col">
 				<span class="truncate text-sm font-medium">
 					{{ column }}
 				</span>
@@ -71,7 +71,7 @@ const getFormattedValue = (value: number) => {
 				</div>
 				<div
 					v-if="config.comparison"
-					class="flex items-center justify-center text-xs font-medium"
+					class="flex items-center gap-1 text-xs font-medium"
 					:class="delta >= 0 ? 'text-green-500' : 'text-red-500'"
 				>
 					<span class="">
