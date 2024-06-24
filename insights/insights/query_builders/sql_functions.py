@@ -187,28 +187,7 @@ class Functions:
             return case(*conditions, else_=default)
 
         if function == "timespan":
-            column = args[0]
-            timespan = args[1].lower()  # "last 7 days"
-            timespan = (
-                timespan[:-1] if timespan.endswith("s") else timespan
-            )  # "last 7 day"
-
-            units = [
-                "day",
-                "week",
-                "month",
-                "quarter",
-                "year",
-                "fiscal year",
-            ]
-            if not any(timespan.endswith(unit) for unit in units):
-                raise Exception(f"Invalid timespan unit - {timespan}")
-
-            dates = get_date_range(timespan)
-            if not dates:
-                raise Exception(f"Invalid timespan {args[1]}")
-            dates_str = add_start_and_end_time(dates)
-            return column.between(*dates_str)
+            return handle_timespan(args[0], args[1])
 
         if function == "time_elapsed":
             VALID_UNITS = [
@@ -256,6 +235,30 @@ class Functions:
             return ColumnFormatter.format_date(args[0].title(), args[1])
 
         raise NotImplementedError(f"Function {function} not implemented")
+
+
+def handle_timespan(column, timespan):
+    if isinstance(timespan, list):
+        timespan = " ".join(timespan)
+    timespan = timespan.lower()  # "last 7 days"
+    timespan = timespan[:-1] if timespan.endswith("s") else timespan  # "last 7 day"
+
+    units = [
+        "day",
+        "week",
+        "month",
+        "quarter",
+        "year",
+        "fiscal year",
+    ]
+    if not any(timespan.endswith(unit) for unit in units):
+        raise Exception(f"Invalid timespan unit - {timespan}")
+
+    dates = get_date_range(timespan)
+    if not dates:
+        raise Exception(f"Invalid timespan {timespan}")
+    dates_str = add_start_and_end_time(dates)
+    return column.between(*dates_str)
 
 
 def get_descendants(node, tree, include_self=False):

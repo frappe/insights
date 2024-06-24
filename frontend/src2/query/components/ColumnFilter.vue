@@ -63,7 +63,7 @@ function processFilter(operator: FilterOperator, value: FilterValue) {
 		if (operator === '=' && value[0] === value[1]) return ['=', value[0]]
 		if (operator === '>=' && value[0] && !value[1]) return ['>=', value[0]]
 		if (operator === '<=' && !value[0] && value[1]) return ['<=', value[1]]
-		if (operator === 'within') return ['within', value]
+		if (operator === 'within') return ['within', value.join(' ')]
 		if (operator === 'between' && value[0] && value[1]) return ['between', [value[0], value[1]]]
 	}
 }

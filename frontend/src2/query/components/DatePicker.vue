@@ -35,7 +35,7 @@
 						:key="toValue(date)"
 						class="flex h-[30px] w-[30px] cursor-pointer items-center justify-center text-sm"
 						:class="{
-							'text-gray-500': date < today,
+							'font-bold': toValue(date) === toValue(today),
 							' rounded-l bg-gray-800 text-white':
 								fromDateTxt && toValue(date) === toValue(fromDateTxt),
 							' rounded-r bg-gray-800 text-white':

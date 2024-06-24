@@ -12,6 +12,7 @@ from ibis.expr.datatypes import DataType
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
+from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -123,7 +124,7 @@ class IbisQueryBuilder:
             "starts_with": lambda x, y: x.like(f"{y}%"),
             "ends_with": lambda x, y: x.like(f"%{y}"),
             "between": lambda x, y: x.between(y[0], y[1]),
-            # "within": lambda x, y: handle_timespan(x, y),
+            "within": lambda x, y: handle_timespan(x, y),
         }[operator]
 
     def translate_filter_group(self, filter_group_args):
