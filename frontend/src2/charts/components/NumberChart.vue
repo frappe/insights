@@ -42,12 +42,13 @@ const cards = computed(() => {
 			currentValue: getFormattedValue(currentValue),
 			previousValue: getFormattedValue(previousValue),
 			delta,
-			percentDelta,
+			percentDelta: getFormattedValue(percentDelta),
 		}
 	})
 })
 
 const getFormattedValue = (value: number) => {
+	if (isNaN(value)) return 0
 	if (config.value.shorten_numbers) {
 		return getShortNumber(value, config.value.decimal)
 	}
@@ -77,7 +78,7 @@ const getFormattedValue = (value: number) => {
 					<span class="">
 						{{ delta >= 0 ? '↑' : '↓' }}
 					</span>
-					<span> {{ formatNumber(Math.abs(percentDelta), 2) }}% </span>
+					<span> {{ percentDelta }}% </span>
 				</div>
 				<div v-if="config.sparkline" class="mt-2 h-[18px] w-[80px]">
 					<Sparkline :dates="dateValues" :values="numberValuesPerColumn[column]" />
