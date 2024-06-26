@@ -1,4 +1,4 @@
-import { safeJSONParse } from '@/utils'
+import { safeJSONParse, wheneverChanges } from '@/utils'
 import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
@@ -22,16 +22,17 @@ export default function useWorkbook(name: string) {
 	const router = useRouter()
 	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.doc.name}`))
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
-	workbook.onAfterLoad((doc: InsightsWorkbook) => {
+
+	wheneverChanges(() => workbook.doc, () => {
 		// load & cache queries, charts and dashboards
 
 		// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
 		// this is because, when the workbook doc is updated,
 		// the reference to the workbook.doc.queries/charts/dashboards is lost
 		// so we need to update the references to the new queries/charts/dashboards
-		doc.queries.forEach((q) => (useQuery(q).doc = q))
-		doc.charts.forEach((c) => (useChart(c).doc = c))
-		doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
+		workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
+		workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
+		workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
 	})
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
