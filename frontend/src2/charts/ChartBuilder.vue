@@ -14,7 +14,6 @@ const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
 const chart = useChart(props.chart)
 provide('chart', chart)
-chart.refresh()
 
 if (!chart.doc.config.order_by) {
 	chart.doc.config.order_by = []

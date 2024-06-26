@@ -8,6 +8,7 @@ import NumberChart from './NumberChart.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const chart = props.chart
+chart.refresh()
 
 const eChartOptions = computed(() => {
 	if (!chart.dataQuery.result.columns?.length) return
