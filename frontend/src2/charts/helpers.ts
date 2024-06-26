@@ -121,6 +121,7 @@ export function getBarChartOptions(chart: Chart) {
 				name: c.name,
 				data: getSeriesData(c.name),
 				stack: type === 'bar' && _config.grouping?.includes('stacked'),
+				axis_swaped: _config.swap_axes,
 				on_right_axis: is_right_axis,
 				show_data_label: _config.show_data_labels,
 				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
@@ -180,6 +181,7 @@ type SeriesCustomizationOptions = {
 	data?: any[]
 	name?: string
 	stack?: boolean
+	axis_swaped?: boolean
 	show_data_label?: boolean
 	data_label_position?: 'inside' | 'top'
 	on_right_axis?: boolean
@@ -192,8 +194,11 @@ function getSeries(options: SeriesCustomizationOptions = {}) {
 		data: options.data,
 		label: {
 			show: options.show_data_label,
-			position: options.data_label_position || 'top',
-			formatter: (params: any) => getShortNumber(params.value?.[1], 1),
+			position: options.data_label_position || options.axis_swaped ? 'right' : 'top',
+			formatter: (params: any) => {
+				const valueIndex = options.axis_swaped ? 0 : 1
+				return getShortNumber(params.value?.[valueIndex], 1)
+			},
 			fontSize: 11,
 		},
 		labelLayout: { hideOverlap: true },
