@@ -237,7 +237,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		}
 		confirmDialog({
 			title: 'Change Source',
-			message: 'Changing the source will clear the current pipeline. Please confirm.',
+			message: 'Changing the source will clear the current operations. Please confirm.',
 			onSuccess: _setSource,
 		})
 	}
