@@ -112,8 +112,9 @@ const showTextWidgetCreationDialog = ref(false)
 								</template>
 								<template #body>
 									<DashboardItemActions
-										class="w-fit"
-										@delete="dashboard.removeItem(index)"
+										:dashboard="dashboard"
+										:item-index="index"
+										:item="dashboard.doc.items[index]"
 									/>
 								</template>
 							</Popover>

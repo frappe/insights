@@ -1,8 +1,9 @@
 import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
-import { DashboardFilterColumn, WorkbookDashboard, WorkbookDashboardChart } from '../types/workbook.types'
 import { FilterArgs } from '../types/query.types'
+import { DashboardFilterColumn, WorkbookDashboard, WorkbookDashboardChart } from '../types/workbook.types'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -16,6 +17,7 @@ export default function useDashboard(workbookDashboard: WorkbookDashboard) {
 }
 
 function makeDashboard(workbookDashboard: WorkbookDashboard) {
+	const router = useRouter()
 	const dashboard = reactive({
 		doc: workbookDashboard,
 
