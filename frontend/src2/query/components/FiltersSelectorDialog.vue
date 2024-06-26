@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
+import { FilterGroupArgs } from '../../types/query.types'
 import { Query } from '../query'
 import FiltersSelector from './FiltersSelector.vue'
-import { FilterGroupArgs } from '../../types/query.types'
 
 const emit = defineEmits({ select: (args: FilterGroupArgs) => true })
 const showDialog = defineModel()
@@ -21,8 +21,13 @@ const columnOptions = computed(() =>
 		<template #body>
 			<FiltersSelector
 				:columnOptions="columnOptions"
-				@select="emit('select', $event)"
 				@close="showDialog = false"
+				@select="
+					(args) => {
+						emit('select', args)
+						showDialog = false
+					}
+				"
 			/>
 		</template>
 	</Dialog>

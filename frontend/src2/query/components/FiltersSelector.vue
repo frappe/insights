@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, reactive } from 'vue'
+import { copy } from '../../helpers'
+import { ColumnDataType, FilterGroupArgs } from '../../types/query.types'
 import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
 import { isFilterExpressionValid, isFilterValid } from './filter_utils'
-import {
-	ColumnDataType,
-	FilterArgs,
-	FilterGroupArgs,
-	LogicalOperator,
-} from '../../types/query.types'
 
 const props = defineProps<{
-	filters?: FilterArgs[]
+	initialFilters?: FilterGroupArgs
 	columnOptions: {
 		label: string
 		value: string
@@ -21,23 +17,23 @@ const props = defineProps<{
 		data_type: ColumnDataType
 	}[]
 }>()
+
 const emit = defineEmits({
 	select: (args: FilterGroupArgs) => true,
 	close: () => true,
 })
-const logicalOperator = ref<LogicalOperator>('And')
-const filters = ref<FilterArgs[]>(
-	props.filters || [
-		{
-			column: column(''),
-			operator: '=',
-			value: undefined,
-		},
-	]
+
+const filterGroup = reactive<FilterGroupArgs>(
+	props.initialFilters
+		? copy(props.initialFilters)
+		: {
+				logical_operator: 'And',
+				filters: [],
+		  }
 )
 
 function addFilter() {
-	filters.value.push({
+	filterGroup.filters.push({
 		column: column(''),
 		operator: '=',
 		value: undefined,
@@ -45,8 +41,8 @@ function addFilter() {
 }
 
 const areAllFiltersValid = computed(() => {
-	if (!filters.value.length) return false
-	return filters.value.every((filter) => {
+	if (!filterGroup.filters.length) return true
+	return filterGroup.filters.every((filter) => {
 		if ('expression' in filter) return isFilterExpressionValid(filter)
 
 		const column = props.columnOptions.find((c) => c.value === filter.column.column_name)
@@ -56,28 +52,21 @@ const areAllFiltersValid = computed(() => {
 	})
 })
 
-function confirmSelection() {
-	emit('select', {
-		logical_operator: logicalOperator.value,
-		filters: filters.value,
-	})
-	filters.value = []
-	close()
-}
-function close() {
-	emit('close')
-}
+const areFiltersUpdated = computed(() => {
+	if (!props.initialFilters) return true
+	return JSON.stringify(filterGroup) !== JSON.stringify(props.initialFilters)
+})
 </script>
 
 <template>
 	<div class="min-w-[36rem] rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 		<div class="flex items-center justify-between pb-4">
 			<h3 class="text-2xl font-semibold leading-6 text-gray-900">Filter</h3>
-			<Button variant="ghost" @click="close" icon="x" size="md"> </Button>
+			<Button variant="ghost" @click="emit('close')" icon="x" size="md"> </Button>
 		</div>
 		<div
-			v-if="filters.length"
-			v-for="(_, i) in filters"
+			v-if="filterGroup.filters.length"
+			v-for="(_, i) in filterGroup.filters"
 			:key="i"
 			id="filter-list"
 			class="mb-3 flex items-start justify-between gap-2"
@@ -87,21 +76,24 @@ function close() {
 					<span v-if="i == 0">Where</span>
 					<Button
 						v-else
-						@click="logicalOperator = logicalOperator === 'And' ? 'Or' : 'And'"
+						@click="
+							filterGroup.logical_operator =
+								filterGroup.logical_operator === 'And' ? 'Or' : 'And'
+						"
 					>
-						{{ logicalOperator }}
+						{{ filterGroup.logical_operator }}
 					</Button>
 				</div>
 				<FilterExpression
-					v-if="'expression' in filters[i]"
-					:modelValue="filters[i]"
-					@update:modelValue="filters[i] = $event"
+					v-if="'expression' in filterGroup.filters[i]"
+					:modelValue="filterGroup.filters[i]"
+					@update:modelValue="filterGroup.filters[i] = $event"
 				/>
 				<FilterRule
-					v-if="'column' in filters[i]"
-					:modelValue="filters[i]"
+					v-if="'column' in filterGroup.filters[i]"
+					:modelValue="filterGroup.filters[i]"
 					:columnOptions="props.columnOptions"
-					@update:modelValue="filters[i] = $event"
+					@update:modelValue="filterGroup.filters[i] = $event"
 				/>
 			</div>
 			<div class="flex h-full flex-shrink-0 items-start">
@@ -115,18 +107,22 @@ function close() {
 						{
 							label: 'Convert to Expression',
 							onClick: () => {
-								filters[i] = { expression: expression('') }
+								filterGroup.filters[i] = { expression: expression('') }
 							},
 						},
 						{
 							label: 'Duplicate',
 							onClick: () => {
-								filters.splice(i + 1, 0, JSON.parse(JSON.stringify(filters[i])))
+								filterGroup.filters.splice(
+									i + 1,
+									0,
+									JSON.parse(JSON.stringify(filterGroup.filters[i]))
+								)
 							},
 						},
 						{
 							label: 'Remove',
-							onClick: () => filters.splice(i, 1),
+							onClick: () => filterGroup.filters.splice(i, 1),
 						},
 					]"
 				/>
@@ -142,11 +138,12 @@ function close() {
 				</template>
 			</Button>
 			<div class="flex items-center gap-2">
+				<Button label="Clear" variant="outline" @click="filterGroup.filters = []" />
 				<Button
 					label="Apply Filters"
 					variant="solid"
-					:disabled="!areAllFiltersValid"
-					@click="confirmSelection"
+					:disabled="!areAllFiltersValid || !areFiltersUpdated"
+					@click="emit('select', filterGroup)"
 				/>
 			</div>
 		</div>

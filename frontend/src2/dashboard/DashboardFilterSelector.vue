@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ListFilter } from 'lucide-vue-next'
-import { computed, inject } from 'vue'
+import { computed, reactive } from 'vue'
 import { copy } from '../helpers'
 import FiltersSelector from '../query/components/FiltersSelector.vue'
 import { getCachedQuery } from '../query/query'
@@ -30,9 +30,15 @@ const columnOptions = computed(() => {
 		.flat()
 })
 
-const filters = computed(() => {
-	const _filters = copy(props.dashboard.filters)
-	return Object.entries(_filters)
+const initialFilters = reactive<FilterGroupArgs>({
+	logical_operator: 'And',
+	filters: [],
+})
+setInitialFilters()
+
+function setInitialFilters() {
+	const dashboardFilters = copy(props.dashboard.filters)
+	initialFilters.filters = Object.entries(dashboardFilters)
 		.map(([queryName, filters]) => {
 			return filters.map((filter) => {
 				if ('column' in filter) {
@@ -42,9 +48,9 @@ const filters = computed(() => {
 			})
 		})
 		.flat()
-})
+}
 
-function applyFilters(args: FilterGroupArgs, togglePopover: Function) {
+function applyFilters(args: FilterGroupArgs) {
 	const filtersByQuery = {} as Record<string, FilterArgs[]>
 	args.filters.forEach((filter) => {
 		if ('column' in filter) {
@@ -59,7 +65,7 @@ function applyFilters(args: FilterGroupArgs, togglePopover: Function) {
 	})
 	props.dashboard.filters = filtersByQuery
 	props.dashboard.refresh()
-	togglePopover()
+	setInitialFilters()
 }
 </script>
 
@@ -71,11 +77,11 @@ function applyFilters(args: FilterGroupArgs, togglePopover: Function) {
 					<ListFilter class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 				Filter
-				<template v-if="filters?.length" #suffix>
+				<template v-if="initialFilters.filters?.length" #suffix>
 					<div
 						class="flex h-5 w-5 items-center justify-center rounded bg-gray-900 pt-[1px] text-2xs font-medium text-white"
 					>
-						{{ filters.length }}
+						{{ initialFilters.filters.length }}
 					</div>
 				</template>
 			</Button>
@@ -84,10 +90,20 @@ function applyFilters(args: FilterGroupArgs, togglePopover: Function) {
 		<template #body-main="{ togglePopover, isOpen }">
 			<FiltersSelector
 				v-if="isOpen"
-				:filters="filters"
+				:initialFilters="initialFilters"
 				:columnOptions="columnOptions"
-				@select="applyFilters($event, togglePopover)"
-				@close="togglePopover"
+				@close="
+					() => {
+						setInitialFilters()
+						togglePopover()
+					}
+				"
+				@select="
+					(filters) => {
+						applyFilters(filters)
+						togglePopover()
+					}
+				"
 			/>
 		</template>
 	</Popover>
