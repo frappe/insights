@@ -113,6 +113,8 @@ export default {
 	},
 	mounted() {
 		this.listener = (e) => {
+			if (!this.isOpen) return
+
 			const clickedElement = e.target
 			const reference = this.$refs.reference
 			const popoverBody = this.$refs.popover
