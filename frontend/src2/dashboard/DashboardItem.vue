@@ -53,42 +53,40 @@ function handleApplyFilter(operator: FilterOperator, value: FilterValue) {
 		]"
 		@click="dashboard.setActiveItem(index)"
 	>
-		<ChartRenderer
-			v-if="chart"
-			:chart="chart"
-			:class="dashboard.editing ? 'pointer-events-none' : ''"
-		/>
+		<div class="h-full w-full" :class="dashboard.editing ? 'pointer-events-none' : ''">
+			<ChartRenderer v-if="chart" :chart="chart" />
 
-		<div v-if="filter" class="flex-1" :class="dashboard.editing ? 'pointer-events-none' : ''">
-			<ColumnFilter
-				placement="bottom-start"
-				:column="filter.column"
-				:valuesProvider="getDistinctColumnValues"
-				@filter="handleApplyFilter"
-			>
-				<template #target="{ togglePopover, isOpen }">
-					<div class="relative flex-1">
-						<Button
-							variant="outline"
-							@click="togglePopover"
-							class="h-8 w-full !justify-start border-0 shadow"
-						>
-							<template #prefix>
-								<DataTypeIcon :column-type="filter.column.type" />
-							</template>
-							{{ filter.column.name }}
-						</Button>
-						<div class="absolute top-0 right-0.5 flex h-full items-center">
+			<div v-if="filter" class="flex-1">
+				<ColumnFilter
+					placement="bottom-start"
+					:column="filter.column"
+					:valuesProvider="getDistinctColumnValues"
+					@filter="handleApplyFilter"
+				>
+					<template #target="{ togglePopover, isOpen }">
+						<div class="relative flex-1">
 							<Button
-								variant="ghost"
-								:disabled="!isOpen"
-								:icon="isOpen ? 'x' : 'chevron-down'"
-								@click=""
-							/>
+								variant="outline"
+								@click="togglePopover"
+								class="h-8 w-full !justify-start border-0 shadow"
+							>
+								<template #prefix>
+									<DataTypeIcon :column-type="filter.column.type" />
+								</template>
+								{{ filter.column.name }}
+							</Button>
+							<div class="absolute top-0 right-0.5 flex h-full items-center">
+								<Button
+									variant="ghost"
+									:disabled="!isOpen"
+									:icon="isOpen ? 'x' : 'chevron-down'"
+									@click=""
+								/>
+							</div>
 						</div>
-					</div>
-				</template>
-			</ColumnFilter>
+					</template>
+				</ColumnFilter>
+			</div>
 		</div>
 	</div>
 </template>
