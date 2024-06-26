@@ -25,7 +25,7 @@ provide('dashboard', dashboard)
 dashboard.refresh()
 
 const selectedCharts = computed(() => {
-	return dashboard.doc.items.filter((item) => item.type == 'chart') as WorkbookDashboardChart[]
+	return dashboard.doc.items.filter((item) => item.type == 'chart')
 })
 
 const showChartSelectorDialog = ref(false)
@@ -127,9 +127,8 @@ const showTextWidgetCreationDialog = ref(false)
 
 	<ChartSelectorDialog
 		v-model="showChartSelectorDialog"
-		:chartOptions="
-			props.charts.filter((chart) => !selectedCharts.some((c) => c.chart == chart.name))
-		"
+		:selected-charts="selectedCharts.map((i) => i.chart)"
+		:chartOptions="props.charts"
 		@select="dashboard.addChart($event)"
 	/>
 </template>

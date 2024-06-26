@@ -2,10 +2,14 @@
 import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import ChartIcon from '../charts/components/ChartIcon.vue'
+import { copy } from '../helpers'
 import { WorkbookChart } from '../types/workbook.types'
 
 const showDialog = defineModel()
-const props = defineProps<{ chartOptions: WorkbookChart[] }>()
+const props = defineProps<{
+	selectedCharts: string[]
+	chartOptions: WorkbookChart[]
+}>()
 const emit = defineEmits({
 	select: (charts: string[]) => true,
 })
@@ -19,7 +23,7 @@ const filteredCharts = computed(() => {
 	})
 })
 
-const selectedCharts = ref<string[]>([])
+const selectedCharts = ref(copy(props.selectedCharts))
 function isSelected(chart: string) {
 	return selectedCharts.value.includes(chart)
 }

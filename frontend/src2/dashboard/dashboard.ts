@@ -1,9 +1,12 @@
 import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
 import { FilterArgs } from '../types/query.types'
-import { DashboardFilterColumn, WorkbookDashboard, WorkbookDashboardChart } from '../types/workbook.types'
+import {
+	DashboardFilterColumn,
+	WorkbookDashboard,
+	WorkbookDashboardChart,
+} from '../types/workbook.types'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -17,7 +20,6 @@ export default function useDashboard(workbookDashboard: WorkbookDashboard) {
 }
 
 function makeDashboard(workbookDashboard: WorkbookDashboard) {
-	const router = useRouter()
 	const dashboard = reactive({
 		doc: workbookDashboard,
 
@@ -35,17 +37,19 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		addChart(chart: string[] | string) {
 			const _chart = Array.isArray(chart) ? chart : [chart]
 			_chart.forEach((chart) => {
-				dashboard.doc.items.push({
-					type: 'chart',
-					chart,
-					layout: {
-						i: getUniqueId(),
-						x: 0,
-						y: 0,
-						w: 10,
-						h: 8,
-					},
-				})
+				if (!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart)) {
+					dashboard.doc.items.push({
+						type: 'chart',
+						chart,
+						layout: {
+							i: getUniqueId(),
+							x: 0,
+							y: 0,
+							w: 10,
+							h: 8,
+						},
+					})
+				}
 			})
 		},
 
