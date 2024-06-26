@@ -4,6 +4,9 @@ import { WorkbookQuery } from '../../types/workbook.types'
 
 const query = defineModel()
 const props = defineProps<{ queries: WorkbookQuery[] }>()
+if (!query.value && props.queries.length === 1) {
+	query.value = props.queries[0].name
+}
 </script>
 
 <template>
