@@ -98,13 +98,25 @@ const showTextWidgetCreationDialog = ref(false)
 					"
 				>
 					<template #item="{ index }">
-						<div class="relative h-full w-full p-2">
-							<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
-							<DashboardItemActions
-								v-if="dashboard.editing && dashboard.isActiveItem(index)"
-								class="absolute right-0 top-1.5 -mr-7"
-								@delete="dashboard.removeItem(index)"
-							/>
+						<div class="relative h-full w-full p-2 [&>div:first-child]:h-full">
+							<Popover
+								class="h-full"
+								:show="dashboard.editing && dashboard.isActiveItem(index)"
+								placement="top-start"
+							>
+								<template #target>
+									<DashboardItem
+										:index="index"
+										:item="dashboard.doc.items[index]"
+									/>
+								</template>
+								<template #body>
+									<DashboardItemActions
+										class="w-fit"
+										@delete="dashboard.removeItem(index)"
+									/>
+								</template>
+							</Popover>
 						</div>
 					</template>
 				</VueGridLayout>
