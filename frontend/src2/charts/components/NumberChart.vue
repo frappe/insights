@@ -57,7 +57,7 @@ const getFormattedValue = (value: number) => {
 </script>
 
 <template>
-	<div class="grid w-full grid-cols-5 gap-4">
+	<div class="grid w-full grid-cols-[repeat(auto-fill,214px)] gap-4">
 		<div
 			v-for="{ column, currentValue, delta, percentDelta } in cards"
 			:key="column"
