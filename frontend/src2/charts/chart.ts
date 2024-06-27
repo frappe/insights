@@ -46,11 +46,14 @@ function makeChart(workbookChart: WorkbookChart) {
 		refresh,
 	})
 
-	wheneverChanges(() => chart.doc.query, () => {
-		chart.doc.config = {} as WorkbookChart['config']
-		chart.doc.config.order_by = []
-		chart.dataQuery.reset()
-	})
+	wheneverChanges(
+		() => chart.doc.query,
+		() => {
+			chart.doc.config = {} as WorkbookChart['config']
+			chart.doc.config.order_by = []
+			chart.dataQuery.reset()
+		},
+	)
 
 	watchDebounced(
 		() => chart.doc.config,
@@ -61,32 +64,36 @@ function makeChart(workbookChart: WorkbookChart) {
 		},
 	)
 
-	async function refresh(filters?: FilterArgs[]) {
+	async function refresh(filters?: FilterArgs[], force = false) {
 		if (!workbookChart.query) return
 		if (chart.baseQuery.executing) {
 			await waitUntil(() => !chart.baseQuery.executing)
 		}
 
-		resetQuery(filters)
+		resetQuery()
+		setFilters(filters || [])
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
-			return fetchAxisChartData(_config)
+			prepareAxisChartQuery(_config)
 		}
 		if (chart.doc.chart_type === 'Number') {
 			const _config = unref(chart.doc.config as NumberChartConfig)
-			return fetchNumberChartData(_config)
+			prepareNumberChartQuery(_config)
 		}
 		if (chart.doc.chart_type === 'Donut') {
 			const _config = unref(chart.doc.config as DountChartConfig)
-			return fetchDonutChartData(_config)
+			prepareDonutChartQuery(_config)
 		}
 		if (chart.doc.chart_type === 'Table') {
 			const _config = unref(chart.doc.config as TableChartConfig)
-			return fetchTableChartData(_config)
+			prepareTableChartQuery(_config)
 		}
+
+		applySortOrder()
+		return executeQuery(force)
 	}
 
-	function fetchAxisChartData(config: AxisChartConfig) {
+	function prepareAxisChartQuery(config: AxisChartConfig) {
 		if (!config.x_axis) {
 			console.warn('X-axis is required')
 			return
@@ -103,18 +110,12 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 
 		const column = chart.baseQuery.getDimension(config.split_by as string)
-		const values = config.y_axis
+		let values = config.y_axis
 			.concat(config.y2_axis)
 			?.map((y) => chart.baseQuery.getMeasure(y))
 			.filter(Boolean) as Measure[]
 
-		prepareAxisChartQuery(row, column, values)
-		applySortOrder()
-		return executeQuery()
-	}
-
-	function prepareAxisChartQuery(row: Dimension, column?: Dimension, values?: Measure[]) {
-		values = values?.length ? values : [count()]
+		values = values.length ? values : [count()]
 
 		if (column) {
 			chart.dataQuery.addPivotWider({
@@ -130,7 +131,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 	}
 
-	function fetchNumberChartData(config: NumberChartConfig) {
+	function prepareNumberChartQuery(config: NumberChartConfig) {
 		if (!config.number_columns?.length) {
 			console.warn('Number column is required')
 			return
@@ -146,19 +147,13 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 
 		const date = chart.baseQuery.getDimension(config.date_column as string)
-		prepareNumberQuery(numbers, date)
-		applySortOrder()
-		return executeQuery()
-	}
-
-	function prepareNumberQuery(numbers: Measure[], date?: Dimension) {
 		chart.dataQuery.addSummarize({
 			measures: numbers,
 			dimensions: date ? [date] : [],
 		})
 	}
 
-	function fetchDonutChartData(config: DountChartConfig) {
+	function prepareDonutChartQuery(config: DountChartConfig) {
 		if (!config.label_column) {
 			console.warn('Label is required')
 			return
@@ -179,12 +174,6 @@ function makeChart(workbookChart: WorkbookChart) {
 			return
 		}
 
-		prepareDonutQuery(label, value)
-		applySortOrder()
-		return executeQuery()
-	}
-
-	function prepareDonutQuery(label: Dimension, value: Measure) {
 		chart.dataQuery.addSummarize({
 			measures: [value],
 			dimensions: [label],
@@ -195,7 +184,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function fetchTableChartData(config: TableChartConfig) {
+	function prepareTableChartQuery(config: TableChartConfig) {
 		if (!config.rows.length) {
 			console.warn('Rows are required')
 			return
@@ -210,12 +199,6 @@ function makeChart(workbookChart: WorkbookChart) {
 			.map((v) => chart.baseQuery.getMeasure(v))
 			.filter(Boolean) as Measure[]
 
-		prepareTableQuery(rows, columns, values)
-		applySortOrder()
-		return executeQuery()
-	}
-
-	function prepareTableQuery(rows: Dimension[], columns: Dimension[], values: Measure[]) {
 		if (!columns.length) {
 			chart.dataQuery.addSummarize({
 				measures: values,
@@ -242,9 +225,11 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function resetQuery(filters?: FilterArgs[]) {
+	function resetQuery() {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.currentOperations])
+	}
+	function setFilters(filters: FilterArgs[]) {
 		const _filters = new Set(filters)
 		if (_filters.size) {
 			_filters.forEach((filter) => {
@@ -254,10 +239,11 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	const lastExecutedQueryOperations = ref<Operation[]>([])
-	async function executeQuery() {
+	async function executeQuery(force = false) {
 		if (
+			!force &&
 			JSON.stringify(lastExecutedQueryOperations.value) ===
-			JSON.stringify(chart.dataQuery.currentOperations)
+				JSON.stringify(chart.dataQuery.currentOperations)
 		) {
 			return Promise.resolve()
 		}

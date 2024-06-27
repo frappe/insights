@@ -85,7 +85,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					const chart = getCachedChart(chartItem.chart)
 					if (!chart || !chart.doc.query) return
 					const filters = dashboard.filters[chart.doc.query]
-					chart.refresh(filters)
+					chart.refresh(filters, true)
 				})
 		},
 	})
