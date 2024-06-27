@@ -2,7 +2,7 @@
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
 import { copy } from '../../helpers'
-import { ColumnDataType, FilterGroupArgs } from '../../types/query.types'
+import { ColumnOption, FilterGroupArgs } from '../../types/query.types'
 import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
@@ -10,12 +10,7 @@ import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 
 const props = defineProps<{
 	initialFilters?: FilterGroupArgs
-	columnOptions: {
-		label: string
-		value: string
-		query: string
-		data_type: ColumnDataType
-	}[]
+	columnOptions: ColumnOption[]
 }>()
 
 const emit = defineEmits({

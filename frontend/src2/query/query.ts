@@ -174,6 +174,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					label: column.name,
 					value: column.name,
 					description: column.type,
+					query: query.doc.name,
 					data_type: column.type,
 				}))
 			})

@@ -145,6 +145,7 @@ export type DropdownOption = {
 }
 
 export type ColumnOption = DropdownOption & {
+	query: string
 	data_type: ColumnDataType
 }
 

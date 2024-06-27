@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ListFilter } from 'lucide-vue-next'
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { copy } from '../helpers'
-import FiltersSelector from '../query/components/FiltersSelector.vue'
+import FiltersSelectorDialog from '../query/components/FiltersSelectorDialog.vue'
 import { getCachedQuery } from '../query/query'
 import { FilterArgs, FilterGroupArgs } from '../types/query.types'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
@@ -13,6 +13,8 @@ const props = defineProps<{
 	charts: WorkbookChart[]
 	queries: WorkbookQuery[]
 }>()
+
+const showDialog = ref(false)
 
 const columnOptions = computed(() => {
 	return props.queries
@@ -70,41 +72,25 @@ function applyFilters(args: FilterGroupArgs) {
 </script>
 
 <template>
-	<Popover>
-		<template #target="{ togglePopover }">
-			<Button label="Filter" variant="outline" @click="togglePopover">
-				<template #prefix>
-					<ListFilter class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-				</template>
-				Filter
-				<template v-if="initialFilters.filters?.length" #suffix>
-					<div
-						class="flex h-5 w-5 items-center justify-center rounded bg-gray-900 pt-[1px] text-2xs font-medium text-white"
-					>
-						{{ initialFilters.filters.length }}
-					</div>
-				</template>
-			</Button>
+	<Button label="Filter" variant="outline" @click="showDialog = true">
+		<template #prefix>
+			<ListFilter class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 		</template>
+		Filter
+		<template v-if="initialFilters.filters?.length" #suffix>
+			<div
+				class="flex h-5 w-5 items-center justify-center rounded bg-gray-900 pt-[1px] text-2xs font-medium text-white"
+			>
+				{{ initialFilters.filters.length }}
+			</div>
+		</template>
+	</Button>
 
-		<template #body-main="{ togglePopover, isOpen }">
-			<FiltersSelector
-				v-if="isOpen"
-				:initialFilters="initialFilters"
-				:columnOptions="columnOptions"
-				@close="
-					() => {
-						setInitialFilters()
-						togglePopover()
-					}
-				"
-				@select="
-					(filters) => {
-						applyFilters(filters)
-						togglePopover()
-					}
-				"
-			/>
-		</template>
-	</Popover>
+	<FiltersSelectorDialog
+		v-if="showDialog"
+		v-model="showDialog"
+		:initial-filters="initialFilters"
+		:column-options="columnOptions"
+		@select="applyFilters($event)"
+	/>
 </template>
