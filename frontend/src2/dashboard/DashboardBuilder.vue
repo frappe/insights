@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
-import {
-	WorkbookChart,
-	WorkbookDashboard,
-	WorkbookDashboardChart,
-	WorkbookQuery,
-} from '../types/workbook.types'
+import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
 import DashboardFilterSelector from './DashboardFilterSelector.vue'
@@ -127,8 +122,12 @@ const showTextWidgetCreationDialog = ref(false)
 
 	<ChartSelectorDialog
 		v-model="showChartSelectorDialog"
-		:selected-charts="selectedCharts.map((i) => i.chart)"
 		:chartOptions="props.charts"
+		:selected-charts="
+			selectedCharts.map(
+				(c) => props.charts.find((chart) => chart.name === c.chart) as WorkbookChart,
+			)
+		"
 		@select="dashboard.addChart($event)"
 	/>
 </template>

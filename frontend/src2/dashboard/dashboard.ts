@@ -4,6 +4,7 @@ import { getUniqueId, store } from '../helpers'
 import { FilterArgs } from '../types/query.types'
 import {
 	DashboardFilterColumn,
+	WorkbookChart,
 	WorkbookDashboard,
 	WorkbookDashboardChart,
 } from '../types/workbook.types'
@@ -34,19 +35,20 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			return dashboard.activeItemIdx == index
 		},
 
-		addChart(chart: string[] | string) {
-			const _chart = Array.isArray(chart) ? chart : [chart]
-			_chart.forEach((chart) => {
-				if (!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart)) {
+		addChart(charts: WorkbookChart[]) {
+			charts.forEach((chart) => {
+				if (
+					!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
+				) {
 					dashboard.doc.items.push({
 						type: 'chart',
-						chart,
+						chart: chart.name,
 						layout: {
 							i: getUniqueId(),
 							x: 0,
 							y: 0,
-							w: 10,
-							h: 8,
+							w: chart.chart_type === 'Number' ? 20 : 10,
+							h: chart.chart_type === 'Number' ? 4 : 8,
 						},
 					})
 				}

@@ -7,11 +7,11 @@ import { WorkbookChart } from '../types/workbook.types'
 
 const showDialog = defineModel()
 const props = defineProps<{
-	selectedCharts: string[]
+	selectedCharts: WorkbookChart[]
 	chartOptions: WorkbookChart[]
 }>()
 const emit = defineEmits({
-	select: (charts: string[]) => true,
+	select: (charts: WorkbookChart[]) => true,
 })
 
 const searchQuery = ref('')
@@ -23,12 +23,12 @@ const filteredCharts = computed(() => {
 	})
 })
 
-const selectedCharts = ref(copy(props.selectedCharts))
-function isSelected(chart: string) {
-	return selectedCharts.value.includes(chart)
+const selectedCharts = ref<WorkbookChart[]>(copy(props.selectedCharts))
+function isSelected(chart: WorkbookChart) {
+	return selectedCharts.value.find((c) => c.name === chart.name)
 }
-function toggleChart(chart: string) {
-	const index = selectedCharts.value.indexOf(chart)
+function toggleChart(chart: WorkbookChart) {
+	const index = selectedCharts.value.findIndex((c) => c.name === chart.name)
 	if (index === -1) {
 		selectedCharts.value.push(chart)
 	} else {
@@ -39,7 +39,7 @@ function toggleSelectAll() {
 	if (areAllSelected.value) {
 		selectedCharts.value = []
 	} else {
-		selectedCharts.value = [...props.chartOptions.map((c) => c.name)]
+		selectedCharts.value = [...props.chartOptions]
 	}
 }
 const areAllSelected = computed(() => selectedCharts.value.length === props.chartOptions.length)
@@ -98,7 +98,7 @@ function confirmSelection() {
 					<template v-for="chart in filteredCharts">
 						<div
 							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 hover:bg-gray-100"
-							@click="toggleChart(chart.name)"
+							@click="toggleChart(chart)"
 						>
 							<div class="flex items-center gap-1.5">
 								<ChartIcon :chartType="chart.chart_type" />
@@ -107,8 +107,8 @@ function confirmSelection() {
 							<component
 								class="h-4 w-4"
 								stroke-width="1.5"
-								:is="isSelected(chart.name) ? CheckSquare : SquareIcon"
-								:class="isSelected(chart.name) ? 'text-gray-900' : 'text-gray-600'"
+								:is="isSelected(chart) ? CheckSquare : SquareIcon"
+								:class="isSelected(chart) ? 'text-gray-900' : 'text-gray-600'"
 							/>
 						</div>
 					</template>
