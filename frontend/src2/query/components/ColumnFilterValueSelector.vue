@@ -39,17 +39,13 @@ function toggleValue(value: string) {
 </script>
 
 <template>
-	<div
-		v-if="fetchingValues"
-		class="flex items-center justify-center gap-2 p-2 text-base text-gray-600"
-	>
-		<LoadingIndicator class="h-4 w-4 text-gray-600" />
-		<span>Loading values...</span>
-	</div>
-	<div v-else class="flex flex-col gap-2">
-		<FormControl placeholder="Search" v-model="searchInput">
+	<div class="flex flex-col gap-2">
+		<FormControl placeholder="Search" v-model="searchInput" autocomplete="off">
 			<template #prefix>
 				<SearchIcon class="h-4 w-4 text-gray-400" />
+			</template>
+			<template #suffix>
+				<LoadingIndicator v-if="fetchingValues" class="h-4 w-4 text-gray-600" />
 			</template>
 		</FormControl>
 		<div class="max-h-[10rem] overflow-y-scroll">
