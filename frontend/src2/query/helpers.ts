@@ -182,8 +182,12 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: FilterGroupArgs): FilterGroup => ({ type: 'filter_group', ...args }),
 		getDescription: (op: FilterGroup) => {
-			const count = op.filters.length
-			return `${count} condition${count > 1 ? 's' : ''}`
+			const columns = op.filters.map((f) => {
+				if ('expression' in f) return 'custom expression'
+				return f.column.column_name
+			})
+			const more = columns.length - 2
+			return `${columns.slice(0, 2).join(', ')}${more > 0 ? ` & ${more} more` : ''}`
 		},
 	},
 	mutate: {
