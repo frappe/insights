@@ -237,14 +237,14 @@ export default {
 				let _selectedOptions
 				if (!this.multiple) {
 					_selectedOptions = this.findOption(this.modelValue)
-					if (!_selectedOptions && this.modelValue) {
+					if (this.modelValue && !_selectedOptions) {
 						_selectedOptions = this.sanitizeOptions([this.modelValue])[0]
 					}
 					return _selectedOptions
 				}
 
 				_selectedOptions = this.modelValue?.map((v) => this.findOption(v)).filter(Boolean)
-				if (!_selectedOptions.length && this.modelValue) {
+				if (this.modelValue && !_selectedOptions.length) {
 					_selectedOptions = this.sanitizeOptions(this.modelValue)
 				}
 				return _selectedOptions
