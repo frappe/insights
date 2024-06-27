@@ -6,10 +6,13 @@ import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUniqueId } from '../helpers'
 import useUserStore from './users'
-import useWorkbooks, { WorkbookListItem } from './workbooks'
+import useWorkbooks from './workbooks'
+import { WorkbookListItem } from '../types/workbook.types'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
+workbookStore.getWorkbooks()
+
 const searchQuery = ref('')
 const filteredWorkbooks = computed(() => {
 	if (!searchQuery.value) {
