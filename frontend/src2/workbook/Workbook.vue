@@ -2,9 +2,10 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { provide, ref, watch, watchEffect } from 'vue'
+import { provide, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
+import { waitUntil } from '../helpers'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
@@ -25,6 +26,10 @@ watch(
 	() => workbook.isdirty,
 	(dirty) => (window.onbeforeunload = dirty ? function () {} : null)
 )
+
+waitUntil(() => Boolean(workbook.doc.name)).then(() => {
+	!workbook.doc.queries.length && workbook.addQuery()
+})
 
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`
