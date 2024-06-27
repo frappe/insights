@@ -66,47 +66,50 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	async function refresh(filters?: FilterArgs[], force = false) {
 		if (!workbookChart.query) return
+		if (!chart.doc.chart_type) return
 		if (chart.baseQuery.executing) {
 			await waitUntil(() => !chart.baseQuery.executing)
 		}
 
 		resetQuery()
 		setFilters(filters || [])
+		let prepared = false
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
-			prepareAxisChartQuery(_config)
-		}
-		if (chart.doc.chart_type === 'Number') {
+			prepared = prepareAxisChartQuery(_config)
+		} else if (chart.doc.chart_type === 'Number') {
 			const _config = unref(chart.doc.config as NumberChartConfig)
-			prepareNumberChartQuery(_config)
-		}
-		if (chart.doc.chart_type === 'Donut') {
+			prepared = prepareNumberChartQuery(_config)
+		} else if (chart.doc.chart_type === 'Donut') {
 			const _config = unref(chart.doc.config as DountChartConfig)
-			prepareDonutChartQuery(_config)
-		}
-		if (chart.doc.chart_type === 'Table') {
+			prepared = prepareDonutChartQuery(_config)
+		} else if (chart.doc.chart_type === 'Table') {
 			const _config = unref(chart.doc.config as TableChartConfig)
-			prepareTableChartQuery(_config)
+			prepared = prepareTableChartQuery(_config)
+		} else {
+			console.warn('Unknown chart type: ', chart.doc.chart_type)
 		}
 
-		applySortOrder()
-		return executeQuery(force)
+		if (prepared) {
+			applySortOrder()
+			return executeQuery(force)
+		}
 	}
 
 	function prepareAxisChartQuery(config: AxisChartConfig) {
 		if (!config.x_axis) {
 			console.warn('X-axis is required')
-			return
+			return false
 		}
 		if (config.x_axis === config.split_by) {
 			console.warn('X-axis and split-by cannot be the same')
-			return
+			return false
 		}
 
 		const row = chart.baseQuery.getDimension(config.x_axis)
 		if (!row) {
 			console.warn('X-axis column not found')
-			return
+			return false
 		}
 
 		const column = chart.baseQuery.getDimension(config.split_by as string)
@@ -129,12 +132,14 @@ function makeChart(workbookChart: WorkbookChart) {
 				dimensions: [row],
 			})
 		}
+
+		return true
 	}
 
 	function prepareNumberChartQuery(config: NumberChartConfig) {
 		if (!config.number_columns?.length) {
 			console.warn('Number column is required')
-			return
+			return false
 		}
 
 		const numbers = config.number_columns
@@ -143,7 +148,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		if (!numbers?.length) {
 			console.warn('Number column not found')
-			return
+			return false
 		}
 
 		const date = chart.baseQuery.getDimension(config.date_column as string)
@@ -151,27 +156,29 @@ function makeChart(workbookChart: WorkbookChart) {
 			measures: numbers,
 			dimensions: date ? [date] : [],
 		})
+
+		return true
 	}
 
 	function prepareDonutChartQuery(config: DountChartConfig) {
 		if (!config.label_column) {
 			console.warn('Label is required')
-			return
+			return false
 		}
 		if (!config.value_column) {
 			console.warn('Value is required')
-			return
+			return false
 		}
 
 		const label = chart.baseQuery.getDimension(config.label_column)
 		const value = chart.baseQuery.getMeasure(config.value_column)
 		if (!label) {
 			console.warn('Label column not found')
-			return
+			return false
 		}
 		if (!value) {
 			console.warn('Value column not found')
-			return
+			return false
 		}
 
 		chart.dataQuery.addSummarize({
@@ -182,12 +189,14 @@ function makeChart(workbookChart: WorkbookChart) {
 			column: column(value.column_name),
 			direction: 'desc',
 		})
+
+		return true
 	}
 
 	function prepareTableChartQuery(config: TableChartConfig) {
 		if (!config.rows.length) {
 			console.warn('Rows are required')
-			return
+			return false
 		}
 		const rows = config.rows
 			.map((r) => chart.baseQuery.getDimension(r))
@@ -212,6 +221,8 @@ function makeChart(workbookChart: WorkbookChart) {
 				values: values,
 			})
 		}
+
+		return true
 	}
 
 	function applySortOrder() {
