@@ -243,8 +243,8 @@ export default {
 					return _selectedOptions
 				}
 
-				_selectedOptions = this.modelValue?.map((v) => this.findOption(v))
-				if (!_selectedOptions && this.modelValue) {
+				_selectedOptions = this.modelValue?.map((v) => this.findOption(v)).filter(Boolean)
+				if (!_selectedOptions.length && this.modelValue) {
 					_selectedOptions = this.sanitizeOptions(this.modelValue)
 				}
 				return _selectedOptions
