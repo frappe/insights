@@ -226,8 +226,11 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 				},
 			},
 		],
-		tooltip: getTooltip(),
 		legend: getLegend(),
+		tooltip: {
+			...getTooltip(),
+			trigger: 'item',
+		},
 	}
 }
 
