@@ -23,8 +23,8 @@ class DataWarehouse:
             frappe.local.insights_warehouse = ddb
         return frappe.local.insights_warehouse
 
-    def get_table(self, data_source, table_name, sync=False, realtime=False):
-        if not realtime:
+    def get_table(self, data_source, table_name, sync=False, remote=False):
+        if not remote:
             return self.get_warehouse_table(data_source, table_name, sync)
         else:
             return self.get_remote_table(data_source, table_name)

@@ -31,6 +31,7 @@ class IbisQueryBuilder:
         return DataWarehouse().get_table(
             table.data_source,
             table.table_name,
+            remote=False,
             sync=True,
         )
 
