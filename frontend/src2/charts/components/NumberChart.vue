@@ -76,7 +76,7 @@ const getFormattedValue = (value: number) => {
 					:class="delta >= 0 ? 'text-green-500' : 'text-red-500'"
 				>
 					<span class="">
-						{{ delta >= 0 ? '↑' : '↓' }}
+						{{ delta >= 0 && !config.negative_is_better ? '↑' : '↓' }}
 					</span>
 					<span> {{ percentDelta }}% </span>
 				</div>
