@@ -37,8 +37,17 @@ export function getLineChartOptions(chart: Chart) {
 	const rightYAxis = getYAxis({ is_secondary: true })
 	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
+	const sortedRows =
+		xColumn && FIELDTYPES.DATE.includes(xColumn.type)
+			? _rows.sort((a, b) => {
+					const a_date = new Date(a[_config.x_axis])
+					const b_date = new Date(b[_config.x_axis])
+					return a_date.getTime() - b_date.getTime()
+				})
+			: _rows
+
 	const getSeriesData = (column: string) =>
-		_rows.map((r) => {
+		sortedRows.map((r) => {
 			const x_value = r[_config.x_axis]
 			const y_value = r[column]
 			return [x_value, y_value]
