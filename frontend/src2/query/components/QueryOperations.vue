@@ -8,11 +8,14 @@ const query = inject('query') as Query
 </script>
 
 <template>
-	<div v-if="query.doc.operations.length" class="flex flex-col gap-2 px-2.5 py-2">
-		<div class="flex h-6 items-center justify-between">
-			<div class="text-[11px] uppercase">Operations</div>
+	<div v-if="query.doc.operations.length" class="flex flex-col px-2.5 py-2">
+		<div class="mb-1 flex h-6 items-center justify-between">
+			<div class="flex items-center gap-1">
+				<div class="text-sm font-medium">Operations</div>
+			</div>
+			<div></div>
 		</div>
-		<div class="relative ml-1.5 mt-1 border-l border-gray-300 font-mono text-xs">
+		<div class="relative ml-1.5 mt-1 border-l border-gray-300 text-xs">
 			<div
 				v-for="(op, idx) in query.doc.operations"
 				:key="idx"
@@ -20,7 +23,7 @@ const query = inject('query') as Query
 				:class="idx <= query.activeOperationIdx ? 'opacity-100' : 'opacity-40'"
 				@click="query.setActiveStep(idx)"
 			>
-				<CircleDotIcon class="absolute -left-4 top-0.5 h-2 w-2 bg-white text-gray-600" />
+				<CircleDotIcon class="absolute -left-4 top-1 h-2 w-2 bg-white text-gray-600" />
 				<div class="flex items-center justify-between gap-2 overflow-hidden">
 					<div class="flex flex-1 flex-col gap-1 overflow-hidden">
 						<div class="font-medium text-gray-900">
