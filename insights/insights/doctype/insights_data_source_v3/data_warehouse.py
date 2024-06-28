@@ -1,6 +1,8 @@
 import os
+from datetime import datetime
 
 import frappe
+import frappe.utils
 import ibis
 from frappe.utils import get_files_path
 from ibis import BaseBackend
@@ -64,7 +66,13 @@ class DataWarehouse:
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         with ds._get_ibis_backend() as remote_db:
             table = remote_db.table(table_name)
-            # TODO: check metadata to see if copy is needed
+
+            if ds.is_frappe_db and hasattr(table, "creation"):
+                first_day_of_last_year = datetime.now().replace(
+                    month=1, day=1, year=datetime.now().year - 1
+                )
+                table = table.filter(table.creation >= first_day_of_last_year)
+
             table.to_parquet(path, compression="snappy")
 
     def sync_insights_table(self, data_source, table_name, table: IbisTable):
