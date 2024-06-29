@@ -198,13 +198,10 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		}
 	}
 
-	type setSourceArgs = { table: string; data_source: string }
-	function setSource(args: setSourceArgs) {
+	function setSource(args: SourceArgs) {
 		const _setSource = () => {
 			query.setOperations([])
-			query.addSource({
-				table: table(args.data_source, args.table),
-			})
+			query.addSource(args)
 		}
 		if (!query.doc.operations.length) {
 			_setSource()

@@ -4,10 +4,12 @@ import { ListEmptyState, ListView } from 'frappe-ui'
 import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, ref } from 'vue'
 import useTableStore from '../../data_source/tables'
+import { SourceArgs } from '../../types/query.types'
+import { table } from '../helpers'
 import DataSourceSelector from './DataSourceSelector.vue'
 
 const emit = defineEmits({
-	select: (args: { table: string; data_source: string }) => true,
+	select: (args: SourceArgs) => true,
 })
 const showDialog = defineModel()
 
@@ -51,8 +53,7 @@ function onConfirm() {
 	const selectedTable = tableStore.tables.find((table: any) => table.selected)
 	if (!selectedTable) return
 	emit('select', {
-		table: selectedTable.table_name,
-		data_source: selectedTable.data_source,
+		table: table(selectedTable.data_source, selectedTable.table_name),
 	})
 	showDialog.value = false
 }
