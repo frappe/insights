@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { wheneverChanges } from '@/utils'
 import { Tooltip } from 'frappe-ui'
 import {
 	BlendIcon,
@@ -10,7 +9,7 @@ import {
 	PlayIcon,
 	Sigma,
 } from 'lucide-vue-next'
-import { h, inject, ref } from 'vue'
+import { h, inject, ref, watch } from 'vue'
 import { Operation } from '../../types/query.types'
 import { Query } from '../query'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
@@ -29,7 +28,7 @@ const showNewColumnSelectorDialog = ref(false)
 const showSourceSelectorDialog = ref(false)
 const showViewSQLDialog = ref(false)
 
-wheneverChanges(
+watch(
 	() => query.activeEditOperation,
 	(operation: Operation) => {
 		switch (operation.type) {
@@ -133,6 +132,7 @@ const actions = [
 	<SourceSelectorDialog
 		v-if="showSourceSelectorDialog"
 		v-model="showSourceSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
 		:source="
 			query.activeEditOperation.type === 'source' ? query.activeEditOperation : undefined
 		"
@@ -153,6 +153,15 @@ const actions = [
 	<FiltersSelectorDialog
 		v-if="showFiltersSelectorDialog"
 		v-model="showFiltersSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:filter="
+			query.activeEditOperation.type === 'filter' ? query.activeEditOperation : undefined
+		"
+		:filter-group="
+			query.activeEditOperation.type === 'filter_group'
+				? query.activeEditOperation
+				: undefined
+		"
 		:column-options="query.result.columnOptions"
 		@select="query.addFilterGroup($event)"
 	/>

@@ -215,6 +215,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: FilterGroupArgs): FilterGroup => ({ type: 'filter_group', ...args }),
 		getDescription: (op: FilterGroup) => {
+			if (!op.filters.length) return 'empty'
 			const columns = op.filters.map((f) => {
 				if ('expression' in f) return 'custom expression'
 				return f.column.column_name

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
-import { copy } from '../../helpers'
-import { ColumnOption, FilterGroupArgs } from '../../types/query.types'
+import { ColumnOption, FilterArgs, FilterGroupArgs } from '../../types/query.types'
 import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
 import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 
 const props = defineProps<{
-	initialFilters?: FilterGroupArgs
+	filter?: FilterArgs
+	filterGroup?: FilterGroupArgs
 	columnOptions: ColumnOption[]
 }>()
 
@@ -19,11 +19,11 @@ const emit = defineEmits({
 })
 
 const filterGroup = reactive<FilterGroupArgs>(
-	props.initialFilters
-		? copy(props.initialFilters)
+	props.filterGroup
+		? { ...props.filterGroup }
 		: {
 				logical_operator: 'And',
-				filters: [],
+				filters: props.filter ? [{ ...props.filter }] : [],
 		  }
 )
 
@@ -48,8 +48,8 @@ const areAllFiltersValid = computed(() => {
 })
 
 const areFiltersUpdated = computed(() => {
-	if (!props.initialFilters) return true
-	return JSON.stringify(filterGroup) !== JSON.stringify(props.initialFilters)
+	if (!props.filterGroup) return true
+	return JSON.stringify(filterGroup) !== JSON.stringify(props.filterGroup)
 })
 </script>
 

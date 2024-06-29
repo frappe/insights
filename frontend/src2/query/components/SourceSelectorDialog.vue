@@ -4,12 +4,12 @@ import { ListEmptyState, ListView } from 'frappe-ui'
 import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, ref } from 'vue'
 import useTableStore from '../../data_source/tables'
-import { Source, SourceArgs, TableArgs } from '../../types/query.types'
+import { SourceArgs, TableArgs } from '../../types/query.types'
 import { table } from '../helpers'
 import DataSourceSelector from './DataSourceSelector.vue'
 
 const emit = defineEmits({ select: (source: SourceArgs) => true })
-const props = defineProps<{ source?: Source }>()
+const props = defineProps<{ source?: SourceArgs }>()
 const showDialog = defineModel()
 
 const selectedTable = ref<TableArgs>(

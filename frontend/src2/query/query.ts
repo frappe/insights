@@ -1,6 +1,6 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { call } from 'frappe-ui'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive } from 'vue'
 import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import {
@@ -251,7 +251,16 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function addFilterGroup(args: FilterGroupArgs) {
-		addOperation(filter_group(args))
+		const editingFilter =
+			query.activeEditOperation.type === 'filter_group' ||
+			query.activeEditOperation.type === 'filter'
+
+		if (!editingFilter) {
+			addOperation(filter_group(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = filter_group(args)
+			query.setActiveEditIndex(-1)
+		}
 	}
 
 	function addMutate(args: MutateArgs) {
@@ -331,10 +340,16 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '') {
+		const operations =
+			query.activeEditIndex > -1
+				? // when editing a filter, get distinct values from the operations before the filter
+					query.doc.operations.slice(0, query.activeEditIndex)
+				: query.currentOperations
+
 		return call(
 			'insights.insights.doctype.insights_workbook.insights_workbook.get_distinct_column_values',
 			{
-				operations: query.currentOperations,
+				operations: operations,
 				column_name: column,
 				search_term,
 			},
