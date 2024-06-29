@@ -23,17 +23,20 @@ export default function useWorkbook(name: string) {
 	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.doc.name}`))
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 
-	wheneverChanges(() => workbook.doc, () => {
-		// load & cache queries, charts and dashboards
+	wheneverChanges(
+		() => workbook.doc,
+		() => {
+			// load & cache queries, charts and dashboards
 
-		// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
-		// this is because, when the workbook doc is updated,
-		// the reference to the workbook.doc.queries/charts/dashboards is lost
-		// so we need to update the references to the new queries/charts/dashboards
-		workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
-		workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
-		workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
-	})
+			// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
+			// this is because, when the workbook doc is updated,
+			// the reference to the workbook.doc.queries/charts/dashboards is lost
+			// so we need to update the references to the new queries/charts/dashboards
+			workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
+			workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
+			workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
+		},
+	)
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
 		router.replace(

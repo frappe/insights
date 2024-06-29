@@ -92,7 +92,7 @@ export default function useDocumentResource<T extends object>(
 			confirmDialog({
 				title: 'Discard Changes',
 				message: 'Are you sure you want to discard changes?',
-				onSuccess: resource.load,
+				onSuccess: () => this.load()
 			})
 		},
 
