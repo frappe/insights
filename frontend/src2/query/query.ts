@@ -1,6 +1,6 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { call } from 'frappe-ui'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import {
@@ -9,7 +9,6 @@ import {
 	DimensionDataType,
 	FilterArgs,
 	FilterGroupArgs,
-	GranularityType,
 	JoinArgs,
 	Measure,
 	MeasureDataType,
@@ -39,7 +38,6 @@ import {
 	select,
 	source,
 	summarize,
-	table,
 } from './helpers'
 
 const queries = new Map<string, Query>()
@@ -62,6 +60,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		activeOperationIdx: -1,
 		currentOperations: computed(() => [] as Operation[]),
+		activeEditIndex: -1,
+		activeEditOperation: computed(() => ({}) as Operation),
 
 		autoExecute: true,
 		executing: false,
@@ -70,6 +70,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		execute,
 		setOperations,
 		setActiveStep,
+		setActiveEditIndex,
 		removeStep,
 		setSource,
 		addSource,
@@ -135,6 +136,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return operations
 	})
 
+	// @ts-ignore
+	query.activeEditOperation = computed(() => {
+		if (query.activeEditIndex === -1) return {}
+		return query.doc.operations[query.activeEditIndex]
+	})
+
 	wheneverChanges(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
@@ -186,6 +193,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function setActiveStep(index: number) {
 		query.activeOperationIdx = index
+		query.activeEditIndex = -1
+	}
+
+	function setActiveEditIndex(index: number) {
+		query.activeEditIndex = index
 	}
 
 	function removeStep(index: number) {
@@ -199,11 +211,18 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function setSource(args: SourceArgs) {
+		const editingSource = query.activeEditOperation.type === 'source'
+
 		const _setSource = () => {
-			query.setOperations([])
-			query.addSource(args)
+			if (editingSource) {
+				query.doc.operations[query.activeEditIndex] = source(args)
+				query.setActiveEditIndex(-1)
+			} else {
+				query.setOperations([])
+				query.addSource(args)
+			}
 		}
-		if (!query.doc.operations.length) {
+		if (!query.doc.operations.length || editingSource) {
 			_setSource()
 			return
 		}

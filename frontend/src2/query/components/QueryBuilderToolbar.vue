@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wheneverChanges } from '@/utils'
 import { Tooltip } from 'frappe-ui'
 import {
 	BlendIcon,
@@ -10,6 +11,7 @@ import {
 	Sigma,
 } from 'lucide-vue-next'
 import { h, inject, ref } from 'vue'
+import { Operation } from '../../types/query.types'
 import { Query } from '../query'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
@@ -18,7 +20,6 @@ import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import SourceSelectorDialog from './SourceSelectorDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 
-const emit = defineEmits(['change-source'])
 const query = inject('query') as Query
 
 const showColumnsSelectorDialog = ref(false)
@@ -27,6 +28,31 @@ const showJoinSelectorDialog = ref(false)
 const showNewColumnSelectorDialog = ref(false)
 const showSourceSelectorDialog = ref(false)
 const showViewSQLDialog = ref(false)
+
+wheneverChanges(
+	() => query.activeEditOperation,
+	(operation: Operation) => {
+		switch (operation.type) {
+			case 'source':
+				showSourceSelectorDialog.value = true
+				break
+			case 'join':
+				showJoinSelectorDialog.value = true
+				break
+			case 'select':
+				showColumnsSelectorDialog.value = true
+				break
+			case 'filter':
+				showFiltersSelectorDialog.value = true
+				break
+			case 'mutate':
+				showNewColumnSelectorDialog.value = true
+				break
+			default:
+				break
+		}
+	}
+)
 
 const actions = [
 	{
@@ -107,6 +133,9 @@ const actions = [
 	<SourceSelectorDialog
 		v-if="showSourceSelectorDialog"
 		v-model="showSourceSelectorDialog"
+		:source="
+			query.activeEditOperation.type === 'source' ? query.activeEditOperation : undefined
+		"
 		@select="query.setSource($event)"
 	/>
 

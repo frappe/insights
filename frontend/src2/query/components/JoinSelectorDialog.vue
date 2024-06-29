@@ -120,7 +120,7 @@ function confirm() {
 	if (!isValid.value) return
 	const tableOption = tableOptions.value.find((t) => t.value === join.value.table) as TableOption
 	emit('select', {
-		table: table(tableOption.data_source, tableOption.table_name),
+		table: table(tableOption),
 		left_column: column(join.value.leftColumn),
 		right_column: column(join.value.rightColumn),
 		join_type: join.value.type,

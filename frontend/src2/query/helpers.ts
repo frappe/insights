@@ -46,14 +46,15 @@ import {
 	SourceArgs,
 	Summarize,
 	SummarizeArgs,
-	Table
+	Table,
+	TableArgs
 } from '../types/query.types'
 import { Query } from './query'
 
-export const table = (data_source: string, table_name: string): Table => ({
+export const table = (args: TableArgs): Table => ({
 	type: 'table',
-	data_source,
-	table_name,
+	table_name: args.table_name,
+	data_source: args.data_source,
 })
 export const column = (column_name: string, options = {}): Column => ({
 	type: 'column',

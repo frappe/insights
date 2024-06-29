@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleDotIcon, XIcon } from 'lucide-vue-next'
+import { CircleDotIcon, Edit, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
@@ -34,6 +34,15 @@ const query = inject('query') as Query
 						</div>
 					</div>
 					<div class="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+						<Button
+							v-if="query.activeOperationIdx === idx"
+							variant="ghost"
+							@click.prevent.stop="query.setActiveEditIndex(idx)"
+						>
+							<template #icon>
+								<Edit class="h-3.5 w-3.5 text-gray-500" />
+							</template>
+						</Button>
 						<Button variant="ghost" @click="query.removeStep(idx)">
 							<template #icon>
 								<XIcon class="h-3.5 w-3.5 text-gray-500" />
