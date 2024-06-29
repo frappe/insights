@@ -1,3 +1,4 @@
+import { FIELDTYPES } from '@/utils'
 import dayjs from '@/utils/dayjs'
 import {
 	ArrowUpDown,
@@ -12,6 +13,7 @@ import {
 	TextCursorInput,
 	XSquareIcon,
 } from 'lucide-vue-next'
+import { copy } from '../helpers'
 import {
 	Cast,
 	CastArgs,
@@ -44,8 +46,9 @@ import {
 	SourceArgs,
 	Summarize,
 	SummarizeArgs,
-	Table,
+	Table
 } from '../types/query.types'
+import { Query } from './query'
 
 export const table = (data_source: string, table_name: string): Table => ({
 	type: 'table',
@@ -76,6 +79,35 @@ export const expression = (expression: string): Expression => ({
 // 	partition_by: options.partition_by,
 // 	order_by: options.order_by,
 // })
+
+
+export function getFormattedRows(query: Query) {
+	const result = query.result
+
+	if (!result.rows?.length || !result.columns?.length) return []
+
+	const rows = copy(result.rows)
+	const columns = copy(result.columns)
+	const operations = copy(query.doc.operations)
+	const summarize_step = operations.reverse().find((op) => op.type === 'summarize')
+
+	const getGranularity = (column_name: string) => {
+		const dim = summarize_step?.dimensions.find((dim) => dim.column_name === column_name)
+		return dim ? dim.granularity : null
+	}
+
+	const formattedRows = rows.map((row) => {
+		const formattedRow = { ...row }
+		columns.forEach((column) => {
+			if (FIELDTYPES.DATE.includes(column.type) && getGranularity(column.name)) {
+				const granularity = getGranularity(column.name) as GranularityType
+				formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
+			}
+		})
+		return formattedRow
+	})
+	return formattedRows
+}
 
 export function getFormattedDate(date: string, granularity: GranularityType) {
 	if (!date) return ''
