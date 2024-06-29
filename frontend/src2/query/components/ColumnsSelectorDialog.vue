@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import { QueryResultColumn, SelectArgs } from '../../types/query.types'
 import { Query } from '../query'
 import DataTypeIcon from './DataTypeIcon.vue'
-import { QueryResultColumn } from '../../types/query.types'
 
+const props = defineProps<{ columns?: SelectArgs }>()
 const emit = defineEmits({
-	select: (columns: string[]) => true,
+	select: (args: SelectArgs) => true,
 })
 const showDialog = defineModel()
 
@@ -22,7 +23,9 @@ const filteredColumns = computed(() => {
 	})
 })
 
-const selectedColumns = ref<QueryResultColumn[]>([])
+const selectedColumns = ref<QueryResultColumn[]>(
+	props.columns ? columns.value.filter((c) => props.columns?.column_names.includes(c.name)) : []
+)
 function isSelected(column: QueryResultColumn) {
 	return selectedColumns.value.includes(column)
 }
@@ -44,10 +47,9 @@ function toggleSelectAll() {
 const areAllSelected = computed(() => selectedColumns.value.length === columns.value.length)
 const areNoneSelected = computed(() => selectedColumns.value.length === 0)
 function confirmSelection() {
-	emit(
-		'select',
-		selectedColumns.value.map((c) => c.name)
-	)
+	emit('select', {
+		column_names: selectedColumns.value.map((c) => c.name),
+	})
 	showDialog.value = false
 }
 </script>

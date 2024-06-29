@@ -150,8 +150,13 @@ const actions = [
 	<ColumnsSelectorDialog
 		v-if="showColumnsSelectorDialog"
 		v-model="showColumnsSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:columns="
+			query.activeEditOperation.type === 'select' ? query.activeEditOperation : undefined
+		"
 		@select="query.selectColumns($event)"
 	/>
+
 	<FiltersSelectorDialog
 		v-if="showFiltersSelectorDialog"
 		v-model="showFiltersSelectorDialog"
@@ -167,9 +172,14 @@ const actions = [
 		:column-options="query.result.columnOptions"
 		@select="query.addFilterGroup($event)"
 	/>
+
 	<NewColumnSelectorDialog
 		v-if="showNewColumnSelectorDialog"
 		v-model="showNewColumnSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:mutation="
+			query.activeEditOperation.type === 'mutate' ? query.activeEditOperation : undefined
+		"
 		@select="query.addMutate($event)"
 	/>
 

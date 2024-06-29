@@ -33,12 +33,11 @@ const query = inject('query') as Query
 							{{ query_operation_types[op.type].getDescription(op as any) }}
 						</div>
 					</div>
-					<div class="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-						<Button
-							v-if="query.activeOperationIdx === idx"
-							variant="ghost"
-							@click.prevent.stop="query.setActiveEditIndex(idx)"
-						>
+					<div
+						v-show="query.activeOperationIdx === idx"
+						class="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+					>
+						<Button variant="ghost" @click.prevent.stop="query.setActiveEditIndex(idx)">
 							<template #icon>
 								<Edit class="h-3.5 w-3.5 text-gray-500" />
 							</template>

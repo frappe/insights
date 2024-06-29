@@ -2,19 +2,28 @@
 import Code from '@/components/Controls/Code.vue'
 import { COLUMN_TYPES } from '@/utils'
 import { computed, ref } from 'vue'
-import { expression } from '../helpers'
 import { ColumnDataType, MutateArgs } from '../../types/query.types'
+import { expression } from '../helpers'
 
+const props = defineProps<{ mutation?: MutateArgs }>()
 const emit = defineEmits({ select: (column: MutateArgs) => true })
 const showDialog = defineModel()
 
 const columnTypes = COLUMN_TYPES.map((t) => t.value as ColumnDataType)
 
-const newColumn = ref({
-	name: 'New Column',
-	type: columnTypes[0],
-	expression: '',
-})
+const newColumn = ref(
+	props.mutation
+		? {
+				name: props.mutation.new_name,
+				type: props.mutation.data_type,
+				expression: props.mutation.mutation.expression,
+		  }
+		: {
+				name: 'New Column',
+				type: columnTypes[0],
+				expression: '',
+		  }
+)
 
 const isValid = computed(() => {
 	return newColumn.value.name && newColumn.value.type && newColumn.value.expression
@@ -79,7 +88,7 @@ function resetNewColumn() {
 					<div></div>
 					<div class="flex items-center gap-2">
 						<Button
-							label="Add Column"
+							label="Confirm"
 							variant="solid"
 							:disabled="!isValid"
 							@click="confirmCalculation"

@@ -17,6 +17,7 @@ import {
 	OrderByArgs,
 	PivotWiderArgs,
 	QueryResult,
+	SelectArgs,
 	SourceArgs,
 	SummarizeArgs,
 } from '../types/query.types'
@@ -202,11 +203,17 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function removeStep(index: number) {
 		query.doc.operations.splice(index, 1)
-		if (query.activeOperationIdx >= index) {
-			query.activeOperationIdx--
-		}
-		if (query.activeOperationIdx < 0) {
-			query.activeOperationIdx = -1
+		switch (true) {
+			case query.activeOperationIdx === index && index > 0:
+				// if the active operation is removed, move the active operation to the previous step
+				query.activeOperationIdx--
+				break
+			case query.activeOperationIdx === index && index === 0:
+				// if the first operation is removed, reset the active operation
+				query.activeOperationIdx = -1
+				break
+			default:
+				break
 		}
 	}
 
@@ -271,7 +278,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function addMutate(args: MutateArgs) {
-		addOperation(mutate(args))
+		const editingMutate = query.activeEditOperation.type === 'mutate'
+
+		if (!editingMutate) {
+			addOperation(mutate(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = mutate(args)
+			query.setActiveEditIndex(-1)
+		}
 	}
 
 	function addSummarize(args: SummarizeArgs) {
@@ -314,8 +328,15 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		addOperation(pivot_wider(args))
 	}
 
-	function selectColumns(columns: string[]) {
-		addOperation(select({ column_names: columns }))
+	function selectColumns(args: SelectArgs) {
+		const editingSelect = query.activeEditOperation.type === 'select'
+		
+		if (!editingSelect) {
+			addOperation(select(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = select(args)
+			query.setActiveEditIndex(-1)
+		}
 	}
 
 	function renameColumn(oldName: string, newName: string) {
