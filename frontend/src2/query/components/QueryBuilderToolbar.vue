@@ -142,6 +142,8 @@ const actions = [
 	<JoinSelectorDialog
 		v-if="showJoinSelectorDialog"
 		v-model="showJoinSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:join="query.activeEditOperation.type === 'join' ? query.activeEditOperation : undefined"
 		@select="query.addJoin($event)"
 	/>
 

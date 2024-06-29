@@ -243,7 +243,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function addJoin(args: JoinArgs) {
-		addOperation(join(args))
+		const editingJoin = query.activeEditOperation.type === 'join'
+
+		if (!editingJoin) {
+			addOperation(join(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = join(args)
+			query.setActiveEditIndex(-1)
+		}
 	}
 
 	function addFilter(args: FilterArgs) {

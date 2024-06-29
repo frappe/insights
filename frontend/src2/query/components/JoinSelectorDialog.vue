@@ -10,18 +10,29 @@ import useTableStore from '../../data_source/tables'
 import { JoinArgs, JoinType } from '../../types/query.types'
 import { column, table } from '../helpers'
 import { Query } from '../query'
+import { createToast } from '../../helpers/toasts'
 
+const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
 	select: (join: JoinArgs) => true,
 })
 const showDialog = defineModel()
 
-const join = ref({
-	type: 'left' as JoinType,
-	table: '',
-	leftColumn: '',
-	rightColumn: '',
-})
+const join = ref(
+	props.join
+		? {
+				type: props.join.join_type,
+				table: `${props.join.table.data_source}.${props.join.table.table_name}`,
+				left_column: props.join.left_column.column_name,
+				right_column: props.join.right_column.column_name,
+		  }
+		: {
+				type: 'left' as JoinType,
+				table: '',
+				left_column: '',
+				right_column: '',
+		  }
+)
 
 const tableStore = useTableStore()
 type TableOption = {
@@ -41,9 +52,10 @@ const tableOptions = computed<TableOption[]>(() => {
 		value: `${t.data_source}.${t.table_name}`,
 	}))
 })
-const tableSearchText = ref('')
+const tableSearchText = ref(props.join?.table.table_name || '')
 watchDebounced(tableSearchText, () => tableStore.getTables(undefined, tableSearchText.value), {
 	debounce: 300,
+	immediate: true,
 })
 
 const tableColumnOptions = ref<DropdownOption[]>([])
@@ -63,8 +75,8 @@ wheneverChanges(
 					data_type: c.type,
 				}))
 
-				if (join.value.rightColumn) {
-					join.value.rightColumn = ''
+				if (join.value.right_column) {
+					join.value.right_column = ''
 				}
 
 				autoMatchColumns()
@@ -80,8 +92,38 @@ function autoMatchColumns() {
 	const rightColumns = tableColumnOptions.value
 	const matchingColumns = leftColumns.filter((l) => rightColumns.some((r) => r.value === l.value))
 	if (matchingColumns.length) {
-		join.value.leftColumn = matchingColumns[0].value
-		join.value.rightColumn = matchingColumns[0].value
+		join.value.left_column = matchingColumns[0].value
+		join.value.right_column = matchingColumns[0].value
+	}
+}
+
+const isValid = computed(() => {
+	return join.value.table && join.value.left_column && join.value.right_column && join.value.type
+})
+function confirm() {
+	if (!isValid.value) return
+	const tableOption = tableOptions.value.find((t) => t.value === join.value.table)
+	if (!tableOption) {
+		return createToast({
+			message: 'Table not found',
+			variant: 'error',
+		})
+	}
+	emit('select', {
+		table: table(tableOption),
+		left_column: column(join.value.left_column),
+		right_column: column(join.value.right_column),
+		join_type: join.value.type,
+	})
+	reset()
+	showDialog.value = false
+}
+function reset() {
+	join.value = {
+		type: 'left',
+		table: '',
+		left_column: '',
+		right_column: '',
 	}
 }
 
@@ -112,30 +154,6 @@ const joinTypes = [
 		description: 'Keep all rows from both tables',
 	},
 ] as const
-
-const isValid = computed(() => {
-	return join.value.table && join.value.leftColumn && join.value.rightColumn && join.value.type
-})
-function confirm() {
-	if (!isValid.value) return
-	const tableOption = tableOptions.value.find((t) => t.value === join.value.table) as TableOption
-	emit('select', {
-		table: table(tableOption),
-		left_column: column(join.value.leftColumn),
-		right_column: column(join.value.rightColumn),
-		join_type: join.value.type,
-	})
-	reset()
-	showDialog.value = false
-}
-function reset() {
-	join.value = {
-		type: 'left',
-		table: '',
-		leftColumn: '',
-		rightColumn: '',
-	}
-}
 </script>
 
 <template>
@@ -174,8 +192,8 @@ function reset() {
 							<Autocomplete
 								placeholder="Column"
 								:options="query.result.columnOptions"
-								:modelValue="join.leftColumn"
-								@update:modelValue="join.leftColumn = $event.value"
+								:modelValue="join.left_column"
+								@update:modelValue="join.left_column = $event.value"
 							/>
 						</div>
 						<div class="flex flex-shrink-0 items-center font-mono">=</div>
@@ -183,8 +201,8 @@ function reset() {
 							<Autocomplete
 								placeholder="Column"
 								:options="tableColumnOptions"
-								:modelValue="join.rightColumn"
-								@update:modelValue="join.rightColumn = $event.value"
+								:modelValue="join.right_column"
+								@update:modelValue="join.right_column = $event.value"
 							/>
 						</div>
 					</div>
