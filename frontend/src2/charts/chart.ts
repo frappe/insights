@@ -198,27 +198,27 @@ function makeChart(workbookChart: WorkbookChart) {
 			console.warn('Rows are required')
 			return false
 		}
-		const rows = config.rows
+		let rows = config.rows
 			.map((r) => chart.baseQuery.getDimension(r))
 			.filter(Boolean) as Dimension[]
-		const columns = config.columns
-			.map((c) => chart.baseQuery.getDimension(c))
+		let columns = config.columns
+			?.map((c) => chart.baseQuery.getDimension(c))
 			.filter(Boolean) as Dimension[]
-		const values = config.values
-			.map((v) => chart.baseQuery.getMeasure(v))
+		let values = config.values
+			?.map((v) => chart.baseQuery.getMeasure(v))
 			.filter(Boolean) as Measure[]
 
-		if (!columns.length) {
+		if (!columns?.length) {
 			chart.dataQuery.addSummarize({
-				measures: values,
+				measures: values || [count()],
 				dimensions: rows,
 			})
 		}
-		if (columns.length) {
+		if (columns?.length) {
 			chart.dataQuery.addPivotWider({
 				rows: rows,
 				columns: columns,
-				values: values,
+				values: values || [count()],
 			})
 		}
 

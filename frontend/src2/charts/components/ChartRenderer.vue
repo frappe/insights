@@ -37,6 +37,7 @@ const eChartOptions = computed(() => {
 	<NumberChart v-if="chart.doc.chart_type == 'Number'" :chart="chart" />
 	<DataTable
 		v-if="chart.doc.chart_type == 'Table'"
+		class="rounded bg-white shadow"
 		:columns="chart.dataQuery.result.columns"
 		:rows="chart.dataQuery.result.rows"
 	/>
