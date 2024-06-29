@@ -238,7 +238,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function resetQuery() {
 		chart.dataQuery.autoExecute = false
-		chart.dataQuery.setOperations([...chart.baseQuery.currentOperations])
+		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
 	}
 	function setFilters(filters: FilterArgs[]) {
 		const _filters = new Set(filters)
