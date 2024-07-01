@@ -129,7 +129,9 @@ class InsightsQueryClient:
 
         related_table_names = get_related_table_names(table_names, self.data_source)
 
-        selected_table_cols = get_matching_columns_from(table_names, self.data_source, search_txt)
+        selected_table_cols = get_matching_columns_from(
+            table_names, self.data_source, search_txt
+        )
         related_table_cols = get_matching_columns_from(
             related_table_names, self.data_source, search_txt
         )
@@ -165,7 +167,8 @@ def get_related_table_names(table_names, data_source):
         .left_join(insights_table_link)
         .on(insights_table.name == insights_table_link.parent)
         .where(
-            (insights_table.data_source == data_source) & (insights_table.table.isin(table_names))
+            (insights_table.data_source == data_source)
+            & (insights_table.table.isin(table_names))
         )
         .select(insights_table_link.foreign_table)
         .groupby(insights_table_link.foreign_table)

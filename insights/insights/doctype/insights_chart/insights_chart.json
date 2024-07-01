@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "creation": "2023-04-05 20:57:15.153273",
  "default_view": "List",
  "doctype": "DocType",
@@ -28,8 +27,7 @@
    "fieldname": "options",
    "fieldtype": "JSON",
    "in_list_view": 1,
-   "label": "Options",
-   "reqd": 1
+   "label": "Options"
   },
   {
    "default": "0",
@@ -59,7 +57,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-13 12:11:47.615480",
+ "modified": "2024-06-09 19:24:28.025276",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart",
@@ -90,9 +88,7 @@
    "write": 1
   }
  ],
- "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "query"
+ "states": []
 }

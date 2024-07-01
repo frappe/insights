@@ -80,8 +80,12 @@ class SQLQueryBuilder:
                     left=self.make_table(join.left_table.table),
                     right=self.make_table(join.right_table.table),
                     type=join.join_type.value,
-                    left_key=self.make_column(join.left_column.column, join.left_table.table),
-                    right_key=self.make_column(join.right_column.column, join.right_table.table),
+                    left_key=self.make_column(
+                        join.left_column.column, join.left_table.table
+                    ),
+                    right_key=self.make_column(
+                        join.right_column.column, join.right_table.table
+                    ),
                 )
             )
 
@@ -125,7 +129,9 @@ class SQLQueryBuilder:
             elif "set" in operator:  # is set, is not set
                 _filter = call_function(operator, _column)
             elif operator == "is":
-                operator_fn = "is_set" if filter_value.lower() == "set" else "is_not_set"
+                operator_fn = (
+                    "is_set" if filter_value.lower() == "set" else "is_not_set"
+                )
                 _filter = call_function(operator_fn, _column)
             elif operator == "between":
                 from_to = filter_value.split(",")
@@ -206,7 +212,9 @@ class SQLQueryBuilder:
         try:
             raw = process_raw_expression(raw_expression)
             eval_globals = get_eval_globals()
-            eval_globals["column"] = lambda table, column: self.make_column(column, table)
+            eval_globals["column"] = lambda table, column: self.make_column(
+                column, table
+            )
             return frappe.safe_eval(raw, eval_globals=eval_globals)
         except Exception as e:
             raise Exception(f"Invalid expression {raw} - {e}")

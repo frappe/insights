@@ -38,7 +38,9 @@ class InsightsScriptQueryController:
             return []
 
         def get_value(variable):
-            return get_decrypted_password(variable.doctype, variable.name, "variable_value")
+            return get_decrypted_password(
+                variable.doctype, variable.name, "variable_value"
+            )
 
         results = []
         try:

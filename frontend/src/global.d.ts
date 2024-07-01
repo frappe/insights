@@ -5,7 +5,7 @@ declare type HashString = `#${string}`
 declare type RGBString = `rgb(${number}, ${number}, ${number})`
 
 interface User {
-	user_id: string
+	email: string
 	first_name: string
 	last_name: string
 	full_name: string
@@ -90,6 +90,9 @@ type DropdownOption = {
 	label: string
 	value: string
 	description: string
+}
+type ColumnOption = DropdownOption & {
+	data_type: ColumnDataType
 }
 
 interface DataSourceTableOption extends DropdownOption {

@@ -61,7 +61,9 @@ class StoredQueryTableFactory:
 class QueryStore(SQLiteDB):
     def __init__(self) -> None:
         self.data_source = "Query Store"
-        database_path = frappe.get_site_path("private", "files", "insights_query_store.sqlite")
+        database_path = frappe.get_site_path(
+            "private", "files", "insights_query_store.sqlite"
+        )
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.table_factory = StoredQueryTableFactory()
         self.query_builder = SQLiteQueryBuilder(self.engine)
@@ -99,4 +101,6 @@ def store_query(query, results):
 def remove_stored_query(query):
     query_store = QueryStore()
     query_store.store_query(query, [])
-    frappe.db.delete("Insights Table", {"table": query.name, "data_source": "Query Store"})
+    frappe.db.delete(
+        "Insights Table", {"table": query.name, "data_source": "Query Store"}
+    )

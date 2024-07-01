@@ -95,7 +95,9 @@ def create_insights_table(table, force=False):
 
     version = frappe.new_doc("Version")
     # if there's some update to store only then save the doc
-    doc_changed = version.update_version_info(doc_before, doc) or column_added or column_removed
+    doc_changed = (
+        version.update_version_info(doc_before, doc) or column_added or column_removed
+    )
     is_new = not exists
     if is_new or doc_changed or force:
         # need to ignore permissions when creating/updating a table in query store
@@ -183,13 +185,17 @@ def get_stored_query_sql(
         if data_source is None:
             data_source = sql.data_source
         if data_source and sql.data_source != data_source:
-            frappe.throw("Cannot use queries from different data sources in a single query")
+            frappe.throw(
+                "Cannot use queries from different data sources in a single query"
+            )
 
         stored_query_sql[sql.name] = sql.sql
         if not sql.is_native_query:
             # non native queries are already processed and stored in the db
             continue
-        sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source, dialect=dialect)
+        sub_stored_query_sql = get_stored_query_sql(
+            sql.sql, data_source, dialect=dialect
+        )
         # sub_stored_query_sql = { 'QRY-004': 'SELECT name FROM `Item`' }
         if not sub_stored_query_sql:
             continue
@@ -211,7 +217,9 @@ def make_wrap_table_fn(
     elif data_source:
         quote = (
             "`"
-            if frappe.get_cached_value("Insights Data Source", data_source, "database_type")
+            if frappe.get_cached_value(
+                "Insights Data Source", data_source, "database_type"
+            )
             == "MariaDB"
             else '"'
         )
@@ -280,7 +288,9 @@ def add_limit_to_sql(sql, limit=1000):
 
 def replace_query_tables_with_cte(sql, data_source, dialect=None):
     try:
-        return process_cte(str(sql).strip().rstrip(";"), data_source=data_source, dialect=dialect)
+        return process_cte(
+            str(sql).strip().rstrip(";"), data_source=data_source, dialect=dialect
+        )
     except Exception:
         frappe.log_error(title="Failed to process CTE")
         frappe.throw("Failed to replace query tables with CTE")
@@ -305,7 +315,9 @@ def execute_and_log(conn, sql, data_source, query_name):
 def handle_query_execution_error(e):
     err_lower = str(e).lower()
     if "duplicate column name" in err_lower:
-        frappe.throw("Duplicate column name. Please make sure the column labels are unique.")
+        frappe.throw(
+            "Duplicate column name. Please make sure the column labels are unique."
+        )
     if "syntax" in err_lower and "error" in err_lower:
         frappe.throw(
             "Syntax error in the query. Please check the browser console for more details."

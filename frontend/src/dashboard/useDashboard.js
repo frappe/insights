@@ -42,7 +42,7 @@ export default function useDashboard(name) {
 		await resource.get.fetch()
 		state.doc = resource.doc
 		state.itemLayouts = state.doc.items.map(makeLayoutObject)
-		state.isOwner = state.doc.owner == session.user.user_id
+		state.isOwner = state.doc.owner == session.user.email
 		state.canShare = state.isOwner || session.user.is_admin
 		resource.is_private.fetch().then((res) => (state.isPrivate = res))
 		state.loading = false
