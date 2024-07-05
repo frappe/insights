@@ -42,7 +42,13 @@ def get_queries():
             DataSource.title.as_("data_source_title"),
         )
         .where(Query.name.isin(allowed_queries))
-        .groupby(Query.name)
+        .groupby(
+            Query.name,
+            User.full_name.as_("owner_name"),
+            User.user_image.as_("owner_image"),
+            QueryChart.chart_type,
+            DataSource.title.as_("data_source_title"),
+        )
         .orderby(Query.creation, order=frappe.qb.desc)
     ).run(as_dict=True)
 
