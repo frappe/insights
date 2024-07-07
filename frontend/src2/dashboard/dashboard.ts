@@ -48,7 +48,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 							x: 0,
 							y: 0,
 							w: chart.chart_type === 'Number' ? 20 : 10,
-							h: chart.chart_type === 'Number' ? 4 : 8,
+							h: chart.chart_type === 'Number' ? 3 : 8,
 						},
 					})
 				}
