@@ -42,6 +42,7 @@ watch(
 				showColumnsSelectorDialog.value = true
 				break
 			case 'filter':
+			case 'filter_group':
 				showFiltersSelectorDialog.value = true
 				break
 			case 'mutate':
