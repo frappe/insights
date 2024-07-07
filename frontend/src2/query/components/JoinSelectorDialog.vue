@@ -10,7 +10,6 @@ import useTableStore from '../../data_source/tables'
 import { JoinArgs, JoinType } from '../../types/query.types'
 import { column, table } from '../helpers'
 import { Query } from '../query'
-import { createToast } from '../../helpers/toasts'
 
 const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
@@ -18,19 +17,25 @@ const emit = defineEmits({
 })
 const showDialog = defineModel()
 
-const join = ref(
+const join = ref<JoinArgs>(
 	props.join
 		? {
-				type: props.join.join_type,
-				table: `${props.join.table.data_source}.${props.join.table.table_name}`,
-				left_column: props.join.left_column.column_name,
-				right_column: props.join.right_column.column_name,
+				join_type: props.join.join_type,
+				table: table({
+					table_name: props.join.table.table_name,
+					data_source: props.join.table.data_source,
+				}),
+				left_column: column(props.join.left_column.column_name),
+				right_column: column(props.join.right_column.column_name),
 		  }
 		: {
-				type: 'left' as JoinType,
-				table: '',
-				left_column: '',
-				right_column: '',
+				join_type: 'left' as JoinType,
+				table: table({
+					table_name: '',
+					data_source: '',
+				}),
+				left_column: column(''),
+				right_column: column(''),
 		  }
 )
 
@@ -59,14 +64,14 @@ watchDebounced(tableSearchText, () => tableStore.getTables(undefined, tableSearc
 })
 
 const tableColumnOptions = ref<DropdownOption[]>([])
+const fetchingColumnOptions = ref(false)
 wheneverChanges(
-	() => join.value.table,
+	() => join.value.table.table_name,
 	() => {
-		const newTable = join.value.table
-		const tableColumn = tableOptions.value.find((t) => t.value === newTable)
-		if (!tableColumn) return
+		if (!join.value.table.table_name) return
+		fetchingColumnOptions.value = true
 		tableStore
-			.getTableColumns(tableColumn.data_source, tableColumn.table_name)
+			.getTableColumns(join.value.table.data_source, join.value.table.table_name)
 			.then((columns) => {
 				tableColumnOptions.value = columns.map((c: any) => ({
 					label: c.name,
@@ -75,11 +80,14 @@ wheneverChanges(
 					data_type: c.type,
 				}))
 
-				if (join.value.right_column) {
-					join.value.right_column = ''
+				if (join.value.right_column.column_name) {
+					join.value.right_column.column_name = ''
 				}
 
 				autoMatchColumns()
+			})
+			.finally(() => {
+				fetchingColumnOptions.value = false
 			})
 	},
 	{ immediate: true }
@@ -92,38 +100,34 @@ function autoMatchColumns() {
 	const rightColumns = tableColumnOptions.value
 	const matchingColumns = leftColumns.filter((l) => rightColumns.some((r) => r.value === l.value))
 	if (matchingColumns.length) {
-		join.value.left_column = matchingColumns[0].value
-		join.value.right_column = matchingColumns[0].value
+		join.value.left_column.column_name = matchingColumns[0].value
+		join.value.right_column.column_name = matchingColumns[0].value
 	}
 }
 
 const isValid = computed(() => {
-	return join.value.table && join.value.left_column && join.value.right_column && join.value.type
+	return (
+		join.value.table.table_name &&
+		join.value.left_column.column_name &&
+		join.value.right_column.column_name &&
+		join.value.join_type
+	)
 })
 function confirm() {
 	if (!isValid.value) return
-	const tableOption = tableOptions.value.find((t) => t.value === join.value.table)
-	if (!tableOption) {
-		return createToast({
-			message: 'Table not found',
-			variant: 'error',
-		})
-	}
-	emit('select', {
-		table: table(tableOption),
-		left_column: column(join.value.left_column),
-		right_column: column(join.value.right_column),
-		join_type: join.value.type,
-	})
-	reset()
+	emit('select', join.value)
 	showDialog.value = false
+	reset()
 }
 function reset() {
 	join.value = {
-		type: 'left',
-		table: '',
-		left_column: '',
-		right_column: '',
+		join_type: 'left',
+		table: table({
+			table_name: '',
+			data_source: '',
+		}),
+		left_column: column(''),
+		right_column: column(''),
 	}
 }
 
@@ -179,8 +183,17 @@ const joinTypes = [
 					<Autocomplete
 						placeholder="Table"
 						:options="tableOptions"
-						:modelValue="join.table"
-						@update:modelValue="join.table = $event.value"
+						:modelValue="
+							join.table.table_name
+								? `${join.table.data_source}.${join.table.table_name}`
+								: ''
+						"
+						@update:modelValue="
+							(option: any) => {
+								join.table.data_source = option.data_source
+								join.table.table_name = option.table_name
+							}
+						"
 						@update:query="tableSearchText = $event"
 						:loading="tableStore.loading"
 					/>
@@ -191,18 +204,20 @@ const joinTypes = [
 						<div class="flex-1">
 							<Autocomplete
 								placeholder="Column"
+								:loading="fetchingColumnOptions"
 								:options="query.result.columnOptions"
-								:modelValue="join.left_column"
-								@update:modelValue="join.left_column = $event.value"
+								:modelValue="join.left_column.column_name"
+								@update:modelValue="join.left_column.column_name = $event?.value"
 							/>
 						</div>
 						<div class="flex flex-shrink-0 items-center font-mono">=</div>
 						<div class="flex-1">
 							<Autocomplete
 								placeholder="Column"
+								:loading="fetchingColumnOptions"
 								:options="tableColumnOptions"
-								:modelValue="join.right_column"
-								@update:modelValue="join.right_column = $event.value"
+								:modelValue="join.right_column.column_name"
+								@update:modelValue="join.right_column.column_name = $event?.value"
 							/>
 						</div>
 					</div>
@@ -215,11 +230,11 @@ const joinTypes = [
 							:key="joinType.label"
 							class="flex flex-1 flex-col items-center justify-center rounded border py-3 transition-all"
 							:class="
-								join.type === joinType.value
+								join.join_type === joinType.value
 									? 'border-gray-700'
 									: 'cursor-pointer hover:border-gray-400'
 							"
-							@click="join.type = joinType.value"
+							@click="join.join_type = joinType.value"
 						>
 							<component
 								:is="joinType.icon"
@@ -230,7 +245,7 @@ const joinTypes = [
 						</div>
 					</div>
 					<div class="mt-1 text-xs text-gray-600">
-						{{ joinTypes.find((j) => j.value === join.type)?.description }}
+						{{ joinTypes.find((j) => j.value === join.join_type)?.description }}
 					</div>
 				</div>
 			</div>
