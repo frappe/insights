@@ -6,6 +6,7 @@ import { column, expression } from '../helpers'
 import FilterExpression from './FilterExpression.vue'
 import FilterRule from './FilterRule.vue'
 import { isFilterExpressionValid, isFilterValid } from './filter_utils'
+import { copy } from '../../helpers'
 
 const props = defineProps<{
 	filter?: FilterArgs
@@ -20,7 +21,7 @@ const emit = defineEmits({
 
 const filterGroup = reactive<FilterGroupArgs>(
 	props.filterGroup
-		? { ...props.filterGroup }
+		? copy(props.filterGroup)
 		: {
 				logical_operator: 'And',
 				filters: props.filter ? [{ ...props.filter }] : [],

@@ -1,4 +1,5 @@
-import { FIELDTYPES, wheneverChanges } from '@/utils'
+import { FIELDTYPES } from '@/utils'
+import { watchDebounced, watchOnce } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy, showErrorToast } from '../helpers'
@@ -7,7 +8,6 @@ import {
 	ColumnDataType,
 	Dimension,
 	DimensionDataType,
-	FilterArgs,
 	FilterGroupArgs,
 	JoinArgs,
 	Measure,
@@ -26,7 +26,6 @@ import {
 	cast,
 	column,
 	count,
-	filter,
 	filter_group,
 	getFormattedRows,
 	join,
@@ -76,7 +75,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		setSource,
 		addSource,
 		addJoin,
-		addFilter,
 		addFilterGroup,
 		addMutate,
 		addSummarize,
@@ -98,6 +96,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		reset,
 	})
+
+	watchOnce(
+		() => query.doc.operations.length,
+		() => (query.activeOperationIdx = query.doc.operations.length - 1),
+		{ immediate: true },
+	)
 
 	// @ts-ignore
 	query.dimensions = computed(() => {
@@ -131,8 +135,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		const operations = [...query.doc.operations]
 		if (query.activeOperationIdx >= 0) {
 			operations.splice(query.activeOperationIdx + 1)
-		} else {
-			query.activeOperationIdx = operations.length - 1
 		}
 		return operations
 	})
@@ -143,7 +145,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return query.doc.operations[query.activeEditIndex]
 	})
 
-	wheneverChanges(
+	watchDebounced(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
 		{ deep: true, immediate: true },
@@ -260,10 +262,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		}
 	}
 
-	function addFilter(args: FilterArgs) {
-		addOperation(filter(args))
-	}
-
 	function addFilterGroup(args: FilterGroupArgs) {
 		const editingFilter =
 			query.activeEditOperation.type === 'filter_group' ||
@@ -330,7 +328,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function selectColumns(args: SelectArgs) {
 		const editingSelect = query.activeEditOperation.type === 'select'
-		
+
 		if (!editingSelect) {
 			addOperation(select(args))
 		} else {

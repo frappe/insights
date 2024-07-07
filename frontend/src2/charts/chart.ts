@@ -243,8 +243,9 @@ function makeChart(workbookChart: WorkbookChart) {
 	function setFilters(filters: FilterArgs[]) {
 		const _filters = new Set(filters)
 		if (_filters.size) {
-			_filters.forEach((filter) => {
-				chart.dataQuery.addFilter(filter)
+			chart.dataQuery.addFilterGroup({
+				logical_operator: 'And',
+				filters: Array.from(_filters),
 			})
 		}
 	}

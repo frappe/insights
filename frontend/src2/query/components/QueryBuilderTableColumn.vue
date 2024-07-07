@@ -2,18 +2,18 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { MoreHorizontal } from 'lucide-vue-next'
 import { inject } from 'vue'
-import { column } from '../helpers'
-import { Query } from '../query'
-import ColumnFilter from './ColumnFilter.vue'
-import ColumnRemove from './ColumnRemove.vue'
-import ColumnSort from './ColumnSort.vue'
-import ColumnTypeChange from './ColumnTypeChange.vue'
 import {
 	ColumnDataType,
 	FilterOperator,
 	FilterValue,
 	QueryResultColumn,
 } from '../../types/query.types'
+import { column } from '../helpers'
+import { Query } from '../query'
+import ColumnFilter from './ColumnFilter.vue'
+import ColumnRemove from './ColumnRemove.vue'
+import ColumnSort from './ColumnSort.vue'
+import ColumnTypeChange from './ColumnTypeChange.vue'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 
@@ -52,10 +52,15 @@ function onFilter(
 	filter_value: FilterValue,
 	togglePopover: () => void
 ) {
-	query.addFilter({
-		column: column(props.column.name),
-		operator: filter_operator,
-		value: filter_value,
+	query.addFilterGroup({
+		logical_operator: 'And',
+		filters: [
+			{
+				column: column(props.column.name),
+				operator: filter_operator,
+				value: filter_value,
+			},
+		],
 	})
 	togglePopover()
 }
@@ -93,7 +98,10 @@ function onFilter(
 					<ColumnFilter
 						:column="props.column"
 						@filter="(op, val) => onFilter(op, val, togglePopover)"
-						:valuesProvider="(searchTxt: string) => query.getDistinctColumnValues(props.column.name, searchTxt)"
+						:valuesProvider="
+							(searchTxt: string) =>
+								query.getDistinctColumnValues(props.column.name, searchTxt)
+						"
 					/>
 					<ColumnRemove :column="props.column" @remove="onRemove(togglePopover)" />
 				</div>
