@@ -268,10 +268,13 @@ class IbisQueryBuilder:
 
 
 def execute_ibis_query(
-    query: IbisQuery, query_name=None, limit=100, cache=True
+    query: IbisQuery, query_name=None, limit=100, cache=False
 ) -> pd.DataFrame:
     query = query.head(limit) if limit else query
     sql = ibis.to_sql(query)
+
+    if cache and has_cached_results(sql):
+        return get_cached_results(sql)
 
     backend = query._find_backend(use_default=True)
     try:
@@ -285,6 +288,9 @@ def execute_ibis_query(
     create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
 
     res = res.replace({pd.NaT: None, np.NaN: 0})
+    if cache:
+        cache_results(sql, res)
+
     return res
 
 

@@ -77,7 +77,7 @@ def get_distinct_column_values(operations, column_name, search_term=None):
         .distinct()
         .head(20)
     )
-    result = execute_ibis_query(values_query)
+    result = execute_ibis_query(values_query, cache=True)
     return result[column_name].tolist()
 
 
