@@ -45,7 +45,7 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 						</td>
 						<td
 							v-for="col in props.columns"
-							class="truncate border-b border-r py-2 px-3 text-gray-800"
+							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
 							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
 							height="30px"
 						>
