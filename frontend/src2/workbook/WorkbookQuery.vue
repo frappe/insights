@@ -5,8 +5,8 @@ import { Workbook, workbookKey } from './workbook'
 
 const props = defineProps<{ name?: string; index: number | string }>()
 
-const workbook = inject(workbookKey) as Workbook
-const activeQuery = computed(() => workbook.doc.queries[Number(props.index)])
+const workbook = inject<Workbook>(workbookKey)
+const activeQuery = computed(() => workbook?.doc.queries[Number(props.index)])
 </script>
 
 <template>
