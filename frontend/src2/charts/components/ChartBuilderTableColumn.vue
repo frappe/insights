@@ -1,0 +1,162 @@
+<script setup lang="ts">
+import ContentEditable from '@/components/ContentEditable.vue'
+import { FIELDTYPES } from '@/utils'
+import {
+	ArrowDownWideNarrow,
+	ArrowUpDown,
+	ArrowUpNarrowWide,
+	Calendar,
+	Check,
+	ListFilter,
+	XIcon,
+} from 'lucide-vue-next'
+import { computed, h, inject } from 'vue'
+import ColumnFilterBody from '../../query/components/ColumnFilterBody.vue'
+import { column } from '../../query/helpers'
+import { Query } from '../../query/query'
+import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
+import { Chart } from '../chart'
+
+const props = defineProps<{ column: QueryResultColumn }>()
+const chart = inject('chart') as Chart
+const query = inject('query') as Query
+
+const currentSortOrder = computed(() => {
+	return chart.doc.config.order_by.find((order) => order.column.column_name === props.column.name)
+})
+const sortOptions = [
+	{
+		label: 'Sort Ascending',
+		icon: h(ArrowUpNarrowWide, { class: 'h-4 w-4 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => onSort('asc'),
+	},
+	{
+		label: 'Sort Descending',
+		icon: h(ArrowDownWideNarrow, { class: 'h-4 w-4 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => onSort('desc'),
+	},
+	{
+		label: 'Remove Sort',
+		icon: h(XIcon, { class: 'h-4 w-4 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => onSort(''),
+	},
+]
+
+function onSort(sort_order: 'asc' | 'desc' | '') {
+	const existingOrder = chart.doc.config.order_by.find(
+		(order) => order.column.column_name === props.column.name
+	)
+	if (existingOrder) {
+		if (sort_order) {
+			existingOrder.direction = sort_order
+		} else {
+			chart.doc.config.order_by = chart.doc.config.order_by.filter(
+				(order) => order.column.column_name !== props.column.name
+			)
+		}
+	} else {
+		if (!sort_order) return
+		chart.doc.config.order_by.push({
+			column: column(props.column.name),
+			direction: sort_order,
+		})
+	}
+}
+
+const dateGranularityOptions = computed(() => {
+	const options = [
+		// { label: 'Second', onClick: () => chart.updateGranularity(props.column.name, 'second') },
+		// { label: 'Minute', onClick: () => chart.updateGranularity(props.column.name, 'minute') },
+		// { label: 'Hour', onClick: () => chart.updateGranularity(props.column.name, 'hour') },
+		{ label: 'Day', onClick: () => chart.updateGranularity(props.column.name, 'day') },
+		{ label: 'Week', onClick: () => chart.updateGranularity(props.column.name, 'week') },
+		{ label: 'Month', onClick: () => chart.updateGranularity(props.column.name, 'month') },
+		{ label: 'Quarter', onClick: () => chart.updateGranularity(props.column.name, 'quarter') },
+		{ label: 'Year', onClick: () => chart.updateGranularity(props.column.name, 'year') },
+	]
+	options.forEach((option: any) => {
+		option.icon =
+			option.label.toLowerCase() === chart.getGranularity(props.column.name)
+				? h(Check, {
+						class: 'h-4 w-4 text-gray-700',
+						strokeWidth: 1.5,
+				  })
+				: h('div', { class: 'h-4 w-4' })
+	})
+	return options
+})
+
+function onFilter(filter_operator: FilterOperator, filter_value: FilterValue) {
+	chart.updateFilter({
+		column: column(props.column.name),
+		operator: filter_operator,
+		value: filter_value,
+	})
+}
+</script>
+
+<template>
+	<div class="flex w-full items-center justify-between gap-8 pl-2">
+		<div class="flex items-center">
+			<ContentEditable
+				:modelValue="props.column.name"
+				placeholder="Column Name"
+				class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-sm focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
+				disabled
+			/>
+		</div>
+
+		<div class="flex">
+			<!-- Sort -->
+			<Dropdown :options="sortOptions">
+				<Button variant="ghost" class="rounded-none">
+					<template #icon>
+						<component
+							:is="
+								!currentSortOrder
+									? ArrowUpDown
+									: currentSortOrder.direction === 'asc'
+									? ArrowUpNarrowWide
+									: ArrowDownWideNarrow
+							"
+							class="h-3.5 w-3.5 text-gray-700"
+							stroke-width="1.5"
+						/>
+					</template>
+				</Button>
+			</Dropdown>
+
+			<!-- Granularity -->
+			<Dropdown
+				v-if="FIELDTYPES.DATE.includes(props.column.type)"
+				:options="dateGranularityOptions"
+			>
+				<Button variant="ghost" class="rounded-none">
+					<template #icon>
+						<Calendar class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+			</Dropdown>
+
+			<!-- Filter -->
+			<Popover placement="bottom-end">
+				<template #target="{ togglePopover }">
+					<Button variant="ghost" class="rounded-none" @click="togglePopover">
+						<template #icon>
+							<ListFilter class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+						</template>
+					</Button>
+				</template>
+				<template #body-main="{ togglePopover, isOpen }">
+					<ColumnFilterBody
+						v-if="isOpen"
+						:column="props.column"
+						:valuesProvider="(t) => query.getDistinctColumnValues(props.column.name, t)"
+						@filter="(op, val) => onFilter(op, val)"
+						@close="togglePopover"
+					/>
+				</template>
+			</Popover>
+		</div>
+	</div>
+</template>

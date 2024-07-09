@@ -1,3 +1,5 @@
+import { Dimension, Measure } from "./query.types"
+
 export const AXIS_CHARTS = ['Bar', 'Line']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
@@ -5,11 +7,11 @@ export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Table']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
-	x_axis: string
-	y_axis: string[]
-	y2_axis: string[]
+	x_axis: Dimension
+	y_axis: Measure[]
+	y2_axis?: Measure[]
 	y2_axis_type?: 'line' | 'bar'
-	split_by?: string
+	split_by: Dimension
 	show_data_labels?: boolean
 }
 export type BarChartConfig = AxisChartConfig & {
@@ -20,10 +22,10 @@ export type BarChartConfig = AxisChartConfig & {
 export type LineChartConfig = AxisChartConfig & {}
 
 export type NumberChartConfig = {
-	number_columns: string[]
+	number_columns: Measure[]
 	comparison: boolean
 	sparkline: boolean
-	date_column?: string
+	date_column?: Dimension
 	shorten_numbers?: boolean
 	decimal?: number
 	prefix?: string
@@ -32,8 +34,8 @@ export type NumberChartConfig = {
 }
 
 export type DountChartConfig = {
-	label_column: string
-	value_column: string
+	label_column: Dimension
+	value_column: Measure
 }
 
 export type TableChartConfig = {

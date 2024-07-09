@@ -9,11 +9,13 @@ import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
+import ChartBuilderTableColumn from './components/ChartBuilderTableColumn.vue'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
 const chart = useChart(props.chart)
 provide('chart', chart)
+provide('query', chart.dataQuery)
 
 if (!chart.doc.config.order_by) {
 	chart.doc.config.order_by = []
@@ -41,11 +43,7 @@ if (!chart.doc.config.order_by) {
 				:rows="chart.dataQuery.result.formattedRows"
 			>
 				<template #column-header="{ column }">
-					<div
-						class="flex cursor-pointer items-center gap-2 truncate py-2 px-3 hover:underline"
-					>
-						<span>{{ column.name }}</span>
-					</div>
+					<ChartBuilderTableColumn :column="column" />
 				</template>
 			</DataTable>
 		</div>

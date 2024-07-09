@@ -11,11 +11,11 @@ const props = defineProps<{
 const config = defineModel<LineChartConfig>({
 	required: true,
 	default: () => ({
-		x_axis: '',
+		x_axis: {},
 		y_axis: [],
 		y2_axis: [],
 		y2_axis_type: 'line',
-		split_by: '',
+		split_by: {},
 		show_data_labels: false,
 	}),
 })

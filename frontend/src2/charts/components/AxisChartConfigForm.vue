@@ -13,23 +13,25 @@ const props = defineProps<{
 const config = defineModel<AxisChartConfig>({
 	required: true,
 	default: () => ({
-		x_axis: '',
+		x_axis: {},
 		y_axis: [],
 		y2_axis: [],
 		y2_axis_type: 'line',
-		split_by: '',
+		split_by: {},
 		show_data_labels: false,
 	}),
 })
 
 const dimensions = computed(() =>
 	props.dimensions.map((dimension) => ({
+		...dimension,
 		label: dimension.column_name,
 		value: dimension.column_name,
 	}))
 )
 const measures = computed(() =>
 	props.measures.map((measure) => ({
+		...measure,
 		label: measure.column_name,
 		value: measure.column_name,
 	}))
@@ -42,32 +44,32 @@ const measures = computed(() =>
 			class="w-full"
 			:showFooter="true"
 			:options="dimensions"
-			:modelValue="config.x_axis"
-			@update:modelValue="config.x_axis = $event?.value"
+			:modelValue="config.x_axis?.column_name"
+			@update:modelValue="config.x_axis = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Left Y Axis">
 		<Autocomplete
 			:multiple="true"
 			:options="measures"
-			:modelValue="config.y_axis"
-			@update:modelValue="config.y_axis = $event?.map((v: any) => v.value)"
+			:modelValue="config.y_axis?.map((measure) => measure.column_name)"
+			@update:modelValue="config.y_axis = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Right Y Axis">
 		<Autocomplete
 			:multiple="true"
 			:options="measures"
-			:modelValue="config.y2_axis"
-			@update:modelValue="config.y2_axis = $event?.map((v: any) => v.value)"
+			:modelValue="config.y2_axis?.map((measure) => measure.column_name)"
+			@update:modelValue="config.y2_axis = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Split By">
 		<Autocomplete
 			:showFooter="true"
 			:options="dimensions"
-			:modelValue="config.split_by"
-			@update:modelValue="config.split_by = $event?.value"
+			:modelValue="config.split_by?.column_name"
+			@update:modelValue="config.split_by = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Right Axis Type" class="!w-1/2">

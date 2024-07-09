@@ -14,7 +14,7 @@ const props = defineProps<{
 const config = defineModel<NumberChartConfig>({
 	required: true,
 	default: () => ({
-		number_columns: '',
+		number_columns: [],
 		comparison: false,
 		sparkline: false,
 	}),
@@ -24,12 +24,14 @@ const date_dimensions = computed(() =>
 	props.dimensions
 		.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
 		.map((dimension) => ({
+			...dimension,
 			label: dimension.column_name,
 			value: dimension.column_name,
 		}))
 )
 const measures = computed(() =>
 	props.measures.map((measure) => ({
+		...measure,
 		label: measure.column_name,
 		value: measure.column_name,
 	}))
@@ -42,8 +44,8 @@ const measures = computed(() =>
 			:multiple="true"
 			:showFooter="true"
 			:options="measures"
-			:modelValue="config.number_columns"
-			@update:modelValue="config.number_columns = $event?.map((v: any) => v.value)"
+			:modelValue="config.number_columns?.map((c) => c.column_name)"
+			@update:modelValue="config.number_columns = $event"
 		/>
 	</InlineFormControlLabel>
 
@@ -51,8 +53,8 @@ const measures = computed(() =>
 		<Autocomplete
 			:showFooter="true"
 			:options="date_dimensions"
-			:modelValue="config.date_column"
-			@update:modelValue="config.date_column = $event?.value"
+			:modelValue="config.date_column?.column_name"
+			@update:modelValue="config.date_column = $event"
 		/>
 	</InlineFormControlLabel>
 

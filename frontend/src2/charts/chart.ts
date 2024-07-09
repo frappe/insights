@@ -2,6 +2,7 @@ import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
 import { computed, reactive, ref, unref } from 'vue'
 import { copy, getUniqueId, waitUntil } from '../helpers'
+import { createToast } from '../helpers/toasts'
 import { column, count } from '../query/helpers'
 import { Query, getCachedQuery, makeQuery } from '../query/query'
 import {
@@ -11,7 +12,7 @@ import {
 	NumberChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { Dimension, FilterArgs, Measure, Operation } from '../types/query.types'
+import { Dimension, FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 
 const charts = new Map<string, Chart>()
@@ -43,6 +44,10 @@ function makeChart(workbookChart: WorkbookChart) {
 		}),
 
 		refresh,
+		getGranularity,
+		updateGranularity,
+		getFilter,
+		updateFilter,
 	})
 
 	wheneverChanges(
@@ -52,6 +57,11 @@ function makeChart(workbookChart: WorkbookChart) {
 			chart.doc.config.order_by = []
 			chart.dataQuery.reset()
 		},
+	)
+
+	wheneverChanges(
+		() => chart.baseQuery.result?.totalRowCount,
+		() => refresh(),
 	)
 
 	watchDebounced(
@@ -91,6 +101,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		if (prepared) {
 			applySortOrder()
+			applyFilters()
 			return executeQuery(force)
 		}
 	}
@@ -100,35 +111,27 @@ function makeChart(workbookChart: WorkbookChart) {
 			console.warn('X-axis is required')
 			return false
 		}
-		if (config.x_axis === config.split_by) {
-			console.warn('X-axis and split-by cannot be the same')
+		if (config.x_axis.column_name === config.split_by?.column_name) {
+			createToast({
+				message: 'X-axis and Split by cannot be the same',
+				variant: 'error',
+			})
 			return false
 		}
 
-		const row = chart.baseQuery.getDimension(config.x_axis)
-		if (!row) {
-			console.warn('X-axis column not found')
-			return false
-		}
-
-		const column = chart.baseQuery.getDimension(config.split_by as string)
-		let values = config.y_axis
-			.concat(config.y2_axis)
-			?.map((y) => chart.baseQuery.getMeasure(y))
-			.filter(Boolean) as Measure[]
-
+		let values = [...config.y_axis, ...(config.y2_axis || [])]
 		values = values.length ? values : [count()]
 
-		if (column) {
+		if (config.split_by) {
 			chart.dataQuery.addPivotWider({
-				rows: [row],
-				columns: [column],
+				rows: [config.x_axis],
+				columns: [config.split_by],
 				values: values,
 			})
 		} else {
 			chart.dataQuery.addSummarize({
 				measures: values,
-				dimensions: [row],
+				dimensions: [config.x_axis],
 			})
 		}
 
@@ -141,19 +144,9 @@ function makeChart(workbookChart: WorkbookChart) {
 			return false
 		}
 
-		const numbers = config.number_columns
-			?.map((n) => chart.baseQuery.getMeasure(n))
-			.filter(Boolean) as Measure[]
-
-		if (!numbers?.length) {
-			console.warn('Number column not found')
-			return false
-		}
-
-		const date = chart.baseQuery.getDimension(config.date_column as string)
 		chart.dataQuery.addSummarize({
-			measures: numbers,
-			dimensions: date ? [date] : [],
+			measures: config.number_columns,
+			dimensions: config.date_column?.column_name ? [config.date_column] : [],
 		})
 
 		return true
@@ -169,8 +162,8 @@ function makeChart(workbookChart: WorkbookChart) {
 			return false
 		}
 
-		const label = chart.baseQuery.getDimension(config.label_column)
-		const value = chart.baseQuery.getMeasure(config.value_column)
+		const label = config.label_column
+		const value = config.value_column
 		if (!label) {
 			console.warn('Label column not found')
 			return false
@@ -238,6 +231,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	function resetQuery() {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
+		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
 	}
 	function setFilters(filters: FilterArgs[]) {
 		const _filters = new Set(filters)
@@ -260,7 +254,49 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 		return chart.dataQuery.execute().then(() => {
 			lastExecutedQueryOperations.value = copy(chart.dataQuery.currentOperations)
-			chart.dataQuery.autoExecute = true
+		})
+	}
+
+	function getGranularity(column_name: string) {
+		const granularity = Object.entries(chart.doc.config).find(([_, value]) => {
+			if (Array.isArray(value)) {
+				return value.some((v) => v.column_name === column_name)
+			}
+			return value.column_name === column_name
+		})?.[1].granularity
+		return granularity
+	}
+
+	function updateGranularity(column_name: string, granularity: GranularityType) {
+		Object.entries(chart.doc.config).forEach(([_, value]) => {
+			if (Array.isArray(value)) {
+				const index = value.findIndex((v) => v.column_name === column_name)
+				if (index > -1) {
+					value[index].granularity = granularity
+				}
+			}
+			if (value.column_name === column_name) {
+				value.granularity = granularity
+			}
+		})
+	}
+
+	function getFilter(column_name: string) {
+		if (!chart.doc.config.filters) return
+		return chart.doc.config.filters[column_name]
+	}
+
+	function updateFilter(filter: FilterArgs) {
+		if ('expression' in filter) return
+		if (!chart.doc.config.filters) chart.doc.config.filters = {}
+		chart.doc.config.filters[filter.column.column_name] = filter
+	}
+
+	function applyFilters() {
+		if (!chart.doc.config.filters) return
+		chart.dataQuery.addFilterGroup({
+			logical_operator: 'And',
+			filters: Object.values(chart.doc.config.filters),
 		})
 	}
 
