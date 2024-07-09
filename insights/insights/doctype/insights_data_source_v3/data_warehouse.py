@@ -12,18 +12,21 @@ from insights.insights.doctype.insights_table_column.insights_table_column impor
     InsightsTableColumn,
 )
 
+WAREHOUSE_DB_NAME = "insights.duckdb"
+
 
 class DataWarehouse:
     def __init__(self):
         self.warehouse_path = get_warehouse_folder_path()
-        self.db_path = os.path.join(self.warehouse_path, "insights.duckdb")
+        self.db_path = os.path.join(self.warehouse_path, WAREHOUSE_DB_NAME)
 
     @property
     def db(self) -> BaseBackend:
-        if not hasattr(frappe.local, "insights_warehouse"):
+        if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
             ddb = ibis.duckdb.connect(self.db_path, read_only=True)
-            frappe.local.insights_warehouse = ddb
-        return frappe.local.insights_warehouse
+            frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
+
+        return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
 
     def get_table(self, data_source, table_name, sync=False, use_live_connection=False):
         if use_live_connection:
@@ -100,9 +103,3 @@ def get_parquet_filepath(data_source, table_name):
     warehouse_path = get_warehouse_folder_path()
     warehouse_table = get_warehouse_table_name(data_source, table_name)
     return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
-
-
-def close_warehouse_connection():
-    if hasattr(frappe.local, "insights_warehouse"):
-        frappe.local.insights_warehouse.disconnect()
-        del frappe.local.insights_warehouse

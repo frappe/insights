@@ -79,7 +79,6 @@ before_request = [
 ]
 after_request = [
     "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"
-    "insights.insights.doctype.insights_data_source_v3.data_warehouse.close_warehouse_connection"
 ]
 
 fixtures = [

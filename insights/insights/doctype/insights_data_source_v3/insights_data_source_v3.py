@@ -11,6 +11,9 @@ from frappe.utils.caching import site_cache
 from ibis import BaseBackend
 
 from insights.api.telemetry import track
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+    WAREHOUSE_DB_NAME,
+)
 from insights.insights.doctype.insights_table_column.insights_table_column import (
     InsightsTableColumn,
 )
@@ -30,6 +33,9 @@ class InsightsDataSourceDocument:
         self.name = frappe.scrub(self.title)
 
     def before_insert(self):
+        if self.name == WAREHOUSE_DB_NAME:
+            frappe.throw("Cannot create a Data Source with this name")
+
         if self.is_site_db and frappe.db.exists(
             "Insights Data Source v3", {"is_site_db": 1}
         ):
