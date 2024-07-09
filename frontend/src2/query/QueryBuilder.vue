@@ -6,6 +6,7 @@ import QueryBuilderTable from './components/QueryBuilderTable.vue'
 import QueryBuilderToolbar from './components/QueryBuilderToolbar.vue'
 import QueryOperations from './components/QueryOperations.vue'
 import useQuery from './query'
+import QueryInfo from './components/QueryInfo.vue'
 
 const props = defineProps<{ query: WorkbookQuery }>()
 const query = useQuery(props.query)
@@ -21,8 +22,9 @@ provide('query', query)
 		</div>
 	</div>
 	<div
-		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white shadow-sm"
+		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col gap-1 divide-y overflow-y-auto bg-white shadow-sm"
 	>
+		<QueryInfo />
 		<QueryOperations />
 	</div>
 </template>

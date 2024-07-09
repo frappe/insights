@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Checkbox from '@/components/Controls/Checkbox.vue'
 import { Tooltip } from 'frappe-ui'
 import {
 	BlendIcon,
@@ -132,12 +131,7 @@ const actions = [
 			</Tooltip>
 		</div>
 
-		<div class="flex items-center">
-			<div class="flex items-center">
-				<label class="-mr-1 text-xs uppercase leading-4 text-gray-500">Live Mode</label>
-				<Checkbox v-model="query.doc.use_live_connection" />
-			</div>
-		</div>
+		<div class="flex items-center"></div>
 	</div>
 
 	<SourceSelectorDialog
