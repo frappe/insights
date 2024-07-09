@@ -16,7 +16,7 @@ const query = inject('query') as Query
 		</div>
 		<div class="flex flex-shrink-0 flex-col gap-2.5 px-0.5">
 			<InlineFormControlLabel label="Query Title">
-				<FormControl v-model="query.doc.title" autocomplete="off" />
+				<FormControl v-model="query.doc.title" autocomplete="off" placeholder="Title" />
 			</InlineFormControlLabel>
 			<InlineFormControlLabel label="Enable Live Mode" class="w-2/3">
 				<Checkbox v-model="query.doc.use_live_connection" />
