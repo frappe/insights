@@ -68,7 +68,7 @@ def fetch_query_results(operations, use_live_connection=False):
 def get_distinct_column_values(
     operations, column_name, search_term=None, use_live_connection=False
 ):
-    query = IbisQueryBuilder().build(operations, remote=use_live_connection)
+    query = IbisQueryBuilder().build(operations, use_live_connection)
     values_query = (
         query.select(column_name)
         .filter(
@@ -85,7 +85,7 @@ def get_distinct_column_values(
 
 @frappe.whitelist()
 def get_columns_for_selection(operations, use_live_connection=False):
-    query = IbisQueryBuilder().build(operations, remote=use_live_connection)
+    query = IbisQueryBuilder().build(operations, use_live_connection)
     columns = get_columns_from_schema(query.schema())
     return columns
 
