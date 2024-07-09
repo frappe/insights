@@ -20,8 +20,9 @@ from .data_warehouse import DataWarehouse
 
 
 class IbisQueryBuilder:
-    def build(self, operations: list) -> IbisQuery:
+    def build(self, operations: list, use_live_connection=False) -> IbisQuery:
         self.query = None
+        self.use_live_connection = use_live_connection
         for operation in operations:
             handler = self.get_operation_handler(operation)
             self.query = handler(self.query)
@@ -31,8 +32,8 @@ class IbisQueryBuilder:
         return DataWarehouse().get_table(
             table.data_source,
             table.table_name,
-            remote=False,
             sync=True,
+            use_live_connection=self.use_live_connection,
         )
 
     def get_operation_handler(self, operation):
@@ -276,15 +277,8 @@ def execute_ibis_query(
     if cache and has_cached_results(sql):
         return get_cached_results(sql)
 
-    backend = query._find_backend(use_default=True)
-    try:
-        # make sure the connection is open
-        backend.connect()
-    except Exception as e:
-        frappe.throw(f"Error connecting to the database: {e}")
-
     start = time.monotonic()
-    res = backend.execute(query)
+    res = query.execute()
     create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
 
     res = res.replace({pd.NaT: None, np.NaN: 0})

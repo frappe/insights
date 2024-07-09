@@ -14,7 +14,7 @@ const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString()
 </script>
 
 <template>
-	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded bg-white shadow">
+	<div class="relative flex w-full flex-1 flex-col overflow-hidden bg-white">
 		<div
 			v-if="query.executing"
 			class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"

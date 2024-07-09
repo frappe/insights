@@ -169,6 +169,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return call(
 			'insights.insights.doctype.insights_workbook.insights_workbook.fetch_query_results',
 			{
+				use_live_connection: query.doc.use_live_connection,
 				operations: query.currentOperations,
 			},
 		)
@@ -376,6 +377,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return call(
 			'insights.insights.doctype.insights_workbook.insights_workbook.get_distinct_column_values',
 			{
+				use_live_connection: query.doc.use_live_connection,
 				operations: operations,
 				column_name: column,
 				search_term,
@@ -391,7 +393,10 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		const method =
 			'insights.insights.doctype.insights_workbook.insights_workbook.get_columns_for_selection'
-		return call(method, { operations })
+		return call(method, {
+			use_live_connection: query.doc.use_live_connection,
+			operations,
+		})
 	}
 
 	function getDimension(column_name: string) {

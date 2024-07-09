@@ -23,7 +23,8 @@ export type InsightsWorkbook = {
 
 export type WorkbookQuery = {
 	name: string
-	title: string
+	title?: string
+	use_live_connection?: boolean
 	operations: Operation[]
 }
 

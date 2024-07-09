@@ -39,7 +39,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		}),
 		dataQuery: makeQuery({
 			name: getUniqueId(),
-			title: '',
 			operations: [],
 		}),
 
@@ -261,6 +260,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 		return chart.dataQuery.execute().then(() => {
 			lastExecutedQueryOperations.value = copy(chart.dataQuery.currentOperations)
+			chart.dataQuery.autoExecute = true
 		})
 	}
 

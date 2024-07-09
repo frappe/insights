@@ -3,8 +3,6 @@
 
 
 import re
-from collections.abc import Generator
-from contextlib import contextmanager
 
 import frappe
 import ibis
@@ -126,19 +124,20 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         username: DF.Data | None
     # end: auto-generated types
 
-    @contextmanager
-    def _get_ibis_backend(self) -> Generator[BaseBackend, None, None]:
+    def _get_ibis_backend(self) -> BaseBackend:
+        if self.name in frappe.local.insights_db_connections:
+            return frappe.local.insights_db_connections[self.name]
+
         connection_string, extra_args = self.get_connection_string()
         db: BaseBackend = ibis.connect(connection_string, **extra_args)
+        print(f"Connected to {self.name} ({self.title})")
 
         if self.is_frappe_db:
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
 
-        try:
-            yield db
-        finally:
-            db.disconnect()
+        frappe.local.insights_db_connections[self.name] = db
+        return db
 
     def get_connection_string(self):
         if self.is_site_db:
@@ -156,9 +155,9 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
     def test_connection(self, raise_exception=False):
         try:
-            with self._get_ibis_backend() as db:
-                res = db.raw_sql("SELECT 1").fetchall()
-                return res[0][0] == 1
+            db = self._get_ibis_backend()
+            res = db.raw_sql("SELECT 1").fetchall()
+            return res[0][0] == 1
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:
@@ -168,10 +167,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     def update_table_list(self):
         blacklist_patterns = ["^_", "^sqlite_"]
         blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
-        with self._get_ibis_backend() as remote_db:
-            tables = remote_db.list_tables()
-            tables = [t for t in tables if not blacklisted(t)]
-            self.db_set("tables", frappe.as_json(tables))
+        remote_db = self._get_ibis_backend()
+        tables = remote_db.list_tables()
+        tables = [t for t in tables if not blacklisted(t)]
+        self.db_set("tables", frappe.as_json(tables))
 
 
 @frappe.whitelist()
@@ -221,6 +220,16 @@ def get_data_source_tables(data_source=None, search_term=None, limit=100):
 @site_cache
 def get_table_columns(data_source, table_name):
     ds = frappe.get_doc("Insights Data Source v3", data_source)
-    with ds._get_ibis_backend() as db:
-        table = db.table(table_name)
-        return InsightsTableColumn.from_ibis_schema(table.schema())
+    db = ds._get_ibis_backend()
+    table = db.table(table_name)
+    return InsightsTableColumn.from_ibis_schema(table.schema())
+
+
+def before_request():
+    if not hasattr(frappe.local, "insights_db_connections"):
+        frappe.local.insights_db_connections = {}
+
+
+def after_request():
+    for db in frappe.local.insights_db_connections.values():
+        db.disconnect()

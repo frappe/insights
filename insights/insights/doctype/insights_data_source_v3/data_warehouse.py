@@ -25,11 +25,11 @@ class DataWarehouse:
             frappe.local.insights_warehouse = ddb
         return frappe.local.insights_warehouse
 
-    def get_table(self, data_source, table_name, sync=False, remote=False):
-        if not remote:
-            return self.get_warehouse_table(data_source, table_name, sync)
-        else:
+    def get_table(self, data_source, table_name, sync=False, use_live_connection=False):
+        if use_live_connection:
             return self.get_remote_table(data_source, table_name)
+        else:
+            return self.get_warehouse_table(data_source, table_name, sync)
 
     def get_warehouse_table(self, data_source, table_name, sync=False):
         parquet_file = get_parquet_filepath(data_source, table_name)
@@ -51,8 +51,8 @@ class DataWarehouse:
 
     def get_remote_table(self, data_source, table_name):
         ds = frappe.get_doc("Insights Data Source v3", data_source)
-        with ds._get_ibis_backend() as remote_db:
-            return remote_db.table(table_name)
+        remote_db = ds._get_ibis_backend()
+        return remote_db.table(table_name)
 
     def create_parquet_file(self, data_source, table_name):
         path = get_parquet_filepath(data_source, table_name)
@@ -64,16 +64,16 @@ class DataWarehouse:
             return
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
-        with ds._get_ibis_backend() as remote_db:
-            table = remote_db.table(table_name)
+        remote_db = ds._get_ibis_backend()
+        table = remote_db.table(table_name)
 
-            if ds.is_frappe_db and hasattr(table, "creation"):
-                first_day_of_last_year = datetime.now().replace(
-                    month=1, day=1, year=datetime.now().year - 1
-                )
-                table = table.filter(table.creation >= first_day_of_last_year)
+        if ds.is_frappe_db and hasattr(table, "creation"):
+            first_day_of_last_year = datetime.now().replace(
+                month=1, day=1, year=datetime.now().year - 1
+            )
+            table = table.filter(table.creation >= first_day_of_last_year)
 
-            table.to_parquet(path, compression="snappy")
+        table.to_parquet(path, compression="snappy")
 
     def sync_insights_table(self, data_source, table_name, table: IbisTable):
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
