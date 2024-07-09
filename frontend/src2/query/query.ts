@@ -17,6 +17,7 @@ import {
 	OrderByArgs,
 	PivotWiderArgs,
 	QueryResult,
+	Rename,
 	SelectArgs,
 	SourceArgs,
 	SummarizeArgs,
@@ -340,12 +341,24 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function renameColumn(oldName: string, newName: string) {
-		addOperation(
-			rename({
-				column: column(oldName),
-				new_name: newName,
-			}),
+		// first check if there's already a rename operation for the column
+		const existingRenameIdx = query.doc.operations.findIndex(
+			(op) => op.type === 'rename' && op.new_name === oldName,
 		)
+		if (existingRenameIdx > -1) {
+			const existingRename = query.doc.operations[existingRenameIdx] as Rename
+			existingRename.new_name = newName
+		}
+
+		// if not, add a new rename operation
+		else {
+			addOperation(
+				rename({
+					column: column(oldName),
+					new_name: newName,
+				}),
+			)
+		}
 	}
 
 	function removeColumn(column_names: string | string[]) {
