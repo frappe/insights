@@ -34,7 +34,11 @@ const query = inject('query') as Query
 						</div>
 					</div>
 					<div
-						v-show="query.activeOperationIdx === idx"
+						v-show="
+							query.activeOperationIdx === idx ||
+							(query.activeEditIndex === -1 &&
+								idx === query.doc.operations.length - 1)
+						"
 						class="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
 					>
 						<Button variant="ghost" @click.prevent.stop="query.setActiveEditIndex(idx)">

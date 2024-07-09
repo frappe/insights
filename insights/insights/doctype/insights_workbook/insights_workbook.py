@@ -82,6 +82,13 @@ def get_distinct_column_values(operations, column_name, search_term=None):
 
 
 @frappe.whitelist()
+def get_columns_for_selection(operations):
+    query = IbisQueryBuilder().build(operations)
+    columns = get_columns_from_schema(query.schema())
+    return columns
+
+
+@frappe.whitelist()
 def get_workbooks():
     return frappe.get_list(
         "Insights Workbook", fields=["name", "title", "owner", "creation", "modified"]

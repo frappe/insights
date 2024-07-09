@@ -12,7 +12,13 @@ const emit = defineEmits({
 const showDialog = defineModel()
 
 const query = inject('query') as Query
-const columns = computed(() => query.result.columns)
+const columns = ref<QueryResultColumn[]>([])
+query.getColumnsForSelection().then((cols: QueryResultColumn[]) => {
+	columns.value = cols
+	selectedColumns.value = props.columns
+		? columns.value.filter((c) => props.columns?.column_names.includes(c.name))
+		: []
+})
 
 const columnSearchQuery = ref('')
 const filteredColumns = computed(() => {
@@ -23,9 +29,7 @@ const filteredColumns = computed(() => {
 	})
 })
 
-const selectedColumns = ref<QueryResultColumn[]>(
-	props.columns ? columns.value.filter((c) => props.columns?.column_names.includes(c.name)) : []
-)
+const selectedColumns = ref<QueryResultColumn[]>([])
 function isSelected(column: QueryResultColumn) {
 	return selectedColumns.value.includes(column)
 }

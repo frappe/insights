@@ -88,6 +88,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		changeColumnType,
 
 		getDistinctColumnValues,
+		getColumnsForSelection,
 
 		dimensions: computed(() => ({}) as Dimension[]),
 		measures: computed(() => ({}) as Measure[]),
@@ -380,6 +381,17 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				search_term,
 			},
 		)
+	}
+
+	function getColumnsForSelection() {
+		const operations =
+			query.activeEditOperation.type === 'select'
+				? query.doc.operations.slice(0, query.activeEditIndex)
+				: query.currentOperations
+
+		const method =
+			'insights.insights.doctype.insights_workbook.insights_workbook.get_columns_for_selection'
+		return call(method, { operations })
 	}
 
 	function getDimension(column_name: string) {
