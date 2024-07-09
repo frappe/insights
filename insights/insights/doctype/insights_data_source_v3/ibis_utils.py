@@ -247,6 +247,18 @@ class IbisQueryBuilder:
         }[aggregate_function]
 
     def apply_granularity(self, column, granularity):
+        if granularity == "week":
+            week_start = column - column.day_of_week.index().cast("int32").to_interval(
+                unit="D"
+            )
+            return week_start.strftime("%Y-%m-%d").name(column.get_name())
+        if granularity == "quarter":
+            year = column.year()
+            quarter = column.quarter()
+            month = (quarter * 3) - 2
+            quarter_start = ibis.date(year, month, 1)
+            return quarter_start.strftime("%Y-%m-%d").name(column.get_name())
+
         format_str = {
             "day": "%Y-%m-%d",
             "month": "%Y-%m-01",
