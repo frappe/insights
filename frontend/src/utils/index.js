@@ -196,6 +196,10 @@ export function safeJSONParse(str, defaultValue = null) {
 		console.log(str)
 		console.error(e)
 		console.groupEnd()
+		createToast({
+			message: 'Error parsing JSON',
+			variant: 'error',
+		})
 		return defaultValue
 	}
 }
