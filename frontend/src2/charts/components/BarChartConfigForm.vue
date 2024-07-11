@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Tabs from '@/components/Tabs.vue'
-import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { BarChartConfig } from '../../types/chart.types'
 import { Dimension, Measure } from '../../types/query.types'
@@ -19,7 +18,7 @@ const config = defineModel<BarChartConfig>({
 		y2_axis: [],
 		y2_axis_type: 'line',
 		split_by: '',
-		grouping: 'stacked',
+		stack: true,
 		show_data_labels: false,
 		swap_axes: false,
 		normalize: false,
@@ -33,12 +32,12 @@ const config = defineModel<BarChartConfig>({
 		:dimensions="props.dimensions"
 		:measures="props.measures"
 	/>
-	<InlineFormControlLabel label="Grouping">
+	<InlineFormControlLabel label="Stack" class="!w-1/2">
 		<Tabs
-			v-model="config.grouping"
+			v-model="config.stack"
 			:tabs="[
-				{ label: 'Stacked', value: 'stacked', default: true },
-				{ label: 'Grouped', value: 'grouped' },
+				{ label: 'Yes', value: true, default: true },
+				{ label: 'No', value: false },
 			]"
 		/>
 	</InlineFormControlLabel>

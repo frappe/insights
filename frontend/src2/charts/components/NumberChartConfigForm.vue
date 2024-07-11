@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Checkbox from '@/components/Controls/Checkbox.vue'
+import Tabs from '@/components/Tabs.vue'
 import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
@@ -67,19 +67,43 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Decimal">
 		<FormControl v-model="config.decimal" type="number" />
 	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Show short numbers" class="w-2/3">
-		<Checkbox v-model="config.shorten_numbers" />
+	<InlineFormControlLabel label="Show short numbers" class="!w-1/2">
+		<Tabs
+			v-model="config.shorten_numbers"
+			:tabs="[
+				{ label: 'Yes', value: true, default: true },
+				{ label: 'No', value: false },
+			]"
+		/>
 	</InlineFormControlLabel>
 
-	<InlineFormControlLabel v-if="config.date_column" label="Show comparison" class="w-2/3">
-		<Checkbox v-model="config.comparison" />
+	<InlineFormControlLabel v-if="config.date_column" label="Show comparison" class="!w-1/2">
+		<Tabs
+			v-model="config.comparison"
+			:tabs="[
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
+			]"
+		/>
 	</InlineFormControlLabel>
 
-	<InlineFormControlLabel v-if="config.comparison" label="Negative is better" class="w-2/3">
-		<Checkbox v-model="config.negative_is_better" />
+	<InlineFormControlLabel v-if="config.comparison" label="Negative is better" class="!w-1/2">
+		<Tabs
+			v-model="config.negative_is_better"
+			:tabs="[
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
+			]"
+		/>
 	</InlineFormControlLabel>
 
-	<InlineFormControlLabel v-if="config.date_column" label="Show sparkline" class="w-2/3">
-		<Checkbox v-model="config.sparkline" />
+	<InlineFormControlLabel v-if="config.date_column" label="Show sparkline" class="!w-1/2">
+		<Tabs
+			v-model="config.sparkline"
+			:tabs="[
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
+			]"
+		/>
 	</InlineFormControlLabel>
 </template>

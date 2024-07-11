@@ -125,7 +125,7 @@ export function getBarChartOptions(chart: Chart) {
 				type,
 				name: c.name,
 				data: getSeriesData(c.name),
-				stack: type === 'bar' && _config.grouping?.includes('stacked'),
+				stack: type === 'bar' && _config.stack,
 				axis_swaped: _config.swap_axes,
 				on_right_axis: is_right_axis,
 				show_data_label: _config.show_data_labels,

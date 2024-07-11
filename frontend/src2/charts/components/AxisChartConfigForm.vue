@@ -56,20 +56,20 @@ const measures = computed(() =>
 			@update:modelValue="config.y_axis = $event"
 		/>
 	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Right Y Axis">
-		<Autocomplete
-			:multiple="true"
-			:options="measures"
-			:modelValue="config.y2_axis?.map((measure) => measure.column_name)"
-			@update:modelValue="config.y2_axis = $event"
-		/>
-	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Split By">
 		<Autocomplete
 			:showFooter="true"
 			:options="dimensions"
 			:modelValue="config.split_by?.column_name"
 			@update:modelValue="config.split_by = $event"
+		/>
+	</InlineFormControlLabel>
+	<InlineFormControlLabel label="Right Y Axis">
+		<Autocomplete
+			:multiple="true"
+			:options="measures"
+			:modelValue="config.y2_axis?.map((measure) => measure.column_name)"
+			@update:modelValue="config.y2_axis = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Right Axis Type" class="!w-1/2">

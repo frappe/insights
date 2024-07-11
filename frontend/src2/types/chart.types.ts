@@ -15,7 +15,7 @@ export type AxisChartConfig = {
 	show_data_labels?: boolean
 }
 export type BarChartConfig = AxisChartConfig & {
-	grouping?: 'stacked' | 'grouped'
+	stack?: boolean
 	normalize?: boolean
 	swap_axes?: boolean
 }

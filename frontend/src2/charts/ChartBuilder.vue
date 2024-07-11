@@ -36,14 +36,15 @@ if (!chart.doc.config.order_by) {
 			class="relative flex w-[17rem] flex-shrink-0 flex-col gap-2.5 overflow-y-auto bg-white p-3"
 		>
 			<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
-			<hr class="my-1 border-t border-gray-200" />
+			<hr class="border-t border-gray-200" />
 			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
-			<hr class="my-1 border-t border-gray-200" />
+			<hr class="border-t border-gray-200" />
 			<ChartFilterConfig
 				v-model="chart.doc.config.filters"
 				:column-options="chart.baseQuery.result?.columnOptions || []"
 			/>
+			<hr class="border-t border-gray-200" />
 			<ChartSortConfig
 				v-model="chart.doc.config.order_by"
 				:column-options="chart.dataQuery.result?.columnOptions || []"
