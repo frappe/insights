@@ -8,24 +8,20 @@ const chartType = defineModel<ChartType>()
 
 <template>
 	<InlineFormControlLabel label="Chart Type">
-		<Autocomplete
-			:options="
-				CHARTS.map((item) => {
-					return {
-						label: item,
-						value: item,
-					}
-				})
-			"
-			:modelValue="chartType"
-			@update:modelValue="chartType = $event?.value"
-		>
-			<template #prefix>
-				<ChartIcon v-if="chartType" :chartType="chartType" />
-			</template>
-			<template #item-prefix="{ option }">
-				<ChartIcon :chartType="option.value" />
-			</template>
-		</Autocomplete>
+		<div class="grid grid-cols-2 gap-2">
+			<Button
+				v-for="item in CHARTS"
+				:key="item"
+				variant="subtle"
+				class="!justify-start"
+				:class="chartType === item ? 'bg-white shadow hover:bg-white' : ''"
+				@click="chartType = item"
+			>
+				<div class="flex items-center gap-1.5">
+					<ChartIcon :chartType="item" class="!h-3.5 !w-3.5" />
+					<div class="text-xs">{{ item == 'Number' ? 'KPI' : item }}</div>
+				</div>
+			</Button>
+		</div>
 	</InlineFormControlLabel>
 </template>

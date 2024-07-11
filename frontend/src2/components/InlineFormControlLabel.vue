@@ -4,14 +4,14 @@ const props = defineProps<{ label: string }>()
 </script>
 
 <template>
-	<div class="flex items-center justify-between gap-1">
+	<div class="flex items-start justify-between gap-1">
 		<span
-			class="inline-flex w-1/3 flex-shrink-0 text-xs leading-5 text-gray-700"
+			class="inline-flex w-1/3 flex-shrink-0 text-xs leading-7 text-gray-700"
 			:class="$attrs.class"
 		>
 			{{ props.label }}
 		</span>
-		<div class="flex-1 overflow-hidden">
+		<div class="-m-0.5 flex-1 overflow-hidden p-0.5">
 			<slot />
 		</div>
 	</div>

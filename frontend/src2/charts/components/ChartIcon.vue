@@ -5,6 +5,7 @@ import {
 	BarChartHorizontal,
 	BatteryMedium,
 	Filter,
+	Hash,
 	LifeBuoy,
 	LineChart,
 	ScatterChart,
@@ -33,7 +34,7 @@ const icon = computed(() => {
 		case 'Table':
 			return Table2
 		case 'Number':
-			return BatteryMedium
+			return Hash
 		default:
 			return BarChart3
 	}
@@ -41,5 +42,5 @@ const icon = computed(() => {
 </script>
 
 <template>
-	<component :is="icon" class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+	<component :is="icon" class="h-4 w-4 text-gray-700" stroke-width="1.5" v-bind="$attrs" />
 </template>
