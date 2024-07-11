@@ -34,14 +34,12 @@ const config = defineModel<BarChartConfig>({
 		:measures="props.measures"
 	/>
 	<InlineFormControlLabel label="Grouping">
-		<Autocomplete
-			:hideSearch="true"
-			:options="[
-				{ label: 'Stacked', value: 'stacked' },
+		<Tabs
+			v-model="config.grouping"
+			:tabs="[
+				{ label: 'Stacked', value: 'stacked', default: true },
 				{ label: 'Grouped', value: 'grouped' },
 			]"
-			:modelValue="config.grouping"
-			@update:modelValue="config.grouping = $event?.value.toLowerCase()"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Normalize Data" class="!w-1/2">
