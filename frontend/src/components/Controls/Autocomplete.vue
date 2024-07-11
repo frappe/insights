@@ -87,7 +87,7 @@
 								>
 									<div
 										v-if="group.group && !group.hideLabel"
-										class="sticky top-10 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
+										class="sticky top-0 truncate bg-white px-2.5 py-1.5 text-sm font-medium text-gray-600"
 									>
 										{{ group.group }}
 									</div>
