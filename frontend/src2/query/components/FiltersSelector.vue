@@ -9,7 +9,6 @@ import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 import { copy } from '../../helpers'
 
 const props = defineProps<{
-	filter?: FilterArgs
 	filterGroup?: FilterGroupArgs
 	columnOptions: ColumnOption[]
 }>()
@@ -24,7 +23,7 @@ const filterGroup = reactive<FilterGroupArgs>(
 		? copy(props.filterGroup)
 		: {
 				logical_operator: 'And',
-				filters: props.filter ? [{ ...props.filter }] : [],
+				filters: [],
 		  }
 )
 

@@ -1,5 +1,5 @@
 import { ChartConfig, ChartType } from './chart.types'
-import { ColumnDataType, FilterArgs, Operation, OrderByArgs } from './query.types'
+import { ColumnDataType, FilterGroupArgs, Operation, OrderByArgs } from './query.types'
 
 export type WorkbookListItem = {
 	title: string
@@ -35,7 +35,7 @@ export type WorkbookChart = {
 	chart_type: ChartType
 	config: ChartConfig & {
 		order_by: OrderByArgs[]
-		filters?: Record<string, FilterArgs>
+		filters?: FilterGroupArgs
 	}
 }
 

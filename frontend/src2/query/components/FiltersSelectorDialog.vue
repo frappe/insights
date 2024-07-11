@@ -3,7 +3,6 @@ import { ColumnOption, FilterArgs, FilterGroupArgs } from '../../types/query.typ
 import FiltersSelector from './FiltersSelector.vue'
 
 const props = defineProps<{
-	filter?: FilterArgs
 	filterGroup?: FilterGroupArgs
 	columnOptions: ColumnOption[]
 }>()
@@ -15,7 +14,6 @@ const showDialog = defineModel()
 	<Dialog v-model="showDialog" :options="{ size: '2xl' }">
 		<template #body>
 			<FiltersSelector
-				:filter="props.filter"
 				:filterGroup="props.filterGroup"
 				:columnOptions="props.columnOptions"
 				@close="showDialog = false"

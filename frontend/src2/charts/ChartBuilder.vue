@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { LoadingIndicator } from 'frappe-ui'
 import { provide } from 'vue'
-import DataTable from '../components/DataTable.vue'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useChart from './chart'
+import ChartBuilderTable from './ChartBuilderTable.vue'
 import ChartConfigForm from './components/ChartConfigForm.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
+import ChartFilterConfig from './components/ChartFilterConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
-import ChartBuilderTableColumn from './components/ChartBuilderTableColumn.vue'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
 const chart = useChart(props.chart)
 provide('chart', chart)
-provide('query', chart.dataQuery)
 
 if (!chart.doc.config.order_by) {
 	chart.doc.config.order_by = []
@@ -24,28 +23,14 @@ if (!chart.doc.config.order_by) {
 
 <template>
 	<div class="relative flex h-full w-full divide-x overflow-hidden">
-		<div class="relative flex h-full w-full flex-col divide-y overflow-hidden">
-			<div
-				v-if="chart.dataQuery.executing"
-				class="absolute top-0 left-0 z-10 flex h-full w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
-			>
-				<LoadingIndicator class="h-8 w-8 text-gray-700" />
-			</div>
+		<div class="relative flex h-full w-full flex-col overflow-hidden">
+			<LoadingOverlay v-if="chart.dataQuery.executing" />
 			<div
 				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
 			>
 				<ChartRenderer :chart="chart" />
 			</div>
-			<DataTable
-				v-if="chart.doc.chart_type != 'Table'"
-				class="max-h-[17rem] border-x bg-white"
-				:columns="chart.dataQuery.result.columns"
-				:rows="chart.dataQuery.result.formattedRows"
-			>
-				<template #column-header="{ column }">
-					<ChartBuilderTableColumn :column="column" />
-				</template>
-			</DataTable>
+			<ChartBuilderTable />
 		</div>
 		<div
 			class="relative flex w-[17rem] flex-shrink-0 flex-col gap-2.5 overflow-y-auto bg-white p-3"
@@ -55,9 +40,13 @@ if (!chart.doc.config.order_by) {
 			<ChartTypeSelector v-model="chart.doc.chart_type" />
 			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
 			<hr class="my-1 border-t border-gray-200" />
+			<ChartFilterConfig
+				v-model="chart.doc.config.filters"
+				:column-options="chart.baseQuery.result?.columnOptions || []"
+			/>
 			<ChartSortConfig
 				v-model="chart.doc.config.order_by"
-				:column-options="chart.dataQuery.result.columnOptions || []"
+				:column-options="chart.dataQuery.result?.columnOptions || []"
 			/>
 		</div>
 	</div>

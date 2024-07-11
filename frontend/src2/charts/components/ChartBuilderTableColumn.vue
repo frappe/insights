@@ -13,13 +13,12 @@ import {
 import { computed, h, inject } from 'vue'
 import ColumnFilterBody from '../../query/components/ColumnFilterBody.vue'
 import { column } from '../../query/helpers'
-import { Query } from '../../query/query'
 import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import { Chart } from '../chart'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 const chart = inject('chart') as Chart
-const query = inject('query') as Query
+const query = chart.dataQuery
 
 const currentSortOrder = computed(() => {
 	return chart.doc.config.order_by.find((order) => order.column.column_name === props.column.name)
@@ -85,18 +84,10 @@ const dateGranularityOptions = computed(() => {
 	})
 	return options
 })
-
-function onFilter(filter_operator: FilterOperator, filter_value: FilterValue) {
-	chart.updateFilter({
-		column: column(props.column.name),
-		operator: filter_operator,
-		value: filter_value,
-	})
-}
 </script>
 
 <template>
-	<div class="flex w-full items-center justify-between gap-8 pl-2">
+	<div class="flex w-full items-center pl-2">
 		<div class="flex items-center">
 			<ContentEditable
 				:modelValue="props.column.name"
@@ -137,26 +128,6 @@ function onFilter(filter_operator: FilterOperator, filter_value: FilterValue) {
 					</template>
 				</Button>
 			</Dropdown>
-
-			<!-- Filter -->
-			<Popover placement="bottom-end">
-				<template #target="{ togglePopover }">
-					<Button variant="ghost" class="rounded-none" @click="togglePopover">
-						<template #icon>
-							<ListFilter class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
-				</template>
-				<template #body-main="{ togglePopover, isOpen }">
-					<ColumnFilterBody
-						v-if="isOpen"
-						:column="props.column"
-						:valuesProvider="(t) => query.getDistinctColumnValues(props.column.name, t)"
-						@filter="(op, val) => onFilter(op, val)"
-						@close="togglePopover"
-					/>
-				</template>
-			</Popover>
 		</div>
 	</div>
 </template>

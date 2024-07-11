@@ -46,8 +46,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		refresh,
 		getGranularity,
 		updateGranularity,
-		getFilter,
-		updateFilter,
 	})
 
 	wheneverChanges(
@@ -80,8 +78,9 @@ function makeChart(workbookChart: WorkbookChart) {
 			await waitUntil(() => !chart.baseQuery.executing)
 		}
 
-		resetQuery()
+		prepareBaseQuery()
 		setFilters(filters || [])
+		applyFilters()
 		let prepared = false
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
@@ -101,7 +100,6 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		if (prepared) {
 			applySortOrder()
-			applyFilters()
 			return executeQuery(force)
 		}
 	}
@@ -228,7 +226,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function resetQuery() {
+	function prepareBaseQuery() {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
 		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
@@ -281,23 +279,9 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function getFilter(column_name: string) {
-		if (!chart.doc.config.filters) return
-		return chart.doc.config.filters[column_name]
-	}
-
-	function updateFilter(filter: FilterArgs) {
-		if ('expression' in filter) return
-		if (!chart.doc.config.filters) chart.doc.config.filters = {}
-		chart.doc.config.filters[filter.column.column_name] = filter
-	}
-
 	function applyFilters() {
-		if (!chart.doc.config.filters) return
-		chart.dataQuery.addFilterGroup({
-			logical_operator: 'And',
-			filters: Object.values(chart.doc.config.filters),
-		})
+		if (!chart.doc.config.filters?.filters?.length) return
+		chart.dataQuery.addFilterGroup(chart.doc.config.filters)
 	}
 
 	return chart

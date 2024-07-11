@@ -110,11 +110,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		if (!query.result.columns?.length) return []
 		return query.result.columns
 			.filter((column) => FIELDTYPES.DIMENSION.includes(column.type))
-			.map((column) => ({
-				column_name: column.name,
-				data_type: column.type as DimensionDataType,
-				granularity: FIELDTYPES.DATE.includes(column.type) ? 'month' : undefined,
-			}))
+			.map((column) => {
+				const isDate = FIELDTYPES.DATE.includes(column.type)
+				return {
+					column_name: column.name,
+					data_type: column.type as DimensionDataType,
+					granularity: isDate ? 'month' : undefined,
+				}
+			})
 	})
 	// @ts-ignore
 	query.measures = computed(() => {
@@ -124,11 +127,13 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			count_measure,
 			...query.result.columns
 				.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
-				.map((column) => ({
-					column_name: column.name,
-					data_type: column.type as MeasureDataType,
-					aggregation: 'sum',
-				})),
+				.map((column) => {
+					return {
+						aggregation: 'sum',
+						column_name: column.name,
+						data_type: column.type as MeasureDataType,
+					}
+				}),
 		]
 	})
 

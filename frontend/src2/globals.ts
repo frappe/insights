@@ -1,6 +1,7 @@
 import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import Checkbox from '@/components/Controls/Checkbox.vue'
 import Popover from '@/components/Popover.vue'
+import FormControl from './components/FormControl.vue'
 import {
 	Avatar,
 	Badge,
@@ -9,7 +10,6 @@ import {
 	Dropdown,
 	ErrorMessage,
 	FeatherIcon,
-	FormControl,
 	Input,
 	LoadingIndicator,
 	Tooltip,

@@ -132,6 +132,9 @@ class IbisQueryBuilder:
 
     def translate_filter_group(self, filter_group_args):
         filters = filter_group_args.filters
+        if not filters:
+            return lambda query: query
+
         logical_operator = filter_group_args.logical_operator
         conditions = [self.make_filter_condition(filter) for filter in filters]
 

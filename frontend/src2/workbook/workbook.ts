@@ -189,6 +189,12 @@ function getWorkbookResource(name: string) {
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
 			doc.charts.forEach((chart) => {
+				chart.config.filters = chart.config.filters?.filters?.length
+					? chart.config.filters
+					: {
+							filters: [],
+							logical_operator: 'And',
+						}
 				chart.config.order_by = chart.config.order_by || []
 			})
 			return doc
