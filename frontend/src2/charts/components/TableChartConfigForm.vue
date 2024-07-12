@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { TableChartConfig } from '../../types/chart.types'
-import { Dimension, Measure } from '../../types/query.types'
+import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 
 const props = defineProps<{
-	dimensions: Dimension[]
-	measures: Measure[]
+	dimensions: DimensionOption[]
+	measures: MeasureOption[]
 }>()
 
 const config = defineModel<TableChartConfig>({
@@ -17,26 +16,13 @@ const config = defineModel<TableChartConfig>({
 		values: [],
 	}),
 })
-
-const dimensions = computed(() =>
-	props.dimensions.map((dimension) => ({
-		label: dimension.column_name,
-		value: dimension.column_name,
-	}))
-)
-const measures = computed(() =>
-	props.measures.map((measure) => ({
-		label: measure.column_name,
-		value: measure.column_name,
-	}))
-)
 </script>
 
 <template>
 	<InlineFormControlLabel label="Rows">
 		<Autocomplete
 			:multiple="true"
-			:options="dimensions"
+			:options="props.dimensions"
 			:modelValue="config.rows"
 			@update:modelValue="config.rows = $event?.map((v: any) => v.value)"
 		/>
@@ -44,7 +30,7 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Columns">
 		<Autocomplete
 			:multiple="true"
-			:options="dimensions"
+			:options="props.dimensions"
 			:modelValue="config.columns"
 			@update:modelValue="config.columns = $event?.map((v: any) => v.value)"
 		/>
@@ -52,7 +38,7 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Values">
 		<Autocomplete
 			:multiple="true"
-			:options="measures"
+			:options="props.measures"
 			:modelValue="config.values"
 			@update:modelValue="config.values = $event?.map((v: any) => v.value)"
 		/>

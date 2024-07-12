@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import Tabs from '@/components/Tabs.vue'
-import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
-import { Dimension, Measure } from '../../types/query.types'
+import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 
 const props = defineProps<{
-	dimensions: Dimension[]
-	measures: Measure[]
+	dimensions: DimensionOption[]
+	measures: MeasureOption[]
 }>()
 
 const config = defineModel<AxisChartConfig>({
@@ -21,21 +20,6 @@ const config = defineModel<AxisChartConfig>({
 		show_data_labels: false,
 	}),
 })
-
-const dimensions = computed(() =>
-	props.dimensions.map((dimension) => ({
-		...dimension,
-		label: dimension.column_name,
-		value: dimension.column_name,
-	}))
-)
-const measures = computed(() =>
-	props.measures.map((measure) => ({
-		...measure,
-		label: measure.column_name,
-		value: measure.column_name,
-	}))
-)
 </script>
 
 <template>
@@ -43,7 +27,7 @@ const measures = computed(() =>
 		<Autocomplete
 			class="w-full"
 			:showFooter="true"
-			:options="dimensions"
+			:options="props.dimensions"
 			:modelValue="config.x_axis?.column_name"
 			@update:modelValue="config.x_axis = $event"
 		/>
@@ -51,7 +35,7 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Left Y Axis">
 		<Autocomplete
 			:multiple="true"
-			:options="measures"
+			:options="props.measures"
 			:modelValue="config.y_axis?.map((measure) => measure.column_name)"
 			@update:modelValue="config.y_axis = $event"
 		/>
@@ -59,7 +43,7 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Split By">
 		<Autocomplete
 			:showFooter="true"
-			:options="dimensions"
+			:options="props.dimensions"
 			:modelValue="config.split_by?.column_name"
 			@update:modelValue="config.split_by = $event"
 		/>
@@ -67,7 +51,7 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Right Y Axis">
 		<Autocomplete
 			:multiple="true"
-			:options="measures"
+			:options="props.measures"
 			:modelValue="config.y2_axis?.map((measure) => measure.column_name)"
 			@update:modelValue="config.y2_axis = $event"
 		/>

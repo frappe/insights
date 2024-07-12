@@ -4,11 +4,11 @@ import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { NumberChartConfig } from '../../types/chart.types'
-import { Dimension, Measure } from '../../types/query.types'
+import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 
 const props = defineProps<{
-	dimensions: Dimension[]
-	measures: Measure[]
+	dimensions: DimensionOption[]
+	measures: MeasureOption[]
 }>()
 
 const config = defineModel<NumberChartConfig>({
@@ -21,20 +21,7 @@ const config = defineModel<NumberChartConfig>({
 })
 
 const date_dimensions = computed(() =>
-	props.dimensions
-		.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
-		.map((dimension) => ({
-			...dimension,
-			label: dimension.column_name,
-			value: dimension.column_name,
-		}))
-)
-const measures = computed(() =>
-	props.measures.map((measure) => ({
-		...measure,
-		label: measure.column_name,
-		value: measure.column_name,
-	}))
+	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
 )
 </script>
 
@@ -43,7 +30,7 @@ const measures = computed(() =>
 		<Autocomplete
 			:multiple="true"
 			:showFooter="true"
-			:options="measures"
+			:options="props.measures"
 			:modelValue="config.number_columns?.map((c) => c.column_name)"
 			@update:modelValue="config.number_columns = $event"
 		/>

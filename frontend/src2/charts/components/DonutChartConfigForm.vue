@@ -3,11 +3,11 @@ import { FIELDTYPES } from '@/utils'
 import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { DountChartConfig } from '../../types/chart.types'
-import { Dimension, Measure } from '../../types/query.types'
+import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 
 const props = defineProps<{
-	dimensions: Dimension[]
-	measures: Measure[]
+	dimensions: DimensionOption[]
+	measures: MeasureOption[]
 }>()
 
 const config = defineModel<DountChartConfig>({
@@ -19,20 +19,7 @@ const config = defineModel<DountChartConfig>({
 })
 
 const discrete_dimensions = computed(() =>
-	props.dimensions
-		.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type))
-		.map((dimension) => ({
-			...dimension,
-			label: dimension.column_name,
-			value: dimension.column_name,
-		}))
-)
-const measures = computed(() =>
-	props.measures.map((measure) => ({
-		...measure,
-		label: measure.column_name,
-		value: measure.column_name,
-	}))
+	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type))
 )
 </script>
 
@@ -48,7 +35,7 @@ const measures = computed(() =>
 	<InlineFormControlLabel label="Value">
 		<Autocomplete
 			:showFooter="true"
-			:options="measures"
+			:options="props.measures"
 			:modelValue="config.value_column?.column_name"
 			@update:modelValue="config.value_column = $event"
 		/>
