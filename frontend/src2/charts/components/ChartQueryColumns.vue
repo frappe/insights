@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Plus } from 'lucide-vue-next'
+import { Edit, Plus } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import DataTypeIcon from '../../query/components/DataTypeIcon.vue'
 import NewColumnSelectorDialog from '../../query/components/NewColumnSelectorDialog.vue'
+import { expression } from '../../query/helpers'
 import { ExpressionMeasure, MeasureDataType, MutateArgs } from '../../types/query.types'
 import { Chart } from '../chart'
 
@@ -13,6 +14,28 @@ function toMeasure(args: MutateArgs): ExpressionMeasure {
 		column_name: args.new_name,
 		expression: args.expression.expression,
 		data_type: args.data_type as MeasureDataType,
+	}
+}
+
+const activeEditMeasure = ref<ExpressionMeasure>()
+function setActiveEditMeasure(measure: ExpressionMeasure) {
+	activeEditMeasure.value = measure
+	showNewColumnSelectorDialog.value = true
+}
+function toMutateArgs(measure: ExpressionMeasure): MutateArgs {
+	return {
+		new_name: measure.column_name,
+		data_type: measure.data_type,
+		expression: expression(measure.expression),
+	}
+}
+
+function updateMeasure(args: MutateArgs) {
+	const measure = toMeasure(args)
+	if (!activeEditMeasure.value) {
+		chart.baseQuery.addMeasure(measure)
+	} else {
+		chart.baseQuery.updateMeasure(activeEditMeasure.value.column_name, measure)
 	}
 }
 </script>
@@ -46,13 +69,23 @@ function toMeasure(args: MutateArgs): ExpressionMeasure {
 		>
 			<DataTypeIcon :column-type="measure.data_type" />
 			{{ measure.column_name }}
+			<button
+				v-if="'expression' in measure"
+				class="group ml-auto h-full cursor-pointer rounded px-2"
+				@click.prevent.stop="setActiveEditMeasure(measure)"
+			>
+				<Edit
+					class="h-3.5 w-3.5 text-gray-500 transition-all group-hover:text-gray-700"
+					stroke-width="1.5"
+				/>
+			</button>
 		</div>
 	</div>
 
 	<NewColumnSelectorDialog
 		v-if="showNewColumnSelectorDialog"
 		v-model="showNewColumnSelectorDialog"
-		:mutation="undefined"
-		@select="chart.baseQuery.addMeasure(toMeasure($event))"
+		:mutation="activeEditMeasure ? toMutateArgs(activeEditMeasure) : undefined"
+		@select="updateMeasure"
 	/>
 </template>

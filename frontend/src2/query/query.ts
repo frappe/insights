@@ -97,6 +97,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		getMeasure,
 
 		addMeasure,
+		updateMeasure,
 
 		reset,
 	})
@@ -433,6 +434,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			...query.doc.calculated_measures,
 			[measure.column_name]: measure
 		}
+	}
+	function updateMeasure(column_name: string, measure: Measure) {
+		if (!query.doc.calculated_measures) query.doc.calculated_measures = {}
+		delete query.doc.calculated_measures[column_name]
+		query.doc.calculated_measures[measure.column_name] = measure
 	}
 
 	const originalQuery = copy(workbookQuery)
