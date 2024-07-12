@@ -16,10 +16,10 @@ const newColumn = ref(
 		? {
 				name: props.mutation.new_name,
 				type: props.mutation.data_type,
-				expression: props.mutation.mutation.expression,
+				expression: props.mutation.expression.expression,
 		  }
 		: {
-				name: 'New Column',
+				name: 'new_column',
 				type: columnTypes[0],
 				expression: '',
 		  }
@@ -34,7 +34,7 @@ function confirmCalculation() {
 	emit('select', {
 		new_name: newColumn.value.name,
 		data_type: newColumn.value.type,
-		mutation: expression(newColumn.value.expression),
+		expression: expression(newColumn.value.expression),
 	})
 	resetNewColumn()
 	showDialog.value = false

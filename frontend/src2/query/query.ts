@@ -96,6 +96,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		getDimension,
 		getMeasure,
 
+		addMeasure,
+
 		reset,
 	})
 
@@ -134,6 +136,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 						data_type: column.type as MeasureDataType,
 					}
 				}),
+			...Object.values(query.doc.calculated_measures || {}),
 		]
 	})
 
@@ -423,6 +426,13 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function getMeasure(column_name: string) {
 		return query.measures.find((m) => m.column_name === column_name)
+	}
+
+	function addMeasure(measure: Measure) {
+		query.doc.calculated_measures = {
+			...query.doc.calculated_measures,
+			[measure.column_name]: measure
+		}
 	}
 
 	const originalQuery = copy(workbookQuery)

@@ -1,5 +1,5 @@
 import { ChartConfig, ChartType } from './chart.types'
-import { ColumnDataType, FilterGroupArgs, Operation, OrderByArgs } from './query.types'
+import { ColumnDataType, FilterGroupArgs, Measure, Operation, OrderByArgs } from './query.types'
 
 export type WorkbookListItem = {
 	title: string
@@ -24,8 +24,9 @@ export type InsightsWorkbook = {
 export type WorkbookQuery = {
 	name: string
 	title?: string
-	use_live_connection?: boolean
 	operations: Operation[]
+	use_live_connection?: boolean
+	calculated_measures?: Record<string, Measure>
 }
 
 export type WorkbookChart = {

@@ -4,10 +4,16 @@ export type Column = {
 	type: 'column'
 	column_name: string
 }
-export type Measure = {
+export type Measure = ColumnMeasure | ExpressionMeasure
+export type ColumnMeasure = {
 	column_name: string
 	data_type: MeasureDataType
 	aggregation: AggregationType
+}
+export type ExpressionMeasure = {
+	column_name: string
+	expression: string
+	data_type: MeasureDataType
 }
 export type Dimension = {
 	column_name: string
@@ -89,8 +95,7 @@ export type JoinArgs = {
 }
 export type Join = { type: 'join' } & JoinArgs
 
-export type Mutation = Expression
-export type MutateArgs = { new_name: string; data_type: ColumnDataType; mutation: Mutation }
+export type MutateArgs = { new_name: string; data_type: ColumnDataType; expression: Expression }
 export type Mutate = { type: 'mutate' } & MutateArgs
 
 export type SummarizeArgs = { measures: Measure[]; dimensions: Dimension[] }

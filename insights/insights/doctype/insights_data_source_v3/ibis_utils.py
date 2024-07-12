@@ -175,7 +175,7 @@ class IbisQueryBuilder:
     def translate_mutate(self, mutate_args):
         new_name = mutate_args.new_name
         dtype = self.get_ibis_dtype(mutate_args.data_type)
-        new_column = self.evaluate_expression(mutate_args.mutation.expression).cast(
+        new_column = self.evaluate_expression(mutate_args.expression.expression).cast(
             dtype
         )
         return lambda query: query.mutate(**{new_name: new_column})
@@ -230,6 +230,11 @@ class IbisQueryBuilder:
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
             return _.count()
+
+        if "expression" in measure:
+            column = self.evaluate_expression(measure.expression)
+            dtype = self.get_ibis_dtype(measure.data_type)
+            return column.cast(dtype).name(measure.column_name)
 
         column = getattr(_, measure.column_name)
         return self.apply_aggregate(column, measure.aggregation)

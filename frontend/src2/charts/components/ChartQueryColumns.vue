@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { inject } from 'vue'
-import { Chart } from '../chart'
 import { Plus } from 'lucide-vue-next'
+import { inject, ref } from 'vue'
 import DataTypeIcon from '../../query/components/DataTypeIcon.vue'
+import NewColumnSelectorDialog from '../../query/components/NewColumnSelectorDialog.vue'
+import { ExpressionMeasure, MeasureDataType, MutateArgs } from '../../types/query.types'
+import { Chart } from '../chart'
 
 const chart = inject('chart') as Chart
+const showNewColumnSelectorDialog = ref(false)
+function toMeasure(args: MutateArgs): ExpressionMeasure {
+	return {
+		column_name: args.new_name,
+		expression: args.expression.expression,
+		data_type: args.data_type as MeasureDataType,
+	}
+}
 </script>
 
 <template>
@@ -12,7 +22,10 @@ const chart = inject('chart') as Chart
 		<div class="flex items-center justify-between">
 			<label class="inline-flex flex-shrink-0 text-xs leading-7 text-gray-700">Columns</label>
 			<div>
-				<button class="cursor-pointer rounded p-1 transition-colors hover:bg-gray-100">
+				<button
+					class="cursor-pointer rounded p-1 transition-colors hover:bg-gray-100"
+					@click="showNewColumnSelectorDialog = true"
+				>
 					<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</button>
 			</div>
@@ -35,4 +48,11 @@ const chart = inject('chart') as Chart
 			{{ measure.column_name }}
 		</div>
 	</div>
+
+	<NewColumnSelectorDialog
+		v-if="showNewColumnSelectorDialog"
+		v-model="showNewColumnSelectorDialog"
+		:mutation="undefined"
+		@select="chart.baseQuery.addMeasure(toMeasure($event))"
+	/>
 </template>

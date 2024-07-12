@@ -7,18 +7,15 @@ import {
 	ArrowUpNarrowWide,
 	Calendar,
 	Check,
-	ListFilter,
 	XIcon,
 } from 'lucide-vue-next'
 import { computed, h, inject } from 'vue'
-import ColumnFilterBody from '../../query/components/ColumnFilterBody.vue'
 import { column } from '../../query/helpers'
-import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
+import { QueryResultColumn } from '../../types/query.types'
 import { Chart } from '../chart'
 
 const props = defineProps<{ column: QueryResultColumn }>()
 const chart = inject('chart') as Chart
-const query = chart.dataQuery
 
 const currentSortOrder = computed(() => {
 	return chart.doc.config.order_by.find((order) => order.column.column_name === props.column.name)
