@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Edit, Plus } from 'lucide-vue-next'
+import { Edit, Plus, X } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import DataTypeIcon from '../../query/components/DataTypeIcon.vue'
 import NewColumnSelectorDialog from '../../query/components/NewColumnSelectorDialog.vue'
@@ -65,20 +65,32 @@ function updateMeasure(args: MutateArgs) {
 		<div
 			v-for="measure in chart.baseQuery.measures"
 			:key="measure.column_name"
-			class="flex h-7 cursor-grab items-center gap-2 rounded px-1 hover:bg-gray-100"
+			class="group flex h-7 cursor-grab items-center gap-2 rounded px-1 hover:bg-gray-100"
 		>
 			<DataTypeIcon :column-type="measure.data_type" />
 			{{ measure.column_name }}
-			<button
-				v-if="'expression' in measure"
-				class="group ml-auto h-full cursor-pointer rounded px-2"
-				@click.prevent.stop="setActiveEditMeasure(measure)"
-			>
-				<Edit
-					class="h-3.5 w-3.5 text-gray-500 transition-all group-hover:text-gray-700"
-					stroke-width="1.5"
-				/>
-			</button>
+			<div class="invisible ml-auto group-hover:visible">
+				<button
+					v-if="'expression' in measure"
+					class="group cursor-pointer p-1"
+					@click.prevent.stop="setActiveEditMeasure(measure)"
+				>
+					<Edit
+						class="h-3.5 w-3.5 text-gray-500 transition-all group-hover:text-gray-700"
+						stroke-width="1.5"
+					/>
+				</button>
+				<button
+					v-if="'expression' in measure"
+					class="group cursor-pointer p-1"
+					@click.prevent.stop="chart.baseQuery.removeMeasure(measure.column_name)"
+				>
+					<X
+						class="h-3.5 w-3.5 text-gray-500 transition-all group-hover:text-gray-700"
+						stroke-width="1.5"
+					/>
+				</button>
+			</div>
 		</div>
 	</div>
 

@@ -105,7 +105,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareAxisChartQuery(config: AxisChartConfig) {
-		if (!config.x_axis) {
+		if (!config.x_axis || !config.x_axis.column_name) {
 			console.warn('X-axis is required')
 			return false
 		}
