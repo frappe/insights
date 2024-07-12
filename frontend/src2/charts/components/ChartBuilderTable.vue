@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import DataTable from '../components/DataTable.vue'
-import { Chart } from './chart'
-import ChartBuilderTableColumn from './components/ChartBuilderTableColumn.vue'
+import DataTable from '../../components/DataTable.vue'
+import { Chart } from '../chart'
+import ChartBuilderTableColumn from './ChartBuilderTableColumn.vue'
 
 const chart = inject('chart') as Chart
 </script>

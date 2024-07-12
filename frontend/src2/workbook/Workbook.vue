@@ -7,7 +7,7 @@ import { useRoute } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
-import WorkbookSidebar from './WorkbookSidebar.vue'
+import WorkbookTabSwitcher from './WorkbookTabSwitcher.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -55,8 +55,8 @@ watchEffect(() => {
 				<WorkbookNavbarActions />
 			</template>
 		</Navbar>
-		<div class="relative flex flex-1 overflow-hidden bg-gray-50">
-			<WorkbookSidebar />
+		<div class="relative flex w-full flex-1 flex-col divide-y overflow-hidden bg-gray-50">
+			<WorkbookTabSwitcher />
 			<RouterView :key="route.fullPath" />
 		</div>
 	</div>

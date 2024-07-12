@@ -53,7 +53,7 @@ function moveSortColumn(from: number, to: number) {
 <template>
 	<div>
 		<div class="mb-1 flex items-center justify-between">
-			<label class="block text-xs text-gray-600">Sort By</label>
+			<label class="inline-flex flex-shrink-0 text-xs leading-7 text-gray-700">Sort By</label>
 			<div>
 				<Autocomplete
 					:options="props.columnOptions"

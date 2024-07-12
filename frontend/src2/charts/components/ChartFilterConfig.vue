@@ -29,7 +29,7 @@ function getFilterLabel(filter: FilterArgs) {
 <template>
 	<div>
 		<div class="mb-1 flex items-center justify-between">
-			<label class="block text-xs text-gray-600">Filters</label>
+			<label class="inline-flex flex-shrink-0 text-xs leading-7 text-gray-700">Filters</label>
 			<div>
 				<button
 					class="cursor-pointer rounded p-1 transition-colors hover:bg-gray-100"

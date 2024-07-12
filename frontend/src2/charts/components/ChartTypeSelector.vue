@@ -19,7 +19,7 @@ const chartType = defineModel<ChartType>()
 			>
 				<div class="flex items-center gap-1.5">
 					<ChartIcon :chartType="item" class="!h-3.5 !w-3.5" />
-					<div class="text-xs">{{ item == 'Number' ? 'KPI' : item }}</div>
+					<div class="text-sm">{{ item == 'Number' ? 'KPI' : item }}</div>
 				</div>
 			</Button>
 		</div>
