@@ -22,6 +22,10 @@ class DataWarehouse:
 
     @property
     def db(self) -> BaseBackend:
+        if not os.path.exists(self.db_path):
+            ddb = ibis.duckdb.connect(self.db_path)
+            ddb.disconnect()
+
         if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
             ddb = ibis.duckdb.connect(self.db_path, read_only=True)
             frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
