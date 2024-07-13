@@ -230,6 +230,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
 		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
+		chart.baseQuery.activeOperationIdx = chart.baseQuery.doc.operations.length - 1
 	}
 	function setFilters(filters: FilterArgs[]) {
 		const _filters = new Set(filters)
