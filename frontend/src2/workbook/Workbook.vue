@@ -2,7 +2,8 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { provide, watch, watchEffect } from 'vue'
+import { AlertOctagon } from 'lucide-vue-next'
+import { computed, provide, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
@@ -31,6 +32,16 @@ if (workbook.islocal && workbook.doc.queries.length === 0) {
 	workbook.addQuery()
 }
 
+const tabExists = computed(() => {
+	const tabType = route.name?.toString().replace('Workbook', '').toLowerCase()
+	const tabIndex = parseInt(route.params.index.toString())
+	return (
+		(tabType === 'query' && workbook.doc.queries[tabIndex]) ||
+		(tabType === 'chart' && workbook.doc.charts[tabIndex]) ||
+		(tabType === 'dashboard' && workbook.doc.dashboards[tabIndex])
+	)
+})
+
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`
 })
@@ -57,7 +68,18 @@ watchEffect(() => {
 		</Navbar>
 		<div class="relative flex w-full flex-1 flex-col divide-y overflow-hidden bg-gray-50">
 			<WorkbookTabSwitcher />
-			<RouterView :key="route.fullPath" />
+			<RouterView :key="route.fullPath" v-slot="{ Component }">
+				<component v-if="tabExists" :is="Component" />
+				<div v-else class="flex flex-1 items-center justify-center">
+					<div class="flex flex-col items-center gap-4">
+						<AlertOctagon class="h-16 w-16 text-gray-400" stroke-width="1" />
+						<p class="text-center text-lg text-gray-500">
+							Looks like this tab doesn't exist <br />
+							Try switching to another tab
+						</p>
+					</div>
+				</div>
+			</RouterView>
 		</div>
 	</div>
 </template>
