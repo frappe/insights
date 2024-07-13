@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { LineChartConfig } from '../../types/chart.types'
-import { Dimension, Measure } from '../../types/query.types'
 import AxisChartConfigForm from './AxisChartConfigForm.vue'
+import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 
 const props = defineProps<{
-	dimensions: Dimension[]
-	measures: Measure[]
+	dimensions: DimensionOption[]
+	measures: MeasureOption[]
 }>()
 
 const config = defineModel<LineChartConfig>({

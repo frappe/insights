@@ -65,6 +65,7 @@ export const count = (): Measure => ({
 	column_name: 'count',
 	data_type: 'Integer',
 	aggregation: 'count',
+	measure_name: 'count(*)',
 })
 export const operator = (operator: FilterOperator): FilterOperator => operator
 export const value = (value: FilterValue): FilterValue => value
@@ -243,7 +244,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SummarizeArgs): Summarize => ({ type: 'summarize', ...args }),
 		getDescription: (op: Summarize) => {
-			const measures = op.measures.map((m) => `${m.aggregation}(${m.column_name})`).join(', ')
+			const measures = op.measures.map((m) => m.measure_name).join(', ')
 			const dimensions = op.dimensions.map((g) => g.column_name).join(', ')
 			return `${measures} BY ${dimensions}`
 		},

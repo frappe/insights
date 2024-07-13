@@ -56,7 +56,7 @@ export function getLineChartOptions(chart: Chart) {
 		xAxis,
 		yAxis,
 		series: measures.map((c, idx) => {
-			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.column_name))
+			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.measure_name))
 			const type = is_right_axis ? _config.y2_axis_type : 'line'
 			return getSeries({
 				type,
@@ -119,7 +119,7 @@ export function getBarChartOptions(chart: Chart) {
 		xAxis: _config.swap_axes ? yAxis : xAxis,
 		yAxis: _config.swap_axes ? xAxis : yAxis,
 		series: measures.map((c, idx) => {
-			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.column_name))
+			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.measure_name))
 			const type = is_right_axis ? _config.y2_axis_type : 'bar'
 			return getSeries({
 				type,

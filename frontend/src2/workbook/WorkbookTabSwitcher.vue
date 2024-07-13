@@ -61,7 +61,7 @@ const newOptions = [
 				/>
 			</button>
 		</div>
-		<Dropdown :options="newOptions">
+		<Dropdown class="ml-1.5" :options="newOptions">
 			<Button variant="ghost" icon="plus"> </Button>
 		</Dropdown>
 	</div>

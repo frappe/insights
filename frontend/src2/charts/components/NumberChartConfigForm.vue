@@ -31,7 +31,7 @@ const date_dimensions = computed(() =>
 			:multiple="true"
 			:showFooter="true"
 			:options="props.measures"
-			:modelValue="config.number_columns?.map((c) => c.column_name)"
+			:modelValue="config.number_columns?.map((c) => c.measure_name)"
 			@update:modelValue="config.number_columns = $event"
 		/>
 	</InlineFormControlLabel>

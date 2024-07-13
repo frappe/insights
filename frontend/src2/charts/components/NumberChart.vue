@@ -21,7 +21,7 @@ const numberValuesPerColumn = computed(() => {
 	if (!props.chart.dataQuery.result?.rows) return {}
 
 	return config.value.number_columns
-		.map((c) => c.column_name)
+		.map((c) => c.measure_name)
 		.reduce((acc: any, column: string) => {
 			acc[column] = props.chart.dataQuery.result.rows.map((row: any) => row[column])
 			return acc
@@ -33,7 +33,7 @@ const cards = computed(() => {
 	if (!props.chart.dataQuery.result?.rows) return []
 
 	return config.value.number_columns.map((column: Measure) => {
-		const numberValues = numberValuesPerColumn.value[column.column_name]
+		const numberValues = numberValuesPerColumn.value[column.measure_name]
 		const currentValue = numberValues[numberValues.length - 1]
 		const previousValue = numberValues[numberValues.length - 2]
 		const delta = config.value.negative_is_better
@@ -63,12 +63,12 @@ const getFormattedValue = (value: number) => {
 	<div class="grid w-full grid-cols-[repeat(auto-fill,214px)] gap-4">
 		<div
 			v-for="{ column, currentValue, delta, percentDelta } in cards"
-			:key="column.column_name"
+			:key="column.measure_name"
 			class="flex h-[140px] items-center gap-2 overflow-y-auto rounded bg-white py-4 px-6 shadow"
 		>
 			<div class="flex w-full flex-col">
 				<span class="truncate text-sm font-medium">
-					{{ column.column_name }}
+					{{ column.measure_name }}
 				</span>
 				<div class="flex-1 flex-shrink-0 text-[24px] font-semibold leading-10">
 					{{ config.prefix }}{{ currentValue }}{{ config.suffix }}
@@ -86,7 +86,7 @@ const getFormattedValue = (value: number) => {
 				<div v-if="config.sparkline" class="mt-2 h-[18px] w-[80px]">
 					<Sparkline
 						:dates="dateValues"
-						:values="numberValuesPerColumn[column.column_name]"
+						:values="numberValuesPerColumn[column.measure_name]"
 					/>
 				</div>
 			</div>

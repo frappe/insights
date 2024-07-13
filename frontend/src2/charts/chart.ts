@@ -176,7 +176,7 @@ function makeChart(workbookChart: WorkbookChart) {
 			dimensions: [label],
 		})
 		chart.dataQuery.addOrderBy({
-			column: column(value.column_name),
+			column: column(value.measure_name),
 			direction: 'desc',
 		})
 

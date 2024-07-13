@@ -181,12 +181,14 @@ class IbisQueryBuilder:
         return lambda query: query.mutate(**{new_name: new_column})
 
     def translate_summary(self, summarize_args):
-        measures = summarize_args.measures
-        dimensions = summarize_args.dimensions
         aggregates = {
-            measure.column_name: self.translate_measure(measure) for measure in measures
+            measure.measure_name: self.translate_measure(measure)
+            for measure in summarize_args.measures
         }
-        group_bys = [self.translate_dimension(dimension) for dimension in dimensions]
+        group_bys = [
+            self.translate_dimension(dimension)
+            for dimension in summarize_args.dimensions
+        ]
         return lambda query: query.aggregate(**aggregates, by=group_bys)
 
     def translate_order_by(self, order_by_args):
@@ -206,7 +208,7 @@ class IbisQueryBuilder:
             for dimension in pivot_args["columns"]
         }
         values = {
-            measure.column_name: self.translate_measure(measure)
+            measure.measure_name: self.translate_measure(measure)
             for measure in pivot_args["values"]
         }
 
@@ -232,9 +234,9 @@ class IbisQueryBuilder:
             return _.count()
 
         if "expression" in measure:
-            column = self.evaluate_expression(measure.expression)
+            column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
-            return column.cast(dtype).name(measure.column_name)
+            return column.cast(dtype).name(measure.measure_name)
 
         column = getattr(_, measure.column_name)
         return self.apply_aggregate(column, measure.aggregation)

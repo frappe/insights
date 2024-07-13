@@ -25,8 +25,8 @@ export type MeasureOption = Measure & { label: string; value: string }
 const measures = computed<MeasureOption[]>(() => {
 	return chart.baseQuery.measures.map((measure) => ({
 		...measure,
-		label: measure.column_name,
-		value: measure.column_name,
+		label: measure.measure_name,
+		value: measure.measure_name,
 	}))
 })
 </script>

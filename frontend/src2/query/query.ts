@@ -123,6 +123,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				}
 			})
 	})
+
 	// @ts-ignore
 	query.measures = computed(() => {
 		if (!query.result.columns?.length) return []
@@ -135,6 +136,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					return {
 						aggregation: 'sum',
 						column_name: column.name,
+						measure_name: `sum(${column.name})`,
 						data_type: column.type as MeasureDataType,
 					}
 				}),
@@ -427,19 +429,19 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function getMeasure(column_name: string) {
-		return query.measures.find((m) => m.column_name === column_name)
+		return query.measures.find((m) => m.measure_name === column_name)
 	}
 
 	function addMeasure(measure: Measure) {
 		query.doc.calculated_measures = {
 			...query.doc.calculated_measures,
-			[measure.column_name]: measure
+			[measure.measure_name]: measure
 		}
 	}
 	function updateMeasure(column_name: string, measure: Measure) {
 		if (!query.doc.calculated_measures) query.doc.calculated_measures = {}
 		delete query.doc.calculated_measures[column_name]
-		query.doc.calculated_measures[measure.column_name] = measure
+		query.doc.calculated_measures[measure.measure_name] = measure
 	}
 	function removeMeasure(column_name: string) {
 		if (!query.doc.calculated_measures) return

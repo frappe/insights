@@ -36,7 +36,7 @@ const discrete_dimensions = computed(() =>
 		<Autocomplete
 			:showFooter="true"
 			:options="props.measures"
-			:modelValue="config.value_column?.column_name"
+			:modelValue="config.value_column?.measure_name"
 			@update:modelValue="config.value_column = $event"
 		/>
 	</InlineFormControlLabel>

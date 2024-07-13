@@ -36,7 +36,7 @@ const config = defineModel<AxisChartConfig>({
 		<Autocomplete
 			:multiple="true"
 			:options="props.measures"
-			:modelValue="config.y_axis?.map((measure) => measure.column_name)"
+			:modelValue="config.y_axis?.map((measure) => measure.measure_name)"
 			@update:modelValue="config.y_axis = $event"
 		/>
 	</InlineFormControlLabel>
@@ -52,7 +52,7 @@ const config = defineModel<AxisChartConfig>({
 		<Autocomplete
 			:multiple="true"
 			:options="props.measures"
-			:modelValue="config.y2_axis?.map((measure) => measure.column_name)"
+			:modelValue="config.y2_axis?.map((measure) => measure.measure_name)"
 			@update:modelValue="config.y2_axis = $event"
 		/>
 	</InlineFormControlLabel>

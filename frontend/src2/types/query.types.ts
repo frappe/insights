@@ -6,13 +6,14 @@ export type Column = {
 }
 export type Measure = ColumnMeasure | ExpressionMeasure
 export type ColumnMeasure = {
+	measure_name: string
 	column_name: string
 	data_type: MeasureDataType
 	aggregation: AggregationType
 }
 export type ExpressionMeasure = {
-	column_name: string
-	expression: string
+	measure_name: string
+	expression: Expression
 	data_type: MeasureDataType
 }
 export type Dimension = {
