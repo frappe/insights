@@ -80,15 +80,14 @@ type TableNameCache = Record<string, string>
 const tableNameCache = useStorage<TableNameCache>(dailyCacheKey, {})
 
 async function getTableName(params: GetTableParams): Promise<string> {
-	const { name, table, data_source } = params
-	if (name) return name
-
-	const key = `${data_source}:${table}`
+	if ('name' in params) return params.name
+	
+	const key = `${params.data_source}:${params.table}`
 	if (tableNameCache.value[key]) {
 		return tableNameCache.value[key]
 	}
 
-	const _name = await fetchTableName(data_source, table)
+	const _name = await fetchTableName(params.data_source, params.table)
 	tableNameCache.value[key] = _name
 	return _name
 }
