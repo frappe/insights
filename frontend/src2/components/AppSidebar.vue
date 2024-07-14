@@ -24,9 +24,10 @@
 		>
 			<template #icon>
 				<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
-					<CollapseSidebar
+					<PanelRightOpen
 						class="h-4.5 w-4.5 text-gray-700 duration-300 ease-in-out"
 						:class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
+						stroke-width="1.5"
 					/>
 				</span>
 			</template>
@@ -36,7 +37,7 @@
 
 <script setup lang="ts">
 import UserDropdown from './UserDropdown.vue'
-import { Book, LayoutGrid } from 'lucide-vue-next'
+import { Book, LayoutGrid, PanelRightOpen } from 'lucide-vue-next'
 import { ref } from 'vue'
 import CollapseSidebar from './Icons/CollapseSidebar.vue'
 import SidebarLink from './SidebarLink.vue'
