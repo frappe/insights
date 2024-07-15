@@ -231,6 +231,12 @@ def get_table_columns(data_source, table_name):
     return InsightsTableColumn.from_ibis_schema(table.schema())
 
 
+@frappe.whitelist()
+def update_data_source_tables(data_source):
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    ds.update_table_list()
+
+
 def before_request():
     if not hasattr(frappe.local, "insights_db_connections"):
         frappe.local.insights_db_connections = {}

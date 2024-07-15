@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { wheneverChanges } from '@/utils'
 import { ListEmptyState, ListView } from 'frappe-ui'
-import { Check, SearchIcon, Table2Icon } from 'lucide-vue-next'
-import { computed, h, ref } from 'vue'
+import { Check, RefreshCcw, SearchIcon, Table2Icon } from 'lucide-vue-next'
+import { computed, h, inject, ref } from 'vue'
 import useTableStore from '../../data_source/tables'
 import { SourceArgs, TableArgs } from '../../types/query.types'
 import { table } from '../helpers'
+import { Query } from '../query'
 import DataSourceSelector from './DataSourceSelector.vue'
 
 const emit = defineEmits({ select: (source: SourceArgs) => true })
 const props = defineProps<{ source?: SourceArgs }>()
 const showDialog = defineModel()
+const query = inject<Query>('query')
 
 const selectedTable = ref<TableArgs>(
 	props.source
@@ -70,7 +72,7 @@ const listColumns = [
 	<Dialog
 		v-model="showDialog"
 		:options="{
-			title: 'Pick starting data',
+			title: query?.doc.operations.length ? 'Change starting data' : 'Pick starting data',
 			size: '4xl',
 			actions: [
 				{
@@ -84,17 +86,40 @@ const listColumns = [
 	>
 		<template #body-content>
 			<div class="flex h-[20rem] flex-col gap-2 overflow-auto p-0.5">
-				<div class="flex gap-2 overflow-visible py-1">
-					<FormControl
-						placeholder="Search by Title"
-						v-model="tableSearchQuery"
-						autocomplete="off"
-					>
-						<template #prefix>
-							<SearchIcon class="h-4 w-4 text-gray-500" />
-						</template>
-					</FormControl>
-					<DataSourceSelector v-model="dataSourceFilter"> </DataSourceSelector>
+				<div class="flex justify-between overflow-visible py-1">
+					<div class="flex gap-2">
+						<FormControl
+							placeholder="Search by Title"
+							v-model="tableSearchQuery"
+							autocomplete="off"
+						>
+							<template #prefix>
+								<SearchIcon class="h-4 w-4 text-gray-500" />
+							</template>
+						</FormControl>
+						<DataSourceSelector v-model="dataSourceFilter"> </DataSourceSelector>
+					</div>
+					<div>
+						<Tooltip
+							:text="
+								!dataSourceFilter
+									? 'Select data source to refresh tables'
+									: `Refresh tables from ${dataSourceFilter}`
+							"
+						>
+							<Button
+								:disabled="!dataSourceFilter"
+								variant="outline"
+								label="Refresh Tables"
+								:loading="tableStore.updatingDataSourceTables"
+								@click="tableStore.updateDataSourceTables(dataSourceFilter)"
+							>
+								<template #prefix>
+									<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+								</template>
+							</Button>
+						</Tooltip>
+					</div>
 				</div>
 				<ListView
 					v-if="tableStore.tables.length"
