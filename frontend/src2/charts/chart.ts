@@ -1,6 +1,6 @@
 import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
-import { computed, reactive, ref, unref } from 'vue'
+import { computed, reactive, ref, unref, watch } from 'vue'
 import { copy, getUniqueId, waitUntil } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { column, count } from '../query/helpers'
@@ -54,6 +54,23 @@ function makeChart(workbookChart: WorkbookChart) {
 			chart.doc.config = {} as WorkbookChart['config']
 			chart.doc.config.order_by = []
 			chart.dataQuery.reset()
+		},
+	)
+
+	// when chart type changes from axis to non-axis or vice versa reset the config
+	watch(
+		() => chart.doc.chart_type,
+		(newType: string, oldType: string) => {
+			if (newType === oldType) return
+			if (!newType || !oldType) return
+			if (
+				(AXIS_CHARTS.includes(newType) && !AXIS_CHARTS.includes(oldType)) ||
+				(!AXIS_CHARTS.includes(newType) && AXIS_CHARTS.includes(oldType))
+			) {
+				chart.doc.config = {} as WorkbookChart['config']
+				chart.doc.config.order_by = []
+				chart.dataQuery.reset()
+			}
 		},
 	)
 
