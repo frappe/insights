@@ -40,6 +40,15 @@ const join = ref<JoinArgs>(
 )
 
 const tableStore = useTableStore()
+
+const query = inject('query') as Query
+const data_source = computed(() => {
+	if (!query.doc.use_live_connection) return undefined
+	return query.doc.operations[0].type === 'source'
+		? query.doc.operations[0].table.data_source
+		: undefined
+})
+
 type TableOption = {
 	label: string
 	value: string
@@ -58,10 +67,14 @@ const tableOptions = computed<TableOption[]>(() => {
 	}))
 })
 const tableSearchText = ref(props.join?.table.table_name || '')
-watchDebounced(tableSearchText, () => tableStore.getTables(undefined, tableSearchText.value), {
-	debounce: 300,
-	immediate: true,
-})
+watchDebounced(
+	tableSearchText,
+	() => tableStore.getTables(data_source.value, tableSearchText.value),
+	{
+		debounce: 300,
+		immediate: true,
+	}
+)
 
 const tableColumnOptions = ref<DropdownOption[]>([])
 const fetchingColumnOptions = ref(false)
@@ -93,7 +106,6 @@ wheneverChanges(
 	{ immediate: true }
 )
 
-const query = inject('query') as Query
 function autoMatchColumns() {
 	if (!join.value.table) return
 	const leftColumns = query.result.columnOptions
