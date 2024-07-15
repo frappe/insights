@@ -106,14 +106,7 @@ wheneverChanges(
 )
 
 function autoMatchColumns() {
-	if (!join.value.table) return
-	const leftColumns = query.result.columnOptions
-	const rightColumns = tableColumnOptions.value
-	const matchingColumns = leftColumns.filter((l) => rightColumns.some((r) => r.value === l.value))
-	if (matchingColumns.length) {
-		join.value.left_column.column_name = matchingColumns[0].value
-		join.value.right_column.column_name = matchingColumns[0].value
-	}
+	return
 }
 
 const isValid = computed(() => {
