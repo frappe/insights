@@ -1,7 +1,9 @@
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
+import { graphic } from 'echarts/core'
 import { BarChartConfig, LineChartConfig } from '../types/chart.types'
 import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
+import { getColors } from '@/utils/colors'
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -34,14 +36,13 @@ export function getLineChartOptions(chart: Chart) {
 	const rightYAxis = getYAxis({ is_secondary: true })
 	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
-	const sortedRows =
-		FIELDTYPES.DATE.includes(_config.x_axis.data_type)
-			? _rows.sort((a, b) => {
-					const a_date = new Date(a[_config.x_axis.column_name])
-					const b_date = new Date(b[_config.x_axis.column_name])
-					return a_date.getTime() - b_date.getTime()
-				})
-			: _rows
+	const sortedRows = FIELDTYPES.DATE.includes(_config.x_axis.data_type)
+		? _rows.sort((a, b) => {
+				const a_date = new Date(a[_config.x_axis.column_name])
+				const b_date = new Date(b[_config.x_axis.column_name])
+				return a_date.getTime() - b_date.getTime()
+			})
+		: _rows
 
 	const getSeriesData = (column: string) =>
 		sortedRows.map((r) => {
@@ -50,22 +51,46 @@ export function getLineChartOptions(chart: Chart) {
 			return [x_value, y_value]
 		})
 
+	const colors = getColors()
+
 	return {
 		animation: true,
 		grid: getGrid({ show_legend }),
+		colors,
 		xAxis,
 		yAxis,
 		series: measures.map((c, idx) => {
 			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.measure_name))
 			const type = is_right_axis ? _config.y2_axis_type : 'line'
-			return getSeries({
+			return {
 				type,
 				name: c.name,
 				data: getSeriesData(c.name),
-				on_right_axis: is_right_axis,
-				show_data_label: _config.show_data_labels,
-				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
-			})
+				emphasis: { focus: 'series' },
+				yAxisIndex: is_right_axis ? 1 : 0,
+				smooth: _config.smooth ? 0.4 : false,
+				smoothMonotone: 'x',
+				showSymbol: _config.show_data_points,
+				label: {
+					fontSize: 11,
+					show: _config.show_data_labels,
+					position: idx === measures.length - 1 ? 'top' : 'inside',
+					formatter: (params: any) => {
+						return getShortNumber(params.value?.[1], 1)
+					},
+				},
+				labelLayout: { hideOverlap: true },
+				areaStyle:
+				_config.show_area
+					? {
+							color: new graphic.LinearGradient(0, 0, 0, 1, [
+								{ offset: 0, color: colors[idx] },
+								{ offset: 1, color: '#fff' },
+							]),
+							opacity: 0.2,
+					  }
+					: undefined,
+			}
 		}),
 		tooltip: getTooltip(),
 		legend: getLegend(show_legend),
@@ -113,8 +138,11 @@ export function getBarChartOptions(chart: Chart) {
 			return _config.swap_axes ? [normalized_value, x_value] : [x_value, normalized_value]
 		})
 
+	const colors = getColors()
+
 	return {
 		animation: true,
+		colors: colors,
 		grid: getGrid({ show_legend }),
 		xAxis: _config.swap_axes ? yAxis : xAxis,
 		yAxis: _config.swap_axes ? xAxis : yAxis,
@@ -216,8 +244,11 @@ function getSeries(options: SeriesCustomizationOptions = {}) {
 export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
 	const MAX_SLICES = 10
 	const data = getDonutChartData(columns, rows, MAX_SLICES)
+
+	const colors = getColors()
 	return {
 		animation: true,
+		colors: colors,
 		dataset: { source: data },
 		series: [
 			{

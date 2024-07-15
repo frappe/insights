@@ -5,7 +5,9 @@
 			class="flex h-full flex-1 items-center justify-center truncate px-4 transition-all"
 			:class="{
 				'rounded bg-white shadow':
-					tab.active || currentTab === tab.value || (!currentTab && tab.default),
+					tab.active ||
+					currentTab === tab.value ||
+					(currentTab === undefined && tab.default),
 				'cursor-not-allowed': tab.disabled,
 			}"
 			@click="handleClick(tab)"

@@ -19,7 +19,11 @@ export type BarChartConfig = AxisChartConfig & {
 	normalize?: boolean
 	swap_axes?: boolean
 }
-export type LineChartConfig = AxisChartConfig & {}
+export type LineChartConfig = AxisChartConfig & {
+	smooth?: boolean
+	show_data_points?: boolean
+	show_area?: boolean
+}
 
 export type NumberChartConfig = {
 	number_columns: Measure[]
