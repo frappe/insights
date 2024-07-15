@@ -1,4 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
+import domtoimage from 'dom-to-image'
 import { watch } from 'vue'
 import { createToast } from './toasts'
 
@@ -55,4 +56,35 @@ export function showErrorToast(err: Error) {
 		message: getErrorMessage(err),
 	})
 	throw err
+}
+
+export function downloadImage(
+	element: HTMLElement,
+	filename: string,
+	scale = 1,
+	options = {}
+) {
+	return domtoimage
+		.toPng(element, {
+			height: element.offsetHeight * scale,
+			width: element.offsetWidth * scale,
+			style: {
+				transform: 'scale(' + scale + ')',
+				transformOrigin: 'top left',
+				width: element.offsetWidth + 'px',
+				height: element.offsetHeight + 'px',
+			},
+			bgColor: 'white',
+			...options,
+		})
+		.then(function (dataUrl: string) {
+			const img = new Image()
+			img.src = dataUrl
+			img.onload = async () => {
+				const link = document.createElement('a')
+				link.download = filename
+				link.href = img.src
+				link.click()
+			}
+		})
 }

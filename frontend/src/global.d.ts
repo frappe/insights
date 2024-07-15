@@ -1,5 +1,6 @@
 declare module 'frappe-ui'
 declare module '@/utils/dayjs'
+declare module 'dom-to-image'
 
 declare type HashString = `#${string}`
 declare type RGBString = `rgb(${number}, ${number}, ${number})`
