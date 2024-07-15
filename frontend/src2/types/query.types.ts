@@ -91,6 +91,7 @@ export type JoinType = 'inner' | 'left' | 'right' | 'full'
 export type JoinArgs = {
 	join_type: JoinType
 	table: Table
+	select_columns: Column[]
 	left_column: Column
 	right_column: Column
 }

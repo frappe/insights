@@ -73,6 +73,17 @@ class IbisQueryBuilder:
 
     def translate_join(self, join_args):
         right_table = self.get_table(join_args.table)
+        select_columns = (
+            [col.column_name for col in join_args.select_columns]
+            if join_args.select_columns
+            else None
+        )
+        right_table = (
+            right_table.select(*select_columns, join_args.right_column.column_name)
+            if select_columns
+            else right_table
+        )
+
         left_column = getattr(_, join_args.left_column.column_name)
         right_column = getattr(right_table, join_args.right_column.column_name)
         join_on = left_column.cast(right_column.type()) == right_column
@@ -300,10 +311,11 @@ def execute_ibis_query(
         return get_cached_results(sql)
 
     start = time.monotonic()
-    res = query.execute()
+    res: pd.DataFrame = query.execute()
     create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
 
-    res = res.replace({pd.NaT: None, np.NaN: 0})
+    res = res.replace({pd.NaT: None, np.NaN: None})
+
     if cache:
         cache_results(sql, res)
 

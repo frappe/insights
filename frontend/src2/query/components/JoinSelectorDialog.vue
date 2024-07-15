@@ -21,12 +21,10 @@ const join = ref<JoinArgs>(
 	props.join
 		? {
 				join_type: props.join.join_type,
-				table: table({
-					table_name: props.join.table.table_name,
-					data_source: props.join.table.data_source,
-				}),
-				left_column: column(props.join.left_column.column_name),
-				right_column: column(props.join.right_column.column_name),
+				table: props.join.table,
+				left_column: props.join.left_column,
+				right_column: props.join.right_column,
+				select_columns: props.join.select_columns || [],
 		  }
 		: {
 				join_type: 'left' as JoinType,
@@ -36,6 +34,7 @@ const join = ref<JoinArgs>(
 				}),
 				left_column: column(''),
 				right_column: column(''),
+				select_columns: [],
 		  }
 )
 
@@ -122,7 +121,8 @@ const isValid = computed(() => {
 		join.value.table.table_name &&
 		join.value.left_column.column_name &&
 		join.value.right_column.column_name &&
-		join.value.join_type
+		join.value.join_type &&
+		join.value.select_columns.length > 0
 	)
 })
 function confirm() {
@@ -140,6 +140,7 @@ function reset() {
 		}),
 		left_column: column(''),
 		right_column: column(''),
+		select_columns: [],
 	}
 }
 
@@ -173,92 +174,115 @@ const joinTypes = [
 </script>
 
 <template>
-	<Dialog
-		v-model="showDialog"
-		@after-leave="reset"
-		:options="{
-			title: 'Join Table',
-			actions: [
-				{
-					label: 'Confirm',
-					variant: 'solid',
-					disabled: !isValid,
-					onClick: confirm,
-				},
-			],
-		}"
-	>
-		<template #body-content>
-			<div class="-mb-5 flex flex-col gap-3 overflow-auto p-0.5 text-base">
-				<div>
-					<label class="mb-1 block text-xs text-gray-600">Pick Table to Join</label>
-					<Autocomplete
-						placeholder="Table"
-						:options="tableOptions"
-						:modelValue="
-							join.table.table_name
-								? `${join.table.data_source}.${join.table.table_name}`
-								: ''
-						"
-						@update:modelValue="
-							(option: any) => {
-								join.table.data_source = option.data_source
-								join.table.table_name = option.table_name
-							}
-						"
-						@update:query="tableSearchText = $event"
-						:loading="tableStore.loading"
-					/>
+	<Dialog :modelValue="showDialog">
+		<template #body>
+			<div class="rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
+				<!-- Title & Close -->
+				<div class="flex items-center justify-between pb-4">
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Join Table</h3>
+					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
+					</Button>
 				</div>
-				<div>
-					<label class="mb-1 block text-xs text-gray-600">Pick Matching Columns</label>
-					<div class="flex gap-2">
-						<div class="flex-1">
-							<Autocomplete
-								placeholder="Column"
-								:loading="fetchingColumnOptions"
-								:options="query.result.columnOptions"
-								:modelValue="join.left_column.column_name"
-								@update:modelValue="join.left_column.column_name = $event?.value"
-							/>
-						</div>
-						<div class="flex flex-shrink-0 items-center font-mono">=</div>
-						<div class="flex-1">
-							<Autocomplete
-								placeholder="Column"
-								:loading="fetchingColumnOptions"
-								:options="tableColumnOptions"
-								:modelValue="join.right_column.column_name"
-								@update:modelValue="join.right_column.column_name = $event?.value"
-							/>
-						</div>
-					</div>
-				</div>
-				<div>
-					<label class="mb-1 block text-xs text-gray-600">Pick Join Type</label>
-					<div class="flex gap-2">
-						<div
-							v-for="joinType in joinTypes"
-							:key="joinType.label"
-							class="flex flex-1 flex-col items-center justify-center rounded border py-3 transition-all"
-							:class="
-								join.join_type === joinType.value
-									? 'border-gray-700'
-									: 'cursor-pointer hover:border-gray-400'
+
+				<!-- Fields -->
+				<div class="flex w-full flex-col gap-3 overflow-auto p-0.5 text-base">
+					<div>
+						<label class="mb-1 block text-xs text-gray-600">Select Table to Join</label>
+						<Autocomplete
+							placeholder="Table"
+							:options="tableOptions"
+							:modelValue="
+								join.table.table_name
+									? `${join.table.data_source}.${join.table.table_name}`
+									: ''
 							"
-							@click="join.join_type = joinType.value"
+							@update:modelValue="
+								(option: any) => {
+									join.table.data_source = option.data_source
+									join.table.table_name = option.table_name
+								}
+							"
+							@update:query="tableSearchText = $event"
+							:loading="tableStore.loading"
+						/>
+					</div>
+					<div>
+						<label class="mb-1 block text-xs text-gray-600"
+							>Select Matching Columns</label
 						>
-							<component
-								:is="joinType.icon"
-								class="h-6 w-6 text-gray-600"
-								stroke-width="1.5"
-							/>
-							<span class="block text-center text-xs">{{ joinType.label }}</span>
+						<div class="flex gap-2">
+							<div class="flex-1">
+								<Autocomplete
+									placeholder="Column"
+									:loading="fetchingColumnOptions"
+									:options="query.result.columnOptions"
+									:modelValue="join.left_column.column_name"
+									@update:modelValue="
+										join.left_column.column_name = $event?.value
+									"
+								/>
+							</div>
+							<div class="flex flex-shrink-0 items-center font-mono">=</div>
+							<div class="flex-1">
+								<Autocomplete
+									placeholder="Column"
+									:loading="fetchingColumnOptions"
+									:options="tableColumnOptions"
+									:modelValue="join.right_column.column_name"
+									@update:modelValue="
+										join.right_column.column_name = $event?.value
+									"
+								/>
+							</div>
 						</div>
 					</div>
-					<div class="mt-1 text-xs text-gray-600">
-						{{ joinTypes.find((j) => j.value === join.join_type)?.description }}
+					<div>
+						<label class="mb-1 block text-xs text-gray-600">Select Join Type</label>
+						<div class="flex gap-2">
+							<div
+								v-for="joinType in joinTypes"
+								:key="joinType.label"
+								class="flex flex-1 flex-col items-center justify-center rounded border py-3 transition-all"
+								:class="
+									join.join_type === joinType.value
+										? 'border-gray-700'
+										: 'cursor-pointer hover:border-gray-400'
+								"
+								@click="join.join_type = joinType.value"
+							>
+								<component
+									:is="joinType.icon"
+									class="h-6 w-6 text-gray-600"
+									stroke-width="1.5"
+								/>
+								<span class="block text-center text-xs">{{ joinType.label }}</span>
+							</div>
+						</div>
+						<div class="mt-1 text-xs text-gray-600">
+							{{ joinTypes.find((j) => j.value === join.join_type)?.description }}
+						</div>
 					</div>
+					<div>
+						<label class="mb-1 block text-xs text-gray-600"
+							>Select Columns to Add</label
+						>
+						<Autocomplete
+							:multiple="true"
+							placeholder="Columns"
+							:loading="fetchingColumnOptions"
+							:options="tableColumnOptions"
+							:modelValue="join.select_columns?.map((c) => c.column_name)"
+							@update:modelValue="
+								join.select_columns = $event?.map((o: any) => column(o.value))
+							"
+						/>
+					</div>
+				</div>
+
+				<!-- Actions -->
+				<div class="mt-4 flex justify-end gap-2">
+					<Button variant="outline" label="Cancel" @click="showDialog = false" />
+					<Button variant="solid" label="Confirm" :disabled="!isValid" @click="confirm" />
 				</div>
 			</div>
 		</template>
