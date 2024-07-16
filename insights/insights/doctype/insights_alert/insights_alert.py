@@ -124,11 +124,7 @@ class Telegram:
 
     def send(self, message):
         try:
-            text = message[: telegram.MAX_MESSAGE_LENGTH]
-            parse_mode = telegram.ParseMode.MARKDOWN
-            return self.bot.send_message(
-                chat_id=self.chat_id, text=text, parse_mode=parse_mode
-            )
+            return self.bot.send_message(chat_id=self.chat_id, text=message[:4096])
         except Exception:
             frappe.log_error("Telegram Bot Error")
             raise
