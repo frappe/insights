@@ -38,7 +38,7 @@ const columnOptions = computed(() => {
 			<Autocomplete
 				:options="columnOptions"
 				:modelValue="options.column"
-				@update:modelValue="options.column = $event?.column"
+				@update:modelValue="options.column = $event?.value"
 			/>
 		</div>
 		<div>
