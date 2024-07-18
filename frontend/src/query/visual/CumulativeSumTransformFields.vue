@@ -23,10 +23,10 @@ const valueOptions = computed(() => {
 	<div class="space-y-1">
 		<span class="text-sm font-medium text-gray-700">Number Column</span>
 		<Autocomplete
-			v-model="options.column"
-			:return-value="true"
 			placeholder="Number Column"
 			:options="valueOptions"
+			:modelValue="options.column"
+			@update:modelValue="options.column = $event?.value"
 		/>
 	</div>
 </template>

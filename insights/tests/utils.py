@@ -8,7 +8,6 @@ from insights.insights.doctype.insights_query.insights_query import InsightsQuer
 
 def before_tests():
     delete_all_records()
-    create_query_store()
     create_site_db()
     create_sqlite_db()
     complete_setup_wizard()

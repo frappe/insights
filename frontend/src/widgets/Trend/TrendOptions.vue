@@ -1,6 +1,5 @@
 <script setup>
 import { FIELDTYPES } from '@/utils'
-import { Check } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -45,14 +44,18 @@ const valueOptions = computed(() => {
 		/>
 		<div>
 			<label class="mb-1.5 block text-xs text-gray-600">Date Column</label>
-			<Autocomplete v-model="options.dateColumn" :returnValue="true" :options="dateOptions" />
+			<Autocomplete
+				:options="dateOptions"
+				:modelValue="options.dateColumn"
+				@update:modelValue="options.dateColumn = $event?.value"
+			/>
 		</div>
 		<div>
 			<label class="mb-1.5 block text-xs text-gray-600">Value Column</label>
 			<Autocomplete
-				v-model="options.valueColumn"
-				:returnValue="true"
 				:options="valueOptions"
+				:modelValue="options.valueColumn"
+				@update:modelValue="options.valueColumn = $event?.value"
 			/>
 		</div>
 		<FormControl

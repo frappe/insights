@@ -38,7 +38,9 @@ class InsightsScriptQueryController:
             return []
 
         def get_value(variable):
-            return get_decrypted_password(variable.doctype, variable.name, "variable_value")
+            return get_decrypted_password(
+                variable.doctype, variable.name, "variable_value"
+            )
 
         results = []
         try:
@@ -55,7 +57,6 @@ class InsightsScriptQueryController:
             self.update_script_log()
             results = _locals["results"]
         except Exception as e:
-            frappe.log_error(title="Insights Script Query Error")
             frappe.throw(
                 f"Error while executing script: {e}",
                 title="Insights Script Query Error",
@@ -80,17 +81,22 @@ class InsightsScriptQueryController:
             update_modified=False,
         )
 
-    def validate_and_sanitize_results(self, results):
-        if not results:
+    def validate_and_sanitize_results(self, results: list | pd.DataFrame | None):
+        if (
+            (results is None)
+            or (isinstance(results, list) and not results)
+            or (isinstance(results, pd.DataFrame) and results.empty)
+        ):
             notify(
-                "The script should declare a variable named 'results' that contains column header and row data."
+                "The script should declare a variable named 'results' that contains the data."
             )
             return []
 
         if isinstance(results, pd.DataFrame):
+            results = results.fillna("")
             columns = [ResultColumn.from_args(col) for col in results.columns]
             values = results.values.tolist()
-            return [columns] + values
+            return [columns, *values]
 
         if not all(isinstance(row, list) for row in results):
             notify("All rows should be lists.")

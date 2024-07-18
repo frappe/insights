@@ -83,7 +83,9 @@ class SQLiteFunctions(Functions):
             ]
             unit = args[0].upper()
             if unit not in VALID_UNITS:
-                raise Exception(f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}")
+                raise Exception(
+                    f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}"
+                )
 
             day_diff = func.julianday(args[1]) - func.julianday(args[2])
 
@@ -113,7 +115,9 @@ class SQLiteFunctions(Functions):
             valid_units = ["day", "week", "month", "quarter", "year"]
             unit = args[0].lower()
             if unit not in valid_units:
-                raise Exception(f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}")
+                raise Exception(
+                    f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}"
+                )
             return SQLiteColumnFormatter.format_date(args[0].title(), args[1])
 
         if function == "today":

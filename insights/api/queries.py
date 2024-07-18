@@ -86,7 +86,9 @@ def create_chart():
 
 
 @frappe.whitelist()
-def pivot(data, indexes: list[str] = None, columns: list[str] = None, values: list[str] = None):
+def pivot(
+    data, indexes: list[str] = None, columns: list[str] = None, values: list[str] = None
+):
     indexes = indexes or []
     columns = columns or []
     values = values or []
@@ -105,7 +107,13 @@ def pivot(data, indexes: list[str] = None, columns: list[str] = None, values: li
             df[value_column] = df[value_column].apply(lambda x: 1)
 
     pivot = pd.pivot_table(
-        df, index=indexes, columns=columns, values=values, sort=False, fill_value=0, aggfunc="sum"
+        df,
+        index=indexes,
+        columns=columns,
+        values=values,
+        sort=False,
+        fill_value=0,
+        aggfunc="sum",
     )
     pivot = pivot.reset_index()
     pivot = pivot.to_dict("records")

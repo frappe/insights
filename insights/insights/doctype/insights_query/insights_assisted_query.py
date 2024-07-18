@@ -43,7 +43,11 @@ class InsightsAssistedQueryController:
         columns = self.query_json.get_columns()
         tables = self.query_json.get_tables()
         for column in columns:
-            if not column.is_valid() or column.is_expression() or column.get("column") == "count":
+            if (
+                not column.is_valid()
+                or column.is_expression()
+                or column.get("column") == "count"
+            ):
                 continue
             if column.get("table") not in tables:
                 frappe.throw(
@@ -98,7 +102,9 @@ class InsightsAssistedQueryController:
         selected_tables = self.get_selected_tables()
         selected_tables_names = [t.get("table") for t in selected_tables]
         for table in set(selected_tables_names):
-            table_doc = InsightsTable.get_doc(data_source=self.doc.data_source, table=table)
+            table_doc = InsightsTable.get_doc(
+                data_source=self.doc.data_source, table=table
+            )
             table_columns = table_doc.get_columns()
             columns += [
                 frappe._dict(
@@ -126,7 +132,9 @@ class InsightsAssistedQueryController:
         if self.doc.data_source != "Query Store":
             return
         sub_queries = [
-            t.get("table") for t in self.get_selected_tables() if t.get("table") != self.doc.name
+            t.get("table")
+            for t in self.get_selected_tables()
+            if t.get("table") != self.doc.name
         ]
         sync_query_store(sub_queries)
 

@@ -26,9 +26,13 @@ FUNCTION_OPERATORS = [
 
 def convert_to_expression(table, column, filter_operator, filter_value, value_type):
     if filter_operator in BINARY_OPERATORS:
-        return make_binary_expression(table, column, filter_operator, filter_value, value_type)
+        return make_binary_expression(
+            table, column, filter_operator, filter_value, value_type
+        )
     if filter_operator in FUNCTION_OPERATORS:
-        return make_call_expression(table, column, filter_operator, filter_value, value_type)
+        return make_call_expression(
+            table, column, filter_operator, filter_value, value_type
+        )
 
 
 def make_binary_expression(table, column, filter_operator, filter_value, value_type):

@@ -119,11 +119,14 @@
 		>
 			<template #body-content>
 				<div class="relative">
-					<p
-						class="rounded border bg-gray-100 p-2 text-base text-gray-600"
-						style="font-family: 'Fira Code'"
-						v-html="formattedSQL"
-					></p>
+					<div class="max-h-[50vh] overflow-y-auto rounded border text-base">
+						<Code
+							language="sql"
+							:model-value="query.doc.sql"
+							:read-only="true"
+							:hide-line-numbers="true"
+						/>
+					</div>
 					<Button
 						icon="copy"
 						variant="outline"
@@ -160,6 +163,7 @@ import { Dialog, Dropdown } from 'frappe-ui'
 import { BookmarkMinus } from 'lucide-vue-next'
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import Code from '@/components/Controls/Code.vue'
 const settings = settingsStore().settings
 
 const props = defineProps(['query'])

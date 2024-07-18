@@ -56,7 +56,9 @@ class FrappeTableFactory:
         for [table_name, column_name, data_type, _] in columns:
             if not table_name.startswith("tab"):
                 continue
-            schema.setdefault(table_name, []).append(self.get_column(column_name, data_type))
+            schema.setdefault(table_name, []).append(
+                self.get_column(column_name, data_type)
+            )
         return schema
 
     def get_table(self, table_name):
@@ -109,7 +111,9 @@ class FrappeTableFactory:
                 CustomField.options,
                 CustomField.dt.as_("parent"),
             )
-            .where((CustomField.fieldtype == "Link") | (CustomField.fieldtype == "Table"))
+            .where(
+                (CustomField.fieldtype == "Link") | (CustomField.fieldtype == "Table")
+            )
             .get_sql()
         )
         query = text(query)
@@ -158,7 +162,10 @@ class FrappeTableFactory:
                 DocField.options,
                 DocType.issingle,
             )
-            .where((DocField.fieldtype == "Dynamic Link") & (DocType.name == DocField.parent))
+            .where(
+                (DocField.fieldtype == "Dynamic Link")
+                & (DocType.name == DocField.parent)
+            )
             .get_sql()
         )
 
@@ -171,7 +178,10 @@ class FrappeTableFactory:
                 CustomField.options,
                 DocType.issingle,
             )
-            .where((CustomField.fieldtype == "Dynamic Link") & (DocType.name == CustomField.dt))
+            .where(
+                (CustomField.fieldtype == "Dynamic Link")
+                & (DocType.name == CustomField.dt)
+            )
             .get_sql()
         )
 
@@ -204,7 +214,9 @@ class FrappeTableFactory:
 
 
 class FrappeDB(MariaDB):
-    def __init__(self, data_source, host, port, username, password, database_name, use_ssl, **_):
+    def __init__(
+        self, data_source, host, port, username, password, database_name, use_ssl, **_
+    ):
         self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
@@ -241,8 +253,12 @@ class FrappeDB(MariaDB):
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(f"""select * from `{table}` limit {limit}""", cached=True)
-        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[0][0]
+        data = self.execute_query(
+            f"""select * from `{table}` limit {limit}""", cached=True
+        )
+        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[
+            0
+        ][0]
         return {
             "data": data or [],
             "length": length or 0,

@@ -73,7 +73,9 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
 
     @property
     def is_saved_as_table(self):
-        table_name = frappe.db.exists("Insights Table", {"table": self.name, "is_query_based": 1})
+        table_name = frappe.db.exists(
+            "Insights Table", {"table": self.name, "is_query_based": 1}
+        )
         return bool(table_name)
 
     @property
@@ -255,7 +257,9 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
             if transform.type == "Transpose":
                 return apply_transpose_transform(results, transform.options)
 
-        cumulative_sum_transforms = [t for t in self.transforms if t.type == "CumulativeSum"]
+        cumulative_sum_transforms = [
+            t for t in self.transforms if t.type == "CumulativeSum"
+        ]
         if cumulative_sum_transforms:
             columns = []
             for transform in cumulative_sum_transforms:
