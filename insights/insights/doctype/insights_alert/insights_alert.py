@@ -62,6 +62,9 @@ class InsightsAlert(Document):
         query_dict = query.as_dict()
         # query_dict.results = f"""<div class="results">{query.get_formatted_results(as_html=True)}</div>"""
         message = frappe.render_template(self.message, context=query_dict)
+        if self.channel == "Telegram":
+            return message
+
         return frappe.render_template(
             "insights/templates/alert.html", context=frappe._dict(message=message)
         )

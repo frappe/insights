@@ -72,30 +72,6 @@
 				</div>
 			</div>
 
-			<!-- <div v-if="configurables.is_subscribed" class="rounded bg-white p-6 shadow">
-				<div class="flex items-baseline">
-					<div class="text-xl font-medium text-gray-700">Subscription</div>
-				</div>
-				<div class="mt-4 flex flex-col space-y-8">
-					<Setting
-						label="Support Login Link"
-						description="Send a login link to the support portal. You can login to the support portal to manage support tickets."
-					>
-						<Button
-							variant="outline"
-							@click="settings.send_support_login_link.submit()"
-							:loading="settings.send_support_login_link.loading"
-							:disabled="
-								!configurables.is_subscribed ||
-								settings.send_support_login_link.loading
-							"
-						>
-							Send Login Link
-						</Button>
-					</Setting>
-				</div>
-			</div> -->
-
 			<div class="rounded bg-white p-6 shadow">
 				<div class="flex items-baseline">
 					<div class="text-xl font-medium text-gray-700">Notifications</div>
