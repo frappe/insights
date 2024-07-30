@@ -160,6 +160,7 @@ function makeOptions(chartType, labels, datasets, options) {
 				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : value),
 			},
 			min: options.yAxisMin,
+			max: options.yAxisMax,
 		})),
 		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
