@@ -39,7 +39,7 @@ const exampleCode = `def fetch_data_from_url():
 
 		try:
 				# Read data from the CSV file into a Pandas DataFrame
-				df = pd.read_csv(csv_url)
+				df = pandas.read_csv(csv_url)
 
 				# use the log function to log messages to the script log
 				log(df)
