@@ -20,6 +20,7 @@ const query = inject('query') as Query
 			</InlineFormControlLabel>
 			<InlineFormControlLabel label="Enable Live Mode" class="w-2/3">
 				<Checkbox
+					class="h-full"
 					v-model="query.doc.use_live_connection"
 					@update:modelValue="$event && query.execute()"
 				/>
