@@ -49,7 +49,11 @@ function resetNewColumn() {
 </script>
 
 <template>
-	<Dialog :modelValue="showDialog" @after-leave="resetNewColumn">
+	<Dialog
+		:modelValue="showDialog"
+		@after-leave="resetNewColumn"
+		@close="!newColumn.expression && (showDialog = false)"
+	>
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
