@@ -52,7 +52,7 @@ watchEffect(() => {
 	<div class="flex h-full w-full flex-col">
 		<Navbar>
 			<template #left>
-				<Button icon-left="chevron-left" variant="outline" @click="router.back()">
+				<Button icon-left="chevron-left" variant="outline" @click="router.push('/')">
 					Back
 				</Button>
 			</template>
