@@ -4,7 +4,7 @@ import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
 import { AlertOctagon } from 'lucide-vue-next'
 import { computed, provide, watchEffect } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
@@ -13,6 +13,7 @@ import WorkbookTabSwitcher from './WorkbookTabSwitcher.vue'
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{ name: string }>()
+const router = useRouter()
 const route = useRoute()
 
 const workbook = useWorkbook(props.name)
@@ -51,6 +52,11 @@ watchEffect(() => {
 	<div class="flex h-full w-full flex-col">
 		<Navbar>
 			<template #left>
+				<Button icon-left="chevron-left" variant="outline" @click="router.back()">
+					Back
+				</Button>
+			</template>
+			<template #center>
 				<div class="flex gap-3">
 					<ContentEditable
 						class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
@@ -62,7 +68,7 @@ watchEffect(() => {
 					</Badge>
 				</div>
 			</template>
-			<template #actions>
+			<template #right>
 				<WorkbookNavbarActions />
 			</template>
 		</Navbar>

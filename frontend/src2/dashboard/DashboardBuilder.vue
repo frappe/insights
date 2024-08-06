@@ -43,8 +43,9 @@ const showTextWidgetCreationDialog = ref(false)
 						v-if="!dashboard.editing"
 						variant="outline"
 						@click="() => dashboard.refresh()"
+						label="Refresh"
 					>
-						<template #icon>
+						<template #prefix>
 							<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
@@ -52,10 +53,19 @@ const showTextWidgetCreationDialog = ref(false)
 						v-if="!dashboard.editing"
 						variant="outline"
 						@click="dashboard.editing = true"
+						label="Edit"
 					>
-						<template #icon>
+						<template #prefix>
 							<Edit3 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>
+					</Button>
+					<Button
+						v-if="dashboard.editing"
+						variant="outline"
+						icon-left="plus"
+						@click="showChartSelectorDialog = true"
+					>
+						Chart
 					</Button>
 					<Button
 						v-if="dashboard.editing"
@@ -65,15 +75,6 @@ const showTextWidgetCreationDialog = ref(false)
 					>
 						Done
 					</Button>
-					<template v-if="dashboard.editing">
-						<Button
-							variant="outline"
-							icon-left="plus"
-							@click="showChartSelectorDialog = true"
-						>
-							Chart
-						</Button>
-					</template>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-2">

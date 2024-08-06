@@ -11,7 +11,7 @@ const props = defineProps<{ label: string }>()
 		>
 			{{ props.label }}
 		</span>
-		<div class="-m-0.5 flex-1 overflow-hidden p-0.5">
+		<div class="-m-0.5 flex h-full flex-1 items-center justify-end overflow-hidden p-0.5">
 			<slot />
 		</div>
 	</div>

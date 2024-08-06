@@ -52,7 +52,7 @@ function updateMeasure(args: MutateArgs) {
 		<div
 			v-for="dimension in chart.baseQuery.dimensions"
 			:key="dimension.column_name"
-			class="flex h-7 cursor-grab items-center gap-2 rounded px-1 font-mono text-sm text-gray-700 hover:bg-gray-100"
+			class="flex h-7 cursor-grab items-center gap-2 rounded px-1 text-gray-700 hover:bg-gray-100"
 		>
 			<DataTypeIcon :column-type="dimension.data_type" />
 			<span class="flex-1 truncate">{{ dimension.column_name }}</span>
@@ -61,7 +61,7 @@ function updateMeasure(args: MutateArgs) {
 		<div
 			v-for="measure in chart.baseQuery.measures"
 			:key="measure.measure_name"
-			class="group flex h-7 cursor-grab items-center gap-2 rounded px-1 font-mono text-sm text-gray-700 hover:bg-gray-100"
+			class="group flex h-7 cursor-grab items-center gap-2 rounded px-1 text-gray-700 hover:bg-gray-100"
 		>
 			<DataTypeIcon :column-type="measure.data_type" />
 			<span class="flex-1 truncate">{{ measure.measure_name }}</span>
