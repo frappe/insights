@@ -4,7 +4,7 @@ import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import useDashboard from '../dashboard/dashboard'
-import { copy, getUniqueId } from '../helpers'
+import { getUniqueId } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
@@ -60,12 +60,20 @@ export default function useWorkbook(name: string) {
 	}
 
 	function removeQuery(queryName: string) {
-		const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
-		if (idx === -1) return
-		workbook.doc.queries.splice(idx, 1)
-		if (isActiveTab('query', idx)) {
-			setActiveTab('', 0)
+		function _remove() {
+			const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
+			if (idx === -1) return
+			workbook.doc.queries.splice(idx, 1)
+			if (isActiveTab('query', idx)) {
+				setActiveTab('', 0)
+			}
 		}
+
+		confirmDialog({
+			title: 'Delete Query',
+			message: 'Are you sure you want to delete this query?',
+			onSuccess: _remove,
+		})
 	}
 
 	function addChart() {
@@ -81,12 +89,20 @@ export default function useWorkbook(name: string) {
 	}
 
 	function removeChart(chartName: string) {
-		const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
-		if (idx === -1) return
-		workbook.doc.charts.splice(idx, 1)
-		if (isActiveTab('chart', idx)) {
-			setActiveTab('', 0)
+		function _remove() {
+			const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
+			if (idx === -1) return
+			workbook.doc.charts.splice(idx, 1)
+			if (isActiveTab('chart', idx)) {
+				setActiveTab('', 0)
+			}
 		}
+
+		confirmDialog({
+			title: 'Delete Chart',
+			message: 'Are you sure you want to delete this chart?',
+			onSuccess: _remove,
+		})
 	}
 
 	function addDashboard() {
@@ -100,12 +116,20 @@ export default function useWorkbook(name: string) {
 	}
 
 	function removeDashboard(dashboardName: string) {
-		const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
-		if (idx === -1) return
-		workbook.doc.dashboards.splice(idx, 1)
-		if (isActiveTab('dashboard', idx)) {
-			setActiveTab('', 0)
+		function _remove() {
+			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
+			if (idx === -1) return
+			workbook.doc.dashboards.splice(idx, 1)
+			if (isActiveTab('dashboard', idx)) {
+				setActiveTab('', 0)
+			}
 		}
+
+		confirmDialog({
+			title: 'Delete Dashboard',
+			message: 'Are you sure you want to delete this dashboard?',
+			onSuccess: _remove,
+		})
 	}
 
 	async function getSharePermissions(): Promise<WorkbookSharePermission[]> {
