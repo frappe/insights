@@ -42,7 +42,10 @@ const tableStore = useTableStore()
 
 const query = inject('query') as Query
 const data_source = computed(() => {
-	if (!query.doc.use_live_connection) return undefined
+	// allow only one data source joins for now
+	// TODO: support multiple data source joins if live connection is disabled
+	// if (!query.doc.use_live_connection) return undefined
+
 	return query.doc.operations[0].type === 'source'
 		? query.doc.operations[0].table.data_source
 		: undefined
