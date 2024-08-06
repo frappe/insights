@@ -95,11 +95,6 @@ function updatePermissions() {
 			title: 'Share Workbook',
 			actions: [
 				{
-					label: 'Close',
-					variant: 'ghost',
-					onClick: () => (show = false),
-				},
-				{
 					label: 'Save',
 					variant: 'solid',
 					disabled: saveDisabled,
