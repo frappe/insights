@@ -10,7 +10,11 @@ const showShareDialog = ref(false)
 
 <template>
 	<div class="flex gap-2">
-		<Button v-if="workbook.canShare" variant="outline" @click="showShareDialog = true">
+		<Button
+			v-if="workbook.canShare && !workbook.isdirty && !workbook.islocal"
+			variant="outline"
+			@click="showShareDialog = true"
+		>
 			Share
 		</Button>
 		<Button
