@@ -11,7 +11,7 @@ type DocumentResourceOptions<T> = {
 export default function useDocumentResource<T extends object>(
 	doctype: string,
 	name: string,
-	options: DocumentResourceOptions<T>
+	options: DocumentResourceOptions<T>,
 ) {
 	const tranformFn = options.transform || ((doc: T) => doc)
 	const afterLoadFns = new Set<Function>()
@@ -53,7 +53,7 @@ export default function useDocumentResource<T extends object>(
 		onBeforeSave: (fn: Function) => beforeSaveFns.add(fn),
 		async save() {
 			if (this.saving) {
-				console.log('Already saving', doctype, name)
+				console.log('Already saving', this.doctype, this.name)
 				return this.doc
 			}
 			if (!this.isdirty && !this.islocal) {
@@ -71,14 +71,15 @@ export default function useDocumentResource<T extends object>(
 				await this.insert().finally(() => (this.saving = false))
 			} else {
 				const doc = await call('frappe.client.set_value', {
-					doctype,
-					name,
+					doctype: this.doctype,
+					name: this.name,
 					fieldname: removeMetaFields(this.doc),
-				})
-					.catch(showErrorToast)
-					.finally(() => (this.saving = false))
-				this.doc = tranformFn({ ...doc })
-				this.originalDoc = copy(this.doc)
+				}).catch(showErrorToast)
+
+				if (doc) {
+					this.doc = tranformFn({ ...doc })
+					this.originalDoc = copy(this.doc)
+				}
 			}
 
 			this.islocal = false
@@ -92,14 +93,20 @@ export default function useDocumentResource<T extends object>(
 			confirmDialog({
 				title: 'Discard Changes',
 				message: 'Are you sure you want to discard changes?',
-				onSuccess: () => this.load()
+				onSuccess: () => this.load(),
 			})
 		},
 
 		async load() {
 			if (this.islocal) return
 			this.loading = true
-			const doc = await call('frappe.client.get', { doctype, name })
+			const doc = await call('frappe.client.get', {
+				doctype: this.doctype,
+				name: this.name,
+			}).catch(showErrorToast)
+
+			if (!doc) return
+
 			this.doc = tranformFn({ ...doc })
 			this.originalDoc = copy(this.doc)
 			await Promise.all(Array.from(afterLoadFns).map((fn) => fn(this.doc)))
@@ -117,21 +124,26 @@ export default function useDocumentResource<T extends object>(
 				},
 				args,
 			})
-			this.loading = false
+				.catch(showErrorToast)
+				.finally(() => (this.loading = false))
 			return response.message
 		},
 
 		async delete() {
 			this.deleting = true
-			await call('frappe.client.delete', { doctype, name })
-			this.deleting = false
+			await call('frappe.client.delete', {
+				doctype: this.doctype,
+				name: this.name,
+			})
+				.catch(showErrorToast)
+				.finally(() => (this.deleting = false))
 		},
 	})
 
 	resource.load()
 	// @ts-ignore
 	resource.isdirty = computed(
-		() => JSON.stringify(resource.doc) !== JSON.stringify(resource.originalDoc)
+		() => JSON.stringify(resource.doc) !== JSON.stringify(resource.originalDoc),
 	)
 
 	return resource
