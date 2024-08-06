@@ -55,6 +55,7 @@ export function getLineChartOptions(chart: Chart) {
 
 	return {
 		animation: true,
+		animationDuration: 700,
 		grid: getGrid({ show_legend }),
 		colors,
 		xAxis,
@@ -142,6 +143,7 @@ export function getBarChartOptions(chart: Chart) {
 
 	return {
 		animation: true,
+		animationDuration: 700,
 		colors: colors,
 		grid: getGrid({ show_legend }),
 		xAxis: _config.swap_axes ? yAxis : xAxis,
@@ -248,6 +250,7 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 	const colors = getColors()
 	return {
 		animation: true,
+		animationDuration: 700,
 		colors: colors,
 		dataset: { source: data },
 		series: [

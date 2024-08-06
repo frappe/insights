@@ -16,6 +16,7 @@ const gradient = new graphic.LinearGradient(0, 0, 0, 1, [
 	<BaseChart
 		:options="{
 			animation: true,
+			animationDuration: 700,
 			grid: {
 				top: '20%',
 				left: 0,
