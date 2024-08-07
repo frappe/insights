@@ -34,6 +34,6 @@ const tabs = computed(() => {
 function handleClick(tab) {
 	if (tab.disabled) return
 	emit('switch', tab)
-	emit('update:modelValue', tab.value)
+	emit('update:modelValue', tab)
 }
 </script>
