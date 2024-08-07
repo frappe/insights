@@ -1,10 +1,10 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
+import { downloadImage } from '@/utils'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { whenever } from '@vueuse/shared'
 import { Maximize } from 'lucide-vue-next'
-import { downloadImage } from '@/utils'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 
@@ -125,8 +125,8 @@ function downloadChartImage() {
 						</div>
 					</Tooltip>
 				</div>
-				<div class="invisible group-hover:visible">
-					<Button variant="outline" @click="fullscreenDialog = true">
+				<div v-if="!dashboard.editing && isChart" class="invisible group-hover:visible">
+					<Button variant="ghost" @click="fullscreenDialog = true">
 						<template #icon> <Maximize class="h-4 w-4" /> </template>
 					</Button>
 				</div>
