@@ -53,6 +53,11 @@ const routes = [
 		],
 	},
 	{
+		path: '/data-source',
+		name: 'DataSourceList',
+		component: () => import('./data_source/DataSourceList.vue'),
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('@/pages/NotFound.vue'),
 		meta: { hideSidebar: true },

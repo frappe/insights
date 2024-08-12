@@ -5,7 +5,7 @@ import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUniqueId } from '../helpers'
-import useUserStore from './users'
+import useUserStore from '../users'
 import useWorkbooks from './workbooks'
 import { WorkbookListItem } from '../types/workbook.types'
 
@@ -33,7 +33,7 @@ const listOptions = ref({
 			prefix: (props: any) => {
 				const workbook = props.row as WorkbookListItem
 				const imageUrl = userStore.getUser(workbook.owner)?.user_image
-				return <Avatar size="sm" label={workbook.owner} image={imageUrl} />
+				return <Avatar size="md" label={workbook.owner} image={imageUrl} />
 			},
 		},
 		{ label: 'Created', key: 'created_from_now' },

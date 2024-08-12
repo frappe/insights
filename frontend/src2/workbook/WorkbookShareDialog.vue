@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import session from '../session'
-import useUserStore from './users'
+import useUserStore from '../users'
 import { createToast } from '../helpers/toasts'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
 import { Workbook, workbookKey } from './workbook'

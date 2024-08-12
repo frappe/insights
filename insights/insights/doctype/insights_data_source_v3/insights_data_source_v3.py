@@ -184,7 +184,15 @@ def get_data_sources():
     return frappe.get_all(
         "Insights Data Source v3",
         filters={"status": "Active"},
-        fields=["name", "title"],
+        fields=[
+            "name",
+            "status",
+            "title",
+            "owner",
+            "creation",
+            "modified",
+            "database_type",
+        ],
     )
 
 

@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import UserDropdown from './UserDropdown.vue'
-import { Book, LayoutGrid, PanelRightOpen } from 'lucide-vue-next'
+import { Book, Database, LayoutGrid, PanelRightOpen } from 'lucide-vue-next'
 import { ref } from 'vue'
 import CollapseSidebar from './Icons/CollapseSidebar.vue'
 import SidebarLink from './SidebarLink.vue'
@@ -53,6 +53,11 @@ const links = [
 		label: 'Workbooks',
 		icon: Book,
 		to: 'WorkbookList',
+	},
+	{
+		label: 'Data Sources',
+		icon: Database,
+		to: 'DataSourceList',
 	},
 ]
 </script>
