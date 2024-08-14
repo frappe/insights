@@ -18,6 +18,7 @@ from insights.insights.doctype.insights_table_column.insights_table_column impor
     InsightsTableColumn,
 )
 
+from .connectors.duckdb import get_duckdb_connection_string
 from .connectors.frappe_db import (
     get_frappedb_connection_string,
     get_sitedb_connection_string,
@@ -86,16 +87,16 @@ class InsightsDataSourceDocument:
     def validate(self):
         if self.is_site_db:
             return
-        if self.database_type == "SQLite":
-            self.validate_sqlite_fields()
+        if self.database_type == "SQLite" or self.database_type == "DuckDB":
+            self.validate_database_name()
         else:
             self.validate_remote_db_fields()
 
-    def validate_sqlite_fields(self):
+    def validate_database_name(self):
         mandatory = ("database_name",)
         for field in mandatory:
             if not self.get(field):
-                frappe.throw(f"{field} is mandatory for SQLite")
+                frappe.throw(f"{field} is mandatory for {self.database_type} Database")
 
     def validate_remote_db_fields(self):
         if self.connection_string:
@@ -117,7 +118,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         connection_string: DF.Text | None
         database_name: DF.Data | None
-        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite"]
+        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB"]
         host: DF.Data | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check
@@ -150,6 +151,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_sitedb_connection_string()
         if self.database_type == "SQLite":
             return get_sqlite_connection_string(self)
+        if self.database_type == "DuckDB":
+            return get_duckdb_connection_string(self)
         if self.is_frappe_db:
             return get_frappedb_connection_string(self)
         if self.database_type == "MariaDB":

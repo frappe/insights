@@ -9,6 +9,7 @@ import useDataSourceStore, { DataSourceListItem } from './data_source'
 import MariaDBIcon from '../components/Icons/MariaDBIcon.vue'
 import SQLiteIcon from '../components/Icons/SQLiteIcon.vue'
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
+import DuckDBIcon from '../components/Icons/DuckDBIcon.vue'
 
 const router = useRouter()
 const dataSourceStore = useDataSourceStore()
@@ -41,6 +42,9 @@ const listOptions = ref({
 				if (data_source.database_type === 'SQLite') {
 					return <SQLiteIcon class="h-5 w-5" />
 				}
+				if (data_source.database_type === 'DuckDB') {
+					return <DuckDBIcon class="h-5 w-5" />
+				}
 			},
 		},
 		{
@@ -68,7 +72,7 @@ const listOptions = ref({
 	options: {
 		showTooltip: false,
 		getRowRoute: (data_source: DataSourceListItem) => ({
-			path: `/data_sources/${data_source.name}`,
+			path: `/data-source/${data_source.name}`,
 		}),
 		emptyState: {
 			title: 'No data sources.',

@@ -9,7 +9,7 @@ export type DataSourceListItem = {
 	name: string
 	owner: string
 	status: 'Active' | 'Inactive'
-	database_type: 'MariaDB' | 'PostgreSQL' | 'SQLite'
+	database_type: 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB'
 	creation: string
 	modified: string
 	created_from_now: string

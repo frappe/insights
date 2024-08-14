@@ -39,7 +39,7 @@
    "fieldname": "database_type",
    "fieldtype": "Select",
    "label": "Database Type",
-   "options": "MariaDB\nPostgreSQL\nSQLite"
+   "options": "MariaDB\nPostgreSQL\nSQLite\nDuckDB"
   },
   {
    "fieldname": "host",
@@ -109,7 +109,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-09 19:49:22.654794",
+ "modified": "2024-08-14 13:53:29.330024",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",
