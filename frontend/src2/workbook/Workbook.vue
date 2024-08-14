@@ -2,7 +2,7 @@
 import ContentEditable from '@/components/ContentEditable.vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { AlertOctagon } from 'lucide-vue-next'
+import { AlertOctagon, ArrowLeft } from 'lucide-vue-next'
 import { computed, provide, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
@@ -52,18 +52,20 @@ watchEffect(() => {
 	<div class="flex h-full w-full flex-col">
 		<Navbar>
 			<template #left>
-				<Button icon-left="chevron-left" variant="outline" @click="router.push('/')">
-					Back
+				<Button variant="ghost" @click="router.push('/')">
+					<template #icon>
+						<ArrowLeft class="h-4 w-4" stroke-width="1.5" />
+					</template>
 				</Button>
 			</template>
 			<template #center>
 				<div class="flex gap-3">
 					<ContentEditable
-						class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+						class="rounded-sm font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 						v-model="workbook.doc.title"
 						placeholder="Untitled Workbook"
 					></ContentEditable>
-					<Badge v-if="workbook.islocal || workbook.isdirty" theme="orange">
+					<Badge size="sm" v-if="workbook.islocal || workbook.isdirty" theme="orange">
 						Unsaved
 					</Badge>
 				</div>
