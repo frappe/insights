@@ -5,7 +5,7 @@ import { createToast } from '../helpers/toasts'
 
 const basePath = 'insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.'
 
-type DataSourceTable = { table_name: string; data_source: string }
+export type DataSourceTable = { table_name: string; data_source: string }
 const tables = ref<DataSourceTable[]>([])
 
 const loading = ref(false)
@@ -47,10 +47,6 @@ async function updateDataSourceTables(data_source: string) {
 }
 
 export default function useTableStore() {
-	if (!tables.value.length) {
-		getTables()
-	}
-
 	return reactive({
 		tables,
 		loading,

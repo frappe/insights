@@ -58,6 +58,12 @@ const routes = [
 		component: () => import('./data_source/DataSourceList.vue'),
 	},
 	{
+		props: true,
+		path: '/data-source/:name',
+		name: 'DataSourceTableList',
+		component: () => import('./data_source/DataSourceTableList.vue'),
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('@/pages/NotFound.vue'),
 		meta: { hideSidebar: true },
