@@ -1,13 +1,12 @@
 <script setup lang="tsx">
-import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import { Avatar, ListView } from 'frappe-ui'
+import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUniqueId } from '../helpers'
+import { WorkbookListItem } from '../types/workbook.types'
 import useUserStore from '../users'
 import useWorkbooks from './workbooks'
-import { WorkbookListItem } from '../types/workbook.types'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
@@ -71,7 +70,7 @@ watchEffect(() => {
 
 <template>
 	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<PageBreadcrumbs class="h-7" :items="[{ label: 'Workbooks' }]" />
+		<Breadcrumbs :items="[{ label: 'Workbooks', route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button label="New Workbook" variant="solid" @click="openNewWorkbook">
 				<template #prefix>

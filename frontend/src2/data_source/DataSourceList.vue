@@ -1,6 +1,5 @@
 <script setup lang="tsx">
-import PageBreadcrumbs from '@/components/PageBreadcrumbs.vue'
-import { Avatar, ListView } from 'frappe-ui'
+import { Avatar, ListView, Breadcrumbs } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -88,7 +87,7 @@ document.title = 'Data Sources | Insights'
 
 <template>
 	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<PageBreadcrumbs class="h-7" :items="[{ label: 'Data Sources' }]" />
+		<Breadcrumbs :items="[{ label: 'Data Sources', route: '/data-source' }]" />
 		<div class="flex items-center gap-2">
 			<Button label="New Data Source" variant="solid" @click="">
 				<template #prefix>
