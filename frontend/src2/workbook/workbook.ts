@@ -161,11 +161,13 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
-	const canShare = computed(() => workbook.doc.owner === session.user?.email)
+	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
+	const canShare = computed(() => isOwner.value)
 
 	return reactive({
 		...toRefs(workbook),
 		canShare,
+		isOwner,
 
 		isActiveTab,
 

@@ -35,11 +35,13 @@ const showShareDialog = ref(false)
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
-				{
-					label: 'Delete',
-					icon: 'trash-2',
-					onClick: () => workbook.delete(),
-				},
+				!workbook.islocal
+					? {
+							label: 'Delete',
+							icon: 'trash-2',
+							onClick: () => workbook.delete(),
+					  }
+					: null,
 			]"
 		/>
 	</div>
