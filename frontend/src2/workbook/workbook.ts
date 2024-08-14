@@ -54,6 +54,7 @@ export default function useWorkbook(name: string) {
 		workbook.doc.queries.push({
 			name: getUniqueId(),
 			title: `Query ${idx + 1}`,
+			use_live_connection: true,
 			operations: [],
 		})
 		setActiveTab('query', idx)

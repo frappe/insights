@@ -20,7 +20,7 @@ from .data_warehouse import DataWarehouse
 
 
 class IbisQueryBuilder:
-    def build(self, operations: list, use_live_connection=False) -> IbisQuery:
+    def build(self, operations: list, use_live_connection=True) -> IbisQuery:
         self.query = None
         self.use_live_connection = use_live_connection
         for operation in operations:

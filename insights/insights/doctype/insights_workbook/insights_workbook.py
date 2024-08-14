@@ -42,7 +42,7 @@ class InsightsWorkbook(Document):
 
 
 @frappe.whitelist()
-def fetch_query_results(operations, use_live_connection=False):
+def fetch_query_results(operations, use_live_connection=True):
     results = []
     ibis_query = IbisQueryBuilder().build(operations, use_live_connection)
     if ibis_query is None:
@@ -66,7 +66,7 @@ def fetch_query_results(operations, use_live_connection=False):
 
 @frappe.whitelist()
 def get_distinct_column_values(
-    operations, column_name, search_term=None, use_live_connection=False
+    operations, column_name, search_term=None, use_live_connection=True
 ):
     query = IbisQueryBuilder().build(operations, use_live_connection)
     values_query = (
@@ -84,7 +84,7 @@ def get_distinct_column_values(
 
 
 @frappe.whitelist()
-def get_columns_for_selection(operations, use_live_connection=False):
+def get_columns_for_selection(operations, use_live_connection=True):
     query = IbisQueryBuilder().build(operations, use_live_connection)
     columns = get_columns_from_schema(query.schema())
     return columns

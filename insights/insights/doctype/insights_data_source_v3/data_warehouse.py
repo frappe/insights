@@ -32,7 +32,7 @@ class DataWarehouse:
 
         return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
 
-    def get_table(self, data_source, table_name, sync=False, use_live_connection=False):
+    def get_table(self, data_source, table_name, sync=False, use_live_connection=True):
         if use_live_connection:
             return self.get_remote_table(data_source, table_name)
         else:
