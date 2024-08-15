@@ -15,7 +15,6 @@ import type {
 	WorkbookChart,
 	WorkbookSharePermission,
 } from '../types/workbook.types'
-import useWorkbookListItemStore from './workbooks'
 
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
