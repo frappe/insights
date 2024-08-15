@@ -296,6 +296,12 @@ class IbisQueryBuilder:
             case=ibis.case,
             row_number=ibis.row_number,
             literal=ibis.literal,
+            now=ibis.now,
+            today=ibis.today,
+            to_inr=lambda curr, amount, rate=83: ibis.case()
+            .when(curr == "USD", amount * rate)
+            .else_(amount)
+            .end(),
         )
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)
