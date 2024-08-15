@@ -70,9 +70,9 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		execute,
 		setOperations,
-		setActiveStep,
+		setActiveOperation,
 		setActiveEditIndex,
-		removeStep,
+		removeOperation,
 		setSource,
 		addSource,
 		addJoin,
@@ -209,7 +209,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			})
 	}
 
-	function setActiveStep(index: number) {
+	function setActiveOperation(index: number) {
 		query.activeOperationIdx = index
 		query.activeEditIndex = -1
 	}
@@ -218,7 +218,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		query.activeEditIndex = index
 	}
 
-	function removeStep(index: number) {
+	function removeOperation(index: number) {
 		query.doc.operations.splice(index, 1)
 		switch (true) {
 			case query.activeOperationIdx === index && index > 0:

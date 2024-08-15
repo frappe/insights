@@ -15,6 +15,7 @@ import type {
 	WorkbookChart,
 	WorkbookSharePermission,
 } from '../types/workbook.types'
+import useWorkbookListItemStore from './workbooks'
 
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
@@ -35,12 +36,12 @@ export default function useWorkbook(name: string) {
 			workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
 			workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
 			workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
-		},
+		}
 	)
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
 		router.replace(
-			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`,
+			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`
 		)
 	}
 	function isActiveTab(type: 'query' | 'chart' | 'dashboard', idx: number) {
@@ -133,6 +134,9 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
+	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
+	const canShare = computed(() => isOwner.value)
+
 	async function getSharePermissions(): Promise<WorkbookSharePermission[]> {
 		const method =
 			'insights.insights.doctype.insights_workbook.insights_workbook.get_share_permissions'
@@ -162,8 +166,18 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
-	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
-	const canShare = computed(() => isOwner.value)
+	function deleteWorkbook() {
+		confirmDialog({
+			title: 'Delete Workbook',
+			message: 'Are you sure you want to delete this workbook?',
+			theme: 'red',
+			onSuccess: () => {
+				workbook.delete().then(() => {
+					router.replace('/workbook')
+				})
+			},
+		})
+	}
 
 	return reactive({
 		...toRefs(workbook),
@@ -174,25 +188,17 @@ export default function useWorkbook(name: string) {
 
 		addQuery,
 		removeQuery,
+
 		addChart,
 		removeChart,
+
 		addDashboard,
 		removeDashboard,
 
 		getSharePermissions,
 		updateSharePermissions,
 
-		delete() {
-			confirmDialog({
-				title: 'Delete Workbook',
-				message: 'Are you sure you want to delete this workbook?',
-				theme: 'red',
-				onSuccess: () => {
-					workbook.delete()
-					router.replace('/workbook')
-				},
-			})
-		},
+		delete: deleteWorkbook,
 	})
 }
 
@@ -221,7 +227,7 @@ function getWorkbookResource(name: string) {
 					: {
 							filters: [],
 							logical_operator: 'And',
-						}
+					  }
 				chart.config.order_by = chart.config.order_by || []
 			})
 			return doc

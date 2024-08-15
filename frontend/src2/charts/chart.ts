@@ -50,12 +50,14 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	wheneverChanges(
 		() => chart.doc.query,
-		() => {
-			chart.doc.config = {} as WorkbookChart['config']
-			chart.doc.config.order_by = []
-			chart.dataQuery.reset()
-		},
+		() => resetConfig()
 	)
+
+	function resetConfig() {
+		chart.doc.config = {} as WorkbookChart['config']
+		chart.doc.config.order_by = []
+		chart.dataQuery.reset()
+	}
 
 	// when chart type changes from axis to non-axis or vice versa reset the config
 	watch(
@@ -67,16 +69,14 @@ function makeChart(workbookChart: WorkbookChart) {
 				(AXIS_CHARTS.includes(newType) && !AXIS_CHARTS.includes(oldType)) ||
 				(!AXIS_CHARTS.includes(newType) && AXIS_CHARTS.includes(oldType))
 			) {
-				chart.doc.config = {} as WorkbookChart['config']
-				chart.doc.config.order_by = []
-				chart.dataQuery.reset()
+				resetConfig()
 			}
-		},
+		}
 	)
 
 	wheneverChanges(
 		() => chart.baseQuery.result?.totalRowCount,
-		() => refresh(),
+		() => refresh()
 	)
 
 	watchDebounced(
@@ -85,7 +85,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		{
 			deep: true,
 			debounce: 500,
-		},
+		}
 	)
 
 	async function refresh(filters?: FilterArgs[], force = false) {

@@ -3,20 +3,14 @@ import { LayoutPanelTop, Table2, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { useRouter } from 'vue-router'
 import ChartIcon from '../charts/components/ChartIcon.vue'
-import { Workbook, workbookKey } from './workbook'
+import { workbookKey } from './workbook'
 
 const router = useRouter()
-const workbook = inject(workbookKey) as Workbook
-
-const newOptions = [
-	{ label: 'New Query', onClick: workbook.addQuery },
-	{ label: 'New Chart', onClick: workbook.addChart },
-	{ label: 'New Dashboard', onClick: workbook.addDashboard },
-]
+const workbook = inject(workbookKey)
 </script>
 
 <template>
-	<div class="relative flex flex-shrink-0 items-center overflow-x-auto bg-white">
+	<div v-if="workbook" class="relative flex flex-shrink-0 items-center overflow-x-auto bg-white">
 		<div class="flex">
 			<button
 				v-for="(query, idx) in workbook.doc.queries"
@@ -61,7 +55,14 @@ const newOptions = [
 				/>
 			</button>
 		</div>
-		<Dropdown class="ml-1.5" :options="newOptions">
+		<Dropdown
+			class="ml-1.5"
+			:options="[
+				{ label: 'New Query', onClick: workbook.addQuery },
+				{ label: 'New Chart', onClick: workbook.addChart },
+				{ label: 'New Dashboard', onClick: workbook.addDashboard },
+			]"
+		>
 			<Button variant="ghost" icon="plus"> </Button>
 		</Dropdown>
 	</div>

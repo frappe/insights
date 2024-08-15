@@ -21,7 +21,7 @@ const query = inject('query') as Query
 				:key="idx"
 				class="group relative ml-3 mb-3 cursor-pointer last:mb-0"
 				:class="idx <= query.activeOperationIdx ? 'opacity-100' : 'opacity-40'"
-				@click="query.setActiveStep(idx)"
+				@click="query.setActiveOperation(idx)"
 			>
 				<CircleDotIcon class="absolute -left-4 top-1 h-2 w-2 bg-white text-gray-600" />
 				<div class="flex items-center justify-between gap-2 overflow-hidden">
@@ -46,7 +46,7 @@ const query = inject('query') as Query
 								<Edit class="h-3.5 w-3.5 text-gray-500" />
 							</template>
 						</Button>
-						<Button variant="ghost" @click="query.removeStep(idx)">
+						<Button variant="ghost" @click="query.removeOperation(idx)">
 							<template #icon>
 								<XIcon class="h-3.5 w-3.5 text-gray-500" />
 							</template>
