@@ -103,11 +103,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		reset,
 	})
 
-	watchOnce(
-		() => query.doc.operations.length,
-		() => (query.activeOperationIdx = query.doc.operations.length - 1),
-		{ immediate: true },
-	)
+	query.activeOperationIdx = query.doc.operations.length - 1
 
 	// @ts-ignore
 	query.dimensions = computed(() => {
@@ -220,18 +216,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function removeOperation(index: number) {
 		query.doc.operations.splice(index, 1)
-		switch (true) {
-			case query.activeOperationIdx === index && index > 0:
-				// if the active operation is removed, move the active operation to the previous step
-				query.activeOperationIdx--
-				break
-			case query.activeOperationIdx === index && index === 0:
-				// if the first operation is removed, reset the active operation
-				query.activeOperationIdx = -1
-				break
-			default:
-				break
-		}
+		query.activeOperationIdx--
+		query.activeOperationIdx = Math.max(query.activeOperationIdx, -1)
 	}
 
 	function setSource(args: SourceArgs) {

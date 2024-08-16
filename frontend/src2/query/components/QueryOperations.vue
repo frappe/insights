@@ -46,7 +46,7 @@ const query = inject('query') as Query
 								<Edit class="h-3.5 w-3.5 text-gray-500" />
 							</template>
 						</Button>
-						<Button variant="ghost" @click="query.removeOperation(idx)">
+						<Button variant="ghost" @click.prevent.stop="query.removeOperation(idx)">
 							<template #icon>
 								<XIcon class="h-3.5 w-3.5 text-gray-500" />
 							</template>
