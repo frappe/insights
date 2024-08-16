@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleDotIcon, Edit, XIcon } from 'lucide-vue-next'
+import { CircleDotIcon, Edit, Sparkles, XIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
@@ -13,7 +13,13 @@ const query = inject('query') as Query
 			<div class="flex items-center gap-1">
 				<div class="text-sm font-medium">Operations</div>
 			</div>
-			<div></div>
+			<div>
+				<Button variant="ghost" @click="query.reorderOperations()">
+					<template #icon>
+						<Sparkles class="h-3.5 w-3.5" stroke-width="1.5" />
+					</template>
+				</Button>
+			</div>
 		</div>
 		<div class="relative ml-1.5 mt-1 border-l border-gray-300 text-xs">
 			<div

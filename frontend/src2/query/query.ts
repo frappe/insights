@@ -1,5 +1,5 @@
 import { FIELDTYPES } from '@/utils'
-import { watchDebounced, watchOnce } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy, showErrorToast } from '../helpers'
@@ -62,7 +62,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		activeOperationIdx: -1,
 		currentOperations: computed(() => [] as Operation[]),
 		activeEditIndex: -1,
-		activeEditOperation: computed(() => ({}) as Operation),
+		activeEditOperation: computed(() => ({} as Operation)),
 
 		autoExecute: true,
 		executing: false,
@@ -91,8 +91,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 
-		dimensions: computed(() => ({}) as Dimension[]),
-		measures: computed(() => ({}) as Measure[]),
+		dimensions: computed(() => ({} as Dimension[])),
+		measures: computed(() => ({} as Measure[])),
 		getDimension,
 		getMeasure,
 
@@ -100,6 +100,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		updateMeasure,
 		removeMeasure,
 
+		reorderOperations,
 		reset,
 	})
 
@@ -158,7 +159,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	watchDebounced(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
-		{ deep: true, immediate: true },
+		{ deep: true, immediate: true }
 	)
 
 	async function execute() {
@@ -180,14 +181,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			{
 				use_live_connection: query.doc.use_live_connection,
 				operations: query.currentOperations,
-			},
+			}
 		)
 			.then((response: any) => {
 				if (!response) return
 				query.result.executedSQL = response.sql
 				query.result.columns = response.columns
 				query.result.rows = response.rows.map((row: any) =>
-					Object.fromEntries(query.result.columns.map((column, idx) => [column.name, row[idx]])),
+					Object.fromEntries(query.result.columns.map((column, idx) => [column.name, row[idx]]))
 				)
 				query.result.formattedRows = getFormattedRows(query)
 				query.result.totalRowCount = response.total_row_count
@@ -296,12 +297,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			(op) =>
 				op.type === 'order_by' &&
 				op.column.column_name === args.column.column_name &&
-				op.direction === args.direction,
+				op.direction === args.direction
 		)
 		if (existingOrderBy) return
 
 		const existingOrderByIndex = query.doc.operations.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name,
+			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
 		)
 		if (existingOrderByIndex > -1) {
 			query.doc.operations[existingOrderByIndex] = order_by(args)
@@ -312,7 +313,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function removeOrderBy(column_name: string) {
 		const index = query.doc.operations.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === column_name,
+			(op) => op.type === 'order_by' && op.column.column_name === column_name
 		)
 		if (index > -1) {
 			query.doc.operations.splice(index, 1)
@@ -341,7 +342,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	function renameColumn(oldName: string, newName: string) {
 		// first check if there's already a rename operation for the column
 		const existingRenameIdx = query.doc.operations.findIndex(
-			(op) => op.type === 'rename' && op.new_name === oldName,
+			(op) => op.type === 'rename' && op.new_name === oldName
 		)
 		if (existingRenameIdx > -1) {
 			const existingRename = query.doc.operations[existingRenameIdx] as Rename
@@ -354,7 +355,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				rename({
 					column: column(oldName),
 					new_name: newName,
-				}),
+				})
 			)
 		}
 	}
@@ -369,7 +370,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			cast({
 				column: column(column_name),
 				data_type: newType,
-			}),
+			})
 		)
 	}
 
@@ -378,11 +379,63 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		query.activeOperationIdx = newOperations.length - 1
 	}
 
+	function reorderOperations() {
+		const sourceOp = query.doc.operations.find((op) => op.type === 'source')
+		if (!sourceOp) return
+
+		let newOperations: Operation[] = [sourceOp]
+		const opsOrder = ['join', 'mutate', 'filter_group', 'filter', 'select', 'order_by', 'limit']
+		opsOrder.forEach((opType) => {
+			newOperations.push(...query.doc.operations.filter((op) => op.type === opType))
+		})
+
+		// combine multiple filter_group & select operations into one
+		const filterGroups: FilterGroupArgs[] = []
+		const selects: SelectArgs[] = []
+		newOperations.forEach((op) => {
+			if (op.type === 'filter_group') {
+				filterGroups.push(op as FilterGroupArgs)
+			} else if (op.type === 'select') {
+				selects.push(op as SelectArgs)
+			}
+		})
+		if (filterGroups.length > 1) {
+			const index = newOperations.findIndex((op) => op.type === 'filter_group')
+			newOperations.splice(index, filterGroups.length, filter_group({ 
+				logical_operator: 'And',
+				filters: filterGroups.flatMap((fg) => fg.filters),
+			}))
+		}
+		if (selects.length > 1) {
+			const index = newOperations.findIndex((op) => op.type === 'select')
+			newOperations.splice(index, selects.length, select({ 
+				column_names: selects.flatMap((s) => s.column_names),
+			}))
+		}
+
+		// append all mutated columns to the select operation (if not already selected)
+		const mutatedColumns = newOperations
+			.filter((op) => op.type === 'mutate')
+			.map((op) => op.new_name)
+
+		const selectOp = newOperations.find((op) => op.type === 'select')
+		if (selectOp) {
+			const selectArgs = selectOp as SelectArgs
+			mutatedColumns.forEach((column) => {
+				if (!selectArgs.column_names.includes(column)) {
+					selectArgs.column_names.push(column)
+				}
+			})
+		}
+
+		query.setOperations(newOperations)
+	}
+
 	function getDistinctColumnValues(column: string, search_term: string = '') {
 		const operations =
 			query.activeEditIndex > -1
 				? // when editing a filter, get distinct values from the operations before the filter
-					query.doc.operations.slice(0, query.activeEditIndex)
+				  query.doc.operations.slice(0, query.activeEditIndex)
 				: query.currentOperations
 
 		return call(
@@ -392,7 +445,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				operations: operations,
 				column_name: column,
 				search_term,
-			},
+			}
 		)
 	}
 
@@ -421,7 +474,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	function addMeasure(measure: Measure) {
 		query.doc.calculated_measures = {
 			...query.doc.calculated_measures,
-			[measure.measure_name]: measure
+			[measure.measure_name]: measure,
 		}
 	}
 	function updateMeasure(column_name: string, measure: Measure) {
