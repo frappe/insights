@@ -293,7 +293,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function addOrderBy(args: OrderByArgs) {
-		const existingOrderBy = query.doc.operations.find(
+		const existingOrderBy = query.currentOperations.find(
 			(op) =>
 				op.type === 'order_by' &&
 				op.column.column_name === args.column.column_name &&
@@ -301,11 +301,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		)
 		if (existingOrderBy) return
 
-		const existingOrderByIndex = query.doc.operations.findIndex(
+		const existingOrderByIndex = query.currentOperations.findIndex(
 			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
 		)
 		if (existingOrderByIndex > -1) {
-			query.doc.operations[existingOrderByIndex] = order_by(args)
+			query.currentOperations[existingOrderByIndex] = order_by(args)
 		} else {
 			addOperation(order_by(args))
 		}
@@ -341,11 +341,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function renameColumn(oldName: string, newName: string) {
 		// first check if there's already a rename operation for the column
-		const existingRenameIdx = query.doc.operations.findIndex(
+		const existingRenameIdx = query.currentOperations.findIndex(
 			(op) => op.type === 'rename' && op.new_name === oldName
 		)
 		if (existingRenameIdx > -1) {
-			const existingRename = query.doc.operations[existingRenameIdx] as Rename
+			const existingRename = query.currentOperations[existingRenameIdx] as Rename
 			existingRename.new_name = newName
 		}
 
