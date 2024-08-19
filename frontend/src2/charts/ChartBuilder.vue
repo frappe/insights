@@ -21,20 +21,6 @@ provide('chart', chart)
 if (!chart.doc.config.order_by) {
 	chart.doc.config.order_by = []
 }
-
-const chartEl = ref<HTMLElement | null>(null)
-function downloadChart() {
-	if (!chartEl.value || !chartEl.value.clientHeight) {
-		console.log(chartEl.value)
-		console.warn('Chart element not found')
-		return
-	}
-	return downloadImage(chartEl.value, chart.doc.title, 2, {
-		filter: (element: HTMLElement) => {
-			return !element?.classList?.contains('absolute')
-		},
-	})
-}
 </script>
 
 <template>
@@ -49,15 +35,9 @@ function downloadChart() {
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<LoadingOverlay v-if="chart.dataQuery.executing" />
 			<div
-				class="relative flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
+				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
 			>
-				<div ref="chartEl" class="h-full w-full">
-					<ChartRenderer :chart="chart" />
-				</div>
-
-				<div v-if="!chart.dataQuery.executing && chartEl" class="absolute top-8 right-8">
-					<Button variant="outline" icon="download" @click="downloadChart"></Button>
-				</div>
+				<ChartRenderer :chart="chart" :show-download="true" />
 			</div>
 			<ChartBuilderTable />
 		</div>
