@@ -269,7 +269,7 @@ const joinTypes = [
 							:options="tableColumnOptions"
 							:modelValue="join.select_columns?.map((c) => c.column_name)"
 							@update:modelValue="
-								join.select_columns = $event?.map((o: any) => column(o.value))
+								join.select_columns = $event?.map((o: any) => column(o.value)) || []
 							"
 						/>
 					</div>
