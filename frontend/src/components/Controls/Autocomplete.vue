@@ -238,12 +238,16 @@ export default {
 				if (!this.multiple) {
 					_selectedOptions = this.findOption(this.modelValue)
 					if (this.modelValue && !_selectedOptions) {
-						_selectedOptions = this.sanitizeOptions([this.modelValue])[0]
+						_selectedOptions = this.sanitizeOption(this.modelValue)
 					}
 					return _selectedOptions
 				}
 
-				_selectedOptions = this.modelValue?.map((v) => this.findOption(v)).filter(Boolean)
+				_selectedOptions = this.modelValue?.map((v) => {
+					const option = this.findOption(v)
+					if (option) return option
+					return this.sanitizeOption(v)
+				})
 				if (this.modelValue && !_selectedOptions.length) {
 					_selectedOptions = this.sanitizeOptions(this.modelValue)
 				}
@@ -339,9 +343,10 @@ export default {
 		sanitizeOptions(options) {
 			if (!options) return []
 			// in case the options are just strings, convert them to objects
-			return options.map((option) => {
-				return typeof option === 'string' ? { label: option, value: option } : option
-			})
+			return options.map((option) => this.sanitizeOption(option))
+		},
+		sanitizeOption(option) {
+			return typeof option === 'string' ? { label: option, value: option } : option
 		},
 		isOptionSelected(option) {
 			if (!this.multiple) {
