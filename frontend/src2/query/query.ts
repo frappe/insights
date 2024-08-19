@@ -384,7 +384,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		if (!sourceOp) return
 
 		let newOperations: Operation[] = [sourceOp]
-		const opsOrder = ['join', 'mutate', 'filter_group', 'filter', 'select', 'order_by', 'limit']
+		const opsOrder = ['join', 'mutate', 'filter_group', 'filter', 'select', 'remove', 'cast', 'rename', 'order_by', 'limit']
 		opsOrder.forEach((opType) => {
 			newOperations.push(...query.doc.operations.filter((op) => op.type === opType))
 		})
@@ -401,19 +401,32 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		})
 		if (filterGroups.length > 1) {
 			const index = newOperations.findIndex((op) => op.type === 'filter_group')
-			newOperations.splice(index, filterGroups.length, filter_group({ 
-				logical_operator: 'And',
-				filters: filterGroups.flatMap((fg) => fg.filters),
-			}))
+			newOperations.splice(
+				index,
+				filterGroups.length,
+				filter_group({
+					logical_operator: 'And',
+					filters: filterGroups.flatMap((fg) => fg.filters),
+				})
+			)
 		}
 		if (selects.length > 1) {
 			const index = newOperations.findIndex((op) => op.type === 'select')
-			newOperations.splice(index, selects.length, select({ 
-				column_names: selects.flatMap((s) => s.column_names),
-			}))
+			newOperations.splice(
+				index,
+				selects.length,
+				select({
+					column_names: selects.flatMap((s) => s.column_names),
+				})
+			)
 		}
 
-		// append all mutated columns to the select operation (if not already selected)
+		// append all mutated columns & joined columns to the select operation (if not already selected)
+		const joinColumns = newOperations
+			.filter((op) => op.type === 'join')
+			.map((op) => op.select_columns.map((col) => col.column_name))
+			.flat()
+
 		const mutatedColumns = newOperations
 			.filter((op) => op.type === 'mutate')
 			.map((op) => op.new_name)
@@ -421,6 +434,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		const selectOp = newOperations.find((op) => op.type === 'select')
 		if (selectOp) {
 			const selectArgs = selectOp as SelectArgs
+			joinColumns.forEach((column) => {
+				if (!selectArgs.column_names.includes(column)) {
+					selectArgs.column_names.push(column)
+				}
+			})
 			mutatedColumns.forEach((column) => {
 				if (!selectArgs.column_names.includes(column)) {
 					selectArgs.column_names.push(column)
