@@ -88,12 +88,12 @@ export type CastArgs = { column: Column; data_type: ColumnDataType }
 export type Cast = { type: 'cast' } & CastArgs
 
 export type JoinType = 'inner' | 'left' | 'right' | 'full'
+export type JoinCondition = { left_column: Column; right_column: Column } | { join_expression: Expression }
 export type JoinArgs = {
 	join_type: JoinType
 	table: Table
 	select_columns: Column[]
-	left_column: Column
-	right_column: Column
+	join_condition: JoinCondition
 }
 export type Join = { type: 'join' } & JoinArgs
 

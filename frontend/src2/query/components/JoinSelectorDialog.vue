@@ -5,11 +5,13 @@ import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '@/components/Icons/JoinRightIcon.vue'
 import { wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
+import { Braces } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import useTableStore from '../../data_source/tables'
 import { JoinArgs, JoinType } from '../../types/query.types'
-import { column, table } from '../helpers'
+import { column, expression, table } from '../helpers'
 import { Query } from '../query'
+import InlineExpression from './InlineExpression.vue'
 
 const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
@@ -17,13 +19,22 @@ const emit = defineEmits({
 })
 const showDialog = defineModel()
 
+// handle backward compatibility
+// move left_column and right_column under join_condition
+const _props_join: any = props.join
+if (props.join && _props_join.left_column?.column_name && _props_join.right_column?.column_name) {
+	props.join.join_condition = {
+		left_column: _props_join.left_column,
+		right_column: _props_join.right_column,
+	}
+}
+
 const join = ref<JoinArgs>(
 	props.join
 		? {
 				join_type: props.join.join_type,
 				table: props.join.table,
-				left_column: props.join.left_column,
-				right_column: props.join.right_column,
+				join_condition: props.join.join_condition,
 				select_columns: props.join.select_columns || [],
 		  }
 		: {
@@ -32,8 +43,10 @@ const join = ref<JoinArgs>(
 					table_name: '',
 					data_source: '',
 				}),
-				left_column: column(''),
-				right_column: column(''),
+				join_condition: {
+					left_column: column(''),
+					right_column: column(''),
+				},
 				select_columns: [],
 		  }
 )
@@ -94,11 +107,6 @@ wheneverChanges(
 					description: c.type,
 					data_type: c.type,
 				}))
-
-				if (join.value.right_column.column_name) {
-					join.value.right_column.column_name = ''
-				}
-
 				autoMatchColumns()
 			})
 			.finally(() => {
@@ -108,17 +116,64 @@ wheneverChanges(
 	{ immediate: true }
 )
 
+wheneverChanges(
+	() => join.value.table.table_name,
+	() => {
+		if (!join.value.table.table_name) return
+
+		// reset previous values if table is changed
+		join.value.select_columns = []
+		if (
+			'right_column' in join.value.join_condition &&
+			join.value.join_condition.right_column.column_name
+		) {
+			join.value.join_condition.right_column.column_name = ''
+		}
+
+		if (
+			'join_expression' in join.value.join_condition &&
+			join.value.join_condition.join_expression
+		) {
+			join.value.join_condition.join_expression = expression('')
+		}
+	}
+)
+
 function autoMatchColumns() {
 	return
 }
 
+const showJoinConditionEditor = computed(() => 'join_expression' in join.value.join_condition)
+function toggleJoinConditionEditor() {
+	if (showJoinConditionEditor.value) {
+		join.value.join_condition = {
+			left_column: column(''),
+			right_column: column(''),
+		}
+	} else {
+		join.value.join_condition = {
+			join_expression: expression(''),
+		}
+	}
+}
+
 const isValid = computed(() => {
+	const hasValidJoinExpression =
+		'join_expression' in join.value.join_condition
+			? join.value.join_condition.join_expression.expression
+			: false
+
+	const hasValidJoinColumns =
+		'left_column' in join.value.join_condition && 'right_column' in join.value.join_condition
+			? join.value.join_condition.left_column.column_name &&
+			  join.value.join_condition.right_column.column_name
+			: false
+
 	return (
 		join.value.table.table_name &&
-		join.value.left_column.column_name &&
-		join.value.right_column.column_name &&
 		join.value.join_type &&
-		join.value.select_columns.length > 0
+		join.value.select_columns.length > 0 &&
+		(hasValidJoinExpression || hasValidJoinColumns)
 	)
 })
 function confirm() {
@@ -134,8 +189,10 @@ function reset() {
 			table_name: '',
 			data_source: '',
 		}),
-		left_column: column(''),
-		right_column: column(''),
+		join_condition: {
+			left_column: column(''),
+			right_column: column(''),
+		},
 		select_columns: [],
 	}
 }
@@ -207,28 +264,52 @@ const joinTypes = [
 							>Select Matching Columns</label
 						>
 						<div class="flex gap-2">
-							<div class="flex-1">
-								<Autocomplete
-									placeholder="Column"
-									:loading="fetchingColumnOptions"
-									:options="query.result.columnOptions"
-									:modelValue="join.left_column.column_name"
-									@update:modelValue="
-										join.left_column.column_name = $event?.value
-									"
-								/>
-							</div>
-							<div class="flex flex-shrink-0 items-center font-mono">=</div>
-							<div class="flex-1">
-								<Autocomplete
-									placeholder="Column"
-									:loading="fetchingColumnOptions"
-									:options="tableColumnOptions"
-									:modelValue="join.right_column.column_name"
-									@update:modelValue="
-										join.right_column.column_name = $event?.value
-									"
-								/>
+							<template
+								v-if="
+									'left_column' in join.join_condition &&
+									'right_column' in join.join_condition
+								"
+							>
+								<div class="flex-1">
+									<Autocomplete
+										placeholder="Column"
+										:loading="fetchingColumnOptions"
+										:options="query.result.columnOptions"
+										:modelValue="join.join_condition.left_column.column_name"
+										@update:modelValue="
+											join.join_condition.left_column.column_name =
+												$event?.value
+										"
+									/>
+								</div>
+								<div class="flex flex-shrink-0 items-center font-mono">=</div>
+								<div class="flex-1">
+									<Autocomplete
+										placeholder="Column"
+										:loading="fetchingColumnOptions"
+										:options="tableColumnOptions"
+										:modelValue="join.join_condition.right_column.column_name"
+										@update:modelValue="
+											join.join_condition.right_column.column_name =
+												$event?.value
+										"
+									/>
+								</div>
+							</template>
+							<template v-else-if="'join_expression' in join.join_condition">
+								<InlineExpression v-model="join.join_condition.join_expression" />
+							</template>
+							<div class="flex flex-shrink-0 items-center">
+								<Tooltip text="Custom Join Condition" :hover-delay="0.5">
+									<Button @click="toggleJoinConditionEditor">
+										<template #icon>
+											<Braces
+												class="h-4 w-4 text-gray-700"
+												stroke-width="1.5"
+											/>
+										</template>
+									</Button>
+								</Tooltip>
 							</div>
 						</div>
 					</div>

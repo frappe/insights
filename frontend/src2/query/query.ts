@@ -1,4 +1,4 @@
-import { FIELDTYPES } from '@/utils'
+import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
@@ -156,7 +156,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return query.doc.operations[query.activeEditIndex]
 	})
 
-	watchDebounced(
+	wheneverChanges(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
 		{ deep: true, immediate: true }
@@ -217,6 +217,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function removeOperation(index: number) {
 		query.doc.operations.splice(index, 1)
+		if (index > query.activeOperationIdx) return
 		query.activeOperationIdx--
 		query.activeOperationIdx = Math.max(query.activeOperationIdx, -1)
 	}

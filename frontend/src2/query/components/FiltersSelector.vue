@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
-import { ColumnOption, FilterArgs, FilterGroupArgs } from '../../types/query.types'
-import { column, expression } from '../helpers'
-import FilterExpression from './FilterExpression.vue'
-import FilterRule from './FilterRule.vue'
-import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 import { copy } from '../../helpers'
+import { ColumnOption, FilterGroupArgs } from '../../types/query.types'
+import { column, expression } from '../helpers'
+import FilterRule from './FilterRule.vue'
+import InlineExpression from './InlineExpression.vue'
+import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 
 const props = defineProps<{
 	filterGroup?: FilterGroupArgs
@@ -79,10 +79,9 @@ const areFiltersUpdated = computed(() => {
 						{{ filterGroup.logical_operator }}
 					</Button>
 				</div>
-				<FilterExpression
+				<InlineExpression
 					v-if="'expression' in filterGroup.filters[i]"
-					:modelValue="filterGroup.filters[i]"
-					@update:modelValue="filterGroup.filters[i] = $event"
+					v-model="filterGroup.filters[i].expression"
 				/>
 				<FilterRule
 					v-if="'column' in filterGroup.filters[i]"

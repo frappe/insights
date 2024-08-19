@@ -9,6 +9,8 @@ from frappe.utils.data import flt
 from ibis import _
 from ibis import selectors as s
 from ibis.expr.datatypes import DataType
+from ibis.expr.operations.relations import DatabaseTable, Field
+from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
@@ -72,27 +74,93 @@ class IbisQueryBuilder:
         return lambda _: table
 
     def translate_join(self, join_args):
+        def _translate_join(query):
+            right_table = self.get_right_table(query, join_args)
+            join_condition = self.translate_join_condition(join_args, right_table)
+            join_type = (
+                "outer" if join_args.join_type == "full" else join_args.join_type
+            )
+            return query.join(
+                right_table,
+                join_condition,
+                how=join_type,
+            ).select(~s.endswith("right"))
+
+        return _translate_join
+
+    def get_right_table(self, query, join_args):
         right_table = self.get_table(join_args.table)
-        select_columns = (
-            [col.column_name for col in join_args.select_columns]
-            if join_args.select_columns
-            else None
-        )
-        right_table = (
-            right_table.select(*select_columns, join_args.right_column.column_name)
-            if select_columns
-            else right_table
-        )
+        if not join_args.select_columns:
+            return right_table
 
-        left_column = getattr(_, join_args.left_column.column_name)
-        right_column = getattr(right_table, join_args.right_column.column_name)
-        join_on = left_column.cast(right_column.type()) == right_column
-        join_type = join_args.join_type
-        join_type = "outer" if join_type == "full" else join_type
+        select_columns = [col.column_name for col in join_args.select_columns]
 
-        return lambda query: query.join(right_table, join_on, how=join_type).select(
-            ~s.endswith("right")
-        )
+        if join_args.right_column:
+            select_columns.append(join_args.right_column.column_name)
+
+        if join_args.join_condition and join_args.join_condition.right_column:
+            select_columns.append(join_args.join_condition.right_column.column_name)
+
+        if join_args.join_condition and join_args.join_condition.join_expression:
+            expression = self.evaluate_expression(
+                join_args.join_condition.join_expression.expression,
+                additonal_context={
+                    "t1": query,
+                    "t2": right_table,
+                },
+            )
+            right_table_columns = self.get_columns_from_expression(
+                expression, table=join_args.table.table_name
+            )
+            select_columns.extend(right_table_columns)
+
+        return right_table.select(select_columns)
+
+    def get_columns_from_expression(
+        self,
+        expression: Expr,
+        table: str | None = None,
+    ):
+        exp_columns = expression.op().find_topmost(Field)
+        if not table:
+            return list({col.name for col in exp_columns})
+
+        columns = set()
+        for col in exp_columns:
+            col_table = col.rel.find_topmost(DatabaseTable)[0]
+            if col_table and col_table.name == table:
+                columns.add(col.name)
+
+        return list(columns)
+
+    def translate_join_condition(self, join_args, right_table):
+        def left_eq_right_condition(left_column, right_column):
+            if (
+                left_column
+                and right_column
+                and left_column.column_name
+                and right_column.column_name
+            ):
+                rt = right_table
+                lc = getattr(_, left_column.column_name)
+                rc = getattr(rt, right_column.column_name)
+                return lc.cast(rc.type()) == rc
+
+            frappe.throw("Join condition is not valid")
+
+        if join_args.join_condition and join_args.join_condition.join_expression:
+            return self.evaluate_expression(
+                join_args.join_condition.join_expression.expression,
+                {
+                    "t1": _,
+                    "t2": right_table,
+                },
+            )
+        else:
+            return left_eq_right_condition(
+                join_args.left_column or join_args.join_condition.left_column,
+                join_args.right_column or join_args.join_condition.right_column,
+            )
 
     def translate_filter(self, filter_args):
         condition = self.make_filter_condition(filter_args)
@@ -289,7 +357,7 @@ class IbisQueryBuilder:
             frappe.throw(f"Granularity {granularity} is not supported")
         return column.strftime(format_str[granularity]).name(column.get_name())
 
-    def evaluate_expression(self, expression):
+    def evaluate_expression(self, expression, additonal_context=None):
         context = frappe._dict(
             q=_,
             columns=ibis.selectors.c,
@@ -302,6 +370,7 @@ class IbisQueryBuilder:
             .when(curr == "USD", amount * rate)
             .else_(amount)
             .end(),
+            **(additonal_context or {}),
         )
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)
