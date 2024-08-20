@@ -52,8 +52,8 @@ const operatorOptions = computed(() => {
 		options.push({ label: 'does not contain', value: 'not_contains' }) // text
 		options.push({ label: 'starts with', value: 'starts_with' }) // text
 		options.push({ label: 'ends with', value: 'ends_with' }) // text
-		options.push({ label: 'is empty', value: 'is_set' }) // no value
-		options.push({ label: 'is not empty', value: 'is_not_set' }) // no value
+		options.push({ label: 'is set', value: 'is_set' }) // no value
+		options.push({ label: 'is not set', value: 'is_not_set' }) // no value
 	}
 	if (FIELDTYPES.NUMBER.includes(type)) {
 		options.push({ label: '=', value: '=' }) // number
