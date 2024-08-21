@@ -1,4 +1,4 @@
-import { formatNumber, getShortNumber } from '@/utils'
+import { formatNumber, getShortNumber, ellipsis } from '@/utils'
 import { getColors as getDefaultColors } from '@/utils/colors'
 import { graphic } from 'echarts/core'
 
@@ -144,7 +144,7 @@ function makeOptions(chartType, labels, datasets, options) {
 			},
 			axisLabel: {
 				rotate: options.rotateLabels,
-				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : value),
+				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : ellipsis(value, 20)),
 			},
 		},
 		yAxis: datasets.map((dataset) => ({
@@ -157,8 +157,10 @@ function makeOptions(chartType, labels, datasets, options) {
 				lineStyle: { type: 'dashed' },
 			},
 			axisLabel: {
-				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : value),
+				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : ellipsis(value, 20)),
 			},
+			min: options.yAxisMin,
+			max: options.yAxisMax,
 		})),
 		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
