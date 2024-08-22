@@ -96,8 +96,8 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 
 		prepareBaseQuery()
-		setFilters(filters || [])
-		applyFilters()
+		setCustomFilters(filters || [])
+		setChartFilters()
 		let prepared = false
 		if (AXIS_CHARTS.includes(chart.doc.chart_type)) {
 			const _config = unref(chart.doc.config as AxisChartConfig)
@@ -245,10 +245,11 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function prepareBaseQuery() {
 		chart.dataQuery.autoExecute = false
-		chart.dataQuery.setOperations([...chart.baseQuery.doc.operations])
+		chart.dataQuery.setOperations([])
+		chart.dataQuery.setSource({ query: chart.baseQuery.doc })
 		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
 	}
-	function setFilters(filters: FilterArgs[]) {
+	function setCustomFilters(filters: FilterArgs[]) {
 		const _filters = new Set(filters)
 		if (_filters.size) {
 			chart.dataQuery.addFilterGroup({
@@ -296,7 +297,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function applyFilters() {
+	function setChartFilters() {
 		if (!chart.doc.config.filters?.filters?.length) return
 		chart.dataQuery.addFilterGroup(chart.doc.config.filters)
 	}
