@@ -22,7 +22,7 @@
 						</label>
 						<button
 							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
-							:class="{ 'bg-gray-200': isComboboxOpen }"
+							:class="[isComboboxOpen ? 'bg-gray-200' : '', $props.buttonClasses]"
 							@click="() => togglePopover()"
 						>
 							<div class="flex flex-1 items-center gap-2 overflow-hidden">
@@ -212,6 +212,7 @@ export default {
 		'autoFocus',
 		'placement',
 		'showFooter',
+		'buttonClasses',
 	],
 	emits: ['update:modelValue', 'update:query', 'change'],
 	components: {
