@@ -1,3 +1,5 @@
+import { WorkbookQuery } from "./workbook.types";
+
 export type TableArgs = { data_source: string; table_name: string }
 export type Table = { type: 'table' } & TableArgs
 export type Column = {
@@ -59,7 +61,9 @@ export type Expression = {
 	expression: string
 }
 
-export type SourceArgs = { table: Table }
+export type TableSource = { table: Table }
+export type QuerySource = { query: WorkbookQuery }
+export type SourceArgs = TableSource | QuerySource
 export type Source = { type: 'source' } & SourceArgs
 
 export type LogicalOperator = 'And' | 'Or'

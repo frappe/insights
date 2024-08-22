@@ -70,7 +70,10 @@ class IbisQueryBuilder:
         return handler
 
     def translate_source(self, source_args):
-        table = self.get_table(source_args.table)
+        if source_args.table:
+            table = self.get_table(source_args.table)
+        if source_args.query:
+            table = self.build(source_args.query.operations)
         return lambda _: table
 
     def translate_join(self, join_args):

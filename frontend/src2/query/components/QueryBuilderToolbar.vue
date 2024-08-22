@@ -16,7 +16,7 @@ import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import JoinSelectorDialog from './JoinSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
-import SourceSelectorDialog from './SourceSelectorDialog.vue'
+import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 
 const query = inject('query') as Query

@@ -13,6 +13,7 @@ import session from '../session'
 import type {
 	InsightsWorkbook,
 	WorkbookChart,
+	WorkbookQuery,
 	WorkbookSharePermission,
 } from '../types/workbook.types'
 

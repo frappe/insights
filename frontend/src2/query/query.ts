@@ -1,7 +1,6 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
-import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watchEffect } from 'vue'
 import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import {
@@ -19,6 +18,7 @@ import {
 	QueryResult,
 	Rename,
 	SelectArgs,
+	Source,
 	SourceArgs,
 	SummarizeArgs,
 } from '../types/query.types'
@@ -59,6 +59,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	const query = reactive({
 		doc: workbookQuery,
 
+		source: computed(() => ({} as Source)),
 		activeOperationIdx: -1,
 		currentOperations: computed(() => [] as Operation[]),
 		activeEditIndex: -1,
@@ -139,6 +140,13 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				}),
 			...Object.values(query.doc.calculated_measures || {}),
 		]
+	})
+
+	// @ts-ignore
+	query.source = computed(() => {
+		const sourceOp = query.doc.operations.find((op) => op.type === 'source')
+		if (!sourceOp) return {} as Source
+		return sourceOp as Source
 	})
 
 	// @ts-ignore
@@ -385,7 +393,18 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		if (!sourceOp) return
 
 		let newOperations: Operation[] = [sourceOp]
-		const opsOrder = ['join', 'mutate', 'filter_group', 'filter', 'select', 'remove', 'cast', 'rename', 'order_by', 'limit']
+		const opsOrder = [
+			'join',
+			'mutate',
+			'filter_group',
+			'filter',
+			'select',
+			'remove',
+			'cast',
+			'rename',
+			'order_by',
+			'limit',
+		]
 		opsOrder.forEach((opType) => {
 			newOperations.push(...query.doc.operations.filter((op) => op.type === opType))
 		})

@@ -136,7 +136,10 @@ export const query_operation_types = {
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
-		getDescription: (op: Source) => `${op.table.table_name}`,
+		getDescription: (op: Source) => {
+			if ('table' in op) return `${op.table.table_name}`
+			if ('query' in op) return `${op.query.title}`
+		},
 	},
 	join: {
 		label: 'Merge',

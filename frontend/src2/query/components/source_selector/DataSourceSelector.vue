@@ -1,7 +1,7 @@
 <script setup>
 import { ChevronDown, ListFilter } from 'lucide-vue-next'
 import { computed } from 'vue'
-import useDataSourceStore from '../../data_source/data_source'
+import useDataSourceStore from '../../../data_source/data_source'
 
 const currentSourceName = defineModel()
 const props = defineProps({

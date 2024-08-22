@@ -10,13 +10,7 @@
 		>
 			<Tooltip :text="label" placement="right">
 				<slot name="icon">
-					<span v-if="icon" class="grid h-5 w-6 flex-shrink-0 place-items-center">
-						<component
-							:is="icon"
-							class="h-4.5 w-4.5 text-gray-700"
-							stroke-width="1.5"
-						/>
-					</span>
+					<component :is="icon" class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</slot>
 			</Tooltip>
 			<span
@@ -41,7 +35,7 @@ const props = defineProps<{
 	icon?: any
 	label: string
 	to?: string
-	isCollapsed: boolean
+	isCollapsed?: boolean
 }>()
 
 function handleClick() {
