@@ -298,7 +298,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function addSummarize(args: SummarizeArgs) {
-		addOperation(summarize(args))
+		const editingSummarize = query.activeEditOperation.type === 'summarize'
+
+		if (!editingSummarize) {
+			addOperation(summarize(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = summarize(args)
+			query.setActiveEditIndex(-1)
+		}
 	}
 
 	function addOrderBy(args: OrderByArgs) {
@@ -489,7 +496,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function getColumnsForSelection() {
 		const operations =
-			query.activeEditOperation.type === 'select'
+			query.activeEditOperation.type === 'select' || query.activeEditOperation.type === 'summarize'
 				? query.doc.operations.slice(0, query.activeEditIndex)
 				: query.currentOperations
 

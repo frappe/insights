@@ -325,7 +325,10 @@ class IbisQueryBuilder:
 
     def translate_dimension(self, dimension):
         col = getattr(_, dimension.column_name)
-        if dimension.granularity:
+        if (
+            dimension.data_type in ["Date", "Time", "Datetime"]
+            and dimension.granularity
+        ):
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
             col = col.name(dimension.column_name)
@@ -374,6 +377,10 @@ class IbisQueryBuilder:
             .else_(amount)
             .end(),
             **(additonal_context or {}),
+            to_usd=lambda curr, amount, rate=83: ibis.case()
+            .when(curr == "INR", amount / rate)
+            .else_(amount)
+            .end(),
         )
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)

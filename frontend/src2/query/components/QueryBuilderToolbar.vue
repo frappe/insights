@@ -4,6 +4,7 @@ import {
 	BlendIcon,
 	CodeIcon,
 	ColumnsIcon,
+	Combine,
 	Database,
 	FilterIcon,
 	PlayIcon,
@@ -17,15 +18,17 @@ import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import JoinSelectorDialog from './JoinSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
+import SummarySelectorDialog from './SummarySelectorDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 
 const query = inject('query') as Query
 
+const showSourceSelectorDialog = ref(false)
+const showJoinSelectorDialog = ref(false)
 const showColumnsSelectorDialog = ref(false)
 const showFiltersSelectorDialog = ref(false)
-const showJoinSelectorDialog = ref(false)
 const showNewColumnSelectorDialog = ref(false)
-const showSourceSelectorDialog = ref(false)
+const showSummarySelectorDialog = ref(false)
 const showViewSQLDialog = ref(false)
 
 watch(
@@ -47,6 +50,9 @@ watch(
 				break
 			case 'mutate':
 				showNewColumnSelectorDialog.value = true
+				break
+			case 'summarize':
+				showSummarySelectorDialog.value = true
 				break
 			default:
 				break
@@ -84,10 +90,11 @@ const actions = [
 		icon: Sigma,
 		onClick: () => (showNewColumnSelectorDialog.value = true),
 	},
-	// {
-	// 	label: 'Summarize',
-	// 	icon: Combine,
-	// },
+	{
+		label: 'Summarize',
+		icon: Combine,
+		onClick: () => (showSummarySelectorDialog.value = true),
+	},
 	// {
 	// 	label: 'Pivot',
 	// 	icon: GitBranch,
@@ -96,6 +103,9 @@ const actions = [
 	// 	label: 'Unpivot',
 	// 	icon: GitMerge,
 	// },
+	{
+		type: 'separator',
+	},
 	{
 		label: 'View SQL',
 		icon: CodeIcon,
@@ -111,27 +121,26 @@ const actions = [
 
 <template>
 	<div class="flex w-full flex-shrink-0 justify-between">
-		<div class="flex items-center gap-2">
-			<Tooltip
-				:key="idx"
-				v-for="(action, idx) in actions"
-				placement="top"
-				:hover-delay="0.1"
-				:text="action.label"
-			>
-				<Button :variant="'ghost'" @click="action.onClick" class="h-8 w-8 bg-white shadow">
-					<template #icon>
-						<component
-							:is="action.icon"
-							class="h-4.5 w-4.5 text-gray-700"
-							stroke-width="1.5"
-						/>
-					</template>
-				</Button>
-			</Tooltip>
+		<div class="flex w-full items-center gap-2">
+			<template v-for="(action, idx) in actions" :key="idx">
+				<div v-if="action.type === 'separator'" class="h-8 flex-1"></div>
+				<Tooltip v-else placement="top" :hover-delay="0.1" :text="action.label">
+					<Button
+						:variant="'ghost'"
+						@click="action.onClick"
+						class="h-8 w-8 bg-white shadow"
+					>
+						<template #icon>
+							<component
+								:is="action.icon"
+								class="h-4.5 w-4.5 text-gray-700"
+								stroke-width="1.5"
+							/>
+						</template>
+					</Button>
+				</Tooltip>
+			</template>
 		</div>
-
-		<div class="flex items-center"></div>
 	</div>
 
 	<SourceSelectorDialog
@@ -186,6 +195,16 @@ const actions = [
 			query.activeEditOperation.type === 'mutate' ? query.activeEditOperation : undefined
 		"
 		@select="query.addMutate($event)"
+	/>
+
+	<SummarySelectorDialog
+		v-if="showSummarySelectorDialog"
+		v-model="showSummarySelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:summary="
+			query.activeEditOperation.type === 'summarize' ? query.activeEditOperation : undefined
+		"
+		@select="query.addSummarize($event)"
 	/>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />

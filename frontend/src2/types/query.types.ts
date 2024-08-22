@@ -34,7 +34,8 @@ export type ColumnDataType =
 	| 'Text'
 export type MeasureDataType = 'String' | 'Integer' | 'Decimal'
 export type DimensionDataType = 'String' | 'Date' | 'Datetime' | 'Time'
-export type AggregationType = 'sum' | 'count' | 'avg' | 'min' | 'max'
+export const aggregations = ['sum', 'count', 'avg', 'min', 'max']
+export type AggregationType = typeof aggregations[number]
 export type GranularityType = 'day' | 'week' | 'month' | 'quarter' | 'year'
 export type DataFormat = 'currency' | 'percent'
 
