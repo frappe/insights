@@ -31,7 +31,7 @@ const activeTab = defineModel<Tab>('activeTab', {
 
 <template>
 	<div class="flex h-full w-full">
-		<div class="flex w-52 shrink-0 flex-col bg-gray-50 p-2">
+		<div class="flex w-52 shrink-0 flex-col overflow-hidden bg-gray-50 p-2">
 			<h1 v-if="props.title" class="mb-3 px-2 pt-2 text-lg font-semibold">
 				{{ props.title }}
 			</h1>
@@ -42,7 +42,7 @@ const activeTab = defineModel<Tab>('activeTab', {
 				>
 					<span>{{ group.groupLabel }}</span>
 				</div>
-				<nav class="space-y-1">
+				<nav class="space-y-1 overflow-hidden">
 					<SidebarLink
 						v-for="tab in group.tabs"
 						:icon="tab.icon"

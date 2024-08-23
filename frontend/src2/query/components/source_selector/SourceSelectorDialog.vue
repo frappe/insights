@@ -90,9 +90,9 @@ function onConfirm() {
 </script>
 
 <template>
-	<Dialog v-model="showDialog" :options="{ size: '5xl' }">
+	<Dialog v-model="showDialog" :options="{ size: '4xl' }">
 		<template #body>
-			<div class="relative flex" :style="{ height: 'calc(100vh - 24rem)' }">
+			<div class="relative flex" :style="{ height: 'calc(100vh - 12rem)' }">
 				<div class="absolute top-3 right-3">
 					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
 					</Button>
