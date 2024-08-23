@@ -7,7 +7,12 @@ import { ColumnOption, FilterArgs, FilterGroupArgs } from '../../types/query.typ
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const filterGroup = defineModel<FilterGroupArgs>({
-	default: () => [],
+	default: () => {
+		return {
+			logical_operator: 'And',
+			filters: [],
+		}
+	},
 })
 
 const showFiltersSelectorDialog = ref(false)
