@@ -295,9 +295,18 @@ class IbisQueryBuilder:
         }
 
         def _pivot_wider(query):
+            names = query.select(columns.keys()).distinct().limit(10).execute()
             return (
                 query.group_by(*rows.values(), *columns.values())
                 .aggregate(**values)
+                .filter(
+                    ibis.or_(
+                        *[
+                            getattr(query, col).isin(names[col])
+                            for col in columns.keys()
+                        ]
+                    )
+                )
                 .pivot_wider(
                     id_cols=rows.keys(),
                     names_from=columns.keys(),
