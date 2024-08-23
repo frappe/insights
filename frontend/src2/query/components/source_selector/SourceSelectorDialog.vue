@@ -102,7 +102,7 @@ function onConfirm() {
 					:tabs="tabGroups"
 					v-model:activeTab="activeTab"
 				/>
-				<div class="absolute bottom-6 right-16">
+				<div class="absolute bottom-3 right-3">
 					<Button variant="solid" :disabled="confirmDisabled" @click="onConfirm">
 						Confirm
 					</Button>

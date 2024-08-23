@@ -58,7 +58,7 @@ const activeTab = defineModel<Tab>('activeTab', {
 				</nav>
 			</div>
 		</div>
-		<div class="flex h-full flex-1 flex-col px-16 py-6">
+		<div class="flex h-full flex-1 flex-col px-3 py-3">
 			<component v-if="activeTab && activeTab.component" :is="activeTab.component" />
 		</div>
 	</div>
