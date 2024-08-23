@@ -2,6 +2,7 @@
 import { inject, ref } from 'vue'
 import { Workbook, workbookKey } from './workbook'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
+import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
 
 const workbook = inject(workbookKey) as Workbook
 
@@ -35,6 +36,11 @@ const showShareDialog = ref(false)
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
+				{
+					label: workbook.showSidebar ? 'Hide Sidebar' : 'Show Sidebar',
+					icon: workbook.showSidebar ? PanelRightOpen : PanelRightClose,
+					onClick: () => (workbook.showSidebar = !workbook.showSidebar),
+				},
 				!workbook.islocal
 					? {
 							label: 'Delete',

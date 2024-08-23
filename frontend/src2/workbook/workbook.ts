@@ -184,6 +184,8 @@ export default function useWorkbook(name: string) {
 		canShare,
 		isOwner,
 
+		showSidebar: true,
+
 		isActiveTab,
 
 		addQuery,

@@ -3,12 +3,13 @@ import ContentEditable from '@/components/ContentEditable.vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
 import { AlertOctagon, ArrowLeft } from 'lucide-vue-next'
-import { computed, provide, watchEffect } from 'vue'
+import { computed, provide, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
 import WorkbookTabSwitcher from './WorkbookTabSwitcher.vue'
+import WorkbookSidebar from './WorkbookSidebar.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -74,8 +75,12 @@ watchEffect(() => {
 				<WorkbookNavbarActions />
 			</template>
 		</Navbar>
-		<div class="relative flex w-full flex-1 flex-col divide-y overflow-hidden bg-gray-50">
-			<WorkbookTabSwitcher />
+		<div
+			class="relative flex w-full flex-1 overflow-hidden bg-gray-50"
+			:class="workbook.showSidebar ? 'flex-row divide-x' : 'flex-col divide-y'"
+		>
+			<WorkbookSidebar v-if="workbook.showSidebar" />
+			<WorkbookTabSwitcher v-else />
 			<RouterView :key="route.fullPath" v-slot="{ Component }">
 				<component v-if="tabExists" :is="Component" />
 				<div v-else class="flex flex-1 items-center justify-center">
