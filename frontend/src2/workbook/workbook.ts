@@ -21,7 +21,7 @@ export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
 
 	const router = useRouter()
-	workbook.onAfterInsert(() => router.replace(`/workbook/${workbook.doc.name}`))
+	workbook.onAfterInsert(() => window.location.href = `/workbook/${workbook.doc.name}`)
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 
 	wheneverChanges(
