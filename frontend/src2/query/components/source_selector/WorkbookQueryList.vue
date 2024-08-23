@@ -36,7 +36,7 @@ const listColumns = [
 		label: 'Source',
 		key: 'source',
 		width: 1,
-		getLabel: (props: any) => props.row.operations?.[0]?.table.table_name,
+		getLabel: (props: any) => props.row.operations?.[0]?.table?.table_name,
 	},
 	{
 		label: '',
