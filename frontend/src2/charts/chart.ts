@@ -275,10 +275,14 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	function getGranularity(column_name: string) {
 		const granularity = Object.entries(chart.doc.config).find(([_, value]) => {
+			if (!value) return false
 			if (Array.isArray(value)) {
 				return value.some((v) => v.column_name === column_name)
 			}
-			return value.column_name === column_name
+			if (typeof value === 'object') {
+				return value.column_name === column_name
+			}
+			return false
 		})?.[1].granularity
 		return granularity
 	}
