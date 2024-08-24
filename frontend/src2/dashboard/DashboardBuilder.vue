@@ -8,6 +8,8 @@ import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { safeJSONParse } from '@/utils'
+import { createToast } from '../helpers/toasts'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -25,6 +27,31 @@ const selectedCharts = computed(() => {
 
 const showChartSelectorDialog = ref(false)
 const showTextWidgetCreationDialog = ref(false)
+
+function onDragOver(event: DragEvent) {
+	if (!event.dataTransfer) return
+	event.preventDefault()
+	event.dataTransfer.dropEffect = 'copy'
+}
+function onDrop(event: DragEvent) {
+	if (!event.dataTransfer) return
+	event.preventDefault()
+	if (!dashboard.editing && dashboard.doc.items.length > 0) {
+		return createToast({
+			title: 'Info',
+			message: 'You can only add charts to the dashboard in edit mode',
+			variant: 'info',
+		})
+	}
+	if (!dashboard.editing) {
+		dashboard.editing = true
+	}
+	const data = safeJSONParse(event.dataTransfer.getData('text/plain'))
+	const chartName = data.item.name
+	const chart = props.charts.find((c) => c.name === chartName)
+	if (!chart) return
+	dashboard.addChart([chart])
+}
 </script>
 
 <template>
@@ -69,7 +96,7 @@ const showTextWidgetCreationDialog = ref(false)
 					</Button>
 					<Button
 						v-if="dashboard.editing"
-						variant="outline"
+						variant="solid"
 						icon-left="check"
 						@click="dashboard.editing = false"
 					>
@@ -77,7 +104,7 @@ const showTextWidgetCreationDialog = ref(false)
 					</Button>
 				</div>
 			</div>
-			<div class="flex-1 overflow-y-auto p-2">
+			<div class="flex-1 overflow-y-auto p-2" @dragover="onDragOver" @drop="onDrop">
 				<VueGridLayout
 					v-if="dashboard.doc.items.length > 0"
 					class="h-fit w-full"

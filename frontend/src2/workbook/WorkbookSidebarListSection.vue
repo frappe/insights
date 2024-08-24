@@ -10,6 +10,12 @@ const section = defineProps<{
 	remove: (item: any) => void
 	route: (idx: number) => string
 }>()
+
+function setDraggedItem(event: DragEvent, row: any) {
+	if (!event.dataTransfer) return
+	const data = JSON.stringify({ type: section.title, item: row })
+	event.dataTransfer.setData('text/plain', data)
+}
 </script>
 
 <template>
@@ -39,6 +45,8 @@ const section = defineProps<{
 				:key="row[section.itemKey]"
 				class="group w-full cursor-pointer rounded transition-all hover:bg-gray-50"
 				:class="section.isActive(idx) ? ' bg-gray-100' : ' hover:border-gray-300'"
+				draggable="true"
+				@dragstart="setDraggedItem($event, row)"
 			>
 				<router-link
 					:to="route(idx)"
