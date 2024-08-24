@@ -56,7 +56,7 @@ const selectedQuery = ref<WorkbookQuery | undefined>(
 	props.source && 'query' in props.source ? props.source.query : undefined
 )
 const workbook = inject<Workbook>(workbookKey)!
-if (workbook.doc.queries.length) {
+if (workbook.doc.queries.length > 1) {
 	tabGroups.value.push({
 		groupLabel: 'Workbook',
 		tabs: [
@@ -93,16 +93,13 @@ function onConfirm() {
 	<Dialog v-model="showDialog" :options="{ size: '4xl' }">
 		<template #body>
 			<div class="relative flex" :style="{ height: 'calc(100vh - 12rem)' }">
-				<div class="absolute top-3 right-3">
-					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
-					</Button>
-				</div>
 				<TabbedSidebarLayout
 					title="Pick Starting Data"
 					:tabs="tabGroups"
 					v-model:activeTab="activeTab"
 				/>
-				<div class="absolute bottom-3 right-3">
+				<div class="absolute bottom-3 right-3 flex gap-2">
+					<Button @click="showDialog = false"> Close </Button>
 					<Button variant="solid" :disabled="confirmDisabled" @click="onConfirm">
 						Confirm
 					</Button>
