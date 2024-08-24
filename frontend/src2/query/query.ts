@@ -1,6 +1,7 @@
 import { FIELDTYPES, wheneverChanges } from '@/utils'
+import { useDebouncedRefHistory, UseRefHistoryReturn } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, reactive, watchEffect } from 'vue'
+import { computed, reactive } from 'vue'
 import { copy, showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import {
@@ -59,10 +60,10 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	const query = reactive({
 		doc: workbookQuery,
 
-		source: computed(() => ({} as Source)),
 		activeOperationIdx: -1,
-		currentOperations: computed(() => [] as Operation[]),
 		activeEditIndex: -1,
+		source: computed(() => ({} as Source)),
+		currentOperations: computed(() => [] as Operation[]),
 		activeEditOperation: computed(() => ({} as Operation)),
 
 		autoExecute: true,
@@ -103,6 +104,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		reorderOperations,
 		reset,
+
+		history: {} as UseRefHistoryReturn<any, any>,
 	})
 
 	query.activeOperationIdx = query.doc.operations.length - 1
@@ -540,6 +543,29 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		query.executing = false
 		query.result = {} as QueryResult
 	}
+
+	query.history = useDebouncedRefHistory(
+		// @ts-ignore
+		computed({
+			get() {
+				return {
+					doc: query.doc,
+					activeOperationIdx: query.activeOperationIdx,
+					activeEditIndex: query.activeEditIndex,
+				}
+			},
+			set(value) {
+				Object.assign(query.doc, value.doc)
+				query.activeOperationIdx = value.activeOperationIdx
+				query.activeEditIndex = value.activeEditIndex
+			},
+		}),
+		{
+			deep: true,
+			max: 100,
+			debounce: 500,
+		}
+	)
 
 	return query
 }

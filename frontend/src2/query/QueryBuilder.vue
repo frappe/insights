@@ -7,10 +7,23 @@ import QueryBuilderToolbar from './components/QueryBuilderToolbar.vue'
 import QueryInfo from './components/QueryInfo.vue'
 import QueryOperations from './components/QueryOperations.vue'
 import useQuery from './query'
+import { useMagicKeys, whenever } from '@vueuse/core'
+import { onBeforeUnmount } from 'vue-demi'
 
 const props = defineProps<{ query: WorkbookQuery }>()
 const query = useQuery(props.query)
 provide('query', query)
+
+const keys = useMagicKeys()
+const cmdZ = keys['Meta+Z']
+const cmdShiftZ = keys['Meta+Shift+Z']
+const stopUndoWatcher = whenever(cmdZ, () => query.history.undo())
+const stopRedoWatcher = whenever(cmdShiftZ, () => query.history.redo())
+
+onBeforeUnmount(() => {
+	stopUndoWatcher()
+	stopRedoWatcher()
+})
 </script>
 
 <template>
