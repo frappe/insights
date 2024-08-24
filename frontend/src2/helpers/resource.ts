@@ -1,8 +1,10 @@
+import { useStorage, watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast } from './index'
 import { createToast } from './toasts'
+import { wheneverChanges } from '@/utils'
 
 type DocumentResourceOptions<T> = {
 	initialDoc: T
@@ -11,7 +13,7 @@ type DocumentResourceOptions<T> = {
 export default function useDocumentResource<T extends object>(
 	doctype: string,
 	name: string,
-	options: DocumentResourceOptions<T>,
+	options: DocumentResourceOptions<T>
 ) {
 	const tranformFn = options.transform || ((doc: T) => doc)
 	const afterLoadFns = new Set<Function>()
@@ -140,11 +142,38 @@ export default function useDocumentResource<T extends object>(
 		},
 	})
 
-	resource.load()
 	// @ts-ignore
 	resource.isdirty = computed(
-		() => JSON.stringify(resource.doc) !== JSON.stringify(resource.originalDoc),
+		() => JSON.stringify(resource.doc) !== JSON.stringify(resource.originalDoc)
 	)
+
+	resource.load().then(setupLocalStorage)
+
+	function setupLocalStorage() {
+		const storageKey = `insights:resource:${resource.doctype}:${resource.name}`
+		const storage = useStorage(storageKey, {
+			doc: null as any,
+			originalDoc: null as any,
+		})
+		// on creation, restore the doc from local storage, if exists
+		if (storage.value && storage.value.doc) {
+			resource.doc = storage.value.doc
+			resource.originalDoc = storage.value.originalDoc
+		}
+		// watch for changes in doc and save it to local storage
+		watchDebounced(
+			() => resource.isdirty,
+			() => {
+				storage.value = resource.isdirty
+					? {
+							doc: resource.doc,
+							originalDoc: resource.originalDoc,
+					  }
+					: null
+			},
+			{ debounce: 1000 }
+		)
+	}
 
 	return resource
 }
