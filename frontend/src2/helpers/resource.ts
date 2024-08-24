@@ -171,7 +171,7 @@ export default function useDocumentResource<T extends object>(
 					  }
 					: null
 			},
-			{ debounce: 1000 }
+			{ debounce: 500 }
 		)
 	}
 
