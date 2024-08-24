@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide } from 'vue'
+import { onBeforeUnmount, provide } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useChart from './chart'
@@ -10,6 +10,7 @@ import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
+import { useMagicKeys, whenever } from '@vueuse/core'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
@@ -19,6 +20,17 @@ provide('chart', chart)
 if (!chart.doc.config.order_by) {
 	chart.doc.config.order_by = []
 }
+
+const keys = useMagicKeys()
+const cmdZ = keys['Meta+Z']
+const cmdShiftZ = keys['Meta+Shift+Z']
+const stopUndoWatcher = whenever(cmdZ, () => chart.history.undo())
+const stopRedoWatcher = whenever(cmdShiftZ, () => chart.history.redo())
+
+onBeforeUnmount(() => {
+	stopUndoWatcher()
+	stopRedoWatcher()
+})
 </script>
 
 <template>

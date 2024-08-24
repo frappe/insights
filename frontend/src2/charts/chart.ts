@@ -1,5 +1,5 @@
 import { wheneverChanges } from '@/utils'
-import { watchDebounced } from '@vueuse/core'
+import { useDebouncedRefHistory, UseRefHistoryReturn, watchDebounced } from '@vueuse/core'
 import { computed, reactive, ref, unref, watch } from 'vue'
 import { copy, getUniqueId, waitUntil } from '../helpers'
 import { createToast } from '../helpers/toasts'
@@ -46,6 +46,8 @@ function makeChart(workbookChart: WorkbookChart) {
 		refresh,
 		getGranularity,
 		updateGranularity,
+
+		history: {} as UseRefHistoryReturn<any, any>,
 	})
 
 	wheneverChanges(
@@ -305,6 +307,19 @@ function makeChart(workbookChart: WorkbookChart) {
 		if (!chart.doc.config.filters?.filters?.length) return
 		chart.dataQuery.addFilterGroup(chart.doc.config.filters)
 	}
+
+	chart.history = useDebouncedRefHistory(
+		// @ts-ignore
+		computed({
+			get: () => chart.doc,
+			set: (value) => Object.assign(chart.doc, value),
+		}),
+		{
+			deep: true,
+			max: 100,
+			debounce: 500,
+		}
+	)
 
 	return chart
 }
