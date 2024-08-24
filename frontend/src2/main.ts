@@ -17,6 +17,14 @@ app.use(router)
 app.component('grid-layout', GridLayout)
 app.component('grid-item', GridItem)
 
+app.config.errorHandler = (err, vm, info) => {
+	console.groupCollapsed('Unhandled Error in: ', info)
+	console.error('Context:', vm)
+	console.error('Error:', err)
+	console.groupEnd()
+	return false
+}
+
 registerGlobalComponents(app)
 registerControllers(app)
 
