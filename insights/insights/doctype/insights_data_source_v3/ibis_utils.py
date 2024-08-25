@@ -378,11 +378,16 @@ class IbisQueryBuilder:
     def evaluate_expression(self, expression, additonal_context=None):
         context = frappe._dict()
         context.q = _
+        context.update(self.get_current_columns())
         context.update(get_functions())
         context.update(additonal_context or {})
 
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)
+
+    def get_current_columns(self):
+        # TODO: handle collisions with function names
+        return {col: getattr(_, col) for col in self.query.schema().names}
 
 
 def execute_ibis_query(
