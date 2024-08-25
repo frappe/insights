@@ -27,8 +27,7 @@ class IbisQueryBuilder:
         self.query = None
         self.use_live_connection = use_live_connection
         for operation in operations:
-            handler = self.get_operation_handler(operation)
-            self.query = handler(self.query)
+            self.query = self.perform_operation(operation)
         return self.query
 
     def get_table(self, table):
@@ -39,60 +38,54 @@ class IbisQueryBuilder:
             use_live_connection=self.use_live_connection,
         )
 
-    def get_operation_handler(self, operation):
+    def perform_operation(self, operation):
         operation = _dict(operation)
-        handler = lambda query: query
         if operation.type == "source":
-            handler = self.translate_source(operation)
+            return self.apply_source(operation)
         elif operation.type == "join":
-            handler = self.translate_join(operation)
+            return self.apply_join(operation)
         elif operation.type == "filter":
-            handler = self.translate_filter(operation)
+            return self.apply_filter(operation)
         elif operation.type == "filter_group":
-            handler = self.translate_filter_group(operation)
+            return self.apply_filter_group(operation)
         elif operation.type == "select":
-            handler = self.translate_select(operation)
+            return self.apply_select(operation)
         elif operation.type == "rename":
-            handler = self.translate_rename(operation)
+            return self.apply_rename(operation)
         elif operation.type == "remove":
-            handler = self.translate_remove(operation)
+            return self.apply_remove(operation)
         elif operation.type == "mutate":
-            handler = self.translate_mutate(operation)
+            return self.apply_mutate(operation)
         elif operation.type == "cast":
-            handler = self.translate_cast(operation)
+            return self.apply_cast(operation)
         elif operation.type == "summarize":
-            handler = self.translate_summary(operation)
+            return self.apply_summary(operation)
         elif operation.type == "order_by":
-            handler = self.translate_order_by(operation)
+            return self.apply_order_by(operation)
         elif operation.type == "limit":
-            handler = self.translate_limit(operation)
+            return self.apply_limit(operation)
         elif operation.type == "pivot_wider":
-            handler = self.translate_pivot(operation, "wider")
-        return handler
+            return self.apply_pivot(operation, "wider")
+        return self.query
 
-    def translate_source(self, source_args):
+    def apply_source(self, source_args):
         if source_args.table:
             table = self.get_table(source_args.table)
         if source_args.query:
             table = self.build(source_args.query.operations)
-        return lambda _: table
+        return table
 
-    def translate_join(self, join_args):
-        def _translate_join(query):
-            right_table = self.get_right_table(query, join_args)
-            join_condition = self.translate_join_condition(join_args, right_table)
-            join_type = (
-                "outer" if join_args.join_type == "full" else join_args.join_type
-            )
-            return query.join(
-                right_table,
-                join_condition,
-                how=join_type,
-            ).select(~s.endswith("right"))
+    def apply_join(self, join_args):
+        right_table = self.get_right_table(join_args)
+        join_condition = self.translate_join_condition(join_args, right_table)
+        join_type = "outer" if join_args.join_type == "full" else join_args.join_type
+        return self.query.join(
+            right_table,
+            join_condition,
+            how=join_type,
+        ).select(~s.endswith("right"))
 
-        return _translate_join
-
-    def get_right_table(self, query, join_args):
+    def get_right_table(self, join_args):
         right_table = self.get_table(join_args.table)
         if not join_args.select_columns:
             return right_table
@@ -109,7 +102,7 @@ class IbisQueryBuilder:
             expression = self.evaluate_expression(
                 join_args.join_condition.join_expression.expression,
                 additonal_context={
-                    "t1": query,
+                    "t1": self.query,
                     "t2": right_table,
                 },
             )
@@ -166,9 +159,9 @@ class IbisQueryBuilder:
                 join_args.right_column or join_args.join_condition.right_column,
             )
 
-    def translate_filter(self, filter_args):
+    def apply_filter(self, filter_args):
         condition = self.make_filter_condition(filter_args)
-        return lambda query: query.filter(condition)
+        return self.query.filter(condition)
 
     def make_filter_condition(self, filter_args):
         if hasattr(filter_args, "expression") and filter_args.expression:
@@ -213,37 +206,37 @@ class IbisQueryBuilder:
             "within": lambda x, y: handle_timespan(x, y),
         }[operator]
 
-    def translate_filter_group(self, filter_group_args):
+    def apply_filter_group(self, filter_group_args):
         filters = filter_group_args.filters
         if not filters:
-            return lambda query: query
+            return self.query
 
         logical_operator = filter_group_args.logical_operator
         conditions = [self.make_filter_condition(filter) for filter in filters]
 
         if logical_operator == "And":
-            return lambda query: query.filter(ibis.and_(*conditions))
+            return self.query.filter(ibis.and_(*conditions))
         elif logical_operator == "Or":
-            return lambda query: query.filter(ibis.or_(*conditions))
+            return self.query.filter(ibis.or_(*conditions))
 
         frappe.throw(f"Logical operator {logical_operator} is not supported")
 
-    def translate_select(self, select_args):
+    def apply_select(self, select_args):
         select_args = _dict(select_args)
-        return lambda query: query.select(select_args.column_names)
+        return self.query.select(select_args.column_names)
 
-    def translate_rename(self, rename_args):
+    def apply_rename(self, rename_args):
         old_name = rename_args.column.column_name
         new_name = frappe.scrub(rename_args.new_name)
-        return lambda query: query.rename(**{new_name: old_name})
+        return self.query.rename(**{new_name: old_name})
 
-    def translate_remove(self, remove_args):
-        return lambda query: query.drop(*remove_args.column_names)
+    def apply_remove(self, remove_args):
+        return self.query.drop(*remove_args.column_names)
 
-    def translate_cast(self, cast_args):
+    def apply_cast(self, cast_args):
         col_name = cast_args.column.column_name
         dtype = self.get_ibis_dtype(cast_args.data_type)
-        return lambda query: query.cast({col_name: dtype})
+        return self.query.cast({col_name: dtype})
 
     def get_ibis_dtype(self, data_type):
         return {
@@ -256,15 +249,14 @@ class IbisQueryBuilder:
             "Text": "string",
         }[data_type]
 
-    def translate_mutate(self, mutate_args):
+    def apply_mutate(self, mutate_args):
         new_name = frappe.scrub(mutate_args.new_name)
         dtype = self.get_ibis_dtype(mutate_args.data_type)
-        new_column = self.evaluate_expression(mutate_args.expression.expression).cast(
-            dtype
-        )
-        return lambda query: query.mutate(**{new_name: new_column})
+        new_column = self.evaluate_expression(mutate_args.expression.expression)
+        new_column = new_column.cast(dtype)
+        return self.query.mutate(**{new_name: new_column})
 
-    def translate_summary(self, summarize_args):
+    def apply_summary(self, summarize_args):
         aggregates = {
             frappe.scrub(measure.measure_name): self.translate_measure(measure)
             for measure in summarize_args.measures
@@ -273,16 +265,16 @@ class IbisQueryBuilder:
             self.translate_dimension(dimension)
             for dimension in summarize_args.dimensions
         ]
-        return lambda query: query.aggregate(**aggregates, by=group_bys)
+        return self.query.aggregate(**aggregates, by=group_bys)
 
-    def translate_order_by(self, order_by_args):
+    def apply_order_by(self, order_by_args):
         order_fn = ibis.asc if order_by_args.direction == "asc" else ibis.desc
-        return lambda query: query.order_by(order_fn(order_by_args.column.column_name))
+        return self.query.order_by(order_fn(order_by_args.column.column_name))
 
-    def translate_limit(self, limit_args):
-        return lambda query: query.limit(limit_args.limit)
+    def apply_limit(self, limit_args):
+        return self.query.limit(limit_args.limit)
 
-    def translate_pivot(self, pivot_args, pivot_type):
+    def apply_pivot(self, pivot_args, pivot_type):
         rows = {
             dimension.column_name: self.translate_dimension(dimension)
             for dimension in pivot_args["rows"]
@@ -296,17 +288,14 @@ class IbisQueryBuilder:
             for measure in pivot_args["values"]
         }
 
-        def _pivot_wider(query):
-            names = query.select(columns.keys()).distinct().limit(10).execute()
+        if pivot_type == "wider":
+            names = self.query.select(columns.keys()).distinct().limit(10).execute()
             return (
-                query.group_by(*rows.values(), *columns.values())
+                self.query.group_by(*rows.values(), *columns.values())
                 .aggregate(**values)
                 .filter(
                     ibis.or_(
-                        *[
-                            getattr(query, col).isin(names[col])
-                            for col in columns.keys()
-                        ]
+                        *[getattr(_, col).isin(names[col]) for col in columns.keys()]
                     )
                 )
                 .pivot_wider(
@@ -317,10 +306,7 @@ class IbisQueryBuilder:
                 )
             )
 
-        if pivot_type == "wider":
-            return _pivot_wider
-
-        return lambda query: query
+        return self.query
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
