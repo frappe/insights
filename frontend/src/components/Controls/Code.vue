@@ -60,6 +60,10 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	disableAutocompletions: {
+		type: Boolean,
+		default: false,
+	},
 })
 const emit = defineEmits(['inputChange', 'viewUpdate', 'focus', 'blur'])
 
@@ -112,7 +116,9 @@ if (props.completions) {
 		},
 	]
 }
-extensions.push(autocompletion(autocompletionOptions))
+if (!props.disableAutocompletions) {
+	extensions.push(autocompletion(autocompletionOptions))
+}
 
 const chalky = '#e5a05b',
 	coral = '#b04a54',

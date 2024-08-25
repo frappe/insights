@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Code from '@/components/Controls/Code.vue'
 import { COLUMN_TYPES } from '@/utils'
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
 import { ColumnDataType, MutateArgs } from '../../types/query.types'
 import { expression } from '../helpers'
+import { debounce } from 'frappe-ui'
 
 const props = defineProps<{ mutation?: MutateArgs }>()
 const emit = defineEmits({ select: (column: MutateArgs) => true })
@@ -46,6 +47,22 @@ function resetNewColumn() {
 		expression: '',
 	}
 }
+
+const help = ref(null)
+const codeContainer = ref(null)
+const setHelpTooltipPosition = debounce(async () => {
+	if (codeContainer.value && help.value) {
+		const helpTooltip = help.value as HTMLElement
+		const container = codeContainer.value as HTMLElement
+		const cursor = container.querySelector('.cm-cursor') as HTMLElement
+
+		const cursorRect = cursor.getBoundingClientRect()
+		if (cursorRect.top) {
+			helpTooltip.style.top = `${cursorRect.top + cursorRect.height}px`
+			helpTooltip.style.left = `${cursorRect.left}px`
+		}
+	}
+}, 100)
 </script>
 
 <template>
@@ -62,12 +79,23 @@ function resetNewColumn() {
 					</Button>
 				</div>
 				<div class="flex flex-col gap-2">
-					<div class="flex max-h-[14rem] w-full overflow-scroll rounded border text-base">
+					<div
+						ref="codeContainer"
+						class="flex max-h-[14rem] w-full overflow-scroll rounded border text-base"
+					>
 						<Code
+							language="python"
 							class="column-expression"
 							v-model="newColumn.expression"
-							language="python"
+							:disable-autocompletions="true"
+							@view-update="setHelpTooltipPosition"
 						></Code>
+						<Teleport to="body">
+							<div
+								ref="help"
+								class="absolute z-[10000] hidden h-20 w-32 rounded bg-white p-2 shadow-lg transition-all"
+							></div>
+						</Teleport>
 					</div>
 					<div class="flex gap-2">
 						<FormControl
@@ -113,8 +141,9 @@ function resetNewColumn() {
 		height: 14rem !important;
 	}
 	.cm-tooltip-autocomplete {
-		position: absolute !important;
-		z-index: 1000 !important;
+		// position: absolute !important;
+		// z-index: 1000 !important;
+		display: none !important;
 	}
 }
 </style>
