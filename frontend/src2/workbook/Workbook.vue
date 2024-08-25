@@ -24,12 +24,6 @@ const keys = useMagicKeys()
 const cmdS = keys['Meta+S']
 whenever(cmdS, () => workbook.save())
 
-window.onbeforeunload = function () {
-	if (workbook.isdirty) {
-		return 'You have unsaved changes. Are you sure you want to leave?'
-	}
-}
-
 if (workbook.islocal && workbook.doc.queries.length === 0) {
 	workbook.addQuery()
 }
