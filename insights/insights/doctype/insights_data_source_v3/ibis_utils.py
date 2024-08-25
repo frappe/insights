@@ -19,6 +19,7 @@ from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .data_warehouse import DataWarehouse
+from .ibis_functions import get_functions
 
 
 class IbisQueryBuilder:
@@ -373,24 +374,11 @@ class IbisQueryBuilder:
         return column.strftime(format_str[granularity]).name(column.get_name())
 
     def evaluate_expression(self, expression, additonal_context=None):
-        context = frappe._dict(
-            q=_,
-            columns=ibis.selectors.c,
-            case=ibis.case,
-            row_number=ibis.row_number,
-            literal=ibis.literal,
-            now=ibis.now,
-            today=ibis.today,
-            to_inr=lambda curr, amount, rate=83: ibis.case()
-            .when(curr == "USD", amount * rate)
-            .else_(amount)
-            .end(),
-            **(additonal_context or {}),
-            to_usd=lambda curr, amount, rate=83: ibis.case()
-            .when(curr == "INR", amount / rate)
-            .else_(amount)
-            .end(),
-        )
+        context = frappe._dict()
+        context.q = _
+        context.update(get_functions())
+        context.update(additonal_context or {})
+
         stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
         return frappe.safe_eval(stripped_expression, context)
 
