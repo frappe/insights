@@ -26,7 +26,7 @@ const newColumn = ref(
 )
 
 const isValid = computed(() => {
-	return newColumn.value.name && newColumn.value.type && newColumn.value.expression
+	return newColumn.value.name && newColumn.value.type && newColumn.value.expression.trim()
 })
 
 function confirmCalculation() {
@@ -62,7 +62,7 @@ function resetNewColumn() {
 					</Button>
 				</div>
 				<div class="flex flex-col gap-2">
-					<div class="flex h-[14rem] w-full rounded border text-base">
+					<div class="flex max-h-[14rem] w-full overflow-scroll rounded border text-base">
 						<Code
 							class="column-expression"
 							v-model="newColumn.expression"
@@ -111,6 +111,10 @@ function resetNewColumn() {
 	}
 	.cm-gutters {
 		height: 14rem !important;
+	}
+	.cm-tooltip-autocomplete {
+		position: absolute !important;
+		z-index: 1000 !important;
 	}
 }
 </style>
