@@ -153,7 +153,7 @@ export type QueryResultColumn = {
 export type DropdownOption = {
 	label: string
 	value: string
-	description: string
+	description?: string
 }
 
 export type ColumnOption = DropdownOption & {

@@ -194,6 +194,7 @@ const actions = [
 		:mutation="
 			query.activeEditOperation.type === 'mutate' ? query.activeEditOperation : undefined
 		"
+		:column-options="query.result.columnOptions"
 		@select="query.addMutate($event)"
 	/>
 

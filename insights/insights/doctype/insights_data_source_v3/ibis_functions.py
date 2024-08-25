@@ -81,3 +81,8 @@ def get_functions():
             context[key[2:]] = functions[key]
 
     return context
+
+
+@frappe.whitelist()
+def get_function_list():
+    return [key[2:] for key in globals() if key.startswith("f_")]

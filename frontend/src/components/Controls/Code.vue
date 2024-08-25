@@ -78,6 +78,8 @@ onMounted(() => {
 const onUpdate = (viewUpdate) => {
 	emit('viewUpdate', {
 		cursorPos: viewUpdate.state.selection.ranges[0].to,
+		syntaxTree: syntaxTree(viewUpdate.state),
+		state: viewUpdate.state,
 	})
 }
 
