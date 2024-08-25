@@ -234,7 +234,8 @@ class IbisQueryBuilder:
 
     def translate_rename(self, rename_args):
         old_name = rename_args.column.column_name
-        return lambda query: query.rename(**{rename_args.new_name: old_name})
+        new_name = frappe.scrub(rename_args.new_name)
+        return lambda query: query.rename(**{new_name: old_name})
 
     def translate_remove(self, remove_args):
         return lambda query: query.drop(*remove_args.column_names)
@@ -256,7 +257,7 @@ class IbisQueryBuilder:
         }[data_type]
 
     def translate_mutate(self, mutate_args):
-        new_name = mutate_args.new_name
+        new_name = frappe.scrub(mutate_args.new_name)
         dtype = self.get_ibis_dtype(mutate_args.data_type)
         new_column = self.evaluate_expression(mutate_args.expression.expression).cast(
             dtype
@@ -265,7 +266,7 @@ class IbisQueryBuilder:
 
     def translate_summary(self, summarize_args):
         aggregates = {
-            measure.measure_name: self.translate_measure(measure)
+            frappe.scrub(measure.measure_name): self.translate_measure(measure)
             for measure in summarize_args.measures
         }
         group_bys = [
@@ -291,7 +292,7 @@ class IbisQueryBuilder:
             for dimension in pivot_args["columns"]
         }
         values = {
-            measure.measure_name: self.translate_measure(measure)
+            frappe.scrub(measure.measure_name): self.translate_measure(measure)
             for measure in pivot_args["values"]
         }
 
@@ -328,7 +329,8 @@ class IbisQueryBuilder:
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
-            return column.cast(dtype).name(measure.measure_name)
+            measure_name = frappe.scrub(measure.measure_name)
+            return column.cast(dtype).name(measure_name)
 
         column = getattr(_, measure.column_name)
         return self.apply_aggregate(column, measure.aggregation)
