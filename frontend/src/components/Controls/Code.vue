@@ -105,7 +105,7 @@ const language =
 
 const extensions = [language, closeBrackets(), EditorView.lineWrapping]
 const autocompletionOptions = {
-	activateOnTyping: true,
+	activateOnTyping: props.disableAutocompletions ? false : true,
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
@@ -118,9 +118,7 @@ if (props.completions) {
 		},
 	]
 }
-if (!props.disableAutocompletions) {
-	extensions.push(autocompletion(autocompletionOptions))
-}
+extensions.push(autocompletion(autocompletionOptions))
 
 const chalky = '#e5a05b',
 	coral = '#b04a54',
