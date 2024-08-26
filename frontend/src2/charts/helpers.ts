@@ -309,8 +309,8 @@ function getDonutChartData(
 function getGrid(options: any = {}) {
 	return {
 		top: 18,
-		left: 22,
-		right: 22,
+		left: 30,
+		right: 30,
 		bottom: options.show_legend ? 36 : 22,
 		containLabel: true,
 	}
