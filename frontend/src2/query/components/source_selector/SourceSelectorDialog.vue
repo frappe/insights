@@ -4,7 +4,6 @@ import { DatabaseIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import useDataSourceStore from '../../../data_source/data_source'
 import { SourceArgs, TableArgs } from '../../../types/query.types'
-import { WorkbookQuery } from '../../../types/workbook.types'
 import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { table } from '../../helpers'
 import DataSourceTableList from './DataSourceTableList.vue'
@@ -32,7 +31,7 @@ wheneverChanges(activeTab, () => {
 		data_source: '',
 		table_name: '',
 	}
-	selectedQuery.value = undefined
+	selectedQuery.value = ''
 })
 
 dataSourceStore.getSources().then(() => {
@@ -52,9 +51,7 @@ dataSourceStore.getSources().then(() => {
 	activeTab.value = tabGroups.value[0].tabs[0]
 })
 
-const selectedQuery = ref<WorkbookQuery | undefined>(
-	props.source && 'query' in props.source ? props.source.query : undefined
-)
+const selectedQuery = ref(props.source && 'query' in props.source ? props.source.query : '')
 const workbook = inject<Workbook>(workbookKey)!
 if (workbook.doc.queries.length > 1) {
 	tabGroups.value.push({
@@ -70,7 +67,7 @@ if (workbook.doc.queries.length > 1) {
 }
 
 const confirmDisabled = computed(() => {
-	return !selectedTable.value?.table_name && !selectedQuery.value?.name
+	return !selectedTable.value?.table_name && !selectedQuery.value
 })
 
 function onConfirm() {

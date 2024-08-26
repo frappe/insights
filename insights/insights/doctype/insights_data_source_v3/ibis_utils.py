@@ -69,11 +69,7 @@ class IbisQueryBuilder:
         return self.query
 
     def apply_source(self, source_args):
-        if source_args.table:
-            table = self.get_table(source_args.table)
-        if source_args.query:
-            table = self.build(source_args.query.operations)
-        return table
+        return self.get_table(source_args.table)
 
     def apply_join(self, join_args):
         right_table = self.get_right_table(join_args)

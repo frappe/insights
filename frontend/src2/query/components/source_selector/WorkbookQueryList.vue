@@ -8,9 +8,9 @@ import { Query } from '../../query'
 
 const workbook = inject<Workbook>(workbookKey)!
 const currentQuery = inject<Query>('query')!
-const selectedQuery = defineModel<WorkbookQuery>('selectedQuery')
+const selectedQuery = defineModel<string>('selectedQuery')
 
-const querySearchTxt = ref(selectedQuery.value?.name || '')
+const querySearchTxt = ref(selectedQuery.value || '')
 const queries = computed(() => {
 	const _queriesExceptCurrent = workbook.doc.queries.filter(
 		(query) => query.name !== currentQuery.doc.name
@@ -44,7 +44,7 @@ const listColumns = [
 		width: '40px',
 		getLabel: () => '',
 		prefix: (props: any) =>
-			props.row.name === selectedQuery.value?.name && h(CheckIcon, { class: 'h-4 w-4' }),
+			props.row.name === selectedQuery.value && h(CheckIcon, { class: 'h-4 w-4' }),
 	},
 ]
 </script>
@@ -73,7 +73,7 @@ const listColumns = [
 			:options="{
 				selectable: false,
 				showTooltip: false,
-				onRowClick: (row: any) => (selectedQuery = row),
+				onRowClick: (row: any) => (selectedQuery = row.name),
 				emptyState: {
 					title: 'No Queries Found'
 				},

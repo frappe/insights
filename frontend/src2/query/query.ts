@@ -41,6 +41,7 @@ import {
 	source,
 	summarize,
 } from './helpers'
+import { createToast } from '../helpers/toasts'
 
 const queries = new Map<string, Query>()
 export function getCachedQuery(name: string): Query | undefined {
@@ -70,6 +71,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		executing: false,
 		result: {} as QueryResult,
 
+		getOperationsForExecution,
 		execute,
 		setOperations,
 		setActiveOperation,
@@ -173,6 +175,43 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		{ deep: true, immediate: true }
 	)
 
+	function getOperationsForExecution(): Operation[] {
+		if (!query.doc.operations.length) {
+			return []
+		}
+
+		const sourceOp = query.doc.operations.find((op) => op.type === 'source')
+		if (!sourceOp) {
+			return []
+		}
+
+		if ('table' in sourceOp) {
+			return query.currentOperations
+		}
+
+		if ('query' in sourceOp) {
+			const sourceQuery = getCachedQuery(sourceOp.query)
+			if (!sourceQuery) {
+				createToast({
+					variant: 'error',
+					title: 'Error',
+					message: `Source query not found`,
+				})
+				throw new Error('Source query not found')
+			}
+
+			const sourceQueryOperations = sourceQuery.getOperationsForExecution()
+			const currentOperationsWithoutSource = query.currentOperations.slice(1)
+
+			return [
+				...sourceQueryOperations,
+				...currentOperationsWithoutSource
+			]
+		}
+
+		return []
+	}
+
 	async function execute() {
 		if (!query.doc.operations.length) {
 			query.result = {
@@ -191,7 +230,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			'insights.insights.doctype.insights_workbook.insights_workbook.fetch_query_results',
 			{
 				use_live_connection: query.doc.use_live_connection,
-				operations: query.currentOperations,
+				operations: query.getOperationsForExecution(),
 			}
 		)
 			.then((response: any) => {

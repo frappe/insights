@@ -138,7 +138,7 @@ export const query_operation_types = {
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
 		getDescription: (op: Source) => {
 			if ('table' in op) return `${op.table.table_name}`
-			if ('query' in op) return `${op.query.title}`
+			if ('query' in op) return `${op.query}`
 		},
 	},
 	join: {

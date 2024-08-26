@@ -255,7 +255,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	function prepareBaseQuery() {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([])
-		chart.dataQuery.setSource({ query: chart.baseQuery.doc })
+		chart.dataQuery.setSource({ query: chart.baseQuery.doc.name })
 		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
 	}
 	function setCustomFilters(filters: FilterArgs[]) {

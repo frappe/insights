@@ -63,7 +63,7 @@ export type Expression = {
 }
 
 export type TableSource = { table: Table }
-export type QuerySource = { query: WorkbookQuery }
+export type QuerySource = { query: string }
 export type SourceArgs = TableSource | QuerySource
 export type Source = { type: 'source' } & SourceArgs
 
