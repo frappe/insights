@@ -105,7 +105,7 @@ const language =
 
 const extensions = [language, closeBrackets(), EditorView.lineWrapping]
 const autocompletionOptions = {
-	activateOnTyping: props.disableAutocompletions ? false : true,
+	activateOnTyping: true,
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
