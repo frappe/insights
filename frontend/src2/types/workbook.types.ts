@@ -37,6 +37,7 @@ export type WorkbookChart = {
 	config: ChartConfig & {
 		order_by: OrderByArgs[]
 		filters?: FilterGroupArgs
+		limit?: number
 	}
 }
 

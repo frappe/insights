@@ -119,6 +119,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		if (prepared) {
 			applySortOrder()
+			applyLimit()
 			return executeQuery(force)
 		}
 	}
@@ -243,6 +244,12 @@ function makeChart(workbookChart: WorkbookChart) {
 				direction: sort.direction,
 			})
 		})
+	}
+
+	function applyLimit() {
+		if (chart.doc.config.limit) {
+			chart.dataQuery.addLimit(chart.doc.config.limit)
+		}
 	}
 
 	function prepareBaseQuery() {

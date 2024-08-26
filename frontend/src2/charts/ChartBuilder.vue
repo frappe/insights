@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useMagicKeys, whenever } from '@vueuse/core'
 import { onBeforeUnmount, provide } from 'vue'
+import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useChart from './chart'
@@ -10,7 +12,6 @@ import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
-import { useMagicKeys, whenever } from '@vueuse/core'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
@@ -61,6 +62,10 @@ onBeforeUnmount(() => {
 				v-model="chart.doc.config.order_by"
 				:column-options="chart.dataQuery.result?.columnOptions || []"
 			/>
+			<hr class="border-t border-gray-200" />
+			<InlineFormControlLabel label="Limit" class="w-1/2">
+				<FormControl v-model="chart.doc.config.limit" type="number" />
+			</InlineFormControlLabel>
 		</div>
 	</div>
 </template>
