@@ -1,9 +1,9 @@
 import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
+import { getColors } from '@/utils/colors'
 import { graphic } from 'echarts/core'
 import { BarChartConfig, LineChartConfig } from '../types/chart.types'
 import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
-import { getColors } from '@/utils/colors'
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -41,7 +41,7 @@ export function getLineChartOptions(chart: Chart) {
 				const a_date = new Date(a[_config.x_axis.column_name])
 				const b_date = new Date(b[_config.x_axis.column_name])
 				return a_date.getTime() - b_date.getTime()
-			})
+		  })
 		: _rows
 
 	const getSeriesData = (column: string) =>
@@ -81,8 +81,7 @@ export function getLineChartOptions(chart: Chart) {
 					},
 				},
 				labelLayout: { hideOverlap: true },
-				areaStyle:
-				_config.show_area
+				areaStyle: _config.show_area
 					? {
 							color: new graphic.LinearGradient(0, 0, 0, 1, [
 								{ offset: 0, color: colors[idx] },
@@ -104,15 +103,12 @@ export function getBarChartOptions(chart: Chart) {
 	const _rows = chart.dataQuery.result.rows
 
 	const measures = _columns.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
-	const total_per_x_value = _rows.reduce(
-		(acc, row) => {
-			const x_value = row[_config.x_axis.column_name]
-			if (!acc[x_value]) acc[x_value] = 0
-			measures.forEach((m) => (acc[x_value] += row[m.name]))
-			return acc
-		},
-		{} as Record<string, number>,
-	)
+	const total_per_x_value = _rows.reduce((acc, row) => {
+		const x_value = row[_config.x_axis.column_name]
+		if (!acc[x_value]) acc[x_value] = 0
+		measures.forEach((m) => (acc[x_value] += row[m.name]))
+		return acc
+	}, {} as Record<string, number>)
 
 	const show_legend = measures.length > 1
 
@@ -229,7 +225,7 @@ function getSeries(options: SeriesCustomizationOptions = {}) {
 		data: options.data,
 		label: {
 			show: options.show_data_label,
-			position: options.data_label_position || options.axis_swaped ? 'right' : 'top',
+			position: options.axis_swaped ? 'right' : options.data_label_position,
 			formatter: (params: any) => {
 				const valueIndex = options.axis_swaped ? 0 : 1
 				return getShortNumber(params.value?.[valueIndex], 1)
@@ -276,7 +272,7 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 function getDonutChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	maxSlices: number,
+	maxSlices: number
 ) {
 	// reduce the number of slices to 10
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
@@ -289,16 +285,13 @@ function getDonutChartData(
 		throw new Error('No label column found')
 	}
 
-	const valueByLabel = rows.reduce(
-		(acc, row) => {
-			const label = row[labelColumn.name]
-			const value = row[measureColumn.name]
-			if (!acc[label]) acc[label] = 0
-			acc[label] = acc[label] + value
-			return acc
-		},
-		{} as Record<string, number>,
-	)
+	const valueByLabel = rows.reduce((acc, row) => {
+		const label = row[labelColumn.name]
+		const value = row[measureColumn.name]
+		if (!acc[label]) acc[label] = 0
+		acc[label] = acc[label] + value
+		return acc
+	}, {} as Record<string, number>)
 
 	const sortedLabels = Object.keys(valueByLabel).sort((a, b) => valueByLabel[b] - valueByLabel[a])
 	const topLabels = sortedLabels.slice(0, maxSlices)
