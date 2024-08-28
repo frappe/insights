@@ -7,11 +7,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
 	plugins: [frappeui(), vue(), vueJsx()],
 	esbuild: { loader: 'tsx' },
-	resolve: {
-		alias: {
-			'@': path.resolve(__dirname, 'src'),
-		},
-	},
+	resolve: {},
 	build: {
 		outDir: `../insights/public/frontend`,
 		emptyOutDir: true,
@@ -20,7 +16,6 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				main: path.resolve(__dirname, 'index.html'),
-				insights_v3: path.resolve(__dirname, 'index_v3.html'),
 			},
 			output: {
 				manualChunks: {
