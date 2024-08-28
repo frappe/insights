@@ -248,6 +248,34 @@ def update_data_source_tables(data_source):
     ds.update_table_list()
 
 
+def make_data_source(data_source):
+    data_source = frappe._dict(data_source)
+    ds = frappe.new_doc("Insights Data Source v3")
+    ds.database_type = data_source.database_type
+    ds.title = data_source.title
+    ds.host = data_source.host
+    ds.port = data_source.port
+    ds.username = data_source.username
+    ds.password = data_source.password
+    ds.database_name = data_source.database_name
+    ds.use_ssl = data_source.use_ssl
+    ds.connection_string = data_source.connection_string
+    return ds
+
+
+@frappe.whitelist()
+def test_connection(data_source):
+    ds = make_data_source(data_source)
+    return ds.test_connection(raise_exception=True)
+
+
+@frappe.whitelist()
+def create_data_source(data_source):
+    ds = make_data_source(data_source)
+    ds.save()
+    return ds.name
+
+
 def before_request():
     if not hasattr(frappe.local, "insights_db_connections"):
         frappe.local.insights_db_connections = {}

@@ -49,13 +49,13 @@ export function getErrorMessage(err: any) {
 	return err.exc?.split('\n').filter(Boolean).at(-1)
 }
 
-export function showErrorToast(err: Error) {
+export function showErrorToast(err: Error, raise = true) {
 	createToast({
 		variant: 'error',
 		title: 'Error',
 		message: getErrorMessage(err),
 	})
-	throw err
+	if (raise) throw err
 }
 
 export function downloadImage(

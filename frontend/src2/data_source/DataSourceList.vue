@@ -1,17 +1,19 @@
 <script setup lang="tsx">
-import { Avatar, ListView, Breadcrumbs } from 'frappe-ui'
+import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
+import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import PostgresIcon from '../components/Icons/PostgresIcon.vue'
-import useUserStore from '../users'
-import useDataSourceStore, { DataSourceListItem } from './data_source'
-import MariaDBIcon from '../components/Icons/MariaDBIcon.vue'
-import SQLiteIcon from '../components/Icons/SQLiteIcon.vue'
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import DuckDBIcon from '../components/Icons/DuckDBIcon.vue'
+import MariaDBIcon from '../components/Icons/MariaDBIcon.vue'
+import PostgreSQLIcon from '../components/Icons/PostgreSQLIcon.vue'
+import SQLiteIcon from '../components/Icons/SQLiteIcon.vue'
+import SelectTypeDialog from '../components/SelectTypeDialog.vue'
+import useUserStore from '../users'
+import ConnectMariaDBDialog from './ConnectMariaDBDialog.vue'
+import useDataSourceStore from './data_source'
+import { DataSourceListItem } from './data_source.types'
+import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
 
-const router = useRouter()
 const dataSourceStore = useDataSourceStore()
 dataSourceStore.getSources()
 
@@ -25,6 +27,31 @@ const filteredDataSources = computed(() => {
 	)
 })
 
+const showNewSourceDialog = ref(false)
+const showNewMariaDBDialog = ref(false)
+const showNewPostgreSQLDialog = ref(false)
+
+const sourceTypes = [
+	{
+		label: 'MariaDB',
+		icon: <MariaDBIcon class="h-8 w-8" />,
+		description: 'Connect to MariaDB database',
+		onClick: () => {
+			showNewSourceDialog.value = false
+			showNewMariaDBDialog.value = true
+		},
+	},
+	{
+		label: 'PostgreSQL',
+		icon: <PostgreSQLIcon class="h-8 w-8" />,
+		description: 'Connect to PostgreSQL database',
+		onClick: () => {
+			showNewSourceDialog.value = false
+			showNewPostgreSQLDialog.value = true
+		},
+	},
+]
+
 const userStore = useUserStore()
 const listOptions = ref({
 	columns: [
@@ -37,7 +64,7 @@ const listOptions = ref({
 					return <MariaDBIcon class="h-5 w-5" />
 				}
 				if (data_source.database_type === 'PostgreSQL') {
-					return <PostgresIcon class="h-5 w-5" />
+					return <PostgreSQLIcon class="h-5 w-5" />
 				}
 				if (data_source.database_type === 'SQLite') {
 					return <SQLiteIcon class="h-5 w-5" />
@@ -93,7 +120,7 @@ document.title = 'Data Sources | Insights'
 	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: 'Data Sources', route: '/data-source' }]" />
 		<div class="flex items-center gap-2">
-			<Button label="New Data Source" variant="solid" @click="">
+			<Button label="New Data Source" variant="solid" @click="showNewSourceDialog = true">
 				<template #prefix>
 					<PlusIcon class="w-4" />
 				</template>
@@ -111,4 +138,13 @@ document.title = 'Data Sources | Insights'
 		</div>
 		<ListView class="h-full" v-bind="listOptions"> </ListView>
 	</div>
+
+	<SelectTypeDialog
+		v-model="showNewSourceDialog"
+		:types="sourceTypes"
+		title="Select a data source"
+	/>
+
+	<ConnectMariaDBDialog v-model="showNewMariaDBDialog" />
+	<ConnectPostgreSQLDialog v-model="showNewPostgreSQLDialog" />
 </template>

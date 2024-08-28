@@ -1,20 +1,11 @@
-import { call } from 'frappe-ui';
-import { reactive, ref } from 'vue';
+import { call } from 'frappe-ui'
+import { reactive, ref } from 'vue'
 import { useTimeAgo } from '@vueuse/core'
+import { DataSource, DataSourceListItem } from './data_source.types'
+import { showErrorToast } from '../helpers'
 
 const basePath = 'insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.'
 
-export type DataSourceListItem = {
-	title: string
-	name: string
-	owner: string
-	status: 'Active' | 'Inactive'
-	database_type: 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB'
-	creation: string
-	modified: string
-	created_from_now: string
-	modified_from_now: string
-}
 const sources = ref<DataSourceListItem[]>([])
 
 const loading = ref(false)
@@ -30,6 +21,30 @@ async function getSources() {
 	return sources.value
 }
 
+const testing = ref(false)
+function testConnection(data_source: DataSource) {
+	testing.value = true
+	return call(basePath + 'test_connection', { data_source })
+		.catch((error: Error) => {
+			showErrorToast(error, false)
+		})
+		.finally(() => {
+			testing.value = false
+		})
+}
+
+const creating = ref(false)
+function createDataSource(data_source: DataSource) {
+	creating.value = true
+	return call(basePath + 'create_data_source', { data_source })
+		.catch((error: Error) => {
+			showErrorToast(error)
+		})
+		.finally(() => {
+			creating.value = false
+		})
+}
+
 export default function useDataSourceStore() {
 	if (!sources.value.length) {
 		getSources()
@@ -39,5 +54,11 @@ export default function useDataSourceStore() {
 		sources,
 		loading,
 		getSources,
+
+		testing,
+		testConnection,
+
+		creating,
+		createDataSource,
 	})
 }
