@@ -1,18 +1,18 @@
 <script setup lang="tsx">
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import DuckDBIcon from '../components/Icons/DuckDBIcon.vue'
+import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import MariaDBIcon from '../components/Icons/MariaDBIcon.vue'
 import PostgreSQLIcon from '../components/Icons/PostgreSQLIcon.vue'
 import SQLiteIcon from '../components/Icons/SQLiteIcon.vue'
 import SelectTypeDialog from '../components/SelectTypeDialog.vue'
 import useUserStore from '../users'
 import ConnectMariaDBDialog from './ConnectMariaDBDialog.vue'
+import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
 import useDataSourceStore from './data_source'
 import { DataSourceListItem } from './data_source.types'
-import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
 
 const dataSourceStore = useDataSourceStore()
 dataSourceStore.getSources()

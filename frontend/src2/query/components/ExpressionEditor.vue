@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Code from '@/components/Controls/Code.vue'
 import { call } from 'frappe-ui'
 import { ref } from 'vue'
+import Code from '../../components/Code.vue'
 import { ColumnOption } from '../../types/query.types'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()

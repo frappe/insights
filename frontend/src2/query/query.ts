@@ -1,9 +1,10 @@
-import { FIELDTYPES, wheneverChanges } from '@/utils'
 import { useDebouncedRefHistory, UseRefHistoryReturn } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
-import { copy, showErrorToast } from '../helpers'
+import { copy, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
+import { FIELDTYPES } from '../helpers/constants'
+import { createToast } from '../helpers/toasts'
 import {
 	ColumnDataType,
 	Dimension,
@@ -41,7 +42,6 @@ import {
 	source,
 	summarize,
 } from './helpers'
-import { createToast } from '../helpers/toasts'
 
 const queries = new Map<string, Query>()
 export function getCachedQuery(name: string): Query | undefined {
@@ -203,10 +203,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			const sourceQueryOperations = sourceQuery.getOperationsForExecution()
 			const currentOperationsWithoutSource = query.currentOperations.slice(1)
 
-			return [
-				...sourceQueryOperations,
-				...currentOperationsWithoutSource
-			]
+			return [...sourceQueryOperations, ...currentOperationsWithoutSource]
 		}
 
 		return []

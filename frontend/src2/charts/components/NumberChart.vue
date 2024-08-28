@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { formatNumber, getShortNumber } from '@/utils'
 import { computed } from 'vue'
+import { formatNumber, getShortNumber } from '../../helpers'
 import { NumberChartConfig } from '../../types/chart.types'
 import { Measure } from '../../types/query.types'
 import { Chart } from '../chart'

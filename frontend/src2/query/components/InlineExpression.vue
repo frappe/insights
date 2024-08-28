@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Code from '@/components/Controls/Code.vue'
+import Code from '../../components/Code.vue'
 import { Expression } from '../../types/query.types'
 import { expression } from '../helpers'
 

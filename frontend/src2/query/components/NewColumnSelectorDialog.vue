@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { COLUMN_TYPES } from '@/utils'
 import { computed, ref } from 'vue'
+import { COLUMN_TYPES } from '../../helpers/constants'
 import { ColumnDataType, ColumnOption, MutateArgs } from '../../types/query.types'
 import { expression } from '../helpers'
 import ExpressionEditor from './ExpressionEditor.vue'

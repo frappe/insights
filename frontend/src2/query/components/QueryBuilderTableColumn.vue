@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ContentEditable from '@/components/ContentEditable.vue'
 import { MoreHorizontal } from 'lucide-vue-next'
 import { inject } from 'vue'
+import ContentEditable from '../../components/ContentEditable.vue'
 import {
 	ColumnDataType,
 	FilterOperator,

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import Form from '../components/Form.vue'
 import useDataSourceStore from './data_source'
-import { MariaDBDataSource, PostgreSQLDataSource } from './data_source.types'
+import { PostgreSQLDataSource } from './data_source.types'
 
 const show = defineModel({
 	default: false,
 })
 
-const database = reactive<PostgreSQLDataSource>({
+const database = ref<PostgreSQLDataSource>({
 	database_type: 'PostgreSQL',
 	title: '',
 	host: 'localhost',
@@ -79,7 +79,7 @@ const connectButton = computed(() => {
 		variant: 'subtle',
 		theme: 'gray',
 		onClick() {
-			sources.testConnection(database).then((result: boolean) => {
+			sources.testConnection(database.value).then((result: boolean) => {
 				connected.value = Boolean(result)
 			})
 		},
@@ -107,7 +107,7 @@ const submitButton = computed(() => {
 		loading: sources.creating,
 		variant: connected.value ? 'solid' : 'subtle',
 		onClick() {
-			sources.createDataSource(database).then(() => {
+			sources.createDataSource(database.value).then(() => {
 				show.value = false
 			})
 		},

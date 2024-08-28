@@ -1,8 +1,8 @@
 <script setup lang="tsx">
-import { wheneverChanges } from '@/utils'
 import { DatabaseIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import useDataSourceStore from '../../../data_source/data_source'
+import { wheneverChanges } from '../../../helpers'
 import { SourceArgs, TableArgs } from '../../../types/query.types'
 import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { table } from '../../helpers'

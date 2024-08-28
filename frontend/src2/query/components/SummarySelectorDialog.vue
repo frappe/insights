@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { FIELDTYPES } from '@/utils'
 import { computed, inject, ref } from 'vue'
+import { FIELDTYPES } from '../../helpers/constants'
 import {
 	aggregations,
 	ColumnMeasure,

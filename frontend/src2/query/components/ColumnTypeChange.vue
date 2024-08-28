@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { COLUMN_TYPES } from '@/utils'
+import { COLUMN_TYPES } from '../../helpers/constants'
 import DataTypeIcon from './DataTypeIcon.vue'
 import { ColumnDataType, QueryResultColumn } from '../../types/query.types'
 

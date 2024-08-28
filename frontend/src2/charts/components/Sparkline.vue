@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import BaseChart from '@/components/Charts/BaseChart.vue'
-import { getColors } from '@/utils/colors'
 import { graphic } from 'echarts/core'
+import { getColors } from '../colors'
+import BaseChart from './BaseChart.vue'
 
 const props = defineProps<{ dates: string[]; values: number[] }>()
 
