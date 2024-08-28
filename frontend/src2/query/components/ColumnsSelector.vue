@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Checkbox from '@/components/Controls/Checkbox.vue'
-import DraggableList from '@/components/DraggableList.vue'
+import DraggableList from '../../components/DraggableList.vue'
 import { ColumnsIcon } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { Query } from '../query'

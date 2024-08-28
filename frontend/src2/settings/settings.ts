@@ -1,5 +1,5 @@
-import { createToast } from '@/utils/toasts'
 import useDocumentResource from '../helpers/resource'
+import { createToast } from '../helpers/toasts'
 
 let settings = undefined as Settings | undefined
 export default function useSettings() {

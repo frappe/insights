@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FIELDTYPES } from '@/utils'
+import { FIELDTYPES } from '../../helpers/constants'
 import { computed, reactive } from 'vue'
 import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import ColumnFilterTypeDate from './ColumnFilterTypeDate.vue'

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { wheneverChanges } from '@/utils'
 import { ListEmptyState, ListView } from 'frappe-ui'
 import { CheckIcon, RefreshCcw, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { h, ref } from 'vue'
 import useTableStore from '../../../data_source/tables'
+import { wheneverChanges } from '../../../helpers'
 import { TableArgs } from '../../../types/query.types'
 
 const props = defineProps<{ data_source: string }>()

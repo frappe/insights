@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Code from '@/components/Controls/Code.vue'
-import { copyToClipboard } from '@/utils'
-import { computed, inject } from 'vue'
+import { inject } from 'vue'
+import Code from '../../components/Code.vue'
+import { copyToClipboard } from '../../helpers'
 import { Query } from '../query'
 
 const showDialog = defineModel()

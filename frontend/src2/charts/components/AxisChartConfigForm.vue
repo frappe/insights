@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Tabs from '@/components/Tabs.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
@@ -57,7 +56,7 @@ const config = defineModel<AxisChartConfig>({
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Right Axis Type" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.y2_axis_type"
 			:tabs="[
 				{ label: 'Bar', value: 'bar', default: true },
@@ -66,7 +65,7 @@ const config = defineModel<AxisChartConfig>({
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Show Labels" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.show_data_labels"
 			:tabs="[
 				{ label: 'Yes', value: true },

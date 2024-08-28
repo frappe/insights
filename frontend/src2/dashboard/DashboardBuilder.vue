@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
+import { safeJSONParse } from '../helpers'
+import { createToast } from '../helpers/toasts'
 import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
@@ -8,8 +10,6 @@ import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import VueGridLayout from './VueGridLayout.vue'
-import { safeJSONParse } from '@/utils'
-import { createToast } from '../helpers/toasts'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard

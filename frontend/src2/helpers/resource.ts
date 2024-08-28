@@ -4,7 +4,6 @@ import { computed, reactive } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast } from './index'
 import { createToast } from './toasts'
-import { wheneverChanges } from '@/utils'
 
 type DocumentResourceOptions<T> = {
 	initialDoc: T

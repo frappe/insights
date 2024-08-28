@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Tabs from '@/components/Tabs.vue'
-import { FIELDTYPES } from '@/utils'
+import { FIELDTYPES } from '../../helpers/constants'
 import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { NumberChartConfig } from '../../types/chart.types'
@@ -55,7 +54,7 @@ const date_dimensions = computed(() =>
 		<FormControl v-model="config.decimal" type="number" />
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Show short numbers" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.shorten_numbers"
 			:tabs="[
 				{ label: 'Yes', value: true, default: true },
@@ -65,7 +64,7 @@ const date_dimensions = computed(() =>
 	</InlineFormControlLabel>
 
 	<InlineFormControlLabel v-if="config.date_column" label="Show comparison" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.comparison"
 			:tabs="[
 				{ label: 'Yes', value: true },
@@ -75,7 +74,7 @@ const date_dimensions = computed(() =>
 	</InlineFormControlLabel>
 
 	<InlineFormControlLabel v-if="config.comparison" label="Negative is better" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.negative_is_better"
 			:tabs="[
 				{ label: 'Yes', value: true },
@@ -85,7 +84,7 @@ const date_dimensions = computed(() =>
 	</InlineFormControlLabel>
 
 	<InlineFormControlLabel v-if="config.date_column" label="Show sparkline" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.sparkline"
 			:tabs="[
 				{ label: 'Yes', value: true },

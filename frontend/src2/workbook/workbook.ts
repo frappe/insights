@@ -1,10 +1,9 @@
-import { safeJSONParse, wheneverChanges } from '@/utils'
 import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import useDashboard from '../dashboard/dashboard'
-import { getUniqueId } from '../helpers'
+import { getUniqueId, safeJSONParse, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
@@ -13,8 +12,7 @@ import session from '../session'
 import type {
 	InsightsWorkbook,
 	WorkbookChart,
-	WorkbookQuery,
-	WorkbookSharePermission,
+	WorkbookSharePermission
 } from '../types/workbook.types'
 
 export default function useWorkbook(name: string) {

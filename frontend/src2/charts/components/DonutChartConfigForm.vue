@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FIELDTYPES } from '@/utils'
+import { FIELDTYPES } from '../../helpers/constants'
 import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { DountChartConfig } from '../../types/chart.types'

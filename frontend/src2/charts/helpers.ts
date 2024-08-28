@@ -1,9 +1,10 @@
-import { FIELDTYPES, formatNumber, getShortNumber } from '@/utils'
-import { getColors } from '@/utils/colors'
 import { graphic } from 'echarts/core'
+import { formatNumber, getShortNumber } from '../helpers'
+import { FIELDTYPES } from '../helpers/constants'
 import { BarChartConfig, LineChartConfig } from '../types/chart.types'
 import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
+import { getColors } from './colors'
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {

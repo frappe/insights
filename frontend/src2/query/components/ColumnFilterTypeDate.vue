@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wheneverChanges } from '@/utils'
-import dayjs from '@/utils/dayjs'
+import { wheneverChanges } from '../../helpers'
+import dayjs from '../../helpers/dayjs'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { ref } from 'vue'
 import useSettings from '../../settings/settings'

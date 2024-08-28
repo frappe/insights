@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FIELDTYPES } from '@/utils'
+import { FIELDTYPES } from '../../helpers/constants'
 import { debounce } from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
 import { column } from '../helpers'

@@ -3,7 +3,6 @@ import { LineChartConfig } from '../../types/chart.types'
 import AxisChartConfigForm from './AxisChartConfigForm.vue'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import Tabs from '@/components/Tabs.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -31,7 +30,7 @@ const config = defineModel<LineChartConfig>({
 	/>
 
 	<InlineFormControlLabel label="Enable Curved Lines" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.smooth"
 			:tabs="[
 				{ label: 'Yes', value: true },
@@ -41,7 +40,7 @@ const config = defineModel<LineChartConfig>({
 	</InlineFormControlLabel>
 
 	<InlineFormControlLabel label="Show Data Points" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.show_data_points"
 			:tabs="[
 				{ label: 'Yes', value: true, default: true },
@@ -51,7 +50,7 @@ const config = defineModel<LineChartConfig>({
 	</InlineFormControlLabel>
 
 	<InlineFormControlLabel label="Show Area" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.show_area"
 			:tabs="[
 				{ label: 'Yes', value: true },

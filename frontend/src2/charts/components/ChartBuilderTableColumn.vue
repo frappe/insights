@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ContentEditable from '@/components/ContentEditable.vue'
-import { FIELDTYPES } from '@/utils'
+import ContentEditable from '../../components/ContentEditable.vue'
+import { FIELDTYPES } from '../../helpers/constants'
 import {
 	ArrowDownWideNarrow,
 	ArrowUpDown,

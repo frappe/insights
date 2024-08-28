@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Tabs from '@/components/Tabs.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { BarChartConfig } from '../../types/chart.types'
 import AxisChartConfigForm from './AxisChartConfigForm.vue'
@@ -33,7 +32,7 @@ const config = defineModel<BarChartConfig>({
 		:measures="props.measures"
 	/>
 	<InlineFormControlLabel label="Stack" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.stack"
 			:tabs="[
 				{ label: 'Yes', value: true, default: true },
@@ -42,7 +41,7 @@ const config = defineModel<BarChartConfig>({
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Normalize Data" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.normalize"
 			:tabs="[
 				{ label: 'Yes', value: true },
@@ -51,7 +50,7 @@ const config = defineModel<BarChartConfig>({
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Swap X & Y" class="!w-1/2">
-		<Tabs
+		<Switch
 			v-model="config.swap_axes"
 			:tabs="[
 				{ label: 'Yes', value: true },

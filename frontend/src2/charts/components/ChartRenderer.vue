@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BaseChart from '@/components/Charts/BaseChart.vue'
+import BaseChart from './BaseChart.vue'
 import { computed, ref } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { Chart } from '../chart'

@@ -1,10 +1,9 @@
-import { wheneverChanges } from '@/utils'
 import { useDebouncedRefHistory, UseRefHistoryReturn, watchDebounced } from '@vueuse/core'
 import { computed, reactive, ref, unref, watch } from 'vue'
-import { copy, getUniqueId, waitUntil } from '../helpers'
+import { copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { column, count } from '../query/helpers'
-import { Query, getCachedQuery, makeQuery } from '../query/query'
+import { getCachedQuery, makeQuery, Query } from '../query/query'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,

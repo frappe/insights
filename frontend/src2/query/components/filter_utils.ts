@@ -1,4 +1,4 @@
-import { FIELDTYPES } from '@/utils'
+import { FIELDTYPES } from '../../helpers/constants'
 import { ColumnDataType, FilterExpression, FilterRule } from '../../types/query.types'
 
 export function getValueSelectorType(filter: FilterRule, columnType: ColumnDataType) {

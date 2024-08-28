@@ -5,7 +5,7 @@ const routes = [
 	{
 		path: '/login',
 		name: 'Login',
-		component: () => import('@/pages/Login.vue'),
+		component: () => import('./auth/Login.vue'),
 		meta: { isGuestView: true, hideSidebar: true },
 	},
 	{
@@ -65,7 +65,7 @@ const routes = [
 	},
 	{
 		path: '/:pathMatch(.*)*',
-		component: () => import('@/pages/NotFound.vue'),
+		component: () => import('./auth/NotFound.vue'),
 		meta: { hideSidebar: true },
 	},
 ]

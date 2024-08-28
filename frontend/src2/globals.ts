@@ -1,7 +1,8 @@
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import Checkbox from '@/components/Controls/Checkbox.vue'
-import Popover from '@/components/Popover.vue'
+import Autocomplete from './components/Autocomplete.vue'
+import Checkbox from './components/Checkbox.vue'
+import Popover from './components/Popover.vue'
 import FormControl from './components/FormControl.vue'
+import Switch from './components/Switch.vue'
 import {
 	Avatar,
 	Badge,
@@ -26,6 +27,7 @@ export function registerGlobalComponents(app: App) {
 	app.component('Button', Button)
 	app.component('Dialog', Dialog)
 	app.component('Avatar', Avatar)
+	app.component('Switch', Switch)
 	app.component('Popover', Popover)
 	app.component('Tooltip', Tooltip)
 	app.component('Checkbox', Checkbox)
