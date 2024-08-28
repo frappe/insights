@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.defaults import get_user_default, set_user_default
 from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
 
@@ -45,7 +46,22 @@ def get_user_info():
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": frappe.db.get_single_value("System Settings", "language"),
+        "is_v2_user": frappe.db.count("Insights Query") > 0,
+        "default_version": get_user_default(
+            "insights_default_version", frappe.session.user
+        ),
     }
+
+
+@frappe.whitelist()
+def update_default_version(version):
+    if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
+        set_user_default("insights_has_visited_v3", "1", frappe.session.user)
+
+    if version not in ["v2", "v3", ""]:
+        frappe.throw("Invalid Version")
+
+    set_user_default("insights_default_version", version, frappe.session.user)
 
 
 @frappe.whitelist()

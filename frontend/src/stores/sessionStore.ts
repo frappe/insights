@@ -12,6 +12,8 @@ const emptyUser: User = {
 	is_user: false,
 	country: '',
 	locale: 'en-US',
+	is_v2_user: false,
+	default_version: '',
 }
 
 const sessionStore = defineStore('insights:session', function () {
@@ -36,6 +38,7 @@ const sessionStore = defineStore('insights:session', function () {
 			...userInfo,
 			is_admin: Boolean(userInfo.is_admin),
 			is_user: Boolean(userInfo.is_user),
+			is_v2_user: Boolean(userInfo.is_v2_user),
 		})
 	}
 
@@ -63,6 +66,11 @@ const sessionStore = defineStore('insights:session', function () {
 		await api.createLastViewedLog(recordType, recordName)
 	}
 
+	function updateDefaultVersion(version: User['default_version']) {
+		user.value.default_version = version
+		return api.updateDefaultVersion(version)
+	}
+
 	return {
 		user: user,
 		initialized,
@@ -74,6 +82,7 @@ const sessionStore = defineStore('insights:session', function () {
 		logout,
 		resetSession,
 		createViewLog,
+		updateDefaultVersion,
 	}
 })
 

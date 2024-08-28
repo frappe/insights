@@ -1,6 +1,20 @@
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
+type User = {
+	email: string
+	first_name: string
+	last_name: string
+	full_name: string
+	user_image: string
+	is_admin: boolean
+	is_user: boolean
+	country: string
+	locale: string
+	is_v2_user: boolean
+	default_version: 'v3' | 'v2' | ''
+}
+
 const emptyUser: User = {
 	email: '',
 	first_name: '',
@@ -11,6 +25,8 @@ const emptyUser: User = {
 	is_user: false,
 	country: '',
 	locale: 'en-US',
+	is_v2_user: false,
+	default_version: '',
 }
 
 const session = reactive({
@@ -20,6 +36,7 @@ const session = reactive({
 	isAuthorized: computed(() => false),
 	initialize,
 	fetchSessionInfo,
+	updateDefaultVersion,
 	login,
 	logout,
 	resetSession,
@@ -45,7 +62,13 @@ async function fetchSessionInfo() {
 		...userInfo,
 		is_admin: Boolean(userInfo.is_admin),
 		is_user: Boolean(userInfo.is_user),
+		is_v2_user: Boolean(userInfo.is_v2_user),
 	})
+}
+
+function updateDefaultVersion(version: User['default_version']) {
+	session.user.default_version = version
+	return call('insights.api.update_default_version', { version })
 }
 
 async function login(email: string, password: string) {

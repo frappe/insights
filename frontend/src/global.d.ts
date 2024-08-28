@@ -15,6 +15,8 @@ interface User {
 	is_user: boolean
 	country: string
 	locale: string
+	is_v2_user: boolean
+	default_version: 'v3' | 'v2' | ''
 }
 
 interface Session {
