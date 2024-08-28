@@ -2,8 +2,14 @@
 # For license information, please see license.txt
 
 import os
+import shutil
 
 import frappe
+
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+    after_request,
+    before_request,
+)
 
 
 def update_progress(message, progress):
@@ -31,35 +37,31 @@ class DemoDataFactory:
             return factory
         update_progress("Downloading data...", 5)
         factory.download_demo_data()
-        update_progress("Extracting data...", 30)
-        factory.extract_demo_data()
         update_progress("Syncing tables...", 60)
         factory.sync_tables()
-        update_progress("Cleaning up...", 90)
-        factory.cleanup()
         update_progress("Done", 99)
         return factory
 
     def initialize(self):
-        self.data_url = "https://drive.google.com/u/0/uc?id=11EpftRVNilAtMVMX9cNFVd1QFmqx7MYF&export=download"
+        self.db_url = "https://drive.google.com/uc?export=download&id=1l43RqU0KWKr04fx54PLsrHpWqMijRKTa"
         self.files_folder = frappe.get_site_path("private", "files")
-        self.tar_filename = "insights_demo_data.sqlite.tar"
-        self.local_filename = os.path.join(self.files_folder, self.tar_filename)
+        self.db_filename = "insights_demo_data.duckdb"
+        self.db_file_path = os.path.join(self.files_folder, self.db_filename)
+
         self.file_schema = self.get_schema()
         self.table_names = [frappe.scrub(table) for table in self.file_schema.keys()]
 
         self.create_demo_data_source()
         self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
         if frappe.flags.in_test or os.environ.get("CI"):
-            self.local_filename = os.path.join(
-                os.path.dirname(__file__), "test_sqlite_db.sqlite.tar"
-            )
+            test_db_path = os.path.join(os.path.dirname(__file__), self.db_filename)
+            shutil.copyfile(test_db_path, self.db_file_path)
 
     def create_demo_data_source(self):
         if not frappe.db.exists("Insights Data Source v3", "demo_data"):
             data_source = frappe.new_doc("Insights Data Source v3")
             data_source.title = "Demo Data"
-            data_source.database_type = "SQLite"
+            data_source.database_type = "DuckDB"
             data_source.database_name = "insights_demo_data"
             data_source.save(ignore_permissions=True)
             frappe.db.commit()
@@ -68,6 +70,32 @@ class DemoDataFactory:
         if not self.data_source.tables:
             return False
         return len(frappe.parse_json(self.data_source.tables)) == len(self.table_names)
+
+    def download_demo_data(self):
+        if os.path.exists(self.db_file_path):
+            return
+
+        import requests
+
+        try:
+            with requests.get(self.db_url, stream=True) as r:
+                r.raise_for_status()
+                with open(self.db_file_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+        except Exception as e:
+            frappe.log_error(
+                "Error downloading demo data. Please check your Internet connection."
+            )
+            update_progress("Error...", -1)
+            raise e
+
+    def sync_tables(self):
+        before_request()
+        self.data_source.update_table_list()
+        self.data_source.save(ignore_permissions=True)
+        print(self.data_source.tables)
+        after_request()
 
     def get_schema(self):
         return {
@@ -80,15 +108,15 @@ class DemoDataFactory:
                     "customer_state": "String",
                 },
             },
-            # "Geolocation": {
-            #     "columns": {
-            #         "geolocation_zip_code_prefix": "String",
-            #         "geolocation_lat": "String",
-            #         "geolocation_lng": "String",
-            #         "geolocation_city": "String",
-            #         "geolocation_state": "String",
-            #     }
-            # },
+            "Geolocation": {
+                "columns": {
+                    "geolocation_zip_code_prefix": "String",
+                    "geolocation_lat": "String",
+                    "geolocation_lng": "String",
+                    "geolocation_city": "String",
+                    "geolocation_state": "String",
+                }
+            },
             "OrderItems": {
                 "columns": {
                     "order_id": "String",
@@ -152,64 +180,22 @@ class DemoDataFactory:
             },
         }
 
-    def cleanup(self):
-        if os.path.exists(os.path.join(self.files_folder, self.tar_filename)):
-            os.remove(os.path.join(self.files_folder, self.tar_filename))
-
-    def download_demo_data(self):
-        """Download file locally under sites path and return local path"""
-        if os.path.exists(self.local_filename):
-            return
-
-        import requests
-
-        try:
-            with requests.get(self.data_url, stream=True) as r:
-                r.raise_for_status()
-                with open(self.local_filename, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
-        except Exception as e:
-            frappe.log_error(
-                "Error downloading demo data. Please check your Internet connection."
-            )
-            update_progress("Error...", -1)
-            raise e
-
-    def extract_demo_data(self):
-        import tarfile
-
-        try:
-            with tarfile.open(self.local_filename) as tar:
-                tar.extractall(self.files_folder)
-                tar.close()
-        except Exception as e:
-            frappe.log_error(
-                "Error extracting demo data. Please check if the file exists and is not corrupted."
-            )
-            update_progress("Error...", -1)
-            raise e
-
-    def sync_tables(self):
-        self.data_source.update_table_list()
-        self.data_source.save(ignore_permissions=True)
-
     def create_table_links(self):
         # TODO: refactor table links, create a new table for table links
         foreign_key_relations = {
             "Customers": [["customer_id", "Orders", "customer_id"]],
-            # "Geolocation": [
-            #     [
-            #         "geolocation_zip_code_prefix",
-            #         "Customers",
-            #         "customer_zip_code_prefix",
-            #     ],
-            #     [
-            #         "geolocation_zip_code_prefix",
-            #         "Suppliers",
-            #         "supplier_zip_code_prefix",
-            #     ],
-            # ],
+            "Geolocation": [
+                [
+                    "geolocation_zip_code_prefix",
+                    "Customers",
+                    "customer_zip_code_prefix",
+                ],
+                [
+                    "geolocation_zip_code_prefix",
+                    "Suppliers",
+                    "supplier_zip_code_prefix",
+                ],
+            ],
             "Orders": [
                 ["order_id", "OrderItems", "order_id"],
                 ["order_id", "OrderPayments", "order_id"],
