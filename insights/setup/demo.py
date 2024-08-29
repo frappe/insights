@@ -9,6 +9,10 @@ import frappe
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     after_request,
     before_request,
+    get_data_source_tables,
+)
+from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
+    InsightsTableLinkv3,
 )
 
 
@@ -48,9 +52,6 @@ class DemoDataFactory:
         self.db_filename = "insights_demo_data.duckdb"
         self.db_file_path = os.path.join(self.files_folder, self.db_filename)
 
-        self.file_schema = self.get_schema()
-        self.table_names = [frappe.scrub(table) for table in self.file_schema.keys()]
-
         self.create_demo_data_source()
         self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
         if frappe.flags.in_test or os.environ.get("CI"):
@@ -67,12 +68,11 @@ class DemoDataFactory:
             frappe.db.commit()
 
     def demo_data_exists(self):
-        if not self.data_source.tables:
-            return False
-        return len(frappe.parse_json(self.data_source.tables)) == len(self.table_names)
+        tables = get_data_source_tables(self.data_source.name)
+        return len(tables) == 8
 
     def download_demo_data(self):
-        if os.path.exists(self.db_file_path):
+        if frappe.flags.in_test or os.environ.get("CI"):
             return
 
         import requests
@@ -94,134 +94,68 @@ class DemoDataFactory:
         before_request()
         self.data_source.update_table_list()
         self.data_source.save(ignore_permissions=True)
-        print(self.data_source.tables)
         after_request()
-
-    def get_schema(self):
-        return {
-            "Customers": {
-                "columns": {
-                    "customer_id": "String",
-                    "customer_unique_id": "String",
-                    "customer_zip_code_prefix": "String",
-                    "customer_city": "String",
-                    "customer_state": "String",
-                },
-            },
-            "Geolocation": {
-                "columns": {
-                    "geolocation_zip_code_prefix": "String",
-                    "geolocation_lat": "String",
-                    "geolocation_lng": "String",
-                    "geolocation_city": "String",
-                    "geolocation_state": "String",
-                }
-            },
-            "OrderItems": {
-                "columns": {
-                    "order_id": "String",
-                    "order_item_id": "String",
-                    "product_id": "String",
-                    "seller_id": "String",
-                    "shipping_limit_date": "Datetime",
-                    "price": "Decimal",
-                    "freight_value": "Decimal",
-                }
-            },
-            "OrderPayments": {
-                "columns": {
-                    "order_id": "String",
-                    "payment_sequential": "String",
-                    "payment_type": "String",
-                    "payment_installments": "Integer",
-                    "payment_value": "Decimal",
-                }
-            },
-            "OrderReviews": {
-                "columns": {
-                    "review_id": "String",
-                    "order_id": "String",
-                    "review_score": "Integer",
-                    "review_comment_title": "String",
-                    "review_comment_message": "Text",
-                    "review_creation_date": "Datetime",
-                    "review_answer_timestamp": "Datetime",
-                }
-            },
-            "Orders": {
-                "columns": {
-                    "order_id": "String",
-                    "customer_id": "String",
-                    "order_status": "String",
-                    "order_purchase_timestamp": "Datetime",
-                    "order_approved_at": "Datetime",
-                    "order_delivered_carrier_date": "Datetime",
-                    "order_delivered_customer_date": "Datetime",
-                    "order_estimated_delivery_date": "Datetime",
-                }
-            },
-            "Products": {
-                "columns": {
-                    "product_id": "String",
-                    "product_category_name": "String",
-                    "product_weight_g": "Integer",
-                    "product_length_cm": "Integer",
-                    "product_height_cm": "Integer",
-                    "product_width_cm": "Integer",
-                }
-            },
-            "Sellers": {
-                "columns": {
-                    "seller_id": "String",
-                    "seller_zip_code_prefix": "String",
-                    "seller_city": "String",
-                    "seller_state": "String",
-                }
-            },
-        }
+        self.create_table_links()
 
     def create_table_links(self):
-        # TODO: refactor table links, create a new table for table links
-        foreign_key_relations = {
-            "Customers": [["customer_id", "Orders", "customer_id"]],
-            "Geolocation": [
-                [
-                    "geolocation_zip_code_prefix",
-                    "Customers",
-                    "customer_zip_code_prefix",
-                ],
-                [
-                    "geolocation_zip_code_prefix",
-                    "Suppliers",
-                    "supplier_zip_code_prefix",
-                ],
-            ],
-            "Orders": [
-                ["order_id", "OrderItems", "order_id"],
-                ["order_id", "OrderPayments", "order_id"],
-                ["order_id", "OrderReviews", "order_id"],
-            ],
-            "Products": [
-                ["product_id", "OrderItems", "product_id"],
-            ],
-            "Sellers": [
-                ["seller_id", "OrderItems", "seller_id"],
-            ],
-        }
-        for table, links in foreign_key_relations.items():
-            doc = frappe.get_doc(
-                "Insights Table v3",
-                {"table": frappe.scrub(table), "data_source": self.data_source.name},
+        table_links = [
+            {
+                "left_table": "customers",
+                "right_table": "orders",
+                "left_column": "customer_id",
+                "right_column": "customer_id",
+            },
+            {
+                "left_table": "geolocation",
+                "right_table": "customers",
+                "left_column": "geolocation_zip_code_prefix",
+                "right_column": "customer_zip_code_prefix",
+            },
+            {
+                "left_table": "geolocation",
+                "right_table": "sellers",
+                "left_column": "geolocation_zip_code_prefix",
+                "right_column": "seller_zip_code_prefix",
+            },
+            {
+                "left_table": "orders",
+                "right_table": "orderitems",
+                "left_column": "order_id",
+                "right_column": "order_id",
+            },
+            {
+                "left_table": "orders",
+                "right_table": "orderpayments",
+                "left_column": "order_id",
+                "right_column": "order_id",
+            },
+            {
+                "left_table": "orders",
+                "right_table": "orderreviews",
+                "left_column": "order_id",
+                "right_column": "order_id",
+            },
+            {
+                "left_table": "products",
+                "right_table": "orderitems",
+                "left_column": "product_id",
+                "right_column": "product_id",
+            },
+            {
+                "left_table": "sellers",
+                "right_table": "orderitems",
+                "left_column": "seller_id",
+                "right_column": "seller_id",
+            },
+        ]
+        frappe.db.delete(
+            "Insights Table Link v3", {"data_source": self.data_source.name}
+        )
+        for link in table_links:
+            InsightsTableLinkv3.create(
+                self.data_source.name,
+                link["left_table"],
+                link["right_table"],
+                link["left_column"],
+                link["right_column"],
             )
-            for link in links:
-                doc.append(
-                    "table_links",
-                    {
-                        "primary_key": link[0],
-                        "foreign_key": link[2],
-                        "foreign_table": frappe.scrub(link[1]),
-                        "foreign_table_label": link[1],
-                        "cardinality": "1:N",
-                    },
-                )
-            doc.save(ignore_permissions=True)
