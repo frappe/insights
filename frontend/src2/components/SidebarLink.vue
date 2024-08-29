@@ -10,11 +10,17 @@
 		>
 			<Tooltip :text="label" placement="right">
 				<slot name="icon">
-					<component :is="icon" class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
+						<component
+							:is="icon"
+							class="h-4.5 w-4.5 text-gray-700"
+							stroke-width="1.5"
+						/>
+					</span>
 				</slot>
 			</Tooltip>
 			<span
-				class="flex-shrink-0 truncate text-base duration-300 ease-in-out"
+				class="flex-shrink-0 text-base duration-300 ease-in-out"
 				:class="
 					isCollapsed ? 'ml-0 w-0 overflow-hidden opacity-0' : 'ml-2 w-auto opacity-100'
 				"
@@ -26,7 +32,6 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'frappe-ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
