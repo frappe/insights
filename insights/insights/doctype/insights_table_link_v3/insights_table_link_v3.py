@@ -41,6 +41,14 @@ class InsightsTableLinkv3(Document):
                 "left_column": self.right_column,
                 "right_column": self.left_column,
             },
+        ) or frappe.db.exists(
+            "Insights Table Link v3",
+            {
+                "left_table": self.left_table,
+                "right_table": self.right_table,
+                "left_column": self.left_column,
+                "right_column": self.right_column,
+            },
         )
 
     @staticmethod

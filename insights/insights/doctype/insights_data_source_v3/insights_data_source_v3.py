@@ -17,13 +17,17 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 from insights.insights.doctype.insights_table_column.insights_table_column import (
     InsightsTableColumn,
 )
+from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
+    InsightsTableLinkv3,
+)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
-    sync_insights_table,
+    InsightsTablev3,
 )
 
 from .connectors.duckdb import get_duckdb_connection_string
 from .connectors.frappe_db import (
     get_frappedb_connection_string,
+    get_frappedb_table_links,
     get_sitedb_connection_string,
     is_frappe_db,
 )
@@ -81,7 +85,9 @@ class InsightsDataSourceDocument:
         linked_doctypes = ["Insights Table v3"]
         for doctype in linked_doctypes:
             for name in frappe.db.get_all(
-                doctype, {"data_source": self.name}, pluck="name"
+                doctype,
+                {"data_source": self.name},
+                pluck="name",
             ):
                 frappe.delete_doc(doctype, name)
 
@@ -185,12 +191,28 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         errors = []
         for table in tables:
             try:
-                sync_insights_table(self.name, table)
+                InsightsTablev3.create(self.name, table)
             except Exception as e:
                 errors.append(f"Error syncing {table}: {e}")
 
         if errors:
             frappe.throw("\n".join(errors))
+
+        self.update_table_links()
+
+    def update_table_links(self):
+        links = []
+        if self.is_site_db or self.is_frappe_db:
+            links = get_frappedb_table_links(self)
+
+        for link in links:
+            InsightsTableLinkv3.create(
+                self.name,
+                link.left_table,
+                link.right_table,
+                link.left_column,
+                link.right_column,
+            )
 
 
 @frappe.whitelist()
@@ -212,7 +234,6 @@ def get_data_sources():
 
 @frappe.whitelist()
 def get_data_source_tables(data_source=None, search_term=None, limit=100):
-
     tables = frappe.get_all(
         "Insights Table v3",
         filters={
