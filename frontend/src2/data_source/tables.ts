@@ -33,6 +33,10 @@ async function getTableColumns(data_source: string, table_name: string) {
 const updatingDataSourceTables = ref(false)
 async function updateDataSourceTables(data_source: string) {
 	updatingDataSourceTables.value = true
+	createToast({
+		message: `Updating tables for ${data_source}`,
+		variant: 'info',
+	})
 	return call(basePath + 'update_data_source_tables', { data_source })
 		.then(() => {
 			getTables(data_source)

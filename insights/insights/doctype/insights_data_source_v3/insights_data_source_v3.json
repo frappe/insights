@@ -18,8 +18,7 @@
   "username",
   "password",
   "section_break_ajvs",
-  "connection_string",
-  "tables"
+  "connection_string"
  ],
  "fields": [
   {
@@ -99,17 +98,11 @@
    "fieldname": "connection_string",
    "fieldtype": "Text",
    "label": "Connection String"
-  },
-  {
-   "fieldname": "tables",
-   "fieldtype": "JSON",
-   "label": "Tables",
-   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-14 13:53:29.330024",
+ "modified": "2024-08-29 13:58:25.669483",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

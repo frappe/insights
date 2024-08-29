@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "autoincrement",
  "creation": "2024-06-09 19:42:19.655930",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -7,13 +8,11 @@
  "field_order": [
   "table",
   "label",
-  "is_query_based",
   "column_break_3",
   "data_source",
   "last_synced_on",
   "section_break_6",
-  "columns",
-  "table_links"
+  "columns"
  ],
  "fields": [
   {
@@ -55,30 +54,19 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "0",
-   "fieldname": "is_query_based",
-   "fieldtype": "Check",
-   "label": "Is Query Based"
-  },
-  {
    "fieldname": "last_synced_on",
    "fieldtype": "Datetime",
    "label": "Last Synced On",
    "read_only": 1
-  },
-  {
-   "fieldname": "table_links",
-   "fieldtype": "Table",
-   "label": "Links",
-   "options": "Insights Table Link"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-06-09 19:49:22.654794",
+ "modified": "2024-08-29 13:35:16.264909",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",
+ "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {

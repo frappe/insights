@@ -1,8 +1,8 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
 import { Breadcrumbs, ListView } from 'frappe-ui'
-import { SearchIcon } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { MoreHorizontal, RefreshCcw, SearchIcon } from 'lucide-vue-next'
+import { h, ref } from 'vue'
 import useTableStore, { DataSourceTable } from './tables'
 
 const props = defineProps<{ name: string }>()
@@ -66,6 +66,28 @@ document.title = `Tables | ${props.name}`
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>
 			</FormControl>
+			<Dropdown
+				:options="[
+					{
+						label: 'Update Tables',
+						onClick: () =>
+							tableStore
+								.updateDataSourceTables(props.name)
+								.then(() => updateTablesList()),
+						icon: () =>
+							h(RefreshCcw, {
+								class: 'h-4 w-4 text-gray-700',
+								'stroke-width': '1.5',
+							}),
+					},
+				]"
+			>
+				<Button>
+					<template #icon>
+						<MoreHorizontal class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+			</Dropdown>
 		</div>
 		<ListView class="h-full" v-bind="listOptions"> </ListView>
 	</div>

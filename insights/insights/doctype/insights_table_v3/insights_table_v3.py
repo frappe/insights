@@ -5,9 +5,6 @@
 import frappe
 from frappe.model.document import Document
 
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-    get_warehouse_table_name,
-)
 from insights.insights.doctype.insights_table_column.insights_table_column import (
     InsightsTableColumn,
 )
@@ -25,17 +22,17 @@ class InsightsTablev3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        from insights.insights.doctype.insights_table_column.insights_table_column import (
+            InsightsTableColumn,
+        )
+
         columns: DF.Table[InsightsTableColumn]
         data_source: DF.Link
-        is_query_based: DF.Check
         label: DF.Data
         last_synced_on: DF.Datetime | None
+        name: DF.Int | None
         table: DF.Data
-        table_links: DF.Table[InsightsTableLink]
     # end: auto-generated types
-
-    def autoname(self):
-        self.name = get_warehouse_table_name(self.data_source, self.table)
 
 
 def sync_insights_table(
@@ -74,14 +71,15 @@ def sync_insights_table(
     doc.label = table_name
     if force:
         doc.columns = []
-        doc.table_links = []
+        # doc.table_links = []
 
-    for table_link in table_links or []:
-        if not doc.get("table_links", table_link):
-            doc.append("table_links", table_link)
+    # for table_link in table_links or []:
+    #     if not doc.get("table_links", table_link):
+    #         doc.append("table_links", table_link)
 
     column_added = False
-    for column in columns or []:
+    columns = columns or []
+    for column in columns:
         # do not overwrite existing columns, since type or label might have been changed
         if any(doc_column.column == column.column for doc_column in doc.columns):
             continue

@@ -17,6 +17,9 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 from insights.insights.doctype.insights_table_column.insights_table_column import (
     InsightsTableColumn,
 )
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+    sync_insights_table,
+)
 
 from .connectors.duckdb import get_duckdb_connection_string
 from .connectors.frappe_db import (
@@ -125,7 +128,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         password: DF.Password | None
         port: DF.Int
         status: DF.Literal["Inactive", "Active"]
-        tables: DF.JSON | None
         title: DF.Data
         use_ssl: DF.Check
         username: DF.Data | None
@@ -179,7 +181,16 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         remote_db = self._get_ibis_backend()
         tables = remote_db.list_tables()
         tables = [t for t in tables if not blacklisted(t)]
-        self.db_set("tables", frappe.as_json(tables))
+
+        errors = []
+        for table in tables:
+            try:
+                sync_insights_table(self.name, table)
+            except Exception as e:
+                errors.append(f"Error syncing {table}: {e}")
+
+        if errors:
+            frappe.throw("\n".join(errors))
 
 
 @frappe.whitelist()
@@ -200,37 +211,34 @@ def get_data_sources():
 
 
 @frappe.whitelist()
-@site_cache
 def get_data_source_tables(data_source=None, search_term=None, limit=100):
-    tables = []
-    for ds in frappe.get_all(
-        "Insights Data Source v3",
+
+    tables = frappe.get_all(
+        "Insights Table v3",
         filters={
-            "status": "Active",
-            "name": data_source or ["is", "set"],
+            "data_source": data_source or ["is", "set"],
         },
-        fields=["name", "tables"],
-    ):
-        if not ds.tables:
-            continue
-        ds_tables = frappe.parse_json(ds.tables)
-        ds_tables = [
-            table
-            for table in ds_tables
-            if not search_term or search_term.lower() in table.lower()
-        ]
-        tables.extend(
-            [
-                frappe._dict(
-                    {
-                        "table_name": table_name,
-                        "data_source": ds.name,
-                    }
-                )
-                for table_name in ds_tables
-            ]
+        or_filters={
+            "label": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
+            "table": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
+        },
+        fields=["name", "table", "label", "data_source", "last_synced_on"],
+        limit=limit,
+    )
+
+    ret = []
+    for table in tables:
+        ret.append(
+            frappe._dict(
+                {
+                    "label": table.label,
+                    "table_name": table.table,
+                    "data_source": table.data_source,
+                    "last_synced_on": table.last_synced_on,
+                }
+            )
         )
-    return tables[:limit]
+    return ret
 
 
 @frappe.whitelist()
