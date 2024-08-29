@@ -82,7 +82,7 @@ class InsightsDataSourceDocument:
         if self.is_site_db:
             frappe.throw("Cannot delete the site database. It is needed for Insights.")
 
-        linked_doctypes = ["Insights Table v3"]
+        linked_doctypes = ["Insights Table v3", "Insights Table Link v3"]
         for doctype in linked_doctypes:
             for name in frappe.db.get_all(
                 doctype,
