@@ -277,6 +277,11 @@ def update_data_source_tables(data_source):
     ds.update_table_list()
 
 
+@frappe.whitelist()
+def get_table_links(data_source, left_table, right_table):
+    return InsightsTableLinkv3.get_links(data_source, left_table, right_table)
+
+
 def make_data_source(data_source):
     data_source = frappe._dict(data_source)
     ds = frappe.new_doc("Insights Data Source v3")

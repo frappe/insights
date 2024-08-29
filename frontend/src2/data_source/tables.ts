@@ -1,7 +1,7 @@
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-import { QueryResultColumn } from '../types/query.types'
 import { createToast } from '../helpers/toasts'
+import { QueryResultColumn } from '../types/query.types'
 
 const basePath = 'insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.'
 
@@ -26,7 +26,7 @@ async function getTableColumns(data_source: string, table_name: string) {
 				name: c.column,
 				type: c.type,
 			})) as QueryResultColumn[]
-		},
+		}
 	)
 }
 
@@ -50,6 +50,24 @@ async function updateDataSourceTables(data_source: string) {
 		})
 }
 
+type TableLink = {
+	left_table: string
+	right_table: string
+	left_column: string
+	right_column: string
+}
+async function getTableLinks(
+	data_source: string,
+	left_table: string,
+	right_table: string
+): Promise<TableLink[]> {
+	return call(basePath + 'get_table_links', {
+		data_source,
+		left_table,
+		right_table,
+	})
+}
+
 export default function useTableStore() {
 	return reactive({
 		tables,
@@ -58,5 +76,6 @@ export default function useTableStore() {
 		getTableColumns,
 		updatingDataSourceTables,
 		updateDataSourceTables,
+		getTableLinks,
 	})
 }

@@ -59,9 +59,9 @@ const data_source = computed(() => {
 	// TODO: support multiple data source joins if live connection is disabled
 	// if (!query.doc.use_live_connection) return undefined
 
-	return query.doc.operations[0].type === 'source'
-		? query.doc.operations[0].table.data_source
-		: undefined
+	const operations = query.getOperationsForExecution()
+	const source = operations.find((op) => op.type === 'source' && 'table' in op)
+	return source ? source.table.data_source : undefined
 })
 
 type TableOption = {
@@ -140,7 +140,46 @@ wheneverChanges(
 )
 
 function autoMatchColumns() {
-	return
+	if ('join_expression' in join.value.join_condition) return
+
+	const selected_tables = query.doc.operations
+		.filter((op) => op.type === 'source' || op.type === 'join')
+		.map((op) => {
+			if (op.type === 'source' && 'table' in op) {
+				return op.table.table_name
+			}
+			if (op.type === 'join' && 'table' in op) {
+				return op.table.table_name
+			}
+			return ''
+		})
+		.filter((table) => table !== join.value.table.table_name)
+
+	const right_table = join.value.table.table_name
+	selected_tables.some(async (left_table: string) => {
+		const links = await tableStore.getTableLinks(
+			join.value.table.data_source,
+			left_table,
+			right_table
+		)
+
+		if (!links?.length) {
+			return false
+		}
+
+		// find a link where left column is present in query.result.columns
+		const link = links.find((l) => {
+			return query.result.columns.find((c) => c.name === l.left_column)
+		})
+		if (!link) {
+			return false
+		}
+
+		if ('left_column' in join.value.join_condition) {
+			join.value.join_condition.left_column.column_name = link.left_column
+			join.value.join_condition.right_column.column_name = link.right_column
+		}
+	})
 }
 
 const showJoinConditionEditor = computed(() => 'join_expression' in join.value.join_condition)

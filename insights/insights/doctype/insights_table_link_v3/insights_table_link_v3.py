@@ -61,3 +61,30 @@ class InsightsTableLinkv3(Document):
         doc.right_column = right_column
         with suppress(frappe.DuplicateEntryError):
             doc.save(ignore_permissions=True)
+
+    @staticmethod
+    def get_links(data_source, left_table, right_table):
+        left_to_right_links = frappe.get_all(
+            "Insights Table Link v3",
+            filters={
+                "data_source": data_source,
+                "left_table": left_table,
+                "right_table": right_table,
+            },
+            fields=["left_table", "right_table", "left_column", "right_column"],
+        )
+        right_to_left_links = frappe.get_all(
+            "Insights Table Link v3",
+            filters={
+                "data_source": data_source,
+                "left_table": right_table,
+                "right_table": left_table,
+            },
+            fields=[
+                "left_table as right_table",
+                "right_table as left_table",
+                "left_column as right_column",
+                "right_column as left_column",
+            ],
+        )
+        return left_to_right_links + right_to_left_links
