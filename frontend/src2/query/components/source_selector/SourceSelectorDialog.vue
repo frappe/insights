@@ -24,7 +24,12 @@ const selectedTable = ref<TableArgs>(
 )
 
 const dataSourceStore = useDataSourceStore()
-const tabGroups = ref<TabGroup[]>([])
+const tabGroups = ref<TabGroup[]>([
+	{
+		groupLabel: 'Data Sources',
+		tabs: [],
+	},
+])
 const activeTab = ref<Tab | undefined>()
 wheneverChanges(activeTab, () => {
 	selectedTable.value = {
@@ -35,19 +40,16 @@ wheneverChanges(activeTab, () => {
 })
 
 dataSourceStore.getSources().then(() => {
-	tabGroups.value.push({
-		groupLabel: 'Data Sources',
-		tabs: dataSourceStore.sources.map((source) => ({
-			label: source.name,
-			icon: DatabaseIcon,
-			component: () => (
-				<DataSourceTableList
-					v-model:selectedTable={selectedTable.value}
-					data_source={source.name}
-				/>
-			),
-		})),
-	})
+	tabGroups.value[0].tabs = dataSourceStore.sources.map((source) => ({
+		label: source.name,
+		icon: DatabaseIcon,
+		component: () => (
+			<DataSourceTableList
+				v-model:selectedTable={selectedTable.value}
+				data_source={source.name}
+			/>
+		),
+	}))
 	activeTab.value = tabGroups.value[0].tabs[0]
 })
 
