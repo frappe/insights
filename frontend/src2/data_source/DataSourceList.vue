@@ -107,7 +107,7 @@ const listOptions = ref({
 			button: {
 				label: 'New Data Source',
 				variant: 'solid',
-				onClick: () => {},
+				onClick: () => (showNewSourceDialog.value = true),
 			},
 		},
 	},
