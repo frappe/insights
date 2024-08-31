@@ -137,11 +137,11 @@
 		<template #body-content>
 			<div class="prose prose-sm mb-4">
 				<p>
-					Switch to the new version and try it out. The new version of Insights is built
-					from the ground up to provide a better experience.
+					Switch to the newest version of Insights, built from the ground up for a better
+					experience.
 				</p>
 				<p>
-					You can always come back to this version by clicking on the "Switch to Insights
+					You can always switch back to this version by clicking the "Switch to Insights
 					v2" button in the new version.
 				</p>
 			</div>
