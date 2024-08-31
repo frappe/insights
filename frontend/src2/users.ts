@@ -1,12 +1,16 @@
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { createToast } from './helpers/toasts'
 
-type User = {
+export type User = {
+	name: ''
 	email: ''
-	first_name: ''
-	last_name: ''
 	full_name: ''
 	user_image: ''
+	type: 'Admin' | 'User'
+	enabled: 1 | 0
+	last_active?: ''
+	invitation_status?: 'Pending' | 'Expired'
 }
 const users = ref<User[]>([])
 
@@ -20,6 +24,33 @@ async function getUsers(search_term = '') {
 	})
 }
 
+function getUser(email: string) {
+	return users.value.find((user) => user.email === email)
+}
+
+const sendingInvitation = ref(false)
+function inviteUsers(emails: string[]) {
+	sendingInvitation.value = true
+	return call(
+		'insights.insights.doctype.insights_user_invitation.insights_user_invitation.invite_users',
+		{ emails: emails.join(',') }
+	)
+		.then(() => {
+			getUsers()
+			createToast({
+				title: 'Invitation Sent',
+				message:
+					emails.length === 1
+						? `Invitation sent to ${emails[0]}`
+						: `Invitations sent to ${emails.length} users`,
+				variant: 'success',
+			})
+		})
+		.finally(() => {
+			sendingInvitation.value = false
+		})
+}
+
 export default function useUserStore() {
 	if (!users.value.length) {
 		getUsers()
@@ -29,8 +60,9 @@ export default function useUserStore() {
 		users,
 		loading,
 		getUsers,
-		getUser(email: string) {
-			return users.value.find((user) => user.email === email)
-		}
+		getUser,
+
+		inviteUsers,
+		sendingInvitation,
 	})
 }

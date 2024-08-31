@@ -36,19 +36,18 @@
 </template>
 
 <script setup lang="ts">
-import UserDropdown from './UserDropdown.vue'
-import { Book, Database, LayoutGrid, PanelRightOpen } from 'lucide-vue-next'
+import { Book, Database, PanelRightOpen, Users } from 'lucide-vue-next'
 import { ref } from 'vue'
-import CollapseSidebar from './Icons/CollapseSidebar.vue'
 import SidebarLink from './SidebarLink.vue'
+import UserDropdown from './UserDropdown.vue'
 
 const isSidebarCollapsed = ref(false)
 const links = [
-	{
-		label: 'Dashboards',
-		icon: LayoutGrid,
-		to: 'DashboardList',
-	},
+	// {
+	// 	label: 'Dashboards',
+	// 	icon: LayoutGrid,
+	// 	to: 'DashboardList',
+	// },
 	{
 		label: 'Workbooks',
 		icon: Book,
@@ -58,6 +57,11 @@ const links = [
 		label: 'Data Sources',
 		icon: Database,
 		to: 'DataSourceList',
+	},
+	{
+		label: 'Users',
+		icon: Users,
+		to: 'UserList',
 	},
 ]
 </script>

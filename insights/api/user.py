@@ -26,12 +26,11 @@ def get_users(search_term=None):
 
     users = frappe.get_all(
         "User",
-        fields=["name", "full_name", "email", "last_active", "user_image"],
+        fields=["name", "full_name", "email", "last_active", "user_image", "enabled"],
         filters={
             "name": ["in", list(set(insights_users + insights_admins))],
             **additional_filters,
         },
-        order_by="last_active desc",
     )
     for user in users:
         teams = frappe.get_all(
@@ -41,6 +40,26 @@ def get_users(search_term=None):
         )
         user["type"] = "Admin" if user.name in insights_admins else "User"
         user["teams"] = teams
+
+    invitations = frappe.get_all(
+        "Insights User Invitation",
+        fields=["email", "status"],
+        filters={"status": ["in", ["Pending", "Expired"]]},
+    )
+    for invitation in invitations:
+        users.append(
+            {
+                "name": invitation.email,
+                "full_name": invitation.email.split("@")[0],
+                "email": invitation.email,
+                "last_active": None,
+                "user_image": None,
+                "enabled": 0,
+                "type": "User",
+                "teams": [],
+                "invitation_status": invitation.status,
+            }
+        )
 
     return users
 

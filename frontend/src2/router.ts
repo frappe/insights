@@ -64,6 +64,11 @@ const routes = [
 		component: () => import('./data_source/DataSourceTableList.vue'),
 	},
 	{
+		path: '/users',
+		name: 'UserList',
+		component: () => import('./users/UserList.vue'),
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('./auth/NotFound.vue'),
 		meta: { hideSidebar: true },

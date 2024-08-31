@@ -1,7 +1,6 @@
 import Autocomplete from './components/Autocomplete.vue'
 import Checkbox from './components/Checkbox.vue'
 import Popover from './components/Popover.vue'
-import FormControl from './components/FormControl.vue'
 import Switch from './components/Switch.vue'
 import {
 	Avatar,
@@ -14,6 +13,7 @@ import {
 	Input,
 	LoadingIndicator,
 	Tooltip,
+	FormControl
 } from 'frappe-ui'
 
 import { App } from 'vue'
