@@ -2,6 +2,7 @@
 import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import CSVIcon from '../components/Icons/CSVIcon.vue'
 import DuckDBIcon from '../components/Icons/DuckDBIcon.vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import MariaDBIcon from '../components/Icons/MariaDBIcon.vue'
@@ -13,6 +14,7 @@ import ConnectMariaDBDialog from './ConnectMariaDBDialog.vue'
 import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
 import useDataSourceStore from './data_source'
 import { DataSourceListItem } from './data_source.types'
+import UploadCSVFileDialog from './UploadCSVFileDialog.vue'
 
 const dataSourceStore = useDataSourceStore()
 dataSourceStore.getSources()
@@ -30,6 +32,7 @@ const filteredDataSources = computed(() => {
 const showNewSourceDialog = ref(false)
 const showNewMariaDBDialog = ref(false)
 const showNewPostgreSQLDialog = ref(false)
+const showCSVFileUploadDialog = ref(true)
 
 const sourceTypes = [
 	{
@@ -48,6 +51,15 @@ const sourceTypes = [
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewPostgreSQLDialog.value = true
+		},
+	},
+	{
+		label: 'Upload CSV',
+		icon: <CSVIcon class="h-8 w-8" />,
+		description: 'Upload a CSV file',
+		onClick: () => {
+			showNewSourceDialog.value = false
+			showCSVFileUploadDialog.value = true
 		},
 	},
 ]
@@ -147,4 +159,5 @@ document.title = 'Data Sources | Insights'
 
 	<ConnectMariaDBDialog v-model="showNewMariaDBDialog" />
 	<ConnectPostgreSQLDialog v-model="showNewPostgreSQLDialog" />
+	<UploadCSVFileDialog v-model="showCSVFileUploadDialog" />
 </template>
