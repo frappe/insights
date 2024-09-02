@@ -32,7 +32,7 @@ const filteredDataSources = computed(() => {
 const showNewSourceDialog = ref(false)
 const showNewMariaDBDialog = ref(false)
 const showNewPostgreSQLDialog = ref(false)
-const showCSVFileUploadDialog = ref(true)
+const showCSVFileUploadDialog = ref(false)
 
 const sourceTypes = [
 	{
