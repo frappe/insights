@@ -10,6 +10,7 @@ import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import ContentEditable from '../components/ContentEditable.vue'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -58,7 +59,13 @@ function onDrop(event: DragEvent) {
 	<div class="relative flex h-full w-full divide-x overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<div class="flex items-center justify-between border-x bg-white py-3 px-4 shadow-sm">
-				<div class="text-lg font-semibold">{{ dashboard.doc.title }}</div>
+				<ContentEditable
+					class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+					:class="[dashboard.editing ? '' : 'cursor-default']"
+					v-model="dashboard.doc.title"
+					:disabled="!dashboard.editing"
+					placeholder="Untitled Dashboard"
+				></ContentEditable>
 				<div class="flex gap-2">
 					<DashboardFilterSelector
 						v-if="!dashboard.editing"
