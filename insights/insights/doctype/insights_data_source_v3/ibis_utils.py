@@ -385,7 +385,7 @@ def execute_ibis_query(
     res: pd.DataFrame = query.execute()
     create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
 
-    res = res.replace({pd.NaT: None, np.NaN: None})
+    res = res.replace({pd.NaT: None, np.nan: None})
 
     if cache:
         cache_results(sql, res)
