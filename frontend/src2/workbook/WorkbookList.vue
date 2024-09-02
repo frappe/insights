@@ -31,13 +31,13 @@ const listOptions = ref({
 			key: 'owner',
 			getLabel(props: any) {
 				const workbook = props.row as WorkbookListItem
-				const user = userStore.getUser(workbook.owner)!
-				return user.full_name
+				const user = userStore.getUser(workbook.owner)
+				return user?.full_name
 			},
 			prefix: (props: any) => {
 				const workbook = props.row as WorkbookListItem
-				const user = userStore.getUser(workbook.owner)!
-				return <Avatar size="md" label={workbook.owner} image={user.user_image} />
+				const user = userStore.getUser(workbook.owner)
+				return <Avatar size="md" label={workbook.owner} image={user?.user_image} />
 			},
 		},
 		{ label: 'Created', key: 'created_from_now' },
