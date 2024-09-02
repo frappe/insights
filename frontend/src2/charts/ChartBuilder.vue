@@ -12,6 +12,7 @@ import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
+import { RefreshCcw } from 'lucide-vue-next'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
@@ -66,6 +67,15 @@ onBeforeUnmount(() => {
 			<InlineFormControlLabel label="Limit" class="!w-1/2">
 				<FormControl v-model="chart.doc.config.limit" type="number" />
 			</InlineFormControlLabel>
+			<hr class="border-t border-gray-200" />
+			<div>
+				<Button @click="chart.refresh([], true)" class="w-full">
+					<template #prefix>
+						<RefreshCcw class="h-4 text-gray-700" stroke-width="1.5" />
+					</template>
+					Refresh Chart
+				</Button>
+			</div>
 		</div>
 	</div>
 </template>
