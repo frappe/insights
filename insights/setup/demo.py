@@ -37,6 +37,7 @@ class DemoDataFactory:
     def run(force=False):
         factory = DemoDataFactory()
         if factory.demo_data_exists() and not force:
+            factory.create_table_links()
             update_progress("Done", 99)
             return factory
         update_progress("Downloading data...", 5)
@@ -52,20 +53,22 @@ class DemoDataFactory:
         self.db_filename = "insights_demo_data.duckdb"
         self.db_file_path = os.path.join(self.files_folder, self.db_filename)
 
-        self.create_demo_data_source()
-        self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
+        self.setup_demo_data_source()
         if frappe.flags.in_test or os.environ.get("CI"):
             test_db_path = os.path.join(os.path.dirname(__file__), self.db_filename)
             shutil.copyfile(test_db_path, self.db_file_path)
 
-    def create_demo_data_source(self):
+    def setup_demo_data_source(self):
         if not frappe.db.exists("Insights Data Source v3", "demo_data"):
             data_source = frappe.new_doc("Insights Data Source v3")
+            data_source.name = "demo_data"
             data_source.title = "Demo Data"
             data_source.database_type = "DuckDB"
             data_source.database_name = "insights_demo_data"
-            data_source.save(ignore_permissions=True)
+            data_source.insert(ignore_permissions=True)
             frappe.db.commit()
+
+        self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
 
     def demo_data_exists(self):
         tables = get_data_source_tables(self.data_source.name)
