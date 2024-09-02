@@ -1,8 +1,8 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watchEffect } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { copy, showErrorToast } from './index'
+import { copy, showErrorToast, waitUntil } from './index'
 import { createToast } from './toasts'
 
 type DocumentResourceOptions<T> = {
@@ -55,6 +55,7 @@ export default function useDocumentResource<T extends object>(
 		async save() {
 			if (this.saving) {
 				console.log('Already saving', this.doctype, this.name)
+				await waitUntil(() => !this.saving)
 				return this.doc
 			}
 			if (!this.isdirty && !this.islocal) {
@@ -69,7 +70,7 @@ export default function useDocumentResource<T extends object>(
 			await Promise.all(Array.from(beforeSaveFns).map((fn) => fn()))
 
 			if (this.islocal) {
-				await this.insert().finally(() => (this.saving = false))
+				await this.insert()
 			} else {
 				const doc = await call('frappe.client.set_value', {
 					doctype: this.doctype,
@@ -83,7 +84,6 @@ export default function useDocumentResource<T extends object>(
 				}
 			}
 
-			this.islocal = false
 			this.saving = false
 			await Promise.all(Array.from(afterSaveFns).map((fn) => fn()))
 			return this.doc
@@ -170,7 +170,7 @@ export default function useDocumentResource<T extends object>(
 					  }
 					: null
 			},
-			{ debounce: 500 }
+			{ debounce: 500, immediate: true }
 		)
 	}
 

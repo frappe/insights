@@ -212,7 +212,7 @@ function getWorkbookResource(name: string) {
 	const workbook = useDocumentResource<InsightsWorkbook>(doctype, name, {
 		initialDoc: {
 			doctype,
-			name: '',
+			name,
 			owner: '',
 			title: '',
 			queries: [],
