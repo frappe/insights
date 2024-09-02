@@ -18,6 +18,16 @@ const query = inject('query') as Query
 			<InlineFormControlLabel label="Query Title">
 				<FormControl v-model="query.doc.title" autocomplete="off" placeholder="Title" />
 			</InlineFormControlLabel>
+			<InlineFormControlLabel label="Use Cache" class="!w-1/2">
+				<Switch
+					:modelValue="!query.doc.use_live_connection"
+					@update:modelValue="query.doc.use_live_connection = !$event"
+					:tabs="[
+						{ label: 'Yes', value: true },
+						{ label: 'No', value: false, default: true },
+					]"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</div>
 </template>
