@@ -32,7 +32,7 @@ export default function useQuery(name) {
 
 	// Results
 	state.MAX_ROWS = 100
-	state.isOwner = computed(() => resource.doc?.owner === session.user.user_id)
+	state.isOwner = computed(() => resource.doc?.owner === session.user.email)
 
 	state.reload = () => {
 		setLoading(true)

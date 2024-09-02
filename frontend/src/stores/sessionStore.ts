@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 const emptyUser: User = {
-	user_id: '',
+	email: '',
 	first_name: '',
 	last_name: '',
 	full_name: '',
@@ -12,13 +12,15 @@ const emptyUser: User = {
 	is_user: false,
 	country: '',
 	locale: 'en-US',
+	is_v2_user: false,
+	default_version: '',
 }
 
 const sessionStore = defineStore('insights:session', function () {
 	const initialized = ref(false)
 	const user = ref(emptyUser)
 
-	const isLoggedIn = computed(() => user.value.user_id && user.value.user_id !== 'Guest')
+	const isLoggedIn = computed(() => user.value.email && user.value.email !== 'Guest')
 	const isAuthorized = computed(() => user.value.is_admin || user.value.is_user)
 
 	async function initialize(force: boolean = false) {
@@ -36,6 +38,7 @@ const sessionStore = defineStore('insights:session', function () {
 			...userInfo,
 			is_admin: Boolean(userInfo.is_admin),
 			is_user: Boolean(userInfo.is_user),
+			is_v2_user: Boolean(userInfo.is_v2_user),
 		})
 	}
 
@@ -63,6 +66,11 @@ const sessionStore = defineStore('insights:session', function () {
 		await api.createLastViewedLog(recordType, recordName)
 	}
 
+	function updateDefaultVersion(version: User['default_version']) {
+		user.value.default_version = version
+		return api.updateDefaultVersion(version)
+	}
+
 	return {
 		user: user,
 		initialized,
@@ -74,6 +82,7 @@ const sessionStore = defineStore('insights:session', function () {
 		logout,
 		resetSession,
 		createViewLog,
+		updateDefaultVersion,
 	}
 })
 
@@ -82,6 +91,7 @@ function getSessionFromCookies() {
 		.split('; ')
 		.map((c) => c.split('='))
 		.reduce((acc, [key, value]) => {
+			key = key == 'user_id' ? 'email' : key
 			acc[key] = decodeURIComponent(value)
 			return acc
 		}, {} as any)

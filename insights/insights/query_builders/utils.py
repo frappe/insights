@@ -31,7 +31,9 @@ class AndOrReplacer(ast.NodeTransformer):
         """
         Helper method to create an ast.Call node.
         """
-        return ast.Call(func=ast.Name(id=fn_name, ctx=ast.Load()), args=[left, right], keywords=[])
+        return ast.Call(
+            func=ast.Name(id=fn_name, ctx=ast.Load()), args=[left, right], keywords=[]
+        )
 
 
 def replace_and_or_expressions(source_code):

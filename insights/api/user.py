@@ -12,16 +12,25 @@ from insights.insights.doctype.insights_team.insights_team import get_user_teams
 
 @frappe.whitelist()
 @check_role("Insights Admin")
-def get_users():
+def get_users(search_term=None):
     """Returns full_name, email, type, teams, last_active"""
     insights_users = get_users_with_role("Insights User")
     insights_admins = get_users_with_role("Insights Admin")
 
+    additional_filters = {}
+    if search_term:
+        additional_filters = {
+            "full_name": ["like", f"%{search_term}%"],
+            "email": ["like", f"%{search_term}%"],
+        }
+
     users = frappe.get_all(
         "User",
-        fields=["name", "full_name", "email", "last_active"],
-        filters={"name": ["in", list(set(insights_users + insights_admins))]},
-        order_by="last_active desc",
+        fields=["name", "full_name", "email", "last_active", "user_image", "enabled"],
+        filters={
+            "name": ["in", list(set(insights_users + insights_admins))],
+            **additional_filters,
+        },
     )
     for user in users:
         teams = frappe.get_all(
@@ -31,6 +40,26 @@ def get_users():
         )
         user["type"] = "Admin" if user.name in insights_admins else "User"
         user["teams"] = teams
+
+    invitations = frappe.get_all(
+        "Insights User Invitation",
+        fields=["email", "status"],
+        filters={"status": ["in", ["Pending", "Expired"]]},
+    )
+    for invitation in invitations:
+        users.append(
+            {
+                "name": invitation.email,
+                "full_name": invitation.email.split("@")[0],
+                "email": invitation.email,
+                "last_active": None,
+                "user_image": None,
+                "enabled": 0,
+                "type": "User",
+                "teams": [],
+                "invitation_status": invitation.status,
+            }
+        )
 
     return users
 

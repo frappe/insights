@@ -1,0 +1,37 @@
+# Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
+# For license information, please see license.txt
+
+
+import frappe
+from frappe.model.document import Document
+
+
+class InsightsTablev3(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        from insights.insights.doctype.insights_table_column.insights_table_column import (
+            InsightsTableColumn,
+        )
+
+        columns: DF.Table[InsightsTableColumn]
+        data_source: DF.Link
+        label: DF.Data
+        last_synced_on: DF.Datetime | None
+        name: DF.Int | None
+        table: DF.Data
+    # end: auto-generated types
+
+    @staticmethod
+    def create(data_source, table_name):
+        doc = frappe.new_doc("Insights Table v3")
+        doc.data_source = data_source
+        doc.table = table_name
+        doc.label = table_name
+        doc.save(ignore_permissions=True)
+        return doc.name

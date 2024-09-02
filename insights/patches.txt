@@ -45,3 +45,4 @@ insights.insights.doctype.insights_table.patches.sync_table_links
 insights.insights.doctype.insights_notebook_page.patches.replace_query_builder_with_editor
 insights.insights.doctype.insights_query.patches.set_chart_name
 insights.insights.doctype.insights_chart.patches.convert_bar_to_row_chart
+insights.insights.doctype.insights_data_source_v3.patches.copy_data_sources #v4

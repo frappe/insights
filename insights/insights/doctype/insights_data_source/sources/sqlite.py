@@ -60,7 +60,9 @@ class SQLiteTableFactory:
         )
 
     def get_table_columns(self, table_name):
-        columns = self.db_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
+        columns = self.db_conn.execute(
+            text(f"PRAGMA table_info({table_name})")
+        ).fetchall()
         return [
             frappe._dict(
                 {
@@ -85,7 +87,9 @@ class SQLiteTableFactory:
 
 class SQLiteDB(BaseDatabase):
     def __init__(self, data_source, database_name) -> None:
-        database_path = frappe.get_site_path("private", "files", f"{database_name}.sqlite")
+        database_path = frappe.get_site_path(
+            "private", "files", f"{database_name}.sqlite"
+        )
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)

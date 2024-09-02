@@ -1,5 +1,6 @@
-import { createColumnHelper } from '@tanstack/vue-table'
 import { getFormattedCell } from '@/components/Table/utils'
+import { formatNumber } from '@/utils'
+import { createColumnHelper } from '@tanstack/vue-table'
 /**
  * A recursive function to convert a flat dict to a nested dict
  * Input: {
@@ -86,10 +87,20 @@ function _convertToTanstackColumns(columnHelper, pivotedRow, idPrefix = '', sepe
 				columnHelper.accessor(idPrefix + key, {
 					header: key,
 					isNumber: valueIsNumber,
+					filterFn: 'filterFunction',
 					cell: (props) =>
 						valueIsNumber && props.getValue() == 0
 							? ''
 							: getFormattedCell(props.getValue()),
+					footer: (props) => {
+						if (!valueIsNumber) return ''
+						const filteredRows = props.table.getFilteredRowModel().rows
+						const values = filteredRows.map((row) => row.getValue(idPrefix + key))
+						return formatNumber(
+							values.reduce((acc, curr) => acc + curr, 0),
+							2
+						)
+					},
 				})
 			)
 		}

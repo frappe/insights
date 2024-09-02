@@ -85,6 +85,11 @@
 							  }
 							: null,
 						{
+							label: 'Switch to Insights v3',
+							icon: 'grid',
+							onClick: () => (showSwitchToV3Dialog = true),
+						},
+						{
 							label: 'Logout',
 							icon: 'log-out',
 							onClick: () => session.logout(),
@@ -115,6 +120,39 @@
 	</div>
 
 	<HelpDialog v-model="showHelpDialog" />
+
+	<Dialog
+		v-model="showSwitchToV3Dialog"
+		:options="{
+			title: 'Insights v3 ✨',
+			actions: [
+				{
+					label: 'Continue',
+					variant: 'solid',
+					onClick: openInsightsV3,
+				},
+			],
+		}"
+	>
+		<template #body-content>
+			<div class="prose prose-sm mb-4">
+				<p>
+					Switch to the newest version of Insights, built from the ground up for a better
+					experience.
+				</p>
+				<p>
+					You can always switch back to this version by clicking the "Switch to Insights
+					v2" button in the new version.
+				</p>
+			</div>
+			<FormControl
+				type="checkbox"
+				label="Set Insights v3 as default"
+				:modelValue="session.user.default_version === 'v3'"
+				@update:modelValue="session.user.default_version = $event ? 'v3' : ''"
+			/>
+		</template>
+	</Dialog>
 </template>
 
 <script setup>
@@ -123,9 +161,9 @@ import { Avatar } from 'frappe-ui'
 import HelpDialog from '@/components/HelpDialog.vue'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
-import { createResource } from 'frappe-ui'
 import {
 	Book,
+	BookOpen,
 	Database,
 	GanttChartSquare,
 	HomeIcon,
@@ -133,7 +171,6 @@ import {
 	Settings,
 	User,
 	Users,
-	BookOpen,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -142,6 +179,8 @@ const session = sessionStore()
 const settings = settingsStore().settings
 
 const showHelpDialog = ref(false)
+const showSwitchToV3Dialog = ref(false)
+
 const sidebarItems = ref([
 	{
 		path: '/',
@@ -223,4 +262,17 @@ const currentRoute = computed(() => {
 })
 
 const open = (url) => window.open(url, '_blank')
+
+function openInsightsV3() {
+	session
+		.updateDefaultVersion(
+			// if default version is v2, then /insights always redirects to /insights_v2
+			// so it is not possible to switch to v3 from v2
+			// so we need to remove the default_version
+			session.user.default_version === 'v2' ? '' : session.user.default_version
+		)
+		.then(() => {
+			window.location.href = '/insights'
+		})
+}
 </script>

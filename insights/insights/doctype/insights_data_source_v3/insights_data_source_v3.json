@@ -1,0 +1,127 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-06-09 19:42:19.655930",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "status",
+  "database_type",
+  "host",
+  "port",
+  "use_ssl",
+  "is_site_db",
+  "is_frappe_db",
+  "column_break_pfsa",
+  "database_name",
+  "username",
+  "password",
+  "section_break_ajvs",
+  "connection_string"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Inactive\nActive"
+  },
+  {
+   "fieldname": "database_type",
+   "fieldtype": "Select",
+   "label": "Database Type",
+   "options": "MariaDB\nPostgreSQL\nSQLite\nDuckDB"
+  },
+  {
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "label": "Host"
+  },
+  {
+   "fieldname": "port",
+   "fieldtype": "Int",
+   "label": "Port"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_ssl",
+   "fieldtype": "Check",
+   "label": "Use SSL"
+  },
+  {
+   "default": "0",
+   "depends_on": "is_site_db",
+   "fieldname": "is_site_db",
+   "fieldtype": "Check",
+   "label": "Is Site Database",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_frappe_db",
+   "fieldtype": "Check",
+   "label": "Is Frappe Database",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pfsa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name"
+  },
+  {
+   "fieldname": "username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "section_break_ajvs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "connection_string",
+   "fieldtype": "Text",
+   "label": "Connection String"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-08-29 13:58:25.669483",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Data Source v3",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

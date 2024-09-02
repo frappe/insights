@@ -91,7 +91,9 @@ def apply_pivot_transform(results, options):
 
     new_columns = pivoted.columns.to_list()
     result_index_column = ResultColumn.from_dict(index_column)
-    result_columns = [ResultColumn.from_args(c, value_column["type"]) for c in new_columns[1:]]
+    result_columns = [
+        ResultColumn.from_args(c, value_column["type"]) for c in new_columns[1:]
+    ]
     new_columns = [result_index_column] + result_columns
     return [new_columns] + pivoted.values.tolist()
 
@@ -200,7 +202,9 @@ def get_columns_with_inferred_types(results):
     columns = ResultColumn.from_dicts(results[0])
     column_names = [column.label for column in columns]
     results_df = pd.DataFrame(results[1:], columns=column_names)
-    column_types = (infer_type_from_list(results_df[column_name]) for column_name in column_names)
+    column_types = (
+        infer_type_from_list(results_df[column_name]) for column_name in column_names
+    )
     for column, column_type in zip(columns, column_types):
         column.type = column_type
     return columns
@@ -343,7 +347,11 @@ class Filter(frappe._dict):
             return True
         if self.operator.value in ["is_set", "is_not_set"]:
             return self.column.is_valid() and self.operator.is_valid()
-        return self.column.is_valid() and self.operator.is_valid() and self.value.is_valid()
+        return (
+            self.column.is_valid()
+            and self.operator.is_valid()
+            and self.value.is_valid()
+        )
 
     @classmethod
     def from_dicts(cls, dicts):
@@ -379,7 +387,8 @@ class Query(frappe._dict):
             frappe.throw("Invalid Column")
 
         is_filter_applied_to_column = any(
-            f.column.column == column.get("column") and f.column.table == column.get("table")
+            f.column.column == column.get("column")
+            and f.column.table == column.get("table")
             for f in self.filters
             if f.column.is_valid()
         )
@@ -389,9 +398,9 @@ class Query(frappe._dict):
         else:
             # update existing filter
             for f in self.filters:
-                if f.column.column == column.get("column") and f.column.table == column.get(
-                    "table"
-                ):
+                if f.column.column == column.get(
+                    "column"
+                ) and f.column.table == column.get("table"):
                     f.value = LabelValue(**value)
                     f.operator = LabelValue(**operator)
                     break

@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-05-28 11:49:18.335351",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "queries",
+  "charts",
+  "dashboards"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "queries",
+   "fieldtype": "JSON",
+   "label": "Queries"
+  },
+  {
+   "fieldname": "charts",
+   "fieldtype": "JSON",
+   "label": "Charts"
+  },
+  {
+   "fieldname": "dashboards",
+   "fieldtype": "JSON",
+   "label": "Dashboards"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-06-15 22:48:09.166590",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Workbook",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

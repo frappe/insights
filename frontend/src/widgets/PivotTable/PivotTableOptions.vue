@@ -88,5 +88,8 @@ const columnOptions = computed(() => {
 			>
 			</DraggableList>
 		</div>
+
+		<Checkbox v-model="options.showTotal" label="Show Total Row" />
+		<Checkbox v-model="options.filtersEnabled" label="Show Filter Row" />
 	</div>
 </template>

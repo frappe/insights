@@ -1,5 +1,3 @@
-from . import __version__ as app_version
-
 app_name = "insights"
 app_title = "Frappe Insights"
 app_publisher = "Frappe Technologies Pvt. Ltd."
@@ -8,6 +6,8 @@ app_icon = "octicon octicon-file-directory"
 app_color = "grey"
 app_email = "hello@frappe.io"
 app_license = "GNU GPLv3"
+
+export_python_type_annotations = True
 
 # Includes in <head>
 # ------------------
@@ -74,11 +74,22 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # after_install = "insights.setup.after_install"
 # after_migrate = ["insights.migrate.after_migrate"]
 
+before_request = [
+    "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.before_request"
+]
+after_request = [
+    "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"
+]
+
 fixtures = [
     {
         "dt": "Insights Data Source",
         "filters": {"name": ("in", ["Site DB", "Query Store"])},
-    }
+    },
+    {
+        "dt": "Insights Data Source v3",
+        "filters": {"name": ("in", ["Site DB"])},
+    },
 ]
 
 # Uninstallation
@@ -131,7 +142,9 @@ has_permission = {
 # Scheduled Tasks
 # ---------------
 
-scheduler_events = {"all": ["insights.insights.doctype.insights_alert.insights_alert.send_alerts"]}
+scheduler_events = {
+    "all": ["insights.insights.doctype.insights_alert.insights_alert.send_alerts"]
+}
 
 # Testing
 # -------
@@ -190,4 +203,5 @@ before_tests = "insights.tests.utils.before_tests"
 
 website_route_rules = [
     {"from_route": "/insights/<path:app_path>", "to_route": "insights"},
+    {"from_route": "/insights_v2/<path:app_path>", "to_route": "insights_v2"},
 ]

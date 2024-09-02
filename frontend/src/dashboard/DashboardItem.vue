@@ -1,8 +1,10 @@
 <script setup>
 import UsePopover from '@/components/UsePopover.vue'
+import { downloadImage } from '@/utils'
 import useChartData from '@/widgets/useChartData'
 import widgets from '@/widgets/widgets'
 import { whenever } from '@vueuse/shared'
+import { Maximize } from 'lucide-vue-next'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 
@@ -63,6 +65,24 @@ function setGuessedChart() {
 function openQueryInNewTab() {
 	window.open(`/insights/query/build/${props.item.options.query}`, '_blank')
 }
+
+const fullscreenDialog = ref(false)
+const chartRef = ref(null)
+const downloading = ref(false)
+function downloadChartImage() {
+	if (!chartRef.value) {
+		$notify({
+			variant: 'error',
+			title: 'Chart container reference not found',
+		})
+		return
+	}
+	downloading.value = true
+	const title = props.item.options.title
+	downloadImage(chartRef.value.$el, `${title}.png`).then(() => {
+		downloading.value = false
+	})
+}
 </script>
 
 <template>
@@ -105,6 +125,11 @@ function openQueryInNewTab() {
 						</div>
 					</Tooltip>
 				</div>
+				<div v-if="!dashboard.editing && isChart" class="invisible group-hover:visible">
+					<Button variant="ghost" @click="fullscreenDialog = true">
+						<template #icon> <Maximize class="h-4 w-4" /> </template>
+					</Button>
+				</div>
 				<div
 					v-if="!dashboard.editing && item.options.query"
 					class="invisible -mb-1 -mt-1 flex cursor-pointer rounded p-1 text-gray-600 hover:bg-gray-100 group-hover:visible"
@@ -126,5 +151,34 @@ function openQueryInNewTab() {
 		>
 			<DashboardItemActions :item="item" />
 		</UsePopover>
+
+		<Dialog
+			v-if="item.item_type"
+			v-model="fullscreenDialog"
+			:options="{
+				size: '7xl',
+			}"
+		>
+			<template #body>
+				<div class="relative flex h-[40rem] w-full p-1">
+					<component
+						v-if="item.item_type"
+						ref="chartRef"
+						:is="widgets.getComponent(item.item_type)"
+						:options="item.options"
+						:data="chartData.data"
+					/>
+					<div class="absolute top-0 right-0 p-2">
+						<Button
+							variant="outline"
+							@click="downloadChartImage"
+							:loading="downloading"
+							icon="download"
+						>
+						</Button>
+					</div>
+				</div>
+			</template>
+		</Dialog>
 	</div>
 </template>
