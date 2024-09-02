@@ -8,9 +8,8 @@ const chart = inject('chart') as Chart
 </script>
 
 <template>
-	<div class="flex h-[18rem] flex-col divide-y border">
+	<div v-if="chart.doc.chart_type != 'Table'" class="flex h-[18rem] flex-col divide-y border">
 		<DataTable
-			v-if="chart.doc.chart_type != 'Table'"
 			class="bg-white"
 			:columns="chart.dataQuery.result.columns"
 			:rows="chart.dataQuery.result.formattedRows"

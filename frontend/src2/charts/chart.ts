@@ -208,14 +208,8 @@ function makeChart(workbookChart: WorkbookChart) {
 			return false
 		}
 		let rows = config.rows
-			.map((r) => chart.baseQuery.getDimension(r))
-			.filter(Boolean) as Dimension[]
 		let columns = config.columns
-			?.map((c) => chart.baseQuery.getDimension(c))
-			.filter(Boolean) as Dimension[]
 		let values = config.values
-			?.map((v) => chart.baseQuery.getMeasure(v))
-			.filter(Boolean) as Measure[]
 
 		if (!columns?.length) {
 			chart.dataQuery.addSummarize({
@@ -282,7 +276,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function getGranularity(column_name: string) {
-		const granularity = Object.entries(chart.doc.config).find(([_, value]) => {
+		const column = Object.entries(chart.doc.config).find(([_, value]) => {
 			if (!value) return false
 			if (Array.isArray(value)) {
 				return value.some((v) => v.column_name === column_name)
@@ -291,7 +285,15 @@ function makeChart(workbookChart: WorkbookChart) {
 				return value.column_name === column_name
 			}
 			return false
-		})?.[1].granularity
+		})
+		if (!column) return
+
+		if (Array.isArray(column[1])) {
+			const granularity = column[1].find((v) => v.column_name === column_name)?.granularity
+			return granularity
+		}
+
+		const granularity = column[1].granularity
 		return granularity
 	}
 

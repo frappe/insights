@@ -43,9 +43,9 @@ export type DountChartConfig = {
 }
 
 export type TableChartConfig = {
-	rows: string[]
-	columns: string[]
-	values: string[]
+	rows: Dimension[]
+	columns: Dimension[]
+	values: Measure[]
 }
 
 export type ChartConfig = AxisChartConfig | NumberChartConfig | DountChartConfig | TableChartConfig

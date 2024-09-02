@@ -24,7 +24,7 @@ const config = defineModel<TableChartConfig>({
 			:multiple="true"
 			:options="props.dimensions"
 			:modelValue="config.rows"
-			@update:modelValue="config.rows = $event?.map((v: any) => v.value)"
+			@update:modelValue="config.rows = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Columns">
@@ -32,7 +32,7 @@ const config = defineModel<TableChartConfig>({
 			:multiple="true"
 			:options="props.dimensions"
 			:modelValue="config.columns"
-			@update:modelValue="config.columns = $event?.map((v: any) => v.value)"
+			@update:modelValue="config.columns = $event"
 		/>
 	</InlineFormControlLabel>
 	<InlineFormControlLabel label="Values">
@@ -40,7 +40,7 @@ const config = defineModel<TableChartConfig>({
 			:multiple="true"
 			:options="props.measures"
 			:modelValue="config.values"
-			@update:modelValue="config.values = $event?.map((v: any) => v.value)"
+			@update:modelValue="config.values = $event"
 		/>
 	</InlineFormControlLabel>
 </template>

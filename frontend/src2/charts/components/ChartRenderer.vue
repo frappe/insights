@@ -6,6 +6,7 @@ import { Chart } from '../chart'
 import { getBarChartOptions, getDonutChartOptions, getLineChartOptions } from '../helpers'
 import NumberChart from './NumberChart.vue'
 import { downloadImage } from '../../helpers'
+import ChartBuilderTableColumn from './ChartBuilderTableColumn.vue'
 
 const props = defineProps<{ chart: Chart; showDownload?: boolean }>()
 const chart = props.chart
@@ -56,7 +57,11 @@ function downloadChart() {
 			class="rounded bg-white shadow"
 			:columns="chart.dataQuery.result.columns"
 			:rows="chart.dataQuery.result.rows"
-		/>
+		>
+			<template #column-header="{ column }">
+				<ChartBuilderTableColumn :column="column" />
+			</template>
+		</DataTable>
 
 		<div v-if="props.showDownload && chartEl && eChartOptions" class="absolute top-3 right-3">
 			<Button variant="outline" icon="download" @click="downloadChart"></Button>
