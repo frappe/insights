@@ -47,7 +47,7 @@ import {
 	Summarize,
 	SummarizeArgs,
 	Table,
-	TableArgs
+	TableArgs,
 } from '../types/query.types'
 import { Query } from './query'
 
@@ -82,7 +82,6 @@ export const expression = (expression: string): Expression => ({
 // 	order_by: options.order_by,
 // })
 
-
 export function getFormattedRows(query: Query) {
 	const result = query.result
 
@@ -92,9 +91,12 @@ export function getFormattedRows(query: Query) {
 	const columns = copy(result.columns)
 	const operations = copy(query.doc.operations)
 	const summarize_step = operations.reverse().find((op) => op.type === 'summarize')
+	const pivot_step = operations.reverse().find((op) => op.type === 'pivot_wider')
 
 	const getGranularity = (column_name: string) => {
-		const dim = summarize_step?.dimensions.find((dim) => dim.column_name === column_name)
+		const dim =
+			summarize_step?.dimensions.find((dim) => dim.column_name === column_name) ||
+			pivot_step?.rows.find((dim) => dim.column_name === column_name)
 		return dim ? dim.granularity : null
 	}
 

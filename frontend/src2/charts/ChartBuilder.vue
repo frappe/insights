@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
 				:column-options="chart.dataQuery.result?.columnOptions || []"
 			/>
 			<hr class="border-t border-gray-200" />
-			<InlineFormControlLabel label="Limit" class="w-1/2">
+			<InlineFormControlLabel label="Limit" class="!w-1/2">
 				<FormControl v-model="chart.doc.config.limit" type="number" />
 			</InlineFormControlLabel>
 		</div>

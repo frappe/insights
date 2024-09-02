@@ -234,9 +234,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				if (!response) return
 				query.result.executedSQL = response.sql
 				query.result.columns = response.columns
-				query.result.rows = response.rows.map((row: any) =>
-					Object.fromEntries(query.result.columns.map((column, idx) => [column.name, row[idx]]))
-				)
+				query.result.rows = response.rows
 				query.result.formattedRows = getFormattedRows(query)
 				query.result.totalRowCount = response.total_row_count
 				query.result.columnOptions = query.result.columns.map((column) => ({

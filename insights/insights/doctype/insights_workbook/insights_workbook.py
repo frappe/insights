@@ -50,7 +50,7 @@ def fetch_query_results(operations, use_live_connection=True):
 
     columns = get_columns_from_schema(ibis_query.schema())
     results = execute_ibis_query(ibis_query)
-    results = results.values.tolist()
+    results = results.to_dict(orient="records")
 
     count_query = ibis_query.aggregate(count=_.count())
     count_results = execute_ibis_query(count_query)
