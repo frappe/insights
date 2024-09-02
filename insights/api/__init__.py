@@ -65,9 +65,6 @@ def update_default_version(version):
     if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
         set_user_default("insights_has_visited_v3", "1", frappe.session.user)
 
-    if version not in ["v2", "v3", ""]:
-        frappe.throw("Invalid Version")
-
     set_user_default("insights_default_version", version, frappe.session.user)
 
 
