@@ -1,4 +1,4 @@
-import dayjs from '../helpers/dayjs'
+import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { WorkbookListItem } from '../types/workbook.types'
@@ -12,8 +12,8 @@ async function getWorkbooks() {
 	workbooks.value = await call(basePath + 'get_workbooks')
 	workbooks.value = workbooks.value.map((workbook: any) => ({
 		...workbook,
-		created_from_now: dayjs(workbook.creation).fromNow(),
-		modified_from_now: dayjs(workbook.modified).fromNow(),
+		created_from_now: useTimeAgo(workbook.creation),
+		modified_from_now: useTimeAgo(workbook.modified),
 	}))
 	loading.value = false
 	return workbooks.value
