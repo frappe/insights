@@ -31,7 +31,7 @@ const config = defineModel<AxisChartConfig>({
 			@update:modelValue="config.x_axis = $event"
 		/>
 	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Left Y Axis">
+	<InlineFormControlLabel label="Y Axis">
 		<Autocomplete
 			:multiple="true"
 			:options="props.measures"
@@ -55,7 +55,7 @@ const config = defineModel<AxisChartConfig>({
 			@update:modelValue="config.y2_axis = $event"
 		/>
 	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Right Axis Type" class="!w-1/2">
+	<InlineFormControlLabel v-if="config.y2_axis?.length" label="Right Axis Type" class="!w-1/2">
 		<Switch
 			v-model="config.y2_axis_type"
 			:tabs="[
