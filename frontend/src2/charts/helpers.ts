@@ -72,7 +72,7 @@ export function getLineChartOptions(chart: Chart) {
 				yAxisIndex: is_right_axis ? 1 : 0,
 				smooth: _config.smooth ? 0.4 : false,
 				smoothMonotone: 'x',
-				showSymbol: _config.show_data_points,
+				showSymbol: _config.show_data_points || _config.show_data_labels,
 				label: {
 					fontSize: 11,
 					show: _config.show_data_labels,

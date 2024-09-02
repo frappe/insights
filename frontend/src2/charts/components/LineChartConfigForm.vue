@@ -43,8 +43,8 @@ const config = defineModel<LineChartConfig>({
 		<Switch
 			v-model="config.show_data_points"
 			:tabs="[
-				{ label: 'Yes', value: true, default: true },
-				{ label: 'No', value: false },
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
 			]"
 		/>
 	</InlineFormControlLabel>
