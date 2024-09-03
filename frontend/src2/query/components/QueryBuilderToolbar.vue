@@ -6,6 +6,7 @@ import {
 	ColumnsIcon,
 	Combine,
 	Database,
+	Download,
 	FilterIcon,
 	PlayIcon,
 	Sigma,
@@ -105,6 +106,11 @@ const actions = [
 	// },
 	{
 		type: 'separator',
+	},
+	{
+		label: 'Download Data',
+		icon: Download,
+		onClick: () => query.downloadResults(),
 	},
 	{
 		label: 'View SQL',

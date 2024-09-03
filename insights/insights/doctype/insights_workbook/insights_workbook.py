@@ -65,6 +65,16 @@ def fetch_query_results(operations, use_live_connection=True):
 
 
 @frappe.whitelist()
+def download_query_results(operations, use_live_connection=True):
+    ibis_query = IbisQueryBuilder().build(operations, use_live_connection)
+    if ibis_query is None:
+        return
+
+    results = execute_ibis_query(ibis_query, limit=100_00_00)
+    return results.to_csv(index=False)
+
+
+@frappe.whitelist()
 def get_distinct_column_values(
     operations, column_name, search_term=None, use_live_connection=True
 ):
