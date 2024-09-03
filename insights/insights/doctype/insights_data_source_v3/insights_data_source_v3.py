@@ -10,7 +10,6 @@ from frappe.model.document import Document
 from frappe.utils.caching import site_cache
 from ibis import BaseBackend
 
-from insights.api.telemetry import track
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WAREHOUSE_DB_NAME,
 )
@@ -91,8 +90,6 @@ class InsightsDataSourceDocument:
                 pluck="name",
             ):
                 frappe.delete_doc(doctype, name)
-
-        track("delete_data_source")
 
     def validate(self):
         if self.is_site_db:

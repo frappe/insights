@@ -5,6 +5,8 @@
 import frappe
 from frappe.defaults import get_user_default
 
+from insights.api.telemetry import track_active_site
+
 no_cache = 1
 
 
@@ -47,6 +49,7 @@ def continue_to_v3(context):
     frappe.db.commit()
     context.csrf_token = csrf_token
     context.site_name = frappe.local.site
+    track_active_site(is_v3=True)
 
 
 def redirect_to_v2():

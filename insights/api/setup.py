@@ -5,7 +5,6 @@ import json
 
 import frappe
 
-from insights.api.telemetry import track
 from insights.setup.demo import DemoDataFactory
 
 
@@ -16,13 +15,11 @@ def setup_complete():
 
 @frappe.whitelist()
 def update_erpnext_source_title(title):
-    track("setup_erpnext_source")
     frappe.db.set_value("Insights Data Source", "Site DB", "title", title)
 
 
 @frappe.whitelist()
 def setup_sample_data(dataset):
-    track("setup_sample_data")
     factory = DemoDataFactory()
     factory.run()
     # import_demo_queries_and_dashboards()
@@ -58,7 +55,6 @@ def import_demo_queries_and_dashboards():
 
 @frappe.whitelist()
 def submit_survey_responses(responses):
-    track("submit_survey_responses")
     responses = frappe.parse_json(responses)
 
     try:
@@ -113,7 +109,6 @@ def test_database_connection(database):
 
 @frappe.whitelist()
 def add_database(database):
-    track("add_data_source")
     data_source = get_new_datasource(database)
     data_source.save()
     data_source.enqueue_sync_tables()
@@ -124,4 +119,3 @@ def complete_setup():
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1
     settings.save()
-    track("setup_complete")

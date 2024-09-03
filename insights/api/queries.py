@@ -1,6 +1,5 @@
 import frappe
 
-from insights.api.telemetry import track
 from insights.decorators import check_role
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
@@ -56,7 +55,6 @@ def get_queries():
 @frappe.whitelist()
 @check_role("Insights User")
 def create_query(**query):
-    track("create_query")
     doc = frappe.new_doc("Insights Query")
     doc.title = query.get("title")
     doc.data_source = query.get("data_source")

@@ -51,7 +51,6 @@ async function initialize(force: boolean = false) {
 	if (session.initialized && !force) return
 	Object.assign(session.user, getSessionFromCookies())
 	session.isLoggedIn && (await fetchSessionInfo())
-	session.isLoggedIn && call('insights.api.telemetry.track_active_site')
 	session.initialized = true
 }
 

@@ -9,7 +9,6 @@ from frappe.model.document import Document
 from frappe.utils.caching import redis_cache, site_cache
 
 from insights import notify
-from insights.api.telemetry import track
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_team.insights_team import (
     check_table_permission,
@@ -46,8 +45,6 @@ class InsightsDataSourceDocument:
                 doctype, {"data_source": self.name}, pluck="name"
             ):
                 frappe.delete_doc(doctype, name)
-
-        track("delete_data_source")
 
     def validate(self):
         if self.is_site_db or self.name == "Query Store":

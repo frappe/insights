@@ -4,14 +4,12 @@
 
 import random
 from contextlib import suppress
-from json import dumps
 
 import frappe
 from frappe.model.document import Document
 
 from insights import notify
 from insights.api.permissions import is_private
-from insights.api.telemetry import track
 from insights.cache_utils import make_digest
 
 from .utils import guess_layout_for_chart
@@ -20,9 +18,6 @@ CACHE_NAMESPACE = "insights_dashboard"
 
 
 class InsightsDashboard(Document):
-    def on_trash(self):
-        track("delete_dashboard")
-
     @frappe.whitelist()
     def is_private(self):
         return is_private("Insights Dashboard", self.name)
@@ -84,7 +79,9 @@ class InsightsDashboard(Document):
             "Insights Settings", "query_result_expiry"
         )
         query_result_expiry_in_seconds = query_result_expiry * 60
-        frappe.cache().set_value(key, new_results, expires_in_sec=query_result_expiry_in_seconds)
+        frappe.cache().set_value(
+            key, new_results, expires_in_sec=query_result_expiry_in_seconds
+        )
         return new_results
 
 
@@ -139,7 +136,9 @@ def get_query_columns(query):
 
 
 def get_dashboard_public_key(name):
-    existing_key = frappe.db.get_value("Insights Dashboard", name, "public_key", cache=True)
+    existing_key = frappe.db.get_value(
+        "Insights Dashboard", name, "public_key", cache=True
+    )
     if existing_key:
         return existing_key
 
