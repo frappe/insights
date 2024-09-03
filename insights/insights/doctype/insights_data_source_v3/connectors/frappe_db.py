@@ -7,42 +7,41 @@ import ibis
 from frappe import _dict
 from ibis import _
 
+from .mariadb import get_mariadb_connection_string
+from .postgresql import get_postgres_connection_string
+
 
 def get_frappedb_connection_string(data_source):
-    password = data_source.get_password(raise_exception=False)
-    connection_string = (
-        f"mysql://{data_source.username}:{password}"
-        f"@{data_source.host}:{data_source.port}/{data_source.database_name}"
-    )
-    extra_args = frappe._dict(
-        ssl=data_source.use_ssl,
-        ssl_verify_cert=data_source.use_ssl,
-        charset="utf8mb4",
-        use_unicode=True,
-    )
-    return connection_string, extra_args
+    if data_source.database_type == "PostgreSQL":
+        return get_postgres_connection_string(data_source)
+    else:
+        connection_string = get_mariadb_connection_string(data_source)
+        frappe_db_args = "charset=utf8mb4&use_unicode=true"
+        has_extra_args = connection_string.find("?") != -1
+        connection_string += (
+            f"&{frappe_db_args}" if has_extra_args else f"?{frappe_db_args}"
+        )
+        return connection_string
 
 
 def get_sitedb_connection_string():
-    username = frappe.conf.db_name
-    password = frappe.conf.db_password
-    database = frappe.conf.db_name
-    host = frappe.conf.db_host or "127.0.0.1"
-    port = frappe.conf.db_port or "3306"
-    connection_string = f"mysql://{username}:{password}@{host}:{port}/{database}"
-    extra_args = frappe._dict(
-        ssl=False,
-        ssl_verify_cert=False,
-        charset="utf8mb4",
-        use_unicode=True,
+    data_source = frappe.new_doc("Insights Data Source V3")
+    data_source.database_type = (
+        "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
     )
-    return connection_string, extra_args
+    data_source.host = frappe.conf.db_host
+    data_source.port = frappe.conf.db_port
+    data_source.database_name = frappe.conf.db_name
+    data_source.username = frappe.conf.db_name
+    data_source.password = frappe.conf.db_password
+    data_source.use_ssl = False
+    return get_frappedb_connection_string(data_source)
 
 
 def is_frappe_db(data_source):
-    connection_string, extra_args = get_frappedb_connection_string(data_source)
+    connection_string = get_frappedb_connection_string(data_source)
     try:
-        db = ibis.connect(connection_string, **extra_args)
+        db = ibis.connect(connection_string)
         db.raw_sql("SET SESSION time_zone='+00:00'")
         db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
         res = db.raw_sql("SELECT name FROM tabDocType LIMIT 1").fetchall()

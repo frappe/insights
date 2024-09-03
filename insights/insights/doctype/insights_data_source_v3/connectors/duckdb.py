@@ -35,4 +35,4 @@ def get_duckdb_connection_string(data_source):
     database_path = os.path.join(database_path, f"{data_source.database_name}.duckdb")
     database_path = os.path.abspath(database_path)
     database_path = database_path.lstrip("/")
-    return f"duckdb:///{database_path}", {}
+    return f"duckdb:///{database_path}"

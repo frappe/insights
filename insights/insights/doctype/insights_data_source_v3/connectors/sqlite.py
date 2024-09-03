@@ -35,4 +35,4 @@ def get_sqlite_connection_string(data_source):
     database_path = os.path.join(database_path, f"{data_source.database_name}.sqlite")
     database_path = os.path.abspath(database_path)
     database_path = database_path.lstrip("/")
-    return f"sqlite:///{database_path}", {}
+    return f"sqlite:///{database_path}"
