@@ -94,6 +94,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		getDistinctColumnValues,
 		getColumnsForSelection,
+		downloadResults,
 
 		dimensions: computed(() => ({} as Dimension[])),
 		measures: computed(() => ({} as Measure[])),
@@ -511,6 +512,26 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		}
 
 		query.setOperations(newOperations)
+	}
+
+	function downloadResults() {
+		return call(
+			'insights.insights.doctype.insights_workbook.insights_workbook.download_query_results',
+			{
+				use_live_connection: query.doc.use_live_connection,
+				operations: query.getOperationsForExecution(),
+			}
+		).then((csv_data: string) => {
+			const blob = new Blob([csv_data], { type: 'text/csv' })
+			const url = window.URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.setAttribute('hidden', '')
+			a.setAttribute('href', url)
+			a.setAttribute('download', `${query.doc.title || 'data'}.csv`)
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+		})
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '') {
