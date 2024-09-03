@@ -4,6 +4,9 @@ import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { Query } from '../query'
 
 const query = inject('query') as Query
+window.toggleLiveConnection = () => {
+	query.doc.use_live_connection = !query.doc.use_live_connection
+}
 </script>
 
 <template>
@@ -17,16 +20,6 @@ const query = inject('query') as Query
 		<div class="flex flex-shrink-0 flex-col gap-2.5 px-0.5">
 			<InlineFormControlLabel label="Query Title">
 				<FormControl v-model="query.doc.title" autocomplete="off" placeholder="Title" />
-			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Use Cache" class="!w-1/2">
-				<Switch
-					:modelValue="!query.doc.use_live_connection"
-					@update:modelValue="query.doc.use_live_connection = !$event"
-					:tabs="[
-						{ label: 'Yes', value: true },
-						{ label: 'No', value: false, default: true },
-					]"
-				/>
 			</InlineFormControlLabel>
 		</div>
 	</div>
