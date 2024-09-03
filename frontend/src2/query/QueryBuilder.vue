@@ -13,6 +13,7 @@ import { onBeforeUnmount } from 'vue-demi'
 const props = defineProps<{ query: WorkbookQuery }>()
 const query = useQuery(props.query)
 provide('query', query)
+window.query = query
 
 const keys = useMagicKeys()
 const cmdZ = keys['Meta+Z']
