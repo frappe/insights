@@ -333,6 +333,9 @@ class IbisQueryBuilder:
             "sum": column.sum(),
             "avg": column.mean(),
             "count": column.count(),
+            "min": column.min(),
+            "max": column.max(),
+            "count_distinct": column.nunique(),
         }[aggregate_function]
 
     def apply_granularity(self, column, granularity):

@@ -94,14 +94,15 @@ function confirmSelections() {
 								<Autocomplete
 									button-classes="rounded-r-none"
 									placeholder="Agg"
-									v-model="measure.aggregation"
 									:options="aggregations"
+									:modelValue="measure.aggregation"
+									@update:modelValue="measure.aggregation = $event.value"
 									:hide-search="true"
 								/>
 								<Autocomplete
 									button-classes="rounded-l-none"
-									placeholder="Column"
-									:options="numberColumns"
+									:placeholder="measure.aggregation"
+									:options="columnOptions"
 									:modelValue="measure.column_name"
 									@update:model-value="(e: QueryResultColumn) => {
 										measure.column_name = e.name
