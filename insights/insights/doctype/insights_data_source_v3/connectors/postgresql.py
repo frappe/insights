@@ -10,8 +10,7 @@ def get_postgres_connection_string(data_source):
         connection_string = (
             f"postgresql://{data_source.username}:{password}"
             f"@{data_source.host}:{data_source.port}/{data_source.database_name}"
-            "?sslmode=require"
-            if data_source.use_ssl
-            else ""
         )
+        if data_source.use_ssl:
+            connection_string += "?sslmode=require"
         return connection_string

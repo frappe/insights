@@ -7,8 +7,8 @@ def get_mariadb_connection_string(data_source):
     connection_string = (
         f"mysql://{data_source.username}:{password}"
         f"@{data_source.host}:{data_source.port}/{data_source.database_name}"
-        "?ssl=true&ssl_verify_cert=true"
-        if data_source.use_ssl
-        else ""
+        "?charset=utf8mb4&use_unicode=true"
     )
+    if data_source.use_ssl:
+        connection_string += "&ssl=true&ssl_verify_cert=true"
     return connection_string

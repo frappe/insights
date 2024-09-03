@@ -15,13 +15,7 @@ def get_frappedb_connection_string(data_source):
     if data_source.database_type == "PostgreSQL":
         return get_postgres_connection_string(data_source)
     else:
-        connection_string = get_mariadb_connection_string(data_source)
-        frappe_db_args = "charset=utf8mb4&use_unicode=true"
-        has_extra_args = connection_string.find("?") != -1
-        connection_string += (
-            f"&{frappe_db_args}" if has_extra_args else f"?{frappe_db_args}"
-        )
-        return connection_string
+        return get_mariadb_connection_string(data_source)
 
 
 def get_sitedb_connection_string():
