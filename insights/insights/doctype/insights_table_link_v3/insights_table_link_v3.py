@@ -26,7 +26,7 @@ class InsightsTableLinkv3(Document):
 
     def before_insert(self):
         if self.is_duplicate():
-            frappe.throw("Link already exists", exc=frappe.DuplicateEntryError)
+            raise frappe.DuplicateEntryError
 
     def is_duplicate(self):
         # check if there a link with the same tables and columns

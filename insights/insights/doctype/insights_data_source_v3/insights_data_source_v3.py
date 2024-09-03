@@ -76,6 +76,7 @@ class InsightsDataSourceDocument:
             or self.username != doc_before.username
             or self.host != doc_before.host
             or self.port != doc_before.port
+            or self.use_ssl != doc_before.use_ssl
         )
 
     def on_trash(self):
@@ -141,8 +142,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.name in frappe.local.insights_db_connections:
             return frappe.local.insights_db_connections[self.name]
 
-        connection_string, extra_args = self.get_connection_string()
-        db: BaseBackend = ibis.connect(connection_string, **extra_args)
+        connection_string = self.get_connection_string()
+        db: BaseBackend = ibis.connect(connection_string)
         print(f"Connected to {self.name} ({self.title})")
 
         if self.is_frappe_db:
@@ -185,6 +186,12 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         remote_db = self._get_ibis_backend()
         tables = remote_db.list_tables()
         tables = [t for t in tables if not blacklisted(t)]
+
+        if not tables or len(tables) == frappe.db.count(
+            "Insights Table v3",
+            {"data_source": self.name},
+        ):
+            return
 
         errors = []
         for table in tables:
