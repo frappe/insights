@@ -46,6 +46,7 @@ def get_credentials():
     }
 
 
+@frappe.whitelist()
 def track_active_site(is_v3=False):
     if (
         frappe.conf.developer_mode
