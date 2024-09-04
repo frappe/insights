@@ -34,7 +34,7 @@ export function isFilterValid(filter: FilterRule, columnType: ColumnDataType) {
 		return true
 	}
 
-	if (!filter.value) {
+	if (!filter.value && filter.value !== 0) {
 		return false
 	}
 
