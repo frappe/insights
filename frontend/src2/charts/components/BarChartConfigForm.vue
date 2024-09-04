@@ -35,8 +35,8 @@ const config = defineModel<BarChartConfig>({
 		<Switch
 			v-model="config.stack"
 			:tabs="[
-				{ label: 'Yes', value: true, default: true },
-				{ label: 'No', value: false },
+				{ label: 'Yes', value: true },
+				{ label: 'No', value: false, default: true },
 			]"
 		/>
 	</InlineFormControlLabel>
