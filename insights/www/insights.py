@@ -29,6 +29,17 @@ def get_context(context):
         redirect_to_v2()
         return
 
+    v2_routes = [
+        "/insights/query",
+        "/insights/query/build",
+        "/insights/dashboard",
+        "/insights/public/dashboard",
+        "/insights/public/chart",
+    ]
+    if any(route in frappe.request.path for route in v2_routes):
+        redirect_to_v2()
+        return
+
     is_v3_default = (
         get_user_default("insights_default_version", frappe.session.user) == "v3"
     )
