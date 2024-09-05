@@ -11,10 +11,6 @@ no_cache = 1
 
 
 def get_context(context):
-    if frappe.session.user == "Guest":
-        frappe.local.flags.redirect_location = "/login"
-        raise frappe.Redirect
-
     is_v2_user = frappe.db.count("Insights Query") > 0
     # if not v2 user continue to v3
     if not is_v2_user:
