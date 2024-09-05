@@ -188,6 +188,8 @@ before_tests = "insights.tests.utils.before_tests"
 # 	"insights.auth.validate"
 # ]
 
+page_renderer = "insights.utils.InsightsPageRenderer"
+
 website_route_rules = [
     {"from_route": "/insights/<path:app_path>", "to_route": "insights"},
 ]

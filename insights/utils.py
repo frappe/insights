@@ -8,6 +8,7 @@ import chardet
 import frappe
 import pandas as pd
 from frappe.model.base_document import BaseDocument
+from frappe.website.page_renderers.template_page import TemplatePage
 
 
 class ResultColumn:
@@ -133,3 +134,40 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
         df[column] = prefix + pd.Series(codes).astype(str)
 
     return df
+
+
+def xls_to_df(file_path: str) -> list[pd.DataFrame]:
+    file_extension = file_path.split(".")[-1].lower()
+    if file_extension != "xlsx" or file_extension != "xls":
+        frappe.throw(f"Unsupported file extension: {file_extension}")
+
+    sheets = {}
+    excel_file = pd.ExcelFile(file_path)
+    for sheet_name in excel_file.sheet_names:
+        sheets[sheet_name] = excel_file.parse(sheet_name)
+    return sheets
+
+
+class InsightsPageRenderer(TemplatePage):
+    def __init__(self, path, http_status_code=None):
+        super().__init__(path=path, http_status_code=http_status_code)
+        self.set_headers()
+
+    def set_headers(self):
+        path = frappe.request.path
+        embed_urls = [
+            "/insights_v2/public",
+            "/insights/public",
+        ]
+        if not any(path.startswith(url) for url in embed_urls):
+            return
+
+        allowed_origins = frappe.db.get_single_value("Insights Settings", "allowed_origins")
+        if not allowed_origins:
+            return
+
+        self.headers = self.headers or {}
+        allowed_origins = allowed_origins.split(",") if allowed_origins else []
+        allowed_origins = [origin.strip() for origin in allowed_origins]
+        allowed_origins = " ".join(allowed_origins)
+        self.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {allowed_origins}"
