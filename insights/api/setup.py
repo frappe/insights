@@ -5,20 +5,21 @@ import json
 
 import frappe
 
+from insights.decorators import insights_whitelist
 from insights.setup.demo import DemoDataFactory
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def setup_complete():
     return bool(frappe.get_single("Insights Settings").setup_complete)
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def update_erpnext_source_title(title):
     frappe.db.set_value("Insights Data Source", "Site DB", "title", title)
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def setup_sample_data(dataset):
     factory = DemoDataFactory()
     factory.run()
@@ -53,7 +54,7 @@ def import_demo_queries_and_dashboards():
         print(e)
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def submit_survey_responses(responses):
     responses = frappe.parse_json(responses)
 
@@ -101,20 +102,20 @@ def get_new_datasource(db):
     return data_source
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def test_database_connection(database):
     data_source = get_new_datasource(database)
     return data_source.test_connection(raise_exception=True)
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def add_database(database):
     data_source = get_new_datasource(database)
     data_source.save()
     data_source.enqueue_sync_tables()
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def complete_setup():
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1

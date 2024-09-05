@@ -5,8 +5,10 @@
 import frappe
 from pypika.functions import Max
 
+from insights.decorators import insights_whitelist
 
-@frappe.whitelist()
+
+@insights_whitelist()
 def create_last_viewed_log(record_type, record_name):
     recordToDoctype = {
         "Query": "Insights Query",
@@ -20,10 +22,14 @@ def create_last_viewed_log(record_type, record_name):
         pass
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_last_viewed_records():
     ViewLog = frappe.qb.DocType("View Log")
-    TRACKED_DOCTYPES = ["Insights Query", "Insights Dashboard", "Insights Notebook Page"]
+    TRACKED_DOCTYPES = [
+        "Insights Query",
+        "Insights Dashboard",
+        "Insights Notebook Page",
+    ]
     records = (
         frappe.qb.from_(ViewLog)
         .select(
@@ -49,7 +55,9 @@ def get_last_viewed_records():
 def fetch_titles(records):
     docnames_by_doctype = {}
     for record in records:
-        docnames_by_doctype.setdefault(record.reference_doctype, []).append(record.reference_name)
+        docnames_by_doctype.setdefault(record.reference_doctype, []).append(
+            record.reference_name
+        )
 
     for doctype, docnames in docnames_by_doctype.items():
         titles = frappe.get_all(
@@ -59,7 +67,10 @@ def fetch_titles(records):
         )
         for title in titles:
             for record in records:
-                if record.reference_doctype == doctype and record.reference_name == title.name:
+                if (
+                    record.reference_doctype == doctype
+                    and record.reference_name == title.name
+                ):
                     record["title"] = title.title
                     break
 
@@ -80,6 +91,9 @@ def fetch_notebook_names(records):
         )
         for notebook in notebooks:
             for record in records:
-                if record.reference_doctype == doctype and record.reference_name == notebook.name:
+                if (
+                    record.reference_doctype == doctype
+                    and record.reference_name == notebook.name
+                ):
                     record["notebook"] = notebook.notebook
                     break

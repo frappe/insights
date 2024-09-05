@@ -2,9 +2,10 @@ import frappe
 from frappe.utils.caching import redis_cache
 
 from insights.api.data_sources import fetch_column_values
+from insights.decorators import insights_whitelist
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_public_key(resource_type, resource_name):
     from insights.insights.doctype.insights_chart.insights_chart import (
         get_chart_public_key,
@@ -40,11 +41,15 @@ def get_public_chart(public_key):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
-    chart_name = frappe.db.exists("Insights Chart", {"public_key": public_key, "is_public": 1})
+    chart_name = frappe.db.exists(
+        "Insights Chart", {"public_key": public_key, "is_public": 1}
+    )
     if not chart_name:
         frappe.throw("Invalid Public Key")
 
-    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(no_default_fields=True)
+    chart = frappe.get_cached_doc("Insights Chart", chart_name).as_dict(
+        no_default_fields=True
+    )
     chart_data = frappe.get_cached_doc("Insights Query", chart.query).fetch_results()
     chart["data"] = chart_data
     return chart

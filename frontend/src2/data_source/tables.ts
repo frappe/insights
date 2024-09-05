@@ -3,15 +3,13 @@ import { reactive, ref } from 'vue'
 import { createToast } from '../helpers/toasts'
 import { QueryResultColumn } from '../types/query.types'
 
-const basePath = 'insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.'
-
 export type DataSourceTable = { table_name: string; data_source: string }
 const tables = ref<DataSourceTable[]>([])
 
 const loading = ref(false)
 async function getTables(data_source?: string, search_term?: string) {
 	loading.value = true
-	tables.value = await call(basePath + 'get_data_source_tables', {
+	tables.value = await call('insights.api.data_sources.get_data_source_tables', {
 		data_source,
 		search_term,
 	})
@@ -20,14 +18,15 @@ async function getTables(data_source?: string, search_term?: string) {
 }
 
 async function getTableColumns(data_source: string, table_name: string) {
-	return call(basePath + 'get_table_columns', { data_source, table_name }).then(
-		(columns: any[]) => {
-			return columns.map((c) => ({
-				name: c.column,
-				type: c.type,
-			})) as QueryResultColumn[]
-		}
-	)
+	return call('insights.api.data_sources.get_data_source_table_columns', {
+		data_source,
+		table_name,
+	}).then((columns: any[]) => {
+		return columns.map((c) => ({
+			name: c.column,
+			type: c.type,
+		})) as QueryResultColumn[]
+	})
 }
 
 const updatingDataSourceTables = ref(false)
@@ -37,7 +36,7 @@ async function updateDataSourceTables(data_source: string) {
 		message: `Updating tables for ${data_source}`,
 		variant: 'info',
 	})
-	return call(basePath + 'update_data_source_tables', { data_source })
+	return call('insights.api.data_sources.update_data_source_tables', { data_source })
 		.then(() => {
 			getTables(data_source)
 		})
@@ -61,7 +60,7 @@ async function getTableLinks(
 	left_table: string,
 	right_table: string
 ): Promise<TableLink[]> {
-	return call(basePath + 'get_table_links', {
+	return call('insights.api.data_sources.get_table_links', {
 		data_source,
 		left_table,
 		right_table,

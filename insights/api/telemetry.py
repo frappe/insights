@@ -8,6 +8,8 @@ from frappe.utils.data import date_diff
 from frappe.utils.telemetry import POSTHOG_HOST_FIELD, POSTHOG_PROJECT_FIELD
 from posthog import Posthog
 
+from insights.decorators import insights_whitelist
+
 
 @frappe.whitelist()
 def is_enabled():
@@ -46,7 +48,7 @@ def get_credentials():
     }
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def track_active_site(is_v3=False):
     if (
         frappe.conf.developer_mode
