@@ -3,9 +3,9 @@ import { DatabaseIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import useDataSourceStore from '../../../data_source/data_source'
 import { wheneverChanges } from '../../../helpers'
-import { SourceArgs, TableArgs } from '../../../types/query.types'
+import { QueryTableArgs, SourceArgs, TableArgs } from '../../../types/query.types'
 import { Workbook, workbookKey } from '../../../workbook/workbook'
-import { table } from '../../helpers'
+import { query_table, table } from '../../helpers'
 import DataSourceTableList from './DataSourceTableList.vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from './TabbedSidebarLayout.vue'
 import WorkbookQueryList from './WorkbookQueryList.vue'
@@ -15,9 +15,10 @@ const props = defineProps<{ source?: SourceArgs }>()
 const showDialog = defineModel()
 
 const selectedTable = ref<TableArgs>(
-	props.source && 'table' in props.source
+	props.source && props.source.table.type == 'table'
 		? { ...props.source.table }
 		: {
+				type: 'table',
 				data_source: '',
 				table_name: '',
 		  }
@@ -33,10 +34,15 @@ const tabGroups = ref<TabGroup[]>([
 const activeTab = ref<Tab | undefined>()
 wheneverChanges(activeTab, () => {
 	selectedTable.value = {
+		type: 'table',
 		data_source: '',
 		table_name: '',
 	}
-	selectedQuery.value = ''
+	selectedQuery.value = {
+		type: 'query',
+		workbook: '',
+		query_name: '',
+	}
 })
 
 dataSourceStore.getSources().then(() => {
@@ -53,7 +59,15 @@ dataSourceStore.getSources().then(() => {
 	activeTab.value = tabGroups.value[0].tabs[0]
 })
 
-const selectedQuery = ref(props.source && 'query' in props.source ? props.source.query : '')
+const selectedQuery = ref<QueryTableArgs>(
+	props.source && props.source.table.type == 'query'
+		? { ...props.source.table }
+		: {
+				type: 'query',
+				workbook: '',
+				query_name: '',
+		  }
+)
 const workbook = inject<Workbook>(workbookKey)!
 if (workbook.doc.queries.length > 1) {
 	tabGroups.value.push({
@@ -78,7 +92,7 @@ function onConfirm() {
 		'select',
 		selectedQuery.value
 			? {
-					query: selectedQuery.value,
+					table: query_table(selectedQuery.value),
 			  }
 			: {
 					table: table(selectedTable.value),

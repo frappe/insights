@@ -8,7 +8,7 @@ import JoinLeftIcon from '../../components/Icons/JoinLeftIcon.vue'
 import JoinRightIcon from '../../components/Icons/JoinRightIcon.vue'
 import useTableStore from '../../data_source/tables'
 import { wheneverChanges } from '../../helpers'
-import { JoinArgs, JoinType } from '../../types/query.types'
+import { JoinArgs, JoinType, TableArgs } from '../../types/query.types'
 import { column, expression, table } from '../helpers'
 import { Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
@@ -29,20 +29,21 @@ if (props.join && _props_join.left_column?.column_name && _props_join.right_colu
 	}
 }
 
+const selectedTable = ref<TableArgs>(
+	props.join && props.join.table.type === 'table'
+		? { ...props.join.table }
+		: {
+				type: 'table',
+				data_source: '',
+				table_name: '',
+		  }
+)
 const join = ref<JoinArgs>(
 	props.join
-		? {
-				join_type: props.join.join_type,
-				table: props.join.table,
-				join_condition: props.join.join_condition,
-				select_columns: props.join.select_columns || [],
-		  }
+		? { ...props.join }
 		: {
 				join_type: 'left' as JoinType,
-				table: table({
-					table_name: '',
-					data_source: '',
-				}),
+				table: selectedTable.value,
 				join_condition: {
 					left_column: column(''),
 					right_column: column(''),
@@ -60,8 +61,8 @@ const data_source = computed(() => {
 	// if (!query.doc.use_live_connection) return undefined
 
 	const operations = query.getOperationsForExecution()
-	const source = operations.find((op) => op.type === 'source' && 'table' in op)
-	return source ? source.table.data_source : undefined
+	const source = operations.find((op) => op.type === 'source')
+	return source && source.table.type === 'table' ? source.table.data_source : undefined
 })
 
 type TableOption = {
@@ -81,7 +82,7 @@ const tableOptions = computed<TableOption[]>(() => {
 		value: `${t.data_source}.${t.table_name}`,
 	}))
 })
-const tableSearchText = ref(props.join?.table.table_name || '')
+const tableSearchText = ref(props.join?.table.type === 'table' ? props.join.table.table_name : '')
 watchDebounced(
 	tableSearchText,
 	() => tableStore.getTables(data_source.value, tableSearchText.value),
@@ -94,12 +95,12 @@ watchDebounced(
 const tableColumnOptions = ref<DropdownOption[]>([])
 const fetchingColumnOptions = ref(false)
 wheneverChanges(
-	() => join.value.table.table_name,
+	() => selectedTable.value.table_name,
 	() => {
-		if (!join.value.table.table_name) return
+		if (!selectedTable.value.table_name) return
 		fetchingColumnOptions.value = true
 		tableStore
-			.getTableColumns(join.value.table.data_source, join.value.table.table_name)
+			.getTableColumns(selectedTable.value.data_source, selectedTable.value.table_name)
 			.then((columns) => {
 				tableColumnOptions.value = columns.map((c: any) => ({
 					label: c.name,
@@ -117,9 +118,9 @@ wheneverChanges(
 )
 
 wheneverChanges(
-	() => join.value.table.table_name,
+	() => selectedTable.value.table_name,
 	() => {
-		if (!join.value.table.table_name) return
+		if (!selectedTable.value.table_name) return
 
 		// reset previous values if table is changed
 		join.value.select_columns = []
@@ -145,20 +146,20 @@ function autoMatchColumns() {
 	const selected_tables = query.doc.operations
 		.filter((op) => op.type === 'source' || op.type === 'join')
 		.map((op) => {
-			if (op.type === 'source' && 'table' in op) {
+			if (op.type === 'source' && op.table.type === 'table') {
 				return op.table.table_name
 			}
-			if (op.type === 'join' && 'table' in op) {
+			if (op.type === 'join' && op.table.type === 'table') {
 				return op.table.table_name
 			}
 			return ''
 		})
-		.filter((table) => table !== join.value.table.table_name)
+		.filter((table) => table !== selectedTable.value.table_name)
 
-	const right_table = join.value.table.table_name
+	const right_table = selectedTable.value.table_name
 	selected_tables.some(async (left_table: string) => {
 		const links = await tableStore.getTableLinks(
-			join.value.table.data_source,
+			selectedTable.value.data_source,
 			left_table,
 			right_table
 		)
@@ -209,7 +210,7 @@ const isValid = computed(() => {
 			: false
 
 	return (
-		join.value.table.table_name &&
+		selectedTable.value.table_name &&
 		join.value.join_type &&
 		join.value.select_columns.length > 0 &&
 		(hasValidJoinExpression || hasValidJoinColumns)
@@ -217,17 +218,22 @@ const isValid = computed(() => {
 })
 function confirm() {
 	if (!isValid.value) return
-	emit('select', join.value)
+	emit('select', {
+		...join.value,
+		table: selectedTable.value,
+	})
 	showDialog.value = false
 	reset()
 }
 function reset() {
+	selectedTable.value = {
+		type: 'table',
+		data_source: '',
+		table_name: '',
+	}
 	join.value = {
 		join_type: 'left',
-		table: table({
-			table_name: '',
-			data_source: '',
-		}),
+		table: selectedTable.value,
 		join_condition: {
 			left_column: column(''),
 			right_column: column(''),
@@ -284,14 +290,14 @@ const joinTypes = [
 							placeholder="Table"
 							:options="tableOptions"
 							:modelValue="
-								join.table.table_name
-									? `${join.table.data_source}.${join.table.table_name}`
+								selectedTable.table_name
+									? `${selectedTable.data_source}.${selectedTable.table_name}`
 									: ''
 							"
 							@update:modelValue="
 								(option: any) => {
-									join.table.data_source = option.data_source
-									join.table.table_name = option.table_name
+									selectedTable.data_source = option.data_source
+									selectedTable.table_name = option.table_name
 								}
 							"
 							@update:query="tableSearchText = $event"
@@ -299,9 +305,13 @@ const joinTypes = [
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-gray-600"
-							>Select Matching Columns</label
-						>
+						<label class="mb-1 block text-xs text-gray-600">
+							{{
+								showJoinConditionEditor
+									? 'Custom Join Condition'
+									: 'Select Matching Columns'
+							}}
+						</label>
 						<div class="flex gap-2">
 							<template
 								v-if="
@@ -336,9 +346,12 @@ const joinTypes = [
 								</div>
 							</template>
 							<template v-else-if="'join_expression' in join.join_condition">
-								<InlineExpression v-model="join.join_condition.join_expression" />
+								<InlineExpression
+									v-model="join.join_condition.join_expression"
+									placeholder="Example: (t1.column_name = t2.column_name) & (t1.column_name > 10)"
+								/>
 							</template>
-							<div class="flex flex-shrink-0 items-center">
+							<div class="flex flex-shrink-0 items-start">
 								<Tooltip text="Custom Join Condition" :hover-delay="0.5">
 									<Button @click="toggleJoinConditionEditor">
 										<template #icon>

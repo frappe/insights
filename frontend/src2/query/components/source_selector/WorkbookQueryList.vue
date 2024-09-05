@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ListView } from 'frappe-ui'
 import { CheckIcon, SearchIcon, Table2Icon } from 'lucide-vue-next'
-import { computed, h, inject, ref, watchEffect } from 'vue'
-import { WorkbookQuery } from '../../../types/workbook.types'
+import { computed, h, inject, ref } from 'vue'
+import { QueryTableArgs } from '../../../types/query.types'
 import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { Query } from '../../query'
 
 const workbook = inject<Workbook>(workbookKey)!
 const currentQuery = inject<Query>('query')!
-const selectedQuery = defineModel<string>('selectedQuery')
+const selectedQuery = defineModel<QueryTableArgs>('selectedQuery')
 
-const querySearchTxt = ref(selectedQuery.value || '')
+const querySearchTxt = ref(selectedQuery.value?.query_name || '')
 const queries = computed(() => {
 	const _queriesExceptCurrent = workbook.doc.queries.filter(
 		(query) => query.name !== currentQuery.doc.name
@@ -43,8 +43,11 @@ const listColumns = [
 		key: 'selected',
 		width: '40px',
 		getLabel: () => '',
-		prefix: (props: any) =>
-			props.row.name === selectedQuery.value && h(CheckIcon, { class: 'h-4 w-4' }),
+		prefix: (props: any) => {
+			if (props.row.name === selectedQuery.value?.query_name) {
+				return h(CheckIcon, { class: 'h-4 w-4' })
+			}
+		},
 	},
 ]
 </script>
@@ -73,7 +76,13 @@ const listColumns = [
 			:options="{
 				selectable: false,
 				showTooltip: false,
-				onRowClick: (row: any) => (selectedQuery = row.name),
+				onRowClick: (row: any) => {
+					selectedQuery = {
+						type: 'query',
+						workbook: workbook.doc.name,
+						query_name: row.name,
+					}
+				},
 				emptyState: {
 					title: 'No Queries Found'
 				},

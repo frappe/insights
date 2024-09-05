@@ -201,7 +201,7 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 			show: true,
 			hideOverlap: true,
 			margin: 4,
-			formatter: (value: Number) => getShortNumber(value, 1),
+			formatter: (value: number) => getShortNumber(value, 1),
 		},
 		min: options.normalized ? 0 : undefined,
 		max: options.normalized ? 100 : undefined,

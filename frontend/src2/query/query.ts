@@ -36,6 +36,7 @@ import {
 	mutate,
 	order_by,
 	pivot_wider,
+	query_table,
 	remove,
 	rename,
 	select,
@@ -186,12 +187,20 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			return []
 		}
 
-		if ('table' in sourceOp) {
+		if ('query' in sourceOp && sourceOp.query) {
+			// move old structure to new structure
+			sourceOp.table = query_table({
+				query_name: sourceOp.query as string,
+			})
+			delete sourceOp.query
+		}
+
+		if (sourceOp.table.type === 'table') {
 			return query.currentOperations
 		}
 
-		if ('query' in sourceOp) {
-			const sourceQuery = getCachedQuery(sourceOp.query)
+		if (sourceOp.table.type === 'query') {
+			const sourceQuery = getCachedQuery(sourceOp.table.query_name)
 			if (!sourceQuery) {
 				createToast({
 					variant: 'error',
