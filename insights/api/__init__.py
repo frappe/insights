@@ -7,7 +7,7 @@ from frappe.defaults import get_user_default, set_user_default
 from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
 
-from insights.decorators import check_role, validate_type
+from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -16,14 +16,12 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 )
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_user_info():
     is_admin = frappe.db.exists(
         "Has Role",
@@ -60,7 +58,7 @@ def get_user_info():
     }
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def update_default_version(version):
     if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
         set_user_default("insights_has_visited_v3", "1", frappe.session.user)
@@ -104,7 +102,7 @@ def get_csv_file(filename: str):
     return file
 
 
-@frappe.whitelist()
+@insights_whitelist()
 @validate_type
 def get_csv_data(filename: str):
     file = get_csv_file(filename)
@@ -125,7 +123,7 @@ def get_csv_data(filename: str):
     }
 
 
-@frappe.whitelist()
+@insights_whitelist()
 @validate_type
 def import_csv_data(filename: str):
     file = get_csv_file(filename)

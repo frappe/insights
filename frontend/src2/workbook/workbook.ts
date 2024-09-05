@@ -85,6 +85,7 @@ export default function useWorkbook(name: string) {
 			title: `Chart ${idx + 1}`,
 			query: '',
 			chart_type: 'Line',
+			public: false,
 			config: {} as WorkbookChart['config'],
 		})
 		setActiveTab('chart', idx)
@@ -138,8 +139,7 @@ export default function useWorkbook(name: string) {
 	const canShare = computed(() => isOwner.value)
 
 	async function getSharePermissions(): Promise<WorkbookSharePermission[]> {
-		const method =
-			'insights.insights.doctype.insights_workbook.insights_workbook.get_share_permissions'
+		const method = 'insights.api.workbooks.get_share_permissions'
 		return call(method, { workbook_name: workbook.name }).then((permissions: any) => {
 			return permissions.map((p: any) => {
 				return {
@@ -152,8 +152,7 @@ export default function useWorkbook(name: string) {
 	}
 
 	async function updateSharePermissions(permissions: WorkbookSharePermission[]) {
-		const method =
-			'insights.insights.doctype.insights_workbook.insights_workbook.update_share_permissions'
+		const method = 'insights.api.workbooks.update_share_permissions'
 		return call(method, {
 			workbook_name: workbook.name,
 			permissions: permissions.map((p) => {

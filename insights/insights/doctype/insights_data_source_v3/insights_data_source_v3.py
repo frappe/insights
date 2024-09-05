@@ -7,14 +7,10 @@ import re
 import frappe
 import ibis
 from frappe.model.document import Document
-from frappe.utils.caching import site_cache
 from ibis import BaseBackend
 
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WAREHOUSE_DB_NAME,
-)
-from insights.insights.doctype.insights_table_column.insights_table_column import (
-    InsightsTableColumn,
 )
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
@@ -220,101 +216,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 link.left_column,
                 link.right_column,
             )
-
-
-@frappe.whitelist()
-def get_data_sources():
-    return frappe.get_all(
-        "Insights Data Source v3",
-        filters={"status": "Active"},
-        fields=[
-            "name",
-            "status",
-            "title",
-            "owner",
-            "creation",
-            "modified",
-            "database_type",
-        ],
-    )
-
-
-@frappe.whitelist()
-def get_data_source_tables(data_source=None, search_term=None, limit=100):
-    tables = frappe.get_all(
-        "Insights Table v3",
-        filters={
-            "data_source": data_source or ["is", "set"],
-        },
-        or_filters={
-            "label": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
-            "table": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
-        },
-        fields=["name", "table", "label", "data_source", "last_synced_on"],
-        limit=limit,
-    )
-
-    ret = []
-    for table in tables:
-        ret.append(
-            frappe._dict(
-                {
-                    "label": table.label,
-                    "table_name": table.table,
-                    "data_source": table.data_source,
-                    "last_synced_on": table.last_synced_on,
-                }
-            )
-        )
-    return ret
-
-
-@frappe.whitelist()
-@site_cache
-def get_table_columns(data_source, table_name):
-    ds = frappe.get_doc("Insights Data Source v3", data_source)
-    db = ds._get_ibis_backend()
-    table = db.table(table_name)
-    return InsightsTableColumn.from_ibis_schema(table.schema())
-
-
-@frappe.whitelist()
-def update_data_source_tables(data_source):
-    ds = frappe.get_doc("Insights Data Source v3", data_source)
-    ds.update_table_list()
-
-
-@frappe.whitelist()
-def get_table_links(data_source, left_table, right_table):
-    return InsightsTableLinkv3.get_links(data_source, left_table, right_table)
-
-
-def make_data_source(data_source):
-    data_source = frappe._dict(data_source)
-    ds = frappe.new_doc("Insights Data Source v3")
-    ds.database_type = data_source.database_type
-    ds.title = data_source.title
-    ds.host = data_source.host
-    ds.port = data_source.port
-    ds.username = data_source.username
-    ds.password = data_source.password
-    ds.database_name = data_source.database_name
-    ds.use_ssl = data_source.use_ssl
-    ds.connection_string = data_source.connection_string
-    return ds
-
-
-@frappe.whitelist()
-def test_connection(data_source):
-    ds = make_data_source(data_source)
-    return ds.test_connection(raise_exception=True)
-
-
-@frappe.whitelist()
-def create_data_source(data_source):
-    ds = make_data_source(data_source)
-    ds.save()
-    return ds.name
 
 
 def before_request():

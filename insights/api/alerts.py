@@ -1,9 +1,9 @@
 import frappe
 
-from insights.api.telemetry import track
+from insights.decorators import insights_whitelist
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def create_alert(alert):
     alert = frappe._dict(alert)
     alert_doc = frappe.new_doc("Insights Alert")
@@ -12,7 +12,7 @@ def create_alert(alert):
     return alert_doc
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def test_alert(alert):
     alert_doc = frappe.new_doc("Insights Alert")
     alert_doc.update(alert)

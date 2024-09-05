@@ -6,12 +6,11 @@ from frappe.utils import split_emails, validate_email_address
 from frappe.utils.user import get_users_with_role
 
 from insights import notify
-from insights.decorators import check_role
+from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_team.insights_team import get_user_teams
 
 
-@frappe.whitelist()
-@check_role("Insights Admin")
+@insights_whitelist()
 def get_users(search_term=None):
     """Returns full_name, email, type, teams, last_active"""
     insights_users = get_users_with_role("Insights User")
@@ -64,8 +63,7 @@ def get_users(search_term=None):
     return users
 
 
-@frappe.whitelist()
-@check_role("Insights Admin")
+@insights_whitelist()
 def add_insights_user(user):
     email_strings = validate_email_address(user.get("email"), throw=True)
     email_strings = split_emails(email_strings)
@@ -104,3 +102,50 @@ def add_insights_user(user):
                 title="Team Not Found",
                 message=f"Team {user.get('team')} does not exist. Please create a new team or add the user to an existing team.",
             )
+
+
+@frappe.whitelist(allow_guest=True)
+@validate_type
+def accept_invitation(key: str):
+    if not key:
+        frappe.throw("Invalid or expired key")
+
+    invitation_name = frappe.db.exists("Insights User Invitation", {"key": key})
+    if not invitation_name:
+        frappe.throw("Invalid or expired key")
+
+    invitation = frappe.get_doc("Insights User Invitation", invitation_name)
+    invitation.accept()
+    invitation.reload()
+
+    if invitation.status == "Accepted":
+        frappe.local.login_manager.login_as(invitation.email)
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = "/insights"
+
+
+@insights_whitelist()
+@validate_type
+def invite_users(emails: str):
+    if not emails:
+        return
+
+    email_string = validate_email_address(emails, throw=False)
+    email_list = split_emails(email_string)
+    if not email_list:
+        return
+
+    existing_invites = frappe.db.get_all(
+        "Insights User Invitation",
+        filters={
+            "email": ["in", email_list],
+            "status": ["in", ["Pending", "Accepted"]],
+        },
+        pluck="email",
+    )
+
+    new_invites = list(set(email_list) - set(existing_invites))
+    for email in new_invites:
+        invite = frappe.new_doc("Insights User Invitation")
+        invite.email = email
+        invite.insert(ignore_permissions=True)

@@ -31,10 +31,7 @@ function getUser(email: string) {
 const sendingInvitation = ref(false)
 function inviteUsers(emails: string[]) {
 	sendingInvitation.value = true
-	return call(
-		'insights.insights.doctype.insights_user_invitation.insights_user_invitation.invite_users',
-		{ emails: emails.join(',') }
-	)
+	return call('insights.api.user.invite_users', { emails: emails.join(',') })
 		.then(() => {
 			getUsers()
 			createToast({

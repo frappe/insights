@@ -1,15 +1,14 @@
 import frappe
 
 from insights.api.permissions import is_private
-from insights.decorators import check_role
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
     get_permission_filter,
 )
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_dashboard_list():
     dashboards = frappe.get_list(
         "Insights Dashboard",
@@ -43,8 +42,7 @@ def get_dashboard_list():
     return dashboards
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def create_dashboard(title):
     dashboard = frappe.get_doc({"doctype": "Insights Dashboard", "title": title})
     dashboard.insert()
@@ -54,8 +52,7 @@ def create_dashboard(title):
     }
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_dashboard_options(chart):
     allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
     if not allowed_dashboards:
@@ -76,7 +73,7 @@ def get_dashboard_options(chart):
     )
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def add_chart_to_dashboard(dashboard, chart):
     dashboard = frappe.get_doc("Insights Dashboard", dashboard)
     dashboard.add_chart(chart)

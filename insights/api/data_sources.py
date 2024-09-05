@@ -1,9 +1,15 @@
 import frappe
-from frappe.utils.caching import redis_cache
+from frappe.utils.caching import redis_cache, site_cache
 
 from insights import notify
-from insights.decorators import check_role
+from insights.decorators import insights_whitelist, validate_type
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+    to_insights_type,
+)
 from insights.insights.doctype.insights_query.utils import infer_type_from_list
+from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
+    InsightsTableLinkv3,
+)
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
     check_table_permission,
@@ -12,8 +18,7 @@ from insights.insights.doctype.insights_team.insights_team import (
 from insights.utils import InsightsTable, detect_encoding
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_data_sources():
     return frappe.get_list(
         "Insights Data Source",
@@ -33,8 +38,7 @@ def get_data_sources():
     )
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_table_columns(data_source, table):
     check_table_permission(data_source, table)
 
@@ -49,8 +53,7 @@ def get_table_columns(data_source, table):
     return {"columns": doc.columns}
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
     return frappe.get_value(
@@ -58,8 +61,7 @@ def get_table_name(data_source, table):
     )
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_tables(data_source=None, with_query_tables=False):
     if not data_source:
         return []
@@ -81,8 +83,7 @@ def get_tables(data_source=None, with_query_tables=False):
     )
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def create_table_link(
     data_source, primary_table, foreign_table, primary_key, foreign_key
 ):
@@ -124,8 +125,7 @@ def create_table_link(
         foreign.save()
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_columns_from_uploaded_file(filename):
     import pandas as pd
 
@@ -155,8 +155,7 @@ def create_data_source_for_csv():
         data_source.insert(ignore_permissions=True)
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def import_csv(table_label, table_name, filename, if_exists, columns, data_source):
     create_data_source_for_csv()
 
@@ -187,8 +186,7 @@ def import_csv(table_label, table_name, filename, if_exists, columns, data_sourc
     )
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def delete_data_source(data_source):
     try:
         frappe.delete_doc("Insights Data Source", data_source)
@@ -217,7 +215,7 @@ def delete_data_source(data_source):
         )
 
 
-@frappe.whitelist()
+@insights_whitelist()
 @redis_cache()
 def fetch_column_values(data_source, table, column, search_text=None):
     if not data_source or not isinstance(data_source, str):
@@ -230,7 +228,7 @@ def fetch_column_values(data_source, table, column, search_text=None):
     return doc.get_column_options(table, column, search_text)
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_relation(data_source, table_one, table_two):
     table_one_doc = InsightsTable.get_doc(
         {"data_source": data_source, "table": table_one}
@@ -274,3 +272,112 @@ def get_reverse_cardinality(cardinality):
     if cardinality == "N:1":
         return "1:N"
     return cardinality
+
+
+# v3 APIs
+
+
+@insights_whitelist()
+def get_all_data_sources():
+    return frappe.get_all(
+        "Insights Data Source v3",
+        filters={"status": "Active"},
+        fields=[
+            "name",
+            "status",
+            "title",
+            "owner",
+            "creation",
+            "modified",
+            "database_type",
+        ],
+    )
+
+
+@insights_whitelist()
+@validate_type
+def get_data_source_tables(data_source=None, search_term=None, limit=100):
+    tables = frappe.get_all(
+        "Insights Table v3",
+        filters={
+            "data_source": data_source or ["is", "set"],
+        },
+        or_filters={
+            "label": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
+            "table": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
+        },
+        fields=["name", "table", "label", "data_source", "last_synced_on"],
+        limit=limit,
+    )
+
+    ret = []
+    for table in tables:
+        ret.append(
+            frappe._dict(
+                {
+                    "label": table.label,
+                    "table_name": table.table,
+                    "data_source": table.data_source,
+                    "last_synced_on": table.last_synced_on,
+                }
+            )
+        )
+    return ret
+
+
+@insights_whitelist()
+@site_cache
+@validate_type
+def get_data_source_table_columns(data_source: str, table_name: str):
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    db = ds._get_ibis_backend()
+    table = db.table(table_name)
+    return [
+        frappe._dict(
+            column=column,
+            label=column,
+            type=to_insights_type(datatype),
+        )
+        for column, datatype in table.schema().items()
+    ]
+
+
+@insights_whitelist()
+@validate_type
+def update_data_source_tables(data_source: str):
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    ds.update_table_list()
+
+
+@insights_whitelist()
+@validate_type
+def get_table_links(data_source: str, left_table: str, right_table: str):
+    return InsightsTableLinkv3.get_links(data_source, left_table, right_table)
+
+
+def make_data_source(data_source):
+    data_source = frappe._dict(data_source)
+    ds = frappe.new_doc("Insights Data Source v3")
+    ds.database_type = data_source.database_type
+    ds.title = data_source.title
+    ds.host = data_source.host
+    ds.port = data_source.port
+    ds.username = data_source.username
+    ds.password = data_source.password
+    ds.database_name = data_source.database_name
+    ds.use_ssl = data_source.use_ssl
+    ds.connection_string = data_source.connection_string
+    return ds
+
+
+@insights_whitelist()
+def test_connection(data_source):
+    ds = make_data_source(data_source)
+    return ds.test_connection(raise_exception=True)
+
+
+@insights_whitelist()
+def create_data_source(data_source):
+    ds = make_data_source(data_source)
+    ds.save()
+    return ds.name
