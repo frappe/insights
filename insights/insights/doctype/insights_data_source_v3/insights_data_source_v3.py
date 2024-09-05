@@ -43,8 +43,10 @@ class InsightsDataSourceDocument:
         if self.name == WAREHOUSE_DB_NAME:
             frappe.throw("Cannot create a Data Source with this name")
 
-        if self.is_site_db and frappe.db.exists(
-            "Insights Data Source v3", {"is_site_db": 1}
+        if (
+            not frappe.flags.in_migrate
+            and self.is_site_db
+            and frappe.db.exists("Insights Data Source v3", {"is_site_db": 1})
         ):
             frappe.throw("Only one site database can be configured")
 

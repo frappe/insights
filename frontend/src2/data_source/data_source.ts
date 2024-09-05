@@ -16,6 +16,7 @@ async function getSources() {
 		...source,
 		created_from_now: useTimeAgo(source.creation),
 		modified_from_now: useTimeAgo(source.modified),
+		title: source.is_site_db && source.title == 'Site DB' ? window.location.hostname : source.title,
 	}))
 	loading.value = false
 	return sources.value
