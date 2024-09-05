@@ -22,7 +22,7 @@ const config = computed(() => props.chart.doc.config as TableChartConfig)
 			:rows="chart.dataQuery.result.formattedRows"
 		>
 			<template #column-header="{ column }">
-				<ChartBuilderTableColumn :column="column" />
+				<ChartBuilderTableColumn :chart="chart" :column="column" />
 			</template>
 		</DataTable>
 	</div>
