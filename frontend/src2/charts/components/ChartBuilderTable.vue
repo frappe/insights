@@ -15,7 +15,7 @@ const chart = inject('chart') as Chart
 			:rows="chart.dataQuery.result.formattedRows"
 		>
 			<template #column-header="{ column }">
-				<ChartBuilderTableColumn :column="column" />
+				<ChartBuilderTableColumn :chart="chart" :column="column" />
 			</template>
 		</DataTable>
 	</div>

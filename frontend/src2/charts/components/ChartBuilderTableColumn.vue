@@ -14,8 +14,8 @@ import { column } from '../../query/helpers'
 import { QueryResultColumn } from '../../types/query.types'
 import { Chart } from '../chart'
 
-const props = defineProps<{ column: QueryResultColumn }>()
-const chart = inject('chart') as Chart
+const props = defineProps<{ chart: Chart; column: QueryResultColumn }>()
+const chart = props.chart
 
 const currentSortOrder = computed(() => {
 	return chart.doc.config.order_by.find((order) => order.column.column_name === props.column.name)
