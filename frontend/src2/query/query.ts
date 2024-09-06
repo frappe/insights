@@ -174,7 +174,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	wheneverChanges(
 		() => query.currentOperations,
 		() => query.autoExecute && execute(),
-		{ deep: true, immediate: true }
+		{ deep: true }
 	)
 
 	function getOperationsForExecution(): Operation[] {

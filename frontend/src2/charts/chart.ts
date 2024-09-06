@@ -75,10 +75,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 	)
 
-	wheneverChanges(
-		() => chart.baseQuery.result?.totalRowCount,
-		() => refresh([], true)
-	)
 
 	watchDebounced(
 		() => chart.doc.config,

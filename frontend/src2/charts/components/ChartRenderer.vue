@@ -9,7 +9,6 @@ import TableChart from './TableChart.vue'
 
 const props = defineProps<{ chart: Chart; showDownload?: boolean }>()
 const chart = props.chart
-chart.refresh()
 
 const eChartOptions = computed(() => {
 	if (!chart.dataQuery.result.columns?.length) return
