@@ -14,6 +14,7 @@ const props = defineProps<{ query: WorkbookQuery }>()
 const query = useQuery(props.query)
 provide('query', query)
 window.query = query
+query.execute()
 
 const keys = useMagicKeys()
 const cmdZ = keys['Meta+Z']
