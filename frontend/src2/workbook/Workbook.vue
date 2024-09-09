@@ -71,7 +71,7 @@ watchEffect(() => {
 		</Navbar>
 		<div
 			class="relative flex w-full flex-1 overflow-hidden bg-gray-50"
-			:class="workbook.showSidebar ? 'flex-row divide-x' : 'flex-col divide-y'"
+			:class="workbook.showSidebar ? 'flex-row' : 'flex-col'"
 		>
 			<WorkbookSidebar v-if="workbook.showSidebar" />
 			<WorkbookTabSwitcher v-else />
