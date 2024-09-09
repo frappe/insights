@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
 import { Braces } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
-import JoinFullIcon from '../../components/Icons/JoinFullIcon.vue'
-import JoinInnerIcon from '../../components/Icons/JoinInnerIcon.vue'
-import JoinLeftIcon from '../../components/Icons/JoinLeftIcon.vue'
-import JoinRightIcon from '../../components/Icons/JoinRightIcon.vue'
-import useTableStore from '../../data_source/tables'
+import { computed, inject, reactive, watch } from 'vue'
 import { wheneverChanges } from '../../helpers'
-import { JoinArgs, JoinType, TableArgs } from '../../types/query.types'
+import { joinTypes } from '../../helpers/constants'
+import { JoinArgs, JoinType } from '../../types/query.types'
 import { column, expression, table } from '../helpers'
 import { Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
+import { handleOldProps, useTableColumnOptions, useTableOptions } from './join_utils'
+import useTableStore from '../../data_source/tables'
 
 const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
@@ -19,31 +16,16 @@ const emit = defineEmits({
 })
 const showDialog = defineModel()
 
-// handle backward compatibility
-// move left_column and right_column under join_condition
-const _props_join: any = props.join
-if (props.join && _props_join.left_column?.column_name && _props_join.right_column?.column_name) {
-	props.join.join_condition = {
-		left_column: _props_join.left_column,
-		right_column: _props_join.right_column,
-	}
+if (props.join) {
+	handleOldProps(props.join)
 }
 
-const selectedTable = ref<TableArgs>(
-	props.join && props.join.table.type === 'table'
-		? { ...props.join.table }
-		: {
-				type: 'table',
-				data_source: '',
-				table_name: '',
-		  }
-)
-const join = ref<JoinArgs>(
+const join = reactive<JoinArgs>(
 	props.join
 		? { ...props.join }
 		: {
 				join_type: 'left' as JoinType,
-				table: selectedTable.value,
+				table: table({}),
 				join_condition: {
 					left_column: column(''),
 					right_column: column(''),
@@ -51,8 +33,6 @@ const join = ref<JoinArgs>(
 				select_columns: [],
 		  }
 )
-
-const tableStore = useTableStore()
 
 const query = inject('query') as Query
 const data_source = computed(() => {
@@ -62,88 +42,53 @@ const data_source = computed(() => {
 
 	const operations = query.getOperationsForExecution()
 	const source = operations.find((op) => op.type === 'source')
-	return source && source.table.type === 'table' ? source.table.data_source : undefined
+	return source && source.table.type === 'table' ? source.table.data_source : ''
 })
 
-type TableOption = {
-	label: string
-	value: string
-	description: string
-	data_source: string
-	table_name: string
-}
-const tableOptions = computed<TableOption[]>(() => {
-	if (!tableStore.tables.length) return []
-	return tableStore.tables.map((t) => ({
-		table_name: t.table_name,
-		data_source: t.data_source,
-		description: t.data_source,
-		label: t.table_name,
-		value: `${t.data_source}.${t.table_name}`,
-	}))
+const tableOptions = useTableOptions({
+	data_source,
+	initialSearchText: join.table.type === 'table' ? join.table.table_name : '',
 })
-const tableSearchText = ref(props.join?.table.type === 'table' ? props.join.table.table_name : '')
-watchDebounced(
-	tableSearchText,
-	() => tableStore.getTables(data_source.value, tableSearchText.value),
-	{
-		debounce: 300,
-		immediate: true,
+
+const rightTable = computed(() => {
+	return join.table.type === 'table' ? join.table.table_name : ''
+})
+
+wheneverChanges(rightTable, () => {
+	if (!rightTable.value) return
+
+	// reset previous values if table is changed
+	join.select_columns = []
+	if ('right_column' in join.join_condition && join.join_condition.right_column.column_name) {
+		join.join_condition.right_column.column_name = ''
 	}
-)
 
-const tableColumnOptions = ref<DropdownOption[]>([])
-const fetchingColumnOptions = ref(false)
-wheneverChanges(
-	() => selectedTable.value.table_name,
+	if ('join_expression' in join.join_condition && join.join_condition.join_expression) {
+		join.join_condition.join_expression = expression('')
+	}
+})
+
+const rightTableColumnOptions = useTableColumnOptions(data_source, rightTable)
+
+watch(
+	() => rightTableColumnOptions.options,
 	() => {
-		if (!selectedTable.value.table_name) return
-		fetchingColumnOptions.value = true
-		tableStore
-			.getTableColumns(selectedTable.value.data_source, selectedTable.value.table_name)
-			.then((columns) => {
-				tableColumnOptions.value = columns.map((c: any) => ({
-					label: c.name,
-					value: c.name,
-					description: c.type,
-					data_type: c.type,
-				}))
-				autoMatchColumns()
-			})
-			.finally(() => {
-				fetchingColumnOptions.value = false
-			})
-	},
-	{ immediate: true }
-)
-
-wheneverChanges(
-	() => selectedTable.value.table_name,
-	() => {
-		if (!selectedTable.value.table_name) return
-
-		// reset previous values if table is changed
-		join.value.select_columns = []
-		if (
-			'right_column' in join.value.join_condition &&
-			join.value.join_condition.right_column.column_name
-		) {
-			join.value.join_condition.right_column.column_name = ''
-		}
+		if ('join_expression' in join.join_condition) return
+		if (!rightTableColumnOptions.options.length) return
 
 		if (
-			'join_expression' in join.value.join_condition &&
-			join.value.join_condition.join_expression
+			'right_column' in join.join_condition &&
+			!join.join_condition.right_column.column_name
 		) {
-			join.value.join_condition.join_expression = expression('')
+			autoMatchColumns()
 		}
 	}
 )
 
-function autoMatchColumns() {
-	if ('join_expression' in join.value.join_condition) return
-
-	const selected_tables = query.doc.operations
+const tableStore = useTableStore()
+async function autoMatchColumns() {
+	const selected_tables = query
+		.getOperationsForExecution()
 		.filter((op) => op.type === 'source' || op.type === 'join')
 		.map((op) => {
 			if (op.type === 'source' && op.table.type === 'table') {
@@ -154,44 +99,35 @@ function autoMatchColumns() {
 			}
 			return ''
 		})
-		.filter((table) => table !== selectedTable.value.table_name)
+		.filter((table) => table !== rightTable.value)
 
-	const right_table = selectedTable.value.table_name
-	selected_tables.some(async (left_table: string) => {
-		const links = await tableStore.getTableLinks(
-			selectedTable.value.data_source,
-			left_table,
-			right_table
-		)
-
+	const right_table = rightTable.value
+	const resultColumns = query.result.columns.map((c) => c.name)
+	for (const left_table of selected_tables) {
+		const links = await tableStore.getTableLinks(data_source.value, left_table, right_table)
 		if (!links?.length) {
-			return false
+			continue
 		}
-
 		// find a link where left column is present in query.result.columns
-		const link = links.find((l) => {
-			return query.result.columns.find((c) => c.name === l.left_column)
-		})
-		if (!link) {
-			return false
+		const link = links.find((l) => resultColumns.includes(l.left_column))
+		if (!link) continue
+		if ('left_column' in join.join_condition) {
+			join.join_condition.left_column.column_name = link.left_column
+			join.join_condition.right_column.column_name = link.right_column
+			break
 		}
-
-		if ('left_column' in join.value.join_condition) {
-			join.value.join_condition.left_column.column_name = link.left_column
-			join.value.join_condition.right_column.column_name = link.right_column
-		}
-	})
+	}
 }
 
-const showJoinConditionEditor = computed(() => 'join_expression' in join.value.join_condition)
+const showJoinConditionEditor = computed(() => 'join_expression' in join.join_condition)
 function toggleJoinConditionEditor() {
 	if (showJoinConditionEditor.value) {
-		join.value.join_condition = {
+		join.join_condition = {
 			left_column: column(''),
 			right_column: column(''),
 		}
 	} else {
-		join.value.join_condition = {
+		join.join_condition = {
 			join_expression: expression(''),
 		}
 	}
@@ -199,76 +135,40 @@ function toggleJoinConditionEditor() {
 
 const isValid = computed(() => {
 	const hasValidJoinExpression =
-		'join_expression' in join.value.join_condition
-			? join.value.join_condition.join_expression.expression
+		'join_expression' in join.join_condition
+			? join.join_condition.join_expression.expression
 			: false
 
 	const hasValidJoinColumns =
-		'left_column' in join.value.join_condition && 'right_column' in join.value.join_condition
-			? join.value.join_condition.left_column.column_name &&
-			  join.value.join_condition.right_column.column_name
+		'left_column' in join.join_condition && 'right_column' in join.join_condition
+			? join.join_condition.left_column.column_name &&
+			  join.join_condition.right_column.column_name
 			: false
 
 	return (
-		selectedTable.value.table_name &&
-		join.value.join_type &&
-		join.value.select_columns.length > 0 &&
+		rightTable.value &&
+		join.join_type &&
+		join.select_columns.length > 0 &&
 		(hasValidJoinExpression || hasValidJoinColumns)
 	)
 })
 function confirm() {
 	if (!isValid.value) return
-	emit('select', {
-		...join.value,
-		table: selectedTable.value,
-	})
+	emit('select', { ...join })
 	showDialog.value = false
 	reset()
 }
 function reset() {
-	selectedTable.value = {
-		type: 'table',
-		data_source: '',
-		table_name: '',
-	}
-	join.value = {
+	Object.assign(join, {
 		join_type: 'left',
-		table: selectedTable.value,
+		table: table({}),
 		join_condition: {
 			left_column: column(''),
 			right_column: column(''),
 		},
 		select_columns: [],
-	}
+	})
 }
-
-const joinTypes = [
-	{
-		label: 'Left',
-		icon: JoinLeftIcon,
-		value: 'left',
-		description: 'Keep all existing rows and include matching rows from the new table',
-	},
-	{
-		label: 'Inner',
-		icon: JoinInnerIcon,
-		value: 'inner',
-		description: 'Keep only rows that have matching values in both tables',
-	},
-	{
-		label: 'Right',
-		icon: JoinRightIcon,
-		value: 'right',
-		description:
-			'Keep all rows from the new table and include matching rows from the existing table',
-	},
-	{
-		label: 'Full',
-		icon: JoinFullIcon,
-		value: 'full',
-		description: 'Keep all rows from both tables',
-	},
-] as const
 </script>
 
 <template>
@@ -288,20 +188,22 @@ const joinTypes = [
 						<label class="mb-1 block text-xs text-gray-600">Select Table to Join</label>
 						<Autocomplete
 							placeholder="Table"
-							:options="tableOptions"
+							:options="tableOptions.options"
 							:modelValue="
-								selectedTable.table_name
-									? `${selectedTable.data_source}.${selectedTable.table_name}`
+								join.table.type === 'table' && join.table.table_name
+									? `${join.table.data_source}.${join.table.table_name}`
 									: ''
 							"
 							@update:modelValue="
 								(option: any) => {
-									selectedTable.data_source = option.data_source
-									selectedTable.table_name = option.table_name
+									if (join.table.type === 'table') {
+										join.table.data_source = option.data_source
+										join.table.table_name = option.table_name
+									}
 								}
 							"
-							@update:query="tableSearchText = $event"
-							:loading="tableStore.loading"
+							@update:query="tableOptions.searchText = $event"
+							:loading="tableOptions.loading"
 						/>
 					</div>
 					<div>
@@ -322,7 +224,6 @@ const joinTypes = [
 								<div class="flex-1">
 									<Autocomplete
 										placeholder="Column"
-										:loading="fetchingColumnOptions"
 										:options="query.result.columnOptions"
 										:modelValue="join.join_condition.left_column.column_name"
 										@update:modelValue="
@@ -335,8 +236,8 @@ const joinTypes = [
 								<div class="flex-1">
 									<Autocomplete
 										placeholder="Column"
-										:loading="fetchingColumnOptions"
-										:options="tableColumnOptions"
+										:loading="rightTableColumnOptions.loading"
+										:options="rightTableColumnOptions.options"
 										:modelValue="join.join_condition.right_column.column_name"
 										@update:modelValue="
 											join.join_condition.right_column.column_name =
@@ -398,8 +299,8 @@ const joinTypes = [
 						<Autocomplete
 							:multiple="true"
 							placeholder="Columns"
-							:loading="fetchingColumnOptions"
-							:options="tableColumnOptions"
+							:loading="rightTableColumnOptions.loading"
+							:options="rightTableColumnOptions.options"
 							:modelValue="join.select_columns?.map((c) => c.column_name)"
 							@update:modelValue="
 								join.select_columns = $event?.map((o: any) => column(o.value)) || []
