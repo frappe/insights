@@ -11,7 +11,7 @@ no_cache = 1
 
 
 def get_context(context):
-    is_v2_user = frappe.db.count("Insights Query") > 0
+    is_v2_user = frappe.db.count("Insights Query", cache=True) > 0
     # if not v2 user continue to v3
     if not is_v2_user:
         continue_to_v3(context)
