@@ -149,19 +149,26 @@ def xls_to_df(file_path: str) -> list[pd.DataFrame]:
 
 
 class InsightsPageRenderer(TemplatePage):
-    def __init__(self, path, http_status_code=None):
-        super().__init__(path=path, http_status_code=http_status_code)
-        self.set_headers()
+    def can_render(self):
+        try:
+            path = frappe.request.path
+        except BaseException:
+            path = self.path
 
-    def set_headers(self):
-        path = frappe.request.path
         embed_urls = [
             "/insights_v2/public",
             "/insights/public",
         ]
         if not any(path.startswith(url) for url in embed_urls):
-            return
+            return False
 
+        return super().can_render()
+
+    def render(self):
+        self.set_headers()
+        return super().render()
+
+    def set_headers(self):
         allowed_origins = frappe.db.get_single_value("Insights Settings", "allowed_origins")
         if not allowed_origins:
             return
