@@ -81,9 +81,12 @@ def create_chart():
     return chart.name
 
 
-@insights_whitelist()
+@frappe.whitelist(allow_guest=True)
 def pivot(
-    data, indexes: list[str] = None, columns: list[str] = None, values: list[str] = None
+    data,
+    indexes: list[str] | None = None,
+    columns: list[str] | None = None,
+    values: list[str] | None = None,
 ):
     indexes = indexes or []
     columns = columns or []
