@@ -1,6 +1,6 @@
 import frappe
 import ibis
-from ibis import _
+from ibis import _, selectors
 from ibis.expr.types import Column, NumericColumn, StringColumn, TimestampColumn, Value
 
 # generic functions
@@ -17,12 +17,13 @@ f_coalesce = Value.coalesce
 f_distinct_count = Column.nunique
 f_sum_if = lambda condition, column: f_sum(column, where=condition)
 f_count_if = lambda condition, column: f_count(column, where=condition)
-f_if = (
+f_if_else = (
     lambda condition, true_value, false_value: ibis.case()
     .when(condition, true_value)
     .else_(false_value)
     .end()
 )
+f_case = lambda *args: ibis.case().when(*args).end()
 f_sql = lambda query: _.sql(query)
 
 
@@ -66,10 +67,12 @@ f_start_of = lambda unit, date: None  # TODO
 f_is_within = lambda args, kwargs: None  # TODO
 
 # utility functions
-f_to_inr = lambda curr, amount, rate=83: f_if(curr == "USD", amount * rate, amount)
-f_to_usd = lambda curr, amount, rate=83: f_if(curr == "INR", amount / rate, amount)
+f_to_inr = lambda curr, amount, rate=83: f_if_else(curr == "USD", amount * rate, amount)
+f_to_usd = lambda curr, amount, rate=83: f_if_else(curr == "INR", amount / rate, amount)
 f_literal = ibis.literal
 f_row_number = ibis.row_number
+f_s = selectors
+f_selectors = selectors
 
 
 def get_functions():
