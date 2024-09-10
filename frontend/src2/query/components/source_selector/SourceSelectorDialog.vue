@@ -90,7 +90,7 @@ function onConfirm() {
 	if (confirmDisabled.value) return
 	emit(
 		'select',
-		selectedQuery.value
+		selectedQuery.value.query_name
 			? {
 					table: query_table(selectedQuery.value),
 			  }
