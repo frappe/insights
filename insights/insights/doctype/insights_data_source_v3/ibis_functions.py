@@ -72,6 +72,14 @@ f_to_inr = lambda curr, amount, rate=83: f_if_else(curr == "USD", amount * rate,
 f_to_usd = lambda curr, amount, rate=83: f_if_else(curr == "INR", amount / rate, amount)
 f_literal = ibis.literal
 f_row_number = ibis.row_number
+f_previous_period_value = lambda column, date_column, offset=1: column.lag(offset).over(
+    group_by=(~s.numeric() & ~s.matches(date_column)),
+    order_by=ibis.asc(date_column),
+)
+f_next_period_value = lambda column, date_column, offset=1: column.lead(offset).over(
+    group_by=(~s.numeric() & ~s.matches(date_column)),
+    order_by=ibis.asc(date_column),
+)
 
 
 def get_functions():
