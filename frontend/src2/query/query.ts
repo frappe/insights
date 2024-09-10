@@ -7,6 +7,7 @@ import { FIELDTYPES } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import {
 	ColumnDataType,
+	CustomOperationArgs,
 	Dimension,
 	DimensionDataType,
 	FilterGroupArgs,
@@ -29,6 +30,7 @@ import {
 	cast,
 	column,
 	count,
+	custom_operation,
 	filter_group,
 	getFormattedRows,
 	join,
@@ -70,7 +72,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		autoExecute: true,
 		executing: false,
-		result: {} as QueryResult,
+		result: { ...EMPTY_RESULT },
 
 		getOperationsForExecution,
 		execute,
@@ -92,6 +94,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		renameColumn,
 		removeColumn,
 		changeColumnType,
+		addCustomOperation,
 
 		getDistinctColumnValues,
 		getColumnsForSelection,
@@ -221,14 +224,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	async function execute() {
 		if (!query.doc.operations.length) {
-			query.result = {
-				executedSQL: '',
-				totalRowCount: 0,
-				rows: [],
-				formattedRows: [],
-				columns: [],
-				columnOptions: [],
-			}
+			query.result = { ...EMPTY_RESULT }
 			return
 		}
 
@@ -252,7 +248,10 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					data_type: column.type,
 				}))
 			})
-			.catch(showErrorToast)
+			.catch((e: Error) => {
+				query.result = { ...EMPTY_RESULT }
+				showErrorToast(e)
+			})
 			.finally(() => {
 				query.executing = false
 			})
@@ -432,6 +431,17 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				data_type: newType,
 			})
 		)
+	}
+
+	function addCustomOperation(args: CustomOperationArgs) {
+		const editingCustomOperation = query.activeEditOperation.type === 'custom_operation'
+
+		if (!editingCustomOperation) {
+			addOperation(custom_operation(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = custom_operation(args)
+			query.setActiveEditIndex(-1)
+		}
 	}
 
 	function setOperations(newOperations: Operation[]) {
@@ -623,5 +633,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	return query
 }
+
+const EMPTY_RESULT = {
+	executedSQL: '',
+	totalRowCount: 0,
+	rows: [],
+	formattedRows: [],
+	columns: [],
+	columnOptions: [],
+} as QueryResult
 
 export type Query = ReturnType<typeof makeQuery>

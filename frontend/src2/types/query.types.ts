@@ -128,6 +128,9 @@ export type PivotWiderArgs = {
 }
 export type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 
+export type CustomOperationArgs = { expression: Expression }
+export type CustomOperation = { type: 'custom_operation' } & CustomOperationArgs
+
 export type Operation =
 	| Source
 	| Filter
@@ -142,6 +145,7 @@ export type Operation =
 	| OrderBy
 	| Limit
 	| PivotWider
+	| CustomOperation
 
 export type QueryResultRow = Record<string, any>
 export type QueryResultColumn = {

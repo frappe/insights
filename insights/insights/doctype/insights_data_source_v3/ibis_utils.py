@@ -66,6 +66,8 @@ class IbisQueryBuilder:
             return self.apply_limit(operation)
         elif operation.type == "pivot_wider":
             return self.apply_pivot(operation, "wider")
+        elif operation.type == "custom_operation":
+            return self.apply_custom_operation(operation)
         return self.query
 
     def apply_source(self, source_args):
@@ -303,6 +305,14 @@ class IbisQueryBuilder:
             )
 
         return self.query
+
+    def apply_custom_operation(self, operation):
+        return self.evaluate_expression(
+            operation.expression.expression,
+            additonal_context={
+                "q": self.query,
+            },
+        )
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":

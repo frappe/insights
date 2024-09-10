@@ -2,12 +2,14 @@
 import { Tooltip } from 'frappe-ui'
 import {
 	BlendIcon,
+	Braces,
 	CodeIcon,
 	ColumnsIcon,
 	Combine,
 	Database,
 	Download,
 	FilterIcon,
+	FunctionSquare,
 	PlayIcon,
 	Sigma,
 } from 'lucide-vue-next'
@@ -21,6 +23,7 @@ import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
 import SummarySelectorDialog from './SummarySelectorDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
+import CustomScriptDialog from './CustomScriptDialog.vue'
 
 const query = inject('query') as Query
 
@@ -30,6 +33,7 @@ const showColumnsSelectorDialog = ref(false)
 const showFiltersSelectorDialog = ref(false)
 const showNewColumnSelectorDialog = ref(false)
 const showSummarySelectorDialog = ref(false)
+const showCustomScriptDialog = ref(false)
 const showViewSQLDialog = ref(false)
 
 watch(
@@ -54,6 +58,9 @@ watch(
 				break
 			case 'summarize':
 				showSummarySelectorDialog.value = true
+				break
+			case 'custom_operation':
+				showCustomScriptDialog.value = true
 				break
 			default:
 				break
@@ -88,13 +95,18 @@ const actions = [
 	// },
 	{
 		label: 'Create Columns',
-		icon: Sigma,
+		icon: FunctionSquare,
 		onClick: () => (showNewColumnSelectorDialog.value = true),
 	},
 	{
 		label: 'Summarize',
 		icon: Combine,
 		onClick: () => (showSummarySelectorDialog.value = true),
+	},
+	{
+		label: 'Custom Script',
+		icon: Braces,
+		onClick: () => (showCustomScriptDialog.value = true),
 	},
 	// {
 	// 	label: 'Pivot',
@@ -212,6 +224,19 @@ const actions = [
 			query.activeEditOperation.type === 'summarize' ? query.activeEditOperation : undefined
 		"
 		@select="query.addSummarize($event)"
+	/>
+
+	<CustomScriptDialog
+		v-if="showCustomScriptDialog"
+		v-model="showCustomScriptDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:operation="
+			query.activeEditOperation.type === 'custom_operation'
+				? query.activeEditOperation
+				: undefined
+		"
+		:column-options="query.result.columnOptions"
+		@select="query.addCustomOperation($event)"
 	/>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />

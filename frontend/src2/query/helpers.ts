@@ -18,6 +18,8 @@ import {
 	Cast,
 	CastArgs,
 	Column,
+	CustomOperation,
+	CustomOperationArgs,
 	Expression,
 	Filter,
 	FilterArgs,
@@ -294,6 +296,17 @@ export const query_operation_types = {
 			return `${op.limit}`
 		},
 	},
+	custom_operation: {
+		label: 'Custom Operation',
+		type: 'custom_operation',
+		icon: Sigma,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: CustomOperationArgs): CustomOperation => ({ type: 'custom_operation', ...args }),
+		getDescription: (op: CustomOperation) => {
+			return `${op.expression.expression}`
+		},
+	},
 }
 
 export const source = query_operation_types.source.init
@@ -309,3 +322,4 @@ export const summarize = query_operation_types.summarize.init
 export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init
 export const limit = query_operation_types.limit.init
+export const custom_operation = query_operation_types.custom_operation.init
