@@ -11,14 +11,15 @@ const currentQuery = inject<Query>('query')!
 const selectedQuery = defineModel<QueryTableArgs>('selectedQuery')
 
 const querySearchTxt = ref(selectedQuery.value?.query_name || '')
+const linkedQueries = workbook.getLinkedQueries(currentQuery.doc.name)
+const validQueries = workbook.doc.queries.filter(
+	(q) => q.name !== currentQuery.doc.name && !linkedQueries.includes(q.name)
+)
 const queries = computed(() => {
-	const _queriesExceptCurrent = workbook.doc.queries.filter(
-		(query) => query.name !== currentQuery.doc.name
-	)
 	if (!querySearchTxt.value) {
-		return _queriesExceptCurrent
+		return validQueries
 	}
-	return _queriesExceptCurrent.filter((query) => {
+	return validQueries.filter((query) => {
 		return (
 			query.name.includes(querySearchTxt.value) || query.title?.includes(querySearchTxt.value)
 		)

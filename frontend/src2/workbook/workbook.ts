@@ -7,12 +7,13 @@ import { getUniqueId, safeJSONParse, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
-import useQuery from '../query/query'
+import useQuery, { getCachedQuery } from '../query/query'
 import session from '../session'
+import { Join, Source } from '../types/query.types'
 import type {
 	InsightsWorkbook,
 	WorkbookChart,
-	WorkbookSharePermission
+	WorkbookSharePermission,
 } from '../types/workbook.types'
 
 export default function useWorkbook(name: string) {
@@ -178,6 +179,45 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
+	function getLinkedQueries(query_name: string): string[] {
+		const query = getCachedQuery(query_name)
+		if (!query) {
+			console.error(`Query ${query_name} not found`)
+			return []
+		}
+
+		const querySource = query.doc.operations.find(
+			(op) => op.type === 'source' && op.table.type === 'query' && op.table.query_name
+		) as Source
+
+		const queryJoins = query.doc.operations.filter(
+			(op) => op.type === 'join' && op.table.type === 'query' && op.table.query_name
+		) as Join[]
+
+		const linkedQueries = [] as string[]
+		if (querySource && querySource.table.type === 'query') {
+			linkedQueries.push(querySource.table.query_name)
+		}
+		if (queryJoins.length) {
+			queryJoins.forEach((j) => {
+				if (j.table.type === 'query') {
+					linkedQueries.push(j.table.query_name)
+				}
+			})
+		}
+
+		const linkedQueriesByQuery = {} as Record<string, string[]>
+		linkedQueries.forEach((q) => {
+			linkedQueriesByQuery[q] = getLinkedQueries(q)
+		})
+
+		Object.values(linkedQueriesByQuery).forEach((subLinkedQueries) => {
+			linkedQueries.concat(subLinkedQueries)
+		})
+
+		return linkedQueries
+	}
+
 	return reactive({
 		...toRefs(workbook),
 		canShare,
@@ -198,6 +238,8 @@ export default function useWorkbook(name: string) {
 
 		getSharePermissions,
 		updateSharePermissions,
+
+		getLinkedQueries,
 
 		delete: deleteWorkbook,
 	})
