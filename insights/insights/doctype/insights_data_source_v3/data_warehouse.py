@@ -1,16 +1,10 @@
 import os
-from datetime import datetime
 
 import frappe
 import frappe.utils
 import ibis
 from frappe.utils import get_files_path
 from ibis import BaseBackend
-from ibis.expr.types import Table as IbisTable
-
-from insights.insights.doctype.insights_table_column.insights_table_column import (
-    InsightsTableColumn,
-)
 
 WAREHOUSE_DB_NAME = "insights.duckdb"
 
@@ -44,7 +38,7 @@ class DataWarehouse:
 
         if not os.path.exists(parquet_file):
             if sync:
-                self.create_parquet_file(data_source, table_name)
+                self.import_remote_table(data_source, table_name)
                 return self.db.read_parquet(parquet_file, table_name=warehouse_table)
             else:
                 frappe.throw(
@@ -61,9 +55,9 @@ class DataWarehouse:
         remote_db = ds._get_ibis_backend()
         return remote_db.table(table_name)
 
-    def create_parquet_file(self, data_source, table_name):
+    def import_remote_table(self, data_source, table_name, force=False):
         path = get_parquet_filepath(data_source, table_name)
-        if os.path.exists(path):
+        if os.path.exists(path) and not force:
             print(
                 f"Skipping creation of parquet file for {table_name} of {data_source} as it already exists. "
                 "Skipping insights table creation as well."
@@ -74,21 +68,14 @@ class DataWarehouse:
         remote_db = ds._get_ibis_backend()
         table = remote_db.table(table_name)
 
-        if ds.is_frappe_db and hasattr(table, "creation"):
-            first_day_of_last_year = datetime.now().replace(
-                month=1, day=1, year=datetime.now().year - 1
+        if hasattr(table, "creation"):
+            max_records_to_sync = frappe.db.get_single_value(
+                "Insights Settings", "max_records_to_sync"
             )
-            table = table.filter(table.creation >= first_day_of_last_year)
+            max_records_to_sync = max_records_to_sync or 10_00_000
+            table = table.order_by(ibis.desc("creation")).limit(max_records_to_sync)
 
         table.to_parquet(path, compression="snappy")
-
-    def sync_insights_table(self, data_source, table_name, table: IbisTable):
-        from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
-            sync_insights_table,
-        )
-
-        columns = InsightsTableColumn.from_ibis_schema(table.schema())
-        sync_insights_table(data_source, table_name, columns=columns)
 
 
 def get_warehouse_folder_path():

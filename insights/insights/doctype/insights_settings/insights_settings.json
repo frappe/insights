@@ -16,6 +16,7 @@
   "query_result_limit",
   "is_subscribed",
   "allowed_origins",
+  "max_records_to_sync",
   "integrations_section",
   "telegram_api_token",
   "query_section",
@@ -100,12 +101,17 @@
    "fieldname": "allowed_origins",
    "fieldtype": "Data",
    "label": "Allowed Origins"
+  },
+  {
+   "fieldname": "max_records_to_sync",
+   "fieldtype": "Int",
+   "label": "Max Records To Sync"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-05 16:24:09.943954",
+ "modified": "2024-09-10 14:01:26.583316",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

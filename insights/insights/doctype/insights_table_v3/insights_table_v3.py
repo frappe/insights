@@ -7,6 +7,10 @@ from contextlib import suppress
 import frappe
 from frappe.model.document import Document
 
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+    DataWarehouse,
+)
+
 
 class InsightsTablev3(Document):
     # begin: auto-generated types
@@ -50,3 +54,12 @@ class InsightsTablev3(Document):
         doc.label = table_name
         with suppress(frappe.DuplicateEntryError):
             doc.save(ignore_permissions=True)
+
+    @frappe.whitelist()
+    def import_to_data_warehouse(self):
+        frappe.only_for("System Manager")
+        DataWarehouse().import_remote_table(
+            self.data_source,
+            self.table,
+            force=True,
+        )

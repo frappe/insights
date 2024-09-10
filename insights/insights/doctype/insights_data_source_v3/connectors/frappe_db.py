@@ -19,7 +19,7 @@ def get_frappedb_connection_string(data_source):
 
 
 def get_sitedb_connection_string():
-    data_source = frappe.new_doc("Insights Data Source V3")
+    data_source = frappe.new_doc("Insights Data Source v3")
     data_source.database_type = (
         "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
     )

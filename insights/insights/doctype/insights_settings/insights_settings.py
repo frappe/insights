@@ -23,6 +23,7 @@ class InsightsSettings(Document):
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None
         is_subscribed: DF.Check
+        max_records_to_sync: DF.Int
         onboarding_complete: DF.Check
         query_result_expiry: DF.Int
         query_result_limit: DF.Int
