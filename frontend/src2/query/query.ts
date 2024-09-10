@@ -198,28 +198,46 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			delete sourceOp.query
 		}
 
-		if (sourceOp.table.type === 'table') {
-			return query.currentOperations
-		}
+		let _operations = [...query.currentOperations]
 
 		if (sourceOp.table.type === 'query') {
 			const sourceQuery = getCachedQuery(sourceOp.table.query_name)
 			if (!sourceQuery) {
+				const message = `Source query ${sourceOp.table.query_name} not found`
 				createToast({
 					variant: 'error',
 					title: 'Error',
-					message: `Source query not found`,
+					message,
 				})
-				throw new Error('Source query not found')
+				throw new Error(message)
 			}
 
 			const sourceQueryOperations = sourceQuery.getOperationsForExecution()
 			const currentOperationsWithoutSource = query.currentOperations.slice(1)
 
-			return [...sourceQueryOperations, ...currentOperationsWithoutSource]
+			_operations = [...sourceQueryOperations, ...currentOperationsWithoutSource]
 		}
 
-		return []
+		for (const op of _operations) {
+			if (op.type !== 'join') continue
+			if (op.table.type !== 'query') continue
+
+			const joinQuery = getCachedQuery(op.table.query_name)
+			if (!joinQuery) {
+				const message = `Join query ${op.table.query_name} not found`
+				createToast({
+					variant: 'error',
+					title: 'Error',
+					message,
+				})
+				throw new Error(message)
+			}
+
+			const joinQueryOperations = joinQuery.getOperationsForExecution()
+			op.table.operations = joinQueryOperations
+		}
+
+		return _operations
 	}
 
 	async function execute() {

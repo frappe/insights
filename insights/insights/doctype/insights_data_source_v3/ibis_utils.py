@@ -86,7 +86,19 @@ class IbisQueryBuilder:
         ).select(~s.endswith("right"))
 
     def get_right_table(self, join_args):
-        right_table = self.get_table(join_args.table)
+        right_table = None
+
+        if join_args.table.type == "table":
+            right_table = self.get_table(join_args.table)
+        if join_args.table.type == "query":
+            right_table = IbisQueryBuilder().build(
+                join_args.table.operations,
+                use_live_connection=self.use_live_connection,
+            )
+
+        if right_table is None:
+            frappe.throw("Invalid join table")
+
         if not join_args.select_columns:
             return right_table
 

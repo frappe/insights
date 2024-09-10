@@ -1,5 +1,10 @@
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
-export type QueryTableArgs = { type: 'query'; workbook: string; query_name: string }
+export type QueryTableArgs = {
+	type: 'query'
+	workbook: string
+	query_name: string
+	operations?: Operation[]
+}
 export type Table = TableArgs | QueryTableArgs
 export type Column = {
 	type: 'column'

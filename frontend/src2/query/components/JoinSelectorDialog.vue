@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { Braces } from 'lucide-vue-next'
 import { computed, inject, reactive, watch } from 'vue'
+import useTableStore from '../../data_source/tables'
 import { wheneverChanges } from '../../helpers'
 import { joinTypes } from '../../helpers/constants'
 import { JoinArgs, JoinType } from '../../types/query.types'
-import { column, expression, table } from '../helpers'
-import { Query } from '../query'
+import { workbookKey } from '../../workbook/workbook'
+import { column, expression, query_table, table } from '../helpers'
+import { getCachedQuery, Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
 import { handleOldProps, useTableColumnOptions, useTableOptions } from './join_utils'
-import useTableStore from '../../data_source/tables'
 
 const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
@@ -33,6 +34,30 @@ const join = reactive<JoinArgs>(
 				select_columns: [],
 		  }
 )
+const selectedTableOption = computed({
+	get() {
+		if (join.table.type === 'table' && join.table.table_name) {
+			return `${join.table.data_source}.${join.table.table_name}`
+		}
+		if (join.table.type === 'query' && join.table.query_name) {
+			return join.table.query_name
+		}
+	},
+	set(option: any) {
+		if (option.data_source && option.table_name) {
+			join.table = table({
+				data_source: option.data_source,
+				table_name: option.table_name,
+			})
+		}
+		if (option.query_name) {
+			join.table = query_table({
+				workbook: option.workbook,
+				query_name: option.query_name,
+			})
+		}
+	},
+})
 
 const query = inject('query') as Query
 const data_source = computed(() => {
@@ -45,17 +70,8 @@ const data_source = computed(() => {
 	return source && source.table.type === 'table' ? source.table.data_source : ''
 })
 
-const tableOptions = useTableOptions({
-	data_source,
-	initialSearchText: join.table.type === 'table' ? join.table.table_name : '',
-})
-
-const rightTable = computed(() => {
-	return join.table.type === 'table' ? join.table.table_name : ''
-})
-
-wheneverChanges(rightTable, () => {
-	if (!rightTable.value) return
+wheneverChanges(selectedTableOption, () => {
+	if (!selectedTableOption.value) return
 
 	// reset previous values if table is changed
 	join.select_columns = []
@@ -68,6 +84,13 @@ wheneverChanges(rightTable, () => {
 	}
 })
 
+const rightTable = computed(() => {
+	return join.table.type === 'table' ? join.table.table_name : ''
+})
+const tableOptions = useTableOptions({
+	data_source,
+	initialSearchText: rightTable.value,
+})
 const rightTableColumnOptions = useTableColumnOptions(data_source, rightTable)
 
 watch(
@@ -119,6 +142,27 @@ async function autoMatchColumns() {
 	}
 }
 
+const workbook = inject(workbookKey)!
+const linkedQueries = workbook.getLinkedQueries(query.doc.name)
+const queryTableOptions = workbook.doc.queries
+	.filter((q) => q.name !== query.doc.name && !linkedQueries.includes(q.name))
+	.map((q) => {
+		return {
+			workbook: workbook.doc.name,
+			query_name: q.name,
+			label: q.title,
+			value: q.name,
+			description: 'Query',
+		}
+	})
+
+const queryTableColumnOptions = computed(() => {
+	if (join.table.type !== 'query') return []
+	const query = getCachedQuery(join.table.query_name)
+	if (!query) return []
+	return query.result.columnOptions
+})
+
 const showJoinConditionEditor = computed(() => 'join_expression' in join.join_condition)
 function toggleJoinConditionEditor() {
 	if (showJoinConditionEditor.value) {
@@ -134,6 +178,10 @@ function toggleJoinConditionEditor() {
 }
 
 const isValid = computed(() => {
+	const isRightTableSelected =
+		(join.table.type === 'table' && join.table.table_name) ||
+		(join.table.type === 'query' && join.table.query_name)
+
 	const hasValidJoinExpression =
 		'join_expression' in join.join_condition
 			? join.join_condition.join_expression.expression
@@ -146,7 +194,7 @@ const isValid = computed(() => {
 			: false
 
 	return (
-		rightTable.value &&
+		isRightTableSelected &&
 		join.join_type &&
 		join.select_columns.length > 0 &&
 		(hasValidJoinExpression || hasValidJoinColumns)
@@ -188,22 +236,10 @@ function reset() {
 						<label class="mb-1 block text-xs text-gray-600">Select Table to Join</label>
 						<Autocomplete
 							placeholder="Table"
-							:options="tableOptions.options"
-							:modelValue="
-								join.table.type === 'table' && join.table.table_name
-									? `${join.table.data_source}.${join.table.table_name}`
-									: ''
-							"
-							@update:modelValue="
-								(option: any) => {
-									if (join.table.type === 'table') {
-										join.table.data_source = option.data_source
-										join.table.table_name = option.table_name
-									}
-								}
-							"
-							@update:query="tableOptions.searchText = $event"
+							v-model="selectedTableOption"
 							:loading="tableOptions.loading"
+							:options="[...tableOptions.options, ...queryTableOptions]"
+							@update:query="tableOptions.searchText = $event"
 						/>
 					</div>
 					<div>
@@ -237,7 +273,10 @@ function reset() {
 									<Autocomplete
 										placeholder="Column"
 										:loading="rightTableColumnOptions.loading"
-										:options="rightTableColumnOptions.options"
+										:options="[
+											...rightTableColumnOptions.options,
+											...queryTableColumnOptions,
+										]"
 										:modelValue="join.join_condition.right_column.column_name"
 										@update:modelValue="
 											join.join_condition.right_column.column_name =
@@ -300,7 +339,10 @@ function reset() {
 							:multiple="true"
 							placeholder="Columns"
 							:loading="rightTableColumnOptions.loading"
-							:options="rightTableColumnOptions.options"
+							:options="[
+								...rightTableColumnOptions.options,
+								...queryTableColumnOptions,
+							]"
 							:modelValue="join.select_columns?.map((c) => c.column_name)"
 							@update:modelValue="
 								join.select_columns = $event?.map((o: any) => column(o.value)) || []
