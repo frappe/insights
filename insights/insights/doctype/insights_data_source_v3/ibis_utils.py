@@ -1,3 +1,4 @@
+import ast
 import time
 from io import StringIO
 
@@ -6,6 +7,7 @@ import ibis
 import numpy as np
 import pandas as pd
 from frappe.utils.data import flt
+from frappe.utils.safe_exec import safe_eval, safe_exec
 from ibis import _
 from ibis import selectors as s
 from ibis.expr.datatypes import DataType
@@ -371,14 +373,16 @@ class IbisQueryBuilder:
         return column.strftime(format_str[granularity]).name(column.get_name())
 
     def evaluate_expression(self, expression, additonal_context=None):
+        if not expression or not expression.strip():
+            raise ValueError(f"Invalid expression: {expression}")
+
         context = frappe._dict()
         context.q = _
         context.update(self.get_current_columns())
         context.update(get_functions())
         context.update(additonal_context or {})
 
-        stripped_expression = expression.strip().replace("\n", "").replace("\t", "")
-        return frappe.safe_eval(stripped_expression, context)
+        return exec_with_return(expression, context)
 
     def get_current_columns(self):
         # TODO: handle collisions with function names
@@ -451,3 +455,28 @@ def has_cached_results(sql):
     cache_key = make_digest(sql)
     cache_key = "insights:query_results:" + cache_key
     return frappe.cache().get_value(cache_key) is not None
+
+
+def exec_with_return(
+    code: str,
+    _globals: dict | None = None,
+    _locals: dict | None = None,
+):
+    a = ast.parse(code)
+
+    last_expression = None
+    if a.body:
+        if isinstance(a_last := a.body[-1], ast.Expr):
+            last_expression = ast.unparse(a.body.pop())
+        elif isinstance(a_last, ast.Assign):
+            last_expression = ast.unparse(a_last.targets[0])
+        elif isinstance(a_last, ast.AnnAssign | ast.AugAssign):
+            last_expression = ast.unparse(a_last.target)
+
+    _globals = _globals or {}
+    _locals = _locals or {}
+    if last_expression:
+        safe_exec(ast.unparse(a), _globals, _locals)
+        return safe_eval(last_expression, _globals, _locals)
+    else:
+        return safe_eval(code, _globals, _locals)
