@@ -548,11 +548,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '') {
+		const operationsForExecution = query.getOperationsForExecution()
 		const operations =
 			query.activeEditIndex > -1
 				? // when editing a filter, get distinct values from the operations before the filter
-				  query.doc.operations.slice(0, query.activeEditIndex)
-				: query.currentOperations
+				  operationsForExecution.slice(0, query.activeEditIndex)
+				: operationsForExecution
 
 		return call('insights.api.workbooks.get_distinct_column_values', {
 			use_live_connection: query.doc.use_live_connection,
@@ -563,10 +564,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function getColumnsForSelection() {
+		const operationsForExecution = query.getOperationsForExecution()
 		const operations =
 			query.activeEditOperation.type === 'select' || query.activeEditOperation.type === 'summarize'
-				? query.doc.operations.slice(0, query.activeEditIndex)
-				: query.currentOperations
+				? operationsForExecution.slice(0, query.activeEditIndex)
+				: operationsForExecution
 
 		const method = 'insights.api.workbooks.get_columns_for_selection'
 		return call(method, {
