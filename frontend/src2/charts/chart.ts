@@ -75,16 +75,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 	)
 
-
-	watchDebounced(
-		() => chart.doc.config,
-		() => refresh(),
-		{
-			deep: true,
-			debounce: 500,
-		}
-	)
-
 	async function refresh(filters?: FilterArgs[], force = false) {
 		if (!workbookChart.query) return
 		if (!chart.doc.chart_type) return

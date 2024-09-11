@@ -59,10 +59,7 @@ function getFunctionMatches(word: string) {
 </script>
 
 <template>
-	<div
-		ref="codeContainer"
-		class="flex max-h-[14rem] w-full overflow-scroll rounded border text-base"
-	>
+	<div ref="codeContainer" class="flex h-[14rem] w-full overflow-scroll rounded border text-base">
 		<Code
 			ref="codeEditor"
 			language="python"
@@ -76,10 +73,10 @@ function getFunctionMatches(word: string) {
 <style lang="scss">
 .column-expression {
 	.cm-content {
-		height: 14rem !important;
+		height: 100% !important;
 	}
 	.cm-gutters {
-		height: 14rem !important;
+		height: 100% !important;
 	}
 	.cm-tooltip-autocomplete {
 		position: absolute !important;

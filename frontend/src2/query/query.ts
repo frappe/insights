@@ -7,6 +7,7 @@ import { FIELDTYPES } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import {
 	ColumnDataType,
+	CustomOperationArgs,
 	Dimension,
 	DimensionDataType,
 	FilterGroupArgs,
@@ -29,6 +30,7 @@ import {
 	cast,
 	column,
 	count,
+	custom_operation,
 	filter_group,
 	getFormattedRows,
 	join,
@@ -70,7 +72,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		autoExecute: true,
 		executing: false,
-		result: {} as QueryResult,
+		result: { ...EMPTY_RESULT },
 
 		getOperationsForExecution,
 		execute,
@@ -92,6 +94,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		renameColumn,
 		removeColumn,
 		changeColumnType,
+		addCustomOperation,
 
 		getDistinctColumnValues,
 		getColumnsForSelection,
@@ -195,40 +198,51 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			delete sourceOp.query
 		}
 
-		if (sourceOp.table.type === 'table') {
-			return query.currentOperations
-		}
+		let _operations = [...query.currentOperations]
 
 		if (sourceOp.table.type === 'query') {
 			const sourceQuery = getCachedQuery(sourceOp.table.query_name)
 			if (!sourceQuery) {
+				const message = `Source query ${sourceOp.table.query_name} not found`
 				createToast({
 					variant: 'error',
 					title: 'Error',
-					message: `Source query not found`,
+					message,
 				})
-				throw new Error('Source query not found')
+				throw new Error(message)
 			}
 
 			const sourceQueryOperations = sourceQuery.getOperationsForExecution()
 			const currentOperationsWithoutSource = query.currentOperations.slice(1)
 
-			return [...sourceQueryOperations, ...currentOperationsWithoutSource]
+			_operations = [...sourceQueryOperations, ...currentOperationsWithoutSource]
 		}
 
-		return []
+		for (const op of _operations) {
+			if (op.type !== 'join') continue
+			if (op.table.type !== 'query') continue
+
+			const joinQuery = getCachedQuery(op.table.query_name)
+			if (!joinQuery) {
+				const message = `Join query ${op.table.query_name} not found`
+				createToast({
+					variant: 'error',
+					title: 'Error',
+					message,
+				})
+				throw new Error(message)
+			}
+
+			const joinQueryOperations = joinQuery.getOperationsForExecution()
+			op.table.operations = joinQueryOperations
+		}
+
+		return _operations
 	}
 
 	async function execute() {
 		if (!query.doc.operations.length) {
-			query.result = {
-				executedSQL: '',
-				totalRowCount: 0,
-				rows: [],
-				formattedRows: [],
-				columns: [],
-				columnOptions: [],
-			}
+			query.result = { ...EMPTY_RESULT }
 			return
 		}
 
@@ -252,7 +266,10 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					data_type: column.type,
 				}))
 			})
-			.catch(showErrorToast)
+			.catch((e: Error) => {
+				query.result = { ...EMPTY_RESULT }
+				showErrorToast(e)
+			})
 			.finally(() => {
 				query.executing = false
 			})
@@ -434,6 +451,17 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		)
 	}
 
+	function addCustomOperation(args: CustomOperationArgs) {
+		const editingCustomOperation = query.activeEditOperation.type === 'custom_operation'
+
+		if (!editingCustomOperation) {
+			addOperation(custom_operation(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = custom_operation(args)
+			query.setActiveEditIndex(-1)
+		}
+	}
+
 	function setOperations(newOperations: Operation[]) {
 		query.doc.operations = newOperations
 		query.activeOperationIdx = newOperations.length - 1
@@ -538,11 +566,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '') {
+		const operationsForExecution = query.getOperationsForExecution()
 		const operations =
 			query.activeEditIndex > -1
 				? // when editing a filter, get distinct values from the operations before the filter
-				  query.doc.operations.slice(0, query.activeEditIndex)
-				: query.currentOperations
+				  operationsForExecution.slice(0, query.activeEditIndex)
+				: operationsForExecution
 
 		return call('insights.api.workbooks.get_distinct_column_values', {
 			use_live_connection: query.doc.use_live_connection,
@@ -553,10 +582,11 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function getColumnsForSelection() {
+		const operationsForExecution = query.getOperationsForExecution()
 		const operations =
 			query.activeEditOperation.type === 'select' || query.activeEditOperation.type === 'summarize'
-				? query.doc.operations.slice(0, query.activeEditIndex)
-				: query.currentOperations
+				? operationsForExecution.slice(0, query.activeEditIndex)
+				: operationsForExecution
 
 		const method = 'insights.api.workbooks.get_columns_for_selection'
 		return call(method, {
@@ -623,5 +653,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	return query
 }
+
+const EMPTY_RESULT = {
+	executedSQL: '',
+	totalRowCount: 0,
+	rows: [],
+	formattedRows: [],
+	columns: [],
+	columnOptions: [],
+} as QueryResult
 
 export type Query = ReturnType<typeof makeQuery>

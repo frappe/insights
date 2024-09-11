@@ -1,5 +1,10 @@
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
-export type QueryTableArgs = { type: 'query'; workbook: string; query_name: string }
+export type QueryTableArgs = {
+	type: 'query'
+	workbook: string
+	query_name: string
+	operations?: Operation[]
+}
 export type Table = TableArgs | QueryTableArgs
 export type Column = {
 	type: 'column'
@@ -128,6 +133,9 @@ export type PivotWiderArgs = {
 }
 export type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 
+export type CustomOperationArgs = { expression: Expression }
+export type CustomOperation = { type: 'custom_operation' } & CustomOperationArgs
+
 export type Operation =
 	| Source
 	| Filter
@@ -142,6 +150,7 @@ export type Operation =
 	| OrderBy
 	| Limit
 	| PivotWider
+	| CustomOperation
 
 export type QueryResultRow = Record<string, any>
 export type QueryResultColumn = {

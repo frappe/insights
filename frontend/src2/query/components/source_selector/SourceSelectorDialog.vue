@@ -90,7 +90,7 @@ function onConfirm() {
 	if (confirmDisabled.value) return
 	emit(
 		'select',
-		selectedQuery.value
+		selectedQuery.value.query_name
 			? {
 					table: query_table(selectedQuery.value),
 			  }
@@ -105,7 +105,7 @@ function onConfirm() {
 <template>
 	<Dialog v-model="showDialog" :options="{ size: '4xl' }">
 		<template #body>
-			<div class="relative flex" :style="{ height: 'calc(100vh - 12rem)' }">
+			<div class="relative flex pb-10" :style="{ height: 'calc(100vh - 12rem)' }">
 				<TabbedSidebarLayout
 					title="Pick Starting Data"
 					:tabs="tabGroups"

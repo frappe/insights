@@ -23,6 +23,7 @@ class InsightsSettings(Document):
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None
         is_subscribed: DF.Check
+        max_records_to_sync: DF.Int
         onboarding_complete: DF.Check
         query_result_expiry: DF.Int
         query_result_limit: DF.Int
@@ -72,6 +73,6 @@ def create_site_db_data_source():
     data_source_fixture_path = frappe.get_app_path(
         "insights", "fixtures", "insights_data_source.json"
     )
-    with open(data_source_fixture_path, "r") as f:
+    with open(data_source_fixture_path) as f:
         site_db = json.load(f)[0]
         frappe.get_doc(site_db).insert()
