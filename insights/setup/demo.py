@@ -6,10 +6,10 @@ import shutil
 
 import frappe
 
+from insights.api.data_sources import get_data_source_tables
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     after_request,
     before_request,
-    get_data_source_tables,
 )
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
