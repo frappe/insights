@@ -32,18 +32,21 @@ const tabGroups = ref<TabGroup[]>([
 	},
 ])
 const activeTab = ref<Tab | undefined>()
-wheneverChanges(activeTab, () => {
-	selectedTable.value = {
-		type: 'table',
-		data_source: '',
-		table_name: '',
+wheneverChanges(
+	() => activeTab.value?.label,
+	() => {
+		selectedTable.value = {
+			type: 'table',
+			data_source: '',
+			table_name: '',
+		}
+		selectedQuery.value = {
+			type: 'query',
+			workbook: '',
+			query_name: '',
+		}
 	}
-	selectedQuery.value = {
-		type: 'query',
-		workbook: '',
-		query_name: '',
-	}
-})
+)
 
 dataSourceStore.getSources().then(() => {
 	tabGroups.value[0].tabs = dataSourceStore.sources.map((source) => ({
@@ -83,7 +86,7 @@ if (workbook.doc.queries.length > 1) {
 }
 
 const confirmDisabled = computed(() => {
-	return !selectedTable.value?.table_name && !selectedQuery.value
+	return !selectedTable.value.table_name && !selectedQuery.value.query_name
 })
 
 function onConfirm() {

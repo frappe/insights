@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Tooltip } from 'frappe-ui'
 import {
+	BetweenHorizonalStart,
 	BlendIcon,
 	Braces,
 	CodeIcon,
@@ -19,6 +20,7 @@ import { Query } from '../query'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import JoinSelectorDialog from './JoinSelectorDialog.vue'
+import UnionSelectorDialog from './UnionSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
 import SummarySelectorDialog from './SummarySelectorDialog.vue'
@@ -29,6 +31,7 @@ const query = inject('query') as Query
 
 const showSourceSelectorDialog = ref(false)
 const showJoinSelectorDialog = ref(false)
+const showUnionSelectorDialog = ref(false)
 const showColumnsSelectorDialog = ref(false)
 const showFiltersSelectorDialog = ref(false)
 const showNewColumnSelectorDialog = ref(false)
@@ -45,6 +48,9 @@ watch(
 				break
 			case 'join':
 				showJoinSelectorDialog.value = true
+				break
+			case 'union':
+				showUnionSelectorDialog.value = true
 				break
 			case 'select':
 				showColumnsSelectorDialog.value = true
@@ -88,6 +94,11 @@ const actions = [
 		label: 'Join Table',
 		icon: h(BlendIcon, { class: '-rotate-45' }),
 		onClick: () => (showJoinSelectorDialog.value = true),
+	},
+	{
+		label: 'Append Table',
+		icon: BetweenHorizonalStart,
+		onClick: () => (showUnionSelectorDialog.value = true),
 	},
 	// {
 	// 	label: 'Sort Rows',
@@ -177,6 +188,14 @@ const actions = [
 		@update:model-value="!$event && query.setActiveEditIndex(-1)"
 		:join="query.activeEditOperation.type === 'join' ? query.activeEditOperation : undefined"
 		@select="query.addJoin($event)"
+	/>
+
+	<UnionSelectorDialog
+		v-if="showUnionSelectorDialog"
+		v-model="showUnionSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:union="query.activeEditOperation.type === 'union' ? query.activeEditOperation : undefined"
+		@select="query.addUnion($event)"
 	/>
 
 	<ColumnsSelectorDialog

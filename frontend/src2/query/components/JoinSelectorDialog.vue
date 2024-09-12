@@ -156,6 +156,19 @@ const queryTableOptions = workbook.doc.queries
 		}
 	})
 
+const groupedTableOptions = computed(() => {
+	return [
+		{
+			group: 'Queries',
+			items: queryTableOptions,
+		},
+		{
+			group: 'Tables',
+			items: tableOptions.options,
+		},
+	]
+})
+
 const queryTableColumnOptions = computed(() => {
 	if (join.table.type !== 'query') return []
 	const query = getCachedQuery(join.table.query_name)
@@ -238,7 +251,7 @@ function reset() {
 							placeholder="Table"
 							v-model="selectedTableOption"
 							:loading="tableOptions.loading"
-							:options="[...tableOptions.options, ...queryTableOptions]"
+							:options="groupedTableOptions"
 							@update:query="tableOptions.searchText = $event"
 						/>
 					</div>

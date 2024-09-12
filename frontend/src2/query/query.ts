@@ -24,6 +24,7 @@ import {
 	Source,
 	SourceArgs,
 	SummarizeArgs,
+	UnionArgs,
 } from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
@@ -44,6 +45,7 @@ import {
 	select,
 	source,
 	summarize,
+	union,
 } from './helpers'
 
 const queries = new Map<string, Query>()
@@ -83,6 +85,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		setSource,
 		addSource,
 		addJoin,
+		addUnion,
 		addFilterGroup,
 		addMutate,
 		addSummarize,
@@ -219,12 +222,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		}
 
 		for (const op of _operations) {
-			if (op.type !== 'join') continue
+			if (op.type !== 'join' && op.type !== 'union') continue
 			if (op.table.type !== 'query') continue
 
-			const joinQuery = getCachedQuery(op.table.query_name)
-			if (!joinQuery) {
-				const message = `Join query ${op.table.query_name} not found`
+			const queryTable = getCachedQuery(op.table.query_name)
+			if (!queryTable) {
+				const message = `Query ${op.table.query_name} not found`
 				createToast({
 					variant: 'error',
 					title: 'Error',
@@ -233,8 +236,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				throw new Error(message)
 			}
 
-			const joinQueryOperations = joinQuery.getOperationsForExecution()
-			op.table.operations = joinQueryOperations
+			op.table.operations = queryTable.getOperationsForExecution()
 		}
 
 		return _operations
@@ -330,6 +332,17 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			addOperation(join(args))
 		} else {
 			query.doc.operations[query.activeEditIndex] = join(args)
+			query.setActiveEditIndex(-1)
+		}
+	}
+
+	function addUnion(args: UnionArgs) {
+		const editingUnion = query.activeEditOperation.type === 'union'
+
+		if (!editingUnion) {
+			addOperation(union(args))
+		} else {
+			query.doc.operations[query.activeEditIndex] = union(args)
 			query.setActiveEditIndex(-1)
 		}
 	}

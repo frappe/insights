@@ -46,6 +46,8 @@ class IbisQueryBuilder:
             return self.apply_source(operation)
         elif operation.type == "join":
             return self.apply_join(operation)
+        elif operation.type == "union":
+            return self.apply_union(operation)
         elif operation.type == "filter":
             return self.apply_filter(operation)
         elif operation.type == "filter_group":
@@ -85,19 +87,24 @@ class IbisQueryBuilder:
             how=join_type,
         ).select(~s.endswith("right"))
 
-    def get_right_table(self, join_args):
-        right_table = None
+    def get_table_or_query(self, table_args):
+        _table = None
 
-        if join_args.table.type == "table":
-            right_table = self.get_table(join_args.table)
-        if join_args.table.type == "query":
-            right_table = IbisQueryBuilder().build(
-                join_args.table.operations,
+        if table_args.type == "table":
+            _table = self.get_table(table_args)
+        if table_args.type == "query":
+            _table = IbisQueryBuilder().build(
+                table_args.operations,
                 use_live_connection=self.use_live_connection,
             )
 
-        if right_table is None:
+        if _table is None:
             frappe.throw("Invalid join table")
+
+        return _table
+
+    def get_right_table(self, join_args):
+        right_table = self.get_table_or_query(join_args.table)
 
         if not join_args.select_columns:
             return right_table
@@ -170,6 +177,29 @@ class IbisQueryBuilder:
                 join_args.left_column or join_args.join_condition.left_column,
                 join_args.right_column or join_args.join_condition.right_column,
             )
+
+    def apply_union(self, union_args):
+        other_table = self.get_table_or_query(union_args.table)
+
+        # Ensure both tables have the same columns
+        # Add missing columns with None values
+        for col, dtype in self.query.schema().items():
+            if col not in other_table.columns:
+                other_table = other_table.mutate(
+                    **{
+                        col: ibis.literal(None).cast(dtype).name(col),
+                    }
+                )
+
+        for col, dtype in other_table.schema().items():
+            if col not in self.query.columns:
+                self.query = self.query.mutate(
+                    **{
+                        col: ibis.literal(None).cast(dtype).name(col),
+                    }
+                )
+
+        return self.query.union(other_table, distinct=union_args.distinct)
 
     def apply_filter(self, filter_args):
         condition = self.make_filter_condition(filter_args)

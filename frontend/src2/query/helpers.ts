@@ -51,6 +51,8 @@ import {
 	SummarizeArgs,
 	Table,
 	TableArgs,
+	Union,
+	UnionArgs,
 } from '../types/query.types'
 import { Query } from './query'
 
@@ -158,6 +160,17 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: JoinArgs): Join => ({ type: 'join', ...args }),
 		getDescription: (op: Join) => {
+			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
+		},
+	},
+	union: {
+		label: 'Union',
+		type: 'union',
+		icon: Merge,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: UnionArgs): Union => ({ type: 'union', ...args }),
+		getDescription: (op: Union) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
 		},
 	},
@@ -311,6 +324,7 @@ export const query_operation_types = {
 
 export const source = query_operation_types.source.init
 export const join = query_operation_types.join.init
+export const union = query_operation_types.union.init
 export const select = query_operation_types.select.init
 export const rename = query_operation_types.rename.init
 export const remove = query_operation_types.remove.init

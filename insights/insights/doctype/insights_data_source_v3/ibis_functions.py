@@ -26,6 +26,8 @@ f_if_else = (
 )
 f_case = lambda *args: ibis.case().when(*args).end()
 f_sql = lambda query: _.sql(query)
+f_asc = ibis.asc
+f_desc = ibis.desc
 
 
 # number Functions
