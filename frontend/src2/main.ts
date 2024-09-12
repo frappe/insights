@@ -1,11 +1,12 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
 import { frappeRequest, setConfig } from 'frappe-ui'
+import { GridItem, GridLayout } from 'grid-layout-plus'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
 import App from './App.vue'
+import { registerControllers, registerGlobalComponents } from './globals.ts'
 import './index.css'
 import router from './router.ts'
-import { GridItem, GridLayout } from 'grid-layout-plus'
-import { registerControllers, registerGlobalComponents } from './globals.ts'
+import './telemetry.ts'
 
 setConfig('resourceFetcher', frappeRequest)
 
