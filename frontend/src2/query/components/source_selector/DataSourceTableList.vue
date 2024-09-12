@@ -71,7 +71,6 @@ const listColumns = [
 			</div>
 		</div>
 		<ListView
-			v-if="tableStore.tables.length"
 			class="h-full"
 			:columns="listColumns"
 			:rows="tableStore.tables"
@@ -83,12 +82,14 @@ const listColumns = [
 				emptyState: {
 					title: 'No Tables Found',
 					description: 'Sync tables from your data source to get started',
+					button: {
+						variant: 'outline',
+						label: 'Refresh Tables',
+						onClick: () => tableStore.updateDataSourceTables(props.data_source),
+					},
 				},
 			}"
 		>
-			<ListEmptyState v-if="tableStore.loading">
-				<LoadingIndicator class="h-6 w-6 text-gray-600" />
-			</ListEmptyState>
 		</ListView>
 	</div>
 </template>
