@@ -24,7 +24,7 @@
 </div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
-	<a href="https://insights-demo.frappe.cloud">Live Demo</a>
+	<a href="https://insightsdemo.frappe.cloud">Live Demo</a>
 	-
 	<a href="https://docs.frappeinsights.com">Documentation</a>
 </div>
