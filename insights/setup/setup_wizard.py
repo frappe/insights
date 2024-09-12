@@ -36,6 +36,7 @@ def setup_demo_data(args):
         return
     factory = DemoDataFactory()
     factory.run()
+    frappe.db.commit()
 
 
 def wrap_up(args):
