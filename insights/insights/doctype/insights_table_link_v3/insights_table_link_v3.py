@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from contextlib import suppress
 
 import frappe
 from frappe.model.document import Document
@@ -25,31 +24,8 @@ class InsightsTableLinkv3(Document):
     # end: auto-generated types
 
     def before_insert(self):
-        if self.is_duplicate():
+        if is_duplicate(self):
             raise frappe.DuplicateEntryError
-
-    def is_duplicate(self):
-        # check if there a link with the same tables and columns
-        # for eg. if there is a link between Orders and OrderItems with columns order_id and order_id
-        # there should not be another link between OrderItems and Orders with columns order_id and order_id
-
-        return frappe.db.exists(
-            "Insights Table Link v3",
-            {
-                "left_table": self.right_table,
-                "right_table": self.left_table,
-                "left_column": self.right_column,
-                "right_column": self.left_column,
-            },
-        ) or frappe.db.exists(
-            "Insights Table Link v3",
-            {
-                "left_table": self.left_table,
-                "right_table": self.right_table,
-                "left_column": self.left_column,
-                "right_column": self.right_column,
-            },
-        )
 
     @staticmethod
     def create(data_source, left_table, right_table, left_column, right_column):
@@ -59,8 +35,8 @@ class InsightsTableLinkv3(Document):
         doc.right_table = right_table
         doc.left_column = left_column
         doc.right_column = right_column
-        with suppress(frappe.DuplicateEntryError):
-            doc.save(ignore_permissions=True)
+        if not is_duplicate(doc):
+            doc.db_insert()
 
     @staticmethod
     def get_links(data_source, left_table, right_table):
@@ -88,3 +64,27 @@ class InsightsTableLinkv3(Document):
             ],
         )
         return left_to_right_links + right_to_left_links
+
+
+def is_duplicate(doc):
+    # check if there a link with the same tables and columns
+    # for eg. if there is a link between Orders and OrderItems with columns order_id and order_id
+    # there should not be another link between OrderItems and Orders with columns order_id and order_id
+
+    return frappe.db.exists(
+        "Insights Table Link v3",
+        {
+            "left_table": doc.right_table,
+            "right_table": doc.left_table,
+            "left_column": doc.right_column,
+            "right_column": doc.left_column,
+        },
+    ) or frappe.db.exists(
+        "Insights Table Link v3",
+        {
+            "left_table": doc.left_table,
+            "right_table": doc.right_table,
+            "left_column": doc.left_column,
+            "right_column": doc.right_column,
+        },
+    )

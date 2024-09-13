@@ -2,8 +2,6 @@
 # For license information, please see license.txt
 
 
-from contextlib import suppress
-
 import frappe
 from frappe.model.document import Document
 
@@ -34,17 +32,8 @@ class InsightsTablev3(Document):
     # end: auto-generated types
 
     def before_insert(self):
-        if self.is_duplicate():
+        if is_duplicate(self):
             raise frappe.DuplicateEntryError
-
-    def is_duplicate(self):
-        return frappe.db.exists(
-            "Insights Table v3",
-            {
-                "data_source": self.data_source,
-                "table": self.table,
-            },
-        )
 
     @staticmethod
     def create(data_source, table_name):
@@ -52,8 +41,8 @@ class InsightsTablev3(Document):
         doc.data_source = data_source
         doc.table = table_name
         doc.label = table_name
-        with suppress(frappe.DuplicateEntryError):
-            doc.save(ignore_permissions=True)
+        if not is_duplicate(doc):
+            doc.db_insert()
 
     @frappe.whitelist()
     def import_to_data_warehouse(self):
@@ -63,3 +52,13 @@ class InsightsTablev3(Document):
             self.table,
             force=True,
         )
+
+
+def is_duplicate(doc):
+    return frappe.db.exists(
+        "Insights Table v3",
+        {
+            "data_source": doc.data_source,
+            "table": doc.table_name,
+        },
+    )
