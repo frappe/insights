@@ -26,16 +26,16 @@ export const COLUMN_TYPES = [
 
 export const joinTypes = [
 	{
-		label: 'Left',
-		icon: defineAsyncComponent(() => import('../components/Icons/JoinLeftIcon.vue')),
-		value: 'left',
-		description: 'Keep all existing rows and include matching rows from the new table',
-	},
-	{
 		label: 'Inner',
 		icon: defineAsyncComponent(() => import('../components/Icons/JoinInnerIcon.vue')),
 		value: 'inner',
 		description: 'Keep only rows that have matching values in both tables',
+	},
+	{
+		label: 'Left',
+		icon: defineAsyncComponent(() => import('../components/Icons/JoinLeftIcon.vue')),
+		value: 'left',
+		description: 'Keep all existing rows and include matching rows from the new table',
 	},
 	{
 		label: 'Right',

@@ -25,7 +25,7 @@ const join = reactive<JoinArgs>(
 	props.join
 		? { ...props.join }
 		: {
-				join_type: 'left' as JoinType,
+				join_type: 'inner',
 				table: table({}),
 				join_condition: {
 					left_column: column(''),
@@ -221,7 +221,7 @@ function confirm() {
 }
 function reset() {
 	Object.assign(join, {
-		join_type: 'left',
+		join_type: 'inner',
 		table: table({}),
 		join_condition: {
 			left_column: column(''),
