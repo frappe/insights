@@ -12,7 +12,7 @@ dependencies = [
     "SQLAlchemy==2.0.22",
     "python-telegram-bot==21.4",
     "duckdb==1.0.0",
-    "ibis-framework==9.3.0",
+    "ibis-framework==9.5.0",
     "ibis-framework[duckdb]",
     "ibis-framework[mysql]",
     "ibis-framework[sqlite]",
