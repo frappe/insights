@@ -394,9 +394,10 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            week_start = column - column.day_of_week.index().cast("int32").to_interval(
-                unit="D"
-            )
+            week_starts_on = 6
+            day_of_week = column.day_of_week.index().cast("int32")
+            adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
+            week_start = column - adjusted_week_start.to_interval(unit="D")
             return week_start.strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
             year = column.year()
