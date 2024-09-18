@@ -225,4 +225,12 @@ def before_request():
 
 def after_request():
     for db in frappe.local.insights_db_connections.values():
-        db.disconnect()
+        catch_error(db.disconnect)
+
+
+def catch_error(fn):
+    try:
+        return fn(), None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None, e
