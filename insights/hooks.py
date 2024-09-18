@@ -115,6 +115,7 @@ fixtures = [
 permission_query_conditions = {
     "Insights Data Source v3": "insights.permissions.get_data_source_query_conditions",
     "Insights Table v3": "insights.permissions.get_table_query_conditions",
+    "Insights Team": "insights.permissions.get_team_query_conditions",
 }
 
 has_permission = {

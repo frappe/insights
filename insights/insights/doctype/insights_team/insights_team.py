@@ -31,6 +31,12 @@ class InsightsTeam(Document):
     # end: auto-generated types
 
     def validate(self):
+        if self.team_name == "Admin":
+            if not self.team_members:
+                frappe.throw("Admin team must have at least one member")
+            if self.has_value_changed("team_name"):
+                frappe.throw("Admin team name cannot be changed")
+
         for d in self.team_permissions:
             if d.resource_type not in [
                 "Insights Data Source v3",

@@ -5,6 +5,7 @@ import frappe
 
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
+    get_teams,
     is_admin,
 )
 
@@ -53,4 +54,17 @@ def get_table_query_conditions(user):
 
     return """(`tabInsights Table v3`.name in ({tables}))""".format(
         tables=", ".join(frappe.db.escape(tables) for tables in allowed_tables)
+    )
+
+
+def get_team_query_conditions(user):
+    if is_admin(user):
+        return ""
+
+    user_teams = get_teams(user)
+    if not user_teams:
+        return """(`tabInsights Team`.name is NULL)"""
+
+    return """(`tabInsights Team`.name in ({teams}))""".format(
+        teams=", ".join(frappe.db.escape(team) for team in user_teams)
     )

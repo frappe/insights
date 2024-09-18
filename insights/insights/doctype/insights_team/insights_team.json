@@ -41,7 +41,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 19:33:31.037194",
+ "modified": "2024-09-18 20:22:52.941397",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Team",
@@ -59,6 +59,15 @@
    "role": "Insights Admin",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1
   }
  ],
  "show_title_field_in_link": 1,

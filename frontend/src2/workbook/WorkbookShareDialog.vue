@@ -1,44 +1,21 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
-import session from '../session'
-import useUserStore from '../users'
+import UserSelector from '../components/UserSelector.vue'
 import { createToast } from '../helpers/toasts'
+import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
+import useUserStore, { User } from '../users/users'
 import { Workbook, workbookKey } from './workbook'
 
 const show = defineModel()
-const searchTxt = ref('')
+
 const userStore = useUserStore()
-
-const filteredUsers = computed(() => {
-	return userStore.users
-		.filter((user) => {
-			if (!searchTxt.value) return true
-			return (
-				user.full_name.toLowerCase().includes(searchTxt.value.toLowerCase()) ||
-				user.email.toLowerCase().includes(searchTxt.value.toLowerCase())
-			)
-		})
-		.filter((user) => {
-			return !permissionMap.value[user.email]
-		})
-		.map((user) => {
-			return {
-				...user,
-				label: user.full_name,
-				value: user.email,
-				description: user.email,
-			}
-		})
-})
-
-type User = typeof userStore.users[0]
 const selectedUser = ref<User | null>(null)
+
 function shareWorkbook() {
 	if (!selectedUser.value) return
 	permissionMap.value[selectedUser.value.email] = 'view'
 	selectedUser.value = null
-	searchTxt.value = ''
 }
 
 type PermissionMap = Record<string, ShareAccess>
@@ -107,33 +84,10 @@ function updatePermissions() {
 			<div class="-mb-8 flex flex-col gap-3 text-base">
 				<div class="flex w-full gap-2">
 					<div class="flex-1">
-						<Autocomplete
+						<UserSelector
 							v-model="selectedUser"
-							:hide-search="true"
-							:options="filteredUsers"
-							:autofocus="false"
-							@update:modelValue="searchTxt = $event.email"
-						>
-							<template #target="{ open }">
-								<FormControl
-									class="w-full"
-									type="text"
-									placeholder="Search by email or name"
-									autocomplete="off"
-									v-model="searchTxt"
-									@update:modelValue="open"
-									@focus="open"
-								/>
-							</template>
-
-							<template #item-prefix="{ option }">
-								<Avatar
-									size="sm"
-									:label="option.label"
-									:image="option.user_image"
-								/>
-							</template>
-						</Autocomplete>
+							:hide-users="userPermissions.map((u) => u.email)"
+						/>
 					</div>
 					<Button
 						class="flex-shrink-0"

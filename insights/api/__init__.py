@@ -31,7 +31,7 @@ def get_user_info():
         {
             "parenttype": "User",
             "parent": frappe.session.user,
-            "role": ["in", ("Insights Admin", "System Manager")],
+            "role": ["in", ("Insights Admin")],
         },
     )
     is_user = frappe.db.exists(
@@ -39,7 +39,7 @@ def get_user_info():
         {
             "parenttype": "User",
             "parent": frappe.session.user,
-            "role": ["in", ("Insights User", "System Manager")],
+            "role": ["in", ("Insights User")],
         },
     )
 

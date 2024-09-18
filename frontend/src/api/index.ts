@@ -1,7 +1,7 @@
 import { call, createDocumentResource, createListResource, createResource } from 'frappe-ui'
 import getWhitelistedMethods from './whitelistedMethods'
 
-export const login = (email: string, password: string): Promise<User> => {
+export const login = (email: string, password: string): Promise<SessionUser> => {
 	return call('login', { usr: email, pwd: password })
 }
 export const logout = (): Promise<any> => call('logout')

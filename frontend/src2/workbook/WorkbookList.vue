@@ -5,7 +5,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUniqueId } from '../helpers'
 import { WorkbookListItem } from '../types/workbook.types'
-import useUserStore from '../users'
+import useUserStore from '../users/users'
 import useWorkbooks from './workbooks'
 
 const router = useRouter()

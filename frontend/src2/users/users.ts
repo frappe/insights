@@ -1,6 +1,7 @@
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-import { createToast } from './helpers/toasts'
+import { createToast } from '../helpers/toasts'
+import { showErrorToast } from '../helpers'
 
 export type User = {
 	name: ''
@@ -42,6 +43,9 @@ function inviteUsers(emails: string[]) {
 						: `Invitations sent to ${emails.length} users`,
 				variant: 'success',
 			})
+		})
+		.catch((e: Error) => {
+			showErrorToast(e)
 		})
 		.finally(() => {
 			sendingInvitation.value = false

@@ -2,7 +2,7 @@ import * as api from '@/api'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-const emptyUser: User = {
+const emptyUser: SessionUser = {
 	email: '',
 	first_name: '',
 	last_name: '',
@@ -33,7 +33,7 @@ const sessionStore = defineStore('insights:session', function () {
 
 	async function fetchSessionInfo() {
 		if (!isLoggedIn.value) return
-		const userInfo: User = await api.fetchUserInfo()
+		const userInfo: SessionUser = await api.fetchUserInfo()
 		Object.assign(user.value, {
 			...userInfo,
 			is_admin: Boolean(userInfo.is_admin),
@@ -66,7 +66,7 @@ const sessionStore = defineStore('insights:session', function () {
 		await api.createLastViewedLog(recordType, recordName)
 	}
 
-	function updateDefaultVersion(version: User['default_version']) {
+	function updateDefaultVersion(version: SessionUser['default_version']) {
 		user.value.default_version = version
 		return api.updateDefaultVersion(version)
 	}

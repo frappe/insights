@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { Book, Database, PanelRightOpen, Users } from 'lucide-vue-next'
+import { Book, Database, PanelRightOpen, ShieldHalf, Users } from 'lucide-vue-next'
 import { ref } from 'vue'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
@@ -62,6 +62,11 @@ const links = [
 		label: 'Users',
 		icon: Users,
 		to: 'UserList',
+	},
+	{
+		label: 'Teams',
+		icon: ShieldHalf,
+		to: 'TeamList',
 	},
 ]
 </script>

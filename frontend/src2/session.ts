@@ -1,7 +1,7 @@
 import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 
-type User = {
+type SessionUser = {
 	email: string
 	first_name: string
 	last_name: string
@@ -15,7 +15,7 @@ type User = {
 	default_version: 'v3' | 'v2' | ''
 }
 
-const emptyUser: User = {
+const emptyUser: SessionUser = {
 	email: '',
 	first_name: '',
 	last_name: '',
@@ -56,7 +56,7 @@ async function initialize(force: boolean = false) {
 
 async function fetchSessionInfo() {
 	if (!session.isLoggedIn) return
-	const userInfo: User = await call('insights.api.get_user_info')
+	const userInfo: SessionUser = await call('insights.api.get_user_info')
 	Object.assign(session.user, {
 		...userInfo,
 		is_admin: Boolean(userInfo.is_admin),
@@ -65,7 +65,7 @@ async function fetchSessionInfo() {
 	})
 }
 
-function updateDefaultVersion(version: User['default_version']) {
+function updateDefaultVersion(version: SessionUser['default_version']) {
 	session.user.default_version = version
 	return call('insights.api.update_default_version', { version })
 }

@@ -4,7 +4,8 @@ import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon, XIcon } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
-import useUserStore, { User } from '../users'
+import session from '../session'
+import useUserStore, { User } from './users'
 
 const userStore = useUserStore()
 userStore.getUsers()
@@ -77,11 +78,13 @@ const listOptions = ref({
 		emptyState: {
 			title: 'No users.',
 			description: 'No users to display.',
-			button: {
-				label: 'Invite User',
-				variant: 'solid',
-				onClick: () => (showInviteUserDialog.value = true),
-			},
+			button: session.user.is_admin
+				? {
+						label: 'Invite User',
+						variant: 'solid',
+						onClick: () => (showInviteUserDialog.value = true),
+				  }
+				: undefined,
 		},
 	},
 })
@@ -122,7 +125,12 @@ document.title = 'Users | Insights'
 	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: 'Users', route: '/users' }]" />
 		<div class="flex items-center gap-2">
-			<Button label="Invite User" variant="solid" @click="showInviteUserDialog = true">
+			<Button
+				v-if="session.user.is_admin"
+				label="Invite User"
+				variant="solid"
+				@click="showInviteUserDialog = true"
+			>
 				<template #prefix>
 					<PlusIcon class="w-4" />
 				</template>
@@ -132,7 +140,7 @@ document.title = 'Users | Insights'
 
 	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
 		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search by Name" v-model="searchQuery" :debounce="300">
+			<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>

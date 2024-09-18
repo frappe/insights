@@ -69,6 +69,11 @@ const routes = [
 		component: () => import('./users/UserList.vue'),
 	},
 	{
+		path: '/teams',
+		name: 'TeamList',
+		component: () => import('./teams/TeamList.vue'),
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('./auth/NotFound.vue'),
 		meta: { hideSidebar: true },

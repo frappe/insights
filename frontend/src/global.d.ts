@@ -5,7 +5,7 @@ declare module 'dom-to-image'
 declare type HashString = `#${string}`
 declare type RGBString = `rgb(${number}, ${number}, ${number})`
 
-interface User {
+interface SessionUser {
 	email: string
 	first_name: string
 	last_name: string
@@ -21,7 +21,7 @@ interface User {
 
 interface Session {
 	initialized: boolean
-	user: User
+	user: SessionUser
 }
 
 type ListResourceParams = {

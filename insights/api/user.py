@@ -5,9 +5,11 @@ import frappe
 from frappe.utils import split_emails, validate_email_address
 from frappe.utils.user import get_users_with_role
 
-from insights import notify
 from insights.decorators import insights_whitelist, validate_type
-from insights.insights.doctype.insights_team.insights_team import get_teams, is_admin
+from insights.insights.doctype.insights_team.insights_team import (
+    get_teams as get_user_teams,
+)
+from insights.insights.doctype.insights_team.insights_team import is_admin
 
 
 @insights_whitelist()
@@ -22,7 +24,7 @@ def get_users(search_term=None):
             as_dict=True,
         )
         user_info["type"] = "User"
-        user_info["teams"] = get_teams(frappe.session.user)
+        user_info["teams"] = get_user_teams(frappe.session.user)
         return [user_info]
 
     insights_admins = get_users_with_role("Insights Admin")
@@ -45,7 +47,7 @@ def get_users(search_term=None):
     )
     for user in users:
         user["type"] = "Admin" if user.name in insights_admins else "User"
-        user["teams"] = get_teams(user.name)
+        user["teams"] = get_user_teams(user.name)
 
     invitations = frappe.get_list(
         "Insights User Invitation",
@@ -71,44 +73,76 @@ def get_users(search_term=None):
 
 
 @insights_whitelist()
+def get_teams(search_term=None):
+    teams = frappe.get_list(
+        "Insights Team",
+        filters={
+            "name": ["like", f"%{search_term}%"] if search_term else ["is", "set"],
+        },
+        fields=[
+            "name",
+            "team_name",
+            "owner",
+            "creation",
+        ],
+    )
+
+    members = frappe.get_all(
+        "Insights Team Member",
+        fields=["parent", "user"],
+        filters={"parent": ["in", [team.name for team in teams]]},
+    )
+
+    members_user_info = frappe.get_all(
+        "User",
+        fields=["name", "full_name", "email", "user_image"],
+        filters={"name": ["in", [member.user for member in members]]},
+    )
+
+    for team in teams:
+        team.team_members = [
+            member_info
+            for member_info in members_user_info
+            if member_info.name
+            in [member.user for member in members if member.parent == team.name]
+        ]
+
+    return teams
+
+
+@insights_whitelist()
+@validate_type
+def create_team(team_name: str):
+    frappe.only_for("Insights Admin")
+
+    team = frappe.new_doc("Insights Team")
+    team.team_name = team_name
+    team.insert()
+    return team
+
+
+@insights_whitelist()
+@validate_type
+def update_team(team: dict):
+    frappe.only_for("Insights Admin")
+
+    team = frappe._dict(team)
+    doc = frappe.get_doc("Insights Team", team.name)
+    doc.team_name = team.team_name if team.name != "Admin" else "Admin"
+    doc.set("team_members", [])
+    for member in team.team_members:
+        doc.append(
+            "team_members",
+            {
+                "user": member["name"] or member["email"],
+            },
+        )
+    doc.save()
+
+
+@insights_whitelist()
 def add_insights_user(user):
-    email_strings = validate_email_address(user.get("email"), throw=True)
-    email_strings = split_emails(email_strings)
-    if user.get("role") not in ["User", "Admin"]:
-        frappe.throw("Invalid Role")
-
-    doc = frappe.get_doc(
-        {
-            "doctype": "User",
-            "first_name": user.get("first_name"),
-            "last_name": user.get("last_name"),
-            "email": email_strings[0],
-            "user_type": "Website User",
-            "send_welcome_email": 1,
-        }
-    )
-    doc.append_roles("Insights User")
-    if user.get("role") == "Admin":
-        doc.append_roles("Insights Admin")
-    doc.insert()
-    frappe.db.commit()
-    notify(
-        type="success",
-        title="User Added",
-        message=f"{user.get('first_name')} {user.get('last_name')} has been added as an Insights {user.get('role')}",
-    )
-
-    if user.get("team"):
-        try:
-            team = frappe.get_doc("Insights Team", user.get("team"))
-            team.append("team_members", {"user": doc.name})
-            team.save()
-        except frappe.DoesNotExistError:
-            notify(
-                type="error",
-                title="Team Not Found",
-                message=f"Team {user.get('team')} does not exist. Please create a new team or add the user to an existing team.",
-            )
+    raise NotImplementedError
 
 
 @frappe.whitelist(allow_guest=True)
