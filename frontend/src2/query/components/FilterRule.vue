@@ -56,21 +56,21 @@ const operatorOptions = computed(() => {
 		options.push({ label: 'is not set', value: 'is_not_set' }) // no value
 	}
 	if (FIELDTYPES.NUMBER.includes(type)) {
-		options.push({ label: '=', value: '=' }) // number
-		options.push({ label: '!=', value: '!=' }) // number
-		options.push({ label: '>', value: '>' }) // number
-		options.push({ label: '>=', value: '>=' }) // number
-		options.push({ label: '<', value: '<' }) // number
-		options.push({ label: '<=', value: '<=' }) // number
+		options.push({ label: 'equals', value: '=' })
+		options.push({ label: 'not equals', value: '!=' })
+		options.push({ label: 'greater than', value: '>' })
+		options.push({ label: 'greater than or equals', value: '>=' })
+		options.push({ label: 'less than', value: '<' })
+		options.push({ label: 'less than or equals', value: '<=' })
 	}
 	if (FIELDTYPES.DATE.includes(type)) {
-		options.push({ label: 'is', value: '=' }) // date
-		options.push({ label: 'is not', value: '!=' }) // date
-		options.push({ label: 'is before', value: '<' }) // date
-		options.push({ label: 'is after', value: '>' }) // date
-		options.push({ label: 'is on or after', value: '>=' }) // date
-		options.push({ label: 'is on or before', value: '<=' }) // date
-		options.push({ label: 'is between', value: 'between' }) // date range
+		options.push({ label: 'equals', value: '=' })
+		options.push({ label: 'not equals', value: '!=' })
+		options.push({ label: 'greater than', value: '>' })
+		options.push({ label: 'greater than or equals', value: '>=' })
+		options.push({ label: 'less than', value: '<' })
+		options.push({ label: 'less than or equals', value: '<=' })
+		options.push({ label: 'between', value: 'between' })
 	}
 	return options
 })
