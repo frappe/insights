@@ -7,15 +7,14 @@ from frappe.utils.user import get_users_with_role
 
 from insights import notify
 from insights.decorators import insights_whitelist, validate_type
-from insights.insights.doctype.insights_team.insights_team import get_teams
+from insights.insights.doctype.insights_team.insights_team import get_teams, is_admin
 
 
 @insights_whitelist()
 def get_users(search_term=None):
     """Returns full_name, email, type, teams, last_active"""
 
-    insights_admins = get_users_with_role("Insights Admin")
-    if frappe.session.user not in insights_admins:
+    if not is_admin(frappe.session.user):
         user_info = frappe.db.get_value(
             "User",
             frappe.session.user,
@@ -26,7 +25,9 @@ def get_users(search_term=None):
         user_info["teams"] = get_teams(frappe.session.user)
         return [user_info]
 
+    insights_admins = get_users_with_role("Insights Admin")
     insights_users = get_users_with_role("Insights User")
+
     additional_filters = {}
     if search_term:
         additional_filters = {
