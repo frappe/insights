@@ -55,25 +55,13 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 16:29:44.286108",
+ "modified": "2024-09-18 19:33:23.576448",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights User Invitation",
  "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
   {
    "create": 1,
    "delete": 1,
