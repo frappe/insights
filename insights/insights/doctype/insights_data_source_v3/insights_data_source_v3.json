@@ -102,7 +102,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-29 13:58:25.669483",
+ "modified": "2024-09-18 17:12:28.394897",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",
@@ -119,6 +119,27 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1
   }
  ],
  "sort_field": "creation",

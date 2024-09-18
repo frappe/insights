@@ -7,15 +7,26 @@ from frappe.utils.user import get_users_with_role
 
 from insights import notify
 from insights.decorators import insights_whitelist, validate_type
-from insights.insights.doctype.insights_team.insights_team import get_user_teams
+from insights.insights.doctype.insights_team.insights_team import get_teams
 
 
 @insights_whitelist()
 def get_users(search_term=None):
     """Returns full_name, email, type, teams, last_active"""
-    insights_users = get_users_with_role("Insights User")
-    insights_admins = get_users_with_role("Insights Admin")
 
+    insights_admins = get_users_with_role("Insights Admin")
+    if frappe.session.user not in insights_admins:
+        user_info = frappe.db.get_value(
+            "User",
+            frappe.session.user,
+            ["name", "full_name", "email", "last_active", "user_image", "enabled"],
+            as_dict=True,
+        )
+        user_info["type"] = "User"
+        user_info["teams"] = get_teams(frappe.session.user)
+        return [user_info]
+
+    insights_users = get_users_with_role("Insights User")
     additional_filters = {}
     if search_term:
         additional_filters = {
@@ -32,13 +43,8 @@ def get_users(search_term=None):
         },
     )
     for user in users:
-        teams = frappe.get_list(
-            "Insights Team",
-            filters={"name": ["in", get_user_teams(user.name)]},
-            pluck="team_name",
-        )
         user["type"] = "Admin" if user.name in insights_admins else "User"
-        user["teams"] = teams
+        user["teams"] = get_teams(user.name)
 
     invitations = frappe.get_list(
         "Insights User Invitation",
@@ -127,6 +133,8 @@ def accept_invitation(key: str):
 @insights_whitelist()
 @validate_type
 def invite_users(emails: str):
+    frappe.only_for("Insights Admin")
+
     if not emails:
         return
 

@@ -90,6 +90,10 @@ fixtures = [
         "dt": "Insights Data Source v3",
         "filters": {"name": ("in", ["Site DB"])},
     },
+    {
+        "dt": "Insights Team",
+        "filters": {"name": ("in", ["Admin"])},
+    },
 ]
 
 # Uninstallation
@@ -108,15 +112,14 @@ fixtures = [
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
+permission_query_conditions = {
+    "Insights Data Source v3": "insights.permissions.get_data_source_query_conditions",
+    "Insights Table v3": "insights.permissions.get_table_query_conditions",
+}
+
 has_permission = {
-    "Insights Data Source": "insights.overrides.has_permission",
-    "Insights Table": "insights.overrides.has_permission",
-    "Insights Query": "insights.overrides.has_permission",
-    "Insights Dashboard": "insights.overrides.has_permission",
+    "Insights Data Source v3": "insights.permissions.has_doc_permission",
+    "Insights Table v3": "insights.permissions.has_doc_permission",
 }
 
 # DocType Class

@@ -279,7 +279,7 @@ def get_reverse_cardinality(cardinality):
 
 @insights_whitelist()
 def get_all_data_sources():
-    return frappe.get_all(
+    return frappe.get_list(
         "Insights Data Source v3",
         filters={"status": "Active"},
         fields=[
@@ -297,7 +297,7 @@ def get_all_data_sources():
 @insights_whitelist()
 @validate_type
 def get_data_source_tables(data_source=None, search_term=None, limit=100):
-    tables = frappe.get_all(
+    tables = frappe.get_list(
         "Insights Table v3",
         filters={
             "data_source": data_source or ["is", "set"],
@@ -329,6 +329,7 @@ def get_data_source_tables(data_source=None, search_term=None, limit=100):
 @site_cache
 @validate_type
 def get_data_source_table_columns(data_source: str, table_name: str):
+    check_table_permission(data_source, table_name)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
     db = ds._get_ibis_backend()
     table = db.table(table_name)
@@ -345,6 +346,7 @@ def get_data_source_table_columns(data_source: str, table_name: str):
 @insights_whitelist()
 @validate_type
 def update_data_source_tables(data_source: str):
+    check_data_source_permission(data_source)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
     ds.update_table_list()
 
@@ -352,6 +354,7 @@ def update_data_source_tables(data_source: str):
 @insights_whitelist()
 @validate_type
 def get_table_links(data_source: str, left_table: str, right_table: str):
+    check_table_permission(data_source, left_table)
     return InsightsTableLinkv3.get_links(data_source, left_table, right_table)
 
 
@@ -372,12 +375,14 @@ def make_data_source(data_source):
 
 @insights_whitelist()
 def test_connection(data_source):
+    frappe.only_for("Insights Admin")
     ds = make_data_source(data_source)
     return ds.test_connection(raise_exception=True)
 
 
 @insights_whitelist()
 def create_data_source(data_source):
+    frappe.only_for("Insights Admin")
     ds = make_data_source(data_source)
     ds.save()
     return ds.name

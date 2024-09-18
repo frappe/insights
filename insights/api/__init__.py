@@ -14,6 +14,9 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
+from insights.insights.doctype.insights_team.insights_team import (
+    check_data_source_permission,
+)
 
 
 @insights_whitelist()
@@ -26,6 +29,7 @@ def get_user_info():
     is_admin = frappe.db.exists(
         "Has Role",
         {
+            "parenttype": "User",
             "parent": frappe.session.user,
             "role": ["in", ("Insights Admin", "System Manager")],
         },
@@ -33,6 +37,7 @@ def get_user_info():
     is_user = frappe.db.exists(
         "Has Role",
         {
+            "parenttype": "User",
             "parent": frappe.session.user,
             "role": ["in", ("Insights User", "System Manager")],
         },
@@ -105,6 +110,8 @@ def get_csv_file(filename: str):
 @insights_whitelist()
 @validate_type
 def get_csv_data(filename: str):
+    check_data_source_permission("uploads")
+
     file = get_csv_file(filename)
     file_path = file.get_full_path()
     file_name = file.file_name.split(".")[0]
@@ -126,6 +133,8 @@ def get_csv_data(filename: str):
 @insights_whitelist()
 @validate_type
 def import_csv_data(filename: str):
+    check_data_source_permission("uploads")
+
     file = get_csv_file(filename)
     file_path = file.get_full_path()
     table_name = file.file_name.split(".")[0]

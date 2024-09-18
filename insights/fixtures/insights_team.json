@@ -1,0 +1,15 @@
+[
+	{
+		"name": "Admin",
+		"owner": "Administrator",
+		"creation": "2024-09-18 15:22:03.781109",
+		"modified": "2024-09-18 15:22:03.781109",
+		"modified_by": "Administrator",
+		"docstatus": 0,
+		"idx": 0,
+		"team_name": "Admin",
+		"doctype": "Insights Team",
+		"team_permissions": [],
+		"team_members": []
+	}
+]

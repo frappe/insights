@@ -1,5 +1,7 @@
 {
  "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:team_name",
  "beta": 1,
  "creation": "2022-12-22 20:18:03.581245",
  "doctype": "DocType",
@@ -17,7 +19,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Team Name",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "team_members",
@@ -38,10 +41,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-01-01 19:10:19.510456",
+ "modified": "2024-09-18 15:21:40.704424",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Team",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

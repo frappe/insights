@@ -111,7 +111,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-10 14:01:26.583316",
+ "modified": "2024-09-18 16:31:44.868158",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
@@ -128,12 +128,21 @@
    "write": 1
   },
   {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
    "email": 1,
    "print": 1,
    "read": 1,
    "role": "Insights User",
-   "share": 1,
-   "write": 1
+   "share": 1
   }
  ],
  "sort_field": "modified",

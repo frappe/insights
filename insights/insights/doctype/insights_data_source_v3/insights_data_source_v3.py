@@ -140,7 +140,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.name in frappe.local.insights_db_connections:
             return frappe.local.insights_db_connections[self.name]
 
-        connection_string = self.get_connection_string()
+        connection_string = self._get_connection_string()
         db: BaseBackend = ibis.connect(connection_string)
         print(f"Connected to {self.name} ({self.title})")
 
@@ -151,7 +151,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         frappe.local.insights_db_connections[self.name] = db
         return db
 
-    def get_connection_string(self):
+    def _get_connection_string(self):
         if self.is_site_db:
             return get_sitedb_connection_string()
         if self.database_type == "SQLite":
@@ -177,36 +177,39 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             if raise_exception:
                 raise e
 
-    @frappe.whitelist()
-    def update_table_list(self):
+    def update_table_list(self, force=False):
         blacklist_patterns = ["^_", "^sqlite_"]
         blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
         remote_db = self._get_ibis_backend()
         tables = remote_db.list_tables()
         tables = [t for t in tables if not blacklisted(t)]
 
+        if force:
+            frappe.db.delete(
+                "Insights Table v3",
+                {"data_source": self.name},
+            )
+
         if not tables or len(tables) == frappe.db.count(
             "Insights Table v3",
             {"data_source": self.name},
         ):
+            print("No new tables to sync")
             return
 
-        errors = []
-        for table in tables:
-            try:
-                InsightsTablev3.create(self.name, table)
-            except Exception as e:
-                errors.append(f"Error syncing {table}: {e}")
+        InsightsTablev3.bulk_create(self.name, tables)
+        self.update_table_links(force)
 
-        if errors:
-            frappe.throw("\n".join(errors))
-
-        self.update_table_links()
-
-    def update_table_links(self):
+    def update_table_links(self, force=False):
         links = []
         if self.is_site_db or self.is_frappe_db:
             links = get_frappedb_table_links(self)
+
+        if force:
+            frappe.db.delete(
+                "Insights Table Link v3",
+                {"data_source": self.name},
+            )
 
         for link in links:
             InsightsTableLinkv3.create(

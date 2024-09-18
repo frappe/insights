@@ -20,7 +20,7 @@ def is_enabled():
     )
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_posthog_settings():
     can_record_session = False
     if start_time := frappe.db.get_default("session_recording_start"):

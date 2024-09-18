@@ -2,8 +2,10 @@
 # For license information, please see license.txt
 
 
+from hashlib import md5
+
 import frappe
-from frappe.model.document import Document
+from frappe.model.document import Document, bulk_insert
 
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     DataWarehouse,
@@ -27,25 +29,32 @@ class InsightsTablev3(Document):
         data_source: DF.Link
         label: DF.Data
         last_synced_on: DF.Datetime | None
-        name: DF.Int | None
         table: DF.Data
     # end: auto-generated types
 
-    def before_insert(self):
-        if is_duplicate(self):
-            raise frappe.DuplicateEntryError
+    def autoname(self):
+        self.name = get_table_name(self.data_source, self.table)
 
     @staticmethod
-    def create(data_source, table_name):
-        doc = frappe.new_doc("Insights Table v3")
-        doc.data_source = data_source
-        doc.table = table_name
-        doc.label = table_name
-        if not is_duplicate(doc):
-            doc.db_insert()
+    def bulk_create(data_source: str, tables: list[str]):
+        table_docs = []
+        for table in tables:
+            doc = frappe.new_doc("Insights Table v3")
+            doc.name = get_table_name(data_source, table)
+            doc.data_source = data_source
+            doc.table = table
+            doc.label = table
+            table_docs.append(doc)
+
+        bulk_insert("Insights Table v3", table_docs)
 
     @staticmethod
     def get_ibis_table(data_source, table_name, use_live_connection=False):
+        from insights.insights.doctype.insights_team.insights_team import (
+            check_table_permission,
+        )
+
+        check_table_permission(data_source, table_name)
         return DataWarehouse().get_table(
             data_source,
             table_name,
@@ -54,7 +63,7 @@ class InsightsTablev3(Document):
 
     @frappe.whitelist()
     def import_to_data_warehouse(self):
-        frappe.only_for("System Manager")
+        frappe.only_for("Insights Admin")
         DataWarehouse().import_remote_table(
             self.data_source,
             self.table,
@@ -62,11 +71,5 @@ class InsightsTablev3(Document):
         )
 
 
-def is_duplicate(doc):
-    return frappe.db.exists(
-        "Insights Table v3",
-        {
-            "data_source": doc.data_source,
-            "table": doc.table,
-        },
-    )
+def get_table_name(data_source, table):
+    return md5((data_source + table).encode()).hexdigest()[:10]

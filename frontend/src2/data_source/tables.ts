@@ -1,5 +1,6 @@
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { showErrorToast } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { QueryResultColumn } from '../types/query.types'
 
@@ -39,13 +40,16 @@ async function updateDataSourceTables(data_source: string) {
 	return call('insights.api.data_sources.update_data_source_tables', { data_source })
 		.then(() => {
 			getTables(data_source)
-		})
-		.finally(() => {
-			updatingDataSourceTables.value = false
 			createToast({
 				message: `Tables updated for ${data_source}`,
 				variant: 'success',
 			})
+		})
+		.catch((e: Error) => {
+			showErrorToast(e)
+		})
+		.finally(() => {
+			updatingDataSourceTables.value = false
 		})
 }
 

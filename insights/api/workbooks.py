@@ -72,12 +72,22 @@ def get_columns_for_selection(operations, use_live_connection=True):
 @insights_whitelist()
 def get_workbooks():
     return frappe.get_list(
-        "Insights Workbook", fields=["name", "title", "owner", "creation", "modified"]
+        "Insights Workbook",
+        fields=[
+            "name",
+            "title",
+            "owner",
+            "creation",
+            "modified",
+        ],
     )
 
 
 @insights_whitelist()
 def get_share_permissions(workbook_name):
+    if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
+        frappe.throw(_("You do not have permission to share this workbook"))
+
     DocShare = frappe.qb.DocType("DocShare")
     User = frappe.qb.DocType("User")
 
@@ -89,6 +99,7 @@ def get_share_permissions(workbook_name):
             DocShare.user,
             DocShare.read,
             DocShare.write,
+            DocShare.share,
             User.full_name,
         )
         .where(DocShare.share_doctype == "Insights Workbook")
@@ -109,6 +120,9 @@ def get_share_permissions(workbook_name):
 
 @insights_whitelist()
 def update_share_permissions(workbook_name, permissions):
+    if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
+        frappe.throw(_("You do not have permission to share this workbook"))
+
     perm_exists = lambda user: frappe.db.exists(
         "DocShare",
         {
