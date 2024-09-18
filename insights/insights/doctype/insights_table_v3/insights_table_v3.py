@@ -44,6 +44,14 @@ class InsightsTablev3(Document):
         if not is_duplicate(doc):
             doc.db_insert()
 
+    @staticmethod
+    def get_ibis_table(data_source, table_name, use_live_connection=False):
+        return DataWarehouse().get_table(
+            data_source,
+            table_name,
+            use_live_connection=use_live_connection,
+        )
+
     @frappe.whitelist()
     def import_to_data_warehouse(self):
         frappe.only_for("System Manager")
@@ -59,6 +67,6 @@ def is_duplicate(doc):
         "Insights Table v3",
         {
             "data_source": doc.data_source,
-            "table": doc.table_name,
+            "table": doc.table,
         },
     )

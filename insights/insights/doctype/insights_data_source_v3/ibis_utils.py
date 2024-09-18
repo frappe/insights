@@ -16,11 +16,13 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+    InsightsTablev3,
+)
 from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .data_warehouse import DataWarehouse
 from .ibis_functions import get_functions
 
 
@@ -33,10 +35,9 @@ class IbisQueryBuilder:
         return self.query
 
     def get_table(self, table):
-        return DataWarehouse().get_table(
+        return InsightsTablev3.get_ibis_table(
             table.data_source,
             table.table_name,
-            sync=True,
             use_live_connection=self.use_live_connection,
         )
 

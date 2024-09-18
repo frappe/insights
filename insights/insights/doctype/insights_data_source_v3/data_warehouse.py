@@ -26,13 +26,13 @@ class DataWarehouse:
 
         return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
 
-    def get_table(self, data_source, table_name, sync=False, use_live_connection=True):
+    def get_table(self, data_source, table_name, use_live_connection=True):
         if use_live_connection:
             return self.get_remote_table(data_source, table_name)
         else:
-            return self.get_warehouse_table(data_source, table_name, sync)
+            return self.get_warehouse_table(data_source, table_name)
 
-    def get_warehouse_table(self, data_source, table_name, sync=False):
+    def get_warehouse_table(self, data_source, table_name, sync=True):
         parquet_file = get_parquet_filepath(data_source, table_name)
         warehouse_table = get_warehouse_table_name(data_source, table_name)
 
