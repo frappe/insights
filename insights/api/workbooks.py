@@ -18,11 +18,11 @@ def fetch_query_results(operations, use_live_connection=True):
         return
 
     columns = get_columns_from_schema(ibis_query.schema())
-    results = execute_ibis_query(ibis_query)
+    results = execute_ibis_query(ibis_query, cache=True, cache_expiry=60 * 5)
     results = results.to_dict(orient="records")
 
     count_query = ibis_query.aggregate(count=_.count())
-    count_results = execute_ibis_query(count_query)
+    count_results = execute_ibis_query(count_query, cache=True, cache_expiry=60 * 5)
     total_count = count_results.values[0][0]
 
     return {
