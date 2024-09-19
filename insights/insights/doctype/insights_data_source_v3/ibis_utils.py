@@ -395,7 +395,20 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            week_starts_on = 6
+            week_start_day = (
+                frappe.db.get_single_value("Insights Settings", "week_starts_on")
+                or "Monday"
+            )
+            days = [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            ]
+            week_starts_on = days.index(week_start_day)
             day_of_week = column.day_of_week.index().cast("int32")
             adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
             week_start = column - adjusted_week_start.to_interval(unit="D")

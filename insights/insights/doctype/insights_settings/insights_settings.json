@@ -7,20 +7,21 @@
  "engine": "InnoDB",
  "field_order": [
   "onboarding_section",
-  "setup_complete",
-  "onboarding_complete",
   "enable_permissions",
-  "allow_subquery",
-  "auto_execute_query",
-  "query_result_expiry",
-  "query_result_limit",
-  "is_subscribed",
   "allowed_origins",
   "max_records_to_sync",
   "integrations_section",
   "telegram_api_token",
   "query_section",
-  "fiscal_year_start"
+  "fiscal_year_start",
+  "week_starts_on",
+  "tab_break_tvwi",
+  "setup_complete",
+  "onboarding_complete",
+  "allow_subquery",
+  "auto_execute_query",
+  "query_result_expiry",
+  "query_result_limit"
  ],
  "fields": [
   {
@@ -80,13 +81,6 @@
    "label": "Telegram API Token"
   },
   {
-   "default": "0",
-   "fieldname": "is_subscribed",
-   "fieldtype": "Check",
-   "is_virtual": 1,
-   "label": "Is Subscribed"
-  },
-  {
    "fieldname": "query_section",
    "fieldtype": "Section Break",
    "label": "Query"
@@ -106,12 +100,24 @@
    "fieldname": "max_records_to_sync",
    "fieldtype": "Int",
    "label": "Max Records To Sync"
+  },
+  {
+   "default": "Monday",
+   "fieldname": "week_starts_on",
+   "fieldtype": "Select",
+   "label": "Week Starts On",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
+  },
+  {
+   "fieldname": "tab_break_tvwi",
+   "fieldtype": "Tab Break",
+   "label": "Legacy"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-18 16:31:44.868158",
+ "modified": "2024-09-19 20:08:41.358679",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
