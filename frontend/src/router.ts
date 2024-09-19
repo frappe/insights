@@ -96,7 +96,7 @@ const routes = [
 		component: () => import('@/pages/Users.vue'),
 		meta: {
 			isAllowed(): boolean {
-				return sessionStore().user.is_admin && settingsStore().settings.enable_permissions
+				return false
 			},
 		},
 	},
@@ -106,7 +106,7 @@ const routes = [
 		component: () => import('@/pages/Teams.vue'),
 		meta: {
 			isAllowed(): boolean {
-				return sessionStore().user.is_admin && settingsStore().settings.enable_permissions
+				return false
 			},
 		},
 	},
