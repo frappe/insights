@@ -128,7 +128,8 @@ def update_team(team: dict):
 
     team = frappe._dict(team)
     doc = frappe.get_doc("Insights Team", team.name)
-    doc.team_name = team.team_name if team.name != "Admin" else "Admin"
+    if team.name != "Admin" and doc.team_name != team.team_name:
+        doc.rename(team.team_name)
     doc.set("team_members", [])
     for member in team.team_members:
         doc.append(

@@ -137,11 +137,12 @@ document.title = 'Teams | Insights'
 				{
 					label: 'Create',
 					variant: 'solid',
-					disabled: !newTeamName,
+					disabled: !newTeamName || teamStore.creatingTeam,
 					loading: teamStore.creatingTeam,
 					onClick: () => {
-						teamStore.createTeam(newTeamName)
-						showCreateTeamDialog = false
+						teamStore.createTeam(newTeamName).then(() => {
+							showCreateTeamDialog = false
+						})
 					},
 				},
 			],
@@ -163,11 +164,13 @@ document.title = 'Teams | Insights'
 				{
 					label: 'Done',
 					variant: 'solid',
-					disabled: !teamModified,
+					disabled: !teamModified || teamStore.updatingTeam,
+					loading: teamStore.updatingTeam,
 					onClick: () => {
 						if (!editTeam) return
-						teamStore.updateTeam(editTeam)
-						showEditTeamDialog = false
+						teamStore.updateTeam(editTeam).then(() => {
+							showEditTeamDialog = false
+						})
 					},
 				},
 			],
