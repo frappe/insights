@@ -479,6 +479,10 @@ def to_insights_type(dtype: DataType):
         return "Date"
     if dtype.is_time():
         return "Time"
+    if dtype.is_boolean():
+        return "Boolean"
+    if dtype.is_uuid():
+        return "UUID"
     frappe.throw(f"Cannot infer data type for: {dtype}")
 
 
