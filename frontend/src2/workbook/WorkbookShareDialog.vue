@@ -10,12 +10,12 @@ import { Workbook, workbookKey } from './workbook'
 const show = defineModel()
 
 const userStore = useUserStore()
-const selectedUser = ref<User | null>(null)
+const selectedUserEmail = ref<string>('')
 
 function shareWorkbook() {
-	if (!selectedUser.value) return
-	permissionMap.value[selectedUser.value.email] = 'view'
-	selectedUser.value = null
+	if (!selectedUserEmail.value) return
+	permissionMap.value[selectedUserEmail.value] = 'view'
+	selectedUserEmail.value = ''
 }
 
 type PermissionMap = Record<string, ShareAccess>
@@ -85,7 +85,7 @@ function updatePermissions() {
 				<div class="flex w-full gap-2">
 					<div class="flex-1">
 						<UserSelector
-							v-model="selectedUser"
+							v-model="selectedUserEmail"
 							:hide-users="userPermissions.map((u) => u.email)"
 						/>
 					</div>
@@ -93,7 +93,7 @@ function updatePermissions() {
 						class="flex-shrink-0"
 						variant="solid"
 						label="Share"
-						:disabled="selectedUser === null"
+						:disabled="!selectedUserEmail"
 						@click="shareWorkbook"
 					></Button>
 				</div>

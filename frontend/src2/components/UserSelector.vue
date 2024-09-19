@@ -2,13 +2,16 @@
 import { computed, ref, watchEffect } from 'vue'
 import useUserStore, { User } from '../users/users'
 
-const props = defineProps<{ hideUsers?: string[] }>()
-const selectedUser = defineModel<User | null>()
+const props = defineProps<{
+	placeholder?: string
+	hideUsers?: string[]
+}>()
+const selectedUserEmail = defineModel<string>()
 
 const userStore = useUserStore()
 const searchTxt = ref('')
 watchEffect(() => {
-	searchTxt.value = selectedUser.value?.email || ''
+	searchTxt.value = selectedUserEmail.value || ''
 })
 const filteredUsers = computed(() => {
 	return userStore.users
@@ -35,16 +38,17 @@ const filteredUsers = computed(() => {
 
 <template>
 	<Autocomplete
-		v-model="selectedUser"
 		:hide-search="true"
-		:options="filteredUsers"
 		:autofocus="false"
+		:modelValue="selectedUserEmail"
+		@update:modelValue="selectedUserEmail = $event?.value"
+		:options="filteredUsers"
 	>
 		<template #target="{ open }">
 			<FormControl
 				class="w-full"
 				type="text"
-				placeholder="Search by email or name"
+				:placeholder="props.placeholder || 'Search user...'"
 				autocomplete="off"
 				v-model="searchTxt"
 				@update:modelValue="open"
