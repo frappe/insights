@@ -38,10 +38,13 @@
 <script setup lang="ts">
 import { Book, Database, PanelRightOpen, ShieldHalf, Users } from 'lucide-vue-next'
 import { ref } from 'vue'
+import useSettings from '../settings/settings'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
 
 const isSidebarCollapsed = ref(false)
+const settings = useSettings()
+
 const links = [
 	// {
 	// 	label: 'Dashboards',
@@ -63,10 +66,13 @@ const links = [
 		icon: Users,
 		to: 'UserList',
 	},
-	{
+]
+
+if (settings.doc.enable_permissions) {
+	links.push({
 		label: 'Teams',
 		icon: ShieldHalf,
 		to: 'TeamList',
-	},
-]
+	})
+}
 </script>

@@ -38,6 +38,9 @@ def has_doc_permission(doc, ptype, user):
 
 
 def get_data_source_query_conditions(user):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return ""
+
     allowed_sources = get_allowed_resources_for_user("Insights Data Source v3", user)
     if not allowed_sources:
         return """(`tabInsights Data Source v3`.name is NULL)"""
@@ -48,6 +51,9 @@ def get_data_source_query_conditions(user):
 
 
 def get_table_query_conditions(user):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return ""
+
     allowed_tables = get_allowed_resources_for_user("Insights Table v3", user)
     if not allowed_tables:
         return """(`tabInsights Table v3`.name is NULL)"""
@@ -58,6 +64,9 @@ def get_table_query_conditions(user):
 
 
 def get_team_query_conditions(user):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return ""
+
     if is_admin(user):
         return ""
 

@@ -12,9 +12,7 @@ function makeSettings() {
 	const _settings = useDocumentResource<InsightsSettings>(doctype, doctype, {
 		initialDoc: {
 			name: '',
-			setup_complete: false,
-			telegram_api_token: '',
-			fiscal_year_start: '',
+			enable_permissions: false,
 		},
 	})
 	_settings.onAfterSave(() =>
@@ -32,7 +30,5 @@ type Settings = ReturnType<typeof makeSettings>
 
 type InsightsSettings = {
 	name: string
-	setup_complete: boolean
-	telegram_api_token: string
-	fiscal_year_start: string
+	enable_permissions: boolean
 }
