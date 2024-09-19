@@ -111,14 +111,11 @@ function importCSVData() {
 				v-else
 				class="relative flex h-[30rem] w-full flex-1 flex-col overflow-hidden rounded border bg-white"
 			>
-				<div
-					v-if="csvData.loading"
-					class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+				<DataTable
+					:columns="csvData.columns"
+					:rows="csvData.rows"
+					:loading="csvData.loading"
 				>
-					<LoadingIndicator class="h-8 w-8 text-gray-700" />
-				</div>
-
-				<DataTable v-else :columns="csvData.columns" :rows="csvData.rows">
 					<template #footer>
 						<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
 							<p class="tnum text-sm text-gray-600">

@@ -52,7 +52,7 @@ import {
 	Table,
 	TableArgs,
 	Union,
-	UnionArgs,
+	UnionArgs
 } from '../types/query.types'
 import { Query } from './query'
 

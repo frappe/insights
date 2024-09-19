@@ -261,7 +261,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		})
 	}
 
-	function getGranularity(column_name: string) {
+	function getGranularity(column_name: string): GranularityType | undefined {
 		const column = Object.entries(chart.doc.config).find(([_, value]) => {
 			if (!value) return false
 			if (Array.isArray(value)) {

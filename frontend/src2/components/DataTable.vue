@@ -4,10 +4,15 @@ import { formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
+const emit = defineEmits({
+	'cell-dbl-click': (row: QueryResultRow, column: QueryResultColumn) => true,
+})
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
 	rows: QueryResultRow[] | undefined
+	loading?: boolean
 }>()
+
 const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
 </script>
 
@@ -49,6 +54,7 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
 							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
 							height="30px"
+							@dblclick="emit('cell-dbl-click', row, col)"
 						>
 							{{ isNumberColumn(col) ? formatNumber(row[col.name]) : row[col.name] }}
 						</td>
@@ -58,6 +64,13 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 			</table>
 		</div>
 		<slot name="footer"></slot>
+	</div>
+
+	<div
+		v-else-if="props.loading"
+		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+	>
+		<LoadingIndicator class="h-8 w-8 text-gray-700" />
 	</div>
 
 	<div v-else class="flex h-full w-full items-center justify-center">

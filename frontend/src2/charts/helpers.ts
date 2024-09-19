@@ -1,8 +1,10 @@
 import { graphic } from 'echarts/core'
-import { formatNumber, getShortNumber } from '../helpers'
+import { copy, formatNumber, getShortNumber, getUniqueId } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
+import { column } from '../query/helpers'
+import useQuery, { Query } from '../query/query'
 import { BarChartConfig, LineChartConfig } from '../types/chart.types'
-import { ColumnDataType, QueryResultColumn, QueryResultRow } from '../types/query.types'
+import { ColumnDataType, FilterRule, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
 import { getColors } from './colors'
 
@@ -342,4 +344,66 @@ function getLegend(show_legend = true) {
 		pageFormatter: '{current}',
 		pageButtonItemGap: 2,
 	}
+}
+
+export function getDrillDownQuery(chart: Chart, row: QueryResultRow, col: QueryResultColumn) {
+	if (!FIELDTYPES.NUMBER.includes(col.type)) {
+		return
+	}
+
+	const textColumns = chart.dataQuery.result.columns
+		.filter((column) => FIELDTYPES.TEXT.includes(column.type))
+		.map((column) => column.name)
+
+	const dateColumns = chart.dataQuery.result.columns
+		.filter((column) => FIELDTYPES.DATE.includes(column.type))
+		.map((column) => column.name)
+
+	const rowIndex = chart.dataQuery.result.formattedRows.findIndex((r) => r === row)
+	const currRow = chart.dataQuery.result.rows[rowIndex]
+	const nextRow = chart.dataQuery.result.rows[rowIndex + 1]
+
+	const filters: FilterRule[] = []
+	for (const column_name of textColumns) {
+		filters.push({
+			column: column(column_name),
+			operator: '=',
+			value: currRow[column_name] as string,
+		})
+	}
+
+	for (const column_name of dateColumns) {
+		if (nextRow) {
+			filters.push({
+				column: column(column_name),
+				operator: '>=',
+				value: currRow[column_name] as string,
+			})
+			filters.push({
+				column: column(column_name),
+				operator: '<',
+				value: nextRow[column_name] as string,
+			})
+		} else {
+			filters.push({
+				column: column(column_name),
+				operator: '>=',
+				value: currRow[column_name] as string,
+			})
+		}
+	}
+
+	const query = useQuery({ name: getUniqueId(), operations: [] })
+	query.autoExecute = false
+
+	query.setOperations(copy(chart.dataQuery.doc.operations))
+	const summarizeIndex = query.doc.operations.findIndex((op) => op.type === 'summarize')
+	query.doc.operations.splice(summarizeIndex)
+
+	query.addFilterGroup({
+		logical_operator: 'And',
+		filters: filters,
+	})
+
+	return query
 }
