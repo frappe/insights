@@ -31,6 +31,9 @@ class InsightsTeam(Document):
     # end: auto-generated types
 
     def validate(self):
+        if frappe.flags.in_migrate:
+            return
+
         if self.team_name == "Admin":
             if not self.team_members:
                 frappe.throw("Admin team must have at least one member")
