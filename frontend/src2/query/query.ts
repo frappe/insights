@@ -116,6 +116,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		reset,
 
 		history: {} as UseRefHistoryReturn<any, any>,
+		canUndo() {
+			return !query.activeEditIndex && !query.executing
+		},
+		canRedo() {
+			return !query.activeEditIndex && !query.executing
+		},
 	})
 
 	query.activeOperationIdx = query.doc.operations.length - 1
@@ -303,6 +309,13 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			} else {
 				query.setOperations([])
 				query.addSource(args)
+			}
+
+			if (args.table.type == 'query') {
+				const sourceQuery = getCachedQuery(args.table.query_name)
+				if (sourceQuery) {
+					query.doc.use_live_connection = sourceQuery.doc.use_live_connection
+				}
 			}
 		}
 		if (!query.doc.operations.length || editingSource) {
