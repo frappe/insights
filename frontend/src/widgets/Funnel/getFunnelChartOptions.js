@@ -48,7 +48,7 @@ export default function getFunnelChartOptions(labels, dataset, options) {
 				label: {
 					show: true,
 					position: 'inside',
-					formatter: '{c}',
+					formatter: (params) => (isNaN(params.value) ? params.value : formatNumber(params.value)),
 				},
 				gap: 14,
 				data: dataset.data?.map((value, index) => ({
