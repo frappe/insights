@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import { Book, Database, PanelRightOpen, ShieldHalf, Users } from 'lucide-vue-next'
 import { ref } from 'vue'
+import { waitUntil } from '../helpers'
 import useSettings from '../settings/settings'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
@@ -45,7 +46,7 @@ import UserDropdown from './UserDropdown.vue'
 const isSidebarCollapsed = ref(false)
 const settings = useSettings()
 
-const links = [
+const links = ref([
 	// {
 	// 	label: 'Dashboards',
 	// 	icon: LayoutGrid,
@@ -66,13 +67,15 @@ const links = [
 		icon: Users,
 		to: 'UserList',
 	},
-]
+])
 
-if (settings.doc.enable_permissions) {
-	links.push({
-		label: 'Teams',
-		icon: ShieldHalf,
-		to: 'TeamList',
-	})
-}
+waitUntil(() => settings.loading === false).then(() => {
+	if (settings.doc.enable_permissions) {
+		links.value.push({
+			label: 'Teams',
+			icon: ShieldHalf,
+			to: 'TeamList',
+		})
+	}
+})
 </script>
