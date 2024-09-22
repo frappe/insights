@@ -183,6 +183,7 @@ def get_resource_options(team_name: str, search_term: str | None = None):
         .select(DataSource.name, DataSource.title, DataSource.database_type)
         .where(filter_condition)
         .limit(50)
+        .orderby(DataSource.title)
         .run(as_dict=True)
     )
 
@@ -204,6 +205,7 @@ def get_resource_options(team_name: str, search_term: str | None = None):
         )
         .where(filter_condition)
         .limit(50)
+        .orderby(DataSource.title, Table.label)
         .run(as_dict=True)
     )
 
