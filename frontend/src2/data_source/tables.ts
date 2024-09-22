@@ -4,15 +4,16 @@ import { showErrorToast } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { QueryResultColumn } from '../types/query.types'
 
-export type DataSourceTable = { table_name: string; data_source: string }
+export type DataSourceTable = { name: string, table_name: string; data_source: string }
 const tables = ref<DataSourceTable[]>([])
 
 const loading = ref(false)
-async function getTables(data_source?: string, search_term?: string) {
+async function getTables(data_source?: string, search_term?: string, limit: number = 100) {
 	loading.value = true
 	tables.value = await call('insights.api.data_sources.get_data_source_tables', {
 		data_source,
 		search_term,
+		limit,
 	})
 	loading.value = false
 	return tables.value

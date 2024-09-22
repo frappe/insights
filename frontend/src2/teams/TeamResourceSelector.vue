@@ -1,91 +1,239 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { wheneverChanges } from '../helpers'
-import useTeamStore, { ResourceOption, Team, TeamPermission } from './teams'
+import { watchDebounced } from '@vueuse/core'
+import { call } from 'frappe-ui'
+import { ChevronDown, ChevronRight, SearchIcon } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import useDataSourceStore from '../data_source/data_source'
+import { DataSourceListItem } from '../data_source/data_source.types'
+import useTableStore, { DataSourceTable } from '../data_source/tables'
+import { TeamPermission } from './teams'
 
-const props = defineProps<{ team: Team }>()
-const newResources = defineModel<TeamPermission[]>({
+const teamPermissions = defineModel<TeamPermission[]>({
 	required: true,
 })
 
-const teamStore = useTeamStore()
-const groupedResourceOptions = ref([])
-const resourceSearchQuery = ref('')
-wheneverChanges(
-	() => [props.team.name, resourceSearchQuery.value],
-	() => {
-		if (!props.team.name) return
-		teamStore
-			.getResourceOptions(props.team.name, resourceSearchQuery.value)
-			.then((options: ResourceOption[]) => {
-				groupedResourceOptions.value = options.reduce(
-					(acc: any, option: ResourceOption) => {
-						if (option.resource_type_label === 'Source') {
-							acc[0].items.push(option)
-						}
-						if (option.resource_type_label === 'Table') {
-							acc[1].items.push(option)
-						}
-						return acc
-					},
-					[
-						{ group: 'Data Sources', items: [] },
-						{ group: 'Tables', items: [] },
-					]
-				)
+const dataSourceStore = useDataSourceStore()
+const tableStore = useTableStore()
+
+const selectedDataSources = ref<string[]>([])
+const selectedTables = ref<Record<string, string[]>>({})
+
+if (teamPermissions.value.length) {
+	selectedDataSources.value = teamPermissions.value
+		.filter((p) => p.type === 'Source')
+		.map((p) => p.resource_name)
+
+	for (const ds of selectedDataSources.value) {
+		selectDataSource(ds, true)
+	}
+
+	const permittedTables = teamPermissions.value
+		.filter((p) => p.type === 'Table')
+		.map((p) => p.resource_name)
+
+	if (permittedTables.length) {
+		const tables: Record<string, string[]> = await call(
+			'insights.api.data_sources.get_data_sources_of_tables',
+			{ table_names: permittedTables }
+		)
+		selectedTables.value = tables
+		console.log('selectedTables', selectedTables.value)
+		setTimeout(() => {
+			Object.keys(tables).forEach((ds) => {
+				if (!dataSourceTables.value[ds]?.length) {
+					fetchTables(ds)
+				}
 			})
+		}, 0)
+	}
+}
+
+watchDebounced(
+	() => [selectedDataSources.value, selectedTables.value],
+	() => {
+		const dataSourcesPerms: TeamPermission[] = selectedDataSources.value.map((ds) => {
+			return {
+				type: 'Source',
+				resource_type: 'Insights Data Source v3',
+				resource_name: ds,
+			}
+		})
+		const tablePerms: TeamPermission[] = Object.entries(selectedTables.value).flatMap(
+			([ds, tables]) => {
+				return tables.map((table) => {
+					return {
+						type: 'Table',
+						resource_type: 'Insights Table v3',
+						resource_name: table,
+					}
+				})
+			}
+		)
+		const newPermissions = [...dataSourcesPerms, ...tablePerms]
+		const hasChanged =
+			JSON.stringify(newPermissions.map((p) => p.resource_name).sort()) !==
+			JSON.stringify(teamPermissions.value.map((p) => p.resource_name).sort())
+
+		if (hasChanged) {
+			teamPermissions.value = newPermissions
+		}
 	},
-	{ deep: true, debounce: 500, immediate: true }
+	{ debounce: 300, deep: true }
 )
+
+const dataSources = ref<DataSourceListItem[]>([])
+dataSourceStore.getSources().then((sources) => {
+	dataSources.value = sources.sort((a, b) => a.title.localeCompare(b.title))
+	selectedTables.value = dataSources.value.reduce((acc, ds) => {
+		acc[ds.name] = acc[ds.name] || []
+		return acc
+	}, selectedTables.value)
+})
+
+const expandedDataSource = ref<string | null>(null)
+const expandedDataSourceTables = computed(() => {
+	if (!expandedDataSource.value) {
+		return []
+	}
+	return dataSourceTables.value[expandedDataSource.value] || []
+})
+
+const tableSearchQuery = ref('')
+const dataSourceTables = ref<Record<string, DataSourceTable[]>>({})
+function toggleExpandedDataSource(dataSource: string) {
+	if (expandedDataSource.value === dataSource) {
+		expandedDataSource.value = null
+	} else {
+		expandedDataSource.value = dataSource
+		fetchTables(dataSource)
+	}
+	const el = document.querySelector(`[data-source="${dataSource}"]`)
+	if (el) {
+		el.scrollIntoView({ behavior: 'smooth' })
+	}
+}
+async function fetchTables(dataSource: string) {
+	return tableStore.getTables(dataSource, '', 0).then((tables) => {
+		Object.assign(dataSourceTables.value, {
+			[dataSource]: tables,
+		})
+		console.log('dataSourceTables', dataSourceTables.value)
+		return tables
+	})
+}
+
+function isDataSourceSelected(dataSource: string) {
+	return (
+		selectedDataSources.value.some((ds) => ds === dataSource) ||
+		selectedTables.value[dataSource]?.length === dataSourceTables.value[dataSource]?.length
+	)
+}
+function isTableSelected(dataSource: string, table: string) {
+	return selectedTables.value[dataSource]?.some((t) => t === table)
+}
+function selectDataSource(dataSource: string, selected: boolean) {
+	if (selected) {
+		selectedDataSources.value.push(dataSource)
+		if (expandedDataSource.value === dataSource && expandedDataSourceTables.value) {
+			selectedTables.value[dataSource] = expandedDataSourceTables.value.map((t) => t.name)
+		} else {
+			fetchTables(dataSource).then((tables) => {
+				selectedTables.value[dataSource] = tables.map((t) => t.name)
+			})
+		}
+	} else {
+		selectedDataSources.value = selectedDataSources.value.filter((ds) => ds !== dataSource)
+		selectedTables.value[dataSource] = []
+	}
+}
+function selectTable(dataSource: string, table: string, selected: boolean) {
+	if (!expandedDataSource.value) {
+		return
+	}
+	if (isDataSourceSelected(dataSource)) {
+		selectedDataSources.value = selectedDataSources.value.filter((ds) => ds !== dataSource)
+	}
+	if (selected) {
+		selectedTables.value[dataSource].push(table)
+	} else {
+		selectedTables.value[dataSource] = selectedTables.value[dataSource].filter(
+			(t) => t !== table
+		)
+	}
+}
 </script>
 
 <template>
-	<Autocomplete
-		:multiple="true"
-		:hide-search="true"
-		:autofocus="false"
-		v-model="newResources"
-		:options="groupedResourceOptions"
+	<div
+		v-for="data_source in dataSources"
+		:key="data_source.name"
+		class="flex flex-col"
+		:data-source="data_source.name"
 	>
-		<template #target="{ open }">
+		<div class="sticky top-0 z-10 flex items-center gap-2 bg-white pb-1.5">
 			<FormControl
-				class="w-full"
-				type="text"
-				v-model="resourceSearchQuery"
-				placeholder="Add permissions"
-				autocomplete="off"
-				@update:modelValue="open"
-				@focus="open"
+				type="checkbox"
+				:modelValue="isDataSourceSelected(data_source.name)"
+				@update:modelValue="selectDataSource(data_source.name, $event)"
 			/>
-		</template>
-		<template #footer="{ togglePopover }">
-			<div class="flex items-center justify-between p-0.5">
-				<p class="px-3 text-sm text-gray-600">
-					{{ newResources.length }} resources selected
-				</p>
-				<div class="flex gap-1">
-					<Button
-						label="Reset"
-						:disabled="!newResources.length"
-						@click.prevent.stop="newResources = []"
+			<div
+				class="group flex flex-1 cursor-pointer items-center justify-between gap-2"
+				@click="toggleExpandedDataSource(data_source.name)"
+			>
+				<div class="flex flex-shrink-0 select-none items-baseline gap-2">
+					<p class="font-medium leading-5 group-hover:underline">
+						{{ data_source.title }}
+					</p>
+					<p
+						v-if="selectedTables[data_source.name]?.length"
+						class="text-xs leading-5 text-gray-600"
 					>
-					</Button>
-					<Button
-						variant="solid"
-						label="Done"
-						:disabled="!newResources.length"
-						@click="
-							() => {
-								if (!team) return
-								team.team_permissions.push(...newResources)
-								newResources = []
-								togglePopover(false)
-							}
-						"
-					>
-					</Button>
+						({{ selectedTables[data_source.name]?.length }} selected)
+					</p>
+				</div>
+				<hr class="flex-1 border-gray-200" />
+				<component
+					:is="expandedDataSource === data_source.name ? ChevronDown : ChevronRight"
+					class="h-4 w-4 flex-shrink-0 text-gray-600"
+					stroke-width="1.5"
+				/>
+			</div>
+		</div>
+		<div
+			v-if="expandedDataSource === data_source.name"
+			class="flex flex-col gap-2.5 pl-6 pb-1.5"
+		>
+			<FormControl type="text" placeholder="Search tables" v-model="tableSearchQuery">
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-600" stroke-width="1.5" />
+				</template>
+				<template #suffix>
+					<LoadingIndicator v-if="tableStore.loading" class="h-4 w-4 text-gray-600" />
+				</template>
+			</FormControl>
+			<div
+				v-for="table in expandedDataSourceTables
+					.filter((t) =>
+						t.table_name.toLocaleLowerCase().includes(tableSearchQuery.toLowerCase())
+					)
+					.slice(0, 50)"
+				:key="table.name"
+			>
+				<div class="flex items-center gap-2">
+					<FormControl
+						type="checkbox"
+						:label="table.table_name"
+						:modelValue="isTableSelected(data_source.name, table.name)"
+						@update:modelValue="selectTable(data_source.name, table.name, $event)"
+					/>
 				</div>
 			</div>
-		</template>
-	</Autocomplete>
+			<div v-if="expandedDataSourceTables.length > 50" class="text-xs text-gray-600">
+				Showing only 50 of {{ expandedDataSourceTables.length }} tables
+			</div>
+			<div v-if="!expandedDataSourceTables.length" class="text-xs text-gray-600">
+				No tables found
+			</div>
+		</div>
+	</div>
 </template>

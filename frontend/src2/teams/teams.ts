@@ -8,12 +8,12 @@ export type TeamMember = {
 	user: string
 }
 export type TeamPermission = {
+	type: 'Source' | 'Table'
 	resource_type: 'Insights Data Source v3' | 'Insights Table v3'
-	resource_type_label: 'Source' | 'Table'
 	resource_name: string
-	label: string
-	value: string
-	description: string
+	label?: string
+	value?: string
+	description?: string
 }
 export type Team = {
 	name: string
@@ -37,7 +37,7 @@ async function getTeams(search_term = '') {
 				team_permissions: t.team_permissions.map((p: any) => {
 					return {
 						...p,
-						resource_type_label: getResourceTypeLabel(p.resource_type),
+						type: getResourceTypeLabel(p.resource_type),
 					}
 				}),
 			}
@@ -94,7 +94,7 @@ async function getResourceOptions(team_name: string, search_term = '') {
 			res.map((p: any) => {
 				return {
 					...p,
-					resource_type_label: getResourceTypeLabel(p.resource_type),
+					type: getResourceTypeLabel(p.resource_type),
 				}
 			})
 		)

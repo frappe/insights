@@ -315,6 +315,7 @@ def get_data_source_tables(data_source=None, search_term=None, limit=100):
         ret.append(
             frappe._dict(
                 {
+                    "name": table.name,
                     "label": table.label,
                     "table_name": table.table,
                     "data_source": table.data_source,
@@ -386,3 +387,25 @@ def create_data_source(data_source):
     ds = make_data_source(data_source)
     ds.save()
     return ds.name
+
+
+@insights_whitelist()
+def get_data_sources_of_tables(table_names: list[str]):
+    if not table_names:
+        return {}
+    if not isinstance(table_names, list):
+        frappe.throw("Table names should be a list")
+    if not all(isinstance(table_name, str) for table_name in table_names):
+        frappe.throw("Table names should be a list of strings")
+
+    tables = frappe.get_list(
+        "Insights Table v3",
+        filters={"name": ["in", table_names]},
+        fields=["data_source", "name"],
+    )
+    data_sources = {}
+    for table in tables:
+        data_sources[table.data_source] = data_sources.get(table.data_source, [])
+        data_sources[table.data_source].append(table.name)
+
+    return data_sources
