@@ -2,7 +2,7 @@ import { useDebouncedRefHistory, UseRefHistoryReturn, watchDebounced } from '@vu
 import { computed, reactive, ref, unref, watch } from 'vue'
 import { copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
 import { createToast } from '../helpers/toasts'
-import { column, count } from '../query/helpers'
+import { column, count, query_table } from '../query/helpers'
 import { getCachedQuery, makeQuery, Query } from '../query/query'
 import {
 	AXIS_CHARTS,
@@ -234,7 +234,11 @@ function makeChart(workbookChart: WorkbookChart) {
 	function prepareBaseQuery() {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([])
-		chart.dataQuery.setSource({ query: chart.baseQuery.doc.name })
+		chart.dataQuery.setSource({
+			table: query_table({
+				query_name: workbookChart.query,
+			}),
+		})
 		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
 	}
 	function setCustomFilters(filters: FilterArgs[]) {

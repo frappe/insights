@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
-import { onBeforeUnmount, provide } from 'vue'
+import { Download, RefreshCcw } from 'lucide-vue-next'
+import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
+import { downloadImage } from '../helpers'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useChart from './chart'
 import ChartBuilderTable from './components/ChartBuilderTable.vue'
@@ -12,7 +14,6 @@ import ChartQuerySelector from './components/ChartQuerySelector.vue'
 import ChartRenderer from './components/ChartRenderer.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
-import { RefreshCcw } from 'lucide-vue-next'
 
 const props = defineProps<{ chart: WorkbookChart; queries: WorkbookQuery[] }>()
 
@@ -44,6 +45,20 @@ onBeforeUnmount(() => {
 	stopUndoWatcher()
 	stopRedoWatcher()
 })
+
+const chartEl = ref<HTMLElement | null>(null)
+function downloadChart() {
+	if (!chartEl.value || !chartEl.value.clientHeight) {
+		console.log(chartEl.value)
+		console.warn('Chart element not found')
+		return
+	}
+	return downloadImage(chartEl.value, chart.doc.title, 2, {
+		filter: (element: HTMLElement) => {
+			return !element?.classList?.contains('absolute')
+		},
+	})
+}
 </script>
 
 <template>
@@ -51,9 +66,10 @@ onBeforeUnmount(() => {
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<LoadingOverlay v-if="chart.dataQuery.executing" />
 			<div
+				ref="chartEl"
 				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
 			>
-				<ChartRenderer :chart="chart" :show-download="true" />
+				<ChartRenderer :chart="chart" />
 			</div>
 			<ChartBuilderTable />
 		</div>
@@ -79,12 +95,19 @@ onBeforeUnmount(() => {
 				<FormControl v-model="chart.doc.config.limit" type="number" />
 			</InlineFormControlLabel>
 			<hr class="border-t border-gray-200" />
-			<div>
+			<div class="flex flex-col gap-2">
 				<Button @click="chart.refresh([], true)" class="w-full">
 					<template #prefix>
 						<RefreshCcw class="h-4 text-gray-700" stroke-width="1.5" />
 					</template>
 					Refresh Chart
+				</Button>
+
+				<Button class="w-full" :disabled="!chartEl" @click="downloadChart">
+					<template #prefix>
+						<Download class="h-4 text-gray-700" stroke-width="1.5" />
+					</template>
+					Export as PNG
 				</Button>
 			</div>
 		</div>

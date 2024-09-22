@@ -25,24 +25,10 @@ const eChartOptions = computed(() => {
 		)
 	}
 })
-
-const chartEl = ref<HTMLElement | null>(null)
-function downloadChart() {
-	if (!chartEl.value || !chartEl.value.clientHeight) {
-		console.log(chartEl.value)
-		console.warn('Chart element not found')
-		return
-	}
-	return downloadImage(chartEl.value, chart.doc.title, 2, {
-		filter: (element: HTMLElement) => {
-			return !element?.classList?.contains('absolute')
-		},
-	})
-}
 </script>
 
 <template>
-	<div ref="chartEl" class="relative h-full w-full">
+	<div class="relative h-full w-full">
 		<BaseChart
 			v-if="eChartOptions"
 			class="rounded bg-white py-1 shadow"
@@ -51,9 +37,5 @@ function downloadChart() {
 		/>
 		<NumberChart v-if="chart.doc.chart_type == 'Number'" :chart="chart" />
 		<TableChart v-if="chart.doc.chart_type == 'Table'" :chart="chart" />
-
-		<div v-if="props.showDownload && chartEl && eChartOptions" class="absolute top-3 right-3">
-			<Button variant="outline" icon="download" @click="downloadChart"></Button>
-		</div>
 	</div>
 </template>
