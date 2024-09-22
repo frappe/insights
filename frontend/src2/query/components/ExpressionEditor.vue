@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { ColumnOption } from '../../types/query.types'
 
-const props = defineProps<{ columnOptions: ColumnOption[] }>()
+const props = defineProps<{ columnOptions: ColumnOption[]; placeholder?: string }>()
 const expression = defineModel<string>({
 	required: true,
 })
@@ -65,6 +65,7 @@ function getFunctionMatches(word: string) {
 			language="python"
 			class="column-expression"
 			v-model="expression"
+			:placeholder="placeholder"
 			:completions="getCompletions"
 		></Code>
 	</div>

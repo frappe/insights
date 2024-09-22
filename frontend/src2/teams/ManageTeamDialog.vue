@@ -145,7 +145,7 @@ function removeMember(userEmail: string) {
 
 					<div
 						v-if="currentTeam.name !== 'Admin'"
-						class="relative flex max-h-[15rem] flex-col gap-1 overflow-y-auto"
+						class="relative flex max-h-[20rem] flex-col gap-1 overflow-y-auto"
 					>
 						<Suspense>
 							<TeamResourceSelector v-model="currentTeam.team_permissions" />

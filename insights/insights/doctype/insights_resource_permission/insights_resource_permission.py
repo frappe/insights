@@ -20,6 +20,7 @@ class InsightsResourcePermission(Document):
         parenttype: DF.Data
         resource_name: DF.DynamicLink
         resource_type: DF.Link
+        table_restrictions: DF.Data | None
     # end: auto-generated types
 
     pass

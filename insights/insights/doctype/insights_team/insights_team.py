@@ -5,7 +5,11 @@ import frappe
 from frappe.core.doctype.role.role import get_users as get_users_with_role
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
+from ibis import _
 
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+    exec_with_return,
+)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
 
@@ -256,6 +260,43 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
             return False
 
     return True
+
+
+def get_table_restrictions(data_source, table, user=None):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+        return []
+
+    user = user or frappe.session.user
+    if is_admin(user):
+        return []
+
+    table_name = get_table_name(data_source, table)
+    table_restrictions = frappe.get_all(
+        "Insights Resource Permission",
+        filters={
+            "parent": ["in", get_teams(user)],
+            "resource_name": table_name,
+            "resource_type": "Insights Table v3",
+            "table_restrictions": ["is", "set"],
+        },
+        pluck="table_restrictions",
+    )
+    return table_restrictions
+
+
+def apply_table_restrictions(table, data_source, table_name):
+    restrictions = get_table_restrictions(data_source, table_name)
+    if not restrictions:
+        return table
+
+    filters = restrictions
+    table_columns = table.schema().names
+    table_columns_dict = {column: getattr(_, column) for column in table_columns}
+    for filter_expression in filters:
+        filter_expression = filter_expression.strip()
+        table = table.filter(exec_with_return(filter_expression, table_columns_dict))
+
+    return table
 
 
 def remove_admin_role(users):

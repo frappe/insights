@@ -94,22 +94,13 @@ def get_teams(search_term=None):
     )
 
     ResourcePermission = frappe.qb.DocType("Insights Resource Permission")
-    DataSource = frappe.qb.DocType("Insights Data Source v3")
-    Table = frappe.qb.DocType("Insights Table v3")
     table_permissions = (
         frappe.qb.from_(ResourcePermission)
-        .left_join(Table)
-        .on(ResourcePermission.resource_name == Table.name)
-        .left_join(DataSource)
-        .on(Table.data_source == DataSource.name)
         .select(
             ResourcePermission.parent,
             ResourcePermission.resource_name,
             ResourcePermission.resource_type,
-            DataSource.title.as_("description"),
-            Table.label.as_("label"),
-            Table.table.as_("table"),
-            Table.name.as_("value"),
+            ResourcePermission.table_restrictions,
         )
         .where(
             ResourcePermission.parent.isin([team.name for team in teams])
@@ -120,15 +111,10 @@ def get_teams(search_term=None):
 
     source_permissions = (
         frappe.qb.from_(ResourcePermission)
-        .left_join(DataSource)
-        .on(ResourcePermission.resource_name == DataSource.name)
         .select(
             ResourcePermission.parent,
             ResourcePermission.resource_name,
             ResourcePermission.resource_type,
-            DataSource.name.as_("value"),
-            DataSource.title.as_("label"),
-            DataSource.database_type.as_("description"),
         )
         .where(
             ResourcePermission.parent.isin([team.name for team in teams])
@@ -153,86 +139,6 @@ def get_teams(search_term=None):
         ]
 
     return teams
-
-
-@insights_whitelist()
-@validate_type
-def get_resource_options(team_name: str, search_term: str | None = None):
-    """
-    Returns the list of data sources and tables that the team doesn't have access to
-    """
-    frappe.only_for("Insights Admin")
-
-    team = frappe.get_doc("Insights Team", team_name)
-    allowed_data_sources = team.get_sources()
-    allowed_tables = team.get_tables()
-
-    DataSource = frappe.qb.DocType("Insights Data Source v3")
-    Table = frappe.qb.DocType("Insights Table v3")
-
-    filter_condition = DataSource.name.isnotnull()
-    if allowed_data_sources:
-        filter_condition &= ~DataSource.name.isin(allowed_data_sources)
-
-    if search_term:
-        filter_condition &= (DataSource.title.like(f"%{search_term}%")) | (
-            DataSource.database_type.like(f"%{search_term}%")
-        )
-    data_sources = (
-        frappe.qb.from_(DataSource)
-        .select(DataSource.name, DataSource.title, DataSource.database_type)
-        .where(filter_condition)
-        .limit(50)
-        .orderby(DataSource.title)
-        .run(as_dict=True)
-    )
-
-    filter_condition = Table.name.isnotnull()
-    if allowed_tables:
-        filter_condition &= ~Table.name.isin(allowed_tables)
-    if search_term:
-        filter_condition &= (
-            (Table.label.like(f"%{search_term}%"))
-            | (Table.table.like(f"%{search_term}%"))
-            | (DataSource.title.like(f"%{search_term}%"))
-        )
-    tables = (
-        frappe.qb.from_(Table)
-        .left_join(DataSource)
-        .on(Table.data_source == DataSource.name)
-        .select(
-            Table.name, Table.table, Table.label, DataSource.title.as_("data_source")
-        )
-        .where(filter_condition)
-        .limit(50)
-        .orderby(DataSource.title, Table.label)
-        .run(as_dict=True)
-    )
-
-    resources = []
-    for data_source in data_sources:
-        resources.append(
-            {
-                "resource_type": "Insights Data Source v3",
-                "resource_name": data_source.name,
-                "value": data_source.name,
-                "label": data_source.title,
-                "description": data_source.database_type,
-            }
-        )
-
-    for table in tables:
-        resources.append(
-            {
-                "resource_type": "Insights Table v3",
-                "resource_name": table.name,
-                "value": table.name,
-                "label": table.label,
-                "description": table.data_source,
-            }
-        )
-
-    return resources
 
 
 @insights_whitelist()
@@ -269,20 +175,17 @@ def update_team(team: dict):
     )
     doc.set("team_permissions", [])
     for permission in team.team_permissions:
-        resource_type = (
-            "Insights Data Source v3"
-            if permission["resource_type"] == "Source"
-            else "Insights Table v3"
-            if permission["resource_type"] == "Table"
-            else permission["resource_type"]
-        )
-        if resource_type not in ["Insights Data Source v3", "Insights Table v3"]:
+        if permission["resource_type"] not in [
+            "Insights Data Source v3",
+            "Insights Table v3",
+        ]:
             continue
         doc.append(
             "team_permissions",
             {
                 "resource_type": permission["resource_type"],
                 "resource_name": permission["resource_name"],
+                "table_restrictions": permission["table_restrictions"].strip(),
             },
         )
     doc.save()

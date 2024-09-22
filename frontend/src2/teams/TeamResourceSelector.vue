@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import useDataSourceStore from '../data_source/data_source'
 import { DataSourceListItem } from '../data_source/data_source.types'
 import useTableStore, { DataSourceTable } from '../data_source/tables'
+import ExpressionEditor from '../query/components/ExpressionEditor.vue'
 import { TeamPermission } from './teams'
 
 const teamPermissions = defineModel<TeamPermission[]>({
@@ -17,6 +18,7 @@ const tableStore = useTableStore()
 
 const selectedDataSources = ref<string[]>([])
 const selectedTables = ref<Record<string, string[]>>({})
+const tableRestrictions = ref<Record<string, string>>({})
 
 if (teamPermissions.value.length) {
 	selectedDataSources.value = teamPermissions.value
@@ -27,29 +29,37 @@ if (teamPermissions.value.length) {
 		selectDataSource(ds, true)
 	}
 
-	const permittedTables = teamPermissions.value
+	const permittedTableNames = teamPermissions.value
 		.filter((p) => p.type === 'Table')
 		.map((p) => p.resource_name)
 
-	if (permittedTables.length) {
-		const tables: Record<string, string[]> = await call(
+	if (permittedTableNames.length) {
+		const tablesBySource: Record<string, string[]> = await call(
 			'insights.api.data_sources.get_data_sources_of_tables',
-			{ table_names: permittedTables }
+			{ table_names: permittedTableNames }
 		)
-		selectedTables.value = tables
-		console.log('selectedTables', selectedTables.value)
+		selectedTables.value = tablesBySource
 		setTimeout(() => {
-			Object.keys(tables).forEach((ds) => {
-				if (!dataSourceTables.value[ds]?.length) {
-					fetchTables(ds)
+			// wrap in setTimeout to avoid 'referenced before assignment' error
+			for (const data_source of Object.keys(tablesBySource)) {
+				if (!dataSourceTables.value[data_source]?.length) {
+					fetchTables(data_source)
 				}
-			})
+			}
 		}, 0)
+
+		for (const table of permittedTableNames) {
+			const tablePerm = teamPermissions.value.find((p) => p.resource_name === table)
+			const tableRestriction = tablePerm?.table_restrictions
+			if (tableRestriction) {
+				tableRestrictions.value[table] = tableRestriction
+			}
+		}
 	}
 }
 
 watchDebounced(
-	() => [selectedDataSources.value, selectedTables.value],
+	() => [selectedDataSources.value, selectedTables.value, tableRestrictions.value],
 	() => {
 		const dataSourcesPerms: TeamPermission[] = selectedDataSources.value.map((ds) => {
 			return {
@@ -65,16 +75,41 @@ watchDebounced(
 						type: 'Table',
 						resource_type: 'Insights Table v3',
 						resource_name: table,
+						table_restrictions: tableRestrictions.value[table] || '',
 					}
 				})
 			}
 		)
 		const newPermissions = [...dataSourcesPerms, ...tablePerms]
-		const hasChanged =
-			JSON.stringify(newPermissions.map((p) => p.resource_name).sort()) !==
-			JSON.stringify(teamPermissions.value.map((p) => p.resource_name).sort())
+		const hasResourcesChanged =
+			JSON.stringify(
+				newPermissions
+					.map((p) => p.resource_name)
+					.filter(Boolean)
+					.sort()
+			) !==
+			JSON.stringify(
+				teamPermissions.value
+					.map((p) => p.resource_name)
+					.filter(Boolean)
+					.sort()
+			)
 
-		if (hasChanged) {
+		const hasRestrictionsChanged =
+			JSON.stringify(
+				newPermissions
+					.map((p) => p.table_restrictions)
+					.filter(Boolean)
+					.sort()
+			) !==
+			JSON.stringify(
+				teamPermissions.value
+					.map((p) => p.table_restrictions)
+					.filter(Boolean)
+					.sort()
+			)
+
+		if (hasResourcesChanged || hasRestrictionsChanged) {
 			teamPermissions.value = newPermissions
 		}
 	},
@@ -117,7 +152,6 @@ async function fetchTables(dataSource: string) {
 		Object.assign(dataSourceTables.value, {
 			[dataSource]: tables,
 		})
-		console.log('dataSourceTables', dataSourceTables.value)
 		return tables
 	})
 }
@@ -161,13 +195,23 @@ function selectTable(dataSource: string, table: string, selected: boolean) {
 		)
 	}
 }
+
+const expandedTable = ref<string | null>(null)
+function toggleExpandedTable(table: string) {
+	if (expandedTable.value === table) {
+		expandedTable.value = null
+	} else {
+		tableRestrictions.value[table] = tableRestrictions.value[table] || ''
+		expandedTable.value = table
+	}
+}
 </script>
 
 <template>
 	<div
 		v-for="data_source in dataSources"
 		:key="data_source.name"
-		class="flex flex-col"
+		class="flex flex-col pr-2"
 		:data-source="data_source.name"
 	>
 		<div class="sticky top-0 z-10 flex items-center gap-2 bg-white pb-1.5">
@@ -203,7 +247,12 @@ function selectTable(dataSource: string, table: string, selected: boolean) {
 			v-if="expandedDataSource === data_source.name"
 			class="flex flex-col gap-2.5 pl-6 pb-1.5"
 		>
-			<FormControl type="text" placeholder="Search tables" v-model="tableSearchQuery">
+			<FormControl
+				type="text"
+				placeholder="Search tables"
+				v-model="tableSearchQuery"
+				autocomplete="off"
+			>
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-600" stroke-width="1.5" />
 				</template>
@@ -219,13 +268,56 @@ function selectTable(dataSource: string, table: string, selected: boolean) {
 					.slice(0, 50)"
 				:key="table.name"
 			>
-				<div class="flex items-center gap-2">
-					<FormControl
-						type="checkbox"
-						:label="table.table_name"
-						:modelValue="isTableSelected(data_source.name, table.name)"
-						@update:modelValue="selectTable(data_source.name, table.name, $event)"
-					/>
+				<div class="flex flex-col gap-1">
+					<div class="group flex items-center gap-2">
+						<FormControl
+							type="checkbox"
+							:modelValue="isTableSelected(data_source.name, table.name)"
+							@update:modelValue="selectTable(data_source.name, table.name, $event)"
+						/>
+						<div
+							class="group flex flex-shrink-0 select-none items-baseline gap-2"
+							@click="
+								selectTable(
+									data_source.name,
+									table.name,
+									!isTableSelected(data_source.name, table.name)
+								)
+							"
+						>
+							<p class="leading-5">{{ table.table_name }}</p>
+							<p
+								v-if="
+									isTableSelected(data_source.name, table.name) ||
+									expandedTable === table.name ||
+									tableRestrictions[table.name]
+								"
+								class="invisible cursor-pointer text-xs leading-5 text-gray-600 transition-all hover:underline group-hover:visible"
+								:class="
+									expandedTable === table.name || tableRestrictions[table.name]
+										? '!visible'
+										: 'invisible'
+								"
+								@click.prevent.stop="toggleExpandedTable(table.name)"
+							>
+								{{
+									expandedTable === table.name
+										? 'Hide'
+										: tableRestrictions[table.name]
+										? 'Edit Filters'
+										: 'Set Filters'
+								}}
+							</p>
+						</div>
+					</div>
+					<div v-if="expandedTable === table.name" class="ml-6 flex flex-col gap-1.5">
+						<ExpressionEditor
+							:column-options="[]"
+							v-model="tableRestrictions[table.name]"
+							placeholder="eg. country == 'India'"
+							class="h-fit max-h-[10rem] min-h-[2.5rem] text-sm"
+						/>
+					</div>
 				</div>
 			</div>
 			<div v-if="expandedDataSourceTables.length > 50" class="text-xs text-gray-600">

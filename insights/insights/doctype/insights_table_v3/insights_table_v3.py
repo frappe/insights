@@ -49,17 +49,20 @@ class InsightsTablev3(Document):
         bulk_insert("Insights Table v3", table_docs)
 
     @staticmethod
-    def get_ibis_table(data_source, table_name, use_live_connection=False):
+    def get_ibis_table(data_source, table, use_live_connection=False):
         from insights.insights.doctype.insights_team.insights_team import (
+            apply_table_restrictions,
             check_table_permission,
         )
 
-        check_table_permission(data_source, table_name)
-        return DataWarehouse().get_table(
+        check_table_permission(data_source, table)
+        t = DataWarehouse().get_table(
             data_source,
-            table_name,
+            table,
             use_live_connection=use_live_connection,
         )
+        t = apply_table_restrictions(t, data_source, table)
+        return t
 
     @frappe.whitelist()
     def import_to_data_warehouse(self):
