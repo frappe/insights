@@ -60,7 +60,7 @@ export function getLineChartOptions(chart: Chart) {
 		animation: true,
 		animationDuration: 700,
 		grid: getGrid({ show_legend }),
-		colors,
+		color: colors,
 		xAxis,
 		yAxis,
 		series: measures.map((c, idx) => {
@@ -143,7 +143,7 @@ export function getBarChartOptions(chart: Chart) {
 	return {
 		animation: true,
 		animationDuration: 700,
-		colors: colors,
+		color: colors,
 		grid: getGrid({ show_legend }),
 		xAxis: _config.swap_axes ? yAxis : xAxis,
 		yAxis: _config.swap_axes ? xAxis : yAxis,
@@ -250,7 +250,7 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 	return {
 		animation: true,
 		animationDuration: 700,
-		colors: colors,
+		color: colors,
 		dataset: { source: data },
 		series: [
 			{
