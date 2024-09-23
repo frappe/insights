@@ -1,8 +1,8 @@
 import { graphic } from 'echarts/core'
 import { copy, formatNumber, getShortNumber, getUniqueId } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { column } from '../query/helpers'
-import useQuery, { Query } from '../query/query'
+import { column, getFormattedDate } from '../query/helpers'
+import useQuery from '../query/query'
 import { BarChartConfig, LineChartConfig } from '../types/chart.types'
 import { ColumnDataType, FilterRule, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
@@ -34,12 +34,14 @@ export function getLineChartOptions(chart: Chart) {
 	const show_legend = measures.length > 1
 
 	const xAxis = getXAxis({ column_type: _config.x_axis.data_type })
+	const xAxisIsDate = FIELDTYPES.DATE.includes(_config.x_axis.data_type)
+	const granularity = xAxisIsDate ? chart.getGranularity(_config.x_axis.column_name) : null
 
 	const leftYAxis = getYAxis()
 	const rightYAxis = getYAxis({ is_secondary: true })
 	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
-	const sortedRows = FIELDTYPES.DATE.includes(_config.x_axis.data_type)
+	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
 				const a_date = new Date(a[_config.x_axis.column_name])
 				const b_date = new Date(b[_config.x_axis.column_name])
@@ -95,7 +97,10 @@ export function getLineChartOptions(chart: Chart) {
 					: undefined,
 			}
 		}),
-		tooltip: getTooltip(),
+		tooltip: getTooltip({
+			xAxisIsDate,
+			granularity,
+		}),
 		legend: getLegend(show_legend),
 	}
 }
@@ -120,6 +125,8 @@ export function getBarChartOptions(chart: Chart) {
 		values: _config.swap_axes ? xAxisValues.reverse() : xAxisValues,
 		column_type: _config.x_axis.data_type,
 	})
+	const xAxisIsDate = FIELDTYPES.DATE.includes(_config.x_axis.data_type)
+	const granularity = xAxisIsDate ? chart.getGranularity(_config.x_axis.column_name) : null
 
 	const leftYAxis = getYAxis({ normalized: _config.normalize })
 	const rightYAxis = getYAxis({ is_secondary: true })
@@ -161,7 +168,10 @@ export function getBarChartOptions(chart: Chart) {
 				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
 			})
 		}),
-		tooltip: getTooltip(),
+		tooltip: getTooltip({
+			xAxisIsDate,
+			granularity
+		}),
 		legend: getLegend(show_legend),
 	}
 }
@@ -319,12 +329,48 @@ function getGrid(options: any = {}) {
 	}
 }
 
-function getTooltip() {
+function getTooltip(options: any = {}) {
 	return {
 		trigger: 'axis',
 		confine: true,
 		appendToBody: false,
-		valueFormatter: (value: any) => (isNaN(value) ? value : formatNumber(value)),
+		formatter: (params: Object | Array<Object>) => {
+			if (!Array.isArray(params)) {
+				const p = params as any
+				const value = p.value[1]
+				const formatted = isNaN(value) ? value : formatNumber(value)
+				return `
+					<div class="flex items-center justify-between gap-5">
+						<div>${p.name}</div>
+						<div class="font-bold">${formatted}</div>
+					</div>
+				`
+			}
+			if (Array.isArray(params)) {
+				const t = params.map((p, idx) => {
+					const xValue = p.value[0]
+					const yValue = p.value[1]
+					const formattedX =
+						options.xAxisIsDate && options.granularity
+							? getFormattedDate(xValue, options.granularity)
+							: xValue
+					const formattedY = isNaN(yValue) ? yValue : formatNumber(yValue)
+					return `
+							<div class="flex flex-col">
+								${idx == 0 ? `<div>${formattedX}</div>` : ''}
+								<div class="flex items-center justify-between gap-5">
+									<div class="flex gap-1 items-center">
+										${p.marker}
+										<div>${p.seriesName}</div>
+									</div>
+									<div class="font-bold">${formattedY}</div>
+								</div>
+							</div>
+						`
+				})
+				return t.join('')
+			}
+		},
 	}
 }
 
