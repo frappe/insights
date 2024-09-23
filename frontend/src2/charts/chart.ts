@@ -78,9 +78,6 @@ function makeChart(workbookChart: WorkbookChart) {
 	async function refresh(filters?: FilterArgs[], force = false) {
 		if (!workbookChart.query) return
 		if (!chart.doc.chart_type) return
-		if (!chart.baseQuery.result.rows.length) {
-			chart.baseQuery.execute()
-		}
 		if (chart.baseQuery.executing) {
 			await waitUntil(() => !chart.baseQuery.executing)
 		}
