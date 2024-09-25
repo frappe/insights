@@ -388,6 +388,58 @@ function getDonutChartData(
 	return topData
 }
 
+export function getFunnelChartOptions(chart: Chart) {
+	const config = chart.doc.config as DountChartConfig
+	const rows = chart.dataQuery.result.rows
+
+	const labelColumn = config.label_column.column_name
+	const valueColumn = config.value_column.measure_name
+	const labels = rows.map((r) => r[labelColumn])
+	const values = rows.map((r) => r[valueColumn])
+
+	const colors = getColors()
+
+	return {
+		animation: true,
+		animationDuration: 300,
+		color: colors,
+		series: [
+			{
+				name: 'Funnel',
+				type: 'funnel',
+				orient: 'vertical',
+				funnelAlign: 'center',
+				top: 'center',
+				left: 'center',
+				width: '60%',
+				height: '80%',
+				minSize: '0%',
+				maxSize: '100%',
+				sort: 'descending',
+				label: {
+					show: true,
+					position: 'inside',
+					formatter: (params: any) => {
+						const index = labels.indexOf(params.name)
+						const percent = ((values[index] / values[0]) * 100).toFixed(0)
+						return `${params.name} (${percent}%)`
+					}
+				},
+				gap: 2,
+				data: values.map((value, index) => ({
+					name: labels[index],
+					value: value,
+					itemStyle: {
+						color: colors[index],
+						borderColor: colors[index],
+						borderWidth: 1,
+					},
+				})),
+			},
+		],
+	}
+}
+
 function getGrid(options: any = {}) {
 	return {
 		top: 18,

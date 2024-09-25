@@ -11,10 +11,12 @@ import TableChartConfigForm from './TableChartConfigForm.vue'
 import {
 	BarChartConfig,
 	DountChartConfig,
+	FunnelChartConfig,
 	LineChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
 } from '../../types/chart.types'
+import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const chart = props.chart
@@ -48,6 +50,12 @@ const measures = computed<MeasureOption[]>(() => {
 	<DonutChartConfigForm
 		v-if="chart.doc.chart_type == 'Donut'"
 		v-model="(chart.doc.config as DountChartConfig)"
+		:dimensions="dimensions"
+		:measures="measures"
+	/>
+	<FunnelChartConfigForm
+		v-if="chart.doc.chart_type == 'Funnel'"
+		v-model="(chart.doc.config as FunnelChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
 	/>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { FIELDTYPES } from '../../helpers/constants'
-import { DountChartConfig } from '../../types/chart.types'
+import { FunnelChartConfig } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 
@@ -10,7 +10,7 @@ const props = defineProps<{
 	measures: MeasureOption[]
 }>()
 
-const config = defineModel<DountChartConfig>({
+const config = defineModel<FunnelChartConfig>({
 	required: true,
 	default: () => ({
 		label_column: {},
@@ -39,18 +39,6 @@ const discrete_dimensions = computed(() =>
 				:options="props.measures"
 				:modelValue="config.value_column?.measure_name"
 				@update:modelValue="config.value_column = $event"
-			/>
-
-			<FormControl
-				v-model="config.legend_position"
-				label="Legend Position"
-				type="select"
-				:options="[
-					{ label: 'Top', value: 'top' },
-					{ label: 'Bottom', value: 'bottom' },
-					{ label: 'Left', value: 'left' },
-					{ label: 'Right', value: 'right' },
-				]"
 			/>
 		</div>
 	</CollapsibleSection>

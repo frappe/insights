@@ -2,7 +2,12 @@
 import { computed, ref } from 'vue'
 import { downloadImage } from '../../helpers'
 import { Chart } from '../chart'
-import { getBarChartOptions, getDonutChartOptions, getLineChartOptions } from '../helpers'
+import {
+	getBarChartOptions,
+	getDonutChartOptions,
+	getFunnelChartOptions,
+	getLineChartOptions,
+} from '../helpers'
 import BaseChart from './BaseChart.vue'
 import NumberChart from './NumberChart.vue'
 import TableChart from './TableChart.vue'
@@ -20,6 +25,9 @@ const eChartOptions = computed(() => {
 	}
 	if (chart.doc.chart_type === 'Donut') {
 		return getDonutChartOptions(chart)
+	}
+	if (chart.doc.chart_type === 'Funnel') {
+		return getFunnelChartOptions(chart)
 	}
 })
 </script>
