@@ -84,6 +84,7 @@ export type TableChartConfig = {
 	rows: Dimension[]
 	columns: Dimension[]
 	values: Measure[]
+	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean
 	conditional_formatting?: boolean

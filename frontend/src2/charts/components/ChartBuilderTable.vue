@@ -48,9 +48,10 @@ function onCellClick(row: QueryResultRow, col: QueryResultColumn) {
 					class="relative flex h-[35rem] w-full flex-1 flex-col overflow-hidden rounded border bg-white"
 				>
 					<DataTable
+						:loading="drillDownQuery.executing"
 						:columns="drillDownQuery.result.columns"
 						:rows="drillDownQuery.result.rows"
-						:loading="drillDownQuery.executing"
+						:show-filter-row="true"
 					>
 						<template #footer>
 							<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
