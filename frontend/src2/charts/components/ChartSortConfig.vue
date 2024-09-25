@@ -51,25 +51,7 @@ function moveSortColumn(from: number, to: number) {
 </script>
 
 <template>
-	<div>
-		<div class="mb-1 flex items-center justify-between">
-			<label class="inline-flex flex-shrink-0 text-xs leading-7 text-gray-700">Sort By</label>
-			<div>
-				<Autocomplete
-					:options="props.columnOptions"
-					@update:modelValue="addSortColumn($event.value)"
-				>
-					<template #target="{ togglePopover }">
-						<button
-							class="cursor-pointer rounded p-1 transition-colors hover:bg-gray-100"
-							@click="togglePopover"
-						>
-							<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-						</button>
-					</template>
-				</Autocomplete>
-			</div>
-		</div>
+	<div class="flex flex-col gap-2">
 		<DraggableList
 			group="sortColumns"
 			:show-empty-state="false"
@@ -119,5 +101,20 @@ function moveSortColumn(from: number, to: number) {
 				</div>
 			</template>
 		</DraggableList>
+
+		<!-- add sort button -->
+		<Autocomplete
+			:options="props.columnOptions"
+			@update:modelValue="addSortColumn($event.value)"
+		>
+			<template #target="{ togglePopover }">
+				<Button class="w-full" @click="togglePopover">
+					<template #prefix>
+						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					</template>
+					Add Sort
+				</Button>
+			</template>
+		</Autocomplete>
 	</div>
 </template>

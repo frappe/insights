@@ -6,7 +6,7 @@ const props = defineProps<{ label: string }>()
 <template>
 	<div class="flex items-start justify-between gap-1">
 		<span
-			class="inline-flex w-1/3 flex-shrink-0 text-xs leading-7 text-gray-700"
+			class="inline-flex w-[30%] flex-shrink-0 text-xs leading-7 text-gray-600"
 			:class="$attrs.class"
 		>
 			{{ props.label }}

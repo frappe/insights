@@ -51,3 +51,15 @@ export const joinTypes = [
 		description: 'Keep all rows from both tables',
 	},
 ] as const
+
+
+export const granularityOptions = [
+	// { label: 'Second', value: 'second' },
+	// { label: 'Minute', value: 'minute' },
+	// { label: 'Hour', value: 'hour' },
+	{ label: 'Day', value: 'day'},
+	{ label: 'Week', value: 'week'},
+	{ label: 'Month', value: 'month'},
+	{ label: 'Quarter', value: 'quarter'},
+	{ label: 'Year', value: 'year'},
+]

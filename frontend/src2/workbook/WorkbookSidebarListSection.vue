@@ -19,7 +19,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 </script>
 
 <template>
-	<div class="flex flex-col border-b px-2.5 py-2">
+	<div class="flex flex-col border-b px-3.5 py-3">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm font-medium">{{ section.title }}</div>

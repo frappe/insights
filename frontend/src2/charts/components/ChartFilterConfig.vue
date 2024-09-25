@@ -32,20 +32,8 @@ function getFilterLabel(filter: FilterArgs) {
 </script>
 
 <template>
-	<div>
-		<div class="mb-1 flex items-center justify-between">
-			<label class="inline-flex flex-shrink-0 text-xs leading-7 text-gray-700">Filters</label>
-			<div>
-				<button
-					class="cursor-pointer rounded p-1 transition-colors hover:bg-gray-100"
-					@click="showFiltersSelectorDialog = true"
-				>
-					<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-				</button>
-			</div>
-		</div>
-
-		<div class="flex flex-col gap-1">
+	<div class="flex flex-col gap-2">
+		<div v-if="filterGroup.filters.length" class="flex flex-col gap-1">
 			<div v-for="(filter, idx) in filterGroup.filters" :key="idx" class="flex rounded">
 				<div class="flex-1 overflow-hidden">
 					<Button
@@ -71,6 +59,14 @@ function getFilterLabel(filter: FilterArgs) {
 				</Button>
 			</div>
 		</div>
+
+		<!-- add filter button -->
+		<Button class="w-full" @click="showFiltersSelectorDialog = true">
+			<template #prefix>
+				<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
+			Add Filter
+		</Button>
 	</div>
 
 	<FiltersSelectorDialog

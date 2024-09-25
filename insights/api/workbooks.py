@@ -45,7 +45,7 @@ def download_query_results(operations, use_live_connection=True):
 
 @insights_whitelist()
 def get_distinct_column_values(
-    operations, column_name, search_term=None, use_live_connection=True
+    operations, column_name, search_term=None, use_live_connection=True, limit=20
 ):
     query = IbisQueryBuilder().build(operations, use_live_connection)
     values_query = (
@@ -56,7 +56,7 @@ def get_distinct_column_values(
             else getattr(_, column_name).ilike(f"%{search_term}%")
         )
         .distinct()
-        .head(20)
+        .head(limit)
     )
     result = execute_ibis_query(values_query, cache=True)
     return result[column_name].tolist()

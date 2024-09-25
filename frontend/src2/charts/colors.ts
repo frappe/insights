@@ -23,11 +23,6 @@ export const COLOR_MAP = {
 	'#B4CD29': '#B4CD29',
 }
 
-export const getColors = (num = Object.keys(COLOR_MAP).length) => {
-	const colors = []
-	const _colors = Object.values(COLOR_MAP)
-	for (let i = 0; i < num; i++) {
-		colors.push(_colors[i % _colors.length])
-	}
-	return colors
+export const getColors = () => {
+	return Object.values(COLOR_MAP)
 }

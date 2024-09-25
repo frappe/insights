@@ -343,6 +343,7 @@ class IbisQueryBuilder:
                 .pivot_wider(
                     id_cols=rows.keys(),
                     names_from=columns.keys(),
+                    names_sort=True,
                     values_from=values.keys(),
                     values_agg="sum",
                 )

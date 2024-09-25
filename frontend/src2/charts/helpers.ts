@@ -3,7 +3,7 @@ import { copy, formatNumber, getShortNumber, getUniqueId } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
-import { BarChartConfig, LineChartConfig } from '../types/chart.types'
+import { AxisChartConfig, BarChartConfig, LineChartConfig, SeriesLine } from '../types/chart.types'
 import { ColumnDataType, FilterRule, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
 import { getColors } from './colors'
@@ -30,16 +30,17 @@ export function getLineChartOptions(chart: Chart) {
 	const _columns = chart.dataQuery.result.columns
 	const _rows = chart.dataQuery.result.rows
 
-	const measures = _columns.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
-	const show_legend = measures.length > 1
+	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+	const show_legend = number_columns.length > 1
 
 	const xAxis = getXAxis({ column_type: _config.x_axis.data_type })
 	const xAxisIsDate = FIELDTYPES.DATE.includes(_config.x_axis.data_type)
 	const granularity = xAxisIsDate ? chart.getGranularity(_config.x_axis.column_name) : null
 
 	const leftYAxis = getYAxis()
-	const rightYAxis = getYAxis({ is_secondary: true })
-	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
+	const rightYAxis = getYAxis()
+	const hasRightAxis = _config.y_axis.series.some((s) => s.align === 'Right')
+	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
@@ -65,36 +66,35 @@ export function getLineChartOptions(chart: Chart) {
 		color: colors,
 		xAxis,
 		yAxis,
-		series: measures.map((c, idx) => {
-			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.measure_name))
-			const type = is_right_axis ? _config.y2_axis_type : 'line'
+		series: number_columns.map((c, idx) => {
+			const serie = getSerie(_config, c.name) as SeriesLine
+
+			const is_right_axis = serie.align === 'Right'
+			const smooth = serie.smooth ?? _config.y_axis.smooth
+			const show_data_points = serie.show_data_points ?? _config.y_axis.show_data_points
+			const show_area = serie.show_area ?? _config.y_axis.show_area
+			const show_data_labels = serie.show_data_labels ?? _config.y_axis.show_data_labels
+
 			return {
-				type,
+				type: 'line',
 				name: c.name,
 				data: getSeriesData(c.name),
 				emphasis: { focus: 'series' },
 				yAxisIndex: is_right_axis ? 1 : 0,
-				smooth: _config.smooth ? 0.4 : false,
+				smooth: smooth ? 0.4 : false,
 				smoothMonotone: 'x',
-				showSymbol: _config.show_data_points || _config.show_data_labels,
+				showSymbol: show_data_points || show_data_labels,
 				label: {
 					fontSize: 11,
-					show: _config.show_data_labels,
-					position: idx === measures.length - 1 ? 'top' : 'inside',
+					show: show_data_labels,
+					position: idx === number_columns.length - 1 ? 'top' : 'inside',
 					formatter: (params: any) => {
 						return getShortNumber(params.value?.[1], 1)
 					},
 				},
 				labelLayout: { hideOverlap: true },
-				areaStyle: _config.show_area
-					? {
-							color: new graphic.LinearGradient(0, 0, 0, 1, [
-								{ offset: 0, color: colors[idx] },
-								{ offset: 1, color: '#fff' },
-							]),
-							opacity: 0.2,
-					  }
-					: undefined,
+				itemStyle: { color: colors[idx] },
+				areaStyle: show_area ? getAreaStyle(colors[idx]) : undefined,
 			}
 		}),
 		tooltip: getTooltip({
@@ -105,44 +105,52 @@ export function getLineChartOptions(chart: Chart) {
 	}
 }
 
+function getAreaStyle(color: string) {
+	return {
+		color: new graphic.LinearGradient(0, 0, 0, 1, [
+			{ offset: 0, color: color },
+			{ offset: 1, color: '#fff' },
+		]),
+		opacity: 0.2,
+	}
+}
+
 export function getBarChartOptions(chart: Chart) {
 	const _config = chart.doc.config as BarChartConfig
 	const _columns = chart.dataQuery.result.columns
 	const _rows = chart.dataQuery.result.rows
 
-	const measures = _columns.filter((c) => FIELDTYPES.MEASURE.includes(c.type))
+	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const total_per_x_value = _rows.reduce((acc, row) => {
 		const x_value = row[_config.x_axis.column_name]
 		if (!acc[x_value]) acc[x_value] = 0
-		measures.forEach((m) => (acc[x_value] += row[m.name]))
+		number_columns.forEach((m) => (acc[x_value] += row[m.name]))
 		return acc
 	}, {} as Record<string, number>)
 
-	const show_legend = measures.length > 1
+	const show_legend = number_columns.length > 1
 
-	const xAxisValues = _rows.map((r) => r[_config.x_axis.column_name])
-	const xAxis = getXAxis({
-		values: _config.swap_axes ? xAxisValues.reverse() : xAxisValues,
-		column_type: _config.x_axis.data_type,
-	})
+	const xAxis = getXAxis({ column_type: _config.x_axis.data_type })
 	const xAxisIsDate = FIELDTYPES.DATE.includes(_config.x_axis.data_type)
 	const granularity = xAxisIsDate ? chart.getGranularity(_config.x_axis.column_name) : null
 
-	const leftYAxis = getYAxis({ normalized: _config.normalize })
-	const rightYAxis = getYAxis({ is_secondary: true })
-	const yAxis = !_config.y2_axis ? [leftYAxis] : [leftYAxis, rightYAxis]
+	const leftYAxis = getYAxis({ normalized: _config.y_axis.normalize })
+	const rightYAxis = getYAxis({ normalized: _config.y_axis.normalize })
+	const hasRightAxis = _config.y_axis.series.some((s) => s.align === 'Right')
+	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
 	const getSeriesData = (column: string) =>
 		_rows.map((r) => {
 			const x_value = r[_config.x_axis.column_name]
 			const y_value = r[column]
-			if (!_config.normalize) {
-				return _config.swap_axes ? [y_value, x_value] : [x_value, y_value]
+			const normalize = _config.y_axis.normalize
+			if (!normalize) {
+				return [x_value, y_value]
 			}
 
 			const total = total_per_x_value[x_value]
 			const normalized_value = total ? (y_value / total) * 100 : 0
-			return _config.swap_axes ? [normalized_value, x_value] : [x_value, normalized_value]
+			return [x_value, normalized_value]
 		})
 
 	const colors = getColors()
@@ -152,39 +160,66 @@ export function getBarChartOptions(chart: Chart) {
 		animationDuration: 700,
 		color: colors,
 		grid: getGrid({ show_legend }),
-		xAxis: _config.swap_axes ? yAxis : xAxis,
-		yAxis: _config.swap_axes ? xAxis : yAxis,
-		series: measures.map((c, idx) => {
-			const is_right_axis = _config.y2_axis?.some((y) => c.name.includes(y.measure_name))
-			const type = is_right_axis ? _config.y2_axis_type : 'bar'
-			return getSeries({
-				type,
+		xAxis: xAxis,
+		yAxis: yAxis,
+		series: number_columns.map((c, idx) => {
+			const serie = getSerie(_config, c.name)
+			const is_right_axis = serie.align === 'Right'
+
+			const stack = _config.y_axis.stack
+			const show_data_labels = serie.show_data_labels ?? _config.y_axis.show_data_labels
+
+			return {
+				type: 'bar',
+				stack,
 				name: c.name,
 				data: getSeriesData(c.name),
-				stack: type === 'bar' && _config.stack,
-				axis_swaped: _config.swap_axes,
-				on_right_axis: is_right_axis,
-				show_data_label: _config.show_data_labels,
-				data_label_position: idx === measures.length - 1 ? 'top' : 'inside',
-			})
+				label: {
+					show: show_data_labels,
+					position: idx === number_columns.length - 1 ? 'top' : 'inside',
+					formatter: (params: any) => {
+						return getShortNumber(params.value?.[1], 1)
+					},
+					fontSize: 11,
+				},
+				labelLayout: { hideOverlap: true },
+				emphasis: { focus: 'series' },
+				barMaxWidth: 60,
+				yAxisIndex: is_right_axis ? 1 : 0,
+				itemStyle: { color: colors[idx] },
+			}
 		}),
 		tooltip: getTooltip({
 			xAxisIsDate,
-			granularity
+			granularity,
 		}),
 		legend: getLegend(show_legend),
 	}
 }
 
+function getSerie(config: AxisChartConfig, number_column: string) {
+	let serie
+	if (!config.split_by?.column_name) {
+		serie = config.y_axis.series.find((s) => s.measure.measure_name === number_column)
+	} else {
+		let seriesCount = config.y_axis.series.filter((s) => s.measure.measure_name).length
+		if (seriesCount === 1) {
+			serie = config.y_axis.series[0]
+		} else {
+			serie = config.y_axis.series.find((s) => number_column.includes(s.measure.measure_name))
+		}
+	}
+	serie = serie || config.y_axis.series[0]
+	return serie
+}
+
 type XAxisCustomizeOptions = {
-	values?: string[]
 	column_type?: ColumnDataType
 }
 function getXAxis(options: XAxisCustomizeOptions = {}) {
 	const xAxisIsDate = options.column_type && FIELDTYPES.DATE.includes(options.column_type)
 	return {
 		type: xAxisIsDate ? 'time' : 'category',
-		data: options.values,
 		z: 2,
 		scale: true,
 		boundaryGap: ['1%', '2%'],
@@ -217,38 +252,6 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 		},
 		min: options.normalized ? 0 : undefined,
 		max: options.normalized ? 100 : undefined,
-	}
-}
-
-type SeriesCustomizationOptions = {
-	type?: 'bar' | 'line'
-	data?: any[]
-	name?: string
-	stack?: boolean
-	axis_swaped?: boolean
-	show_data_label?: boolean
-	data_label_position?: 'inside' | 'top'
-	on_right_axis?: boolean
-}
-function getSeries(options: SeriesCustomizationOptions = {}) {
-	return {
-		type: options.type || 'bar',
-		stack: options.stack,
-		name: options.name,
-		data: options.data,
-		label: {
-			show: options.show_data_label,
-			position: options.axis_swaped ? 'right' : options.data_label_position,
-			formatter: (params: any) => {
-				const valueIndex = options.axis_swaped ? 0 : 1
-				return getShortNumber(params.value?.[valueIndex], 1)
-			},
-			fontSize: 11,
-		},
-		labelLayout: { hideOverlap: true },
-		emphasis: { focus: 'series' },
-		barMaxWidth: 60,
-		yAxisIndex: options.on_right_axis ? 1 : 0,
 	}
 }
 
@@ -452,4 +455,13 @@ export function getDrillDownQuery(chart: Chart, row: QueryResultRow, col: QueryR
 	})
 
 	return query
+}
+
+export function handleOldYAxisConfig(old_y_axis: any): AxisChartConfig['y_axis'] {
+	if (Array.isArray(old_y_axis)) {
+		return {
+			series: old_y_axis.map((measure: any) => ({ measure })),
+		}
+	}
+	return old_y_axis
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { BarChartConfig } from '../../types/chart.types'
-import AxisChartConfigForm from './AxisChartConfigForm.vue'
+import { BarChartConfig, YAxisBar } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
+import SplitByConfig from './SplitByConfig.vue'
+import XAxisConfig from './XAxisConfig.vue'
+import YAxisConfig from './YAxisConfig.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -12,50 +13,23 @@ const props = defineProps<{
 const config = defineModel<BarChartConfig>({
 	required: true,
 	default: () => ({
-		x_axis: '',
-		y_axis: [],
-		y2_axis: [],
-		y2_axis_type: 'line',
-		split_by: '',
-		stack: true,
-		show_data_labels: false,
-		swap_axes: false,
-		normalize: false,
+		x_axis: {},
+		y_axis: {},
+		split_by: {},
 	}),
 })
 </script>
 
 <template>
-	<AxisChartConfigForm
-		v-model="config"
-		:dimensions="props.dimensions"
-		:measures="props.measures"
-	/>
-	<InlineFormControlLabel label="Stack" class="!w-1/2">
-		<Switch
-			v-model="config.stack"
-			:tabs="[
-				{ label: 'Yes', value: true },
-				{ label: 'No', value: false, default: true },
-			]"
-		/>
-	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Normalize Data" class="!w-1/2">
-		<Switch
-			v-model="config.normalize"
-			:tabs="[
-				{ label: 'Yes', value: true },
-				{ label: 'No', value: false, default: true },
-			]"
-		/>
-	</InlineFormControlLabel>
-	<InlineFormControlLabel label="Swap X & Y" class="!w-1/2">
-		<Switch
-			v-model="config.swap_axes"
-			:tabs="[
-				{ label: 'Yes', value: true },
-				{ label: 'No', value: false, default: true },
-			]"
-		/>
-	</InlineFormControlLabel>
+	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
+
+	<YAxisConfig v-model="config.y_axis" :measures="props.measures">
+		<template #y-axis-settings="{ y_axis }">
+			<Checkbox label="Stack" v-model="(y_axis as YAxisBar).stack" />
+			<Checkbox label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
+			<Checkbox label="Show Data Labels" v-model="(y_axis as YAxisBar).show_data_labels" />
+		</template>
+	</YAxisConfig>
+
+	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
 </template>

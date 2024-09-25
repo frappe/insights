@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { LineChartConfig } from '../../types/chart.types'
-import AxisChartConfigForm from './AxisChartConfigForm.vue'
+import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
-import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import SplitByConfig from './SplitByConfig.vue'
+import XAxisConfig from './XAxisConfig.vue'
+import YAxisConfig from './YAxisConfig.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -13,49 +14,29 @@ const config = defineModel<LineChartConfig>({
 	required: true,
 	default: () => ({
 		x_axis: {},
-		y_axis: [],
-		y2_axis: [],
-		y2_axis_type: 'line',
+		y_axis: {},
 		split_by: {},
-		show_data_labels: false,
 	}),
 })
 </script>
 
 <template>
-	<AxisChartConfigForm
-		v-model="config"
-		:dimensions="props.dimensions"
-		:measures="props.measures"
-	/>
+	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<InlineFormControlLabel label="Enable Curved Lines" class="!w-1/2">
-		<Switch
-			v-model="config.smooth"
-			:tabs="[
-				{ label: 'Yes', value: true },
-				{ label: 'No', value: false, default: true },
-			]"
-		/>
-	</InlineFormControlLabel>
+	<YAxisConfig v-model="config.y_axis" :measures="props.measures">
+		<template #y-axis-settings="{ y_axis }">
+			<Checkbox label="Curved Lines" v-model="(y_axis as YAxisLine).smooth" />
+			<Checkbox label="Show Area" v-model="(y_axis as YAxisLine).show_area" />
+			<Checkbox label="Show Data Labels" v-model="(y_axis as YAxisLine).show_data_labels" />
+			<Checkbox label="Show Data Points" v-model="(y_axis as YAxisLine).show_data_points" />
+		</template>
+		<template #series-settings="{ series }">
+			<Checkbox label="Curved Lines" v-model="(series as SeriesLine).smooth" />
+			<Checkbox label="Show Area" v-model="(series as SeriesLine).show_area" />
+			<Checkbox label="Show Data Labels" v-model="(series as SeriesLine).show_data_labels" />
+			<Checkbox label="Show Data Points" v-model="(series as SeriesLine).show_data_points" />
+		</template>
+	</YAxisConfig>
 
-	<InlineFormControlLabel label="Show Data Points" class="!w-1/2">
-		<Switch
-			v-model="config.show_data_points"
-			:tabs="[
-				{ label: 'Yes', value: true },
-				{ label: 'No', value: false, default: true },
-			]"
-		/>
-	</InlineFormControlLabel>
-
-	<InlineFormControlLabel label="Show Area" class="!w-1/2">
-		<Switch
-			v-model="config.show_area"
-			:tabs="[
-				{ label: 'Yes', value: true },
-				{ label: 'No', value: false, default: true },
-			]"
-		/>
-	</InlineFormControlLabel>
+	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
 </template>

@@ -8,6 +8,13 @@ import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import LineChartConfigForm from './LineChartConfigForm.vue'
 import NumberChartConfigForm from './NumberChartConfigForm.vue'
 import TableChartConfigForm from './TableChartConfigForm.vue'
+import {
+	BarChartConfig,
+	DountChartConfig,
+	LineChartConfig,
+	NumberChartConfig,
+	TableChartConfig,
+} from '../../types/chart.types'
 
 const props = defineProps<{ chart: Chart }>()
 const chart = props.chart
@@ -32,36 +39,33 @@ const measures = computed<MeasureOption[]>(() => {
 </script>
 
 <template>
-	<InlineFormControlLabel label="Title">
-		<FormControl v-model="chart.doc.title" />
-	</InlineFormControlLabel>
 	<NumberChartConfigForm
 		v-if="chart.doc.chart_type == 'Number'"
-		v-model="chart.doc.config"
+		v-model="(chart.doc.config as NumberChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
 	/>
 	<DonutChartConfigForm
 		v-if="chart.doc.chart_type == 'Donut'"
-		v-model="chart.doc.config"
+		v-model="(chart.doc.config as DountChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
 	/>
 	<TableChartConfigForm
 		v-if="chart.doc.chart_type == 'Table'"
-		v-model="chart.doc.config"
+		v-model="(chart.doc.config as TableChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
 	/>
 	<BarChartConfigForm
 		v-if="chart.doc.chart_type == 'Bar'"
-		v-model="chart.doc.config"
+		v-model="(chart.doc.config as BarChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
 	/>
 	<LineChartConfigForm
 		v-if="chart.doc.chart_type == 'Line'"
-		v-model="chart.doc.config"
+		v-model="(chart.doc.config as LineChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
 	/>

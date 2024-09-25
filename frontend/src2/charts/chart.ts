@@ -1,4 +1,4 @@
-import { useDebouncedRefHistory, UseRefHistoryReturn, watchDebounced } from '@vueuse/core'
+import { useDebouncedRefHistory, UseRefHistoryReturn } from '@vueuse/core'
 import { computed, reactive, ref, unref, watch } from 'vue'
 import { copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
 import { createToast } from '../helpers/toasts'
@@ -105,13 +105,16 @@ function makeChart(workbookChart: WorkbookChart) {
 		if (prepared) {
 			applySortOrder()
 			applyLimit()
-			return executeQuery(force)
+			if (shouldExecuteQuery(force)) {
+				return executeQuery()
+			}
 		}
 	}
 
 	function prepareAxisChartQuery(config: AxisChartConfig) {
 		if (!config.x_axis || !config.x_axis.column_name) {
 			console.warn('X-axis is required')
+			chart.dataQuery.reset()
 			return false
 		}
 		if (config.x_axis.column_name === config.split_by?.column_name) {
@@ -119,13 +122,15 @@ function makeChart(workbookChart: WorkbookChart) {
 				message: 'X-axis and Split by cannot be the same',
 				variant: 'error',
 			})
+			chart.dataQuery.reset()
 			return false
 		}
 
-		let values = [...config.y_axis, ...(config.y2_axis || [])]
-		values = values.length ? values : [count()]
+		const values = config.y_axis?.series.map((s) => s.measure).filter((m) => m.measure_name) || [
+			count(),
+		]
 
-		if (config.split_by) {
+		if (config.split_by?.column_name) {
 			chart.dataQuery.addPivotWider({
 				rows: [config.x_axis],
 				columns: [config.split_by],
@@ -144,6 +149,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	function prepareNumberChartQuery(config: NumberChartConfig) {
 		if (!config.number_columns?.length) {
 			console.warn('Number column is required')
+			chart.dataQuery.reset()
 			return false
 		}
 
@@ -158,10 +164,12 @@ function makeChart(workbookChart: WorkbookChart) {
 	function prepareDonutChartQuery(config: DountChartConfig) {
 		if (!config.label_column) {
 			console.warn('Label is required')
+			chart.dataQuery.reset()
 			return false
 		}
 		if (!config.value_column) {
 			console.warn('Value is required')
+			chart.dataQuery.reset()
 			return false
 		}
 
@@ -169,10 +177,12 @@ function makeChart(workbookChart: WorkbookChart) {
 		const value = config.value_column
 		if (!label) {
 			console.warn('Label column not found')
+			chart.dataQuery.reset()
 			return false
 		}
 		if (!value) {
 			console.warn('Value column not found')
+			chart.dataQuery.reset()
 			return false
 		}
 
@@ -191,6 +201,7 @@ function makeChart(workbookChart: WorkbookChart) {
 	function prepareTableChartQuery(config: TableChartConfig) {
 		if (!config.rows.length) {
 			console.warn('Rows are required')
+			chart.dataQuery.reset()
 			return false
 		}
 		let rows = config.rows
@@ -252,14 +263,14 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	const lastExecutedQueryOperations = ref<Operation[]>([])
-	async function executeQuery(force = false) {
-		if (
-			!force &&
-			JSON.stringify(lastExecutedQueryOperations.value) ===
-				JSON.stringify(chart.dataQuery.currentOperations)
-		) {
-			return Promise.resolve()
-		}
+	function shouldExecuteQuery(force = false) {
+		if (force) return true
+		return (
+			JSON.stringify(lastExecutedQueryOperations.value) !==
+			JSON.stringify(chart.dataQuery.currentOperations)
+		)
+	}
+	async function executeQuery() {
 		return chart.dataQuery.execute().then(() => {
 			lastExecutedQueryOperations.value = copy(chart.dataQuery.currentOperations)
 		})

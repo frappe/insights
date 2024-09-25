@@ -591,7 +591,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		})
 	}
 
-	function getDistinctColumnValues(column: string, search_term: string = '') {
+	function getDistinctColumnValues(column: string, search_term: string = '', limit: number = 20) {
 		const operationsForExecution = query.getOperationsForExecution()
 		const operations =
 			query.activeEditIndex > -1
@@ -604,6 +604,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			operations: operations,
 			column_name: column,
 			search_term,
+			limit,
 		})
 	}
 

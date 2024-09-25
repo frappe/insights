@@ -15,6 +15,7 @@ import type {
 	WorkbookChart,
 	WorkbookSharePermission,
 } from '../types/workbook.types'
+import { handleOldYAxisConfig } from '../charts/helpers'
 
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
@@ -272,6 +273,12 @@ function getWorkbookResource(name: string) {
 							logical_operator: 'And',
 					  }
 				chart.config.order_by = chart.config.order_by || []
+				chart.config.limit = 100
+
+				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
+					// @ts-ignore
+					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
+				}
 			})
 			return doc
 		},
