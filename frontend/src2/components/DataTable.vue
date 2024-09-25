@@ -3,6 +3,7 @@ import { Table2Icon } from 'lucide-vue-next'
 import { formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
+import { computed } from 'vue'
 
 const emit = defineEmits({
 	'cell-dbl-click': (row: QueryResultRow, column: QueryResultColumn) => true,
@@ -10,10 +11,48 @@ const emit = defineEmits({
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
 	rows: QueryResultRow[] | undefined
+	showRowTotals?: boolean
+	showColumnTotals?: boolean
 	loading?: boolean
 }>()
 
 const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
+
+const totalPerColumn = computed(() => {
+	const columns = props.columns
+	const rows = props.rows
+	if (!columns?.length || !rows?.length || !props.showColumnTotals) return
+
+	const totals: Record<string, number> = {}
+	columns.forEach((col) => {
+		if (isNumberColumn(col)) {
+			totals[col.name] = rows.reduce((acc, row) => acc + (row[col.name] as number), 0)
+		}
+	})
+	return totals
+})
+
+const totalPerRow = computed(() => {
+	const columns = props.columns
+	const rows = props.rows
+	if (!columns?.length || !rows?.length || !props.showRowTotals) return
+
+	const totals: Record<number, number> = {}
+	rows.forEach((row, idx) => {
+		totals[idx] = columns.reduce((acc, col) => {
+			if (isNumberColumn(col)) {
+				return acc + (row[col.name] as number)
+			}
+			return acc
+		}, 0)
+	})
+	return totals
+})
+
+const totalColumnTotal = computed(() => {
+	if (!props.showColumnTotals || !totalPerColumn.value) return
+	return Object.values(totalPerColumn.value).reduce((acc, val) => acc + val, 0)
+})
 </script>
 
 <template>
@@ -38,6 +77,14 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 								</div>
 							</slot>
 						</td>
+
+						<td
+							v-if="props.showRowTotals"
+							class="border-b border-r text-right"
+							width="1%"
+						>
+							<div class="truncate pl-3 pr-20"></div>
+						</td>
 					</tr>
 				</thead>
 				<tbody>
@@ -58,7 +105,34 @@ const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(co
 						>
 							{{ isNumberColumn(col) ? formatNumber(row[col.name]) : row[col.name] }}
 						</td>
+
+						<td
+							v-if="props.showRowTotals && totalPerRow"
+							class="border-b border-r px-3 text-right font-bold"
+							height="30px"
+						>
+							{{ formatNumber(totalPerRow[idx]) }}
+						</td>
 					</tr>
+
+					<tr v-if="props.showColumnTotals && totalPerColumn" class="border-b">
+						<td class="whitespace-nowrap border-r px-3"></td>
+						<td
+							v-for="col in props.columns"
+							class="truncate border-r py-2 px-3 font-bold text-gray-800"
+							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
+						>
+							{{ isNumberColumn(col) ? formatNumber(totalPerColumn[col.name]) : '' }}
+						</td>
+
+						<td
+							v-if="props.showRowTotals && totalColumnTotal"
+							class="border-r px-3 text-right font-bold"
+						>
+							{{ formatNumber(totalColumnTotal) }}
+						</td>
+					</tr>
+
 					<tr height="99%" class="border-b"></tr>
 				</tbody>
 			</table>

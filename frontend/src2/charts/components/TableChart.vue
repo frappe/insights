@@ -20,6 +20,8 @@ const config = computed(() => props.chart.doc.config as TableChartConfig)
 			class="w-full flex-1 overflow-hidden border-t"
 			:columns="chart.dataQuery.result.columns"
 			:rows="chart.dataQuery.result.formattedRows"
+			:show-column-totals="config.show_column_totals"
+			:show-row-totals="config.show_row_totals"
 		>
 			<template #column-header="{ column }">
 				<ChartBuilderTableColumn :chart="chart" :column="column" />

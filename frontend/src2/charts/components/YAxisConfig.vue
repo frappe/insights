@@ -101,7 +101,7 @@ function resetSeriesConfig(idx: number) {
 							</div>
 						</template>
 					</Popover>
-					<Button v-else @click="y_axis.series.splice(idx, 1)">
+					<Button v-else class="flex-shrink-0" @click="y_axis.series.splice(idx, 1)">
 						<template #icon>
 							<XIcon class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>

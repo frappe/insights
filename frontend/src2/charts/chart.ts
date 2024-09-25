@@ -199,14 +199,15 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareTableChartQuery(config: TableChartConfig) {
-		if (!config.rows.length) {
+		let rows = config.rows.filter((r) => r.column_name)
+		let columns = config.columns.filter((c) => c.column_name)
+		let values = config.values.filter((v) => v.measure_name)
+
+		if (!rows.length) {
 			console.warn('Rows are required')
 			chart.dataQuery.reset()
 			return false
 		}
-		let rows = config.rows
-		let columns = config.columns
-		let values = config.values
 
 		if (!columns?.length) {
 			chart.dataQuery.addSummarize({
