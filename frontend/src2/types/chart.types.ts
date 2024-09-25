@@ -73,6 +73,7 @@ export type NumberChartConfig = {
 export type DountChartConfig = {
 	label_column: Dimension
 	value_column: Measure
+	legend_position?: 'top' | 'bottom' | 'left' | 'right'
 }
 
 export type TableChartConfig = {

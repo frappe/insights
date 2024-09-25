@@ -239,3 +239,11 @@ export function copyToClipboard(text: string) {
 		}
 	}
 }
+
+
+export function ellipsis(value: string, length: number) {
+	if (value && value.length > length) {
+		return value.substring(0, length) + '...'
+	}
+	return value
+}

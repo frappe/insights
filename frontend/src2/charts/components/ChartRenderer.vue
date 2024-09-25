@@ -19,10 +19,7 @@ const eChartOptions = computed(() => {
 		return getLineChartOptions(chart)
 	}
 	if (chart.doc.chart_type === 'Donut') {
-		return getDonutChartOptions(
-			chart.dataQuery.result.columns,
-			chart.dataQuery.result.formattedRows
-		)
+		return getDonutChartOptions(chart)
 	}
 })
 </script>

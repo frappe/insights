@@ -6,7 +6,7 @@ const chartType = defineModel<ChartType>()
 </script>
 
 <template>
-	<div class="grid grid-cols-2 gap-2">
+	<div class="grid grid-cols-2 gap-2 pt-0.5">
 		<Button
 			v-for="item in CHARTS"
 			:key="item"
@@ -17,7 +17,7 @@ const chartType = defineModel<ChartType>()
 		>
 			<div class="flex items-center gap-1.5">
 				<ChartIcon :chartType="item" class="!h-3.5 !w-3.5" />
-				<div class="text-sm">{{ item == 'Number' ? 'KPI' : item }}</div>
+				<div class="text-sm">{{ item }}</div>
 			</div>
 		</Button>
 	</div>

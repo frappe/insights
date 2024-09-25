@@ -1,9 +1,15 @@
 import { graphic } from 'echarts/core'
-import { copy, formatNumber, getShortNumber, getUniqueId } from '../helpers'
+import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
-import { AxisChartConfig, BarChartConfig, LineChartConfig, SeriesLine } from '../types/chart.types'
+import {
+	AxisChartConfig,
+	BarChartConfig,
+	DountChartConfig,
+	LineChartConfig,
+	SeriesLine,
+} from '../types/chart.types'
 import { ColumnDataType, FilterRule, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { Chart } from './chart'
 import { getColors } from './colors'
@@ -255,11 +261,54 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 	}
 }
 
-export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryResultRow[]) {
+export function getDonutChartOptions(chart: Chart) {
+	const config = chart.doc.config as DountChartConfig
+	const columns = chart.dataQuery.result.columns
+	const rows = chart.dataQuery.result.rows
+
 	const MAX_SLICES = 10
 	const data = getDonutChartData(columns, rows, MAX_SLICES)
+	const labels = data.map((d) => d[0])
+	const values = data.map((d) => d[1])
+	const total = values.reduce((a, b) => a + b, 0)
 
 	const colors = getColors()
+
+	let center, radius, top, left, right, bottom, padding, orient
+	const legend_position = config.legend_position || 'bottom'
+	if (legend_position == 'bottom') {
+		orient = 'horizontal'
+		radius = ['45%', '75%']
+		center = ['50%', '45%']
+		bottom = 0
+		left = 'center'
+		padding = [30, 30, 10, 30]
+	}
+	if (legend_position == 'top') {
+		orient = 'horizontal'
+		radius = ['45%', '75%']
+		center = ['50%', '55%']
+		top = 0
+		left = 'center'
+		padding = 20
+	}
+	if (legend_position == 'right') {
+		orient = 'vertical'
+		radius = ['45%', '80%']
+		center = ['33%', '50%']
+		left = '63%'
+		top = 'middle'
+		padding = [30, 0, 30, 0]
+	}
+	if (legend_position == 'left') {
+		orient = 'vertical'
+		radius = ['45%', '80%']
+		center = ['67%', '50%']
+		right = '63%'
+		top = 'middle'
+		padding = [30, 0, 30, 0]
+	}
+
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -268,8 +317,8 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 		series: [
 			{
 				type: 'pie',
-				center: ['50%', '45%'],
-				radius: ['40%', '70%'],
+				center,
+				radius,
 				labelLine: { show: false },
 				label: { show: false },
 				emphasis: {
@@ -277,10 +326,28 @@ export function getDonutChartOptions(columns: QueryResultColumn[], rows: QueryRe
 				},
 			},
 		],
-		legend: getLegend(),
+		legend: {
+			...getLegend(),
+			top,
+			left,
+			right,
+			bottom,
+			padding,
+			orient,
+			formatter: (name: string) => {
+				const labelIndex = labels.indexOf(name)
+				const percent = (values[labelIndex] / total) * 100
+				return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
+			},
+		},
 		tooltip: {
-			...getTooltip(),
 			trigger: 'item',
+			confine: true,
+			appendToBody: false,
+			valueFormatter: (value: number) => {
+				const percent = (value / total) * 100
+				return `${formatNumber(value, 2)} (${percent.toFixed(0)}%)`
+			},
 		},
 	}
 }
@@ -290,7 +357,6 @@ function getDonutChartData(
 	rows: QueryResultRow[],
 	maxSlices: number
 ) {
-	// reduce the number of slices to 10
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	if (!measureColumn) {
 		throw new Error('No measure column found')
