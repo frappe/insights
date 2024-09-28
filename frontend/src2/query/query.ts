@@ -464,8 +464,19 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function removeColumn(column_names: string | string[]) {
-		if (!Array.isArray(column_names)) column_names = [column_names]
-		addOperation(remove({ column_names }))
+		if (!Array.isArray(column_names)) {
+			column_names = [column_names]
+		}
+
+		// if last operation is remove operation, append to it
+		const lastOperation = query.doc.operations[query.activeOperationIdx]
+		if (lastOperation?.type === 'remove') {
+			query.doc.operations[query.activeOperationIdx] = remove({
+				column_names: [...lastOperation.column_names, ...column_names],
+			})
+		} else {
+			addOperation(remove({ column_names }))
+		}
 	}
 
 	function changeColumnType(column_name: string, newType: ColumnDataType) {
