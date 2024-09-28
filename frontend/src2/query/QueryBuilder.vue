@@ -30,9 +30,9 @@ onBeforeUnmount(() => {
 <template>
 	<div class="flex flex-1 overflow-hidden">
 		<QueryBuilderSourceSelector v-if="!query.doc.operations.length" />
-		<div v-else class="relative flex h-full w-full flex-col gap-4 overflow-hidden border-l p-4">
+		<div v-else class="relative flex h-full w-full flex-col overflow-hidden">
 			<QueryBuilderToolbar></QueryBuilderToolbar>
-			<div class="flex flex-1 overflow-hidden rounded shadow">
+			<div class="flex flex-1 overflow-hidden border">
 				<QueryBuilderTable></QueryBuilderTable>
 			</div>
 		</div>

@@ -79,7 +79,7 @@ watchEffect(() => {
 			</template>
 		</Navbar>
 		<div
-			class="relative flex w-full flex-1 overflow-hidden bg-gray-50"
+			class="relative flex w-full flex-1 overflow-hidden"
 			:class="workbook.showSidebar ? 'flex-row' : 'flex-col'"
 		>
 			<WorkbookSidebar v-if="workbook.showSidebar" />

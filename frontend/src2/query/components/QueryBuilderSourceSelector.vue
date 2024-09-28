@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Table } from 'lucide-vue-next'
+import { DatabaseZap, Table } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Query } from '../query'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
@@ -14,13 +14,12 @@ const showSourceSelectorDialog = ref(true)
 			<div
 				class="flex h-[18rem] w-[24rem] flex-col items-center justify-center rounded bg-white px-8 text-center shadow-sm"
 			>
-				<Table class="mb-2 h-12 w-12 text-gray-400" stroke-width="1.5" />
-				<span class="text-lg font-medium">Select a Source</span>
-				<span class="text-sm text-gray-600">
-					Select a source to start building your query
+				<DatabaseZap class="mb-2 h-12 w-12 text-gray-400" stroke-width="1.5" />
+				<span class="px-12 text-sm text-gray-600">
+					Select a source table to start building your query
 				</span>
 				<Button class="mt-2" variant="outline" @click="showSourceSelectorDialog = true">
-					Open Source Selector
+					Open Selector
 				</Button>
 			</div>
 		</div>

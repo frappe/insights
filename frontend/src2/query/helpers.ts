@@ -1,16 +1,20 @@
 import {
 	ArrowUpDown,
+	BetweenHorizonalStart,
+	BlendIcon,
+	Braces,
+	ColumnsIcon,
 	Combine,
+	DatabaseZap,
 	Filter as FilterIcon,
+	FunctionSquare,
 	GitBranch,
 	Indent,
-	Merge,
-	Pointer,
-	Sigma,
-	Table as TableIcon,
+	Repeat,
 	TextCursorInput,
-	XSquareIcon,
+	XSquareIcon
 } from 'lucide-vue-next'
+import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
@@ -144,7 +148,7 @@ export const query_operation_types = {
 	source: {
 		label: 'Source',
 		type: 'source',
-		icon: TableIcon,
+		icon: DatabaseZap,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
@@ -153,9 +157,9 @@ export const query_operation_types = {
 		},
 	},
 	join: {
-		label: 'Merge',
+		label: 'Join',
 		type: 'join',
-		icon: Merge,
+		icon: h(BlendIcon, { class: '-rotate-45' }),
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: JoinArgs): Join => ({ type: 'join', ...args }),
@@ -166,7 +170,7 @@ export const query_operation_types = {
 	union: {
 		label: 'Union',
 		type: 'union',
-		icon: Merge,
+		icon: BetweenHorizonalStart,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: UnionArgs): Union => ({ type: 'union', ...args }),
@@ -177,7 +181,7 @@ export const query_operation_types = {
 	select: {
 		label: 'Select',
 		type: 'select',
-		icon: Pointer,
+		icon: ColumnsIcon,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SelectArgs): Select => ({ type: 'select', ...args }),
@@ -213,7 +217,7 @@ export const query_operation_types = {
 	cast: {
 		label: 'Cast',
 		type: 'cast',
-		icon: TextCursorInput,
+		icon: Repeat,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CastArgs): Cast => ({ type: 'cast', ...args }),
@@ -255,7 +259,7 @@ export const query_operation_types = {
 	mutate: {
 		label: 'Calculate',
 		type: 'mutate',
-		icon: Sigma,
+		icon: FunctionSquare,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: MutateArgs): Mutate => ({ type: 'mutate', ...args }),
@@ -312,7 +316,7 @@ export const query_operation_types = {
 	custom_operation: {
 		label: 'Custom Operation',
 		type: 'custom_operation',
-		icon: Sigma,
+		icon: Braces,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CustomOperationArgs): CustomOperation => ({ type: 'custom_operation', ...args }),

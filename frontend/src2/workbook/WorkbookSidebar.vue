@@ -11,7 +11,7 @@ const workbook = inject(workbookKey) as Workbook
 <template>
 	<div
 		v-if="workbook"
-		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white shadow-sm"
+		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white shadow"
 	>
 		<WorkbookSidebarListSection
 			v-bind="{

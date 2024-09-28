@@ -1,31 +1,19 @@
 <script setup lang="ts">
 import { Tooltip } from 'frappe-ui'
-import {
-	BetweenHorizonalStart,
-	BlendIcon,
-	Braces,
-	CodeIcon,
-	ColumnsIcon,
-	Combine,
-	Database,
-	Download,
-	FilterIcon,
-	FunctionSquare,
-	PlayIcon,
-	Sigma,
-} from 'lucide-vue-next'
-import { h, inject, ref, watch } from 'vue'
+import { CodeIcon, Download, PlayIcon } from 'lucide-vue-next'
+import { inject, ref, watch } from 'vue'
 import { Operation } from '../../types/query.types'
+import { query_operation_types } from '../helpers'
 import { Query } from '../query'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
+import CustomScriptDialog from './CustomScriptDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import JoinSelectorDialog from './JoinSelectorDialog.vue'
-import UnionSelectorDialog from './UnionSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
 import SummarySelectorDialog from './SummarySelectorDialog.vue'
+import UnionSelectorDialog from './UnionSelectorDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
-import CustomScriptDialog from './CustomScriptDialog.vue'
 
 const query = inject('query') as Query
 
@@ -77,27 +65,27 @@ watch(
 const actions = [
 	{
 		label: 'Change Source',
-		icon: Database,
+		icon: query_operation_types.source.icon,
 		onClick: () => (showSourceSelectorDialog.value = true),
 	},
 	{
 		label: 'Select Columns',
-		icon: ColumnsIcon,
+		icon: query_operation_types.select.icon,
 		onClick: () => (showColumnsSelectorDialog.value = true),
 	},
 	{
 		label: 'Filter Rows',
-		icon: FilterIcon,
+		icon: query_operation_types.filter.icon,
 		onClick: () => (showFiltersSelectorDialog.value = true),
 	},
 	{
 		label: 'Join Table',
-		icon: h(BlendIcon, { class: '-rotate-45' }),
+		icon: query_operation_types.join.icon,
 		onClick: () => (showJoinSelectorDialog.value = true),
 	},
 	{
 		label: 'Append Table',
-		icon: BetweenHorizonalStart,
+		icon: query_operation_types.union.icon,
 		onClick: () => (showUnionSelectorDialog.value = true),
 	},
 	// {
@@ -106,17 +94,17 @@ const actions = [
 	// },
 	{
 		label: 'Create Columns',
-		icon: FunctionSquare,
+		icon: query_operation_types.mutate.icon,
 		onClick: () => (showNewColumnSelectorDialog.value = true),
 	},
 	{
 		label: 'Summarize',
-		icon: Combine,
+		icon: query_operation_types.summarize.icon,
 		onClick: () => (showSummarySelectorDialog.value = true),
 	},
 	{
 		label: 'Custom Script',
-		icon: Braces,
+		icon: query_operation_types.custom_operation.icon,
 		onClick: () => (showCustomScriptDialog.value = true),
 	},
 	// {
@@ -149,7 +137,7 @@ const actions = [
 </script>
 
 <template>
-	<div class="flex w-full flex-shrink-0 justify-between">
+	<div class="flex w-full flex-shrink-0 justify-between bg-gray-50 p-2">
 		<div class="flex w-full items-center gap-2">
 			<template v-for="(action, idx) in actions" :key="idx">
 				<div v-if="action.type === 'separator'" class="h-8 flex-1"></div>
