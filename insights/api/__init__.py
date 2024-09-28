@@ -56,7 +56,7 @@ def get_user_info():
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": frappe.db.get_single_value("System Settings", "language"),
-        "is_v2_user": frappe.db.count("Insights Query") > 0,
+        "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default(
             "insights_default_version", frappe.session.user
         ),

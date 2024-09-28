@@ -76,6 +76,7 @@
 import { Dropdown } from 'frappe-ui'
 import { ChevronDown } from 'lucide-vue-next'
 import { ref } from 'vue'
+import { waitUntil } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 
@@ -83,7 +84,7 @@ const props = defineProps<{ isCollapsed: boolean }>()
 
 const showSwitchToV2Dialog = ref(false)
 
-const userDropdownOptions = [
+const userDropdownOptions = ref([
 	{
 		label: 'Documentation',
 		icon: 'help-circle',
@@ -95,11 +96,6 @@ const userDropdownOptions = [
 		onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
 	},
 	{
-		label: 'Switch to Insights v2',
-		icon: 'grid',
-		onClick: () => (showSwitchToV2Dialog.value = true),
-	},
-	{
 		icon: 'log-out',
 		label: 'Log out',
 		onClick: () =>
@@ -109,7 +105,17 @@ const userDropdownOptions = [
 				onSuccess: session.logout,
 			}),
 	},
-]
+])
+
+waitUntil(() => session.initialized).then(() => {
+	if (session.user.is_v2_instance) {
+		userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
+			label: 'Switch to Insights v2',
+			icon: 'grid',
+			onClick: () => (showSwitchToV2Dialog.value = true),
+		})
+	}
+})
 
 function openInsightsV2() {
 	session.updateDefaultVersion(session.user.default_version).then(() => {

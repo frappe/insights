@@ -11,7 +11,7 @@ type SessionUser = {
 	is_user: boolean
 	country: string
 	locale: string
-	is_v2_user: boolean
+	is_v2_instance: boolean
 	default_version: 'v3' | 'v2' | ''
 }
 
@@ -25,7 +25,7 @@ const emptyUser: SessionUser = {
 	is_user: false,
 	country: '',
 	locale: 'en-US',
-	is_v2_user: false,
+	is_v2_instance: false,
 	default_version: '',
 }
 
@@ -61,7 +61,7 @@ async function fetchSessionInfo() {
 		...userInfo,
 		is_admin: Boolean(userInfo.is_admin),
 		is_user: Boolean(userInfo.is_user),
-		is_v2_user: Boolean(userInfo.is_v2_user),
+		is_v2_instance: Boolean(userInfo.is_v2_instance),
 	})
 }
 
