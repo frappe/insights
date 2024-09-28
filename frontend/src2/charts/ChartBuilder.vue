@@ -68,7 +68,7 @@ function downloadChart() {
 			<LoadingOverlay v-if="chart.dataQuery.executing" />
 			<div
 				ref="chartEl"
-				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-5"
+				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-4"
 			>
 				<ChartRenderer :chart="chart" />
 			</div>
