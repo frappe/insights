@@ -96,7 +96,7 @@ watch(emailsTxt, extractEmails)
 
 function extractEmails(emails: string) {
 	const lastChar = emails.slice(-1)
-	if (![' ', ','].includes(lastChar)) {
+	if (lastChar != ' ' && lastChar != ',') {
 		emailsTxt.value = emails
 		return
 	}
@@ -110,13 +110,32 @@ function extractEmails(emails: string) {
 }
 
 const areAllEmailsValid = computed(() => {
+	if (!emailsToInvite.value.length && isValidEmail(emailsTxt.value)) {
+		return true
+	}
 	if (!emailsToInvite.value.length) {
 		return false
 	}
 	return emailsToInvite.value.every((email) => {
-		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+		return isValidEmail(email)
 	})
 })
+
+function isValidEmail(email: string) {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function sendInvitation() {
+	if (!areAllEmailsValid.value) {
+		return
+	}
+	if (!emailsToInvite.value.length) {
+		emailsToInvite.value = [emailsTxt.value]
+	}
+	userStore.inviteUsers(emailsToInvite.value)
+	emailsToInvite.value = []
+	showInviteUserDialog.value = false
+}
 
 document.title = 'Users | Insights'
 </script>
@@ -159,10 +178,7 @@ document.title = 'Users | Insights'
 					variant: 'solid',
 					disabled: !areAllEmailsValid,
 					loading: userStore.sendingInvitation,
-					onClick: () => {
-						userStore.inviteUsers(emailsToInvite)
-						showInviteUserDialog = false
-					},
+					onClick: sendInvitation,
 				},
 			],
 		}"
