@@ -3,7 +3,7 @@ import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
 import { AlertOctagon, ArrowLeft } from 'lucide-vue-next'
 import { computed, provide, watchEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import ContentEditable from '../components/ContentEditable.vue'
 import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
@@ -36,6 +36,15 @@ const tabExists = computed(() => {
 		(tabType === 'chart' && workbook.doc.charts[tabIndex]) ||
 		(tabType === 'dashboard' && workbook.doc.dashboards[tabIndex])
 	)
+})
+
+onBeforeRouteLeave(() => {
+	if (workbook.islocal) {
+		const message = 'Do you really want to leave? you have unsaved changes!'
+		if (!window.confirm(message)) {
+			return false
+		}
+	}
 })
 
 watchEffect(() => {
