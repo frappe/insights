@@ -135,19 +135,19 @@ has_permission = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "User": {
+        "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
+    }
+}
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-    "all": ["insights.insights.doctype.insights_alert.insights_alert.send_alerts"]
+    "all": [
+        "insights.insights.doctype.insights_alert.insights_alert.send_alerts",
+    ]
 }
 
 # Testing

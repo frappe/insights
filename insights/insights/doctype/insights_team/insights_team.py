@@ -35,7 +35,7 @@ class InsightsTeam(Document):
     # end: auto-generated types
 
     def validate(self):
-        if frappe.flags.in_migrate:
+        if frappe.flags.in_migrate or frappe.flags.in_install:
             return
 
         if self.team_name == "Admin":
@@ -137,6 +137,43 @@ class InsightsTeam(Document):
         )
 
         return list(set(allowed_tables + allowed_tables_of_unrestricted_sources))
+
+
+def update_admin_team(user, method=None):
+    try:
+        if not frappe.db.get_single_value(
+            "Insights Settings", "enable_permissions", cache=True
+        ):
+            return
+
+        if not user.has_value_changed("roles"):
+            return
+
+        roles = user.get("roles", [])
+        is_user = next((True for role in roles if role.role == "Insights User"), False)
+        if not is_user:
+            return
+
+        admin_members = admin_team_members()
+        is_admin = next(
+            (True for role in roles if role.role == "Insights Admin"), False
+        )
+
+        if not is_admin and user.name in admin_members:
+            frappe.db.delete(
+                "Insights Team Member",
+                {
+                    "parent": "Admin",
+                    "user": user.name,
+                },
+            )
+        if is_admin and user.name not in admin_team_members():
+            team = frappe.get_cached_doc("Insights Team", "Admin")
+            team.append("team_members", {"user": user.name})
+            team.save(ignore_permissions=True)
+
+    except Exception:
+        frappe.log_error(title="update_admin_team")
 
 
 def clear_cache():
@@ -313,4 +350,17 @@ def remove_admin_role(users):
 
 def give_admin_role(users):
     for user in users:
-        frappe.get_doc("User", user).add_roles("Insights Admin")
+        if not has_admin_role(user):
+            u = frappe.get_doc("User", user)
+            u.add_roles("Insights Admin")
+
+
+def has_admin_role(user):
+    return frappe.db.exists(
+        "Has Role",
+        {
+            "parent": user,
+            "parenttype": "User",
+            "role": "Insights Admin",
+        },
+    )
