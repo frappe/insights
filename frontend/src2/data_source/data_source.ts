@@ -20,6 +20,9 @@ async function getSources() {
 	loading.value = false
 	return sources.value
 }
+function getSource(name: string) {
+	return sources.value.find(source => source.name === name)
+}
 
 const testing = ref(false)
 function testConnection(data_source: DataSource) {
@@ -54,6 +57,7 @@ export default function useDataSourceStore() {
 		sources,
 		loading,
 		getSources,
+		getSource,
 
 		testing,
 		testConnection,

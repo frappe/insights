@@ -2,7 +2,8 @@
 import { watchDebounced } from '@vueuse/core'
 import { Breadcrumbs, ListView } from 'frappe-ui'
 import { MoreHorizontal, RefreshCcw, SearchIcon } from 'lucide-vue-next'
-import { h, ref } from 'vue'
+import { h, ref, watchEffect } from 'vue'
+import useDataSourceStore from './data_source'
 import useTableStore, { DataSourceTable } from './tables'
 
 const props = defineProps<{ name: string }>()
@@ -30,6 +31,9 @@ const listOptions = ref({
 	rowKey: 'table_name',
 	options: {
 		showTooltip: false,
+		getRowRoute: (table: DataSourceTable) => ({
+			path: `/data-source/${props.name}/${table.table_name}`,
+		}),
 		emptyState: {
 			title: 'No Tables Found',
 			description: 'No tables found for the selected data source.',
@@ -45,7 +49,11 @@ const listOptions = ref({
 	},
 })
 
-document.title = `Tables | ${props.name}`
+const dataSourceStore = useDataSourceStore()
+watchEffect(() => {
+	const ds = dataSourceStore.getSource(props.name)
+	document.title = `Tables | ${props.name || ds?.title}`
+})
 </script>
 
 <template>

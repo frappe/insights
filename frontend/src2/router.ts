@@ -64,6 +64,12 @@ const routes = [
 		component: () => import('./data_source/DataSourceTableList.vue'),
 	},
 	{
+		props: true,
+		path: '/data-source/:data_source/:table_name',
+		name: 'DataSourceTable',
+		component: () => import('./data_source/DataSourceTable.vue'),
+	},
+	{
 		path: '/users',
 		name: 'UserList',
 		component: () => import('./users/UserList.vue'),
