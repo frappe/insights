@@ -63,7 +63,7 @@ function downloadChart() {
 </script>
 
 <template>
-	<div v-if="chart" class="relative flex h-full w-full divide-x overflow-hidden">
+	<div v-if="chart" class="relative flex h-full w-full overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<LoadingOverlay v-if="chart.dataQuery.executing" />
 			<div
@@ -75,7 +75,7 @@ function downloadChart() {
 			<ChartBuilderTable />
 		</div>
 		<div
-			class="relative flex w-[17rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white"
+			class="relative z-[1] flex w-[17rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white shadow"
 		>
 			<CollapsibleSection title="Chart">
 				<div class="flex flex-col gap-3">

@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { Check, PanelRightClose, PanelRightOpen, Share2, Undo2 } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Workbook, workbookKey } from './workbook'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
-import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
 
 const workbook = inject(workbookKey) as Workbook
 
@@ -16,6 +16,9 @@ const showShareDialog = ref(false)
 			variant="outline"
 			@click="showShareDialog = true"
 		>
+			<template #prefix>
+				<Share2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
 			Share
 		</Button>
 		<Button
@@ -23,6 +26,9 @@ const showShareDialog = ref(false)
 			variant="outline"
 			@click="workbook.discard()"
 		>
+			<template #prefix>
+				<Undo2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
 			Discard
 		</Button>
 		<Button
@@ -31,6 +37,9 @@ const showShareDialog = ref(false)
 			:loading="workbook.saving"
 			@click="workbook.save()"
 		>
+			<template #prefix>
+				<Check class="h-4 w-4 text-gray-100" stroke-width="1.5" />
+			</template>
 			Save
 		</Button>
 		<Dropdown
