@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { FIELDTYPES } from '../../helpers/constants'
 import { debounce } from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
+import { FIELDTYPES } from '../../helpers/constants'
+import {
+	ColumnOption,
+	FilterOperator,
+	FilterRule,
+	GroupedColumnOption,
+} from '../../types/query.types'
 import { column } from '../helpers'
 import { getCachedQuery } from '../query'
 import DatePickerControl from './DatePickerControl.vue'
 import { getValueSelectorType } from './filter_utils'
-import { ColumnDataType, FilterOperator, FilterRule } from '../../types/query.types'
+import { flattenOptions } from '../../helpers'
 
 const filter = defineModel<FilterRule>({ required: true })
 const props = defineProps<{
-	columnOptions: {
-		label: string
-		value: string
-		query: string
-		data_type: ColumnDataType
-	}[]
+	columnOptions: ColumnOption[] | GroupedColumnOption[]
 }>()
 
 onMounted(() => {
@@ -35,7 +36,8 @@ function onColumnChange(column_name: string) {
 const columnType = computed(() => {
 	if (!props.columnOptions?.length) return
 	if (!filter.value.column.column_name) return
-	const col = props.columnOptions.find((c) => c.value === filter.value.column.column_name)
+	const options = flattenOptions(props.columnOptions) as ColumnOption[]
+	const col = options.find((c) => c.value === filter.value.column.column_name)
 	if (!col) throw new Error(`Column not found: ${filter.value.column.column_name}`)
 	return col.data_type
 })
@@ -87,7 +89,8 @@ const valueSelectorType = computed(
 const distinctColumnValues = ref<any[]>([])
 const fetchingValues = ref(false)
 const fetchColumnValues = debounce((searchTxt: string) => {
-	const option = props.columnOptions.find((c) => c.value === filter.value.column.column_name)
+	const options = flattenOptions(props.columnOptions) as ColumnOption[]
+	const option = options.find((c) => c.value === filter.value.column.column_name)
 	if (!option?.query) {
 		fetchingValues.value = false
 		console.warn('Query not found for column:', filter.value.column.column_name)
@@ -104,6 +107,8 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 		.then((values: string[]) => (distinctColumnValues.value = values))
 		.finally(() => (fetchingValues.value = false))
 }, 300)
+
+console.log(props)
 </script>
 
 <template>

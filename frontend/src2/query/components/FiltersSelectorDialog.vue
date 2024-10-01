@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ColumnOption, FilterArgs, FilterGroupArgs } from '../../types/query.types'
+import { ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
 import FiltersSelector from './FiltersSelector.vue'
 
 const props = defineProps<{
 	filterGroup?: FilterGroupArgs
-	columnOptions: ColumnOption[]
+	columnOptions: ColumnOption[] | GroupedColumnOption[]
 }>()
 const emit = defineEmits({ select: (args: FilterGroupArgs) => true })
 const showDialog = defineModel()

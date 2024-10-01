@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { PlusIcon } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
-import { copy } from '../../helpers'
-import { ColumnOption, FilterGroupArgs } from '../../types/query.types'
+import { copy, flattenOptions } from '../../helpers'
+import { Column, ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
 import { column, expression } from '../helpers'
 import FilterRule from './FilterRule.vue'
 import InlineExpression from './InlineExpression.vue'
@@ -10,7 +10,7 @@ import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 
 const props = defineProps<{
 	filterGroup?: FilterGroupArgs
-	columnOptions: ColumnOption[]
+	columnOptions: ColumnOption[] | GroupedColumnOption[]
 }>()
 
 const emit = defineEmits({
@@ -40,7 +40,9 @@ const areAllFiltersValid = computed(() => {
 	return filterGroup.filters.every((filter) => {
 		if ('expression' in filter) return isFilterExpressionValid(filter)
 
-		const column = props.columnOptions.find((c) => c.value === filter.column.column_name)
+		const options = flattenOptions(props.columnOptions) as ColumnOption[]
+
+		const column = options.find((c) => c.value === filter.column.column_name)
 		if (!column) return false
 
 		return isFilterValid(filter, column.data_type)

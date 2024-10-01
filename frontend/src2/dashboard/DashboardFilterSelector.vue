@@ -17,20 +17,24 @@ const props = defineProps<{
 const showDialog = ref(false)
 
 const columnOptions = computed(() => {
-	return props.queries
-		.map((q) => {
-			const query = getCachedQuery(q.name)
-			if (!query) return []
-			return query.result.columns.map((c) => ({
-				query: q.name,
-				label: c.name,
-				data_type: c.type,
-				description: c.type,
-				value: `'${q.name}'.'${c.name}'`,
-			}))
-		})
-		.flat()
+	return props.queries.map((q) => {
+		const query = getCachedQuery(q.name)
+		if (!query) return []
+		const columns = query.result.columns.map((c) => ({
+			query: q.name,
+			label: c.name,
+			data_type: c.type,
+			description: c.type,
+			value: `'${q.name}'.'${c.name}'`,
+		}))
+		return {
+			group: query.doc.title,
+			items: columns,
+		}
+	})
 })
+
+console.log(columnOptions)
 
 const filterGroup = reactive<FilterGroupArgs>({
 	logical_operator: 'And',

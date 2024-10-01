@@ -2,6 +2,7 @@ import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { ComputedRef, Ref, watch } from 'vue'
 import session from '../session'
+import { DropdownOption, GroupedDropdownOption } from '../types/query.types'
 import { createToast } from './toasts'
 
 export function getUniqueId(length = 8) {
@@ -240,10 +241,17 @@ export function copyToClipboard(text: string) {
 	}
 }
 
-
 export function ellipsis(value: string, length: number) {
 	if (value && value.length > length) {
 		return value.substring(0, length) + '...'
 	}
 	return value
+}
+
+export function flattenOptions(
+	options: DropdownOption[] | GroupedDropdownOption[]
+): DropdownOption[] {
+	return 'group' in options[0]
+		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
+		: (options as DropdownOption[])
 }

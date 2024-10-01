@@ -168,9 +168,19 @@ export type DropdownOption = {
 	description?: string
 }
 
+export type GroupedDropdownOption = {
+	group: string
+	items: DropdownOption[]
+}
+
 export type ColumnOption = DropdownOption & {
 	query: string
 	data_type: ColumnDataType
+}
+
+export type GroupedColumnOption = {
+	group: string
+	items: ColumnOption[]
 }
 
 export type QueryResult = {
