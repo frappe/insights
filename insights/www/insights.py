@@ -61,5 +61,8 @@ def continue_to_v3(context):
 
 def redirect_to_v2():
     path = frappe.request.full_path
-    frappe.local.flags.redirect_location = path.replace("/insights", "/insights_v2")
+    path = path.replace("/insights", "/insights_v2")
+    if not path.startswith("/insights_v2"):
+        path = "/insights_v2"
+    frappe.local.flags.redirect_location = path
     raise frappe.Redirect
