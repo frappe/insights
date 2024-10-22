@@ -211,7 +211,7 @@ const queryListColumns = [
 		</div>
 		<ListView
 			:columns="queryListColumns"
-			:rows="queries"
+			:rows="queries.slice(0, 100)"
 			:row-key="'name'"
 			:options="{
 				showTooltip: false,
