@@ -154,4 +154,4 @@ def import_csv_data(filename: str):
     table = db.read_csv(file_path, table_name=table_name)
     db.create_table(table_name, table, overwrite=True)
 
-    InsightsTablev3.create(ds.name, table_name)
+    InsightsTablev3.bulk_create(ds.name, [table_name])
