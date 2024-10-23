@@ -145,8 +145,16 @@ export function getBarChartOptions(chart: Chart) {
 	const hasRightAxis = _config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
+	const sortedRows = xAxisIsDate
+		? _rows.sort((a, b) => {
+				const a_date = new Date(a[_config.x_axis.column_name])
+				const b_date = new Date(b[_config.x_axis.column_name])
+				return a_date.getTime() - b_date.getTime()
+		  })
+		: _rows
+
 	const getSeriesData = (column: string) =>
-		_rows.map((r) => {
+		sortedRows.map((r) => {
 			const x_value = r[_config.x_axis.column_name]
 			const y_value = r[column]
 			const normalize = _config.y_axis.normalize
@@ -174,12 +182,15 @@ export function getBarChartOptions(chart: Chart) {
 
 			const stack = _config.y_axis.stack
 			const show_data_labels = serie.show_data_labels ?? _config.y_axis.show_data_labels
+			const color = serie.color?.[0] || colors[idx]
+			const type = serie.type?.toLowerCase() || 'bar'
 
 			return {
-				type: 'bar',
-				stack,
+				type,
+				stack: type === 'bar' && stack ? 'stack' : undefined,
 				name: c.name,
 				data: getSeriesData(c.name),
+				color: color,
 				label: {
 					show: show_data_labels,
 					position: idx === number_columns.length - 1 ? 'top' : 'inside',
@@ -192,7 +203,7 @@ export function getBarChartOptions(chart: Chart) {
 				emphasis: { focus: 'series' },
 				barMaxWidth: 60,
 				yAxisIndex: is_right_axis ? 1 : 0,
-				itemStyle: { color: colors[idx] },
+				itemStyle: { color: color },
 			}
 		}),
 		tooltip: getTooltip({
@@ -267,6 +278,7 @@ export function getDonutChartOptions(chart: Chart) {
 	const rows = chart.dataQuery.result.rows
 
 	const MAX_SLICES = 10
+	const valueColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	const data = getDonutChartData(columns, rows, MAX_SLICES)
 	const labels = data.map((d) => d[0])
 	const values = data.map((d) => d[1])
@@ -317,6 +329,7 @@ export function getDonutChartOptions(chart: Chart) {
 		series: [
 			{
 				type: 'pie',
+				name: valueColumn?.name,
 				center,
 				radius,
 				labelLine: { show: false },
@@ -514,6 +527,8 @@ function getLegend(show_legend = true) {
 }
 
 export function getDrillDownQuery(chart: Chart, row: QueryResultRow, col: QueryResultColumn) {
+	if (!chart || !row || !col) return
+
 	if (!FIELDTYPES.NUMBER.includes(col.type)) {
 		return
 	}

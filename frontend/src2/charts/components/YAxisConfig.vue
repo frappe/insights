@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import ColorInput from '@/components/Controls/ColorInput.vue'
+import { debounce } from 'frappe-ui'
 import { RefreshCcw, Settings, XIcon } from 'lucide-vue-next'
 import Checkbox from '../../components/Checkbox.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
 import { MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
-import { watchEffect } from 'vue'
 
 const props = defineProps<{ measures: MeasureOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
@@ -28,6 +28,13 @@ function resetSeriesConfig(idx: number) {
 		measure: y_axis.value.series[idx].measure,
 	}
 }
+
+const updateColor = debounce((color: string, idx: number) => {
+	if (!y_axis.value.series[idx].color) {
+		y_axis.value.series[idx].color = []
+	}
+	y_axis.value.series[idx].color = color ? [color] : []
+}, 500)
 </script>
 
 <template>
@@ -62,6 +69,13 @@ function resetSeriesConfig(idx: number) {
 										:debounce="500"
 									/>
 								</InlineFormControlLabel>
+								<InlineFormControlLabel label="Type">
+									<FormControl
+										type="select"
+										v-model="s.type"
+										:options="['Line', 'Bar']"
+									/>
+								</InlineFormControlLabel>
 								<InlineFormControlLabel label="Align">
 									<FormControl
 										type="select"
@@ -70,14 +84,34 @@ function resetSeriesConfig(idx: number) {
 									/>
 								</InlineFormControlLabel>
 								<InlineFormControlLabel label="Color">
-									<ColorInput placement="left-start" />
+									<ColorInput
+										:model-value="s.color?.[0]"
+										@update:model-value="updateColor($event, idx)"
+										placement="left-start"
+									/>
 								</InlineFormControlLabel>
+								<Checkbox label="Show Data Labels" v-model="s.show_data_labels" />
+
 								<slot name="series-settings" :series="s" :idx="idx" />
 
 								<div class="flex gap-1">
 									<Button
 										class="w-full"
+										@click="resetSeriesConfig(idx)"
+										variant="outline"
+									>
+										<template #prefix>
+											<RefreshCcw
+												class="h-4 w-4 text-gray-700"
+												stroke-width="1.5"
+											/>
+										</template>
+										Reset
+									</Button>
+									<Button
+										class="w-full"
 										@click="y_axis.series.splice(idx, 1)"
+										variant="outline"
 										theme="red"
 									>
 										<template #prefix>
@@ -87,15 +121,6 @@ function resetSeriesConfig(idx: number) {
 											/>
 										</template>
 										Remove
-									</Button>
-									<Button class="w-full" @click="resetSeriesConfig(idx)">
-										<template #prefix>
-											<RefreshCcw
-												class="h-4 w-4 text-gray-700"
-												stroke-width="1.5"
-											/>
-										</template>
-										Reset
 									</Button>
 								</div>
 							</div>
@@ -117,6 +142,7 @@ function resetSeriesConfig(idx: number) {
 
 			<slot name="y-axis-settings" :y_axis="y_axis" />
 
+			<Checkbox label="Show Data Labels" v-model="y_axis.show_data_labels" />
 			<Checkbox label="Show Axis Label" v-model="y_axis.show_axis_label" />
 			<FormControl
 				v-if="y_axis.show_axis_label"
