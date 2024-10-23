@@ -105,5 +105,10 @@ document.title = 'Teams | Insights'
 		<ListView class="h-full" v-bind="listOptions"> </ListView>
 	</div>
 	<CreateTeamDialog v-model="showCreateTeamDialog" />
-	<ManageTeamDialog v-if="editTeam" v-model="showEditTeamDialog" :team="editTeam" />
+	<ManageTeamDialog
+		v-if="editTeam"
+		:key="editTeam.name"
+		v-model="showEditTeamDialog"
+		:team="editTeam"
+	/>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { AlertOctagon, ArrowLeft } from 'lucide-vue-next'
+import { AlertOctagon } from 'lucide-vue-next'
 import { computed, provide, watchEffect } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import ContentEditable from '../components/ContentEditable.vue'
@@ -87,9 +87,16 @@ watchEffect(() => {
 				<div v-else class="flex flex-1 items-center justify-center">
 					<div class="flex flex-col items-center gap-4">
 						<AlertOctagon class="h-16 w-16 text-gray-400" stroke-width="1" />
-						<p class="text-center text-lg text-gray-500">
-							Looks like this tab doesn't exist <br />
+						<p
+							v-if="workbook.doc.queries.length"
+							class="text-center text-lg leading-4 text-gray-500"
+						>
+							This tab doesn't exist <br />
 							Try switching to another tab
+						</p>
+						<p v-else class="text-center text-lg leading-5 text-gray-500">
+							You haven't added any queries yet <br />
+							Click on the "+" button to add a new query
 						</p>
 					</div>
 				</div>

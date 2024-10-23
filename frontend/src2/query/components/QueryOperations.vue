@@ -1,6 +1,6 @@
 <script setup lang="tsx">
-import { Edit, Plus, XIcon } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { XIcon } from 'lucide-vue-next'
+import { computed, inject } from 'vue'
 import {
 	Cast,
 	CustomOperation,
@@ -136,18 +136,21 @@ const CastInfo = (props: any) => {
 
 const FilterInfo = (props: any) => {
 	const group = props.filter as FilterGroup
-	const filter_expressions = group.filters.filter(
+	const custom_expressions = group.filters.filter(
 		(f) => 'expression' in f && f.expression.expression
 	)
-	const filter_columns = group.filters
+	const filtered_columns = group.filters
 		.filter((f) => 'column' in f)
 		.map((f) => f.column.column_name)
 
 	return (
 		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
 			<p>Filter</p>
-			{filter_columns.map((column, idx) => (
+			{filtered_columns.map((column, idx) => (
 				<Element>{column}</Element>
+			))}
+			{custom_expressions.map((expression, idx) => (
+				<Element>expression</Element>
 			))}
 		</div>
 	)
@@ -273,7 +276,7 @@ const CustomOperationInfo = (props: any) => {
 								(query.activeEditIndex === -1 &&
 									idx === query.doc.operations.length - 1)
 							"
-							class="absolute right-0 flex-shrink-0 opacity-0 transition-all group-hover:opacity-100"
+							class="absolute right-0 flex h-full flex-shrink-0 items-center bg-white opacity-0 transition-all group-hover:opacity-100"
 						>
 							<Button
 								variant="ghost"

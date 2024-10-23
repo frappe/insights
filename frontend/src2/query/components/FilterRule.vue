@@ -107,8 +107,6 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 		.then((values: string[]) => (distinctColumnValues.value = values))
 		.finally(() => (fetchingValues.value = false))
 }, 300)
-
-console.log(props)
 </script>
 
 <template>

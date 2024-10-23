@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlusIcon } from 'lucide-vue-next'
+import { PlusIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
 import { copy, flattenOptions } from '../../helpers'
 import { Column, ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
@@ -69,16 +69,20 @@ const areFiltersUpdated = computed(() => {
 			class="mb-3 flex items-start justify-between gap-2"
 		>
 			<div class="flex flex-1 items-start gap-2">
-				<div class="flex h-7 w-13 flex-shrink-0 items-center text-base text-gray-600">
+				<div class="flex h-7 w-15 flex-shrink-0 items-center text-base text-gray-600">
 					<span v-if="i == 0">Where</span>
 					<Button
 						v-else
+						class="text-sm"
 						@click="
 							filterGroup.logical_operator =
 								filterGroup.logical_operator === 'And' ? 'Or' : 'And'
 						"
 					>
-						{{ filterGroup.logical_operator }}
+						<template #prefix>
+							<RefreshCcw class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+						</template>
+						{{ filterGroup.logical_operator.toLowerCase() }}
 					</Button>
 				</div>
 				<InlineExpression

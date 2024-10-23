@@ -20,6 +20,7 @@ const newTeamName = ref('')
 					loading: teamStore.creatingTeam,
 					onClick: () => {
 						teamStore.createTeam(newTeamName).then(() => {
+							newTeamName = ''
 							show = false
 						})
 					},

@@ -3,9 +3,9 @@ import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { getUniqueId } from '../helpers'
 import { WorkbookListItem } from '../types/workbook.types'
 import useUserStore from '../users/users'
+import { newWorkbookName } from './workbook'
 import useWorkbooks from './workbooks'
 
 const router = useRouter()
@@ -63,9 +63,8 @@ const listOptions = ref({
 })
 
 function openNewWorkbook() {
-	const unique_id = getUniqueId()
-	const name = `new-workbook-${unique_id}`
-	router.push(`/workbook/${name}`)
+	const newName = newWorkbookName()
+	router.push(`/workbook/${newName}`)
 }
 
 watchEffect(() => {

@@ -24,6 +24,7 @@ export type Series = {
 	name?: string
 	measure: Measure
 	color?: string[]
+	type?: 'line' | 'bar'
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
 }

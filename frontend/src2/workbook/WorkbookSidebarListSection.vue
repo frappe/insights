@@ -52,9 +52,9 @@ function setDraggedItem(event: DragEvent, row: any) {
 					:to="route(idx)"
 					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
 				>
-					<div class="flex gap-1.5">
+					<div class="flex gap-1.5 overflow-hidden">
 						<slot name="item-icon" :item="row" />
-						<p>{{ row.title }}</p>
+						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
 						class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"
