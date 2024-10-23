@@ -74,7 +74,7 @@ const connected = ref<boolean | null>(null)
 const connectButton = computed(() => {
 	const _button = {
 		label: 'Connect',
-		disabled: form.value?.hasRequiredFields === false,
+		disabled: form.value?.hasRequiredFields === false || sources.testing || sources.creating,
 		loading: sources.testing,
 		variant: 'subtle',
 		theme: 'gray',

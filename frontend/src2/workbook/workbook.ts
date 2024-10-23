@@ -261,11 +261,11 @@ function getWorkbookResource(name: string) {
 			charts: [],
 			dashboards: [],
 		},
-		transform(doc) {
+		transform(doc: any) {
 			doc.queries = safeJSONParse(doc.queries) || []
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
-			doc.charts.forEach((chart) => {
+			doc.charts.forEach((chart: any) => {
 				chart.config.filters = chart.config.filters?.filters?.length
 					? chart.config.filters
 					: {
