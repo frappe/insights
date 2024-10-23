@@ -4,7 +4,8 @@ import frappe
 import frappe.utils
 import ibis
 from frappe.utils import get_files_path
-from ibis import BaseBackend
+from ibis import BaseBackend, _
+from ibis.expr.types import Expr
 
 WAREHOUSE_DB_NAME = "insights.duckdb"
 
@@ -64,18 +65,21 @@ class DataWarehouse:
             )
             return
 
+        max_records_to_sync = (
+            frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
+            or 10_00_000
+        )
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         remote_db = ds._get_ibis_backend()
         table = remote_db.table(table_name)
 
         if hasattr(table, "creation"):
-            max_records_to_sync = frappe.db.get_single_value(
-                "Insights Settings", "max_records_to_sync"
-            )
-            max_records_to_sync = max_records_to_sync or 10_00_000
             table = table.order_by(ibis.desc("creation")).limit(max_records_to_sync)
-
-        table.to_parquet(path, compression="snappy")
+            table_name = get_warehouse_table_name(data_source, table_name)
+            batch_import_to_parquet(table, "creation", table_name)
+        else:
+            table = table.limit(max_records_to_sync)
+            table.to_parquet(path, compression="snappy")
 
 
 def get_warehouse_folder_path():
@@ -94,3 +98,108 @@ def get_parquet_filepath(data_source, table_name):
     warehouse_path = get_warehouse_folder_path()
     warehouse_table = get_warehouse_table_name(data_source, table_name)
     return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
+
+
+def batch_import_to_parquet(
+    table: Expr, primary_key: str, table_name: str, memory_limit: int = 1024
+):
+    folder = get_warehouse_folder_path()
+    batch_size = calculate_batch_size(table, memory_limit)
+    imported_batch_paths = process_batches(
+        table, primary_key, table_name, folder, batch_size
+    )
+    merge_batches(imported_batch_paths, table_name, folder)
+    cleanup_batch_files(imported_batch_paths)
+
+
+def calculate_batch_size(table: Expr, memory_limit: int) -> int:
+    sample_size = 10
+    sample_rows = table.head(sample_size).execute()
+    total_size = sum(
+        sample_rows[column].memory_usage(deep=True) for column in sample_rows.columns
+    )
+    row_size = total_size / sample_size / (1024 * 1024)
+    batch_size = int(memory_limit / row_size)  # in MB
+    print(f"Batch size: {batch_size}")
+    return batch_size
+
+
+def process_batches(
+    table: Expr, primary_key: str, table_name: str, folder: str, batch_size: int
+):
+    _table = table.order_by(primary_key)
+    n = 0
+    max_primary_key = None
+    imported_batch_paths = []
+
+    try:
+        while True:
+            batch = _table.head(batch_size)
+            path = create_batch_file(batch, table_name, n, folder)
+            imported_batch_paths.append(path)
+
+            metadata = get_batch_metadata(path, primary_key)
+            total_rows, max_primary_key = metadata["count"], metadata["max_primary_key"]
+            print_batch_info(n, table_name, total_rows, max_primary_key)
+
+            if total_rows < batch_size:
+                break
+
+            _table = _table.filter(_[primary_key] > max_primary_key)
+            n += 1
+
+    except BaseException as e:
+        cleanup_batch_files(imported_batch_paths)
+        raise e
+
+    return imported_batch_paths
+
+
+def create_batch_file(
+    batch: Expr, table_name: str, batch_number: int, folder: str
+) -> str:
+    print(f"SQL for batch {batch_number} of {table_name}: {ibis.to_sql(batch)}")
+    batch_file_name = f"{table_name}_{batch_number}.parquet"
+    path = os.path.join(folder, batch_file_name)
+    batch.to_parquet(path, compression="snappy")
+    print(f"Created batch {batch_number} for {table_name}")
+    return path
+
+
+def get_batch_metadata(path: str, primary_key: str):
+    ddb = ibis.duckdb.connect(":memory:")
+    batch = ddb.read_parquet(path)
+    metadata = (
+        batch.aggregate(
+            count=_.count(),
+            max_primary_key=_[primary_key].max(),
+        )
+        .execute()
+        .to_records(index=False)[0]
+    )
+    ddb.disconnect()
+    return metadata
+
+
+def print_batch_info(
+    batch_number: int, table_name: str, total_rows: int, max_primary_key: str
+):
+    print(f"Batch {batch_number} for {table_name} has {total_rows} rows")
+    print(
+        f"Max primary key for batch {batch_number} of {table_name}: {max_primary_key}"
+    )
+
+
+def merge_batches(imported_batch_paths: list[str], table_name: str, folder: str):
+    print(f"Merging {len(imported_batch_paths)} batches for {table_name}")
+    path = os.path.join(folder, f"{table_name}.parquet")
+    ddb = ibis.duckdb.connect(":memory:")
+    merged = ddb.read_parquet(imported_batch_paths, table_name=table_name)
+    merged.to_parquet(path, compression="snappy")
+    print(f"Created parquet file for {table_name}")
+    ddb.disconnect()
+
+
+def cleanup_batch_files(imported_batch_paths: list[str]):
+    for path in imported_batch_paths:
+        os.remove(path)
