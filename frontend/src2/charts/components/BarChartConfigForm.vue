@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { BarChartConfig, YAxisBar } from '../../types/chart.types'
+import { Dimension } from '../../types/query.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
@@ -18,6 +19,16 @@ const config = defineModel<BarChartConfig>({
 		split_by: {},
 	}),
 })
+
+if (!config.value.x_axis) {
+	config.value.x_axis = {} as Dimension
+}
+if (!config.value.y_axis) {
+	config.value.y_axis = {} as YAxisBar
+}
+if (config.value.y_axis?.stack === undefined) {
+	config.value.y_axis.stack = true
+}
 </script>
 
 <template>
@@ -27,7 +38,6 @@ const config = defineModel<BarChartConfig>({
 		<template #y-axis-settings="{ y_axis }">
 			<Checkbox label="Stack" v-model="(y_axis as YAxisBar).stack" />
 			<Checkbox label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
-			<Checkbox label="Show Data Labels" v-model="(y_axis as YAxisBar).show_data_labels" />
 		</template>
 	</YAxisConfig>
 

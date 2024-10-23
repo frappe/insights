@@ -23,7 +23,7 @@ provide('chart', chart)
 window.chart = chart
 
 chart.refresh()
-if (chart.doc.query && !chart.baseQuery.result.rows.length) {
+if (chart.doc.query && !chart.baseQuery.result.executedSQL) {
 	chart.baseQuery.execute()
 }
 
@@ -72,7 +72,7 @@ function downloadChart() {
 			>
 				<ChartRenderer :chart="chart" />
 			</div>
-			<ChartBuilderTable />
+			<ChartBuilderTable v-if="chart.dataQuery.result.executedSQL" />
 		</div>
 		<div
 			class="relative z-[1] flex w-[17rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white shadow"

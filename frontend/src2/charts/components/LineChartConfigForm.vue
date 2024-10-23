@@ -27,13 +27,11 @@ const config = defineModel<LineChartConfig>({
 		<template #y-axis-settings="{ y_axis }">
 			<Checkbox label="Curved Lines" v-model="(y_axis as YAxisLine).smooth" />
 			<Checkbox label="Show Area" v-model="(y_axis as YAxisLine).show_area" />
-			<Checkbox label="Show Data Labels" v-model="(y_axis as YAxisLine).show_data_labels" />
 			<Checkbox label="Show Data Points" v-model="(y_axis as YAxisLine).show_data_points" />
 		</template>
 		<template #series-settings="{ series }">
 			<Checkbox label="Curved Lines" v-model="(series as SeriesLine).smooth" />
 			<Checkbox label="Show Area" v-model="(series as SeriesLine).show_area" />
-			<Checkbox label="Show Data Labels" v-model="(series as SeriesLine).show_data_labels" />
 			<Checkbox label="Show Data Points" v-model="(series as SeriesLine).show_data_points" />
 		</template>
 	</YAxisConfig>

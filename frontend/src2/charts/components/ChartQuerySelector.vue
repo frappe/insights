@@ -2,12 +2,23 @@
 import { Table2 } from 'lucide-vue-next'
 import { WorkbookQuery } from '../../types/workbook.types'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import { wheneverChanges } from '../../helpers'
+import { getCachedQuery } from '../../query/query'
 
 const query = defineModel()
 const props = defineProps<{ queries: WorkbookQuery[] }>()
-if (!query.value && props.queries.length === 1) {
+if (!query.value && props.queries.length) {
 	query.value = props.queries[0].name
 }
+
+wheneverChanges(query, (value: string) => {
+	if (value) {
+		const q = getCachedQuery(value)
+		if (q && !q.result.executedSQL) {
+			q.execute()
+		}
+	}
+})
 </script>
 
 <template>

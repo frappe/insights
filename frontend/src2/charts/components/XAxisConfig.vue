@@ -35,7 +35,8 @@ const x_axis = defineModel<AxisChartConfig['x_axis']>({
 					@update:model-value="x_axis.granularity = $event?.value || 'month'"
 				/>
 			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Axis Label">
+			<Checkbox label="Show Axis Label" />
+			<InlineFormControlLabel v-if="false" label="Axis Label">
 				<FormControl />
 			</InlineFormControlLabel>
 		</div>

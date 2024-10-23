@@ -126,9 +126,8 @@ function makeChart(workbookChart: WorkbookChart) {
 			return false
 		}
 
-		const values = config.y_axis?.series.map((s) => s.measure).filter((m) => m.measure_name) || [
-			count(),
-		]
+		let values = config.y_axis?.series.map((s) => s.measure).filter((m) => m.measure_name)
+		values = values?.length ? values : [count()]
 
 		if (config.split_by?.column_name) {
 			chart.dataQuery.addPivotWider({
@@ -147,14 +146,16 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareNumberChartQuery(config: NumberChartConfig) {
-		if (!config.number_columns?.length) {
+		const number_columns = config.number_columns?.filter((c) => c.measure_name)
+
+		if (!number_columns?.length) {
 			console.warn('Number column is required')
 			chart.dataQuery.reset()
 			return false
 		}
 
 		chart.dataQuery.addSummarize({
-			measures: config.number_columns,
+			measures: number_columns,
 			dimensions: config.date_column?.column_name ? [config.date_column] : [],
 		})
 
