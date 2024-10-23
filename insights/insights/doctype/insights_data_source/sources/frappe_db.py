@@ -11,11 +11,7 @@ from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
-from .base_database import (
-    BaseDatabase,
-    DatabaseCredentialsError,
-    DatabaseParallelConnectionError,
-)
+from .base_database import DatabaseCredentialsError, DatabaseParallelConnectionError
 from .mariadb import MARIADB_TO_GENERIC_TYPES, MariaDB
 from .utils import create_insights_table, get_sqlalchemy_engine
 
@@ -74,7 +70,7 @@ class FrappeTableFactory:
         return _dict(
             {
                 "column": column_name,
-                "label": frappe.unscrub(column_name),
+                "label": frappe.unscrub(column_name) or column_name,
                 "type": MARIADB_TO_GENERIC_TYPES.get(column_type, "String"),
             }
         )
