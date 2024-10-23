@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, getShortNumber } from '../../helpers'
+import { formatNumber, getShortNumber, scrub } from '../../helpers'
 import { NumberChartConfig } from '../../types/chart.types'
 import { Measure } from '../../types/query.types'
 import { Chart } from '../chart'
@@ -11,6 +11,9 @@ const props = defineProps<{ chart: Chart }>()
 const title = computed(() => props.chart.doc.title)
 const config = computed(() => props.chart.doc.config as NumberChartConfig)
 
+const numberColumns = computed(() => {
+	return config.value.number_columns.filter((c) => c.measure_name).map((c) => c.measure_name)
+})
 const dateValues = computed(() => {
 	if (!config.value.date_column) return []
 	const date_column = config.value.date_column.column_name
@@ -20,20 +23,20 @@ const numberValuesPerColumn = computed(() => {
 	if (!config.value.number_columns?.length) return {}
 	if (!props.chart.dataQuery.result?.rows) return {}
 
-	return config.value.number_columns
-		.map((c) => c.measure_name)
-		.reduce((acc: any, column: string) => {
-			acc[column] = props.chart.dataQuery.result.rows.map((row: any) => row[column])
-			return acc
-		}, {})
+	return numberColumns.value.reduce((acc: any, measure_name: string) => {
+		acc[scrub(measure_name)] = props.chart.dataQuery.result.rows.map(
+			(row: any) => row[scrub(measure_name)]
+		)
+		return acc
+	}, {})
 })
 
 const cards = computed(() => {
 	if (!config.value.number_columns?.length) return []
 	if (!props.chart.dataQuery.result?.rows) return []
 
-	return config.value.number_columns.map((column: Measure) => {
-		const numberValues = numberValuesPerColumn.value[column.measure_name]
+	return numberColumns.value.map((measure_name: string) => {
+		const numberValues = numberValuesPerColumn.value[scrub(measure_name)]
 		const currentValue = numberValues[numberValues.length - 1]
 		const previousValue = numberValues[numberValues.length - 2]
 		const delta = config.value.negative_is_better
@@ -41,7 +44,8 @@ const cards = computed(() => {
 			: currentValue - previousValue
 		const percentDelta = (delta / previousValue) * 100
 		return {
-			column,
+			measure_name,
+			values: numberValues,
 			currentValue: getFormattedValue(currentValue),
 			previousValue: getFormattedValue(previousValue),
 			delta,
@@ -62,13 +66,13 @@ const getFormattedValue = (value: number) => {
 <template>
 	<div class="grid w-full grid-cols-[repeat(auto-fill,214px)] gap-4">
 		<div
-			v-for="{ column, currentValue, delta, percentDelta } in cards"
-			:key="column.measure_name"
+			v-for="{ measure_name, values, currentValue, delta, percentDelta } in cards"
+			:key="measure_name"
 			class="flex h-[140px] items-center gap-2 overflow-y-auto rounded bg-white py-4 px-6 shadow"
 		>
 			<div class="flex w-full flex-col">
 				<span class="truncate text-sm font-medium">
-					{{ column.measure_name }}
+					{{ measure_name }}
 				</span>
 				<div class="flex-1 flex-shrink-0 text-[24px] font-semibold leading-10">
 					{{ config.prefix }}{{ currentValue }}{{ config.suffix }}
@@ -84,10 +88,7 @@ const getFormattedValue = (value: number) => {
 					<span> {{ percentDelta }}% </span>
 				</div>
 				<div v-if="config.sparkline" class="mt-2 h-[18px] w-[80px]">
-					<Sparkline
-						:dates="dateValues"
-						:values="numberValuesPerColumn[column.measure_name]"
-					/>
+					<Sparkline :dates="dateValues" :values="values" />
 				</div>
 			</div>
 		</div>
