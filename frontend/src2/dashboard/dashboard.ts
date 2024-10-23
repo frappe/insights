@@ -36,6 +36,12 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		},
 
 		addChart(charts: WorkbookChart[]) {
+			const maxY = Math.max(
+				...dashboard.doc.items
+					.filter((item) => item.type === 'chart')
+					.map((chart) => chart.layout.y + chart.layout.h),
+				0
+			)
 			charts.forEach((chart) => {
 				if (
 					!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
@@ -46,7 +52,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 						layout: {
 							i: getUniqueId(),
 							x: 0,
-							y: 0,
+							y: maxY,
 							w: chart.chart_type === 'Number' ? 20 : 10,
 							h: chart.chart_type === 'Number' ? 3 : 8,
 						},
