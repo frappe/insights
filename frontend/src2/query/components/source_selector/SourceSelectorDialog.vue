@@ -49,16 +49,18 @@ wheneverChanges(
 )
 
 dataSourceStore.getSources().then(() => {
-	tabGroups.value[0].tabs = dataSourceStore.sources.map((source) => ({
-		label: source.name,
-		icon: DatabaseIcon,
-		component: () => (
-			<DataSourceTableList
-				v-model:selectedTable={selectedTable.value}
-				data_source={source.name}
-			/>
-		),
-	}))
+	tabGroups.value[0].tabs = dataSourceStore.sources
+		.map((source) => ({
+			label: source.name,
+			icon: DatabaseIcon,
+			component: () => (
+				<DataSourceTableList
+					v-model:selectedTable={selectedTable.value}
+					data_source={source.name}
+				/>
+			),
+		}))
+		.sort((a, b) => a.label.localeCompare(b.label))
 	activeTab.value = tabGroups.value[0].tabs[0]
 })
 
