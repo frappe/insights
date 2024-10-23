@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ListFilter } from 'lucide-vue-next'
-import { computed, reactive, ref } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 import { copy } from '../helpers'
 import FiltersSelectorDialog from '../query/components/FiltersSelectorDialog.vue'
 import { getCachedQuery } from '../query/query'
-import { FilterArgs, FilterGroupArgs } from '../types/query.types'
+import { FilterArgs, FilterGroupArgs, GroupedColumnOption } from '../types/query.types'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
+import { workbookKey } from '../workbook/workbook'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{
@@ -16,25 +17,50 @@ const props = defineProps<{
 
 const showDialog = ref(false)
 
-const columnOptions = computed(() => {
-	return props.queries.map((q) => {
-		const query = getCachedQuery(q.name)
-		if (!query) return []
-		const columns = query.result.columns.map((c) => ({
-			query: q.name,
-			label: c.name,
-			data_type: c.type,
-			description: c.type,
-			value: `'${q.name}'.'${c.name}'`,
-		}))
-		return {
-			group: query.doc.title,
-			items: columns,
-		}
-	})
+const workbook = inject(workbookKey)!
+
+const chartQueries = computed(() => {
+	if (!workbook)
+		return props.charts
+			.map((c) => c.query)
+			.map((q) => props.queries.find((query) => query.name === q)!)
+
+	return props.charts
+		.map((c) => [c.query, ...workbook.getLinkedQueries(c.query)])
+		.flat()
+		.filter((q, i, arr) => arr.indexOf(q) === i)
+		.map((q) => props.queries.find((query) => query.name === q)!)
 })
 
-console.log(columnOptions)
+if (chartQueries.value.length) {
+	// execute query to load result columns
+	chartQueries.value.forEach((q) => {
+		const query = getCachedQuery(q.name)
+		if (query && !query.result.executedSQL) {
+			query.execute()
+		}
+	})
+}
+
+const columnOptions = computed(() => {
+	return chartQueries.value
+		.map((q) => {
+			const query = getCachedQuery(q.name)
+			if (!query) return {}
+			const columns = query.result.columns.map((c) => ({
+				query: q.name,
+				label: c.name,
+				data_type: c.type,
+				description: c.type,
+				value: `'${q.name}'.'${c.name}'`,
+			}))
+			return {
+				group: query.doc.title || q.name,
+				items: columns,
+			}
+		})
+		.filter((group) => group.items?.length) as GroupedColumnOption[]
+})
 
 const filterGroup = reactive<FilterGroupArgs>({
 	logical_operator: 'And',

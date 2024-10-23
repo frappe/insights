@@ -115,7 +115,7 @@ function onDrop(event: DragEvent) {
 				<VueGridLayout
 					v-if="dashboard.doc.items.length > 0"
 					class="h-fit w-full"
-					:class="[dashboard.editing ? 'mb-[20rem] ' : '']"
+					:class="[dashboard.editing ? 'mb-[20rem] !select-none' : '']"
 					:cols="20"
 					:disabled="!dashboard.editing"
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
