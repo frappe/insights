@@ -8,6 +8,7 @@ const props = defineProps({
 	title: { type: String, required: false },
 	subtitle: { type: String, required: false },
 	options: { type: Object, required: true },
+	onClick: { type: Function, required: false },
 })
 
 let eChart = null
@@ -15,6 +16,7 @@ const chartRef = ref(null)
 onMounted(() => {
 	eChart = echarts.init(chartRef.value, 'light', { renderer: 'svg' })
 	Object.keys(props.options).length && eChart.setOption(props.options)
+	props.onClick && eChart.on('click', props.onClick)
 
 	const resizeObserver = new ResizeObserver(() => eChart.resize())
 	setTimeout(() => chartRef.value && resizeObserver.observe(chartRef.value), 1000)
