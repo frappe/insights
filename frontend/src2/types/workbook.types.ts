@@ -33,7 +33,8 @@ export type WorkbookChart = {
 	name: string
 	title: string
 	query: string
-	public: boolean
+	is_public: boolean
+	share_link?: string
 	chart_type: ChartType
 	config: ChartConfig & {
 		order_by: OrderByArgs[]

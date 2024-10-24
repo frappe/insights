@@ -6,7 +6,6 @@ import App from './App.vue'
 import { registerControllers, registerGlobalComponents } from './globals.ts'
 import './index.css'
 import router from './router.ts'
-import './telemetry.ts'
 
 setConfig('resourceFetcher', frappeRequest)
 

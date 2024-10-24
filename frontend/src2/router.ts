@@ -80,6 +80,16 @@ const routes = [
 		component: () => import('./teams/TeamList.vue'),
 	},
 	{
+		props: true,
+		name: 'SharedChart',
+		path: '/shared/chart/:chart_name',
+		component: () => import('./charts/SharedChart.vue'),
+		meta: {
+			hideSidebar: true,
+			isGuestView: true,
+		},
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('./auth/NotFound.vue'),
 		meta: { hideSidebar: true },

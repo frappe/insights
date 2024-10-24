@@ -23,26 +23,28 @@ type PosthogSettings = {
 	posthog_identifier: string
 }
 
-call('insights.api.telemetry.get_posthog_settings').then((posthogSettings: PosthogSettings) => {
-	if (!posthogSettings.enable_telemetry || !posthogSettings.posthog_project_id) {
-		return
-	}
-	window.posthog.init(posthogSettings.posthog_project_id, {
-		api_host: posthogSettings.posthog_host,
-		person_profiles: 'identified_only',
-		autocapture: false,
-		capture_pageview: false,
-		capture_pageleave: false,
-		enable_heatmaps: false,
-		disable_session_recording: true,
-		loaded: (ph: typeof posthog) => {
-			ph.identify(posthogSettings.posthog_identifier || window.location.host)
-			Object.assign(posthog, ph)
-			if (posthogSettings.record_session) {
-				ph.startSessionRecording()
-			}
-		},
+function init() {
+	call('insights.api.telemetry.get_posthog_settings').then((posthogSettings: PosthogSettings) => {
+		if (!posthogSettings.enable_telemetry || !posthogSettings.posthog_project_id) {
+			return
+		}
+		window.posthog.init(posthogSettings.posthog_project_id, {
+			api_host: posthogSettings.posthog_host,
+			person_profiles: 'identified_only',
+			autocapture: false,
+			capture_pageview: false,
+			capture_pageleave: false,
+			enable_heatmaps: false,
+			disable_session_recording: true,
+			loaded: (ph: typeof posthog) => {
+				ph.identify(posthogSettings.posthog_identifier || window.location.host)
+				Object.assign(posthog, ph)
+				if (posthogSettings.record_session) {
+					ph.startSessionRecording()
+				}
+			},
+		})
 	})
-})
+}
 
-export { posthog }
+export default { posthog, init }

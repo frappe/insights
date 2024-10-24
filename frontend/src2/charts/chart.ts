@@ -46,6 +46,8 @@ function makeChart(workbookChart: WorkbookChart) {
 		getGranularity,
 		updateGranularity,
 
+		getShareLink,
+
 		history: {} as UseRefHistoryReturn<any, any>,
 	})
 
@@ -317,6 +319,12 @@ function makeChart(workbookChart: WorkbookChart) {
 	function setChartFilters() {
 		if (!chart.doc.config.filters?.filters?.length) return
 		chart.dataQuery.addFilterGroup(chart.doc.config.filters)
+	}
+
+	function getShareLink() {
+		return (
+			chart.doc.share_link || `${window.location.origin}/insights/shared/chart/${chart.doc.name}`
+		)
 	}
 
 	chart.history = useDebouncedRefHistory(
