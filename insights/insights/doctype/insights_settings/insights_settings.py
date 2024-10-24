@@ -22,6 +22,7 @@ class InsightsSettings(Document):
         auto_execute_query: DF.Check
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None
+        max_memory_usage: DF.Int
         max_records_to_sync: DF.Int
         onboarding_complete: DF.Check
         query_result_expiry: DF.Int

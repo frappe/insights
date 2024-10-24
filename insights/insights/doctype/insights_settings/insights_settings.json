@@ -10,6 +10,7 @@
   "enable_permissions",
   "allowed_origins",
   "max_records_to_sync",
+  "max_memory_usage",
   "integrations_section",
   "telegram_api_token",
   "query_section",
@@ -99,7 +100,8 @@
   {
    "fieldname": "max_records_to_sync",
    "fieldtype": "Int",
-   "label": "Max Records To Sync"
+   "label": "Max Records To Sync",
+   "non_negative": 1
   },
   {
    "default": "Monday",
@@ -112,12 +114,18 @@
    "fieldname": "tab_break_tvwi",
    "fieldtype": "Tab Break",
    "label": "Legacy"
+  },
+  {
+   "fieldname": "max_memory_usage",
+   "fieldtype": "Int",
+   "label": "Max Memory Usage",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-19 20:08:41.358679",
+ "modified": "2024-10-24 12:24:13.641240",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

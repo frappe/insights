@@ -69,6 +69,9 @@ class DataWarehouse:
             frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
             or 10_00_000
         )
+        max_memory_usage = (
+            frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
+        )
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         remote_db = ds._get_ibis_backend()
         table = remote_db.table(table_name)
@@ -76,7 +79,7 @@ class DataWarehouse:
         if hasattr(table, "creation"):
             table = table.order_by(ibis.desc("creation")).limit(max_records_to_sync)
             table_name = get_warehouse_table_name(data_source, table_name)
-            batch_import_to_parquet(table, "creation", table_name)
+            batch_import_to_parquet(table, "creation", table_name, max_memory_usage)
         else:
             table = table.limit(max_records_to_sync)
             table.to_parquet(path, compression="snappy")
@@ -101,7 +104,7 @@ def get_parquet_filepath(data_source, table_name):
 
 
 def batch_import_to_parquet(
-    table: Expr, primary_key: str, table_name: str, memory_limit: int = 1024
+    table: Expr, primary_key: str, table_name: str, memory_limit: int
 ):
     folder = get_warehouse_folder_path()
     batch_size = calculate_batch_size(table, memory_limit)
