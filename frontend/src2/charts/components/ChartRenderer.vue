@@ -59,10 +59,10 @@ function onClick(params: any) {
 			:options="eChartOptions"
 			:onClick="onClick"
 		/>
-		<NumberChart v-if="chart.doc.chart_type == 'Number'" :chart="chart" />
-		<TableChart v-if="chart.doc.chart_type == 'Table'" :chart="chart" />
+		<NumberChart v-else-if="chart.doc.chart_type == 'Number'" :chart="chart" />
+		<TableChart v-else-if="chart.doc.chart_type == 'Table'" :chart="chart" />
 
-		<div class="flex h-full flex-1 flex-col items-center justify-center">
+		<div v-else class="flex h-full flex-1 flex-col items-center justify-center">
 			<ChartSectionEmptySvg></ChartSectionEmptySvg>
 			<p class="text-gray-500">
 				Pick a chart type and configure options to see the chart here
