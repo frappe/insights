@@ -331,22 +331,37 @@ class IbisQueryBuilder:
         }
 
         if pivot_type == "wider":
-            names = self.query.select(columns.keys()).distinct().limit(10).execute()
-            return (
-                self.query.group_by(*rows.values(), *columns.values())
-                .aggregate(**values)
-                .filter(
+            other_columns = [
+                dim.column_name
+                for dim in pivot_args["columns"]
+                if not self.is_date_type(dim.data_type)
+            ]
+            if other_columns:
+                names = self.query.select(other_columns).distinct().limit(10).execute()
+                self.query = self.query.filter(
                     ibis.or_(
-                        *[getattr(_, col).isin(names[col]) for col in columns.keys()]
+                        *[getattr(_, col).isin(names[col]) for col in other_columns]
                     )
                 )
-                .pivot_wider(
-                    id_cols=rows.keys(),
-                    names_from=columns.keys(),
-                    names_sort=True,
-                    values_from=values.keys(),
-                    values_agg="sum",
-                )
+
+            self.query = self.query.group_by(
+                *rows.values(), *columns.values()
+            ).aggregate(**values)
+
+            date_columns = [
+                dim.column_name
+                for dim in pivot_args["columns"]
+                if self.is_date_type(dim.data_type)
+            ]
+            if date_columns:
+                self.query = self.query.cast({col: "string" for col in date_columns})
+
+            return self.query.pivot_wider(
+                id_cols=rows.keys(),
+                names_from=columns.keys(),
+                names_sort=True,
+                values_from=values.keys(),
+                values_agg="sum",
             )
 
         return self.query
@@ -374,14 +389,14 @@ class IbisQueryBuilder:
 
     def translate_dimension(self, dimension):
         col = getattr(_, dimension.column_name)
-        if (
-            dimension.data_type in ["Date", "Time", "Datetime"]
-            and dimension.granularity
-        ):
+        if self.is_date_type(dimension.data_type) and dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
             col = col.name(dimension.column_name)
         return col
+
+    def is_date_type(self, data_type):
+        return data_type in ["Date", "Datetime", "Time"]
 
     def apply_aggregate(self, column, aggregate_function):
         return {
