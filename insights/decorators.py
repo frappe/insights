@@ -7,12 +7,14 @@ from functools import wraps
 
 import frappe
 
+from insights.insights.doctype.insights_team.insights_team import is_admin
+
 
 def check_role(role):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            if frappe.session.user == "Administrator":
+            if is_admin(frappe.session.user):
                 return function(*args, **kwargs)
 
             perm_disabled = not frappe.db.get_single_value(

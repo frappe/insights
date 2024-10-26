@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory, UseRefHistoryReturn } from '@vueuse/core'
 import { computed, reactive, ref, unref, watch } from 'vue'
-import { copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
+import { areDeeplyEqual, copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
 import { getCachedQuery, makeQuery, Query } from '../query/query'
@@ -43,7 +43,6 @@ function makeChart(workbookChart: WorkbookChart) {
 		}),
 
 		refresh,
-		getGranularity,
 		updateGranularity,
 
 		getShareLink,
@@ -77,14 +76,8 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 	)
 
-	async function refresh(filters?: FilterArgs[], force = false) {
-		if (!workbookChart.query) return
-		if (!chart.doc.chart_type) return
-		if (chart.baseQuery.executing) {
-			await waitUntil(() => !chart.baseQuery.executing)
-		}
-
-		prepareBaseQuery()
+	function prepareDataQuery(filters?: FilterArgs[]) {
+		resetDataQuery()
 		setCustomFilters(filters || [])
 		setChartFilters()
 		let prepared = false
@@ -103,10 +96,22 @@ function makeChart(workbookChart: WorkbookChart) {
 		} else {
 			console.warn('Unknown chart type: ', chart.doc.chart_type)
 		}
-
 		if (prepared) {
 			applySortOrder()
 			applyLimit()
+		}
+		return prepared
+	}
+
+	async function refresh(filters?: FilterArgs[], force = false) {
+		if (!workbookChart.query) return
+		if (!chart.doc.chart_type) return
+		if (chart.baseQuery.executing) {
+			await waitUntil(() => !chart.baseQuery.executing)
+		}
+
+		const prepared = prepareDataQuery(filters)
+		if (prepared) {
 			if (shouldExecuteQuery(force)) {
 				return executeQuery()
 			}
@@ -246,7 +251,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		}
 	}
 
-	function prepareBaseQuery() {
+	function resetDataQuery() {
 		chart.dataQuery.autoExecute = false
 		chart.dataQuery.setOperations([])
 		chart.dataQuery.setSource({
@@ -277,29 +282,10 @@ function makeChart(workbookChart: WorkbookChart) {
 	async function executeQuery() {
 		return chart.dataQuery.execute().then(() => {
 			lastExecutedQueryOperations.value = copy(chart.dataQuery.currentOperations)
-		})
-	}
-
-	function getGranularity(column_name: string): GranularityType | undefined {
-		const column = Object.entries(chart.doc.config).find(([_, value]) => {
-			if (!value) return false
-			if (Array.isArray(value)) {
-				return value.some((v) => v.column_name === column_name)
+			if (!areDeeplyEqual(chart.doc.operations, chart.dataQuery.currentOperations)) {
+				chart.doc.operations = copy(chart.dataQuery.currentOperations)
 			}
-			if (typeof value === 'object') {
-				return value.column_name === column_name
-			}
-			return false
 		})
-		if (!column) return
-
-		if (Array.isArray(column[1])) {
-			const granularity = column[1].find((v) => v.column_name === column_name)?.granularity
-			return granularity
-		}
-
-		const granularity = column[1].granularity
-		return granularity
 	}
 
 	function updateGranularity(column_name: string, granularity: GranularityType) {

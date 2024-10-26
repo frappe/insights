@@ -256,7 +256,6 @@ export function flattenOptions(
 		: (options as DropdownOption[])
 }
 
-
 export function scrub(text: string, spacer = '_') {
-	return text.replace(/ /g, spacer).toLowerCase();
+	return text.replace(/ /g, spacer).toLowerCase()
 }

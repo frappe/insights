@@ -3,13 +3,16 @@
 		<div v-if="!hideSidebar" class="h-full border-r bg-gray-50">
 			<AppSidebar />
 		</div>
+
 		<div class="flex h-full flex-1 flex-col overflow-auto">
 			<RouterView />
 		</div>
+
 		<template v-if="!isGuestView">
-			<Toaster :visible-toasts="2" position="bottom-right" />
 			<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 		</template>
+
+		<Toaster :visible-toasts="2" position="bottom-right" />
 	</div>
 </template>
 

@@ -207,10 +207,12 @@ def admin_team_members():
     )
 
 
-@site_cache(ttl=60 * 60 * 24)
 def is_admin(user):
-    if user == "Administrator" or user in admin_team_members():
-        return True
+    return (
+        user == "Administrator"
+        or user in admin_team_members()
+        or frappe.flags.ignore_insights_permissions
+    )
 
 
 def get_allowed_resources_for_user(resource_type, user=None):

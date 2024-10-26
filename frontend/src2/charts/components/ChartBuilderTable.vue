@@ -20,10 +20,22 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(n
 			@cell-dbl-click="(row, column) => (drillOn = { row, column })"
 		>
 			<template #column-header="{ column }">
-				<ChartBuilderTableColumn :chart="chart" :column="column" />
+				<ChartBuilderTableColumn
+					:config="chart.doc.config"
+					:column="column"
+					:on-granularity-change="chart.updateGranularity"
+				/>
 			</template>
 		</DataTable>
 
-		<DrillDown v-if="drillOn" :chart="chart" :row="drillOn.row" :column="drillOn.column" />
+		<DrillDown
+			v-if="drillOn"
+			:chart="{
+				operations: chart.doc.operations,
+				result: chart.dataQuery.result,
+			}"
+			:row="drillOn.row"
+			:column="drillOn.column"
+		/>
 	</div>
 </template>

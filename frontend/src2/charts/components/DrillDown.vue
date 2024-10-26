@@ -2,12 +2,14 @@
 import { ref, watch } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { Query } from '../../query/query'
-import { QueryResultColumn, QueryResultRow } from '../../types/query.types'
-import { Chart } from '../chart'
+import { Operation, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { getDrillDownQuery } from '../helpers'
 
 const props = defineProps<{
-	chart: Chart
+	chart: {
+		operations: Operation[]
+		result: QueryResult
+	}
 	row: QueryResultRow
 	column: QueryResultColumn
 }>()
@@ -18,7 +20,12 @@ const drillDownQuery = ref<Query | null>(null)
 watch(
 	() => props.row || props.column,
 	() => {
-		const query = getDrillDownQuery(props.chart, props.row, props.column)
+		const query = getDrillDownQuery(
+			props.chart.operations,
+			props.chart.result,
+			props.row,
+			props.column
+		)
 		if (query) {
 			drillDownQuery.value = query
 			drillDownQuery.value.execute()

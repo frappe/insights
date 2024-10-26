@@ -73,7 +73,13 @@ const showShareDialog = ref(false)
 				ref="chartEl"
 				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-4"
 			>
-				<ChartRenderer :chart="chart" />
+				<ChartRenderer
+					:title="chart.doc.title"
+					:chart_type="chart.doc.chart_type"
+					:config="chart.doc.config"
+					:operations="chart.doc.operations"
+					:result="chart.dataQuery.result"
+				/>
 			</div>
 			<ChartBuilderTable v-if="chart.dataQuery.result.executedSQL" />
 		</div>

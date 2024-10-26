@@ -2,14 +2,15 @@
 import { computed } from 'vue'
 import { formatNumber, getShortNumber, scrub } from '../../helpers'
 import { NumberChartConfig } from '../../types/chart.types'
-import { Measure } from '../../types/query.types'
-import { Chart } from '../chart'
+import { QueryResult } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
-const props = defineProps<{ chart: Chart }>()
+const props = defineProps<{
+	config: NumberChartConfig
+	result: QueryResult
+}>()
 
-const title = computed(() => props.chart.doc.title)
-const config = computed(() => props.chart.doc.config as NumberChartConfig)
+const config = computed(() => props.config)
 
 const numberColumns = computed(() => {
 	return config.value.number_columns.filter((c) => c.measure_name).map((c) => c.measure_name)
@@ -17,23 +18,21 @@ const numberColumns = computed(() => {
 const dateValues = computed(() => {
 	if (!config.value.date_column) return []
 	const date_column = config.value.date_column.column_name
-	return props.chart.dataQuery.result.rows.map((row: any) => row[date_column])
+	return props.result.rows.map((row: any) => row[date_column])
 })
 const numberValuesPerColumn = computed(() => {
 	if (!config.value.number_columns?.length) return {}
-	if (!props.chart.dataQuery.result?.rows) return {}
+	if (!props.result?.rows?.length) return {}
 
 	return numberColumns.value.reduce((acc: any, measure_name: string) => {
-		acc[scrub(measure_name)] = props.chart.dataQuery.result.rows.map(
-			(row: any) => row[scrub(measure_name)]
-		)
+		acc[scrub(measure_name)] = props.result.rows.map((row: any) => row[scrub(measure_name)])
 		return acc
 	}, {})
 })
 
 const cards = computed(() => {
 	if (!config.value.number_columns?.length) return []
-	if (!props.chart.dataQuery.result?.rows) return []
+	if (!props.result?.rows) return []
 
 	return numberColumns.value.map((measure_name: string) => {
 		const numberValues = numberValuesPerColumn.value[scrub(measure_name)]

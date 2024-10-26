@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import ContentEditable from '../../components/ContentEditable.vue'
-import { FIELDTYPES } from '../../helpers/constants'
 import {
 	ArrowDownWideNarrow,
 	ArrowUpDown,
@@ -9,16 +7,22 @@ import {
 	Check,
 	XIcon,
 } from 'lucide-vue-next'
-import { computed, h, inject } from 'vue'
+import { computed, h } from 'vue'
+import ContentEditable from '../../components/ContentEditable.vue'
+import { FIELDTYPES } from '../../helpers/constants'
 import { column } from '../../query/helpers'
-import { QueryResultColumn } from '../../types/query.types'
-import { Chart } from '../chart'
+import { GranularityType, QueryResultColumn } from '../../types/query.types'
+import { WorkbookChart } from '../../types/workbook.types'
+import { getGranularity } from '../helpers'
 
-const props = defineProps<{ chart: Chart; column: QueryResultColumn }>()
-const chart = props.chart
+const props = defineProps<{
+	config: WorkbookChart['config']
+	column: QueryResultColumn
+	onGranularityChange?: (column_name: string, granularity: GranularityType) => void
+}>()
 
 const currentSortOrder = computed(() => {
-	return chart.doc.config.order_by.find((order) => order.column.column_name === props.column.name)
+	return props.config.order_by.find((order) => order.column.column_name === props.column.name)
 })
 const sortOptions = [
 	{
@@ -39,20 +43,20 @@ const sortOptions = [
 ]
 
 function onSort(sort_order: 'asc' | 'desc' | '') {
-	const existingOrder = chart.doc.config.order_by.find(
+	const existingOrder = props.config.order_by.find(
 		(order) => order.column.column_name === props.column.name
 	)
 	if (existingOrder) {
 		if (sort_order) {
 			existingOrder.direction = sort_order
 		} else {
-			chart.doc.config.order_by = chart.doc.config.order_by.filter(
+			props.config.order_by = props.config.order_by.filter(
 				(order) => order.column.column_name !== props.column.name
 			)
 		}
 	} else {
 		if (!sort_order) return
-		chart.doc.config.order_by.push({
+		props.config.order_by.push({
 			column: column(props.column.name),
 			direction: sort_order,
 		})
@@ -60,19 +64,22 @@ function onSort(sort_order: 'asc' | 'desc' | '') {
 }
 
 const dateGranularityOptions = computed(() => {
+	if (!props.onGranularityChange) return []
+
+	const changeFn = (granularity: string) => {
+		props.onGranularityChange?.(props.column.name, granularity)
+	}
+
 	const options = [
-		// { label: 'Second', onClick: () => chart.updateGranularity(props.column.name, 'second') },
-		// { label: 'Minute', onClick: () => chart.updateGranularity(props.column.name, 'minute') },
-		// { label: 'Hour', onClick: () => chart.updateGranularity(props.column.name, 'hour') },
-		{ label: 'Day', onClick: () => chart.updateGranularity(props.column.name, 'day') },
-		{ label: 'Week', onClick: () => chart.updateGranularity(props.column.name, 'week') },
-		{ label: 'Month', onClick: () => chart.updateGranularity(props.column.name, 'month') },
-		{ label: 'Quarter', onClick: () => chart.updateGranularity(props.column.name, 'quarter') },
-		{ label: 'Year', onClick: () => chart.updateGranularity(props.column.name, 'year') },
+		{ label: 'Day', onClick: () => changeFn('day') },
+		{ label: 'Week', onClick: () => changeFn('week') },
+		{ label: 'Month', onClick: () => changeFn('month') },
+		{ label: 'Quarter', onClick: () => changeFn('quarter') },
+		{ label: 'Year', onClick: () => changeFn('year') },
 	]
 	options.forEach((option: any) => {
 		option.icon =
-			option.label.toLowerCase() === chart.getGranularity(props.column.name)
+			option.label.toLowerCase() === getGranularity(props.column.name, props.config)
 				? h(Check, {
 						class: 'h-4 w-4 text-gray-700',
 						strokeWidth: 1.5,
@@ -116,7 +123,7 @@ const dateGranularityOptions = computed(() => {
 
 			<!-- Granularity -->
 			<Dropdown
-				v-if="FIELDTYPES.DATE.includes(props.column.type)"
+				v-if="FIELDTYPES.DATE.includes(props.column.type) && props.onGranularityChange"
 				:options="dateGranularityOptions"
 			>
 				<Button variant="ghost" class="rounded-none">

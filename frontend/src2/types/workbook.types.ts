@@ -41,6 +41,7 @@ export type WorkbookChart = {
 		filters?: FilterGroupArgs
 		limit?: number
 	}
+	operations: Operation[]
 }
 
 export type WorkbookDashboard = {
