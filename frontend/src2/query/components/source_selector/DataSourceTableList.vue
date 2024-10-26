@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { ListEmptyState, ListView } from 'frappe-ui'
+import { ListView } from 'frappe-ui'
 import { CheckIcon, RefreshCcw, SearchIcon, Table2Icon } from 'lucide-vue-next'
-import { h, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 import useTableStore from '../../../data_source/tables'
 import { wheneverChanges } from '../../../helpers'
 import { TableArgs } from '../../../types/query.types'
 
 const props = defineProps<{ data_source: string }>()
 const tableStore = useTableStore()
-tableStore.getTables()
 
 const selectedTable = defineModel<TableArgs>('selectedTable')
 
@@ -41,6 +40,25 @@ const listColumns = [
 			h(CheckIcon, { class: 'h-4 w-4' }),
 	},
 ]
+
+const emptyState = computed(() => {
+	if (tableStore.updatingDataSourceTables) {
+		return {
+			title: 'Refreshing Tables',
+			description: 'Please wait while we refresh the tables from your data source',
+		}
+	}
+
+	return {
+		title: 'No Tables Found',
+		description: 'Sync tables from your data source to get started',
+		button: {
+			variant: 'outline',
+			label: 'Refresh Tables',
+			onClick: () => tableStore.updateDataSourceTables(props.data_source),
+		},
+	}
+})
 </script>
 
 <template>
@@ -73,21 +91,13 @@ const listColumns = [
 		<ListView
 			class="h-full"
 			:columns="listColumns"
-			:rows="tableStore.tables"
+			:rows="tableStore.tables[props.data_source] || []"
 			:row-key="'name'"
 			:options="{
 				selectable: false,
 				showTooltip: false,
 				onRowClick: (row: any) => (selectedTable = row),
-				emptyState: {
-					title: 'No Tables Found',
-					description: 'Sync tables from your data source to get started',
-					button: {
-						variant: 'outline',
-						label: 'Refresh Tables',
-						onClick: () => tableStore.updateDataSourceTables(props.data_source),
-					},
-				},
+				emptyState: emptyState,
 			}"
 		>
 		</ListView>

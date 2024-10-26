@@ -10,18 +10,23 @@ export type DataSourceTable = {
 	data_source: string
 	preview?: any[]
 }
-const tables = ref<DataSourceTable[]>([])
+const tables = ref<Record<string, DataSourceTable[]>>({})
 
 const loading = ref(false)
 async function getTables(data_source?: string, search_term?: string, limit: number = 100) {
 	loading.value = true
-	tables.value = await call('insights.api.data_sources.get_data_source_tables', {
+	const _tables = await call('insights.api.data_sources.get_data_source_tables', {
 		data_source,
 		search_term,
 		limit,
 	})
 	loading.value = false
-	return tables.value
+	if (data_source) {
+		tables.value[data_source] = _tables
+	} else {
+		tables.value['__all'] = _tables
+	}
+	return tables
 }
 
 const fetchingTable = ref(false)

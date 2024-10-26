@@ -33,9 +33,10 @@ type UseTableOptions = {
 }
 export function useTableOptions(options: UseTableOptions) {
 	const tableStore = useTableStore()
+	const dataSourceTables = tableStore.tables[options.data_source.value] || []
 	const tableOptions = computed<TableOption[]>(() => {
-		if (!tableStore.tables.length) return []
-		return tableStore.tables.map((t) => ({
+		if (!dataSourceTables.length) return []
+		return dataSourceTables.map((t) => ({
 			table_name: t.table_name,
 			data_source: t.data_source,
 			description: t.data_source,
