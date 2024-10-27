@@ -179,7 +179,6 @@ def update_admin_team(user, method=None):
 def clear_cache():
     get_teams.clear_cache()
     admin_team_members.clear_cache()
-    is_admin.clear_cache()
     _get_allowed_resources_for_user.clear_cache()
 
 
