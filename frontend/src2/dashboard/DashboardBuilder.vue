@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
+import ContentEditable from '../components/ContentEditable.vue'
 import { safeJSONParse } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
@@ -10,7 +11,6 @@ import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import VueGridLayout from './VueGridLayout.vue'
-import ContentEditable from '../components/ContentEditable.vue'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -58,12 +58,10 @@ function onDrop(event: DragEvent) {
 <template>
 	<div class="relative flex h-full w-full divide-x overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
-			<div class="flex items-center justify-between border-x bg-white py-3 px-4 shadow-sm">
+			<div class="flex items-center justify-between border-x px-4 pt-3">
 				<ContentEditable
-					class="rounded-sm text-lg font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-					:class="[dashboard.editing ? '' : 'cursor-default']"
+					class="cursor-text rounded-sm text-lg font-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 					v-model="dashboard.doc.title"
-					:disabled="!dashboard.editing"
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 				<div class="flex gap-2">

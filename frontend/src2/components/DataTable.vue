@@ -151,7 +151,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 				<tbody>
 					<tr v-for="(row, idx) in visibleRows?.slice(0, 100)" :key="idx">
 						<td
-							class="whitespace-nowrap border-b border-r px-3"
+							class="whitespace-nowrap border-b border-r px-3 text-right"
 							width="1%"
 							height="30px"
 						>
