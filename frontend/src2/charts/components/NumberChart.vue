@@ -33,6 +33,7 @@ const numberValuesPerColumn = computed(() => {
 const cards = computed(() => {
 	if (!config.value.number_columns?.length) return []
 	if (!props.result?.rows) return []
+	if (!Object.keys(numberValuesPerColumn.value).length) return []
 
 	return numberColumns.value.map((measure_name: string) => {
 		const numberValues = numberValuesPerColumn.value[scrub(measure_name)]
