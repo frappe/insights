@@ -70,6 +70,11 @@ const routes = [
 		component: () => import('./data_source/DataSourceTable.vue'),
 	},
 	{
+		path: '/data-store',
+		name: 'DataStoreList',
+		component: () => import('./data_store/DataStoreList.vue'),
+	},
+	{
 		path: '/users',
 		name: 'UserList',
 		component: () => import('./users/UserList.vue'),

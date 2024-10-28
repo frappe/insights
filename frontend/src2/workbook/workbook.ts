@@ -89,6 +89,7 @@ export default function useWorkbook(name: string) {
 			chart_type: 'Bar',
 			is_public: false,
 			config: {} as WorkbookChart['config'],
+			operations: [],
 		})
 		setActiveTab('chart', idx)
 	}

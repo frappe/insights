@@ -43,7 +43,7 @@ watchEffect(() => {
 					<template #footer>
 						<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
 							<p class="tnum text-sm text-gray-600">
-								Showing 100 rows from {{ table.table_name }} table
+								Showing only the first 100 rows
 							</p>
 						</div>
 					</template>

@@ -40,7 +40,6 @@ const listOptions = ref({
 				return <Avatar size="md" label={workbook.owner} image={user?.user_image} />
 			},
 		},
-		{ label: 'Created', key: 'created_from_now' },
 		{ label: 'Modified', key: 'modified_from_now' },
 	],
 	rows: filteredWorkbooks,

@@ -7,9 +7,8 @@ from hashlib import md5
 import frappe
 from frappe.model.document import Document, bulk_insert
 
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-    DataWarehouse,
-)
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
+from insights.utils import InsightsDataSourcev3
 
 
 class InsightsTablev3(Document):
@@ -21,14 +20,10 @@ class InsightsTablev3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        from insights.insights.doctype.insights_table_column.insights_table_column import (
-            InsightsTableColumn,
-        )
-
-        columns: DF.Table[InsightsTableColumn]
         data_source: DF.Link
         label: DF.Data
         last_synced_on: DF.Datetime | None
+        stored: DF.Check
         table: DF.Data
     # end: auto-generated types
 
@@ -49,29 +44,29 @@ class InsightsTablev3(Document):
         bulk_insert("Insights Table v3", table_docs)
 
     @staticmethod
-    def get_ibis_table(data_source, table, use_live_connection=False):
+    def get_ibis_table(data_source, table_name, use_live_connection=False):
         from insights.insights.doctype.insights_team.insights_team import (
             apply_table_restrictions,
             check_table_permission,
         )
 
-        check_table_permission(data_source, table)
-        t = DataWarehouse().get_table(
-            data_source,
-            table,
-            use_live_connection=use_live_connection,
-        )
-        t = apply_table_restrictions(t, data_source, table)
+        check_table_permission(data_source, table_name)
+
+        if not use_live_connection:
+            wt = Warehouse().get_table(data_source, table_name)
+            t = wt.get_ibis_table(import_if_not_exists=False)
+        else:
+            ds = InsightsDataSourcev3.get_doc(data_source)
+            t = ds.get_ibis_table(table_name)
+
+        t = apply_table_restrictions(t, data_source, table_name)
         return t
 
     @frappe.whitelist()
-    def import_to_data_warehouse(self):
+    def import_to_warehouse(self, overwrite=False):
         frappe.only_for("Insights Admin")
-        DataWarehouse().import_remote_table(
-            self.data_source,
-            self.table,
-            force=True,
-        )
+        wt = Warehouse().get_table(self.data_source, self.table)
+        wt.import_remote_table(overwrite=overwrite)
 
 
 def get_table_name(data_source, table):

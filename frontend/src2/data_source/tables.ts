@@ -1,6 +1,6 @@
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-import { showErrorToast } from '../helpers'
+import { showErrorToast, toOptions } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
@@ -13,7 +13,7 @@ export type DataSourceTable = {
 const tables = ref<Record<string, DataSourceTable[]>>({})
 
 const loading = ref(false)
-async function getTables(data_source?: string, search_term?: string, limit: number = 100) {
+export async function getTables(data_source?: string, search_term?: string, limit: number = 100) {
 	loading.value = true
 	const _tables = await call('insights.api.data_sources.get_data_source_tables', {
 		data_source,
@@ -26,7 +26,7 @@ async function getTables(data_source?: string, search_term?: string, limit: numb
 	} else {
 		tables.value['__all'] = _tables
 	}
-	return tables
+	return _tables
 }
 
 const fetchingTable = ref(false)
@@ -62,6 +62,13 @@ async function getTableColumns(data_source: string, table_name: string) {
 			name: c.column,
 			type: c.type,
 		})) as QueryResultColumn[]
+	})
+}
+
+export async function getRowCount(data_source: string, table_name: string) {
+	return call('insights.api.data_sources.get_data_source_table_row_count', {
+		data_source,
+		table_name,
 	})
 }
 
@@ -106,11 +113,22 @@ async function getTableLinks(
 	})
 }
 
+export function getTableOptions(data_source: string) {
+	if (!tables.value[data_source]) return []
+	return toOptions(tables.value[data_source], {
+		label: 'table_name',
+		value: 'table_name',
+		description: 'data_source',
+	})
+}
+
 export default function useTableStore() {
 	return reactive({
 		tables,
 		loading,
 		getTables,
+		getRowCount,
+		getOptions: getTableOptions,
 
 		getTableColumns,
 		updatingDataSourceTables,

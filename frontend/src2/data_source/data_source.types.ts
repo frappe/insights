@@ -1,10 +1,11 @@
 
+export type DatabaseType = 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB'
 export type DataSourceListItem = {
 	title: string
 	name: string
 	owner: string
 	status: 'Active' | 'Inactive'
-	database_type: 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB'
+	database_type: DatabaseType
 	creation: string
 	modified: string
 	created_from_now: string
@@ -13,7 +14,7 @@ export type DataSourceListItem = {
 
 type BaseDataSource = {
 	title: string
-	database_type: 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB'
+	database_type: DatabaseType
 	status?: 'Active' | 'Inactive'
 }
 

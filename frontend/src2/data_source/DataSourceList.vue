@@ -3,16 +3,12 @@ import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import CSVIcon from '../components/Icons/CSVIcon.vue'
-import DuckDBIcon from '../components/Icons/DuckDBIcon.vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
-import MariaDBIcon from '../components/Icons/MariaDBIcon.vue'
-import PostgreSQLIcon from '../components/Icons/PostgreSQLIcon.vue'
-import SQLiteIcon from '../components/Icons/SQLiteIcon.vue'
 import SelectTypeDialog from '../components/SelectTypeDialog.vue'
 import useUserStore from '../users/users'
 import ConnectMariaDBDialog from './ConnectMariaDBDialog.vue'
 import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
-import useDataSourceStore from './data_source'
+import useDataSourceStore, { getDatabaseLogo } from './data_source'
 import { DataSourceListItem } from './data_source.types'
 import UploadCSVFileDialog from './UploadCSVFileDialog.vue'
 
@@ -37,7 +33,7 @@ const showCSVFileUploadDialog = ref(false)
 const sourceTypes = [
 	{
 		label: 'MariaDB',
-		icon: <MariaDBIcon class="h-8 w-8" />,
+		icon: getDatabaseLogo('MariaDB'),
 		description: 'Connect to MariaDB database',
 		onClick: () => {
 			showNewSourceDialog.value = false
@@ -46,7 +42,7 @@ const sourceTypes = [
 	},
 	{
 		label: 'PostgreSQL',
-		icon: <PostgreSQLIcon class="h-8 w-8" />,
+		icon: getDatabaseLogo('PostgreSQL'),
 		description: 'Connect to PostgreSQL database',
 		onClick: () => {
 			showNewSourceDialog.value = false
@@ -72,18 +68,7 @@ const listOptions = ref({
 			key: 'title',
 			prefix: (props: any) => {
 				const data_source = props.row as DataSourceListItem
-				if (data_source.database_type === 'MariaDB') {
-					return <MariaDBIcon class="h-5 w-5" />
-				}
-				if (data_source.database_type === 'PostgreSQL') {
-					return <PostgreSQLIcon class="h-5 w-5" />
-				}
-				if (data_source.database_type === 'SQLite') {
-					return <SQLiteIcon class="h-5 w-5" />
-				}
-				if (data_source.database_type === 'DuckDB') {
-					return <DuckDBIcon class="h-5 w-5" />
-				}
+				return getDatabaseLogo(data_source.database_type, 'sm')
 			},
 		},
 		{
@@ -97,6 +82,11 @@ const listOptions = ref({
 		{
 			label: 'Owner',
 			key: 'owner',
+			getLabel(props: any) {
+				const data_source = props.row as DataSourceListItem
+				const user = userStore.getUser(data_source.owner)
+				return user?.full_name || data_source.owner
+			},
 			prefix: (props: any) => {
 				const data_source = props.row as DataSourceListItem
 				const imageUrl = userStore.getUser(data_source.owner)?.user_image

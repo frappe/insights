@@ -346,6 +346,17 @@ def get_data_source_table(data_source: str, table_name: str):
 
 
 @insights_whitelist()
+@validate_type
+def get_data_source_table_row_count(data_source: str, table_name: str):
+    check_table_permission(data_source, table_name)
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    db = ds._get_ibis_backend()
+    table = db.table(table_name)
+    result = table.count().execute()
+    return int(result)
+
+
+@insights_whitelist()
 @site_cache
 @validate_type
 def get_data_source_table_columns(data_source: str, table_name: str):

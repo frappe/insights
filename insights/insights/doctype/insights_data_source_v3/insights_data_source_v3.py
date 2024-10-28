@@ -220,6 +220,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 link.right_column,
             )
 
+    def get_ibis_table(self, table_name):
+        remote_db = self._get_ibis_backend()
+        return remote_db.table(table_name)
+
 
 def before_request():
     if not hasattr(frappe.local, "insights_db_connections"):

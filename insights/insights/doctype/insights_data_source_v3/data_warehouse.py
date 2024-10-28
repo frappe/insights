@@ -7,10 +7,12 @@ from frappe.utils import get_files_path
 from ibis import BaseBackend, _
 from ibis.expr.types import Expr
 
+from insights.utils import InsightsDataSourcev3, InsightsTablev3
+
 WAREHOUSE_DB_NAME = "insights.duckdb"
 
 
-class DataWarehouse:
+class Warehouse:
     def __init__(self):
         self.warehouse_path = get_warehouse_folder_path()
         self.db_path = os.path.join(self.warehouse_path, WAREHOUSE_DB_NAME)
@@ -27,65 +29,212 @@ class DataWarehouse:
 
         return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
 
-    def get_table(self, data_source, table_name, use_live_connection=True):
-        if use_live_connection:
-            return self.get_remote_table(data_source, table_name)
-        else:
-            return self.get_warehouse_table(data_source, table_name)
+    def get_table(self, data_source: str, table_name: str) -> "WarehouseTable":
+        return WarehouseTable(data_source, table_name)
 
-    def get_warehouse_table(self, data_source, table_name, sync=True):
-        parquet_file = get_parquet_filepath(data_source, table_name)
-        warehouse_table = get_warehouse_table_name(data_source, table_name)
 
-        if not os.path.exists(parquet_file):
-            if sync:
-                self.import_remote_table(data_source, table_name)
-                return self.db.read_parquet(parquet_file, table_name=warehouse_table)
+class WarehouseTable:
+    def __init__(self, data_source: str, table_name: str):
+        self.warehouse = Warehouse()
+        self.data_source = data_source
+        self.table_name = table_name
+        self.warehouse_table_name = get_warehouse_table_name(data_source, table_name)
+        self.parquet_filepath = get_parquet_filepath(data_source, table_name)
+
+    def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
+        if not os.path.exists(self.parquet_filepath):
+            if import_if_not_exists:
+                self.import_remote_table()
+                return self.warehouse.db.read_parquet(
+                    self.parquet_filepath, table_name=self.warehouse_table_name
+                )
             else:
                 frappe.throw(
-                    f"{table_name} of {data_source} is not synced to the data warehouse."
+                    f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
                 )
 
-        if not self.db.list_tables(warehouse_table):
-            return self.db.read_parquet(parquet_file, table_name=warehouse_table)
-        else:
-            return self.db.table(warehouse_table)
+        if not self.warehouse.db.list_tables(self.warehouse_table_name):
+            return self.warehouse.db.read_parquet(
+                self.parquet_filepath, table_name=self.warehouse_table_name
+            )
 
-    def get_remote_table(self, data_source, table_name):
-        ds = frappe.get_doc("Insights Data Source v3", data_source)
-        remote_db = ds._get_ibis_backend()
-        return remote_db.table(table_name)
+        return self.warehouse.db.table(self.warehouse_table_name)
 
-    def import_remote_table(self, data_source, table_name, force=False):
-        path = get_parquet_filepath(data_source, table_name)
-        if os.path.exists(path) and not force:
+    def get_remote_table(self) -> Expr:
+        ds = InsightsDataSourcev3.get_doc(self.data_source)
+        return ds.get_ibis_table(self.table_name)
+
+    def import_remote_table(self, overwrite: bool = False):
+        if os.path.exists(self.parquet_filepath) and not overwrite:
             print(
-                f"Skipping creation of parquet file for {table_name} of {data_source} as it already exists. "
-                "Skipping insights table creation as well."
+                f"Skipping creation of parquet file for {self.table_name} of {self.data_source} as it already exists."
             )
             return
 
-        max_records_to_sync = (
+        importer = WarehouseTableImporter(self)
+        importer.start_import()
+        t = InsightsTablev3.get_doc(
+            {
+                "data_source": self.data_source,
+                "table": self.table_name,
+            }
+        )
+        t.stored = 1
+        t.last_synced_on = frappe.utils.now()
+        t.save()
+
+
+class WarehouseTableImporter:
+    def __init__(self, table: WarehouseTable):
+        self.table = table
+        self.remote_table = None
+        self.primary_key = ""
+        self.warehouse_table_name = ""
+        self.warehouse_folder = ""
+        self.imported_batch_paths = []
+
+        self.log = None
+        self.settings = frappe._dict()
+
+    def start_import(self):
+        self.prepare_log()
+        self.prepare_settings()
+        self.prepare_remote_table()
+        self.start_batch_import()
+        self.log.ended_at = frappe.utils.now()
+        self.log.time_taken = frappe.utils.time_diff_in_seconds(
+            self.log.ended_at, self.log.started_at
+        )
+        self.log.save()
+
+    def prepare_log(self):
+        self.log = frappe.new_doc("Insights Table Import Log")
+        self.log.data_source = self.table.data_source
+        self.log.table_name = self.table.table_name
+        self.log.started_at = frappe.utils.now()
+
+    def prepare_settings(self) -> dict:
+        self.settings.row_limit = (
             frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
             or 10_00_000
         )
-        max_memory_usage = (
+        self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
         )
-        ds = frappe.get_doc("Insights Data Source v3", data_source)
-        remote_db = ds._get_ibis_backend()
-        table = remote_db.table(table_name)
+        self.log.row_limit = self.settings.row_limit
+        self.log.memory_limit = self.settings.memory_limit
 
-        if hasattr(table, "creation"):
-            table = table.order_by(ibis.desc("creation")).limit(max_records_to_sync)
-            table_name = get_warehouse_table_name(data_source, table_name)
-            batch_import_to_parquet(table, "creation", table_name, max_memory_usage)
-        else:
-            table = table.limit(max_records_to_sync)
-            table.to_parquet(path, compression="snappy")
+    def prepare_remote_table(self) -> Expr:
+        self.remote_table = self.table.get_remote_table()
+
+        if hasattr(self.remote_table, "creation"):
+            self.remote_table = self.remote_table.order_by(ibis.desc("creation"))
+
+        self.remote_table = self.remote_table.limit(self.settings.row_limit)
+        self.log.query = ibis.to_sql(self.remote_table)
+
+        if not hasattr(self.remote_table, "creation"):
+            self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
+
+    def start_batch_import(self):
+        self.primary_key = (
+            "creation" if hasattr(self.remote_table, "creation") else "__row_number"
+        )
+        self.warehouse_table_name = self.table.warehouse_table_name
+        self.warehouse_folder = get_warehouse_folder_path()
+        self.imported_batch_paths = []
+
+        try:
+            batch_size = self.calculate_batch_size()
+            self.process_batches(batch_size)
+            self.merge_batches()
+        finally:
+            self._cleanup()
+
+    def calculate_batch_size(self) -> int:
+        sample_size = 10
+        sample_rows = self.remote_table.head(sample_size).execute()
+        total_size = sum(
+            sample_rows[column].memory_usage(deep=True)
+            for column in sample_rows.columns
+        )
+        row_size = total_size / sample_size / (1024 * 1024)
+        batch_size = int(self.settings.memory_limit / row_size)
+        self.log.row_size = row_size * 1024
+        self.log.batch_size = batch_size
+        return batch_size
+
+    def process_batches(self, batch_size: int):
+        remote_table = self.remote_table.order_by(self.primary_key)
+        batch_number = 0
+
+        while True:
+            self.log.append_message(f"Processing batch: {batch_number + 1}")
+            batch = remote_table.head(batch_size)
+            path = self.create_parquet_file(batch, batch_number)
+            self.imported_batch_paths.append(path)
+
+            metadata = self.get_batch_metadata(path)
+            if metadata["count"] < batch_size:
+                break
+
+            remote_table = remote_table.filter(
+                _[self.primary_key] > metadata["max_primary_key"]
+            )
+            batch_number += 1
+
+    def create_parquet_file(self, batch: Expr, batch_number: int) -> str:
+        batch_file_name = f"{self.warehouse_table_name}_{batch_number}.parquet"
+        path = os.path.join(self.warehouse_folder, batch_file_name)
+        self.log.append_message(f"Batch Query: \n{ibis.to_sql(batch)}")
+        batch.to_parquet(path, compression="snappy")
+        return path
+
+    def get_batch_metadata(self, path: str) -> dict:
+        ddb = ibis.duckdb.connect(":memory:")
+        batch = ddb.read_parquet(path)
+        metadata = (
+            batch.aggregate(
+                count=_.count(),
+                max_primary_key=_[self.primary_key].max(),
+            )
+            .execute()
+            .to_records(index=False)[0]
+        )
+        self.log.append_message(
+            f"Rows: {metadata['count']}\n" f"Bookmark: {metadata['max_primary_key']}"
+        )
+        ddb.disconnect()
+        return metadata
+
+    def merge_batches(self):
+        ddb = ibis.duckdb.connect(":memory:")
+        merged = ddb.read_parquet(
+            self.imported_batch_paths, table_name=self.warehouse_table_name
+        )
+        path = os.path.join(
+            self.warehouse_folder, f"{self.warehouse_table_name}.parquet"
+        )
+        if hasattr(merged, "__row_number"):
+            merged = merged.drop("__row_number")
+        merged.to_parquet(path, compression="snappy")
+
+        total_rows = int(merged.count().execute())
+        self.log.parquet_file = path
+        self.log.rows_imported = total_rows
+        self.log.append_message(
+            f"Total Batches: {len(self.imported_batch_paths)}\n"
+            f"Total Rows: {total_rows}"
+        )
+        ddb.disconnect()
+
+    def _cleanup(self):
+        for path in self.imported_batch_paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 
-def get_warehouse_folder_path():
+def get_warehouse_folder_path() -> str:
     path = os.path.realpath(get_files_path(is_private=1))
     path = os.path.join(path, "insights_data_warehouse")
     if not os.path.exists(path):
@@ -93,116 +242,11 @@ def get_warehouse_folder_path():
     return path
 
 
-def get_warehouse_table_name(data_source, table_name):
+def get_warehouse_table_name(data_source: str, table_name: str) -> str:
     return f"{frappe.scrub(data_source)}.{frappe.scrub(table_name)}"
 
 
-def get_parquet_filepath(data_source, table_name):
+def get_parquet_filepath(data_source: str, table_name: str) -> str:
     warehouse_path = get_warehouse_folder_path()
     warehouse_table = get_warehouse_table_name(data_source, table_name)
     return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
-
-
-def batch_import_to_parquet(
-    table: Expr, primary_key: str, table_name: str, memory_limit: int
-):
-    folder = get_warehouse_folder_path()
-    batch_size = calculate_batch_size(table, memory_limit)
-    imported_batch_paths = process_batches(
-        table, primary_key, table_name, folder, batch_size
-    )
-    merge_batches(imported_batch_paths, table_name, folder)
-    cleanup_batch_files(imported_batch_paths)
-
-
-def calculate_batch_size(table: Expr, memory_limit: int) -> int:
-    sample_size = 10
-    sample_rows = table.head(sample_size).execute()
-    total_size = sum(
-        sample_rows[column].memory_usage(deep=True) for column in sample_rows.columns
-    )
-    row_size = total_size / sample_size / (1024 * 1024)
-    batch_size = int(memory_limit / row_size)  # in MB
-    print(f"Batch size: {batch_size}")
-    return batch_size
-
-
-def process_batches(
-    table: Expr, primary_key: str, table_name: str, folder: str, batch_size: int
-):
-    _table = table.order_by(primary_key)
-    n = 0
-    max_primary_key = None
-    imported_batch_paths = []
-
-    try:
-        while True:
-            batch = _table.head(batch_size)
-            path = create_batch_file(batch, table_name, n, folder)
-            imported_batch_paths.append(path)
-
-            metadata = get_batch_metadata(path, primary_key)
-            total_rows, max_primary_key = metadata["count"], metadata["max_primary_key"]
-            print_batch_info(n, table_name, total_rows, max_primary_key)
-
-            if total_rows < batch_size:
-                break
-
-            _table = _table.filter(_[primary_key] > max_primary_key)
-            n += 1
-
-    except BaseException as e:
-        cleanup_batch_files(imported_batch_paths)
-        raise e
-
-    return imported_batch_paths
-
-
-def create_batch_file(
-    batch: Expr, table_name: str, batch_number: int, folder: str
-) -> str:
-    print(f"SQL for batch {batch_number} of {table_name}: {ibis.to_sql(batch)}")
-    batch_file_name = f"{table_name}_{batch_number}.parquet"
-    path = os.path.join(folder, batch_file_name)
-    batch.to_parquet(path, compression="snappy")
-    print(f"Created batch {batch_number} for {table_name}")
-    return path
-
-
-def get_batch_metadata(path: str, primary_key: str):
-    ddb = ibis.duckdb.connect(":memory:")
-    batch = ddb.read_parquet(path)
-    metadata = (
-        batch.aggregate(
-            count=_.count(),
-            max_primary_key=_[primary_key].max(),
-        )
-        .execute()
-        .to_records(index=False)[0]
-    )
-    ddb.disconnect()
-    return metadata
-
-
-def print_batch_info(
-    batch_number: int, table_name: str, total_rows: int, max_primary_key: str
-):
-    print(f"Batch {batch_number} for {table_name} has {total_rows} rows")
-    print(
-        f"Max primary key for batch {batch_number} of {table_name}: {max_primary_key}"
-    )
-
-
-def merge_batches(imported_batch_paths: list[str], table_name: str, folder: str):
-    print(f"Merging {len(imported_batch_paths)} batches for {table_name}")
-    path = os.path.join(folder, f"{table_name}.parquet")
-    ddb = ibis.duckdb.connect(":memory:")
-    merged = ddb.read_parquet(imported_batch_paths, table_name=table_name)
-    merged.to_parquet(path, compression="snappy")
-    print(f"Created parquet file for {table_name}")
-    ddb.disconnect()
-
-
-def cleanup_batch_files(imported_batch_paths: list[str]):
-    for path in imported_batch_paths:
-        os.remove(path)

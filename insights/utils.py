@@ -102,6 +102,14 @@ class InsightsQueryResult(DoctypeBase):
     doctype = "Insights Query Result"
 
 
+class InsightsDataSourcev3(DoctypeBase):
+    doctype = "Insights Data Source v3"
+
+
+class InsightsTablev3(DoctypeBase):
+    doctype = "Insights Table v3"
+
+
 class InsightsSettings:
     @classmethod
     def get(cls, key):

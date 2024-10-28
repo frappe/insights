@@ -1,14 +1,13 @@
-import { call } from 'frappe-ui'
-import { reactive, ref } from 'vue'
 import { useTimeAgo } from '@vueuse/core'
-import { DataSource, DataSourceListItem } from './data_source.types'
-import { showErrorToast } from '../helpers'
-
+import { call } from 'frappe-ui'
+import { defineAsyncComponent, h, reactive, ref } from 'vue'
+import { showErrorToast, toOptions } from '../helpers'
+import { DatabaseType, DataSource, DataSourceListItem } from './data_source.types'
 
 const sources = ref<DataSourceListItem[]>([])
 
 const loading = ref(false)
-async function getSources() {
+async function fetchSources() {
 	loading.value = true
 	sources.value = await call('insights.api.data_sources.get_all_data_sources')
 	sources.value = sources.value.map((source: any) => ({
@@ -21,7 +20,7 @@ async function getSources() {
 	return sources.value
 }
 function getSource(name: string) {
-	return sources.value.find(source => source.name === name)
+	return sources.value.find((source) => source.name === name)
 }
 
 const testing = ref(false)
@@ -48,16 +47,33 @@ function createDataSource(data_source: DataSource) {
 		})
 }
 
+export function getDataSourceList() {
+	if (!sources.value.length) {
+		fetchSources()
+	}
+	return sources
+}
+
+export function getDataSourceOptions() {
+	const list = getDataSourceList()
+	return toOptions(list.value, {
+		label: 'title',
+		value: 'name',
+		description: 'database_type',
+	})
+}
+
 export default function useDataSourceStore() {
 	if (!sources.value.length) {
-		getSources()
+		fetchSources()
 	}
 
 	return reactive({
 		sources,
 		loading,
-		getSources,
+		getSources: fetchSources,
 		getSource,
+		getOptions: getDataSourceOptions,
 
 		testing,
 		testConnection,
@@ -65,4 +81,25 @@ export default function useDataSourceStore() {
 		creating,
 		createDataSource,
 	})
+}
+
+export function getDatabaseLogo(database_type: DatabaseType, size: 'sm' | 'md' = 'md') {
+	let comp = undefined
+	if (database_type === 'MariaDB') {
+		comp = defineAsyncComponent(() => import('../components/Icons/MariaDBIcon.vue'))
+	}
+	if (database_type === 'PostgreSQL') {
+		comp = defineAsyncComponent(() => import('../components/Icons/PostgreSQLIcon.vue'))
+	}
+	if (database_type === 'SQLite') {
+		comp = defineAsyncComponent(() => import('../components/Icons/SQLiteIcon.vue'))
+	}
+	if (database_type === 'DuckDB') {
+		comp = defineAsyncComponent(() => import('../components/Icons/DuckDBIcon.vue'))
+	}
+	return comp
+		? h(comp, {
+				class: size === 'sm' ? 'w-5 h-5' : 'w-8 h-8',
+		  })
+		: null
 }
