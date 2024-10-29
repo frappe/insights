@@ -77,7 +77,7 @@ const showShareDialog = ref(false)
 					:title="chart.doc.title"
 					:chart_type="chart.doc.chart_type"
 					:config="chart.doc.config"
-					:operations="chart.doc.operations"
+					:operations="chart.doc.operations || chart.dataQuery.operations || []"
 					:result="chart.dataQuery.result"
 				/>
 			</div>

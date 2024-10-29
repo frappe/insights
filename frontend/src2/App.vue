@@ -5,7 +5,9 @@
 		</div>
 
 		<div class="flex h-full flex-1 flex-col overflow-auto">
-			<RouterView />
+			<Suspense>
+				<RouterView />
+			</Suspense>
 		</div>
 
 		<template v-if="!isGuestView">

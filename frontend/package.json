@@ -18,6 +18,7 @@
 		"@codemirror/lang-sql": "^6.4.0",
 		"@formkit/auto-animate": "^0.8.1",
 		"@headlessui/vue": "^1.7.17",
+		"@tailwindcss/container-queries": "^0.1.1",
 		"@tanstack/vue-table": "^8.10.7",
 		"@tiptap/vue-3": "^2.1.16",
 		"@types/vue-router": "^2.0.0",

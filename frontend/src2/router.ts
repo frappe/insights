@@ -20,6 +20,12 @@ const routes = [
 		component: () => import('./dashboard/DashboardList.vue'),
 	},
 	{
+		props: true,
+		name: 'Dashboard',
+		path: '/dashboard/:name',
+		component: () => import('./dashboard/Dashboard.vue'),
+	},
+	{
 		path: '/workbook',
 		name: 'WorkbookList',
 		component: () => import('./workbook/WorkbookList.vue'),

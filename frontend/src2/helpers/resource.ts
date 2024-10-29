@@ -14,6 +14,7 @@ export default function useDocumentResource<T extends object>(
 	name: string,
 	options: DocumentResourceOptions<T>
 ) {
+	name = String(name)
 	const tranformFn = options.transform || ((doc: T) => doc)
 	const afterLoadFns = new Set<Function>()
 	const beforeInsertFns = new Set<Function>()

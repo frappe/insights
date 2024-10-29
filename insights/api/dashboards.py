@@ -78,3 +78,47 @@ def add_chart_to_dashboard(dashboard, chart):
     dashboard = frappe.get_doc("Insights Dashboard", dashboard)
     dashboard.add_chart(chart)
     dashboard.save()
+
+
+# v3 API
+
+
+@insights_whitelist()
+def get_dashboards(search_term=None, limit=50):
+    workbooks = frappe.get_list(
+        "Insights Workbook",
+        filters={"dashboards": ["like", f"%{search_term}%" if search_term else "%"]},
+        fields=["name", "title", "dashboards", "modified"],
+    )
+
+    dashboards = []
+    for workbook in workbooks:
+        _dashboards = frappe.parse_json(workbook.dashboards)
+        for dashboard in _dashboards:
+            if len(dashboards) >= limit:
+                break
+            dashboards.append(
+                {
+                    "name": dashboard["name"],
+                    "title": dashboard["title"],
+                    "workbook": workbook.name,
+                    "charts": len(dashboard["items"]),
+                    "modified": workbook["modified"],
+                }
+            )
+
+    return dashboards
+
+
+@insights_whitelist()
+def get_workbook_name(dashboard_name: str):
+    workbooks = frappe.get_list(
+        "Insights Workbook",
+        filters={"dashboards": ["like", f"%{dashboard_name}%"]},
+        pluck="name",
+    )
+
+    if not workbooks:
+        frappe.throw("Could not find workbook for dashboard")
+
+    return workbooks[0]

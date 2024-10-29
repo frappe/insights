@@ -36,7 +36,15 @@
 </template>
 
 <script setup lang="ts">
-import { Book, Database, PanelRightOpen, ShieldHalf, Users, Warehouse } from 'lucide-vue-next'
+import {
+	Book,
+	Database,
+	LayoutGrid,
+	PanelRightOpen,
+	ShieldHalf,
+	Users,
+	Warehouse,
+} from 'lucide-vue-next'
 import { ref } from 'vue'
 import { waitUntil } from '../helpers'
 import useSettings from '../settings/settings'
@@ -47,11 +55,11 @@ const isSidebarCollapsed = ref(false)
 const settings = useSettings()
 
 const links = ref([
-	// {
-	// 	label: 'Dashboards',
-	// 	icon: LayoutGrid,
-	// 	to: 'DashboardList',
-	// },
+	{
+		label: 'Dashboards',
+		icon: LayoutGrid,
+		to: 'DashboardList',
+	},
 	{
 		label: 'Workbooks',
 		icon: Book,
