@@ -48,7 +48,7 @@ def get_credentials():
     }
 
 
-@insights_whitelist()
+@frappe.whitelist(allow_guest=True)
 def track_active_site(is_v3=False):
     if (
         frappe.conf.developer_mode

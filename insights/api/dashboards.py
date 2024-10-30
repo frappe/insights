@@ -104,6 +104,7 @@ def get_dashboards(search_term=None, limit=50):
                     "workbook": workbook.name,
                     "charts": len(dashboard["items"]),
                     "modified": workbook["modified"],
+                    "preview_image": f"/private/files/{dashboard['name']}-preview.jpeg",
                 }
             )
 
@@ -122,3 +123,20 @@ def get_workbook_name(dashboard_name: str):
         frappe.throw("Could not find workbook for dashboard")
 
     return workbooks[0]
+
+
+@frappe.whitelist(allow_guest=True)
+def fetch_dashboard_workbook(dashboard_name: str):
+    workbooks = frappe.get_all(
+        "Insights Workbook",
+        filters={"dashboards": ["like", f"%{dashboard_name}%"]},
+        pluck="name",
+    )
+
+    if not workbooks:
+        frappe.throw("Could not find workbook for dashboard")
+
+    workbook_name = workbooks[0]
+    workbook = frappe.get_doc("Insights Workbook", workbook_name)
+    dashboards = frappe.parse_json(workbook.dashboards)
+    return next((d for d in dashboards if d["name"] == dashboard_name), None)

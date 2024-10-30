@@ -9,6 +9,7 @@ export type DashboardListItem = {
 	charts: number
 	modified: string
 	modified_from_now: string
+	preview_image: string
 }
 
 const dashboards = ref<DashboardListItem[]>([])

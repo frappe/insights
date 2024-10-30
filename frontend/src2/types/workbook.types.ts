@@ -50,10 +50,7 @@ export type WorkbookDashboard = {
 	items: WorkbookDashboardItem[]
 }
 
-export type WorkbookDashboardItem =
-	| WorkbookDashboardChart
-	| WorkbookDashboardFilter
-	| WorkbookDashboardText
+export type WorkbookDashboardItem = WorkbookDashboardChart
 
 export type Layout = {
 	i: string

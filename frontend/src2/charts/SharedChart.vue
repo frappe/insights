@@ -4,6 +4,7 @@ import { reactive } from 'vue'
 import { QueryResult } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 import ChartRenderer from './components/ChartRenderer.vue'
+import { getFormattedRows } from '../query/helpers'
 
 const props = defineProps<{ chart_name: string }>()
 
@@ -16,6 +17,7 @@ call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart
 	(res: any) => {
 		chart.doc = res.chart
 		chart.result = res.results
+		chart.result.formattedRows = getFormattedRows(chart.result, chart.doc.operations)
 	}
 )
 </script>

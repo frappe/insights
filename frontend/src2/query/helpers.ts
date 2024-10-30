@@ -38,10 +38,12 @@ import {
 	Measure,
 	Mutate,
 	MutateArgs,
+	Operation,
 	OrderBy,
 	OrderByArgs,
 	PivotWider,
 	PivotWiderArgs,
+	QueryResult,
 	QueryTableArgs,
 	Remove,
 	RemoveArgs,
@@ -96,16 +98,14 @@ export const expression = (expression: string): Expression => ({
 // 	order_by: options.order_by,
 // })
 
-export function getFormattedRows(query: Query) {
-	const result = query.result
-
+export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 	if (!result.rows?.length || !result.columns?.length) return []
 
 	const rows = copy(result.rows)
 	const columns = copy(result.columns)
-	const operations = copy(query.doc.operations)
-	const summarize_step = operations.reverse().find((op) => op.type === 'summarize')
-	const pivot_step = operations.reverse().find((op) => op.type === 'pivot_wider')
+	const _operations = copy(operations)
+	const summarize_step = _operations.reverse().find((op) => op.type === 'summarize')
+	const pivot_step = _operations.reverse().find((op) => op.type === 'pivot_wider')
 
 	const getGranularity = (column_name: string) => {
 		const dim =

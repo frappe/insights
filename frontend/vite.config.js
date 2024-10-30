@@ -5,7 +5,13 @@ import path from 'path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-	plugins: [frappeui(), vue(), vueJsx()],
+	plugins: [
+		frappeui({
+			source: '^/(app|login|api|assets|files|private)',
+		}),
+		vue(),
+		vueJsx(),
+	],
 	esbuild: { loader: 'tsx' },
 	resolve: {
 		alias: {

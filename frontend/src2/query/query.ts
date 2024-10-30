@@ -264,7 +264,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				query.result.executedSQL = response.sql
 				query.result.columns = response.columns
 				query.result.rows = response.rows
-				query.result.formattedRows = getFormattedRows(query)
+				query.result.formattedRows = getFormattedRows(query.result, query.doc.operations)
 				query.result.totalRowCount = response.total_row_count
 				query.result.columnOptions = query.result.columns.map((column) => ({
 					label: column.name,

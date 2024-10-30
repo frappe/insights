@@ -101,6 +101,16 @@ const routes = [
 		},
 	},
 	{
+		props: true,
+		name: 'SharedDashboard',
+		path: '/shared/dashboard/:dashboard_name',
+		component: () => import('./dashboard/SharedDashboard.vue'),
+		meta: {
+			hideSidebar: true,
+			isGuestView: true,
+		},
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('./auth/NotFound.vue'),
 		meta: { hideSidebar: true },

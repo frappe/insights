@@ -11,18 +11,9 @@ no_cache = 1
 
 
 def get_context(context):
-    is_v2_user = frappe.db.count("Insights Query", cache=True) > 0
-    # if not v2 user continue to v3
-    if not is_v2_user:
+    is_v2_site = frappe.db.count("Insights Query", cache=True) > 0
+    if not is_v2_site:
         continue_to_v3(context)
-        return
-
-    # go to v2 if user has not visited v3 yet
-    has_visited_v3 = (
-        get_user_default("insights_has_visited_v3", frappe.session.user) == "1"
-    )
-    if not has_visited_v3:
-        redirect_to_v2()
         return
 
     v2_routes = [
@@ -33,6 +24,22 @@ def get_context(context):
         "/insights/public/chart",
     ]
     if any(route in frappe.request.path for route in v2_routes):
+        redirect_to_v2()
+        return
+
+    guest_v3_routes = [
+        "/insights/shared/chart",
+        "/insights/shared/dashboard",
+    ]
+    if any(route in frappe.request.path for route in guest_v3_routes):
+        continue_to_v3(context)
+        return
+
+    # go to v2 if user has not visited v3 yet
+    has_visited_v3 = (
+        get_user_default("insights_has_visited_v3", frappe.session.user) == "1"
+    )
+    if not has_visited_v3:
         redirect_to_v2()
         return
 

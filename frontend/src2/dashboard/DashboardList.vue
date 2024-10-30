@@ -21,7 +21,7 @@ watchEffect(() => {
 		<div class="flex items-center gap-2"></div>
 	</header>
 
-	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-6">
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
 				<template #prefix>
@@ -32,7 +32,7 @@ watchEffect(() => {
 
 		<div class="h-full w-full">
 			<!-- Dashboard Cards -->
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			<div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				<router-link
 					v-for="dashboard in store.dashboards"
 					:key="dashboard.name"
@@ -42,17 +42,13 @@ watchEffect(() => {
 						class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-white"
 					>
 						<div
-							class="flex h-[150px] overflow-hidden rounded shadow-sm group-hover:shadow"
+							class="flex h-[150px] overflow-hidden rounded shadow group-hover:shadow-md"
 						>
 							<img
-								v-if="dashboard.thumbnail"
-								src="https://via.placeholder.com/150"
-								onerror="this.src='/assets/builder/images/fallback.png'"
-								class="w-full object-cover"
+								:src="dashboard.preview_image"
+								onerror="this.src = ''"
+								class="z-10 object-cover opacity-80"
 							/>
-							<div v-else class="flex w-full items-center justify-center bg-gray-100">
-								<p class="text-gray-500">No Thumbnail</p>
-							</div>
 						</div>
 						<div class="flex items-center justify-between">
 							<div class="flex-1">

@@ -47,7 +47,7 @@ dashboard.refresh()
 		</div>
 	</header>
 
-	<div class="relative flex h-full w-full divide-x overflow-hidden">
+	<div class="relative flex h-full w-full overflow-hidden">
 		<div class="flex-1 overflow-y-auto p-4">
 			<VueGridLayout
 				v-if="dashboard.doc.items.length > 0"
@@ -55,13 +55,6 @@ dashboard.refresh()
 				:cols="20"
 				:disabled="true"
 				:modelValue="dashboard.doc.items.map((item) => item.layout)"
-				@update:modelValue="
-					(newLayout) => {
-						dashboard.doc.items.forEach((item, idx) => {
-							item.layout = newLayout[idx]
-						})
-					}
-				"
 			>
 				<template #item="{ index }">
 					<div class="relative h-full w-full p-2 [&>div:first-child]:h-full">

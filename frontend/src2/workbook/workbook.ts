@@ -274,7 +274,7 @@ function getWorkbookResource(name: string) {
 							logical_operator: 'And',
 					  }
 				chart.config.order_by = chart.config.order_by || []
-				chart.config.limit = 100
+				chart.config.limit = chart.config.limit || 100
 
 				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
 					// @ts-ignore
