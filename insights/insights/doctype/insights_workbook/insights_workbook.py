@@ -121,14 +121,20 @@ class InsightsWorkbook(Document):
         return operations
 
     def enqueue_update_dashboard_previews(self):
-        new_workbook = self.as_dict()
-        prev_workbook = self.get_doc_before_save().as_dict()
+        if (
+            self.is_new()
+            or not frappe.parse_json(self.dashboards)
+            or not self.get_doc_before_save()
+        ):
+            return
+
+        prev_workbook = self.get_doc_before_save()
         frappe.enqueue_doc(
             doctype=self.doctype,
             name=self.name,
             method="update_dashboard_previews",
-            new_workbook=new_workbook,
-            prev_workbook=prev_workbook,
+            new_workbook=self.as_dict(),
+            prev_workbook=prev_workbook.as_dict(),
             enqueue_after_commit=True,
         )
 

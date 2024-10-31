@@ -54,7 +54,7 @@ class InsightsTablev3(Document):
 
         if not use_live_connection:
             wt = Warehouse().get_table(data_source, table_name)
-            t = wt.get_ibis_table(import_if_not_exists=False)
+            t = wt.get_ibis_table(import_if_not_exists=True)
         else:
             ds = InsightsDataSourcev3.get_doc(data_source)
             t = ds.get_ibis_table(table_name)

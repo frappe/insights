@@ -32,7 +32,7 @@ const listOptions = ref({
 			getLabel(props: any) {
 				const workbook = props.row as WorkbookListItem
 				const user = userStore.getUser(workbook.owner)
-				return user?.full_name
+				return user?.full_name || workbook.owner
 			},
 			prefix: (props: any) => {
 				const workbook = props.row as WorkbookListItem
