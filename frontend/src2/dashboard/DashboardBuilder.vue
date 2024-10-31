@@ -126,27 +126,7 @@ function onDrop(event: DragEvent) {
 					"
 				>
 					<template #item="{ index }">
-						<div class="relative h-full w-full p-2 [&>div:first-child]:h-full">
-							<Popover
-								class="h-full"
-								:show="dashboard.editing && dashboard.isActiveItem(index)"
-								placement="top-start"
-							>
-								<template #target>
-									<DashboardItem
-										:index="index"
-										:item="dashboard.doc.items[index]"
-									/>
-								</template>
-								<template #body>
-									<DashboardItemActions
-										:dashboard="dashboard"
-										:item-index="index"
-										:item="dashboard.doc.items[index]"
-									/>
-								</template>
-							</Popover>
-						</div>
+						<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
 					</template>
 				</VueGridLayout>
 			</div>
