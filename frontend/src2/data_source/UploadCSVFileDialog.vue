@@ -116,13 +116,10 @@ function importCSVData() {
 					:rows="csvData.rows"
 					:loading="csvData.loading"
 				>
-					<template #footer>
-						<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
-							<p class="tnum text-sm text-gray-600">
-								Showing {{ csvData.rows.length }} of
-								{{ csvData.totalRowCount }} rows
-							</p>
-						</div>
+					<template #footer-left>
+						<p class="tnum text-sm text-gray-600">
+							Showing {{ csvData.rows.length }} of {{ csvData.totalRowCount }} rows
+						</p>
 					</template>
 				</DataTable>
 			</div>

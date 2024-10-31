@@ -22,16 +22,14 @@ const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString()
 			<LoadingIndicator class="h-8 w-8 text-gray-700" />
 		</div>
 
-		<DataTable :columns="columns" :rows="rows">
+		<DataTable :columns="columns" :rows="rows" :on-export="query.downloadResults">
 			<template #column-header="{ column }">
 				<QueryBuilderTableColumn :column="column" />
 			</template>
-			<template #footer>
-				<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
-					<p class="tnum text-sm text-gray-600">
-						Showing {{ previewRowCount }} of {{ totalRowCount }} rows
-					</p>
-				</div>
+			<template #footer-left>
+				<p class="tnum text-sm text-gray-600">
+					Showing {{ previewRowCount }} of {{ totalRowCount }} rows
+				</p>
 			</template>
 		</DataTable>
 	</div>

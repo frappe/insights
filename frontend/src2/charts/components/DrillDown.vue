@@ -57,13 +57,11 @@ watch(
 					:show-column-totals="true"
 					:show-filter-row="true"
 				>
-					<template #footer>
-						<div class="flex flex-shrink-0 items-center gap-3 border-t p-2">
-							<p class="tnum text-sm text-gray-600">
-								Showing {{ drillDownQuery.result.rows.length }} of
-								{{ drillDownQuery.result.totalRowCount }} rows
-							</p>
-						</div>
+					<template #footer-left>
+						<p class="tnum p-1 text-sm text-gray-600">
+							Showing {{ drillDownQuery.result.rows.length }} of
+							{{ drillDownQuery.result.totalRowCount }} rows
+						</p>
 					</template>
 				</DataTable>
 			</div>

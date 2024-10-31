@@ -22,7 +22,7 @@ function toggleLiveConnection(enable: boolean) {
 </script>
 
 <template>
-	<div class="flex flex-col px-2.5 py-2">
+	<div class="flex flex-col px-3.5 py-3">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm font-medium">Details</div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Table2Icon } from 'lucide-vue-next'
+import { Download, Table2Icon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -15,6 +15,7 @@ const props = defineProps<{
 	showColumnTotals?: boolean
 	showFilterRow?: boolean
 	loading?: boolean
+	onExport?: Function
 }>()
 
 const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
@@ -202,7 +203,22 @@ const filterPerColumn = ref<Record<string, string>>({})
 				</tbody>
 			</table>
 		</div>
-		<slot name="footer"></slot>
+		<slot name="footer">
+			<div class="flex flex-shrink-0 items-center justify-between border-t px-2 py-1">
+				<slot name="footer-left">
+					<div></div>
+				</slot>
+				<slot name="footer-right">
+					<div>
+						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
+							<template #icon>
+								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							</template>
+						</Button>
+					</div>
+				</slot>
+			</div>
+		</slot>
 	</div>
 
 	<div

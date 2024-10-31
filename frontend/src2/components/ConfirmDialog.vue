@@ -23,7 +23,7 @@
 					@click="onConfirm"
 					:loading="isLoading"
 				>
-					Confirm
+					{{ primaryActionLabel || 'Confirm' }}
 				</Button>
 			</div>
 		</template>
@@ -34,7 +34,7 @@ import { ErrorMessage, FormControl } from 'frappe-ui'
 
 export default {
 	name: 'ConfirmDialog',
-	props: ['title', 'message', 'theme', 'fields', 'onSuccess'],
+	props: ['title', 'message', 'theme', 'fields', 'onSuccess', 'primaryActionLabel'],
 	data() {
 		return {
 			show: true,

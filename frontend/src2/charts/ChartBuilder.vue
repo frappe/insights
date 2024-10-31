@@ -77,14 +77,14 @@ const showShareDialog = ref(false)
 					:title="chart.doc.title"
 					:chart_type="chart.doc.chart_type"
 					:config="chart.doc.config"
-					:operations="chart.doc.operations || chart.dataQuery.operations || []"
+					:operations="chart.doc.operations || chart.dataQuery.doc.operations || []"
 					:result="chart.dataQuery.result"
 				/>
 			</div>
 			<ChartBuilderTable v-if="chart.dataQuery.result.executedSQL" />
 		</div>
 		<div
-			class="relative z-[1] flex w-[17rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white shadow"
+			class="relative z-[1] flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white shadow"
 		>
 			<CollapsibleSection title="Chart">
 				<div class="flex flex-col gap-3">

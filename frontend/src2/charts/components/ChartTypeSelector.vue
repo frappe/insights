@@ -6,7 +6,7 @@ const chartType = defineModel<ChartType>()
 </script>
 
 <template>
-	<div class="grid grid-cols-2 gap-2 pt-0.5">
+	<div class="grid grid-cols-3 gap-2 pt-0.5">
 		<Button
 			v-for="item in CHARTS"
 			:key="item"

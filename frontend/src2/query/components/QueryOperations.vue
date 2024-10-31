@@ -1,6 +1,6 @@
 <script setup lang="tsx">
-import { XIcon } from 'lucide-vue-next'
-import { computed, inject } from 'vue'
+import { Plus, XIcon } from 'lucide-vue-next'
+import { computed, inject, ref, watch } from 'vue'
 import {
 	Cast,
 	CustomOperation,
@@ -8,6 +8,7 @@ import {
 	Join,
 	Limit,
 	Mutate,
+	Operation,
 	OrderBy,
 	Remove,
 	Rename,
@@ -18,6 +19,7 @@ import {
 } from '../../types/query.types'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
+import AddOperationPopover from './AddOperationPopover.vue'
 
 const query = inject('query') as Query
 const operations = computed(() => {
@@ -31,7 +33,7 @@ const operations = computed(() => {
 
 const Element = (_: any, { slots }: any) => {
 	return (
-		<div class="w-fit truncate rounded border border-orange-200 bg-orange-50 py-0.5 px-1 font-mono text-xs text-orange-800">
+		<div class="w-fit truncate rounded border border-orange-200 bg-orange-50 py-0.5 px-1 font-mono text-xs text-orange-800 opacity-90">
 			{slots.default?.()}
 		</div>
 	)
@@ -227,14 +229,14 @@ const CustomOperationInfo = (props: any) => {
 </script>
 
 <template>
-	<div v-if="query.doc.operations.length" class="flex flex-col px-2.5 py-2">
-		<div class="mb-1 flex h-6 items-center justify-between">
+	<div v-if="query.doc.operations.length" class="flex flex-col px-3.5 py-3">
+		<div class="mb-2 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm font-medium">Operations</div>
 			</div>
 			<div></div>
 		</div>
-		<div class="relative mt-1 ml-3 flex flex-col gap-3 border-l border-gray-300 text-sm">
+		<div class="relative ml-3 flex flex-col-reverse gap-3 border-l border-gray-300 text-sm">
 			<template v-for="(op, idx) in operations" :key="idx">
 				<div
 					class="group relative flex cursor-pointer select-none items-start gap-2"
@@ -289,24 +291,8 @@ const CustomOperationInfo = (props: any) => {
 						</div>
 					</div>
 				</div>
+				<AddOperationPopover v-if="idx === query.activeOperationIdx" />
 			</template>
-
-			<!-- <div
-				v-if="idx === query.activeOperationIdx"
-				class="group relative flex cursor-pointer items-start gap-2"
-			>
-				<div
-					class="-ml-[14px] h-fit flex-shrink-0 rounded border border-dashed bg-white p-1 transition-all group-hover:border-gray-400"
-				>
-					<Plus
-						class="h-4 w-4 text-gray-500 transition-all hover:text-gray-600"
-						stroke-width="1.5"
-					/>
-				</div>
-				<div class="flex flex-1 items-center gap-2 leading-[26px]">
-					<div class="text-gray-500 transition-all group-hover:text-gray-600">Add operation</div>
-				</div>
-			</div> -->
 		</div>
 	</div>
 </template>

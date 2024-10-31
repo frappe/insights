@@ -6,6 +6,7 @@ export const dialogs = ref<VNode[]>([])
 export function confirmDialog({
 	title = 'Untitled',
 	message = '',
+	primaryActionLabel = 'Confirm',
 	theme = 'gray',
 	fields = [],
 	onSuccess = () => {},
@@ -16,6 +17,7 @@ export function confirmDialog({
 		theme,
 		fields,
 		onSuccess,
+		primaryActionLabel,
 	})
 	dialogs.value.push(component)
 }
