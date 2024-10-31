@@ -89,7 +89,11 @@ const getFormattedValue = (value: number) => {
 						<span> {{ percentDelta }}% </span>
 					</div>
 					<div v-if="config.sparkline" class="mt-2 h-[18px] w-[80px]">
-						<Sparkline :dates="dateValues" :values="values" />
+						<Sparkline
+							:dates="dateValues"
+							:values="values"
+							:color="config.sparkline_color"
+						/>
 					</div>
 				</div>
 			</div>

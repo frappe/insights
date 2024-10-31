@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '../../helpers/constants'
 import { computed } from 'vue'
+import { debounce } from 'frappe-ui'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { NumberChartConfig } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import { Settings, XIcon } from 'lucide-vue-next'
 import { copy } from '../../helpers'
+import ColorInput from '@/components/Controls/ColorInput.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -36,6 +38,10 @@ if (!config.value.number_columns.length) {
 function addNumberColumn() {
 	config.value.number_columns.push({} as MeasureOption)
 }
+
+const updateColor = debounce((color: string) => {
+	config.value.sparkline_color = color
+}, 500)
 </script>
 
 <template>
@@ -135,6 +141,14 @@ function addNumberColumn() {
 				v-model="config.negative_is_better"
 			/>
 			<Checkbox v-if="config.date_column" label="Show sparkline" v-model="config.sparkline" />
+
+			<InlineFormControlLabel v-if="config.sparkline" label="Color">
+				<ColorInput
+					:model-value="config.sparkline_color"
+					@update:model-value="updateColor($event)"
+					placement="left-start"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 </template>

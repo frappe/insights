@@ -63,6 +63,7 @@ export type NumberChartConfig = {
 	number_columns: Measure[]
 	comparison: boolean
 	sparkline: boolean
+	sparkline_color?: string
 	date_column?: Dimension
 	shorten_numbers?: boolean
 	decimal?: number

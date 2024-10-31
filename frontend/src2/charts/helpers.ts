@@ -87,11 +87,13 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
 			const show_area = serie.show_area ?? config.y_axis.show_area
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
+			const color = serie.color?.[0] || colors[idx]
 
 			return {
 				type: 'line',
 				name: c.name,
 				data: getSeriesData(c.name),
+				color: color,
 				emphasis: { focus: 'series' },
 				yAxisIndex: is_right_axis ? 1 : 0,
 				smooth: smooth ? 0.4 : false,
@@ -106,8 +108,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 					},
 				},
 				labelLayout: { hideOverlap: true },
-				itemStyle: { color: colors[idx] },
-				areaStyle: show_area ? getAreaStyle(colors[idx]) : undefined,
+				itemStyle: { color: color },
+				areaStyle: show_area ? getAreaStyle(color) : undefined,
 			}
 		}),
 		tooltip: getTooltip({

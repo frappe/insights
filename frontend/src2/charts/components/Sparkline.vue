@@ -2,14 +2,17 @@
 import { graphic } from 'echarts/core'
 import { getColors } from '../colors'
 import BaseChart from './BaseChart.vue'
+import { computed } from 'vue'
 
-const props = defineProps<{ dates: string[]; values: number[] }>()
+const props = defineProps<{ dates: string[]; values: number[]; color?: string }>()
 
-const color = getColors()[0]
-const gradient = new graphic.LinearGradient(0, 0, 0, 1, [
-	{ offset: 0, color: color },
-	{ offset: 1, color: '#fff' },
-])
+const color = computed(() => props.color || getColors()[0])
+const gradient = computed(() => {
+	return new graphic.LinearGradient(0, 0, 0, 1, [
+		{ offset: 0, color: color.value },
+		{ offset: 1, color: '#fff' },
+	])
+})
 </script>
 
 <template>
