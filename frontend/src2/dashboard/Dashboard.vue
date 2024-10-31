@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Breadcrumbs } from 'frappe-ui'
-import { RefreshCcw } from 'lucide-vue-next'
+import { ExternalLink, RefreshCcw } from 'lucide-vue-next'
 import { provide } from 'vue'
+import { useRouter } from 'vue-router'
 import { waitUntil } from '../helpers'
 import useWorkbook from '../workbook/workbook'
 import useDashboard from './dashboard'
@@ -23,6 +24,11 @@ const dashboard = useDashboard(
 )
 provide('dashboard', dashboard)
 dashboard.refresh()
+
+const router = useRouter()
+function openWorkbook() {
+	router.push(`/workbook/${workbook.doc.name}`)
+}
 </script>
 
 <template>
@@ -42,6 +48,11 @@ dashboard.refresh()
 			<Button variant="outline" @click="() => dashboard.refresh()" label="Refresh">
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				</template>
+			</Button>
+			<Button variant="outline" @click="openWorkbook" label="Workbook">
+				<template #prefix>
+					<ExternalLink class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
 		</div>
