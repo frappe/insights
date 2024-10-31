@@ -18,7 +18,7 @@ import {
 	Operation,
 	QueryResult,
 	QueryResultColumn,
-	QueryResultRow
+	QueryResultRow,
 } from '../types/query.types'
 import { getColors } from './colors'
 
@@ -130,7 +130,7 @@ function getAreaStyle(color: string) {
 	}
 }
 
-export function getBarChartOptions(config: BarChartConfig, result: QueryResult) {
+export function getBarChartOptions(config: BarChartConfig, result: QueryResult, swapAxes = false) {
 	const _columns = result.columns
 	const _rows = result.rows
 
@@ -162,18 +162,20 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult) 
 	}, {} as Record<string, number>)
 
 	const getSeriesData = (column: string) =>
-		sortedRows.map((r) => {
-			const x_value = r[config.x_axis.column_name]
-			const y_value = r[column]
-			const normalize = config.y_axis.normalize
-			if (!normalize) {
-				return [x_value, y_value]
-			}
+		sortedRows
+			.map((r) => {
+				const x_value = r[config.x_axis.column_name]
+				const y_value = r[column]
+				const normalize = config.y_axis.normalize
+				if (!normalize) {
+					return [x_value, y_value]
+				}
 
-			const total = total_per_x_value[x_value]
-			const normalized_value = total ? (y_value / total) * 100 : 0
-			return [x_value, normalized_value]
-		})
+				const total = total_per_x_value[x_value]
+				const normalized_value = total ? (y_value / total) * 100 : 0
+				return [x_value, normalized_value]
+			})
+			.map((d) => (swapAxes ? [d[1], d[0]] : d))
 
 	const colors = getColors()
 
@@ -182,8 +184,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult) 
 		animationDuration: 700,
 		color: colors,
 		grid: getGrid({ show_legend }),
-		xAxis: xAxis,
-		yAxis: yAxis,
+		xAxis: swapAxes ? yAxis : xAxis,
+		yAxis: swapAxes ? xAxis : yAxis,
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -193,17 +195,20 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult) 
 			const color = serie.color?.[0] || colors[idx]
 			const type = serie.type?.toLowerCase() || 'bar'
 
+			const data = getSeriesData(c.name)
+
 			return {
 				type,
 				stack: type === 'bar' && stack ? 'stack' : undefined,
 				name: c.name,
-				data: getSeriesData(c.name),
+				data: swapAxes ? data.reverse() : data,
 				color: color,
 				label: {
 					show: show_data_labels,
-					position: idx === number_columns.length - 1 ? 'top' : 'inside',
+					position: idx === number_columns.length - 1 ? (swapAxes ? 'right' : 'top') : 'inside',
 					formatter: (params: any) => {
-						return getShortNumber(params.value?.[1], 1)
+						const _val = swapAxes ? params.value?.[0] : params.value?.[1]
+						return getShortNumber(_val, 1)
 					},
 					fontSize: 11,
 				},
@@ -217,6 +222,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult) 
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
+			xySwapped: swapAxes,
 		}),
 		legend: getLegend(show_legend),
 	}
@@ -477,7 +483,7 @@ function getTooltip(options: any = {}) {
 		formatter: (params: Object | Array<Object>) => {
 			if (!Array.isArray(params)) {
 				const p = params as any
-				const value = p.value[1]
+				const value = options.xySwapped ? p.value[0] : p.value[1]
 				const formatted = isNaN(value) ? value : formatNumber(value)
 				return `
 					<div class="flex items-center justify-between gap-5">
@@ -488,8 +494,8 @@ function getTooltip(options: any = {}) {
 			}
 			if (Array.isArray(params)) {
 				const t = params.map((p, idx) => {
-					const xValue = p.value[0]
-					const yValue = p.value[1]
+					const xValue = options.xySwapped ? p.value[1] : p.value[0]
+					const yValue = options.xySwapped ? p.value[0] : p.value[1]
 					const formattedX =
 						options.xAxisIsDate && options.granularity
 							? getFormattedDate(xValue, options.granularity)

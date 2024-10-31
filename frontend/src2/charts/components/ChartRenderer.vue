@@ -32,8 +32,12 @@ const props = defineProps<{
 
 const eChartOptions = computed(() => {
 	if (!props.result.columns?.length) return
-	if (props.chart_type === 'Bar') {
-		return getBarChartOptions(props.config as BarChartConfig, props.result)
+	if (props.chart_type === 'Bar' || props.chart_type === 'Row') {
+		return getBarChartOptions(
+			props.config as BarChartConfig,
+			props.result,
+			props.chart_type === 'Row'
+		)
 	}
 	if (props.chart_type === 'Line') {
 		return getLineChartOptions(props.config as LineChartConfig, props.result)

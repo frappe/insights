@@ -66,7 +66,7 @@ const measures = computed<MeasureOption[]>(() => {
 		:measures="measures"
 	/>
 	<BarChartConfigForm
-		v-if="chart.doc.chart_type == 'Bar'"
+		v-if="chart.doc.chart_type == 'Bar' || chart.doc.chart_type == 'Row'"
 		v-model="(chart.doc.config as BarChartConfig)"
 		:dimensions="dimensions"
 		:measures="measures"
