@@ -111,8 +111,16 @@ waitUntil(() => session.initialized).then(() => {
 	if (session.user.is_v2_instance) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
 			label: 'Switch to Insights v2',
-			icon: 'grid',
+			icon: 'toggle-right',
 			onClick: () => (showSwitchToV2Dialog.value = true),
+		})
+	}
+
+	if (session.user.is_admin) {
+		userDropdownOptions.value.splice(2, 0, {
+			label: 'Switch to Desk',
+			icon: 'toggle-right',
+			onClick: () => window.open('/app', '_blank'),
 		})
 	}
 })
