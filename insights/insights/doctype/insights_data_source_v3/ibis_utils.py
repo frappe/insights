@@ -8,7 +8,6 @@ import pandas as pd
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
 from ibis import _
-from ibis import selectors as s
 from ibis.expr.datatypes import DataType
 from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
@@ -81,11 +80,12 @@ class IbisQueryBuilder:
         right_table = self.get_right_table(join_args)
         join_condition = self.translate_join_condition(join_args, right_table)
         join_type = "outer" if join_args.join_type == "full" else join_args.join_type
+        right_table = self.rename_duplicate_columns(right_table)
         return self.query.join(
             right_table,
             join_condition,
             how=join_type,
-        ).select(~s.endswith("right"))
+        )
 
     def get_table_or_query(self, table_args):
         _table = None
@@ -109,13 +109,16 @@ class IbisQueryBuilder:
         if not join_args.select_columns:
             return right_table
 
-        select_columns = [col.column_name for col in join_args.select_columns]
+        select_columns = set()
+
+        for col in join_args.select_columns:
+            select_columns.add(col.column_name)
 
         if join_args.right_column:
-            select_columns.append(join_args.right_column.column_name)
+            select_columns.add(join_args.right_column.column_name)
 
         if join_args.join_condition and join_args.join_condition.right_column:
-            select_columns.append(join_args.join_condition.right_column.column_name)
+            select_columns.add(join_args.join_condition.right_column.column_name)
 
         if join_args.join_condition and join_args.join_condition.join_expression:
             expression = self.evaluate_expression(
@@ -128,7 +131,7 @@ class IbisQueryBuilder:
             right_table_columns = self.get_columns_from_expression(
                 expression, table=join_args.table.table_name
             )
-            select_columns.extend(right_table_columns)
+            select_columns.update(right_table_columns)
 
         return right_table.select(select_columns)
 
@@ -177,6 +180,17 @@ class IbisQueryBuilder:
                 join_args.left_column or join_args.join_condition.left_column,
                 join_args.right_column or join_args.join_condition.right_column,
             )
+
+    def rename_duplicate_columns(self, right_table):
+        query: IbisQuery = self.query
+        query_columns = set(query.columns)
+        right_table_columns = set(right_table.columns)
+
+        duplicate_columns = query_columns.intersection(right_table_columns)
+        if not duplicate_columns:
+            return right_table
+
+        return right_table.rename(**{f"right_{col}": col for col in duplicate_columns})
 
     def apply_union(self, union_args):
         other_table = self.get_table_or_query(union_args.table)
