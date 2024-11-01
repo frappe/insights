@@ -61,7 +61,13 @@ dataSourceStore.getSources().then(() => {
 			),
 		}))
 		.sort((a, b) => a.label.localeCompare(b.label))
+
 	activeTab.value = tabGroups.value[0].tabs[0]
+	if (props.source && props.source.table.type == 'table') {
+		const source_data_source = props.source.table.data_source
+		const tab = tabGroups.value[0].tabs.find((tab) => tab.label == source_data_source)
+		if (tab) activeTab.value = tab
+	}
 })
 
 const selectedQuery = ref<QueryTableArgs>(
@@ -85,6 +91,9 @@ if (workbook.doc.queries.length > 1) {
 			},
 		],
 	})
+	if (props.source && props.source.table.type == 'query') {
+		activeTab.value = tabGroups.value[1].tabs[0]
+	}
 }
 
 const confirmDisabled = computed(() => {
