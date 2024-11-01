@@ -330,7 +330,7 @@ def cache_results(sql, data_source, results):
     frappe.cache().set_value(
         f"insights_query_result:{data_source}:{key}",
         frappe.as_json(results),
-        expires_in_sec=60 * 5,
+        expires_in_sec=60 * 15,
     )
 
 

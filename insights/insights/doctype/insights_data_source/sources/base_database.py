@@ -114,7 +114,7 @@ class BaseDatabase(Database):
         sql,  # can be a string or a sqlalchemy query object or text object
         pluck=False,
         return_columns=False,
-        cached=False,
+        cached=True,
         query_name=None,
         log_errors=True,
     ):
