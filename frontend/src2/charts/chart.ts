@@ -52,7 +52,7 @@ function makeChart(workbookChart: WorkbookChart) {
 
 	wheneverChanges(
 		() => chart.doc.query,
-		() => resetConfig()
+		() => refresh()
 	)
 
 	function resetConfig() {
