@@ -208,7 +208,26 @@ export default function useQuery(name) {
 		let data = [...results]
 		if (data.length === 0) return
 		data[0] = data[0].map((d) => d.label)
-		const csvString = data.map((row) => row.join(',')).join('\n')
+		const csvString = data
+			.map((row) => {
+				return row
+					.map((cell) => {
+						if (typeof cell === 'string') {
+							// if newline, wrap whole cell in quotes
+							// if double quote, prepend with another double quote
+							// if comma, wrap whole cell in quotes
+							if (cell.includes('"')) {
+								cell = cell.replace(/"/g, '""')
+							}
+							if (cell.includes('\n') || cell.includes(',') || cell.includes('"')) {
+								cell = `"${cell}"`
+							}
+						}
+						return cell
+					})
+					.join(',')
+			})
+			.join('\n')
 		const blob = new Blob([csvString], { type: 'text/csv' })
 		const url = window.URL.createObjectURL(blob)
 		const a = document.createElement('a')
