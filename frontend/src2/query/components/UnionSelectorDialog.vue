@@ -65,24 +65,26 @@ const tableOptions = useTableOptions({
 })
 
 const workbook = inject(workbookKey)!
-const linkedQueries = workbook.getLinkedQueries(query.doc.name)
-const queryTableOptions = workbook.doc.queries
-	.filter((q) => q.name !== query.doc.name && !linkedQueries.includes(q.name))
-	.map((q) => {
-		return {
-			workbook: workbook.doc.name,
-			query_name: q.name,
-			label: q.title,
-			value: q.name,
-			description: 'Query',
-		}
-	})
+const queryTableOptions = computed(() => {
+	const linkedQueries = workbook.getLinkedQueries(query.doc.name)
+	return workbook.doc.queries
+		.filter((q) => q.name !== query.doc.name && !linkedQueries.includes(q.name))
+		.map((q) => {
+			return {
+				workbook: workbook.doc.name,
+				query_name: q.name,
+				label: q.title,
+				value: q.name,
+				description: 'Query',
+			}
+		})
+})
 
 const groupedTableOptions = computed(() => {
 	return [
 		{
 			group: 'Queries',
-			items: queryTableOptions,
+			items: queryTableOptions.value,
 		},
 		{
 			group: 'Tables',

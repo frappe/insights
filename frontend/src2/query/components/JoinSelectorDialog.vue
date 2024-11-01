@@ -4,7 +4,7 @@ import { computed, inject, reactive, watch } from 'vue'
 import useTableStore from '../../data_source/tables'
 import { wheneverChanges } from '../../helpers'
 import { joinTypes } from '../../helpers/constants'
-import { JoinArgs, JoinType } from '../../types/query.types'
+import { JoinArgs } from '../../types/query.types'
 import { workbookKey } from '../../workbook/workbook'
 import { column, expression, query_table, table } from '../helpers'
 import { getCachedQuery, Query } from '../query'
@@ -143,24 +143,25 @@ async function autoMatchColumns() {
 }
 
 const workbook = inject(workbookKey)!
-const linkedQueries = workbook.getLinkedQueries(query.doc.name)
-const queryTableOptions = workbook.doc.queries
-	.filter((q) => q.name !== query.doc.name && !linkedQueries.includes(q.name))
-	.map((q) => {
-		return {
-			workbook: workbook.doc.name,
-			query_name: q.name,
-			label: q.title,
-			value: q.name,
-			description: 'Query',
-		}
-	})
-
+const queryTableOptions = computed(() => {
+	const linkedQueries = workbook.getLinkedQueries(query.doc.name)
+	return workbook.doc.queries
+		.filter((q) => q.name !== query.doc.name && !linkedQueries.includes(q.name))
+		.map((q) => {
+			return {
+				workbook: workbook.doc.name,
+				query_name: q.name,
+				label: q.title,
+				value: q.name,
+				description: 'Query',
+			}
+		})
+})
 const groupedTableOptions = computed(() => {
 	return [
 		{
 			group: 'Queries',
-			items: queryTableOptions,
+			items: queryTableOptions.value,
 		},
 		{
 			group: 'Tables',
