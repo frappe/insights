@@ -151,15 +151,15 @@ def update_admin_team(user, method=None):
 
         roles = user.get("roles", [])
         is_user = next((True for role in roles if role.role == "Insights User"), False)
-        if not is_user:
-            return
-
-        admin_members = admin_team_members()
         is_admin = next(
             (True for role in roles if role.role == "Insights Admin"), False
         )
+        if not is_user and not is_admin:
+            return
 
+        admin_members = admin_team_members()
         if not is_admin and user.name in admin_members:
+            clear_cache()
             frappe.db.delete(
                 "Insights Team Member",
                 {

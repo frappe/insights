@@ -2,8 +2,19 @@
 # See license.txt
 
 
-# import frappe
+import frappe
 
 
 def after_migrate():
-    pass
+    create_admin_team()
+
+
+def create_admin_team():
+    if not frappe.db.exists("Insights Team", "Admin"):
+        frappe.get_doc(
+            {
+                "doctype": "Insights Team",
+                "team_name": "Admin",
+                "team_members": [{"user": "Administrator"}],
+            }
+        ).insert(ignore_permissions=True)

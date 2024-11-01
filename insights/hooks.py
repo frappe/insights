@@ -71,8 +71,8 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # ------------
 
 # before_install = "insights.install.before_install"
-# after_install = "insights.setup.after_install"
-# after_migrate = ["insights.migrate.after_migrate"]
+after_install = "insights.migrate.after_migrate"
+after_migrate = "insights.migrate.after_migrate"
 
 before_request = [
     "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.before_request"
@@ -89,10 +89,6 @@ fixtures = [
     {
         "dt": "Insights Data Source v3",
         "filters": {"name": ("in", ["Site DB"])},
-    },
-    {
-        "dt": "Insights Team",
-        "filters": {"name": ("in", ["Admin"])},
     },
 ]
 
