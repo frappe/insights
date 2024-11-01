@@ -255,9 +255,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		}
 
 		query.executing = true
+		const operations = query.getOperationsForExecution()
+		const limit = operations.find((op) => op.type === 'limit')?.limit
 		return call('insights.api.workbooks.fetch_query_results', {
 			use_live_connection: query.doc.use_live_connection,
-			operations: query.getOperationsForExecution(),
+			operations,
+			limit,
 		})
 			.then((response: any) => {
 				if (!response) return

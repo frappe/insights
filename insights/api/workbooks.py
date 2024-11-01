@@ -11,14 +11,16 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 
 
 @insights_whitelist()
-def fetch_query_results(operations, use_live_connection=True):
+def fetch_query_results(operations, limit=100, use_live_connection=True):
     results = []
     ibis_query = IbisQueryBuilder().build(operations, use_live_connection)
     if ibis_query is None:
         return
 
     columns = get_columns_from_schema(ibis_query.schema())
-    results = execute_ibis_query(ibis_query, cache=True, cache_expiry=60 * 5)
+    results = execute_ibis_query(
+        ibis_query, limit=limit, cache=True, cache_expiry=60 * 5
+    )
     results = results.to_dict(orient="records")
 
     count_query = ibis_query.aggregate(count=_.count())

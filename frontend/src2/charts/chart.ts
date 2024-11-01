@@ -296,7 +296,7 @@ function makeChart(workbookChart: WorkbookChart) {
 					value[index].granularity = granularity
 				}
 			}
-			if (value.column_name === column_name) {
+			if (value && value.column_name === column_name) {
 				value.granularity = granularity
 			}
 		})

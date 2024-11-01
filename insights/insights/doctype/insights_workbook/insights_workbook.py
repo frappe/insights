@@ -62,7 +62,9 @@ class InsightsWorkbook(Document):
         operations = self.resolve_query_tables(operations)
 
         frappe.flags.ignore_insights_permissions = True
-        results = fetch_query_results(operations, use_live_connection)
+        results = fetch_query_results(
+            operations, use_live_connection=use_live_connection
+        )
         frappe.flags.ignore_insights_permissions = False
 
         return {
