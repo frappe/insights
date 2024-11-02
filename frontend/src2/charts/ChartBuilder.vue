@@ -79,6 +79,7 @@ const showShareDialog = ref(false)
 					:config="chart.doc.config"
 					:operations="chart.doc.operations || chart.dataQuery.doc.operations || []"
 					:result="chart.dataQuery.result"
+					:loading="chart.dataQuery.executing"
 				/>
 			</div>
 			<ChartBuilderTable v-if="chart.dataQuery.result.executedSQL" />

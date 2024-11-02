@@ -28,6 +28,7 @@ const props = defineProps<{
 	config: WorkbookChart['config']
 	operations: Operation[]
 	result: QueryResult
+	loading?: boolean
 }>()
 
 const eChartOptions = computed(() => {
@@ -69,29 +70,35 @@ function onClick(params: any) {
 <template>
 	<div class="relative h-full w-full">
 		<BaseChart
-			v-if="eChartOptions"
+			v-if="!props.loading && eChartOptions"
 			class="rounded bg-white py-1 shadow"
 			:title="props.title"
 			:options="eChartOptions"
 			:onClick="onClick"
 		/>
 		<NumberChart
-			v-else-if="props.chart_type == 'Number'"
+			v-else-if="!props.loading && props.chart_type == 'Number'"
 			:config="(props.config as NumberChartConfig)"
 			:result="props.result"
 		/>
 		<TableChart
-			v-else-if="props.chart_type == 'Table'"
+			v-else-if="!props.loading && props.chart_type == 'Table'"
 			:title="props.title"
 			:config="props.config"
 			:result="props.result"
 		/>
 
-		<div v-else class="flex h-full flex-1 flex-col items-center justify-center">
-			<ChartSectionEmptySvg></ChartSectionEmptySvg>
-			<p class="text-gray-500">
-				Pick a chart type and configure options to see the chart here
-			</p>
+		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
+			<template v-if="props.loading">
+				<LoadingIndicator class="h-5 w-5 text-gray-500" />
+				<p class="mt-1.5 text-gray-500">Loading data...</p>
+			</template>
+			<template v-else>
+				<ChartSectionEmptySvg></ChartSectionEmptySvg>
+				<p class="text-gray-500">
+					Pick a chart type and configure options to see the chart here
+				</p>
+			</template>
 		</div>
 	</div>
 

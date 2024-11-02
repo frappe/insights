@@ -68,6 +68,7 @@ document.addEventListener('mousemove', (event) => {
 							:config="chart.doc.config"
 							:operations="chart.doc.operations"
 							:result="chart.dataQuery.result"
+							:loading="chart.dataQuery.executing"
 						/>
 					</div>
 				</div>
