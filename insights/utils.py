@@ -110,6 +110,10 @@ class InsightsTablev3(DoctypeBase):
     doctype = "Insights Table v3"
 
 
+class DocShare(DoctypeBase):
+    doctype = "DocShare"
+
+
 class InsightsSettings:
     @classmethod
     def get(cls, key):
