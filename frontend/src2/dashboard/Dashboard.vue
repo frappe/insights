@@ -68,9 +68,7 @@ function openWorkbook() {
 				:modelValue="dashboard.doc.items.map((item) => item.layout)"
 			>
 				<template #item="{ index }">
-					<div class="relative h-full w-full p-2 [&>div:first-child]:h-full">
-						<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
-					</div>
+					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
 				</template>
 			</VueGridLayout>
 		</div>
