@@ -181,8 +181,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         blacklist_patterns = ["^_", "^sqlite_"]
         blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
         remote_db = self._get_ibis_backend()
-        tables = remote_db.list_tables()
-        tables = [t for t in tables if not blacklisted(t)]
+        remote_tables = remote_db.list_tables()
+        remote_tables = [t for t in remote_tables if not blacklisted(t)]
+
+        if not remote_tables:
+            return
 
         if force:
             frappe.db.delete(
@@ -190,14 +193,19 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 {"data_source": self.name},
             )
 
-        if not tables or len(tables) == frappe.db.count(
-            "Insights Table v3",
-            {"data_source": self.name},
-        ):
-            print("No new tables to sync")
+        tables_to_import = set(remote_tables)
+        if not force:
+            existing_tables = frappe.get_all(
+                "Insights Table v3",
+                {"data_source": self.name},
+                pluck="table",
+            )
+            tables_to_import = set(remote_tables) - set(existing_tables)
+
+        if not tables_to_import:
             return
 
-        InsightsTablev3.bulk_create(self.name, tables)
+        InsightsTablev3.bulk_create(self.name, list(tables_to_import))
         self.update_table_links(force)
 
     def update_table_links(self, force=False):

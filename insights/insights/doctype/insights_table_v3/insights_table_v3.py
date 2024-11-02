@@ -41,7 +41,7 @@ class InsightsTablev3(Document):
             doc.label = table
             table_docs.append(doc)
 
-        bulk_insert("Insights Table v3", table_docs)
+        bulk_insert("Insights Table v3", table_docs, ignore_duplicates=True)
 
     @staticmethod
     def get_ibis_table(data_source, table_name, use_live_connection=False):
