@@ -7,6 +7,7 @@ from frappe.utils import get_files_path
 from ibis import BaseBackend, _
 from ibis.expr.types import Expr
 
+from insights import create_toast
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights.duckdb"
@@ -71,6 +72,10 @@ class WarehouseTable:
             )
             return
 
+        create_toast(
+            f"Importing {frappe.bold(self.table_name)} of {frappe.bold(self.data_source)} to the data store."
+        )
+
         importer = WarehouseTableImporter(self)
         importer.start_import()
         t = InsightsTablev3.get_doc(
@@ -82,6 +87,11 @@ class WarehouseTable:
         t.stored = 1
         t.last_synced_on = frappe.utils.now()
         t.save()
+
+        create_toast(
+            f"Imported {frappe.bold(self.table_name)} of {frappe.bold(self.data_source)} to the data store.",
+            type="success",
+        )
 
 
 class WarehouseTableImporter:
