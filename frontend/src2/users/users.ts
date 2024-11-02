@@ -28,6 +28,14 @@ async function getUsers(search_term = '') {
 function getUser(email: string) {
 	return users.value.find((user) => user.email === email)
 }
+function getName(email: string) {
+	const user = getUser(email)
+	return user ? user.full_name || email : ''
+}
+function getImage(email: string) {
+	const user = getUser(email)
+	return user ? user.user_image : ''
+}
 
 const sendingInvitation = ref(false)
 function inviteUsers(emails: string[]) {
@@ -62,6 +70,8 @@ export default function useUserStore() {
 		loading,
 		getUsers,
 		getUser,
+		getName,
+		getImage,
 
 		inviteUsers,
 		sendingInvitation,

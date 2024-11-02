@@ -16,6 +16,7 @@ watchEffect(() => {
 const filteredUsers = computed(() => {
 	return userStore.users
 		.filter((user) => {
+			if (!user.enabled) return false
 			if (!searchTxt.value) return true
 			return (
 				user.full_name.toLowerCase().includes(searchTxt.value.toLowerCase()) ||

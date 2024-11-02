@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { handleOldYAxisConfig } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
-import { getUniqueId, safeJSONParse, wheneverChanges } from '../helpers'
+import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
@@ -173,7 +173,7 @@ export default function useWorkbook(name: string) {
 					write: p.access === 'edit',
 				}
 			}),
-		})
+		}).catch(showErrorToast)
 	}
 
 	function deleteWorkbook() {

@@ -6,9 +6,12 @@ import { WorkbookListItem } from '../types/workbook.types'
 const workbooks = ref<WorkbookListItem[]>([])
 
 const loading = ref(false)
-async function getWorkbooks() {
+async function getWorkbooks(search_term?: string, limit: number = 100) {
 	loading.value = true
-	workbooks.value = await call('insights.api.workbooks.get_workbooks')
+	workbooks.value = await call('insights.api.workbooks.get_workbooks', {
+		search_term,
+		limit,
+	})
 	workbooks.value = workbooks.value.map((workbook: any) => ({
 		...workbook,
 		created_from_now: useTimeAgo(workbook.creation),

@@ -10,6 +10,8 @@ export type WorkbookListItem = {
 	created_from_now: string
 	modified_from_now: string
 	views: number
+	shared_with: string[]
+	shared_with_organization?: boolean
 }
 
 export type InsightsWorkbook = {

@@ -73,9 +73,13 @@ def get_columns_for_selection(operations, use_live_connection=True):
 
 
 @insights_whitelist()
-def get_workbooks():
+def get_workbooks(search_term=None, limit=100):
     workbooks = frappe.get_list(
         "Insights Workbook",
+        or_filters={
+            "owner": ["like", f"%{search_term}%" if search_term else "%"],
+            "title": ["like", f"%{search_term}%" if search_term else "%"],
+        },
         fields=[
             "name",
             "title",
@@ -83,7 +87,7 @@ def get_workbooks():
             "creation",
             "modified",
         ],
-        limit=100,
+        limit=limit,
     )
     # FIX: figure out how to use frappe.qb while respecting permissions
     # TODO: use frappe.qb to get the view count
@@ -103,6 +107,33 @@ def get_workbooks():
             if str(view["reference_name"]) == str(workbook["name"])
         ]
         workbook["views"] = len(views)
+
+    for workbook in workbooks:
+        organization_has_access = frappe.db.exists(
+            "DocShare",
+            {
+                "share_doctype": "Insights Workbook",
+                "share_name": workbook["name"],
+                "everyone": 1,
+                "read": 1,
+            },
+        )
+        if organization_has_access:
+            workbook["shared_with_organization"] = True
+            continue
+
+        shared_with = frappe.get_all(
+            "DocShare",
+            filters={
+                "share_doctype": "Insights Workbook",
+                "share_name": workbook["name"],
+                "user": ["!=", workbook["owner"]],
+                "read": 1,
+            },
+            pluck="user",
+        )
+        workbook["shared_with"] = shared_with
+
     return workbooks
 
 
