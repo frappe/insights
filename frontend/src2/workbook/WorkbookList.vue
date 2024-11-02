@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
-import { PlusIcon, SearchIcon } from 'lucide-vue-next'
+import { Eye, PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { WorkbookListItem } from '../types/workbook.types'
@@ -25,10 +25,30 @@ const filteredWorkbooks = computed(() => {
 const userStore = useUserStore()
 const listOptions = ref({
 	columns: [
-		{ label: 'Title', key: 'title' },
+		{
+			label: 'Title',
+			key: 'title',
+			width: 3,
+		},
+		{
+			label: 'Views',
+			key: 'views',
+			width: 1,
+			getLabel: (props: any) => {},
+			prefix: (props: any) => {
+				const workbook = props.row as WorkbookListItem
+				return (
+					<div class="flex gap-1">
+						<Eye class="h-3.5 w-3.5 text-gray-600" stroke-width="1.5" />
+						<span class="font-mono text-sm text-gray-700">{workbook.views}</span>
+					</div>
+				)
+			},
+		},
 		{
 			label: 'Owner',
 			key: 'owner',
+			width: 1,
 			getLabel(props: any) {
 				const workbook = props.row as WorkbookListItem
 				const user = userStore.getUser(workbook.owner)
@@ -40,7 +60,7 @@ const listOptions = ref({
 				return <Avatar size="md" label={workbook.owner} image={user?.user_image} />
 			},
 		},
-		{ label: 'Modified', key: 'modified_from_now' },
+		{ label: 'Modified', key: 'modified_from_now', width: 1 },
 	],
 	rows: filteredWorkbooks,
 	rowKey: 'name',

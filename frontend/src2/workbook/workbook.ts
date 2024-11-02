@@ -284,6 +284,8 @@ function getWorkbookResource(name: string) {
 			return doc
 		},
 	})
+
+	workbook.onAfterLoad(() => workbook.call('track_view').catch(() => {}))
 	return workbook
 }
 

@@ -8,6 +8,8 @@ import frappe
 import frappe.utils
 import requests
 from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
 
 from insights.api.workbooks import fetch_query_results
 
@@ -30,11 +32,31 @@ class InsightsWorkbook(Document):
 
     def before_save(self):
         self.title = self.title or f"Workbook {frappe.utils.cint(self.name)}"
+        self.fix_json_fields()
+        self.enqueue_update_dashboard_previews()
+
+    def fix_json_fields(self):
         # fix: json field value cannot be a list (see: base_document.py:get_valid_dict)
         self.queries = frappe.as_json(frappe.parse_json(self.queries))
         self.charts = frappe.as_json(frappe.parse_json(self.charts))
         self.dashboards = frappe.as_json(frappe.parse_json(self.dashboards))
-        self.enqueue_update_dashboard_previews()
+
+    @frappe.whitelist()
+    def track_view(self):
+        self.fix_json_fields()
+        view_log = frappe.qb.DocType("View Log")
+        last_viewed_recently = frappe.db.get_value(
+            view_log,
+            filters=(
+                (view_log.creation < (Now() - Interval(minutes=5)))
+                & (view_log.reference_doctype == self.doctype)
+                & (view_log.reference_name == self.name)
+                & (view_log.viewed_by == frappe.session.user)
+            ),
+            pluck="name",
+        )
+        if not last_viewed_recently:
+            self.add_viewed()
 
     @cached_property
     def query_map(self):

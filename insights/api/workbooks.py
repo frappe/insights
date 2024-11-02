@@ -73,7 +73,7 @@ def get_columns_for_selection(operations, use_live_connection=True):
 
 @insights_whitelist()
 def get_workbooks():
-    return frappe.get_list(
+    workbooks = frappe.get_list(
         "Insights Workbook",
         fields=[
             "name",
@@ -82,7 +82,27 @@ def get_workbooks():
             "creation",
             "modified",
         ],
+        limit=100,
     )
+    # FIX: figure out how to use frappe.qb while respecting permissions
+    # TODO: use frappe.qb to get the view count
+    workbook_names = [workbook["name"] for workbook in workbooks]
+    workbook_views = frappe.get_all(
+        "View Log",
+        filters={
+            "reference_doctype": "Insights Workbook",
+            "reference_name": ["in", workbook_names],
+        },
+        fields=["reference_name", "name"],
+    )
+    for workbook in workbooks:
+        views = [
+            view
+            for view in workbook_views
+            if str(view["reference_name"]) == str(workbook["name"])
+        ]
+        workbook["views"] = len(views)
+    return workbooks
 
 
 @insights_whitelist()

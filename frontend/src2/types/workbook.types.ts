@@ -9,6 +9,7 @@ export type WorkbookListItem = {
 	modified: string
 	created_from_now: string
 	modified_from_now: string
+	views: number
 }
 
 export type InsightsWorkbook = {
