@@ -113,6 +113,20 @@ async function getTableLinks(
 	})
 }
 
+async function updateTableLinks(data_source: string) {
+	createToast({
+		title: 'Updating table links',
+		message: `Updating table links for ${data_source}. This may take a while.`,
+		variant: 'info',
+	})
+	return call('insights.api.data_sources.update_table_links', { data_source }).then(() => {
+		createToast({
+			message: `Table links updated for ${data_source}`,
+			variant: 'success',
+		})
+	})
+}
+
 export function getTableOptions(data_source: string) {
 	if (!tables.value[data_source]) return []
 	return toOptions(tables.value[data_source], {
@@ -133,7 +147,9 @@ export default function useTableStore() {
 		getTableColumns,
 		updatingDataSourceTables,
 		updateDataSourceTables,
+
 		getTableLinks,
+		updateTableLinks,
 
 		fetchingTable,
 		fetchTable,

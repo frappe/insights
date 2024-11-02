@@ -88,6 +88,15 @@ watchEffect(() => {
 								'stroke-width': '1.5',
 							}),
 					},
+					{
+						label: 'Update Table Links',
+						onClick: () => tableStore.updateTableLinks(props.name),
+						icon: () =>
+							h(RefreshCcw, {
+								class: 'h-4 w-4 text-gray-700',
+								'stroke-width': '1.5',
+							}),
+					},
 				]"
 			>
 				<Button>

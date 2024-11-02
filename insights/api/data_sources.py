@@ -389,6 +389,14 @@ def get_table_links(data_source: str, left_table: str, right_table: str):
     return InsightsTableLinkv3.get_links(data_source, left_table, right_table)
 
 
+@insights_whitelist()
+@validate_type
+def update_table_links(data_source: str):
+    check_data_source_permission(data_source)
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    ds.update_table_links(force=True)
+
+
 def make_data_source(data_source):
     data_source = frappe._dict(data_source)
     ds = frappe.new_doc("Insights Data Source v3")
