@@ -185,6 +185,8 @@ class IbisQueryBuilder:
         query: IbisQuery = self.query
         query_columns = set(query.columns)
         right_table_columns = set(right_table.columns)
+        right_table_name = get_ibis_table_name(right_table)
+        right_table_name = frappe.scrub(right_table_name)
 
         duplicate_columns = query_columns.intersection(right_table_columns)
         if not duplicate_columns:
@@ -194,13 +196,17 @@ class IbisQueryBuilder:
             return col in query_columns or col in right_table_columns
 
         def get_new_name(col):
+            new_name = f"{right_table_name}.{col}"
+            if not is_conflicting(new_name):
+                return new_name
+
             n = 1
-            while is_conflicting(f"{col}_{n}"):
+            while is_conflicting(f"{new_name}_{n}"):
                 n += 1
                 if n > 20:
                     frappe.throw("Too many duplicate columns")
 
-            return f"{col}_{n}"
+            return f"{new_name}_{n}"
 
         return right_table.rename(
             **{get_new_name(col): col for col in duplicate_columns}
@@ -600,3 +606,10 @@ def exec_with_return(
         return safe_eval(last_expression, _globals, _locals)
     else:
         return safe_eval(code, _globals, _locals)
+
+
+def get_ibis_table_name(table: IbisQuery):
+    dt = table.op().find_topmost(DatabaseTable)
+    if not dt:
+        return None
+    return dt[0].name
