@@ -1,14 +1,32 @@
 <script setup lang="tsx">
 import { Breadcrumbs } from 'frappe-ui'
-import { BarChart2, Eye, SearchIcon } from 'lucide-vue-next'
+import { BarChart2, Clock, Eye, MoreVertical, RefreshCw, SearchIcon } from 'lucide-vue-next'
 import { ref, watchEffect } from 'vue'
-import useDashboardStore from './dashboards'
+import { useRouter } from 'vue-router'
+import useDashboardStore, { DashboardListItem } from './dashboards'
 
 const store = useDashboardStore()
 const searchQuery = ref('')
 watchEffect(() => {
 	store.fetchDashboards(searchQuery.value)
 })
+
+const router = useRouter()
+const dropdownOptions = (dashboard: DashboardListItem) => {
+	return [
+		{
+			label: 'Open Workbook',
+			icon: 'external-link',
+			onClick: () => router.push(`/workbook/${dashboard.workbook}`),
+		},
+		{
+			label: 'Refresh Preview',
+			icon: 'refresh-cw',
+			loading: store.updatingPreviewImage,
+			onClick: () => store.updatePreviewImage(dashboard.name),
+		},
+	]
+}
 
 watchEffect(() => {
 	document.title = 'Dashboards | Insights'
@@ -33,52 +51,77 @@ watchEffect(() => {
 		<div class="h-full w-full">
 			<!-- Dashboard Cards -->
 			<div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<router-link
+				<div
 					v-for="dashboard in store.dashboards"
 					:key="dashboard.name"
-					:to="`/dashboard/${dashboard.name}`"
+					class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-white"
 				>
-					<div
-						class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-white"
+					<router-link
+						:to="`/dashboard/${dashboard.name}`"
+						class="flex h-[150px] overflow-hidden rounded shadow transition-transform duration-200 group-hover:scale-[1.01]"
 					>
+						<img
+							v-if="dashboard.preview_image"
+							:src="dashboard.preview_image"
+							onerror="this.src = ''"
+							class="z-10 object-cover opacity-80"
+						/>
 						<div
-							class="flex h-[150px] overflow-hidden rounded shadow group-hover:shadow-md"
+							v-else
+							class="flex h-full w-full items-center justify-center bg-gray-50/70"
 						>
-							<img
-								:src="dashboard.preview_image"
-								onerror="this.src = ''"
-								class="z-10 object-cover opacity-80"
-							/>
+							<Button
+								variant="ghost"
+								@click.prevent.stop="store.updatePreviewImage(dashboard.name)"
+								:loading="store.updatingPreviewImage"
+							>
+								<template #prefix>
+									<RefreshCw class="h-3.5 w-3.5 text-gray-500" />
+								</template>
+								<span class="text-gray-500">Load Preview</span>
+							</Button>
 						</div>
-						<div class="flex items-center justify-between">
-							<div class="flex-1">
-								<div class="flex items-center gap-1">
-									<p class="truncate">
-										{{ dashboard.title }}
-									</p>
-								</div>
-								<p class="mt-1 text-xs text-gray-600">
-									Updated {{ dashboard.modified_from_now }}
+					</router-link>
+					<div class="flex items-center justify-between gap-2">
+						<div class="flex-1">
+							<div class="flex items-center gap-1">
+								<p class="truncate">
+									{{ dashboard.title }}
 								</p>
 							</div>
-							<div class="flex flex-shrink-0 flex-col items-center gap-1">
-								<div class="flex gap-1">
-									<Eye class="h-3.5 w-3.5 text-gray-500" stroke-width="1.5" />
-									<span class="text-xs text-gray-500">10</span>
+							<div class="mt-1.5 flex gap-2">
+								<div class="flex items-center gap-1">
+									<Eye class="h-3 w-3 text-gray-600" stroke-width="1.5" />
+									<span class="text-xs text-gray-600">10</span>
 								</div>
-								<div class="flex gap-1">
-									<BarChart2
-										class="h-3.5 w-3.5 text-gray-500"
-										stroke-width="1.5"
-									/>
-									<span class="text-xs text-gray-500">{{
-										dashboard.charts
-									}}</span>
+								<div class="flex items-center gap-1">
+									<BarChart2 class="h-3 w-3 text-gray-600" stroke-width="1.5" />
+									<span class="text-xs text-gray-600">
+										{{ dashboard.charts }}
+									</span>
+								</div>
+								<div class="flex items-center gap-1">
+									<Clock class="h-3 w-3 text-gray-600" stroke-width="1.5" />
+									<span class="text-xs text-gray-600">
+										{{ dashboard.modified_from_now }}
+									</span>
 								</div>
 							</div>
 						</div>
+						<div class="flex flex-shrink-0 items-center">
+							<Dropdown :options="dropdownOptions(dashboard)">
+								<Button variant="ghost">
+									<template #icon>
+										<MoreVertical
+											class="h-4 w-4 text-gray-700"
+											stroke-width="1.5"
+										/>
+									</template>
+								</Button>
+							</Dropdown>
+						</div>
 					</div>
-				</router-link>
+				</div>
 			</div>
 		</div>
 	</div>

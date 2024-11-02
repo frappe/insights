@@ -12,6 +12,7 @@ from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
 from insights.api.workbooks import fetch_query_results
+from insights.utils import File
 
 
 class InsightsWorkbook(Document):
@@ -165,6 +166,7 @@ class InsightsWorkbook(Document):
     def update_dashboard_previews(self, new_workbook, prev_workbook):
         new_dashboards = frappe.parse_json(new_workbook.dashboards)
 
+        updated_dashboards = 0
         for dashboard in new_dashboards:
             if not len(dashboard["items"]):
                 continue
@@ -176,16 +178,33 @@ class InsightsWorkbook(Document):
             ):
                 continue
 
-            with generate_preview_key() as key:
-                preview = get_page_preview(
-                    frappe.utils.get_url(
-                        f"/insights/shared/dashboard/{dashboard['name']}"
-                    ),
-                    headers={
-                        "X-Insights-Preview-Key": key,
-                    },
-                )
-                create_preview_file(preview, dashboard["name"], self.name)
+            self.update_dashboard_preview(dashboard["name"])
+            updated_dashboards += 1
+
+        if updated_dashboards:
+            self.save()
+
+    def update_dashboard_preview(self, dashboard_name):
+        with generate_preview_key() as key:
+            preview = get_page_preview(
+                frappe.utils.get_url(f"/insights/shared/dashboard/{dashboard_name}"),
+                headers={
+                    "X-Insights-Preview-Key": key,
+                },
+            )
+            file_url = create_preview_file(preview, dashboard_name, self.name)
+            random_hash = frappe.generate_hash()[0:4]
+            file_url = f"{file_url}?{random_hash}"
+            self.update_dashboard_preview_url(dashboard_name, file_url)
+            return file_url
+
+    def update_dashboard_preview_url(self, dashboard_name, file_url):
+        dashboards = frappe.parse_json(self.dashboards)
+        for dashboard in dashboards:
+            if dashboard["name"] == dashboard_name:
+                dashboard["preview_image"] = file_url
+                break
+        self.dashboards = frappe.as_json(dashboards)
 
 
 def has_dashboard_changed(dashboard_name, new_workbook, prev_workbook):
@@ -248,25 +267,17 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
 
 def create_preview_file(content: bytes, dashboard_name: str, workbook_name: str):
     file_name = f"{dashboard_name}-preview.jpeg"
-    if filename := frappe.db.exists(
-        "File",
-        {
-            "file_name": file_name,
-            "attached_to_doctype": "Insights Workbook",
-            "attached_to_name": workbook_name,
-        },
-    ):
-        file = frappe.get_doc("File", filename)
+    file = File.get_or_create_doc(
+        attached_to_doctype="Insights Workbook",
+        attached_to_name=workbook_name,
+        file_name=file_name,
+        is_private=1,
+    )
+    if file.name:
         file.content = content
         file.save_file(overwrite=True)
         file.save()
     else:
-        file = frappe.new_doc("File")
-        file.attached_to_doctype = "Insights Workbook"
-        file.attached_to_name = workbook_name
-        file.folder = "Home/Attachments"
-        file.file_name = file_name
-        file.is_private = 1
         # insert file while ensuring file name is same as the one we want
         # first insert without content to reserve the file name (ignoring validate_file_on_disk)
         # then overwrite the file with the content
@@ -276,6 +287,8 @@ def create_preview_file(content: bytes, dashboard_name: str, workbook_name: str)
         file.content = content
         file.save_file(overwrite=True)
         file.save()
+
+    return file.file_url
 
 
 @contextmanager

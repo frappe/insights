@@ -114,6 +114,10 @@ class DocShare(DoctypeBase):
     doctype = "DocShare"
 
 
+class File(DoctypeBase):
+    doctype = "File"
+
+
 class InsightsSettings:
     @classmethod
     def get(cls, key):

@@ -1,7 +1,7 @@
 import frappe
 
 from insights.api.permissions import is_private
-from insights.decorators import insights_whitelist
+from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
     get_permission_filter,
@@ -104,16 +104,15 @@ def get_dashboards(search_term=None, limit=50):
                     "workbook": workbook.name,
                     "charts": len(dashboard["items"]),
                     "modified": workbook["modified"],
-                    "preview_image": f"/private/files/{dashboard['name']}-preview.jpeg",
+                    "preview_image": dashboard.get("preview_image"),
                 }
             )
 
     return dashboards
 
 
-@insights_whitelist()
-def get_workbook_name(dashboard_name: str):
-    workbooks = frappe.get_list(
+def _get_workbook_name(dashboard_name: str):
+    workbooks = frappe.get_all(
         "Insights Workbook",
         filters={"dashboards": ["like", f"%{dashboard_name}%"]},
         pluck="name",
@@ -125,18 +124,35 @@ def get_workbook_name(dashboard_name: str):
     return workbooks[0]
 
 
+@insights_whitelist()
+def get_workbook_name(dashboard_name: str):
+    return _get_workbook_name(dashboard_name)
+
+
 @frappe.whitelist(allow_guest=True)
 def fetch_dashboard_workbook(dashboard_name: str):
-    workbooks = frappe.get_all(
-        "Insights Workbook",
-        filters={"dashboards": ["like", f"%{dashboard_name}%"]},
-        pluck="name",
-    )
-
-    if not workbooks:
-        frappe.throw("Could not find workbook for dashboard")
-
-    workbook_name = workbooks[0]
+    workbook_name = _get_workbook_name(dashboard_name)
     workbook = frappe.get_doc("Insights Workbook", workbook_name)
     dashboards = frappe.parse_json(workbook.dashboards)
     return next((d for d in dashboards if d["name"] == dashboard_name), None)
+
+
+@insights_whitelist()
+@validate_type
+def update_dashboard_preview(dashboard_name: str):
+    workbook_name = _get_workbook_name(dashboard_name)
+    workbook = frappe.get_doc("Insights Workbook", workbook_name)
+    dashboard = next(
+        (
+            d
+            for d in frappe.parse_json(workbook.dashboards)
+            if d["name"] == dashboard_name
+        ),
+        None,
+    )
+    if not dashboard:
+        frappe.throw("Could not find dashboard")
+
+    file_url = workbook.update_dashboard_preview(dashboard["name"])
+    workbook.save()
+    return file_url

@@ -22,3 +22,10 @@ export function createToast(toastOptions: ToastOptions) {
 	})
 	toast.custom(markRaw(component))
 }
+
+export function createInfoToast(message: string) {
+	createToast({ message, variant: 'info' })
+}
+export function createSuccessToast(message: string) {
+	createToast({ message, variant: 'success' })
+}

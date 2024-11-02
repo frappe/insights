@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { Badge } from 'frappe-ui'
 import { AlertOctagon } from 'lucide-vue-next'
 import { computed, provide, watchEffect } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-import ContentEditable from '../components/ContentEditable.vue'
-import Navbar from '../components/Navbar.vue'
 import useWorkbook, { workbookKey } from './workbook'
-import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
+import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import WorkbookTabSwitcher from './WorkbookTabSwitcher.vue'
-import WorkbookNavbar from './WorkbookNavbar.vue'
 
 defineOptions({ inheritAttrs: false })
 

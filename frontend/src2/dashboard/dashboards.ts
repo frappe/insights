@@ -1,6 +1,8 @@
 import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { createInfoToast, createSuccessToast } from '../helpers/toasts'
+import { showErrorToast } from '../helpers'
 
 export type DashboardListItem = {
 	name: string
@@ -30,8 +32,26 @@ async function fetchDashboards(search_term?: string, limit: number = 50) {
 	return dashboards.value
 }
 
-async function fetchWorkbookName(name: string) {
-	return await call('insights.api.dashboards.get_workbook_name', { dashboard_name: name })
+async function fetchWorkbookName(dashboard_name: string) {
+	return await call('insights.api.dashboards.get_workbook_name', { dashboard_name })
+}
+
+const updatingPreviewImage = ref(false)
+async function updatePreviewImage(dashboard_name: string) {
+	updatingPreviewImage.value = true
+	createInfoToast('Updating preview image...')
+	return call('insights.api.dashboards.update_dashboard_preview', { dashboard_name })
+		.then((file_url: string) => {
+			createSuccessToast('Preview image updated successfully')
+			const dashboard = dashboards.value.find((d) => d.name === dashboard_name)
+			if (dashboard) {
+				dashboard.preview_image = file_url
+			}
+		})
+		.catch(showErrorToast)
+		.finally(() => {
+			updatingPreviewImage.value = false
+		})
 }
 
 export default function useDashboardStore() {
@@ -44,5 +64,8 @@ export default function useDashboardStore() {
 		loading,
 		fetchDashboards,
 		fetchWorkbookName,
+
+		updatePreviewImage,
+		updatingPreviewImage,
 	})
 }
