@@ -27,7 +27,7 @@ const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString()
 				<QueryBuilderTableColumn :column="column" />
 			</template>
 			<template #footer-left>
-				<p class="tnum text-sm text-gray-600">
+				<p class="tnum p-1 text-sm text-gray-600">
 					Showing {{ previewRowCount }} of {{ totalRowCount }} rows
 				</p>
 			</template>

@@ -117,7 +117,7 @@ watchEffect(() => {
 </script>
 
 <template>
-	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
+	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: 'Workbooks', route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button label="New Workbook" variant="solid" @click="openNewWorkbook">
@@ -128,7 +128,7 @@ watchEffect(() => {
 		</div>
 	</header>
 
-	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl
 				placeholder="Search by Title"

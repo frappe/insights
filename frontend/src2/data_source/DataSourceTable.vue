@@ -41,7 +41,9 @@ watchEffect(() => {
 					:rows="table.rows"
 				>
 					<template #footer-left>
-						<p class="tnum text-sm text-gray-600">Showing only the first 100 rows</p>
+						<p class="tnum p-1 text-sm text-gray-600">
+							Showing only the first 100 rows
+						</p>
 					</template>
 				</DataTable>
 			</div>

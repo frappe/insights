@@ -117,7 +117,7 @@ function importCSVData() {
 					:loading="csvData.loading"
 				>
 					<template #footer-left>
-						<p class="tnum text-sm text-gray-600">
+						<p class="tnum p-1 text-sm text-gray-600">
 							Showing {{ csvData.rows.length }} of {{ csvData.totalRowCount }} rows
 						</p>
 					</template>

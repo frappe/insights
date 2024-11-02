@@ -141,7 +141,7 @@ document.title = 'Users | Insights'
 </script>
 
 <template>
-	<header class="mb-2 flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
+	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: 'Users', route: '/users' }]" />
 		<div class="flex items-center gap-2">
 			<Button
@@ -157,7 +157,7 @@ document.title = 'Users | Insights'
 		</div>
 	</header>
 
-	<div class="mb-4 flex h-full flex-col gap-2 overflow-auto px-4">
+	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
 				<template #prefix>
