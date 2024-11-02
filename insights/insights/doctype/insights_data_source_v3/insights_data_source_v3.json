@@ -102,7 +102,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 19:33:02.997371",
+ "modified": "2024-11-02 12:13:07.587648",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",
@@ -132,5 +132,6 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

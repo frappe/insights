@@ -41,7 +41,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 20:22:52.941397",
+ "modified": "2024-11-02 12:13:37.959366",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Team",
@@ -74,5 +74,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "team_name"
+ "title_field": "team_name",
+ "track_changes": 1
 }
