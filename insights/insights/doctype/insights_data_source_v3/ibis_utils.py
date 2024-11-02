@@ -190,7 +190,21 @@ class IbisQueryBuilder:
         if not duplicate_columns:
             return right_table
 
-        return right_table.rename(**{f"right_{col}": col for col in duplicate_columns})
+        def is_conflicting(col):
+            return col in query_columns or col in right_table_columns
+
+        def get_new_name(col):
+            n = 1
+            while is_conflicting(f"{col}_{n}"):
+                n += 1
+                if n > 20:
+                    frappe.throw("Too many duplicate columns")
+
+            return f"{col}_{n}"
+
+        return right_table.rename(
+            **{get_new_name(col): col for col in duplicate_columns}
+        )
 
     def apply_union(self, union_args):
         other_table = self.get_table_or_query(union_args.table)
