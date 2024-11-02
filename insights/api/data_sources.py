@@ -335,7 +335,7 @@ def get_data_source_table(data_source: str, table_name: str):
     ds = frappe.get_doc("Insights Data Source v3", data_source)
     db = ds._get_ibis_backend()
     q = db.table(table_name).head(100)
-    data = execute_ibis_query(q, cache=True, cache_expiry=24 * 60 * 60)
+    data = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
 
     return {
         "table_name": table_name,

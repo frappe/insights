@@ -19,13 +19,11 @@ def fetch_query_results(operations, limit=100, use_live_connection=True):
         return
 
     columns = get_columns_from_schema(ibis_query.schema())
-    results = execute_ibis_query(
-        ibis_query, limit=limit, cache=True, cache_expiry=60 * 5
-    )
+    results = execute_ibis_query(ibis_query, limit=limit, cache_expiry=60 * 5)
     results = results.to_dict(orient="records")
 
     count_query = ibis_query.aggregate(count=_.count())
-    count_results = execute_ibis_query(count_query, cache=True, cache_expiry=60 * 5)
+    count_results = execute_ibis_query(count_query, cache_expiry=60 * 5)
     total_count = count_results.values[0][0]
 
     return {
@@ -42,7 +40,7 @@ def download_query_results(operations, use_live_connection=True):
     if ibis_query is None:
         return
 
-    results = execute_ibis_query(ibis_query, limit=100_00_00)
+    results = execute_ibis_query(ibis_query, cache=False, limit=10_00_000)
     return results.to_csv(index=False)
 
 
@@ -61,7 +59,7 @@ def get_distinct_column_values(
         .distinct()
         .head(limit)
     )
-    result = execute_ibis_query(values_query, cache=True)
+    result = execute_ibis_query(values_query, cache_expiry=24 * 60 * 60)
     return result[column_name].tolist()
 
 

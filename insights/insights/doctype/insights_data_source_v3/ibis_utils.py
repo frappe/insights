@@ -476,9 +476,10 @@ class IbisQueryBuilder:
 
 
 def execute_ibis_query(
-    query: IbisQuery, query_name=None, limit=100, cache=False, cache_expiry=3600
+    query: IbisQuery, limit=100, cache=True, cache_expiry=3600
 ) -> pd.DataFrame:
     limit = limit or 100
+    limit = min(max(limit, 1), 10_00_000)
     query = query.head(limit) if limit else query
     sql = ibis.to_sql(query)
 
@@ -487,12 +488,11 @@ def execute_ibis_query(
 
     start = time.monotonic()
     res: pd.DataFrame = query.execute()
-    create_execution_log(sql, flt(time.monotonic() - start, 3), query_name)
+    create_execution_log(sql, flt(time.monotonic() - start, 3))
 
     res = res.replace({pd.NaT: None, np.nan: None})
 
     if cache:
-        # TODO: fix: pivot queries are not same, so cache key is always different
         cache_results(sql, res, cache_expiry)
 
     return res
