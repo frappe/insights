@@ -74,7 +74,7 @@ function updateMeasure(measure: ExpressionMeasure) {
 <template>
 	<CollapsibleSection title="Y Axis">
 		<div class="flex flex-col gap-3 pt-1">
-			<template v-for="(s, idx) in y_axis.series" :key="idx">
+			<template v-for="(s, idx) in y_axis.series" :key="s.measure.measure_name">
 				<div class="flex items-end gap-1">
 					<div class="flex-1">
 						<Autocomplete
