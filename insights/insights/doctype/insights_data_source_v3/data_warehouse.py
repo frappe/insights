@@ -3,6 +3,8 @@ import os
 import frappe
 import frappe.utils
 import ibis
+import ibis.backends
+import ibis.backends.duckdb
 from frappe.query_builder.functions import IfNull
 from frappe.utils import get_files_path
 from frappe.utils.background_jobs import is_job_enqueued
@@ -27,7 +29,7 @@ class Warehouse:
             ddb.disconnect()
 
         if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
-            ddb = ibis.duckdb.connect(self.db_path, read_only=True)
+            ddb = ibis.duckdb.connect(self.db_path)
             frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
 
         return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
@@ -49,16 +51,17 @@ class WarehouseTable:
             if import_if_not_exists:
                 self.enqueue_import()
                 remote_table = self.get_remote_table()
-                ddb = ibis.duckdb.connect(":memory:")
-                return ddb.create_table(
-                    self.warehouse_table_name, schema=remote_table.schema()
+                return self.warehouse.db.create_table(
+                    self.warehouse_table_name,
+                    schema=remote_table.schema(),
+                    overwrite=True,
                 )
             else:
                 frappe.throw(
                     f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
                 )
 
-        if not self.warehouse.db.list_tables(self.warehouse_table_name):
+        if os.path.exists(self.parquet_filepath):
             return self.warehouse.db.read_parquet(
                 self.parquet_filepath, table_name=self.warehouse_table_name
             )
@@ -132,9 +135,9 @@ class WarehouseTableImporter:
             self.update_log()
 
         create_toast(
-            f"Imported {frappe.bold(self.table.table_name)} of "
-            f"{frappe.bold(self.table.data_source)} to the data store. ",
+            f"Imported {frappe.bold(self.table.table_name)} to the data store. "
             "Please refresh the query to see the updated data.",
+            title="Import Completed",
             type="success",
             duration=7,
         )
@@ -153,9 +156,9 @@ class WarehouseTableImporter:
         )
 
         create_toast(
-            f"Importing {frappe.bold(self.table.table_name)} of "
-            f"{frappe.bold(self.table.data_source)} to the data store. "
+            f"Importing {frappe.bold(self.table.table_name)} to the data store. "
             "You may not see the results till the import is completed.",
+            title="Import Started",
             duration=7,
         )
 
