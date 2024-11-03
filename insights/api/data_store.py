@@ -61,4 +61,4 @@ def import_table(data_source: str, table_name: str):
     frappe.only_for("Insights Admin")
     name = get_table_name(data_source, table_name)
     table_doc = frappe.get_doc("Insights Table v3", name)
-    table_doc.import_to_warehouse(overwrite=True)
+    table_doc.import_to_warehouse()

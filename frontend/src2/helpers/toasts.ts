@@ -8,6 +8,7 @@ type ToastOptions = {
 	title?: string
 	message?: string
 	variant: ToastVariant
+	duration?: number
 }
 export function createToast(toastOptions: ToastOptions) {
 	const options = { ...toastOptions }
@@ -20,7 +21,9 @@ export function createToast(toastOptions: ToastOptions) {
 		message: options.message,
 		variant: toastOptions.variant,
 	})
-	toast.custom(markRaw(component))
+	toast.custom(markRaw(component), {
+		duration: options.duration || 5000,
+	})
 }
 
 export function createInfoToast(message: string) {

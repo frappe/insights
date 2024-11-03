@@ -63,10 +63,10 @@ class InsightsTablev3(Document):
         return t
 
     @frappe.whitelist()
-    def import_to_warehouse(self, overwrite=False):
+    def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
         wt = Warehouse().get_table(self.data_source, self.table)
-        wt.import_remote_table(overwrite=overwrite)
+        wt.enqueue_import()
 
 
 def get_table_name(data_source, table):

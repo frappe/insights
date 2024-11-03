@@ -123,6 +123,7 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "In Progress\nCompleted\nFailed",
    "read_only": 1
@@ -130,13 +131,14 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-03 13:09:24.873537",
+ "modified": "2024-11-03 14:33:32.757565",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Log",
  "owner": "Administrator",
  "permissions": [
   {
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,

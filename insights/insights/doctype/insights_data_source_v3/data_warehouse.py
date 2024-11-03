@@ -47,9 +47,11 @@ class WarehouseTable:
     def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
         if not os.path.exists(self.parquet_filepath):
             if import_if_not_exists:
-                self.import_remote_table()
-                return self.warehouse.db.read_parquet(
-                    self.parquet_filepath, table_name=self.warehouse_table_name
+                self.enqueue_import()
+                remote_table = self.get_remote_table()
+                ddb = ibis.duckdb.connect(":memory:")
+                return ddb.create_table(
+                    self.warehouse_table_name, schema=remote_table.schema()
                 )
             else:
                 frappe.throw(
@@ -67,13 +69,7 @@ class WarehouseTable:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
         return ds.get_ibis_table(self.table_name)
 
-    def import_remote_table(self, overwrite: bool = False):
-        if os.path.exists(self.parquet_filepath) and not overwrite:
-            print(
-                f"Skipping creation of parquet file for {self.table_name} of {self.data_source} as it already exists."
-            )
-            return
-
+    def enqueue_import(self):
         importer = WarehouseTableImporter(self)
         importer.enqueue_import()
 
@@ -136,9 +132,11 @@ class WarehouseTableImporter:
             self.update_log()
 
         create_toast(
-            f"Imported {frappe.bold(self.table_name)} of "
-            f"{frappe.bold(self.data_source)} to the data store.",
+            f"Imported {frappe.bold(self.table.table_name)} of "
+            f"{frappe.bold(self.table.data_source)} to the data store. ",
+            "Please refresh the query to see the updated data.",
             type="success",
+            duration=7,
         )
 
     def prepare_log(self):
@@ -156,7 +154,9 @@ class WarehouseTableImporter:
 
         create_toast(
             f"Importing {frappe.bold(self.table.table_name)} of "
-            f"{frappe.bold(self.table.data_source)} to the data store."
+            f"{frappe.bold(self.table.data_source)} to the data store. "
+            "You may not see the results till the import is completed.",
+            duration=7,
         )
 
     def prepare_settings(self) -> dict:

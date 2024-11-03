@@ -54,6 +54,7 @@ $socket.on('insights_notification', (data: any) => {
 			title: data.title || data.message,
 			message: data.title ? data.message : '',
 			variant: data.type,
+			duration: data.duration ? data.duration * 1000 : 4000,
 		})
 	}
 })

@@ -9,6 +9,7 @@ def create_toast(
     message: str,
     title: str | None = None,
     type: str = "info",
+    duration: int = 5,
 ):
     import frappe
 
@@ -23,6 +24,7 @@ def create_toast(
             "title": title,
             "type": type,
             "user": frappe.session.user,
+            "duration": duration,
         },
     )
 
