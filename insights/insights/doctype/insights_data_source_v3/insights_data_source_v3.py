@@ -109,7 +109,7 @@ class InsightsDataSourceDocument:
             return
         if self.database_type == "SQLite" or self.database_type == "DuckDB":
             self.validate_database_name()
-        if self.database_type == "BigQuery":
+        elif self.database_type == "BigQuery":
             self.validate_bigquery_fields()
         else:
             self.validate_remote_db_fields()

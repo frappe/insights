@@ -359,6 +359,9 @@ class IbisQueryBuilder:
         return self.query.aggregate(**aggregates, by=group_bys)
 
     def apply_order_by(self, order_by_args):
+        # check if column exists in current query schema, if not then skip
+        if order_by_args.column.column_name not in self.query.columns:
+            return self.query
         order_fn = ibis.asc if order_by_args.direction == "asc" else ibis.desc
         return self.query.order_by(order_fn(order_by_args.column.column_name))
 
@@ -497,13 +500,15 @@ class IbisQueryBuilder:
         if not expression or not expression.strip():
             raise ValueError(f"Invalid expression: {expression}")
 
+        frappe.flags.current_ibis_query = self.query
         context = frappe._dict()
         context.q = _
         context.update(self.get_current_columns())
         context.update(get_functions())
         context.update(additonal_context or {})
-
-        return exec_with_return(expression, context)
+        ret = exec_with_return(expression, context)
+        frappe.flags.current_ibis_query = None
+        return ret
 
     def get_current_columns(self):
         # TODO: handle collisions with function names
