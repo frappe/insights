@@ -106,7 +106,7 @@ class WarehouseTableImporter:
 
         if is_job_enqueued(job_id) or self.import_in_progress():
             create_toast(
-                f"Import for {frappe.bold(self.table.table_name)} is in progress.",
+                f"Import for {frappe.bold(self.table.table_name)} is in progress."
                 "You may not see the results till the import is completed.",
                 title="Import In Progress",
                 type="info",
