@@ -73,7 +73,7 @@ watchEffect(() => {
 							<Button
 								variant="ghost"
 								@click.prevent.stop="store.updatePreviewImage(dashboard.name)"
-								:loading="store.updatingPreviewImage"
+								:loading="store.updatingPreviewImage[dashboard.name]"
 							>
 								<template #prefix>
 									<RefreshCw class="h-3.5 w-3.5 text-gray-500" />
