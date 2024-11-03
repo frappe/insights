@@ -77,16 +77,10 @@ class WarehouseTable:
         )
 
         importer = WarehouseTableImporter(self)
+        if importer.import_in_progress():
+            return
+
         importer.start_import()
-        t = InsightsTablev3.get_doc(
-            {
-                "data_source": self.data_source,
-                "table": self.table_name,
-            }
-        )
-        t.stored = 1
-        t.last_synced_on = frappe.utils.now()
-        t.save()
 
         create_toast(
             f"Imported {frappe.bold(self.table_name)} of {frappe.bold(self.data_source)} to the data store.",
@@ -106,6 +100,17 @@ class WarehouseTableImporter:
         self.log = None
         self.settings = frappe._dict()
 
+    def import_in_progress(self):
+        log = frappe.qb.DocType("Insights Table Import Log")
+        return frappe.db.exists(
+            log,
+            (
+                (log.data_source == self.table.data_source)
+                & (log.table_name == self.table.table_name)
+                & (log.status == "In Progress")
+            ),
+        )
+
     def start_import(self):
         self.prepare_log()
         self.prepare_settings()
@@ -122,6 +127,7 @@ class WarehouseTableImporter:
         self.log.data_source = self.table.data_source
         self.log.table_name = self.table.table_name
         self.log.started_at = frappe.utils.now()
+        self.log.status = "In Progress"
         self.log.db_update()
 
     def prepare_settings(self) -> dict:
@@ -161,6 +167,10 @@ class WarehouseTableImporter:
             batch_size = self.calculate_batch_size()
             self.process_batches(batch_size)
             self.merge_batches()
+            self.update_insights_table()
+        except Exception as e:
+            self.log.status = "Failed"
+            self.log.log_output(f"Error: \n{e}")
         finally:
             self._cleanup()
 
@@ -241,6 +251,17 @@ class WarehouseTableImporter:
             f"Total Rows: {total_rows}"
         )
         ddb.disconnect()
+
+    def update_insights_table(self):
+        t = InsightsTablev3.get_doc(
+            {
+                "data_source": self.table.data_source,
+                "table": self.table.table_name,
+            }
+        )
+        t.stored = 1
+        t.last_synced_on = frappe.utils.now()
+        t.save()
 
     def _cleanup(self):
         for path in self.imported_batch_paths:

@@ -25,6 +25,7 @@ class InsightsTableImportLog(Document):
         row_size: DF.Float
         rows_imported: DF.Int
         started_at: DF.Datetime | None
+        status: DF.Literal["In Progress", "Completed", "Failed"]
         table_name: DF.Data
         time_taken: DF.Int
     # end: auto-generated types

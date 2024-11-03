@@ -2,8 +2,9 @@
  "actions": [],
  "creation": "2024-10-28 13:05:53.961297",
  "doctype": "DocType",
- "engine": "MyISAM",
+ "engine": "InnoDB",
  "field_order": [
+  "status",
   "data_source",
   "table_name",
   "parquet_file",
@@ -118,11 +119,18 @@
    "label": "Time Taken (Seconds)",
    "non_negative": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "In Progress\nCompleted\nFailed",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-28 19:25:56.672054",
+ "modified": "2024-11-03 13:09:24.873537",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Log",
