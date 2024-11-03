@@ -608,7 +608,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		confirmDialog({
 			title: 'Download Results',
-			message: 'This action will download the datatable results as a CSV file. Do you want to proceed?',
+			message:
+				'This action will download the datatable results as a CSV file. Do you want to proceed?',
 			primaryActionLabel: 'Yes',
 			onSuccess: _downloadResults,
 		})
@@ -616,15 +617,16 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function getDistinctColumnValues(column: string, search_term: string = '', limit: number = 20) {
 		const operationsForExecution = query.getOperationsForExecution()
-		const operations =
-			query.activeEditIndex > -1
-				? // when editing a filter, get distinct values from the operations before the filter
-				  operationsForExecution.slice(0, query.activeEditIndex)
-				: operationsForExecution
+		if (query.activeEditIndex > -1) {
+			// remove the active edit operation from the operations
+			// we can't use activeEditIndex because the operations for execution may have more operations (after query table resolution)
+			const idx = operationsForExecution.findIndex((op) => op === query.activeEditOperation)
+			operationsForExecution.splice(idx, 1)
+		}
 
 		return call('insights.api.workbooks.get_distinct_column_values', {
 			use_live_connection: query.doc.use_live_connection,
-			operations: operations,
+			operations: operationsForExecution,
 			column_name: column,
 			search_term,
 			limit,
@@ -633,15 +635,20 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	function getColumnsForSelection() {
 		const operationsForExecution = query.getOperationsForExecution()
-		const operations =
-			query.activeEditOperation.type === 'select' || query.activeEditOperation.type === 'summarize'
-				? operationsForExecution.slice(0, query.activeEditIndex)
-				: operationsForExecution
+		if (
+			query.activeEditOperation.type === 'select' ||
+			query.activeEditOperation.type === 'summarize'
+		) {
+			// remove the active edit operation from the operations
+			// we can't use activeEditIndex because the operations for execution may have more operations (after query table resolution)
+			const idx = operationsForExecution.findIndex((op) => op === query.activeEditOperation)
+			operationsForExecution.splice(idx, 1)
+		}
 
 		const method = 'insights.api.workbooks.get_columns_for_selection'
 		return call(method, {
 			use_live_connection: query.doc.use_live_connection,
-			operations,
+			operations: operationsForExecution,
 		})
 	}
 

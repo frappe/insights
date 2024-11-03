@@ -20,6 +20,7 @@ import {
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
 import AddOperationPopover from './AddOperationPopover.vue'
+import { workbookKey } from '../../workbook/workbook'
 
 const query = inject('query') as Query
 const operations = computed(() => {
@@ -39,16 +40,25 @@ const Element = (_: any, { slots }: any) => {
 	)
 }
 
+const workbook = inject(workbookKey)!
+const getQueryTitle = (query_name: string) => {
+	const q = workbook.doc.queries.find((q) => q.name === query_name)
+	return q ? q.title : query_name
+}
+
 const SourceInfo = (props: any) => {
 	const source = props.source as Source
 	const source_name =
-		source.table.type === 'table' ? source.table.table_name : source.table.query_name
+		source.table.type === 'table'
+			? source.table.table_name
+			: getQueryTitle(source.table.query_name)
+	const is_table = source.table.type === 'table'
 
 	return (
 		<div class="flex items-baseline gap-1 text-gray-700">
 			<p>Select</p>
 			<Element>{source_name}</Element>
-			<p>table</p>
+			<p>{is_table ? 'table' : 'query'}</p>
 		</div>
 	)
 }
@@ -56,14 +66,16 @@ const SourceInfo = (props: any) => {
 const JoinInfo = (props: any) => {
 	const join = props.join as Join
 	const join_type = join.join_type
-	const join_name = join.table.type === 'table' ? join.table.table_name : join.table.query_name
+	const join_name =
+		join.table.type === 'table' ? join.table.table_name : getQueryTitle(join.table.query_name)
+	const is_table = join.table.type === 'table'
 
 	return (
 		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
 			<Element>{join_type}</Element>
 			<p>join</p>
 			<Element>{join_name}</Element>
-			<p>table</p>
+			<p>{is_table ? 'table' : 'query'}</p>
 		</div>
 	)
 }

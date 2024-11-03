@@ -22,7 +22,7 @@ export const COLUMN_TYPES = [
 	{ label: 'Date', value: 'Date' },
 	{ label: 'Time', value: 'Time' },
 	{ label: 'Datetime', value: 'Datetime' },
-]
+] as const
 
 export const joinTypes = [
 	{

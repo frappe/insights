@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
+import { copy } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants'
 import {
 	aggregations,
@@ -34,8 +35,8 @@ const nonNumberColumns = computed(() =>
 	columnOptions.value.filter((col) => !FIELDTYPES.NUMBER.includes(col.type))
 )
 
-const measures = ref<ColumnMeasure[]>((props.summary?.measures as ColumnMeasure[]) || [])
-const dimensions = ref<Dimension[]>(props.summary?.dimensions || [])
+const measures = ref<ColumnMeasure[]>(copy((props.summary?.measures as ColumnMeasure[]) || []))
+const dimensions = ref<Dimension[]>(copy(props.summary?.dimensions || []))
 
 const areAllMeasuresValid = computed(
 	() => measures.value.length && measures.value.every((m) => m.column_name)
@@ -64,11 +65,9 @@ function resetSelections() {
 	dimensions.value = []
 }
 function confirmSelections() {
-	console.log('measures', measures.value)
-	console.log('dimensions', dimensions.value)
 	emit('select', {
-		measures: measures.value,
-		dimensions: dimensions.value,
+		measures: measures.value.filter((m) => m.column_name),
+		dimensions: dimensions.value.filter((d) => d.column_name),
 	})
 	showDialog.value = false
 }
@@ -87,8 +86,9 @@ function confirmSelections() {
 					<div class="flex items-start gap-4">
 						<span
 							class="w-[68px] flex-shrink-0 text-right text-base leading-7 text-gray-600"
-							>Aggregate</span
 						>
+							Aggregate
+						</span>
 						<div class="flex flex-1 flex-wrap gap-2">
 							<div v-for="(measure, idx) in measures" :key="idx" class="flex">
 								<Autocomplete
@@ -109,7 +109,16 @@ function confirmSelections() {
 										measure.data_type = e.type as MeasureDataType
 										measure.measure_name = `${measure.aggregation}(${e.name})`
 									}"
-								/>
+								>
+									<template #footer>
+										<div class="flex items-center justify-end">
+											<Button
+												label="Remove"
+												@click="measures.splice(idx, 1)"
+											/>
+										</div>
+									</template>
+								</Autocomplete>
 							</div>
 							<Button icon="plus" @click="addMeasure"> </Button>
 						</div>
@@ -130,7 +139,16 @@ function confirmSelections() {
 										dimension.column_name = e.name
 										dimension.data_type = e.type as DimensionDataType
 									}"
-								/>
+								>
+									<template #footer>
+										<div class="flex items-center justify-end">
+											<Button
+												label="Remove"
+												@click="dimensions.splice(idx, 1)"
+											/>
+										</div>
+									</template>
+								</Autocomplete>
 							</div>
 							<Button icon="plus" @click="addDimension"> </Button>
 						</div>

@@ -22,7 +22,7 @@ const props = defineProps<{
 }>()
 
 const currentSortOrder = computed(() => {
-	return props.config.order_by.find((order) => order.column.column_name === props.column.name)
+	return props.config.order_by?.find((order) => order.column.column_name === props.column.name)
 })
 const sortOptions = [
 	{

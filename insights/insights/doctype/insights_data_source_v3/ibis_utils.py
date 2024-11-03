@@ -518,7 +518,7 @@ class IbisQueryBuilder:
 def execute_ibis_query(
     query: IbisQuery, limit=100, cache=True, cache_expiry=3600
 ) -> pd.DataFrame:
-    limit = limit or 100
+    limit = int(limit or 100)
     limit = min(max(limit, 1), 10_00_000)
     query = query.head(limit) if limit else query
     sql = ibis.to_sql(query)
