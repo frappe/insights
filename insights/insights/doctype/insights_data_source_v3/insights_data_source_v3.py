@@ -3,6 +3,7 @@
 
 
 import re
+from contextlib import contextmanager
 
 import frappe
 import ibis
@@ -241,6 +242,15 @@ def before_request():
 def after_request():
     for db in frappe.local.insights_db_connections.values():
         catch_error(db.disconnect)
+
+
+@contextmanager
+def db_connections_context():
+    before_request()
+    try:
+        yield
+    finally:
+        after_request()
 
 
 def catch_error(fn):

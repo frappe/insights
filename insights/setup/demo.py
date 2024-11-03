@@ -8,8 +8,7 @@ import frappe
 
 from insights.api.data_sources import get_data_source_tables
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
-    after_request,
-    before_request,
+    db_connections_context,
 )
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
@@ -30,22 +29,21 @@ def update_progress(message, progress):
 
 
 class DemoDataFactory:
-    def __init__(self) -> None:
-        self.initialize()
-
     @staticmethod
     def run(force=False):
-        factory = DemoDataFactory()
-        if factory.demo_data_exists() and not force:
-            factory.create_table_links()
+        with db_connections_context():
+            factory = DemoDataFactory()
+            factory.initialize()
+            if factory.demo_data_exists() and not force:
+                factory.create_table_links()
+                update_progress("Done", 99)
+                return factory
+            update_progress("Downloading data...", 5)
+            factory.download_demo_data()
+            update_progress("Syncing tables...", 60)
+            factory.sync_tables()
             update_progress("Done", 99)
             return factory
-        update_progress("Downloading data...", 5)
-        factory.download_demo_data()
-        update_progress("Syncing tables...", 60)
-        factory.sync_tables()
-        update_progress("Done", 99)
-        return factory
 
     def initialize(self):
         self.db_url = "https://drive.google.com/uc?export=download&id=1l43RqU0KWKr04fx54PLsrHpWqMijRKTa"
@@ -63,10 +61,11 @@ class DemoDataFactory:
             data_source = frappe.new_doc("Insights Data Source v3")
             data_source.name = "demo_data"
             data_source.title = "Demo Data"
+            data_source.status = "Active"
             data_source.database_type = "DuckDB"
             data_source.database_name = "insights_demo_data"
-            data_source.insert(ignore_permissions=True)
-            frappe.db.commit()
+            data_source.flags.ignore_permissions = True
+            data_source.db_insert()
 
         self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
 
@@ -94,10 +93,8 @@ class DemoDataFactory:
             raise e
 
     def sync_tables(self):
-        before_request()
         self.data_source.update_table_list()
         self.data_source.save(ignore_permissions=True)
-        after_request()
         self.create_table_links()
 
     def create_table_links(self):
