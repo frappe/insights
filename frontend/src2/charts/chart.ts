@@ -11,7 +11,7 @@ import {
 	NumberChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { FilterArgs, GranularityType, Operation } from '../types/query.types'
+import { FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 
 const charts = new Map<string, Chart>()
@@ -46,6 +46,9 @@ function makeChart(workbookChart: WorkbookChart) {
 		updateGranularity,
 
 		getShareLink,
+
+		updateMeasure,
+		removeMeasure,
 
 		history: {} as UseRefHistoryReturn<any, any>,
 	})
@@ -311,6 +314,18 @@ function makeChart(workbookChart: WorkbookChart) {
 		return (
 			chart.doc.share_link || `${window.location.origin}/insights/shared/chart/${chart.doc.name}`
 		)
+	}
+
+	function updateMeasure(measure: Measure) {
+		if (!chart.doc.calculated_measures) chart.doc.calculated_measures = {}
+		chart.doc.calculated_measures = {
+			...chart.doc.calculated_measures,
+			[measure.measure_name]: measure,
+		}
+	}
+	function removeMeasure(measure: Measure) {
+		if (!chart.doc.calculated_measures) return
+		delete chart.doc.calculated_measures[measure.measure_name]
 	}
 
 	chart.history = useDebouncedRefHistory(

@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import ColorInput from '@/components/Controls/ColorInput.vue'
 import { debounce } from 'frappe-ui'
-import { RefreshCcw, Settings, XIcon } from 'lucide-vue-next'
+import { Edit, RefreshCcw, Settings, XIcon } from 'lucide-vue-next'
+import { inject, ref } from 'vue'
 import Checkbox from '../../components/Checkbox.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
+import { ExpressionMeasure, aggregations } from '../../types/query.types'
+import { Chart } from '../chart'
 import { MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
+import NewMeasureSelectorDialog from './NewMeasureSelectorDialog.vue'
 
 const props = defineProps<{ measures: MeasureOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
@@ -35,6 +39,36 @@ const updateColor = debounce((color: string, idx: number) => {
 	}
 	y_axis.value.series[idx].color = color ? [color] : []
 }, 500)
+
+const chart = inject<Chart>('chart')!
+const showMeasureDialog = ref(false)
+const currentMeasure = ref<ExpressionMeasure>()
+function editMeasure(measure: ExpressionMeasure) {
+	currentMeasure.value = measure
+	showMeasureDialog.value = true
+}
+function updateMeasure(measure: ExpressionMeasure) {
+	chart.updateMeasure(measure)
+	if (currentMeasure.value) {
+		const currentMeasureName = currentMeasure.value.measure_name
+		if (currentMeasureName !== measure.measure_name) {
+			chart.removeMeasure(currentMeasure.value)
+		}
+		y_axis.value.series.forEach((s) => {
+			if (s.measure.measure_name === currentMeasureName) {
+				s.measure = measure
+			}
+		})
+		currentMeasure.value = undefined
+	} else {
+		const idx = y_axis.value.series.findIndex((s) => !s.measure.measure_name)
+		if (idx > -1) {
+			y_axis.value.series[idx].measure = measure
+		} else {
+			y_axis.value.series.push({ measure })
+		}
+	}
+}
 </script>
 
 <template>
@@ -50,7 +84,22 @@ const updateColor = debounce((color: string, idx: number) => {
 							:options="props.measures"
 							:modelValue="s.measure.measure_name"
 							@update:modelValue="s.measure = $event || {}"
-						/>
+						>
+							<template #footer="{ togglePopover }">
+								<div class="flex items-center justify-between">
+									<Button
+										label="Create New"
+										@click="
+											() => {
+												showMeasureDialog = true
+												togglePopover()
+											}
+										"
+									/>
+									<Button label="Clear" @click.stop="s.measure = {}" />
+								</div>
+							</template>
+						</Autocomplete>
 					</div>
 					<Popover v-if="s.measure.measure_name" placement="bottom-end">
 						<template #target="{ togglePopover }">
@@ -60,8 +109,42 @@ const updateColor = debounce((color: string, idx: number) => {
 								</template>
 							</Button>
 						</template>
-						<template #body-main>
+						<template #body-main="{ togglePopover }">
 							<div class="flex w-[14rem] flex-col gap-2 p-2">
+								<InlineFormControlLabel
+									v-if="
+										'aggregation' in s.measure &&
+										s.measure.aggregation &&
+										s.measure.column_name != 'count'
+									"
+									label="Function"
+								>
+									<Autocomplete
+										button-classes="rounded-r-none"
+										placeholder="Agg"
+										:options="aggregations"
+										:modelValue="s.measure.aggregation"
+										@update:modelValue="s.measure.aggregation = $event.value"
+										:hide-search="true"
+									/>
+								</InlineFormControlLabel>
+								<Button
+									v-if="
+										'expression' in s.measure && s.measure.expression.expression
+									"
+									class="w-full"
+									label="Edit Expression"
+									@click="
+										() => {
+											editMeasure(s.measure as ExpressionMeasure)
+											togglePopover()
+										}
+									"
+								>
+									<template #prefix>
+										<Edit class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+									</template>
+								</Button>
 								<InlineFormControlLabel label="Label">
 									<FormControl
 										v-model="s.measure.measure_name"
@@ -151,4 +234,12 @@ const updateColor = debounce((color: string, idx: number) => {
 			/>
 		</div>
 	</CollapsibleSection>
+
+	<NewMeasureSelectorDialog
+		v-if="showMeasureDialog"
+		v-model="showMeasureDialog"
+		:column-options="chart.baseQuery.result.columnOptions"
+		:measure="currentMeasure"
+		@select="updateMeasure"
+	/>
 </template>

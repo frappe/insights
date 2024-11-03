@@ -45,6 +45,7 @@ export type WorkbookChart = {
 		limit?: number
 	}
 	operations: Operation[]
+	calculated_measures?: Record<string, Measure>
 }
 
 export type WorkbookDashboard = {
