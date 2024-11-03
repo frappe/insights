@@ -19,7 +19,7 @@ class InsightsTableImportLog(Document):
         ended_at: DF.Datetime | None
         memory_limit: DF.Int
         output: DF.LongText | None
-        parquet_file: DF.Data | None
+        parquet_file: DF.Text | None
         query: DF.Code
         row_limit: DF.Int
         row_size: DF.Float

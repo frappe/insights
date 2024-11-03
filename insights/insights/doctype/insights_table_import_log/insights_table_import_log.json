@@ -58,7 +58,7 @@
   },
   {
    "fieldname": "parquet_file",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "Parquet File",
    "read_only": 1
   },
@@ -131,7 +131,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-03 14:33:32.757565",
+ "modified": "2024-11-03 15:28:54.289437",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Log",
