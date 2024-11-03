@@ -35,7 +35,7 @@ watchEffect(() => {
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Dashboards', route: '/dashboard' }]" />
+		<Breadcrumbs :items="[{ label: 'Dashboards', route: '/dashboards' }]" />
 		<div class="flex items-center gap-2"></div>
 	</header>
 
@@ -57,7 +57,7 @@ watchEffect(() => {
 					class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-white"
 				>
 					<router-link
-						:to="`/dashboard/${dashboard.name}`"
+						:to="`/dashboards/${dashboard.name}`"
 						class="flex h-[150px] overflow-hidden rounded shadow transition-transform duration-200 group-hover:scale-[1.01]"
 					>
 						<img

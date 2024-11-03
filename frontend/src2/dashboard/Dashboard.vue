@@ -35,8 +35,8 @@ function openWorkbook() {
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs
 			:items="[
-				{ label: 'Dashboards', route: '/dashboard' },
-				{ label: dashboard.doc.title, route: `/dashboard/${dashboard.doc.name}` },
+				{ label: 'Dashboards', route: '/dashboards' },
+				{ label: dashboard.doc.title, route: `/dashboards/${dashboard.doc.name}` },
 			]"
 		/>
 		<div class="flex items-center gap-2">
