@@ -204,10 +204,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
-    def test_connection(self, raise_exception=True):
+    def test_connection(self, raise_exception=False):
         try:
             db = self._get_ibis_backend()
-            db.raw_sql("SELECT 1")
+            db.list_tables()
             return True
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
