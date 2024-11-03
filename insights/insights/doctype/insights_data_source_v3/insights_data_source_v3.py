@@ -10,6 +10,9 @@ import ibis
 from frappe.model.document import Document
 from ibis import BaseBackend
 
+from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import (
+    get_bigquery_connection,
+)
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WAREHOUSE_DB_NAME,
 )
@@ -69,14 +72,24 @@ class InsightsDataSourceDocument:
         doc_before = self.get_doc_before_save()
         if not doc_before:
             return True
-        return (
-            self.database_name != doc_before.database_name
-            or self.password != doc_before.password
-            or self.username != doc_before.username
-            or self.host != doc_before.host
-            or self.port != doc_before.port
-            or self.use_ssl != doc_before.use_ssl
-        )
+        if self.database_type in ["SQLite", "DuckDB"]:
+            return self.database_name != doc_before.database
+        if self.database_type == "BigQuery":
+            return (
+                self.bigquery_project_id != doc_before.bigquery_project_id
+                or self.bigquery_dataset_id != doc_before.bigquery_dataset_id
+                or self.bigquery_service_account_key
+                != doc_before.bigquery_service_account_key
+            )
+        if self.database_type in ["MariaDB", "PostgreSQL"]:
+            return (
+                self.database_name != doc_before.database_name
+                or self.password != doc_before.password
+                or self.username != doc_before.username
+                or self.host != doc_before.host
+                or self.port != doc_before.port
+                or self.use_ssl != doc_before.use_ssl
+            )
 
     def on_trash(self):
         if self.is_site_db:
@@ -96,6 +109,8 @@ class InsightsDataSourceDocument:
             return
         if self.database_type == "SQLite" or self.database_type == "DuckDB":
             self.validate_database_name()
+        if self.database_type == "BigQuery":
+            self.validate_bigquery_fields()
         else:
             self.validate_remote_db_fields()
 
@@ -113,6 +128,16 @@ class InsightsDataSourceDocument:
             if not self.get(field):
                 frappe.throw(f"{field} is mandatory for Database")
 
+    def validate_bigquery_fields(self):
+        mandatory = (
+            "bigquery_project_id",
+            "bigquery_dataset_id",
+            "bigquery_service_account_key",
+        )
+        for field in mandatory:
+            if not self.get(field):
+                frappe.throw(f"{field} is mandatory for BigQuery Database")
+
 
 class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     # begin: auto-generated types
@@ -123,9 +148,14 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        bigquery_dataset_id: DF.Data | None
+        bigquery_project_id: DF.Data | None
+        bigquery_service_account_key: DF.JSON | None
         connection_string: DF.Text | None
         database_name: DF.Data | None
-        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB"]
+        database_type: DF.Literal[
+            "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery"
+        ]
         host: DF.Data | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check
@@ -141,8 +171,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.name in frappe.local.insights_db_connections:
             return frappe.local.insights_db_connections[self.name]
 
-        connection_string = self._get_connection_string()
-        db: BaseBackend = ibis.connect(connection_string)
+        db: BaseBackend = self._get_db_connection()
         print(f"Connected to {self.name} ({self.title})")
 
         if self.database_type == "MariaDB":
@@ -151,6 +180,13 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.local.insights_db_connections[self.name] = db
         return db
+
+    def _get_db_connection(self) -> BaseBackend:
+        if self.database_type == "BigQuery":
+            return get_bigquery_connection(self)
+
+        connection_string = self._get_connection_string()
+        return ibis.connect(connection_string)
 
     def _get_connection_string(self):
         if self.is_site_db:
@@ -168,11 +204,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
-    def test_connection(self, raise_exception=False):
+    def test_connection(self, raise_exception=True):
         try:
             db = self._get_ibis_backend()
-            res = db.raw_sql("SELECT 1").fetchall()
-            return res[0][0] == 1
+            db.raw_sql("SELECT 1")
+            return True
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:

@@ -17,6 +17,9 @@
   "database_name",
   "username",
   "password",
+  "bigquery_project_id",
+  "bigquery_dataset_id",
+  "bigquery_service_account_key",
   "section_break_ajvs",
   "connection_string"
  ],
@@ -38,7 +41,7 @@
    "fieldname": "database_type",
    "fieldtype": "Select",
    "label": "Database Type",
-   "options": "MariaDB\nPostgreSQL\nSQLite\nDuckDB"
+   "options": "MariaDB\nPostgreSQL\nSQLite\nDuckDB\nBigQuery"
   },
   {
    "fieldname": "host",
@@ -98,11 +101,26 @@
    "fieldname": "connection_string",
    "fieldtype": "Text",
    "label": "Connection String"
+  },
+  {
+   "fieldname": "bigquery_project_id",
+   "fieldtype": "Data",
+   "label": "BigQuery Project ID"
+  },
+  {
+   "fieldname": "bigquery_dataset_id",
+   "fieldtype": "Data",
+   "label": "BigQuery Dataset ID"
+  },
+  {
+   "fieldname": "bigquery_service_account_key",
+   "fieldtype": "JSON",
+   "label": "BigQuery Service Account Key (JSON)"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-02 12:13:07.587648",
+ "modified": "2024-11-03 17:10:59.295243",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

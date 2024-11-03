@@ -16,6 +16,7 @@ dependencies = [
     "ibis-framework[duckdb]",
     "ibis-framework[mysql]",
     "ibis-framework[sqlite]",
+    "ibis-framework[bigquery]",
     # "ibis-framework[postgres]",
 ]
 
