@@ -1,3 +1,5 @@
+import math
+
 import frappe
 import ibis
 from ibis import _
@@ -93,6 +95,38 @@ f_next_period_value = lambda column, date_column, offset=1: column.lead(offset).
     group_by=(~s.numeric() & ~s.matches(date_column)),
     order_by=ibis.asc(date_column),
 )
+
+
+def f_create_buckets(column, num_buckets):
+    query = frappe.flags.current_ibis_query
+    if query is None:
+        frappe.throw("Failed to create buckets. Query not found")
+
+    values_df = query.select(column).distinct().execute()
+    values = [v[0] for v in values_df.values.tolist()]
+    values = sorted(values)
+
+    if not values:
+        frappe.throw("Failed to create buckets. No data found in the column")
+
+    if len(values) < num_buckets:
+        frappe.throw(
+            "Number of unique values in the column is less than the number of buckets"
+        )
+
+    bucket_size = math.ceil(len(values) / num_buckets)
+    buckets = []
+    for i in range(0, len(values), bucket_size):
+        buckets.append(values[i : i + bucket_size])
+
+    case = ibis.case()
+    for bucket in buckets:
+        min_val = bucket[0]
+        max_val = bucket[-1]
+        label = f"{min_val}-{max_val}"
+        case = case.when(f_is_in(column, *bucket), label)
+
+    return case.else_(None).end()
 
 
 def get_functions():
