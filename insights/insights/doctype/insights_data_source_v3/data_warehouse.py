@@ -3,7 +3,9 @@ import os
 import frappe
 import frappe.utils
 import ibis
+from frappe.query_builder.functions import IfNull
 from frappe.utils import get_files_path
+from frappe.utils.background_jobs import is_job_enqueued
 from ibis import BaseBackend, _
 from ibis.expr.types import Expr
 
@@ -72,20 +74,8 @@ class WarehouseTable:
             )
             return
 
-        create_toast(
-            f"Importing {frappe.bold(self.table_name)} of {frappe.bold(self.data_source)} to the data store."
-        )
-
         importer = WarehouseTableImporter(self)
-        if importer.import_in_progress():
-            return
-
-        importer.start_import()
-
-        create_toast(
-            f"Imported {frappe.bold(self.table_name)} of {frappe.bold(self.data_source)} to the data store.",
-            type="success",
-        )
+        importer.enqueue_import()
 
 
 class WarehouseTableImporter:
@@ -108,27 +98,66 @@ class WarehouseTableImporter:
                 (log.data_source == self.table.data_source)
                 & (log.table_name == self.table.table_name)
                 & (log.status == "In Progress")
+                & (IfNull(log.ended_at, "") == "")
             ),
         )
 
-    def start_import(self):
-        self.prepare_log()
-        self.prepare_settings()
-        self.prepare_remote_table()
-        self.start_batch_import()
-        self.log.ended_at = frappe.utils.now()
-        self.log.time_taken = frappe.utils.time_diff_in_seconds(
-            self.log.ended_at, self.log.started_at
+    def enqueue_import(self):
+        job_id = f"import_{frappe.scrub(self.table.data_source)}_{frappe.scrub(self.table.table_name)}"
+
+        if is_job_enqueued(job_id):
+            print("Job already enqueued")
+            return
+
+        if self.import_in_progress():
+            print("Import in progress")
+            return
+
+        frappe.enqueue(
+            method="frappe.call",
+            fn="insights.insights.doctype.insights_data_source_v3.data_warehouse._start_table_import",
+            data_source=self.table.data_source,
+            table_name=self.table.table_name,
+            queue="long",
+            timeout=6000,
+            job_id=job_id,
         )
-        self.log.db_update()
+
+    def start_import(self):
+        from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+            db_connections,
+        )
+
+        with db_connections():
+            self.prepare_log()
+            self.prepare_settings()
+            self.prepare_remote_table()
+            self.start_batch_import()
+            self.update_log()
+
+        create_toast(
+            f"Imported {frappe.bold(self.table_name)} of "
+            f"{frappe.bold(self.data_source)} to the data store.",
+            type="success",
+        )
 
     def prepare_log(self):
         self.log = frappe.new_doc("Insights Table Import Log")
-        self.log.data_source = self.table.data_source
-        self.log.table_name = self.table.table_name
-        self.log.started_at = frappe.utils.now()
-        self.log.status = "In Progress"
-        self.log.db_update()
+        self.log.db_insert()
+        self.log.db_set(
+            {
+                "data_source": self.table.data_source,
+                "table_name": self.table.table_name,
+                "started_at": frappe.utils.now(),
+                "status": "In Progress",
+            },
+            commit=True,
+        )
+
+        create_toast(
+            f"Importing {frappe.bold(self.table.table_name)} of "
+            f"{frappe.bold(self.table.data_source)} to the data store."
+        )
 
     def prepare_settings(self) -> dict:
         self.settings.row_limit = (
@@ -138,9 +167,13 @@ class WarehouseTableImporter:
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
         )
-        self.log.row_limit = self.settings.row_limit
-        self.log.memory_limit = self.settings.memory_limit
-        self.log.db_update()
+        self.log.db_set(
+            {
+                "row_limit": self.settings.row_limit,
+                "memory_limit": self.settings.memory_limit,
+            },
+            commit=True,
+        )
 
     def prepare_remote_table(self) -> Expr:
         self.remote_table = self.table.get_remote_table()
@@ -149,8 +182,7 @@ class WarehouseTableImporter:
             self.remote_table = self.remote_table.order_by(ibis.desc("creation"))
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
-        self.log.query = ibis.to_sql(self.remote_table)
-        self.log.db_update()
+        self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
         if not hasattr(self.remote_table, "creation"):
             self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
@@ -168,9 +200,11 @@ class WarehouseTableImporter:
             self.process_batches(batch_size)
             self.merge_batches()
             self.update_insights_table()
+            self.log.status = "Completed"
+            self.log.log_output("Import completed successfully.", commit=True)
         except Exception as e:
             self.log.status = "Failed"
-            self.log.log_output(f"Error: \n{e}")
+            self.log.log_output(f"Error: \n{e}", commit=True)
         finally:
             self._cleanup()
 
@@ -183,9 +217,13 @@ class WarehouseTableImporter:
         )
         row_size = total_size / sample_size / (1024 * 1024)
         batch_size = int(self.settings.memory_limit / row_size)
-        self.log.row_size = row_size * 1024
-        self.log.batch_size = batch_size
-        self.log.db_update()
+        self.log.db_set(
+            {
+                "row_size": row_size * 1024,
+                "batch_size": batch_size,
+            },
+            commit=True,
+        )
         return batch_size
 
     def process_batches(self, batch_size: int):
@@ -193,7 +231,7 @@ class WarehouseTableImporter:
         batch_number = 0
 
         while True:
-            self.log.log_output(f"Processing batch: {batch_number + 1}")
+            self.log.log_output(f"Processing batch: {batch_number + 1}", commit=True)
             batch = remote_table.head(batch_size)
             path = self.create_parquet_file(batch, batch_number)
             self.imported_batch_paths.append(path)
@@ -210,7 +248,7 @@ class WarehouseTableImporter:
     def create_parquet_file(self, batch: Expr, batch_number: int) -> str:
         batch_file_name = f"{self.warehouse_table_name}_{batch_number}.parquet"
         path = os.path.join(self.warehouse_folder, batch_file_name)
-        self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}")
+        self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
         batch.to_parquet(path, compression="snappy")
         return path
 
@@ -226,7 +264,8 @@ class WarehouseTableImporter:
             .to_records(index=False)[0]
         )
         self.log.log_output(
-            f"Rows: {metadata['count']}\n" f"Bookmark: {metadata['max_primary_key']}"
+            f"Rows: {metadata['count']}\n" f"Bookmark: {metadata['max_primary_key']}",
+            commit=True,
         )
         ddb.disconnect()
         return metadata
@@ -248,9 +287,21 @@ class WarehouseTableImporter:
         self.log.rows_imported = total_rows
         self.log.log_output(
             f"Total Batches: {len(self.imported_batch_paths)}\n"
-            f"Total Rows: {total_rows}"
+            f"Total Rows: {total_rows}",
+            commit=True,
         )
         ddb.disconnect()
+
+    def update_log(self):
+        self.log.db_set(
+            {
+                "ended_at": frappe.utils.now(),
+                "time_taken": frappe.utils.time_diff_in_seconds(
+                    self.log.ended_at, self.log.started_at
+                ),
+            },
+            commit=True,
+        )
 
     def update_insights_table(self):
         t = InsightsTablev3.get_doc(
@@ -267,6 +318,13 @@ class WarehouseTableImporter:
         for path in self.imported_batch_paths:
             if os.path.exists(path):
                 os.remove(path)
+
+
+# called by background job
+def _start_table_import(data_source: str, table_name: str):
+    table = WarehouseTable(data_source, table_name)
+    importer = WarehouseTableImporter(table)
+    importer.start_import()
 
 
 def get_warehouse_folder_path() -> str:

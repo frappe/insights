@@ -245,7 +245,7 @@ def after_request():
 
 
 @contextmanager
-def db_connections_context():
+def db_connections():
     before_request()
     try:
         yield

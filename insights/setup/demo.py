@@ -8,7 +8,7 @@ import frappe
 
 from insights.api.data_sources import get_data_source_tables
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
-    db_connections_context,
+    db_connections,
 )
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
@@ -31,7 +31,7 @@ def update_progress(message, progress):
 class DemoDataFactory:
     @staticmethod
     def run(force=False):
-        with db_connections_context():
+        with db_connections():
             factory = DemoDataFactory()
             factory.initialize()
             if factory.demo_data_exists() and not force:
