@@ -2,7 +2,7 @@
  "actions": [],
  "creation": "2024-10-28 13:05:53.961297",
  "doctype": "DocType",
- "engine": "InnoDB",
+ "engine": "MyISAM",
  "field_order": [
   "data_source",
   "table_name",

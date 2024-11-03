@@ -29,7 +29,8 @@ class InsightsTableImportLog(Document):
         time_taken: DF.Int
     # end: auto-generated types
 
-    def append_message(self, message: str):
+    def log_output(self, message: str, commit: bool = True):
         if not self.output:
             self.output = ""
         self.output += message + "\n\n"
+        commit and self.db_update()

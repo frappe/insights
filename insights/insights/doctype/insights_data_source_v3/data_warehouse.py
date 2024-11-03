@@ -115,13 +115,14 @@ class WarehouseTableImporter:
         self.log.time_taken = frappe.utils.time_diff_in_seconds(
             self.log.ended_at, self.log.started_at
         )
-        self.log.save()
+        self.log.db_update()
 
     def prepare_log(self):
         self.log = frappe.new_doc("Insights Table Import Log")
         self.log.data_source = self.table.data_source
         self.log.table_name = self.table.table_name
         self.log.started_at = frappe.utils.now()
+        self.log.db_update()
 
     def prepare_settings(self) -> dict:
         self.settings.row_limit = (
@@ -133,6 +134,7 @@ class WarehouseTableImporter:
         )
         self.log.row_limit = self.settings.row_limit
         self.log.memory_limit = self.settings.memory_limit
+        self.log.db_update()
 
     def prepare_remote_table(self) -> Expr:
         self.remote_table = self.table.get_remote_table()
@@ -142,6 +144,7 @@ class WarehouseTableImporter:
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
         self.log.query = ibis.to_sql(self.remote_table)
+        self.log.db_update()
 
         if not hasattr(self.remote_table, "creation"):
             self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
@@ -172,6 +175,7 @@ class WarehouseTableImporter:
         batch_size = int(self.settings.memory_limit / row_size)
         self.log.row_size = row_size * 1024
         self.log.batch_size = batch_size
+        self.log.db_update()
         return batch_size
 
     def process_batches(self, batch_size: int):
@@ -179,7 +183,7 @@ class WarehouseTableImporter:
         batch_number = 0
 
         while True:
-            self.log.append_message(f"Processing batch: {batch_number + 1}")
+            self.log.log_output(f"Processing batch: {batch_number + 1}")
             batch = remote_table.head(batch_size)
             path = self.create_parquet_file(batch, batch_number)
             self.imported_batch_paths.append(path)
@@ -196,7 +200,7 @@ class WarehouseTableImporter:
     def create_parquet_file(self, batch: Expr, batch_number: int) -> str:
         batch_file_name = f"{self.warehouse_table_name}_{batch_number}.parquet"
         path = os.path.join(self.warehouse_folder, batch_file_name)
-        self.log.append_message(f"Batch Query: \n{ibis.to_sql(batch)}")
+        self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}")
         batch.to_parquet(path, compression="snappy")
         return path
 
@@ -211,7 +215,7 @@ class WarehouseTableImporter:
             .execute()
             .to_records(index=False)[0]
         )
-        self.log.append_message(
+        self.log.log_output(
             f"Rows: {metadata['count']}\n" f"Bookmark: {metadata['max_primary_key']}"
         )
         ddb.disconnect()
@@ -232,7 +236,7 @@ class WarehouseTableImporter:
         total_rows = int(merged.count().execute())
         self.log.parquet_file = path
         self.log.rows_imported = total_rows
-        self.log.append_message(
+        self.log.log_output(
             f"Total Batches: {len(self.imported_batch_paths)}\n"
             f"Total Rows: {total_rows}"
         )
