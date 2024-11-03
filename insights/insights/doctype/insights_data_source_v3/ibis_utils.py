@@ -240,6 +240,13 @@ class IbisQueryBuilder:
         if not common_columns:
             frappe.throw("Tables must have common columns to perform union")
 
+        # ensure columns have the same data types
+        for col in common_columns:
+            left_col_type = self.query.schema()[col]
+            right_col_type = other_table.schema()[col]
+            if left_col_type != right_col_type:
+                other_table = other_table.cast({col: left_col_type})
+
         self.query = self.query.select(common_columns)
         return self.query.union(other_table, distinct=union_args.distinct)
 
