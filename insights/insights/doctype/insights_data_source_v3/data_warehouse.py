@@ -29,7 +29,7 @@ class Warehouse:
             ddb.disconnect()
 
         if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
-            ddb = ibis.duckdb.connect(self.db_path)
+            ddb = ibis.duckdb.connect(self.db_path, read_only=True)
             frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
 
         return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
@@ -54,6 +54,7 @@ class WarehouseTable:
                 return self.warehouse.db.create_table(
                     self.warehouse_table_name,
                     schema=remote_table.schema(),
+                    temp=True,
                     overwrite=True,
                 )
             else:
