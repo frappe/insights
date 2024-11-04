@@ -20,7 +20,7 @@
 </div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
-	<img src=".github/hero-image.png" alt="Hero Image" width="72%" />
+	<img src=".github/hero-image.png?v=3" alt="Hero Image" width="72%" />
 </div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
@@ -34,7 +34,7 @@ Insights is a 100% open-source BI tool designed to make data analysis and report
 
 
 ## Motivation
-Building custom apps or creating structured data has been very easy with Frappe Framework. However, extracting information from these apps was not a very good experience. Users needed to know how to write SQL queries to create reports to gain valuable information from the data. So I wanted to improve the experience of building these reports and dashboards for everyone in our team. 
+Building custom apps or creating structured data has been very easy with Frappe Framework. However, extracting information from these apps was not a very good experience. Users needed to know how to write SQL queries to create reports to gain valuable information from the data. So I wanted to improve the experience of building these reports and dashboards for everyone in our team.
 
 ## Key Features
 
@@ -88,7 +88,7 @@ Frappe Insights bench setup script
 
 **Step 4**: The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
 
-> username: administrator  
+> username: administrator
 > password: admin
 
 ### Local
