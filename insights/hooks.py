@@ -71,7 +71,6 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # ------------
 
 # before_install = "insights.install.before_install"
-after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 
 before_request = [
