@@ -553,7 +553,8 @@ export function getDrillDownQuery(
 	operations: Operation[],
 	result: QueryResult,
 	row: QueryResultRow,
-	col: QueryResultColumn
+	col: QueryResultColumn,
+	use_live_connection = true
 ) {
 	if (!result.columns?.length || !row || !col) return
 
@@ -605,6 +606,7 @@ export function getDrillDownQuery(
 
 	const query = useQuery({ name: getUniqueId(), operations: [] })
 	query.autoExecute = false
+	query.doc.use_live_connection = use_live_connection
 
 	query.setOperations(copy(operations))
 	const summarizeIndex = query.doc.operations.findIndex((op) => op.type === 'summarize')
