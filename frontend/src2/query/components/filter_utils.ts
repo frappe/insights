@@ -8,7 +8,9 @@ export function getValueSelectorType(filter: FilterRule, columnType: ColumnDataT
 	if (FIELDTYPES.TEXT.includes(columnType)) {
 		return ['in', 'not_in'].includes(filter.operator) ? 'select' : 'text'
 	}
-	if (FIELDTYPES.NUMBER.includes(columnType)) return 'number'
+	if (FIELDTYPES.NUMBER.includes(columnType)) {
+		return filter.operator === 'between' ? 'text' : 'number'
+	}
 	if (FIELDTYPES.DATE.includes(columnType)) {
 		return filter.operator === 'between' ? 'date_range' : 'date'
 	}

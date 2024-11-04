@@ -64,6 +64,7 @@ const operatorOptions = computed(() => {
 		options.push({ label: 'greater than or equals', value: '>=' })
 		options.push({ label: 'less than', value: '<' })
 		options.push({ label: 'less than or equals', value: '<=' })
+		options.push({ label: 'between', value: 'between' })
 	}
 	if (FIELDTYPES.DATE.includes(type)) {
 		options.push({ label: 'equals', value: '=' })
