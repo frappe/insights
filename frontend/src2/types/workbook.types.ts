@@ -45,6 +45,7 @@ export type WorkbookChart = {
 		limit?: number
 	}
 	operations: Operation[]
+	use_live_connection?: boolean
 	calculated_measures?: Record<string, Measure>
 }
 

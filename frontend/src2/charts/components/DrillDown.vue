@@ -8,6 +8,7 @@ import { getDrillDownQuery } from '../helpers'
 const props = defineProps<{
 	chart: {
 		operations: Operation[]
+		use_live_connection?: boolean
 		result: QueryResult
 	}
 	row: QueryResultRow
@@ -24,7 +25,8 @@ watch(
 			props.chart.operations,
 			props.chart.result,
 			props.row,
-			props.column
+			props.column,
+			props.chart.use_live_connection
 		)
 		if (query) {
 			drillDownQuery.value = query

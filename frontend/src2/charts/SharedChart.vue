@@ -33,6 +33,7 @@ call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart
 			:chart_type="chart.doc.chart_type"
 			:config="chart.doc.config"
 			:operations="chart.doc.operations"
+			:use_live_connection="chart.doc.use_live_connection"
 			:result="chart.result"
 			:loading="fetchingData"
 		/>

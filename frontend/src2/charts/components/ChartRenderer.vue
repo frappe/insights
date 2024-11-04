@@ -27,6 +27,7 @@ const props = defineProps<{
 	chart_type: ChartType
 	config: WorkbookChart['config']
 	operations: Operation[]
+	use_live_connection?: boolean
 	result: QueryResult
 	loading?: boolean
 }>()
@@ -106,6 +107,7 @@ function onClick(params: any) {
 		v-if="drillOn"
 		:chart="{
 			operations: props.operations,
+			use_live_connection: props.use_live_connection,
 			result: props.result,
 		}"
 		:row="drillOn.row"

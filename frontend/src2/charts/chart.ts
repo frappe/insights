@@ -264,6 +264,7 @@ function makeChart(workbookChart: WorkbookChart) {
 				query_name: workbookChart.query,
 			}),
 		})
+		chart.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
 		chart.dataQuery.doc.use_live_connection = chart.baseQuery.doc.use_live_connection
 	}
 	function setCustomFilters(filters: FilterArgs[]) {
