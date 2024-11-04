@@ -73,15 +73,15 @@ class InsightsDataSourceDocument:
         if not doc_before:
             return True
         if self.database_type in ["SQLite", "DuckDB"]:
-            return self.database_name != doc_before.database
-        if self.database_type == "BigQuery":
+            return self.database_name != doc_before.database_name
+        elif self.database_type == "BigQuery":
             return (
                 self.bigquery_project_id != doc_before.bigquery_project_id
                 or self.bigquery_dataset_id != doc_before.bigquery_dataset_id
                 or self.bigquery_service_account_key
                 != doc_before.bigquery_service_account_key
             )
-        if self.database_type in ["MariaDB", "PostgreSQL"]:
+        elif self.database_type in ["MariaDB", "PostgreSQL"]:
             return (
                 self.database_name != doc_before.database_name
                 or self.password != doc_before.password
