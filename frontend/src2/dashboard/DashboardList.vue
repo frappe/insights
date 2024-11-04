@@ -50,7 +50,10 @@ watchEffect(() => {
 
 		<div class="h-full w-full">
 			<!-- Dashboard Cards -->
-			<div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			<div
+				v-if="store.dashboards.length"
+				class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+			>
 				<div
 					v-for="dashboard in store.dashboards"
 					:key="dashboard.name"
@@ -121,6 +124,14 @@ watchEffect(() => {
 							</Dropdown>
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<!-- Empty State -->
+			<div v-else class="flex h-full w-full flex-col items-center justify-center text-base">
+				<div class="text-xl font-medium">No Dashboards</div>
+				<div class="mt-1 text-base text-gray-600">
+					Create a dashboard in your workbook to view it here.
 				</div>
 			</div>
 		</div>

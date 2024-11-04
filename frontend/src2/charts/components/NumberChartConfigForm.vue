@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FIELDTYPES } from '../../helpers/constants'
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { debounce } from 'frappe-ui'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { NumberChartConfig } from '../../types/chart.types'
@@ -28,12 +28,14 @@ const date_dimensions = computed(() =>
 	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
 )
 
-if (!config.value.number_columns) {
-	config.value.number_columns = props.measures.length ? [copy(props.measures[0])] : []
-}
-if (!config.value.number_columns.length) {
-	addNumberColumn()
-}
+watchEffect(() => {
+	if (!config.value.number_columns) {
+		config.value.number_columns = props.measures.length ? [copy(props.measures[0])] : []
+	}
+	if (!config.value.number_columns.length) {
+		addNumberColumn()
+	}
+})
 
 function addNumberColumn() {
 	config.value.number_columns.push({} as MeasureOption)

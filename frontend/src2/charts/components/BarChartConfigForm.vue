@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watchEffect } from 'vue'
 import { BarChartConfig, YAxisBar } from '../../types/chart.types'
 import { Dimension } from '../../types/query.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
@@ -20,15 +21,17 @@ const config = defineModel<BarChartConfig>({
 	}),
 })
 
-if (!config.value.x_axis) {
-	config.value.x_axis = {} as Dimension
-}
-if (!config.value.y_axis) {
-	config.value.y_axis = {} as YAxisBar
-}
-if (config.value.y_axis?.stack === undefined) {
-	config.value.y_axis.stack = true
-}
+watchEffect(() => {
+	if (!config.value.x_axis) {
+		config.value.x_axis = {} as Dimension
+	}
+	if (!config.value.y_axis) {
+		config.value.y_axis = {} as YAxisBar
+	}
+	if (config.value.y_axis?.stack === undefined) {
+		config.value.y_axis.stack = true
+	}
+})
 </script>
 
 <template>

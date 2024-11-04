@@ -2,7 +2,7 @@
 import ColorInput from '@/components/Controls/ColorInput.vue'
 import { debounce } from 'frappe-ui'
 import { Edit, RefreshCcw, Settings, XIcon } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { inject, ref, watchEffect } from 'vue'
 import Checkbox from '../../components/Checkbox.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
@@ -21,9 +21,12 @@ const y_axis = defineModel<AxisChartConfig['y_axis']>({
 })
 
 const emptySeries = { measure: {} as MeasureOption }
-if (!y_axis.value?.series?.length) {
-	y_axis.value = { series: [{ ...emptySeries }] }
-}
+watchEffect(() => {
+	if (!y_axis.value?.series?.length) {
+		y_axis.value = { series: [{ ...emptySeries }] }
+	}
+})
+
 function addSeries() {
 	y_axis.value.series.push({ ...emptySeries })
 }

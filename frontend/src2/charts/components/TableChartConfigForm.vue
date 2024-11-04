@@ -3,6 +3,7 @@ import { XIcon } from 'lucide-vue-next'
 import { TableChartConfig } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
+import { watchEffect } from 'vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -17,16 +18,17 @@ const config = defineModel<TableChartConfig>({
 		values: [],
 	}),
 })
-
-if (!config.value.rows?.length) {
-	config.value.rows = [{} as any]
-}
-if (!config.value.columns?.length) {
-	config.value.columns = [{} as any]
-}
-if (!config.value.values?.length) {
-	config.value.values = [{} as any]
-}
+watchEffect(() => {
+	if (!config.value.rows?.length) {
+		config.value.rows = [{} as any]
+	}
+	if (!config.value.columns?.length) {
+		config.value.columns = [{} as any]
+	}
+	if (!config.value.values?.length) {
+		config.value.values = [{} as any]
+	}
+})
 </script>
 
 <template>

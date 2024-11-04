@@ -314,6 +314,10 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				query.addSource(args)
 			}
 
+			if (query.doc.title?.match(/Query \d+/) && 'table_name' in args.table) {
+				query.doc.title = args.table.table_name
+			}
+
 			if (args.table.type == 'query') {
 				const sourceQuery = getCachedQuery(args.table.query_name)
 				if (sourceQuery) {

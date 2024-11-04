@@ -438,7 +438,7 @@ export function getFunnelChartOptions(config: DountChartConfig, result: QueryRes
 				left: 'center',
 				width: '60%',
 				height: '80%',
-				minSize: '0%',
+				minSize: '10px',
 				maxSize: '100%',
 				sort: 'descending',
 				label: {
@@ -450,14 +450,25 @@ export function getFunnelChartOptions(config: DountChartConfig, result: QueryRes
 						return `${params.name} (${percent}%)`
 					},
 				},
-				gap: 2,
+				gap: 6,
 				data: values.map((value, index) => ({
 					name: labels[index],
 					value: value,
 					itemStyle: {
 						color: colors[index],
 						borderColor: colors[index],
-						borderWidth: 1,
+						borderWidth: 4,
+						borderCap: 'round',
+						borderJoin: 'round',
+					},
+					emphasis: {
+						itemStyle: {
+							color: colors[index],
+							borderColor: colors[index],
+							borderWidth: 6,
+							borderCap: 'round',
+							borderJoin: 'round',
+						},
 					},
 				})),
 			},
