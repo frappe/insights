@@ -52,6 +52,8 @@ export type WorkbookDashboard = {
 	name: string
 	title: string
 	items: WorkbookDashboardItem[]
+	is_public?: boolean
+	share_link?: string
 }
 
 export type WorkbookDashboardItem = WorkbookDashboardChart

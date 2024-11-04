@@ -9,7 +9,7 @@ const props = defineProps<{ dashboard_name: string }>()
 
 const dashboard = ref<WorkbookDashboard>()
 
-dashboard.value = await call('insights.api.dashboards.fetch_dashboard_workbook', {
+dashboard.value = await call('insights.api.dashboards.fetch_workbook_dashboard', {
 	dashboard_name: props.dashboard_name,
 })
 </script>

@@ -94,6 +94,13 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					chart.refresh(filters, true)
 				})
 		},
+
+		getShareLink() {
+			return (
+				dashboard.doc.share_link ||
+				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
+			)
+		},
 	})
 
 	const key = `insights:dashboard-filters-${workbookDashboard.name}`

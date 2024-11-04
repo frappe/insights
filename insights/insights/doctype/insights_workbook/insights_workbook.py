@@ -102,6 +102,17 @@ class InsightsWorkbook(Document):
         if chart.get("is_public"):
             return True
 
+        dashboards = frappe.parse_json(self.dashboards)
+        shared_dashboard_charts = [
+            item["chart"]
+            for shared_dashboard in dashboards
+            for item in shared_dashboard["items"]
+            if item["type"] == "chart" and shared_dashboard.get("is_public")
+        ]
+        # chart belongs to one of the shared dashboards
+        if any(chart_name == chart["name"] for chart_name in shared_dashboard_charts):
+            return True
+
         preview_key = frappe.request.headers.get("X-Insights-Preview-Key")
         if preview_key and frappe.cache.get_value(
             f"insights_preview_key:{preview_key}"

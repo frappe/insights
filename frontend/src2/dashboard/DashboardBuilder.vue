@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Edit3, RefreshCcw } from 'lucide-vue-next'
+import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { safeJSONParse } from '../helpers'
@@ -11,6 +11,7 @@ import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import DashboardShareDialog from './DashboardShareDialog.vue'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -53,6 +54,8 @@ function onDrop(event: DragEvent) {
 	if (!chart) return
 	dashboard.addChart([chart])
 }
+
+const showShareDialog = ref(false)
 </script>
 
 <template>
@@ -79,6 +82,16 @@ function onDrop(event: DragEvent) {
 					>
 						<template #prefix>
 							<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						</template>
+					</Button>
+					<Button
+						v-if="!dashboard.editing"
+						variant="outline"
+						@click="showShareDialog = true"
+						label="Share"
+					>
+						<template #prefix>
+							<Share2 class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
 					<Button
@@ -143,4 +156,6 @@ function onDrop(event: DragEvent) {
 		"
 		@select="dashboard.addChart($event)"
 	/>
+
+	<DashboardShareDialog v-model="showShareDialog" />
 </template>

@@ -130,7 +130,7 @@ def get_workbook_name(dashboard_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def fetch_dashboard_workbook(dashboard_name: str):
+def fetch_workbook_dashboard(dashboard_name: str):
     workbook_name = _get_workbook_name(dashboard_name)
     workbook = frappe.get_doc("Insights Workbook", workbook_name)
     dashboards = frappe.parse_json(workbook.dashboards)

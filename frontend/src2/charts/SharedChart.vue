@@ -5,6 +5,7 @@ import { QueryResult } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 import ChartRenderer from './components/ChartRenderer.vue'
 import { getFormattedRows } from '../query/helpers'
+import { showErrorToast } from '../helpers'
 
 const props = defineProps<{ chart_name: string }>()
 
@@ -14,14 +15,14 @@ const chart = reactive({
 })
 
 const fetchingData = ref(true)
-call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart_name }).then(
-	(res: any) => {
+call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart_name })
+	.then((res: any) => {
 		fetchingData.value = false
 		chart.doc = res.chart
 		chart.result = res.results
 		chart.result.formattedRows = getFormattedRows(chart.result, chart.doc.operations)
-	}
-)
+	})
+	.catch(showErrorToast)
 </script>
 
 <template>
