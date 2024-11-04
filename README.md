@@ -38,38 +38,58 @@ Building custom apps or creating structured data has been very easy with Frappe 
 
 ## Key Features
 
-**Connect Multiple Sources**: You can integrate data from multiple databases, files and spreadsheets. Getting all your data into one place helps you analyse interconnected data.
+- **Connect Multiple Sources**: You can integrate data from multiple databases, files and spreadsheets. Getting all your data into one place helps you analyse interconnected data.
 
-**Query Builder**: Frappe Insights a user-friendly query builder interface that allows users to create queries without any SQL knowledge. The interface provides a step-by-step approach for building queries, empowering users to easily select tables, add joins, apply filters, perform calculations, and more.
+- **Query Builder**: Frappe Insights a user-friendly query builder interface that allows users to create queries without any SQL knowledge. The interface provides a step-by-step approach for building queries, empowering users to easily select tables, add joins, apply filters, perform calculations, and more.
 
-**Visualizations and Dashboards**: You can visualize the query results using a variety of charts and graphs. Frappe Insights also suggests the best chart for a given result set. You can create dashboards using a drag-and-drop interface and add filters on the dashboard to apply on the charts.
+- **Visualizations and Dashboards**: You can visualize the query results using a variety of charts and graphs. Frappe Insights also suggests the best chart for a given result set. You can create dashboards using a drag-and-drop interface and add filters on the dashboard to apply to the charts.
 
-**Database Support**: Frappe Insights currently supports MySQL, PostgreSQL, DuckDB, BigQuery databases. More database integrations are planned for the future.
+- **Database Support**: Frappe Insights currently supports MySQL, PostgreSQL, DuckDB, and BigQuery databases. More database integrations are planned for the future.
 
 ## Under the Hood
 
-[**Frappe Framework**](https://github.com/frappe/frappe): Frappe Insights is built upon the Frappe Framework, a full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
+- [**Frappe Framework**](https://github.com/frappe/frappe): Frappe Insights is built upon the Frappe Framework, a full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
 
-[**Frappe UI**](https://github.com/frappe/frappe-ui): Frappe Insights uses Frappe UI, a Vue-based UI library, to provide a modern user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
+- [**Frappe UI**](https://github.com/frappe/frappe-ui): Frappe Insights uses Frappe UI, a Vue-based UI library, to provide a modern user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
 
-[**SQLAlchemy**](https://github.com/sqlalchemy/sqlalchemy): Frappe Insights uses SQLAlchemy, a Python SQL toolkit and Object Relational Mapper, to interact with the database. SQLAlchemy provides a powerful and flexible interface for working with databases, allowing Frappe Insights to support multiple database integrations.
+- [**SQLAlchemy**](https://github.com/sqlalchemy/sqlalchemy): Frappe Insights uses SQLAlchemy, a Python SQL toolkit and Object Relational Mapper, to interact with the database. SQLAlchemy provides a powerful and flexible interface for working with databases, allowing Frappe Insights to support multiple database integrations.
 
-[**eCharts**](https://github.com/apache/echarts): Frappe Insights uses eCharts, a powerful open-source charting and visualization library, to render charts and graphs. eCharts provides a variety of chart types and customization options, allowing Frappe Insights to provide a rich and interactive data visualization experience.
+- [**eCharts**](https://github.com/apache/echarts): Frappe Insights uses eCharts, a powerful open-source charting and visualization library, to render charts and graphs. eCharts provides a variety of chart types and customization options, allowing Frappe Insights to provide a rich and interactive data visualization experience.
 
 
 ## Installation
-### Docker
-You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, run the following commands:
 
-```
-git clone https://github.com/frappe/insights
-cd insights/docker
-docker-compose up
-```
+### Managed Hosting
 
-Wait for sometime until the setup script creates a site. After that you can
-Open the URL `http://insights.localhost:8000/insights` in your browser, you should see the app running
-should show up. You can login with the default credentials `Administrator` and `admin`.
+Get started with your personal or business site with a few clicks on [Frappe Cloud](https://frappecloud.com/insights/signup).
+
+### Docker (Recommended)
+
+You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, follow below steps:
+
+**Step 1**: Setup folder and download the required files
+
+    mkdir frappe-insights
+    cd frappe-insights
+
+**Step 2**: Download the required files
+
+Docker Compose File:
+
+    wget -O docker-compose.yml https://raw.githubusercontent.com/frappe/insights/develop/docker/docker-compose.yml
+
+Frappe Insights bench setup script
+
+    wget -O init.sh https://raw.githubusercontent.com/frappe/insights/develop/docker/init.sh
+
+**Step 3**: Run the container and daemonize it
+
+    docker compose up -d
+
+**Step 4**: The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
+
+> username: administrator  
+> password: admin
 
 ### Local
 
@@ -84,13 +104,9 @@ To setup the repository locally follow the steps mentioned below:
 1. Now open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
 
 ---
-## Contributions and Community
+## Need help?
 
-There are many ways you can contribute even if you don't code:
-
-1. You can start by giving a star to this repository!
-1. If you find any issues, even if it is a typo, you can [raise an issue](https://github.com/frappe/insights/issues/new) to inform us.
-1. You can join our [telegram group](https://t.me/frappeinsights) and share your thoughts.
+Join our [telegram group](https://t.me/frappeinsights) for instant help.
 
 ---
 
