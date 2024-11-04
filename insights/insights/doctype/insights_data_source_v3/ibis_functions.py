@@ -19,6 +19,7 @@ f_is_not_between = lambda column, start, end: ~column.between(start, end)
 f_distinct_count = lambda column: column.nunique()
 f_sum_if = lambda condition, column: f_sum(column, where=condition)
 f_count_if = lambda condition, column: f_count(column, where=condition)
+f_distinct_count_if = lambda condition, column: column.nunique(where=condition)
 f_if_else = (
     lambda condition, true_value, false_value: ibis.case()
     .when(condition, true_value)
@@ -95,6 +96,17 @@ f_next_period_value = lambda column, date_column, offset=1: column.lead(offset).
     group_by=(~s.numeric() & ~s.matches(date_column)),
     order_by=ibis.asc(date_column),
 )
+
+
+def f_percentage_change(column, date_column, offset=1):
+    prev_value = f_previous_period_value(column, date_column, offset)
+    return ((column - prev_value) * 100) / prev_value
+
+
+def f_is_first_row(group_by, order_by, sort_order="asc"):
+    _order_by = ibis.asc(order_by) if sort_order == "asc" else ibis.desc(order_by)
+    row_number = f_row_number().over(group_by=group_by, order_by=_order_by)
+    return f_if_else(row_number == 1, 1, 0)
 
 
 def f_create_buckets(column, num_buckets):
