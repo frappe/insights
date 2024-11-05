@@ -7,6 +7,8 @@ from contextlib import suppress
 from functools import cached_property
 
 import frappe
+import numpy as np
+import pandas as pd
 from frappe import _dict
 from frappe.model.document import Document
 from frappe.utils import flt
@@ -218,6 +220,8 @@ class InsightsQuery(InsightsLegacyQueryClient, InsightsQueryClient, Document):
     def update_query_results(self, results=None):
         results = results or []
         query_result: Document = InsightsQueryResult.get_or_create_doc(query=self.name)
+        results = pd.DataFrame(results).replace({pd.NaT: None, np.nan: None})
+        results = results.to_dict(orient="records")
         query_result.update(
             {
                 "results": frappe.as_json(results),
