@@ -12,8 +12,8 @@ f_max = lambda column, *args, **kwargs: column.max(*args, **kwargs)
 f_group_concat = lambda column, *args, **kwargs: column.group_concat(*args, **kwargs)
 f_is_in = lambda column, *values: column.isin(values)
 f_is_not_in = lambda column, *values: column.notin(values)
-f_is_set = lambda column: column.notnull()
-f_is_not_set = lambda column: column.isnull()
+f_is_set = lambda column: f_coalesce(column, "") != ""
+f_is_not_set = lambda column: f_coalesce(column, "") == ""
 f_is_between = lambda column, start, end: column.between(start, end)
 f_is_not_between = lambda column, start, end: ~column.between(start, end)
 f_distinct_count = lambda column: column.nunique()
