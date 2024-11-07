@@ -96,7 +96,10 @@ function confirmSelections() {
 									placeholder="Agg"
 									:options="aggregations"
 									:modelValue="measure.aggregation"
-									@update:modelValue="measure.aggregation = $event.value"
+									@update:modelValue="(e: any) => {
+										measure.aggregation = e.value
+										measure.measure_name = `${e.value}_${measure.column_name}`
+									}"
 									:hide-search="true"
 								/>
 								<Autocomplete
@@ -107,7 +110,7 @@ function confirmSelections() {
 									@update:model-value="(e: QueryResultColumn) => {
 										measure.column_name = e.name
 										measure.data_type = e.type as MeasureDataType
-										measure.measure_name = `${measure.aggregation}(${e.name})`
+										measure.measure_name = `${measure.aggregation}_${e.name}`
 									}"
 								>
 									<template #footer>

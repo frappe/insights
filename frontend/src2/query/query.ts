@@ -74,10 +74,13 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		autoExecute: true,
 		executing: false,
+		fetchingCount: false,
 		result: { ...EMPTY_RESULT },
 
 		getOperationsForExecution,
 		execute,
+		fetchResultCount,
+
 		setOperations,
 		setActiveOperation,
 		setActiveEditIndex,
@@ -268,7 +271,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				query.result.columns = response.columns
 				query.result.rows = response.rows
 				query.result.formattedRows = getFormattedRows(query.result, query.doc.operations)
-				query.result.totalRowCount = response.total_row_count
 				query.result.columnOptions = query.result.columns.map((column) => ({
 					label: column.name,
 					value: column.name,
@@ -284,6 +286,24 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			.finally(() => {
 				query.executing = false
 			})
+	}
+
+	async function fetchResultCount() {
+		if (!query.doc.operations.length) return
+
+		query.fetchingCount = true
+		const operations = query.getOperationsForExecution()
+		return call('insights.api.workbooks.fetch_query_results_count', {
+			use_live_connection: query.doc.use_live_connection,
+			operations,
+		})
+		.then((count: number) => {
+			query.result.totalRowCount = count || 0
+		})
+		.catch(showErrorToast)
+		.finally(() => {
+			query.fetchingCount = false
+		})
 	}
 
 	function setActiveOperation(index: number) {

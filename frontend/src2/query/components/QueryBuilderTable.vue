@@ -4,13 +4,16 @@ import { computed, inject } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { Query } from '../query'
 import QueryBuilderTableColumn from './QueryBuilderTableColumn.vue'
+import { RefreshCw } from 'lucide-vue-next'
 
 const query = inject('query') as Query
 
 const columns = computed(() => query.result.columns)
 const rows = computed(() => query.result.formattedRows)
 const previewRowCount = computed(() => query.result.rows.length.toLocaleString())
-const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString())
+const totalRowCount = computed(() =>
+	query.result.totalRowCount ? query.result.totalRowCount.toLocaleString() : ''
+)
 </script>
 
 <template>
@@ -27,9 +30,22 @@ const totalRowCount = computed(() => query.result.totalRowCount.toLocaleString()
 				<QueryBuilderTableColumn :column="column" />
 			</template>
 			<template #footer-left>
-				<p class="tnum p-1 text-sm text-gray-600">
-					Showing {{ previewRowCount }} of {{ totalRowCount }} rows
-				</p>
+				<div class="tnum flex items-center gap-2 text-sm text-gray-600">
+					<span> Showing {{ previewRowCount }} of </span>
+					<span v-if="!totalRowCount" class="inline-block">
+						<Tooltip text="Load Count">
+							<RefreshCw
+								v-if="!query.fetchingCount"
+								class="h-3.5 w-3.5 cursor-pointer transition-all hover:text-gray-800"
+								stroke-width="1.5"
+								@click="query.fetchResultCount"
+							/>
+							<LoadingIndicator v-else class="h-3.5 w-3.5 text-gray-600" />
+						</Tooltip>
+					</span>
+					<span v-else> {{ totalRowCount }} </span>
+					rows
+				</div>
 			</template>
 		</DataTable>
 	</div>

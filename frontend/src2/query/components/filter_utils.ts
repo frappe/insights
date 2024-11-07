@@ -12,7 +12,11 @@ export function getValueSelectorType(filter: FilterRule, columnType: ColumnDataT
 		return filter.operator === 'between' ? 'text' : 'number'
 	}
 	if (FIELDTYPES.DATE.includes(columnType)) {
-		return filter.operator === 'between' ? 'date_range' : 'date'
+		return filter.operator === 'between'
+			? 'date_range'
+			: filter.operator === 'within'
+			? 'relative_date'
+			: 'date'
 	}
 	return 'text'
 }
@@ -64,7 +68,7 @@ export function isFilterValid(filter: FilterRule, columnType: ColumnDataType) {
 	// if it's a date, validate if it's a date string
 	// if it's a date range, validate if it's an array of 2 date strings
 	if (FIELDTYPES.DATE.includes(columnType)) {
-		if (valueSelectorType === 'date') {
+		if (valueSelectorType === 'date' || valueSelectorType === 'relative_date') {
 			return typeof filter.value === 'string'
 		} else if (valueSelectorType === 'date_range') {
 			return Boolean(

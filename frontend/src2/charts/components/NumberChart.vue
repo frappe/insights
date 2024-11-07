@@ -65,7 +65,7 @@ const getFormattedValue = (value: number) => {
 
 <template>
 	<div class="h-full w-full @container">
-		<div class="grid w-full grid-cols-4 gap-4 @5xl:grid-cols-5">
+		<div class="grid w-full grid-cols-[repeat(auto-fill,214px)] gap-4">
 			<div
 				v-for="{ measure_name, values, currentValue, delta, percentDelta } in cards"
 				:key="measure_name"

@@ -16,7 +16,8 @@ from insights.insights.doctype.insights_team.insights_team import is_admin
 def get_users(search_term=None):
     """Returns full_name, email, type, teams, last_active"""
 
-    if not is_admin(frappe.session.user):
+    perm_enabled = frappe.db.get_single_value("Insights Settings", "enable_permissions")
+    if perm_enabled and not is_admin(frappe.session.user):
         user_info = frappe.db.get_value(
             "User",
             frappe.session.user,

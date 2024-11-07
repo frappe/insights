@@ -6,7 +6,7 @@ __version__ = "3.0.0"
 
 
 def create_toast(
-    message: str,
+    message: str | None = None,
     title: str | None = None,
     type: str = "info",
     duration: int = 5,

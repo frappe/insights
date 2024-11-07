@@ -36,3 +36,9 @@ class InsightsTableImportLog(Document):
         self.output += message + "\n\n"
         self.db_update()
         commit and frappe.db.commit()
+
+    @frappe.whitelist()
+    def mark_as_failed(self):
+        frappe.only_for("System Manager")
+        self.status = "Failed"
+        self.db_update()

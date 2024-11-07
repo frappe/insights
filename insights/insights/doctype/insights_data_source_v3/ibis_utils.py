@@ -215,30 +215,15 @@ class IbisQueryBuilder:
     def apply_union(self, union_args):
         other_table = self.get_table_or_query(union_args.table)
 
-        # Ensure both tables have the same columns
-        # Add missing columns with None values
-        # for col, dtype in self.query.schema().items():
-        #     if col not in other_table.columns:
-        #         other_table = other_table.mutate(
-        #             **{
-        #                 col: ibis.literal(None).cast(dtype).name(col),
-        #             }
-        #         )
-
-        # for col, dtype in other_table.schema().items():
-        #     if col not in self.query.columns:
-        #         self.query = self.query.mutate(
-        #             **{
-        #                 col: ibis.literal(None).cast(dtype).name(col),
-        #             }
-        #         )
-
         current_columns = set(self.query.columns)
         other_columns = set(other_table.columns)
         common_columns = current_columns.intersection(other_columns)
 
         if not common_columns:
-            frappe.throw("Tables must have common columns to perform union")
+            frappe.throw(
+                "Both tables must have at least one common column to perform union",
+                title="Cannot Perform Union",
+            )
 
         # ensure columns have the same data types
         for col in common_columns:
@@ -248,6 +233,7 @@ class IbisQueryBuilder:
                 other_table = other_table.cast({col: left_col_type})
 
         self.query = self.query.select(common_columns)
+        other_table = other_table.select(common_columns)
         return self.query.union(other_table, distinct=union_args.distinct)
 
     def apply_filter(self, filter_args):

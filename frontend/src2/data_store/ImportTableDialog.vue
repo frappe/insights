@@ -69,6 +69,7 @@ function importTable() {
 					<Autocomplete
 						label="Table"
 						placeholder="Select Table"
+						v-model:query="dataSourceTableQuery"
 						:disabled="!table.data_source"
 						:modelValue="table.table_name"
 						@update:modelValue="table.table_name = $event?.value"

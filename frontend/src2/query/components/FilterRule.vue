@@ -11,6 +11,7 @@ import {
 import { column } from '../helpers'
 import { getCachedQuery } from '../query'
 import DatePickerControl from './DatePickerControl.vue'
+import RelativeDatePicker from './RelativeDatePicker.vue'
 import { getValueSelectorType } from './filter_utils'
 import { flattenOptions } from '../../helpers'
 
@@ -74,6 +75,7 @@ const operatorOptions = computed(() => {
 		options.push({ label: 'less than', value: '<' })
 		options.push({ label: 'less than or equals', value: '<=' })
 		options.push({ label: 'between', value: 'between' })
+		options.push({ label: 'within', value: 'within' })
 	}
 	return options
 })
@@ -155,6 +157,11 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				:range="true"
 				v-model="(filter.value as string[])"
 				placeholder="Select Date"
+			/>
+			<RelativeDatePicker
+				v-else-if="valueSelectorType === 'relative_date'"
+				v-model="(filter.value as string)"
+				placeholder="Relative Date"
 			/>
 			<Autocomplete
 				v-else-if="valueSelectorType === 'select'"

@@ -1,6 +1,5 @@
 import operator
 from contextlib import suppress
-from datetime import date, datetime
 
 import frappe
 from frappe.utils.data import (
@@ -401,13 +400,13 @@ def get_date_range(timespan, include_current=False):
 def add_start_and_end_time(dates):
     if not dates:
         return dates
-    if type(dates[0]) == str:
-        return [dates[0] + " 00:00:00", dates[1] + " 23:59:59"]
-    if type(dates[0]) == datetime or type(dates[0]) == date:
-        return [
-            dates[0].strftime("%Y-%m-%d 00:00:00"),
-            dates[1].strftime("%Y-%m-%d 23:59:59"),
-        ]
+
+    dates[0] = getdate(dates[0])
+    dates[1] = getdate(dates[1])
+    dates[0] = dates[0].strftime("%Y-%m-%d 00:00:00")
+    dates[1] = dates[1].strftime("%Y-%m-%d 23:59:59")
+
+    return dates
 
 
 class BinaryOperations:
