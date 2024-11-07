@@ -406,6 +406,8 @@ def add_start_and_end_time(dates):
     dates[0] = dates[0].strftime("%Y-%m-%d 00:00:00")
     dates[1] = dates[1].strftime("%Y-%m-%d 23:59:59")
 
+    return dates
+
 
 class BinaryOperations:
     ARITHMETIC_OPERATIONS = {
