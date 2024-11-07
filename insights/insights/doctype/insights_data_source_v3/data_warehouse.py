@@ -46,6 +46,14 @@ class WarehouseTable:
         self.warehouse_table_name = get_warehouse_table_name(data_source, table_name)
         self.parquet_filepath = get_parquet_filepath(data_source, table_name)
 
+        self.validate()
+
+    def validate(self):
+        if not self.data_source:
+            frappe.throw("Data Source is required.")
+        if not self.table_name:
+            frappe.throw("Table Name is required.")
+
     def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
         if not os.path.exists(self.parquet_filepath):
             if import_if_not_exists:
