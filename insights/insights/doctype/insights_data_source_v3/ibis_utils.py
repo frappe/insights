@@ -32,12 +32,25 @@ class IbisQueryBuilder:
             self.query = self.perform_operation(operation)
         return self.query
 
-    def get_table(self, table):
-        return InsightsTablev3.get_ibis_table(
-            table.data_source,
-            table.table_name,
-            use_live_connection=self.use_live_connection,
-        )
+    def get_table_or_query(self, table_args):
+        _table = None
+
+        if table_args.type == "table":
+            _table = InsightsTablev3.get_ibis_table(
+                table_args.data_source,
+                table_args.table_name,
+                use_live_connection=self.use_live_connection,
+            )
+        if table_args.type == "query":
+            _table = IbisQueryBuilder().build(
+                table_args.operations,
+                use_live_connection=self.use_live_connection,
+            )
+
+        if _table is None:
+            frappe.throw("Invalid join table")
+
+        return _table
 
     def perform_operation(self, operation):
         operation = _dict(operation)
@@ -74,7 +87,7 @@ class IbisQueryBuilder:
         return self.query
 
     def apply_source(self, source_args):
-        return self.get_table(source_args.table)
+        return self.get_table_or_query(source_args.table)
 
     def apply_join(self, join_args):
         right_table = self.get_right_table(join_args)
@@ -86,22 +99,6 @@ class IbisQueryBuilder:
             join_condition,
             how=join_type,
         )
-
-    def get_table_or_query(self, table_args):
-        _table = None
-
-        if table_args.type == "table":
-            _table = self.get_table(table_args)
-        if table_args.type == "query":
-            _table = IbisQueryBuilder().build(
-                table_args.operations,
-                use_live_connection=self.use_live_connection,
-            )
-
-        if _table is None:
-            frappe.throw("Invalid join table")
-
-        return _table
 
     def get_right_table(self, join_args):
         right_table = self.get_table_or_query(join_args.table)

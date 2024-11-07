@@ -24,7 +24,7 @@ import {
 	Source,
 	SourceArgs,
 	SummarizeArgs,
-	UnionArgs,
+	UnionArgs
 } from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
@@ -197,41 +197,9 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			return []
 		}
 
-		const sourceOp = query.doc.operations.find((op) => op.type === 'source')
-		if (!sourceOp) {
-			return []
-		}
-
-		if ('query' in sourceOp && sourceOp.query) {
-			// move old structure to new structure
-			sourceOp.table = query_table({
-				query_name: sourceOp.query as string,
-			})
-			delete sourceOp.query
-		}
-
 		let _operations = [...query.currentOperations]
-
-		if (sourceOp.table.type === 'query') {
-			const sourceQuery = getCachedQuery(sourceOp.table.query_name)
-			if (!sourceQuery) {
-				const message = `Source query ${sourceOp.table.query_name} not found`
-				createToast({
-					variant: 'error',
-					title: 'Error',
-					message,
-				})
-				throw new Error(message)
-			}
-
-			const sourceQueryOperations = sourceQuery.getOperationsForExecution()
-			const currentOperationsWithoutSource = query.currentOperations.slice(1)
-
-			_operations = [...sourceQueryOperations, ...currentOperationsWithoutSource]
-		}
-
 		for (const op of _operations) {
-			if (op.type !== 'join' && op.type !== 'union') continue
+			if (op.type !== 'source' && op.type !== 'join' && op.type !== 'union') continue
 			if (op.table.type !== 'query') continue
 
 			const queryTable = getCachedQuery(op.table.query_name)
@@ -270,6 +238,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 				query.result.executedSQL = response.sql
 				query.result.columns = response.columns
 				query.result.rows = response.rows
+				query.result.totalRowCount = 0
 				query.result.formattedRows = getFormattedRows(query.result, query.doc.operations)
 				query.result.columnOptions = query.result.columns.map((column) => ({
 					label: column.name,
@@ -297,13 +266,13 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			use_live_connection: query.doc.use_live_connection,
 			operations,
 		})
-		.then((count: number) => {
-			query.result.totalRowCount = count || 0
-		})
-		.catch(showErrorToast)
-		.finally(() => {
-			query.fetchingCount = false
-		})
+			.then((count: number) => {
+				query.result.totalRowCount = count || 0
+			})
+			.catch(showErrorToast)
+			.finally(() => {
+				query.fetchingCount = false
+			})
 	}
 
 	function setActiveOperation(index: number) {
@@ -664,7 +633,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			query.activeEditOperation.type === 'summarize'
 		) {
 			// remove the active edit operation from the operations
-			// we can't use activeEditIndex because the operations for execution may have more operations (after query table resolution)
 			const idx = operationsForExecution.findIndex((op) => op === query.activeEditOperation)
 			operationsForExecution.splice(idx, 1)
 		}

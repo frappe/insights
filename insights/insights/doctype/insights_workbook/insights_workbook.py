@@ -122,25 +122,15 @@ class InsightsWorkbook(Document):
         return False
 
     def resolve_query_tables(self, operations):
-        source_op = next((op for op in operations if op["type"] == "source"), None)
-        if not source_op:
-            return []
-
-        if source_op["table"]["type"] == "query":
-            query_name = source_op["table"]["query_name"]
-            source_query = self.query_map.get(query_name)
-            if not source_query:
-                frappe.throw(f"Source query {query_name} not found")
-
-            source_query_operations = self.resolve_query_tables(
-                source_query["operations"]
-            )
-            current_operations_without_source = operations[1:]
-
-            operations = source_query_operations + current_operations_without_source
+        if not operations:
+            return operations
 
         for op in operations:
-            if op["type"] != "join" and op["type"] != "union":
+            if (
+                op["type"] != "source"
+                and op["type"] != "join"
+                and op["type"] != "union"
+            ):
                 continue
             if op["table"]["type"] != "query":
                 continue
