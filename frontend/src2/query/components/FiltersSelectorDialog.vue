@@ -5,6 +5,8 @@ import FiltersSelector from './FiltersSelector.vue'
 const props = defineProps<{
 	filterGroup?: FilterGroupArgs
 	columnOptions: ColumnOption[] | GroupedColumnOption[]
+	disableLogicalOperator?: boolean
+	disableExpressions?: boolean
 }>()
 const emit = defineEmits({ select: (args: FilterGroupArgs) => true })
 const showDialog = defineModel()
@@ -16,6 +18,8 @@ const showDialog = defineModel()
 			<FiltersSelector
 				:filterGroup="props.filterGroup"
 				:columnOptions="props.columnOptions"
+				:disableLogicalOperator="props.disableLogicalOperator"
+				:disableExpressions="props.disableExpressions"
 				@close="showDialog = false"
 				@select="
 					(args) => {

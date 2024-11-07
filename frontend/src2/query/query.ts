@@ -118,6 +118,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		reorderOperations,
 		reset,
 
+		dashboardFilters: {} as FilterGroupArgs,
+
 		history: {} as UseRefHistoryReturn<any, any>,
 		canUndo() {
 			return !query.activeEditIndex && !query.executing
@@ -214,6 +216,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			}
 
 			op.table.operations = queryTable.getOperationsForExecution()
+		}
+
+
+		if (query.dashboardFilters.filters?.length) {
+			_operations.push(filter_group(query.dashboardFilters))
+			query.dashboardFilters = {} as FilterGroupArgs
 		}
 
 		return _operations

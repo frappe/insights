@@ -2,7 +2,7 @@
 import { PlusIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed, reactive } from 'vue'
 import { copy, flattenOptions } from '../../helpers'
-import { Column, ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
+import { ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
 import { column, expression } from '../helpers'
 import FilterRule from './FilterRule.vue'
 import InlineExpression from './InlineExpression.vue'
@@ -11,6 +11,8 @@ import { isFilterExpressionValid, isFilterValid } from './filter_utils'
 const props = defineProps<{
 	filterGroup?: FilterGroupArgs
 	columnOptions: ColumnOption[] | GroupedColumnOption[]
+	disableLogicalOperator?: boolean
+	disableExpressions?: boolean
 }>()
 
 const emit = defineEmits({
@@ -75,8 +77,11 @@ const areFiltersUpdated = computed(() => {
 						v-else
 						class="text-sm"
 						@click="
-							filterGroup.logical_operator =
-								filterGroup.logical_operator === 'And' ? 'Or' : 'And'
+							() => {
+								if (props.disableLogicalOperator) return
+								filterGroup.logical_operator =
+									filterGroup.logical_operator === 'And' ? 'Or' : 'And'
+							}
 						"
 					>
 						<template #prefix>
@@ -104,20 +109,18 @@ const areFiltersUpdated = computed(() => {
 						variant: 'ghost',
 					}"
 					:options="[
-						{
-							label: 'Convert to Expression',
-							onClick: () => {
-								filterGroup.filters[i] = { expression: expression('') }
-							},
-						},
+						!props.disableExpressions
+							? {
+									label: 'Convert to Expression',
+									onClick: () => {
+										filterGroup.filters[i] = { expression: expression('') }
+									},
+							  }
+							: null,
 						{
 							label: 'Duplicate',
 							onClick: () => {
-								filterGroup.filters.splice(
-									i + 1,
-									0,
-									JSON.parse(JSON.stringify(filterGroup.filters[i]))
-								)
+								filterGroup.filters.splice(i + 1, 0, copy(filterGroup.filters[i]))
 							},
 						},
 						{
