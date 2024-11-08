@@ -1,0 +1,934 @@
+{
+	"doctype": "Insights Workbook",
+	"title": "Order Analysis",
+	"queries": [
+		{
+			"name": "dmpeh9iw",
+			"operations": [
+				{
+					"table": {
+						"data_source": "demo_data",
+						"table_name": "orders",
+						"type": "table"
+					},
+					"type": "source"
+				},
+				{
+					"join_condition": {
+						"left_column": {
+							"column_name": "order_id",
+							"type": "column"
+						},
+						"right_column": {
+							"column_name": "order_id",
+							"type": "column"
+						}
+					},
+					"join_type": "left",
+					"table": {
+						"data_source": "demo_data",
+						"table_name": "orderitems",
+						"type": "table"
+					},
+					"type": "join"
+				},
+				{
+					"column": {
+						"column_name": "order_purchase_timestamp",
+						"type": "column"
+					},
+					"data_type": "Datetime",
+					"type": "cast"
+				},
+				{
+					"filters": [
+						{
+							"column": {
+								"column_name": "order_status",
+								"type": "column"
+							},
+							"operator": "not_in",
+							"value": [
+								"delivered"
+							]
+						},
+						{
+							"column": {
+								"column_name": "order_id",
+								"type": "column"
+							},
+							"operator": "is_set"
+						},
+						{
+							"column": {
+								"column_name": "customer_id",
+								"type": "column"
+							},
+							"operator": "is_set"
+						},
+						{
+							"expression": {
+								"expression": "(order_purchase_timestamp >= '2016-10-01') & (order_purchase_timestamp <= '2018-08-31')",
+								"type": "expression"
+							}
+						}
+					],
+					"logical_operator": "And",
+					"type": "filter_group"
+				},
+				{
+					"data_type": "Decimal",
+					"expression": {
+						"expression": "q.price + q.freight_value",
+						"type": "expression"
+					},
+					"new_name": "order_value",
+					"type": "mutate"
+				}
+			],
+			"title": "Undelivered Orders",
+			"use_live_connection": true
+		}
+	],
+	"charts": [
+		{
+			"chart_type": "Bar",
+			"config": {
+				"filters": {
+					"filters": [],
+					"logical_operator": "And"
+				},
+				"grouping": "stacked",
+				"limit": "100",
+				"normalize": false,
+				"order_by": [
+					{
+						"column": {
+							"column_name": "order_purchase_timestamp",
+							"type": "column"
+						},
+						"direction": "asc"
+					}
+				],
+				"show_data_labels": false,
+				"split_by": null,
+				"stack": false,
+				"swap_axes": false,
+				"x_axis": {
+					"column_name": "order_purchase_timestamp",
+					"data_type": "Datetime",
+					"granularity": "month",
+					"label": "order_purchase_timestamp",
+					"value": "order_purchase_timestamp"
+				},
+				"y2_axis": null,
+				"y2_axis_type": "line",
+				"y_axis": {
+					"normalize": false,
+					"series": [
+						{
+							"measure": {
+								"aggregation": "sum",
+								"column_name": "price",
+								"data_type": "Decimal",
+								"label": "sum(price)",
+								"measure_name": "sum(price)",
+								"value": "sum(price)"
+							}
+						}
+					],
+					"show_axis_label": false,
+					"show_data_labels": false,
+					"stack": false
+				}
+			},
+			"name": "e2xcyj2w",
+			"operations": [
+				{
+					"table": {
+						"operations": [
+							{
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orders",
+									"type": "table"
+								},
+								"type": "source"
+							},
+							{
+								"join_condition": {
+									"left_column": {
+										"column_name": "order_id",
+										"type": "column"
+									},
+									"right_column": {
+										"column_name": "order_id",
+										"type": "column"
+									}
+								},
+								"join_type": "left",
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orderitems",
+									"type": "table"
+								},
+								"type": "join"
+							},
+							{
+								"column": {
+									"column_name": "order_purchase_timestamp",
+									"type": "column"
+								},
+								"data_type": "Datetime",
+								"type": "cast"
+							},
+							{
+								"filters": [
+									{
+										"column": {
+											"column_name": "order_status",
+											"type": "column"
+										},
+										"operator": "not_in",
+										"value": [
+											"delivered"
+										]
+									},
+									{
+										"column": {
+											"column_name": "order_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"column": {
+											"column_name": "customer_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"expression": {
+											"expression": "(order_purchase_timestamp >= '2016-10-01') & (order_purchase_timestamp <= '2018-08-31')",
+											"type": "expression"
+										}
+									}
+								],
+								"logical_operator": "And",
+								"type": "filter_group"
+							},
+							{
+								"data_type": "Decimal",
+								"expression": {
+									"expression": "q.price + q.freight_value",
+									"type": "expression"
+								},
+								"new_name": "order_value",
+								"type": "mutate"
+							}
+						],
+						"query_name": "dmpeh9iw",
+						"type": "query",
+						"workbook": ""
+					},
+					"type": "source"
+				},
+				{
+					"dimensions": [
+						{
+							"column_name": "order_purchase_timestamp",
+							"data_type": "Datetime",
+							"granularity": "month",
+							"label": "order_purchase_timestamp",
+							"value": "order_purchase_timestamp"
+						}
+					],
+					"measures": [
+						{
+							"aggregation": "sum",
+							"column_name": "price",
+							"data_type": "Decimal",
+							"label": "sum(price)",
+							"measure_name": "sum(price)",
+							"value": "sum(price)"
+						}
+					],
+					"type": "summarize"
+				},
+				{
+					"column": {
+						"column_name": "order_purchase_timestamp",
+						"type": "column"
+					},
+					"direction": "asc",
+					"type": "order_by"
+				},
+				{
+					"limit": "100",
+					"type": "limit"
+				}
+			],
+			"query": "dmpeh9iw",
+			"title": "Order per Month",
+			"use_live_connection": true
+		},
+		{
+			"chart_type": "Donut",
+			"config": {
+				"filters": {
+					"filters": [],
+					"logical_operator": "And"
+				},
+				"label_column": {
+					"column_name": "order_status",
+					"data_type": "String",
+					"label": "order_status",
+					"value": "order_status"
+				},
+				"legend_position": "bottom",
+				"limit": 100,
+				"order_by": [
+					{
+						"column": {
+							"column_name": "sum(order_value)",
+							"type": "column"
+						},
+						"direction": "desc"
+					}
+				],
+				"swap_axes": true,
+				"value_column": {
+					"aggregation": "sum",
+					"column_name": "order_value",
+					"data_type": "Decimal",
+					"label": "sum(order_value)",
+					"measure_name": "sum(order_value)",
+					"value": "sum(order_value)"
+				},
+				"x_axis": {
+					"column_name": "order_status"
+				},
+				"y_axis": {
+					"series": [
+						{
+							"measure": {
+								"column_name": "count"
+							}
+						}
+					]
+				}
+			},
+			"name": "7k43ggsa",
+			"operations": [
+				{
+					"table": {
+						"operations": [
+							{
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orders",
+									"type": "table"
+								},
+								"type": "source"
+							},
+							{
+								"join_condition": {
+									"left_column": {
+										"column_name": "order_id",
+										"type": "column"
+									},
+									"right_column": {
+										"column_name": "order_id",
+										"type": "column"
+									}
+								},
+								"join_type": "left",
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orderitems",
+									"type": "table"
+								},
+								"type": "join"
+							},
+							{
+								"column": {
+									"column_name": "order_purchase_timestamp",
+									"type": "column"
+								},
+								"data_type": "Datetime",
+								"type": "cast"
+							},
+							{
+								"filters": [
+									{
+										"column": {
+											"column_name": "order_status",
+											"type": "column"
+										},
+										"operator": "not_in",
+										"value": [
+											"delivered"
+										]
+									},
+									{
+										"column": {
+											"column_name": "order_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"column": {
+											"column_name": "customer_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"expression": {
+											"expression": "(order_purchase_timestamp >= '2016-10-01') & (order_purchase_timestamp <= '2018-08-31')",
+											"type": "expression"
+										}
+									}
+								],
+								"logical_operator": "And",
+								"type": "filter_group"
+							},
+							{
+								"data_type": "Decimal",
+								"expression": {
+									"expression": "q.price + q.freight_value",
+									"type": "expression"
+								},
+								"new_name": "order_value",
+								"type": "mutate"
+							}
+						],
+						"query_name": "dmpeh9iw",
+						"type": "query",
+						"workbook": ""
+					},
+					"type": "source"
+				},
+				{
+					"dimensions": [
+						{
+							"column_name": "order_status",
+							"data_type": "String",
+							"label": "order_status",
+							"value": "order_status"
+						}
+					],
+					"measures": [
+						{
+							"aggregation": "sum",
+							"column_name": "order_value",
+							"data_type": "Decimal",
+							"label": "sum(order_value)",
+							"measure_name": "sum(order_value)",
+							"value": "sum(order_value)"
+						}
+					],
+					"type": "summarize"
+				},
+				{
+					"column": {
+						"column_name": "sum(order_value)",
+						"type": "column"
+					},
+					"direction": "desc",
+					"type": "order_by"
+				},
+				{
+					"limit": 100,
+					"type": "limit"
+				}
+			],
+			"query": "dmpeh9iw",
+			"title": "Order per Category",
+			"use_live_connection": true
+		},
+		{
+			"chart_type": "Number",
+			"config": {
+				"comparison": true,
+				"date_column": {
+					"column_name": "order_purchase_timestamp",
+					"data_type": "Datetime",
+					"granularity": "month",
+					"label": "order_purchase_timestamp",
+					"value": "order_purchase_timestamp"
+				},
+				"decimal": "2",
+				"filters": {
+					"filters": [],
+					"logical_operator": "And"
+				},
+				"limit": 100,
+				"negative_is_better": false,
+				"number_column": [
+					"price",
+					"freight_value"
+				],
+				"number_columns": [
+					{
+						"aggregation": "count",
+						"column_name": "count",
+						"data_type": "Integer",
+						"label": "count(*)",
+						"measure_name": "Orders",
+						"value": "count(*)"
+					},
+					{
+						"aggregation": "sum",
+						"column_name": "order_item_id",
+						"data_type": "Integer",
+						"label": "sum(order_item_id)",
+						"measure_name": "Items",
+						"value": "sum(order_item_id)"
+					},
+					{
+						"aggregation": "sum",
+						"column_name": "price",
+						"data_type": "Decimal",
+						"label": "sum(price)",
+						"measure_name": "Net Total",
+						"value": "sum(price)"
+					},
+					{
+						"aggregation": "sum",
+						"column_name": "freight_value",
+						"data_type": "Decimal",
+						"label": "sum(freight_value)",
+						"measure_name": "Freight",
+						"value": "sum(freight_value)"
+					},
+					{
+						"aggregation": "sum",
+						"column_name": "order_value",
+						"data_type": "Decimal",
+						"label": "sum(order_value)",
+						"measure_name": "Grand Total",
+						"value": "sum(order_value)"
+					}
+				],
+				"order_by": [
+					{
+						"column": {
+							"column_name": "order_purchase_timestamp",
+							"type": "column"
+						},
+						"direction": "desc"
+					}
+				],
+				"shorten_numbers": true,
+				"sparkline": true
+			},
+			"name": "cdsy4r05",
+			"operations": [
+				{
+					"table": {
+						"operations": [
+							{
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orders",
+									"type": "table"
+								},
+								"type": "source"
+							},
+							{
+								"join_condition": {
+									"left_column": {
+										"column_name": "order_id",
+										"type": "column"
+									},
+									"right_column": {
+										"column_name": "order_id",
+										"type": "column"
+									}
+								},
+								"join_type": "left",
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orderitems",
+									"type": "table"
+								},
+								"type": "join"
+							},
+							{
+								"column": {
+									"column_name": "order_purchase_timestamp",
+									"type": "column"
+								},
+								"data_type": "Datetime",
+								"type": "cast"
+							},
+							{
+								"filters": [
+									{
+										"column": {
+											"column_name": "order_status",
+											"type": "column"
+										},
+										"operator": "not_in",
+										"value": [
+											"delivered"
+										]
+									},
+									{
+										"column": {
+											"column_name": "order_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"column": {
+											"column_name": "customer_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"expression": {
+											"expression": "(order_purchase_timestamp >= '2016-10-01') & (order_purchase_timestamp <= '2018-08-31')",
+											"type": "expression"
+										}
+									}
+								],
+								"logical_operator": "And",
+								"type": "filter_group"
+							},
+							{
+								"data_type": "Decimal",
+								"expression": {
+									"expression": "q.price + q.freight_value",
+									"type": "expression"
+								},
+								"new_name": "order_value",
+								"type": "mutate"
+							}
+						],
+						"query_name": "dmpeh9iw",
+						"type": "query",
+						"workbook": ""
+					},
+					"type": "source"
+				},
+				{
+					"dimensions": [
+						{
+							"column_name": "order_purchase_timestamp",
+							"data_type": "Datetime",
+							"granularity": "month",
+							"label": "order_purchase_timestamp",
+							"value": "order_purchase_timestamp"
+						}
+					],
+					"measures": [
+						{
+							"aggregation": "count",
+							"column_name": "count",
+							"data_type": "Integer",
+							"label": "count(*)",
+							"measure_name": "Orders",
+							"value": "count(*)"
+						},
+						{
+							"aggregation": "sum",
+							"column_name": "order_item_id",
+							"data_type": "Integer",
+							"label": "sum(order_item_id)",
+							"measure_name": "Items",
+							"value": "sum(order_item_id)"
+						},
+						{
+							"aggregation": "sum",
+							"column_name": "price",
+							"data_type": "Decimal",
+							"label": "sum(price)",
+							"measure_name": "Net Total",
+							"value": "sum(price)"
+						},
+						{
+							"aggregation": "sum",
+							"column_name": "freight_value",
+							"data_type": "Decimal",
+							"label": "sum(freight_value)",
+							"measure_name": "Freight",
+							"value": "sum(freight_value)"
+						},
+						{
+							"aggregation": "sum",
+							"column_name": "order_value",
+							"data_type": "Decimal",
+							"label": "sum(order_value)",
+							"measure_name": "Grand Total",
+							"value": "sum(order_value)"
+						}
+					],
+					"type": "summarize"
+				},
+				{
+					"column": {
+						"column_name": "order_purchase_timestamp",
+						"type": "column"
+					},
+					"direction": "desc",
+					"type": "order_by"
+				},
+				{
+					"limit": 100,
+					"type": "limit"
+				}
+			],
+			"query": "dmpeh9iw",
+			"title": "Top Level Metrics",
+			"use_live_connection": true
+		},
+		{
+			"chart_type": "Table",
+			"config": {
+				"columns": [
+					{
+						"column_name": "order_status",
+						"data_type": "String",
+						"label": "order_status",
+						"value": "order_status"
+					}
+				],
+				"filters": {
+					"filters": [],
+					"logical_operator": "And"
+				},
+				"limit": 100,
+				"order_by": [
+					{
+						"column": {
+							"column_name": "order_purchase_timestamp",
+							"type": "column"
+						},
+						"direction": "asc"
+					}
+				],
+				"rows": [
+					{
+						"column_name": "order_purchase_timestamp",
+						"data_type": "Datetime",
+						"granularity": "month",
+						"label": "order_purchase_timestamp",
+						"value": "order_purchase_timestamp"
+					}
+				],
+				"show_column_totals": false,
+				"show_row_totals": false,
+				"values": [
+					{
+						"aggregation": "sum",
+						"column_name": "order_value",
+						"data_type": "Decimal",
+						"label": "sum(order_value)",
+						"measure_name": "sum(order_value)",
+						"value": "sum(order_value)"
+					}
+				]
+			},
+			"name": "9p7rtr1u",
+			"operations": [
+				{
+					"table": {
+						"operations": [
+							{
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orders",
+									"type": "table"
+								},
+								"type": "source"
+							},
+							{
+								"join_condition": {
+									"left_column": {
+										"column_name": "order_id",
+										"type": "column"
+									},
+									"right_column": {
+										"column_name": "order_id",
+										"type": "column"
+									}
+								},
+								"join_type": "left",
+								"table": {
+									"data_source": "demo_data",
+									"table_name": "orderitems",
+									"type": "table"
+								},
+								"type": "join"
+							},
+							{
+								"column": {
+									"column_name": "order_purchase_timestamp",
+									"type": "column"
+								},
+								"data_type": "Datetime",
+								"type": "cast"
+							},
+							{
+								"filters": [
+									{
+										"column": {
+											"column_name": "order_status",
+											"type": "column"
+										},
+										"operator": "not_in",
+										"value": [
+											"delivered"
+										]
+									},
+									{
+										"column": {
+											"column_name": "order_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"column": {
+											"column_name": "customer_id",
+											"type": "column"
+										},
+										"operator": "is_set"
+									},
+									{
+										"expression": {
+											"expression": "(order_purchase_timestamp >= '2016-10-01') & (order_purchase_timestamp <= '2018-08-31')",
+											"type": "expression"
+										}
+									}
+								],
+								"logical_operator": "And",
+								"type": "filter_group"
+							},
+							{
+								"data_type": "Decimal",
+								"expression": {
+									"expression": "q.price + q.freight_value",
+									"type": "expression"
+								},
+								"new_name": "order_value",
+								"type": "mutate"
+							}
+						],
+						"query_name": "dmpeh9iw",
+						"type": "query",
+						"workbook": ""
+					},
+					"type": "source"
+				},
+				{
+					"columns": [
+						{
+							"column_name": "order_status",
+							"data_type": "String",
+							"label": "order_status",
+							"value": "order_status"
+						}
+					],
+					"rows": [
+						{
+							"column_name": "order_purchase_timestamp",
+							"data_type": "Datetime",
+							"granularity": "month",
+							"label": "order_purchase_timestamp",
+							"value": "order_purchase_timestamp"
+						}
+					],
+					"type": "pivot_wider",
+					"values": [
+						{
+							"aggregation": "sum",
+							"column_name": "order_value",
+							"data_type": "Decimal",
+							"label": "sum(order_value)",
+							"measure_name": "sum(order_value)",
+							"value": "sum(order_value)"
+						}
+					]
+				},
+				{
+					"column": {
+						"column_name": "order_purchase_timestamp",
+						"type": "column"
+					},
+					"direction": "asc",
+					"type": "order_by"
+				},
+				{
+					"limit": 100,
+					"type": "limit"
+				}
+			],
+			"query": "dmpeh9iw",
+			"title": "Order Value per Month per Status",
+			"use_live_connection": true
+		}
+	],
+	"dashboards": [
+		{
+			"items": [
+				{
+					"chart": "cdsy4r05",
+					"layout": {
+						"h": 3,
+						"i": "1geec587",
+						"moved": false,
+						"w": 20,
+						"x": 0,
+						"y": 0
+					},
+					"type": "chart"
+				},
+				{
+					"chart": "e2xcyj2w",
+					"layout": {
+						"h": 8,
+						"i": "1kpzltkq",
+						"moved": false,
+						"w": 10,
+						"x": 0,
+						"y": 3
+					},
+					"type": "chart"
+				},
+				{
+					"chart": "7k43ggsa",
+					"layout": {
+						"h": 8,
+						"i": "2mkbxvt3",
+						"moved": false,
+						"w": 10,
+						"x": 10,
+						"y": 3
+					},
+					"type": "chart"
+				},
+				{
+					"chart": "9p7rtr1u",
+					"layout": {
+						"h": 11,
+						"i": "b6n952s4",
+						"moved": false,
+						"w": 20,
+						"x": 0,
+						"y": 11
+					},
+					"type": "chart"
+				}
+			],
+			"name": "do859say",
+			"title": "Order Analysis"
+		}
+	]
+}

@@ -35,7 +35,6 @@ class DemoDataFactory:
             factory = DemoDataFactory()
             factory.initialize()
             if factory.demo_data_exists() and not force:
-                factory.create_table_links()
                 update_progress("Done", 99)
                 return factory
             update_progress("Downloading data...", 5)
@@ -43,6 +42,7 @@ class DemoDataFactory:
             update_progress("Syncing tables...", 60)
             factory.sync_tables()
             update_progress("Done", 99)
+            factory.create_sample_workbook()
             return factory
 
     def initialize(self):
@@ -71,7 +71,18 @@ class DemoDataFactory:
 
     def demo_data_exists(self):
         tables = get_data_source_tables(self.data_source.name)
-        return len(tables) == 8
+        tables_exists = len(tables) == 8
+
+        links_count = frappe.db.count(
+            "Insights Table Link v3", {"data_source": self.data_source.name}
+        )
+        links_exists = links_count == 8
+
+        sample_workbook_exists = frappe.db.exists(
+            "Insights Workbook", {"title": "Order Analysis"}
+        )
+
+        return tables_exists and links_exists and sample_workbook_exists
 
     def download_demo_data(self):
         if frappe.flags.in_test or os.environ.get("CI"):
@@ -159,3 +170,15 @@ class DemoDataFactory:
                 link["left_column"],
                 link["right_column"],
             )
+
+    def create_sample_workbook(self):
+        if frappe.db.exists("Insights Workbook", {"title": "Order Analysis"}):
+            return
+
+        fixture_path = frappe.get_app_path("insights", "setup")
+        with open(fixture_path + "/sample_workbook.json") as f:
+            sample_workbook = f.read()
+
+        w = frappe.new_doc("Insights Workbook")
+        w.update(frappe.parse_json(sample_workbook))
+        w.save(ignore_permissions=True)
