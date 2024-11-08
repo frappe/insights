@@ -507,18 +507,19 @@ def execute_ibis_query(
     sql = ibis.to_sql(query)
 
     if cache and has_cached_results(sql):
-        return get_cached_results(sql)
+        return get_cached_results(sql), -1
 
     start = time.monotonic()
     res: pd.DataFrame = query.execute()
-    create_execution_log(sql, flt(time.monotonic() - start, 3))
+    time_taken = flt(time.monotonic() - start, 3)
+    create_execution_log(sql, time_taken)
 
     res = res.replace({pd.NaT: None, np.nan: None})
 
     if cache:
         cache_results(sql, res, cache_expiry)
 
-    return res
+    return res, time_taken
 
 
 def get_columns_from_schema(schema: ibis.Schema):

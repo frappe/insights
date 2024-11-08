@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, Table2Icon } from 'lucide-vue-next'
+import { Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -106,9 +106,12 @@ const filterPerColumn = ref<Record<string, string>>({})
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead class="sticky top-0 z-10 bg-white">
+				<thead class="sticky top-0 z-10 bg-gray-50">
 					<tr>
-						<td class="whitespace-nowrap border-b border-r" width="1%"></td>
+						<td
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-gray-50"
+							width="1%"
+						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
@@ -130,15 +133,26 @@ const filterPerColumn = ref<Record<string, string>>({})
 							<div class="truncate pl-3 pr-20"></div>
 						</td>
 					</tr>
-
 					<tr v-if="props.showFilterRow">
-						<td class="whitespace-nowrap border-b border-r" width="1%"></td>
+						<td
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-gray-50"
+							width="1%"
+						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
-							class="z-0 border-b border-r p-1"
+							class="border-b border-r p-0.5"
 						>
-							<FormControl type="text" v-model="filterPerColumn[column.name]" />
+							<FormControl
+								type="text"
+								v-model="filterPerColumn[column.name]"
+								autocomplete="off"
+								class="[&_input]:bg-gray-200/80"
+							>
+								<template #prefix>
+									<Search class="h-4 w-4 text-gray-500" stroke-width="1.5" />
+								</template>
+							</FormControl>
 						</td>
 						<td
 							v-if="props.showRowTotals"
@@ -152,7 +166,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 				<tbody>
 					<tr v-for="(row, idx) in visibleRows?.slice(0, 100)" :key="idx">
 						<td
-							class="whitespace-nowrap border-b border-r px-3 text-right"
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-gray-50 px-3 text-right"
 							width="1%"
 							height="30px"
 						>
