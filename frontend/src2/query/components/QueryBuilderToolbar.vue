@@ -27,10 +27,10 @@ const actions = [
 </script>
 
 <template>
-	<div class="flex w-full flex-shrink-0 items-center justify-between bg-white p-2">
+	<div class="flex w-full flex-shrink-0 items-center justify-between bg-white">
 		<div
-			v-if="query.result.executedSQL"
-			class="tnum flex items-center gap-2 px-2 text-sm text-gray-600"
+			v-show="query.result.executedSQL"
+			class="tnum flex items-center gap-2 text-sm text-gray-600"
 		>
 			<div class="h-2 w-2 rounded-full bg-green-500"></div>
 			<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
@@ -42,12 +42,12 @@ const actions = [
 					:variant="'ghost'"
 					:label="action.label"
 					@click="action.onClick"
-					class="bg-white text-sm shadow"
+					class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
 				>
 					<template #prefix>
 						<component
 							:is="action.icon"
-							class="h-3.5 w-3.5 text-gray-700"
+							class="h-3 w-3 text-gray-700"
 							stroke-width="1.5"
 						/>
 					</template>

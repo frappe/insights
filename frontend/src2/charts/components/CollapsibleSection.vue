@@ -8,7 +8,7 @@ const collapsed = ref(props.collapsed ?? false)
 </script>
 
 <template>
-	<div class="flex flex-col px-3.5" :class="collapsed ? '' : 'pb-3.5'">
+	<div class="flex flex-col" :class="collapsed ? '' : 'pb-3.5'">
 		<button
 			class="sticky top-0 flex cursor-pointer items-center gap-1 bg-white py-3"
 			@click="collapsed = !collapsed"

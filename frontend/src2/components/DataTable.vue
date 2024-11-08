@@ -106,10 +106,10 @@ const filterPerColumn = ref<Record<string, string>>({})
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead class="sticky top-0 z-10 bg-gray-50">
+				<thead class="sticky top-0 z-10 bg-white">
 					<tr>
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-gray-50"
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white"
 							width="1%"
 						></td>
 						<td
@@ -135,7 +135,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 					</tr>
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-gray-50"
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white"
 							width="1%"
 						></td>
 						<td
@@ -166,7 +166,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 				<tbody>
 					<tr v-for="(row, idx) in visibleRows?.slice(0, 100)" :key="idx">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-gray-50 px-3 text-right"
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-2 text-right text-xs"
 							width="1%"
 							height="30px"
 						>
@@ -237,7 +237,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 
 	<div
 		v-else-if="props.loading"
-		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
+		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
 	>
 		<LoadingIndicator class="h-8 w-8 text-gray-700" />
 	</div>
