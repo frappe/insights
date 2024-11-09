@@ -1,17 +1,10 @@
 import frappe
 
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_team.insights_team import (
-    get_allowed_resources_for_user,
-)
 
 
 @insights_whitelist()
 def get_queries():
-    allowed_queries = get_allowed_resources_for_user("Insights Query")
-    if not allowed_queries:
-        return []
-
     Query = frappe.qb.DocType("Insights Query")
     QueryChart = frappe.qb.DocType("Insights Chart")
     DataSource = frappe.qb.DocType("Insights Data Source")
@@ -39,7 +32,6 @@ def get_queries():
             QueryChart.chart_type,
             DataSource.title.as_("data_source_title"),
         )
-        .where(Query.name.isin(allowed_queries))
         .groupby(
             Query.name,
             User.full_name.as_("owner_name"),

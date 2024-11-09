@@ -2,17 +2,12 @@ import frappe
 
 from insights.api.permissions import is_private
 from insights.decorators import insights_whitelist, validate_type
-from insights.insights.doctype.insights_team.insights_team import (
-    get_allowed_resources_for_user,
-    get_permission_filter,
-)
 
 
 @insights_whitelist()
 def get_dashboard_list():
     dashboards = frappe.get_list(
         "Insights Dashboard",
-        filters={**get_permission_filter("Insights Dashboard")},
         fields=["name", "title", "modified", "_liked_by"],
     )
     for dashboard in dashboards:
@@ -54,10 +49,6 @@ def create_dashboard(title):
 
 @insights_whitelist()
 def get_dashboard_options(chart):
-    allowed_dashboards = get_allowed_resources_for_user("Insights Dashboard")
-    if not allowed_dashboards:
-        return []
-
     # find all dashboards that don't have the chart within the allowed dashboards
     Dashboard = frappe.qb.DocType("Insights Dashboard")
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
@@ -67,7 +58,7 @@ def get_dashboard_options(chart):
         .left_join(DashboardItem)
         .on(Dashboard.name == DashboardItem.parent)
         .select(Dashboard.name.as_("value"), Dashboard.title.as_("label"))
-        .where(Dashboard.name.isin(allowed_dashboards) & (DashboardItem.chart != chart))
+        .where(DashboardItem.chart != chart)
         .groupby(Dashboard.name)
         .run(as_dict=True)
     )
