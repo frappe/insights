@@ -19,6 +19,7 @@ import {
 	OrderByArgs,
 	PivotWiderArgs,
 	QueryResult,
+	QueryResultColumn,
 	Rename,
 	SelectArgs,
 	SourceArgs,
@@ -658,6 +659,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return call(method, {
 			use_live_connection: query.doc.use_live_connection,
 			operations: operationsForExecution,
+		}).then((columns: QueryResultColumn[]) => {
+			return columns.map((column) => ({
+				label: column.name,
+				value: column.name,
+				description: column.type,
+				query: query.doc.name,
+				data_type: column.type,
+			}))
 		})
 	}
 
