@@ -34,7 +34,7 @@ const join = reactive<JoinArgs>(
 				select_columns: [],
 		  }
 )
-const selectedTableOption = computed({
+const selectedTable = computed({
 	get() {
 		if (join.table.type === 'table' && join.table.table_name) {
 			return `${join.table.data_source}.${join.table.table_name}`
@@ -65,13 +65,11 @@ const data_source = computed(() => {
 	// TODO: support multiple data source joins if live connection is disabled
 	// if (!query.doc.use_live_connection) return undefined
 
-	const operations = query.getOperationsForExecution()
-	const source = operations.find((op) => op.type === 'source')
-	return source && source.table.type === 'table' ? source.table.data_source : ''
+	return query.source
 })
 
-wheneverChanges(selectedTableOption, () => {
-	if (!selectedTableOption.value) return
+wheneverChanges(selectedTable, () => {
+	if (!selectedTable.value) return
 
 	// reset previous values if table is changed
 	join.select_columns = []
@@ -250,7 +248,7 @@ function reset() {
 						<label class="mb-1 block text-xs text-gray-600">Select Table to Join</label>
 						<Autocomplete
 							placeholder="Table"
-							v-model="selectedTableOption"
+							v-model="selectedTable"
 							:loading="tableOptions.loading"
 							:options="groupedTableOptions"
 							@update:query="tableOptions.searchText = $event"

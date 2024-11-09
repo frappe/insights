@@ -21,7 +21,6 @@ import {
 	QueryResult,
 	Rename,
 	SelectArgs,
-	Source,
 	SourceArgs,
 	SummarizeArgs,
 	UnionArgs
@@ -39,7 +38,6 @@ import {
 	mutate,
 	order_by,
 	pivot_wider,
-	query_table,
 	remove,
 	rename,
 	select,
@@ -68,7 +66,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		activeOperationIdx: -1,
 		activeEditIndex: -1,
-		source: computed(() => ({} as Source)),
+		source: computed(() => ''),
 		currentOperations: computed(() => [] as Operation[]),
 		activeEditOperation: computed(() => ({} as Operation)),
 
@@ -168,10 +166,21 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	// @ts-ignore
 	query.source = computed(() => {
-		const sourceOp = query.doc.operations.find((op) => op.type === 'source')
-		if (!sourceOp) return {} as Source
-		return sourceOp as Source
+		const operations = query.getOperationsForExecution()
+		return getDataSource(operations)
 	})
+
+	function getDataSource(operations: Operation[]): string {
+		const source = operations.find((op) => op.type === 'source')
+		if (!source) return ''
+		if (source.table.type === 'table') {
+			return source.table.data_source
+		}
+		if (source.table.type === 'query' && 'query' in source.table) {
+			return getDataSource(source.table.operations!)
+		}
+		return ''
+	}
 
 	// @ts-ignore
 	query.currentOperations = computed(() => {
@@ -217,7 +226,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 			op.table.operations = queryTable.getOperationsForExecution()
 		}
-
 
 		if (query.dashboardFilters.filters?.length) {
 			_operations.push(filter_group(query.dashboardFilters))

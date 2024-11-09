@@ -111,9 +111,6 @@ class IbisQueryBuilder:
         for col in join_args.select_columns:
             select_columns.add(col.column_name)
 
-        if join_args.right_column:
-            select_columns.add(join_args.right_column.column_name)
-
         if join_args.join_condition and join_args.join_condition.right_column:
             select_columns.add(join_args.join_condition.right_column.column_name)
 
@@ -164,9 +161,10 @@ class IbisQueryBuilder:
 
             frappe.throw("Join condition is not valid")
 
-        if join_args.join_condition and join_args.join_condition.join_expression:
+        join_condition = join_args.join_condition
+        if join_condition.join_expression and join_condition.join_expression.expression:
             return self.evaluate_expression(
-                join_args.join_condition.join_expression.expression,
+                join_condition.join_expression.expression,
                 {
                     "t1": _,
                     "t2": right_table,
@@ -174,8 +172,8 @@ class IbisQueryBuilder:
             )
         else:
             return left_eq_right_condition(
-                join_args.left_column or join_args.join_condition.left_column,
-                join_args.right_column or join_args.join_condition.right_column,
+                join_condition.left_column,
+                join_condition.right_column,
             )
 
     def rename_duplicate_columns(self, right_table):
@@ -183,7 +181,7 @@ class IbisQueryBuilder:
         query_columns = set(query.columns)
         right_table_columns = set(right_table.columns)
         right_table_name = get_ibis_table_name(right_table)
-        right_table_name = frappe.scrub(right_table_name)
+        right_table_name = sanitize_name(right_table_name)
 
         duplicate_columns = query_columns.intersection(right_table_columns)
         if not duplicate_columns:
@@ -193,7 +191,7 @@ class IbisQueryBuilder:
             return col in query_columns or col in right_table_columns
 
         def get_new_name(col):
-            new_name = f"{right_table_name}.{col}"
+            new_name = f"{right_table_name}_{col}"
             if not is_conflicting(new_name):
                 return new_name
 
@@ -301,7 +299,7 @@ class IbisQueryBuilder:
 
     def apply_rename(self, rename_args):
         old_name = rename_args.column.column_name
-        new_name = frappe.scrub(rename_args.new_name)
+        new_name = sanitize_name(rename_args.new_name)
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
@@ -324,7 +322,7 @@ class IbisQueryBuilder:
         }[data_type]
 
     def apply_mutate(self, mutate_args):
-        new_name = frappe.scrub(mutate_args.new_name)
+        new_name = sanitize_name(mutate_args.new_name)
         dtype = self.get_ibis_dtype(mutate_args.data_type)
         new_column = self.evaluate_expression(mutate_args.expression.expression)
         new_column = new_column.cast(dtype)
@@ -332,7 +330,7 @@ class IbisQueryBuilder:
 
     def apply_summary(self, summarize_args):
         aggregates = {
-            frappe.scrub(measure.measure_name): self.translate_measure(measure)
+            sanitize_name(measure.measure_name): self.translate_measure(measure)
             for measure in summarize_args.measures
         }
         group_bys = [
@@ -361,7 +359,7 @@ class IbisQueryBuilder:
             for dimension in pivot_args["columns"]
         }
         values = {
-            frappe.scrub(measure.measure_name): self.translate_measure(measure)
+            sanitize_name(measure.measure_name): self.translate_measure(measure)
             for measure in pivot_args["values"]
         }
 
@@ -416,7 +414,7 @@ class IbisQueryBuilder:
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
-            measure_name = frappe.scrub(measure.measure_name)
+            measure_name = sanitize_name(measure.measure_name)
             return column.cast(dtype).name(measure_name)
 
         column = getattr(_, measure.column_name)
@@ -609,3 +607,13 @@ def get_ibis_table_name(table: IbisQuery):
     if not dt:
         return None
     return dt[0].name
+
+
+def sanitize_name(name):
+    return (
+        name.replace(" ", "_")
+        .replace("-", "_")
+        .replace(".", "_")
+        .replace("/", "_")
+        .lower()
+    )
