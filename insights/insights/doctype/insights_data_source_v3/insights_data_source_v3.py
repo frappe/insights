@@ -204,10 +204,17 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
+    def get_quoted_db_name(self):
+        if not self.database_name:
+            return None
+        quote_start = self._get_ibis_backend().dialect.QUOTE_START
+        quote_end = self._get_ibis_backend().dialect.QUOTE_END
+        return f"{quote_start}{self.database_name}{quote_end}"
+
     def test_connection(self, raise_exception=False):
         try:
             db = self._get_ibis_backend()
-            db.list_tables()
+            db.list_tables(database=self.get_quoted_db_name())
             return True
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
@@ -218,7 +225,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         blacklist_patterns = ["^_", "^sqlite_"]
         blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
         remote_db = self._get_ibis_backend()
-        remote_tables = remote_db.list_tables()
+        remote_tables = remote_db.list_tables(database=self.get_quoted_db_name())
         remote_tables = [t for t in remote_tables if not blacklisted(t)]
 
         if not remote_tables:
