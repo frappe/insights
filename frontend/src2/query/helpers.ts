@@ -81,7 +81,7 @@ export const count = (): Measure => ({
 	column_name: 'count',
 	data_type: 'Integer',
 	aggregation: 'count',
-	measure_name: 'count(*)',
+	measure_name: 'count_of_rows',
 })
 export const operator = (operator: FilterOperator): FilterOperator => operator
 export const value = (value: FilterValue): FilterValue => value

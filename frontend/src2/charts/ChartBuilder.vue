@@ -68,11 +68,11 @@ const showShareDialog = ref(false)
 
 <template>
 	<div v-if="chart" class="relative flex h-full w-full overflow-hidden">
-		<div class="relative flex h-full w-full flex-col overflow-hidden">
+		<div class="relative flex h-full w-full flex-col gap-4 overflow-hidden p-3 pt-4">
 			<LoadingOverlay v-if="chart.dataQuery.executing" />
 			<div
 				ref="chartEl"
-				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center overflow-hidden p-4"
+				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center"
 			>
 				<ChartRenderer
 					:title="chart.doc.title"
@@ -87,7 +87,7 @@ const showShareDialog = ref(false)
 			<ChartBuilderTable v-if="chart.dataQuery.result.executedSQL" />
 		</div>
 		<div
-			class="relative z-[1] flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white shadow"
+			class="relative z-[1] flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white px-3.5"
 		>
 			<CollapsibleSection title="Chart">
 				<div class="flex flex-col gap-3">

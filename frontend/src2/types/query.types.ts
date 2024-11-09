@@ -190,4 +190,5 @@ export type QueryResult = {
 	formattedRows: QueryResultRow[]
 	columns: QueryResultColumn[]
 	columnOptions: ColumnOption[]
+	timeTaken: number
 }

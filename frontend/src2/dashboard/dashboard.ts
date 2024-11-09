@@ -1,12 +1,11 @@
 import { reactive } from 'vue'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
+import { getCachedQuery } from '../query/query'
 import { FilterArgs } from '../types/query.types'
 import {
-	DashboardFilterColumn,
 	WorkbookChart,
-	WorkbookDashboard,
-	WorkbookDashboardChart,
+	WorkbookDashboard
 } from '../types/workbook.types'
 
 const dashboards = new Map<string, Dashboard>()
@@ -61,20 +60,6 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			})
 		},
 
-		addFilter(column: DashboardFilterColumn) {
-			dashboard.doc.items.push({
-				type: 'filter',
-				column: column,
-				layout: {
-					i: getUniqueId(),
-					x: 0,
-					y: 0,
-					w: 4,
-					h: 1,
-				},
-			})
-		},
-
 		removeItem(index: number) {
 			dashboard.doc.items.splice(index, 1)
 		},
@@ -86,12 +71,21 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 
 		refresh() {
 			dashboard.doc.items
-				.filter((item): item is WorkbookDashboardChart => item.type === 'chart')
+				.filter((item) => item.type === 'chart')
 				.forEach((chartItem) => {
 					const chart = getCachedChart(chartItem.chart)
 					if (!chart || !chart.doc.query) return
-					const filters = dashboard.filters[chart.doc.query]
-					chart.refresh(filters, true)
+
+					Object.keys(dashboard.filters).forEach((query) => {
+						const _query = getCachedQuery(query)
+						if (!_query) return
+						_query.dashboardFilters = {
+							logical_operator: 'And',
+							filters: dashboard.filters[query],
+						}
+					})
+
+					chart.refresh()
 				})
 		},
 

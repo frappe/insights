@@ -5,6 +5,7 @@ import { FIELDTYPES } from '../../helpers/constants'
 import {
 	aggregations,
 	ColumnMeasure,
+	ColumnOption,
 	Dimension,
 	DimensionDataType,
 	MeasureDataType,
@@ -20,19 +21,16 @@ const emit = defineEmits({ select: (args: SummarizeArgs) => true })
 const showDialog = defineModel()
 
 const query = inject<Query>('query')!
-const columnOptions = ref<QueryResultColumn[]>([])
-query.getColumnsForSelection().then((cols: QueryResultColumn[]) => {
-	columnOptions.value = cols.map((col) => ({
-		...col,
-		value: col.name,
-	}))
+const columnOptions = ref<ColumnOption[]>([])
+query.getColumnsForSelection().then((cols: ColumnOption[]) => {
+	columnOptions.value = cols
 })
 
 const numberColumns = computed(() =>
-	columnOptions.value.filter((col) => FIELDTYPES.NUMBER.includes(col.type))
+	columnOptions.value.filter((col) => FIELDTYPES.NUMBER.includes(col.data_type))
 )
 const nonNumberColumns = computed(() =>
-	columnOptions.value.filter((col) => !FIELDTYPES.NUMBER.includes(col.type))
+	columnOptions.value.filter((col) => !FIELDTYPES.NUMBER.includes(col.data_type))
 )
 
 const measures = ref<ColumnMeasure[]>(copy((props.summary?.measures as ColumnMeasure[]) || []))

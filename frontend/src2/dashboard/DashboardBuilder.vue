@@ -59,9 +59,9 @@ const showShareDialog = ref(false)
 </script>
 
 <template>
-	<div class="relative flex h-full w-full divide-x overflow-hidden">
+	<div class="relative flex h-full w-full overflow-hidden bg-gray-50">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
-			<div class="flex items-center justify-between border-x px-4 pt-3">
+			<div class="flex items-center justify-between p-4 pb-3">
 				<ContentEditable
 					class="cursor-text rounded-sm text-lg font-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 					v-model="dashboard.doc.title"
@@ -122,7 +122,7 @@ const showShareDialog = ref(false)
 					</Button>
 				</div>
 			</div>
-			<div class="flex-1 overflow-y-auto p-2" @dragover="onDragOver" @drop="onDrop">
+			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">
 				<VueGridLayout
 					v-if="dashboard.doc.items.length > 0"
 					class="h-fit w-full"

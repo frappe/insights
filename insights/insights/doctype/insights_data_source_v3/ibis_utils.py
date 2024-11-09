@@ -32,12 +32,25 @@ class IbisQueryBuilder:
             self.query = self.perform_operation(operation)
         return self.query
 
-    def get_table(self, table):
-        return InsightsTablev3.get_ibis_table(
-            table.data_source,
-            table.table_name,
-            use_live_connection=self.use_live_connection,
-        )
+    def get_table_or_query(self, table_args):
+        _table = None
+
+        if table_args.type == "table":
+            _table = InsightsTablev3.get_ibis_table(
+                table_args.data_source,
+                table_args.table_name,
+                use_live_connection=self.use_live_connection,
+            )
+        if table_args.type == "query":
+            _table = IbisQueryBuilder().build(
+                table_args.operations,
+                use_live_connection=self.use_live_connection,
+            )
+
+        if _table is None:
+            frappe.throw("Invalid join table")
+
+        return _table
 
     def perform_operation(self, operation):
         operation = _dict(operation)
@@ -74,7 +87,7 @@ class IbisQueryBuilder:
         return self.query
 
     def apply_source(self, source_args):
-        return self.get_table(source_args.table)
+        return self.get_table_or_query(source_args.table)
 
     def apply_join(self, join_args):
         right_table = self.get_right_table(join_args)
@@ -87,22 +100,6 @@ class IbisQueryBuilder:
             how=join_type,
         )
 
-    def get_table_or_query(self, table_args):
-        _table = None
-
-        if table_args.type == "table":
-            _table = self.get_table(table_args)
-        if table_args.type == "query":
-            _table = IbisQueryBuilder().build(
-                table_args.operations,
-                use_live_connection=self.use_live_connection,
-            )
-
-        if _table is None:
-            frappe.throw("Invalid join table")
-
-        return _table
-
     def get_right_table(self, join_args):
         right_table = self.get_table_or_query(join_args.table)
 
@@ -113,9 +110,6 @@ class IbisQueryBuilder:
 
         for col in join_args.select_columns:
             select_columns.add(col.column_name)
-
-        if join_args.right_column:
-            select_columns.add(join_args.right_column.column_name)
 
         if join_args.join_condition and join_args.join_condition.right_column:
             select_columns.add(join_args.join_condition.right_column.column_name)
@@ -167,9 +161,10 @@ class IbisQueryBuilder:
 
             frappe.throw("Join condition is not valid")
 
-        if join_args.join_condition and join_args.join_condition.join_expression:
+        join_condition = join_args.join_condition
+        if join_condition.join_expression and join_condition.join_expression.expression:
             return self.evaluate_expression(
-                join_args.join_condition.join_expression.expression,
+                join_condition.join_expression.expression,
                 {
                     "t1": _,
                     "t2": right_table,
@@ -177,8 +172,8 @@ class IbisQueryBuilder:
             )
         else:
             return left_eq_right_condition(
-                join_args.left_column or join_args.join_condition.left_column,
-                join_args.right_column or join_args.join_condition.right_column,
+                join_condition.left_column,
+                join_condition.right_column,
             )
 
     def rename_duplicate_columns(self, right_table):
@@ -186,7 +181,7 @@ class IbisQueryBuilder:
         query_columns = set(query.columns)
         right_table_columns = set(right_table.columns)
         right_table_name = get_ibis_table_name(right_table)
-        right_table_name = frappe.scrub(right_table_name)
+        right_table_name = sanitize_name(right_table_name)
 
         duplicate_columns = query_columns.intersection(right_table_columns)
         if not duplicate_columns:
@@ -196,7 +191,7 @@ class IbisQueryBuilder:
             return col in query_columns or col in right_table_columns
 
         def get_new_name(col):
-            new_name = f"{right_table_name}.{col}"
+            new_name = f"{right_table_name}_{col}"
             if not is_conflicting(new_name):
                 return new_name
 
@@ -304,7 +299,7 @@ class IbisQueryBuilder:
 
     def apply_rename(self, rename_args):
         old_name = rename_args.column.column_name
-        new_name = frappe.scrub(rename_args.new_name)
+        new_name = sanitize_name(rename_args.new_name)
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
@@ -327,7 +322,7 @@ class IbisQueryBuilder:
         }[data_type]
 
     def apply_mutate(self, mutate_args):
-        new_name = frappe.scrub(mutate_args.new_name)
+        new_name = sanitize_name(mutate_args.new_name)
         dtype = self.get_ibis_dtype(mutate_args.data_type)
         new_column = self.evaluate_expression(mutate_args.expression.expression)
         new_column = new_column.cast(dtype)
@@ -335,7 +330,7 @@ class IbisQueryBuilder:
 
     def apply_summary(self, summarize_args):
         aggregates = {
-            frappe.scrub(measure.measure_name): self.translate_measure(measure)
+            sanitize_name(measure.measure_name): self.translate_measure(measure)
             for measure in summarize_args.measures
         }
         group_bys = [
@@ -364,7 +359,7 @@ class IbisQueryBuilder:
             for dimension in pivot_args["columns"]
         }
         values = {
-            frappe.scrub(measure.measure_name): self.translate_measure(measure)
+            sanitize_name(measure.measure_name): self.translate_measure(measure)
             for measure in pivot_args["values"]
         }
 
@@ -419,7 +414,7 @@ class IbisQueryBuilder:
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
-            measure_name = frappe.scrub(measure.measure_name)
+            measure_name = sanitize_name(measure.measure_name)
             return column.cast(dtype).name(measure_name)
 
         column = getattr(_, measure.column_name)
@@ -510,18 +505,19 @@ def execute_ibis_query(
     sql = ibis.to_sql(query)
 
     if cache and has_cached_results(sql):
-        return get_cached_results(sql)
+        return get_cached_results(sql), -1
 
     start = time.monotonic()
     res: pd.DataFrame = query.execute()
-    create_execution_log(sql, flt(time.monotonic() - start, 3))
+    time_taken = flt(time.monotonic() - start, 3)
+    create_execution_log(sql, time_taken)
 
     res = res.replace({pd.NaT: None, np.nan: None})
 
     if cache:
         cache_results(sql, res, cache_expiry)
 
-    return res
+    return res, time_taken
 
 
 def get_columns_from_schema(schema: ibis.Schema):
@@ -611,3 +607,15 @@ def get_ibis_table_name(table: IbisQuery):
     if not dt:
         return None
     return dt[0].name
+
+
+def sanitize_name(name):
+    return (
+        name.replace(" ", "_")
+        .replace("-", "_")
+        .replace(".", "_")
+        .replace("/", "_")
+        .replace("(", "_")
+        .replace(")", "_")
+        .lower()
+    )

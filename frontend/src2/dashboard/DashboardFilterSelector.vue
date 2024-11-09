@@ -42,6 +42,7 @@ if (chartQueries.value.length) {
 	})
 }
 
+const sep = '`'
 const columnOptions = computed(() => {
 	return chartQueries.value
 		.map((q) => {
@@ -52,7 +53,7 @@ const columnOptions = computed(() => {
 				label: c.name,
 				data_type: c.type,
 				description: c.type,
-				value: `'${q.name}'.'${c.name}'`,
+				value: `${sep}${q.name}${sep}.${sep}${c.name}${sep}`,
 			}))
 			return {
 				group: query.doc.title || q.name,
@@ -74,7 +75,8 @@ function setInitialFilters() {
 		.map(([queryName, filters]) => {
 			return filters.map((filter) => {
 				if ('column' in filter) {
-					filter.column.column_name = `'${queryName}'.'${filter.column.column_name}'`
+					const col_name = filter.column.column_name
+					filter.column.column_name = `${sep}${queryName}${sep}.${sep}${col_name}${sep}`
 				}
 				return filter
 			})
@@ -87,8 +89,8 @@ function applyFilters(args: FilterGroupArgs) {
 	args.filters.forEach((filter) => {
 		if ('column' in filter) {
 			const [queryName, columnName] = filter.column.column_name
-				.split("'.'")
-				.map((s) => s.replace(/'/g, ''))
+				.split(`${sep}.${sep}`)
+				.map((s) => s.replace(new RegExp(sep, 'g'), ''))
 
 			filter.column.column_name = columnName
 			filtersByQuery[queryName] = filtersByQuery[queryName] || []
@@ -121,6 +123,8 @@ function applyFilters(args: FilterGroupArgs) {
 		v-model="showDialog"
 		:filter-group="filterGroup"
 		:column-options="columnOptions"
+		:disable-logical-operator="true"
+		:disable-expressions="true"
 		@select="applyFilters($event)"
 	/>
 </template>

@@ -99,8 +99,10 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 		console.warn('Query not found for column:', filter.value.column.column_name)
 		return
 	}
-	// if column_name is 'query'.'column_name' extract column_name
-	const pattern = /'([^']+)'\.'([^']+)'/g
+	// only for dashboard filters
+	// if column_name is {sep}query{sep}.{sep}column_name{sep} extract column_name
+	const sep = '`'
+	const pattern = new RegExp(`${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}`)
 	const match = pattern.exec(filter.value.column.column_name)
 	const column_name = match ? match[2] : filter.value.column.column_name
 
@@ -172,7 +174,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				:options="distinctColumnValues"
 				:loading="fetchingValues"
 				@update:query="fetchColumnValues"
-				@update:modelValue="filter.value = $event.map((v: any) => v.value)"
+				@update:modelValue="filter.value = $event?.map((v: any) => v.value) || []"
 			/>
 			<FormControl v-else disabled />
 		</div>
