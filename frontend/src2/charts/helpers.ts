@@ -1,5 +1,12 @@
 import { graphic } from 'echarts/core'
-import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
+import {
+	copy,
+	ellipsis,
+	formatNumber,
+	getShortNumber,
+	getUniqueId,
+	sanitizeColumnName,
+} from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
@@ -9,6 +16,7 @@ import {
 	ChartConfig,
 	DountChartConfig,
 	LineChartConfig,
+	Series,
 	SeriesLine,
 } from '../types/chart.types'
 import {
@@ -83,15 +91,17 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const serie = getSerie(config, c.name) as SeriesLine
 
 			const is_right_axis = serie.align === 'Right'
+			const type = serie.type?.toLowerCase() || 'line'
 			const smooth = serie.smooth ?? config.y_axis.smooth
 			const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
 			const show_area = serie.show_area ?? config.y_axis.show_area
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
+			const name = serie.measure.measure_name || c.name
 
 			return {
-				type: 'line',
-				name: c.name,
+				type,
+				name,
 				data: getSeriesData(c.name),
 				color: color,
 				yAxisIndex: is_right_axis ? 1 : 0,
@@ -189,17 +199,18 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
 
-			const stack = config.y_axis.stack
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
 			const type = serie.type?.toLowerCase() || 'bar'
+			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
+			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 
 			const data = getSeriesData(c.name)
+			const name = serie.measure.measure_name || c.name
 
 			return {
 				type,
-				stack: type === 'bar' && stack ? 'stack' : undefined,
-				name: c.name,
+				stack,
+				name,
 				data: swapAxes ? data.reverse() : data,
 				color: color,
 				label: {
@@ -226,19 +237,25 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	}
 }
 
-function getSerie(config: AxisChartConfig, number_column: string) {
+function getSerie(config: AxisChartConfig, number_column: string): Series {
 	let serie
 	if (!config.split_by?.column_name) {
-		serie = config.y_axis.series.find((s) => s.measure.measure_name === number_column)
+		serie = config.y_axis.series.find(
+			(s) => sanitizeColumnName(s.measure.measure_name) === number_column
+		)
 	} else {
 		let seriesCount = config.y_axis.series.filter((s) => s.measure.measure_name).length
 		if (seriesCount === 1) {
 			serie = config.y_axis.series[0]
 		} else {
-			serie = config.y_axis.series.find((s) => number_column.includes(s.measure.measure_name))
+			serie = config.y_axis.series.find((s) =>
+				number_column.includes(sanitizeColumnName(s.measure.measure_name))
+			)
 		}
 	}
-	serie = serie || config.y_axis.series[0]
+	if (!serie) {
+		throw new Error(`Cannot find series for column ${number_column}`)
+	}
 	return serie
 }
 

@@ -615,5 +615,7 @@ def sanitize_name(name):
         .replace("-", "_")
         .replace(".", "_")
         .replace("/", "_")
+        .replace("(", "_")
+        .replace(")", "_")
         .lower()
     )

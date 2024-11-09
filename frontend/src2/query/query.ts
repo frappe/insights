@@ -157,7 +157,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					return {
 						aggregation: 'sum',
 						column_name: column.name,
-						measure_name: `sum(${column.name})`,
+						measure_name: `sum_of_${column.name}`,
 						data_type: column.type as MeasureDataType,
 					}
 				}),

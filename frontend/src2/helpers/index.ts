@@ -270,3 +270,14 @@ export function toOptions(arr: any[], map: Record<OptionKey, string>) {
 		return item
 	})
 }
+
+export function sanitizeColumnName(name: string) {
+	return name
+		.replace(' ', '_')
+		.replace('-', '_')
+		.replace('.', '_')
+		.replace('/', '_')
+		.replace('(', '_')
+		.replace(')', '_')
+		.toLowerCase()
+}
