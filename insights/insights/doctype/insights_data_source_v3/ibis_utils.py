@@ -439,14 +439,20 @@ class IbisQueryBuilder:
         return data_type in ["Date", "Datetime", "Time"]
 
     def apply_aggregate(self, column, aggregate_function):
-        return {
-            "sum": column.sum(),
-            "avg": column.mean(),
-            "count": column.count(),
-            "min": column.min(),
-            "max": column.max(),
-            "count_distinct": column.nunique(),
-        }[aggregate_function]
+        if aggregate_function == "count_distinct":
+            return column.nunique()
+        if aggregate_function == "count":
+            return column.count()
+        if aggregate_function == "sum":
+            return column.sum()
+        if aggregate_function == "avg":
+            return column.mean()
+        if aggregate_function == "min":
+            return column.min()
+        if aggregate_function == "max":
+            return column.max()
+
+        frappe.throw(f"Aggregate function {aggregate_function} is not supported")
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
