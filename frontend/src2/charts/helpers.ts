@@ -4,8 +4,7 @@ import {
 	ellipsis,
 	formatNumber,
 	getShortNumber,
-	getUniqueId,
-	sanitizeColumnName,
+	getUniqueId
 } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
@@ -240,17 +239,13 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 function getSerie(config: AxisChartConfig, number_column: string): Series {
 	let serie
 	if (!config.split_by?.column_name) {
-		serie = config.y_axis.series.find(
-			(s) => sanitizeColumnName(s.measure.measure_name) === number_column
-		)
+		serie = config.y_axis.series.find((s) => s.measure.measure_name === number_column)
 	} else {
 		let seriesCount = config.y_axis.series.filter((s) => s.measure.measure_name).length
 		if (seriesCount === 1) {
 			serie = config.y_axis.series[0]
 		} else {
-			serie = config.y_axis.series.find((s) =>
-				number_column.includes(sanitizeColumnName(s.measure.measure_name))
-			)
+			serie = config.y_axis.series.find((s) => number_column.includes(s.measure.measure_name))
 		}
 	}
 
@@ -647,7 +642,6 @@ export function handleOldYAxisConfig(old_y_axis: any): AxisChartConfig['y_axis']
 	return old_y_axis
 }
 
-
 export function setDimensionNames(config: any) {
 	const setDimensionName = (dimension: any) => {
 		if (
@@ -673,7 +667,6 @@ export function setDimensionNames(config: any) {
 	}
 	return config
 }
-
 
 export function getGranularity(dimension_name: string, config: ChartConfig) {
 	const column = Object.entries(config).find(([_, value]) => {

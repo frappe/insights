@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, getShortNumber, sanitizeColumnName } from '../../helpers'
+import { formatNumber, getShortNumber } from '../../helpers'
 import { NumberChartConfig } from '../../types/chart.types'
 import { QueryResult } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
@@ -25,8 +25,7 @@ const numberValuesPerColumn = computed(() => {
 	if (!props.result?.rows?.length) return {}
 
 	return numberColumns.value.reduce((acc: any, measure_name: string) => {
-		const colName = sanitizeColumnName(measure_name)
-		acc[colName] = props.result.rows.map((row: any) => row[colName])
+		acc[measure_name] = props.result.rows.map((row: any) => row[measure_name])
 		return acc
 	}, {})
 })
@@ -37,8 +36,7 @@ const cards = computed(() => {
 	if (!Object.keys(numberValuesPerColumn.value).length) return []
 
 	return numberColumns.value.map((measure_name: string) => {
-		const colName = sanitizeColumnName(measure_name)
-		const numberValues = numberValuesPerColumn.value[colName]
+		const numberValues = numberValuesPerColumn.value[measure_name]
 		const currentValue = numberValues[numberValues.length - 1]
 		const previousValue = numberValues[numberValues.length - 2]
 		const delta = config.value.negative_is_better

@@ -39,26 +39,6 @@ class IbisQueryBuilder:
                 )
         return self.query
 
-    def get_table_or_query(self, table_args):
-        _table = None
-
-        if table_args.type == "table":
-            _table = InsightsTablev3.get_ibis_table(
-                table_args.data_source,
-                table_args.table_name,
-                use_live_connection=self.use_live_connection,
-            )
-        if table_args.type == "query":
-            _table = IbisQueryBuilder().build(
-                table_args.operations,
-                use_live_connection=self.use_live_connection,
-            )
-
-        if _table is None:
-            frappe.throw("Invalid join table")
-
-        return _table
-
     def perform_operation(self, operation):
         if operation.type == "source":
             return self.apply_source(operation)
@@ -91,6 +71,34 @@ class IbisQueryBuilder:
         elif operation.type == "custom_operation":
             return self.apply_custom_operation(operation)
         return self.query
+
+    def get_table_or_query(self, table_args):
+        _table = None
+
+        if table_args.type == "table":
+            _table = InsightsTablev3.get_ibis_table(
+                table_args.data_source,
+                table_args.table_name,
+                use_live_connection=self.use_live_connection,
+            )
+        if table_args.type == "query":
+            _table = IbisQueryBuilder().build(
+                table_args.operations,
+                use_live_connection=self.use_live_connection,
+            )
+
+        if _table is None:
+            frappe.throw("Invalid join table")
+
+        return _table
+
+    def get_column(self, column_name, throw=True):
+        if column_name in self.query.columns:
+            return getattr(self.query, column_name)
+        if sanitize_name(column_name) in self.query.columns:
+            return getattr(self.query, sanitize_name(column_name))
+        if throw:
+            frappe.throw(f"Column {column_name} does not exist in the table")
 
     def apply_source(self, source_args):
         return self.get_table_or_query(source_args.table)
@@ -249,14 +257,14 @@ class IbisQueryBuilder:
         filter_operator = filter_args.operator
         filter_value = filter_args.value
 
-        left = getattr(self.query, sanitize_name(filter_column.column_name))
+        left = self.get_column(filter_column.column_name)
         operator_fn = self.get_operator(filter_operator)
 
         if operator_fn is None:
             frappe.throw(f"Operator {filter_operator} is not supported")
 
         right_column = (
-            getattr(self.query, sanitize_name(filter_value.column_name))
+            self.get_column(filter_value.column_name)
             if hasattr(filter_value, "column_name")
             else None
         )
@@ -304,16 +312,17 @@ class IbisQueryBuilder:
         return self.query.select(select_args.column_names)
 
     def apply_rename(self, rename_args):
-        old_name = sanitize_name(rename_args.column.column_name)
+        old_name = self.get_column(rename_args.column.column_name).get_name()
         new_name = sanitize_name(rename_args.new_name)
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
-        columns = {sanitize_name(col) for col in remove_args.column_names}
-        return self.query.drop(*columns)
+        to_remove = {self.get_column(col) for col in remove_args.column_names}
+        to_remove = {col.get_name() for col in to_remove}
+        return self.query.drop(*to_remove)
 
     def apply_cast(self, cast_args):
-        col_name = sanitize_name(cast_args.column.column_name)
+        col_name = self.get_column(cast_args.column.column_name).get_name()
         dtype = self.get_ibis_dtype(cast_args.data_type)
         return self.query.cast({col_name: dtype})
 
@@ -347,17 +356,11 @@ class IbisQueryBuilder:
         return self.query.aggregate(**aggregates, by=group_bys)
 
     def apply_order_by(self, order_by_args):
-        # check if column exists in current query schema, if not then skip
-        column = order_by_args.column.column_name
-        sanitized_column = sanitize_name(column)
-        if (
-            column not in self.query.columns
-            and sanitized_column not in self.query.columns
-        ):
+        order_by_column = self.get_column(order_by_args.column.column_name, throw=False)
+        if order_by_column is None:
             return self.query
-        column = sanitized_column if sanitized_column in self.query.columns else column
         order_fn = ibis.asc if order_by_args.direction == "asc" else ibis.desc
-        return self.query.order_by(order_fn(column))
+        return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
         return self.query.limit(limit_args.limit)
@@ -417,18 +420,17 @@ class IbisQueryBuilder:
         if measure.column_name == "count" and measure.aggregation == "count":
             first_column = self.query.columns[0]
             first_column = getattr(self.query, first_column)
-            return first_column.count().name(sanitize_name(measure.measure_name))
+            return first_column.count().name(measure.measure_name)
 
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
             column = column.cast(dtype)
         else:
-            column = getattr(self.query, sanitize_name(measure.column_name))
+            column = self.get_column(measure.column_name)
             column = self.apply_aggregate(column, measure.aggregation)
 
-        measure_name = sanitize_name(measure.measure_name)
-        return column.name(measure_name)
+        return column.name(measure.measure_name)
 
     def translate_dimension(self, dimension):
         col = getattr(self.query, dimension.column_name)
