@@ -161,7 +161,7 @@ class IbisQueryBuilder:
                 and right_column.column_name
             ):
                 rt = right_table
-                lc = getattr(_, left_column.column_name)
+                lc = getattr(self.query, left_column.column_name)
                 rc = getattr(rt, right_column.column_name)
                 return lc.cast(rc.type()) == rc
 
@@ -249,14 +249,14 @@ class IbisQueryBuilder:
         filter_operator = filter_args.operator
         filter_value = filter_args.value
 
-        left = getattr(_, sanitize_name(filter_column.column_name))
+        left = getattr(self.query, sanitize_name(filter_column.column_name))
         operator_fn = self.get_operator(filter_operator)
 
         if operator_fn is None:
             frappe.throw(f"Operator {filter_operator} is not supported")
 
         right_column = (
-            getattr(_, sanitize_name(filter_value.column_name))
+            getattr(self.query, sanitize_name(filter_value.column_name))
             if hasattr(filter_value, "column_name")
             else None
         )
@@ -336,10 +336,10 @@ class IbisQueryBuilder:
         return self.query.mutate(**{new_name: new_column})
 
     def apply_summary(self, summarize_args):
-        aggregates = {
-            sanitize_name(measure.measure_name): self.translate_measure(measure)
-            for measure in summarize_args.measures
-        }
+        aggregates = [
+            self.translate_measure(measure) for measure in summarize_args.measures
+        ]
+        aggregates = {agg.get_name(): agg for agg in aggregates}
         group_bys = [
             self.translate_dimension(dimension)
             for dimension in summarize_args.dimensions
@@ -348,28 +348,26 @@ class IbisQueryBuilder:
 
     def apply_order_by(self, order_by_args):
         # check if column exists in current query schema, if not then skip
-        order_by_column = sanitize_name(order_by_args.column.column_name)
-        if order_by_column not in self.query.columns:
+        column = order_by_args.column.column_name
+        sanitized_column = sanitize_name(column)
+        if (
+            column not in self.query.columns
+            and sanitized_column not in self.query.columns
+        ):
             return self.query
+        column = sanitized_column if sanitized_column in self.query.columns else column
         order_fn = ibis.asc if order_by_args.direction == "asc" else ibis.desc
-        return self.query.order_by(order_fn(order_by_column))
+        return self.query.order_by(order_fn(column))
 
     def apply_limit(self, limit_args):
         return self.query.limit(limit_args.limit)
 
     def apply_pivot(self, pivot_args, pivot_type):
-        rows = {
-            dimension.column_name: self.translate_dimension(dimension)
-            for dimension in pivot_args["rows"]
-        }
-        columns = {
-            dimension.column_name: self.translate_dimension(dimension)
-            for dimension in pivot_args["columns"]
-        }
-        values = {
-            sanitize_name(measure.measure_name): self.translate_measure(measure)
-            for measure in pivot_args["values"]
-        }
+        rows = [self.translate_dimension(dimension) for dimension in pivot_args["rows"]]
+        columns = [
+            self.translate_dimension(dimension) for dimension in pivot_args["columns"]
+        ]
+        values = [self.translate_measure(measure) for measure in pivot_args["values"]]
 
         if pivot_type == "wider":
             other_columns = [
@@ -381,60 +379,61 @@ class IbisQueryBuilder:
                 names = self.query.select(other_columns).distinct().limit(10).execute()
                 self.query = self.query.filter(
                     ibis.or_(
-                        *[getattr(_, col).isin(names[col]) for col in other_columns]
+                        *[
+                            getattr(self.query, col).isin(names[col])
+                            for col in other_columns
+                        ]
                     )
                 )
 
-            self.query = self.query.group_by(
-                *rows.values(), *columns.values()
-            ).aggregate(**values)
+            self.query = self.query.group_by(*rows, *columns).aggregate(
+                **{value.get_name(): value for value in values}
+            )
 
-            date_columns = [
-                dim.column_name
+            date_dimensions = [
+                self.translate_dimension(dim)
                 for dim in pivot_args["columns"]
                 if self.is_date_type(dim.data_type)
             ]
-            if date_columns:
-                self.query = self.query.cast({col: "string" for col in date_columns})
+            if date_dimensions:
+                self.query = self.query.cast(
+                    {dimension.get_name(): "string" for dimension in date_dimensions}
+                )
 
             return self.query.pivot_wider(
-                id_cols=rows.keys(),
-                names_from=columns.keys(),
+                id_cols=[row.get_name() for row in rows],
+                names_from=[col.get_name() for col in columns],
                 names_sort=True,
-                values_from=values.keys(),
+                values_from=[value.get_name() for value in values],
                 values_agg="sum",
             )
 
         return self.query
 
     def apply_custom_operation(self, operation):
-        return self.evaluate_expression(
-            operation.expression.expression,
-            additonal_context={
-                "q": self.query,
-            },
-        )
+        return self.evaluate_expression(operation.expression.expression)
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
-            return _.count()
+            return self.query.count().name(sanitize_name(measure.measure_name))
 
+        column = getattr(self.query, sanitize_name(measure.column_name))
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
-            measure_name = sanitize_name(measure.measure_name)
-            return column.cast(dtype).name(measure_name)
+            column = column.cast(dtype)
+        else:
+            column = self.apply_aggregate(column, measure.aggregation)
 
-        column = getattr(_, sanitize_name(measure.column_name))
-        return self.apply_aggregate(column, measure.aggregation)
+        measure_name = sanitize_name(measure.measure_name)
+        return column.name(measure_name)
 
     def translate_dimension(self, dimension):
-        col = getattr(_, dimension.column_name)
+        col = getattr(self.query, dimension.column_name)
         if self.is_date_type(dimension.data_type) and dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
-            col = col.name(dimension.column_name)
-        return col
+        return col.name(dimension.dimension_name or dimension.column_name)
 
     def is_date_type(self, data_type):
         return data_type in ["Date", "Datetime", "Time"]
@@ -491,7 +490,7 @@ class IbisQueryBuilder:
 
         frappe.flags.current_ibis_query = self.query
         context = frappe._dict()
-        context.q = _
+        context.q = self.query
         context.update(self.get_current_columns())
         context.update(get_functions())
         context.update(additonal_context or {})
@@ -501,7 +500,7 @@ class IbisQueryBuilder:
 
     def get_current_columns(self):
         # TODO: handle collisions with function names
-        return {col: getattr(_, col) for col in self.query.schema().names}
+        return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
 def execute_ibis_query(

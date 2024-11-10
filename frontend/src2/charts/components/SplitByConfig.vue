@@ -3,6 +3,7 @@ import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
 import { DimensionOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
+import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -16,14 +17,11 @@ const split_by = defineModel<AxisChartConfig['split_by']>({
 
 <template>
 	<CollapsibleSection title="Split Series">
-		<InlineFormControlLabel label="Split By">
-			<Autocomplete
-				placeholder="Select a column"
-				:showFooter="true"
-				:options="props.dimensions"
-				:modelValue="split_by?.column_name"
-				@update:modelValue="split_by = $event"
-			/>
-		</InlineFormControlLabel>
+		<DimensionPicker
+			label="Split By"
+			:options="props.dimensions"
+			:modelValue="split_by || {}"
+			@update:modelValue="split_by = $event || {}"
+		/>
 	</CollapsibleSection>
 </template>

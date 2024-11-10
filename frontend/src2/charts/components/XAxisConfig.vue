@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { FIELDTYPES, granularityOptions } from '../../helpers/constants'
 import { AxisChartConfig } from '../../types/chart.types'
 import { DimensionOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
+import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{ dimensions: DimensionOption[] }>()
 const x_axis = defineModel<AxisChartConfig['x_axis']>({
@@ -15,26 +15,12 @@ const x_axis = defineModel<AxisChartConfig['x_axis']>({
 <template>
 	<CollapsibleSection title="X Axis">
 		<div class="flex flex-col gap-3 pt-1">
-			<InlineFormControlLabel label="Column">
-				<Autocomplete
-					placeholder="Select a column"
-					:showFooter="true"
-					:options="props.dimensions"
-					:modelValue="x_axis.column_name"
-					@update:modelValue="x_axis = $event || {}"
-				/>
-			</InlineFormControlLabel>
-			<InlineFormControlLabel
-				v-if="FIELDTYPES.DATE.includes(x_axis.data_type)"
-				label="Granularity"
-			>
-				<Autocomplete
-					:hide-search="true"
-					:options="granularityOptions"
-					:model-value="x_axis.granularity"
-					@update:model-value="x_axis.granularity = $event?.value || 'month'"
-				/>
-			</InlineFormControlLabel>
+			<DimensionPicker
+				label="Column"
+				:options="props.dimensions"
+				:modelValue="x_axis"
+				@update:modelValue="x_axis = $event || {}"
+			/>
 			<Checkbox label="Show Axis Label" />
 			<InlineFormControlLabel v-if="false" label="Axis Label">
 				<FormControl />

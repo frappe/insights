@@ -56,6 +56,7 @@ function addDimension() {
 		column_name: '',
 		data_type: 'String',
 		granularity: 'month',
+		dimension_name: '',
 	})
 }
 function resetSelections() {

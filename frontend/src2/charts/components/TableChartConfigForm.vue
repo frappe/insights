@@ -6,6 +6,7 @@ import CollapsibleSection from './CollapsibleSection.vue'
 import { watchEffect } from 'vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import DraggableList from '../../components/DraggableList.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -35,11 +36,45 @@ watchEffect(() => {
 
 <template>
 	<CollapsibleSection title="Rows">
-		<DimensionPicker v-model="config.rows" :options="props.dimensions" />
+		<div>
+			<DraggableList v-model:items="config.rows" group="rows">
+				<template #item="{ item, index }">
+					<DimensionPicker
+						:options="props.dimensions"
+						:model-value="item"
+						@update:model-value="Object.assign(item, $event || {})"
+					/>
+				</template>
+			</DraggableList>
+			<button
+				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+				@click="config.rows.push({} as any)"
+			>
+				+ Add column
+			</button>
+		</div>
 	</CollapsibleSection>
+
 	<CollapsibleSection title="Columns">
-		<DimensionPicker v-model="config.columns" :options="props.dimensions" />
+		<div>
+			<DraggableList v-model:items="config.columns" group="columns">
+				<template #item="{ item, index }">
+					<DimensionPicker
+						:options="props.dimensions"
+						:model-value="item"
+						@update:model-value="Object.assign(item, $event || {})"
+					/>
+				</template>
+			</DraggableList>
+			<button
+				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+				@click="config.columns.push({} as any)"
+			>
+				+ Add column
+			</button>
+		</div>
 	</CollapsibleSection>
+
 	<CollapsibleSection title="Values">
 		<div class="flex flex-col gap-3">
 			<MeasurePicker v-model="config.values" :options="props.measures" />

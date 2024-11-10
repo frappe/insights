@@ -33,7 +33,7 @@ function addMeasure() {
 
 <template>
 	<div>
-		<DraggableList v-model:items="measures">
+		<DraggableList v-model:items="measures" group="measures">
 			<template #item="{ item, index }">
 				<div class="flex gap-1">
 					<div class="flex-1">

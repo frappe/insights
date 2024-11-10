@@ -26,12 +26,10 @@ const discrete_dimensions = computed(() =>
 <template>
 	<CollapsibleSection title="Options">
 		<div class="flex flex-col gap-3 pt-1">
-			<Autocomplete
+			<DimensionPicker
 				label="Label"
-				:showFooter="true"
+				v-model="config.label_column"
 				:options="discrete_dimensions"
-				:modelValue="config.label_column?.column_name"
-				@update:modelValue="config.label_column = $event"
 			/>
 			<Autocomplete
 				label="Value"

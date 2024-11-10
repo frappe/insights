@@ -9,6 +9,7 @@ import { NumberChartConfig } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -35,6 +36,9 @@ watchEffect(() => {
 	if (!config.value.number_columns.length) {
 		addNumberColumn()
 	}
+	if (!config.value.date_column) {
+		config.value.date_column = {} as DimensionOption
+	}
 })
 
 function addNumberColumn() {
@@ -54,14 +58,14 @@ const updateColor = debounce((color: string) => {
 				<MeasurePicker v-model="config.number_columns" :options="props.measures" />
 			</div>
 
-			<InlineFormControlLabel label="Date">
-				<Autocomplete
-					:showFooter="true"
-					:options="date_dimensions"
-					:modelValue="config.date_column?.column_name"
-					@update:modelValue="config.date_column = $event"
-				/>
-			</InlineFormControlLabel>
+			<!-- <InlineFormControlLabel label="Date">
+			</InlineFormControlLabel> -->
+			<DimensionPicker
+				label="Date"
+				:options="date_dimensions"
+				:model-value="config.date_column"
+				@update:model-value="config.date_column = $event || {}"
+			/>
 
 			<InlineFormControlLabel label="Prefix">
 				<FormControl v-model="config.prefix" />

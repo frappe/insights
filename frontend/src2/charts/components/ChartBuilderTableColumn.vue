@@ -9,7 +9,7 @@ import {
 } from 'lucide-vue-next'
 import { computed, h } from 'vue'
 import ContentEditable from '../../components/ContentEditable.vue'
-import { FIELDTYPES } from '../../helpers/constants'
+import { FIELDTYPES, granularityOptions } from '../../helpers/constants'
 import { column } from '../../query/helpers'
 import { GranularityType, QueryResultColumn } from '../../types/query.types'
 import { WorkbookChart } from '../../types/workbook.types'
@@ -66,27 +66,19 @@ function onSort(sort_order: 'asc' | 'desc' | '') {
 const dateGranularityOptions = computed(() => {
 	if (!props.onGranularityChange) return []
 
-	const changeFn = (granularity: string) => {
-		props.onGranularityChange?.(props.column.name, granularity)
-	}
-
-	const options = [
-		{ label: 'Day', onClick: () => changeFn('day') },
-		{ label: 'Week', onClick: () => changeFn('week') },
-		{ label: 'Month', onClick: () => changeFn('month') },
-		{ label: 'Quarter', onClick: () => changeFn('quarter') },
-		{ label: 'Year', onClick: () => changeFn('year') },
-	]
-	options.forEach((option: any) => {
-		option.icon =
+	return granularityOptions.map((option) => {
+		const _option = { ...option } as any
+		_option.onClick = () => props.onGranularityChange?.(props.column.name, option.value)
+		_option.icon =
 			option.label.toLowerCase() === getGranularity(props.column.name, props.config)
 				? h(Check, {
 						class: 'h-4 w-4 text-gray-700',
 						strokeWidth: 1.5,
 				  })
 				: h('div', { class: 'h-4 w-4' })
+
+		return _option
 	})
-	return options
 })
 </script>
 
