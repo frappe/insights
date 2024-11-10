@@ -28,8 +28,15 @@ class IbisQueryBuilder:
     def build(self, operations: list, use_live_connection=True) -> IbisQuery:
         self.query = None
         self.use_live_connection = use_live_connection
-        for operation in operations:
-            self.query = self.perform_operation(operation)
+        for idx, operation in enumerate(operations):
+            try:
+                operation = _dict(operation)
+                self.query = self.perform_operation(operation)
+            except Exception as e:
+                operation_type_title = frappe.bold(operation.type.title())
+                frappe.throw(
+                    f"Invalid {operation_type_title} Operation at position {idx + 1}: {e!s}"
+                )
         return self.query
 
     def get_table_or_query(self, table_args):
@@ -53,7 +60,6 @@ class IbisQueryBuilder:
         return _table
 
     def perform_operation(self, operation):
-        operation = _dict(operation)
         if operation.type == "source":
             return self.apply_source(operation)
         elif operation.type == "join":
