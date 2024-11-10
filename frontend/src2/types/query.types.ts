@@ -191,4 +191,5 @@ export type QueryResult = {
 	columns: QueryResultColumn[]
 	columnOptions: ColumnOption[]
 	timeTaken: number
+	lastExecutedAt: Date
 }

@@ -3,6 +3,7 @@ import { PlayIcon, Scroll } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Query } from '../query'
 import ViewSQLDialog from './ViewSQLDialog.vue'
+import { useTimeAgo } from '@vueuse/core'
 
 const query = inject('query') as Query
 
@@ -34,8 +35,11 @@ const actions = [
 				class="tnum flex items-center gap-2 text-sm text-gray-600"
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
-				<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
-				<span v-else> Fetched in {{ query.result.timeTaken }} ms </span>
+				<div>
+					<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
+					<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
+					<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
+				</div>
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
