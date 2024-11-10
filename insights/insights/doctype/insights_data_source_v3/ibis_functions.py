@@ -5,6 +5,8 @@ import ibis
 from ibis import _
 from ibis import selectors as s
 
+# from ibis.expr.types.numeric import NumericValue
+
 # generic functions
 f_count = lambda column, *args, **kwargs: column.count(*args, **kwargs)
 f_min = lambda column, *args, **kwargs: column.min(*args, **kwargs)

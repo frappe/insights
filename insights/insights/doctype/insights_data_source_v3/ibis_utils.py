@@ -371,7 +371,7 @@ class IbisQueryBuilder:
 
         if pivot_type == "wider":
             other_columns = [
-                dim.column_name
+                self.translate_dimension(dim).get_name()
                 for dim in pivot_args["columns"]
                 if not self.is_date_type(dim.data_type)
             ]
@@ -391,13 +391,13 @@ class IbisQueryBuilder:
             )
 
             date_dimensions = [
-                self.translate_dimension(dim)
+                self.translate_dimension(dim).get_name()
                 for dim in pivot_args["columns"]
                 if self.is_date_type(dim.data_type)
             ]
             if date_dimensions:
                 self.query = self.query.cast(
-                    {dimension.get_name(): "string" for dimension in date_dimensions}
+                    {dimension: "string" for dimension in date_dimensions}
                 )
 
             return self.query.pivot_wider(
@@ -415,7 +415,9 @@ class IbisQueryBuilder:
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
-            return self.query.count().name(sanitize_name(measure.measure_name))
+            first_column = self.query.columns[0]
+            first_column = getattr(self.query, first_column)
+            return first_column.count().name(sanitize_name(measure.measure_name))
 
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
