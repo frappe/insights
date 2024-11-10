@@ -20,9 +20,9 @@ import type {
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
 
-	const router = useRouter()
 	workbook.onAfterInsert(() => {
-		window.location.href = window.location.href.replace(name, workbook.doc.name)
+		const href = window.location.href.replace(name, workbook.doc.name)
+		window.location.replace(href)
 	})
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 
@@ -41,6 +41,7 @@ export default function useWorkbook(name: string) {
 		}
 	)
 
+	const router = useRouter()
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
 		router.replace(
 			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`

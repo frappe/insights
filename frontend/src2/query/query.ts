@@ -265,6 +265,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					data_type: column.type,
 				}))
 				query.result.timeTaken = response.time_taken
+				query.result.lastExecutedAt = new Date()
 			})
 			.catch((e: Error) => {
 				query.result = { ...EMPTY_RESULT }
@@ -737,6 +738,7 @@ const EMPTY_RESULT = {
 	columns: [],
 	columnOptions: [],
 	timeTaken: 0,
+	lastExecutedAt: new Date(),
 } as QueryResult
 
 export type Query = ReturnType<typeof makeQuery>

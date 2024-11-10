@@ -94,7 +94,15 @@ export function store<T>(key: string, value: () => T) {
 }
 
 export function getErrorMessage(err: any) {
-	return err.exc?.split('\n').filter(Boolean).at(-1)
+	const lastLine = err.exc
+		?.split('\n')
+		.filter(Boolean)
+		.at(-1)
+		?.trim()
+		.split(': ')
+		.slice(1)
+		.join(': ')
+	return lastLine || err.message || err.toString()
 }
 
 export function showErrorToast(err: Error, raise = true) {
@@ -251,6 +259,7 @@ export function ellipsis(value: string, length: number) {
 export function flattenOptions(
 	options: DropdownOption[] | GroupedDropdownOption[]
 ): DropdownOption[] {
+	if (!options.length) return []
 	return 'group' in options[0]
 		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
 		: (options as DropdownOption[])
@@ -273,11 +282,13 @@ export function toOptions(arr: any[], map: Record<OptionKey, string>) {
 
 export function sanitizeColumnName(name: string) {
 	return name
-		.replace(' ', '_')
-		.replace('-', '_')
-		.replace('.', '_')
-		.replace('/', '_')
-		.replace('(', '_')
-		.replace(')', '_')
-		.toLowerCase()
+		? name
+				.replace(' ', '_')
+				.replace('-', '_')
+				.replace('.', '_')
+				.replace('/', '_')
+				.replace('(', '_')
+				.replace(')', '_')
+				.toLowerCase()
+		: name
 }

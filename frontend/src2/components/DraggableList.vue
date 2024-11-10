@@ -67,7 +67,7 @@ function onChange(e) {
 	</Draggable>
 	<template v-if="showEmptyState && !items?.length">
 		<div
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
+			class="flex h-full flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
 		>
 			<div class="text-xs text-gray-500">{{ props.emptyText }}</div>
 		</div>

@@ -8,6 +8,7 @@ import useTableStore, { DataSourceTable } from './tables'
 
 const props = defineProps<{ name: string }>()
 
+const dataSource = useDataSourceStore().getSource(props.name)
 const tableStore = useTableStore()
 
 const searchQuery = ref('')
@@ -61,7 +62,7 @@ watchEffect(() => {
 		<Breadcrumbs
 			:items="[
 				{ label: 'Data Sources', route: '/data-source' },
-				{ label: props.name, route: `/data-source/${props.name}` },
+				{ label: dataSource?.title || props.name, route: `/data-source/${props.name}` },
 			]"
 		/>
 		<div class="flex items-center gap-2"></div>
@@ -88,15 +89,17 @@ watchEffect(() => {
 								'stroke-width': '1.5',
 							}),
 					},
-					{
-						label: 'Update Table Links',
-						onClick: () => tableStore.updateTableLinks(props.name),
-						icon: () =>
-							h(RefreshCcw, {
-								class: 'h-4 w-4 text-gray-700',
-								'stroke-width': '1.5',
-							}),
-					},
+					dataSource?.is_frappe_db
+						? {
+								label: 'Update Table Links',
+								onClick: () => tableStore.updateTableLinks(props.name),
+								icon: () =>
+									h(RefreshCcw, {
+										class: 'h-4 w-4 text-gray-700',
+										'stroke-width': '1.5',
+									}),
+						  }
+						: null,
 				]"
 			>
 				<Button>

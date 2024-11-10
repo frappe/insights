@@ -154,7 +154,7 @@
 								v-if="groups.length == 0"
 								class="rounded-md px-2.5 py-1.5 text-base text-gray-600"
 							>
-								No results found
+								No options available
 							</li>
 						</ComboboxOptions>
 

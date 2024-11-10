@@ -51,7 +51,7 @@ wheneverChanges(
 dataSourceStore.getSources().then(() => {
 	tabGroups.value[0].tabs = dataSourceStore.sources
 		.map((source) => ({
-			label: source.name,
+			label: source.title,
 			icon: DatabaseIcon,
 			component: () => (
 				<DataSourceTableList

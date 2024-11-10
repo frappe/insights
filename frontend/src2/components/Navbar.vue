@@ -1,4 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+</script>
 
 <template>
 	<div
@@ -7,9 +11,9 @@
 		<div class="relative flex flex-1 items-center">
 			<div class="absolute left-0">
 				<slot name="left">
-					<router-link :to="{ path: '/' }">
+					<button @click="router.back()" class="flex items-center gap-1">
 						<img src="../assets/insights-logo-new.svg" alt="logo" class="h-7 rounded" />
-					</router-link>
+					</button>
 				</slot>
 			</div>
 			<div class="flex flex-1 items-center justify-center">
