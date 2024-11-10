@@ -249,14 +249,14 @@ class IbisQueryBuilder:
         filter_operator = filter_args.operator
         filter_value = filter_args.value
 
-        left = getattr(_, filter_column.column_name)
+        left = getattr(_, sanitize_name(filter_column.column_name))
         operator_fn = self.get_operator(filter_operator)
 
         if operator_fn is None:
             frappe.throw(f"Operator {filter_operator} is not supported")
 
         right_column = (
-            getattr(_, filter_value.column_name)
+            getattr(_, sanitize_name(filter_value.column_name))
             if hasattr(filter_value, "column_name")
             else None
         )
@@ -304,15 +304,16 @@ class IbisQueryBuilder:
         return self.query.select(select_args.column_names)
 
     def apply_rename(self, rename_args):
-        old_name = rename_args.column.column_name
+        old_name = sanitize_name(rename_args.column.column_name)
         new_name = sanitize_name(rename_args.new_name)
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
-        return self.query.drop(*remove_args.column_names)
+        columns = {sanitize_name(col) for col in remove_args.column_names}
+        return self.query.drop(*columns)
 
     def apply_cast(self, cast_args):
-        col_name = cast_args.column.column_name
+        col_name = sanitize_name(cast_args.column.column_name)
         dtype = self.get_ibis_dtype(cast_args.data_type)
         return self.query.cast({col_name: dtype})
 
@@ -347,10 +348,11 @@ class IbisQueryBuilder:
 
     def apply_order_by(self, order_by_args):
         # check if column exists in current query schema, if not then skip
-        if order_by_args.column.column_name not in self.query.columns:
+        order_by_column = sanitize_name(order_by_args.column.column_name)
+        if order_by_column not in self.query.columns:
             return self.query
         order_fn = ibis.asc if order_by_args.direction == "asc" else ibis.desc
-        return self.query.order_by(order_fn(order_by_args.column.column_name))
+        return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
         return self.query.limit(limit_args.limit)
@@ -423,7 +425,7 @@ class IbisQueryBuilder:
             measure_name = sanitize_name(measure.measure_name)
             return column.cast(dtype).name(measure_name)
 
-        column = getattr(_, measure.column_name)
+        column = getattr(_, sanitize_name(measure.column_name))
         return self.apply_aggregate(column, measure.aggregation)
 
     def translate_dimension(self, dimension):
