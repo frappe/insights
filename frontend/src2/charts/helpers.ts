@@ -253,10 +253,15 @@ function getSerie(config: AxisChartConfig, number_column: string): Series {
 			)
 		}
 	}
-	if (!serie) {
-		throw new Error(`Cannot find series for column ${number_column}`)
-	}
-	return serie
+
+	return (
+		serie ||
+		({
+			measure: {
+				measure_name: number_column,
+			},
+		} as Series)
+	)
 }
 
 type XAxisCustomizeOptions = {
