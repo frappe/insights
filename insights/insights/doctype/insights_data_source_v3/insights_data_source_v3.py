@@ -51,8 +51,12 @@ class InsightsDataSourceDocument:
             frappe.throw("Only one site database can be configured")
 
     def on_update(self: "InsightsDataSourcev3"):
-        if self.is_site_db and not self.is_frappe_db:
+        if self.is_site_db:
             self.db_set("is_frappe_db", 1)
+            self.db_set("status", "Active")
+            with db_connections():
+                self.update_table_list()
+            return
 
         credentials_changed = self.has_credentials_changed()
         if (

@@ -289,6 +289,8 @@ def get_all_data_sources():
             "status",
             "title",
             "owner",
+            "is_frappe_db",
+            "is_site_db",
             "creation",
             "modified",
             "database_type",
