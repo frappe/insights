@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { COLUMN_TYPES, FIELDTYPES } from '../../helpers/constants'
-import { ColumnOption, ExpressionMeasure, MeasureDataType } from '../../types/query.types'
-import { expression } from '../../query/helpers'
 import ExpressionEditor from '../../query/components/ExpressionEditor.vue'
+import { expression } from '../../query/helpers'
+import { ColumnOption, ExpressionMeasure, MeasureDataType } from '../../types/query.types'
 
 const props = defineProps<{
 	measure?: ExpressionMeasure
@@ -17,7 +17,7 @@ const columnTypes = COLUMN_TYPES.map((t) => t.value).filter((t) =>
 ) as MeasureDataType[]
 
 const newMeasure = ref(
-	props.measure
+	props.measure?.expression?.expression
 		? {
 				name: props.measure.measure_name,
 				type: props.measure.data_type,
@@ -55,7 +55,7 @@ function resetNewMeasure() {
 
 <template>
 	<Dialog
-		:modelValue="showDialog"
+		:modelValue="Boolean(showDialog)"
 		@after-leave="resetNewMeasure"
 		@close="!newMeasure.expression && (showDialog = false)"
 	>

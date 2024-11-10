@@ -43,6 +43,7 @@ watchEffect(() => {
 						:options="props.dimensions"
 						:model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
+						@remove="config.rows.splice(index, 1)"
 					/>
 				</template>
 			</DraggableList>
@@ -63,6 +64,7 @@ watchEffect(() => {
 						:options="props.dimensions"
 						:model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
+						@remove="config.columns.splice(index, 1)"
 					/>
 				</template>
 			</DraggableList>
@@ -77,7 +79,24 @@ watchEffect(() => {
 
 	<CollapsibleSection title="Values">
 		<div class="flex flex-col gap-3">
-			<MeasurePicker v-model="config.values" :options="props.measures" />
+			<div>
+				<DraggableList v-model:items="config.values" group="values">
+					<template #item="{ item, index }">
+						<MeasurePicker
+							:options="props.measures"
+							:model-value="item"
+							@update:model-value="Object.assign(item, $event || {})"
+							@remove="config.values.splice(index, 1)"
+						/>
+					</template>
+				</DraggableList>
+				<button
+					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+					@click="config.values.push({} as any)"
+				>
+					+ Add column
+				</button>
+			</div>
 			<Checkbox label="Show Filters" v-model="config.show_filter_row" />
 			<Checkbox label="Show Row Totals" v-model="config.show_row_totals" />
 			<Checkbox label="Show Column Totals" v-model="config.show_column_totals" />

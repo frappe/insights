@@ -6,6 +6,7 @@ import { granularityOptions } from '../../helpers/constants'
 import { Dimension } from '../../types/query.types'
 import { DimensionOption } from './ChartConfigForm.vue'
 
+const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
 	label?: string
 	options: DimensionOption[]
@@ -28,14 +29,14 @@ if (!dimension.value.dimension_name && dimension.value.column_name) {
 
 function selectDimension(option?: DimensionOption) {
 	if (!option || !option.column_name) {
-		dimension.value.column_name = ''
-		dimension.value.data_type = 'String'
-		dimension.value.dimension_name = ''
+		dimension.value = {
+			column_name: '',
+			data_type: 'String',
+			dimension_name: '',
+		}
 		return
 	}
-	dimension.value.column_name = option.column_name
-	dimension.value.data_type = option.data_type
-	dimension.value.dimension_name = option.column_name
+	dimension.value = option
 }
 </script>
 
@@ -59,7 +60,7 @@ function selectDimension(option?: DimensionOption) {
 								class="truncate"
 								:class="dimension.column_name ? 'text-gray-900' : 'text-gray-500'"
 							>
-								{{ dimension.dimension_name }}
+								{{ dimension.dimension_name || 'Select a column' }}
 							</span>
 							<template #suffix>
 								<ChevronDown
@@ -72,9 +73,9 @@ function selectDimension(option?: DimensionOption) {
 				</template>
 			</Autocomplete>
 		</div>
-		<Popover placement="bottom-end">
+		<Popover v-if="dimension.column_name" placement="bottom-end">
 			<template #target="{ togglePopover }">
-				<Button @click="togglePopover" :disabled="!dimension.column_name">
+				<Button @click="togglePopover">
 					<template #icon>
 						<Settings class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 					</template>
@@ -99,7 +100,7 @@ function selectDimension(option?: DimensionOption) {
 					</InlineFormControlLabel>
 
 					<div class="flex gap-1">
-						<Button class="w-full" @click="selectDimension()" theme="red">
+						<Button class="w-full" @click="emit('remove')" theme="red">
 							<template #prefix>
 								<XIcon class="h-4 w-4 text-red-700" stroke-width="1.5" />
 							</template>
@@ -109,5 +110,10 @@ function selectDimension(option?: DimensionOption) {
 				</div>
 			</template>
 		</Popover>
+		<Button v-else @click="emit('remove')">
+			<template #icon>
+				<XIcon class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
+		</Button>
 	</div>
 </template>
