@@ -417,12 +417,12 @@ class IbisQueryBuilder:
         if measure.column_name == "count" and measure.aggregation == "count":
             return self.query.count().name(sanitize_name(measure.measure_name))
 
-        column = getattr(self.query, sanitize_name(measure.column_name))
         if "expression" in measure:
             column = self.evaluate_expression(measure.expression.expression)
             dtype = self.get_ibis_dtype(measure.data_type)
             column = column.cast(dtype)
         else:
+            column = getattr(self.query, sanitize_name(measure.column_name))
             column = self.apply_aggregate(column, measure.aggregation)
 
         measure_name = sanitize_name(measure.measure_name)
