@@ -628,7 +628,8 @@ def sanitize_name(name):
     if not name:
         return name
     return (
-        name.replace(" ", "_")
+        name.strip()
+        .replace(" ", "_")
         .replace("-", "_")
         .replace(".", "_")
         .replace("/", "_")

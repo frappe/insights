@@ -284,6 +284,7 @@ export function toOptions(arr: any[], map: Record<OptionKey, string>) {
 export function sanitizeColumnName(name: string) {
 	return name
 		? name
+				.trim()
 				.replace(' ', '_')
 				.replace('-', '_')
 				.replace('.', '_')
