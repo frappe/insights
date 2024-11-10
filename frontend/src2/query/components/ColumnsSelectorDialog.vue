@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SearchIcon } from 'lucide-vue-next'
+import { ChevronDown, SearchIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { QueryResultColumn, SelectArgs } from '../../types/query.types'
@@ -21,20 +21,18 @@ query.getColumnsForSelection().then((cols: ColumnOption[]) => {
 })
 
 const columns = ref<HTMLElement | null>(null)
-function addColumn(column: ColumnOption) {
-	if (!column?.value) return
-	if (!selectedColumns.value.find((c) => c.name === column.value)) {
-		selectedColumns.value.push({
-			name: column.value,
-			type: column.data_type,
+function addColumns(options: ColumnOption[]) {
+	selectedColumns.value = options.map((o) => ({
+		name: o.value,
+		type: o.data_type,
+	}))
+
+	setTimeout(() => {
+		columns.value?.scrollTo({
+			top: columns.value.scrollHeight,
+			behavior: 'smooth',
 		})
-		setTimeout(() => {
-			columns.value?.scrollTo({
-				top: columns.value.scrollHeight,
-				behavior: 'smooth',
-			})
-		}, 100)
-	}
+	}, 100)
 }
 
 const confirmDisabled = computed(
@@ -75,26 +73,37 @@ function confirmSelection() {
 		}"
 	>
 		<template #body-content>
-			<div class="-mb-7 flex max-h-[22rem] flex-col gap-4 p-0.5 text-base">
+			<div class="-mb-7 flex h-[22rem] flex-col p-0.5 text-base">
 				<Autocomplete
-					:options="
-						columnOptions.filter(
-							(c) => !selectedColumns.find((sc) => sc.name === c.value)
-						)
-					"
+					class="flex-shrink-0"
+					:multiple="true"
+					:options="columnOptions"
 					placeholder="Add column"
-					@update:modelValue="addColumn"
+					:modelValue="selectedColumns.map((c) => c.name)"
+					@update:modelValue="addColumns"
 				>
-					<template #prefix>
-						<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
+					<template #target="{ togglePopover }">
+						<Button class="w-full !justify-start" @click="togglePopover">
+							<template #prefix>
+								<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
+							</template>
+							<span class="flex-1 text-gray-500">Add column</span>
+							<template #suffix>
+								<ChevronDown
+									class="ml-auto h-4 w-4 text-gray-500"
+									stroke-width="1.5"
+								/>
+							</template>
+						</Button>
 					</template>
 				</Autocomplete>
 
-				<div ref="columns" class="relative overflow-y-scroll">
+				<div ref="columns" class="relative mt-4 flex-1 overflow-y-scroll">
 					<DraggableList
 						v-model:items="selectedColumns"
 						:item-key="'name'"
 						group="columns"
+						empty-text="No columns selected"
 					>
 						<template #item-content="{ item }">
 							<div class="flex items-center gap-1.5">
@@ -103,11 +112,11 @@ function confirmSelection() {
 							</div>
 						</template>
 					</DraggableList>
-
-					<p class="sticky bottom-0 bg-white pt-1.5 text-sm text-gray-500">
-						{{ selectedColumns.length }} columns selected
-					</p>
 				</div>
+
+				<p class="flex-shrink-0 bg-white pt-1.5 text-sm text-gray-500">
+					{{ selectedColumns.length }} columns selected
+				</p>
 			</div>
 		</template>
 	</Dialog>
