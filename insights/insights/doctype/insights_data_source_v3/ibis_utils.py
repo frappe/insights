@@ -623,6 +623,8 @@ def get_ibis_table_name(table: IbisQuery):
 
 
 def sanitize_name(name):
+    if not name:
+        return name
     return (
         name.replace(" ", "_")
         .replace("-", "_")
