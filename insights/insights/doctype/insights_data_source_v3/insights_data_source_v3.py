@@ -150,9 +150,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         bigquery_service_account_key: DF.JSON | None
         connection_string: DF.Text | None
         database_name: DF.Data | None
-        database_type: DF.Literal[
-            "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "MSSQL"
-        ]
+        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "MSSQL"]
+        driver: DF.Data | None
         host: DF.Data | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check

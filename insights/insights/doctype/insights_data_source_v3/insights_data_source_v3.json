@@ -10,6 +10,7 @@
   "database_type",
   "host",
   "port",
+  "driver",
   "use_ssl",
   "is_site_db",
   "is_frappe_db",
@@ -116,11 +117,16 @@
    "fieldname": "bigquery_service_account_key",
    "fieldtype": "JSON",
    "label": "BigQuery Service Account Key (JSON)"
+  },
+  {
+   "fieldname": "driver",
+   "fieldtype": "Data",
+   "label": "Driver"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-07 19:06:14.814805",
+ "modified": "2024-11-11 23:45:29.957086",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

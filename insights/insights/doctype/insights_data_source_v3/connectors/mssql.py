@@ -9,6 +9,7 @@ def get_mssql_connection_string(data_source):
     connection_string = (
         f"mssql://{data_source.username}:{password}"
         f"@{data_source.host}:{data_source.port}/{data_source.database_name}"
+        f"?driver={data_source.driver}"
     )
     if data_source.use_ssl:
         pass
