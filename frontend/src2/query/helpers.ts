@@ -12,7 +12,7 @@ import {
 	Indent,
 	Repeat,
 	TextCursorInput,
-	XSquareIcon
+	XSquareIcon,
 } from 'lucide-vue-next'
 import { h } from 'vue'
 import { copy } from '../helpers'
@@ -58,7 +58,7 @@ import {
 	Table,
 	TableArgs,
 	Union,
-	UnionArgs
+	UnionArgs,
 } from '../types/query.types'
 import { Query } from './query'
 
@@ -109,8 +109,8 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 
 	const getGranularity = (column_name: string) => {
 		const dim =
-			summarize_step?.dimensions.find((dim) => dim.column_name === column_name) ||
-			pivot_step?.rows.find((dim) => dim.column_name === column_name)
+			summarize_step?.dimensions.find((dim) => dim.dimension_name === column_name) ||
+			pivot_step?.rows.find((dim) => dim.dimension_name === column_name)
 		return dim ? dim.granularity : null
 	}
 

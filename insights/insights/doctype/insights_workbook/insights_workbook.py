@@ -263,7 +263,7 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         return response.content
     else:
         exception = response.json()
-        frappe.log_error(exception, title="Failed to generate preview")
+        frappe.log_error(message=exception, title="Failed to generate preview")
         frappe.throw("Failed to generate preview")
 
 

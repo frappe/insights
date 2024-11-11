@@ -5,6 +5,8 @@ import ibis
 from ibis import _
 from ibis import selectors as s
 
+# from ibis.expr.types.numeric import NumericValue
+
 # generic functions
 f_count = lambda column, *args, **kwargs: column.count(*args, **kwargs)
 f_min = lambda column, *args, **kwargs: column.min(*args, **kwargs)
@@ -88,14 +90,26 @@ f_to_inr = lambda curr, amount, rate=83: f_if_else(curr == "USD", amount * rate,
 f_to_usd = lambda curr, amount, rate=83: f_if_else(curr == "INR", amount / rate, amount)
 f_literal = ibis.literal
 f_row_number = ibis.row_number
-f_previous_period_value = lambda column, date_column, offset=1: column.lag(offset).over(
-    group_by=(~s.numeric() & ~s.matches(date_column)),
-    order_by=ibis.asc(date_column),
-)
-f_next_period_value = lambda column, date_column, offset=1: column.lead(offset).over(
-    group_by=(~s.numeric() & ~s.matches(date_column)),
-    order_by=ibis.asc(date_column),
-)
+
+
+def f_previous_period_value(column, date_column, offset=1):
+    date_column_name = (
+        date_column.get_name() if hasattr(date_column, "get_name") else date_column
+    )
+    return column.lag(offset).over(
+        group_by=(~s.numeric() & ~s.matches(date_column_name)),
+        order_by=ibis.asc(date_column_name),
+    )
+
+
+def f_next_period_value(column, date_column, offset=1):
+    date_column_name = (
+        date_column.get_name() if hasattr(date_column, "get_name") else date_column
+    )
+    return column.lead(offset).over(
+        group_by=(~s.numeric() & ~s.matches(date_column_name)),
+        order_by=ibis.asc(date_column_name),
+    )
 
 
 def f_percentage_change(column, date_column, offset=1):

@@ -141,6 +141,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					column_name: column.name,
 					data_type: column.type as DimensionDataType,
 					granularity: isDate ? 'month' : undefined,
+					dimension_name: column.name,
 				}
 			})
 	})

@@ -32,7 +32,7 @@ const isValid = computed(() => {
 function confirmCalculation() {
 	if (!isValid.value) return
 	emit('select', {
-		new_name: newColumn.value.name,
+		new_name: newColumn.value.name.trim(),
 		data_type: newColumn.value.type,
 		expression: expression(newColumn.value.expression),
 	})

@@ -23,6 +23,7 @@ export type ExpressionMeasure = {
 	data_type: MeasureDataType
 }
 export type Dimension = {
+	dimension_name: string
 	column_name: string
 	data_type: DimensionDataType
 	granularity?: GranularityType

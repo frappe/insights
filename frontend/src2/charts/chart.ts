@@ -188,12 +188,12 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		const label = config.label_column
 		const value = config.value_column
-		if (!label) {
+		if (!label?.column_name) {
 			console.warn('Label column not found')
 			chart.dataQuery.reset()
 			return false
 		}
-		if (!value) {
+		if (!value?.measure_name) {
 			console.warn('Value column not found')
 			chart.dataQuery.reset()
 			return false
@@ -297,12 +297,12 @@ function makeChart(workbookChart: WorkbookChart) {
 	function updateGranularity(column_name: string, granularity: GranularityType) {
 		Object.entries(chart.doc.config).forEach(([_, value]) => {
 			if (Array.isArray(value)) {
-				const index = value.findIndex((v) => v.column_name === column_name)
+				const index = value.findIndex((v) => v.dimension_name === column_name)
 				if (index > -1) {
 					value[index].granularity = granularity
 				}
 			}
-			if (value && value.column_name === column_name) {
+			if (value && value.dimension_name === column_name) {
 				value.granularity = granularity
 			}
 		})

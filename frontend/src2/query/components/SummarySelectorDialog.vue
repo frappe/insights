@@ -56,6 +56,7 @@ function addDimension() {
 		column_name: '',
 		data_type: 'String',
 		granularity: 'month',
+		dimension_name: '',
 	})
 }
 function resetSelections() {
@@ -102,13 +103,13 @@ function confirmSelections() {
 								/>
 								<Autocomplete
 									button-classes="rounded-l-none"
-									:placeholder="measure.aggregation"
+									placeholder="Column"
 									:options="columnOptions"
 									:modelValue="measure.column_name"
-									@update:model-value="(e: QueryResultColumn) => {
-										measure.column_name = e.name
-										measure.data_type = e.type as MeasureDataType
-										measure.measure_name = `${measure.aggregation}_${e.name}`
+									@update:model-value="(e: ColumnOption) => {
+										measure.column_name = e.value
+										measure.data_type = e.data_type as MeasureDataType
+										measure.measure_name = `${measure.aggregation}_${e.value}`
 									}"
 								>
 									<template #footer>
@@ -136,9 +137,9 @@ function confirmSelections() {
 									placeholder="Column"
 									:options="nonNumberColumns"
 									:modelValue="dimension.column_name"
-									@update:model-value="(e: QueryResultColumn) => {
-										dimension.column_name = e.name
-										dimension.data_type = e.type as DimensionDataType
+									@update:model-value="(e: ColumnOption) => {
+										dimension.column_name = e.value
+										dimension.data_type = e.data_type as DimensionDataType
 									}"
 								>
 									<template #footer>

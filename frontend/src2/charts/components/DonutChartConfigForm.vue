@@ -4,6 +4,8 @@ import { FIELDTYPES } from '../../helpers/constants'
 import { DountChartConfig } from '../../types/chart.types'
 import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
+import DimensionPicker from './DimensionPicker.vue'
+import MeasurePicker from './MeasurePicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -26,21 +28,12 @@ const discrete_dimensions = computed(() =>
 <template>
 	<CollapsibleSection title="Options">
 		<div class="flex flex-col gap-3 pt-1">
-			<Autocomplete
+			<DimensionPicker
 				label="Label"
-				:showFooter="true"
+				v-model="config.label_column"
 				:options="discrete_dimensions"
-				:modelValue="config.label_column?.column_name"
-				@update:modelValue="config.label_column = $event"
 			/>
-			<Autocomplete
-				label="Value"
-				:showFooter="true"
-				:options="props.measures"
-				:modelValue="config.value_column?.measure_name"
-				@update:modelValue="config.value_column = $event"
-			/>
-
+			<MeasurePicker label="Value" :options="props.measures" v-model="config.value_column" />
 			<FormControl
 				v-model="config.legend_position"
 				label="Legend Position"
