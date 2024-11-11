@@ -1,11 +1,5 @@
 import { graphic } from 'echarts/core'
-import {
-	copy,
-	ellipsis,
-	formatNumber,
-	getShortNumber,
-	getUniqueId
-} from '../helpers'
+import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
@@ -96,7 +90,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const show_area = serie.show_area ?? config.y_axis.show_area
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
-			const name = serie.measure.measure_name || c.name
+			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
 			return {
 				type,
@@ -204,7 +198,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 
 			const data = getSeriesData(c.name)
-			const name = serie.measure.measure_name || c.name
+			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
 			return {
 				type,
