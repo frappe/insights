@@ -209,11 +209,14 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
     def get_quoted_db_name(self):
-        if not self.database_name:
+        database_name = self.database_name
+        if self.is_site_db:
+            database_name = frappe.conf.db_name
+        if not database_name:
             return None
         quote_start = self._get_ibis_backend().dialect.QUOTE_START
         quote_end = self._get_ibis_backend().dialect.QUOTE_END
-        return f"{quote_start}{self.database_name}{quote_end}"
+        return f"{quote_start}{database_name}{quote_end}"
 
     def test_connection(self, raise_exception=False):
         try:
