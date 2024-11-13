@@ -23,7 +23,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 
-from .connectors.duckdb import get_duckdb_connection_string
+from .connectors.duckdb import get_duckdb_connection
 from .connectors.frappe_db import (
     get_frappedb_connection_string,
     get_frappedb_table_links,
@@ -188,6 +188,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     def _get_db_connection(self) -> BaseBackend:
         if self.database_type == "BigQuery":
             return get_bigquery_connection(self)
+        if self.database_type == "DuckDB":
+            return get_duckdb_connection(self)
 
         connection_string = self._get_connection_string()
         return ibis.connect(connection_string)
@@ -197,8 +199,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_sitedb_connection_string()
         if self.database_type == "SQLite":
             return get_sqlite_connection_string(self)
-        if self.database_type == "DuckDB":
-            return get_duckdb_connection_string(self)
         if self.is_frappe_db:
             return get_frappedb_connection_string(self)
         if self.database_type == "MariaDB":
