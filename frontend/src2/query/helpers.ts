@@ -53,6 +53,8 @@ import {
 	SelectArgs,
 	Source,
 	SourceArgs,
+	SQL,
+	SQLArgs,
 	Summarize,
 	SummarizeArgs,
 	Table,
@@ -60,7 +62,6 @@ import {
 	Union,
 	UnionArgs,
 } from '../types/query.types'
-import { Query } from './query'
 
 export const table = (args: Partial<TableArgs>): Table => ({
 	type: 'table',
@@ -324,6 +325,17 @@ export const query_operation_types = {
 			return `${op.expression.expression}`
 		},
 	},
+	sql: {
+		label: 'SQL',
+		type: 'sql',
+		icon: Braces,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
+		getDescription: (op: SQL) => {
+			return `${op.raw_sql}`
+		},
+	},
 }
 
 export const source = query_operation_types.source.init
@@ -341,3 +353,4 @@ export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init
 export const limit = query_operation_types.limit.init
 export const custom_operation = query_operation_types.custom_operation.init
+export const sql = query_operation_types.sql.init

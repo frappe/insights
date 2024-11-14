@@ -24,7 +24,7 @@ import {
 	SelectArgs,
 	SourceArgs,
 	SummarizeArgs,
-	UnionArgs
+	UnionArgs,
 } from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
@@ -43,6 +43,7 @@ import {
 	rename,
 	select,
 	source,
+	sql,
 	summarize,
 	union,
 } from './helpers'
@@ -104,6 +105,9 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 		downloadResults,
+
+		getSQLQuery,
+		setSQLQuery,
 
 		dimensions: computed(() => ({} as Dimension[])),
 		measures: computed(() => ({} as Measure[])),
@@ -694,6 +698,24 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	function removeMeasure(column_name: string) {
 		if (!query.doc.calculated_measures) return
 		delete query.doc.calculated_measures[column_name]
+	}
+
+	function getSQLQuery() {
+		if (!query.doc.is_native_query) return ''
+		const op = query.doc.operations.find((op) => op.type === 'sql')
+		if (!op) return ''
+		return op.raw_sql
+	}
+
+	function setSQLQuery(raw_sql: string, data_source: string) {
+		query.doc.operations = []
+		const op = sql({ raw_sql, data_source })
+		if (raw_sql.trim().length) {
+			query.doc.operations.push(op)
+			query.activeOperationIdx = 0
+		} else {
+			query.activeOperationIdx = -1
+		}
 	}
 
 	const originalQuery = copy(workbookQuery)

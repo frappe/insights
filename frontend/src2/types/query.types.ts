@@ -140,6 +140,9 @@ export type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 export type CustomOperationArgs = { expression: Expression }
 export type CustomOperation = { type: 'custom_operation' } & CustomOperationArgs
 
+export type SQLArgs = { raw_sql: string, data_source: string }
+export type SQL = { type: 'sql' } & SQLArgs
+
 export type Operation =
 	| Source
 	| Filter
@@ -156,6 +159,7 @@ export type Operation =
 	| Limit
 	| PivotWider
 	| CustomOperation
+	| SQL
 
 export type QueryResultRow = Record<string, any>
 export type QueryResultColumn = {
