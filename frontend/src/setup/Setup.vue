@@ -49,13 +49,6 @@ const steps = ref([
 		description: connectStepDescription,
 		component: markRaw(SourceConnectionStep),
 	},
-	{
-		title: 'Help Us Improve',
-		description: `
-			Insights is under active development so	we’d like to ask you a few questions that will help us improve your experience in the future.
-		`,
-		component: markRaw(SetupQuestions),
-	},
 ])
 
 const currentStep = ref(0)
