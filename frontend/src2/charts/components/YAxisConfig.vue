@@ -9,6 +9,7 @@ import { AxisChartConfig } from '../../types/chart.types'
 import { MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import { copy } from '../../helpers'
 
 const props = defineProps<{ measures: MeasureOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
@@ -21,17 +22,12 @@ const y_axis = defineModel<AxisChartConfig['y_axis']>({
 const emptySeries = { measure: {} as MeasureOption }
 watchEffect(() => {
 	if (!y_axis.value?.series?.length) {
-		y_axis.value = { series: [{ ...emptySeries }] }
+		y_axis.value = { series: [copy(emptySeries)] }
 	}
 })
 
 function addSeries() {
-	y_axis.value.series.push({ ...emptySeries })
-}
-function resetSeriesConfig(idx: number) {
-	y_axis.value.series[idx] = {
-		measure: y_axis.value.series[idx].measure,
-	}
+	y_axis.value.series.push(copy(emptySeries))
 }
 
 const updateColor = debounce((color: string, idx: number) => {
