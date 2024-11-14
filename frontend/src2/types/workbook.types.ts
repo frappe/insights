@@ -30,6 +30,9 @@ export type WorkbookQuery = {
 	operations: Operation[]
 	use_live_connection?: boolean
 	calculated_measures?: Record<string, Measure>
+	is_native_query?: boolean
+	is_script_query?: boolean
+	is_builder_query?: boolean
 }
 
 export type WorkbookChart = {

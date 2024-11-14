@@ -275,6 +275,15 @@ function getWorkbookResource(name: string) {
 			doc.queries = safeJSONParse(doc.queries) || []
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
+
+			doc.queries.forEach((query: any) => {
+				if (!query.is_native_query && !query.is_script_query) {
+					query.is_builder_query = true
+				} else {
+					query.is_builder_query = false
+				}
+			})
+
 			doc.charts.forEach((chart: any) => {
 				chart.config.filters = chart.config.filters?.filters?.length
 					? chart.config.filters
