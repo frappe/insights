@@ -68,14 +68,9 @@
 							onClick: () => open('https://docs.frappeinsights.com'),
 						},
 						{
-							label: 'Join Telegram Group',
+							label: 'Telegram Support',
 							icon: 'message-circle',
 							onClick: () => open('https://t.me/frappeinsights'),
-						},
-						{
-							label: 'Help',
-							icon: 'life-buoy',
-							onClick: () => (showHelpDialog = true),
 						},
 						session.user.is_admin
 							? {
