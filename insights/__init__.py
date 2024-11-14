@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 
-__version__ = "2.2.6"
+__version__ = "2.2.7"
 
 
 def notify(*args, **kwargs):
