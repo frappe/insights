@@ -8,6 +8,9 @@ from frappe.integrations.utils import make_post_request
 from frappe.rate_limiter import rate_limit
 
 from insights.decorators import insights_whitelist, validate_type
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    get_duckdb_connection,
+)
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -149,9 +152,12 @@ def import_csv_data(filename: str):
         uploads.save(ignore_permissions=True)
 
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    db = ds._get_ibis_backend()
+    db = get_duckdb_connection(ds, read_only=False)
 
-    table = db.read_csv(file_path, table_name=table_name)
-    db.create_table(table_name, table, overwrite=True)
+    try:
+        table = db.read_csv(file_path, table_name=table_name)
+        db.create_table(table_name, table, overwrite=True)
+    finally:
+        db.disconnect()
 
     InsightsTablev3.bulk_create(ds.name, [table_name])
