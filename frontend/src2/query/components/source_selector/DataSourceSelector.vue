@@ -1,5 +1,5 @@
 <script setup>
-import { ChevronDown, ListFilter } from 'lucide-vue-next'
+import { ChevronDown, Database, ListFilter } from 'lucide-vue-next'
 import { computed } from 'vue'
 import useDataSourceStore from '../../../data_source/data_source'
 
@@ -27,12 +27,12 @@ const dataSourceOptions = computed(() => {
 	<Autocomplete
 		:options="dataSourceOptions"
 		:modelValue="currentSourceName"
-		@update:modelValue="currentSourceName = $event.value"
+		@update:modelValue="currentSourceName = $event?.value || ''"
 	>
 		<template #target="{ togglePopover }">
 			<Button variant="outline" @click="togglePopover">
 				<template #prefix>
-					<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
+					<Database class="h-3.5 w-3.5 flex-shrink-0" stroke-width="1.5" />
 				</template>
 				<span class="flex-1 truncate">
 					{{ currentSource?.title || placeholder }}

@@ -4,16 +4,13 @@
 	position: relative !important;
 }
 .cm-gutters {
-	@apply !border-r !bg-transparent !px-1 !text-center !text-sm !leading-6 !text-gray-600;
-}
-.cm-gutters {
-	@apply !border-r !bg-transparent !text-sm !leading-6 !text-gray-600;
+	@apply !border-0 !bg-transparent !px-1.5 !text-xs !leading-6 !text-gray-500;
 }
 .cm-foldGutter span {
 	@apply !hidden !opacity-0;
 }
 .cm-gutterElement {
-	@apply !text-center;
+	@apply !text-left;
 }
 .cm-activeLine {
 	@apply !bg-transparent;

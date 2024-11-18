@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
-import { Play, RefreshCw } from 'lucide-vue-next'
+import { Play, RefreshCw, Wand2 } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import DataTable from '../../components/DataTable.vue'
 import { Query } from '../query'
+import ContentEditable from '../../components/ContentEditable.vue'
+import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
 
-const sql = ref<string>(query.getSQLQuery())
+const operation = query.getSQLOperation()
+const data_source = ref(operation ? operation.data_source : '')
+const sql = ref(operation ? operation.raw_sql : '')
 function execute() {
-	query.setSQLQuery(sql.value, 'demo_data')
+	query.setSQLQuery(sql.value, data_source.value)
 }
 
 const columns = computed(() => query.result.columns)
@@ -25,14 +29,26 @@ const totalRowCount = computed(() =>
 <template>
 	<div class="flex flex-1 flex-col gap-4 overflow-hidden p-4">
 		<div class="relative flex h-[55%] w-full flex-col rounded border">
-			<div class="flex-1">
-				<Code v-model="sql" />
+			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
+				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
+				<ContentEditable
+					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
+					v-model="query.doc.title"
+					placeholder="Untitled Dashboard"
+				></ContentEditable>
 			</div>
-
-			<div class="absolute bottom-2 left-10">
-				<Button class="h-8 w-8 bg-white shadow" variant="ghost" @click="execute">
-					<template #icon>
-						<Play class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			<div class="flex-1 overflow-hidden">
+				<Code v-model="sql" language="sql" />
+			</div>
+			<div class="flex flex-shrink-0 gap-1 border-t p-1">
+				<Button @click="execute" label="Execute">
+					<template #prefix>
+						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+				<Button @click="" label="Format">
+					<template #prefix>
+						<Wand2 class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
 			</div>
