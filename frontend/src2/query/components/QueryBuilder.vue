@@ -1,13 +1,26 @@
 <script setup lang="ts">
-import { inject } from 'vue'
+import { inject, onBeforeUnmount } from 'vue'
 import { Query } from '../query'
 import QueryBuilderSourceSelector from './QueryBuilderSourceSelector.vue'
 import QueryBuilderTable from './QueryBuilderTable.vue'
 import QueryBuilderToolbar from './QueryBuilderToolbar.vue'
 import QueryInfo from './QueryInfo.vue'
 import QueryOperations from './QueryOperations.vue'
+import { useMagicKeys } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
 
 const query = inject<Query>('query')!
+
+const keys = useMagicKeys()
+const cmdZ = keys['Meta+Z']
+const cmdShiftZ = keys['Meta+Shift+Z']
+const stopUndoWatcher = whenever(cmdZ, () => query.canUndo() && query.history.undo())
+const stopRedoWatcher = whenever(cmdShiftZ, () => query.canRedo() && query.history.redo())
+
+onBeforeUnmount(() => {
+	stopUndoWatcher()
+	stopRedoWatcher()
+})
 </script>
 
 <template>

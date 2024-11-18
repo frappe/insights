@@ -448,3 +448,35 @@ def get_data_sources_of_tables(table_names: list[str]):
         data_sources[table.data_source].append(table.name)
 
     return data_sources
+
+
+@insights_whitelist()
+@site_cache(ttl=24 * 60 * 60)
+@validate_type
+def get_schema(data_source: str):
+    check_data_source_permission(data_source)
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    db = ds._get_ibis_backend()
+
+    tables = get_data_source_tables(data_source)
+    schema = {}
+
+    for table in tables:
+        table_name = table.table_name
+        schema[table_name] = {
+            "table": table_name,
+            "label": table.label,
+            "data_source": data_source,
+            "columns": [],
+        }
+        _table = db.table(table_name)
+        for column, datatype in _table.schema().items():
+            schema[table_name]["columns"].append(
+                frappe._dict(
+                    column=column,
+                    label=column,
+                    type=to_insights_type(datatype),
+                )
+            )
+
+    return schema

@@ -2,12 +2,14 @@
 import { useTimeAgo } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { Play, RefreshCw, Wand2 } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watchEffect } from 'vue'
 import Code from '../../components/Code.vue'
 import DataTable from '../../components/DataTable.vue'
 import { Query } from '../query'
 import ContentEditable from '../../components/ContentEditable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
+import { wheneverChanges } from '../../helpers'
+import useDataSourceStore from '../../data_source/data_source'
 
 const query = inject<Query>('query')!
 
@@ -24,6 +26,47 @@ const previewRowCount = computed(() => query.result.rows.length.toLocaleString()
 const totalRowCount = computed(() =>
 	query.result.totalRowCount ? query.result.totalRowCount.toLocaleString() : ''
 )
+
+const dataSourceSchema = ref<Record<string, any>>({})
+const dataSourceStore = useDataSourceStore()
+wheneverChanges(
+	data_source,
+	() => {
+		if (!data_source.value) {
+			dataSourceSchema.value = {}
+			return
+		}
+		dataSourceStore.getSchema(data_source.value).then((schema: any) => {
+			dataSourceSchema.value = schema
+		})
+	},
+	{ immediate: true }
+)
+const completions = computed(() => {
+	if (!Object.keys(dataSourceSchema.value).length)
+		return {
+			schema: {},
+			tables: [],
+		}
+
+	const schema: Record<string, any> = {}
+	Object.entries(dataSourceSchema.value).forEach(([table, tableData]) => {
+		schema[table] = tableData.columns.map((column: any) => ({
+			label: column.label,
+			detail: column.label,
+		}))
+	})
+
+	const tables = Object.entries(dataSourceSchema.value).map(([table, tableData]) => ({
+		label: table,
+		detail: tableData.label,
+	}))
+
+	return {
+		schema,
+		tables,
+	}
+})
 </script>
 
 <template>
@@ -38,7 +81,13 @@ const totalRowCount = computed(() =>
 				></ContentEditable>
 			</div>
 			<div class="flex-1 overflow-hidden">
-				<Code v-model="sql" language="sql" />
+				<Code
+					:key="completions.tables.length"
+					v-model="sql"
+					language="sql"
+					:schema="completions.schema"
+					:tables="completions.tables"
+				/>
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
 				<Button @click="execute" label="Execute">
