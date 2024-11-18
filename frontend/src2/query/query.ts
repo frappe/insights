@@ -106,7 +106,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		getColumnsForSelection,
 		downloadResults,
 
-		getSQLQuery,
+		getSQLOperation,
 		setSQLQuery,
 
 		dimensions: computed(() => ({} as Dimension[])),
@@ -700,11 +700,9 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		delete query.doc.calculated_measures[column_name]
 	}
 
-	function getSQLQuery() {
+	function getSQLOperation() {
 		if (!query.doc.is_native_query) return ''
-		const op = query.doc.operations.find((op) => op.type === 'sql')
-		if (!op) return ''
-		return op.raw_sql
+		return query.doc.operations.find((op) => op.type === 'sql')
 	}
 
 	function setSQLQuery(raw_sql: string, data_source: string) {
