@@ -32,8 +32,9 @@ bench new-site insights.localhost \
 
 bench --site insights.localhost install-app insights
 bench --site insights.localhost set-config developer_mode 1
-bench --site insights.localhost clear-cache
 bench --site insights.localhost set-config mute_emails 1
+bench --site insights.localhost set-config server_script_enabled 1
+bench --site insights.localhost clear-cache
 bench use insights.localhost
 
 bench start
