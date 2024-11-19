@@ -9,12 +9,14 @@ const props = defineProps<{ name?: string; index: number | string }>()
 const workbook = inject<Workbook>(workbookKey)
 const activeQuery = computed(() => workbook?.doc.queries[Number(props.index)])
 
-const typeIsSet = computed(
-	() =>
+const typeIsSet = computed(() => {
+	return (
 		activeQuery.value?.is_native_query ||
 		activeQuery.value?.is_script_query ||
-		activeQuery.value?.is_builder_query
-)
+		activeQuery.value?.is_builder_query ||
+		activeQuery.value?.operations.find((op) => op.type === 'source')
+	)
+})
 
 function setQueryType(interfaceType: 'query-builder' | 'sql-editor' | 'script-editor') {
 	if (!activeQuery.value) return
