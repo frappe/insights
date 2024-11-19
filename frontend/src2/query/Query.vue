@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide } from 'vue'
+import { computed, provide } from 'vue'
 import { WorkbookQuery } from '../types/workbook.types'
 import NativeQueryEditor from './components/NativeQueryEditor.vue'
 import QueryBuilder from './components/QueryBuilder.vue'
@@ -10,9 +10,13 @@ const query = useQuery(props.query)
 provide('query', query)
 window.query = query
 query.execute()
+
+const is_builder_query = computed(
+	() => query.doc.is_builder_query || query.doc.operations.find((op) => op.type === 'source')
+)
 </script>
 
 <template>
-	<QueryBuilder v-if="query.doc.is_builder_query" />
+	<QueryBuilder v-if="is_builder_query" />
 	<NativeQueryEditor v-else-if="query.doc.is_native_query" />
 </template>
