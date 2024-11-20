@@ -24,13 +24,12 @@
 </template>
 
 <script setup lang="ts">
-import { Socket } from 'socket.io-client'
-import { computed, inject, onBeforeUnmount, ref, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
 import AppSidebar from './components/AppSidebar.vue'
 import { dialogs } from './helpers/confirm_dialog'
-import { waitUntil } from './helpers/index.ts'
+import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
 import { createToast } from './helpers/toasts.ts'
 import session from './session'
 import telemetry from './telemetry.ts'
@@ -47,8 +46,7 @@ waitUntil(() => session.isLoggedIn).then(() => {
 	telemetry.init()
 })
 
-const $socket = inject<Socket>('$socket')!
-$socket.on('insights_notification', (data: any) => {
+attachRealtimeListener('insights_notification', (data: any) => {
 	if (data.user == session.user.email) {
 		createToast({
 			title: data.title || data.message,
@@ -57,8 +55,5 @@ $socket.on('insights_notification', (data: any) => {
 			duration: data.duration ? data.duration * 1000 : 4000,
 		})
 	}
-})
-onBeforeUnmount(() => {
-	$socket.off('insights_notification')
 })
 </script>
