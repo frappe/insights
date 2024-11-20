@@ -48,13 +48,13 @@ Building custom apps or creating structured data has been very easy with Frappe 
 
 ## Under the Hood
 
-- [**Frappe Framework**](https://github.com/frappe/frappe): Frappe Insights is built upon the Frappe Framework, a full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
+- [**Frappe Framework**](https://github.com/frappe/frappe): A full-stack web application framework written in Python and Javascript. The framework provides a robust foundation for building web applications, including a database abstraction layer, user authentication, and a REST API.
 
-- [**Frappe UI**](https://github.com/frappe/frappe-ui): Frappe Insights uses Frappe UI, a Vue-based UI library, to provide a modern user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
+- [**Frappe UI**](https://github.com/frappe/frappe-ui): A Vue-based UI library, to provide a modern user interface. The Frappe UI library provides a variety of components that can be used to build single-page applications on top of the Frappe Framework.
 
-- [**SQLAlchemy**](https://github.com/sqlalchemy/sqlalchemy): Frappe Insights uses SQLAlchemy, a Python SQL toolkit and Object Relational Mapper, to interact with the database. SQLAlchemy provides a powerful and flexible interface for working with databases, allowing Frappe Insights to support multiple database integrations.
+- [**Ibis**](https://github.com/ibis-project/ibis): A Python library to interact with SQL databases using a high-level API. Ibis provides a unified interface to interact with 20+ databases, allowing Frappe Insights to support multiple database backends.
 
-- [**eCharts**](https://github.com/apache/echarts): Frappe Insights uses eCharts, a powerful open-source charting and visualization library, to render charts and graphs. eCharts provides a variety of chart types and customization options, allowing Frappe Insights to provide a rich and interactive data visualization experience.
+- [**eCharts**](https://github.com/apache/echarts): A powerful charting library, to render charts and graphs. eCharts provides a variety of chart types and customization options, allowing Frappe Insights to provide a rich and interactive data visualization experience.
 
 
 ## Installation
