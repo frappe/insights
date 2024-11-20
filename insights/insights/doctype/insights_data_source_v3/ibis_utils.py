@@ -458,6 +458,15 @@ class IbisQueryBuilder:
         if results is None or len(results) == 0:
             results = [{"error": "No results"}]
 
+        frappe.publish_realtime(
+            event="insights_script_log",
+            user=frappe.session.user,
+            message={
+                "user": frappe.session.user,
+                "logs": frappe.debug_log,
+            },
+        )
+
         return ibis.memtable(results, name=make_digest(code))
 
     def translate_measure(self, measure):

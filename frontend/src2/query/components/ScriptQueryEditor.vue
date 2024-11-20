@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
-import { Play, RefreshCw, Wand2 } from 'lucide-vue-next'
+import { Bug, Play, RefreshCw } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import DataTable from '../../components/DataTable.vue'
 import { Query } from '../query'
 import ContentEditable from '../../components/ContentEditable.vue'
+import { attachRealtimeListener } from '../../helpers'
+import session from '../../session'
 
 const query = inject<Query>('query')!
+query.autoExecute = false
 
 const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')
@@ -23,29 +26,15 @@ const totalRowCount = computed(() =>
 	query.result.totalRowCount ? query.result.totalRowCount.toLocaleString() : ''
 )
 
-const exampleCode = `# This is an example script that fetches data from a URL and logs the data to the script log
+const placeholder_script = `# Write your script here`
 
-def fetch_data_from_url():
-		# URL of the CSV file
-		csv_url = "https://example.com/data.csv"
-
-		try:
-				# Read data from the CSV file into a Pandas DataFrame
-				df = pandas.read_csv(csv_url)
-
-				# use the log function to log messages to the script log
-				log(df)
-
-				# return the DataFrame
-				return df
-
-		except Exception as e:
-				log("An error occurred:", str(e))
-				return None
-
-# Call the function to execute the script and
-# then convert the data into a Pandas DataFrame or a List of lists with first row as column names
-results = fetch_data_from_url()`
+const showLogs = ref(false)
+const scriptLogs = ref<string[]>([])
+attachRealtimeListener('insights_script_log', (data: any) => {
+	if (data.user == session.user.email) {
+		scriptLogs.value = data.logs
+	}
+})
 </script>
 
 <template>
@@ -58,8 +47,34 @@ results = fetch_data_from_url()`
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 			</div>
-			<div class="flex-1 overflow-hidden">
-				<Code v-model="code" language="python" :placeholder="exampleCode" />
+			<div class="flex flex-1 overflow-hidden">
+				<div class="flex-1">
+					<Code v-model="code" language="python" :placeholder="placeholder_script" />
+				</div>
+
+				<transition
+					tag="div"
+					name="slide"
+					enter-active-class="transition ease-out duration-200"
+					enter-from-class="transform translate-x-full opacity-0"
+					enter-to-class="transform translate-x-0 opacity-100"
+					leave-active-class="transition ease-in duration-200"
+					leave-from-class="transform translate-x-0"
+					leave-to-class="transform translate-x-full"
+				>
+					<div
+						v-if="showLogs"
+						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-gray-50 p-3"
+					>
+						<div class="font-mono text-sm uppercase text-gray-600">Logs</div>
+						<div class="mt-2 flex w-full flex-col gap-2 overflow-y-auto font-mono">
+							<div v-for="(log, index) in scriptLogs" :key="index" class="flex gap-2">
+								<div class="text-gray-400">[{{ index + 1 }}]</div>
+								<div class="text-gray-500">{{ log }}</div>
+							</div>
+						</div>
+					</div>
+				</transition>
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
 				<Button @click="execute" label="Run">
@@ -67,8 +82,14 @@ results = fetch_data_from_url()`
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
+				<Button @click="showLogs = !showLogs" label="Logs">
+					<template #prefix>
+						<Bug class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
 			</div>
 		</div>
+
 		<div
 			v-show="query.result.executedSQL"
 			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
@@ -80,6 +101,7 @@ results = fetch_data_from_url()`
 				<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
 			</div>
 		</div>
+
 		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
 			<div
 				v-if="query.executing"

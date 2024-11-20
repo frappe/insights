@@ -1,10 +1,11 @@
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
-import { ComputedRef, Ref, watch } from 'vue'
+import { ComputedRef, inject, onBeforeUnmount, Ref, watch } from 'vue'
 import session from '../session'
 import { ColumnDataType, DropdownOption, GroupedDropdownOption } from '../types/query.types'
 import { createToast } from './toasts'
 import { FIELDTYPES } from './constants'
+import { Socket } from 'socket.io-client'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -305,4 +306,13 @@ export function isNumber(data_type: ColumnDataType) {
 
 export function isString(data_type: ColumnDataType) {
 	return FIELDTYPES.TEXT.includes(data_type)
+}
+
+
+export function attachRealtimeListener(event: string, callback: (...args: any[]) => void) {
+	const $socket = inject<Socket>('$socket')!
+	$socket.on(event, callback)
+	onBeforeUnmount(() => {
+		$socket.off(event)
+	})
 }
