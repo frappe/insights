@@ -2,25 +2,18 @@
 import { useTimeAgo } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { Play, RefreshCw, Wand2 } from 'lucide-vue-next'
-import { computed, inject, ref, watchEffect } from 'vue'
+import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import DataTable from '../../components/DataTable.vue'
 import { Query } from '../query'
 import ContentEditable from '../../components/ContentEditable.vue'
-import DataSourceSelector from './source_selector/DataSourceSelector.vue'
-import { wheneverChanges } from '../../helpers'
-import useDataSourceStore from '../../data_source/data_source'
 
 const query = inject<Query>('query')!
 
-const operation = query.getSQLOperation()
-const data_source = ref(operation ? operation.data_source : '')
-const sql = ref(operation ? operation.raw_sql : '')
+const operation = query.getCodeOperation()
+const code = ref(operation ? operation.code : '')
 function execute() {
-	query.setSQL({
-		raw_sql: sql.value,
-		data_source: data_source.value,
-	})
+	query.setCode({ code: code.value })
 }
 
 const columns = computed(() => query.result.columns)
@@ -30,53 +23,35 @@ const totalRowCount = computed(() =>
 	query.result.totalRowCount ? query.result.totalRowCount.toLocaleString() : ''
 )
 
-const dataSourceSchema = ref<Record<string, any>>({})
-const dataSourceStore = useDataSourceStore()
-wheneverChanges(
-	data_source,
-	() => {
-		if (!data_source.value) {
-			dataSourceSchema.value = {}
-			return
-		}
-		dataSourceStore.getSchema(data_source.value).then((schema: any) => {
-			dataSourceSchema.value = schema
-		})
-	},
-	{ immediate: true }
-)
-const completions = computed(() => {
-	if (!Object.keys(dataSourceSchema.value).length)
-		return {
-			schema: {},
-			tables: [],
-		}
+const exampleCode = `# This is an example script that fetches data from a URL and logs the data to the script log
 
-	const schema: Record<string, any> = {}
-	Object.entries(dataSourceSchema.value).forEach(([table, tableData]) => {
-		schema[table] = tableData.columns.map((column: any) => ({
-			label: column.label,
-			detail: column.label,
-		}))
-	})
+def fetch_data_from_url():
+		# URL of the CSV file
+		csv_url = "https://example.com/data.csv"
 
-	const tables = Object.entries(dataSourceSchema.value).map(([table, tableData]) => ({
-		label: table,
-		detail: tableData.label,
-	}))
+		try:
+				# Read data from the CSV file into a Pandas DataFrame
+				df = pandas.read_csv(csv_url)
 
-	return {
-		schema,
-		tables,
-	}
-})
+				# use the log function to log messages to the script log
+				log(df)
+
+				# return the DataFrame
+				return df
+
+		except Exception as e:
+				log("An error occurred:", str(e))
+				return None
+
+# Call the function to execute the script and
+# then convert the data into a Pandas DataFrame or a List of lists with first row as column names
+results = fetch_data_from_url()`
 </script>
 
 <template>
 	<div class="flex flex-1 flex-col gap-4 overflow-hidden p-4">
 		<div class="relative flex h-[55%] w-full flex-col rounded border">
 			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
 				<ContentEditable
 					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
 					v-model="query.doc.title"
@@ -84,23 +59,12 @@ const completions = computed(() => {
 				></ContentEditable>
 			</div>
 			<div class="flex-1 overflow-hidden">
-				<Code
-					:key="completions.tables.length"
-					v-model="sql"
-					language="sql"
-					:schema="completions.schema"
-					:tables="completions.tables"
-				/>
+				<Code v-model="code" language="python" :placeholder="exampleCode" />
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="execute" label="Execute">
+				<Button @click="execute" label="Run">
 					<template #prefix>
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
-				<Button @click="" label="Format">
-					<template #prefix>
-						<Wand2 class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
 			</div>
