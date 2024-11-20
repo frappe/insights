@@ -27,11 +27,14 @@ export default function useChartData(options = {}) {
 		error: null,
 	})
 
+	let currentLoadPromise = null
 	function load(query) {
 		if (!query) return
 		state.loading = true
-		return options
-			.resultsFetcher()
+		if (!currentLoadPromise) {
+			currentLoadPromise = options.resultsFetcher(query)
+		}
+		return currentLoadPromise
 			.then((results) => {
 				state.loading = false
 				state.rawData = getFormattedResult(results)
@@ -40,6 +43,9 @@ export default function useChartData(options = {}) {
 			.catch((error) => {
 				state.loading = false
 				state.error = error
+			})
+			.finally(() => {
+				currentLoadPromise = null
 			})
 	}
 

@@ -306,6 +306,7 @@ function getDashboardResource(name) {
 	return createDocumentResource({
 		doctype: 'Insights Dashboard',
 		name: name,
+		auto: false,
 		whitelistedMethods: {
 			fetch_chart_data: 'fetch_chart_data',
 			clear_charts_cache: 'clear_charts_cache',
