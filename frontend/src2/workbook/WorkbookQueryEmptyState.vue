@@ -34,7 +34,7 @@ const emit = defineEmits({
 					<p class="text-sm text-gray-500">Create queries with raw SQL</p>
 				</div>
 			</div>
-			<!-- <div
+			<div
 				class="flex w-full cursor-pointer items-center gap-4 rounded border border-transparent bg-white p-2 shadow-sm transition-all hover:border-gray-300"
 				@click="emit('select', 'script-editor')"
 			>
@@ -45,7 +45,7 @@ const emit = defineEmits({
 					<p class="font-medium text-gray-700">Script Editor</p>
 					<p class="text-sm text-gray-500">Create queries with a python script</p>
 				</div>
-			</div> -->
+			</div>
 		</div>
 	</div>
 </template>

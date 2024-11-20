@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
+import { Braces, LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
 import { inject } from 'vue'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
@@ -28,6 +28,11 @@ const workbook = inject(workbookKey) as Workbook
 			<template #item-icon="{ item }">
 				<ScrollText
 					v-if="item.is_native_query"
+					class="h-4 w-4 text-gray-700"
+					stroke-width="1.5"
+				/>
+				<Braces
+					v-else-if="item.is_script_query"
 					class="h-4 w-4 text-gray-700"
 					stroke-width="1.5"
 				/>
