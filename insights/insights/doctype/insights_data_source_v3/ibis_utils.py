@@ -573,21 +573,22 @@ def execute_ibis_query(
     limit = min(max(limit, 1), 10_00_000)
     query = query.head(limit) if limit else query
     sql = ibis.to_sql(query)
+    cache_key = make_digest(sql, query._find_backend().db_identity)
 
-    if cache and has_cached_results(sql):
-        return get_cached_results(sql), -1
+    if cache and has_cached_results(cache_key):
+        return get_cached_results(cache_key), -1
 
     start = time.monotonic()
-    res: pd.DataFrame = query.execute()
+    result: pd.DataFrame = query.execute()
     time_taken = flt(time.monotonic() - start, 3)
     create_execution_log(sql, time_taken)
 
-    res = res.replace({pd.NaT: None, np.nan: None})
+    result = result.replace({pd.NaT: None, np.nan: None})
 
     if cache:
-        cache_results(sql, res, cache_expiry)
+        cache_results(cache_key, result, cache_expiry)
 
-    return res, time_taken
+    return result, time_taken
 
 
 def get_columns_from_schema(schema: ibis.Schema):
@@ -622,16 +623,14 @@ def to_insights_type(dtype: DataType):
     frappe.throw(f"Cannot infer data type for: {dtype}")
 
 
-def cache_results(sql, result: pd.DataFrame, cache_expiry=3600):
-    cache_key = make_digest(sql)
+def cache_results(cache_key, result: pd.DataFrame, cache_expiry=3600):
     cache_key = "insights:query_results:" + cache_key
     data = result.to_dict(orient="records")
     data = frappe.as_json(data)
     frappe.cache().set_value(cache_key, data, expires_in_sec=cache_expiry)
 
 
-def get_cached_results(sql) -> pd.DataFrame:
-    cache_key = make_digest(sql)
+def get_cached_results(cache_key) -> pd.DataFrame:
     cache_key = "insights:query_results:" + cache_key
     data = frappe.cache().get_value(cache_key)
     if not data:
@@ -641,8 +640,7 @@ def get_cached_results(sql) -> pd.DataFrame:
     return df
 
 
-def has_cached_results(sql):
-    cache_key = make_digest(sql)
+def has_cached_results(cache_key):
     cache_key = "insights:query_results:" + cache_key
     return frappe.cache().get_value(cache_key) is not None
 
