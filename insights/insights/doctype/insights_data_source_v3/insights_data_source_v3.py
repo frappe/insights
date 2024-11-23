@@ -26,7 +26,7 @@ from .connectors.frappe_db import (
     is_frappe_db,
 )
 from .connectors.mariadb import get_mariadb_connection_string
-from .connectors.mssql import get_mssql_connection_string
+from .connectors.mssql import get_mssql_connection
 from .connectors.postgresql import get_postgres_connection_string
 from .connectors.sqlite import get_sqlite_connection_string
 from .data_warehouse import WAREHOUSE_DB_NAME
@@ -187,6 +187,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_bigquery_connection(self)
         if self.database_type == "DuckDB":
             return get_duckdb_connection(self)
+        if self.database_type == "MSSQL":
+            return get_mssql_connection(self)
 
         connection_string = self._get_connection_string()
         return ibis.connect(connection_string)
@@ -202,8 +204,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_mariadb_connection_string(self)
         if self.database_type == "PostgreSQL":
             return get_postgres_connection_string(self)
-        if self.database_type == "MSSQL":
-            return get_mssql_connection_string(self)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
@@ -223,6 +223,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             db.list_tables(database=self.get_quoted_db_name())
             return True
         except Exception as e:
+            frappe.msgprint(str(e), title="Error", indicator="red")
             frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:
                 raise e
