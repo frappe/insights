@@ -108,7 +108,7 @@ function confirmSelection() {
 						<template #item-content="{ item }">
 							<div class="flex items-center gap-1.5">
 								<DataTypeIcon :columnType="item.type" />
-								<span>{{ item.name }}</span>
+								<span class="truncate">{{ item.name }}</span>
 							</div>
 						</template>
 					</DraggableList>
