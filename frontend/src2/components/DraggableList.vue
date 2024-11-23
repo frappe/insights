@@ -41,17 +41,17 @@ function onChange(e) {
 					v-if="props.showHandle"
 					class="h-4 w-4 flex-shrink-0 cursor-grab text-gray-500"
 				/>
-				<div class="flex flex-1 flex-col justify-center overflow-hidden">
+				<div class="flex-1 overflow-hidden">
 					<slot name="item" :item="item" :index="idx">
 						<div
-							class="group flex flex-1 cursor-pointer items-center justify-between rounded bg-gray-50 py-1.5 px-2 hover:bg-gray-100"
+							class="group flex flex-1 cursor-pointer items-center justify-between gap-1 overflow-hidden rounded bg-gray-50 py-1.5 px-2 hover:bg-gray-100"
 						>
-							<div class="flex items-center space-x-2">
+							<div class="flex-1 overflow-hidden">
 								<slot name="item-content" :item="item" :index="idx">
 									<div>{{ typeof item === 'object' ? item[itemKey] : item }}</div>
 								</slot>
 							</div>
-							<div class="flex items-center space-x-2">
+							<div class="flex-shrink-0">
 								<X
 									@click.prevent.stop="items.splice(idx, 1)"
 									class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
