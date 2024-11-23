@@ -36,7 +36,7 @@ function onChange(e) {
 		@change="onChange"
 	>
 		<template #item="{ element: item, index: idx }">
-			<div class="mb-2 flex items-center gap-1 last:mb-0">
+			<div class="mb-1.5 flex items-center gap-1 last:mb-0">
 				<GripVertical
 					v-if="props.showHandle"
 					class="h-4 w-4 flex-shrink-0 cursor-grab text-gray-500"
@@ -44,15 +44,18 @@ function onChange(e) {
 				<div class="flex flex-1 flex-col justify-center overflow-hidden">
 					<slot name="item" :item="item" :index="idx">
 						<div
-							class="group form-input flex h-7 flex-1 cursor-pointer items-center justify-between px-2"
+							class="group flex flex-1 cursor-pointer items-center justify-between rounded bg-gray-50 py-1.5 px-2 hover:bg-gray-100"
 						>
 							<div class="flex items-center space-x-2">
-								<div>{{ typeof item === 'object' ? item[itemKey] : item }}</div>
+								<slot name="item-content" :item="item" :index="idx">
+									<div>{{ typeof item === 'object' ? item[itemKey] : item }}</div>
+								</slot>
 							</div>
 							<div class="flex items-center space-x-2">
 								<X
 									@click.prevent.stop="items.splice(idx, 1)"
 									class="invisible h-4 w-4 text-gray-600 transition-all hover:text-gray-800 group-hover:visible"
+									stroke-width="1.5"
 								/>
 							</div>
 						</div>
@@ -64,7 +67,7 @@ function onChange(e) {
 	</Draggable>
 	<template v-if="showEmptyState && !items?.length">
 		<div
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
+			class="flex h-full flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
 		>
 			<div class="text-xs text-gray-500">{{ props.emptyText }}</div>
 		</div>

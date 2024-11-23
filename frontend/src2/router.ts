@@ -11,7 +11,7 @@ const routes = [
 	{
 		path: '/',
 		name: 'Home',
-		redirect: '/workbook',
+		redirect: '/dashboards',
 		component: () => import('./home/Home.vue'),
 	},
 	{

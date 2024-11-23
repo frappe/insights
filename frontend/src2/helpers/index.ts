@@ -2,8 +2,9 @@ import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { ComputedRef, Ref, watch } from 'vue'
 import session from '../session'
-import { DropdownOption, GroupedDropdownOption } from '../types/query.types'
+import { ColumnDataType, DropdownOption, GroupedDropdownOption } from '../types/query.types'
 import { createToast } from './toasts'
+import { FIELDTYPES } from './constants'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -94,7 +95,15 @@ export function store<T>(key: string, value: () => T) {
 }
 
 export function getErrorMessage(err: any) {
-	return err.exc?.split('\n').filter(Boolean).at(-1)
+	const lastLine = err.exc
+		?.split('\n')
+		.filter(Boolean)
+		.at(-1)
+		?.trim()
+		.split(': ')
+		.slice(1)
+		.join(': ')
+	return lastLine || err.message || err.toString()
 }
 
 export function showErrorToast(err: Error, raise = true) {
@@ -251,6 +260,7 @@ export function ellipsis(value: string, length: number) {
 export function flattenOptions(
 	options: DropdownOption[] | GroupedDropdownOption[]
 ): DropdownOption[] {
+	if (!options.length) return []
 	return 'group' in options[0]
 		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
 		: (options as DropdownOption[])
@@ -269,4 +279,30 @@ export function toOptions(arr: any[], map: Record<OptionKey, string>) {
 		})
 		return item
 	})
+}
+
+export function sanitizeColumnName(name: string) {
+	return name
+		? name
+				.trim()
+				.replace(' ', '_')
+				.replace('-', '_')
+				.replace('.', '_')
+				.replace('/', '_')
+				.replace('(', '_')
+				.replace(')', '_')
+				.toLowerCase()
+		: name
+}
+
+export function isDate(data_type: ColumnDataType) {
+	return FIELDTYPES.DATE.includes(data_type)
+}
+
+export function isNumber(data_type: ColumnDataType) {
+	return FIELDTYPES.NUMBER.includes(data_type)
+}
+
+export function isString(data_type: ColumnDataType) {
+	return FIELDTYPES.TEXT.includes(data_type)
 }

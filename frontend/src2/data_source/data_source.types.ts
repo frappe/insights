@@ -6,6 +6,8 @@ export type DataSourceListItem = {
 	owner: string
 	status: 'Active' | 'Inactive'
 	database_type: DatabaseType
+	is_frappe_db: boolean
+	is_site_db: boolean
 	creation: string
 	modified: string
 	created_from_now: string

@@ -262,8 +262,9 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
     if response.status_code == 200:
         return response.content
     else:
-        exception = response.json().get("exc")
-        raise Exception(frappe.parse_json(exception)[0])
+        exception = response.json()
+        frappe.log_error(message=exception, title="Failed to generate preview")
+        frappe.throw("Failed to generate preview")
 
 
 def create_preview_file(content: bytes, dashboard_name: str, workbook_name: str):

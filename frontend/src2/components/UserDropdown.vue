@@ -88,7 +88,7 @@ const userDropdownOptions = ref([
 	{
 		label: 'Documentation',
 		icon: 'help-circle',
-		onClick: () => window.open('https://docs.frappeinsights.com', '_blank'),
+		onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
 	},
 	{
 		label: 'Join Telegram Group',

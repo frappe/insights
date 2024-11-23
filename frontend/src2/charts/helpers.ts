@@ -9,6 +9,7 @@ import {
 	ChartConfig,
 	DountChartConfig,
 	LineChartConfig,
+	Series,
 	SeriesLine,
 } from '../types/chart.types'
 import {
@@ -48,7 +49,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const xAxis = getXAxis({ column_type: config.x_axis.data_type })
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.data_type)
-	const granularity = xAxisIsDate ? getGranularity(config.x_axis.column_name, config) : null
+	const granularity = xAxisIsDate ? getGranularity(config.x_axis.dimension_name, config) : null
 
 	const leftYAxis = getYAxis()
 	const rightYAxis = getYAxis()
@@ -57,15 +58,15 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.column_name])
-				const b_date = new Date(b[config.x_axis.column_name])
+				const a_date = new Date(a[config.x_axis.dimension_name])
+				const b_date = new Date(b[config.x_axis.dimension_name])
 				return a_date.getTime() - b_date.getTime()
 		  })
 		: _rows
 
 	const getSeriesData = (column: string) =>
 		sortedRows.map((r) => {
-			const x_value = r[config.x_axis.column_name]
+			const x_value = r[config.x_axis.dimension_name]
 			const y_value = r[column]
 			return [x_value, y_value]
 		})
@@ -83,15 +84,17 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const serie = getSerie(config, c.name) as SeriesLine
 
 			const is_right_axis = serie.align === 'Right'
+			const type = serie.type?.toLowerCase() || 'line'
 			const smooth = serie.smooth ?? config.y_axis.smooth
 			const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
 			const show_area = serie.show_area ?? config.y_axis.show_area
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
+			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
 			return {
-				type: 'line',
-				name: c.name,
+				type,
+				name,
 				data: getSeriesData(c.name),
 				color: color,
 				yAxisIndex: is_right_axis ? 1 : 0,
@@ -138,7 +141,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const xAxis = getXAxis({ column_type: config.x_axis.data_type })
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.data_type)
-	const granularity = xAxisIsDate ? getGranularity(config.x_axis.column_name, config) : null
+	const granularity = xAxisIsDate ? getGranularity(config.x_axis.dimension_name, config) : null
 
 	const leftYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
@@ -147,14 +150,14 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.column_name])
-				const b_date = new Date(b[config.x_axis.column_name])
+				const a_date = new Date(a[config.x_axis.dimension_name])
+				const b_date = new Date(b[config.x_axis.dimension_name])
 				return a_date.getTime() - b_date.getTime()
 		  })
 		: _rows
 
 	const total_per_x_value = _rows.reduce((acc, row) => {
-		const x_value = row[config.x_axis.column_name]
+		const x_value = row[config.x_axis.dimension_name]
 		if (!acc[x_value]) acc[x_value] = 0
 		number_columns.forEach((m) => (acc[x_value] += row[m.name]))
 		return acc
@@ -163,7 +166,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const getSeriesData = (column: string) =>
 		sortedRows
 			.map((r) => {
-				const x_value = r[config.x_axis.column_name]
+				const x_value = r[config.x_axis.dimension_name]
 				const y_value = r[column]
 				const normalize = config.y_axis.normalize
 				if (!normalize) {
@@ -189,17 +192,18 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
 
-			const stack = config.y_axis.stack
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
 			const type = serie.type?.toLowerCase() || 'bar'
+			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
+			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 
 			const data = getSeriesData(c.name)
+			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
 			return {
 				type,
-				stack: type === 'bar' && stack ? 'stack' : undefined,
-				name: c.name,
+				stack,
+				name,
 				data: swapAxes ? data.reverse() : data,
 				color: color,
 				label: {
@@ -226,7 +230,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	}
 }
 
-function getSerie(config: AxisChartConfig, number_column: string) {
+function getSerie(config: AxisChartConfig, number_column: string): Series {
 	let serie
 	if (!config.split_by?.column_name) {
 		serie = config.y_axis.series.find((s) => s.measure.measure_name === number_column)
@@ -238,8 +242,15 @@ function getSerie(config: AxisChartConfig, number_column: string) {
 			serie = config.y_axis.series.find((s) => number_column.includes(s.measure.measure_name))
 		}
 	}
-	serie = serie || config.y_axis.series[0]
-	return serie
+
+	return (
+		serie ||
+		({
+			measure: {
+				measure_name: number_column,
+			},
+		} as Series)
+	)
 }
 
 type XAxisCustomizeOptions = {
@@ -413,7 +424,7 @@ function getDonutChartData(
 export function getFunnelChartOptions(config: DountChartConfig, result: QueryResult) {
 	const rows = result.rows
 
-	const labelColumn = config.label_column.column_name
+	const labelColumn = config.label_column.dimension_name
 	const valueColumn = config.value_column.measure_name
 	const labels = rows.map((r) => r[labelColumn])
 	const values = rows.map((r) => r[valueColumn])
@@ -625,21 +636,47 @@ export function handleOldYAxisConfig(old_y_axis: any): AxisChartConfig['y_axis']
 	return old_y_axis
 }
 
-export function getGranularity(column_name: string, config: ChartConfig) {
+export function setDimensionNames(config: any) {
+	const setDimensionName = (dimension: any) => {
+		if (
+			dimension &&
+			typeof dimension === 'object' &&
+			!dimension.dimension_name &&
+			dimension.column_name
+		) {
+			dimension.dimension_name = dimension.column_name
+		}
+		return dimension
+	}
+
+	const dimensionPaths = ['x_axis', 'split_by', 'date_column', 'label_column']
+	dimensionPaths.forEach((path) => {
+		config[path] = setDimensionName(config[path])
+	})
+	if (config.rows && config.rows.length) {
+		config.rows = config.rows.map(setDimensionName)
+	}
+	if (config.columns && config.columns.length) {
+		config.columns = config.columns.map(setDimensionName)
+	}
+	return config
+}
+
+export function getGranularity(dimension_name: string, config: ChartConfig) {
 	const column = Object.entries(config).find(([_, value]) => {
 		if (!value) return false
 		if (Array.isArray(value)) {
-			return value.some((v) => v.column_name === column_name)
+			return value.some((v) => v.dimension_name === dimension_name)
 		}
 		if (typeof value === 'object') {
-			return value.column_name === column_name
+			return value.dimension_name === dimension_name
 		}
 		return false
 	})
 	if (!column) return
 
 	if (Array.isArray(column[1])) {
-		const granularity = column[1].find((v) => v.column_name === column_name)?.granularity
+		const granularity = column[1].find((v) => v.dimension_name === dimension_name)?.granularity
 		return granularity as GranularityType
 	}
 

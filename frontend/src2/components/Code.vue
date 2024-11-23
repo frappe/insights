@@ -20,11 +20,11 @@ import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { MySQL, sql } from '@codemirror/lang-sql'
-import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language'
+import { syntaxTree } from '@codemirror/language'
 import { EditorView } from '@codemirror/view'
-import { tags } from '@lezer/highlight'
 import { onMounted, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
+import { tomorrow } from 'thememirror'
 
 const props = defineProps({
 	modelValue: String,
@@ -103,7 +103,7 @@ const language =
 				tables: props.tables,
 		  })
 
-const extensions = [language, closeBrackets(), EditorView.lineWrapping]
+const extensions = [language, closeBrackets(), EditorView.lineWrapping, tomorrow]
 const autocompletionOptions = {
 	activateOnTyping: true,
 	closeOnBlur: false,
@@ -119,77 +119,6 @@ if (props.completions) {
 	]
 }
 extensions.push(autocompletion(autocompletionOptions))
-
-const chalky = '#e5a05b',
-	coral = '#b04a54',
-	cyan = '#45a5b1',
-	invalid = '#ffffff',
-	ivory = '#6a6a6a',
-	stone = '#7d8799', // Brightened compared to original to increase contrast
-	malibu = '#61afef',
-	sage = '#76c457',
-	whiskey = '#d19a66',
-	violet = '#c678dd'
-
-const getHighlighterStyle = () =>
-	HighlightStyle.define([
-		{ tag: tags.keyword, color: violet },
-		{
-			tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
-			color: coral,
-		},
-		{
-			tag: [tags.function(tags.variableName), tags.labelName],
-			color: malibu,
-		},
-		{
-			tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)],
-			color: whiskey,
-		},
-		{ tag: [tags.definition(tags.name), tags.separator], color: ivory },
-		{
-			tag: [
-				tags.typeName,
-				tags.className,
-				tags.number,
-				tags.changed,
-				tags.annotation,
-				tags.modifier,
-				tags.self,
-				tags.namespace,
-			],
-			color: chalky,
-		},
-		{
-			tag: [
-				tags.operator,
-				tags.operatorKeyword,
-				tags.url,
-				tags.escape,
-				tags.regexp,
-				tags.link,
-				tags.special(tags.string),
-			],
-			color: cyan,
-		},
-		{ tag: [tags.meta, tags.comment], color: stone },
-		{ tag: tags.strong, fontWeight: 'bold' },
-		{ tag: tags.emphasis, fontStyle: 'italic' },
-		{ tag: tags.strikethrough, textDecoration: 'line-through' },
-		{ tag: tags.link, color: stone, textDecoration: 'underline' },
-		{ tag: tags.heading, fontWeight: 'bold', color: coral },
-		{
-			tag: [tags.atom, tags.bool, tags.special(tags.variableName)],
-			color: whiskey,
-		},
-		{
-			tag: [tags.processingInstruction, tags.string, tags.inserted],
-			color: sage,
-		},
-		{ tag: tags.invalid, color: invalid },
-	])
-
-extensions.push(syntaxHighlighting(getHighlighterStyle()))
 
 defineExpose({
 	get cursorPos() {

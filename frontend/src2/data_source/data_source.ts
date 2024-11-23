@@ -63,6 +63,10 @@ export function getDataSourceOptions() {
 	})
 }
 
+function getSchema(data_source: string) {
+	return call('insights.api.data_sources.get_schema', { data_source })
+}
+
 export default function useDataSourceStore() {
 	if (!sources.value.length) {
 		fetchSources()
@@ -74,6 +78,8 @@ export default function useDataSourceStore() {
 		getSources: fetchSources,
 		getSource,
 		getOptions: getDataSourceOptions,
+
+		getSchema,
 
 		testing,
 		testConnection,

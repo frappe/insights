@@ -6,6 +6,7 @@ import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import {
+	CodeArgs,
 	ColumnDataType,
 	CustomOperationArgs,
 	Dimension,
@@ -19,12 +20,13 @@ import {
 	OrderByArgs,
 	PivotWiderArgs,
 	QueryResult,
+	QueryResultColumn,
 	Rename,
 	SelectArgs,
-	Source,
 	SourceArgs,
+	SQLArgs,
 	SummarizeArgs,
-	UnionArgs
+	UnionArgs,
 } from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
@@ -39,13 +41,14 @@ import {
 	mutate,
 	order_by,
 	pivot_wider,
-	query_table,
 	remove,
 	rename,
 	select,
 	source,
+	sql,
 	summarize,
 	union,
+	code
 } from './helpers'
 
 const queries = new Map<string, Query>()
@@ -68,7 +71,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 		activeOperationIdx: -1,
 		activeEditIndex: -1,
-		source: computed(() => ({} as Source)),
+		source: computed(() => ''),
 		currentOperations: computed(() => [] as Operation[]),
 		activeEditOperation: computed(() => ({} as Operation)),
 
@@ -106,6 +109,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		getColumnsForSelection,
 		downloadResults,
 
+		getSQLOperation,
+		setSQL,
+
+		getCodeOperation,
+		setCode,
+
 		dimensions: computed(() => ({} as Dimension[])),
 		measures: computed(() => ({} as Measure[])),
 		getDimension,
@@ -142,6 +151,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					column_name: column.name,
 					data_type: column.type as DimensionDataType,
 					granularity: isDate ? 'month' : undefined,
+					dimension_name: column.name,
 				}
 			})
 	})
@@ -158,7 +168,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					return {
 						aggregation: 'sum',
 						column_name: column.name,
-						measure_name: `sum(${column.name})`,
+						measure_name: `sum_of_${column.name}`,
 						data_type: column.type as MeasureDataType,
 					}
 				}),
@@ -168,10 +178,21 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 
 	// @ts-ignore
 	query.source = computed(() => {
-		const sourceOp = query.doc.operations.find((op) => op.type === 'source')
-		if (!sourceOp) return {} as Source
-		return sourceOp as Source
+		const operations = query.getOperationsForExecution()
+		return getDataSource(operations)
 	})
+
+	function getDataSource(operations: Operation[]): string {
+		const source = operations.find((op) => op.type === 'source')
+		if (!source) return ''
+		if (source.table.type === 'table') {
+			return source.table.data_source
+		}
+		if (source.table.type === 'query' && 'query' in source.table) {
+			return getDataSource(source.table.operations!)
+		}
+		return ''
+	}
 
 	// @ts-ignore
 	query.currentOperations = computed(() => {
@@ -218,7 +239,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			op.table.operations = queryTable.getOperationsForExecution()
 		}
 
-
 		if (query.dashboardFilters.filters?.length) {
 			_operations.push(filter_group(query.dashboardFilters))
 			query.dashboardFilters = {} as FilterGroupArgs
@@ -255,6 +275,8 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 					query: query.doc.name,
 					data_type: column.type,
 				}))
+				query.result.timeTaken = response.time_taken
+				query.result.lastExecutedAt = new Date()
 			})
 			.catch((e: Error) => {
 				query.result = { ...EMPTY_RESULT }
@@ -649,6 +671,14 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		return call(method, {
 			use_live_connection: query.doc.use_live_connection,
 			operations: operationsForExecution,
+		}).then((columns: QueryResultColumn[]) => {
+			return columns.map((column) => ({
+				label: column.name,
+				value: column.name,
+				description: column.type,
+				query: query.doc.name,
+				data_type: column.type,
+			}))
 		})
 	}
 
@@ -674,6 +704,36 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	function removeMeasure(column_name: string) {
 		if (!query.doc.calculated_measures) return
 		delete query.doc.calculated_measures[column_name]
+	}
+
+	function getSQLOperation() {
+		if (!query.doc.is_native_query) return ''
+		return query.doc.operations.find((op) => op.type === 'sql')
+	}
+
+	function setSQL(args: SQLArgs) {
+		query.doc.operations = []
+		if (args.raw_sql.trim().length) {
+			query.doc.operations.push(sql(args))
+			query.activeOperationIdx = 0
+		} else {
+			query.activeOperationIdx = -1
+		}
+	}
+
+	function getCodeOperation() {
+		return query.doc.operations.find((op) => op.type === 'code')
+	}
+
+	function setCode(args: CodeArgs) {
+		query.doc.operations = []
+		if (args.code.trim().length) {
+			query.doc.operations.push(code(args))
+			query.activeOperationIdx = 0
+			query.execute()
+		} else {
+			query.activeOperationIdx = -1
+		}
 	}
 
 	const originalQuery = copy(workbookQuery)
@@ -718,6 +778,8 @@ const EMPTY_RESULT = {
 	formattedRows: [],
 	columns: [],
 	columnOptions: [],
+	timeTaken: 0,
+	lastExecutedAt: new Date(),
 } as QueryResult
 
 export type Query = ReturnType<typeof makeQuery>

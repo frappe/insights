@@ -18,7 +18,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 )
 
 from .connectors.bigquery import get_bigquery_connection
-from .connectors.duckdb import get_duckdb_connection_string
+from .connectors.duckdb import get_duckdb_connection
 from .connectors.frappe_db import (
     get_frappedb_connection_string,
     get_frappedb_table_links,
@@ -48,8 +48,12 @@ class InsightsDataSourceDocument:
             frappe.throw("Only one site database can be configured")
 
     def on_update(self: "InsightsDataSourcev3"):
-        if self.is_site_db and not self.is_frappe_db:
+        if self.is_site_db:
             self.db_set("is_frappe_db", 1)
+            self.db_set("status", "Active")
+            with db_connections():
+                self.update_table_list()
+            return
 
         credentials_changed = self.has_credentials_changed()
         if (
@@ -181,6 +185,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     def _get_db_connection(self) -> BaseBackend:
         if self.database_type == "BigQuery":
             return get_bigquery_connection(self)
+        if self.database_type == "DuckDB":
+            return get_duckdb_connection(self)
 
         connection_string = self._get_connection_string()
         return ibis.connect(connection_string)
@@ -190,8 +196,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_sitedb_connection_string()
         if self.database_type == "SQLite":
             return get_sqlite_connection_string(self)
-        if self.database_type == "DuckDB":
-            return get_duckdb_connection_string(self)
         if self.is_frappe_db:
             return get_frappedb_connection_string(self)
         if self.database_type == "MariaDB":
@@ -203,10 +207,20 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
+    def get_quoted_db_name(self):
+        database_name = self.database_name
+        if self.is_site_db:
+            database_name = frappe.conf.db_name
+        if not database_name:
+            return None
+        quote_start = self._get_ibis_backend().dialect.QUOTE_START
+        quote_end = self._get_ibis_backend().dialect.QUOTE_END
+        return f"{quote_start}{database_name}{quote_end}"
+
     def test_connection(self, raise_exception=False):
         try:
             db = self._get_ibis_backend()
-            db.list_tables()
+            db.list_tables(database=self.get_quoted_db_name())
             return True
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
@@ -217,7 +231,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         blacklist_patterns = ["^_", "^sqlite_"]
         blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
         remote_db = self._get_ibis_backend()
-        remote_tables = remote_db.list_tables()
+        remote_tables = remote_db.list_tables(database=self.get_quoted_db_name())
         remote_tables = [t for t in remote_tables if not blacklisted(t)]
 
         if not remote_tables:

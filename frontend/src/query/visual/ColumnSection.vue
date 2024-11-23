@@ -110,13 +110,14 @@ function onColumnSort(e) {
 			:showHandle="false"
 		>
 			<template #item="{ item: column, index: idx }">
-				<ColumnListItem
-					v-if="isExpressionColumn(column)"
-					:column="column"
-					:isActive="activeColumnIdx === idx"
-					@edit-column="activeColumnIdx = idx"
-					@remove-column="assistedQuery.removeColumnAt(idx)"
-				/>
+				<div v-if="isExpressionColumn(column)">
+					<ColumnListItem
+						:column="column"
+						:isActive="activeColumnIdx === idx"
+						@edit-column="activeColumnIdx = idx"
+						@remove-column="assistedQuery.removeColumnAt(idx)"
+					/>
+				</div>
 				<Popover
 					v-else
 					:show="showSimpleColumnEditor && activeColumnIdx === idx"

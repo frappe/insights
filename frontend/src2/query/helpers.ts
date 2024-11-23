@@ -11,8 +11,9 @@ import {
 	GitBranch,
 	Indent,
 	Repeat,
+	ScrollText,
 	TextCursorInput,
-	XSquareIcon
+	XSquareIcon,
 } from 'lucide-vue-next'
 import { h } from 'vue'
 import { copy } from '../helpers'
@@ -21,6 +22,8 @@ import dayjs from '../helpers/dayjs'
 import {
 	Cast,
 	CastArgs,
+	Code,
+	CodeArgs,
 	Column,
 	CustomOperation,
 	CustomOperationArgs,
@@ -53,14 +56,15 @@ import {
 	SelectArgs,
 	Source,
 	SourceArgs,
+	SQL,
+	SQLArgs,
 	Summarize,
 	SummarizeArgs,
 	Table,
 	TableArgs,
 	Union,
-	UnionArgs
+	UnionArgs,
 } from '../types/query.types'
-import { Query } from './query'
 
 export const table = (args: Partial<TableArgs>): Table => ({
 	type: 'table',
@@ -81,7 +85,7 @@ export const count = (): Measure => ({
 	column_name: 'count',
 	data_type: 'Integer',
 	aggregation: 'count',
-	measure_name: 'count(*)',
+	measure_name: 'count_of_rows',
 })
 export const operator = (operator: FilterOperator): FilterOperator => operator
 export const value = (value: FilterValue): FilterValue => value
@@ -109,8 +113,8 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 
 	const getGranularity = (column_name: string) => {
 		const dim =
-			summarize_step?.dimensions.find((dim) => dim.column_name === column_name) ||
-			pivot_step?.rows.find((dim) => dim.column_name === column_name)
+			summarize_step?.dimensions.find((dim) => dim.dimension_name === column_name) ||
+			pivot_step?.rows.find((dim) => dim.dimension_name === column_name)
 		return dim ? dim.granularity : null
 	}
 
@@ -324,6 +328,28 @@ export const query_operation_types = {
 			return `${op.expression.expression}`
 		},
 	},
+	sql: {
+		label: 'SQL',
+		type: 'sql',
+		icon: ScrollText,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
+		getDescription: (op: SQL) => {
+			return "SQL"
+		},
+	},
+	code: {
+		label: 'Code',
+		type: 'code',
+		icon: Braces,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
+		getDescription: (op: Code) => {
+			return "Code"
+		},
+	},
 }
 
 export const source = query_operation_types.source.init
@@ -341,3 +367,5 @@ export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init
 export const limit = query_operation_types.limit.init
 export const custom_operation = query_operation_types.custom_operation.init
+export const sql = query_operation_types.sql.init
+export const code = query_operation_types.code.init

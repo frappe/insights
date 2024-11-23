@@ -2,7 +2,7 @@ import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
-import { handleOldYAxisConfig } from '../charts/helpers'
+import { handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
 import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
@@ -20,9 +20,9 @@ import type {
 export default function useWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
 
-	const router = useRouter()
 	workbook.onAfterInsert(() => {
-		window.location.href = window.location.href.replace(name, workbook.doc.name)
+		const href = window.location.href.replace(name, workbook.doc.name)
+		window.location.replace(href)
 	})
 	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 
@@ -41,6 +41,7 @@ export default function useWorkbook(name: string) {
 		}
 	)
 
+	const router = useRouter()
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
 		router.replace(
 			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`
@@ -274,6 +275,15 @@ function getWorkbookResource(name: string) {
 			doc.queries = safeJSONParse(doc.queries) || []
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
+
+			doc.queries.forEach((query: any) => {
+				if (!query.is_native_query && !query.is_script_query) {
+					query.is_builder_query = true
+				} else {
+					query.is_builder_query = false
+				}
+			})
+
 			doc.charts.forEach((chart: any) => {
 				chart.config.filters = chart.config.filters?.filters?.length
 					? chart.config.filters
@@ -288,6 +298,7 @@ function getWorkbookResource(name: string) {
 					// @ts-ignore
 					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
 				}
+				chart.config = setDimensionNames(chart.config)
 			})
 			return doc
 		},

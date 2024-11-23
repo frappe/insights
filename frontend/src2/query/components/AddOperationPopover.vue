@@ -56,7 +56,7 @@ const operationButtons = [
 	},
 	{
 		label: 'Filter Rows',
-		description: 'Filter rows based on columns or custom expressions',
+		description: 'Filter rows based on columns or expressions',
 		icon: query_operation_types.filter.icon,
 		onClick: () => (showFiltersSelectorDialog.value = true),
 	},
@@ -138,32 +138,36 @@ watch(
 				<span class="flex h-6 items-center px-2 text-xs text-gray-500">
 					Select an operation
 				</span>
-				<Button
-					v-for="button in operationButtons"
-					:key="button.label"
-					variant="ghost"
-					class="!h-fit w-full !justify-start"
-					@click="
-						() => {
-							button.onClick()
-							togglePopover()
-						}
-					"
-				>
-					<template #prefix>
-						<div class="flex items-start gap-2 py-2">
-							<component
-								:is="button.icon"
-								class="h-4.5 w-4.5 flex-shrink-0 text-gray-700"
-								stroke-width="1.5"
-							/>
-							<div class="flex flex-1 flex-col gap-1 text-left">
-								<p class="truncate text-sm">{{ button.label }}</p>
-								<p class="w-40 text-xs text-gray-500">{{ button.description }}</p>
+				<div class="grid grid-cols-2">
+					<Button
+						v-for="button in operationButtons"
+						:key="button.label"
+						variant="ghost"
+						class="!h-fit w-full !justify-start"
+						@click="
+							() => {
+								button.onClick()
+								togglePopover()
+							}
+						"
+					>
+						<template #prefix>
+							<div class="flex items-start gap-2 py-2">
+								<component
+									:is="button.icon"
+									class="h-4.5 w-4.5 flex-shrink-0 text-gray-700"
+									stroke-width="1.5"
+								/>
+								<div class="flex flex-1 flex-col gap-1 text-left">
+									<p class="truncate text-sm">{{ button.label }}</p>
+									<p class="w-40 text-xs text-gray-500">
+										{{ button.description }}
+									</p>
+								</div>
 							</div>
-						</div>
-					</template>
-				</Button>
+						</template>
+					</Button>
+				</div>
 			</div>
 		</template>
 	</Popover>

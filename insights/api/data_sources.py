@@ -283,12 +283,13 @@ def get_reverse_cardinality(cardinality):
 def get_all_data_sources():
     return frappe.get_list(
         "Insights Data Source v3",
-        filters={"status": "Active"},
         fields=[
             "name",
             "status",
             "title",
             "owner",
+            "is_frappe_db",
+            "is_site_db",
             "creation",
             "modified",
             "database_type",
@@ -335,7 +336,7 @@ def get_data_source_table(data_source: str, table_name: str):
     ds = frappe.get_doc("Insights Data Source v3", data_source)
     db = ds._get_ibis_backend()
     q = db.table(table_name).head(100)
-    data = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
+    data, time_taken = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
 
     return {
         "table_name": table_name,
@@ -447,3 +448,35 @@ def get_data_sources_of_tables(table_names: list[str]):
         data_sources[table.data_source].append(table.name)
 
     return data_sources
+
+
+@insights_whitelist()
+@site_cache(ttl=24 * 60 * 60)
+@validate_type
+def get_schema(data_source: str):
+    check_data_source_permission(data_source)
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    db = ds._get_ibis_backend()
+
+    tables = get_data_source_tables(data_source)
+    schema = {}
+
+    for table in tables:
+        table_name = table.table_name
+        schema[table_name] = {
+            "table": table_name,
+            "label": table.label,
+            "data_source": data_source,
+            "columns": [],
+        }
+        _table = db.table(table_name)
+        for column, datatype in _table.schema().items():
+            schema[table_name]["columns"].append(
+                frappe._dict(
+                    column=column,
+                    label=column,
+                    type=to_insights_type(datatype),
+                )
+            )
+
+    return schema
