@@ -379,22 +379,6 @@ class IbisQueryBuilder:
         values = [self.translate_measure(measure) for measure in pivot_args["values"]]
 
         if pivot_type == "wider":
-            other_columns = [
-                self.translate_dimension(dim).get_name()
-                for dim in pivot_args["columns"]
-                if not self.is_date_type(dim.data_type)
-            ]
-            if other_columns:
-                names = self.query.select(other_columns).distinct().limit(10).execute()
-                self.query = self.query.filter(
-                    ibis.or_(
-                        *[
-                            getattr(self.query, col).isin(names[col])
-                            for col in other_columns
-                        ]
-                    )
-                )
-
             self.query = self.query.group_by(*rows, *columns).aggregate(
                 **{value.get_name(): value for value in values}
             )
@@ -409,10 +393,20 @@ class IbisQueryBuilder:
                     {dimension: "string" for dimension in date_dimensions}
                 )
 
+            names_from = [col.get_name() for col in columns]
+            names = (
+                self.query.select(names_from)
+                .order_by(names_from)
+                .distinct()
+                .limit(10)
+                .execute()
+            )
+            names = names.fillna("null").values
+
             return self.query.pivot_wider(
                 id_cols=[row.get_name() for row in rows],
-                names_from=[col.get_name() for col in columns],
-                names_sort=True,
+                names_from=names_from,
+                names=names,
                 values_from=[value.get_name() for value in values],
                 values_agg="sum",
             )
