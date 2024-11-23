@@ -32,21 +32,6 @@ class InsightsTablev3(Document):
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):
-        tables = []
-        for table in tables:
-            tables.append(
-                [
-                    get_table_name(data_source, table),
-                    data_source,
-                    table,
-                    table,
-                    frappe.utils.now(),
-                    frappe.utils.now(),
-                    frappe.session.user,
-                    frappe.session.user,
-                ]
-            )
-
         frappe.db.bulk_insert(
             "Insights Table v3",
             [
@@ -59,7 +44,19 @@ class InsightsTablev3(Document):
                 "modified_by",
                 "owner",
             ],
-            tables,
+            [
+                [
+                    get_table_name(data_source, table),
+                    data_source,
+                    table,
+                    table,
+                    frappe.utils.now(),
+                    frappe.utils.now(),
+                    frappe.session.user,
+                    frappe.session.user,
+                ]
+                for table in tables
+            ],
             ignore_duplicates=True,
         )
 
