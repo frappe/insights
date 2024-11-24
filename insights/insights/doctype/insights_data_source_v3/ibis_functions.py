@@ -94,8 +94,17 @@ f_literal = ibis.literal
 f_row_number = ibis.row_number
 f_sql = lambda query: _.sql(query)
 f_coalesce = ibis.coalesce
+f_if_null = ibis.coalesce
 f_asc = ibis.asc
 f_desc = ibis.desc
+
+
+def f_previous_value(column, group_by, order_by, offset=1):
+    return column.lag(offset).over(group_by=group_by, order_by=order_by)
+
+
+def f_next_value(column, group_by, order_by, offset=1):
+    return column.lead(offset).over(group_by=group_by, order_by=order_by)
 
 
 def f_previous_period_value(column, date_column, offset=1):
