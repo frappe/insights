@@ -26,6 +26,7 @@ class InsightsWorkbook(Document):
 
         charts: DF.JSON | None
         dashboards: DF.JSON | None
+        enable_auto_save: DF.Check
         name: DF.Int | None
         queries: DF.JSON | None
         title: DF.Data
