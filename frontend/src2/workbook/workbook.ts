@@ -1,3 +1,4 @@
+import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
@@ -24,7 +25,6 @@ export default function useWorkbook(name: string) {
 		const href = window.location.href.replace(name, workbook.doc.name)
 		window.location.replace(href)
 	})
-	workbook.onAfterSave(() => createToast({ title: 'Saved', variant: 'success' }))
 
 	wheneverChanges(
 		() => workbook.doc,
@@ -228,6 +228,24 @@ export default function useWorkbook(name: string) {
 
 		return linkedQueries
 	}
+
+	let stopAutoSaveWatcher: any
+	wheneverChanges(
+		() => workbook.doc.enable_auto_save,
+		() => {
+			if (!workbook.doc.enable_auto_save && stopAutoSaveWatcher) {
+				stopAutoSaveWatcher()
+				stopAutoSaveWatcher = null
+			}
+			if (workbook.doc.enable_auto_save && !stopAutoSaveWatcher) {
+				stopAutoSaveWatcher = watchDebounced(
+					() => workbook.isdirty,
+					() => workbook.isdirty && workbook.save(),
+					{ immediate: true, debounce: 1000 }
+				)
+			}
+		}
+	)
 
 	return reactive({
 		...toRefs(workbook),
