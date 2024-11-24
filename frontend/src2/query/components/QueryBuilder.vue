@@ -18,6 +18,7 @@ const stopUndoWatcher = whenever(cmdZ, () => query.canUndo() && query.history.un
 const stopRedoWatcher = whenever(cmdShiftZ, () => query.canRedo() && query.history.redo())
 
 onBeforeUnmount(() => {
+	query.activeOperationIdx = query.doc.operations.length - 1
 	stopUndoWatcher()
 	stopRedoWatcher()
 })
