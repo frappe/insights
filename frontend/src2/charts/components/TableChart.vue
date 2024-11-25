@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { TableChartConfig } from '../../types/chart.types'
 import { QueryResult } from '../../types/query.types'
 import { WorkbookChart } from '../../types/workbook.types'
+import { Chart } from '../chart'
 import ChartBuilderTableColumn from './ChartBuilderTableColumn.vue'
 import ChartTitle from './ChartTitle.vue'
 
@@ -13,6 +14,7 @@ const props = defineProps<{
 	result: QueryResult
 }>()
 
+const chart = inject<Chart>('chart')!
 const tableConfig = computed(() => props.config as TableChartConfig)
 </script>
 
@@ -26,6 +28,7 @@ const tableConfig = computed(() => props.config as TableChartConfig)
 			:show-filter-row="tableConfig.show_filter_row"
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
+			:on-export="chart ? chart.dataQuery.downloadResults : undefined"
 		>
 			<template #column-header="{ column }">
 				<ChartBuilderTableColumn :config="props.config" :column="column" />
