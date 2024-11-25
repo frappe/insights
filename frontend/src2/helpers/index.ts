@@ -11,6 +11,7 @@ import {
 } from '../types/query.types'
 import { FIELDTYPES } from './constants'
 import { createToast } from './toasts'
+import { getFormattedDate } from '../query/helpers'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -323,21 +324,7 @@ export function attachRealtimeListener(event: string, callback: (...args: any[])
 
 export function createHeaders(columns: QueryResultColumn[]) {
 	const nestedColumns = columns.filter((column) => column.name.includes('___'))
-	if (!nestedColumns.length) {
-		return [
-			columns.map((column) => {
-				return {
-					label: column.name,
-					level: 0,
-					isLast: true,
-					column: column,
-					colspan: 1,
-				}
-			}),
-		]
-	}
-
-	const levels = nestedColumns[0].name.split('___').length || 1
+	const levels = nestedColumns.length ? nestedColumns[0].name.split('___').length : 1
 
 	const _columns = columns.map((column) => {
 		return {
@@ -401,5 +388,45 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		groupedHeaders.push(groupedHeaderRow)
 	}
 
+	// if header rows have items with values like: 2016-10-01, 2016-11-01, 2016-12-01
+	// i.e first day of each month, then we format the values as 'Oct 2016', 'Nov 2016', 'Dec 2016'
+
+	for (let headerRow of groupedHeaders) {
+		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
+		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
+		const areDates = areValidDates(headerRow.map((header) => header.label))
+
+		for (let header of headerRow) {
+			if (!isValidDate(header.label)) continue
+
+			if (areFirstOfYear) {
+				header.label = getFormattedDate(header.label, 'year')
+			} else if (areFirstOfMonth) {
+				header.label = getFormattedDate(header.label, 'month')
+			} else if (areDates) {
+				header.label = getFormattedDate(header.label, 'day')
+			}
+		}
+	}
+
 	return groupedHeaders
+}
+
+function areFirstDayOfMonth(data: string[]) {
+	const firstDayOfMonth = (date: string) => new Date(date).getDate() === 1
+	return data.map(firstDayOfMonth).filter(Boolean).length / data.length >= 0.5
+}
+
+function areFirstDayOfYear(data: string[]) {
+	const firstDayOfYear = (date: string) =>
+		new Date(date).getMonth() === 0 && new Date(date).getDate() === 1
+	return data.map(firstDayOfYear).filter(Boolean).length / data.length >= 0.5
+}
+
+function areValidDates(data: string[]) {
+	return data.map(isValidDate).filter(Boolean).length / data.length >= 0.5
+}
+
+function isValidDate(value: string) {
+	return !isNaN(new Date(value).getTime())
 }
