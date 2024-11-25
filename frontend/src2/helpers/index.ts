@@ -1,11 +1,16 @@
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { Socket } from 'socket.io-client'
 import { ComputedRef, inject, onBeforeUnmount, Ref, watch } from 'vue'
 import session from '../session'
-import { ColumnDataType, DropdownOption, GroupedDropdownOption } from '../types/query.types'
-import { createToast } from './toasts'
+import {
+	ColumnDataType,
+	DropdownOption,
+	GroupedDropdownOption,
+	QueryResultColumn,
+} from '../types/query.types'
 import { FIELDTYPES } from './constants'
-import { Socket } from 'socket.io-client'
+import { createToast } from './toasts'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -308,11 +313,93 @@ export function isString(data_type: ColumnDataType) {
 	return FIELDTYPES.TEXT.includes(data_type)
 }
 
-
 export function attachRealtimeListener(event: string, callback: (...args: any[]) => void) {
 	const $socket = inject<Socket>('$socket')!
 	$socket.on(event, callback)
 	onBeforeUnmount(() => {
 		$socket.off(event)
 	})
+}
+
+export function createHeaders(columns: QueryResultColumn[]) {
+	const nestedColumns = columns.filter((column) => column.name.includes('___'))
+	if (!nestedColumns.length) {
+		return [
+			columns.map((column) => {
+				return {
+					label: column.name,
+					level: 0,
+					isLast: true,
+					column: column,
+					colspan: 1,
+				}
+			}),
+		]
+	}
+
+	const levels = nestedColumns[0].name.split('___').length || 1
+
+	const _columns = columns.map((column) => {
+		return {
+			...column,
+			isNested: column.name.includes('___'),
+			// ibis returns nested columns as value1___column1, value2___column1, value3___column1
+			// using the columns as it is will show the value1 on the top and column1, column2, column3 as nested columns
+			// so we reverse the parts to show column1 on the top and value1, value2, value3 as nested columns
+			parts: column.name.split('___').reverse(),
+		}
+	})
+
+	const headers = []
+
+	for (let level = 0; level < levels; level++) {
+		const headerRow = []
+
+		for (let column of _columns) {
+			const isNested = column.isNested
+			const isLast = level === levels - 1
+
+			headerRow.push({
+				label: isNested ? column.parts[level] : isLast ? column.name : '',
+				level,
+				isLast,
+				column: column,
+			})
+		}
+
+		headers.push(headerRow)
+	}
+
+	const groupedHeaders = []
+
+	for (let headerRow of headers) {
+		const groupedHeaderRow = []
+
+		let currentHeader = headerRow[0]
+		let currentColspan = 1
+
+		for (let i = 1; i < headerRow.length; i++) {
+			const header = headerRow[i]
+
+			if (header.label === currentHeader.label) {
+				currentColspan++
+			} else {
+				groupedHeaderRow.push({
+					...currentHeader,
+					colspan: currentColspan,
+				})
+				currentHeader = header
+				currentColspan = 1
+			}
+		}
+
+		groupedHeaderRow.push({
+			...currentHeader,
+			colspan: currentColspan,
+		})
+
+		groupedHeaders.push(groupedHeaderRow)
+	}
+
+	return groupedHeaders
 }

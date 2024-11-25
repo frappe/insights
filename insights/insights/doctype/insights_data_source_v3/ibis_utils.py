@@ -406,6 +406,7 @@ class IbisQueryBuilder:
             return self.query.pivot_wider(
                 id_cols=[row.get_name() for row in rows],
                 names_from=names_from,
+                names_sep="___",
                 names=names,
                 values_from=[value.get_name() for value in values],
                 values_agg="sum",

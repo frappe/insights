@@ -5,6 +5,7 @@ import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardItemActions from './DashboardItemActions.vue'
+import { watchDebounced } from '@vueuse/core'
 
 const props = defineProps<{
 	index: number
@@ -18,6 +19,15 @@ const chart = computed(() => {
 	const item = props.item as WorkbookDashboardChart
 	return getCachedChart(item.chart) as Chart
 })
+
+watchDebounced(
+	() => chart.value?.doc.config.order_by,
+	() => chart.value?.refresh(),
+	{
+		deep: true,
+		debounce: 500,
+	}
+)
 
 let timer: any
 const wasDragging = ref(false)
