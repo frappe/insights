@@ -142,7 +142,13 @@ doc_events = {
 scheduler_events = {
     "all": [
         "insights.insights.doctype.insights_alert.insights_alert.send_alerts",
-    ]
+    ],
+    "daily": [
+        "insights.api.data_store.sync_tables",
+    ],
+    "hourly": [
+        "insights.api.data_store.update_failed_sync_status",
+    ],
 }
 
 # Testing

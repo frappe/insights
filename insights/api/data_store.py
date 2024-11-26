@@ -62,3 +62,33 @@ def import_table(data_source: str, table_name: str):
     name = get_table_name(data_source, table_name)
     table_doc = frappe.get_doc("Insights Table v3", name)
     table_doc.import_to_warehouse()
+
+
+def sync_tables():
+    # called daily via hooks
+    tables = frappe.get_all(
+        "Insights Table v3",
+        filters={"stored": 1},
+        fields=["name", "data_source", "table"],
+    )
+
+    for table in tables:
+        import_table(table.data_source, table.table)
+
+
+def update_failed_sync_status():
+    from frappe.query_builder import Interval
+    from frappe.query_builder.functions import Now
+
+    Log = frappe.qb.DocType("Insights Table Import Log")
+    logs = frappe.db.get_values(
+        Log,
+        ((Log.status == "In Progress") & (Log.creation < (Now() - Interval(hours=1)))),
+        pluck="name",
+    )
+
+    if not logs:
+        return
+
+    for log in logs:
+        frappe.db.set_value("Insights Table Import Log", log, "status", "Failed")
