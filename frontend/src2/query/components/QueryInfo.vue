@@ -8,8 +8,8 @@ const query = inject('query') as Query
 function toggleLiveConnection(enable: boolean) {
 	const title = enable ? 'Enable Data Store' : 'Disable Data Store'
 	const message = enable
-		? 'Enabling the data store will make your queries faster by using stored data. However, this data may not be the most current, as it is updated once every 24 hours.'
-		: 'Disabling the data store will ensure you are always using the most up-to-date data, but your queries may take longer to run.'
+		? 'Enabling data store use the cached table data for faster queries, but may not be up-to-date. It will also allow you to combine data from multiple sources. Cached data is updated every day.'
+		: 'Disabling data store will use the live connection to the database for queries. This will ensure that you are always querying the most up-to-date data but may be slower.'
 
 	confirmDialog({
 		title,
