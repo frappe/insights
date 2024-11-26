@@ -41,8 +41,8 @@ function selectDimension(option?: DimensionOption) {
 </script>
 
 <template>
-	<div class="flex items-end gap-1">
-		<div class="flex-1">
+	<div class="flex items-end gap-1 overflow-hidden">
+		<div class="flex-1 overflow-hidden">
 			<Autocomplete
 				placeholder="Select a column"
 				:showFooter="true"

@@ -214,7 +214,7 @@ function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
 						<td
 							v-for="col in props.columns"
 							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
-							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
+							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
 							height="30px"
 							@dblclick="emit('cell-dbl-click', row, col)"
 						>
@@ -223,7 +223,7 @@ function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="border-b border-r px-3 text-right font-bold"
+							class="tnum border-b border-r px-3 text-right font-bold"
 							height="30px"
 						>
 							{{ formatNumber(totalPerRow[idx]) }}
@@ -238,14 +238,14 @@ function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
 						<td
 							v-for="col in props.columns"
 							class="truncate border-r border-t py-2 px-3 font-bold text-gray-800"
-							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
+							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
 						>
 							{{ isNumberColumn(col) ? formatNumber(totalPerColumn[col.name]) : '' }}
 						</td>
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="border-r border-t px-3 text-right font-bold"
+							class="tnum border-r border-t px-3 text-right font-bold"
 						>
 							{{ formatNumber(totalColumnTotal) }}
 						</td>

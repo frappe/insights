@@ -257,7 +257,7 @@ const CustomOperationInfo = (props: any) => {
 					@dblclick="query.setActiveEditIndex(idx)"
 				>
 					<div
-						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-gray-400 bg-white p-1"
+						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-gray-300 bg-white p-1"
 					>
 						<component
 							:is="op.meta.icon"
