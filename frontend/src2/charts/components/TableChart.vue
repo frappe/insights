@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { TableChartConfig } from '../../types/chart.types'
-import { QueryResult } from '../../types/query.types'
+import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { WorkbookChart } from '../../types/workbook.types'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
 import { column } from '../../query/helpers'
+import DrillDown from './DrillDown.vue'
 
 const props = defineProps<{
 	title: string
@@ -31,6 +32,8 @@ function onSort(sort_order: Record<string, 'asc' | 'desc'>) {
 		direction: sort_order[column_name],
 	}))
 }
+
+const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn }>()
 </script>
 
 <template>
@@ -45,7 +48,19 @@ function onSort(sort_order: Record<string, 'asc' | 'desc'>) {
 			:on-export="chart ? chart.dataQuery.downloadResults : undefined"
 			:sort-order="sortOrder"
 			@sort="onSort"
+			@cell-dbl-click="(row, column) => (drillOn = { row, column })"
 		>
 		</DataTable>
+
+		<DrillDown
+			v-if="chart && drillOn"
+			:chart="{
+				operations: chart.doc.operations,
+				use_live_connection: chart.baseQuery.doc.use_live_connection,
+				result: chart.dataQuery.result,
+			}"
+			:row="drillOn.row"
+			:column="drillOn.column"
+		/>
 	</div>
 </template>
