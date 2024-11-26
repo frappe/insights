@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-	Building2,
-	CircleUser,
-	DatabaseZap,
-	SettingsIcon,
-	Shield,
-	Users,
-	Warehouse,
-} from 'lucide-vue-next'
+import { Building2, CircleUser, DatabaseZap, KeyRound, SettingsIcon, Users } from 'lucide-vue-next'
 import { defineAsyncComponent, ref } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
 
@@ -42,13 +34,8 @@ const tabGroups: TabGroup[] = [
 				component: defineAsyncComponent(() => import('./UsersSettings.vue')),
 			},
 			{
-				label: 'Teams',
-				icon: Building2,
-				component: defineAsyncComponent(() => import('./TeamsSettings.vue')),
-			},
-			{
 				label: 'Permissions',
-				icon: Shield,
+				icon: KeyRound,
 				component: defineAsyncComponent(() => import('./PermissionsSettings.vue')),
 			},
 			{
