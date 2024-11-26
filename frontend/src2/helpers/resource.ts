@@ -8,6 +8,7 @@ import { createToast } from './toasts'
 type DocumentResourceOptions<T> = {
 	initialDoc: T
 	transform?: (doc: T) => T
+	disableLocalStorage?: boolean
 }
 export default function useDocumentResource<T extends object>(
 	doctype: string,
@@ -150,6 +151,8 @@ export default function useDocumentResource<T extends object>(
 	resource.load().then(setupLocalStorage)
 
 	function setupLocalStorage() {
+		if (options.disableLocalStorage) return
+
 		const storageKey = `insights:resource:${resource.doctype}:${resource.name}`
 		const storage = useStorage(storageKey, {
 			doc: null as any,

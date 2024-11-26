@@ -1,13 +1,13 @@
 <script setup lang="tsx">
 import { DatabaseIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import TabbedSidebarLayout, { Tab, TabGroup } from '../../../components/TabbedSidebarLayout.vue'
 import useDataSourceStore from '../../../data_source/data_source'
 import { wheneverChanges } from '../../../helpers'
 import { QueryTableArgs, SourceArgs, TableArgs } from '../../../types/query.types'
 import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { query_table, table } from '../../helpers'
 import DataSourceTableList from './DataSourceTableList.vue'
-import TabbedSidebarLayout, { Tab, TabGroup } from './TabbedSidebarLayout.vue'
 import WorkbookQueryList from './WorkbookQueryList.vue'
 
 const emit = defineEmits({ select: (source: SourceArgs) => true })

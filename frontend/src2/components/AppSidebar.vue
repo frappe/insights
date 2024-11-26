@@ -8,11 +8,12 @@
 			<div class="flex flex-col overflow-y-auto">
 				<SidebarLink
 					v-for="link in links"
+					class="mx-2 my-0.5"
 					:icon="link.icon"
 					:label="link.label"
 					:to="link.to"
 					:isCollapsed="isSidebarCollapsed"
-					class="mx-2 my-0.5"
+					@click="link.onClick"
 				/>
 			</div>
 		</div>
@@ -33,26 +34,27 @@
 			</template>
 		</SidebarLink>
 	</div>
+
+	<Settings v-model="showSettingsDialog" />
 </template>
 
 <script setup lang="ts">
 import {
 	Book,
 	Database,
+	DatabaseZap,
 	LayoutGrid,
 	PanelRightOpen,
-	ShieldHalf,
-	Users,
+	SettingsIcon,
 	Warehouse,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
-import { waitUntil } from '../helpers'
-import useSettings from '../settings/settings'
+import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
 
 const isSidebarCollapsed = ref(false)
-const settings = useSettings()
+const showSettingsDialog = ref(false)
 
 const links = ref([
 	{
@@ -72,23 +74,14 @@ const links = ref([
 	},
 	{
 		label: 'Data Store',
-		icon: Warehouse,
+		icon: DatabaseZap,
 		to: 'DataStoreList',
 	},
 	{
-		label: 'Users',
-		icon: Users,
-		to: 'UserList',
+		label: 'Settings',
+		icon: SettingsIcon,
+		to: 'Settings',
+		onClick: () => (showSettingsDialog.value = true),
 	},
 ])
-
-waitUntil(() => settings.loading === false).then(() => {
-	if (settings.doc.enable_permissions) {
-		links.value.push({
-			label: 'Teams',
-			icon: ShieldHalf,
-			to: 'TeamList',
-		})
-	}
-})
 </script>
