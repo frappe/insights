@@ -80,3 +80,14 @@ def get_team_query_conditions(user):
     return """(`tabInsights Team`.name in ({teams}))""".format(
         teams=", ".join(frappe.db.escape(team) for team in user_teams)
     )
+
+
+def check_app_permission():
+    if frappe.session.user == "Administrator":
+        return True
+
+    roles = frappe.get_roles()
+    if any(role in ["Insights User", "Insights Admin"] for role in roles):
+        return True
+
+    return False

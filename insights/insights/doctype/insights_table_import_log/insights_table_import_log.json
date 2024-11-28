@@ -131,7 +131,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-03 15:28:54.289437",
+ "modified": "2024-11-26 22:36:30.872683",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Log",
@@ -157,7 +157,10 @@
    "share": 1
   }
  ],
+ "search_fields": "data_source, table_name",
+ "show_title_field_in_link": 1,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "table_name"
 }
