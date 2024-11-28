@@ -17,8 +17,8 @@ dependencies = [
     "ibis-framework[mysql]",
     "ibis-framework[postgres]",
     "ibis-framework[sqlite]",
-    "ibis-framework[bigquery]",
-    "ibis-framework[mssql]"
+    "ibis-framework[mssql]",
+    # "ibis-framework[bigquery]",
 ]
 
 [build-system]

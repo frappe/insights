@@ -14,23 +14,6 @@ import SummarySelectorDialog from './SummarySelectorDialog.vue'
 import UnionSelectorDialog from './UnionSelectorDialog.vue'
 
 const query = inject('query') as Query
-const AddOperation = (props: any) => {
-	return (
-		<div class="group relative flex cursor-pointer items-start gap-2">
-			<div class="-ml-[14px] h-fit flex-shrink-0 rounded border border-dashed bg-white p-1 transition-all group-hover:border-gray-400">
-				<Plus
-					class="h-4 w-4 text-gray-500 transition-all group-hover:text-gray-600"
-					stroke-width="1.5"
-				/>
-			</div>
-			<div class="flex flex-1 items-center gap-2 leading-[26px]">
-				<div class="text-gray-500 transition-all group-hover:text-gray-600">
-					Add operation
-				</div>
-			</div>
-		</div>
-	)
-}
 
 const showSourceSelectorDialog = ref(false)
 const showJoinSelectorDialog = ref(false)
@@ -131,7 +114,18 @@ watch(
 <template>
 	<Popover placement="left-start" popover-class="!min-w-fit pr-5">
 		<template #target="{ togglePopover, isOpen }">
-			<AddOperation @click="togglePopover" />
+			<div class="group relative flex cursor-pointer items-center gap-2">
+				<Button
+					variant="outline"
+					label="Add Operation"
+					class="-ml-[14px] !h-6 !gap-1.5 bg-white !px-2 text-xs"
+					@click="togglePopover"
+				>
+					<template #prefix>
+						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+			</div>
 		</template>
 		<template #body-main="{ togglePopover, isOpen }">
 			<div v-if="isOpen" class="flex flex-col p-1.5">

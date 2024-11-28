@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { formatNumber } from '../helpers'
+import { createHeaders, formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
+import DataTableColumn from './DataTableColumn.vue'
 
 const emit = defineEmits({
+	sort: (sort_order: Record<string, 'asc' | 'desc'>) => true,
 	'cell-dbl-click': (row: QueryResultRow, column: QueryResultColumn) => true,
 })
 const props = defineProps<{
@@ -16,10 +18,17 @@ const props = defineProps<{
 	showFilterRow?: boolean
 	loading?: boolean
 	onExport?: Function
+	sortOrder?: Record<string, 'asc' | 'desc'>
 }>()
 
-const isNumberColumn = (col: QueryResultColumn) => FIELDTYPES.NUMBER.includes(col.type)
+const headers = computed(() => {
+	if (!props.columns?.length) return []
+	return createHeaders(props.columns)
+})
 
+const isNumberColumn = (col: QueryResultColumn): boolean => FIELDTYPES.NUMBER.includes(col.type)
+
+const filterPerColumn = ref<Record<string, string>>({})
 const visibleRows = computed(() => {
 	const columns = props.columns
 	const rows = props.rows
@@ -96,33 +105,61 @@ const totalColumnTotal = computed(() => {
 	return Object.values(totalPerColumn.value).reduce((acc, val) => acc + val, 0)
 })
 
-const filterPerColumn = ref<Record<string, string>>({})
+const sortOrder = ref<Record<string, 'asc' | 'desc'>>({ ...props.sortOrder })
+function getSortOrder(column: QueryResultColumn) {
+	return sortOrder.value[column.name]
+}
+function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
+	if (!direction) {
+		delete sortOrder.value[column.name]
+	} else {
+		sortOrder.value[column.name] = direction
+	}
+	emit('sort', sortOrder.value)
+}
 </script>
 
 <template>
 	<div
 		v-if="columns?.length || rows?.length"
-		class="flex h-full w-full flex-col overflow-hidden font-mono text-sm"
+		class="flex h-full w-full flex-col overflow-hidden text-sm"
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
 				<thead class="sticky top-0 z-10 bg-white">
-					<tr>
+					<tr v-for="headerRow in headers">
 						<td
 							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white"
 							width="1%"
 						></td>
 						<td
-							v-for="(column, idx) in props.columns"
+							v-for="(header, idx) in headerRow"
 							:key="idx"
 							class="border-b border-r"
-							:class="isNumberColumn(column) ? 'text-right' : 'text-left'"
+							:class="[
+								header.isLast && isNumberColumn(header.column)
+									? 'text-right'
+									: 'text-left',
+							]"
+							:colspan="header.colspan"
 						>
-							<slot name="column-header" :column="column">
-								<div class="truncate py-2 px-3">
-									{{ column.name }}
-								</div>
+							<slot
+								v-if="header.isLast"
+								name="column-header"
+								:column="header.column"
+								:label="header.label"
+							>
+								<DataTableColumn
+									:column="header.column"
+									:label="header.label"
+									:sort-order="getSortOrder(header.column)"
+									@sort-change="sortBy(header.column, $event)"
+								/>
 							</slot>
+
+							<div v-else class="flex h-7 items-center truncate px-3">
+								{{ header.label }}
+							</div>
 						</td>
 
 						<td
@@ -133,6 +170,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 							<div class="truncate pl-3 pr-20"></div>
 						</td>
 					</tr>
+
 					<tr v-if="props.showFilterRow">
 						<td
 							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white"
@@ -141,13 +179,13 @@ const filterPerColumn = ref<Record<string, string>>({})
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
-							class="border-b border-r p-0.5"
+							class="border-b border-r p-1"
 						>
 							<FormControl
 								type="text"
 								v-model="filterPerColumn[column.name]"
 								autocomplete="off"
-								class="[&_input]:bg-gray-200/80"
+								class="[&_input]:h-6 [&_input]:bg-gray-200/80"
 							>
 								<template #prefix>
 									<Search class="h-4 w-4 text-gray-500" stroke-width="1.5" />
@@ -176,7 +214,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 						<td
 							v-for="col in props.columns"
 							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
-							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
+							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
 							height="30px"
 							@dblclick="emit('cell-dbl-click', row, col)"
 						>
@@ -185,7 +223,7 @@ const filterPerColumn = ref<Record<string, string>>({})
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="border-b border-r px-3 text-right font-bold"
+							class="tnum border-b border-r px-3 text-right font-bold"
 							height="30px"
 						>
 							{{ formatNumber(totalPerRow[idx]) }}
@@ -200,14 +238,14 @@ const filterPerColumn = ref<Record<string, string>>({})
 						<td
 							v-for="col in props.columns"
 							class="truncate border-r border-t py-2 px-3 font-bold text-gray-800"
-							:class="isNumberColumn(col) ? 'text-right' : 'text-left'"
+							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
 						>
 							{{ isNumberColumn(col) ? formatNumber(totalPerColumn[col.name]) : '' }}
 						</td>
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="border-r border-t px-3 text-right font-bold"
+							class="tnum border-r border-t px-3 text-right font-bold"
 						>
 							{{ formatNumber(totalColumnTotal) }}
 						</td>
@@ -235,17 +273,17 @@ const filterPerColumn = ref<Record<string, string>>({})
 		</slot>
 	</div>
 
-	<div
-		v-else-if="props.loading"
-		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
-	>
-		<LoadingIndicator class="h-8 w-8 text-gray-700" />
-	</div>
-
 	<div v-else class="flex h-full w-full items-center justify-center">
 		<div class="flex flex-col items-center gap-2">
 			<Table2Icon class="h-16 w-16 text-gray-300" stroke-width="1.5" />
 			<p class="text-center text-gray-500">No data to display.</p>
 		</div>
+	</div>
+
+	<div
+		v-if="props.loading"
+		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
+	>
+		<LoadingIndicator class="h-8 w-8 text-gray-700" />
 	</div>
 </template>

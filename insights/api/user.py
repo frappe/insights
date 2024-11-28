@@ -244,3 +244,16 @@ def invite_users(emails: str):
         invite = frappe.new_doc("Insights User Invitation")
         invite.email = email
         invite.insert(ignore_permissions=True)
+
+
+@insights_whitelist()
+def update_user(email: str, fields: dict):
+    first_name, last_name = fields.get("first_name"), fields.get("last_name")
+
+    user = frappe.get_doc("User", email)
+    if first_name:
+        user.first_name = first_name
+    if last_name:
+        user.last_name = last_name
+
+    user.save()

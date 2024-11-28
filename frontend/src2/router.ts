@@ -81,16 +81,6 @@ const routes = [
 		component: () => import('./data_store/DataStoreList.vue'),
 	},
 	{
-		path: '/users',
-		name: 'UserList',
-		component: () => import('./users/UserList.vue'),
-	},
-	{
-		path: '/teams',
-		name: 'TeamList',
-		component: () => import('./teams/TeamList.vue'),
-	},
-	{
 		props: true,
 		name: 'SharedChart',
 		path: '/shared/chart/:chart_name',

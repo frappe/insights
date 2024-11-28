@@ -12,6 +12,7 @@ import { wheneverChanges } from '../../helpers'
 import useDataSourceStore from '../../data_source/data_source'
 
 const query = inject<Query>('query')!
+query.autoExecute = false
 
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')

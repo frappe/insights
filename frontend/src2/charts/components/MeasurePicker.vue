@@ -59,8 +59,8 @@ function updateMeasure(measureExpression: ExpressionMeasure) {
 </script>
 
 <template>
-	<div class="flex items-end gap-1">
-		<div class="flex-1">
+	<div class="flex items-end gap-1 overflow-hidden">
+		<div class="flex-1 overflow-hidden">
 			<Autocomplete
 				:label="props.label"
 				placeholder="Select a column"

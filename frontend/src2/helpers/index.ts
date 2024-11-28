@@ -1,10 +1,17 @@
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
-import { ComputedRef, Ref, watch } from 'vue'
+import { Socket } from 'socket.io-client'
+import { ComputedRef, inject, onBeforeUnmount, Ref, watch } from 'vue'
 import session from '../session'
-import { ColumnDataType, DropdownOption, GroupedDropdownOption } from '../types/query.types'
-import { createToast } from './toasts'
+import {
+	ColumnDataType,
+	DropdownOption,
+	GroupedDropdownOption,
+	QueryResultColumn,
+} from '../types/query.types'
 import { FIELDTYPES } from './constants'
+import { createToast } from './toasts'
+import { getFormattedDate } from '../query/helpers'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -305,4 +312,121 @@ export function isNumber(data_type: ColumnDataType) {
 
 export function isString(data_type: ColumnDataType) {
 	return FIELDTYPES.TEXT.includes(data_type)
+}
+
+export function attachRealtimeListener(event: string, callback: (...args: any[]) => void) {
+	const $socket = inject<Socket>('$socket')!
+	$socket.on(event, callback)
+	onBeforeUnmount(() => {
+		$socket.off(event)
+	})
+}
+
+export function createHeaders(columns: QueryResultColumn[]) {
+	const nestedColumns = columns.filter((column) => column.name.includes('___'))
+	const levels = nestedColumns.length ? nestedColumns[0].name.split('___').length : 1
+
+	const _columns = columns.map((column) => {
+		return {
+			...column,
+			isNested: column.name.includes('___'),
+			// ibis returns nested columns as value1___column1, value2___column1, value3___column1
+			// using the columns as it is will show the value1 on the top and column1, column2, column3 as nested columns
+			// so we reverse the parts to show column1 on the top and value1, value2, value3 as nested columns
+			parts: column.name.split('___').reverse(),
+		}
+	})
+
+	const headers = []
+
+	for (let level = 0; level < levels; level++) {
+		const headerRow = []
+
+		for (let column of _columns) {
+			const isNested = column.isNested
+			const isLast = level === levels - 1
+
+			headerRow.push({
+				label: isNested ? column.parts[level] : isLast ? column.name : '',
+				level,
+				isLast,
+				column: column,
+			})
+		}
+
+		headers.push(headerRow)
+	}
+
+	const groupedHeaders = []
+
+	for (let headerRow of headers) {
+		const groupedHeaderRow = []
+
+		let currentHeader = headerRow[0]
+		let currentColspan = 1
+
+		for (let i = 1; i < headerRow.length; i++) {
+			const header = headerRow[i]
+
+			if (header.label === currentHeader.label) {
+				currentColspan++
+			} else {
+				groupedHeaderRow.push({
+					...currentHeader,
+					colspan: currentColspan,
+				})
+				currentHeader = header
+				currentColspan = 1
+			}
+		}
+
+		groupedHeaderRow.push({
+			...currentHeader,
+			colspan: currentColspan,
+		})
+
+		groupedHeaders.push(groupedHeaderRow)
+	}
+
+	// if header rows have items with values like: 2016-10-01, 2016-11-01, 2016-12-01
+	// i.e first day of each month, then we format the values as 'Oct 2016', 'Nov 2016', 'Dec 2016'
+
+	for (let headerRow of groupedHeaders) {
+		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
+		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
+		const areDates = areValidDates(headerRow.map((header) => header.label))
+
+		for (let header of headerRow) {
+			if (!isValidDate(header.label)) continue
+
+			if (areFirstOfYear) {
+				header.label = getFormattedDate(header.label, 'year')
+			} else if (areFirstOfMonth) {
+				header.label = getFormattedDate(header.label, 'month')
+			} else if (areDates) {
+				header.label = getFormattedDate(header.label, 'day')
+			}
+		}
+	}
+
+	return groupedHeaders
+}
+
+function areFirstDayOfMonth(data: string[]) {
+	const firstDayOfMonth = (date: string) => new Date(date).getDate() === 1
+	return data.map(firstDayOfMonth).filter(Boolean).length / data.length >= 0.5
+}
+
+function areFirstDayOfYear(data: string[]) {
+	const firstDayOfYear = (date: string) =>
+		new Date(date).getMonth() === 0 && new Date(date).getDate() === 1
+	return data.map(firstDayOfYear).filter(Boolean).length / data.length >= 0.5
+}
+
+function areValidDates(data: string[]) {
+	return data.map(isValidDate).filter(Boolean).length / data.length >= 0.5
+}
+
+function isValidDate(value: string) {
+	return !isNaN(new Date(value).getTime())
 }

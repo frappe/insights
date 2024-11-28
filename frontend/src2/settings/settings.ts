@@ -13,7 +13,13 @@ function makeSettings() {
 		initialDoc: {
 			name: '',
 			enable_permissions: false,
+			allowed_origins: '',
+			max_records_to_sync: 10_00_000,
+			max_memory_usage: 512,
+			fiscal_year_start: '2024-04-01',
+			week_starts_on: 'Monday',
 		},
+		disableLocalStorage: true,
 	})
 	_settings.onAfterSave(() =>
 		createToast({
@@ -31,4 +37,9 @@ type Settings = ReturnType<typeof makeSettings>
 type InsightsSettings = {
 	name: string
 	enable_permissions: boolean
+	allowed_origins: string
+	max_records_to_sync: number
+	max_memory_usage: number
+	fiscal_year_start: string
+	week_starts_on: string
 }

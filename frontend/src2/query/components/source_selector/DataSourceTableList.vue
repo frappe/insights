@@ -5,8 +5,12 @@ import { computed, h, ref } from 'vue'
 import useTableStore from '../../../data_source/tables'
 import { wheneverChanges } from '../../../helpers'
 import { TableArgs } from '../../../types/query.types'
+import useDataSourceStore from '../../../data_source/data_source'
 
 const props = defineProps<{ data_source: string }>()
+const dataSourceStore = useDataSourceStore()
+const dataSource = computed(() => dataSourceStore.getSource(props.data_source))
+
 const tableStore = useTableStore()
 
 const selectedTable = defineModel<TableArgs>('selectedTable')
@@ -62,7 +66,8 @@ const emptyState = computed(() => {
 </script>
 
 <template>
-	<div class="flex h-full flex-col gap-2 overflow-auto p-0.5">
+	<div class="flex h-full flex-col gap-2 overflow-auto p-8 px-10">
+		<h1 class="text-xl font-semibold">{{ dataSource?.title }}</h1>
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl
