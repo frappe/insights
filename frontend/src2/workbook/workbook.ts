@@ -60,6 +60,9 @@ export default function useWorkbook(name: string) {
 			title: `Query ${idx + 1}`,
 			use_live_connection: true,
 			operations: [],
+			is_builder_query: false,
+			is_native_query: false,
+			is_script_query: false,
 		})
 		setActiveTab('query', idx)
 	}
@@ -295,10 +298,12 @@ function getWorkbookResource(name: string) {
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
 
 			doc.queries.forEach((query: any) => {
-				if (!query.is_native_query && !query.is_script_query) {
+				if (
+					query.is_native_query === undefined &&
+					query.is_script_query === undefined &&
+					query.is_builder_query === undefined
+				) {
 					query.is_builder_query = true
-				} else {
-					query.is_builder_query = false
 				}
 			})
 
