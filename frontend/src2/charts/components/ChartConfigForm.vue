@@ -1,13 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { Dimension, Measure } from '../../types/query.types'
-import { Chart } from '../chart'
-import BarChartConfigForm from './BarChartConfigForm.vue'
-import DonutChartConfigForm from './DonutChartConfigForm.vue'
-import LineChartConfigForm from './LineChartConfigForm.vue'
-import NumberChartConfigForm from './NumberChartConfigForm.vue'
-import TableChartConfigForm from './TableChartConfigForm.vue'
 import {
 	BarChartConfig,
 	DountChartConfig,
@@ -16,11 +8,17 @@ import {
 	NumberChartConfig,
 	TableChartConfig,
 } from '../../types/chart.types'
+import { DimensionOption, MeasureOption } from '../../types/query.types'
+import { Chart } from '../chart'
+import BarChartConfigForm from './BarChartConfigForm.vue'
+import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
+import LineChartConfigForm from './LineChartConfigForm.vue'
+import NumberChartConfigForm from './NumberChartConfigForm.vue'
+import TableChartConfigForm from './TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
 
-export type DimensionOption = Dimension & { label: string; value: string }
 const dimensions = computed<DimensionOption[]>(() => {
 	return props.chart.baseQuery.dimensions.map((dimension) => ({
 		...dimension,
@@ -29,7 +27,6 @@ const dimensions = computed<DimensionOption[]>(() => {
 	}))
 })
 
-export type MeasureOption = Measure & { label: string; value: string }
 const measures = computed<MeasureOption[]>(() => {
 	const queryMeasures = props.chart.baseQuery.measures.map((measure) => ({
 		...measure,

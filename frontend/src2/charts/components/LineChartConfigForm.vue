@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
+import { DimensionOption, MeasureOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'

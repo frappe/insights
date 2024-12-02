@@ -22,12 +22,14 @@ export type ExpressionMeasure = {
 	expression: Expression
 	data_type: MeasureDataType
 }
+export type MeasureOption = Measure & { label: string; value: string }
 export type Dimension = {
 	dimension_name: string
 	column_name: string
 	data_type: DimensionDataType
 	granularity?: GranularityType
 }
+export type DimensionOption = Dimension & { label: string; value: string }
 
 export type ColumnDataType =
 	| 'String'

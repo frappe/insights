@@ -3,9 +3,8 @@ import { Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { Query } from '../../query/query'
-import { ExpressionMeasure, Measure, aggregations } from '../../types/query.types'
+import { ExpressionMeasure, Measure, MeasureOption, aggregations } from '../../types/query.types'
 import { Chart } from '../chart'
-import { MeasureOption } from './ChartConfigForm.vue'
 import NewMeasureSelectorDialog from './NewMeasureSelectorDialog.vue'
 
 const emit = defineEmits({ remove: () => true })
