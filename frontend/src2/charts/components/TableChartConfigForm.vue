@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { XIcon } from 'lucide-vue-next'
 import { TableChartConfig } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
+import { DimensionOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import { watchEffect } from 'vue'
 import DimensionPicker from './DimensionPicker.vue'

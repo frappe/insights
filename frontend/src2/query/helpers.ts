@@ -12,6 +12,7 @@ import {
 	Indent,
 	Repeat,
 	ScrollText,
+	ScrollText,
 	TextCursorInput,
 	XSquareIcon,
 } from 'lucide-vue-next'
@@ -24,9 +25,13 @@ import {
 	CastArgs,
 	Code,
 	CodeArgs,
+	Code,
+	CodeArgs,
 	Column,
 	CustomOperation,
 	CustomOperationArgs,
+	Dimension,
+	DimensionDataType,
 	Expression,
 	Filter,
 	FilterArgs,
@@ -39,6 +44,7 @@ import {
 	JoinArgs,
 	Limit,
 	Measure,
+	MeasureDataType,
 	Mutate,
 	MutateArgs,
 	Operation,
@@ -47,6 +53,7 @@ import {
 	PivotWider,
 	PivotWiderArgs,
 	QueryResult,
+	QueryResultColumn,
 	QueryTableArgs,
 	Remove,
 	RemoveArgs,
@@ -56,6 +63,8 @@ import {
 	SelectArgs,
 	Source,
 	SourceArgs,
+	SQL,
+	SQLArgs,
 	SQL,
 	SQLArgs,
 	Summarize,
@@ -146,6 +155,39 @@ export function getFormattedDate(date: string, granularity: GranularityType) {
 
 	if (!dayjsFormat[granularity]) return date
 	return dayjs(date).format(dayjsFormat[granularity])
+}
+
+export function getMeasures(columns: QueryResultColumn[]): Measure[] {
+	if (!columns?.length) return []
+	const count_measure = count()
+	return [
+		count_measure,
+		...columns
+			.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
+			.map((column) => {
+				return {
+					aggregation: 'sum',
+					column_name: column.name,
+					measure_name: `sum_of_${column.name}`,
+					data_type: column.type as MeasureDataType,
+				}
+			}),
+	]
+}
+
+export function getDimensions(columns: QueryResultColumn[]): Dimension[] {
+	if (!columns?.length) return []
+	return columns
+		.filter((column) => FIELDTYPES.DIMENSION.includes(column.type))
+		.map((column) => {
+			const isDate = FIELDTYPES.DATE.includes(column.type)
+			return {
+				column_name: column.name,
+				data_type: column.type as DimensionDataType,
+				granularity: isDate ? 'month' : undefined,
+				dimension_name: column.name,
+			}
+		})
 }
 
 export const query_operation_types = {
@@ -367,5 +409,7 @@ export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init
 export const limit = query_operation_types.limit.init
 export const custom_operation = query_operation_types.custom_operation.init
+export const sql = query_operation_types.sql.init
+export const code = query_operation_types.code.init
 export const sql = query_operation_types.sql.init
 export const code = query_operation_types.code.init

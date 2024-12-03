@@ -6,10 +6,10 @@ import Checkbox from '../../components/Checkbox.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
-import { MeasureOption } from './ChartConfigForm.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import { copy } from '../../helpers'
+import { MeasureOption } from '../../types/query.types'
 
 const props = defineProps<{ measures: MeasureOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({

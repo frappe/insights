@@ -12,9 +12,11 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(n
 </script>
 
 <template>
-	<div v-if="chart.doc.chart_type != 'Table'" class="flex h-[18rem] flex-col">
+	<div
+		v-if="chart.doc.chart_type != 'Table'"
+		class="flex h-[18rem] flex-col overflow-hidden rounded border"
+	>
 		<DataTable
-			class="rounded border bg-white"
 			:columns="chart.dataQuery.result.columns"
 			:rows="chart.dataQuery.result.formattedRows"
 			:on-export="chart.dataQuery.downloadResults"

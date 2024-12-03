@@ -60,6 +60,36 @@ function inviteUsers(emails: string[]) {
 		})
 }
 
+const updatingUser = ref(false)
+type UpdateUser = {
+	first_name: string
+	last_name: string
+}
+function updateUser(email: string, data: Partial<UpdateUser>) {
+	updatingUser.value = true
+	return call('insights.api.user.update_user', {
+		email,
+		fields: {
+			first_name: data.first_name,
+			last_name: data.last_name,
+		},
+	})
+		.then(() => {
+			getUsers()
+			createToast({
+				title: 'User Updated',
+				message: 'User updated successfully',
+				variant: 'success',
+			})
+		})
+		.catch((e: Error) => {
+			showErrorToast(e)
+		})
+		.finally(() => {
+			updatingUser.value = false
+		})
+}
+
 export default function useUserStore() {
 	if (!users.value.length) {
 		getUsers()
@@ -72,6 +102,9 @@ export default function useUserStore() {
 		getUser,
 		getName,
 		getImage,
+
+		updatingUser,
+		updateUser,
 
 		inviteUsers,
 		sendingInvitation,

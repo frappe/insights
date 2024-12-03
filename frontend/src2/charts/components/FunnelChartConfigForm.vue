@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import { FunnelChartConfig } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from './ChartConfigForm.vue'
+import { DimensionOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
 

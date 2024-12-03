@@ -3,9 +3,8 @@ import { Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { Query } from '../../query/query'
-import { ExpressionMeasure, Measure, aggregations } from '../../types/query.types'
+import { ExpressionMeasure, Measure, MeasureOption, aggregations } from '../../types/query.types'
 import { Chart } from '../chart'
-import { MeasureOption } from './ChartConfigForm.vue'
 import NewMeasureSelectorDialog from './NewMeasureSelectorDialog.vue'
 
 const emit = defineEmits({ remove: () => true })
@@ -59,8 +58,8 @@ function updateMeasure(measureExpression: ExpressionMeasure) {
 </script>
 
 <template>
-	<div class="flex items-end gap-1">
-		<div class="flex-1">
+	<div class="flex items-end gap-1 overflow-hidden">
+		<div class="flex-1 overflow-hidden">
 			<Autocomplete
 				:label="props.label"
 				placeholder="Select a column"

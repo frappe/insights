@@ -69,7 +69,8 @@ const getFormattedValue = (value: number) => {
 			<div
 				v-for="{ measure_name, values, currentValue, delta, percentDelta } in cards"
 				:key="measure_name"
-				class="flex h-[140px] items-center gap-2 overflow-y-auto rounded bg-white py-4 px-6 shadow"
+				class="flex h-fit max-h-[140px] items-center gap-2 overflow-y-auto rounded bg-white px-6 pt-5 shadow"
+				:class="config.comparison ? 'pb-6' : 'pb-3'"
 			>
 				<div class="flex w-full flex-col">
 					<span class="truncate text-sm font-medium">

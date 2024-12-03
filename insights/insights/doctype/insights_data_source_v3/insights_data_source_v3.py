@@ -212,6 +212,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         database_name = self.database_name
         if self.is_site_db:
             database_name = frappe.conf.db_name
+        if self.database_type == "DuckDB":
+            return None
         if not database_name:
             return None
         quote_start = self._get_ibis_backend().dialect.QUOTE_START

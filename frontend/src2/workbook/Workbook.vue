@@ -16,6 +16,7 @@ const route = useRoute()
 
 const workbook = useWorkbook(props.name)
 provide(workbookKey, workbook)
+window.workbook = workbook
 
 const keys = useMagicKeys()
 const cmdS = keys['Meta+S']

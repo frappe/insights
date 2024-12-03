@@ -6,14 +6,17 @@
 		<div class="flex flex-col overflow-hidden">
 			<UserDropdown class="p-2" :isCollapsed="isSidebarCollapsed" />
 			<div class="flex flex-col overflow-y-auto">
-				<SidebarLink
-					v-for="link in links"
-					:icon="link.icon"
-					:label="link.label"
-					:to="link.to"
-					:isCollapsed="isSidebarCollapsed"
-					class="mx-2 my-0.5"
-				/>
+				<template v-for="link in links">
+					<SidebarLink
+						v-if="!link.hidden"
+						class="mx-2 my-0.5"
+						:icon="link.icon"
+						:label="link.label"
+						:to="link.to"
+						:isCollapsed="isSidebarCollapsed"
+						@click="link.onClick"
+					/>
+				</template>
 			</div>
 		</div>
 		<SidebarLink
@@ -33,25 +36,30 @@
 			</template>
 		</SidebarLink>
 	</div>
+
+	<Settings v-model="showSettingsDialog" />
 </template>
 
 <script setup lang="ts">
 import {
 	Book,
 	Database,
+	DatabaseZap,
 	LayoutGrid,
 	PanelRightOpen,
-	ShieldHalf,
-	Users,
+	SettingsIcon,
 	Warehouse,
 } from 'lucide-vue-next'
-import { ref } from 'vue'
-import { waitUntil } from '../helpers'
-import useSettings from '../settings/settings'
+import { computed, ref, watch } from 'vue'
+import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
+import { waitUntil } from '../helpers'
+import useSettings from '../settings/settings'
 
 const isSidebarCollapsed = ref(false)
+const showSettingsDialog = ref(false)
+
 const settings = useSettings()
 
 const links = ref([
@@ -72,23 +80,15 @@ const links = ref([
 	},
 	{
 		label: 'Data Store',
-		icon: Warehouse,
+		icon: DatabaseZap,
 		to: 'DataStoreList',
+		hidden: computed(() => !settings.doc.enable_data_store),
 	},
 	{
-		label: 'Users',
-		icon: Users,
-		to: 'UserList',
+		label: 'Settings',
+		icon: SettingsIcon,
+		to: 'Settings',
+		onClick: () => (showSettingsDialog.value = true),
 	},
 ])
-
-waitUntil(() => settings.loading === false).then(() => {
-	if (settings.doc.enable_permissions) {
-		links.value.push({
-			label: 'Teams',
-			icon: ShieldHalf,
-			to: 'TeamList',
-		})
-	}
-})
 </script>

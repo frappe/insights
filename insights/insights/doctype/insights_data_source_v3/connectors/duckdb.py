@@ -8,6 +8,16 @@ from frappe.utils import get_files_path
 
 
 def get_duckdb_connection(data_source, read_only=True):
-    path = os.path.realpath(get_files_path(is_private=1))
-    path = os.path.join(path, f"{data_source.database_name}.duckdb")
-    return ibis.duckdb.connect(path, read_only=read_only)
+    name = data_source.name or data_source.title
+    db_name = data_source.database_name
+
+    if db_name.startswith("http"):
+        db = ibis.duckdb.connect()
+        db.load_extension("httpfs")
+        db.attach(db_name, name, read_only=True)
+        db.raw_sql(f"USE {name}")
+        return db
+    else:
+        path = os.path.realpath(get_files_path(is_private=1))
+        path = os.path.join(path, f"{db_name}.duckdb")
+        return ibis.duckdb.connect(path, read_only=read_only)

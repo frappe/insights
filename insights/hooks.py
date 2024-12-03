@@ -9,6 +9,18 @@ app_license = "GNU GPLv3"
 
 export_python_type_annotations = True
 
+
+add_to_apps_screen = [
+    {
+        "name": "insights",
+        "logo": "/assets/insights/frontend/insights-logo.png",
+        "title": "Insights",
+        "route": "/insights",
+        "has_permission": "insights.permissions.check_app_permission",
+    }
+]
+
+
 # Includes in <head>
 # ------------------
 
@@ -142,7 +154,13 @@ doc_events = {
 scheduler_events = {
     "all": [
         "insights.insights.doctype.insights_alert.insights_alert.send_alerts",
-    ]
+    ],
+    "daily": [
+        "insights.api.data_store.sync_tables",
+    ],
+    "hourly": [
+        "insights.api.data_store.update_failed_sync_status",
+    ],
 }
 
 # Testing

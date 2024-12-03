@@ -19,7 +19,9 @@ class InsightsSettings(Document):
 
         allow_subquery: DF.Check
         allowed_origins: DF.Data | None
+        apply_user_permissions: DF.Check
         auto_execute_query: DF.Check
+        enable_data_store: DF.Check
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None
         max_memory_usage: DF.Int

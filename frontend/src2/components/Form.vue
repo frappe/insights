@@ -10,6 +10,7 @@ const props = defineProps<{
 		placeholder?: string
 		required?: boolean
 		defaultValue?: any
+		description?: string
 	}[]
 	actions?: {
 		label: string
@@ -42,10 +43,12 @@ defineExpose({
 		<div class="flex flex-col gap-4">
 			<div class="relative" v-for="field in fields" :key="field.name">
 				<FormControl
+					autocomplete="off"
 					:type="field.type"
 					:label="field.label"
 					:options="field.options"
 					:placeholder="field.placeholder"
+					:description="field.description"
 					v-model="form[field.name]"
 				/>
 				<span

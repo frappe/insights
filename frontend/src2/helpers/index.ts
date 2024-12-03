@@ -2,8 +2,12 @@ import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
 import { ComputedRef, inject, onBeforeUnmount, Ref, watch } from 'vue'
 import session from '../session'
-import { ColumnDataType, DropdownOption, GroupedDropdownOption } from '../types/query.types'
-import { createToast } from './toasts'
+import {
+	ColumnDataType,
+	DropdownOption,
+	GroupedDropdownOption,
+	QueryResultColumn,
+} from '../types/query.types'
 import { FIELDTYPES } from './constants'
 import { Socket } from 'socket.io-client'
 

@@ -214,7 +214,7 @@ function toggleExpandedTable(table: string) {
 		class="flex flex-col pr-2"
 		:data-source="data_source.name"
 	>
-		<div class="sticky top-0 z-10 flex items-center gap-2 bg-white pb-1.5">
+		<div class="sticky top-0 z-10 flex items-center gap-2 bg-white py-1.5">
 			<FormControl
 				type="checkbox"
 				:modelValue="isDataSourceSelected(data_source.name)"
@@ -225,12 +225,12 @@ function toggleExpandedTable(table: string) {
 				@click="toggleExpandedDataSource(data_source.name)"
 			>
 				<div class="flex flex-shrink-0 select-none items-baseline gap-2">
-					<p class="font-medium leading-5 group-hover:underline">
+					<p class="group-hover:underline">
 						{{ data_source.title }}
 					</p>
 					<p
 						v-if="selectedTables[data_source.name]?.length"
-						class="text-xs leading-5 text-gray-600"
+						class="text-p-xs text-gray-700"
 					>
 						({{ selectedTables[data_source.name]?.length }} selected)
 					</p>
