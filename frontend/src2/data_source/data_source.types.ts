@@ -40,4 +40,9 @@ export type PostgreSQLDataSource = BaseDataSource & {
 	use_ssl: boolean
 }
 
-export type DataSource = MariaDBDataSource | PostgreSQLDataSource
+export type DuckDBDataSource = BaseDataSource & {
+	database_type: 'DuckDB'
+	database_name: string
+}
+
+export type DataSource = MariaDBDataSource | PostgreSQLDataSource | DuckDBDataSource

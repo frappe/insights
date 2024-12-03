@@ -39,6 +39,9 @@ const creating = ref(false)
 function createDataSource(data_source: DataSource) {
 	creating.value = true
 	return call('insights.api.data_sources.create_data_source', { data_source })
+		.then(() => {
+			fetchSources()
+		})
 		.catch((error: Error) => {
 			showErrorToast(error)
 		})
