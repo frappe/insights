@@ -6,15 +6,17 @@
 		<div class="flex flex-col overflow-hidden">
 			<UserDropdown class="p-2" :isCollapsed="isSidebarCollapsed" />
 			<div class="flex flex-col overflow-y-auto">
-				<SidebarLink
-					v-for="link in links"
-					class="mx-2 my-0.5"
-					:icon="link.icon"
-					:label="link.label"
-					:to="link.to"
-					:isCollapsed="isSidebarCollapsed"
-					@click="link.onClick"
-				/>
+				<template v-for="link in links">
+					<SidebarLink
+						v-if="!link.hidden"
+						class="mx-2 my-0.5"
+						:icon="link.icon"
+						:label="link.label"
+						:to="link.to"
+						:isCollapsed="isSidebarCollapsed"
+						@click="link.onClick"
+					/>
+				</template>
 			</div>
 		</div>
 		<SidebarLink
@@ -48,13 +50,17 @@ import {
 	SettingsIcon,
 	Warehouse,
 } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
+import { waitUntil } from '../helpers'
+import useSettings from '../settings/settings'
 
 const isSidebarCollapsed = ref(false)
 const showSettingsDialog = ref(false)
+
+const settings = useSettings()
 
 const links = ref([
 	{
@@ -76,6 +82,7 @@ const links = ref([
 		label: 'Data Store',
 		icon: DatabaseZap,
 		to: 'DataStoreList',
+		hidden: computed(() => !settings.doc.enable_data_store),
 	},
 	{
 		label: 'Settings',

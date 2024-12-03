@@ -3,8 +3,10 @@ import { inject } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { confirmDialog } from '../../helpers/confirm_dialog'
 import { Query } from '../query'
+import useSettings from '../../settings/settings'
 
 const query = inject('query') as Query
+const settings = useSettings()
 function toggleLiveConnection(enable: boolean) {
 	const title = enable ? 'Enable Data Store' : 'Disable Data Store'
 	const message = enable
@@ -33,7 +35,11 @@ function toggleLiveConnection(enable: boolean) {
 			<InlineFormControlLabel label="Query Title">
 				<FormControl v-model="query.doc.title" autocomplete="off" placeholder="Title" />
 			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Enable Data Store" class="!w-1/2">
+			<InlineFormControlLabel
+				v-if="settings.doc.enable_data_store"
+				label="Enable Data Store"
+				class="!w-1/2"
+			>
 				<Checkbox
 					class="mt-1"
 					:modelValue="!query.doc.use_live_connection"

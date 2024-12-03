@@ -18,6 +18,7 @@ function makeSettings() {
 			max_memory_usage: 512,
 			fiscal_year_start: '2024-04-01',
 			week_starts_on: 'Monday',
+			enable_data_store: false,
 		},
 		disableLocalStorage: true,
 	})
@@ -42,4 +43,5 @@ type InsightsSettings = {
 	max_memory_usage: number
 	fiscal_year_start: string
 	week_starts_on: string
+	enable_data_store: boolean
 }

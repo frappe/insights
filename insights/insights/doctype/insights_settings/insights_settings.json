@@ -8,6 +8,7 @@
  "field_order": [
   "onboarding_section",
   "enable_permissions",
+  "enable_data_store",
   "allowed_origins",
   "max_records_to_sync",
   "max_memory_usage",
@@ -120,12 +121,18 @@
    "fieldtype": "Int",
    "label": "Max Memory Usage",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_data_store",
+   "fieldtype": "Check",
+   "label": "Enable Data Store"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-24 12:24:13.641240",
+ "modified": "2024-12-03 12:59:14.571531",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

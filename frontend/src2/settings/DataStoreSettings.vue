@@ -15,7 +15,7 @@ settings.load()
 			label="Enable"
 			description="Enable the data store to store database tables into a duckdb database for faster & cross-database queries."
 		>
-			<Checkbox />
+			<Checkbox v-model="settings.doc.enable_data_store" />
 		</SettingItem>
 
 		<SettingItem
