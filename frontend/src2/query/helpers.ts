@@ -12,7 +12,6 @@ import {
 	Indent,
 	Repeat,
 	ScrollText,
-	ScrollText,
 	TextCursorInput,
 	XSquareIcon,
 } from 'lucide-vue-next'
@@ -23,8 +22,6 @@ import dayjs from '../helpers/dayjs'
 import {
 	Cast,
 	CastArgs,
-	Code,
-	CodeArgs,
 	Code,
 	CodeArgs,
 	Column,
@@ -63,8 +60,6 @@ import {
 	SelectArgs,
 	Source,
 	SourceArgs,
-	SQL,
-	SQLArgs,
 	SQL,
 	SQLArgs,
 	Summarize,
@@ -409,7 +404,5 @@ export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init
 export const limit = query_operation_types.limit.init
 export const custom_operation = query_operation_types.custom_operation.init
-export const sql = query_operation_types.sql.init
-export const code = query_operation_types.code.init
 export const sql = query_operation_types.sql.init
 export const code = query_operation_types.code.init

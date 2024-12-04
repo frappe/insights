@@ -262,7 +262,6 @@ const CustomOperationInfo = (props: any) => {
 						<component
 							:is="op.meta.icon"
 							class="h-4 w-4 text-gray-600"
-							class="h-4 w-4 text-gray-600"
 							stroke-width="1.5"
 						/>
 					</div>
