@@ -3,7 +3,7 @@
 <img src=".github/new-logo.svg" alt="Frappe Insights logo" width="124"/>
 <h1>Frappe Insights</h1>
 
-**Simple. Crafted. Powerful. Data Analysis.**
+**Open Source Business Intelligence Tool**
 
 ![GitHub issues](https://img.shields.io/github/issues/frappe/insights)
 ![GitHub license](https://img.shields.io/github/license/frappe/insights)
@@ -13,11 +13,6 @@
 
 </div>
 
-<div align="center" style="max-height: 40px;">
-	<a href="https://frappecloud.com/insights/signup">
-		<img src="https://github.com/frappe/hrms/blob/develop/.github/try-on-f-cloud-button.svg" height="40">
-	</a>
-</div>
 
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
 	<img src=".github/hero-image.png?v=3" alt="Hero Image" width="72%" />
@@ -26,7 +21,9 @@
 <div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
 	<a href="https://insightsdemo.frappe.cloud">Live Demo</a>
 	-
-	<a href="https://docs.frappeinsights.com">Documentation</a>
+	<a href="https://frappe.io/insights">Website</a>
+	-
+	<a href="https://docs.frappe.io/insights">Documentation</a>
 </div>
 
 ## Frappe Insights
@@ -57,13 +54,30 @@ Building custom apps or creating structured data has been very easy with Frappe 
 - [**eCharts**](https://github.com/apache/echarts): A powerful charting library, to render charts and graphs. eCharts provides a variety of chart types and customization options, allowing Frappe Insights to provide a rich and interactive data visualization experience.
 
 
-## Installation
+## Production Setup
 
 ### Managed Hosting
 
-Get started with your personal or business site with a few clicks on [Frappe Cloud](https://frappecloud.com/insights/signup).
+You can try [Frappe Cloud](https://frappecloud.com), a simple, user-friendly and sophisticated [open-source](https://github.com/frappe/press) platform to host Frappe applications with peace of mind.
 
-### Docker (Recommended)
+It takes care of installation, setup, upgrades, monitoring, maintenance and support of your Frappe deployments. It is a fully featured developer platform with an ability to manage and control multiple Frappe deployments.
+
+<div>
+	<button
+	style="background-color: #171717; color: white; border: none; border-radius: 0.5rem; padding: 0px 8px; font-size: 14px; line-height: 1.15;letter-spacing: 0.02em;font-weight: 420;height: 1.75rem;"
+	onclick="window.open('https://frappecloud.com/insights/signup', '_blank')"
+	>
+	 Try on Frappe Cloud
+	</button>
+</div>
+
+### Self Hosting
+
+...
+
+## Development Setup
+
+### Docker
 
 You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, follow below steps:
 
@@ -72,24 +86,19 @@ You need Docker, docker-compose and git setup on your machine. Refer [Docker doc
     mkdir frappe-insights
     cd frappe-insights
 
-**Step 2**: Download the required files
-
-Docker Compose File:
-
+    # Download the docker-compose file
     wget -O docker-compose.yml https://raw.githubusercontent.com/frappe/insights/develop/docker/docker-compose.yml
 
-Frappe Insights bench setup script
-
+    # Download the setup script
     wget -O init.sh https://raw.githubusercontent.com/frappe/insights/develop/docker/init.sh
 
-**Step 3**: Run the container and daemonize it
+**Step 2**: Run the container and daemonize it
 
     docker compose up -d
 
-**Step 4**: The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
+**Step 3**: The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
 
-> username: administrator
-> password: admin
+> username: administrator <br/> password: admin
 
 ### Local
 
@@ -103,12 +112,13 @@ To setup the repository locally follow the steps mentioned below:
 1. Run `bench --site insights.test install-app insights`.
 1. Now open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
 
----
-## Need help?
+## Learning and community
 
-Join our [telegram group](https://t.me/frappeinsights) for instant help.
+[Telegram Public Group](https://t.me/frappeinsights)
 
----
+[Discuss Forum](https://discuss.frappe.io/c/insights/74)
+
+[Documentation](https://docs.frappe.io/insights)
 
 ## License
 
