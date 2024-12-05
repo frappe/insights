@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src=".github/new-logo.svg" alt="Frappe Insights logo" width="124"/>
+<img src=".github/new-logo.svg" alt="Frappe Insights logo" width="100"/>
 <h1>Frappe Insights</h1>
 
 **Open Source Business Intelligence Tool**
@@ -64,7 +64,10 @@ It takes care of installation, setup, upgrades, monitoring, maintenance and supp
 
 <div>
 	<a href="https://frappecloud.com/insights/signup" target="_blank">
-		<img src=".github/try-on-fc.svg" alt="Try on Frappe Cloud" />
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/try-on-fc-white.png">
+			<img src="https://frappe.io/files/try-on-fc-black.png" alt="Try on Frappe Cloud" height="28" />
+		</picture>
 	</a>
 </div>
 
@@ -118,8 +121,8 @@ You need Docker, docker-compose and git setup on your machine. Refer [Docker doc
     docker compose up -d
 
 **Step 3**: The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
-
-> username: administrator <br/> password: admin
+- Username: Administrator
+- Password: admin
 
 ### Local
 
@@ -135,29 +138,15 @@ To setup the repository locally follow the steps mentioned below:
 
 ## Learning and community
 
-[Telegram Public Group](https://t.me/frappeinsights)
+- [Telegram Public Group](https://t.me/frappeinsights)
+- [Discuss Forum](https://discuss.frappe.io/c/insights/74)
+- [Documentation](https://docs.frappe.io/insights)
+- [YouTube](https://frappe.io)
 
-[Discuss Forum](https://discuss.frappe.io/c/insights/74)
-
-[Documentation](https://docs.frappe.io/insights)
-
-## License
-
-[GNU Affero General Public License v3.0](license.txt)
-
-<br />
+<h2></h2>
 <div align="center">
-	<img src=".github/frappe-logo.svg" alt="Frappe Technologies" width="100"/>
-</div>
-<br />
-<div align="center">
-	<a href="https://frappe.io/welcome">About Us</a>
-	-
-	<a href="https://frappe.io">Explore</a>
-	-
-	<a href="https://www.youtube.com/@frappetech">YouTube</a>
-	-
-	<a href="https://www.linkedin.com/company/frappe-technologies">LinkedIn</a>
-	-
-	<a href="https://x.com/frappetech">X</a>
+	<picture>
+		<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
+		<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
+	</picture>
 </div>
