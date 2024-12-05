@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src=".github/new-logo.svg" alt="Frappe Insights logo" width="124"/>
+<img src=".github/new-logo.svg" alt="Frappe Insights logo" width="100"/>
 <h1>Frappe Insights</h1>
 
 **Open Source Business Intelligence Tool**
@@ -135,29 +135,15 @@ To setup the repository locally follow the steps mentioned below:
 
 ## Learning and community
 
-[Telegram Public Group](https://t.me/frappeinsights)
+- [Telegram Public Group](https://t.me/frappeinsights)
+- [Discuss Forum](https://discuss.frappe.io/c/insights/74)
+- [Documentation](https://docs.frappe.io/insights)
+- [YouTube](https://frappe.io)
 
-[Discuss Forum](https://discuss.frappe.io/c/insights/74)
 
-[Documentation](https://docs.frappe.io/insights)
+<h2>&nbsp;</h2>
 
-## License
-
-[GNU Affero General Public License v3.0](license.txt)
-
-<br />
 <div align="center">
-	<img src=".github/frappe-logo.svg" alt="Frappe Technologies" width="100"/>
+<img src=".github/frappe-logo.svg" alt="Frappe Technologies" width="80"/>
 </div>
-<br />
-<div align="center">
-	<a href="https://frappe.io/welcome">About Us</a>
-	-
-	<a href="https://frappe.io">Explore</a>
-	-
-	<a href="https://www.youtube.com/@frappetech">YouTube</a>
-	-
-	<a href="https://www.linkedin.com/company/frappe-technologies">LinkedIn</a>
-	-
-	<a href="https://x.com/frappetech">X</a>
-</div>
+
