@@ -144,3 +144,20 @@ To setup the repository locally follow the steps mentioned below:
 ## License
 
 [GNU Affero General Public License v3.0](license.txt)
+
+<br />
+<div align="center">
+	<img src=".github/frappe-logo.svg" alt="Frappe Technologies" width="100"/>
+</div>
+<br />
+<div align="center">
+	<a href="https://frappe.io/welcome">About Us</a>
+	-
+	<a href="https://frappe.io">Explore</a>
+	-
+	<a href="https://www.youtube.com/@frappetech">YouTube</a>
+	-
+	<a href="https://www.linkedin.com/company/frappe-technologies">LinkedIn</a>
+	-
+	<a href="https://x.com/frappetech">X</a>
+</div>
