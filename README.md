@@ -70,7 +70,31 @@ It takes care of installation, setup, upgrades, monitoring, maintenance and supp
 
 ### Self Hosting
 
-...
+Follow these steps to set up Frappe Insights in production:
+
+**Step 1**: Download the easy install script
+
+```bash
+wget https://frappe.fyi/easy-install.py
+```
+
+**Step 2**: Run the deployment command
+
+```bash
+python3 ./easy-install.py deploy \
+    --project=insights_prod_setup \
+    --email=your_email.example.com \
+    --image=ghcr.io/frappe/insights \
+    --version=stable \
+    --app=insights \
+    --sitename subdomain.domain.tld
+```
+
+Replace the following parameters with your values:
+- `your_email.example.com`: Your email address
+- `subdomain.domain.tld`: Your domain name where Insights will be hosted
+
+The script will set up a production-ready instance of Frappe Insights with all the necessary configurations in about 5 minutes.
 
 ## Development Setup
 
