@@ -64,7 +64,10 @@ It takes care of installation, setup, upgrades, monitoring, maintenance and supp
 
 <div>
 	<a href="https://frappecloud.com/insights/signup" target="_blank">
-		<img src=".github/try-on-fc.svg" alt="Try on Frappe Cloud" />
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/try-on-fc-white.png">
+			<img src="https://frappe.io/files/try-on-fc-black.png" alt="Try on Frappe Cloud" height="28" />
+		</picture>
 	</a>
 </div>
 
@@ -118,8 +121,8 @@ You need Docker, docker-compose and git setup on your machine. Refer [Docker doc
     docker compose up -d
 
 **Step 3**: The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
-
-> username: administrator <br/> password: admin
+- Username: Administrator
+- Password: admin
 
 ### Local
 
@@ -140,10 +143,10 @@ To setup the repository locally follow the steps mentioned below:
 - [Documentation](https://docs.frappe.io/insights)
 - [YouTube](https://frappe.io)
 
-
-<h2>&nbsp;</h2>
-
+<h2></h2>
 <div align="center">
-<img src=".github/frappe-logo.svg" alt="Frappe Technologies" width="80"/>
+	<picture>
+		<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
+		<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
+	</picture>
 </div>
-
