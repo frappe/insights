@@ -63,12 +63,9 @@ You can try [Frappe Cloud](https://frappecloud.com), a simple, user-friendly and
 It takes care of installation, setup, upgrades, monitoring, maintenance and support of your Frappe deployments. It is a fully featured developer platform with an ability to manage and control multiple Frappe deployments.
 
 <div>
-	<button
-	style="background-color: #171717; color: white; border: none; border-radius: 0.5rem; padding: 0px 8px; font-size: 14px; line-height: 1.15;letter-spacing: 0.02em;font-weight: 420;height: 1.75rem;"
-	onclick="window.open('https://frappecloud.com/insights/signup', '_blank')"
-	>
-	 Try on Frappe Cloud
-	</button>
+	<a href="https://frappecloud.com/insights/signup" target="_blank">
+		<img src=".github/try-on-fc.svg" alt="Try on Frappe Cloud" />
+	</a>
 </div>
 
 ### Self Hosting
