@@ -208,22 +208,31 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
-    def get_quoted_db_name(self):
+    def get_table_list(self):
+        db = self._get_ibis_backend()
+
         database_name = self.database_name
         if self.is_site_db:
             database_name = frappe.conf.db_name
-        if self.database_type == "DuckDB":
-            return None
-        if not database_name:
-            return None
-        quote_start = self._get_ibis_backend().dialect.QUOTE_START
-        quote_end = self._get_ibis_backend().dialect.QUOTE_END
-        return f"{quote_start}{database_name}{quote_end}"
+
+        contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)
+
+        if (
+            self.database_type == "DuckDB"
+            or self.database_type == "SQLite"
+            or not contains_special_chars
+            or not database_name
+        ):
+            return db.list_tables()
+
+        quoted_db_name = (
+            f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
+        )
+        return db.list_tables(database=quoted_db_name)
 
     def test_connection(self, raise_exception=False):
         try:
-            db = self._get_ibis_backend()
-            db.list_tables(database=self.get_quoted_db_name())
+            self.get_table_list()
             return True
         except Exception as e:
             frappe.log_error("Testing Data Source connection failed", e)
@@ -231,10 +240,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 raise e
 
     def update_table_list(self, force=False):
+        remote_tables = self.get_table_list()
+
         blacklist_patterns = ["^_", "^sqlite_"]
         blacklisted = lambda table: any(re.match(p, table) for p in blacklist_patterns)
-        remote_db = self._get_ibis_backend()
-        remote_tables = remote_db.list_tables(database=self.get_quoted_db_name())
         remote_tables = [t for t in remote_tables if not blacklisted(t)]
 
         if not remote_tables:
