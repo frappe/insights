@@ -311,7 +311,6 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 	let center, radius, top, left, right, bottom, padding, orient
 	const legend_position = config.legend_position || 'bottom'
 	const showInlineLabels = config.showInlineLabels || false;
-	const showNumberFormat = config.showNumberFormat || false
 
 	if (legend_position == 'bottom') {
 		orient = 'horizontal'
@@ -373,9 +372,7 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
                     show: showInlineLabels,
 					formatter: ({ value, name }: any) => {
 						const percentage = total > 0 ? (value[1] / total) * 100 : 0
-						return showNumberFormat
-						  ? `${ellipsis(name, 20)} (${formatNumber(value[1], 2)})`
-						  : `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
+						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
 					  },
                 },
 				emphasis: { scaleSize: 5 },
@@ -393,9 +390,7 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 			formatter: (name: string) => {
 				const labelIndex = labels.indexOf(name)
 				const percent = (values[labelIndex] / total) * 100
-				return showNumberFormat
-				  ? `${ellipsis(name, 20)} (${formatNumber(values[labelIndex], 2)})`
-				  : `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
+				return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
 			  },
 		  }
 		: null,

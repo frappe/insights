@@ -77,7 +77,6 @@ export type DountChartConfig = {
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
 	showInlineLabels?: boolean;
-	showNumberFormat?: boolean;
 }
 export type FunnelChartConfig = {
 	label_column: Dimension

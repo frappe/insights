@@ -47,7 +47,6 @@ const discrete_dimensions = computed(() =>
 				]"
 			/>
 			<Checkbox v-model="config.showInlineLabels" label="Inline Labels" />
-			<Checkbox v-model="config.showNumberFormat" label="Display Values as Numbers" />
 		</div>
 	</CollapsibleSection>
 </template>
