@@ -5,20 +5,17 @@
 
 **Open Source Business Intelligence Tool**
 
-![GitHub issues](https://img.shields.io/github/issues/frappe/insights)
-![GitHub license](https://img.shields.io/github/license/frappe/insights)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/frappe/insights)
 [![codecov](https://codecov.io/github/frappe/insights/branch/develop/graph/badge.svg?token=8ZXHCY4G9U)](https://codecov.io/github/frappe/insights)
-[![unittests](https://github.com/frappe/insights/actions/workflows/server-tests.yml/badge.svg)](https://github.com/frappe/insights/actions/workflows/server-tests.yml)
 
 </div>
 
 
-<div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
-	<img src=".github/hero-image.png?v=3" alt="Hero Image" width="72%" />
+<div align="center">
+	<img src=".github/hero-image.png?v=4" alt="Hero Image" width="72%" />
 </div>
-
-<div align="center" style="padding-top: 1rem; padding-bottom: 1rem; display: flex; justify-content:center;">
+<br />
+<div align="center">
 	<a href="https://insightsdemo.frappe.cloud">Live Demo</a>
 	-
 	<a href="https://frappe.io/insights">Website</a>
