@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
-	measures: MeasureOption[]
+	columnOptions: ColumnOption[]
 }>()
 
 const config = defineModel<LineChartConfig>({
@@ -23,7 +23,7 @@ const config = defineModel<LineChartConfig>({
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :measures="props.measures">
+	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
 		<template #y-axis-settings="{ y_axis }">
 			<Checkbox label="Curved Lines" v-model="(y_axis as YAxisLine).smooth" />
 			<Checkbox label="Show Area" v-model="(y_axis as YAxisLine).show_area" />

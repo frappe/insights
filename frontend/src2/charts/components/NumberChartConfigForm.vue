@@ -4,18 +4,16 @@ import { debounce } from 'frappe-ui'
 import { computed, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { copy } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants'
 import { NumberChartConfig } from '../../types/chart.types'
-import { Dimension } from '../../types/query.types'
-import { DimensionOption, MeasureOption } from '../../types/query.types'
+import { ColumnOption, Dimension, DimensionOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
-	measures: MeasureOption[]
+	columnOptions: ColumnOption[]
 }>()
 
 const config = defineModel<NumberChartConfig>({
@@ -32,10 +30,7 @@ const date_dimensions = computed(() =>
 )
 
 watchEffect(() => {
-	if (!config.value.number_columns) {
-		config.value.number_columns = props.measures.length ? [copy(props.measures[0])] : []
-	}
-	if (!config.value.number_columns.length) {
+	if (!config.value.number_columns?.length) {
 		addNumberColumn()
 	}
 	if (!config.value.date_column) {
@@ -61,8 +56,8 @@ const updateColor = debounce((color: string) => {
 					<DraggableList v-model:items="config.number_columns" group="numbers">
 						<template #item="{ item, index }">
 							<MeasurePicker
-								:options="props.measures"
 								:model-value="item"
+								:column-options="props.columnOptions"
 								@update:model-value="Object.assign(item, $event || {})"
 								@remove="config.number_columns.splice(index, 1)"
 							/>
