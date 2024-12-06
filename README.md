@@ -143,7 +143,7 @@ To setup the repository locally follow the steps mentioned below:
 1. Run `bench --site insights.test install-app insights`.
 1. Now open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
 
-## Learning and community
+## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappeinsights)
 - [Discuss Forum](https://discuss.frappe.io/c/insights/74)
@@ -151,9 +151,11 @@ To setup the repository locally follow the steps mentioned below:
 - [YouTube](https://frappe.io)
 
 <h2></h2>
-<div align="center">
-	<picture>
-		<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
-		<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
-	</picture>
+<div align="center" style="padding-top: 0.75rem;">
+	<a href="https://frappe.io" target="_blank">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
+			<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
+		</picture>
+	</a>
 </div>
