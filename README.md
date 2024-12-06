@@ -12,7 +12,7 @@
 
 
 <div align="center">
-	<img src=".github/hero-image.png?v=4" alt="Hero Image" width="72%" />
+	<img src=".github/hero-image.png?v=5" alt="Hero Image" width="72%" />
 </div>
 <br />
 <div align="center">
@@ -39,6 +39,16 @@ Building custom apps or creating structured data has been very easy with Frappe 
 - **Visualizations and Dashboards**: You can visualize the query results using a variety of charts and graphs. Frappe Insights also suggests the best chart for a given result set. You can create dashboards using a drag-and-drop interface and add filters on the dashboard to apply to the charts.
 
 - **Database Support**: Frappe Insights currently supports MySQL, PostgreSQL, DuckDB, and BigQuery databases. More database integrations are planned for the future.
+
+
+<details>
+<summary>Screenshots</summary>
+
+![Query Builder](.github/query-builder.png)
+![Query Builder](.github/join-editor.png)
+![Chart Builder](.github/chart-builder.png)
+</details>
+
 
 ## Under the Hood
 
