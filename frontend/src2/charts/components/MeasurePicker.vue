@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { TextInput } from 'frappe-ui'
 import { Check, ChevronLeft, Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
@@ -62,7 +63,11 @@ watchEffect(() => {
 
 watchEffect(() => {
 	const cm = columnMeasure.value
-	if (cm && cm.aggregation && cm.column_name) {
+	if (!cm) return
+
+	const hasDefaultLabel = !cm.measure_name || cm.measure_name.includes(cm.column_name)
+
+	if (cm.aggregation && cm.column_name && hasDefaultLabel) {
 		cm.measure_name = `${cm.aggregation}_${cm.column_name}`
 	}
 })
@@ -78,7 +83,7 @@ function updateMeasure(measureExpression: ExpressionMeasure) {
 }
 
 const aggregationOptions: { label: string; value: AggregationType }[] = [
-	{ label: 'Count of Records', value: 'count' },
+	{ label: 'Count of...', value: 'count' },
 	{ label: 'Sum of...', value: 'sum' },
 	{ label: 'Average of...', value: 'avg' },
 	{ label: 'Minimum of...', value: 'min' },
@@ -111,6 +116,8 @@ function resetMeasure() {
 		aggregation: '',
 	}
 }
+
+const label = ref('')
 </script>
 
 <template>
@@ -240,11 +247,7 @@ function resetMeasure() {
 			<template #body-main>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
 					<InlineFormControlLabel
-						v-if="
-							'aggregation' in measure &&
-							measure.aggregation &&
-							measure.column_name != 'count'
-						"
+						v-if="'aggregation' in measure && measure.aggregation"
 						label="Function"
 					>
 						<Autocomplete
@@ -257,10 +260,12 @@ function resetMeasure() {
 					</InlineFormControlLabel>
 
 					<InlineFormControlLabel label="Label">
-						<FormControl
-							v-model="measure.measure_name"
+						<TextInput
 							autocomplete="off"
-							:debounce="500"
+							:modelValue="measure.measure_name"
+							@update:modelValue="label = $event"
+							@blur="measure.measure_name = label"
+							@keydown.enter="measure.measure_name = label"
 						/>
 					</InlineFormControlLabel>
 
