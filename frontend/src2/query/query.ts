@@ -202,11 +202,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			const queryTable = getCachedQuery(op.table.query_name)
 			if (!queryTable) {
 				const message = `Query ${op.table.query_name} not found`
-				createToast({
-					variant: 'error',
-					title: 'Error',
-					message,
-				})
 				throw new Error(message)
 			}
 
