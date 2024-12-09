@@ -141,7 +141,7 @@ function confirmSelections() {
 							<Button
 								label="Done"
 								variant="solid"
-								:disabled="!areAllMeasuresValid || !areAllDimensionsValid"
+								:disabled="!areAllMeasuresValid && !areAllDimensionsValid"
 								@click="confirmSelections"
 							/>
 						</div>
