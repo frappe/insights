@@ -25,10 +25,10 @@ const filteredCharts = computed(() => {
 
 const selectedCharts = ref<WorkbookChart[]>(copy(props.selectedCharts))
 function isSelected(chart: WorkbookChart) {
-	return selectedCharts.value.find((c) => c.name === chart.name)
+	return selectedCharts.value.find((c) => c && c.name === chart.name)
 }
 function toggleChart(chart: WorkbookChart) {
-	const index = selectedCharts.value.findIndex((c) => c.name === chart.name)
+	const index = selectedCharts.value.findIndex((c) => c && c.name === chart.name)
 	if (index === -1) {
 		selectedCharts.value.push(chart)
 	} else {

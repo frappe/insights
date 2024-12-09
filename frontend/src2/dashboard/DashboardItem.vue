@@ -6,6 +6,7 @@ import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook
 import { Dashboard } from './dashboard'
 import DashboardItemActions from './DashboardItemActions.vue'
 import { watchDebounced } from '@vueuse/core'
+import { AlertTriangle } from 'lucide-vue-next'
 
 const props = defineProps<{
 	index: number
@@ -81,6 +82,14 @@ document.addEventListener('mousemove', (event) => {
 							:result="chart.dataQuery.result"
 							:loading="chart.dataQuery.executing"
 						/>
+
+						<div
+							v-else
+							class="flex h-full flex-1 flex-col items-center justify-center rounded border"
+						>
+							<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
+							<p class="text-p-base text-gray-500">Chart not found</p>
+						</div>
 					</div>
 				</div>
 			</template>
