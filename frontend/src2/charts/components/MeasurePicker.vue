@@ -71,7 +71,7 @@ watchEffect(() => {
 		cm.measure_name.includes(cm.column_name)
 
 	if (cm.aggregation && cm.column_name && hasDefaultLabel) {
-		cm.measure_name = `${cm.aggregation}_${cm.column_name}`
+		cm.measure_name = `${cm.aggregation}_of_${cm.column_name}`
 	}
 })
 
