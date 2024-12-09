@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { formatNumber, getShortNumber } from '../../helpers'
-import { NumberChartConfig } from '../../types/chart.types'
+import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { QueryResult } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
@@ -35,7 +35,7 @@ const cards = computed(() => {
 	if (!props.result?.rows) return []
 	if (!Object.keys(numberValuesPerColumn.value).length) return []
 
-	return numberColumns.value.map((measure_name: string) => {
+	return numberColumns.value.map((measure_name: string, idx: number) => {
 		const numberValues = numberValuesPerColumn.value[measure_name]
 		const currentValue = numberValues[numberValues.length - 1]
 		const previousValue = numberValues[numberValues.length - 2]
@@ -43,23 +43,36 @@ const cards = computed(() => {
 			? previousValue - currentValue
 			: currentValue - previousValue
 		const percentDelta = (delta / previousValue) * 100
+
+		const prefix = getNumberOption(idx, 'prefix')
+		const suffix = getNumberOption(idx, 'suffix')
+		const decimal = getNumberOption(idx, 'decimal')
+		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
+
 		return {
 			measure_name,
 			values: numberValues,
-			currentValue: getFormattedValue(currentValue),
-			previousValue: getFormattedValue(previousValue),
+			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers),
+			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers),
 			delta,
-			percentDelta: getFormattedValue(percentDelta),
+			percentDelta: getFormattedValue(percentDelta, decimal, shorten_numbers),
+			prefix,
+			suffix,
 		}
 	})
 })
 
-const getFormattedValue = (value: number) => {
+const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: boolean) => {
 	if (isNaN(value)) return 0
-	if (config.value.shorten_numbers) {
-		return getShortNumber(value, config.value.decimal)
+	if (shorten_numbers) {
+		return getShortNumber(value, decimal)
 	}
-	return formatNumber(value, config.value.decimal)
+	return formatNumber(value, decimal)
+}
+
+function getNumberOption(index: number, option: keyof NumberColumnOptions) {
+	const numberOption = config.value.number_column_options[index]?.[option] as any
+	return numberOption === undefined ? config.value[option] : numberOption
 }
 </script>
 
@@ -67,7 +80,15 @@ const getFormattedValue = (value: number) => {
 	<div class="h-full w-full @container">
 		<div class="grid w-full grid-cols-[repeat(auto-fill,214px)] gap-4">
 			<div
-				v-for="{ measure_name, values, currentValue, delta, percentDelta } in cards"
+				v-for="{
+					measure_name,
+					values,
+					currentValue,
+					delta,
+					percentDelta,
+					prefix,
+					suffix,
+				} in cards"
 				:key="measure_name"
 				class="flex h-fit max-h-[140px] items-center gap-2 overflow-y-auto rounded bg-white px-6 pt-5 shadow"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
@@ -77,7 +98,7 @@ const getFormattedValue = (value: number) => {
 						{{ measure_name }}
 					</span>
 					<div class="flex-1 flex-shrink-0 text-[24px] font-semibold leading-10">
-						{{ config.prefix }}{{ currentValue }}{{ config.suffix }}
+						{{ prefix }}{{ currentValue }}{{ suffix }}
 					</div>
 					<div
 						v-if="config.comparison"

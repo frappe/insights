@@ -65,7 +65,10 @@ watchEffect(() => {
 	const cm = columnMeasure.value
 	if (!cm) return
 
-	const hasDefaultLabel = !cm.measure_name || cm.measure_name.includes(cm.column_name)
+	const hasDefaultLabel =
+		!cm.measure_name ||
+		cm.measure_name.includes(`${cm.aggregation}_`) ||
+		cm.measure_name.includes(cm.column_name)
 
 	if (cm.aggregation && cm.column_name && hasDefaultLabel) {
 		cm.measure_name = `${cm.aggregation}_${cm.column_name}`
@@ -246,19 +249,6 @@ const label = ref('')
 			</template>
 			<template #body-main>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
-					<InlineFormControlLabel
-						v-if="'aggregation' in measure && measure.aggregation"
-						label="Function"
-					>
-						<Autocomplete
-							placeholder="Agg"
-							:options="aggregations"
-							:modelValue="measure.aggregation"
-							@update:modelValue="measure.aggregation = $event.value"
-							:hide-search="true"
-						/>
-					</InlineFormControlLabel>
-
 					<InlineFormControlLabel label="Label">
 						<TextInput
 							autocomplete="off"
