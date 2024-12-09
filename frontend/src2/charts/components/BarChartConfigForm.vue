@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { BarChartConfig, YAxisBar } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
@@ -30,6 +30,16 @@ watchEffect(() => {
 	if (config.value.y_axis?.stack === undefined) {
 		config.value.y_axis.stack = true
 	}
+	if (hasAxisSplit.value) {
+		config.value.y_axis.stack = false
+	}
+})
+
+const hasAxisSplit = computed(() => {
+	return (
+		config.value.y_axis.series.find((s) => s.align === 'Right') &&
+		config.value.y_axis.series.find((s) => s.align === 'Left')
+	)
 })
 </script>
 
@@ -38,7 +48,7 @@ watchEffect(() => {
 
 	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
 		<template #y-axis-settings="{ y_axis }">
-			<Checkbox label="Stack" v-model="(y_axis as YAxisBar).stack" />
+			<Checkbox label="Stack" v-model="(y_axis as YAxisBar).stack" :disabled="hasAxisSplit" />
 			<Checkbox label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
 		</template>
 	</YAxisConfig>
