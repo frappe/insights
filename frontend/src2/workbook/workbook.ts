@@ -84,12 +84,12 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
-	function addChart() {
+	function addChart(query_name?: string) {
 		const idx = workbook.doc.charts.length
 		workbook.doc.charts.push({
 			name: getUniqueId(),
 			title: `Chart ${idx + 1}`,
-			query: '',
+			query: query_name || '',
 			chart_type: 'Bar',
 			is_public: false,
 			config: {} as WorkbookChart['config'],
