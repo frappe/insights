@@ -138,6 +138,12 @@ def f_is_first_row(group_by, order_by, sort_order="asc"):
     return f_if_else(row_number == 1, 1, 0)
 
 
+def f_filter_first_row(group_by, order_by, sort_order="asc"):
+    _order_by = ibis.asc(order_by) if sort_order == "asc" else ibis.desc(order_by)
+    row_number = f_row_number().over(group_by=group_by, order_by=_order_by)
+    return row_number == 1
+
+
 def f_create_buckets(column, num_buckets):
     query = frappe.flags.current_ibis_query
     if query is None:
