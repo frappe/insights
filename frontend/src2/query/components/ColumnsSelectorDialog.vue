@@ -2,7 +2,7 @@
 import { ChevronDown, SearchIcon } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
-import { QueryResultColumn, SelectArgs } from '../../types/query.types'
+import { ColumnOption, QueryResultColumn, SelectArgs } from '../../types/query.types'
 import { Query } from '../query'
 import DataTypeIcon from './DataTypeIcon.vue'
 
@@ -16,9 +16,7 @@ const query = inject('query') as Query
 const selectedColumns = ref<QueryResultColumn[]>([...query.result.columns])
 
 const columnOptions = ref<ColumnOption[]>([])
-query.getColumnsForSelection().then((cols: ColumnOption[]) => {
-	columnOptions.value = cols
-})
+query.getColumnsForSelection().then((cols) => (columnOptions.value = cols))
 
 const columns = ref<HTMLElement | null>(null)
 function addColumns(options: ColumnOption[]) {

@@ -5,13 +5,13 @@ import { watchEffect } from 'vue'
 import Checkbox from '../../components/Checkbox.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import { copy } from '../../helpers'
 import { AxisChartConfig } from '../../types/chart.types'
+import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import { copy } from '../../helpers'
-import { MeasureOption } from '../../types/query.types'
 
-const props = defineProps<{ measures: MeasureOption[] }>()
+const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
 	required: true,
 	default: () => ({
@@ -47,8 +47,8 @@ const updateColor = debounce((color: string, idx: number) => {
 					<DraggableList v-model:items="y_axis.series" group="series">
 						<template #item="{ item, index }">
 							<MeasurePicker
-								:options="props.measures"
 								:model-value="item.measure"
+								:column-options="props.columnOptions"
 								@update:model-value="Object.assign(item.measure, $event || {})"
 								@remove="y_axis.series.splice(index, 1)"
 							>

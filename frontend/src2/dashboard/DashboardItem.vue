@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
+import { AlertTriangle } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -81,6 +82,14 @@ document.addEventListener('mousemove', (event) => {
 							:result="chart.dataQuery.result"
 							:loading="chart.dataQuery.executing"
 						/>
+
+						<div
+							v-else
+							class="flex h-full flex-1 flex-col items-center justify-center rounded border"
+						>
+							<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
+							<p class="text-p-base text-gray-500">Chart not found</p>
+						</div>
 					</div>
 				</div>
 			</template>

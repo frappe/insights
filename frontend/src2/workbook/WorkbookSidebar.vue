@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { Braces, LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
+import { useRoute } from 'vue-router'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
-import { Workbook, workbookKey } from './workbook'
+import { workbookKey } from './workbook'
 
-const workbook = inject(workbookKey) as Workbook
+const workbook = inject(workbookKey)!
+const route = useRoute()
+
+const activeQueryName = computed(() => {
+	if (route.name === 'WorkbookQuery') {
+		const index = parseInt(route.params.index as string)
+		return workbook?.doc.queries[index].name
+	}
+})
 </script>
 
 <template>
@@ -47,7 +56,7 @@ const workbook = inject(workbookKey) as Workbook
 				items: workbook.doc.charts,
 				itemKey: 'name',
 				isActive: (idx: number) => workbook.isActiveTab('chart', idx),
-				add: workbook.addChart,
+				add: () => workbook.addChart(activeQueryName),
 				remove: (chart) => workbook.removeChart(chart.name),
 				route: (idx: number) => `/workbook/${workbook.name}/chart/${idx}`,
 			}"

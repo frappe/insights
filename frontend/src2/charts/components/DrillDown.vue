@@ -30,8 +30,14 @@ watch(
 		)
 		if (query) {
 			drillDownQuery.value = query
-			drillDownQuery.value.execute()
-			showDrillDownResults.value = true
+			drillDownQuery.value
+				.execute()
+				.then(() => {
+					showDrillDownResults.value = true
+				})
+				.catch(() => {
+					showDrillDownResults.value = false
+				})
 		}
 	},
 	{ immediate: true, deep: true }

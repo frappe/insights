@@ -61,6 +61,7 @@ export type MixedChartConfig = AxisChartConfig & {
 
 export type NumberChartConfig = {
 	number_columns: Measure[]
+	number_column_options: NumberColumnOptions[]
 	comparison: boolean
 	sparkline: boolean
 	sparkline_color?: string
@@ -70,6 +71,12 @@ export type NumberChartConfig = {
 	prefix?: string
 	suffix?: string
 	negative_is_better?: boolean
+}
+export type NumberColumnOptions = {
+	shorten_numbers?: boolean
+	decimal?: number
+	prefix?: string
+	suffix?: string
 }
 
 export type DountChartConfig = {

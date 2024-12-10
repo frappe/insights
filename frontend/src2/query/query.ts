@@ -3,18 +3,16 @@ import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { FIELDTYPES } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import {
 	CodeArgs,
 	ColumnDataType,
+	ColumnOption,
 	CustomOperationArgs,
 	Dimension,
-	DimensionDataType,
 	FilterGroupArgs,
 	JoinArgs,
 	Measure,
-	MeasureDataType,
 	MutateArgs,
 	Operation,
 	OrderByArgs,
@@ -26,16 +24,18 @@ import {
 	SourceArgs,
 	SQLArgs,
 	SummarizeArgs,
-	UnionArgs,
+	UnionArgs
 } from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
 	cast,
+	code,
 	column,
-	count,
 	custom_operation,
 	filter_group,
+	getDimensions,
 	getFormattedRows,
+	getMeasures,
 	join,
 	limit,
 	mutate,
@@ -47,10 +47,7 @@ import {
 	source,
 	sql,
 	summarize,
-	union,
-	code,
-	getMeasures,
-	getDimensions,
+	union
 } from './helpers'
 
 const queries = new Map<string, Query>()
@@ -205,11 +202,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			const queryTable = getCachedQuery(op.table.query_name)
 			if (!queryTable) {
 				const message = `Query ${op.table.query_name} not found`
-				createToast({
-					variant: 'error',
-					title: 'Error',
-					message,
-				})
 				throw new Error(message)
 			}
 
@@ -633,7 +625,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		})
 	}
 
-	function getColumnsForSelection() {
+	function getColumnsForSelection(): Promise<ColumnOption[]> {
 		const operationsForExecution = query.getOperationsForExecution()
 		if (
 			query.activeEditOperation.type === 'select' ||

@@ -12,7 +12,7 @@
 
 
 <div align="center">
-	<img src=".github/hero-image.png?v=4" alt="Hero Image" width="72%" />
+	<img src=".github/hero-image.png?v=5" alt="Hero Image" width="72%" />
 </div>
 <br />
 <div align="center">
@@ -39,6 +39,16 @@ Building custom apps or creating structured data has been very easy with Frappe 
 - **Visualizations and Dashboards**: You can visualize the query results using a variety of charts and graphs. Frappe Insights also suggests the best chart for a given result set. You can create dashboards using a drag-and-drop interface and add filters on the dashboard to apply to the charts.
 
 - **Database Support**: Frappe Insights currently supports MySQL, PostgreSQL, DuckDB, and BigQuery databases. More database integrations are planned for the future.
+
+
+<details>
+<summary>Screenshots</summary>
+
+![Query Builder](.github/query-builder.png)
+![Query Builder](.github/join-editor.png)
+![Chart Builder](.github/chart-builder.png)
+</details>
+
 
 ## Under the Hood
 
@@ -75,7 +85,7 @@ Follow these steps to set up Frappe Insights in production:
 **Step 1**: Download the easy install script
 
 ```bash
-wget https://frappe.fyi/easy-install.py
+wget https://frappe.io/easy-install.py
 ```
 
 **Step 2**: Run the deployment command
@@ -133,7 +143,7 @@ To setup the repository locally follow the steps mentioned below:
 1. Run `bench --site insights.test install-app insights`.
 1. Now open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
 
-## Learning and community
+## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappeinsights)
 - [Discuss Forum](https://discuss.frappe.io/c/insights/74)
@@ -141,9 +151,11 @@ To setup the repository locally follow the steps mentioned below:
 - [YouTube](https://frappe.io)
 
 <h2></h2>
-<div align="center">
-	<picture>
-		<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
-		<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
-	</picture>
+<div align="center" style="padding-top: 0.75rem;">
+	<a href="https://frappe.io" target="_blank">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/Frappe-white.png">
+			<img src="https://frappe.io/files/Frappe-black.png" alt="Frappe Technologies" height="28"/>
+		</picture>
+	</a>
 </div>

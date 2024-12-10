@@ -104,80 +104,74 @@ def apply_user_permissions(t, data_source, table_name):
     ):
         return t
 
-    empty_table = t.filter(t.name.isnull())
-
     doctype = table_name.replace("tab", "")
+    allowed_docs = get_allowed_documents(doctype)
 
-    if not frappe.get_meta(doctype).istable:
-        if not frappe.has_permission(doctype):
-            create_toast(
-                "You do not have permission to access this table", type="error"
-            )
-            return empty_table
+    if allowed_docs == "*":
+        return t
+    if isinstance(allowed_docs, list):
+        return t.filter(t.name.isin(allowed_docs))
 
-        names = get_allowed_documents(doctype)
-
-        if not names:
-            return empty_table
-
-        if names == "*":
-            return t
-
-        return t.filter(t.name.isin(names))
-
-    # For child tables:
-    # 1. Find all the parent doctypes of the child table
-    # 2. Filter the parent doctypes where user has read permission
-    # 3. Find all the allowed documents of the parent doctypes
-    # 4. Filter child table where `parent` is in allowed documents
-
-    child_doctype = doctype
-    parent_doctypes = frappe.get_all(
-        "DocField",
-        filters={
-            "parenttype": "DocType",
-            "fieldtype": ["in", ["Table", "Table MultiSelect"]],
-            "options": child_doctype,
-        },
-        pluck="parent",
-        distinct=True,
-    )
-
-    doctype_perms = get_valid_perms()
-    parent_doctypes = [
-        p.parent for p in doctype_perms if p.read and p.parent in parent_doctypes
-    ]
-
-    if not parent_doctypes:
-        create_toast("You do not have permission to access this table", type="error")
-        return empty_table
-
-    docs_by_doctype = {
-        parent_doctype: get_allowed_documents(parent_doctype)
-        for parent_doctype in parent_doctypes
-    }
-
-    condition = False
-    for parent_doctype, docs in docs_by_doctype.items():
-        if docs == "*":
-            condition = condition | (t.parenttype == parent_doctype)
-        elif docs:
-            condition = condition | (
-                (t.parenttype == parent_doctype) & (t.parent.isin(docs))
-            )
-        else:
-            condition = condition | (
-                (t.parenttype == parent_doctype) & (t.name.isnull())
-            )
-
-    return t.filter(condition)
+    create_toast("You do not have permissions to access this table", type="error")
+    return t.filter(False)
 
 
 def get_allowed_documents(doctype):
-    names = frappe.get_list(doctype, pluck="name")
-    doc_count = frappe.db.count(doctype)
+    docs = []
 
-    if doc_count == len(names):
-        return "*"
+    istable = frappe.get_meta(doctype).istable
 
-    return names
+    if not istable and frappe.has_permission(doctype):
+        docs = frappe.get_list(doctype, pluck="name")
+        doc_count = frappe.db.count(doctype)
+        if doc_count == len(docs):
+            docs = "*"
+
+    if istable:
+        # For child tables:
+        # 1. Find all the parent doctypes of the child table
+        # 2. Filter the parent doctypes where user has read permission
+        # 3. Find all the allowed documents of the parent doctypes
+        # 4. Filter child table where `parent` is in allowed documents
+
+        child_doctype = doctype
+        parent_doctypes = frappe.get_all(
+            "DocField",
+            filters={
+                "parenttype": "DocType",
+                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+                "options": child_doctype,
+            },
+            pluck="parent",
+            distinct=True,
+        )
+
+        doctype_perms = get_valid_perms()
+        parent_doctypes = [
+            p.parent for p in doctype_perms if p.read and p.parent in parent_doctypes
+        ]
+
+        parent_docs_by_doctype = {
+            parent_doctype: get_allowed_documents(parent_doctype)
+            for parent_doctype in parent_doctypes
+        }
+
+        CHILD_DOCTYPE = frappe.qb.DocType(child_doctype)
+        docs_query = frappe.qb.from_(CHILD_DOCTYPE).select(CHILD_DOCTYPE.name)
+        condition = None
+        for parent_doctype, parent_docs in parent_docs_by_doctype.items():
+            if parent_docs == "*":
+                _cond = CHILD_DOCTYPE.parenttype == parent_doctype
+                condition = _cond if condition is None else condition | _cond
+            elif parent_docs:
+                _cond = (CHILD_DOCTYPE.parenttype == parent_doctype) & (
+                    CHILD_DOCTYPE.parent.isin(parent_docs)
+                )
+                condition = _cond if condition is None else condition | _cond
+
+        docs = docs_query.where(condition).run(pluck="name")
+        doc_count = frappe.db.count(doctype)
+        if doc_count == len(docs):
+            docs = "*"
+
+    return docs

@@ -3,12 +3,13 @@
 
 import os
 
+import frappe
 import ibis
 from frappe.utils import get_files_path
 
 
 def get_duckdb_connection(data_source, read_only=True):
-    name = data_source.name or data_source.title
+    name = data_source.name or frappe.scrub(data_source.title)
     db_name = data_source.database_name
 
     if db_name.startswith("http"):

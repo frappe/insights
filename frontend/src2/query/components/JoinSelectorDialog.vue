@@ -245,8 +245,8 @@ function reset() {
 				<!-- Fields -->
 				<div class="flex w-full flex-col gap-3 overflow-auto p-0.5 text-base">
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">Select Table to Join</label>
 						<Autocomplete
+							label="Right Table"
 							placeholder="Table"
 							v-model="selectedTable"
 							:loading="tableOptions.loading"
@@ -255,14 +255,7 @@ function reset() {
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">
-							{{
-								showJoinConditionEditor
-									? 'Custom Join Condition'
-									: 'Select Matching Columns'
-							}}
-						</label>
-						<div class="flex gap-2">
+						<div class="flex items-end gap-2">
 							<template
 								v-if="
 									'left_column' in join.join_condition &&
@@ -271,6 +264,7 @@ function reset() {
 							>
 								<div class="flex-1">
 									<Autocomplete
+										label="Left Column"
 										placeholder="Column"
 										:options="query.result.columnOptions"
 										:modelValue="join.join_condition.left_column.column_name"
@@ -280,9 +274,10 @@ function reset() {
 										"
 									/>
 								</div>
-								<div class="flex flex-shrink-0 items-center font-mono">=</div>
+								<div class="flex h-7 flex-shrink-0 items-center font-mono">=</div>
 								<div class="flex-1">
 									<Autocomplete
+										label="Right Column"
 										placeholder="Column"
 										:loading="rightTableColumnOptions.loading"
 										:options="[
@@ -298,10 +293,15 @@ function reset() {
 								</div>
 							</template>
 							<template v-else-if="'join_expression' in join.join_condition">
-								<InlineExpression
-									v-model="join.join_condition.join_expression"
-									placeholder="Example: (t1.column_name = t2.column_name) & (t1.column_name > 10)"
-								/>
+								<div>
+									<label class="mb-1 block text-xs text-gray-600"
+										>Custom Join Condition
+									</label>
+									<InlineExpression
+										v-model="join.join_condition.join_expression"
+										placeholder="Example: (t1.column_name = t2.column_name) & (t1.column_name > 10)"
+									/>
+								</div>
 							</template>
 							<div class="flex flex-shrink-0 items-start">
 								<Tooltip text="Custom Join Condition" :hover-delay="0.5">
