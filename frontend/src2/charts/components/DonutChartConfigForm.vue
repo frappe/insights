@@ -35,7 +35,7 @@ const discrete_dimensions = computed(() =>
 			/>
 			<MeasurePicker label="Value" :options="props.measures" v-model="config.value_column" />
 			<FormControl
-				v-if="!config.showInlineLabels"
+				v-if="!config.show_inline_labels"
 				v-model="config.legend_position"
 				label="Legend Position"
 				type="select"
@@ -46,7 +46,7 @@ const discrete_dimensions = computed(() =>
 					{ label: 'Right', value: 'right' },
 				]"
 			/>
-			<Checkbox v-model="config.showInlineLabels" label="Inline Labels" />
+			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
 		</div>
 	</CollapsibleSection>
 </template>
