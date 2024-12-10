@@ -3,10 +3,7 @@ import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
 import { getCachedQuery } from '../query/query'
 import { FilterArgs } from '../types/query.types'
-import {
-	WorkbookChart,
-	WorkbookDashboard
-} from '../types/workbook.types'
+import { WorkbookChart, WorkbookDashboard } from '../types/workbook.types'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -72,21 +69,23 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		refresh() {
 			dashboard.doc.items
 				.filter((item) => item.type === 'chart')
-				.forEach((chartItem) => {
-					const chart = getCachedChart(chartItem.chart)
-					if (!chart || !chart.doc.query) return
+				.forEach((item) => dashboard.refreshChart(item.chart))
+		},
 
-					Object.keys(dashboard.filters).forEach((query) => {
-						const _query = getCachedQuery(query)
-						if (!_query) return
-						_query.dashboardFilters = {
-							logical_operator: 'And',
-							filters: dashboard.filters[query],
-						}
-					})
+		refreshChart(chart_name: string) {
+			const chart = getCachedChart(chart_name)
+			if (!chart || !chart.doc.query) return
 
-					chart.refresh()
-				})
+			Object.keys(dashboard.filters).forEach((query) => {
+				const _query = getCachedQuery(query)
+				if (!_query) return
+				_query.dashboardFilters = {
+					logical_operator: 'And',
+					filters: dashboard.filters[query],
+				}
+			})
+
+			chart.refresh()
 		},
 
 		getShareLink() {

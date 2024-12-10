@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
+import { AlertTriangle } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardItemActions from './DashboardItemActions.vue'
-import { watchDebounced } from '@vueuse/core'
-import { AlertTriangle } from 'lucide-vue-next'
 
 const props = defineProps<{
 	index: number
@@ -23,7 +23,7 @@ const chart = computed(() => {
 
 watchDebounced(
 	() => chart.value?.doc.config.order_by,
-	() => chart.value?.refresh(),
+	() => dashboard.refreshChart(props.item.chart),
 	{
 		deep: true,
 		debounce: 500,
