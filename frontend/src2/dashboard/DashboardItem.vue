@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
 import { computed, inject, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardItemActions from './DashboardItemActions.vue'
-import { watchDebounced } from '@vueuse/core'
-import { FilterArgs } from '../types/query.types'
 
 const props = defineProps<{
 	index: number
@@ -23,10 +22,8 @@ const chart = computed(() => {
 
 watchDebounced(
 	() => chart.value?.doc.config.order_by,
-	() => {
-        const consolidatedFilters = Object.values(dashboard.filters).flat() as FilterArgs[];
-        chart.value?.refresh(consolidatedFilters);
-    },	{
+	() => dashboard.refreshChart(props.item.chart),
+	{
 		deep: true,
 		debounce: 500,
 	}
