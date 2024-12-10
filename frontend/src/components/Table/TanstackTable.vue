@@ -105,13 +105,13 @@ const showPagination = computed(
 							v-for="header in headerGroup.headers"
 							:key="header.id"
 							:colSpan="header.colSpan"
-							class="border-b border-r text-gray-800 font-bold"
+							class="border-b border-r text-gray-800"
 							:width="header.column.columnDef.id === 'index' ? '6rem' : 'auto'"
 						>
 							<div
 								class="flex items-center gap-2 truncate py-2 px-3"
 								:class="[
-									header.column.columnDef.isNumber ? 'justify-end' : 'justify-center',
+									header.column.columnDef.isNumber ? 'justify-end' : '',
 									header.column.getCanSort()
 										? 'cursor-pointer hover:text-gray-800'
 										: '',
@@ -160,11 +160,7 @@ const showPagination = computed(
 					</tr>
 				</thead>
 				<tbody>
-					<tr 
-					 	v-for="(row, index) in table.getRowModel().rows" 
-						:key="row.id"
-						class="hover:bg-gray-100"
-					>
+					<tr v-for="(row, index) in table.getRowModel().rows" :key="row.id">
 						<td
 							v-for="cell in row.getVisibleCells()"
 							:key="cell.id"
