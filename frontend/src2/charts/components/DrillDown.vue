@@ -62,6 +62,7 @@ watch(
 					:loading="drillDownQuery.executing"
 					:columns="drillDownQuery.result.columns"
 					:rows="drillDownQuery.result.rows"
+					:enable-pagination="true"
 					:show-column-totals="true"
 					:show-filter-row="true"
 				>
