@@ -135,20 +135,67 @@ You need Docker, docker-compose and git setup on your machine. Refer [Docker doc
 
 To setup the repository locally follow the steps mentioned below:
 
-1. Install bench and setup a `frappe-bench` directory by following the [Installation Steps](https://frappeframework.com/docs/user/en/installation)
-1. Start the server by running `bench start`
-1. In a separate terminal window, create a new site by running `bench new-site insights.test`
-1. Map your site to localhost with the command `bench --site insights.test add-to-hosts`
-1. Get the Insights app. Run `bench get-app https://github.com/frappe/insights`
-1. Run `bench --site insights.test install-app insights`.
-1. Now open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
+1. Setup bench by following the [Installation Steps](https://frappeframework.com/docs/user/en/installation) and start the server
+    ```
+    bench start
+    ```
+
+2. In a separate terminal window, run the following commands:
+    ```
+    # Create a new site
+    bench new-site insights.test
+
+    # Map your site to localhost
+    bench --site insights.test add-to-hosts
+    ```
+
+3. Get the Insights app and install it
+    ```
+    # Get the Insights app
+    bench get-app https://github.com/frappe/insights
+
+    # Install the app
+    bench --site insights.test install-app insights
+    ```
+
+4. Open the URL `http://insights.test:8000/insights` in your browser, you should see the app running
+
+
+### Frontend Development Setup
+
+The Insights frontend is a Vue.js application located in the `frontend/src2` directory. Follow these steps to set up the frontend development environment:
+
+1. Navigate to the Insights app directory:
+    ```bash
+    cd apps/insights
+    ```
+
+2. Install dependencies:
+    ```bash
+    yarn install
+    ```
+
+3. Add the following line in your site's `site_config.json` file
+    ```json
+    "ignore_csrf": 1
+    ```
+
+4. Start the development server:
+    ```bash
+    yarn dev
+    ```
+
+5. Access the development site:
+   - Open `http://insights.localhost:8080/insights` in your browser
+   - Any changes to files in `frontend/src2` will automatically reload in the browser
+
 
 ## Learn and connect
 
 - [Telegram Public Group](https://t.me/frappeinsights)
 - [Discuss Forum](https://discuss.frappe.io/c/insights/74)
 - [Documentation](https://docs.frappe.io/insights)
-- [YouTube](https://frappe.io)
+- [YouTube](https://www.youtube.com/@frappetech)
 
 <h2></h2>
 <div align="center" style="padding-top: 0.75rem;">
