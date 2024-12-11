@@ -16,16 +16,23 @@
 </div>
 <br />
 <div align="center">
-	<a href="https://insightsdemo.frappe.cloud">Live Demo</a>
-	-
-	<a href="https://frappe.io/insights">Website</a>
-	-
-	<a href="https://docs.frappe.io/insights">Documentation</a>
+    <a href="https://insightsdemo.frappe.cloud">Live Demo</a>
+    -
+    <a href="https://frappe.io/insights">Website</a>
+    -
+    <a href="https://docs.frappe.io/insights">Documentation</a>
 </div>
 
 ## Frappe Insights
 Insights is a 100% open-source BI tool designed to make data analysis and reporting more accessible to technical as well as non-technical users.
 
+<details>
+<summary>Screenshots</summary>
+
+![Query Builder](.github/query-builder.png)
+![Query Builder](.github/join-editor.png)
+![Chart Builder](.github/chart-builder.png)
+</details>
 
 ## Motivation
 Building custom apps or creating structured data has been very easy with Frappe Framework. However, extracting information from these apps was not a very good experience. Users needed to know how to write SQL queries to create reports to gain valuable information from the data. So I wanted to improve the experience of building these reports and dashboards for everyone in our team.
@@ -39,15 +46,6 @@ Building custom apps or creating structured data has been very easy with Frappe 
 - **Visualizations and Dashboards**: You can visualize the query results using a variety of charts and graphs. Frappe Insights also suggests the best chart for a given result set. You can create dashboards using a drag-and-drop interface and add filters on the dashboard to apply to the charts.
 
 - **Database Support**: Frappe Insights currently supports MySQL, PostgreSQL, DuckDB, and BigQuery databases. More database integrations are planned for the future.
-
-
-<details>
-<summary>Screenshots</summary>
-
-![Query Builder](.github/query-builder.png)
-![Query Builder](.github/join-editor.png)
-![Chart Builder](.github/chart-builder.png)
-</details>
 
 
 ## Under the Hood
@@ -70,12 +68,12 @@ You can try [Frappe Cloud](https://frappecloud.com), a simple, user-friendly and
 It takes care of installation, setup, upgrades, monitoring, maintenance and support of your Frappe deployments. It is a fully featured developer platform with an ability to manage and control multiple Frappe deployments.
 
 <div>
-	<a href="https://frappecloud.com/insights/signup" target="_blank">
-		<picture>
-			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/try-on-fc-white.png">
-			<img src="https://frappe.io/files/try-on-fc-black.png" alt="Try on Frappe Cloud" height="28" />
-		</picture>
-	</a>
+    <a href="https://frappecloud.com/insights/signup" target="_blank">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/try-on-fc-white.png">
+            <img src="https://frappe.io/files/try-on-fc-black.png" alt="Try on Frappe Cloud" height="28" />
+        </picture>
+    </a>
 </div>
 
 ### Self Hosting
