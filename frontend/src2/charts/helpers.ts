@@ -148,6 +148,16 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
+	const labelRotation = Math.max(0, Math.min(config.label_rotation || 0, 90))
+
+	const updatedXAxis = {
+		...xAxis,
+		axisLabel: {
+			...(xAxis.axisLabel || {}),
+			rotate: labelRotation,
+		},
+	}
+
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
 				const a_date = new Date(a[config.x_axis.dimension_name])
@@ -186,8 +196,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		animationDuration: 700,
 		color: colors,
 		grid: getGrid({ show_legend }),
-		xAxis: swapAxes ? yAxis : xAxis,
-		yAxis: swapAxes ? xAxis : yAxis,
+		xAxis: swapAxes ? yAxis : updatedXAxis,
+		yAxis: swapAxes ? updatedXAxis : yAxis,
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -266,6 +276,10 @@ function getXAxis(options: XAxisCustomizeOptions = {}) {
 		splitLine: { show: false },
 		axisLine: { show: true },
 		axisTick: { show: false },
+		axisLabel: {
+			show: true,
+			rotate: 0,
+		},
 	}
 }
 

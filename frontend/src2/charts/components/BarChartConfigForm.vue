@@ -52,6 +52,12 @@ const hasAxisSplit = computed(() => {
 			<Checkbox label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
 		</template>
 	</YAxisConfig>
+	<FormControl
+		v-model="config.label_rotation"
+		label="Rotate Labels (degrees)"
+		type="number"
+		placeholder="0"
+	/>
 
 	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
 </template>
