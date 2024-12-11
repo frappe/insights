@@ -435,7 +435,14 @@ class IbisQueryBuilder:
         code = code_args.code
         digest = make_digest(code)
         results = get_code_results(code, digest)
-        return ibis.memtable(results, name=digest)
+
+        db = ibis.duckdb.connect()
+        return db.create_table(
+            digest,
+            results,
+            temp=True,
+            overwrite=True,
+        )
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
@@ -534,9 +541,7 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
-def execute_ibis_query(
-    query: IbisQuery, limit=100, cache=True, cache_expiry=3600
-) -> pd.DataFrame:
+def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=3600):
     sql = ibis.to_sql(query)
     backends, _ = query._find_backends()
     backend_id = backends[0].db_identity if backends else None
@@ -660,7 +665,6 @@ def sanitize_name(name):
 
 
 def get_code_results(code: str, digest: str):
-
     if has_cached_results(digest):
         return get_cached_results(digest)
 
