@@ -17,6 +17,7 @@ const props = defineProps<{
 	showColumnTotals?: boolean
 	showFilterRow?: boolean
 	enablePagination?: boolean
+	enableColorScale?: boolean
 	loading?: boolean
 	onExport?: Function
 	sortOrder?: Record<string, 'asc' | 'desc'>
@@ -145,6 +146,49 @@ page.total = computed(() => {
 page.startIndex = computed(() => (page.current - 1) * page.size)
 // @ts-ignore
 page.endIndex = computed(() => Math.min(page.current * page.size, visibleRows.value?.length || 0))
+
+const colorByPercentage = {
+	0: 'bg-white text-gray-900',
+	10: 'bg-blue-100 text-blue-900',
+	30: 'bg-blue-200 text-blue-900',
+	60: 'bg-blue-300 text-blue-900',
+	90: 'bg-blue-400 text-blue-900',
+	100: 'bg-blue-500 text-white',
+}
+
+const colorByValues = computed(() => {
+	const columns = props.columns
+	const rows = visibleRows.value
+	if (!columns?.length || !rows?.length) return []
+
+	let uniqueValues = [] as number[]
+	columns.forEach((col) => {
+		if (isNumberColumn(col)) {
+			rows.forEach((row) => {
+				const value = Number(row[col.name])
+				if (!uniqueValues.includes(value)) {
+					uniqueValues.push(value)
+				}
+			})
+		}
+	})
+
+	uniqueValues = uniqueValues.sort((a, b) => a - b)
+	const max = uniqueValues[uniqueValues.length - 1]
+	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
+
+	const _colorByValues: Record<number, string> = {}
+	uniqueValuesNormalized.forEach((percentVal, index) => {
+		for (const [percent, color] of Object.entries(colorByPercentage)) {
+			if (percentVal <= Number(percent)) {
+				_colorByValues[uniqueValues[index]] = color
+				break
+			}
+		}
+	})
+
+	return _colorByValues
+})
 </script>
 
 <template>
@@ -245,7 +289,12 @@ page.endIndex = computed(() => Math.min(page.current * page.size, visibleRows.va
 						<td
 							v-for="col in props.columns"
 							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
-							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
+							:class="[
+								isNumberColumn(col) ? 'tnum text-right' : 'text-left',
+								props.enableColorScale && isNumberColumn(col)
+									? colorByValues[row[col.name]]
+									: '',
+							]"
 							height="30px"
 							@dblclick="emit('cell-dbl-click', row, col)"
 						>

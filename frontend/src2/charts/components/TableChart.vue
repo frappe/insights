@@ -46,6 +46,7 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn }>()
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
 			:enable-pagination="true"
+			:enable-color-scale="tableConfig.enable_color_scale"
 			:on-export="chart ? chart.dataQuery.downloadResults : undefined"
 			:sort-order="sortOrder"
 			@sort="onSort"
