@@ -10,13 +10,13 @@ from ibis import selectors as s
 # from ibis.expr.types.temporal import DateValue, TimestampValue
 
 # aggregate functions
-def f_count(column=None):
+def f_count(column=None, where=None):
     if column is None:
         query = frappe.flags.current_ibis_query
         column = query.columns[0]
         column = getattr(query, column)
 
-    return column.count()
+    return column.count(where=where)
 
 
 def f_count_if(condition, column=None):
