@@ -11,7 +11,7 @@ from ibis import selectors as s
 
 # aggregate functions
 def f_count(column=None):
-    if not column:
+    if column is None:
         query = frappe.flags.current_ibis_query
         column = query.columns[0]
         column = getattr(query, column)
@@ -20,7 +20,7 @@ def f_count(column=None):
 
 
 def f_count_if(condition, column=None):
-    if not column:
+    if column is None:
         query = frappe.flags.current_ibis_query
         column = query.columns[0]
         column = getattr(query, column)
