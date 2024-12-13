@@ -104,6 +104,17 @@ def apply_user_permissions(t, data_source, table_name):
     ):
         return t
 
+    if table_name == "tabSingles":
+        single_doctypes = frappe.get_all(
+            "DocType", filters={"issingle": 1}, pluck="name"
+        )
+        allowed_doctypes = get_valid_perms()
+        allowed_doctypes = [p.parent for p in allowed_doctypes if p.read]
+        allowed_single_doctypes = set(single_doctypes) & set(allowed_doctypes)
+        if len(allowed_single_doctypes) == len(single_doctypes):
+            return t
+        return t.filter(t.doctype.isin(allowed_single_doctypes))
+
     doctype = table_name.replace("tab", "")
     allowed_docs = get_allowed_documents(doctype)
 
