@@ -697,6 +697,9 @@ def get_code_results(code: str, digest: str):
         },
     )
 
+    if not isinstance(results, pd.DataFrame):
+        results = pd.DataFrame(results)
+
     cache_results(digest, results)
 
     return results
