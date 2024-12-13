@@ -20,6 +20,13 @@ const config = defineModel<BarChartConfig>({
 	}),
 })
 
+const hasAxisSplit = computed(() => {
+	return (
+		config.value.y_axis.series?.find((s) => s.align === 'Right') &&
+		config.value.y_axis.series?.find((s) => s.align === 'Left')
+	)
+})
+
 watchEffect(() => {
 	if (!config.value.x_axis) {
 		config.value.x_axis = {} as Dimension
@@ -33,13 +40,6 @@ watchEffect(() => {
 	if (hasAxisSplit.value) {
 		config.value.y_axis.stack = false
 	}
-})
-
-const hasAxisSplit = computed(() => {
-	return (
-		config.value.y_axis.series.find((s) => s.align === 'Right') &&
-		config.value.y_axis.series.find((s) => s.align === 'Left')
-	)
 })
 </script>
 
