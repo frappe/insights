@@ -9,6 +9,7 @@ from ibis import selectors as s
 # from ibis.expr.types.strings import StringValue
 # from ibis.expr.types.temporal import DateValue, TimestampValue
 
+
 # aggregate functions
 def f_count(column=None, where=None):
     if column is None:
@@ -173,9 +174,7 @@ def f_create_buckets(column, num_buckets):
         frappe.throw("Failed to create buckets. No data found in the column")
 
     if len(values) < num_buckets:
-        frappe.throw(
-            "Number of unique values in the column is less than the number of buckets"
-        )
+        num_buckets = len(values)
 
     bucket_size = math.ceil(len(values) / num_buckets)
     buckets = []
@@ -190,6 +189,73 @@ def f_create_buckets(column, num_buckets):
         case = case.when(f_is_in(column, *bucket), label)
 
     return case.else_(None).end()
+
+
+def f_week_start(column):
+    week_start_day = (
+        frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
+    )
+    days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
+    week_starts_on = days.index(week_start_day)
+    day_of_week = column.day_of_week.index().cast("int32")
+    adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
+    week_start = column - adjusted_week_start.as_interval(unit="D")
+    return week_start
+
+
+def f_get_retention_data(date_column, id_column, unit="week"):
+    query = frappe.flags.current_ibis_query
+    if query is None:
+        frappe.throw("Query not found")
+
+    if isinstance(date_column, str):
+        date_column = getattr(query, date_column)
+
+    if isinstance(id_column, str):
+        id_column = getattr(query, id_column)
+
+    if not date_column.type().is_date():
+        frappe.throw(f"Invalid date column. Expected date, got {date_column.type()}")
+
+    unit_start = {
+        "day": lambda column: column.strftime("%Y-%m-%d").cast("date"),
+        "week": f_week_start,
+        "month": lambda column: column.strftime("%Y-%m-01").cast("date"),
+        "year": lambda column: column.strftime("%Y-01-01").cast("date"),
+    }[unit]
+
+    query = query.mutate(
+        cohort_start=unit_start(date_column).min().over(group_by=id_column)
+    )
+
+    query = query.mutate(
+        cohort_size=id_column.nunique().over(group_by=query.cohort_start)
+    )
+
+    query = query.mutate(offset=date_column.delta(query.cohort_start, unit))
+
+    zero_padded_offset = (query.offset < 10).ifelse(
+        f_literal("0").concat(query.offset.cast("string")), query.offset.cast("string")
+    )
+    query = query.mutate(
+        offset_label=ibis.literal(f"{unit}_").concat(zero_padded_offset)
+    )
+
+    query = query.group_by(["cohort_start", "cohort_size", "offset_label"]).aggregate(
+        unique_ids=id_column.nunique()
+    )
+
+    query = query.mutate(retention=(query.unique_ids / query.cohort_size) * 100)
+
+    return query
 
 
 def get_functions():

@@ -21,7 +21,7 @@ from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis_functions import get_functions
+from .ibis_functions import f_week_start, get_functions
 
 
 class IbisQueryBuilder:
@@ -488,24 +488,7 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            week_start_day = (
-                frappe.db.get_single_value("Insights Settings", "week_starts_on")
-                or "Monday"
-            )
-            days = [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-            ]
-            week_starts_on = days.index(week_start_day)
-            day_of_week = column.day_of_week.index().cast("int32")
-            adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
-            week_start = column - adjusted_week_start.to_interval(unit="D")
-            return week_start.strftime("%Y-%m-%d").name(column.get_name())
+            return f_week_start(column).strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
             year = column.year()
             quarter = column.quarter()
