@@ -700,7 +700,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		if (args.code.trim().length) {
 			query.doc.operations.push(code(args))
 			query.activeOperationIdx = 0
-			query.execute()
 		} else {
 			query.activeOperationIdx = -1
 		}
