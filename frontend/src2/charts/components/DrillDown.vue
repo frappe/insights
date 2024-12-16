@@ -30,8 +30,14 @@ watch(
 		)
 		if (query) {
 			drillDownQuery.value = query
-			drillDownQuery.value.execute()
-			showDrillDownResults.value = true
+			drillDownQuery.value
+				.execute()
+				.then(() => {
+					showDrillDownResults.value = true
+				})
+				.catch(() => {
+					showDrillDownResults.value = false
+				})
 		}
 	},
 	{ immediate: true, deep: true }
@@ -56,6 +62,7 @@ watch(
 					:loading="drillDownQuery.executing"
 					:columns="drillDownQuery.result.columns"
 					:rows="drillDownQuery.result.rows"
+					:enable-pagination="true"
 					:show-column-totals="true"
 					:show-filter-row="true"
 				>

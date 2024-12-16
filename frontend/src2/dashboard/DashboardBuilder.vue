@@ -3,15 +3,13 @@ import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { safeJSONParse } from '../helpers'
-import { createToast } from '../helpers/toasts'
 import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
 import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
-import DashboardItemActions from './DashboardItemActions.vue'
-import VueGridLayout from './VueGridLayout.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
+import VueGridLayout from './VueGridLayout.vue'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -38,20 +36,13 @@ function onDragOver(event: DragEvent) {
 function onDrop(event: DragEvent) {
 	if (!event.dataTransfer) return
 	event.preventDefault()
-	if (!dashboard.editing && dashboard.doc.items.length > 0) {
-		return createToast({
-			title: 'Info',
-			message: 'You can only add charts to the dashboard in edit mode',
-			variant: 'info',
-		})
-	}
-	if (!dashboard.editing) {
-		dashboard.editing = true
-	}
 	const data = safeJSONParse(event.dataTransfer.getData('text/plain'))
 	const chartName = data.item.name
 	const chart = props.charts.find((c) => c.name === chartName)
 	if (!chart) return
+	if (!dashboard.editing) {
+		dashboard.editing = true
+	}
 	dashboard.addChart([chart])
 }
 

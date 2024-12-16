@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { XIcon } from 'lucide-vue-next'
-import { TableChartConfig } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from '../../types/query.types'
-import CollapsibleSection from './CollapsibleSection.vue'
 import { watchEffect } from 'vue'
+import DraggableList from '../../components/DraggableList.vue'
+import { TableChartConfig } from '../../types/chart.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
+import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import DraggableList from '../../components/DraggableList.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
-	measures: MeasureOption[]
+	columnOptions: ColumnOption[]
 }>()
 
 const config = defineModel<TableChartConfig>({
@@ -83,8 +82,8 @@ watchEffect(() => {
 				<DraggableList v-model:items="config.values" group="values">
 					<template #item="{ item, index }">
 						<MeasurePicker
-							:options="props.measures"
 							:model-value="item"
+							:column-options="props.columnOptions"
 							@update:model-value="Object.assign(item, $event || {})"
 							@remove="config.values.splice(index, 1)"
 						/>
@@ -100,7 +99,11 @@ watchEffect(() => {
 			<Checkbox label="Show Filters" v-model="config.show_filter_row" />
 			<Checkbox label="Show Row Totals" v-model="config.show_row_totals" />
 			<Checkbox label="Show Column Totals" v-model="config.show_column_totals" />
-			<!-- <Checkbox label="Conditional Formatting" v-model="config.conditional_formatting" /> -->
+			<Checkbox
+				v-if="config.values.length === 1"
+				label="Show Color Scale"
+				v-model="config.enable_color_scale"
+			/>
 		</div>
 	</CollapsibleSection>
 </template>

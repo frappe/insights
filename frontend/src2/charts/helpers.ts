@@ -310,6 +310,8 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 
 	let center, radius, top, left, right, bottom, padding, orient
 	const legend_position = config.legend_position || 'bottom'
+	const show_inline_labels = config.show_inline_labels || false
+
 	if (legend_position == 'bottom') {
 		orient = 'horizontal'
 		radius = ['45%', '75%']
@@ -342,6 +344,9 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 		top = 'middle'
 		padding = [30, 0, 30, 0]
 	}
+	if (show_inline_labels) {
+		center = ['50%', '50%']
+	}
 
 	return {
 		animation: true,
@@ -354,25 +359,41 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 				name: valueColumn?.name,
 				center,
 				radius,
-				labelLine: { show: false },
-				label: { show: false },
+				labelLine: {
+					show: show_inline_labels,
+					lineStyle: {
+						width: 2,
+					},
+					length: 10,
+					length2: 20,
+					smooth: true,
+				},
+				label: {
+					show: show_inline_labels,
+					formatter: ({ value, name }: any) => {
+						const percentage = total > 0 ? (value[1] / total) * 100 : 0
+						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
+					},
+				},
 				emphasis: { scaleSize: 5 },
 			},
 		],
-		legend: {
-			...getLegend(),
-			top,
-			left,
-			right,
-			bottom,
-			padding,
-			orient,
-			formatter: (name: string) => {
-				const labelIndex = labels.indexOf(name)
-				const percent = (values[labelIndex] / total) * 100
-				return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
-			},
-		},
+		legend: !show_inline_labels
+			? {
+					...getLegend(),
+					top,
+					left,
+					right,
+					bottom,
+					padding,
+					orient,
+					formatter: (name: string) => {
+						const labelIndex = labels.indexOf(name)
+						const percent = (values[labelIndex] / total) * 100
+						return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
+					},
+			  }
+			: null,
 		tooltip: {
 			trigger: 'item',
 			confine: true,

@@ -27,20 +27,8 @@ const dimensions = computed<DimensionOption[]>(() => {
 	}))
 })
 
-const measures = computed<MeasureOption[]>(() => {
-	const queryMeasures = props.chart.baseQuery.measures.map((measure) => ({
-		...measure,
-		label: measure.measure_name,
-		value: measure.measure_name,
-	}))
-	const chartMeasures = Object.values(props.chart.doc.calculated_measures || {}).map(
-		(measure) => ({
-			...measure,
-			label: measure.measure_name,
-			value: measure.measure_name,
-		})
-	)
-	return [...queryMeasures, ...chartMeasures]
+const columnOptions = computed(() => {
+	return props.chart.baseQuery.result.columnOptions
 })
 </script>
 
@@ -49,36 +37,36 @@ const measures = computed<MeasureOption[]>(() => {
 		v-if="props.chart.doc.chart_type == 'Number'"
 		v-model="(props.chart.doc.config as NumberChartConfig)"
 		:dimensions="dimensions"
-		:measures="measures"
+		:column-options="columnOptions"
 	/>
 	<DonutChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Donut'"
 		v-model="(props.chart.doc.config as DountChartConfig)"
 		:dimensions="dimensions"
-		:measures="measures"
+		:column-options="columnOptions"
 	/>
 	<FunnelChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Funnel'"
 		v-model="(props.chart.doc.config as FunnelChartConfig)"
 		:dimensions="dimensions"
-		:measures="measures"
+		:column-options="columnOptions"
 	/>
 	<TableChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Table'"
 		v-model="(props.chart.doc.config as TableChartConfig)"
 		:dimensions="dimensions"
-		:measures="measures"
+		:column-options="columnOptions"
 	/>
 	<BarChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bar' || props.chart.doc.chart_type == 'Row'"
 		v-model="(props.chart.doc.config as BarChartConfig)"
 		:dimensions="dimensions"
-		:measures="measures"
+		:column-options="columnOptions"
 	/>
 	<LineChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Line'"
 		v-model="(props.chart.doc.config as LineChartConfig)"
 		:dimensions="dimensions"
-		:measures="measures"
+		:column-options="columnOptions"
 	/>
 </template>

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import { DountChartConfig } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from '../../types/query.types'
+import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
-	measures: MeasureOption[]
+	columnOptions: ColumnOption[]
 }>()
 
 const config = defineModel<DountChartConfig>({
@@ -18,6 +18,15 @@ const config = defineModel<DountChartConfig>({
 		label_column: {},
 		value_column: {},
 	}),
+})
+
+watchEffect(() => {
+	if (!config.value.label_column) {
+		config.value.label_column = {} as Dimension
+	}
+	if (!config.value.value_column) {
+		config.value.value_column = {} as Measure
+	}
 })
 
 const discrete_dimensions = computed(() =>
@@ -33,8 +42,13 @@ const discrete_dimensions = computed(() =>
 				v-model="config.label_column"
 				:options="discrete_dimensions"
 			/>
-			<MeasurePicker label="Value" :options="props.measures" v-model="config.value_column" />
+			<MeasurePicker
+				label="Value"
+				v-model="config.value_column"
+				:column-options="props.columnOptions"
+			/>
 			<FormControl
+				v-if="!config.show_inline_labels"
 				v-model="config.legend_position"
 				label="Legend Position"
 				type="select"
@@ -45,6 +59,7 @@ const discrete_dimensions = computed(() =>
 					{ label: 'Right', value: 'right' },
 				]"
 			/>
+			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
 		</div>
 	</CollapsibleSection>
 </template>

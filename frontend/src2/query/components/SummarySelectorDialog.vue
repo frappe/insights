@@ -4,15 +4,13 @@ import DimensionPicker from '../../charts/components/DimensionPicker.vue'
 import MeasurePicker from '../../charts/components/MeasurePicker.vue'
 import { copy } from '../../helpers'
 import {
-	ColumnMeasure,
 	ColumnOption,
 	Dimension,
 	DimensionOption,
-	MeasureOption,
-	QueryResultColumn,
+	Measure,
 	SummarizeArgs,
 } from '../../types/query.types'
-import { getDimensions, getMeasures } from '../helpers'
+import { getDimensions } from '../helpers'
 import { Query } from '../query'
 
 const props = defineProps<{
@@ -22,18 +20,12 @@ const emit = defineEmits({ select: (args: SummarizeArgs) => true })
 const showDialog = defineModel()
 
 const query = inject<Query>('query')!
-const columnOptions = ref<QueryResultColumn[]>([])
-query.getColumnsForSelection().then((cols: ColumnOption[]) => {
-	columnOptions.value = cols.map((col) => {
-		return {
-			name: col.value,
-			type: col.data_type,
-		}
-	})
-})
+const columnOptions = ref<ColumnOption[]>([])
+query.getColumnsForSelection().then((cols) => (columnOptions.value = cols))
 
 const dimensionOptions = computed<DimensionOption[]>(() => {
-	const _dimensions = getDimensions(columnOptions.value)
+	const _resultColumns = columnOptions.value.map((c) => ({ name: c.value, type: c.data_type }))
+	const _dimensions = getDimensions(_resultColumns)
 	return _dimensions.map((dimension) => ({
 		...dimension,
 		label: dimension.column_name,
@@ -41,20 +33,11 @@ const dimensionOptions = computed<DimensionOption[]>(() => {
 	}))
 })
 
-const measureOptions = computed<MeasureOption[]>(() => {
-	const _measures = getMeasures(columnOptions.value)
-	return _measures.map((measure) => ({
-		...measure,
-		label: measure.measure_name,
-		value: measure.measure_name,
-	}))
-})
-
-const measures = ref<ColumnMeasure[]>([])
+const measures = ref<Measure[]>([])
 const dimensions = ref<Dimension[]>([])
 
 if (props.summary?.measures) {
-	measures.value = copy(props.summary.measures as ColumnMeasure[])
+	measures.value = copy(props.summary.measures as Measure[])
 }
 if (props.summary?.dimensions) {
 	dimensions.value = copy(props.summary.dimensions)
@@ -69,18 +52,17 @@ watchEffect(() => {
 	}
 })
 
-const areAllMeasuresValid = computed(
-	() => measures.value.length && measures.value.every((m) => m.column_name)
-)
-const areAllDimensionsValid = computed(
-	() => dimensions.value.length && dimensions.value.every((d) => d.column_name)
-)
+function isValidMeasure(m: Measure) {
+	return ('column_name' in m && m.column_name) || ('expression' in m && m.expression.expression)
+}
+const areAllMeasuresValid = computed(() => measures.value.every((m) => isValidMeasure(m)))
+const areAllDimensionsValid = computed(() => dimensions.value.every((d) => d.column_name))
 
 function addMeasure() {
 	measures.value.push({
 		measure_name: '',
 		column_name: '',
-		aggregation: 'sum',
+		aggregation: '',
 		data_type: 'Decimal',
 	})
 }
@@ -98,7 +80,7 @@ function resetSelections() {
 }
 function confirmSelections() {
 	emit('select', {
-		measures: measures.value.filter((m) => m.column_name),
+		measures: measures.value.filter((m) => isValidMeasure(m)),
 		dimensions: dimensions.value.filter((d) => d.column_name),
 	})
 	showDialog.value = false
@@ -117,7 +99,7 @@ function confirmSelections() {
 				<div class="flex flex-col gap-4">
 					<div class="flex gap-4">
 						<div class="flex-1 flex-shrink-0">
-							<p class="mb-1.5 text-gray-600">Group By</p>
+							<p class="mb-1.5 text-p-sm text-gray-600">Group By</p>
 							<div class="flex flex-col gap-2">
 								<DimensionPicker
 									v-for="(dimension, idx) in dimensions"
@@ -135,13 +117,13 @@ function confirmSelections() {
 							</button>
 						</div>
 						<div class="flex-1 flex-shrink-0">
-							<p class="mb-1.5 text-gray-600">Aggregate</p>
+							<p class="mb-1.5 text-p-sm text-gray-600">Aggregate</p>
 							<div class="flex flex-col gap-2">
 								<MeasurePicker
 									v-for="(measure, idx) in measures"
 									:key="idx"
 									v-model="measures[idx]"
-									:options="measureOptions"
+									:columnOptions="columnOptions"
 									@remove="measures.splice(idx, 1)"
 								/>
 							</div>
@@ -159,7 +141,7 @@ function confirmSelections() {
 							<Button
 								label="Done"
 								variant="solid"
-								:disabled="!areAllMeasuresValid || !areAllDimensionsValid"
+								:disabled="!areAllMeasuresValid && !areAllDimensionsValid"
 								@click="confirmSelections"
 							/>
 						</div>

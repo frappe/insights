@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
+import { AlertTriangle } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardItemActions from './DashboardItemActions.vue'
-import { watchDebounced } from '@vueuse/core'
 
 const props = defineProps<{
 	index: number
@@ -20,9 +21,13 @@ const chart = computed(() => {
 	return getCachedChart(item.chart) as Chart
 })
 
+if (!chart.value?.dataQuery.result.executedSQL) {
+	dashboard.refreshChart(props.item.chart)
+}
+
 watchDebounced(
 	() => chart.value?.doc.config.order_by,
-	() => chart.value?.refresh(),
+	() => dashboard.refreshChart(props.item.chart),
 	{
 		deep: true,
 		debounce: 500,
@@ -81,6 +86,14 @@ document.addEventListener('mousemove', (event) => {
 							:result="chart.dataQuery.result"
 							:loading="chart.dataQuery.executing"
 						/>
+
+						<div
+							v-else
+							class="flex h-full flex-1 flex-col items-center justify-center rounded border"
+						>
+							<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
+							<p class="text-p-base text-gray-500">Chart not found</p>
+						</div>
 					</div>
 				</div>
 			</template>

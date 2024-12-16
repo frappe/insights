@@ -2,26 +2,26 @@
 import ColorInput from '@/components/Controls/ColorInput.vue'
 import { debounce } from 'frappe-ui'
 import { computed, watchEffect } from 'vue'
+import Checkbox from '../../components/Checkbox.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { copy } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants'
-import { NumberChartConfig } from '../../types/chart.types'
-import { Dimension } from '../../types/query.types'
-import { DimensionOption, MeasureOption } from '../../types/query.types'
+import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
+import { ColumnOption, Dimension, DimensionOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
-	measures: MeasureOption[]
+	columnOptions: ColumnOption[]
 }>()
 
 const config = defineModel<NumberChartConfig>({
 	required: true,
 	default: () => ({
 		number_columns: [],
+		number_column_options: [],
 		comparison: false,
 		sparkline: false,
 	}),
@@ -32,24 +32,37 @@ const date_dimensions = computed(() =>
 )
 
 watchEffect(() => {
-	if (!config.value.number_columns) {
-		config.value.number_columns = props.measures.length ? [copy(props.measures[0])] : []
-	}
-	if (!config.value.number_columns.length) {
+	if (!config.value.number_columns?.length) {
 		addNumberColumn()
 	}
 	if (!config.value.date_column) {
 		config.value.date_column = {} as DimensionOption
 	}
+	if (!config.value.number_column_options) {
+		config.value.number_column_options = []
+	}
 })
 
 function addNumberColumn() {
+	if (!config.value.number_columns) {
+		config.value.number_columns = []
+	}
 	config.value.number_columns.push({} as MeasureOption)
 }
 
 const updateColor = debounce((color: string) => {
 	config.value.sparkline_color = color
 }, 500)
+
+function getNumberOption(index: number, option: keyof NumberColumnOptions) {
+	return config.value.number_column_options[index]?.[option]
+}
+function setNumberOption(index: number, option: keyof NumberColumnOptions, value: any) {
+	if (!config.value.number_column_options[index]) {
+		config.value.number_column_options[index] = {} as NumberColumnOptions
+	}
+	config.value.number_column_options[index][option] = value
+}
 </script>
 
 <template>
@@ -61,11 +74,50 @@ const updateColor = debounce((color: string) => {
 					<DraggableList v-model:items="config.number_columns" group="numbers">
 						<template #item="{ item, index }">
 							<MeasurePicker
-								:options="props.measures"
 								:model-value="item"
+								:column-options="props.columnOptions"
 								@update:model-value="Object.assign(item, $event || {})"
 								@remove="config.number_columns.splice(index, 1)"
-							/>
+							>
+								<template #config-fields>
+									<InlineFormControlLabel label="Prefix">
+										<FormControl
+											autocomplete="off"
+											:modelValue="getNumberOption(index, 'prefix')"
+											@update:modelValue="
+												setNumberOption(index, 'prefix', $event)
+											"
+										/>
+									</InlineFormControlLabel>
+									<InlineFormControlLabel label="Suffix">
+										<FormControl
+											autocomplete="off"
+											:modelValue="getNumberOption(index, 'suffix')"
+											@update:modelValue="
+												setNumberOption(index, 'suffix', $event)
+											"
+										/>
+									</InlineFormControlLabel>
+									<InlineFormControlLabel label="Decimal">
+										<FormControl
+											autocomplete="off"
+											:modelValue="getNumberOption(index, 'decimal')"
+											@update:modelValue="
+												setNumberOption(index, 'decimal', $event)
+											"
+											type="number"
+										/>
+									</InlineFormControlLabel>
+
+									<Checkbox
+										label="Show short numbers"
+										:modelValue="getNumberOption(index, 'shorten_numbers')"
+										@update:modelValue="
+											setNumberOption(index, 'shorten_numbers', $event)
+										"
+									/>
+								</template>
+							</MeasurePicker>
 						</template>
 					</DraggableList>
 					<button
@@ -85,16 +137,17 @@ const updateColor = debounce((color: string) => {
 			/>
 
 			<InlineFormControlLabel label="Prefix">
-				<FormControl v-model="config.prefix" />
+				<FormControl v-model="config.prefix" autocomplete="off" />
 			</InlineFormControlLabel>
 			<InlineFormControlLabel label="Suffix">
-				<FormControl v-model="config.suffix" />
+				<FormControl v-model="config.suffix" autocomplete="off" />
 			</InlineFormControlLabel>
 			<InlineFormControlLabel label="Decimal">
-				<FormControl v-model="config.decimal" type="number" />
+				<FormControl v-model="config.decimal" type="number" autocomplete="off" />
 			</InlineFormControlLabel>
 
 			<Checkbox label="Show short numbers" v-model="config.shorten_numbers" />
+
 			<Checkbox label="Show comparison" v-model="config.comparison" />
 			<Checkbox
 				v-if="config.comparison"
