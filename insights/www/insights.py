@@ -2,6 +2,8 @@
 # GNU GPLv3 License. See license.txt
 
 
+import re
+
 import frappe
 from frappe.defaults import get_user_default
 
@@ -16,14 +18,14 @@ def get_context(context):
         continue_to_v3(context)
         return
 
-    v2_routes = [
-        "/insights/query",
-        "/insights/query/build",
-        "/insights/dashboard",
-        "/insights/public/dashboard",
-        "/insights/public/chart",
+    v2_routes_pattern = [
+        r"\/insights\/query\/?",
+        r"\/insights\/query\/build\/?",
+        r"\/insights\/dashboard\/?",
+        r"\/insights\/public\/dashboard\/?",
+        r"\/insights\/public\/chart\/?",
     ]
-    if any(route in frappe.request.path for route in v2_routes):
+    if any(re.match(route, frappe.request.path) for route in v2_routes_pattern):
         redirect_to_v2()
         return
 
