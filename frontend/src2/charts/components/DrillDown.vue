@@ -65,6 +65,7 @@ watch(
 					:enable-pagination="true"
 					:show-column-totals="true"
 					:show-filter-row="true"
+					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
 				>
 					<template #footer-left>
 						<p class="tnum p-1 text-sm text-gray-600">
