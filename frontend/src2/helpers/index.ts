@@ -153,6 +153,7 @@ export function formatNumber(number: number, precision = 2) {
 	precision = precision || guessPrecision(number)
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale || 'en-US', {
+		minimumFractionDigits: precision,
 		maximumFractionDigits: precision,
 	}).format(number)
 }
