@@ -79,7 +79,7 @@ export type NumberColumnOptions = {
 	suffix?: string
 }
 
-export type DountChartConfig = {
+export type DonutChartConfig = {
 	label_column: Dimension
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
@@ -100,4 +100,4 @@ export type TableChartConfig = {
 	enable_color_scale?: boolean
 }
 
-export type ChartConfig = LineChartConfig | BarChartConfig | NumberChartConfig | DountChartConfig | TableChartConfig | FunnelChartConfig
+export type ChartConfig = LineChartConfig | BarChartConfig | NumberChartConfig | DonutChartConfig | TableChartConfig | FunnelChartConfig

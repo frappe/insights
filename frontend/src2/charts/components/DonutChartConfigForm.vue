@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { FIELDTYPES } from '../../helpers/constants'
-import { DountChartConfig } from '../../types/chart.types'
+import { DonutChartConfig } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
@@ -12,7 +12,7 @@ const props = defineProps<{
 	columnOptions: ColumnOption[]
 }>()
 
-const config = defineModel<DountChartConfig>({
+const config = defineModel<DonutChartConfig>({
 	required: true,
 	default: () => ({
 		label_column: {},

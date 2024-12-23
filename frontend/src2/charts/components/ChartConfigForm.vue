@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import {
 	BarChartConfig,
-	DountChartConfig,
+	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
 	NumberChartConfig,
@@ -41,7 +41,7 @@ const columnOptions = computed(() => {
 	/>
 	<DonutChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Donut'"
-		v-model="(props.chart.doc.config as DountChartConfig)"
+		v-model="(props.chart.doc.config as DonutChartConfig)"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
