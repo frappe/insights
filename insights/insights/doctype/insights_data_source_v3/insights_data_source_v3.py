@@ -301,7 +301,7 @@ def before_request():
 
 
 def after_request():
-    for db in frappe.local.insights_db_connections.values():
+    for db in getattr(frappe.local, 'insights_db_connections', {}).values():
         catch_error(db.disconnect)
 
 
