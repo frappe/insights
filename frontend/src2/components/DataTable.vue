@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Download, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
+import { computed, reactive, ref } from 'vue'
 import { createHeaders, formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
@@ -16,6 +16,8 @@ const props = defineProps<{
 	showRowTotals?: boolean
 	showColumnTotals?: boolean
 	showFilterRow?: boolean
+	enablePagination?: boolean
+	enableColorScale?: boolean
 	loading?: boolean
 	onExport?: Function
 	sortOrder?: Record<string, 'asc' | 'desc'>
@@ -117,6 +119,76 @@ function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
 	}
 	emit('sort', sortOrder.value)
 }
+
+const page = reactive({
+	current: 1,
+	size: 100,
+	total: 1,
+	startIndex: 0,
+	endIndex: 99,
+	next() {
+		if (page.current < page.total) {
+			page.current++
+		}
+	},
+	prev() {
+		if (page.current > 1) {
+			page.current--
+		}
+	},
+})
+// @ts-ignore
+page.total = computed(() => {
+	if (!visibleRows.value?.length) return 1
+	return Math.ceil(visibleRows.value.length / page.size)
+})
+// @ts-ignore
+page.startIndex = computed(() => (page.current - 1) * page.size)
+// @ts-ignore
+page.endIndex = computed(() => Math.min(page.current * page.size, visibleRows.value?.length || 0))
+
+const colorByPercentage = {
+	0: 'bg-white text-gray-900',
+	10: 'bg-blue-100 text-blue-900',
+	30: 'bg-blue-200 text-blue-900',
+	60: 'bg-blue-300 text-blue-900',
+	90: 'bg-blue-400 text-blue-900',
+	100: 'bg-blue-500 text-white',
+}
+
+const colorByValues = computed(() => {
+	const columns = props.columns
+	const rows = visibleRows.value
+	if (!columns?.length || !rows?.length) return []
+
+	let uniqueValues = [] as number[]
+	columns.forEach((col) => {
+		if (isNumberColumn(col)) {
+			rows.forEach((row) => {
+				const value = Number(row[col.name])
+				if (!uniqueValues.includes(value)) {
+					uniqueValues.push(value)
+				}
+			})
+		}
+	})
+
+	uniqueValues = uniqueValues.sort((a, b) => a - b)
+	const max = uniqueValues[uniqueValues.length - 1]
+	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
+
+	const _colorByValues: Record<number, string> = {}
+	uniqueValuesNormalized.forEach((percentVal, index) => {
+		for (const [percent, color] of Object.entries(colorByPercentage)) {
+			if (percentVal <= Number(percent)) {
+				_colorByValues[uniqueValues[index]] = color
+				break
+			}
+		}
+	})
+
+	return _colorByValues
+})
 </script>
 
 <template>
@@ -202,19 +274,27 @@ function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="(row, idx) in visibleRows?.slice(0, 100)" :key="idx">
+					<tr
+						v-for="(row, idx) in visibleRows?.slice(page.startIndex, page.endIndex)"
+						:key="idx"
+					>
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-2 text-right text-xs"
+							class="tnum sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-2 text-right text-xs"
 							width="1%"
 							height="30px"
 						>
-							{{ idx + 1 }}
+							{{ idx + page.startIndex + 1 }}
 						</td>
 
 						<td
 							v-for="col in props.columns"
 							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
-							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
+							:class="[
+								isNumberColumn(col) ? 'tnum text-right' : 'text-left',
+								props.enableColorScale && isNumberColumn(col)
+									? colorByValues[row[col.name]]
+									: '',
+							]"
 							height="30px"
 							@dblclick="emit('cell-dbl-click', row, col)"
 						>
@@ -261,7 +341,37 @@ function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
 					<div></div>
 				</slot>
 				<slot name="footer-right">
-					<div>
+					<div class="flex items-center gap-2">
+						<div
+							v-if="props.enablePagination && visibleRows?.length && page.total > 1"
+							class="flex flex-shrink-0 items-center justify-end gap-2"
+						>
+							<p class="tnum text-sm text-gray-600">
+								{{ page.startIndex + 1 }} - {{ page.endIndex }} of
+								{{ visibleRows.length }}
+							</p>
+
+							<div class="flex gap-2">
+								<Button
+									variant="ghost"
+									@click="page.prev"
+									:disabled="page.current === 1"
+								>
+									<ChevronLeft class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+								</Button>
+								<Button
+									variant="ghost"
+									@click="page.next"
+									:disabled="page.current === page.total"
+								>
+									<ChevronRight
+										class="h-4 w-4 text-gray-700"
+										stroke-width="1.5"
+									/>
+								</Button>
+							</div>
+						</div>
+
 						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
 							<template #icon>
 								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />

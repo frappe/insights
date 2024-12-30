@@ -21,6 +21,10 @@ const chart = computed(() => {
 	return getCachedChart(item.chart) as Chart
 })
 
+if (!chart.value?.dataQuery.result.executedSQL) {
+	dashboard.refreshChart(props.item.chart)
+}
+
 watchDebounced(
 	() => chart.value?.doc.config.order_by,
 	() => dashboard.refreshChart(props.item.chart),

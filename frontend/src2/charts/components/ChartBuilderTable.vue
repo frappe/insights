@@ -20,6 +20,7 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(n
 			:columns="chart.dataQuery.result.columns"
 			:rows="chart.dataQuery.result.formattedRows"
 			:on-export="chart.dataQuery.downloadResults"
+			:enable-pagination="true"
 			@cell-dbl-click="(row, column) => (drillOn = { row, column })"
 		>
 			<template #column-header="{ column }">

@@ -7,7 +7,7 @@ import {
 	Check,
 	XIcon,
 } from 'lucide-vue-next'
-import { computed, h } from 'vue'
+import { computed, h, watchEffect } from 'vue'
 import ContentEditable from '../../components/ContentEditable.vue'
 import { FIELDTYPES, granularityOptions } from '../../helpers/constants'
 import { column } from '../../query/helpers'
@@ -20,6 +20,12 @@ const props = defineProps<{
 	column: QueryResultColumn
 	onGranularityChange?: (column_name: string, granularity: GranularityType) => void
 }>()
+
+watchEffect(() => {
+	if (!props.config.order_by) {
+		props.config.order_by = []
+	}
+})
 
 const currentSortOrder = computed(() => {
 	return props.config.order_by?.find((order) => order.column.column_name === props.column.name)

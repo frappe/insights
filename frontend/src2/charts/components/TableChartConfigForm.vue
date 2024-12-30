@@ -99,7 +99,11 @@ watchEffect(() => {
 			<Checkbox label="Show Filters" v-model="config.show_filter_row" />
 			<Checkbox label="Show Row Totals" v-model="config.show_row_totals" />
 			<Checkbox label="Show Column Totals" v-model="config.show_column_totals" />
-			<!-- <Checkbox label="Conditional Formatting" v-model="config.conditional_formatting" /> -->
+			<Checkbox
+				v-if="config.values.length === 1"
+				label="Show Color Scale"
+				v-model="config.enable_color_scale"
+			/>
 		</div>
 	</CollapsibleSection>
 </template>

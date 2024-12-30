@@ -43,7 +43,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 			<div
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				class="group w-full cursor-pointer rounded transition-all hover:bg-gray-50"
+				class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100"
 				:class="section.isActive(idx) ? ' bg-gray-100' : ' hover:border-gray-300'"
 				draggable="true"
 				@dragstart="setDraggedItem($event, row)"

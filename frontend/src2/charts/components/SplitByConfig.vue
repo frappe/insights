@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
-import { DimensionOption } from './ChartConfigForm.vue'
+import { DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 

@@ -7,7 +7,7 @@ import {
 	AxisChartConfig,
 	BarChartConfig,
 	ChartConfig,
-	DountChartConfig,
+	DonutChartConfig,
 	LineChartConfig,
 	Series,
 	SeriesLine,
@@ -309,7 +309,7 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 	}
 }
 
-export function getDonutChartOptions(config: DountChartConfig, result: QueryResult) {
+export function getDonutChartOptions(config: DonutChartConfig, result: QueryResult) {
 	const columns = result.columns
 	const rows = result.rows
 
@@ -456,7 +456,7 @@ function getDonutChartData(
 	return topData
 }
 
-export function getFunnelChartOptions(config: DountChartConfig, result: QueryResult) {
+export function getFunnelChartOptions(config: DonutChartConfig, result: QueryResult) {
 	const rows = result.rows
 
 	const labelColumn = config.label_column.dimension_name

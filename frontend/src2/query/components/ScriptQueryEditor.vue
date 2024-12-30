@@ -4,20 +4,18 @@ import { LoadingIndicator } from 'frappe-ui'
 import { Bug, Play, RefreshCw } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
-import DataTable from '../../components/DataTable.vue'
-import { Query } from '../query'
 import ContentEditable from '../../components/ContentEditable.vue'
-import { attachRealtimeListener } from '../../helpers'
+import DataTable from '../../components/DataTable.vue'
+import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
+import { Query } from '../query'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
 
 const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')
-function execute() {
-	query.setCode({ code: code.value })
-}
+wheneverChanges(code, () => query.setCode({ code: code.value }), { debounce: 500 })
 
 const columns = computed(() => query.result.columns)
 const rows = computed(() => query.result.formattedRows)
@@ -77,7 +75,7 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 				</transition>
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="execute" label="Run">
+				<Button @click="query.execute" label="Run">
 					<template #prefix>
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
