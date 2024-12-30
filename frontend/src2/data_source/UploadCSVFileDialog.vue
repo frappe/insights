@@ -50,6 +50,7 @@ function importCSVData() {
 	})
 		.then(() => {
 			show.value = false
+			resetFile()
 			createToast({
 				title: 'Table Imported',
 				message: `Table '${csvData.tablename}' imported successfully`,
@@ -59,6 +60,15 @@ function importCSVData() {
 		.finally(() => {
 			importing.value = false
 		})
+}
+
+function resetFile() {
+	fileUploaded.value = false
+	csvData.file = null
+	csvData.tablename = ''
+	csvData.columns = []
+	csvData.rows = []
+	csvData.totalRowCount = 0
 }
 </script>
 
@@ -130,6 +140,7 @@ function importCSVData() {
 			</div>
 			<div class="mt-4 flex justify-between pt-2">
 				<div class="ml-auto flex items-center space-x-2">
+					<Button :disabled="!fileUploaded" @click="resetFile"> Reset File </Button>
 					<Button
 						variant="solid"
 						:disabled="importDisabled"
