@@ -21,7 +21,7 @@ def get_context(context):
     v2_routes_pattern = [
         r"\/insights\/query\/?",
         r"\/insights\/query\/build\/?",
-        r"\/insights\/dashboard\/?",
+        r"\/insights\/dashboard[^s]\/?",
         r"\/insights\/public\/dashboard\/?",
         r"\/insights\/public\/chart\/?",
     ]
