@@ -50,11 +50,6 @@ const showShareDialog = ref(false)
 					icon: workbook.doc.enable_auto_save ? Pause : Play,
 					onClick: () => (workbook.doc.enable_auto_save = !workbook.doc.enable_auto_save),
 				},
-				{
-					label: workbook.showSidebar ? 'Hide Sidebar' : 'Show Sidebar',
-					icon: workbook.showSidebar ? PanelRightOpen : PanelRightClose,
-					onClick: () => (workbook.showSidebar = !workbook.showSidebar),
-				},
 				!workbook.islocal
 					? {
 							label: 'Delete',
