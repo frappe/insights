@@ -14,6 +14,9 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+    DataSourceConnectionError,
+)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -32,9 +35,9 @@ class IbisQueryBuilder:
             try:
                 operation = _dict(operation)
                 self.query = self.perform_operation(operation)
-            except frappe.exceptions.ValidationError as e:
+            except (DataSourceConnectionError, frappe.ValidationError) as e:
                 raise e
-            except Exception as e:
+            except BaseException as e:
                 operation_type_title = frappe.bold(operation.type.title())
                 frappe.throw(
                     f"Invalid {operation_type_title} Operation at position {idx + 1}: {e!s}"

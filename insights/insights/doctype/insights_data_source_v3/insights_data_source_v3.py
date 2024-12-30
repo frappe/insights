@@ -35,6 +35,10 @@ from .connectors.postgresql import get_postgres_connection_string
 from .connectors.sqlite import get_sqlite_connection_string
 
 
+class DataSourceConnectionError(frappe.ValidationError):
+    pass
+
+
 class InsightsDataSourceDocument:
     def autoname(self):
         self.name = frappe.scrub(self.title)
@@ -175,7 +179,15 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.name in frappe.local.insights_db_connections:
             return frappe.local.insights_db_connections[self.name]
 
-        db: BaseBackend = self._get_db_connection()
+        try:
+            db: BaseBackend = self._get_db_connection()
+        except Exception as e:
+            frappe.throw(
+                title="Connection Error",
+                msg=f"There was an error connecting to '{self.title}' data source: {e!s}",
+                exc=DataSourceConnectionError,
+            )
+
         print(f"Connected to {self.name} ({self.title})")
 
         if self.database_type == "MariaDB":
@@ -235,7 +247,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             self.get_table_list()
             return True
         except Exception as e:
-            frappe.log_error("Testing Data Source connection failed", e)
             if raise_exception:
                 raise e
 
