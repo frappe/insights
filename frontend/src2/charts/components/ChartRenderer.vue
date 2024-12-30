@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import {
 	BarChartConfig,
 	ChartType,
-	DountChartConfig,
+	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
 	NumberChartConfig,
@@ -45,7 +45,7 @@ const eChartOptions = computed(() => {
 		return getLineChartOptions(props.config as LineChartConfig, props.result)
 	}
 	if (props.chart_type === 'Donut') {
-		return getDonutChartOptions(props.config as DountChartConfig, props.result)
+		return getDonutChartOptions(props.config as DonutChartConfig, props.result)
 	}
 	if (props.chart_type === 'Funnel') {
 		return getFunnelChartOptions(props.config as FunnelChartConfig, props.result)
