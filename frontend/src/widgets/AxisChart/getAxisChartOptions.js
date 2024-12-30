@@ -177,12 +177,12 @@ function makeOptions(chartType, labels, datasets, options) {
 			areaStyle:
 				dataset.series_options.showArea || options.showArea
 					? {
-							color: new graphic.LinearGradient(0, 0, 0, 1, [
-								{ offset: 0, color: dataset.series_options.color || colors[index] },
-								{ offset: 1, color: '#fff' },
-							]),
-							opacity: 0.2,
-					  }
+						color: new graphic.LinearGradient(0, 0, 0, 1, [
+							{ offset: 0, color: dataset.series_options.color || colors[index] },
+							{ offset: 1, color: '#fff' },
+						]),
+						opacity: 0.2,
+					}
 					: undefined,
 			// bar styles
 			itemStyle: {
@@ -194,6 +194,17 @@ function makeOptions(chartType, labels, datasets, options) {
 			barMaxWidth: 50,
 			stack: options.stack ? 'stack' : null,
 		})),
+
+		label: {
+			show: options.show_data_labels,
+			position: 'top',
+			formatter: (params) => {
+				const value = params.value;
+				return !isNaN(value) ? getShortNumber(value, 1) : value;
+			},
+			fontSize: 12,
+			color: '#333',
+		},
 		legend: {
 			icon: 'circle',
 			type: 'scroll',
@@ -216,14 +227,14 @@ function makeOptions(chartType, labels, datasets, options) {
 function getMarkLineOption(options) {
 	return options.referenceLine
 		? {
-				data: [
-					{
-						name: options.referenceLine,
-						type: options.referenceLine.toLowerCase(),
-						label: { position: 'middle', formatter: '{b}: {c}' },
-					},
-				],
-		  }
+			data: [
+				{
+					name: options.referenceLine,
+					type: options.referenceLine.toLowerCase(),
+					label: { position: 'middle', formatter: '{b}: {c}' },
+				},
+			],
+		}
 		: {}
 }
 
