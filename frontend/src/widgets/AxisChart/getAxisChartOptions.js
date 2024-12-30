@@ -197,7 +197,7 @@ function makeOptions(chartType, labels, datasets, options) {
 
 		label: {
 			show: options.show_data_labels,
-			position: 'top',
+			position: 'inside',
 			formatter: (params) => {
 				const value = params.value;
 				return !isNaN(value) ? getShortNumber(value, 1) : value;
