@@ -12,6 +12,7 @@ import {
 import { FIELDTYPES } from './constants'
 import { createToast } from './toasts'
 import { getFormattedDate } from '../query/helpers'
+import { call } from 'frappe-ui'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -430,4 +431,23 @@ function areValidDates(data: string[]) {
 
 function isValidDate(value: string) {
 	return !isNaN(new Date(value).getTime())
+}
+
+const fetchCache = new Map<string, any>()
+export function fetchCall(url: string, options: any): Promise<any> {
+	// a function that makes a fetch call, but also caches the response for the same url & options
+	const key = JSON.stringify({ url, options })
+	if (fetchCache.has(key)) {
+		return Promise.resolve(fetchCache.get(key))
+	}
+
+	return call(url, options)
+		.then((response: any) => {
+			fetchCache.set(key, response)
+			return response
+		})
+		.catch((err: Error) => {
+			fetchCache.delete(key)
+			throw err
+		})
 }
