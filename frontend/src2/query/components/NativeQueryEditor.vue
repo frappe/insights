@@ -125,7 +125,7 @@ const completions = computed(() => {
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
 
-			<DataTable :columns="columns" :rows="rows" :on-export="query.downloadResults">
+			<DataTable :columns="columns" :rows="rows" :enable-pagination="true" :on-export="query.downloadResults">
 				<template #footer-left>
 					<div class="tnum flex items-center gap-2 text-sm text-gray-600">
 						<span> Showing {{ previewRowCount }} of </span>
