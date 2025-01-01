@@ -60,10 +60,10 @@ function getFunctionMatches(word: string) {
 
 const codeEditor = ref<any>(null)
 const codeContainer = ref<HTMLElement | null>(null)
-const suggestionElement = ref<HTMLElement | null>(null)
+const signatureElement = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-	// fix clipping of tooltip & suggestion element because of dialog styling
+	// fix clipping of tooltip & signature element because of dialog styling
 	const dialogElement = codeContainer.value?.closest('.my-8.overflow-hidden.rounded-xl')
 	if (!dialogElement) {
 		return
@@ -72,12 +72,6 @@ onMounted(() => {
 	dialogElement.children[0]?.classList.add('rounded-xl')
 })
 
-type Completion = {
-	name: string
-	type: string
-	completion: string
-}
-const completions = ref<Completion[]>([])
 type FunctionSignature = {
 	name: string
 	definition: string
@@ -89,7 +83,7 @@ type FunctionSignature = {
 const currentFunctionSignature = ref<FunctionSignature>()
 const fetchCompletions = debounce(() => {
 	if (!codeEditor.value) {
-		completions.value = []
+		currentFunctionSignature.value = undefined
 		return
 	}
 
@@ -103,7 +97,6 @@ const fetchCompletions = debounce(() => {
 		code,
 	})
 		.then((res: any) => {
-			completions.value = res.completions
 			currentFunctionSignature.value = res.current_function
 			// if there is a current_param, then we need to update the definition
 			// add <b> & underline tags before and after the current_param value in the definition
@@ -125,14 +118,14 @@ const fetchCompletions = debounce(() => {
 		})
 }, 1000)
 
-function setSuggestionElementPosition() {
+function setSignatureElementPosition() {
 	setTimeout(() => {
 		const containerRect = codeContainer.value?.getBoundingClientRect()
 		const tooltipElement = codeContainer.value?.querySelector('.cm-tooltip-autocomplete')
 		const cursorElement = codeContainer.value?.querySelector('.cm-cursor.cm-cursor-primary')
 
 		if (!containerRect) return
-		if (!suggestionElement.value) return
+		if (!signatureElement.value) return
 
 		let left = 0,
 			top = 0
@@ -151,8 +144,8 @@ function setSuggestionElementPosition() {
 			return
 		}
 
-		suggestionElement.value.style.left = `${left}px`
-		suggestionElement.value.style.top = `${top}px`
+		signatureElement.value.style.left = `${left}px`
+		signatureElement.value.style.top = `${top}px`
 	}, 100)
 }
 </script>
@@ -166,11 +159,11 @@ function setSuggestionElementPosition() {
 			v-model="expression"
 			:placeholder="placeholder"
 			:completions="getCompletions"
-			@view-update="() => (fetchCompletions(), setSuggestionElementPosition())"
+			@view-update="() => (fetchCompletions(), setSignatureElementPosition())"
 		></Code>
 
 		<div
-			ref="suggestionElement"
+			ref="signatureElement"
 			v-show="currentFunctionSignature"
 			class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
 		>
