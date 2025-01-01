@@ -56,8 +56,9 @@ import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
 import { waitUntil } from '../helpers'
 import useSettings from '../settings/settings'
+import { useStorage } from '@vueuse/core'
 
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = useStorage('sidebarState', false)
 const showSettingsDialog = ref(false)
 
 const settings = useSettings()
