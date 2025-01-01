@@ -434,7 +434,7 @@ function isValidDate(value: string) {
 }
 
 const fetchCache = new Map<string, any>()
-export function fetchCall(url: string, options: any): Promise<any> {
+export function fetchCall(url: string, options?: any): Promise<any> {
 	// a function that makes a fetch call, but also caches the response for the same url & options
 	const key = JSON.stringify({ url, options })
 	if (fetchCache.has(key)) {

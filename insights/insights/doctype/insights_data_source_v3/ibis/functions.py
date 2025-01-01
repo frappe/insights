@@ -733,12 +733,12 @@ def coalesce(*args):
 
 def if_null(column, value):
     """
-    def ifnull(column, value)
+    def if_null(column, value)
 
     Replace null values in a column with a default value.
 
     Examples:
-    - ifnull(email, 'No Email')
+    - if_null(email, 'No Email')
     """
     return ibis.coalesce(column, value)
 

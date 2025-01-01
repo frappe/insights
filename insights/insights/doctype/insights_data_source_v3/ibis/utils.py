@@ -40,43 +40,23 @@ def get_whitelisted_selectors():
 
 
 @frappe.whitelist()
-def get_code_completions(code: str, columns: list):
-    import_statement = (
-        "from insights.insights.doctype.insights_data_source_v3.ibis.functions import *"
-    )
-    column_definitions = "\n".join([f"{column} = 0" for column in columns])
-    code = f"{import_statement}\n\n{column_definitions}\n\n{code}"
+def get_function_list():
+    return [key for key in get_functions() if not key.startswith("_")]
+
+
+@frappe.whitelist()
+def get_code_completions(code: str):
+    import_statement = """from insights.insights.doctype.insights_data_source_v3.ibis.functions import *\nfrom ibis import selectors as s"""
+    code = f"{import_statement}\n\n{code}"
 
     cursor_pos = code.find("|")
     line_pos = code.count("\n", 0, cursor_pos)
     column_pos = cursor_pos - code.rfind("\n", 0, cursor_pos) - 1
     code = code.replace("|", "")
 
-    completions = []
     current_function = None
 
     script = Script(code)
-    completion_items = script.complete(line_pos + 1, column_pos)
-
-    functions_module = (
-        "insights.insights.doctype.insights_data_source_v3.ibis.functions"
-    )
-    for c in completion_items:
-        if (
-            c.in_builtin_module()
-            or c.name.startswith("_")
-            or c.type not in ["function", "statement"]
-            or (c.type == "function" and c.module_name != functions_module)
-        ):
-            continue
-        completions.append(
-            {
-                "name": c.name,
-                "type": "column" if c.type == "statement" else c.type,
-                "completion": c.complete + "()" if c.type == "function" else c.complete,
-            }
-        )
-
     signature_items = script.get_signatures(line_pos + 1, column_pos)
     for sig in signature_items:
         description = sig.docstring()
@@ -110,6 +90,5 @@ def get_code_completions(code: str, columns: list):
             current_function["current_param_description"] = current_param.description
 
     return {
-        "completions": completions,
         "current_function": current_function,
     }

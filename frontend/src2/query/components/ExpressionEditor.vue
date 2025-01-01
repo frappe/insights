@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
-import { nextTick, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { fetchCall } from '../../helpers'
 import { ColumnOption } from '../../types/query.types'
@@ -10,9 +10,67 @@ const expression = defineModel<string>({
 	required: true,
 })
 
+const functionList = ref<string[]>([])
+fetchCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
+	(res: any) => {
+		functionList.value = res
+	}
+)
+
+function getCompletions(context: any, syntaxTree: any) {
+	const word = context.matchBefore(/\w+/)
+	const nodeBefore = syntaxTree.resolveInner(context.pos, -1)
+
+	if (nodeBefore.name === 'VariableName') {
+		const columnMatches = getColumnMatches(word.text)
+		const functionMatches = getFunctionMatches(word.text)
+		return {
+			from: word.from,
+			options: [...columnMatches, ...functionMatches],
+		}
+	}
+	if (nodeBefore.name) {
+		const columnMatches = getColumnMatches(nodeBefore.name)
+		const functionMatches = getFunctionMatches(nodeBefore.name)
+		return {
+			from: nodeBefore.from,
+			options: [...columnMatches, ...functionMatches],
+		}
+	}
+}
+
+function getColumnMatches(word: string) {
+	return props.columnOptions
+		.filter((c) => c.value.includes(word))
+		.map((c) => ({
+			label: c.value,
+			detail: 'column',
+		}))
+}
+
+function getFunctionMatches(word: string) {
+	return functionList.value
+		.filter((f) => f.includes(word))
+		.map((f) => ({
+			label: f,
+			apply: `${f}()`,
+			detail: 'function',
+		}))
+}
+
+const codeEditor = ref<any>(null)
 const codeContainer = ref<HTMLElement | null>(null)
 const suggestionElement = ref<HTMLElement | null>(null)
-const cursorElementClass = '.cm-cursor.cm-cursor-primary'
+
+onMounted(() => {
+	// fix clipping of tooltip & suggestion element because of dialog styling
+	const dialogElement = codeContainer.value?.closest('.my-8.overflow-hidden.rounded-xl')
+	if (!dialogElement) {
+		return
+	}
+	dialogElement.classList.remove('overflow-hidden', 'rounded-xl', 'bg-white')
+	dialogElement.children[0]?.classList.add('rounded-xl')
+})
 
 type Completion = {
 	name: string
@@ -29,14 +87,20 @@ type FunctionSignature = {
 	params: { name: string; description: string }[]
 }
 const currentFunctionSignature = ref<FunctionSignature>()
-const fetchCompletions = debounce((args: any) => {
-	const cursor_pos = args.cursorPos
+const fetchCompletions = debounce(() => {
+	if (!codeEditor.value) {
+		completions.value = []
+		return
+	}
+
 	let code = expression.value
-	code = code.slice(0, cursor_pos) + '|' + code.slice(cursor_pos)
+	const codeBeforeCursor = code.slice(0, codeEditor.value.cursorPos)
+	const codeAfterCursor = code.slice(codeEditor.value.cursorPos)
+
+	code = codeBeforeCursor + '|' + codeAfterCursor
 
 	fetchCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_code_completions', {
 		code,
-		columns: props.columnOptions.map((column) => column.label),
 	})
 		.then((res: any) => {
 			completions.value = res.completions
@@ -59,103 +123,69 @@ const fetchCompletions = debounce((args: any) => {
 		.catch((e: any) => {
 			console.error(e)
 		})
-}, 500)
+}, 1000)
 
 function setSuggestionElementPosition() {
-	// get left & top positions of the cursor
-	// set the suggestion element to that position
 	setTimeout(() => {
 		const containerRect = codeContainer.value?.getBoundingClientRect()
-		const cursorElement = codeContainer.value?.querySelector(cursorElementClass)
-		const cursorRect = cursorElement?.getBoundingClientRect()
+		const tooltipElement = codeContainer.value?.querySelector('.cm-tooltip-autocomplete')
+		const cursorElement = codeContainer.value?.querySelector('.cm-cursor.cm-cursor-primary')
 
-		if (cursorRect && containerRect) {
-			let left = cursorRect.left
-			let top = cursorRect.top + 20
-			if (left <= 0 || top <= 0) {
-				return
-			}
-			suggestionElement.value!.style.left = `${left}px`
-			suggestionElement.value!.style.top = `${top}px`
+		if (!containerRect) return
+		if (!suggestionElement.value) return
+
+		let left = 0,
+			top = 0
+
+		if (tooltipElement) {
+			const tooltipRect = tooltipElement.getBoundingClientRect()
+			left = tooltipRect.left - containerRect.left
+			top = tooltipRect.top + tooltipRect.height - containerRect.top + 10
+		} else if (cursorElement) {
+			const cursorRect = cursorElement?.getBoundingClientRect()
+			left = cursorRect.left - containerRect.left
+			top = cursorRect.top - containerRect.top + 20
 		}
+
+		if (left <= 0 || top <= 0) {
+			return
+		}
+
+		suggestionElement.value.style.left = `${left}px`
+		suggestionElement.value.style.top = `${top}px`
 	}, 100)
-}
-
-const codeEditor = ref<any>(null)
-function applyCompletion(completion: any) {
-	const currentCursorPos = codeEditor.value.cursorPos
-	const expressionValue = expression.value
-	const newExpressionValue =
-		expressionValue.slice(0, currentCursorPos) +
-		completion.completion +
-		expressionValue.slice(currentCursorPos)
-	expression.value = newExpressionValue
-
-	codeEditor.value.focus()
-	let newCursorPos = codeEditor.value.cursorPos + completion.completion.length
-	if (completion.type === 'function') {
-		newCursorPos -= 1
-	}
-	nextTick(() => {
-		codeEditor.value.setCursorPos(newCursorPos)
-	})
 }
 </script>
 
 <template>
-	<div
-		ref="codeContainer"
-		class="relative flex h-[14rem] w-full overflow-scroll rounded border text-base"
-	>
+	<div ref="codeContainer" class="relative flex h-[14rem] w-full rounded border text-base">
 		<Code
 			ref="codeEditor"
 			language="python"
 			class="column-expression"
 			v-model="expression"
 			:placeholder="placeholder"
-			:completions="() => undefined"
-			@view-update="
-				(args) => {
-					fetchCompletions(args), setSuggestionElementPosition()
-				}
-			"
+			:completions="getCompletions"
+			@view-update="() => (fetchCompletions(), setSuggestionElementPosition())"
 		></Code>
 
-		<Teleport to="body">
-			<div
-				ref="suggestionElement"
-				class="absolute z-10 mt-1 h-fit max-h-[14rem] min-w-[14rem] max-w-[26rem] overflow-y-auto rounded-lg bg-white p-1.5 shadow-2xl transition-all"
-				:class="completions.length || currentFunctionSignature ? 'block' : 'hidden'"
-			>
-				<div v-if="currentFunctionSignature?.description" class="flex flex-col gap-2">
-					<p
-						v-if="currentFunctionSignature.definition"
-						v-html="currentFunctionSignature.definition"
-						class="font-mono text-p-sm text-gray-700"
-					></p>
-					<hr v-if="currentFunctionSignature.definition" />
-					<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-700">
-						{{ currentFunctionSignature.description }}
-					</div>
+		<div
+			ref="suggestionElement"
+			v-show="currentFunctionSignature"
+			class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+		>
+			<template v-if="currentFunctionSignature">
+				<p
+					v-if="currentFunctionSignature.definition"
+					v-html="currentFunctionSignature.definition"
+					class="font-mono text-p-sm text-gray-800"
+				></p>
+				<hr v-if="currentFunctionSignature.definition" />
+				<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
+					{{ currentFunctionSignature.description }}
 				</div>
-
-				<div v-else class="relative">
-					<ul>
-						<li
-							class="flex h-7 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
-							v-for="completion in completions"
-							:key="completion.name"
-							@click.prevent.stop="applyCompletion(completion)"
-						>
-							<span class="flex-[2] truncate">{{ completion.name }}</span>
-							<span class="flex-1 truncate text-right text-sm text-gray-600">
-								{{ completion.type }}
-							</span>
-						</li>
-					</ul>
-				</div>
-			</div>
-		</Teleport>
+			</template>
+		</div>
 	</div>
 </template>
 
