@@ -24,7 +24,8 @@ from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis_functions import f_week_start, get_functions
+from .ibis.functions import week_start
+from .ibis.utils import get_functions
 
 
 class IbisQueryBuilder:
@@ -491,7 +492,7 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            return f_week_start(column).strftime("%Y-%m-%d").name(column.get_name())
+            return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
             year = column.year()
             quarter = column.quarter()
