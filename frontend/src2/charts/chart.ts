@@ -7,7 +7,7 @@ import { getCachedQuery, makeQuery, Query } from '../query/query'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
-	DountChartConfig,
+	DonutChartConfig,
 	NumberChartConfig,
 	TableChartConfig
 } from '../types/chart.types'
@@ -93,7 +93,7 @@ function makeChart(workbookChart: WorkbookChart) {
 			const _config = unref(chart.doc.config as NumberChartConfig)
 			prepared = prepareNumberChartQuery(_config)
 		} else if (chart.doc.chart_type === 'Donut' || chart.doc.chart_type === 'Funnel') {
-			const _config = unref(chart.doc.config as DountChartConfig)
+			const _config = unref(chart.doc.config as DonutChartConfig)
 			prepared = prepareDonutChartQuery(_config)
 		} else if (chart.doc.chart_type === 'Table') {
 			const _config = unref(chart.doc.config as TableChartConfig)
@@ -174,7 +174,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		return true
 	}
 
-	function prepareDonutChartQuery(config: DountChartConfig) {
+	function prepareDonutChartQuery(config: DonutChartConfig) {
 		if (!config.label_column) {
 			console.warn('Label is required')
 			chart.dataQuery.reset()

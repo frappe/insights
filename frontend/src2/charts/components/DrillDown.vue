@@ -4,6 +4,7 @@ import DataTable from '../../components/DataTable.vue'
 import { Query } from '../../query/query'
 import { Operation, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { getDrillDownQuery } from '../helpers'
+import { column } from '../../query/helpers'
 
 const props = defineProps<{
 	chart: {
@@ -17,6 +18,7 @@ const props = defineProps<{
 
 const showDrillDownResults = ref(false)
 const drillDownQuery = ref<Query | null>(null)
+const sortOrder = ref<Record<string, 'asc' | 'desc'>>({})
 
 watch(
 	() => props.row || props.column,
@@ -42,6 +44,21 @@ watch(
 	},
 	{ immediate: true, deep: true }
 )
+
+function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
+	sortOrder.value = newSortOrder
+
+	if (drillDownQuery.value) {
+		Object.entries(newSortOrder).forEach(([columnName, direction]) => {
+			drillDownQuery.value?.addOrderBy({
+				column: column(columnName),
+				direction,
+			})
+		})
+
+		drillDownQuery.value.execute()
+	}
+}
 </script>
 
 <template>
@@ -65,6 +82,9 @@ watch(
 					:enable-pagination="true"
 					:show-column-totals="true"
 					:show-filter-row="true"
+					:sort-order="sortOrder"
+					@sort="onSort"
+					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
 				>
 					<template #footer-left>
 						<p class="tnum p-1 text-sm text-gray-600">

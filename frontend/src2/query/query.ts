@@ -194,7 +194,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			return []
 		}
 
-		let _operations = [...query.currentOperations]
+		let _operations = copy(query.currentOperations)
 		for (const op of _operations) {
 			if (op.type !== 'source' && op.type !== 'join' && op.type !== 'union') continue
 			if (op.table.type !== 'query') continue

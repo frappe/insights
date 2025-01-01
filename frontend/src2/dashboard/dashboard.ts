@@ -85,7 +85,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				}
 			})
 
-			chart.refresh()
+			chart.refresh(undefined, true)
 		},
 
 		getShareLink() {

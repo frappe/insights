@@ -268,7 +268,7 @@ function getWorkbookResource(name: string) {
 				}
 			})
 
-			doc.charts.forEach((chart: any) => {
+			doc.charts.forEach((chart: WorkbookChart) => {
 				chart.config.filters = chart.config.filters?.filters?.length
 					? chart.config.filters
 					: {
@@ -281,6 +281,10 @@ function getWorkbookResource(name: string) {
 				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
 					// @ts-ignore
 					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
+				}
+				if (chart.chart_type === 'Funnel') {
+					// @ts-ignore
+					chart.config.label_position = chart.config.label_position || 'left'
 				}
 				chart.config = setDimensionNames(chart.config)
 			})
