@@ -2,7 +2,7 @@
 import { debounce } from 'frappe-ui'
 import { onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
-import { fetchCall } from '../../helpers'
+import { cachedCall } from '../../helpers'
 import { ColumnOption } from '../../types/query.types'
 
 const props = defineProps<{ columnOptions: ColumnOption[]; placeholder?: string }>()
@@ -11,7 +11,7 @@ const expression = defineModel<string>({
 })
 
 const functionList = ref<string[]>([])
-fetchCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
+cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
 		functionList.value = res
 	}
@@ -93,9 +93,12 @@ const fetchCompletions = debounce(() => {
 
 	code = codeBeforeCursor + '|' + codeAfterCursor
 
-	fetchCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_code_completions', {
-		code,
-	})
+	cachedCall(
+		'insights.insights.doctype.insights_data_source_v3.ibis.utils.get_code_completions',
+		{
+			code,
+		}
+	)
 		.then((res: any) => {
 			currentFunctionSignature.value = res.current_function
 			// if there is a current_param, then we need to update the definition
