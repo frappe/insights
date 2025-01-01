@@ -12,5 +12,6 @@ const props = defineProps({
 		<AxisChartOptions seriesType="bar" v-model:options="options" :columns="props.columns" />
 		<Checkbox v-model="options.stack" label="Stack Values" />
 		<Checkbox v-model="options.roundedBars" label="Rounded Bars" />
+		<Checkbox v-model="options.show_data_labels" label="Show Data Labels" />
 	</div>
 </template>
