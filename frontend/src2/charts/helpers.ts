@@ -105,7 +105,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 				label: {
 					fontSize: 11,
 					show: show_data_labels,
-					position: idx === number_columns.length - 1 ? 'top' : 'inside',
+					position: 'top',
 					formatter: (params: any) => {
 						return getShortNumber(params.value?.[1], 1)
 					},
