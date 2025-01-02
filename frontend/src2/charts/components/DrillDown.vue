@@ -81,18 +81,31 @@ function loadAllRows() {
 </script>
 
 <template>
-	<Dialog v-model="showDrillDownResults" :options="{
-		title: 'Drill Down Results',
-		size: '5xl',
-	}" @close="drillDownQuery = null">
+	<Dialog
+		v-model="showDrillDownResults"
+		:options="{
+			title: 'Drill Down Results',
+			size: '5xl',
+		}"
+		@close="drillDownQuery = null"
+	>
 		<template #body-content>
-			<div v-if="drillDownQuery"
-				class="relative flex h-[35rem] w-full flex-1 flex-col overflow-hidden rounded border bg-white">
-				<DataTable :loading="drillDownQuery.executing" :columns="drillDownQuery.result.columns"
-					:rows="drillDownQuery.result.rows" :enable-pagination="true" :show-column-totals="true"
-					:show-filter-row="true" :sort-order="sortOrder" @sort="onSort"
-					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined">
-					<template #footer-left>
+			<div
+				v-if="drillDownQuery"
+				class="relative flex h-[35rem] w-full flex-1 flex-col overflow-hidden rounded border bg-white"
+			>
+				<DataTable
+					:loading="drillDownQuery.executing"
+					:columns="drillDownQuery.result.columns"
+					:rows="drillDownQuery.result.rows"
+					:enable-pagination="true"
+					:show-column-totals="true"
+					:show-filter-row="true"
+					:sort-order="sortOrder"
+					@sort="onSort"
+					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
+				>
+				<template #footer-left>
 						<div class="flex items-center justify-between p-1 gap-4">
 							<p class="tnum text-sm text-gray-600">
 								Showing {{ drillDownQuery.result.rows.length }} of
