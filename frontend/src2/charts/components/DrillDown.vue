@@ -35,6 +35,9 @@ watch(
 			drillDownQuery.value
 				.execute()
 				.then(() => {
+					return drillDownQuery.value?.fetchResultCount()
+				})
+				.then(() => {
 					showDrillDownResults.value = true
 				})
 				.catch(() => {
@@ -62,30 +65,17 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 </script>
 
 <template>
-	<Dialog
-		v-model="showDrillDownResults"
-		:options="{
-			title: 'Drill Down Results',
-			size: '5xl',
-		}"
-		@close="drillDownQuery = null"
-	>
+	<Dialog v-model="showDrillDownResults" :options="{
+		title: 'Drill Down Results',
+		size: '5xl',
+	}" @close="drillDownQuery = null">
 		<template #body-content>
-			<div
-				v-if="drillDownQuery"
-				class="relative flex h-[35rem] w-full flex-1 flex-col overflow-hidden rounded border bg-white"
-			>
-				<DataTable
-					:loading="drillDownQuery.executing"
-					:columns="drillDownQuery.result.columns"
-					:rows="drillDownQuery.result.rows"
-					:enable-pagination="true"
-					:show-column-totals="true"
-					:show-filter-row="true"
-					:sort-order="sortOrder"
-					@sort="onSort"
-					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
-				>
+			<div v-if="drillDownQuery"
+				class="relative flex h-[35rem] w-full flex-1 flex-col overflow-hidden rounded border bg-white">
+				<DataTable :loading="drillDownQuery.executing" :columns="drillDownQuery.result.columns"
+					:rows="drillDownQuery.result.rows" :enable-pagination="true" :show-column-totals="true"
+					:show-filter-row="true" :sort-order="sortOrder" @sort="onSort"
+					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined">
 					<template #footer-left>
 						<p class="tnum p-1 text-sm text-gray-600">
 							Showing {{ drillDownQuery.result.rows.length }} of
