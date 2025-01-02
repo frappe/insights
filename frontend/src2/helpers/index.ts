@@ -149,7 +149,7 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 1,
 		})
 }
 
-export function formatNumber(number: number, precision = 2) {
+export function formatNumber(number: number, precision = 0) {
 	if (isNaN(number)) return number
 	precision = precision || guessPrecision(number)
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
