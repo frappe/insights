@@ -60,6 +60,10 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 		})
 
 		drillDownQuery.value.execute()
+		.then(() => drillDownQuery.value?.fetchResultCount())
+		.catch((error) => {
+			console.error('Failed to sort and fetch row count:', error)
+		});
 	}
 }
 
