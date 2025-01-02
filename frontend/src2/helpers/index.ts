@@ -160,6 +160,7 @@ export function formatNumber(number: number, precision = 0) {
 }
 
 export function guessPrecision(number: number) {
+	if (!number || isNaN(number)) return 0
 	// eg. 1.0 precision = 1, 1.00 precision = 2
 	const str = number.toString()
 	const decimalIndex = str.indexOf('.')
