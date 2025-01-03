@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import { AlertTriangle } from 'lucide-vue-next'
+import { AlertTriangle, Maximize } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -53,6 +53,8 @@ document.addEventListener('mousemove', (event) => {
 		clearTimeout(timer)
 	}
 })
+
+const showExpandedChartDialog = ref(false)
 </script>
 
 <template>
@@ -73,7 +75,7 @@ document.addEventListener('mousemove', (event) => {
 					@click="dashboard.setActiveItem(index)"
 				>
 					<div
-						class="h-full w-full"
+						class="group relative h-full w-full"
 						:class="dashboard.editing ? 'pointer-events-none' : ''"
 					>
 						<ChartRenderer
@@ -94,6 +96,19 @@ document.addEventListener('mousemove', (event) => {
 							<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
 							<p class="text-p-base text-gray-500">Chart not found</p>
 						</div>
+
+						<div
+							v-if="chart?.doc.chart_type !== 'Number'"
+							class="absolute top-0 right-0 p-2 opacity-0 transition-opacity group-hover:opacity-100"
+						>
+							<Button
+								variant="ghost"
+								class="!h-7 !w-7"
+								@click="showExpandedChartDialog = true"
+							>
+								<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+							</Button>
+						</div>
 					</div>
 				</div>
 			</template>
@@ -106,4 +121,27 @@ document.addEventListener('mousemove', (event) => {
 			</template>
 		</Popover>
 	</div>
+
+	<Dialog
+		v-if="chart"
+		v-model="showExpandedChartDialog"
+		:options="{
+			size: '6xl',
+		}"
+	>
+		<template #body>
+			<div class="h-[75vh] w-full">
+				<ChartRenderer
+					v-if="chart"
+					:title="chart.doc.title"
+					:chart_type="chart.doc.chart_type"
+					:config="chart.doc.config"
+					:operations="chart.doc.operations"
+					:use_live_connection="chart.doc.use_live_connection"
+					:result="chart.dataQuery.result"
+					:loading="chart.dataQuery.executing"
+				/>
+			</div>
+		</template>
+	</Dialog>
 </template>

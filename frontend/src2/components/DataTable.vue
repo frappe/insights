@@ -201,8 +201,8 @@ const colorByValues = computed(() => {
 				<thead class="sticky top-0 z-10 bg-white">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white"
-							width="1%"
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3"
+							width="1px"
 						></td>
 						<td
 							v-for="(header, idx) in headerRow"
@@ -236,8 +236,8 @@ const colorByValues = computed(() => {
 
 						<td
 							v-if="props.showRowTotals"
-							class="border-b border-r text-right"
-							width="1%"
+							class="border-b border-r px-3 text-right"
+							width="1px"
 						>
 							<div class="truncate pl-3 pr-20"></div>
 						</td>
@@ -245,8 +245,8 @@ const colorByValues = computed(() => {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white"
-							width="1%"
+							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3"
+							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
@@ -266,8 +266,8 @@ const colorByValues = computed(() => {
 						</td>
 						<td
 							v-if="props.showRowTotals"
-							class="border-b border-r text-right"
-							width="1%"
+							class="border-b border-r px-3 text-right"
+							width="1px"
 						>
 							<div class="truncate pl-3 pr-20"></div>
 						</td>
@@ -279,8 +279,8 @@ const colorByValues = computed(() => {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-2 text-right text-xs"
-							width="1%"
+							class="tnum sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							width="1px"
 							height="30px"
 						>
 							{{ idx + page.startIndex + 1 }}
