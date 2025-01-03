@@ -64,7 +64,7 @@ class InsightsWorkbook(Document):
     def query_map(self):
         return {q["name"]: q for q in frappe.parse_json(self.queries)}
 
-    def get_shared_chart_data(self, chart_name):
+    def get_shared_chart_data(self, chart_name, filters: dict= None):
         chart = next(
             (c for c in frappe.parse_json(self.charts) if c["name"] == chart_name), None
         )
@@ -81,9 +81,23 @@ class InsightsWorkbook(Document):
                 "results": [],
             }
 
+        if filters:
+            for key, value in filters.items():
+                for operation in operations:
+                    if "table" in operation and "operations" in operation["table"]:
+                        for table_op in operation["table"]["operations"]:
+                            if table_op.get("type") == "filter_group":
+                                for filter in table_op["filters"]:
+                                    if filter['column']['column_name'] == key:
+                                        filter['value'] = []
+                                        for data in value:
+                                            filter['value'].append(data)
+
         chart_query = self.query_map.get(chart["query"])
+
         use_live_connection = chart_query.get("use_live_connection", True)
-        operations = self.resolve_query_tables(operations)
+
+        operations = self.resolve_query_tables(operations, shared = True)
 
         frappe.flags.ignore_insights_permissions = True
         results = fetch_query_results(
@@ -122,7 +136,7 @@ class InsightsWorkbook(Document):
 
         return False
 
-    def resolve_query_tables(self, operations):
+    def resolve_query_tables(self, operations, shared):
         if not operations:
             return operations
 
@@ -140,7 +154,8 @@ class InsightsWorkbook(Document):
             query_table = self.query_map.get(query_name)
             if not query_table:
                 frappe.throw(f"Query {query_name} not found")
-
+            if shared:
+                continue
             op["table"]["operations"] = self.resolve_query_tables(
                 query_table["operations"]
             )
