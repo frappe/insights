@@ -7,7 +7,7 @@ import ChartRenderer from './components/ChartRenderer.vue'
 import { getFormattedRows } from '../query/helpers'
 import { showErrorToast } from '../helpers'
 
-const props = defineProps<{ chart_name: string }>()
+const props = defineProps<{ chart_name: string; query?: Record<string, string[]>}>()
 
 const chart = reactive({
 	doc: {} as WorkbookChart,
@@ -15,7 +15,7 @@ const chart = reactive({
 })
 
 const fetchingData = ref(true)
-call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart_name })
+call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart_name, filters: props.query })
 	.then((res: any) => {
 		fetchingData.value = false
 		chart.doc = res.chart
