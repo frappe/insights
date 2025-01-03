@@ -231,7 +231,8 @@ def update_share_permissions(
 
 
 @frappe.whitelist(allow_guest=True)
-def fetch_shared_chart_data(chart_name: str):
+def fetch_shared_chart_data(chart_name: str, filters: dict = None):
+    filters = frappe.parse_json(filters) if filters else {}
     workbooks = frappe.get_all(
         "Insights Workbook",
         filters={"charts": ["like", f"%{chart_name}%"]},
@@ -241,4 +242,4 @@ def fetch_shared_chart_data(chart_name: str):
         frappe.throw("Chart not found")
 
     workbook = frappe.get_doc("Insights Workbook", workbooks[0])
-    return workbook.get_shared_chart_data(chart_name)
+    return workbook.get_shared_chart_data(chart_name, filters)
