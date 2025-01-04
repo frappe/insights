@@ -77,5 +77,6 @@ const valueOptions = computed(() => {
 
 		<Checkbox v-model="options.inlineLabels" label="Inline Labels" />
 		<Checkbox v-model="options.scrollLabels" label="Paginate Labels" />
+		<Checkbox v-model="options.showTotalInCenter" label="Show Total in Center" />
 	</div>
 </template>

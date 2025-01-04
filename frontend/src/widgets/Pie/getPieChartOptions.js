@@ -14,6 +14,8 @@ export default function getPieChartOptions(labels, dataset, options) {
 	const otherSlices = dataset.data
 		.slice(parseInt(options.maxSlices) || 9)
 		.reduce((a, b) => a + b, 0)
+		const total = dataset.data.reduce((a, b) => a + b, 0) || 0;
+
 	const data = slices.map((value, index) => {
 		return {
 			name: labels[index],
@@ -150,5 +152,24 @@ export default function getPieChartOptions(labels, dataset, options) {
 					formatter: formatLegend,
 			  }
 			: undefined,
+			graphic: options.showTotalInCenter
+            ? {
+                  elements: [
+                      {
+                          type: 'text',
+                          left: 'center',
+                          top: 'center',
+                          style: {
+                              text: `Total\n${formatNumber(total, 2)}`,
+                              fontSize: 18,
+                              fontWeight: 'bold',
+                              textAlign: 'center',
+                              lineHeight: 24,
+                              fill: '#333',
+                          },
+                      },
+                  ],
+              }
+            : undefined,
 	}
 }
