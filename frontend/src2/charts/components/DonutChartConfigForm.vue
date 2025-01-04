@@ -60,6 +60,8 @@ const discrete_dimensions = computed(() =>
 				]"
 			/>
 			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
+			<Checkbox v-model="config.show_total_in_center" label="Show Total in Center" />
+
 		</div>
 	</CollapsibleSection>
 </template>

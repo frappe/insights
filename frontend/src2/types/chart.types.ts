@@ -84,6 +84,7 @@ export type DonutChartConfig = {
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
 	show_inline_labels?: boolean;
+	show_total_in_center?: boolean;
 }
 export type FunnelChartConfig = {
 	label_column: Dimension

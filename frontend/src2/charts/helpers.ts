@@ -305,7 +305,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 	const data = getDonutChartData(columns, rows, MAX_SLICES)
 	const labels = data.map((d) => d[0])
 	const values = data.map((d) => d[1])
-	const total = values.reduce((a, b) => a + b, 0)
+	const total = values.reduce((a, b) => a + b, 0) || 0;
 
 	const colors = getColors()
 
@@ -404,6 +404,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 				return `${formatNumber(value, 2)} (${percent.toFixed(0)}%)`
 			},
 		},
+		graphic: config.show_total_in_center ? getTotalGraphic(total) : undefined,
 	}
 }
 
@@ -614,6 +615,26 @@ function getLegend(show_legend = true) {
 		pageFormatter: '{current}',
 		pageButtonItemGap: 2,
 	}
+}
+
+function getTotalGraphic(total:number) {
+    return {
+        elements: [
+            {
+                type: 'text',
+                left: 'center',
+                top: 'center',
+                style: {
+                    text: `Total\n${formatNumber(total, 2)}`,
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    lineHeight: 24,
+                    fill: '#333',
+                },
+            },
+        ],
+    }
 }
 
 export function getDrillDownQuery(
