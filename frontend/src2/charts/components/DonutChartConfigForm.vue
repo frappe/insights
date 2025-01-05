@@ -61,6 +61,12 @@ const discrete_dimensions = computed(() =>
 			/>
 			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
 			<Checkbox v-model="config.show_total_in_center" label="Show Total in Center" />
+			<FormControl
+				v-model="config.max_slices"
+				label="Max Slices"
+				type="number"
+				:placeholder="'Enter max slices (default: 10)'"
+			/>
 
 		</div>
 	</CollapsibleSection>

@@ -300,7 +300,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 	const columns = result.columns
 	const rows = result.rows
 
-	const MAX_SLICES = 10
+	const MAX_SLICES = config.max_slices || 10
 	const valueColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	const data = getDonutChartData(columns, rows, MAX_SLICES)
 	const labels = data.map((d) => d[0])
