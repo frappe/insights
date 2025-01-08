@@ -20,7 +20,9 @@ const props = defineProps<{ column: QueryResultColumn }>()
 const query = inject('query') as Query
 
 function onRename(new_name: string) {
+	new_name = new_name.trim()
 	if (new_name === props.column.name) return
+	if (!new_name) return
 	query.renameColumn(props.column.name, new_name)
 }
 

@@ -4,22 +4,24 @@
 		:class="isSidebarCollapsed ? 'w-12' : 'w-56'"
 	>
 		<div class="flex flex-col overflow-hidden">
-			<UserDropdown class="p-2" :isCollapsed="isSidebarCollapsed" />
+			<UserDropdown class="p-2" :isCollapsed="isSidebarCollapsed.value" />
 			<div class="flex flex-col overflow-y-auto">
-				<SidebarLink
-					v-for="link in links"
-					class="mx-2 my-0.5"
-					:icon="link.icon"
-					:label="link.label"
-					:to="link.to"
-					:isCollapsed="isSidebarCollapsed"
-					@click="link.onClick"
-				/>
+				<template v-for="link in links">
+					<SidebarLink
+						v-if="!link.hidden"
+						class="mx-2 my-0.5"
+						:icon="link.icon"
+						:label="link.label"
+						:to="link.to"
+						:isCollapsed="isSidebarCollapsed.value"
+						@click="link.onClick"
+					/>
+				</template>
 			</div>
 		</div>
 		<SidebarLink
 			:label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
-			:isCollapsed="isSidebarCollapsed"
+			:isCollapsed="isSidebarCollapsed.value"
 			@click="isSidebarCollapsed = !isSidebarCollapsed"
 			class="m-2"
 		>
@@ -39,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import {
 	Book,
 	Database,
@@ -46,15 +49,17 @@ import {
 	LayoutGrid,
 	PanelRightOpen,
 	SettingsIcon,
-	Warehouse,
 } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import useSettings from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
 
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
 const showSettingsDialog = ref(false)
+
+const settings = useSettings()
 
 const links = ref([
 	{
@@ -76,6 +81,7 @@ const links = ref([
 		label: 'Data Store',
 		icon: DatabaseZap,
 		to: 'DataStoreList',
+		hidden: computed(() => !settings.doc.enable_data_store),
 	},
 	{
 		label: 'Settings',

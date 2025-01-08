@@ -27,6 +27,8 @@ import {
 	Column,
 	CustomOperation,
 	CustomOperationArgs,
+	Dimension,
+	DimensionDataType,
 	Expression,
 	Filter,
 	FilterArgs,
@@ -39,6 +41,7 @@ import {
 	JoinArgs,
 	Limit,
 	Measure,
+	MeasureDataType,
 	Mutate,
 	MutateArgs,
 	Operation,
@@ -47,6 +50,7 @@ import {
 	PivotWider,
 	PivotWiderArgs,
 	QueryResult,
+	QueryResultColumn,
 	QueryTableArgs,
 	Remove,
 	RemoveArgs,
@@ -146,6 +150,39 @@ export function getFormattedDate(date: string, granularity: GranularityType) {
 
 	if (!dayjsFormat[granularity]) return date
 	return dayjs(date).format(dayjsFormat[granularity])
+}
+
+export function getMeasures(columns: QueryResultColumn[]): Measure[] {
+	if (!columns?.length) return []
+	const count_measure = count()
+	return [
+		count_measure,
+		...columns
+			.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
+			.map((column) => {
+				return {
+					aggregation: 'sum',
+					column_name: column.name,
+					measure_name: `sum_of_${column.name}`,
+					data_type: column.type as MeasureDataType,
+				}
+			}),
+	]
+}
+
+export function getDimensions(columns: QueryResultColumn[]): Dimension[] {
+	if (!columns?.length) return []
+	return columns
+		.filter((column) => FIELDTYPES.DIMENSION.includes(column.type))
+		.map((column) => {
+			const isDate = FIELDTYPES.DATE.includes(column.type)
+			return {
+				column_name: column.name,
+				data_type: column.type as DimensionDataType,
+				granularity: isDate ? 'month' : undefined,
+				dimension_name: column.name,
+			}
+		})
 }
 
 export const query_operation_types = {
@@ -336,7 +373,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
-			return "SQL"
+			return 'SQL'
 		},
 	},
 	code: {
@@ -347,7 +384,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
-			return "Code"
+			return 'Code'
 		},
 	},
 }

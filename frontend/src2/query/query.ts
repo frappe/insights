@@ -3,18 +3,16 @@ import { call } from 'frappe-ui'
 import { computed, reactive } from 'vue'
 import { copy, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { FIELDTYPES } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import {
 	CodeArgs,
 	ColumnDataType,
+	ColumnOption,
 	CustomOperationArgs,
 	Dimension,
-	DimensionDataType,
 	FilterGroupArgs,
 	JoinArgs,
 	Measure,
-	MeasureDataType,
 	MutateArgs,
 	Operation,
 	OrderByArgs,
@@ -26,16 +24,18 @@ import {
 	SourceArgs,
 	SQLArgs,
 	SummarizeArgs,
-	UnionArgs,
+	UnionArgs
 } from '../types/query.types'
 import { WorkbookQuery } from '../types/workbook.types'
 import {
 	cast,
+	code,
 	column,
-	count,
 	custom_operation,
 	filter_group,
+	getDimensions,
 	getFormattedRows,
+	getMeasures,
 	join,
 	limit,
 	mutate,
@@ -47,8 +47,7 @@ import {
 	source,
 	sql,
 	summarize,
-	union,
-	code
+	union
 } from './helpers'
 
 const queries = new Map<string, Query>()
@@ -141,37 +140,12 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	query.activeOperationIdx = query.doc.operations.length - 1
 
 	// @ts-ignore
-	query.dimensions = computed(() => {
-		if (!query.result.columns?.length) return []
-		return query.result.columns
-			.filter((column) => FIELDTYPES.DIMENSION.includes(column.type))
-			.map((column) => {
-				const isDate = FIELDTYPES.DATE.includes(column.type)
-				return {
-					column_name: column.name,
-					data_type: column.type as DimensionDataType,
-					granularity: isDate ? 'month' : undefined,
-					dimension_name: column.name,
-				}
-			})
-	})
+	query.dimensions = computed(() => getDimensions(query.result.columns))
 
 	// @ts-ignore
 	query.measures = computed(() => {
-		if (!query.result.columns?.length) return []
-		const count_measure = count()
 		return [
-			count_measure,
-			...query.result.columns
-				.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
-				.map((column) => {
-					return {
-						aggregation: 'sum',
-						column_name: column.name,
-						measure_name: `sum_of_${column.name}`,
-						data_type: column.type as MeasureDataType,
-					}
-				}),
+			...getMeasures(query.result.columns),
 			...Object.values(query.doc.calculated_measures || {}),
 		]
 	})
@@ -220,7 +194,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			return []
 		}
 
-		let _operations = [...query.currentOperations]
+		let _operations = copy(query.currentOperations)
 		for (const op of _operations) {
 			if (op.type !== 'source' && op.type !== 'join' && op.type !== 'union') continue
 			if (op.table.type !== 'query') continue
@@ -228,11 +202,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 			const queryTable = getCachedQuery(op.table.query_name)
 			if (!queryTable) {
 				const message = `Query ${op.table.query_name} not found`
-				createToast({
-					variant: 'error',
-					title: 'Error',
-					message,
-				})
 				throw new Error(message)
 			}
 
@@ -469,24 +438,38 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function renameColumn(oldName: string, newName: string) {
-		// first check if there's already a rename operation for the column
 		const existingRenameIdx = query.currentOperations.findIndex(
 			(op) => op.type === 'rename' && op.new_name === oldName
 		)
-		if (existingRenameIdx > -1) {
-			const existingRename = query.currentOperations[existingRenameIdx] as Rename
-			existingRename.new_name = newName
-		}
 
-		// if not, add a new rename operation
-		else {
+		if (existingRenameIdx === -1) {
+			// No existing rename, add new one
 			addOperation(
 				rename({
 					column: column(oldName),
 					new_name: newName,
 				})
 			)
+			return
 		}
+
+		const existingRename = query.currentOperations[existingRenameIdx] as Rename
+		const originalColumnName = existingRename.column.column_name
+
+		// If renaming back to original name, remove the rename operation
+		if (originalColumnName === newName) {
+			removeOperation(existingRenameIdx)
+			return
+		}
+
+		// Update existing rename operation
+		query.doc.operations.splice(existingRenameIdx, 1)
+		addOperation(
+			rename({
+				column: column(originalColumnName),
+				new_name: newName,
+			})
+		)
 	}
 
 	function removeColumn(column_names: string | string[]) {
@@ -656,7 +639,7 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		})
 	}
 
-	function getColumnsForSelection() {
+	function getColumnsForSelection(): Promise<ColumnOption[]> {
 		const operationsForExecution = query.getOperationsForExecution()
 		if (
 			query.activeEditOperation.type === 'select' ||
@@ -731,7 +714,6 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 		if (args.code.trim().length) {
 			query.doc.operations.push(code(args))
 			query.activeOperationIdx = 0
-			query.execute()
 		} else {
 			query.activeOperationIdx = -1
 		}

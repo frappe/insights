@@ -11,6 +11,7 @@
 				placeholder="Enter date"
 				v-model="fromDateTxt"
 				autocomplete="off"
+				@update:modelValue="selectDates(), selectCurrentMonthYear()"
 			></FormControl>
 			<FormControl
 				v-if="range"
@@ -18,6 +19,7 @@
 				placeholder="Enter date"
 				v-model="toDateTxt"
 				autocomplete="off"
+				@update:modelValue="selectDates(), selectCurrentMonthYear()"
 			></FormControl>
 		</div>
 		<div class="tnum flex flex-col items-center justify-center text-base">
@@ -81,7 +83,11 @@ onBeforeMount(() => {
 })
 
 function selectCurrentMonthYear() {
-	const date = toDateTxt.value ? new Date(toDateTxt.value) : today
+	const date = toDateTxt.value
+		? new Date(toDateTxt.value)
+		: fromDateTxt.value
+		? new Date(fromDateTxt.value)
+		: today
 	currentYear.value = date.getFullYear()
 	currentMonth.value = date.getMonth() + 1
 }

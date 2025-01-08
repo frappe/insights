@@ -11,6 +11,7 @@ import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
 import useDataSourceStore, { getDatabaseLogo } from './data_source'
 import { DataSourceListItem } from './data_source.types'
 import UploadCSVFileDialog from './UploadCSVFileDialog.vue'
+import ConnectDuckDBDialog from './ConnectDuckDBDialog.vue'
 
 const dataSourceStore = useDataSourceStore()
 dataSourceStore.getSources()
@@ -28,6 +29,7 @@ const filteredDataSources = computed(() => {
 const showNewSourceDialog = ref(false)
 const showNewMariaDBDialog = ref(false)
 const showNewPostgreSQLDialog = ref(false)
+const showNewDuckDBDialog = ref(false)
 const showCSVFileUploadDialog = ref(false)
 
 const sourceTypes = [
@@ -47,6 +49,15 @@ const sourceTypes = [
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewPostgreSQLDialog.value = true
+		},
+	},
+	{
+		label: 'DuckDB',
+		icon: getDatabaseLogo('DuckDB'),
+		description: 'Connect to DuckDB database',
+		onClick: () => {
+			showNewSourceDialog.value = false
+			showNewDuckDBDialog.value = true
 		},
 	},
 	{
@@ -149,5 +160,6 @@ document.title = 'Data Sources | Insights'
 
 	<ConnectMariaDBDialog v-model="showNewMariaDBDialog" />
 	<ConnectPostgreSQLDialog v-model="showNewPostgreSQLDialog" />
+	<ConnectDuckDBDialog v-model="showNewDuckDBDialog" />
 	<UploadCSVFileDialog v-model="showCSVFileUploadDialog" />
 </template>

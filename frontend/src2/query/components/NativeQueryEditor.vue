@@ -10,8 +10,11 @@ import ContentEditable from '../../components/ContentEditable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import { wheneverChanges } from '../../helpers'
 import useDataSourceStore from '../../data_source/data_source'
+import { column } from '../../query/helpers'
 
 const query = inject<Query>('query')!
+const sortOrder = ref<Record<string, 'asc' | 'desc'>>({});
+
 query.autoExecute = false
 
 const operation = query.getSQLOperation()
@@ -71,6 +74,20 @@ const completions = computed(() => {
 		tables,
 	}
 })
+
+function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
+
+	sortOrder.value = newSortOrder;
+	
+	Object.entries(newSortOrder).forEach(([columnName, direction]) => {
+		query.addOrderBy({
+			column: column(columnName), 
+			direction,
+		});
+	});
+
+	query.execute();
+}
 </script>
 
 <template>
@@ -125,7 +142,14 @@ const completions = computed(() => {
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
 
-			<DataTable :columns="columns" :rows="rows" :on-export="query.downloadResults">
+			<DataTable 
+				:columns="columns" 
+				:rows="rows" 
+				:enable-pagination="true" 
+				:on-export="query.downloadResults"
+				:sort-order="sortOrder"
+				@sort="onSort"
+			>
 				<template #footer-left>
 					<div class="tnum flex items-center gap-2 text-sm text-gray-600">
 						<span> Showing {{ previewRowCount }} of </span>

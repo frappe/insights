@@ -123,7 +123,7 @@ def get_csv_data(filename: str):
     count = table.count().execute().item()
 
     columns = get_columns_from_schema(table.schema())
-    rows = table.head(50).execute().to_dict(orient="records")
+    rows = table.head(50).execute().fillna("").to_dict(orient="records")
 
     return {
         "tablename": file_name,

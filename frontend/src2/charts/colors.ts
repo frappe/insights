@@ -23,6 +23,15 @@ export const COLOR_MAP = {
 	'#B4CD29': '#B4CD29',
 }
 
+// https://10015.io/tools/color-shades-generator
+export const GRADIENT_COLORS = {
+	blue: ['#2d87d6', '#4393da', '#589fdf', '#6dace3', '#83b8e7', '#98c4eb', '#c3dcf3', '#d8e9f7', '#edf5fc', '#ffffff'],
+}
+
 export const getColors = () => {
 	return Object.values(COLOR_MAP)
+}
+
+export const getGradientColors = (color: keyof typeof GRADIENT_COLORS) => {
+	return GRADIENT_COLORS[color]
 }

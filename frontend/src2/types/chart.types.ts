@@ -61,6 +61,7 @@ export type MixedChartConfig = AxisChartConfig & {
 
 export type NumberChartConfig = {
 	number_columns: Measure[]
+	number_column_options: NumberColumnOptions[]
 	comparison: boolean
 	sparkline: boolean
 	sparkline_color?: string
@@ -71,15 +72,23 @@ export type NumberChartConfig = {
 	suffix?: string
 	negative_is_better?: boolean
 }
+export type NumberColumnOptions = {
+	shorten_numbers?: boolean
+	decimal?: number
+	prefix?: string
+	suffix?: string
+}
 
-export type DountChartConfig = {
+export type DonutChartConfig = {
 	label_column: Dimension
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
+	show_inline_labels?: boolean;
 }
 export type FunnelChartConfig = {
 	label_column: Dimension
 	value_column: Measure
+	label_position?: 'left' | 'right' | 'alternate'
 }
 
 export type TableChartConfig = {
@@ -89,7 +98,7 @@ export type TableChartConfig = {
 	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean
-	conditional_formatting?: boolean
+	enable_color_scale?: boolean
 }
 
-export type ChartConfig = LineChartConfig | BarChartConfig | NumberChartConfig | DountChartConfig | TableChartConfig | FunnelChartConfig
+export type ChartConfig = LineChartConfig | BarChartConfig | NumberChartConfig | DonutChartConfig | TableChartConfig | FunnelChartConfig

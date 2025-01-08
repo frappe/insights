@@ -19,12 +19,13 @@ const settings = useSettings()
 settings.load()
 
 watchDebounced(
-	() => settings.doc.enable_permissions,
+	() => settings.doc,
 	() => {
 		if (settings.isdirty) {
 			settings.save()
 		}
-	}
+	},
+	{ debounce: 500, deep: true }
 )
 
 const searchQuery = ref('')
@@ -85,6 +86,13 @@ const editTeam = ref<Team | null>(null)
 			description="Enable permissions to restrict access to data sources & tables based on teams and users."
 		>
 			<Checkbox v-model="settings.doc.enable_permissions" />
+		</SettingItem>
+
+		<SettingItem
+			label="Apply User Permissions"
+			description="Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source."
+		>
+			<Checkbox v-model="settings.doc.apply_user_permissions" />
 		</SettingItem>
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">

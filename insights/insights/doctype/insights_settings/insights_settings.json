@@ -8,6 +8,8 @@
  "field_order": [
   "onboarding_section",
   "enable_permissions",
+  "enable_data_store",
+  "apply_user_permissions",
   "allowed_origins",
   "max_records_to_sync",
   "max_memory_usage",
@@ -120,12 +122,24 @@
    "fieldtype": "Int",
    "label": "Max Memory Usage",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_data_store",
+   "fieldtype": "Check",
+   "label": "Enable Data Store"
+  },
+  {
+   "default": "0",
+   "fieldname": "apply_user_permissions",
+   "fieldtype": "Check",
+   "label": "Apply User Permissions"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-24 12:24:13.641240",
+ "modified": "2024-12-03 16:27:21.761873",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

@@ -7,7 +7,8 @@ import {
 	AxisChartConfig,
 	BarChartConfig,
 	ChartConfig,
-	DountChartConfig,
+	DonutChartConfig,
+	FunnelChartConfig,
 	LineChartConfig,
 	Series,
 	SeriesLine,
@@ -21,7 +22,7 @@ import {
 	QueryResultColumn,
 	QueryResultRow,
 } from '../types/query.types'
-import { getColors } from './colors'
+import { getColors, getGradientColors } from './colors'
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -104,7 +105,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 				label: {
 					fontSize: 11,
 					show: show_data_labels,
-					position: idx === number_columns.length - 1 ? 'top' : 'inside',
+					position: 'top',
 					formatter: (params: any) => {
 						return getShortNumber(params.value?.[1], 1)
 					},
@@ -295,7 +296,7 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 	}
 }
 
-export function getDonutChartOptions(config: DountChartConfig, result: QueryResult) {
+export function getDonutChartOptions(config: DonutChartConfig, result: QueryResult) {
 	const columns = result.columns
 	const rows = result.rows
 
@@ -310,6 +311,8 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 
 	let center, radius, top, left, right, bottom, padding, orient
 	const legend_position = config.legend_position || 'bottom'
+	const show_inline_labels = config.show_inline_labels || false
+
 	if (legend_position == 'bottom') {
 		orient = 'horizontal'
 		radius = ['45%', '75%']
@@ -342,6 +345,9 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 		top = 'middle'
 		padding = [30, 0, 30, 0]
 	}
+	if (show_inline_labels) {
+		center = ['50%', '50%']
+	}
 
 	return {
 		animation: true,
@@ -354,25 +360,41 @@ export function getDonutChartOptions(config: DountChartConfig, result: QueryResu
 				name: valueColumn?.name,
 				center,
 				radius,
-				labelLine: { show: false },
-				label: { show: false },
+				labelLine: {
+					show: show_inline_labels,
+					lineStyle: {
+						width: 2,
+					},
+					length: 10,
+					length2: 20,
+					smooth: true,
+				},
+				label: {
+					show: show_inline_labels,
+					formatter: ({ value, name }: any) => {
+						const percentage = total > 0 ? (value[1] / total) * 100 : 0
+						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
+					},
+				},
 				emphasis: { scaleSize: 5 },
 			},
 		],
-		legend: {
-			...getLegend(),
-			top,
-			left,
-			right,
-			bottom,
-			padding,
-			orient,
-			formatter: (name: string) => {
-				const labelIndex = labels.indexOf(name)
-				const percent = (values[labelIndex] / total) * 100
-				return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
-			},
-		},
+		legend: !show_inline_labels
+			? {
+					...getLegend(),
+					top,
+					left,
+					right,
+					bottom,
+					padding,
+					orient,
+					formatter: (name: string) => {
+						const labelIndex = labels.indexOf(name)
+						const percentage = total > 0 ? (values[labelIndex] / total) * 100 : 0
+						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
+					},
+			  }
+			: null,
 		tooltip: {
 			trigger: 'item',
 			confine: true,
@@ -421,15 +443,21 @@ function getDonutChartData(
 	return topData
 }
 
-export function getFunnelChartOptions(config: DountChartConfig, result: QueryResult) {
+export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryResult) {
 	const rows = result.rows
 
 	const labelColumn = config.label_column.dimension_name
 	const valueColumn = config.value_column.measure_name
+	const labelPosition = config.label_position || 'left'
+
 	const labels = rows.map((r) => r[labelColumn])
 	const values = rows.map((r) => r[valueColumn])
+	const total = values.reduce((a, b) => a + b, 0)
 
-	const colors = getColors()
+	labels.unshift('Total')
+	values.unshift(total)
+
+	let colors = getGradientColors('blue')
 
 	return {
 		animation: true,
@@ -443,19 +471,51 @@ export function getFunnelChartOptions(config: DountChartConfig, result: QueryRes
 				funnelAlign: 'center',
 				top: 'center',
 				left: 'center',
-				width: '60%',
-				height: '80%',
+				width: '55%',
+				height: '75%',
 				minSize: '10px',
 				maxSize: '100%',
 				sort: 'descending',
 				label: {
 					show: true,
-					position: 'inside',
+					// position doesn't have any effect
+					// it is mapped here to re-render when the label position changes
+					// because the label layout function is not changing when the label position changes
+					// and so the chart doesn't re-render
+					position: labelPosition,
+					color: '#565656',
+					lineHeight: 16,
+					padding: [0, 5, 0, 0],
 					formatter: (params: any) => {
 						const index = labels.indexOf(params.name)
-						const percent = ((values[index] / values[0]) * 100).toFixed(0)
-						return `${params.name} (${percent}%)`
+						const percentage = Number((values[index] / total) * 100).toFixed(0)
+						const value = getShortNumber(values[index], 2)
+						return `${params.name}\n${value} (${percentage}%)`
 					},
+				},
+				labelLine: { show: false },
+				labelLayout(params: any) {
+					const leftPos = params.rect.x - 15
+					const rightPos = params.rect.x + params.rect.width + 15
+
+					if (labelPosition === 'left') {
+						return {
+							x: leftPos,
+							align: 'right',
+						}
+					}
+					if (labelPosition === 'right') {
+						return {
+							x: rightPos,
+							align: 'left',
+						}
+					}
+					if (labelPosition === 'alternate') {
+						return {
+							x: params.dataIndex % 2 === 0 ? leftPos : rightPos,
+							align: params.dataIndex % 2 === 0 ? 'right' : 'left',
+						}
+					}
 				},
 				gap: 6,
 				data: values.map((value, index) => ({

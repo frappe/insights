@@ -60,6 +60,9 @@ export default function useWorkbook(name: string) {
 			title: `Query ${idx + 1}`,
 			use_live_connection: true,
 			operations: [],
+			is_builder_query: false,
+			is_native_query: false,
+			is_script_query: false,
 		})
 		setActiveTab('query', idx)
 	}
@@ -81,12 +84,12 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
-	function addChart() {
+	function addChart(query_name?: string) {
 		const idx = workbook.doc.charts.length
 		workbook.doc.charts.push({
 			name: getUniqueId(),
 			title: `Chart ${idx + 1}`,
-			query: '',
+			query: query_name || '',
 			chart_type: 'Bar',
 			is_public: false,
 			config: {} as WorkbookChart['config'],
@@ -190,45 +193,6 @@ export default function useWorkbook(name: string) {
 		})
 	}
 
-	function getLinkedQueries(query_name: string): string[] {
-		const query = getCachedQuery(query_name)
-		if (!query) {
-			console.error(`Query ${query_name} not found`)
-			return []
-		}
-
-		const querySource = query.doc.operations.find(
-			(op) => op.type === 'source' && op.table.type === 'query' && op.table.query_name
-		) as Source
-
-		const queryJoins = query.doc.operations.filter(
-			(op) => op.type === 'join' && op.table.type === 'query' && op.table.query_name
-		) as Join[]
-
-		const linkedQueries = [] as string[]
-		if (querySource && querySource.table.type === 'query') {
-			linkedQueries.push(querySource.table.query_name)
-		}
-		if (queryJoins.length) {
-			queryJoins.forEach((j) => {
-				if (j.table.type === 'query') {
-					linkedQueries.push(j.table.query_name)
-				}
-			})
-		}
-
-		const linkedQueriesByQuery = {} as Record<string, string[]>
-		linkedQueries.forEach((q) => {
-			linkedQueriesByQuery[q] = getLinkedQueries(q)
-		})
-
-		Object.values(linkedQueriesByQuery).forEach((subLinkedQueries) => {
-			linkedQueries.concat(subLinkedQueries)
-		})
-
-		return linkedQueries
-	}
-
 	let stopAutoSaveWatcher: any
 	wheneverChanges(
 		() => workbook.doc.enable_auto_save,
@@ -295,14 +259,16 @@ function getWorkbookResource(name: string) {
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
 
 			doc.queries.forEach((query: any) => {
-				if (!query.is_native_query && !query.is_script_query) {
+				if (
+					query.is_native_query === undefined &&
+					query.is_script_query === undefined &&
+					query.is_builder_query === undefined
+				) {
 					query.is_builder_query = true
-				} else {
-					query.is_builder_query = false
 				}
 			})
 
-			doc.charts.forEach((chart: any) => {
+			doc.charts.forEach((chart: WorkbookChart) => {
 				chart.config.filters = chart.config.filters?.filters?.length
 					? chart.config.filters
 					: {
@@ -315,6 +281,10 @@ function getWorkbookResource(name: string) {
 				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
 					// @ts-ignore
 					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
+				}
+				if (chart.chart_type === 'Funnel') {
+					// @ts-ignore
+					chart.config.label_position = chart.config.label_position || 'left'
 				}
 				chart.config = setDimensionNames(chart.config)
 			})
@@ -329,4 +299,44 @@ function getWorkbookResource(name: string) {
 export function newWorkbookName() {
 	const unique_id = getUniqueId()
 	return `new-workbook-${unique_id}`
+}
+
+
+export function getLinkedQueries(query_name: string): string[] {
+	const query = getCachedQuery(query_name)
+	if (!query) {
+		console.error(`Query ${query_name} not found`)
+		return []
+	}
+
+	const querySource = query.doc.operations.find(
+		(op) => op.type === 'source' && op.table.type === 'query' && op.table.query_name
+	) as Source
+
+	const queryJoins = query.doc.operations.filter(
+		(op) => op.type === 'join' && op.table.type === 'query' && op.table.query_name
+	) as Join[]
+
+	const linkedQueries = [] as string[]
+	if (querySource && querySource.table.type === 'query') {
+		linkedQueries.push(querySource.table.query_name)
+	}
+	if (queryJoins.length) {
+		queryJoins.forEach((j) => {
+			if (j.table.type === 'query') {
+				linkedQueries.push(j.table.query_name)
+			}
+		})
+	}
+
+	const linkedQueriesByQuery = {} as Record<string, string[]>
+	linkedQueries.forEach((q) => {
+		linkedQueriesByQuery[q] = getLinkedQueries(q)
+	})
+
+	Object.values(linkedQueriesByQuery).forEach((subLinkedQueries) => {
+		linkedQueries.concat(subLinkedQueries)
+	})
+
+	return linkedQueries
 }

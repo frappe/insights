@@ -11,6 +11,7 @@
 					enabled ? 'bg-gray-900' : 'bg-gray-300',
 					props.size === 'sm' ? 'h-4 w-6.5' : 'h-4.5 w-8',
 				]"
+				:disabled="props.disabled"
 			>
 				<span
 					:class="[
@@ -31,6 +32,6 @@
 <script setup>
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 
-const props = defineProps(['label', 'size'])
+const props = defineProps(['label', 'size', 'disabled'])
 const enabled = defineModel({ type: Boolean })
 </script>

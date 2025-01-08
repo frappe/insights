@@ -12,6 +12,7 @@ import {
 import { FIELDTYPES } from './constants'
 import { createToast } from './toasts'
 import { getFormattedDate } from '../query/helpers'
+import { call } from 'frappe-ui'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -148,16 +149,18 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 1,
 		})
 }
 
-export function formatNumber(number: number, precision = 2) {
+export function formatNumber(number: number, precision = 0) {
 	if (isNaN(number)) return number
 	precision = precision || guessPrecision(number)
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale || 'en-US', {
+		minimumFractionDigits: precision,
 		maximumFractionDigits: precision,
 	}).format(number)
 }
 
 export function guessPrecision(number: number) {
+	if (!number || isNaN(number)) return 0
 	// eg. 1.0 precision = 1, 1.00 precision = 2
 	const str = number.toString()
 	const decimalIndex = str.indexOf('.')
@@ -429,4 +432,23 @@ function areValidDates(data: string[]) {
 
 function isValidDate(value: string) {
 	return !isNaN(new Date(value).getTime())
+}
+
+const callCache = new Map<string, any>()
+export function cachedCall(url: string, options?: any): Promise<any> {
+	// a function that makes a fetch call, but also caches the response for the same url & options
+	const key = JSON.stringify({ url, options })
+	if (callCache.has(key)) {
+		return Promise.resolve(callCache.get(key))
+	}
+
+	return call(url, options)
+		.then((response: any) => {
+			callCache.set(key, response)
+			return response
+		})
+		.catch((err: Error) => {
+			callCache.delete(key)
+			throw err
+		})
 }

@@ -111,7 +111,7 @@ const showPagination = computed(
 							<div
 								class="flex items-center gap-2 truncate py-2 px-3"
 								:class="[
-									header.column.columnDef.isNumber ? 'text-right' : '',
+									header.column.columnDef.isNumber ? 'justify-end' : '',
 									header.column.getCanSort()
 										? 'cursor-pointer hover:text-gray-800'
 										: '',

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ListFilter } from 'lucide-vue-next'
-import { computed, inject, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { copy } from '../helpers'
 import FiltersSelectorDialog from '../query/components/FiltersSelectorDialog.vue'
 import { getCachedQuery } from '../query/query'
 import { FilterArgs, FilterGroupArgs, GroupedColumnOption } from '../types/query.types'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
-import { workbookKey } from '../workbook/workbook'
+import { getLinkedQueries } from '../workbook/workbook'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{
@@ -17,19 +17,20 @@ const props = defineProps<{
 
 const showDialog = ref(false)
 
-const workbook = inject(workbookKey)!
+const dashboardCharts = computed(() => {
+	return props.dashboard.doc.items
+		.filter((item) => item.type === 'chart')
+		.map((i) => props.charts.find((c) => c.name === i.chart))
+		.filter(Boolean) as WorkbookChart[]
+})
 
 const chartQueries = computed(() => {
-	if (!workbook)
-		return props.charts
-			.map((c) => c.query)
-			.map((q) => props.queries.find((query) => query.name === q)!)
-
-	return props.charts
-		.map((c) => [c.query, ...workbook.getLinkedQueries(c.query)])
+	return dashboardCharts.value
+		.map((c) => [c.query, ...getLinkedQueries(c.query)])
 		.flat()
 		.filter((q, i, arr) => arr.indexOf(q) === i)
-		.map((q) => props.queries.find((query) => query.name === q)!)
+		.map((q) => props.queries.find((query) => query.name === q))
+		.filter(Boolean) as WorkbookQuery[]
 })
 
 if (chartQueries.value.length) {

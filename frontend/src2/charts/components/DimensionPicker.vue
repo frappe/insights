@@ -3,8 +3,7 @@ import { ChevronDown, Settings, XIcon } from 'lucide-vue-next'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { isDate } from '../../helpers'
 import { granularityOptions } from '../../helpers/constants'
-import { Dimension } from '../../types/query.types'
-import { DimensionOption } from './ChartConfigForm.vue'
+import { Dimension, DimensionOption } from '../../types/query.types'
 
 const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
