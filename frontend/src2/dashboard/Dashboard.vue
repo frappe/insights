@@ -78,7 +78,7 @@ async function downloadDashboardImage() {
 	</header>
 
 	<div class="relative flex h-full w-full overflow-hidden">
-		<div ref="dashboardContainer" class="h-fit flex-1 overflow-y-auto p-4">
+		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
 			<VueGridLayout
 				v-if="dashboard.doc.items.length > 0"
 				class="h-fit w-full"

@@ -126,13 +126,13 @@ export function showErrorToast(err: Error, raise = true) {
 export function downloadImage(element: HTMLElement, filename: string, scale = 1, options = {}) {
 	return domtoimage
 		.toPng(element, {
-			height: element.offsetHeight * scale,
-			width: element.offsetWidth * scale,
+			height: element.scrollHeight * scale,
+			width: element.scrollWidth * scale,
 			style: {
 				transform: 'scale(' + scale + ')',
 				transformOrigin: 'top left',
-				width: element.offsetWidth + 'px',
-				height: element.offsetHeight + 'px',
+				width: element.scrollWidth + 'px',
+				height: element.scrollHeight + 'px',
 			},
 			bgColor: 'white',
 			...options,
@@ -395,9 +395,11 @@ export function createHeaders(columns: QueryResultColumn[]) {
 	// i.e first day of each month, then we format the values as 'Oct 2016', 'Nov 2016', 'Dec 2016'
 
 	for (let headerRow of groupedHeaders) {
+		const areDates = areValidDates(headerRow.map((header) => header.label))
+		if (!areDates) continue
+
 		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
 		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
-		const areDates = areValidDates(headerRow.map((header) => header.label))
 
 		for (let header of headerRow) {
 			if (!isValidDate(header.label)) continue
@@ -431,7 +433,11 @@ function areValidDates(data: string[]) {
 }
 
 function isValidDate(value: string) {
-	return !isNaN(new Date(value).getTime())
+	// almost all dates will have a valid 4 digit year
+	if (!value) return false
+	if (!/\d{4}/.test(value)) return false
+	const date = new Date(value)
+	return !isNaN(date.getTime()) && date.getFullYear() >= 1900 && date.getFullYear() <= 2900
 }
 
 const callCache = new Map<string, any>()
