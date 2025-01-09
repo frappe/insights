@@ -8,7 +8,12 @@ from ibis import _
 
 
 # aggregate functions
-def count(column: ir.Column = None, where: ir.BooleanValue = None):
+def count(
+    column: ir.Column = None,
+    where: ir.BooleanValue = None,
+    group_by=None,
+    order_by=None,
+):
     """
     def count(column=None, where=None)
 
@@ -18,6 +23,7 @@ def count(column: ir.Column = None, where: ir.BooleanValue = None):
     - count()
     - count(user_id)
     - count(user_id, status == 'Active')
+    - count(user_id, group_by=month(date), order_by=asc(date))
     """
 
     if column is None:
@@ -25,10 +31,15 @@ def count(column: ir.Column = None, where: ir.BooleanValue = None):
         column = query.columns[0]
         column = getattr(query, column)
 
+    if group_by is not None:
+        return column.count(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.count(where=where)
 
 
-def count_if(condition: ir.BooleanValue, column: ir.Column = None):
+def count_if(
+    condition: ir.BooleanValue, column: ir.Column = None, group_by=None, order_by=None
+):
     """
     def count_if(condition)
 
@@ -36,12 +47,14 @@ def count_if(condition: ir.BooleanValue, column: ir.Column = None):
 
     Examples:
     - count_if(status == 'Active')
+    - count_if(status == 'Active', user_id)
+    - count_if(status == 'Active', user_id, group_by=month(date), order_by=asc(date))
     """
 
-    return count(column, where=condition)
+    return count(column, where=condition, group_by=group_by, order_by=order_by)
 
 
-def min(column: ir.Column, where: ir.BooleanValue = None):
+def min(column: ir.Column, where: ir.BooleanValue = None, group_by=None, order_by=None):
     """
     def min(column, where=None)
 
@@ -49,12 +62,18 @@ def min(column: ir.Column, where: ir.BooleanValue = None):
 
     Examples:
     - min(column)
-    - min(column, status == 'Active')
+    - min(column, where=status == 'Active')
+    - min(column, group_by=user_id, order_by=date)
+    - min(column, group_by=[user_id, month(date)], order_by=asc(date))
     """
+
+    if group_by is not None:
+        return column.min(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.min(where=where)
 
 
-def max(column: ir.Column, where: ir.BooleanValue = None):
+def max(column: ir.Column, where: ir.BooleanValue = None, group_by=None, order_by=None):
     """
     def max(column, where=None)
 
@@ -63,11 +82,21 @@ def max(column: ir.Column, where: ir.BooleanValue = None):
     Examples:
     - max(column)
     - max(column, status == 'Active')
+    - max(column, group_by=user_id, order_by=date)
     """
+
+    if group_by is not None:
+        return column.max(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.max(where=where)
 
 
-def sum(column: ir.NumericColumn, where: ir.BooleanValue = None):
+def sum(
+    column: ir.NumericColumn,
+    where: ir.BooleanValue = None,
+    group_by=None,
+    order_by=None,
+):
     """
     def sum(column, where=None)
 
@@ -76,11 +105,21 @@ def sum(column: ir.NumericColumn, where: ir.BooleanValue = None):
     Examples:
     - sum(column)
     - sum(column, status == 'Active')
+    - sum(column, group_by=user_id, order_by=date)
     """
+
+    if group_by is not None:
+        return column.sum(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.sum(where=where)
 
 
-def avg(column: ir.NumericColumn, where: ir.BooleanValue = None):
+def avg(
+    column: ir.NumericColumn,
+    where: ir.BooleanValue = None,
+    group_by=None,
+    order_by=None,
+):
     """
     def avg(column, where=None)
 
@@ -89,11 +128,21 @@ def avg(column: ir.NumericColumn, where: ir.BooleanValue = None):
     Examples:
     - avg(column)
     - avg(column, status == 'Active')
+    - avg(column, group_by=user_id, order_by=date)
     """
+
+    if group_by is not None:
+        return column.mean(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.mean(where=where)
 
 
-def median(column: ir.NumericColumn, where: ir.BooleanValue = None):
+def median(
+    column: ir.NumericColumn,
+    where: ir.BooleanValue = None,
+    group_by=None,
+    order_by=None,
+):
     """
     def median(column, where=None)
 
@@ -102,7 +151,12 @@ def median(column: ir.NumericColumn, where: ir.BooleanValue = None):
     Examples:
     - median(column)
     - median(column, status == 'Active')
+    - median(column, group_by=user_id, order_by=date)
     """
+
+    if group_by is not None:
+        return column.median(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.median(where=where)
 
 
@@ -119,7 +173,9 @@ def group_concat(column: ir.Column, sep: str = ",", where: ir.BooleanValue = Non
     return column.group_concat(sep=sep, where=where)
 
 
-def distinct_count(column: ir.Column, where: ir.BooleanValue = None):
+def distinct_count(
+    column: ir.Column, where: ir.BooleanValue = None, group_by=None, order_by=None
+):
     """
     def distinct_count(column, where=None)
 
@@ -128,7 +184,12 @@ def distinct_count(column: ir.Column, where: ir.BooleanValue = None):
     Examples:
     - distinct_count(column)
     - distinct_count(column, status == 'Active')
+    - distinct_count(column, group_by=user_id, order_by=date)
     """
+
+    if group_by is not None:
+        return column.nunique(where=where).over(group_by=group_by, order_by=order_by)
+
     return column.nunique(where=where)
 
 
@@ -1038,3 +1099,23 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
     query = query.mutate(retention=(query.unique_ids / query.cohort_size) * 100)
 
     return query
+
+
+def pad_number(number: ir.NumericValue, digits: int):
+    """
+    def pad_number(number, digits)
+
+    Convert an integer into an n digit string.
+
+    Examples:
+    - pad_number(1, 2) -> '01'
+    - pad_number(1, 3) -> '001'
+    """
+    string_number = number.cast("string")
+    zero_literal = ibis.literal("0")
+
+    return if_else(
+        string_number.length() < digits,
+        zero_literal.repeat(digits - string_number.length()).concat(string_number),
+        string_number,
+    )
