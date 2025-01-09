@@ -52,6 +52,7 @@
 		"vue-router": "^4.0.12",
 		"vue-sonner": "^1.0.3",
 		"vue-tsc": "^2.0.21",
-		"vuedraggable": "^4.1.0"
+		"vuedraggable": "^4.1.0",
+		"jwt-decode": "4.0.0"
 	}
 }
