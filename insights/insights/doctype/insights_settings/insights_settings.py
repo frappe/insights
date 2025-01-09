@@ -29,11 +29,10 @@ class InsightsSettings(Document):
         onboarding_complete: DF.Check
         query_result_expiry: DF.Int
         query_result_limit: DF.Int
+        secret_key: DF.Data | None
         setup_complete: DF.Check
         telegram_api_token: DF.Password | None
-        week_starts_on: DF.Literal[
-            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
-        ]
+        week_starts_on: DF.Literal["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     # end: auto-generated types
 
     def before_save(self):
