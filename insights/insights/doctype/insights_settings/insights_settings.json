@@ -15,6 +15,7 @@
   "max_memory_usage",
   "integrations_section",
   "telegram_api_token",
+  "secret_key",
   "query_section",
   "fiscal_year_start",
   "week_starts_on",
@@ -134,12 +135,17 @@
    "fieldname": "apply_user_permissions",
    "fieldtype": "Check",
    "label": "Apply User Permissions"
+  },
+  {
+   "fieldname": "secret_key",
+   "fieldtype": "Data",
+   "label": "JWT Secret Key"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-03 16:27:21.761873",
+ "modified": "2025-01-09 16:07:51.393887",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
