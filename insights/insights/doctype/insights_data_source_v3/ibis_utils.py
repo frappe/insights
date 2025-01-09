@@ -24,7 +24,7 @@ from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis.functions import week_start
+from .ibis.functions import quarter_start, week_start
 from .ibis.utils import get_functions
 
 
@@ -494,11 +494,7 @@ class IbisQueryBuilder:
         if granularity == "week":
             return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
-            year = column.year()
-            quarter = column.quarter()
-            month = (quarter * 3) - 2
-            quarter_start = ibis.date(year, month, 1)
-            return quarter_start.strftime("%Y-%m-%d").name(column.get_name())
+            return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
 
         format_str = {
             "day": "%Y-%m-%d",

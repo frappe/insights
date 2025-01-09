@@ -963,6 +963,23 @@ def week_start(column: ir.DateValue):
     return week_start
 
 
+def quarter_start(column: ir.DateValue):
+    """
+    def quarter_start(column)
+
+    Get the start date of the quarter for a given date.
+
+    Examples:
+    - quarter_start(order_date)
+    """
+
+    year = column.year()
+    quarter = column.quarter()
+    month = (quarter * 3) - 2
+    quarter_start = ibis.date(year, month, 1)
+    return quarter_start
+
+
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):
     """
     def get_retention_data(date_column, id_column, unit)
@@ -983,6 +1000,9 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
     if isinstance(id_column, str):
         id_column = getattr(query, id_column)
 
+    if date_column.type().is_timestamp():
+        date_column = date_column.cast("date")
+
     if not date_column.type().is_date():
         frappe.throw(f"Invalid date column. Expected date, got {date_column.type()}")
 
@@ -990,6 +1010,7 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
         "day": lambda column: column.strftime("%Y-%m-%d").cast("date"),
         "week": week_start,
         "month": lambda column: column.strftime("%Y-%m-01").cast("date"),
+        "quarter": quarter_start,
         "year": lambda column: column.strftime("%Y-01-01").cast("date"),
     }[unit]
 
