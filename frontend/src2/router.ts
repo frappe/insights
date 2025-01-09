@@ -101,6 +101,16 @@ const routes = [
 		},
 	},
 	{
+		props: true,
+		name: 'SecureDashboard',
+		path: '/secure/dashboard/:dashboard_name',
+		component: () => import('./dashboard/SecureEmbedDashboard.vue'),
+		meta: {
+			hideSidebar: true,
+			isGuestView: true,
+		},
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		component: () => import('./auth/NotFound.vue'),
 		meta: { hideSidebar: true },
