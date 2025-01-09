@@ -85,13 +85,20 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				}
 			})
 
-			chart.refresh(undefined, true)
+			chart.refresh()
 		},
 
 		getShareLink() {
 			return (
 				dashboard.doc.share_link ||
 				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
+			)
+		},
+
+		getSecureLink() {
+			return (
+				dashboard.doc.secure_link ||
+				`${window.location.origin}/insights/secure/dashboard/${dashboard.doc.name}`
 			)
 		},
 	})
