@@ -61,7 +61,7 @@ export type WorkbookDashboard = {
 	share_link?: string
 }
 
-export type WorkbookDashboardItem = WorkbookDashboardChart
+export type WorkbookDashboardItem = WorkbookDashboardChart | WorkbookDashboardText
 
 export type Layout = {
 	i: string

@@ -15,19 +15,22 @@ const props = defineProps<{
 
 const dashboard = inject('dashboard') as Dashboard
 
-const chart = computed(() => {
-	if (props.item.type != 'chart') return null
-	const item = props.item as WorkbookDashboardChart
-	return getCachedChart(item.chart) as Chart
+const chartName = computed(() => {
+	return props.item.type === 'chart' ? (props.item as WorkbookDashboardChart).chart : null
 })
 
-if (!chart.value?.dataQuery.result.executedSQL) {
-	dashboard.refreshChart(props.item.chart)
+const chart = computed(() => {
+	if (!chartName.value) return null
+	return getCachedChart(chartName.value)
+})
+
+if (chartName.value && !chart.value?.dataQuery.result.executedSQL) {
+	dashboard.refreshChart(chartName.value)
 }
 
 watchDebounced(
 	() => chart.value?.doc.config.order_by,
-	() => dashboard.refreshChart(props.item.chart),
+	() => chartName.value && dashboard.refreshChart(chartName.value),
 	{
 		deep: true,
 		debounce: 500,
@@ -88,6 +91,10 @@ const showExpandedChartDialog = ref(false)
 							:result="chart.dataQuery.result"
 							:loading="chart.dataQuery.executing"
 						/>
+
+						<div v-else-if="props.item.type === 'text'">
+							<div v-html="props.item.text" class="prose text-gray-700"></div>
+						</div>
 
 						<div
 							v-else

@@ -32,12 +32,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		},
 
 		addChart(charts: WorkbookChart[]) {
-			const maxY = Math.max(
-				...dashboard.doc.items
-					.filter((item) => item.type === 'chart')
-					.map((chart) => chart.layout.y + chart.layout.h),
-				0
-			)
+			const maxY = dashboard.getMaxY()
 			charts.forEach((chart) => {
 				if (
 					!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
@@ -54,6 +49,21 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 						},
 					})
 				}
+			})
+		},
+
+		addText() {
+			const maxY = dashboard.getMaxY()
+			dashboard.doc.items.push({
+				type: 'text',
+				text: '',
+				layout: {
+					i: getUniqueId(),
+					x: 0,
+					y: maxY,
+					w: 10,
+					h: 2,
+				},
 			})
 		},
 
@@ -93,6 +103,10 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				dashboard.doc.share_link ||
 				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
 			)
+		},
+
+		getMaxY() {
+			return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
 		},
 	})
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { computed, provide, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse } from '../helpers'
+import { safeJSONParse, wheneverChanges } from '../helpers'
 import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
@@ -10,6 +10,7 @@ import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { workbookKey } from '../workbook/workbook'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -47,6 +48,15 @@ function onDrop(event: DragEvent) {
 }
 
 const showShareDialog = ref(false)
+
+const workbook = inject(workbookKey)
+wheneverChanges(
+	() => dashboard.editing,
+	() => {
+		if (!workbook?.doc.owner) return
+		workbook.doc.enable_auto_save = !dashboard.editing
+	}
+)
 </script>
 
 <template>
@@ -102,6 +112,14 @@ const showShareDialog = ref(false)
 						@click="showChartSelectorDialog = true"
 					>
 						Chart
+					</Button>
+					<Button
+						v-if="dashboard.editing"
+						variant="outline"
+						icon-left="plus"
+						@click="() => dashboard.addText()"
+					>
+						Text
 					</Button>
 					<Button
 						v-if="dashboard.editing"

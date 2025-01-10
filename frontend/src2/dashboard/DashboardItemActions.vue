@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { TextEditor } from 'frappe-ui'
+import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
+import {
+	WorkbookDashboardChart,
+	WorkbookDashboardItem,
+	WorkbookDashboardText,
+} from '../types/workbook.types'
 import { Workbook, workbookKey } from '../workbook/workbook'
 import { Dashboard } from './dashboard'
 
@@ -34,6 +39,17 @@ if (props.item.type === 'chart') {
 		onClick: () => router.push(`/workbook/${workbook.doc.name}/chart/${chartIndex.value}`),
 	})
 }
+
+const showTextWidgetEditDialog = ref(false)
+const text = ref((props.item as WorkbookDashboardText).text)
+
+if (props.item.type === 'text') {
+	actions.splice(0, 0, {
+		icon: 'edit',
+		label: 'Edit',
+		onClick: () => (showTextWidgetEditDialog.value = true),
+	})
+}
 </script>
 <template>
 	<div class="flex w-fit cursor-pointer rounded bg-gray-800 p-1 shadow-sm">
@@ -46,4 +62,40 @@ if (props.item.type === 'chart') {
 			<FeatherIcon :name="action.icon" class="h-3.5 w-3.5 text-white" />
 		</div>
 	</div>
+
+	<Dialog
+		v-model="showTextWidgetEditDialog"
+		:options="{
+			title: 'Edit Text',
+			actions: [
+				{
+					label: 'Save',
+					variant: 'solid',
+					disabled: !text || text.trim() === '' || text === (props.item as WorkbookDashboardText).text,
+					onClick: () => {
+						(props.item as WorkbookDashboardText).text = text
+						showTextWidgetEditDialog = false
+					},
+				},
+				{
+					label: 'Cancel',
+					onClick: () => (showTextWidgetEditDialog = false),
+				},
+			],
+		}"
+	>
+		<template #body-content>
+			<div class="space-y-2">
+				<span class="block text-sm leading-4 text-gray-700">Content</span>
+				<TextEditor
+					ref="textEditor"
+					:editable="true"
+					:content="text"
+					editor-class="h-[8rem] prose-sm cursor-text bg-gray-100 rounded p-2"
+					@change="text = $event"
+				/>
+				<p class="text-xs text-gray-500">Markdown supported</p>
+			</div>
+		</template>
+	</Dialog>
 </template>
