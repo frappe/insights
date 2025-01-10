@@ -559,6 +559,12 @@ function getTooltip(options: any = {}) {
 		confine: true,
 		appendToBody: false,
 		formatter: (params: Object | Array<Object>) => {
+			if (Array.isArray(params)) {
+                params = params
+                    .filter((p) => p.value?.[1] !== 0) 
+                    .sort((a, b) => b.value?.[1] - a.value?.[1]); 
+            }
+
 			if (!Array.isArray(params)) {
 				const p = params as any
 				const value = options.xySwapped ? p.value[0] : p.value[1]

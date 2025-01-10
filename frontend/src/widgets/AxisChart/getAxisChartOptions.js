@@ -219,8 +219,18 @@ function makeOptions(chartType, labels, datasets, options) {
 			trigger: 'axis',
 			confine: true,
 			appendToBody: false,
-			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
+			formatter: (params) => {
+				const filteredParams = params
+					.filter((p) => p.value !== 0 && p.value !== null) 
+					.sort((a, b) => b.value - a.value);
+		
+				if (!filteredParams.length) return ''; 
+				return filteredParams
+					.map((p) => `${p.marker} ${p.seriesName}: ${formatNumber(p.value)}`)
+					.join('<br/>');
+			},
 		},
+		
 	}
 }
 
