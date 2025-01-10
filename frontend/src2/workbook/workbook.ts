@@ -205,7 +205,7 @@ export default function useWorkbook(name: string) {
 				stopAutoSaveWatcher = watchDebounced(
 					() => workbook.isdirty,
 					() => workbook.isdirty && workbook.save(),
-					{ immediate: true, debounce: 1000 }
+					{ immediate: true, debounce: 2000 }
 				)
 			}
 		}
