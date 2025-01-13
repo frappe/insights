@@ -122,7 +122,7 @@ class InsightsWorkbook(Document):
             item["chart"]
             for shared_dashboard in dashboards
             for item in shared_dashboard["items"]
-            if item["type"] == "chart" and shared_dashboard.get("is_public")
+            if item["type"] == "chart" and (shared_dashboard.get("is_public") or shared_dashboard.get("secure_embed"))
         ]
         # chart belongs to one of the shared dashboards
         if any(chart_name == chart["name"] for chart_name in shared_dashboard_charts):
