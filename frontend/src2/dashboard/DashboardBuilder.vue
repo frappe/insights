@@ -50,13 +50,13 @@ function onDrop(event: DragEvent) {
 const showShareDialog = ref(false)
 
 const workbook = inject(workbookKey)
-wheneverChanges(
-	() => dashboard.editing,
-	() => {
-		if (!workbook?.doc.owner) return
-		workbook.doc.enable_auto_save = !dashboard.editing
-	}
-)
+// wheneverChanges(
+// 	() => dashboard.editing,
+// 	() => {
+// 		if (!workbook?.doc.owner) return
+// 		workbook.doc.enable_auto_save = !dashboard.editing
+// 	}
+// )
 </script>
 
 <template>
@@ -112,6 +112,14 @@ wheneverChanges(
 						@click="showChartSelectorDialog = true"
 					>
 						Chart
+					</Button>
+					<Button
+						v-if="dashboard.editing"
+						variant="outline"
+						icon-left="plus"
+						@click="() => dashboard.addFilter()"
+					>
+						Filter
 					</Button>
 					<Button
 						v-if="dashboard.editing"

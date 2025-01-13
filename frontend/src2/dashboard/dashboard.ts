@@ -3,7 +3,7 @@ import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
 import { getCachedQuery } from '../query/query'
 import { FilterArgs } from '../types/query.types'
-import { WorkbookChart, WorkbookDashboard } from '../types/workbook.types'
+import { WorkbookChart, WorkbookDashboard, WorkbookDashboardItem } from '../types/workbook.types'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -21,6 +21,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		doc: workbookDashboard,
 
 		editing: false,
+		editingItemIndex: null as number | null,
 		filters: {} as Record<string, FilterArgs[]>,
 
 		activeItemIdx: null as number | null,
@@ -29,6 +30,9 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		},
 		isActiveItem(index: number) {
 			return dashboard.activeItemIdx == index
+		},
+		isEditingItem(item: WorkbookDashboardItem) {
+			return dashboard.editing && dashboard.editingItemIndex === dashboard.doc.items.indexOf(item)
 		},
 
 		addChart(charts: WorkbookChart[]) {
@@ -63,6 +67,22 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					y: maxY,
 					w: 10,
 					h: 2,
+				},
+			})
+		},
+
+		addFilter() {
+			const maxY = dashboard.getMaxY()
+			dashboard.doc.items.push({
+				type: 'filter',
+				filter_name: 'Filter',
+				data_type: 'String',
+				layout: {
+					i: getUniqueId(),
+					x: 0,
+					y: maxY,
+					w: 4,
+					h: 1,
 				},
 			})
 		},

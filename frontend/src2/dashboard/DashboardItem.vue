@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
-import { AlertTriangle, Maximize } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
-import { Chart, getCachedChart } from '../charts/chart'
-import ChartRenderer from '../charts/components/ChartRenderer.vue'
-import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
+import { inject, ref } from 'vue'
+
+import {
+	WorkbookDashboardChart,
+	WorkbookDashboardFilter,
+	WorkbookDashboardItem,
+	WorkbookDashboardText,
+} from '../types/workbook.types'
 import { Dashboard } from './dashboard'
+import DashboardChart from './DashboardChart.vue'
+import DashboardFilter from './DashboardFilter.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
+import DashboardText from './DashboardText.vue'
 
 const props = defineProps<{
 	index: number
@@ -15,33 +20,16 @@ const props = defineProps<{
 
 const dashboard = inject('dashboard') as Dashboard
 
-const chartName = computed(() => {
-	return props.item.type === 'chart' ? (props.item as WorkbookDashboardChart).chart : null
-})
-
-const chart = computed(() => {
-	if (!chartName.value) return null
-	return getCachedChart(chartName.value)
-})
-
-if (chartName.value && !chart.value?.dataQuery.result.executedSQL) {
-	dashboard.refreshChart(chartName.value)
-}
-
-watchDebounced(
-	() => chart.value?.doc.config.order_by,
-	() => chartName.value && dashboard.refreshChart(chartName.value),
-	{
-		deep: true,
-		debounce: 500,
-	}
-)
-
 let timer: any
 const wasDragging = ref(false)
 const showPopover = ref(false)
 const popoverDelay = 300
 document.addEventListener('mousemove', (event) => {
+	if (!dashboard.editing) return
+	if (dashboard.isEditingItem(props.item)) {
+		showPopover.value = false
+		return
+	}
 	// if mouse moves while the button is pressed, it's dragging
 	// once the button is released, it's not dragging
 	// if not dragging then show popover after delay
@@ -56,8 +44,6 @@ document.addEventListener('mousemove', (event) => {
 		clearTimeout(timer)
 	}
 })
-
-const showExpandedChartDialog = ref(false)
 </script>
 
 <template>
@@ -78,44 +64,23 @@ const showExpandedChartDialog = ref(false)
 					@click="dashboard.setActiveItem(index)"
 				>
 					<div
-						class="group relative h-full w-full"
+						class="group relative flex h-full w-full flex-col justify-center"
 						:class="dashboard.editing ? 'pointer-events-none' : ''"
 					>
-						<ChartRenderer
-							v-if="chart"
-							:title="chart.doc.title"
-							:chart_type="chart.doc.chart_type"
-							:config="chart.doc.config"
-							:operations="chart.doc.operations"
-							:use_live_connection="chart.doc.use_live_connection"
-							:result="chart.dataQuery.result"
-							:loading="chart.dataQuery.executing"
+						<DashboardChart
+							v-if="props.item.type == 'chart'"
+							:item="(props.item as WorkbookDashboardChart)"
 						/>
 
-						<div v-else-if="props.item.type === 'text'">
-							<div v-html="props.item.text" class="prose text-gray-700"></div>
-						</div>
+						<DashboardText
+							v-else-if="props.item.type === 'text'"
+							:item="(props.item as WorkbookDashboardText)"
+						/>
 
-						<div
-							v-else
-							class="flex h-full flex-1 flex-col items-center justify-center rounded border"
-						>
-							<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
-							<p class="text-p-base text-gray-500">Chart not found</p>
-						</div>
-
-						<div
-							v-if="chart?.doc.chart_type !== 'Number'"
-							class="absolute top-0 right-0 p-2 opacity-0 transition-opacity group-hover:opacity-100"
-						>
-							<Button
-								variant="ghost"
-								class="!h-7 !w-7"
-								@click="showExpandedChartDialog = true"
-							>
-								<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-							</Button>
-						</div>
+						<DashboardFilter
+							v-else-if="props.item.type === 'filter'"
+							:item="(props.item as WorkbookDashboardFilter)"
+						/>
 					</div>
 				</div>
 			</template>
@@ -128,27 +93,4 @@ const showExpandedChartDialog = ref(false)
 			</template>
 		</Popover>
 	</div>
-
-	<Dialog
-		v-if="chart"
-		v-model="showExpandedChartDialog"
-		:options="{
-			size: '6xl',
-		}"
-	>
-		<template #body>
-			<div class="h-[75vh] w-full">
-				<ChartRenderer
-					v-if="chart"
-					:title="chart.doc.title"
-					:chart_type="chart.doc.chart_type"
-					:config="chart.doc.config"
-					:operations="chart.doc.operations"
-					:use_live_connection="chart.doc.use_live_connection"
-					:result="chart.dataQuery.result"
-					:loading="chart.dataQuery.executing"
-				/>
-			</div>
-		</template>
-	</Dialog>
 </template>

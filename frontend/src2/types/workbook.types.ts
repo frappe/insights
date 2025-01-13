@@ -61,7 +61,10 @@ export type WorkbookDashboard = {
 	share_link?: string
 }
 
-export type WorkbookDashboardItem = WorkbookDashboardChart | WorkbookDashboardText
+export type WorkbookDashboardItem =
+	| WorkbookDashboardChart
+	| WorkbookDashboardText
+	| WorkbookDashboardFilter
 
 export type Layout = {
 	i: string
@@ -77,7 +80,9 @@ export type WorkbookDashboardChart = {
 }
 export type WorkbookDashboardFilter = {
 	type: 'filter'
-	column: DashboardFilterColumn
+	filter_name: string
+	data_type: ColumnDataType
+	links?: any
 	layout: Layout
 }
 export type WorkbookDashboardText = {
@@ -85,11 +90,10 @@ export type WorkbookDashboardText = {
 	text: string
 	layout: Layout
 }
-export type DashboardFilterColumn = {
-	query: string
-	name: string
-	type: ColumnDataType
-}
 
 export type ShareAccess = 'view' | 'edit' | undefined
-export type WorkbookSharePermission = { email: string; full_name: string; access: ShareAccess }
+export type WorkbookSharePermission = {
+	email: string
+	full_name: string
+	access: ShareAccess
+}
