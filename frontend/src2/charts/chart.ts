@@ -11,8 +11,9 @@ import {
 	NumberChartConfig,
 	TableChartConfig
 } from '../types/chart.types'
-import { FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
+import { FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
+import { GranularityType } from '../helpers/constants'
 
 const charts = new Map<string, Chart>()
 

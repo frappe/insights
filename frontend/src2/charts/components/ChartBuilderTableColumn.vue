@@ -9,9 +9,9 @@ import {
 } from 'lucide-vue-next'
 import { computed, h, watchEffect } from 'vue'
 import ContentEditable from '../../components/ContentEditable.vue'
-import { FIELDTYPES, granularityOptions } from '../../helpers/constants'
+import { FIELDTYPES, granularityOptions, GranularityType } from '../../helpers/constants'
 import { column } from '../../query/helpers'
-import { GranularityType, QueryResultColumn } from '../../types/query.types'
+import { QueryResultColumn } from '../../types/query.types'
 import { WorkbookChart } from '../../types/workbook.types'
 import { getGranularity } from '../helpers'
 

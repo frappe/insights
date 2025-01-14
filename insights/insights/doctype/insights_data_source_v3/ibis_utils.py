@@ -497,6 +497,9 @@ class IbisQueryBuilder:
             return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
 
         format_str = {
+            "second": "%Y-%m-%d %H:%M:%S",
+            "minute": "%Y-%m-%d %H:%M:00",
+            "hour": "%Y-%m-%d %H:00:00",
             "day": "%Y-%m-%d",
             "month": "%Y-%m-01",
             "year": "%Y-01-01",

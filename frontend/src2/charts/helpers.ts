@@ -1,6 +1,6 @@
 import { graphic } from 'echarts/core'
 import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
-import { FIELDTYPES } from '../helpers/constants'
+import { FIELDTYPES, GranularityType } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
 import {
@@ -16,7 +16,6 @@ import {
 import {
 	ColumnDataType,
 	FilterRule,
-	GranularityType,
 	Operation,
 	QueryResult,
 	QueryResultColumn,
@@ -561,8 +560,8 @@ function getTooltip(options: any = {}) {
 		formatter: (params: Object | Array<Object>) => {
 			if (Array.isArray(params)) {
                 params = params
-                    .filter((p) => p.value?.[1] !== 0) 
-                    .sort((a, b) => b.value?.[1] - a.value?.[1]); 
+                    .filter((p) => p.value?.[1] !== 0)
+                    .sort((a, b) => b.value?.[1] - a.value?.[1]);
             }
 
 			if (!Array.isArray(params)) {
