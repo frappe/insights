@@ -404,7 +404,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 				return `${formatNumber(value, 2)} (${percent.toFixed(0)}%)`
 			},
 		},
-		graphic: config.show_total_in_center ? getTotalGraphic(total) : undefined,
+		graphic: config.show_total_in_center ? getTotalGraphic(total,legend_position,show_inline_labels) : undefined,
 	}
 }
 
@@ -617,25 +617,48 @@ function getLegend(show_legend = true) {
 	}
 }
 
-function getTotalGraphic(total:number) {
-    return {
-        elements: [
-            {
-                type: 'text',
-                left: 'center',
-                top: 'center',
-                style: {
-                    text: `Total\n${formatNumber(total, 2)}`,
-                    fontSize: 18,
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    lineHeight: 24,
-                    fill: '#333',
-                },
-            },
-        ],
-    }
-}
+function getTotalGraphic(total: number, legend_position: DonutChartConfig['legend_position'], show_inline_labels: boolean) {
+
+	const positions: Record<DonutChartConfig['legend_position'], [string, string]> = {
+	  left: ['65%', '46%'],
+	  right: ['31%', '46%'],
+	  top: ['48%', '50%'],
+	  bottom: ['48%', '40%'],
+	};
+
+	const [left, top] = show_inline_labels ? ['center', 'center'] : positions[legend_position];
+
+	return {
+		elements: [
+		  {
+			type: 'text',
+			left,
+			top,
+			style: {
+			  text: `${formatNumber(total, 2)}`,
+			  fontSize: 20,
+			  fontWeight: 'bold',
+			  textAlign: 'center',
+			  lineHeight: 24,
+			  fill: '#333',
+			},
+		  },
+		  {
+			type: 'text',
+			left,
+			top:  (parseFloat(top) + 5).toString() + '%',
+			style: {
+			  text: 'TOTAL',
+			  fontSize: 22,
+			  fontWeight: 'normal',
+			  textAlign: 'center',
+			  lineHeight: 24,
+			  fill: '#A0A0A0',
+			},
+		  },
+		],
+	  };
+  }
 
 export function getDrillDownQuery(
 	operations: Operation[],

@@ -58,6 +58,7 @@ const discrete_dimensions = computed(() =>
 					{ label: 'Left', value: 'left' },
 					{ label: 'Right', value: 'right' },
 				]"
+				:value="config.legend_position || 'bottom'"
 			/>
 			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
 			<Checkbox v-model="config.show_total_in_center" label="Show Total in Center" />
