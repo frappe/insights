@@ -69,12 +69,6 @@ const workbook = inject(workbookKey)
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 				<div class="flex gap-2">
-					<DashboardFilterSelector
-						v-if="!dashboard.editing"
-						:dashboard="dashboard"
-						:queries="props.queries"
-						:charts="props.charts"
-					/>
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"

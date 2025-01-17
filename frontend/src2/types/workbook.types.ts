@@ -1,5 +1,6 @@
+import { FilterType } from '../helpers/constants'
 import { ChartConfig, ChartType } from './chart.types'
-import { ColumnDataType, FilterGroupArgs, Measure, Operation, OrderByArgs } from './query.types'
+import { FilterGroupArgs, FilterOperator, FilterRule, FilterValue, Measure, Operation, OrderByArgs } from './query.types'
 
 export type WorkbookListItem = {
 	title: string
@@ -81,8 +82,10 @@ export type WorkbookDashboardChart = {
 export type WorkbookDashboardFilter = {
 	type: 'filter'
 	filter_name: string
-	data_type: ColumnDataType
-	links?: any
+	filter_type: FilterType
+	links: Record<string, string>
+	default_operator?: FilterOperator
+	default_value?: FilterValue
 	layout: Layout
 }
 export type WorkbookDashboardText = {

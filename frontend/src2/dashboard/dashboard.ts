@@ -1,9 +1,16 @@
 import { reactive } from 'vue'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
+import { column } from '../query/helpers'
 import { getCachedQuery } from '../query/query'
-import { FilterArgs } from '../types/query.types'
-import { WorkbookChart, WorkbookDashboard, WorkbookDashboardItem } from '../types/workbook.types'
+import { FilterArgs, FilterOperator, FilterRule, FilterValue } from '../types/query.types'
+import {
+	WorkbookChart,
+	WorkbookDashboard,
+	WorkbookDashboardFilter,
+	WorkbookDashboardItem,
+} from '../types/workbook.types'
+import { isFilterValid } from '../query/components/filter_utils'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -16,6 +23,11 @@ export default function useDashboard(workbookDashboard: WorkbookDashboard) {
 	return dashboard
 }
 
+type FilterState = {
+	operator: FilterOperator
+	value: FilterValue
+}
+
 function makeDashboard(workbookDashboard: WorkbookDashboard) {
 	const dashboard = reactive({
 		doc: workbookDashboard,
@@ -23,6 +35,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		editing: false,
 		editingItemIndex: null as number | null,
 		filters: {} as Record<string, FilterArgs[]>,
+		filterStates: {} as Record<string, FilterState>,
 
 		activeItemIdx: null as number | null,
 		setActiveItem(index: number) {
@@ -69,6 +82,8 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					h: 2,
 				},
 			})
+			dashboard.editingItemIndex = dashboard.doc.items.length - 1
+			dashboard.setActiveItem(dashboard.doc.items.length - 1)
 		},
 
 		addFilter() {
@@ -76,7 +91,8 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			dashboard.doc.items.push({
 				type: 'filter',
 				filter_name: 'Filter',
-				data_type: 'String',
+				filter_type: 'String',
+				links: {},
 				layout: {
 					i: getUniqueId(),
 					x: 0,
@@ -85,15 +101,12 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 					h: 1,
 				},
 			})
+			dashboard.editingItemIndex = dashboard.doc.items.length - 1
+			dashboard.setActiveItem(dashboard.doc.items.length - 1)
 		},
 
 		removeItem(index: number) {
 			dashboard.doc.items.splice(index, 1)
-		},
-
-		applyFilter(query: string, args: FilterArgs) {
-			if (!dashboard.filters[query]) dashboard.filters[query] = []
-			dashboard.filters[query].push(args)
 		},
 
 		refresh() {
@@ -106,16 +119,59 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			const chart = getCachedChart(chart_name)
 			if (!chart || !chart.doc.query) return
 
-			Object.keys(dashboard.filters).forEach((query) => {
+			const dependentQueries = chart.getDependentQueries()
+			dependentQueries.forEach((query) => {
 				const _query = getCachedQuery(query)
 				if (!_query) return
 				_query.dashboardFilters = {
 					logical_operator: 'And',
-					filters: dashboard.filters[query],
+					filters: dashboard.getQueryFilters(query),
 				}
 			})
 
 			chart.refresh(undefined, true)
+		},
+
+		getQueryFilters(query: string) {
+			const filterItems = dashboard.doc.items.filter(
+				(item) => item.type === 'filter' && item.links[query]
+			)
+			return filterItems
+				.map((item) => {
+					const filterItem = item as WorkbookDashboardFilter
+					if (!filterItem.links[query]) return
+
+					const state = dashboard.filterStates[filterItem.filter_name] || {}
+					const filter = {
+						column: column(filterItem.links![query]),
+						operator: state.operator || filterItem.default_operator,
+						value: state.value || filterItem.default_value,
+					}
+
+					if (isFilterValid(filter, filterItem.filter_type)) {
+						return filter
+					}
+				})
+				.filter(Boolean) as FilterRule[]
+		},
+
+		updateFilter(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
+			const filter = dashboard.doc.items.find(
+				(item) => item.type === 'filter' && item.filter_name === filter_name
+			)
+			if (!filter) return
+
+			if (!operator) {
+				delete dashboard.filterStates[filter_name]
+				return
+			}
+
+			dashboard.filterStates[filter_name] = {
+				operator,
+				value,
+			}
+
+			console.log(dashboard.filterStates)
 		},
 
 		getShareLink() {

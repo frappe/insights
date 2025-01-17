@@ -1,24 +1,120 @@
 <script setup lang="ts">
 import { ListFilter } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
-import { copy } from '../helpers'
-import { COLUMN_TYPES } from '../helpers/constants'
-import ColumnFilterBody from '../query/components/ColumnFilterBody.vue'
+import { Chart, getCachedChart } from '../charts/chart'
+import { copy, wheneverChanges } from '../helpers'
+import { FIELDTYPES } from '../helpers/constants'
+import { getCachedQuery, Query } from '../query/query'
+import { ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
+import Filter from './Filter.vue'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
 
-const editedFilter = ref(copy(props.item))
+const filter = ref(copy(props.item))
+if (!filter.value.links) {
+	filter.value.links = {}
+}
+
+const charts = computed(() => {
+	return dashboard.doc.items
+		.filter((i) => i.type === 'chart')
+		.map((i) => i.chart)
+		.filter(Boolean)
+})
+
+const queries = computed(() => {
+	return charts.value
+		.map((c) => getCachedChart(c))
+		.filter(Boolean)
+		.map((c) => c!.getDependentQueries())
+		.flat()
+		.filter((q, i, self) => self.findIndex((qq) => qq === q) === i)
+		.filter(Boolean) as string[]
+})
+
+const linkOptions = computed(() => {
+	return {
+		queries: queries.value
+			.map((q) => getCachedQuery(q))
+			.filter(Boolean)
+			.map((q) => {
+				const query = q as Query
+				return {
+					name: query.doc.name,
+					title: query.doc.title || query.doc.name,
+					columns: filterColumnOptions(query.result.columnOptions),
+				}
+			}),
+		charts: charts.value
+			.map((c) => getCachedChart(c))
+			.filter(Boolean)
+			.map((c) => {
+				const chart = c as Chart
+				const query = chart.dataQuery
+				return {
+					name: query.doc.name,
+					title: chart.doc.title || query.doc.name,
+					columns: filterColumnOptions(query.result.columnOptions),
+				}
+			}),
+	}
+})
+
+const enabledLinks = computed(() => Object.keys(filter.value.links))
+function toggleLink(link: string) {
+	if (enabledLinks.value.includes(link)) {
+		delete filter.value.links[link]
+	} else {
+		filter.value.links[link] = ''
+	}
+}
+
+const filterTypes = {
+	String: FIELDTYPES.TEXT,
+	Number: FIELDTYPES.NUMBER,
+	Date: FIELDTYPES.DATE,
+}
+
+function filterColumnOptions(options: ColumnOption[]) {
+	return options.filter((o) => {
+		return filterTypes[filter.value.filter_type].includes(o.data_type)
+	})
+}
+
+const state = ref({
+	operator: filter.value.default_operator,
+	value: filter.value.default_value,
+})
+wheneverChanges(
+	state,
+	() => {
+		console.log(
+			'update filter',
+			filter.value.filter_name,
+			state.value.operator,
+			state.value.value
+		)
+		dashboard.updateFilter(filter.value.filter_name, state.value.operator, state.value.value)
+		dashboard.refresh()
+	},
+	{ deep: true }
+)
+
 const editDisabled = computed(() => {
 	return (
-		!editedFilter.value.filter_name ||
-		!editedFilter.value.data_type ||
-		(editedFilter.value.filter_name === props.item.filter_name &&
-			editedFilter.value.data_type === props.item.data_type)
+		!filter.value.filter_name ||
+		!filter.value.filter_type ||
+		JSON.stringify(filter.value) === JSON.stringify(props.item)
 	)
 })
+
+function saveEdit() {
+	dashboard.editingItemIndex = null
+	Object.assign(props.item, filter.value)
+}
 </script>
 
 <template>
@@ -37,15 +133,15 @@ const editDisabled = computed(() => {
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">
-				<ColumnFilterBody
-					v-if="isOpen"
-					:column="{
-						name: props.item.filter_name,
-						type: props.item.data_type,
-					}"
-					:valuesProvider="() => []"
-					@close="togglePopover"
-				/>
+				<div class="w-full p-2">
+					<Filter
+						v-if="isOpen"
+						:filter-type="filter.filter_type"
+						v-model:operator="state.operator"
+						v-model:value="state.value"
+					>
+					</Filter>
+				</div>
 			</template>
 		</Popover>
 	</div>
@@ -61,11 +157,7 @@ const editDisabled = computed(() => {
 					label: 'Save',
 					variant: 'solid',
 					disabled: editDisabled,
-					onClick: () => {
-						props.item.filter_name = editedFilter.filter_name
-						props.item.data_type = editedFilter.data_type
-						dashboard.editingItemIndex = null
-					},
+					onClick: saveEdit,
 				},
 				{
 					label: 'Cancel',
@@ -80,16 +172,71 @@ const editDisabled = computed(() => {
 					<FormControl
 						class="flex-1 flex-shrink-0"
 						label="Label"
-						v-model="editedFilter.filter_name"
+						v-model="filter.filter_name"
 						autocomplete="off"
 					/>
 					<FormControl
 						class="flex-1 flex-shrink-0"
-						v-model="editedFilter.data_type"
+						v-model="filter.filter_type"
 						label="Type"
 						type="select"
-						:options="COLUMN_TYPES"
+						:options="Object.keys(filterTypes)"
 					/>
+				</div>
+				<div v-if="filter.filter_type" class="flex w-full flex-col gap-2">
+					<label class="block text-xs text-gray-600">Default Value</label>
+					<Filter
+						class="w-full"
+						:filter-type="filter.filter_type"
+						v-model:operator="filter.default_operator"
+						v-model:value="filter.default_value"
+					></Filter>
+				</div>
+				<div class="flex flex-col">
+					<div class="text-p-sm text-gray-700">Linked Queries</div>
+					<div
+						v-for="link in linkOptions.queries"
+						:key="link.name"
+						class="flex h-8 w-full items-center gap-2"
+					>
+						<Checkbox
+							size="sm"
+							:modelValue="enabledLinks.includes(link.name)"
+							@update:modelValue="toggleLink(link.name)"
+						></Checkbox>
+						<p class="flex-1 truncate text-base">{{ link.title }}</p>
+						<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
+							<Autocomplete
+								class="min-w-[10rem]"
+								placeholder="Select a column"
+								:options="link.columns"
+								:modelValue="filter.links[link.name]"
+								@update:modelValue="filter.links[link.name] = $event.value"
+							/>
+						</div>
+					</div>
+					<div class="mt-2 text-p-sm text-gray-700">Linked Charts</div>
+					<div
+						v-for="link in linkOptions.charts"
+						:key="link.name"
+						class="flex h-8 w-full items-center gap-2"
+					>
+						<Checkbox
+							size="sm"
+							:modelValue="enabledLinks.includes(link.name)"
+							@update:modelValue="toggleLink(link.name)"
+						></Checkbox>
+						<p class="flex-1 truncate text-base">{{ link.title }}</p>
+						<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
+							<Autocomplete
+								class="min-w-[10rem]"
+								placeholder="Select a column"
+								:options="link.columns"
+								:modelValue="filter.links[link.name]"
+								@update:modelValue="filter.links[link.name] = $event.value"
+							/>
+						</div>
+					</div>
 				</div>
 			</div>
 		</template>

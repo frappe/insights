@@ -9,10 +9,11 @@ import {
 	AxisChartConfig,
 	DonutChartConfig,
 	NumberChartConfig,
-	TableChartConfig
+	TableChartConfig,
 } from '../types/chart.types'
-import { FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
+import { ColumnOption, FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
+import { getLinkedQueries } from '../workbook/workbook'
 
 const charts = new Map<string, Chart>()
 
@@ -50,6 +51,9 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		updateMeasure,
 		removeMeasure,
+
+		getDependentQueries,
+		getDependentQueryColumns,
 
 		history: {} as UseRefHistoryReturn<any, any>,
 	})
@@ -329,6 +333,32 @@ function makeChart(workbookChart: WorkbookChart) {
 	function removeMeasure(measure: Measure) {
 		if (!chart.doc.calculated_measures) return
 		delete chart.doc.calculated_measures[measure.measure_name]
+	}
+
+	function getDependentQueries() {
+		const dependentQueries = new Set<string>()
+		dependentQueries.add(chart.doc.query)
+		getLinkedQueries(chart.doc.query).forEach((query) => dependentQueries.add(query))
+		return Array.from(dependentQueries)
+	}
+
+	function getDependentQueryColumns() {
+		return getDependentQueries()
+			.flatMap((query) => {
+				const q = getCachedQuery(query)
+				if (!q) return []
+				if (!q.result.executedSQL) {
+					q.execute()
+				}
+				return q.result.columnOptions.map((c) => {
+					return {
+						...c,
+						query_title: q.doc.title,
+						value: `${query}.${c.value}`,
+					}
+				})
+			})
+			.flatMap((column) => column as ColumnOption & { query_title: string })
 	}
 
 	chart.history = useDebouncedRefHistory(
