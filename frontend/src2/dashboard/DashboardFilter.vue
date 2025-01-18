@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ListFilter } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -42,10 +42,11 @@ const linkOptions = computed(() => {
 			.filter(Boolean)
 			.map((q) => {
 				const query = q as Query
+				if (!query.result.executedSQL) query.execute()
 				return {
 					name: query.doc.name,
 					title: query.doc.title || query.doc.name,
-					columns: filterColumnOptions(query.result.columnOptions),
+					columns: disableColumnOptions(query.result.columnOptions),
 				}
 			}),
 		charts: charts.value
@@ -54,10 +55,11 @@ const linkOptions = computed(() => {
 			.map((c) => {
 				const chart = c as Chart
 				const query = chart.dataQuery
+				if (!query.result.executedSQL) query.execute()
 				return {
 					name: query.doc.name,
 					title: chart.doc.title || query.doc.name,
-					columns: filterColumnOptions(query.result.columnOptions),
+					columns: disableColumnOptions(query.result.columnOptions),
 				}
 			}),
 	}
@@ -78,30 +80,41 @@ const filterTypes = {
 	Date: FIELDTYPES.DATE,
 }
 
-function filterColumnOptions(options: ColumnOption[]) {
-	return options.filter((o) => {
-		return filterTypes[filter.value.filter_type].includes(o.data_type)
+function disableColumnOptions(options: ColumnOption[]) {
+	return options.map((o) => {
+		return {
+			...o,
+			disabled: !filterTypes[filter.value.filter_type].includes(o.data_type),
+		}
 	})
 }
 
-const state = ref({
+function onFilterTypeChange() {
+	filter.value.default_operator = undefined
+	filter.value.default_value = undefined
+	filter.value.links = {}
+}
+
+const state = reactive({
 	operator: filter.value.default_operator,
 	value: filter.value.default_value,
 })
 wheneverChanges(
-	state,
+	() => state,
 	() => {
-		console.log(
-			'update filter',
-			filter.value.filter_name,
-			state.value.operator,
-			state.value.value
-		)
-		dashboard.updateFilter(filter.value.filter_name, state.value.operator, state.value.value)
+		dashboard.updateFilter(filter.value.filter_name, state.operator, state.value)
 		dashboard.refresh()
 	},
 	{ deep: true }
 )
+const label = computed(() => {
+	let _label = filter.value.filter_name
+	if (state.operator && state.value) {
+		const value_str = Array.isArray(state.value) ? state.value.join(', ') : state.value
+		_label += ` ${state.operator} ${value_str}`
+	}
+	return _label
+})
 
 const editDisabled = computed(() => {
 	return (
@@ -123,13 +136,15 @@ function saveEdit() {
 			<template #target="{ togglePopover, isOpen }">
 				<Button
 					variant="outline"
-					:label="props.item.filter_name"
 					class="flex h-full w-full !justify-start shadow-sm"
 					@click="togglePopover"
 				>
 					<template #prefix>
 						<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
 					</template>
+					<p class="flex-1 truncate text-sm">
+						{{ label || 'Filter' }}
+					</p>
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">
@@ -139,6 +154,7 @@ function saveEdit() {
 						:filter-type="filter.filter_type"
 						v-model:operator="state.operator"
 						v-model:value="state.value"
+						@update:value="() => togglePopover()"
 					>
 					</Filter>
 				</div>
@@ -181,6 +197,7 @@ function saveEdit() {
 						label="Type"
 						type="select"
 						:options="Object.keys(filterTypes)"
+						@update:modelValue="onFilterTypeChange"
 					/>
 				</div>
 				<div v-if="filter.filter_type" class="flex w-full flex-col gap-2">

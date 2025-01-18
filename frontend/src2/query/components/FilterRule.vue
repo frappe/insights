@@ -2,7 +2,6 @@
 import { debounce } from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
 import { flattenOptions } from '../../helpers'
-import { FIELDTYPES } from '../../helpers/constants'
 import {
 	ColumnOption,
 	FilterOperator,
@@ -12,8 +11,8 @@ import {
 import { column } from '../helpers'
 import { getCachedQuery } from '../query'
 import DatePickerControl from './DatePickerControl.vue'
-import RelativeDatePicker from './RelativeDatePicker.vue'
 import { getFilterType, getOperatorOptions, getValueSelectorType } from './filter_utils'
+import RelativeDatePickerControl from './RelativeDatePickerControl.vue'
 
 const filter = defineModel<FilterRule>({ required: true })
 const props = defineProps<{
@@ -131,7 +130,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				v-model="(filter.value as string[])"
 				placeholder="Select Date"
 			/>
-			<RelativeDatePicker
+			<RelativeDatePickerControl
 				v-else-if="valueSelectorType === 'relative_date'"
 				v-model="(filter.value as string)"
 				placeholder="Relative Date"

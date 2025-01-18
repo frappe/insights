@@ -1,18 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
+import { copy } from '../helpers'
 import { FilterType } from '../helpers/constants'
-import DatePickerControl from '../query/components/DatePickerControl.vue'
+import DatePicker from '../query/components/DatePicker.vue'
+import { getOperatorOptions, getValueSelectorType } from '../query/components/filter_utils'
+import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
 import { FilterOperator, FilterValue } from '../types/query.types'
-import { getOperatorOptions, getValueSelectorType } from '../query/components/filter_utils'
 
 const props = defineProps<{ filterType: FilterType }>()
 const filterOperator = defineModel<FilterOperator>('operator')
 const filterValue = defineModel<FilterValue>('value')
 
+const state = reactive(
+	copy({
+		operator: filterOperator.value,
+		value: filterValue.value,
+	})
+)
+
 const valueSelectorType = computed(() => {
-	if (!filterOperator.value) return
-	return getValueSelectorType(filterOperator.value, props.filterType)
+	if (!state.operator) return
+	return getValueSelectorType(state.operator, props.filterType)
 })
 
 const operatorOptions = computed(() => {
@@ -20,54 +29,60 @@ const operatorOptions = computed(() => {
 })
 
 function onOperatorChange(operator: FilterOperator) {
-	filterOperator.value = operator
-	filterValue.value = undefined
+	const oldValueSelectorType = valueSelectorType.value
+	state.operator = operator
+	if (oldValueSelectorType !== valueSelectorType.value) {
+		state.value = undefined
+	}
+}
+
+function applyFilter() {
+	filterOperator.value = state.operator
+	filterValue.value = state.value
 }
 </script>
 
 <template>
 	<div class="flex flex-col gap-2">
-		<div id="operator" class="!min-w-[100px] flex-1">
-			<FormControl
-				type="select"
-				placeholder="Operator"
-				:modelValue="filterOperator"
-				:options="operatorOptions"
-				@update:modelValue="onOperatorChange($event)"
-			/>
-		</div>
-		<div id="value" class="!min-w-[140px] flex-1 flex-shrink-0">
-			<FormControl
-				v-if="valueSelectorType === 'text'"
-				v-model="filterValue"
-				placeholder="Value"
-				autocomplete="off"
-			/>
-			<FormControl
-				v-else-if="valueSelectorType === 'number'"
-				type="number"
-				:modelValue="filterValue"
-				placeholder="Value"
-				@update:modelValue="filterValue = Number($event)"
-			/>
-			<DatePickerControl
-				v-else-if="valueSelectorType === 'date'"
-				placeholder="Select Date"
-				:modelValue="[filterValue as string]"
-				@update:modelValue="filterValue = $event[0]"
-			/>
-			<DatePickerControl
-				v-else-if="valueSelectorType === 'date_range'"
-				:range="true"
-				v-model="(filterValue as string[])"
-				placeholder="Select Date"
-			/>
-			<RelativeDatePicker
-				v-else-if="valueSelectorType === 'relative_date'"
-				v-model="(filterValue as string)"
-				placeholder="Relative Date"
-			/>
-			<!-- <Autocomplete
+		<NumberFilterPicker
+			class="w-[200px]"
+			v-if="filterType === 'Number'"
+			v-model:operator="state.operator"
+			v-model:value="(state.value as number)"
+		/>
+		<template>
+			<div id="operator" class="!min-w-[200px] flex-1">
+				<FormControl
+					type="select"
+					placeholder="Operator"
+					:modelValue="state.operator"
+					:options="operatorOptions"
+					@update:modelValue="onOperatorChange($event)"
+				/>
+			</div>
+			<div id="value" class="!min-w-[140px] flex-1 flex-shrink-0">
+				<FormControl
+					v-if="valueSelectorType === 'text'"
+					v-model="state.value"
+					placeholder="Value"
+					autocomplete="off"
+				/>
+				<DatePicker
+					v-else-if="valueSelectorType === 'date'"
+					:range="false"
+					:modelValue="[state.value as string]"
+					@update:modelValue="state.value = $event[0]"
+				></DatePicker>
+				<DatePicker
+					v-else-if="valueSelectorType === 'date_range'"
+					:range="true"
+					v-model="(state.value as string[])"
+				></DatePicker>
+				<RelativeDatePicker
+					v-else-if="valueSelectorType === 'relative_date'"
+					v-model="(state.value as string)"
+				/>
+				<!-- <Autocomplete
 				v-else-if="valueSelectorType === 'select'"
 				class="max-w-[200px]"
 				placeholder="Value"
@@ -78,7 +93,10 @@ function onOperatorChange(operator: FilterOperator) {
 				@update:query="fetchColumnValues"
 				@update:modelValue="filter.value = $event?.map((v: any) => v.value) || []"
 			/> -->
-			<FormControl v-else disabled />
+			</div>
+		</template>
+		<div class="flex justify-end gap-2">
+			<Button icon="check" variant="solid" @click="applyFilter"></Button>
 		</div>
 	</div>
 </template>

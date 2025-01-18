@@ -87,7 +87,14 @@ export function isFilterValid(filter: FilterRule, filterType: FilterType) {
 
 	// for number, validate if it's a number
 	if (filterType === 'Number') {
-		return !isNaN(filter.value as any)
+		if (filter.operator === 'between') {
+			return (
+				Array.isArray(filter.value) &&
+				filter.value.length === 2 &&
+				filter.value.every(isValidNumber)
+			)
+		}
+		return isValidNumber(filter.value)
 	}
 
 	// for text,
@@ -121,4 +128,14 @@ export function isFilterValid(filter: FilterRule, filterType: FilterType) {
 	}
 
 	return false
+}
+
+export function isValidNumber(value: any) {
+	const invalidNaNs = [null, undefined, '']
+	return (
+		!isNaN(value) &&
+		!invalidNaNs.includes(value) &&
+		typeof value !== 'boolean' &&
+		!isNaN(parseFloat(value))
+	)
 }

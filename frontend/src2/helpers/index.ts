@@ -29,6 +29,7 @@ export function titleCase(str: string) {
 }
 
 export function copy<T>(obj: T) {
+	if (!obj) return obj
 	return JSON.parse(JSON.stringify(obj)) as T
 }
 
@@ -40,7 +41,7 @@ export function wheneverChanges(
 	let prevValue: any
 	function onChange(value: any) {
 		if (areDeeplyEqual(value, prevValue)) return
-		prevValue = value
+		prevValue = copy(value)
 		callback(value)
 	}
 	return watchDebounced(getter, onChange, options)

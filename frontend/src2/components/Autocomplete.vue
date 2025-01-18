@@ -96,12 +96,16 @@
 										v-for="(option, idx) in group.items.slice(0, 50)"
 										:key="option?.value || idx"
 										:value="option"
+										:disabled="option.disabled"
 										v-slot="{ active, selected }"
 									>
 										<li
 											:class="[
 												'flex h-7 cursor-pointer items-center justify-between rounded px-2.5 text-base',
-												{ 'bg-gray-100': active },
+												{
+													'bg-gray-100': active,
+													'opacity-50': option.disabled,
+												},
 											]"
 										>
 											<div
