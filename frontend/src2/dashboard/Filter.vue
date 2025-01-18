@@ -45,12 +45,12 @@ function applyFilter() {
 <template>
 	<div class="flex flex-col gap-2">
 		<NumberFilterPicker
-			class="w-[200px]"
 			v-if="filterType === 'Number'"
+			class="w-[200px]"
 			v-model:operator="state.operator"
 			v-model:value="(state.value as number)"
 		/>
-		<template>
+		<template v-else>
 			<div id="operator" class="!min-w-[200px] flex-1">
 				<FormControl
 					type="select"

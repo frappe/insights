@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ListFilter } from 'lucide-vue-next'
 import { computed, inject, reactive, ref } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
+import DataTypeIcon from '../query/components/DataTypeIcon.vue'
 import { getCachedQuery, Query } from '../query/query'
-import { ColumnOption } from '../types/query.types'
+import { ColumnDataType, ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import Filter from './Filter.vue'
@@ -140,7 +140,12 @@ function saveEdit() {
 					@click="togglePopover"
 				>
 					<template #prefix>
-						<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
+						<DataTypeIcon
+							v-if="filter.filter_type"
+							:column-type="(filterTypes[filter.filter_type][0] as ColumnDataType)"
+							class="h-4 w-4 flex-shrink-0"
+							stroke-width="1.5"
+						/>
 					</template>
 					<p class="flex-1 truncate text-sm">
 						{{ label || 'Filter' }}
