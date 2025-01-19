@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import { WorkbookDashboardItem } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 
 const emit = defineEmits({ edit: () => true })
-const props = defineProps<{
-	itemIndex: number
-	item: WorkbookDashboardItem
-}>()
+const props = defineProps<{ itemIndex: number }>()
 
 const dashboard = inject('dashboard') as Dashboard
 

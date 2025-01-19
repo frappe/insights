@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, reactive, ref } from 'vue'
+import { computed, inject, reactive } from 'vue'
 import { Chart, getCachedChart } from '../charts/chart'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -141,7 +141,7 @@ function saveEdit() {
 </script>
 
 <template>
-	<div class="h-8 [&>div:first-child]:h-full">
+	<div class="h-8 w-full [&>div:first-child]:h-full">
 		<Popover class="h-full">
 			<template #target="{ togglePopover }">
 				<Button

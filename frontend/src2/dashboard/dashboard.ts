@@ -37,13 +37,6 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		filters: {} as Record<string, FilterArgs[]>,
 		filterStates: {} as Record<string, FilterState>,
 
-		activeItemIdx: null as number | null,
-		setActiveItem(index: number) {
-			dashboard.activeItemIdx = index
-		},
-		isActiveItem(index: number) {
-			return dashboard.activeItemIdx == index
-		},
 		isEditingItem(item: WorkbookDashboardItem) {
 			return dashboard.editing && dashboard.editingItemIndex === dashboard.doc.items.indexOf(item)
 		},
