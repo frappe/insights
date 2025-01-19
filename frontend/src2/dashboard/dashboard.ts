@@ -73,13 +73,13 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			const maxY = dashboard.getMaxY()
 			dashboard.doc.items.push({
 				type: 'text',
-				text: '',
+				text: 'Enter text here',
 				layout: {
 					i: getUniqueId(),
 					x: 0,
 					y: maxY,
 					w: 10,
-					h: 2,
+					h: 1,
 				},
 			})
 			dashboard.editingItemIndex = dashboard.doc.items.length - 1

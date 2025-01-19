@@ -57,12 +57,14 @@ export const joinTypes = [
 
 
 export const granularityOptions = [
-	// { label: 'Second', value: 'second' },
-	// { label: 'Minute', value: 'minute' },
-	// { label: 'Hour', value: 'hour' },
+	{ label: 'Second', value: 'second' },
+	{ label: 'Minute', value: 'minute' },
+	{ label: 'Hour', value: 'hour' },
 	{ label: 'Day', value: 'day'},
 	{ label: 'Week', value: 'week'},
 	{ label: 'Month', value: 'month'},
 	{ label: 'Quarter', value: 'quarter'},
 	{ label: 'Year', value: 'year'},
 ] as const
+
+export type GranularityType = typeof granularityOptions[number]['value']

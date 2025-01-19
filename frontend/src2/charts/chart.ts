@@ -1,6 +1,7 @@
 import { useDebouncedRefHistory, UseRefHistoryReturn } from '@vueuse/core'
 import { computed, reactive, ref, unref, watch } from 'vue'
 import { areDeeplyEqual, copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
+import { GranularityType } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
 import { getCachedQuery, makeQuery, Query } from '../query/query'
@@ -11,7 +12,7 @@ import {
 	NumberChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { ColumnOption, FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
+import { ColumnOption, FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 import { getLinkedQueries } from '../workbook/workbook'
 

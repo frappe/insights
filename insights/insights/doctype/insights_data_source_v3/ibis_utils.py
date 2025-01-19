@@ -500,6 +500,9 @@ class IbisQueryBuilder:
             return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
 
         format_str = {
+            "second": "%Y-%m-%d %H:%M:%S",
+            "minute": "%Y-%m-%d %H:%M:00",
+            "hour": "%Y-%m-%d %H:00:00",
             "day": "%Y-%m-%d",
             "month": "%Y-%m-01",
             "year": "%Y-01-01",
@@ -541,7 +544,17 @@ def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=360
     query = query.head(limit) if limit else query
 
     start = time.monotonic()
-    result: pd.DataFrame = query.execute()
+
+    try:
+        result: pd.DataFrame = query.execute()
+    except Exception as e:
+        if "max_statement_time" in str(e):
+            frappe.throw(
+                title="Query Timeout",
+                msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
+            )
+        raise e
+
     time_taken = flt(time.monotonic() - start, 3)
     create_execution_log(sql, time_taken)
 
