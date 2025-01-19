@@ -207,8 +207,6 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		},
 	})
 
-	const key = `insights:dashboard-filters-${workbookDashboard.name}`
-	dashboard.filters = store(key, () => dashboard.filters)
 
 	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
 		if (item.type != 'filter') return acc
