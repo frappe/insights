@@ -279,6 +279,9 @@ class IbisQueryBuilder:
             else None
         )
 
+        if filter_operator in ["contains", "not_contains"]:
+            filter_value = filter_value.replace("%", "")
+
         right_value = right_column or filter_value
         return operator_fn(left, right_value)
 
@@ -294,8 +297,8 @@ class IbisQueryBuilder:
             "not_in": lambda x, y: ~x.isin(y),
             "is_set": lambda x, y: (x.notnull()) & (x != ""),
             "is_not_set": lambda x, y: (x.isnull()) | (x == ""),
-            "contains": lambda x, y: x.like(y),
-            "not_contains": lambda x, y: ~x.like(y),
+            "contains": lambda x, y: x.like(f"%{y}%"),
+            "not_contains": lambda x, y: ~x.like(f"%{y}%"),
             "starts_with": lambda x, y: x.like(f"{y}%"),
             "ends_with": lambda x, y: x.like(f"%{y}"),
             "between": lambda x, y: x.between(y[0], y[1]),

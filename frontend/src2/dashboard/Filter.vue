@@ -2,19 +2,27 @@
 import { computed, reactive } from 'vue'
 import { copy } from '../helpers'
 import { FilterType } from '../helpers/constants'
+import ColumnFilterValueSelector from '../query/components/ColumnFilterValueSelector.vue'
 import DatePicker from '../query/components/DatePicker.vue'
 import { getOperatorOptions, getValueSelectorType } from '../query/components/filter_utils'
 import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
 import { FilterOperator, FilterValue } from '../types/query.types'
 
-const props = defineProps<{ filterType: FilterType }>()
+const props = defineProps<{
+	filterType: FilterType
+	valuesProvider: (search: string) => Promise<string[]>
+}>()
 const filterOperator = defineModel<FilterOperator>('operator')
 const filterValue = defineModel<FilterValue>('value')
 
+const operatorOptions = computed(() => {
+	return getOperatorOptions(props.filterType)
+})
+
 const state = reactive(
 	copy({
-		operator: filterOperator.value,
+		operator: filterOperator.value || operatorOptions.value[0].value,
 		value: filterValue.value,
 	})
 )
@@ -22,10 +30,6 @@ const state = reactive(
 const valueSelectorType = computed(() => {
 	if (!state.operator) return
 	return getValueSelectorType(state.operator, props.filterType)
-})
-
-const operatorOptions = computed(() => {
-	return getOperatorOptions(props.filterType)
 })
 
 function onOperatorChange(operator: FilterOperator) {
@@ -39,6 +43,10 @@ function onOperatorChange(operator: FilterOperator) {
 function applyFilter() {
 	filterOperator.value = state.operator
 	filterValue.value = state.value
+}
+function clearFilter() {
+	filterOperator.value = undefined
+	filterValue.value = undefined
 }
 </script>
 
@@ -60,15 +68,9 @@ function applyFilter() {
 					@update:modelValue="onOperatorChange($event)"
 				/>
 			</div>
-			<div id="value" class="!min-w-[140px] flex-1 flex-shrink-0">
-				<FormControl
-					v-if="valueSelectorType === 'text'"
-					v-model="state.value"
-					placeholder="Value"
-					autocomplete="off"
-				/>
+			<div id="value" class="!min-w-[200px] flex-1 flex-shrink-0">
 				<DatePicker
-					v-else-if="valueSelectorType === 'date'"
+					v-if="valueSelectorType === 'date'"
 					:range="false"
 					:modelValue="[state.value as string]"
 					@update:modelValue="state.value = $event[0]"
@@ -82,20 +84,21 @@ function applyFilter() {
 					v-else-if="valueSelectorType === 'relative_date'"
 					v-model="(state.value as string)"
 				/>
-				<!-- <Autocomplete
-				v-else-if="valueSelectorType === 'select'"
-				class="max-w-[200px]"
-				placeholder="Value"
-				:multiple="true"
-				:modelValue="filter.value || []"
-				:options="distinctColumnValues"
-				:loading="fetchingValues"
-				@update:query="fetchColumnValues"
-				@update:modelValue="filter.value = $event?.map((v: any) => v.value) || []"
-			/> -->
+				<ColumnFilterValueSelector
+					v-else-if="valueSelectorType === 'select'"
+					v-model="(state.value as string[])"
+					:valuesProvider="props.valuesProvider"
+				/>
+				<FormControl
+					v-else-if="valueSelectorType === 'text'"
+					v-model="state.value"
+					placeholder="Value"
+					autocomplete="off"
+				/>
 			</div>
 		</template>
 		<div class="flex justify-end gap-2">
+			<Button icon="x" @click="clearFilter"></Button>
 			<Button icon="check" variant="solid" @click="applyFilter"></Button>
 		</div>
 	</div>

@@ -79,7 +79,6 @@ const filterTypes = {
 	Number: FIELDTYPES.NUMBER,
 	Date: FIELDTYPES.DATE,
 }
-
 function disableColumnOptions(options: ColumnOption[]) {
 	return options.map((o) => {
 		return {
@@ -87,6 +86,18 @@ function disableColumnOptions(options: ColumnOption[]) {
 			disabled: !filterTypes[filter.value.filter_type].includes(o.data_type),
 		}
 	})
+}
+function stringValuesProvider(search: string) {
+	const linkQuery = enabledLinks.value[0]
+	const linkedColumn = filter.value.links[linkQuery]
+	if (!linkedColumn) return Promise.resolve([])
+
+	const query = getCachedQuery(linkQuery)
+	if (query) {
+		return query.getDistinctColumnValues(linkedColumn, search)
+	}
+
+	return Promise.resolve([])
 }
 
 function onFilterTypeChange() {
@@ -133,7 +144,7 @@ function saveEdit() {
 <template>
 	<div class="h-8 [&>div:first-child]:h-full">
 		<Popover class="h-full">
-			<template #target="{ togglePopover, isOpen }">
+			<template #target="{ togglePopover }">
 				<Button
 					variant="outline"
 					class="flex h-full w-full !justify-start shadow-sm"
@@ -157,6 +168,7 @@ function saveEdit() {
 					<Filter
 						v-if="isOpen"
 						:filter-type="filter.filter_type"
+						:valuesProvider="stringValuesProvider"
 						v-model:operator="state.operator"
 						v-model:value="state.value"
 						@update:value="() => togglePopover()"
