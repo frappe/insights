@@ -26,7 +26,6 @@ const selectedCharts = computed(() => {
 })
 
 const showChartSelectorDialog = ref(false)
-const showTextWidgetCreationDialog = ref(false)
 
 function onDragOver(event: DragEvent) {
 	if (!event.dataTransfer) return
@@ -48,14 +47,14 @@ function onDrop(event: DragEvent) {
 
 const showShareDialog = ref(false)
 
-const workbook = inject(workbookKey)
-// wheneverChanges(
-// 	() => dashboard.editing,
-// 	() => {
-// 		if (!workbook?.doc.owner) return
-// 		workbook.doc.enable_auto_save = !dashboard.editing
-// 	}
-// )
+const workbook = inject(workbookKey, null)
+wheneverChanges(
+	() => dashboard.editing,
+	() => {
+		if (!workbook) return
+		workbook._pauseAutoSave = dashboard.editing
+	}
+)
 </script>
 
 <template>
