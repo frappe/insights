@@ -225,6 +225,11 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 
 	Object.assign(dashboard.filterStates, defaultFilters)
 
+	const key2 = `insights:dashboard-filter-states-${workbookDashboard.name}`
+	dashboard.filterStates = store(key2, () => dashboard.filterStates)
+
+	console.log(dashboard.filterStates)
+
 	return dashboard
 }
 

@@ -13,9 +13,9 @@ import Filter from './Filter.vue'
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
 
-const filter = ref(copy(props.item))
-if (!filter.value.links) {
-	filter.value.links = {}
+const filter = reactive(copy(props.item))
+if (!filter.links) {
+	filter.links = {}
 }
 
 const charts = computed(() => {
@@ -65,16 +65,16 @@ const linkOptions = computed(() => {
 	}
 })
 
-const enabledLinks = computed(() => Object.keys(filter.value.links))
+const enabledLinks = computed(() => Object.keys(filter.links))
 function toggleLink(link: string) {
 	if (enabledLinks.value.includes(link)) {
-		delete filter.value.links[link]
+		delete filter.links[link]
 	} else {
-		filter.value.links[link] = ''
+		filter.links[link] = ''
 	}
 }
 
-const filterTypes = {
+const FILTER_TYPES = {
 	String: FIELDTYPES.TEXT,
 	Number: FIELDTYPES.NUMBER,
 	Date: FIELDTYPES.DATE,
@@ -83,13 +83,13 @@ function disableColumnOptions(options: ColumnOption[]) {
 	return options.map((o) => {
 		return {
 			...o,
-			disabled: !filterTypes[filter.value.filter_type].includes(o.data_type),
+			disabled: !FILTER_TYPES[filter.filter_type].includes(o.data_type),
 		}
 	})
 }
 function stringValuesProvider(search: string) {
 	const linkQuery = enabledLinks.value[0]
-	const linkedColumn = filter.value.links[linkQuery]
+	const linkedColumn = filter.links[linkQuery]
 	if (!linkedColumn) return Promise.resolve([])
 
 	const query = getCachedQuery(linkQuery)
@@ -101,43 +101,42 @@ function stringValuesProvider(search: string) {
 }
 
 function onFilterTypeChange() {
-	filter.value.default_operator = undefined
-	filter.value.default_value = undefined
-	filter.value.links = {}
+	filter.default_operator = undefined
+	filter.default_value = undefined
+	filter.links = {}
 }
 
-const state = reactive({
-	operator: filter.value.default_operator,
-	value: filter.value.default_value,
-})
+const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))
 wheneverChanges(
-	() => state,
+	() => filterState,
 	() => {
-		dashboard.updateFilterState(filter.value.filter_name, state.operator, state.value)
+		dashboard.updateFilterState(filter.filter_name, filterState.operator, filterState.value)
 	},
 	{ deep: true }
 )
 
 const label = computed(() => {
-	let _label = filter.value.filter_name
-	if (state.operator && state.value) {
-		const value_str = Array.isArray(state.value) ? state.value.join(', ') : state.value
-		_label += ` ${state.operator} ${value_str}`
+	let _label = filter.filter_name
+	if (filterState.operator && filterState.value) {
+		const value_str = Array.isArray(filterState.value)
+			? filterState.value.join(', ')
+			: filterState.value
+		_label += ` ${filterState.operator} ${value_str}`
 	}
 	return _label
 })
 
 const editDisabled = computed(() => {
 	return (
-		!filter.value.filter_name ||
-		!filter.value.filter_type ||
-		JSON.stringify(filter.value) === JSON.stringify(props.item)
+		!filter.filter_name ||
+		!filter.filter_type ||
+		JSON.stringify(filter) === JSON.stringify(props.item)
 	)
 })
 
 function saveEdit() {
 	dashboard.editingItemIndex = null
-	Object.assign(props.item, filter.value)
+	Object.assign(props.item, filter)
 }
 </script>
 
@@ -153,7 +152,7 @@ function saveEdit() {
 					<template #prefix>
 						<DataTypeIcon
 							v-if="filter.filter_type"
-							:column-type="(filterTypes[filter.filter_type][0] as ColumnDataType)"
+							:column-type="(FILTER_TYPES[filter.filter_type][0] as ColumnDataType)"
 							class="h-4 w-4 flex-shrink-0"
 							stroke-width="1.5"
 						/>
@@ -169,8 +168,8 @@ function saveEdit() {
 						v-if="isOpen"
 						:filter-type="filter.filter_type"
 						:valuesProvider="stringValuesProvider"
-						v-model:operator="state.operator"
-						v-model:value="state.value"
+						v-model:operator="filterState.operator"
+						v-model:value="filterState.value"
 						@update:value="() => togglePopover()"
 					>
 					</Filter>
@@ -213,7 +212,7 @@ function saveEdit() {
 						v-model="filter.filter_type"
 						label="Type"
 						type="select"
-						:options="Object.keys(filterTypes)"
+						:options="Object.keys(FILTER_TYPES)"
 						@update:modelValue="onFilterTypeChange"
 					/>
 				</div>
