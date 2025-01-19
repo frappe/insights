@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
+import { isFilterValid } from '../query/components/filter_utils'
 import { column } from '../query/helpers'
 import { getCachedQuery } from '../query/query'
 import { FilterArgs, FilterOperator, FilterRule, FilterValue } from '../types/query.types'
@@ -10,7 +11,6 @@ import {
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
-import { isFilterValid } from '../query/components/filter_utils'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -139,13 +139,14 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			return filterItems
 				.map((item) => {
 					const filterItem = item as WorkbookDashboardFilter
-					if (!filterItem.links[query]) return
+					const linkedColumn = filterItem.links[query]
+					if (!linkedColumn) return
 
 					const state = dashboard.filterStates[filterItem.filter_name] || {}
 					const filter = {
-						column: column(filterItem.links![query]),
-						operator: state.operator || filterItem.default_operator,
-						value: state.value || filterItem.default_value,
+						column: column(linkedColumn),
+						operator: state.operator,
+						value: state.value,
 					}
 
 					if (isFilterValid(filter, filterItem.filter_type)) {
@@ -155,7 +156,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				.filter(Boolean) as FilterRule[]
 		},
 
-		updateFilter(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
+		updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
 			const filter = dashboard.doc.items.find(
 				(item) => item.type === 'filter' && item.filter_name === filter_name
 			)
@@ -163,15 +164,35 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 
 			if (!operator) {
 				delete dashboard.filterStates[filter_name]
-				return
+			} else {
+				dashboard.filterStates[filter_name] = {
+					operator,
+					value,
+				}
 			}
 
-			dashboard.filterStates[filter_name] = {
-				operator,
-				value,
-			}
+			dashboard.applyFilter(filter_name)
+		},
 
-			console.log(dashboard.filterStates)
+		applyFilter(filter_name: string) {
+			const item = dashboard.doc.items.find(
+				(item) => item.type === 'filter' && item.filter_name === filter_name
+			)
+			if (!item) return
+
+			const filterItem = item as WorkbookDashboardFilter
+			const filterQueries = Object.keys(filterItem.links)
+
+			const charts = dashboard.doc.items.filter((i) => i.type === 'chart')
+			charts.forEach((chartItem) => {
+				const chart = getCachedChart(chartItem.chart)
+				if (!chart) return
+
+				const chartQueries = chart.getDependentQueries()
+				if (chartQueries.some((query) => filterQueries.includes(query))) {
+					dashboard.refreshChart(chartItem.chart)
+				}
+			})
 		},
 
 		getShareLink() {
@@ -188,6 +209,21 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 
 	const key = `insights:dashboard-filters-${workbookDashboard.name}`
 	dashboard.filters = store(key, () => dashboard.filters)
+
+	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
+		if (item.type != 'filter') return acc
+
+		const filterItem = item as WorkbookDashboardFilter
+		if (filterItem.default_operator && filterItem.default_value) {
+			acc[filterItem.filter_name] = {
+				operator: filterItem.default_operator,
+				value: filterItem.default_value,
+			}
+		}
+		return acc
+	}, {} as typeof dashboard.filterStates)
+
+	Object.assign(dashboard.filterStates, defaultFilters)
 
 	return dashboard
 }

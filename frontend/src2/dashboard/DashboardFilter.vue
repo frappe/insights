@@ -113,11 +113,11 @@ const state = reactive({
 wheneverChanges(
 	() => state,
 	() => {
-		dashboard.updateFilter(filter.value.filter_name, state.operator, state.value)
-		dashboard.refresh()
+		dashboard.updateFilterState(filter.value.filter_name, state.operator, state.value)
 	},
 	{ deep: true }
 )
+
 const label = computed(() => {
 	let _label = filter.value.filter_name
 	if (state.operator && state.value) {
@@ -217,7 +217,7 @@ function saveEdit() {
 						@update:modelValue="onFilterTypeChange"
 					/>
 				</div>
-				<div v-if="filter.filter_type" class="flex w-full flex-col gap-2">
+				<!-- <div v-if="filter.filter_type" class="flex w-full flex-col gap-2">
 					<label class="block text-xs text-gray-600">Default Value</label>
 					<Filter
 						class="w-full"
@@ -225,7 +225,7 @@ function saveEdit() {
 						v-model:operator="filter.default_operator"
 						v-model:value="filter.default_value"
 					></Filter>
-				</div>
+				</div> -->
 				<div class="flex flex-col">
 					<div class="text-p-sm text-gray-700">Linked Queries</div>
 					<div
