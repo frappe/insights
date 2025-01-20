@@ -76,7 +76,6 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				},
 			})
 			dashboard.editingItemIndex = dashboard.doc.items.length - 1
-			dashboard.setActiveItem(dashboard.doc.items.length - 1)
 		},
 
 		addFilter() {
@@ -95,7 +94,6 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				},
 			})
 			dashboard.editingItemIndex = dashboard.doc.items.length - 1
-			dashboard.setActiveItem(dashboard.doc.items.length - 1)
 		},
 
 		removeItem(index: number) {
