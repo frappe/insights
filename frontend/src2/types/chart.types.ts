@@ -14,6 +14,7 @@ export type AxisChartConfig = {
 
 export type XAxis = {
 	dimension: Dimension
+	label_rotation?: number
 }
 
 export type YAxis = {
@@ -55,7 +56,6 @@ export type SeriesBar = Series & {
 
 export type BarChartConfig = AxisChartConfig & {
 	y_axis: YAxisBar
-	label_rotation?: number
 }
 export type LineChartConfig = AxisChartConfig & {
 	y_axis: YAxisLine

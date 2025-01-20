@@ -12,14 +12,14 @@ import {
 	LineChartConfig,
 	Series,
 	SeriesLine,
+	XAxis,
 } from '../types/chart.types'
 import {
-	ColumnDataType,
 	FilterRule,
 	Operation,
 	QueryResult,
 	QueryResultColumn,
-	QueryResultRow,
+	QueryResultRow
 } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
 
@@ -47,7 +47,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 
-	const xAxis = getXAxis({ column_type: config.x_axis.dimension.data_type })
+	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
 	const granularity = xAxisIsDate
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
@@ -141,7 +141,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 
-	const xAxis = getXAxis({ column_type: config.x_axis.dimension.data_type })
+	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
 	const granularity = xAxisIsDate
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
@@ -151,16 +151,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
-
-	const labelRotation = Math.max(0, Math.min(config.label_rotation || 0, 90))
-
-	const updatedXAxis = {
-		...xAxis,
-		axisLabel: {
-			...(xAxis.axisLabel || {}),
-			rotate: labelRotation,
-		},
-	}
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
@@ -200,8 +190,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		animationDuration: 700,
 		color: colors,
 		grid: getGrid({ show_legend }),
-		xAxis: swapAxes ? yAxis : updatedXAxis,
-		yAxis: swapAxes ? updatedXAxis : yAxis,
+		xAxis: swapAxes ? yAxis : xAxis,
+		yAxis: swapAxes ? xAxis : yAxis,
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -267,11 +257,11 @@ function getSerie(config: AxisChartConfig, number_column: string): Series {
 	)
 }
 
-type XAxisCustomizeOptions = {
-	column_type?: ColumnDataType
-}
-function getXAxis(options: XAxisCustomizeOptions = {}) {
-	const xAxisIsDate = options.column_type && FIELDTYPES.DATE.includes(options.column_type)
+function getXAxis(x_axis: XAxis) {
+	const columnType = x_axis.dimension.data_type
+	const xAxisIsDate = columnType && FIELDTYPES.DATE.includes(columnType)
+	const rotation = Math.min(Math.max(x_axis.label_rotation || 0, 0), 90)
+
 	return {
 		type: xAxisIsDate ? 'time' : 'category',
 		z: 2,
@@ -282,7 +272,7 @@ function getXAxis(options: XAxisCustomizeOptions = {}) {
 		axisTick: { show: false },
 		axisLabel: {
 			show: true,
-			rotate: 0,
+			rotate: rotation,
 		},
 	}
 }

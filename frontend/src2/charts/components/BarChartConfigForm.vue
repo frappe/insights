@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { BarChartConfig, XAxis, YAxisBar } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'
@@ -52,12 +52,6 @@ watchEffect(() => {
 			<Checkbox label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
 		</template>
 	</YAxisConfig>
-	<FormControl
-		v-model="config.label_rotation"
-		label="Rotate Labels (degrees)"
-		type="number"
-		placeholder="0"
-	/>
 
 	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
 </template>
