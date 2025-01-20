@@ -6,7 +6,6 @@ import { safeJSONParse, wheneverChanges } from '../helpers'
 import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
-import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
@@ -27,7 +26,6 @@ const selectedCharts = computed(() => {
 })
 
 const showChartSelectorDialog = ref(false)
-const showTextWidgetCreationDialog = ref(false)
 
 function onDragOver(event: DragEvent) {
 	if (!event.dataTransfer) return
@@ -49,12 +47,12 @@ function onDrop(event: DragEvent) {
 
 const showShareDialog = ref(false)
 
-const workbook = inject(workbookKey)
+const workbook = inject(workbookKey, null)
 wheneverChanges(
 	() => dashboard.editing,
 	() => {
-		if (!workbook?.doc.owner) return
-		workbook.doc.enable_auto_save = !dashboard.editing
+		if (!workbook) return
+		workbook._pauseAutoSave = dashboard.editing
 	}
 )
 </script>
@@ -69,12 +67,6 @@ wheneverChanges(
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 				<div class="flex gap-2">
-					<DashboardFilterSelector
-						v-if="!dashboard.editing"
-						:dashboard="dashboard"
-						:queries="props.queries"
-						:charts="props.charts"
-					/>
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
@@ -112,6 +104,14 @@ wheneverChanges(
 						@click="showChartSelectorDialog = true"
 					>
 						Chart
+					</Button>
+					<Button
+						v-if="dashboard.editing"
+						variant="outline"
+						icon-left="plus"
+						@click="() => dashboard.addFilter()"
+					>
+						Filter
 					</Button>
 					<Button
 						v-if="dashboard.editing"

@@ -6,7 +6,6 @@ import { useRouter } from 'vue-router'
 import { downloadImage, waitUntil } from '../helpers'
 import useWorkbook from '../workbook/workbook'
 import useDashboard from './dashboard'
-import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import useDashboardStore from './dashboards'
 import VueGridLayout from './VueGridLayout.vue'
@@ -46,11 +45,6 @@ async function downloadDashboardImage() {
 			]"
 		/>
 		<div class="flex items-center gap-2">
-			<DashboardFilterSelector
-				:dashboard="dashboard"
-				:queries="workbook.doc.queries"
-				:charts="workbook.doc.charts"
-			/>
 			<Button variant="outline" @click="() => dashboard.refresh()" label="Refresh">
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />

@@ -1,7 +1,9 @@
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { call } from 'frappe-ui'
 import { Socket } from 'socket.io-client'
 import { ComputedRef, inject, onBeforeUnmount, Ref, watch } from 'vue'
+import { getFormattedDate } from '../query/helpers'
 import session from '../session'
 import {
 	ColumnDataType,
@@ -11,8 +13,6 @@ import {
 } from '../types/query.types'
 import { FIELDTYPES } from './constants'
 import { createToast } from './toasts'
-import { getFormattedDate } from '../query/helpers'
-import { call } from 'frappe-ui'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -29,6 +29,7 @@ export function titleCase(str: string) {
 }
 
 export function copy<T>(obj: T) {
+	if (!obj) return obj
 	return JSON.parse(JSON.stringify(obj)) as T
 }
 
@@ -40,7 +41,7 @@ export function wheneverChanges(
 	let prevValue: any
 	function onChange(value: any) {
 		if (areDeeplyEqual(value, prevValue)) return
-		prevValue = value
+		prevValue = copy(value)
 		callback(value)
 	}
 	return watchDebounced(getter, onChange, options)
@@ -274,6 +275,22 @@ export function flattenOptions(
 	return 'group' in options[0]
 		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
 		: (options as DropdownOption[])
+}
+
+export function groupOptions<T extends DropdownOption>(
+	options: T[],
+	groupBy: keyof T
+): GroupedDropdownOption[] {
+	return options.reduce((acc, option) => {
+		const group = option[groupBy] as string
+		const index = acc.findIndex((g) => g.group === group)
+		if (index === -1) {
+			acc.push({ group, items: [option] })
+		} else {
+			acc[index].items.push(option)
+		}
+		return acc
+	}, [] as GroupedDropdownOption[])
 }
 
 export function scrub(text: string, spacer = '_') {

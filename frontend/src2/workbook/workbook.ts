@@ -1,6 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, InjectionKey, reactive, toRefs } from 'vue'
+import { computed, InjectionKey, reactive, ref, toRefs, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
@@ -8,7 +8,6 @@ import useDashboard from '../dashboard/dashboard'
 import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import useQuery, { getCachedQuery } from '../query/query'
 import session from '../session'
 import { Join, Source } from '../types/query.types'
@@ -194,6 +193,10 @@ export default function useWorkbook(name: string) {
 	}
 
 	let stopAutoSaveWatcher: any
+	const _pauseAutoSave = ref(false)
+	watchEffect(() => {
+		console.log('auto save paused', _pauseAutoSave.value)
+	})
 	wheneverChanges(
 		() => workbook.doc.enable_auto_save,
 		() => {
@@ -203,8 +206,8 @@ export default function useWorkbook(name: string) {
 			}
 			if (workbook.doc.enable_auto_save && !stopAutoSaveWatcher) {
 				stopAutoSaveWatcher = watchDebounced(
-					() => workbook.isdirty,
-					() => workbook.isdirty && workbook.save(),
+					() => workbook.isdirty && !_pauseAutoSave.value,
+					(shouldSave) => shouldSave && workbook.save(),
 					{ immediate: true, debounce: 2000 }
 				)
 			}
@@ -217,6 +220,7 @@ export default function useWorkbook(name: string) {
 		isOwner,
 
 		showSidebar: true,
+		_pauseAutoSave,
 
 		isActiveTab,
 
@@ -300,7 +304,6 @@ export function newWorkbookName() {
 	const unique_id = getUniqueId()
 	return `new-workbook-${unique_id}`
 }
-
 
 export function getLinkedQueries(query_name: string): string[] {
 	const query = getCachedQuery(query_name)

@@ -15,7 +15,7 @@ const props = defineProps<{
 	result: QueryResult
 }>()
 
-const chart = inject<Chart>('chart')!
+const chart = inject<Chart | undefined>('chart', undefined)
 const tableConfig = computed(() => props.config as TableChartConfig)
 
 const sortOrder = computed(() => {
