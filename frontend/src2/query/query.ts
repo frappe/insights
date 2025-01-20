@@ -438,24 +438,38 @@ export function makeQuery(workbookQuery: WorkbookQuery) {
 	}
 
 	function renameColumn(oldName: string, newName: string) {
-		// first check if there's already a rename operation for the column
 		const existingRenameIdx = query.currentOperations.findIndex(
 			(op) => op.type === 'rename' && op.new_name === oldName
 		)
-		if (existingRenameIdx > -1) {
-			const existingRename = query.currentOperations[existingRenameIdx] as Rename
-			existingRename.new_name = newName
-		}
 
-		// if not, add a new rename operation
-		else {
+		if (existingRenameIdx === -1) {
+			// No existing rename, add new one
 			addOperation(
 				rename({
 					column: column(oldName),
 					new_name: newName,
 				})
 			)
+			return
 		}
+
+		const existingRename = query.currentOperations[existingRenameIdx] as Rename
+		const originalColumnName = existingRename.column.column_name
+
+		// If renaming back to original name, remove the rename operation
+		if (originalColumnName === newName) {
+			removeOperation(existingRenameIdx)
+			return
+		}
+
+		// Update existing rename operation
+		query.doc.operations.splice(existingRenameIdx, 1)
+		addOperation(
+			rename({
+				column: column(originalColumnName),
+				new_name: newName,
+			})
+		)
 	}
 
 	function removeColumn(column_names: string | string[]) {

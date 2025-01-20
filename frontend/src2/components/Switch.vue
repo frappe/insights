@@ -2,9 +2,9 @@
 	<div class="flex h-7 w-full cursor-pointer select-none items-center rounded border bg-gray-100">
 		<div
 			v-for="tab in tabs"
-			class="flex h-full flex-1 items-center justify-center truncate px-4 transition-all"
+			class="flex h-full flex-1 items-center justify-center truncate px-4 text-gray-700 transition-all"
 			:class="{
-				'rounded bg-white shadow':
+				'rounded bg-white text-gray-800 shadow':
 					tab.active ||
 					currentTab === tab.value ||
 					(currentTab === undefined && tab.default),

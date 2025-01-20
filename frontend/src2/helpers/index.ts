@@ -1,7 +1,9 @@
 import { watchDebounced } from '@vueuse/core'
 import domtoimage from 'dom-to-image'
+import { call } from 'frappe-ui'
 import { Socket } from 'socket.io-client'
 import { ComputedRef, inject, onBeforeUnmount, Ref, watch } from 'vue'
+import { getFormattedDate } from '../query/helpers'
 import session from '../session'
 import {
 	ColumnDataType,
@@ -11,7 +13,6 @@ import {
 } from '../types/query.types'
 import { FIELDTYPES } from './constants'
 import { createToast } from './toasts'
-import { getFormattedDate } from '../query/helpers'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -28,6 +29,7 @@ export function titleCase(str: string) {
 }
 
 export function copy<T>(obj: T) {
+	if (!obj) return obj
 	return JSON.parse(JSON.stringify(obj)) as T
 }
 
@@ -39,7 +41,7 @@ export function wheneverChanges(
 	let prevValue: any
 	function onChange(value: any) {
 		if (areDeeplyEqual(value, prevValue)) return
-		prevValue = value
+		prevValue = copy(value)
 		callback(value)
 	}
 	return watchDebounced(getter, onChange, options)
@@ -125,13 +127,13 @@ export function showErrorToast(err: Error, raise = true) {
 export function downloadImage(element: HTMLElement, filename: string, scale = 1, options = {}) {
 	return domtoimage
 		.toPng(element, {
-			height: element.offsetHeight * scale,
-			width: element.offsetWidth * scale,
+			height: element.scrollHeight * scale,
+			width: element.scrollWidth * scale,
 			style: {
 				transform: 'scale(' + scale + ')',
 				transformOrigin: 'top left',
-				width: element.offsetWidth + 'px',
-				height: element.offsetHeight + 'px',
+				width: element.scrollWidth + 'px',
+				height: element.scrollHeight + 'px',
 			},
 			bgColor: 'white',
 			...options,
@@ -148,7 +150,7 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 1,
 		})
 }
 
-export function formatNumber(number: number, precision = 2) {
+export function formatNumber(number: number, precision = 0) {
 	if (isNaN(number)) return number
 	precision = precision || guessPrecision(number)
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
@@ -159,6 +161,7 @@ export function formatNumber(number: number, precision = 2) {
 }
 
 export function guessPrecision(number: number) {
+	if (!number || isNaN(number)) return 0
 	// eg. 1.0 precision = 1, 1.00 precision = 2
 	const str = number.toString()
 	const decimalIndex = str.indexOf('.')
@@ -272,6 +275,22 @@ export function flattenOptions(
 	return 'group' in options[0]
 		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
 		: (options as DropdownOption[])
+}
+
+export function groupOptions<T extends DropdownOption>(
+	options: T[],
+	groupBy: keyof T
+): GroupedDropdownOption[] {
+	return options.reduce((acc, option) => {
+		const group = option[groupBy] as string
+		const index = acc.findIndex((g) => g.group === group)
+		if (index === -1) {
+			acc.push({ group, items: [option] })
+		} else {
+			acc[index].items.push(option)
+		}
+		return acc
+	}, [] as GroupedDropdownOption[])
 }
 
 export function scrub(text: string, spacer = '_') {
@@ -393,9 +412,11 @@ export function createHeaders(columns: QueryResultColumn[]) {
 	// i.e first day of each month, then we format the values as 'Oct 2016', 'Nov 2016', 'Dec 2016'
 
 	for (let headerRow of groupedHeaders) {
+		const areDates = areValidDates(headerRow.map((header) => header.label))
+		if (!areDates) continue
+
 		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
 		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
-		const areDates = areValidDates(headerRow.map((header) => header.label))
 
 		for (let header of headerRow) {
 			if (!isValidDate(header.label)) continue
@@ -429,5 +450,28 @@ function areValidDates(data: string[]) {
 }
 
 function isValidDate(value: string) {
-	return !isNaN(new Date(value).getTime())
+	// almost all dates will have a valid 4 digit year
+	if (!value) return false
+	if (!/\d{4}/.test(value)) return false
+	const date = new Date(value)
+	return !isNaN(date.getTime()) && date.getFullYear() >= 1900 && date.getFullYear() <= 2900
+}
+
+const callCache = new Map<string, any>()
+export function cachedCall(url: string, options?: any): Promise<any> {
+	// a function that makes a fetch call, but also caches the response for the same url & options
+	const key = JSON.stringify({ url, options })
+	if (callCache.has(key)) {
+		return Promise.resolve(callCache.get(key))
+	}
+
+	return call(url, options)
+		.then((response: any) => {
+			callCache.set(key, response)
+			return response
+		})
+		.catch((err: Error) => {
+			callCache.delete(key)
+			throw err
+		})
 }

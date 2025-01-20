@@ -24,6 +24,9 @@ export const COLUMN_TYPES = [
 	{ label: 'Datetime', value: 'Datetime' },
 ] as const
 
+export const FILTER_TYPES = ['String', 'Number', 'Date'] as const
+export type FilterType = typeof FILTER_TYPES[number]
+
 export const joinTypes = [
 	{
 		label: 'Inner',
@@ -54,12 +57,14 @@ export const joinTypes = [
 
 
 export const granularityOptions = [
-	// { label: 'Second', value: 'second' },
-	// { label: 'Minute', value: 'minute' },
-	// { label: 'Hour', value: 'hour' },
+	{ label: 'Second', value: 'second' },
+	{ label: 'Minute', value: 'minute' },
+	{ label: 'Hour', value: 'hour' },
 	{ label: 'Day', value: 'day'},
 	{ label: 'Week', value: 'week'},
 	{ label: 'Month', value: 'month'},
 	{ label: 'Quarter', value: 'quarter'},
 	{ label: 'Year', value: 'year'},
 ] as const
+
+export type GranularityType = typeof granularityOptions[number]['value']

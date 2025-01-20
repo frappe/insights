@@ -4,9 +4,9 @@ import { computed, reactive } from 'vue'
 import { copy, flattenOptions } from '../../helpers'
 import { ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
 import { column, expression } from '../helpers'
+import ExpressionEditor from './ExpressionEditor.vue'
 import FilterRule from './FilterRule.vue'
-import InlineExpression from './InlineExpression.vue'
-import { isFilterExpressionValid, isFilterValid } from './filter_utils'
+import { getFilterType, isFilterExpressionValid, isFilterValid } from './filter_utils'
 
 const props = defineProps<{
 	filterGroup?: FilterGroupArgs
@@ -47,7 +47,7 @@ const areAllFiltersValid = computed(() => {
 		const column = options.find((c) => c.value === filter.column.column_name)
 		if (!column) return false
 
-		return isFilterValid(filter, column.data_type)
+		return isFilterValid(filter, getFilterType(column.data_type))
 	})
 })
 
@@ -90,9 +90,12 @@ const areFiltersUpdated = computed(() => {
 						{{ filterGroup.logical_operator.toLowerCase() }}
 					</Button>
 				</div>
-				<InlineExpression
+				<ExpressionEditor
 					v-if="'expression' in filterGroup.filters[i]"
-					v-model="filterGroup.filters[i].expression"
+					language="python"
+					class="inline-expression h-fit max-h-[10rem] min-h-[1.75rem] text-sm"
+					v-model="filterGroup.filters[i].expression.expression"
+					:column-options="(flattenOptions(props.columnOptions) as ColumnOption[])"
 				/>
 				<FilterRule
 					v-if="'column' in filterGroup.filters[i]"

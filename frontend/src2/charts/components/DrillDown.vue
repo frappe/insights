@@ -35,6 +35,9 @@ watch(
 			drillDownQuery.value
 				.execute()
 				.then(() => {
+					return drillDownQuery.value?.fetchResultCount()
+				})
+				.then(() => {
 					showDrillDownResults.value = true
 				})
 				.catch(() => {
@@ -57,8 +60,28 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 		})
 
 		drillDownQuery.value.execute()
+		.then(() => drillDownQuery.value?.fetchResultCount())
+		.catch((error) => {
+			console.error('Failed to sort and fetch row count:', error)
+		});
 	}
 }
+
+function loadAllRows() {
+	if (drillDownQuery.value) {
+		drillDownQuery.value.addLimit(drillDownQuery.value.result.totalRowCount)
+		drillDownQuery.value
+			.execute()
+			.then(() => {
+				return drillDownQuery.value?.fetchResultCount()
+			})
+			.catch((error) => {
+				console.error('Failed to load all rows:', error)
+			})
+
+	}
+}
+
 </script>
 
 <template>
@@ -86,11 +109,22 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 					@sort="onSort"
 					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
 				>
-					<template #footer-left>
-						<p class="tnum p-1 text-sm text-gray-600">
-							Showing {{ drillDownQuery.result.rows.length }} of
-							{{ drillDownQuery.result.totalRowCount }} rows
-						</p>
+				<template #footer-left>
+						<div class="flex items-center justify-between p-1 gap-4">
+							<p class="tnum text-sm text-gray-600">
+								Showing {{ drillDownQuery.result.rows.length }} of
+								{{ drillDownQuery.result.totalRowCount }} rows
+							</p>
+							<Button
+							v-if="drillDownQuery.result.rows.length < drillDownQuery.result.totalRowCount"
+								:variant="'ghost'"
+								theme="gray"
+								size="sm"
+								label="Load All Rows"
+								@click="loadAllRows"
+							>
+							</Button>
+						</div>
 					</template>
 				</DataTable>
 			</div>

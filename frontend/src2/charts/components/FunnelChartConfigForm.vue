@@ -5,6 +5,7 @@ import { FunnelChartConfig } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -45,6 +46,16 @@ const discrete_dimensions = computed(() =>
 				label="Value"
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
+			/>
+			<FormControl
+				v-model="config.label_position"
+				label="Label Position"
+				type="select"
+				:options="[
+					{ label: 'Left', value: 'left' },
+					{ label: 'Right', value: 'right' },
+					{ label: 'Alternate', value: 'alternate' },
+				]"
 			/>
 		</div>
 	</CollapsibleSection>

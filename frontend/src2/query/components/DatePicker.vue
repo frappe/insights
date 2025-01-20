@@ -38,9 +38,9 @@
 						class="flex h-[30px] w-[30px] cursor-pointer items-center justify-center text-sm"
 						:class="{
 							'font-bold': toValue(date) === toValue(today),
-							' rounded-l bg-gray-800 text-white':
+							' rounded-l bg-gray-400 !font-medium':
 								fromDateTxt && toValue(date) === toValue(fromDateTxt),
-							' rounded-r bg-gray-800 text-white':
+							' rounded-r bg-gray-400 !font-medium':
 								toDateTxt && toValue(date) === toValue(toDateTxt),
 							'bg-gray-100 font-medium text-gray-800': isInRange(date),
 						}"

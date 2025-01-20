@@ -1,6 +1,6 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, reactive, watchEffect } from 'vue'
+import { computed, reactive } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast, waitUntil } from './index'
 import { createToast } from './toasts'
@@ -43,7 +43,9 @@ export default function useDocumentResource<T extends object>(
 					doctype,
 					...removeMetaFields(this.doc),
 				},
-			}).catch(showErrorToast)
+			})
+				.catch(showErrorToast)
+				.finally(() => (this.saving = false))
 			this.doc = tranformFn({ ...doc })
 			this.originalDoc = copy(this.doc)
 			this.name = doc.name
@@ -78,7 +80,9 @@ export default function useDocumentResource<T extends object>(
 					doctype: this.doctype,
 					name: this.name,
 					fieldname: removeMetaFields(this.doc),
-				}).catch(showErrorToast)
+				})
+					.catch(showErrorToast)
+					.finally(() => (this.saving = false))
 
 				if (doc) {
 					this.doc = tranformFn({ ...doc })
@@ -106,7 +110,9 @@ export default function useDocumentResource<T extends object>(
 			const doc = await call('frappe.client.get', {
 				doctype: this.doctype,
 				name: this.name,
-			}).catch(showErrorToast)
+			})
+				.catch(showErrorToast)
+				.finally(() => (this.loading = false))
 
 			if (!doc) return
 

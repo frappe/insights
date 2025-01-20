@@ -1,3 +1,5 @@
+import { GranularityType } from "../helpers/constants";
+
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
 export type QueryTableArgs = {
 	type: 'query'
@@ -43,7 +45,6 @@ export type MeasureDataType = 'String' | 'Integer' | 'Decimal'
 export type DimensionDataType = 'String' | 'Date' | 'Datetime' | 'Time'
 export const aggregations = ['sum', 'count', 'avg', 'min', 'max', 'count_distinct']
 export type AggregationType = (typeof aggregations)[number]
-export type GranularityType = 'day' | 'week' | 'month' | 'quarter' | 'year'
 export type DataFormat = 'currency' | 'percent'
 
 export type FilterOperator =

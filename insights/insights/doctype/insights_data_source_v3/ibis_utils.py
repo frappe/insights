@@ -24,7 +24,8 @@ from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis_functions import f_week_start, get_functions
+from .ibis.functions import quarter_start, week_start
+from .ibis.utils import get_functions
 
 
 class IbisQueryBuilder:
@@ -278,6 +279,9 @@ class IbisQueryBuilder:
             else None
         )
 
+        if filter_operator in ["contains", "not_contains"]:
+            filter_value = filter_value.replace("%", "")
+
         right_value = right_column or filter_value
         return operator_fn(left, right_value)
 
@@ -293,8 +297,8 @@ class IbisQueryBuilder:
             "not_in": lambda x, y: ~x.isin(y),
             "is_set": lambda x, y: (x.notnull()) & (x != ""),
             "is_not_set": lambda x, y: (x.isnull()) | (x == ""),
-            "contains": lambda x, y: x.like(y),
-            "not_contains": lambda x, y: ~x.like(y),
+            "contains": lambda x, y: x.like(f"%{y}%"),
+            "not_contains": lambda x, y: ~x.like(f"%{y}%"),
             "starts_with": lambda x, y: x.like(f"{y}%"),
             "ends_with": lambda x, y: x.like(f"%{y}"),
             "between": lambda x, y: x.between(y[0], y[1]),
@@ -491,15 +495,14 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            return f_week_start(column).strftime("%Y-%m-%d").name(column.get_name())
+            return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
-            year = column.year()
-            quarter = column.quarter()
-            month = (quarter * 3) - 2
-            quarter_start = ibis.date(year, month, 1)
-            return quarter_start.strftime("%Y-%m-%d").name(column.get_name())
+            return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
 
         format_str = {
+            "second": "%Y-%m-%d %H:%M:%S",
+            "minute": "%Y-%m-%d %H:%M:00",
+            "hour": "%Y-%m-%d %H:00:00",
             "day": "%Y-%m-%d",
             "month": "%Y-%m-01",
             "year": "%Y-01-01",
@@ -541,7 +544,17 @@ def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=360
     query = query.head(limit) if limit else query
 
     start = time.monotonic()
-    result: pd.DataFrame = query.execute()
+
+    try:
+        result: pd.DataFrame = query.execute()
+    except Exception as e:
+        if "max_statement_time" in str(e):
+            frappe.throw(
+                title="Query Timeout",
+                msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
+            )
+        raise e
+
     time_taken = flt(time.monotonic() - start, 3)
     create_execution_log(sql, time_taken)
 

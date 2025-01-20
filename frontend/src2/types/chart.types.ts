@@ -7,9 +7,13 @@ export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
-	x_axis: Dimension
+	x_axis: XAxis
 	y_axis: YAxis
 	split_by?: Dimension
+}
+
+export type XAxis = {
+	dimension: Dimension
 }
 
 export type YAxis = {
@@ -89,6 +93,7 @@ export type DonutChartConfig = {
 export type FunnelChartConfig = {
 	label_column: Dimension
 	value_column: Measure
+	label_position?: 'left' | 'right' | 'alternate'
 }
 
 export type TableChartConfig = {

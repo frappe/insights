@@ -1,6 +1,6 @@
 import { graphic } from 'echarts/core'
 import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
-import { FIELDTYPES } from '../helpers/constants'
+import { FIELDTYPES, GranularityType } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
 import {
@@ -8,6 +8,7 @@ import {
 	BarChartConfig,
 	ChartConfig,
 	DonutChartConfig,
+	FunnelChartConfig,
 	LineChartConfig,
 	Series,
 	SeriesLine,
@@ -15,13 +16,12 @@ import {
 import {
 	ColumnDataType,
 	FilterRule,
-	GranularityType,
 	Operation,
 	QueryResult,
 	QueryResultColumn,
 	QueryResultRow,
 } from '../types/query.types'
-import { getColors } from './colors'
+import { getColors, getGradientColors } from './colors'
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -47,9 +47,11 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 
-	const xAxis = getXAxis({ column_type: config.x_axis.data_type })
-	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.data_type)
-	const granularity = xAxisIsDate ? getGranularity(config.x_axis.dimension_name, config) : null
+	const xAxis = getXAxis({ column_type: config.x_axis.dimension.data_type })
+	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
+	const granularity = xAxisIsDate
+		? getGranularity(config.x_axis.dimension.dimension_name, config)
+		: null
 
 	const leftYAxis = getYAxis()
 	const rightYAxis = getYAxis()
@@ -58,15 +60,15 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.dimension_name])
-				const b_date = new Date(b[config.x_axis.dimension_name])
+				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
+				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
 		  })
 		: _rows
 
 	const getSeriesData = (column: string) =>
 		sortedRows.map((r) => {
-			const x_value = r[config.x_axis.dimension_name]
+			const x_value = r[config.x_axis.dimension.dimension_name]
 			const y_value = r[column]
 			return [x_value, y_value]
 		})
@@ -104,7 +106,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 				label: {
 					fontSize: 11,
 					show: show_data_labels,
-					position: idx === number_columns.length - 1 ? 'top' : 'inside',
+					position: 'top',
 					formatter: (params: any) => {
 						return getShortNumber(params.value?.[1], 1)
 					},
@@ -139,9 +141,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 
-	const xAxis = getXAxis({ column_type: config.x_axis.data_type })
-	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.data_type)
-	const granularity = xAxisIsDate ? getGranularity(config.x_axis.dimension_name, config) : null
+	const xAxis = getXAxis({ column_type: config.x_axis.dimension.data_type })
+	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
+	const granularity = xAxisIsDate
+		? getGranularity(config.x_axis.dimension.dimension_name, config)
+		: null
 
 	const leftYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
@@ -160,14 +164,14 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.dimension_name])
-				const b_date = new Date(b[config.x_axis.dimension_name])
+				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
+				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
 		  })
 		: _rows
 
 	const total_per_x_value = _rows.reduce((acc, row) => {
-		const x_value = row[config.x_axis.dimension_name]
+		const x_value = row[config.x_axis.dimension.dimension_name]
 		if (!acc[x_value]) acc[x_value] = 0
 		number_columns.forEach((m) => (acc[x_value] += row[m.name]))
 		return acc
@@ -176,7 +180,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const getSeriesData = (column: string) =>
 		sortedRows
 			.map((r) => {
-				const x_value = r[config.x_axis.dimension_name]
+				const x_value = r[config.x_axis.dimension.dimension_name]
 				const y_value = r[column]
 				const normalize = config.y_axis.normalize
 				if (!normalize) {
@@ -403,8 +407,8 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 					orient,
 					formatter: (name: string) => {
 						const labelIndex = labels.indexOf(name)
-						const percent = (values[labelIndex] / total) * 100
-						return `${ellipsis(name, 20)} (${percent.toFixed(0)}%)`
+						const percentage = total > 0 ? (values[labelIndex] / total) * 100 : 0
+						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
 					},
 			  }
 			: null,
@@ -456,15 +460,21 @@ function getDonutChartData(
 	return topData
 }
 
-export function getFunnelChartOptions(config: DonutChartConfig, result: QueryResult) {
+export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryResult) {
 	const rows = result.rows
 
 	const labelColumn = config.label_column.dimension_name
 	const valueColumn = config.value_column.measure_name
+	const labelPosition = config.label_position || 'left'
+
 	const labels = rows.map((r) => r[labelColumn])
 	const values = rows.map((r) => r[valueColumn])
+	const total = values.reduce((a, b) => a + b, 0)
 
-	const colors = getColors()
+	labels.unshift('Total')
+	values.unshift(total)
+
+	let colors = getGradientColors('blue')
 
 	return {
 		animation: true,
@@ -478,19 +488,51 @@ export function getFunnelChartOptions(config: DonutChartConfig, result: QueryRes
 				funnelAlign: 'center',
 				top: 'center',
 				left: 'center',
-				width: '60%',
-				height: '80%',
+				width: '55%',
+				height: '75%',
 				minSize: '10px',
 				maxSize: '100%',
 				sort: 'descending',
 				label: {
 					show: true,
-					position: 'inside',
+					// position doesn't have any effect
+					// it is mapped here to re-render when the label position changes
+					// because the label layout function is not changing when the label position changes
+					// and so the chart doesn't re-render
+					position: labelPosition,
+					color: '#565656',
+					lineHeight: 16,
+					padding: [0, 5, 0, 0],
 					formatter: (params: any) => {
 						const index = labels.indexOf(params.name)
-						const percent = ((values[index] / values[0]) * 100).toFixed(0)
-						return `${params.name} (${percent}%)`
+						const percentage = Number((values[index] / total) * 100).toFixed(0)
+						const value = getShortNumber(values[index], 2)
+						return `${params.name}\n${value} (${percentage}%)`
 					},
+				},
+				labelLine: { show: false },
+				labelLayout(params: any) {
+					const leftPos = params.rect.x - 15
+					const rightPos = params.rect.x + params.rect.width + 15
+
+					if (labelPosition === 'left') {
+						return {
+							x: leftPos,
+							align: 'right',
+						}
+					}
+					if (labelPosition === 'right') {
+						return {
+							x: rightPos,
+							align: 'left',
+						}
+					}
+					if (labelPosition === 'alternate') {
+						return {
+							x: params.dataIndex % 2 === 0 ? leftPos : rightPos,
+							align: params.dataIndex % 2 === 0 ? 'right' : 'left',
+						}
+					}
 				},
 				gap: 6,
 				data: values.map((value, index) => ({
@@ -534,6 +576,12 @@ function getTooltip(options: any = {}) {
 		confine: true,
 		appendToBody: false,
 		formatter: (params: Object | Array<Object>) => {
+			if (Array.isArray(params)) {
+				params = params
+					.filter((p) => p.value?.[1] !== 0)
+					.sort((a, b) => b.value?.[1] - a.value?.[1])
+			}
+
 			if (!Array.isArray(params)) {
 				const p = params as any
 				const value = options.xySwapped ? p.value[0] : p.value[1]
@@ -662,6 +710,15 @@ export function getDrillDownQuery(
 	return query
 }
 
+export function handleOldXAxisConfig(old_x_axis: any): AxisChartConfig['x_axis'] {
+	if (old_x_axis && old_x_axis.column_name) {
+		return {
+			dimension: old_x_axis,
+		}
+	}
+	return old_x_axis
+}
+
 export function handleOldYAxisConfig(old_y_axis: any): AxisChartConfig['y_axis'] {
 	if (Array.isArray(old_y_axis)) {
 		return {
@@ -684,10 +741,18 @@ export function setDimensionNames(config: any) {
 		return dimension
 	}
 
-	const dimensionPaths = ['x_axis', 'split_by', 'date_column', 'label_column']
-	dimensionPaths.forEach((path) => {
-		config[path] = setDimensionName(config[path])
-	})
+	if (config.x_axis?.dimension) {
+		config.x_axis.dimension = setDimensionName(config.x_axis.dimension)
+	}
+	if (config.split_by) {
+		config.split_by = setDimensionName(config.split_by)
+	}
+	if (config.date_column) {
+		config.date_column = setDimensionName(config.date_column)
+	}
+	if (config.label_column) {
+		config.label_column = setDimensionName(config.label_column)
+	}
 	if (config.rows && config.rows.length) {
 		config.rows = config.rows.map(setDimensionName)
 	}

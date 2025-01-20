@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
-import { AlertTriangle } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
-import { Chart, getCachedChart } from '../charts/chart'
-import ChartRenderer from '../charts/components/ChartRenderer.vue'
-import { WorkbookDashboardChart, WorkbookDashboardItem } from '../types/workbook.types'
+import { inject } from 'vue'
+import {
+	WorkbookDashboardChart,
+	WorkbookDashboardFilter,
+	WorkbookDashboardItem,
+	WorkbookDashboardText,
+} from '../types/workbook.types'
 import { Dashboard } from './dashboard'
+import DashboardChart from './DashboardChart.vue'
+import DashboardFilter from './DashboardFilter.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
+import DashboardText from './DashboardText.vue'
 
 const props = defineProps<{
 	index: number
@@ -14,96 +18,37 @@ const props = defineProps<{
 }>()
 
 const dashboard = inject('dashboard') as Dashboard
-
-const chart = computed(() => {
-	if (props.item.type != 'chart') return null
-	const item = props.item as WorkbookDashboardChart
-	return getCachedChart(item.chart) as Chart
-})
-
-if (!chart.value?.dataQuery.result.executedSQL) {
-	dashboard.refreshChart(props.item.chart)
-}
-
-watchDebounced(
-	() => chart.value?.doc.config.order_by,
-	() => dashboard.refreshChart(props.item.chart),
-	{
-		deep: true,
-		debounce: 500,
-	}
-)
-
-let timer: any
-const wasDragging = ref(false)
-const showPopover = ref(false)
-const popoverDelay = 300
-document.addEventListener('mousemove', (event) => {
-	// if mouse moves while the button is pressed, it's dragging
-	// once the button is released, it's not dragging
-	// if not dragging then show popover after delay
-	if (wasDragging.value && event.buttons == 0) {
-		clearTimeout(timer)
-		timer = setTimeout(() => (showPopover.value = true), popoverDelay)
-		wasDragging.value = false
-	}
-	if (event.buttons == 1) {
-		wasDragging.value = true
-		showPopover.value = false
-		clearTimeout(timer)
-	}
-})
 </script>
 
 <template>
-	<div class="relative h-full w-full p-2 [&>div:first-child]:h-full">
-		<Popover
-			class="h-full"
-			:show="dashboard.editing && dashboard.isActiveItem(index) && showPopover"
-			placement="top-start"
+	<div class="group relative flex h-full w-full p-2">
+		<div
+			class="flex h-full w-full items-center justify-center"
+			:class="
+				dashboard.editing
+					? 'pointer-events-none  [&>div:first-child]:rounded [&>div:first-child]:group-hover:outline [&>div:first-child]:group-hover:outline-gray-400'
+					: ''
+			"
 		>
-			<template #target>
-				<div
-					class="flex h-full w-full items-center rounded"
-					:class="[
-						dashboard.editing && dashboard.isActiveItem(index)
-							? 'outline outline-gray-700'
-							: '',
-					]"
-					@click="dashboard.setActiveItem(index)"
-				>
-					<div
-						class="h-full w-full"
-						:class="dashboard.editing ? 'pointer-events-none' : ''"
-					>
-						<ChartRenderer
-							v-if="chart"
-							:title="chart.doc.title"
-							:chart_type="chart.doc.chart_type"
-							:config="chart.doc.config"
-							:operations="chart.doc.operations"
-							:use_live_connection="chart.doc.use_live_connection"
-							:result="chart.dataQuery.result"
-							:loading="chart.dataQuery.executing"
-						/>
+			<DashboardChart
+				v-if="props.item.type == 'chart'"
+				:item="(props.item as WorkbookDashboardChart)"
+			/>
 
-						<div
-							v-else
-							class="flex h-full flex-1 flex-col items-center justify-center rounded border"
-						>
-							<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
-							<p class="text-p-base text-gray-500">Chart not found</p>
-						</div>
-					</div>
-				</div>
-			</template>
-			<template #body>
-				<DashboardItemActions
-					:dashboard="dashboard"
-					:item-index="index"
-					:item="dashboard.doc.items[index]"
-				/>
-			</template>
-		</Popover>
+			<DashboardText
+				v-else-if="props.item.type === 'text'"
+				:item="(props.item as WorkbookDashboardText)"
+			/>
+
+			<DashboardFilter
+				v-else-if="props.item.type === 'filter'"
+				:item="(props.item as WorkbookDashboardFilter)"
+			/>
+		</div>
+		<DashboardItemActions
+			v-if="dashboard.editing"
+			class="absolute top-0 right-0 opacity-0 group-hover:opacity-100"
+			:item-index="index"
+		/>
 	</div>
 </template>

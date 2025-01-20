@@ -1,14 +1,13 @@
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, InjectionKey, reactive, toRefs } from 'vue'
+import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
-import { handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
+import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
 import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import useQuery, { getCachedQuery } from '../query/query'
 import session from '../session'
 import { Join, Source } from '../types/query.types'
@@ -194,6 +193,7 @@ export default function useWorkbook(name: string) {
 	}
 
 	let stopAutoSaveWatcher: any
+	const _pauseAutoSave = ref(false)
 	wheneverChanges(
 		() => workbook.doc.enable_auto_save,
 		() => {
@@ -203,9 +203,9 @@ export default function useWorkbook(name: string) {
 			}
 			if (workbook.doc.enable_auto_save && !stopAutoSaveWatcher) {
 				stopAutoSaveWatcher = watchDebounced(
-					() => workbook.isdirty,
-					() => workbook.isdirty && workbook.save(),
-					{ immediate: true, debounce: 1000 }
+					() => workbook.isdirty && !_pauseAutoSave.value,
+					(shouldSave) => shouldSave && workbook.save(),
+					{ immediate: true, debounce: 2000 }
 				)
 			}
 		}
@@ -217,6 +217,7 @@ export default function useWorkbook(name: string) {
 		isOwner,
 
 		showSidebar: true,
+		_pauseAutoSave,
 
 		isActiveTab,
 
@@ -268,7 +269,7 @@ function getWorkbookResource(name: string) {
 				}
 			})
 
-			doc.charts.forEach((chart: any) => {
+			doc.charts.forEach((chart: WorkbookChart) => {
 				chart.config.filters = chart.config.filters?.filters?.length
 					? chart.config.filters
 					: {
@@ -278,10 +279,19 @@ function getWorkbookResource(name: string) {
 				chart.config.order_by = chart.config.order_by || []
 				chart.config.limit = chart.config.limit || 100
 
+				if ('x_axis' in chart.config && chart.config.x_axis) {
+					// @ts-ignore
+					chart.config.x_axis = handleOldXAxisConfig(chart.config.x_axis)
+				}
 				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
 					// @ts-ignore
 					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
 				}
+				if (chart.chart_type === 'Funnel') {
+					// @ts-ignore
+					chart.config.label_position = chart.config.label_position || 'left'
+				}
+
 				chart.config = setDimensionNames(chart.config)
 			})
 			return doc
@@ -296,7 +306,6 @@ export function newWorkbookName() {
 	const unique_id = getUniqueId()
 	return `new-workbook-${unique_id}`
 }
-
 
 export function getLinkedQueries(query_name: string): string[] {
 	const query = getCachedQuery(query_name)

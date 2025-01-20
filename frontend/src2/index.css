@@ -2,6 +2,10 @@
 @import 'frappe-ui/src/style.css';
 @import './styles/codemirror.css';
 
+body {
+	@apply text-base;
+}
+
 .tnum {
 	font-feature-settings: 'tnum';
 }
