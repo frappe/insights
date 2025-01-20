@@ -33,7 +33,7 @@ watchDebounced(
 const showExpandedChartDialog = ref(false)
 
 const router = useRouter()
-const workbook = inject(workbookKey)
+const workbook = inject(workbookKey, null)
 wheneverChanges(
 	() => dashboard.isEditingItem(props.item),
 	(editing: boolean) => {

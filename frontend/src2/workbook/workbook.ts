@@ -1,6 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, InjectionKey, reactive, ref, toRefs, watchEffect } from 'vue'
+import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import { handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
@@ -194,9 +194,6 @@ export default function useWorkbook(name: string) {
 
 	let stopAutoSaveWatcher: any
 	const _pauseAutoSave = ref(false)
-	watchEffect(() => {
-		console.log('auto save paused', _pauseAutoSave.value)
-	})
 	wheneverChanges(
 		() => workbook.doc.enable_auto_save,
 		() => {
