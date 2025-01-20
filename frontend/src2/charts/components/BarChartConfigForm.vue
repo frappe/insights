@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { BarChartConfig, XAxis, YAxisBar } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'
