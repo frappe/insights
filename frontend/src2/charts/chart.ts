@@ -10,9 +10,9 @@ import {
 	AxisChartConfig,
 	DonutChartConfig,
 	NumberChartConfig,
-	TableChartConfig,
+	TableChartConfig
 } from '../types/chart.types'
-import { ColumnOption, FilterArgs, Measure, Operation } from '../types/query.types'
+import { FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
 import { getLinkedQueries } from '../workbook/workbook'
 
@@ -129,12 +129,12 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareAxisChartQuery(config: AxisChartConfig) {
-		if (!config.x_axis || !config.x_axis.column_name) {
+		if (!config.x_axis.dimension || !config.x_axis.dimension.column_name) {
 			console.warn('X-axis is required')
 			chart.dataQuery.reset()
 			return false
 		}
-		if (config.x_axis.column_name === config.split_by?.column_name) {
+		if (config.x_axis.dimension.column_name === config.split_by?.column_name) {
 			createToast({
 				message: 'X-axis and Split by cannot be the same',
 				variant: 'error',
@@ -148,14 +148,14 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		if (config.split_by?.column_name) {
 			chart.dataQuery.addPivotWider({
-				rows: [config.x_axis],
+				rows: [config.x_axis.dimension],
 				columns: [config.split_by],
 				values: values,
 			})
 		} else {
 			chart.dataQuery.addSummarize({
 				measures: values,
-				dimensions: [config.x_axis],
+				dimensions: [config.x_axis.dimension],
 			})
 		}
 

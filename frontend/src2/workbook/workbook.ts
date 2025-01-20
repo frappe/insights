@@ -3,7 +3,7 @@ import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
-import { handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
+import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
 import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
@@ -279,6 +279,10 @@ function getWorkbookResource(name: string) {
 				chart.config.order_by = chart.config.order_by || []
 				chart.config.limit = chart.config.limit || 100
 
+				if ('x_axis' in chart.config && chart.config.x_axis) {
+					// @ts-ignore
+					chart.config.x_axis = handleOldXAxisConfig(chart.config.x_axis)
+				}
 				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
 					// @ts-ignore
 					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
@@ -287,6 +291,7 @@ function getWorkbookResource(name: string) {
 					// @ts-ignore
 					chart.config.label_position = chart.config.label_position || 'left'
 				}
+
 				chart.config = setDimensionNames(chart.config)
 			})
 			return doc

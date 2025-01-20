@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
-import { BarChartConfig, YAxisBar } from '../../types/chart.types'
+import { BarChartConfig, XAxis, YAxisBar } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
@@ -29,7 +29,7 @@ const hasAxisSplit = computed(() => {
 
 watchEffect(() => {
 	if (!config.value.x_axis) {
-		config.value.x_axis = {} as Dimension
+		config.value.x_axis = {} as XAxis
 	}
 	if (!config.value.y_axis) {
 		config.value.y_axis = {} as YAxisBar
