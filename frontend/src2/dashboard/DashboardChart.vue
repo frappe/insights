@@ -67,7 +67,7 @@ wheneverChanges(
 
 	<div
 		v-if="chart && chart.doc.chart_type !== 'Number'"
-		class="absolute top-0 right-0 p-2 opacity-0 transition-opacity group-hover:opacity-100"
+		class="absolute top-1.5 right-1.5 p-2 opacity-0 transition-opacity group-hover:opacity-100"
 	>
 		<Button variant="ghost" class="!h-7 !w-7" @click="showExpandedChartDialog = true">
 			<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
