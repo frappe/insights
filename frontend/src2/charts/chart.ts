@@ -10,7 +10,7 @@ import {
 	AxisChartConfig,
 	DonutChartConfig,
 	NumberChartConfig,
-	TableChartConfig
+	TableChartConfig,
 } from '../types/chart.types'
 import { FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
@@ -337,29 +337,30 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function getDependentQueries() {
-		const dependentQueries = new Set<string>()
-		dependentQueries.add(chart.doc.query)
-		getLinkedQueries(chart.doc.query).forEach((query) => dependentQueries.add(query))
-		return Array.from(dependentQueries)
+		return [chart.doc.query, ...getLinkedQueries(chart.doc.query)]
 	}
 
 	function getDependentQueryColumns() {
 		return getDependentQueries()
-			.flatMap((query) => {
-				const q = getCachedQuery(query)
-				if (!q) return []
-				if (!q.result.executedSQL) {
-					q.execute()
+			.map((q) => getCachedQuery(q))
+			.filter(Boolean)
+			.map((q) => {
+				const query = q!
+				if (!query.result.executedSQL) {
+					query.execute()
 				}
-				return q.result.columnOptions.map((c) => {
-					return {
-						...c,
-						query_title: q.doc.title,
-						value: `${query}.${c.value}`,
-					}
-				})
+				return {
+					group: query.doc.title,
+					items: query.result.columnOptions.map((c) => {
+						const sep = '`'
+						const value = `${sep}${query.doc.name}${sep}.${sep}${c.value}${sep}`
+						return {
+							...c,
+							value,
+						}
+					}),
+				}
 			})
-			.flatMap((column) => column as ColumnOption & { query_title: string })
 	}
 
 	chart.history = useDebouncedRefHistory(

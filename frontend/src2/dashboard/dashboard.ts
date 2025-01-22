@@ -110,41 +110,49 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			const chart = getCachedChart(chart_name)
 			if (!chart || !chart.doc.query) return
 
-			const dependentQueries = chart.getDependentQueries()
-			dependentQueries.forEach((query) => {
-				const _query = getCachedQuery(query)
-				if (!_query) return
-				_query.dashboardFilters = {
+			const filtersApplied = dashboard.doc.items.filter(
+				(item) => item.type === 'filter' && 'links' in item && item.links[chart_name]
+			)
+
+			if (!filtersApplied.length) {
+				chart.refresh(undefined, true)
+				return
+			}
+
+			const filtersByQuery = new Map<string, FilterRule[]>()
+
+			filtersApplied.forEach((item) => {
+				const filterItem = item as WorkbookDashboardFilter
+				const linkedColumn = dashboard.getColumnFromFilterLink(filterItem.links[chart_name])
+				if (!linkedColumn) return
+
+				const query = getCachedQuery(linkedColumn.query)
+				if (!query) return
+
+				const filterState = dashboard.filterStates[filterItem.filter_name] || {}
+
+				const filter = {
+					column: column(linkedColumn.column),
+					operator: filterState.operator,
+					value: filterState.value,
+				}
+
+				if (isFilterValid(filter, filterItem.filter_type)) {
+					const filters = filtersByQuery.get(linkedColumn.query) || []
+					filters.push(filter)
+					filtersByQuery.set(linkedColumn.query, filters)
+				}
+			})
+
+			filtersByQuery.forEach((filters, query_name) => {
+				const query = getCachedQuery(query_name)!
+				query.dashboardFilters = {
 					logical_operator: 'And',
-					filters: dashboard.getQueryFilters(query),
+					filters,
 				}
 			})
 
 			chart.refresh(undefined, true)
-		},
-
-		getQueryFilters(query: string) {
-			const filterItems = dashboard.doc.items.filter(
-				(item) => item.type === 'filter' && item.links[query]
-			)
-			return filterItems
-				.map((item) => {
-					const filterItem = item as WorkbookDashboardFilter
-					const linkedColumn = filterItem.links[query]
-					if (!linkedColumn) return
-
-					const state = dashboard.filterStates[filterItem.filter_name] || {}
-					const filter = {
-						column: column(linkedColumn),
-						operator: state.operator,
-						value: state.value,
-					}
-
-					if (isFilterValid(filter, filterItem.filter_type)) {
-						return filter
-					}
-				})
-				.filter(Boolean) as FilterRule[]
 		},
 
 		updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
@@ -172,18 +180,21 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			if (!item) return
 
 			const filterItem = item as WorkbookDashboardFilter
-			const filterQueries = Object.keys(filterItem.links)
+			const filteredCharts = Object.keys(filterItem.links)
+			filteredCharts.forEach((chart_name) => dashboard.refreshChart(chart_name))
+		},
 
-			const charts = dashboard.doc.items.filter((i) => i.type === 'chart')
-			charts.forEach((chartItem) => {
-				const chart = getCachedChart(chartItem.chart)
-				if (!chart) return
+		getColumnFromFilterLink(linkedColumn: string) {
+			const sep = '`'
+			// `query`.`column`
+			const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
+			const match = linkedColumn.match(pattern)
+			if (!match) return
 
-				const chartQueries = chart.getDependentQueries()
-				if (chartQueries.some((query) => filterQueries.includes(query))) {
-					dashboard.refreshChart(chartItem.chart)
-				}
-			})
+			return {
+				query: match[1],
+				column: match[2],
+			}
 		},
 
 		getShareLink() {
@@ -197,7 +208,6 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
 		},
 	})
-
 
 	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
 		if (item.type != 'filter') return acc
