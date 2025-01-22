@@ -680,6 +680,32 @@ def date_diff(
     return column.delta(other, unit)
 
 
+def date_add(column: ir.DateValue, value: int, unit: str):
+    """
+    def date_add(column, value, unit)
+
+    Add a value to a date column. The unit can be seconds, minutes, hours, days, weeks, months, or years.
+
+    Examples:
+    - date_add(order_date, 1, 'days')
+    - date_add(order_date, 1, 'weeks')
+    """
+    return column + ibis.interval(value, unit)
+
+
+def date_sub(column: ir.DateValue, value: int, unit: str):
+    """
+    def date_sub(column, value, unit)
+
+    Subtract a value from a date column. The unit can be seconds, minutes, hours, days, weeks, months, or years.
+
+    Examples:
+    - date_sub(order_date, 1, 'days')
+    - date_sub(order_date, 1, 'weeks')
+    """
+    return column - ibis.interval(value, unit)
+
+
 def now():
     """
     def now()
@@ -1024,6 +1050,20 @@ def week_start(column: ir.DateValue):
     return week_start
 
 
+def month_start(column: ir.DateValue):
+    """
+    def month_start(column)
+
+    Get the start date of the month for a given date.
+
+    Examples:
+    - month_start(order_date)
+    """
+
+    month_start = column.strftime("%Y-%m-01").cast("date")
+    return month_start
+
+
 def quarter_start(column: ir.DateValue):
     """
     def quarter_start(column)
@@ -1039,6 +1079,20 @@ def quarter_start(column: ir.DateValue):
     month = (quarter * 3) - 2
     quarter_start = ibis.date(year, month, 1)
     return quarter_start
+
+
+def year_start(column: ir.DateValue):
+    """
+    def year_start(column)
+
+    Get the start date of the year for a given date.
+
+    Examples:
+    - year_start(order_date)
+    """
+
+    year_start = column.strftime("%Y-01-01").cast("date")
+    return year_start
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):
