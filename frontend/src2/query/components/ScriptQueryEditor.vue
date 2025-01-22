@@ -12,6 +12,7 @@ import { Query } from '../query'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
+query.execute()
 
 const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')

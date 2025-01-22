@@ -128,6 +128,9 @@ permission_query_conditions = {
 has_permission = {
     "Insights Data Source v3": "insights.permissions.has_doc_permission",
     "Insights Table v3": "insights.permissions.has_doc_permission",
+    "Insights Dashboard v3": "insights.permissions.has_doc_permission",
+    "Insights Chart v3": "insights.permissions.has_doc_permission",
+    "Insights Query v3": "insights.permissions.has_doc_permission",
 }
 
 # DocType Class

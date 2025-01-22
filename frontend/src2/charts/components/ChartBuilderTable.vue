@@ -35,8 +35,8 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(n
 		<DrillDown
 			v-if="drillOn"
 			:chart="{
-				operations: chart.doc.operations,
-				use_live_connection: chart.baseQuery.doc.use_live_connection,
+				operations: chart.dataQuery.doc.operations,
+				use_live_connection: chart.dataQuery.doc.use_live_connection,
 				result: chart.dataQuery.result,
 			}"
 			:row="drillOn.row"

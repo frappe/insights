@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import ChartSectionEmptySvg from '@/query/ChartSectionEmptySvg.vue'
 import { computed, ref } from 'vue'
+import { EMPTY_RESULT } from '../../query/query'
 import {
 	BarChartConfig,
-	ChartType,
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
 	NumberChartConfig,
 } from '../../types/chart.types'
-import { Operation, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
-import { WorkbookChart } from '../../types/workbook.types'
+import { QueryResultColumn, QueryResultRow } from '../../types/query.types'
+import { Chart } from '../chart'
 import {
 	getBarChartOptions,
 	getDonutChartOptions,
@@ -22,43 +22,43 @@ import DrillDown from './DrillDown.vue'
 import NumberChart from './NumberChart.vue'
 import TableChart from './TableChart.vue'
 
-const props = defineProps<{
-	title: string
-	chart_type: ChartType
-	config: WorkbookChart['config']
-	operations: Operation[]
-	use_live_connection?: boolean
-	result: QueryResult
-	loading?: boolean
-}>()
+const props = defineProps<{ chart: Chart }>()
+
+const chart_type = computed(() => props.chart.doc.chart_type)
+const config = computed(() => props.chart.doc.config)
+const result = computed(() => props.chart.dataQuery.result || { ...EMPTY_RESULT })
+const loading = computed(
+	() => props.chart.loading || props.chart.dataQuery.loading || props.chart.dataQuery.executing
+)
 
 const eChartOptions = computed(() => {
-	if (!props.result.columns?.length) return
-	if (props.chart_type === 'Bar' || props.chart_type === 'Row') {
+	if (!result.value.columns?.length) return
+	if (chart_type.value === 'Bar' || chart_type.value === 'Row') {
 		return getBarChartOptions(
-			props.config as BarChartConfig,
-			props.result,
-			props.chart_type === 'Row'
+			config.value as BarChartConfig,
+			result.value,
+			chart_type.value === 'Row'
 		)
 	}
-	if (props.chart_type === 'Line') {
-		return getLineChartOptions(props.config as LineChartConfig, props.result)
+	if (chart_type.value === 'Line') {
+		return getLineChartOptions(config.value as LineChartConfig, result.value)
 	}
-	if (props.chart_type === 'Donut') {
-		return getDonutChartOptions(props.config as DonutChartConfig, props.result)
+	if (chart_type.value === 'Donut') {
+		return getDonutChartOptions(config.value as DonutChartConfig, result.value)
 	}
-	if (props.chart_type === 'Funnel') {
-		return getFunnelChartOptions(props.config as FunnelChartConfig, props.result)
+	if (chart_type.value === 'Funnel') {
+		return getFunnelChartOptions(config.value as FunnelChartConfig, result.value)
 	}
 })
 
 const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(null)
 function onClick(params: any) {
+	if (!result.value) return
 	if (params.componentType === 'series') {
 		const seriesIndex = params.seriesIndex
 		const dataIndex = params.dataIndex
-		const row = props.result.formattedRows[dataIndex]
-		const column = props.result.columns.find((c) => c.name === params.seriesName)!
+		const row = result.value.formattedRows[dataIndex]
+		const column = result.value.columns.find((c) => c.name === params.seriesName)!
 		if (!row || !column) {
 			drillOn.value = null
 			return
@@ -71,26 +71,26 @@ function onClick(params: any) {
 <template>
 	<div class="relative h-full w-full">
 		<BaseChart
-			v-if="!props.loading && eChartOptions"
+			v-if="!loading && eChartOptions"
 			class="rounded bg-white py-1 shadow"
-			:title="props.title"
+			:title="props.chart.doc.title"
 			:options="eChartOptions"
 			:onClick="onClick"
 		/>
 		<NumberChart
-			v-else-if="!props.loading && props.chart_type == 'Number'"
-			:config="(props.config as NumberChartConfig)"
-			:result="props.result"
+			v-else-if="!loading && chart_type == 'Number'"
+			:config="(config as NumberChartConfig)"
+			:result="result"
 		/>
 		<TableChart
-			v-else-if="!props.loading && props.chart_type == 'Table'"
-			:title="props.title"
-			:config="props.config"
-			:result="props.result"
+			v-else-if="!loading && chart_type == 'Table'"
+			:title="props.chart.doc.title"
+			:config="config"
+			:result="result"
 		/>
 
 		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
-			<template v-if="props.loading">
+			<template v-if="loading">
 				<LoadingIndicator class="h-5 w-5 text-gray-500" />
 				<p class="mt-1.5 text-gray-500">Loading data...</p>
 			</template>
@@ -104,11 +104,11 @@ function onClick(params: any) {
 	</div>
 
 	<DrillDown
-		v-if="drillOn"
+		v-if="drillOn && !loading"
 		:chart="{
-			operations: props.operations,
-			use_live_connection: props.use_live_connection,
-			result: props.result,
+			operations: props.chart.dataQuery.doc.operations,
+			use_live_connection: props.chart.dataQuery.doc.use_live_connection,
+			result: result,
 		}"
 		:row="drillOn.row"
 		:column="drillOn.column"

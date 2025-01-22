@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import DataTable from '../../components/DataTable.vue'
+import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
-import { WorkbookChart } from '../../types/workbook.types'
+import { InsightsChartv3 } from '../../types/workbook.types'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
-import { column } from '../../query/helpers'
 import DrillDown from './DrillDown.vue'
 
 const props = defineProps<{
 	title: string
-	config: WorkbookChart['config']
+	config: InsightsChartv3['config']
 	result: QueryResult
 }>()
 
@@ -57,8 +57,8 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn }>()
 		<DrillDown
 			v-if="chart && drillOn"
 			:chart="{
-				operations: chart.doc.operations,
-				use_live_connection: chart.baseQuery.doc.use_live_connection,
+				operations: chart.dataQuery.doc.operations,
+				use_live_connection: chart.dataQuery.doc.use_live_connection,
 				result: chart.dataQuery.result,
 			}"
 			:row="drillOn.row"

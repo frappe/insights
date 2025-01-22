@@ -42,8 +42,21 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-11-24 12:36:33.196238",
+ "links": [
+  {
+   "link_doctype": "Insights Query v3",
+   "link_fieldname": "workbook"
+  },
+  {
+   "link_doctype": "Insights Chart v3",
+   "link_fieldname": "workbook"
+  },
+  {
+   "link_doctype": "Insights Dashboard v3",
+   "link_fieldname": "workbook"
+  }
+ ],
+ "modified": "2025-02-15 20:05:01.670454",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",

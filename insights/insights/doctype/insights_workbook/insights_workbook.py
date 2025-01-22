@@ -11,7 +11,6 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
-from insights.api.workbooks import fetch_query_results
 from insights.utils import File
 
 
@@ -37,11 +36,52 @@ class InsightsWorkbook(Document):
         self.fix_json_fields()
         self.enqueue_update_dashboard_previews()
 
+    def on_trash(self):
+        frappe.db.delete("Insights Query v3", {"workbook": self.name})
+        frappe.db.delete("Insights Chart v3", {"workbook": self.name})
+        frappe.db.delete("Insights Dashboard v3", {"workbook": self.name})
+
     def fix_json_fields(self):
         # fix: json field value cannot be a list (see: base_document.py:get_valid_dict)
         self.queries = frappe.as_json(frappe.parse_json(self.queries))
         self.charts = frappe.as_json(frappe.parse_json(self.charts))
         self.dashboards = frappe.as_json(frappe.parse_json(self.dashboards))
+
+    def as_dict(self, *args, **kwargs):
+        d = super().as_dict(*args, **kwargs)
+        d.queries = frappe.get_all(
+            "Insights Query v3",
+            filters={"workbook": self.name},
+            fields=[
+                "name",
+                "title",
+                "is_native_query",
+                "is_builder_query",
+                "is_script_query",
+            ],
+            order_by="creation asc",
+        )
+        d.charts = frappe.get_all(
+            "Insights Chart v3",
+            filters={"workbook": self.name},
+            fields=[
+                "name",
+                "title",
+                "chart_type",
+                "query",
+            ],
+            order_by="creation asc",
+        )
+        d.dashboards = frappe.get_all(
+            "Insights Dashboard v3",
+            filters={"workbook": self.name},
+            fields=["name", "title"],
+            order_by="creation asc",
+        )
+        d.queries = frappe.as_json(d.queries)
+        d.charts = frappe.as_json(d.charts)
+        d.dashboards = frappe.as_json(d.dashboards)
+        return d
 
     @frappe.whitelist()
     def track_view(self):
@@ -81,15 +121,17 @@ class InsightsWorkbook(Document):
                 "results": [],
             }
 
-        chart_query = self.query_map.get(chart["query"])
-        use_live_connection = chart_query.get("use_live_connection", True)
-        operations = self.resolve_query_tables(operations)
+        # TODO: fix this
+        results = []
+        # chart_query = self.query_map.get(chart["query"])
+        # use_live_connection = chart_query.get("use_live_connection", True)
+        # operations = self.resolve_query_tables(operations)
 
-        frappe.flags.ignore_insights_permissions = True
-        results = fetch_query_results(
-            operations, use_live_connection=use_live_connection
-        )
-        frappe.flags.ignore_insights_permissions = False
+        # frappe.flags.ignore_insights_permissions = True
+        # results = fetch_query_results(
+        #     operations, use_live_connection=use_live_connection
+        # )
+        # frappe.flags.ignore_insights_permissions = False
 
         return {
             "chart": chart,

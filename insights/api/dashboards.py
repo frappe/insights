@@ -93,7 +93,7 @@ def get_dashboards(search_term=None, limit=50):
                     "name": dashboard["name"],
                     "title": dashboard["title"],
                     "workbook": workbook.name,
-                    "charts": len(dashboard["items"]),
+                    "charts": 0,
                     "modified": workbook["modified"],
                     "preview_image": dashboard.get("preview_image"),
                 }

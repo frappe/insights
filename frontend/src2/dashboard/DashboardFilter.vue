@@ -3,7 +3,6 @@ import { computed, inject, reactive } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
-import { getCachedQuery } from '../query/query'
 import { ColumnDataType } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
@@ -33,13 +32,11 @@ const sourceColumn = computed(() => {
 
 function stringValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
-
-	const query = getCachedQuery(sourceColumn.value.query)
-	if (query) {
-		return query.getDistinctColumnValues(sourceColumn.value.column, search)
-	}
-
-	return Promise.resolve([])
+	return dashboard.getDistinctColumnValues(
+		sourceColumn.value.query,
+		sourceColumn.value.column,
+		search
+	)
 }
 
 const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))

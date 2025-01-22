@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-import { QueryResult } from '../types/query.types'
-import { WorkbookChart } from '../types/workbook.types'
-import ChartRenderer from './components/ChartRenderer.vue'
-import { getFormattedRows } from '../query/helpers'
 import { showErrorToast } from '../helpers'
+import { getFormattedRows } from '../query/helpers'
+import { QueryResult } from '../types/query.types'
+import { InsightsChartv3 } from '../types/workbook.types'
+import ChartRenderer from './components/ChartRenderer.vue'
 
 const props = defineProps<{ chart_name: string }>()
 
 const chart = reactive({
-	doc: {} as WorkbookChart,
+	doc: {} as InsightsChartv3,
 	result: {} as QueryResult,
 })
 
@@ -33,7 +33,7 @@ call('insights.api.workbooks.fetch_shared_chart_data', { chart_name: props.chart
 			:chart_type="chart.doc.chart_type"
 			:config="chart.doc.config"
 			:operations="chart.doc.operations"
-			:use_live_connection="chart.doc.use_live_connection"
+			:use_live_connection="Boolean(chart.doc.use_live_connection)"
 			:result="chart.result"
 			:loading="fetchingData"
 		/>

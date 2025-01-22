@@ -2,11 +2,14 @@
 # For license information, please see license.txt
 
 import frappe
+import frappe.client
 import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.integrations.utils import make_post_request
+from frappe.monitor import add_data_to_monitor
 from frappe.rate_limiter import rate_limit
 
+from insights.api.shared import is_shared
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     get_duckdb_connection,
@@ -161,3 +164,70 @@ def import_csv_data(filename: str):
         db.disconnect()
 
     InsightsTablev3.bulk_create(ds.name, [table_name])
+
+
+@frappe.whitelist(allow_guest=True)
+@validate_type
+def get_doc(doctype: str, name: str):
+    check_guest_access(doctype, name)
+
+    doc = frappe.get_doc(doctype, name)
+    is_guest = frappe.session.user == "Guest"
+    if not is_guest:
+        doc.check_permission()
+        doc.apply_fieldlevel_read_permissions()
+    return doc.as_dict()
+
+
+@frappe.whitelist(allow_guest=True)
+def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
+    from frappe.handler import run_doc_method as _run_doc_method
+
+    is_guest = frappe.session.user == "Guest"
+    if not is_guest:
+        return _run_doc_method(method, docs=docs, args=args)
+
+    doc = frappe.parse_json(docs)
+    doc = frappe.get_doc(doc)
+
+    if doc.__islocal:
+        raise frappe.PermissionError(
+            "You don't have permission to access this document"
+        )
+
+    check_guest_access(doc.doctype, doc.name)
+
+    args = args or {}
+
+    response = None
+    if doc.doctype == "Insights Query v3" and method == "execute":
+        response = doc.execute(**args)
+    elif (
+        doc.doctype == "Insights Dashboard v3"
+        and method == "get_distinct_column_values"
+    ):
+        response = doc.get_distinct_column_values(**args)
+    else:
+        raise frappe.PermissionError(
+            "You don't have permission to access this document"
+        )
+
+    frappe.response.docs.append(doc)
+    frappe.response["message"] = response
+
+    add_data_to_monitor(methodname=method)
+
+
+shared_doctypes = [
+    "Insights Dashboard v3",
+    "Insights Chart v3",
+    "Insights Query v3",
+]
+
+
+def check_guest_access(doctype, name):
+    is_guest = frappe.session.user == "Guest"
+    if is_guest and doctype not in shared_doctypes and not is_shared(doctype, name):
+        raise frappe.PermissionError(
+            "You don't have permission to access this document"
+        )

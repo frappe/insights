@@ -13,9 +13,8 @@ import useDataSourceStore from '../../data_source/data_source'
 import { column } from '../../query/helpers'
 
 const query = inject<Query>('query')!
-const sortOrder = ref<Record<string, 'asc' | 'desc'>>({});
-
 query.autoExecute = false
+query.execute()
 
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')
@@ -75,18 +74,18 @@ const completions = computed(() => {
 	}
 })
 
+const sortOrder = ref<Record<string, 'asc' | 'desc'>>({})
 function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
+	sortOrder.value = newSortOrder
 
-	sortOrder.value = newSortOrder;
-	
 	Object.entries(newSortOrder).forEach(([columnName, direction]) => {
 		query.addOrderBy({
-			column: column(columnName), 
+			column: column(columnName),
 			direction,
-		});
-	});
+		})
+	})
 
-	query.execute();
+	query.execute()
 }
 </script>
 
@@ -142,10 +141,10 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 				<LoadingIndicator class="h-8 w-8 text-gray-700" />
 			</div>
 
-			<DataTable 
-				:columns="columns" 
-				:rows="rows" 
-				:enable-pagination="true" 
+			<DataTable
+				:columns="columns"
+				:rows="rows"
+				:enable-pagination="true"
 				:on-export="query.downloadResults"
 				:sort-order="sortOrder"
 				@sort="onSort"

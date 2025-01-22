@@ -85,6 +85,7 @@ export type Filter = { type: 'filter' } & FilterArgs
 
 export type FilterGroupArgs = { logical_operator: LogicalOperator; filters: FilterArgs[] }
 export type FilterGroup = { type: 'filter_group' } & FilterGroupArgs
+export type AdhocFilters = Record<string, FilterGroup>
 
 export type SelectArgs = { column_names: string[] }
 export type Select = { type: 'select' } & SelectArgs

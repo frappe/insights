@@ -2,76 +2,79 @@ import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
-import useChart from '../charts/chart'
-import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
-import useDashboard from '../dashboard/dashboard'
-import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
+import useChart, { newChart } from '../charts/chart'
+import useDashboard, { newDashboard } from '../dashboard/dashboard'
+import { copy, getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
-import useQuery, { getCachedQuery } from '../query/query'
+import useQuery, { newQuery } from '../query/query'
 import session from '../session'
 import type {
 	InsightsWorkbook,
-	WorkbookChart,
 	WorkbookSharePermission as WorkbookUserPermission,
 } from '../types/workbook.types'
 
+const workbooks = new Map<string, Workbook>()
+
 export default function useWorkbook(name: string) {
+	name = String(name)
+	const existingWorkbook = workbooks.get(name)
+	if (existingWorkbook) return existingWorkbook
+
+	const workbook = makeWorkbook(name)
+	workbooks.set(name, workbook)
+	return workbook
+}
+
+function makeWorkbook(name: string) {
 	const workbook = getWorkbookResource(name)
 
-	workbook.onAfterInsert(() => {
-		const href = window.location.href.replace(name, workbook.doc.name)
-		window.location.replace(href)
-	})
-
+	// getLinkedQueries expects the query to be loaded
 	wheneverChanges(
-		() => workbook.doc,
-		() => {
-			// load & cache queries, charts and dashboards
-
-			// fix: dicarding workbook changes doesn't reset the query/chart/dashboard doc
-			// this is because, when the workbook doc is updated,
-			// the reference to the workbook.doc.queries/charts/dashboards is lost
-			// so we need to update the references to the new queries/charts/dashboards
-			workbook.doc.queries.forEach((q) => (useQuery(q).doc = q))
-			workbook.doc.charts.forEach((c) => (useChart(c).doc = c))
-			workbook.doc.dashboards.forEach((d) => (useDashboard(d).doc = d))
-		}
+		() => workbook.doc.queries.map((q) => q.name),
+		() => workbook.doc.queries.forEach((q) => useQuery(q.name)),
+		{ deep: true }
 	)
 
 	const router = useRouter()
-	function setActiveTab(type: 'query' | 'chart' | 'dashboard' | '', idx: number) {
-		router.replace(
-			type ? `/workbook/${workbook.name}/${type}/${idx}` : `/workbook/${workbook.name}`
-		)
+	function setActiveTab(type: 'query' | 'chart' | 'dashboard', name: string) {
+		router.replace(`/workbook/${workbook.name}/${type}/${name}`)
 	}
-	function isActiveTab(type: 'query' | 'chart' | 'dashboard', idx: number) {
+	function isActiveTab(type: 'query' | 'chart' | 'dashboard', name: string) {
 		const url = router.currentRoute.value.path
-		const regex = new RegExp(`/workbook/${workbook.name}/${type}/${idx}`)
+		const regex = new RegExp(`/workbook/${workbook.name}/${type}/${name}`)
 		return regex.test(url)
 	}
 
-	function addQuery() {
-		const idx = workbook.doc.queries.length
-		workbook.doc.queries.push({
-			name: getUniqueId(),
-			title: `Query ${idx + 1}`,
-			use_live_connection: true,
-			operations: [],
-			is_builder_query: false,
-			is_native_query: false,
-			is_script_query: false,
+	async function addQuery() {
+		const query = newQuery()
+		query.doc.title = 'Query ' + (workbook.doc.queries.length + 1)
+		query.doc.workbook = workbook.doc.name
+		query.doc.use_live_connection = true
+		query.insert().then(() => {
+			workbook.doc.queries.push({
+				name: query.doc.name,
+				title: query.doc.title,
+			})
+			setActiveTab('query', query.doc.name)
 		})
-		setActiveTab('query', idx)
 	}
 
-	function removeQuery(queryName: string) {
+	function removeQuery(name: string) {
 		function _remove() {
-			const idx = workbook.doc.queries.findIndex((row) => row.name === queryName)
-			if (idx === -1) return
-			workbook.doc.queries.splice(idx, 1)
-			if (isActiveTab('query', idx)) {
-				setActiveTab('', 0)
+			const queryIndex = workbook.doc.queries.findIndex((row) => row.name === name)
+			if (queryIndex === -1) return
+
+			const query = useQuery(name)
+			query.delete().then(() => {
+				workbook.doc.queries.splice(queryIndex, 1)
+			})
+
+			const nextQueryIndex = queryIndex - 1
+			if (nextQueryIndex >= 0) {
+				setActiveTab('query', workbook.doc.queries[nextQueryIndex].name)
+			} else {
+				router.replace(`/workbook/${workbook.name}`)
 			}
 		}
 
@@ -83,26 +86,36 @@ export default function useWorkbook(name: string) {
 	}
 
 	function addChart(query_name?: string) {
-		const idx = workbook.doc.charts.length
-		workbook.doc.charts.push({
-			name: getUniqueId(),
-			title: `Chart ${idx + 1}`,
-			query: query_name || '',
-			chart_type: 'Bar',
-			is_public: false,
-			config: {} as WorkbookChart['config'],
-			operations: [],
+		const chart = newChart()
+		chart.doc.title = 'Chart ' + (workbook.doc.charts.length + 1)
+		chart.doc.workbook = workbook.doc.name
+		chart.doc.query = query_name || ''
+		chart.doc.chart_type = 'Bar'
+		chart.insert().then(() => {
+			workbook.doc.charts.push({
+				name: chart.doc.name,
+				title: chart.doc.title,
+				query: chart.doc.query,
+				chart_type: 'Bar',
+			})
+			setActiveTab('chart', chart.doc.name)
 		})
-		setActiveTab('chart', idx)
 	}
 
 	function removeChart(chartName: string) {
 		function _remove() {
 			const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
 			if (idx === -1) return
-			workbook.doc.charts.splice(idx, 1)
-			if (isActiveTab('chart', idx)) {
-				setActiveTab('', 0)
+			const chart = useChart(chartName)
+			chart.delete().then(() => {
+				workbook.doc.charts.splice(idx, 1)
+			})
+
+			const nextChartIndex = idx - 1
+			if (nextChartIndex >= 0) {
+				setActiveTab('chart', workbook.doc.charts[nextChartIndex].name)
+			} else {
+				router.replace(`/workbook/${workbook.name}`)
 			}
 		}
 
@@ -114,22 +127,32 @@ export default function useWorkbook(name: string) {
 	}
 
 	function addDashboard() {
-		const idx = workbook.doc.dashboards.length
-		workbook.doc.dashboards.push({
-			name: getUniqueId(),
-			title: `Dashboard ${idx + 1}`,
-			items: [],
+		const dashboard = newDashboard()
+		dashboard.doc.title = 'Dashboard ' + (workbook.doc.dashboards.length + 1)
+		dashboard.doc.workbook = workbook.doc.name
+		dashboard.insert().then(() => {
+			workbook.doc.dashboards.push({
+				name: dashboard.doc.name,
+				title: dashboard.doc.title,
+			})
+			setActiveTab('dashboard', dashboard.doc.name)
 		})
-		setActiveTab('dashboard', idx)
 	}
 
 	function removeDashboard(dashboardName: string) {
 		function _remove() {
 			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
 			if (idx === -1) return
-			workbook.doc.dashboards.splice(idx, 1)
-			if (isActiveTab('dashboard', idx)) {
-				setActiveTab('', 0)
+			const dashboard = useDashboard(dashboardName)
+			dashboard.delete().then(() => {
+				workbook.doc.dashboards.splice(idx, 1)
+			})
+
+			const nextDashboardIndex = idx - 1
+			if (nextDashboardIndex >= 0) {
+				setActiveTab('dashboard', workbook.doc.dashboards[nextDashboardIndex].name)
+			} else {
+				router.replace(`/workbook/${workbook.name}`)
 			}
 		}
 
@@ -238,10 +261,10 @@ export default function useWorkbook(name: string) {
 	})
 }
 
-export type Workbook = ReturnType<typeof useWorkbook>
+export type Workbook = ReturnType<typeof makeWorkbook>
 export const workbookKey = Symbol() as InjectionKey<Workbook>
 
-function getWorkbookResource(name: string) {
+export function getWorkbookResource(name: string) {
 	const doctype = 'Insights Workbook'
 	const workbook = useDocumentResource<InsightsWorkbook>(doctype, name, {
 		initialDoc: {
@@ -253,46 +276,12 @@ function getWorkbookResource(name: string) {
 			charts: [],
 			dashboards: [],
 		},
+		enableAutoSave: true,
+		disableLocalStorage: true,
 		transform(doc: any) {
 			doc.queries = safeJSONParse(doc.queries) || []
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
-
-			doc.queries.forEach((query: any) => {
-				if (
-					query.is_native_query === undefined &&
-					query.is_script_query === undefined &&
-					query.is_builder_query === undefined
-				) {
-					query.is_builder_query = true
-				}
-			})
-
-			doc.charts.forEach((chart: WorkbookChart) => {
-				chart.config.filters = chart.config.filters?.filters?.length
-					? chart.config.filters
-					: {
-							filters: [],
-							logical_operator: 'And',
-					  }
-				chart.config.order_by = chart.config.order_by || []
-				chart.config.limit = chart.config.limit || 100
-
-				if ('x_axis' in chart.config && chart.config.x_axis) {
-					// @ts-ignore
-					chart.config.x_axis = handleOldXAxisConfig(chart.config.x_axis)
-				}
-				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
-					// @ts-ignore
-					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
-				}
-				if (chart.chart_type === 'Funnel') {
-					// @ts-ignore
-					chart.config.label_position = chart.config.label_position || 'left'
-				}
-
-				chart.config = setDimensionNames(chart.config)
-			})
 			return doc
 		},
 	})
@@ -307,15 +296,19 @@ export function newWorkbookName() {
 }
 
 export function getLinkedQueries(query_name: string): string[] {
-	const query = getCachedQuery(query_name)
-	if (!query) {
-		console.error(`Query ${query_name} not found`)
-		return []
-	}
-
+	const query = useQuery(query_name)
 	const linkedQueries = new Set<string>()
 
-	query.doc.operations.forEach((op) => {
+	if (!query.isloaded) {
+		console.log('Operations not loaded yet for query', query_name)
+	}
+
+	const operations = copy(query.currentOperations)
+	if (query.activeEditIndex > -1) {
+		operations.splice(query.activeEditIndex)
+	}
+
+	operations.forEach((op) => {
 		if ('table' in op && 'type' in op.table && op.table.type === 'query') {
 			linkedQueries.add(op.table.query_name)
 		}

@@ -12,11 +12,11 @@ import ContentEditable from '../../components/ContentEditable.vue'
 import { FIELDTYPES, granularityOptions, GranularityType } from '../../helpers/constants'
 import { column } from '../../query/helpers'
 import { QueryResultColumn } from '../../types/query.types'
-import { WorkbookChart } from '../../types/workbook.types'
+import { InsightsChartv3 } from '../../types/workbook.types'
 import { getGranularity } from '../helpers'
 
 const props = defineProps<{
-	config: WorkbookChart['config']
+	config: InsightsChartv3['config']
 	column: QueryResultColumn
 	onGranularityChange?: (column_name: string, granularity: GranularityType) => void
 }>()

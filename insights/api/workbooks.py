@@ -1,83 +1,8 @@
 import frappe
-import ibis
 from ibis import _
 
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
-    IbisQueryBuilder,
-    execute_ibis_query,
-    get_columns_from_schema,
-)
 from insights.utils import DocShare
-
-
-@insights_whitelist()
-def fetch_query_results(operations, limit=100, use_live_connection=True):
-    results = []
-    ibis_query = IbisQueryBuilder().build(operations, use_live_connection)
-    if ibis_query is None:
-        return
-
-    columns = get_columns_from_schema(ibis_query.schema())
-    results, time_taken = execute_ibis_query(
-        ibis_query, limit=limit, cache_expiry=60 * 10
-    )
-    results = results.to_dict(orient="records")
-
-    return {
-        "sql": ibis.to_sql(ibis_query),
-        "columns": columns,
-        "rows": results,
-        "time_taken": time_taken,
-    }
-
-
-@insights_whitelist()
-def fetch_query_results_count(operations, use_live_connection=True):
-    ibis_query = IbisQueryBuilder().build(operations, use_live_connection)
-    if ibis_query is None:
-        return
-
-    count_query = ibis_query.aggregate(count=_.count())
-    count_results, time_taken = execute_ibis_query(count_query, cache_expiry=60 * 5)
-    total_count = count_results.values[0][0]
-    return int(total_count)
-
-
-@insights_whitelist()
-def download_query_results(operations, use_live_connection=True):
-    ibis_query = IbisQueryBuilder().build(operations, use_live_connection)
-    if ibis_query is None:
-        return
-
-    results, time_taken = execute_ibis_query(ibis_query, cache=False, limit=10_00_000)
-    return results.to_csv(index=False)
-
-
-@insights_whitelist()
-def get_distinct_column_values(
-    operations, column_name, search_term=None, use_live_connection=True, limit=20
-):
-    query = IbisQueryBuilder().build(operations, use_live_connection)
-    values_query = (
-        query.select(column_name)
-        .filter(
-            getattr(_, column_name).notnull()
-            if not search_term
-            else getattr(_, column_name).ilike(f"%{search_term}%")
-        )
-        .distinct()
-        .head(limit)
-    )
-    result, time_taken = execute_ibis_query(values_query, cache_expiry=24 * 60 * 60)
-    return result[column_name].tolist()
-
-
-@insights_whitelist()
-def get_columns_for_selection(operations, use_live_connection=True):
-    query = IbisQueryBuilder().build(operations, use_live_connection)
-    columns = get_columns_from_schema(query.schema())
-    return columns
 
 
 @insights_whitelist()

@@ -32,10 +32,6 @@ async function fetchDashboards(search_term?: string, limit: number = 50) {
 	return dashboards.value
 }
 
-async function fetchWorkbookName(dashboard_name: string) {
-	return await call('insights.api.dashboards.get_workbook_name', { dashboard_name })
-}
-
 const updatingPreviewImage = ref<Record<string, boolean>>({})
 async function updatePreviewImage(dashboard_name: string) {
 	updatingPreviewImage.value[dashboard_name] = true
@@ -63,7 +59,6 @@ export default function useDashboardStore() {
 		dashboards,
 		loading,
 		fetchDashboards,
-		fetchWorkbookName,
 
 		updatePreviewImage,
 		updatingPreviewImage,
