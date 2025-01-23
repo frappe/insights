@@ -166,8 +166,13 @@ export default function useDocumentResource<T extends object>(
 		})
 		// on creation, restore the doc from local storage, if exists
 		if (storage.value && storage.value.doc) {
-			resource.doc = storage.value.doc
-			resource.originalDoc = storage.value.originalDoc
+			const isStale =
+				new Date(resource.doc.modified).getTime() > new Date(storage.value.doc.modified).getTime()
+
+			if (!isStale) {
+				resource.doc = storage.value.doc
+				resource.originalDoc = storage.value.originalDoc
+			}
 		}
 		// watch for changes in doc and save it to local storage
 		watchDebounced(
