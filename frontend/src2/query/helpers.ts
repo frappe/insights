@@ -17,7 +17,7 @@ import {
 } from 'lucide-vue-next'
 import { h } from 'vue'
 import { copy } from '../helpers'
-import { FIELDTYPES } from '../helpers/constants'
+import { FIELDTYPES, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
 import {
 	Cast,
@@ -36,7 +36,6 @@ import {
 	FilterGroupArgs,
 	FilterOperator,
 	FilterValue,
-	GranularityType,
 	Join,
 	JoinArgs,
 	Limit,
@@ -138,7 +137,8 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 export function getFormattedDate(date: string, granularity: GranularityType) {
 	if (!date) return ''
 
-	const dayjsFormat = {
+	const dayjsFormat: Record<GranularityType, string> = {
+		second: 'MMMM D, YYYY h:mm:ss A',
 		minute: 'MMMM D, YYYY h:mm A',
 		hour: 'MMMM D, YYYY h:00 A',
 		day: 'MMMM D, YYYY',

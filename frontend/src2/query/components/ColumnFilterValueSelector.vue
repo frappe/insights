@@ -3,13 +3,11 @@ import { watchDebounced } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
 import { CheckSquare, SearchIcon, Square } from 'lucide-vue-next'
 import { ref } from 'vue'
-import { QueryResultColumn } from '../../types/query.types'
 
 const props = defineProps<{
-	column: QueryResultColumn
 	valuesProvider: (search: string) => Promise<string[]>
 }>()
-const selectedValues = defineModel<any[]>({
+const selectedValues = defineModel<string[]>({
 	type: Array,
 	default: () => [],
 })

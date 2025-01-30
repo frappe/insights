@@ -1,17 +1,15 @@
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, InjectionKey, reactive, toRefs } from 'vue'
+import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
-import { handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
+import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from '../charts/helpers'
 import useDashboard from '../dashboard/dashboard'
 import { getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import useQuery, { getCachedQuery } from '../query/query'
 import session from '../session'
-import { Join, Source } from '../types/query.types'
 import type {
 	InsightsWorkbook,
 	WorkbookChart,
@@ -194,6 +192,7 @@ export default function useWorkbook(name: string) {
 	}
 
 	let stopAutoSaveWatcher: any
+	const _pauseAutoSave = ref(false)
 	wheneverChanges(
 		() => workbook.doc.enable_auto_save,
 		() => {
@@ -203,9 +202,9 @@ export default function useWorkbook(name: string) {
 			}
 			if (workbook.doc.enable_auto_save && !stopAutoSaveWatcher) {
 				stopAutoSaveWatcher = watchDebounced(
-					() => workbook.isdirty,
-					() => workbook.isdirty && workbook.save(),
-					{ immediate: true, debounce: 1000 }
+					() => workbook.isdirty && !_pauseAutoSave.value,
+					(shouldSave) => shouldSave && workbook.save(),
+					{ immediate: true, debounce: 2000 }
 				)
 			}
 		}
@@ -217,6 +216,7 @@ export default function useWorkbook(name: string) {
 		isOwner,
 
 		showSidebar: true,
+		_pauseAutoSave,
 
 		isActiveTab,
 
@@ -278,6 +278,10 @@ function getWorkbookResource(name: string) {
 				chart.config.order_by = chart.config.order_by || []
 				chart.config.limit = chart.config.limit || 100
 
+				if ('x_axis' in chart.config && chart.config.x_axis) {
+					// @ts-ignore
+					chart.config.x_axis = handleOldXAxisConfig(chart.config.x_axis)
+				}
 				if ('y_axis' in chart.config && Array.isArray(chart.config.y_axis)) {
 					// @ts-ignore
 					chart.config.y_axis = handleOldYAxisConfig(chart.config.y_axis)
@@ -286,6 +290,7 @@ function getWorkbookResource(name: string) {
 					// @ts-ignore
 					chart.config.label_position = chart.config.label_position || 'left'
 				}
+
 				chart.config = setDimensionNames(chart.config)
 			})
 			return doc
@@ -301,7 +306,6 @@ export function newWorkbookName() {
 	return `new-workbook-${unique_id}`
 }
 
-
 export function getLinkedQueries(query_name: string): string[] {
 	const query = getCachedQuery(query_name)
 	if (!query) {
@@ -309,34 +313,15 @@ export function getLinkedQueries(query_name: string): string[] {
 		return []
 	}
 
-	const querySource = query.doc.operations.find(
-		(op) => op.type === 'source' && op.table.type === 'query' && op.table.query_name
-	) as Source
+	const linkedQueries = new Set<string>()
 
-	const queryJoins = query.doc.operations.filter(
-		(op) => op.type === 'join' && op.table.type === 'query' && op.table.query_name
-	) as Join[]
-
-	const linkedQueries = [] as string[]
-	if (querySource && querySource.table.type === 'query') {
-		linkedQueries.push(querySource.table.query_name)
-	}
-	if (queryJoins.length) {
-		queryJoins.forEach((j) => {
-			if (j.table.type === 'query') {
-				linkedQueries.push(j.table.query_name)
-			}
-		})
-	}
-
-	const linkedQueriesByQuery = {} as Record<string, string[]>
-	linkedQueries.forEach((q) => {
-		linkedQueriesByQuery[q] = getLinkedQueries(q)
+	query.doc.operations.forEach((op) => {
+		if ('table' in op && 'type' in op.table && op.table.type === 'query') {
+			linkedQueries.add(op.table.query_name)
+		}
 	})
 
-	Object.values(linkedQueriesByQuery).forEach((subLinkedQueries) => {
-		linkedQueries.concat(subLinkedQueries)
-	})
+	linkedQueries.forEach((q) => getLinkedQueries(q).forEach((q) => linkedQueries.add(q)))
 
-	return linkedQueries
+	return Array.from(linkedQueries)
 }

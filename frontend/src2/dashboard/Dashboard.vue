@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { Breadcrumbs } from 'frappe-ui'
-import { ExternalLink, RefreshCcw } from 'lucide-vue-next'
-import { provide } from 'vue'
+import { RefreshCcw } from 'lucide-vue-next'
+import { provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { waitUntil } from '../helpers'
+import { downloadImage, waitUntil } from '../helpers'
 import useWorkbook from '../workbook/workbook'
 import useDashboard from './dashboard'
-import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import useDashboardStore from './dashboards'
 import VueGridLayout from './VueGridLayout.vue'
@@ -29,6 +28,12 @@ const router = useRouter()
 function openWorkbook() {
 	router.push(`/workbook/${workbook.doc.name}`)
 }
+
+const dashboardContainer = ref<HTMLElement | null>(null)
+async function downloadDashboardImage() {
+	if (!dashboardContainer.value) return
+	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
+}
 </script>
 
 <template>
@@ -40,26 +45,34 @@ function openWorkbook() {
 			]"
 		/>
 		<div class="flex items-center gap-2">
-			<DashboardFilterSelector
-				:dashboard="dashboard"
-				:queries="workbook.doc.queries"
-				:charts="workbook.doc.charts"
-			/>
 			<Button variant="outline" @click="() => dashboard.refresh()" label="Refresh">
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
-			<Button variant="outline" @click="openWorkbook" label="Workbook">
-				<template #prefix>
-					<ExternalLink class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-				</template>
-			</Button>
+			<Dropdown
+				placement="left"
+				:button="{ icon: 'more-vertical', variant: 'outline' }"
+				:options="[
+					{
+						label: 'Export as PNG',
+						variant: 'outline',
+						icon: 'download',
+						onClick: downloadDashboardImage,
+					},
+					{
+						label: 'Open Workbook',
+						variant: 'outline',
+						icon: 'external-link',
+						onClick: openWorkbook,
+					},
+				]"
+			/>
 		</div>
 	</header>
 
 	<div class="relative flex h-full w-full overflow-hidden">
-		<div class="flex-1 overflow-y-auto p-4">
+		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
 			<VueGridLayout
 				v-if="dashboard.doc.items.length > 0"
 				class="h-fit w-full"

@@ -176,7 +176,8 @@ def update_team(team: dict):
     )
     doc.set("team_permissions", [])
     for permission in team.team_permissions:
-        if permission["resource_type"] not in [
+        permission = frappe._dict(permission)
+        if permission.resource_type not in [
             "Insights Data Source v3",
             "Insights Table v3",
         ]:
@@ -184,9 +185,11 @@ def update_team(team: dict):
         doc.append(
             "team_permissions",
             {
-                "resource_type": permission["resource_type"],
-                "resource_name": permission["resource_name"],
-                "table_restrictions": permission["table_restrictions"].strip(),
+                "resource_type": permission.resource_type,
+                "resource_name": permission.resource_name,
+                "table_restrictions": permission.table_restrictions.strip()
+                if permission.table_restrictions
+                else None,
             },
         )
     doc.save()

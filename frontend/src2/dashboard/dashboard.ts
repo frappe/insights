@@ -1,9 +1,16 @@
 import { reactive } from 'vue'
 import { getCachedChart } from '../charts/chart'
 import { getUniqueId, store } from '../helpers'
+import { isFilterValid } from '../query/components/filter_utils'
+import { column } from '../query/helpers'
 import { getCachedQuery } from '../query/query'
-import { FilterArgs } from '../types/query.types'
-import { WorkbookChart, WorkbookDashboard } from '../types/workbook.types'
+import { FilterArgs, FilterOperator, FilterRule, FilterValue } from '../types/query.types'
+import {
+	WorkbookChart,
+	WorkbookDashboard,
+	WorkbookDashboardFilter,
+	WorkbookDashboardItem,
+} from '../types/workbook.types'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -16,28 +23,26 @@ export default function useDashboard(workbookDashboard: WorkbookDashboard) {
 	return dashboard
 }
 
+type FilterState = {
+	operator: FilterOperator
+	value: FilterValue
+}
+
 function makeDashboard(workbookDashboard: WorkbookDashboard) {
 	const dashboard = reactive({
 		doc: workbookDashboard,
 
 		editing: false,
+		editingItemIndex: null as number | null,
 		filters: {} as Record<string, FilterArgs[]>,
+		filterStates: {} as Record<string, FilterState>,
 
-		activeItemIdx: null as number | null,
-		setActiveItem(index: number) {
-			dashboard.activeItemIdx = index
-		},
-		isActiveItem(index: number) {
-			return dashboard.activeItemIdx == index
+		isEditingItem(item: WorkbookDashboardItem) {
+			return dashboard.editing && dashboard.editingItemIndex === dashboard.doc.items.indexOf(item)
 		},
 
 		addChart(charts: WorkbookChart[]) {
-			const maxY = Math.max(
-				...dashboard.doc.items
-					.filter((item) => item.type === 'chart')
-					.map((chart) => chart.layout.y + chart.layout.h),
-				0
-			)
+			const maxY = dashboard.getMaxY()
 			charts.forEach((chart) => {
 				if (
 					!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
@@ -57,13 +62,42 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			})
 		},
 
-		removeItem(index: number) {
-			dashboard.doc.items.splice(index, 1)
+		addText() {
+			const maxY = dashboard.getMaxY()
+			dashboard.doc.items.push({
+				type: 'text',
+				text: 'Enter text here',
+				layout: {
+					i: getUniqueId(),
+					x: 0,
+					y: maxY,
+					w: 10,
+					h: 1,
+				},
+			})
+			dashboard.editingItemIndex = dashboard.doc.items.length - 1
 		},
 
-		applyFilter(query: string, args: FilterArgs) {
-			if (!dashboard.filters[query]) dashboard.filters[query] = []
-			dashboard.filters[query].push(args)
+		addFilter() {
+			const maxY = dashboard.getMaxY()
+			dashboard.doc.items.push({
+				type: 'filter',
+				filter_name: 'Filter',
+				filter_type: 'String',
+				links: {},
+				layout: {
+					i: getUniqueId(),
+					x: 0,
+					y: maxY,
+					w: 4,
+					h: 1,
+				},
+			})
+			dashboard.editingItemIndex = dashboard.doc.items.length - 1
+		},
+
+		removeItem(index: number) {
+			dashboard.doc.items.splice(index, 1)
 		},
 
 		refresh() {
@@ -76,16 +110,91 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			const chart = getCachedChart(chart_name)
 			if (!chart || !chart.doc.query) return
 
-			Object.keys(dashboard.filters).forEach((query) => {
-				const _query = getCachedQuery(query)
-				if (!_query) return
-				_query.dashboardFilters = {
+			const filtersApplied = dashboard.doc.items.filter(
+				(item) => item.type === 'filter' && 'links' in item && item.links[chart_name]
+			)
+
+			if (!filtersApplied.length) {
+				chart.refresh(undefined, true)
+				return
+			}
+
+			const filtersByQuery = new Map<string, FilterRule[]>()
+
+			filtersApplied.forEach((item) => {
+				const filterItem = item as WorkbookDashboardFilter
+				const linkedColumn = dashboard.getColumnFromFilterLink(filterItem.links[chart_name])
+				if (!linkedColumn) return
+
+				const query = getCachedQuery(linkedColumn.query)
+				if (!query) return
+
+				const filterState = dashboard.filterStates[filterItem.filter_name] || {}
+
+				const filter = {
+					column: column(linkedColumn.column),
+					operator: filterState.operator,
+					value: filterState.value,
+				}
+
+				if (isFilterValid(filter, filterItem.filter_type)) {
+					const filters = filtersByQuery.get(linkedColumn.query) || []
+					filters.push(filter)
+					filtersByQuery.set(linkedColumn.query, filters)
+				}
+			})
+
+			filtersByQuery.forEach((filters, query_name) => {
+				const query = getCachedQuery(query_name)!
+				query.dashboardFilters = {
 					logical_operator: 'And',
-					filters: dashboard.filters[query],
+					filters,
 				}
 			})
 
 			chart.refresh(undefined, true)
+		},
+
+		updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
+			const filter = dashboard.doc.items.find(
+				(item) => item.type === 'filter' && item.filter_name === filter_name
+			)
+			if (!filter) return
+
+			if (!operator) {
+				delete dashboard.filterStates[filter_name]
+			} else {
+				dashboard.filterStates[filter_name] = {
+					operator,
+					value,
+				}
+			}
+
+			dashboard.applyFilter(filter_name)
+		},
+
+		applyFilter(filter_name: string) {
+			const item = dashboard.doc.items.find(
+				(item) => item.type === 'filter' && item.filter_name === filter_name
+			)
+			if (!item) return
+
+			const filterItem = item as WorkbookDashboardFilter
+			const filteredCharts = Object.keys(filterItem.links)
+			filteredCharts.forEach((chart_name) => dashboard.refreshChart(chart_name))
+		},
+
+		getColumnFromFilterLink(linkedColumn: string) {
+			const sep = '`'
+			// `query`.`column`
+			const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
+			const match = linkedColumn.match(pattern)
+			if (!match) return
+
+			return {
+				query: match[1],
+				column: match[2],
+			}
 		},
 
 		getShareLink() {
@@ -94,10 +203,29 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
 			)
 		},
+
+		getMaxY() {
+			return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
+		},
 	})
 
-	const key = `insights:dashboard-filters-${workbookDashboard.name}`
-	dashboard.filters = store(key, () => dashboard.filters)
+	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
+		if (item.type != 'filter') return acc
+
+		const filterItem = item as WorkbookDashboardFilter
+		if (filterItem.default_operator && filterItem.default_value) {
+			acc[filterItem.filter_name] = {
+				operator: filterItem.default_operator,
+				value: filterItem.default_value,
+			}
+		}
+		return acc
+	}, {} as typeof dashboard.filterStates)
+
+	Object.assign(dashboard.filterStates, defaultFilters)
+
+	const key2 = `insights:dashboard-filter-states-${workbookDashboard.name}`
+	dashboard.filterStates = store(key2, () => dashboard.filterStates)
 
 	return dashboard
 }

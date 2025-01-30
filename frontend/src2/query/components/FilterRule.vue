@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
-import { FIELDTYPES } from '../../helpers/constants'
+import { flattenOptions } from '../../helpers'
 import {
 	ColumnOption,
 	FilterOperator,
@@ -11,9 +11,8 @@ import {
 import { column } from '../helpers'
 import { getCachedQuery } from '../query'
 import DatePickerControl from './DatePickerControl.vue'
-import RelativeDatePicker from './RelativeDatePicker.vue'
-import { getValueSelectorType } from './filter_utils'
-import { flattenOptions } from '../../helpers'
+import { getFilterType, getOperatorOptions, getValueSelectorType } from './filter_utils'
+import RelativeDatePickerControl from './RelativeDatePickerControl.vue'
 
 const filter = defineModel<FilterRule>({ required: true })
 const props = defineProps<{
@@ -44,40 +43,8 @@ const columnType = computed(() => {
 })
 
 const operatorOptions = computed(() => {
-	const type = columnType.value
-	if (!type) return []
-
-	const options = [] as { label: string; value: FilterOperator }[]
-	if (FIELDTYPES.TEXT.includes(type)) {
-		options.push({ label: 'is', value: 'in' }) // value selector
-		options.push({ label: 'is not', value: 'not_in' }) // value selector
-		options.push({ label: 'contains', value: 'contains' }) // text
-		options.push({ label: 'does not contain', value: 'not_contains' }) // text
-		options.push({ label: 'starts with', value: 'starts_with' }) // text
-		options.push({ label: 'ends with', value: 'ends_with' }) // text
-		options.push({ label: 'is set', value: 'is_set' }) // no value
-		options.push({ label: 'is not set', value: 'is_not_set' }) // no value
-	}
-	if (FIELDTYPES.NUMBER.includes(type)) {
-		options.push({ label: 'equals', value: '=' })
-		options.push({ label: 'not equals', value: '!=' })
-		options.push({ label: 'greater than', value: '>' })
-		options.push({ label: 'greater than or equals', value: '>=' })
-		options.push({ label: 'less than', value: '<' })
-		options.push({ label: 'less than or equals', value: '<=' })
-		options.push({ label: 'between', value: 'between' })
-	}
-	if (FIELDTYPES.DATE.includes(type)) {
-		options.push({ label: 'equals', value: '=' })
-		options.push({ label: 'not equals', value: '!=' })
-		options.push({ label: 'greater than', value: '>' })
-		options.push({ label: 'greater than or equals', value: '>=' })
-		options.push({ label: 'less than', value: '<' })
-		options.push({ label: 'less than or equals', value: '<=' })
-		options.push({ label: 'between', value: 'between' })
-		options.push({ label: 'within', value: 'within' })
-	}
-	return options
+	if (!columnType.value) return []
+	return getOperatorOptions(getFilterType(columnType.value))
 })
 
 function onOperatorChange(operator: FilterOperator) {
@@ -85,9 +52,12 @@ function onOperatorChange(operator: FilterOperator) {
 	filter.value.value = undefined
 }
 
-const valueSelectorType = computed(
-	() => columnType.value && getValueSelectorType(filter.value, columnType.value)
-)
+const valueSelectorType = computed(() => {
+	if (!filter.value.column.column_name || !filter.value.operator || !columnType.value) {
+		return
+	}
+	return getValueSelectorType(filter.value.operator, getFilterType(columnType.value))
+})
 
 const distinctColumnValues = ref<any[]>([])
 const fetchingValues = ref(false)
@@ -160,7 +130,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				v-model="(filter.value as string[])"
 				placeholder="Select Date"
 			/>
-			<RelativeDatePicker
+			<RelativeDatePickerControl
 				v-else-if="valueSelectorType === 'relative_date'"
 				v-model="(filter.value as string)"
 				placeholder="Relative Date"

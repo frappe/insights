@@ -1,4 +1,4 @@
-import { Dimension, Measure } from "./query.types"
+import { Dimension, Measure } from './query.types'
 
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
@@ -7,9 +7,14 @@ export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
-	x_axis: Dimension
+	x_axis: XAxis
 	y_axis: YAxis
 	split_by?: Dimension
+}
+
+export type XAxis = {
+	dimension: Dimension
+	label_rotation?: number
 }
 
 export type YAxis = {
@@ -83,7 +88,7 @@ export type DonutChartConfig = {
 	label_column: Dimension
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
-	show_inline_labels?: boolean;
+	show_inline_labels?: boolean
 }
 export type FunnelChartConfig = {
 	label_column: Dimension
@@ -101,4 +106,10 @@ export type TableChartConfig = {
 	enable_color_scale?: boolean
 }
 
-export type ChartConfig = LineChartConfig | BarChartConfig | NumberChartConfig | DonutChartConfig | TableChartConfig | FunnelChartConfig
+export type ChartConfig =
+	| LineChartConfig
+	| BarChartConfig
+	| NumberChartConfig
+	| DonutChartConfig
+	| TableChartConfig
+	| FunnelChartConfig

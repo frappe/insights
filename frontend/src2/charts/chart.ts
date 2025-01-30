@@ -1,6 +1,7 @@
 import { useDebouncedRefHistory, UseRefHistoryReturn } from '@vueuse/core'
 import { computed, reactive, ref, unref, watch } from 'vue'
 import { areDeeplyEqual, copy, getUniqueId, waitUntil, wheneverChanges } from '../helpers'
+import { GranularityType } from '../helpers/constants'
 import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
 import { getCachedQuery, makeQuery, Query } from '../query/query'
@@ -9,10 +10,11 @@ import {
 	AxisChartConfig,
 	DonutChartConfig,
 	NumberChartConfig,
-	TableChartConfig
+	TableChartConfig,
 } from '../types/chart.types'
-import { FilterArgs, GranularityType, Measure, Operation } from '../types/query.types'
+import { FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
+import { getLinkedQueries } from '../workbook/workbook'
 
 const charts = new Map<string, Chart>()
 
@@ -50,6 +52,9 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		updateMeasure,
 		removeMeasure,
+
+		getDependentQueries,
+		getDependentQueryColumns,
 
 		history: {} as UseRefHistoryReturn<any, any>,
 	})
@@ -124,12 +129,12 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function prepareAxisChartQuery(config: AxisChartConfig) {
-		if (!config.x_axis || !config.x_axis.column_name) {
+		if (!config.x_axis.dimension || !config.x_axis.dimension.column_name) {
 			console.warn('X-axis is required')
 			chart.dataQuery.reset()
 			return false
 		}
-		if (config.x_axis.column_name === config.split_by?.column_name) {
+		if (config.x_axis.dimension.column_name === config.split_by?.column_name) {
 			createToast({
 				message: 'X-axis and Split by cannot be the same',
 				variant: 'error',
@@ -143,14 +148,14 @@ function makeChart(workbookChart: WorkbookChart) {
 
 		if (config.split_by?.column_name) {
 			chart.dataQuery.addPivotWider({
-				rows: [config.x_axis],
+				rows: [config.x_axis.dimension],
 				columns: [config.split_by],
 				values: values,
 			})
 		} else {
 			chart.dataQuery.addSummarize({
 				measures: values,
-				dimensions: [config.x_axis],
+				dimensions: [config.x_axis.dimension],
 			})
 		}
 
@@ -329,6 +334,33 @@ function makeChart(workbookChart: WorkbookChart) {
 	function removeMeasure(measure: Measure) {
 		if (!chart.doc.calculated_measures) return
 		delete chart.doc.calculated_measures[measure.measure_name]
+	}
+
+	function getDependentQueries() {
+		return [chart.doc.query, ...getLinkedQueries(chart.doc.query)]
+	}
+
+	function getDependentQueryColumns() {
+		return getDependentQueries()
+			.map((q) => getCachedQuery(q))
+			.filter(Boolean)
+			.map((q) => {
+				const query = q!
+				if (!query.result.executedSQL) {
+					query.execute()
+				}
+				return {
+					group: query.doc.title,
+					items: query.result.columnOptions.map((c) => {
+						const sep = '`'
+						const value = `${sep}${query.doc.name}${sep}.${sep}${c.value}${sep}`
+						return {
+							...c,
+							value,
+						}
+					}),
+				}
+			})
 	}
 
 	chart.history = useDebouncedRefHistory(
