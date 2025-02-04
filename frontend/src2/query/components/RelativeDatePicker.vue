@@ -68,7 +68,7 @@ const checkboxLabel = computed(() => {
 				:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
 			/>
 		</div>
-		<div class="flex items-center gap-2">
+		<div v-if="false" class="flex items-center gap-2">
 			<Checkbox size="sm" />
 			<span class="text-p-sm text-gray-600">{{ checkboxLabel }}</span>
 		</div>
