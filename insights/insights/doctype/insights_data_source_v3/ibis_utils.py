@@ -27,6 +27,8 @@ from insights.utils import deep_convert_dict_to_dict as _dict
 from .ibis.functions import week_start
 from .ibis.utils import get_functions
 
+from datetime import date
+
 
 class IbisQueryBuilder:
     def build(self, operations: list, use_live_connection=True) -> IbisQuery:
@@ -422,18 +424,37 @@ class IbisQueryBuilder:
         return self.evaluate_expression(operation.expression.expression)
 
     def apply_sql(self, sql_args):
+
         data_source = sql_args.data_source
         raw_sql = sql_args.raw_sql
+        current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
+        raw_sql = raw_sql.replace('@Today', f"'{current_date}'")
 
-        if not raw_sql.strip().lower().startswith(("select", "with")):
-            frappe.throw(
-                "SQL query must start with a SELECT or WITH statement",
-                title="Invalid SQL Query",
-            )
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
-        return db.sql(raw_sql)
+
+        
+        if raw_sql.strip().lower().startswith(("exec")):
+            
+            result = db.raw_sql(raw_sql)
+
+            columns = [desc[0] for desc in result.description]
+
+            rows = result.fetchall()
+            df = pd.DataFrame.from_records(rows, columns=columns)
+            ibis_table = ibis.memtable(df)
+
+            results = ibis_table
+        else:
+            if not raw_sql.strip().lower().startswith(("select", "with")):
+                frappe.throw(
+                    "SQL query must start with a SELECT or WITH statement",
+                title="Invalid SQL Query",
+                )
+            results = db.sql(raw_sql)
+
+        return results
 
     def apply_code(self, code_args):
         code = code_args.code
