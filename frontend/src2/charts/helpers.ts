@@ -753,23 +753,29 @@ export function setDimensionNames(config: any) {
 }
 
 export function getGranularity(dimension_name: string, config: ChartConfig) {
-	const column = Object.entries(config).find(([_, value]) => {
-		if (!value) return false
-		if (Array.isArray(value)) {
-			return value.some((v) => v.dimension_name === dimension_name)
-		}
-		if (typeof value === 'object') {
-			return value.dimension_name === dimension_name
-		}
-		return false
-	})
-	if (!column) return
-
-	if (Array.isArray(column[1])) {
-		const granularity = column[1].find((v) => v.dimension_name === dimension_name)?.granularity
-		return granularity as GranularityType
+	if ('x_axis' in config && config.x_axis.dimension.dimension_name === dimension_name) {
+		return config.x_axis.dimension.granularity
 	}
 
-	const granularity = column[1].granularity
-	return granularity as GranularityType
+	if ('split_by' in config && config.split_by?.dimension_name === dimension_name) {
+		return config.split_by.granularity
+	}
+
+	if ('date_column' in config && config.date_column?.dimension_name === dimension_name) {
+		return config.date_column.granularity
+	}
+
+	if ('label_column' in config && config.label_column?.dimension_name === dimension_name) {
+		return config.label_column.granularity
+	}
+
+	if ('rows' in config) {
+		const row = config.rows.find((r: any) => r.dimension_name === dimension_name)
+		if (row) return row.granularity
+	}
+
+	if ('columns' in config) {
+		const column = config.columns.find((c: any) => c.dimension_name === dimension_name)
+		if (column) return column.granularity
+	}
 }
