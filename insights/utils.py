@@ -202,6 +202,7 @@ class InsightsPageRenderer(TemplatePage):
         embed_urls = [
             "/insights_v2/public",
             "/insights/public",
+            "/insights/shared",
         ]
         if not any(path.startswith(url) for url in embed_urls):
             return False
