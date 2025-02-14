@@ -15,7 +15,6 @@ dependencies = [
     "ibis-framework==9.5.0",
     "ibis-framework[duckdb]",
     "ibis-framework[mysql]",
-    "ibis-framework[postgres]",
     "ibis-framework[sqlite]",
     "ibis-framework[mssql]",
     # "ibis-framework[bigquery]",
