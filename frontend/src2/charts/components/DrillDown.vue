@@ -31,15 +31,11 @@ watch(
 			props.chart.use_live_connection
 		)
 		if (query) {
+			showDrillDownResults.value = true
 			drillDownQuery.value = query
-			drillDownQuery.value
-				.execute()
-				.then(() => {
-					showDrillDownResults.value = true
-				})
-				.catch(() => {
-					showDrillDownResults.value = false
-				})
+			drillDownQuery.value.execute().then(() => {
+				return drillDownQuery.value?.fetchResultCount()
+			})
 		}
 	},
 	{ immediate: true, deep: true }
@@ -56,7 +52,26 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 			})
 		})
 
-		drillDownQuery.value.execute()
+		drillDownQuery.value
+			.execute()
+			.then(() => drillDownQuery.value?.fetchResultCount())
+			.catch((error) => {
+				console.error('Failed to sort and fetch row count:', error)
+			})
+	}
+}
+
+function loadAllRows() {
+	if (drillDownQuery.value) {
+		drillDownQuery.value.addLimit(drillDownQuery.value.result.totalRowCount)
+		drillDownQuery.value
+			.execute()
+			.then(() => {
+				return drillDownQuery.value?.fetchResultCount()
+			})
+			.catch((error) => {
+				console.error('Failed to load all rows:', error)
+			})
 	}
 }
 </script>
@@ -87,10 +102,24 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
 				>
 					<template #footer-left>
-						<p class="tnum p-1 text-sm text-gray-600">
-							Showing {{ drillDownQuery.result.rows.length }} of
-							{{ drillDownQuery.result.totalRowCount }} rows
-						</p>
+						<div class="flex items-center justify-between gap-4 p-1">
+							<p class="tnum text-sm text-gray-600">
+								Showing {{ drillDownQuery.result.rows.length }} of
+								{{ drillDownQuery.result.totalRowCount }} rows
+							</p>
+							<Button
+								v-if="
+									drillDownQuery.result.rows.length <
+									drillDownQuery.result.totalRowCount
+								"
+								:variant="'ghost'"
+								theme="gray"
+								size="sm"
+								label="Load All Rows"
+								@click="loadAllRows"
+							>
+							</Button>
+						</div>
 					</template>
 				</DataTable>
 			</div>

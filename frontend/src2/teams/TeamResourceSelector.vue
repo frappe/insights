@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import useDataSourceStore from '../data_source/data_source'
 import { DataSourceListItem } from '../data_source/data_source.types'
 import useTableStore, { DataSourceTable } from '../data_source/tables'
+import { toOptions, wheneverChanges } from '../helpers'
 import ExpressionEditor from '../query/components/ExpressionEditor.vue'
 import { TeamPermission } from './teams'
 
@@ -197,6 +198,28 @@ function selectTable(dataSource: string, table: string, selected: boolean) {
 }
 
 const expandedTable = ref<string | null>(null)
+const expandedTableColumns = ref<ColumnOption[]>([])
+wheneverChanges(
+	() => [expandedDataSource.value, expandedTable.value],
+	() => {
+		if (!expandedDataSource.value || !expandedTable.value) {
+			return
+		}
+		const table = dataSourceTables.value[expandedDataSource.value].find(
+			(t) => t.name === expandedTable.value
+		)
+		if (!table) {
+			return
+		}
+		tableStore.getTableColumns(expandedDataSource.value, table.table_name).then((columns) => {
+			expandedTableColumns.value = toOptions(columns, {
+				label: 'name',
+				value: 'name',
+				description: 'type',
+			})
+		})
+	}
+)
 function toggleExpandedTable(table: string) {
 	if (expandedTable.value === table) {
 		expandedTable.value = null
@@ -312,7 +335,7 @@ function toggleExpandedTable(table: string) {
 					</div>
 					<div v-if="expandedTable === table.name" class="ml-6 flex flex-col gap-1.5">
 						<ExpressionEditor
-							:column-options="[]"
+							:column-options="expandedTableColumns"
 							v-model="tableRestrictions[table.name]"
 							placeholder="eg. country == 'India'"
 							class="h-fit max-h-[10rem] min-h-[2.5rem] text-sm"

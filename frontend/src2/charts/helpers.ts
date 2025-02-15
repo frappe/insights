@@ -1,6 +1,6 @@
 import { graphic } from 'echarts/core'
 import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
-import { FIELDTYPES } from '../helpers/constants'
+import { FIELDTYPES, GranularityType } from '../helpers/constants'
 import { column, getFormattedDate } from '../query/helpers'
 import useQuery from '../query/query'
 import {
@@ -12,15 +12,14 @@ import {
 	LineChartConfig,
 	Series,
 	SeriesLine,
+	XAxis,
 } from '../types/chart.types'
 import {
-	ColumnDataType,
 	FilterRule,
-	GranularityType,
 	Operation,
 	QueryResult,
 	QueryResultColumn,
-	QueryResultRow,
+	QueryResultRow
 } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
 
@@ -48,9 +47,11 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 
-	const xAxis = getXAxis({ column_type: config.x_axis.data_type })
-	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.data_type)
-	const granularity = xAxisIsDate ? getGranularity(config.x_axis.dimension_name, config) : null
+	const xAxis = getXAxis(config.x_axis)
+	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
+	const granularity = xAxisIsDate
+		? getGranularity(config.x_axis.dimension.dimension_name, config)
+		: null
 
 	const leftYAxis = getYAxis()
 	const rightYAxis = getYAxis()
@@ -59,15 +60,15 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.dimension_name])
-				const b_date = new Date(b[config.x_axis.dimension_name])
+				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
+				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
 		  })
 		: _rows
 
 	const getSeriesData = (column: string) =>
 		sortedRows.map((r) => {
-			const x_value = r[config.x_axis.dimension_name]
+			const x_value = r[config.x_axis.dimension.dimension_name]
 			const y_value = r[column]
 			return [x_value, y_value]
 		})
@@ -140,9 +141,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 
-	const xAxis = getXAxis({ column_type: config.x_axis.data_type })
-	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.data_type)
-	const granularity = xAxisIsDate ? getGranularity(config.x_axis.dimension_name, config) : null
+	const xAxis = getXAxis(config.x_axis)
+	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
+	const granularity = xAxisIsDate
+		? getGranularity(config.x_axis.dimension.dimension_name, config)
+		: null
 
 	const leftYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
@@ -151,14 +154,14 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.dimension_name])
-				const b_date = new Date(b[config.x_axis.dimension_name])
+				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
+				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
 		  })
 		: _rows
 
 	const total_per_x_value = _rows.reduce((acc, row) => {
-		const x_value = row[config.x_axis.dimension_name]
+		const x_value = row[config.x_axis.dimension.dimension_name]
 		if (!acc[x_value]) acc[x_value] = 0
 		number_columns.forEach((m) => (acc[x_value] += row[m.name]))
 		return acc
@@ -167,7 +170,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const getSeriesData = (column: string) =>
 		sortedRows
 			.map((r) => {
-				const x_value = r[config.x_axis.dimension_name]
+				const x_value = r[config.x_axis.dimension.dimension_name]
 				const y_value = r[column]
 				const normalize = config.y_axis.normalize
 				if (!normalize) {
@@ -254,11 +257,11 @@ function getSerie(config: AxisChartConfig, number_column: string): Series {
 	)
 }
 
-type XAxisCustomizeOptions = {
-	column_type?: ColumnDataType
-}
-function getXAxis(options: XAxisCustomizeOptions = {}) {
-	const xAxisIsDate = options.column_type && FIELDTYPES.DATE.includes(options.column_type)
+function getXAxis(x_axis: XAxis) {
+	const columnType = x_axis.dimension.data_type
+	const xAxisIsDate = columnType && FIELDTYPES.DATE.includes(columnType)
+	const rotation = Math.min(Math.max(x_axis.label_rotation || 0, 0), 90)
+
 	return {
 		type: xAxisIsDate ? 'time' : 'category',
 		z: 2,
@@ -267,6 +270,10 @@ function getXAxis(options: XAxisCustomizeOptions = {}) {
 		splitLine: { show: false },
 		axisLine: { show: true },
 		axisTick: { show: false },
+		axisLabel: {
+			show: true,
+			rotate: rotation,
+		},
 	}
 }
 
@@ -560,6 +567,12 @@ function getTooltip(options: any = {}) {
 		confine: true,
 		appendToBody: false,
 		formatter: (params: Object | Array<Object>) => {
+			if (Array.isArray(params)) {
+				params = params
+					.filter((p) => p.value?.[1] !== 0)
+					.sort((a, b) => b.value?.[1] - a.value?.[1])
+			}
+
 			if (!Array.isArray(params)) {
 				const p = params as any
 				const value = options.xySwapped ? p.value[0] : p.value[1]
@@ -731,6 +744,15 @@ export function getDrillDownQuery(
 	return query
 }
 
+export function handleOldXAxisConfig(old_x_axis: any): AxisChartConfig['x_axis'] {
+	if (old_x_axis && old_x_axis.column_name) {
+		return {
+			dimension: old_x_axis,
+		}
+	}
+	return old_x_axis
+}
+
 export function handleOldYAxisConfig(old_y_axis: any): AxisChartConfig['y_axis'] {
 	if (Array.isArray(old_y_axis)) {
 		return {
@@ -753,10 +775,18 @@ export function setDimensionNames(config: any) {
 		return dimension
 	}
 
-	const dimensionPaths = ['x_axis', 'split_by', 'date_column', 'label_column']
-	dimensionPaths.forEach((path) => {
-		config[path] = setDimensionName(config[path])
-	})
+	if (config.x_axis?.dimension) {
+		config.x_axis.dimension = setDimensionName(config.x_axis.dimension)
+	}
+	if (config.split_by) {
+		config.split_by = setDimensionName(config.split_by)
+	}
+	if (config.date_column) {
+		config.date_column = setDimensionName(config.date_column)
+	}
+	if (config.label_column) {
+		config.label_column = setDimensionName(config.label_column)
+	}
 	if (config.rows && config.rows.length) {
 		config.rows = config.rows.map(setDimensionName)
 	}
@@ -767,23 +797,29 @@ export function setDimensionNames(config: any) {
 }
 
 export function getGranularity(dimension_name: string, config: ChartConfig) {
-	const column = Object.entries(config).find(([_, value]) => {
-		if (!value) return false
-		if (Array.isArray(value)) {
-			return value.some((v) => v.dimension_name === dimension_name)
-		}
-		if (typeof value === 'object') {
-			return value.dimension_name === dimension_name
-		}
-		return false
-	})
-	if (!column) return
-
-	if (Array.isArray(column[1])) {
-		const granularity = column[1].find((v) => v.dimension_name === dimension_name)?.granularity
-		return granularity as GranularityType
+	if ('x_axis' in config && config.x_axis.dimension.dimension_name === dimension_name) {
+		return config.x_axis.dimension.granularity
 	}
 
-	const granularity = column[1].granularity
-	return granularity as GranularityType
+	if ('split_by' in config && config.split_by?.dimension_name === dimension_name) {
+		return config.split_by.granularity
+	}
+
+	if ('date_column' in config && config.date_column?.dimension_name === dimension_name) {
+		return config.date_column.granularity
+	}
+
+	if ('label_column' in config && config.label_column?.dimension_name === dimension_name) {
+		return config.label_column.granularity
+	}
+
+	if ('rows' in config) {
+		const row = config.rows.find((r: any) => r.dimension_name === dimension_name)
+		if (row) return row.granularity
+	}
+
+	if ('columns' in config) {
+		const column = config.columns.find((c: any) => c.dimension_name === dimension_name)
+		if (column) return column.granularity
+	}
 }

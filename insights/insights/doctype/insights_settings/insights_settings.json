@@ -13,6 +13,7 @@
   "allowed_origins",
   "max_records_to_sync",
   "max_memory_usage",
+  "max_execution_time",
   "integrations_section",
   "telegram_api_token",
   "query_section",
@@ -134,12 +135,17 @@
    "fieldname": "apply_user_permissions",
    "fieldtype": "Check",
    "label": "Apply User Permissions"
+  },
+  {
+   "fieldname": "max_execution_time",
+   "fieldtype": "Int",
+   "label": "Max Execution Time (Seconds)"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-03 16:27:21.761873",
+ "modified": "2025-01-14 13:17:25.798141",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { computed, provide, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse } from '../helpers'
+import { safeJSONParse, wheneverChanges } from '../helpers'
 import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
 import ChartSelectorDialog from './ChartSelectorDialog.vue'
 import useDashboard from './dashboard'
-import DashboardFilterSelector from './DashboardFilterSelector.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { workbookKey } from '../workbook/workbook'
 
 const props = defineProps<{
 	dashboard: WorkbookDashboard
@@ -26,7 +26,6 @@ const selectedCharts = computed(() => {
 })
 
 const showChartSelectorDialog = ref(false)
-const showTextWidgetCreationDialog = ref(false)
 
 function onDragOver(event: DragEvent) {
 	if (!event.dataTransfer) return
@@ -47,6 +46,15 @@ function onDrop(event: DragEvent) {
 }
 
 const showShareDialog = ref(false)
+
+const workbook = inject(workbookKey, null)
+wheneverChanges(
+	() => dashboard.editing,
+	() => {
+		if (!workbook) return
+		workbook._pauseAutoSave = dashboard.editing
+	}
+)
 </script>
 
 <template>
@@ -59,12 +67,6 @@ const showShareDialog = ref(false)
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 				<div class="flex gap-2">
-					<DashboardFilterSelector
-						v-if="!dashboard.editing"
-						:dashboard="dashboard"
-						:queries="props.queries"
-						:charts="props.charts"
-					/>
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
@@ -102,6 +104,22 @@ const showShareDialog = ref(false)
 						@click="showChartSelectorDialog = true"
 					>
 						Chart
+					</Button>
+					<Button
+						v-if="dashboard.editing"
+						variant="outline"
+						icon-left="plus"
+						@click="() => dashboard.addFilter()"
+					>
+						Filter
+					</Button>
+					<Button
+						v-if="dashboard.editing"
+						variant="outline"
+						icon-left="plus"
+						@click="() => dashboard.addText()"
+					>
+						Text
 					</Button>
 					<Button
 						v-if="dashboard.editing"

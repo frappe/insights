@@ -3,9 +3,9 @@ import { debounce } from 'frappe-ui'
 import { onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
-import { ColumnOption } from '../../types/query.types'
+import { DropdownOption } from '../../types/query.types'
 
-const props = defineProps<{ columnOptions: ColumnOption[]; placeholder?: string }>()
+const props = defineProps<{ columnOptions: DropdownOption[]; placeholder?: string }>()
 const expression = defineModel<string>({
 	required: true,
 })

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, watchEffect } from 'vue'
-import Switch from '../../components/Switch.vue'
-
-const props = defineProps<{ placeholder: string }>()
+import Checkbox from '../../components/Checkbox.vue'
 
 const relativeDate = defineModel<string>({
 	default: () => 'Last 1 Day',
@@ -34,45 +32,45 @@ watchEffect(() => {
 			? `${parts.span} ${parts.intervalType}`
 			: `${parts.span} ${parts.interval} ${parts.intervalType}`
 })
+
+const checkboxLabel = computed(() => {
+	if (parts.span == 'Current') {
+		return parts.intervalType + ' to Date'
+	}
+	if (parts.span == 'Last') {
+		return 'Include Current ' + parts.intervalType
+	}
+	if (parts.span == 'Next') {
+		return 'Include Current ' + parts.intervalType
+	}
+})
 </script>
 
 <template>
-	<Popover class="flex w-full [&>div:first-child]:w-full">
-		<template #target="{ togglePopover }">
-			<input
-				readonly
-				type="text"
-				:value="relativeDate"
-				:placeholder="props.placeholder"
-				@focus="togglePopover()"
-				class="form-input block h-7 w-full cursor-text select-none rounded border-gray-400 text-sm placeholder-gray-500"
+	<div class="flex w-[15rem] select-none flex-col gap-2 rounded bg-white text-base">
+		<div class="flex gap-2">
+			<FormControl
+				type="select"
+				v-model="parts.span"
+				class="flex-[3] flex-shrink-0 text-sm"
+				:options="['Last', 'Current', 'Next']"
 			/>
-		</template>
-		<template #body="{ togglePopover }">
-			<div
-				class="my-2 flex w-[16rem] select-none flex-col space-y-3 rounded border bg-white p-3 text-base shadow-md"
-			>
-				<Switch :tabs="['Last', 'Current', 'Next']" v-model="parts.span"></Switch>
-
-				<div class="flex space-x-2">
-					<FormControl
-						v-if="parts.span !== 'Current'"
-						type="number"
-						v-model="parts.interval"
-						class="w-full text-sm"
-					/>
-					<FormControl
-						type="select"
-						v-model="parts.intervalType"
-						class="w-full text-sm"
-						:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
-					>
-					</FormControl>
-				</div>
-				<div class="flex justify-end">
-					<Button variant="solid" @click="togglePopover"> Done </Button>
-				</div>
-			</div>
-		</template>
-	</Popover>
+			<FormControl
+				v-if="parts.span !== 'Current'"
+				type="number"
+				v-model="parts.interval"
+				class="flex-[2] flex-shrink-0 text-sm"
+			/>
+			<FormControl
+				type="select"
+				v-model="parts.intervalType"
+				class="flex-[3] flex-shrink-0 text-sm"
+				:options="['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']"
+			/>
+		</div>
+		<div v-if="false" class="flex items-center gap-2">
+			<Checkbox size="sm" />
+			<span class="text-p-sm text-gray-600">{{ checkboxLabel }}</span>
+		</div>
+	</div>
 </template>
