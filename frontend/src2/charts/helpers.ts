@@ -648,27 +648,14 @@ function getTotalGraphic(total: number, legend_position: DonutChartConfig['legen
 			left,
 			top,
 			style: {
-			  text: `${formatNumber(total, 2)}`,
+			  text: `Total\n${formatNumber(total, 2)}`,
 			  fontSize: 20,
 			  fontWeight: 'bold',
 			  textAlign: 'center',
 			  lineHeight: 24,
 			  fill: '#333',
 			},
-		  },
-		  {
-			type: 'text',
-			left,
-			top:  (parseFloat(top) + 5).toString() + '%',
-			style: {
-			  text: 'TOTAL',
-			  fontSize: 22,
-			  fontWeight: 'normal',
-			  textAlign: 'center',
-			  lineHeight: 24,
-			  fill: '#A0A0A0',
-			},
-		  },
+		  }
 		],
 	  };
   }

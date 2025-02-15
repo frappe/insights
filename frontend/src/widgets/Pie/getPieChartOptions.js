@@ -160,7 +160,7 @@ export default function getPieChartOptions(labels, dataset, options) {
 						  left:`${parseInt(center[0]) - 1.5}%`,
 						  top: `${parseInt(center[1]) - 4}%`,
                           style: {
-                              text: `${formatNumber(total, 2)}\nTotal`,
+                              text: `Total\n${formatNumber(total, 2)}`,
                               fontSize: 18,
                               fontWeight: 'bold',
                               textAlign: 'center',
