@@ -87,7 +87,7 @@ export type NumberColumnOptions = {
 export type DonutChartConfig = {
 	label_column: Dimension
 	value_column: Measure
-	legend_position?: 'top' | 'bottom' | 'left' | 'right'
+	legend_position: 'top' | 'bottom' | 'left' | 'right'
 	show_inline_labels?: boolean
 	show_total_in_center?: boolean
 	max_slices?: number
