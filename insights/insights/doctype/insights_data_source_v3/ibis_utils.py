@@ -1,5 +1,6 @@
 import ast
 import time
+from datetime import date
 
 import frappe
 import ibis
@@ -14,6 +15,7 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     DataSourceConnectionError,
 )
@@ -26,8 +28,6 @@ from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import week_start
 from .ibis.utils import get_functions
-
-from datetime import date
 
 
 class IbisQueryBuilder:
@@ -424,35 +424,40 @@ class IbisQueryBuilder:
         return self.evaluate_expression(operation.expression.expression)
 
     def apply_sql(self, sql_args):
-
         data_source = sql_args.data_source
         raw_sql = sql_args.raw_sql
-        current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
-        raw_sql = raw_sql.replace('@Today', f"'{current_date}'")
-
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
 
-        
-        if raw_sql.strip().lower().startswith(("exec")):
-            
+        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith(
+            "exec"
+        ):
+            current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
+            raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
+
             result = db.raw_sql(raw_sql)
 
             columns = [desc[0] for desc in result.description]
-
             rows = result.fetchall()
-            df = pd.DataFrame.from_records(rows, columns=columns)
-            ibis_table = ibis.memtable(df)
 
-            results = ibis_table
-        else:
-            if not raw_sql.strip().lower().startswith(("select", "with")):
-                frappe.throw(
-                    "SQL query must start with a SELECT or WITH statement",
-                title="Invalid SQL Query",
-                )
+            df = pd.DataFrame.from_records(rows, columns=columns)
+
+            results = Warehouse().db.create_table(
+                make_digest(raw_sql),
+                df,
+                temp=True,
+                overwrite=True,
+            )
+
+        elif raw_sql.strip().lower().startswith(("select", "with")):
             results = db.sql(raw_sql)
+
+        else:
+            frappe.throw(
+                "SQL query must start with a SELECT or WITH statement",
+                title="Invalid SQL Query",
+            )
 
         return results
 

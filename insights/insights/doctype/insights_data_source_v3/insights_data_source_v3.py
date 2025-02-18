@@ -161,6 +161,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         database_type: DF.Literal[
             "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "MSSQL"
         ]
+        enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check
