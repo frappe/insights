@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { AlertTriangle, Maximize } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCachedChart } from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -16,7 +16,7 @@ const chart = computed(() => {
 	if (!props.item.chart) return null
 	return getCachedChart(props.item.chart)
 })
-
+provide('chart',chart)
 const dashboard = inject<Dashboard>('dashboard')!
 if (props.item.chart && !chart.value?.dataQuery.result.executedSQL) {
 	dashboard.refreshChart(props.item.chart)
