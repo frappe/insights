@@ -15,7 +15,6 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     DataSourceConnectionError,
 )
@@ -443,12 +442,7 @@ class IbisQueryBuilder:
 
             df = pd.DataFrame.from_records(rows, columns=columns)
 
-            results = Warehouse().db.create_table(
-                make_digest(raw_sql),
-                df,
-                temp=True,
-                overwrite=True,
-            )
+            results = ibis.memtable(df)
 
         elif raw_sql.strip().lower().startswith(("select", "with")):
             results = db.sql(raw_sql)
@@ -658,7 +652,7 @@ def exec_with_return(
 def get_ibis_table_name(table: IbisQuery):
     dt = table.op().find_topmost(DatabaseTable)
     if not dt:
-        return None
+        return "right_table"
     return dt[0].name
 
 
