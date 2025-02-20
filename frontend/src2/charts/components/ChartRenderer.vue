@@ -66,6 +66,10 @@ function onClick(params: any) {
 		drillOn.value = { row, column }
 	}
 }
+
+function handleDrillDown(data: { row: any; column: any }) {
+	drillOn.value = data
+}
 </script>
 
 <template>
@@ -81,6 +85,7 @@ function onClick(params: any) {
 			v-else-if="!props.loading && props.chart_type == 'Number'"
 			:config="(props.config as NumberChartConfig)"
 			:result="props.result"
+			@drill-down="handleDrillDown"
 		/>
 		<TableChart
 			v-else-if="!props.loading && props.chart_type == 'Table'"

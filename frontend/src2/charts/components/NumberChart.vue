@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineEmits } from 'vue'
 import { formatNumber, getShortNumber } from '../../helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { QueryResult } from '../../types/query.types'
@@ -9,6 +9,8 @@ const props = defineProps<{
 	config: NumberChartConfig
 	result: QueryResult
 }>()
+
+const emit = defineEmits(['drill-down'])
 
 const config = computed(() => props.config)
 
@@ -74,6 +76,15 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 	const numberOption = config.value.number_column_options[index]?.[option] as any
 	return numberOption === undefined ? config.value[option] : numberOption
 }
+
+function openDrillDown(measure_name: string) {
+	const row = props.result.formattedRows[0]
+	const column = props.result.columns.find((c) => c.name === measure_name)
+
+	if (!row || !column) return
+
+	emit('drill-down', { row, column })
+}
 </script>
 
 <template>
@@ -92,6 +103,7 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 				:key="measure_name"
 				class="flex h-fit max-h-[140px] items-center gap-2 overflow-y-auto rounded bg-white px-6 pt-5 shadow"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
+				@dblclick="openDrillDown(measure_name)"
 			>
 				<div class="flex w-full flex-col">
 					<span class="truncate text-sm font-medium">
