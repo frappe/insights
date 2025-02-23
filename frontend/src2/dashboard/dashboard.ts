@@ -23,7 +23,7 @@ export default function useDashboard(workbookDashboard: WorkbookDashboard) {
 	return dashboard
 }
 
-type FilterState = {
+export type FilterState = {
 	operator: FilterOperator
 	value: FilterValue
 }
