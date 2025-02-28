@@ -684,9 +684,6 @@ def sanitize_name(name):
 
 
 def get_code_results(code: str, digest: str):
-    if has_cached_results(digest):
-        return get_cached_results(digest)
-
     pandas = frappe._dict()
     pandas.DataFrame = pd.DataFrame
     pandas.read_csv = pd.read_csv
@@ -718,7 +715,5 @@ def get_code_results(code: str, digest: str):
 
     if not isinstance(results, pd.DataFrame):
         results = pd.DataFrame(results)
-
-    cache_results(digest, results)
 
     return results
