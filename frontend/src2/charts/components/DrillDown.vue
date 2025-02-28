@@ -6,6 +6,7 @@ import { Operation, QueryResult, QueryResultColumn, QueryResultRow } from '../..
 import { getDrillDownQuery } from '../helpers'
 import { column } from '../../query/helpers'
 
+const emit = defineEmits({ close: () => true })
 const props = defineProps<{
 	chart: {
 		operations: Operation[]
@@ -74,6 +75,12 @@ function loadAllRows() {
 			})
 	}
 }
+
+function closeDialog() {
+	showDrillDownResults.value = false
+	drillDownQuery.value = null
+	emit('close')
+}
 </script>
 
 <template>
@@ -83,7 +90,7 @@ function loadAllRows() {
 			title: 'Drill Down Results',
 			size: '5xl',
 		}"
-		@close="drillDownQuery = null"
+		@close="closeDialog"
 	>
 		<template #body-content>
 			<div
