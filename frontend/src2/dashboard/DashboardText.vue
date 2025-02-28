@@ -11,7 +11,7 @@ const editedText = ref(unref(props.item.text))
 </script>
 
 <template>
-	<div v-html="props.item.text" class="prose text-gray-700"></div>
+	<div v-html="props.item.text" class="prose w-full text-gray-700"></div>
 
 	<Dialog
 		v-if="dashboard.isEditingItem(props.item)"
