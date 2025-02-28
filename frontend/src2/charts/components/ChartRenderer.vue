@@ -112,5 +112,6 @@ function onClick(params: any) {
 		}"
 		:row="drillOn.row"
 		:column="drillOn.column"
+		@close="drillOn = null"
 	/>
 </template>
