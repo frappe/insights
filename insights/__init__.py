@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 
-__version__ = "3.0.17"
+__version__ = "3.0.18"
 
 
 def create_toast(
