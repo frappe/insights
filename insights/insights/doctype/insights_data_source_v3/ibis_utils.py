@@ -1,5 +1,6 @@
 import ast
 import time
+from datetime import date
 
 import frappe
 import ibis
@@ -14,6 +15,7 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     DataSourceConnectionError,
 )
@@ -428,23 +430,41 @@ class IbisQueryBuilder:
         data_source = sql_args.data_source
         raw_sql = sql_args.raw_sql
 
-        if not raw_sql.strip().lower().startswith(("select", "with")):
+        ds = frappe.get_doc("Insights Data Source v3", data_source)
+        db = ds._get_ibis_backend()
+
+        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith(
+            "exec"
+        ):
+            current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
+            raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
+
+            result = db.raw_sql(raw_sql)
+
+            columns = [desc[0] for desc in result.description]
+            rows = result.fetchall()
+
+            df = pd.DataFrame.from_records(rows, columns=columns)
+
+            results = ibis.memtable(df)
+
+        elif raw_sql.strip().lower().startswith(("select", "with")):
+            results = db.sql(raw_sql)
+
+        else:
             frappe.throw(
                 "SQL query must start with a SELECT or WITH statement",
                 title="Invalid SQL Query",
             )
 
-        ds = frappe.get_doc("Insights Data Source v3", data_source)
-        db = ds._get_ibis_backend()
-        return db.sql(raw_sql)
+        return results
 
     def apply_code(self, code_args):
         code = code_args.code
         digest = make_digest(code)
         results = get_code_results(code, digest)
 
-        db = ibis.duckdb.connect()
-        return db.create_table(
+        return Warehouse().db.create_table(
             digest,
             results,
             temp=True,
@@ -644,7 +664,7 @@ def exec_with_return(
 def get_ibis_table_name(table: IbisQuery):
     dt = table.op().find_topmost(DatabaseTable)
     if not dt:
-        return None
+        return "right_table"
     return dt[0].name
 
 
@@ -664,9 +684,6 @@ def sanitize_name(name):
 
 
 def get_code_results(code: str, digest: str):
-    if has_cached_results(digest):
-        return get_cached_results(digest)
-
     pandas = frappe._dict()
     pandas.DataFrame = pd.DataFrame
     pandas.read_csv = pd.read_csv
@@ -698,7 +715,5 @@ def get_code_results(code: str, digest: str):
 
     if not isinstance(results, pd.DataFrame):
         results = pd.DataFrame(results)
-
-    cache_results(digest, results)
 
     return results

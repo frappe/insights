@@ -6,6 +6,8 @@ import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis import _
 
+from insights.insights.query_builders.sql_functions import handle_timespan
+
 
 # aggregate functions
 def count(
@@ -704,6 +706,21 @@ def date_sub(column: ir.DateValue, value: int, unit: str):
     - date_sub(order_date, 1, 'weeks')
     """
     return column - ibis.interval(value, unit)
+
+
+def within(column: ir.DateValue, timespan: str):
+    """
+    def within(column, timespan)
+
+    Filter rows within a timespan. The timespan can be 'Last [N] [Parts]', 'Current [Parts]', or 'Next [N] [Parts]'.
+    Parts can be 'day', 'week', 'month', 'quarter', 'year' or 'fiscal year'.
+
+    Examples:
+    - within(order_date, 'Last 7 days')
+    - within(order_date, 'Current month')
+    - within(order_date, 'Next 2 weeks')
+    """
+    return handle_timespan(column, timespan)
 
 
 def now():

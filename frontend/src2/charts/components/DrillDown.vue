@@ -6,6 +6,7 @@ import { Operation, QueryResult, QueryResultColumn, QueryResultRow } from '../..
 import { getDrillDownQuery } from '../helpers'
 import { column } from '../../query/helpers'
 
+const emit = defineEmits({ close: () => true })
 const props = defineProps<{
 	chart: {
 		operations: Operation[]
@@ -31,18 +32,11 @@ watch(
 			props.chart.use_live_connection
 		)
 		if (query) {
+			showDrillDownResults.value = true
 			drillDownQuery.value = query
-			drillDownQuery.value
-				.execute()
-				.then(() => {
-					return drillDownQuery.value?.fetchResultCount()
-				})
-				.then(() => {
-					showDrillDownResults.value = true
-				})
-				.catch(() => {
-					showDrillDownResults.value = false
-				})
+			drillDownQuery.value.execute().then(() => {
+				return drillDownQuery.value?.fetchResultCount()
+			})
 		}
 	},
 	{ immediate: true, deep: true }
@@ -59,11 +53,12 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 			})
 		})
 
-		drillDownQuery.value.execute()
-		.then(() => drillDownQuery.value?.fetchResultCount())
-		.catch((error) => {
-			console.error('Failed to sort and fetch row count:', error)
-		});
+		drillDownQuery.value
+			.execute()
+			.then(() => drillDownQuery.value?.fetchResultCount())
+			.catch((error) => {
+				console.error('Failed to sort and fetch row count:', error)
+			})
 	}
 }
 
@@ -78,10 +73,14 @@ function loadAllRows() {
 			.catch((error) => {
 				console.error('Failed to load all rows:', error)
 			})
-
 	}
 }
 
+function closeDialog() {
+	showDrillDownResults.value = false
+	drillDownQuery.value = null
+	emit('close')
+}
 </script>
 
 <template>
@@ -91,7 +90,7 @@ function loadAllRows() {
 			title: 'Drill Down Results',
 			size: '5xl',
 		}"
-		@close="drillDownQuery = null"
+		@close="closeDialog"
 	>
 		<template #body-content>
 			<div
@@ -109,14 +108,17 @@ function loadAllRows() {
 					@sort="onSort"
 					:on-export="drillDownQuery ? drillDownQuery.downloadResults : undefined"
 				>
-				<template #footer-left>
-						<div class="flex items-center justify-between p-1 gap-4">
+					<template #footer-left>
+						<div class="flex items-center justify-between gap-4 p-1">
 							<p class="tnum text-sm text-gray-600">
 								Showing {{ drillDownQuery.result.rows.length }} of
 								{{ drillDownQuery.result.totalRowCount }} rows
 							</p>
 							<Button
-							v-if="drillDownQuery.result.rows.length < drillDownQuery.result.totalRowCount"
+								v-if="
+									drillDownQuery.result.rows.length <
+									drillDownQuery.result.totalRowCount
+								"
 								:variant="'ghost'"
 								theme="gray"
 								size="sm"

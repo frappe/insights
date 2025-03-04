@@ -10,7 +10,7 @@ import {
 	AxisChartConfig,
 	DonutChartConfig,
 	NumberChartConfig,
-	TableChartConfig,
+	TableChartConfig
 } from '../types/chart.types'
 import { FilterArgs, Measure, Operation } from '../types/query.types'
 import { WorkbookChart } from '../types/workbook.types'
@@ -300,17 +300,25 @@ function makeChart(workbookChart: WorkbookChart) {
 	}
 
 	function updateGranularity(column_name: string, granularity: GranularityType) {
-		Object.entries(chart.doc.config).forEach(([_, value]) => {
-			if (Array.isArray(value)) {
-				const index = value.findIndex((v) => v.dimension_name === column_name)
-				if (index > -1) {
-					value[index].granularity = granularity
+		if ('x_axis' in chart.doc.config) {
+			if (chart.doc.config.x_axis?.dimension?.dimension_name === column_name) {
+				chart.doc.config.x_axis.dimension.granularity = granularity
+			}
+		}
+
+		if ('date_column' in chart.doc.config) {
+			if (chart.doc.config.date_column?.dimension_name === column_name) {
+				chart.doc.config.date_column.granularity = granularity
+			}
+		}
+
+		if ('rows' in chart.doc.config) {
+			chart.doc.config.rows.forEach((row) => {
+				if (row.dimension_name === column_name) {
+					row.granularity = granularity
 				}
-			}
-			if (value && value.dimension_name === column_name) {
-				value.granularity = granularity
-			}
-		})
+			})
+		}
 	}
 
 	function setChartFilters() {

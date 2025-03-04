@@ -41,6 +41,7 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(n
 			}"
 			:row="drillOn.row"
 			:column="drillOn.column"
+			@close="drillOn = null"
 		/>
 	</div>
 </template>
