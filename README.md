@@ -102,7 +102,15 @@ Replace the following parameters with your values:
 - `your_email.example.com`: Your email address
 - `subdomain.domain.tld`: Your domain name where Insights will be hosted
 
-The script will set up a production-ready instance of Frappe Insights with all the necessary configurations in about 5 minutes.
+**Step 3**: Enable Server Scripts
+
+```bash
+docker compose -p insights_prod_setup exec backend bench set-config -g server_script_enabled 1
+```
+
+**Step 4**: Access the site
+
+Open the site in your browser at `https://subdomain.domain.tld/` and login with the administrator credentials. You will find the admin password logged in the console after the deployment command is finished. Or you can find it in the `insights_prod_setup-passwords.txt` file created after the deployment.
 
 ## Development Setup
 
