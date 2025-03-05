@@ -1,6 +1,6 @@
 import { reactive, toRefs } from 'vue'
 import useChart from '../charts/chart'
-import { getUniqueId, safeJSONParse, store } from '../helpers'
+import { getUniqueId, safeJSONParse, store, wheneverChanges } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
@@ -11,6 +11,7 @@ import {
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
+import useWorkbook from '../workbook/workbook'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -239,6 +240,21 @@ function makeDashboard(name: string) {
 
 	const key = `insights:dashboard-filter-states-${name}`
 	dashboard.filterStates = store(key, () => dashboard.filterStates)
+
+	wheneverChanges(
+		() => dashboard.doc.title,
+		() => {
+			if (!dashboard.doc.workbook) return
+			const workbook = useWorkbook(dashboard.doc.workbook)
+			for (const d of workbook.doc.dashboards) {
+				if (d.name === dashboard.doc.name) {
+					d.title = dashboard.doc.title
+					break
+				}
+			}
+		},
+		{ debounce: 500 }
+	)
 
 	return dashboard
 }

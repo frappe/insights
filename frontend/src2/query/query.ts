@@ -25,6 +25,7 @@ import {
 	UnionArgs,
 } from '../types/query.types'
 import { InsightsQueryv3 } from '../types/workbook.types'
+import useWorkbook from '../workbook/workbook'
 import {
 	cast,
 	code,
@@ -548,6 +549,21 @@ export function makeQuery(name: string) {
 			}
 		},
 		{ immediate: true }
+	)
+
+	wheneverChanges(
+		() => query.doc.title,
+		() => {
+			if (!query.doc.workbook) return
+			const workbook = useWorkbook(query.doc.workbook)
+			for (const q of workbook.doc.queries) {
+				if (q.name === query.doc.name) {
+					q.title = query.doc.title
+					break
+				}
+			}
+		},
+		{ debounce: 500 }
 	)
 
 	return reactive({

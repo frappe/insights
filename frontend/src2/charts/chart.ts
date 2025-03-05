@@ -15,7 +15,7 @@ import {
 } from '../types/chart.types'
 import { AdhocFilters } from '../types/query.types'
 import { InsightsChartv3 } from '../types/workbook.types'
-import { getLinkedQueries } from '../workbook/workbook'
+import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
 import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
 
 const charts = new Map<string, Chart>()
@@ -348,6 +348,21 @@ function makeChart(name: string) {
 			max: 100,
 			debounce: 500,
 		}
+	)
+
+	wheneverChanges(
+		() => chart.doc.title,
+		() => {
+			if (!chart.doc.workbook) return
+			const workbook = useWorkbook(chart.doc.workbook)
+			for (const c of workbook.doc.charts) {
+				if (c.name === chart.doc.name) {
+					c.title = chart.doc.title
+					break
+				}
+			}
+		},
+		{ debounce: 500 }
 	)
 
 	return reactive({
