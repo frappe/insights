@@ -18,11 +18,7 @@ class InsightsWorkbook(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        charts: DF.JSON | None
-        dashboards: DF.JSON | None
-        enable_auto_save: DF.Check
         name: DF.Int | None
-        queries: DF.JSON | None
         title: DF.Data
     # end: auto-generated types
 
@@ -72,7 +68,6 @@ class InsightsWorkbook(Document):
 
     @frappe.whitelist()
     def track_view(self):
-        self.fix_json_fields()
         view_log = frappe.qb.DocType("View Log")
         last_viewed_recently = frappe.db.get_value(
             view_log,

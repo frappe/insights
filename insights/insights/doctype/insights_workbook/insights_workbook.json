@@ -5,11 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "title",
-  "queries",
-  "charts",
-  "dashboards",
-  "enable_auto_save"
+  "title"
  ],
  "fields": [
   {
@@ -18,27 +14,6 @@
    "in_list_view": 1,
    "label": "Title",
    "reqd": 1
-  },
-  {
-   "fieldname": "queries",
-   "fieldtype": "JSON",
-   "label": "Queries"
-  },
-  {
-   "fieldname": "charts",
-   "fieldtype": "JSON",
-   "label": "Charts"
-  },
-  {
-   "fieldname": "dashboards",
-   "fieldtype": "JSON",
-   "label": "Dashboards"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_auto_save",
-   "fieldtype": "Check",
-   "label": "Enable Auto Save"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -56,7 +31,7 @@
    "link_fieldname": "workbook"
   }
  ],
- "modified": "2025-02-15 20:05:01.670454",
+ "modified": "2025-03-05 17:08:17.594243",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
