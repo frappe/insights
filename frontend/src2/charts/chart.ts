@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
-import { getUniqueId, safeJSONParse, wheneverChanges } from '../helpers'
+import { getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { column, count, query_table } from '../query/helpers'
@@ -50,6 +50,8 @@ function makeChart(name: string) {
 		return useQuery(chart.doc.data_query)
 	})
 	async function refresh(args: ChartRefreshArgs = {}) {
+		await waitUntil(() => chart.isloaded)
+
 		const isValid = validateConfig()
 		if (!isValid) return
 
