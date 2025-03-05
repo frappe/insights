@@ -2,9 +2,13 @@
 # For license information, please see license.txt
 
 import re
+from contextlib import contextmanager
 
 import frappe
+import requests
 from frappe.model.document import Document
+
+from insights.utils import File
 
 
 class InsightsDashboardv3(Document):
@@ -35,6 +39,7 @@ class InsightsDashboardv3(Document):
 
     def before_save(self):
         self.set_linked_charts()
+        self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
         linked_charts = []
@@ -71,3 +76,95 @@ class InsightsDashboardv3(Document):
                     return True
 
         raise frappe.PermissionError
+
+    def enqueue_update_dashboard_preview(self):
+        if self.is_new() or not self.get_doc_before_save():
+            return
+
+        prev_doc = self.get_doc_before_save()
+        frappe.enqueue_doc(
+            doctype=self.doctype,
+            name=self.name,
+            method="update_dashboard_preview",
+            new_doc=self.as_dict(),
+            prev_doc=prev_doc.as_dict(),
+            enqueue_after_commit=True,
+        )
+
+    def update_dashboard_preview(self, new_doc, prev_doc):
+        new_doc = frappe.parse_json(new_doc)
+        prev_doc = frappe.parse_json(prev_doc)
+
+        if new_doc["items"] == prev_doc["items"]:
+            return
+
+        with generate_preview_key() as key:
+            preview = get_page_preview(
+                frappe.utils.get_url(f"/insights/shared/dashboard/{self.name}"),
+                headers={
+                    "X-Insights-Preview-Key": key,
+                },
+            )
+            file_url = create_preview_file(preview, self.name)
+            random_hash = frappe.generate_hash()[0:4]
+            file_url = f"{file_url}?{random_hash}"
+            self.preview_image = file_url
+            return file_url
+
+
+def get_page_preview(url: str, headers: dict | None = None) -> bytes:
+    PREVIEW_GENERATOR_URL = (
+        frappe.conf.preview_generator_url
+        or "https://preview.frappe.cloud/api/method/preview_generator.api.generate_preview_from_url"
+    )
+
+    response = requests.post(
+        PREVIEW_GENERATOR_URL,
+        json={
+            "url": url,
+            "headers": headers or {},
+            "wait_for": 1000,
+        },
+    )
+    if response.status_code == 200:
+        return response.content
+    else:
+        exception = response.json()
+        frappe.log_error(message=exception, title="Failed to generate preview")
+        frappe.throw("Failed to generate preview")
+
+
+def create_preview_file(content: bytes, dashboard_name: str):
+    file_name = f"{dashboard_name}-preview.jpeg"
+    file = File.get_or_create_doc(
+        attached_to_doctype="Insights Dashboard v3",
+        attached_to_name=dashboard_name,
+        file_name=file_name,
+        is_private=1,
+    )
+    if file.name:
+        file.content = content
+        file.save_file(overwrite=True)
+        file.save()
+    else:
+        # insert file while ensuring file name is same as the one we want
+        # first insert without content to reserve the file name (ignoring validate_file_on_disk)
+        # then overwrite the file with the content
+        file.flags.ignore_validate = True
+        file.insert()
+        file.flags.ignore_validate = False
+        file.content = content
+        file.save_file(overwrite=True)
+        file.save()
+
+    return file.file_url
+
+
+@contextmanager
+def generate_preview_key():
+    try:
+        key = frappe.generate_hash()
+        frappe.cache.set_value(f"insights_preview_key:{key}", True)
+        yield key
+    finally:
+        frappe.cache.delete_value(f"insights_preview_key:{key}")

@@ -3,7 +3,6 @@
 
 import frappe
 
-from insights.api.shared import is_shared
 from insights.insights.doctype.insights_team.insights_team import (
     get_allowed_resources_for_user,
     get_teams,
@@ -12,13 +11,7 @@ from insights.insights.doctype.insights_team.insights_team import (
 
 
 def has_doc_permission(doc, ptype, user):
-    if doc.doctype not in [
-        "Insights Data Source v3",
-        "Insights Table v3",
-        "Insights Dashboard v3",
-        "Insights Chart v3",
-        "Insights Query v3",
-    ]:
+    if doc.doctype not in ["Insights Data Source v3", "Insights Table v3"]:
         return True
 
     # only check if doc exists
@@ -27,15 +20,6 @@ def has_doc_permission(doc, ptype, user):
 
     if not user:
         user = frappe.session.user
-
-    is_guest = user == "Guest"
-    if (
-        is_guest
-        and ptype == "read"
-        and doc.doctype
-        in ["Insights Dashboard v3", "Insights Chart v3", "Insights Query v3"]
-    ):
-        return is_shared(doc.doctype, doc.name)
 
     if not frappe.db.get_single_value(
         "Insights Settings", "enable_permissions"

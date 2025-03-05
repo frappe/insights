@@ -4,6 +4,8 @@ from insights.decorators import validate_type
 
 
 def is_shared(doctype: str, name: str):
+    if has_valid_preview_key():
+        return True
     if doctype == "Insights Workbook":
         return is_shared_workbook(name)
     if doctype == "Insights Dashboard v3":
@@ -36,6 +38,12 @@ def is_shared_workbook(name: str):
             "name": ["in", shared_charts],
         },
     )
+
+
+def has_valid_preview_key():
+    # used to generate preview images of a dashboard
+    preview_key = frappe.request.headers.get("X-Insights-Preview-Key")
+    return preview_key and frappe.cache.get_value(f"insights_preview_key:{preview_key}")
 
 
 @validate_type

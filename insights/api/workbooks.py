@@ -153,17 +153,3 @@ def update_share_permissions(
         public_docshare.save()
     elif public_docshare.name:
         public_docshare.delete()
-
-
-@frappe.whitelist(allow_guest=True)
-def fetch_shared_chart_data(chart_name: str):
-    workbooks = frappe.get_all(
-        "Insights Workbook",
-        filters={"charts": ["like", f"%{chart_name}%"]},
-        pluck="name",
-    )
-    if not workbooks:
-        frappe.throw("Chart not found")
-
-    workbook = frappe.get_doc("Insights Workbook", workbooks[0])
-    return workbook.get_shared_chart_data(chart_name)
