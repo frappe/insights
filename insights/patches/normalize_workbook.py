@@ -28,7 +28,12 @@ def execute():
             new_doc.update(query)
             new_doc.workbook = workbook.name
             new_doc.old_name = query["name"]
-            new_doc.insert()
+            new_doc.modified = workbook.modified
+            new_doc.creation = workbook.creation
+            new_doc.modified_by = workbook.modified_by
+            new_doc.owner = workbook.owner
+            new_doc.before_save()
+            new_doc.db_insert()
             query_name_to_doc[query["name"]] = new_doc
 
         for chart in charts:
@@ -53,7 +58,12 @@ def execute():
 
             new_doc.operations = frappe.as_json(chart.operations)
             new_doc.old_name = chart["name"]
-            new_doc.insert()
+            new_doc.modified = workbook.modified
+            new_doc.creation = workbook.creation
+            new_doc.modified_by = workbook.modified_by
+            new_doc.owner = workbook.owner
+            new_doc.before_save()
+            new_doc.db_insert()
             chart_name_to_doc[chart["name"]] = new_doc
 
         for dashboard in dashboards:
@@ -95,7 +105,12 @@ def execute():
 
             new_doc.items = frappe.as_json(dashboard["items"])
             new_doc.old_name = dashboard["name"]
-            new_doc.insert()
+            new_doc.modified = workbook.modified
+            new_doc.creation = workbook.creation
+            new_doc.modified_by = workbook.modified_by
+            new_doc.owner = workbook.owner
+            new_doc.before_save()
+            new_doc.db_insert()
 
         for query in query_name_to_doc.values():
             operations = deep_convert_dict_to_dict(frappe.parse_json(query.operations))

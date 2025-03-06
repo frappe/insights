@@ -9,7 +9,9 @@ export type DashboardListItem = {
 	title: string
 	workbook: string
 	charts: number
+	creation: string
 	modified: string
+	created_from_now: string
 	modified_from_now: string
 	preview_image: string
 }
@@ -25,7 +27,7 @@ async function fetchDashboards(search_term?: string, limit: number = 50) {
 	})
 	dashboards.value = dashboards.value.map((dashboard: any) => ({
 		...dashboard,
-		// created_from_now: useTimeAgo(workbook.creation),
+		created_from_now: useTimeAgo(dashboard.creation),
 		modified_from_now: useTimeAgo(dashboard.modified),
 	}))
 	loading.value = false

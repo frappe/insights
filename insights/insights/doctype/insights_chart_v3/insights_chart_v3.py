@@ -38,5 +38,6 @@ class InsightsChartv3(Document):
     def set_data_query(self):
         if self.data_query:
             return
-        doc = frappe.new_doc("Insights Query v3").insert()
-        self.db_set("data_query", doc.name)
+        doc = frappe.new_doc("Insights Query v3")
+        doc.db_insert()
+        self.data_query = doc.name

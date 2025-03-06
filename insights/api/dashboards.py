@@ -82,25 +82,26 @@ def get_dashboards(search_term=None, limit=50):
             "name": ["like", f"%{search_term}%" if search_term else "%"],
             "title": ["like", f"%{search_term}%" if search_term else "%"],
         },
-        fields=["name", "title", "modified", "preview_image", "items"],
+        fields=[
+            "name",
+            "title",
+            "workbook",
+            "creation",
+            "modified",
+            "preview_image",
+            "items",
+        ],
+        order_by="creation desc",
+        limit=limit,
     )
 
-    _dashboards = []
     for dashboard in dashboards:
         items = frappe.parse_json(dashboard["items"])
         charts = [item for item in items if item["type"] == "chart"]
-        _dashboards.append(
-            {
-                "name": dashboard["name"],
-                "title": dashboard["title"],
-                "workbook": dashboard.name,
-                "charts": len(charts),
-                "modified": dashboard["modified"],
-                "preview_image": dashboard.get("preview_image"),
-            }
-        )
+        dashboard["charts"] = len(charts)
+        del dashboard["items"]
 
-    return _dashboards
+    return dashboards
 
 
 @insights_whitelist()
