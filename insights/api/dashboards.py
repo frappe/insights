@@ -76,74 +76,36 @@ def add_chart_to_dashboard(dashboard, chart):
 
 @insights_whitelist()
 def get_dashboards(search_term=None, limit=50):
-    workbooks = frappe.get_list(
-        "Insights Workbook",
-        filters={"dashboards": ["like", f"%{search_term}%" if search_term else "%"]},
-        fields=["name", "title", "dashboards", "modified"],
+    dashboards = frappe.get_list(
+        "Insights Dashboard v3",
+        or_filters={
+            "name": ["like", f"%{search_term}%" if search_term else "%"],
+            "title": ["like", f"%{search_term}%" if search_term else "%"],
+        },
+        fields=["name", "title", "modified", "preview_image", "items"],
     )
 
-    dashboards = []
-    for workbook in workbooks:
-        _dashboards = frappe.parse_json(workbook.dashboards)
-        for dashboard in _dashboards:
-            if len(dashboards) >= limit:
-                break
-            dashboards.append(
-                {
-                    "name": dashboard["name"],
-                    "title": dashboard["title"],
-                    "workbook": workbook.name,
-                    "charts": 0,
-                    "modified": workbook["modified"],
-                    "preview_image": dashboard.get("preview_image"),
-                }
-            )
+    _dashboards = []
+    for dashboard in dashboards:
+        items = frappe.parse_json(dashboard["items"])
+        charts = [item for item in items if item["type"] == "chart"]
+        _dashboards.append(
+            {
+                "name": dashboard["name"],
+                "title": dashboard["title"],
+                "workbook": dashboard.name,
+                "charts": len(charts),
+                "modified": dashboard["modified"],
+                "preview_image": dashboard.get("preview_image"),
+            }
+        )
 
-    return dashboards
-
-
-def _get_workbook_name(dashboard_name: str):
-    workbooks = frappe.get_all(
-        "Insights Workbook",
-        filters={"dashboards": ["like", f"%{dashboard_name}%"]},
-        pluck="name",
-    )
-
-    if not workbooks:
-        frappe.throw("Could not find workbook for dashboard")
-
-    return workbooks[0]
-
-
-@insights_whitelist()
-def get_workbook_name(dashboard_name: str):
-    return _get_workbook_name(dashboard_name)
-
-
-@frappe.whitelist(allow_guest=True)
-def fetch_workbook_dashboard(dashboard_name: str):
-    workbook_name = _get_workbook_name(dashboard_name)
-    workbook = frappe.get_doc("Insights Workbook", workbook_name)
-    dashboards = frappe.parse_json(workbook.dashboards)
-    return next((d for d in dashboards if d["name"] == dashboard_name), None)
+    return _dashboards
 
 
 @insights_whitelist()
 @validate_type
 def update_dashboard_preview(dashboard_name: str):
-    workbook_name = _get_workbook_name(dashboard_name)
-    workbook = frappe.get_doc("Insights Workbook", workbook_name)
-    dashboard = next(
-        (
-            d
-            for d in frappe.parse_json(workbook.dashboards)
-            if d["name"] == dashboard_name
-        ),
-        None,
-    )
-    if not dashboard:
-        frappe.throw("Could not find dashboard")
-
-    file_url = workbook.update_dashboard_preview(dashboard["name"])
-    workbook.save()
+    dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
+    file_url = dashboard.generate_dashboard_preview()
     return file_url
