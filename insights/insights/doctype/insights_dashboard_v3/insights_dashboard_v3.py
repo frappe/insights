@@ -111,7 +111,7 @@ class InsightsDashboardv3(Document):
             file_url = create_preview_file(preview, self.name)
             random_hash = frappe.generate_hash()[0:4]
             file_url = f"{file_url}?{random_hash}"
-            self.preview_image = file_url
+            self.db_set("preview_image", file_url)
             return file_url
 
 
