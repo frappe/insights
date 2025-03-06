@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
-import { getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { copy, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { column, count, query_table } from '../query/helpers'
@@ -33,12 +33,12 @@ export default function useChart(name: string) {
 function makeChart(name: string) {
 	const chart = getChartResource(name)
 
-	chart.onAfterLoad(() => {
-		wheneverChanges(
-			() => chart.doc.query,
-			() => refresh()
-		)
-	})
+	chart.onAfterLoad(() => useQuery(chart.doc.data_query))
+
+	wheneverChanges(
+		() => chart.doc.query,
+		() => chart.isloaded && refresh()
+	)
 
 	type ChartRefreshArgs = {
 		force?: boolean
@@ -50,7 +50,9 @@ function makeChart(name: string) {
 		return useQuery(chart.doc.data_query)
 	})
 	async function refresh(args: ChartRefreshArgs = {}) {
-		await waitUntil(() => chart.isloaded)
+		await waitUntil(
+			() => chart.isloaded && dataQuery.value.isloaded && useQuery(chart.doc.query).isloaded
+		)
 
 		const isValid = validateConfig()
 		if (!isValid) return
@@ -63,10 +65,11 @@ function makeChart(name: string) {
 		addLimitOperation(query)
 
 		const shouldExecute =
-			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations) ||
-			!dataQuery.value.result.executedSQL
+			args.force ||
+			!dataQuery.value.result.executedSQL ||
+			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations)
 
-		if (!args.force && !shouldExecute) {
+		if (!shouldExecute) {
 			return
 		}
 
