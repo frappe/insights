@@ -5,11 +5,14 @@ import NativeQueryEditor from './components/NativeQueryEditor.vue'
 import QueryBuilder from './components/QueryBuilder.vue'
 import ScriptQueryEditor from './components/ScriptQueryEditor.vue'
 import useQuery from './query'
+import { waitUntil } from '../helpers'
 
 const props = defineProps<{ query_name: string }>()
 const query = useQuery(props.query_name)
 provide('query', query)
 window.query = query
+
+await waitUntil(() => query.isloaded)
 
 const hasSourceOp = computed(() => query.doc.operations.find((op) => op.type === 'source'))
 

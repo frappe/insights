@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { call } from 'frappe-ui'
 import useChart from './chart'
 import ChartRenderer from './components/ChartRenderer.vue'
 
 const props = defineProps<{ chart_name: string }>()
 
-const chart = useChart(props.chart_name)
+const chart_name = await call('insights.api.shared.get_chart_name', {
+	chart_name: props.chart_name,
+})
+
+const chart = useChart(chart_name)
 chart.refresh()
 </script>
 

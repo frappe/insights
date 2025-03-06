@@ -169,22 +169,21 @@ def import_csv_data(filename: str):
 @frappe.whitelist(allow_guest=True)
 @validate_type
 def get_doc(doctype: str, name: str):
+    from frappe.client import get as _get_doc
+
+    if frappe.session.user != "Guest":
+        return _get_doc(doctype, name)
+
     check_guest_access(doctype, name)
 
-    doc = frappe.get_doc(doctype, name)
-    is_guest = frappe.session.user == "Guest"
-    if not is_guest:
-        doc.check_permission()
-        doc.apply_fieldlevel_read_permissions()
-    return doc.as_dict()
+    return frappe.get_doc(doctype, name).as_dict()
 
 
 @frappe.whitelist(allow_guest=True)
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     from frappe.handler import run_doc_method as _run_doc_method
 
-    is_guest = frappe.session.user == "Guest"
-    if not is_guest:
+    if frappe.session.user != "Guest":
         return _run_doc_method(method, docs=docs, args=args)
 
     doc = frappe.parse_json(docs)

@@ -69,8 +69,8 @@ def get_shared_charts():
         filters={"is_public": 1},
         pluck="linked_charts",
     )
-    for charts in linked_public_charts:
-        charts.extend(frappe.parse_json(charts))
+    for linked_charts in linked_public_charts:
+        charts.extend(frappe.parse_json(linked_charts))
 
     return list(set(charts))
 
@@ -106,3 +106,23 @@ def is_shared_query(name: str):
         return True
 
     return False
+
+
+@frappe.whitelist(allow_guest=True)
+def get_dashboard_name(dashboard_name: str):
+    name = dashboard_name
+    if not frappe.db.exists("Insights Dashboard v3", name):
+        new_name = frappe.db.exists("Insights Dashboard v3", {"old_name": name})
+        if new_name:
+            name = new_name
+    return name
+
+
+@frappe.whitelist(allow_guest=True)
+def get_chart_name(chart_name: str):
+    name = chart_name
+    if not frappe.db.exists("Insights Chart v3", name):
+        new_name = frappe.db.exists("Insights Chart v3", {"old_name": name})
+        if new_name:
+            name = new_name
+    return name

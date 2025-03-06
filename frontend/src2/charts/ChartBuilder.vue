@@ -5,7 +5,7 @@ import { ImageDown, RefreshCcw, Share2, XIcon } from 'lucide-vue-next'
 import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
-import { downloadImage } from '../helpers'
+import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
 import useChart from './chart'
 import ChartBuilderTable from './components/ChartBuilderTable.vue'
@@ -23,6 +23,8 @@ const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 const chart = useChart(props.chart_name)
 provide('chart', chart)
 window.chart = chart
+
+await waitUntil(() => chart.isloaded)
 
 chart.refresh()
 

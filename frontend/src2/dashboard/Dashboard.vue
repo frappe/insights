@@ -7,10 +7,15 @@ import { downloadImage } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { call } from 'frappe-ui'
 
 const props = defineProps<{ name: string }>()
 
-const dashboard = useDashboard(props.name)
+const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
+	dashboard_name: props.name,
+})
+
+const dashboard = useDashboard(dashboard_name)
 provide('dashboard', dashboard)
 dashboard.refresh()
 

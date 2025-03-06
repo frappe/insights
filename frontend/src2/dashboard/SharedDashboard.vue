@@ -3,10 +3,15 @@ import { provide } from 'vue'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { call } from 'frappe-ui'
 
 const props = defineProps<{ dashboard_name: string }>()
 
-const dashboard = useDashboard(props.dashboard_name)
+const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
+	dashboard_name: props.dashboard_name,
+})
+
+const dashboard = useDashboard(dashboard_name)
 provide('dashboard', dashboard)
 </script>
 

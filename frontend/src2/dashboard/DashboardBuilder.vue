@@ -2,7 +2,7 @@
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { inject, provide, ref } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse, wheneverChanges } from '../helpers'
+import { safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import { workbookKey } from '../workbook/workbook'
 import useDashboard from './dashboard'
@@ -20,6 +20,8 @@ const props = defineProps<{
 const dashboard = useDashboard(props.dashboard_name)
 provide('dashboard', dashboard)
 dashboard.refresh()
+
+await waitUntil(() => dashboard.isloaded)
 
 const showChartSelectorDialog = ref(false)
 
