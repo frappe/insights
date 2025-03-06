@@ -403,11 +403,14 @@ class IbisQueryBuilder:
                 )
 
             names_from = [col.get_name() for col in columns]
+            max_names = pivot_args.get("max_column_values", 10)
+            max_names = int(max_names)
+            max_names = max(1, min(max_names, 100))
             names = (
                 self.query.select(names_from)
                 .order_by(names_from)
                 .distinct()
-                .limit(10)
+                .limit(max_names)
                 .execute()
             )
             names = names.fillna("null").values
