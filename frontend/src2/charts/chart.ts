@@ -350,20 +350,22 @@ function makeChart(name: string) {
 		}
 	)
 
-	wheneverChanges(
-		() => chart.doc.title,
-		() => {
-			if (!chart.doc.workbook) return
-			const workbook = useWorkbook(chart.doc.workbook)
-			for (const c of workbook.doc.charts) {
-				if (c.name === chart.doc.name) {
-					c.title = chart.doc.title
-					break
+	waitUntil(() => chart.isloaded).then(() => {
+		wheneverChanges(
+			() => chart.doc.title,
+			() => {
+				if (!chart.doc.workbook) return
+				const workbook = useWorkbook(chart.doc.workbook)
+				for (const c of workbook.doc.charts) {
+					if (c.name === chart.doc.name) {
+						c.title = chart.doc.title
+						break
+					}
 				}
-			}
-		},
-		{ debounce: 500 }
-	)
+			},
+			{ debounce: 500 }
+		)
+	})
 
 	return reactive({
 		...toRefs(chart),
