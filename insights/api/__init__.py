@@ -226,8 +226,9 @@ shared_doctypes = [
 
 
 def check_guest_access(doctype, name):
-    is_guest = frappe.session.user == "Guest"
-    if is_guest and doctype not in shared_doctypes and not is_shared(doctype, name):
+    if frappe.session.user != "Guest":
+        return
+    if doctype not in shared_doctypes or not is_shared(doctype, name):
         raise frappe.PermissionError(
             "You don't have permission to access this document"
         )
