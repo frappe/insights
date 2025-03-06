@@ -7,9 +7,9 @@ def execute():
     if not frappe.db.count("Insights Workbook"):
         return
 
-    frappe.db.delete("Insights Query v3")
-    frappe.db.delete("Insights Chart v3")
-    frappe.db.delete("Insights Dashboard v3")
+    frappe.reload_doc("insights", "doctype", "insights_query_v3")
+    frappe.reload_doc("insights", "doctype", "insights_chart_v3")
+    frappe.reload_doc("insights", "doctype", "insights_dashboard_v3")
 
     workbooks = frappe.get_all("Insights Workbook", pluck="name")
 

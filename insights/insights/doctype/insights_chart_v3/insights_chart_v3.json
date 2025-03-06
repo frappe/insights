@@ -11,10 +11,8 @@
   "column_break_mgwd",
   "chart_type",
   "is_public",
-  "use_live_connection",
   "section_break_vmvi",
   "config",
-  "operations",
   "old_name"
  ],
  "fields": [
@@ -68,22 +66,12 @@
    "search_index": 1
   },
   {
-   "fieldname": "operations",
-   "fieldtype": "JSON",
-   "label": "Operations"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_live_connection",
-   "fieldtype": "Check",
-   "label": "Use Live Connection"
-  },
-  {
    "fieldname": "data_query",
    "fieldtype": "Link",
    "label": "Data Query",
    "options": "Insights Query v3",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "old_name",
@@ -94,7 +82,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-03 15:38:13.384665",
+ "modified": "2025-03-06 14:18:38.609033",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",

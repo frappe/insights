@@ -19,10 +19,8 @@ class InsightsChartv3(Document):
         data_query: DF.Link | None
         is_public: DF.Check
         old_name: DF.Data | None
-        operations: DF.JSON | None
         query: DF.Link | None
         title: DF.Data | None
-        use_live_connection: DF.Check
         workbook: DF.Link | None
     # end: auto-generated types
 

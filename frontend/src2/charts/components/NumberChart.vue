@@ -71,7 +71,7 @@ const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: bo
 }
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {
-	const numberOption = config.value.number_column_options[index]?.[option] as any
+	const numberOption = config.value.number_column_options?.[index]?.[option] as any
 	return numberOption === undefined ? config.value[option] : numberOption
 }
 </script>

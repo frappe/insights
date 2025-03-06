@@ -1,13 +1,13 @@
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
-import { useRouter } from 'vue-router'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import { copy, getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import useQuery, { newQuery } from '../query/query'
+import router from '../router'
 import session from '../session'
 import type {
 	InsightsWorkbook,
@@ -36,7 +36,6 @@ function makeWorkbook(name: string) {
 		{ deep: true }
 	)
 
-	const router = useRouter()
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard', name: string) {
 		router.replace(`/workbook/${workbook.name}/${type}/${name}`)
 	}

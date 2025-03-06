@@ -98,6 +98,9 @@ class InsightsDashboardv3(Document):
         if new_doc["items"] == prev_doc["items"]:
             return
 
+        self.generate_dashboard_preview()
+
+    def generate_dashboard_preview(self):
         with generate_preview_key() as key:
             preview = get_page_preview(
                 frappe.utils.get_url(f"/insights/shared/dashboard/{self.name}"),
