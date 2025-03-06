@@ -242,6 +242,7 @@ function makeChart(name: string) {
 				rows: rows,
 				columns: columns,
 				values: values,
+				max_column_values: config.max_column_values || 10,
 			})
 			return
 		}
