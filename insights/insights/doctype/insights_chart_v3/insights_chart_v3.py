@@ -27,8 +27,6 @@ class InsightsChartv3(Document):
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.config, dict):
             self.config = frappe.as_json(self.config)
-        if isinstance(self.operations, list):
-            self.operations = frappe.as_json(self.operations)
         return super().get_valid_dict(*args, **kwargs)
 
     def before_save(self):
