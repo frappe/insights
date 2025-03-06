@@ -2,45 +2,37 @@
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { AlertOctagon } from 'lucide-vue-next'
 import { provide, watchEffect } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { waitUntil } from '../helpers'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{ workbook_name: string }>()
-const router = useRouter()
-const route = useRoute()
 
 const workbook = useWorkbook(props.workbook_name)
 provide(workbookKey, workbook)
 window.workbook = workbook
 
+await waitUntil(() => workbook.isloaded)
+
+if (workbook.doc.queries.length === 0) {
+	workbook.addQuery()
+}
+
+const router = useRouter()
+const route = useRoute()
+if (route.name === 'Workbook' && workbook.doc.queries.length) {
+	const query = workbook.doc.queries[0]
+	router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
+}
+
 const keys = useMagicKeys()
 const cmdS = keys['Meta+S']
 whenever(cmdS, () => workbook.save())
-
-waitUntil(() => workbook.isloaded).then(() => {
-	if (workbook.doc.queries.length === 0) {
-		workbook.addQuery()
-	}
-
-	if (route.name === 'Workbook' && workbook.doc.queries.length) {
-		const query = workbook.doc.queries[0]
-		router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
-	}
-})
-
-onBeforeRouteLeave(() => {
-	if (workbook.islocal) {
-		const message = 'Do you really want to leave? you have unsaved changes!'
-		if (!window.confirm(message)) {
-			return false
-		}
-	}
-})
 
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`
@@ -49,15 +41,16 @@ watchEffect(() => {
 
 <template>
 	<div class="flex h-full w-full flex-col">
+		<LoadingOverlay v-if="!workbook.isloaded" />
 		<WorkbookNavbar />
 		<div
 			class="relative flex w-full flex-1 overflow-hidden"
 			:class="workbook.showSidebar ? 'flex-row' : 'flex-col'"
 		>
 			<WorkbookSidebar />
-			<RouterView :key="route.fullPath" v-slot="{ Component }">
-				<component v-if="true" :is="Component" />
-				<div v-else class="flex flex-1 items-center justify-center">
+			<RouterView v-if="workbook.isloaded" :key="route.fullPath" v-slot="{ Component }">
+				<component :is="Component" />
+				<div v-if="false" class="flex flex-1 items-center justify-center">
 					<div class="flex flex-col items-center gap-4">
 						<AlertOctagon class="h-16 w-16 text-gray-400" stroke-width="1" />
 						<p
