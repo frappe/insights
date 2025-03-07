@@ -3,7 +3,14 @@ import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
-import { copy, getUniqueId, safeJSONParse, showErrorToast, wheneverChanges } from '../helpers'
+import {
+	copy,
+	getUniqueId,
+	safeJSONParse,
+	showErrorToast,
+	waitUntil,
+	wheneverChanges,
+} from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import useQuery, { newQuery } from '../query/query'
@@ -61,20 +68,14 @@ function makeWorkbook(name: string) {
 
 	function removeQuery(name: string) {
 		function _remove() {
-			const queryIndex = workbook.doc.queries.findIndex((row) => row.name === name)
-			if (queryIndex === -1) return
+			const idx = workbook.doc.queries.findIndex((row) => row.name === name)
+			if (idx === -1) return
 
 			const query = useQuery(name)
-			query.delete().then(() => {
-				workbook.doc.queries.splice(queryIndex, 1)
-			})
+			waitUntil(() => query.isloaded).then(() => query.delete())
 
-			const nextQueryIndex = queryIndex - 1
-			if (nextQueryIndex >= 0) {
-				setActiveTab('query', workbook.doc.queries[nextQueryIndex].name)
-			} else {
-				router.replace(`/workbook/${workbook.name}`)
-			}
+			workbook.doc.queries.splice(idx, 1)
+			openNext('query', idx)
 		}
 
 		confirmDialog({
@@ -105,17 +106,12 @@ function makeWorkbook(name: string) {
 		function _remove() {
 			const idx = workbook.doc.charts.findIndex((row) => row.name === chartName)
 			if (idx === -1) return
-			const chart = useChart(chartName)
-			chart.delete().then(() => {
-				workbook.doc.charts.splice(idx, 1)
-			})
 
-			const nextChartIndex = idx - 1
-			if (nextChartIndex >= 0) {
-				setActiveTab('chart', workbook.doc.charts[nextChartIndex].name)
-			} else {
-				router.replace(`/workbook/${workbook.name}`)
-			}
+			const chart = useChart(chartName)
+			waitUntil(() => chart.isloaded).then(() => chart.delete())
+
+			workbook.doc.charts.splice(idx, 1)
+			openNext('chart', idx)
 		}
 
 		confirmDialog({
@@ -142,17 +138,12 @@ function makeWorkbook(name: string) {
 		function _remove() {
 			const idx = workbook.doc.dashboards.findIndex((row) => row.name === dashboardName)
 			if (idx === -1) return
-			const dashboard = useDashboard(dashboardName)
-			dashboard.delete().then(() => {
-				workbook.doc.dashboards.splice(idx, 1)
-			})
 
-			const nextDashboardIndex = idx - 1
-			if (nextDashboardIndex >= 0) {
-				setActiveTab('dashboard', workbook.doc.dashboards[nextDashboardIndex].name)
-			} else {
-				router.replace(`/workbook/${workbook.name}`)
-			}
+			const dashboard = useDashboard(dashboardName)
+			waitUntil(() => dashboard.isloaded).then(() => dashboard.delete())
+
+			workbook.doc.dashboards.splice(idx, 1)
+			openNext('dashboard', idx)
 		}
 
 		confirmDialog({
@@ -160,6 +151,29 @@ function makeWorkbook(name: string) {
 			message: 'Are you sure you want to delete this dashboard?',
 			onSuccess: _remove,
 		})
+	}
+
+	function openNext(type: 'query' | 'chart' | 'dashboard', idx: number) {
+
+		const items = {
+			query: workbook.doc.queries,
+			chart: workbook.doc.charts,
+			dashboard: workbook.doc.dashboards,
+		}[type]
+
+		let nextIndex = idx + 1
+
+		if (nextIndex >= items.length) {
+			nextIndex = 0
+		}
+		if (nextIndex < 0) {
+			nextIndex = items.length - 1
+		}
+		if (nextIndex >= 0 && nextIndex < items.length) {
+			setActiveTab(type, items[nextIndex].name)
+		}
+
+		router.replace(`/workbook/${workbook.name}`)
 	}
 
 	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
