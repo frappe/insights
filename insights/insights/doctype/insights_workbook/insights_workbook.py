@@ -26,9 +26,18 @@ class InsightsWorkbook(Document):
         self.title = self.title or f"Workbook {frappe.utils.cint(self.name)}"
 
     def on_trash(self):
-        frappe.db.delete("Insights Query v3", {"workbook": self.name})
-        frappe.db.delete("Insights Chart v3", {"workbook": self.name})
-        frappe.db.delete("Insights Dashboard v3", {"workbook": self.name})
+        for q in frappe.get_all("Insights Query v3", {"workbook": self.name}):
+            frappe.delete_doc(
+                "Insights Query v3", q.name, force=True, ignore_permissions=True
+            )
+        for c in frappe.get_all("Insights Chart v3", {"workbook": self.name}):
+            frappe.delete_doc(
+                "Insights Chart v3", c.name, force=True, ignore_permissions=True
+            )
+        for d in frappe.get_all("Insights Dashboard v3", {"workbook": self.name}):
+            frappe.delete_doc(
+                "Insights Dashboard v3", d.name, force=True, ignore_permissions=True
+            )
 
     def as_dict(self, *args, **kwargs):
         d = super().as_dict(*args, **kwargs)

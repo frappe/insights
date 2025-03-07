@@ -33,7 +33,9 @@ class InsightsChartv3(Document):
         self.set_data_query()
 
     def on_trash(self):
-        frappe.db.delete("Insights Query v3", self.data_query)
+        frappe.delete_doc(
+            "Insights Query v3", self.data_query, force=True, ignore_permissions=True
+        )
 
     def set_data_query(self):
         if self.data_query:
