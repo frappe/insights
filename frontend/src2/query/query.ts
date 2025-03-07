@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
-import { getUniqueId, safeJSONParse, showErrorToast, waitUntil, wheneverChanges } from '../helpers'
+import { getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import {
