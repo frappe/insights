@@ -11,7 +11,8 @@ const route = useRoute()
 
 const activeQueryName = computed(() => {
 	if (route.name === 'WorkbookQuery') {
-		return route.params.query_name as string
+		const query_name = route.params.query_name as string
+		return workbook.doc.queries.find((query) => query.name === query_name)?.name
 	}
 })
 </script>
