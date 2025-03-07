@@ -27,7 +27,7 @@ class InsightsDashboardv3(Document):
         preview_image: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
-        workbook: DF.Link | None
+        workbook: DF.Link
     # end: auto-generated types
 
     def get_valid_dict(self, *args, **kwargs):

@@ -27,7 +27,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Query",
-   "options": "Insights Query v3"
+   "options": "Insights Query v3",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_mgwd",
@@ -63,6 +64,7 @@
    "in_standard_filter": 1,
    "label": "Workbook",
    "options": "Insights Workbook",
+   "reqd": 1,
    "search_index": 1
   },
   {
@@ -82,7 +84,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-07 14:36:57.025549",
+ "modified": "2025-03-07 15:56:16.833424",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",
@@ -93,7 +95,6 @@
    "delete": 1,
    "email": 1,
    "export": 1,
-   "if_owner": 1,
    "print": 1,
    "read": 1,
    "report": 1,

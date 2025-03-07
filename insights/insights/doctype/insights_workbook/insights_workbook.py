@@ -32,9 +32,17 @@ class InsightsWorkbook(Document):
 
     def as_dict(self, *args, **kwargs):
         d = super().as_dict(*args, **kwargs)
+        chart_queries = frappe.get_all(
+            "Insights Chart v3",
+            filters={"workbook": self.name},
+            pluck="data_query",
+        )
         d.queries = frappe.get_all(
             "Insights Query v3",
-            filters={"workbook": self.name},
+            filters={
+                "workbook": self.name,
+                "name": ["not in", chart_queries],
+            },
             fields=[
                 "name",
                 "title",

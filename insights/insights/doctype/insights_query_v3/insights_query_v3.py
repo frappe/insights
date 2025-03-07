@@ -33,7 +33,7 @@ class InsightsQueryv3(Document):
         operations: DF.JSON | None
         title: DF.Data | None
         use_live_connection: DF.Check
-        workbook: DF.Link | None
+        workbook: DF.Link
     # end: auto-generated types
 
     def get_valid_dict(self, *args, **kwargs):

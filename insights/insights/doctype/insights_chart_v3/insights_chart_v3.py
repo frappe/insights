@@ -19,9 +19,9 @@ class InsightsChartv3(Document):
         data_query: DF.Link | None
         is_public: DF.Check
         old_name: DF.Data | None
-        query: DF.Link | None
+        query: DF.Link
         title: DF.Data | None
-        workbook: DF.Link | None
+        workbook: DF.Link
     # end: auto-generated types
 
     def get_valid_dict(self, *args, **kwargs):
@@ -39,5 +39,6 @@ class InsightsChartv3(Document):
         if self.data_query:
             return
         doc = frappe.new_doc("Insights Query v3")
+        doc.workbook = self.workbook
         doc.db_insert()
         self.data_query = doc.name

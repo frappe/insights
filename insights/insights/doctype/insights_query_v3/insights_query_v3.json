@@ -59,6 +59,7 @@
    "in_list_view": 1,
    "label": "Workbook",
    "options": "Insights Workbook",
+   "reqd": 1,
    "search_index": 1
   },
   {
@@ -93,7 +94,7 @@
    "link_fieldname": "data_query"
   }
  ],
- "modified": "2025-03-07 14:37:23.900126",
+ "modified": "2025-03-07 15:51:51.087336",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",
@@ -104,7 +105,6 @@
    "delete": 1,
    "email": 1,
    "export": 1,
-   "if_owner": 1,
    "print": 1,
    "read": 1,
    "report": 1,
