@@ -148,6 +148,11 @@ class InsightsPermissions:
         return False
 
     def _has_workbook_permission(self, workbook_name, ptype):
+        _ptype = ptype
+        # shared "write" permission implies "create" & "delete"
+        if ptype in ["create", "delete"]:
+            _ptype = "write"
+
         shared_with_user = frappe.db.get_value(
             "DocShare",
             {
@@ -155,10 +160,10 @@ class InsightsPermissions:
                 "share_name": workbook_name,
                 "share_doctype": "Insights Workbook",
             },
-            ["read", "write"],
+            ["read", "write", "share"],
             as_dict=1,
         )
-        if shared_with_user and shared_with_user.get(ptype):
+        if shared_with_user and shared_with_user.get(_ptype):
             return True
 
         shared_with_everyone = frappe.db.get_value(
@@ -168,10 +173,10 @@ class InsightsPermissions:
                 "share_name": workbook_name,
                 "share_doctype": "Insights Workbook",
             },
-            ["read", "write"],
+            ["read", "write", "share"],
             as_dict=1,
         )
-        if shared_with_everyone and shared_with_everyone.get(ptype):
+        if shared_with_everyone and shared_with_everyone.get(_ptype):
             return True
 
         return False
