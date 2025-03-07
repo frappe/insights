@@ -143,9 +143,8 @@ export function makeQuery(name: string) {
 				result.value.timeTaken = response.time_taken
 				result.value.lastExecutedAt = new Date()
 			})
-			.catch((e: Error) => {
+			.catch(() => {
 				result.value = { ...EMPTY_RESULT }
-				showErrorToast(e)
 			})
 			.finally(() => {
 				executing.value = false
@@ -169,7 +168,6 @@ export function makeQuery(name: string) {
 			.then((count: number) => {
 				result.value.totalRowCount = count || 0
 			})
-			.catch(showErrorToast)
 			.finally(() => {
 				fetchingCount.value = false
 			})
