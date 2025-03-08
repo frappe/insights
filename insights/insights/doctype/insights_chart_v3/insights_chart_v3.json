@@ -27,8 +27,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Query",
-   "options": "Insights Query v3",
-   "reqd": 1
+   "options": "Insights Query v3"
   },
   {
    "fieldname": "column_break_mgwd",
@@ -84,7 +83,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-07 15:56:16.833424",
+ "modified": "2025-03-08 15:57:40.170181",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",
