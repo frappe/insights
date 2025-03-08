@@ -187,24 +187,21 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
         return _run_doc_method(method, docs=docs, args=args)
 
     doc = frappe.parse_json(docs)
-    doc = frappe.get_doc(doc)
+    doctype = doc.get("doctype")
+    name = doc.get("name")
 
-    if doc.__islocal:
-        raise frappe.PermissionError(
-            "You don't have permission to access this document"
-        )
+    if not doctype or not name:
+        raise frappe.ValidationError("Invalid document")
 
-    check_guest_access(doc.doctype, doc.name)
+    doc = frappe.get_doc(doctype, name)
+    check_guest_access(doctype, name)
 
     args = args or {}
 
     response = None
-    if doc.doctype == "Insights Query v3" and method == "execute":
+    if doctype == "Insights Query v3" and method == "execute":
         response = doc.execute(**args)
-    elif (
-        doc.doctype == "Insights Dashboard v3"
-        and method == "get_distinct_column_values"
-    ):
+    elif doctype == "Insights Dashboard v3" and method == "get_distinct_column_values":
         response = doc.get_distinct_column_values(**args)
     else:
         raise frappe.PermissionError(
