@@ -97,10 +97,18 @@ class InsightsQueryv3(Document):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        columns = get_columns_from_schema(ibis_query.schema())
-        results, time_taken = execute_ibis_query(ibis_query, cache_expiry=60 * 10)
+        limit = 100
+        for op in frappe.parse_json(self.operations):
+            if op.get("limit"):
+                limit = op.get("limit")
+                break
+
+        results, time_taken = execute_ibis_query(
+            ibis_query, limit, cache_expiry=60 * 10
+        )
         results = results.to_dict(orient="records")
 
+        columns = get_columns_from_schema(ibis_query.schema())
         return {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
