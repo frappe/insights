@@ -52,6 +52,7 @@ import {
 	summarize,
 	union,
 } from './helpers'
+import session from '../session'
 
 const queries = new Map<string, Query>()
 
@@ -518,6 +519,10 @@ export function makeQuery(name: string) {
 	}
 
 	function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
+		if (!session.isLoggedIn) {
+			return
+		}
+
 		const error = validateDrillDown(col, row)
 		if (error) {
 			createToast({
