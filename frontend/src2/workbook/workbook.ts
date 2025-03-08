@@ -74,8 +74,8 @@ function makeWorkbook(name: string) {
 			const query = useQuery(name)
 			waitUntil(() => query.isloaded).then(() => query.delete())
 
-			workbook.doc.queries.splice(idx, 1)
 			openNext('query', idx)
+			workbook.doc.queries.splice(idx, 1)
 		}
 
 		confirmDialog({
@@ -110,8 +110,8 @@ function makeWorkbook(name: string) {
 			const chart = useChart(chartName)
 			waitUntil(() => chart.isloaded).then(() => chart.delete())
 
-			workbook.doc.charts.splice(idx, 1)
 			openNext('chart', idx)
+			workbook.doc.charts.splice(idx, 1)
 		}
 
 		confirmDialog({
@@ -142,8 +142,8 @@ function makeWorkbook(name: string) {
 			const dashboard = useDashboard(dashboardName)
 			waitUntil(() => dashboard.isloaded).then(() => dashboard.delete())
 
-			workbook.doc.dashboards.splice(idx, 1)
 			openNext('dashboard', idx)
+			workbook.doc.dashboards.splice(idx, 1)
 		}
 
 		confirmDialog({
@@ -154,7 +154,6 @@ function makeWorkbook(name: string) {
 	}
 
 	function openNext(type: 'query' | 'chart' | 'dashboard', idx: number) {
-
 		const items = {
 			query: workbook.doc.queries,
 			chart: workbook.doc.charts,
@@ -171,6 +170,7 @@ function makeWorkbook(name: string) {
 		}
 		if (nextIndex >= 0 && nextIndex < items.length) {
 			setActiveTab(type, items[nextIndex].name)
+			return
 		}
 
 		router.replace(`/workbook/${workbook.name}`)
