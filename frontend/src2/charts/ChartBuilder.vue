@@ -4,7 +4,6 @@ import { Badge } from 'frappe-ui'
 import { ImageDown, RefreshCcw, Share2, XIcon } from 'lucide-vue-next'
 import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
-import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
 import useChart from './chart'
@@ -26,8 +25,8 @@ window.chart = chart
 
 await waitUntil(() => chart.isloaded)
 
+// refresh separately to avoid debounce
 chart.refresh()
-
 watchDebounced(
 	() => chart.doc.config,
 	() => chart.refresh(),
@@ -66,14 +65,8 @@ const showShareDialog = ref(false)
 </script>
 
 <template>
-	<div
-		v-if="chart.isloaded && chart.dataQuery.isloaded"
-		class="relative flex h-full w-full overflow-hidden"
-	>
+	<div class="relative flex h-full w-full overflow-hidden">
 		<div class="relative flex h-full w-full flex-col gap-4 overflow-hidden p-3 pt-4">
-			<LoadingOverlay
-				v-if="chart.loading || chart.dataQuery.loading || chart.dataQuery.executing"
-			/>
 			<div
 				ref="chartEl"
 				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center"

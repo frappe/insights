@@ -73,7 +73,7 @@ function makeChart(name: string) {
 			return
 		}
 
-		dataQuery.value.setOperations(query.doc.operations)
+		dataQuery.value.setOperations(copy(query.doc.operations))
 		dataQuery.value.doc.use_live_connection = query.doc.use_live_connection
 		return dataQuery.value.execute(args.adhocFilters, args.force)
 	}

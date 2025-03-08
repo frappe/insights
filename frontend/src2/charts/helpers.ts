@@ -1,8 +1,7 @@
 import { graphic } from 'echarts/core'
-import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
-import { FIELDTYPES, GranularityType } from '../helpers/constants'
-import { column, getFormattedDate } from '../query/helpers'
-import useQuery from '../query/query'
+import { ellipsis, formatNumber, getShortNumber } from '../helpers'
+import { FIELDTYPES } from '../helpers/constants'
+import { getFormattedDate } from '../query/helpers'
 import {
 	AxisChartConfig,
 	BarChartConfig,
@@ -15,8 +14,6 @@ import {
 	XAxis,
 } from '../types/chart.types'
 import {
-	FilterRule,
-	Operation,
 	QueryResult,
 	QueryResultColumn,
 	QueryResultRow
@@ -627,76 +624,6 @@ function getLegend(show_legend = true) {
 		pageFormatter: '{current}',
 		pageButtonItemGap: 2,
 	}
-}
-
-export function getDrillDownQuery(
-	operations: Operation[],
-	result: QueryResult,
-	row: QueryResultRow,
-	col: QueryResultColumn,
-	use_live_connection = true
-) {
-	if (!result.columns?.length || !row || !col) return
-
-	if (!FIELDTYPES.NUMBER.includes(col.type)) {
-		return
-	}
-
-	const textColumns = result.columns
-		.filter((column) => FIELDTYPES.TEXT.includes(column.type))
-		.map((column) => column.name)
-
-	const dateColumns = result.columns
-		.filter((column) => FIELDTYPES.DATE.includes(column.type))
-		.map((column) => column.name)
-
-	const rowIndex = result.formattedRows.findIndex((r) => r === row)
-	const currRow = result.rows[rowIndex]
-	const nextRow = result.rows[rowIndex + 1]
-
-	const filters: FilterRule[] = []
-	for (const column_name of textColumns) {
-		filters.push({
-			column: column(column_name),
-			operator: '=',
-			value: currRow[column_name] as string,
-		})
-	}
-
-	for (const column_name of dateColumns) {
-		if (nextRow) {
-			filters.push({
-				column: column(column_name),
-				operator: '>=',
-				value: currRow[column_name] as string,
-			})
-			filters.push({
-				column: column(column_name),
-				operator: '<',
-				value: nextRow[column_name] as string,
-			})
-		} else {
-			filters.push({
-				column: column(column_name),
-				operator: '>=',
-				value: currRow[column_name] as string,
-			})
-		}
-	}
-
-	const query = useQuery('new-query' + getUniqueId())
-	query.doc.use_live_connection = use_live_connection
-
-	query.setOperations(copy(operations))
-	const summarizeIndex = query.doc.operations.findIndex((op) => op.type === 'summarize')
-	query.doc.operations.splice(summarizeIndex)
-
-	query.addFilterGroup({
-		logical_operator: 'And',
-		filters: filters,
-	})
-
-	return query
 }
 
 export function handleOldXAxisConfig(old_x_axis: any): AxisChartConfig['x_axis'] {

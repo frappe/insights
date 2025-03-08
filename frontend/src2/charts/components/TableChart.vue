@@ -1,69 +1,50 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
-import DataTable from '../../components/DataTable.vue'
+import { computed } from 'vue'
+import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
-import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
-import { InsightsChartv3 } from '../../types/workbook.types'
+import { SortDirection } from '../../types/query.types'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
-import DrillDown from './DrillDown.vue'
 
-const props = defineProps<{
-	title: string
-	config: InsightsChartv3['config']
-	result: QueryResult
-}>()
+const props = defineProps<{ chart: Chart }>()
 
-const chart = inject<Chart | undefined>('chart', undefined)
-const tableConfig = computed(() => props.config as TableChartConfig)
+const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
-const sortOrder = computed(() => {
-	const order_by = props.config.order_by
-	const sort_order: Record<string, 'asc' | 'desc'> = {}
-	order_by?.forEach((order) => {
-		sort_order[order.column.column_name] = order.direction
-	})
-	return sort_order
-})
-function onSort(sort_order: Record<string, 'asc' | 'desc'>) {
-	props.config.order_by = Object.keys(sort_order).map((column_name) => ({
-		column: column(column_name),
-		direction: sort_order[column_name],
-	}))
+function onSortChange(column_name: string, sort_order: SortDirection) {
+	const existingOrder = props.chart.doc.config.order_by.find(
+		(order) => order.column.column_name === column_name
+	)
+	if (existingOrder) {
+		if (sort_order) {
+			existingOrder.direction = sort_order
+		} else {
+			props.chart.doc.config.order_by = props.chart.doc.config.order_by.filter(
+				(order) => order.column.column_name !== column_name
+			)
+		}
+	} else {
+		if (!sort_order) return
+		props.chart.doc.config.order_by.push({
+			column: column(column_name),
+			direction: sort_order,
+		})
+	}
 }
-
-const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn }>()
 </script>
 
 <template>
 	<div class="flex h-full w-full flex-col divide-y overflow-hidden rounded bg-white shadow">
-		<ChartTitle v-if="props.title" :title="props.title" />
-		<DataTable
-			:columns="props.result.columns"
-			:rows="props.result.formattedRows"
+		<ChartTitle :title="props.chart.doc.title" />
+		<QueryDataTable
+			:query="props.chart.dataQuery"
 			:show-filter-row="tableConfig.show_filter_row"
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
-			:enable-pagination="true"
 			:enable-color-scale="tableConfig.enable_color_scale"
-			:on-export="chart ? chart.dataQuery.downloadResults : undefined"
-			:sort-order="sortOrder"
-			@sort="onSort"
-			@cell-dbl-click="(row, column) => (drillOn = { row, column })"
-		>
-		</DataTable>
-
-		<DrillDown
-			v-if="chart && drillOn"
-			:chart="{
-				operations: chart.dataQuery.doc.operations,
-				use_live_connection: chart.dataQuery.doc.use_live_connection,
-				result: chart.dataQuery.result,
-			}"
-			:row="drillOn.row"
-			:column="drillOn.column"
-			@close="drillOn = undefined"
-		/>
+			:enable-sort="true"
+			:enable-drill-down="true"
+			:on-sort-change="onSortChange"
+		></QueryDataTable>
 	</div>
 </template>

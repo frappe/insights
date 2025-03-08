@@ -77,11 +77,15 @@ watchEffect(() => {
 				</button>
 			</div>
 
-			<InlineFormControlLabel class="!w-1/2" label="Max Column Values">
+			<InlineFormControlLabel
+				v-if="config.columns.length"
+				class="!w-1/2"
+				label="Max Column Values"
+			>
 				<FormControl
 					type="number"
 					autocomplete="off"
-					:modelValue="config.max_column_values || 10"
+					:modelValue="config.max_column_values"
 					@update:modelValue="config.max_column_values = $event"
 				/>
 			</InlineFormControlLabel>

@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, XIcon } from 'lucide-vue-next'
-import { h } from 'vue'
-import { QueryResultColumn } from '../types/query.types'
+import { h, ref, watchEffect } from 'vue'
+import { SortDirection } from '../types/query.types'
+import ContentEditable from './ContentEditable.vue'
 
 const props = defineProps<{
 	label: string
-	column: QueryResultColumn
-	sortOrder?: 'asc' | 'desc'
-	onSortChange?: (sort_order: 'asc' | 'desc' | '') => void
+	sortOrder?: SortDirection
+	onSortChange?: (direction: SortDirection) => void
+	onRename?: (new_name: string) => void
 }>()
+
+const _label = ref(props.label)
+watchEffect(() => (_label.value = props.label))
 
 const sortOptions = [
 	{
@@ -30,30 +34,33 @@ const sortOptions = [
 </script>
 
 <template>
-	<div class="flex items-center gap-3 pl-3">
-		<span class="truncate">
-			{{ props.label }}
-		</span>
-
-		<div class="flex">
-			<!-- Sort -->
-			<Dropdown :options="sortOptions">
-				<Button variant="ghost" class="rounded-none">
-					<template #icon>
-						<component
-							:is="
-								!props.sortOrder
-									? ArrowUpDown
-									: props.sortOrder === 'asc'
-									? ArrowUpNarrowWide
-									: ArrowDownWideNarrow
-							"
-							class="h-3.5 w-3.5 text-gray-700"
-							stroke-width="1.5"
-						/>
-					</template>
-				</Button>
-			</Dropdown>
-		</div>
+	<div class="flex w-full items-center gap-0.5">
+		<slot name="prefix" />
+		<ContentEditable
+			v-model="_label"
+			placeholder="Column"
+			class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-sm focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
+			:disabled="!props.onRename"
+			@returned="props.onRename?.(_label)"
+			@blur="props.onRename?.(_label)"
+		/>
+		<Dropdown v-if="props.onSortChange" :options="sortOptions">
+			<Button variant="ghost" class="rounded-none">
+				<template #icon>
+					<component
+						:is="
+							!props.sortOrder
+								? ArrowUpDown
+								: props.sortOrder === 'asc'
+								? ArrowUpNarrowWide
+								: ArrowDownWideNarrow
+						"
+						class="h-3.5 w-3.5 text-gray-700"
+						stroke-width="1.5"
+					/>
+				</template>
+			</Button>
+		</Dropdown>
+		<slot name="suffix" />
 	</div>
 </template>

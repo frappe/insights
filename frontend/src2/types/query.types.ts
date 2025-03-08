@@ -122,6 +122,8 @@ export type Summarize = { type: 'summarize' } & SummarizeArgs
 
 export type OrderByArgs = { column: Column; direction: 'asc' | 'desc' }
 export type OrderBy = { type: 'order_by' } & OrderByArgs
+export type SortDirection = 'asc' | 'desc' | ''
+export type SortOrder = Record<string, SortDirection>
 
 export type Limit = { type: 'limit'; limit: number }
 

@@ -2,7 +2,9 @@ import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import { getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
+import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
+import { createToast } from '../helpers/toasts'
 import {
 	AdhocFilters,
 	CodeArgs,
@@ -10,6 +12,7 @@ import {
 	ColumnOption,
 	CustomOperationArgs,
 	FilterGroupArgs,
+	FilterRule,
 	JoinArgs,
 	MutateArgs,
 	Operation,
@@ -17,6 +20,7 @@ import {
 	PivotWiderArgs,
 	QueryResult,
 	QueryResultColumn,
+	QueryResultRow,
 	Rename,
 	SelectArgs,
 	SourceArgs,
@@ -101,7 +105,9 @@ export function makeQuery(name: string) {
 	const executing = ref(false)
 	let lastExecutionId = ''
 	async function execute(adhocFilters?: AdhocFilters, force: boolean = false) {
-		await waitUntil(() => query.isloaded)
+		if (!query.islocal) {
+			await waitUntil(() => query.isloaded)
+		}
 
 		if (!query.doc.operations.length) {
 			result.value = { ...EMPTY_RESULT }
@@ -153,7 +159,9 @@ export function makeQuery(name: string) {
 
 	const fetchingCount = ref(false)
 	async function fetchResultCount() {
-		await waitUntil(() => query.isloaded)
+		if (!query.islocal) {
+			await waitUntil(() => query.isloaded)
+		}
 
 		if (!query.doc.operations.length) {
 			result.value.totalRowCount = 0
@@ -509,6 +517,119 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
+		const error = validateDrillDown(col, row)
+		if (error) {
+			createToast({
+				title: 'Failed to drill down',
+				message: error,
+				variant: 'warning',
+			})
+			return
+		}
+
+		const textColumns = result.value.columns
+			.filter((c) => FIELDTYPES.TEXT.includes(c.type))
+			.map((c) => c.name)
+
+		const dateColumns = result.value.columns
+			.filter((c) => FIELDTYPES.DATE.includes(c.type))
+			.map((c) => c.name)
+
+		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
+		const currRow = result.value.rows[rowIndex]
+		const nextRow = result.value.rows[rowIndex + 1]
+
+		const filters: FilterRule[] = []
+		for (const column_name of textColumns) {
+			filters.push({
+				column: column(column_name),
+				operator: '=',
+				value: currRow[column_name] as string,
+			})
+		}
+
+		for (const column_name of dateColumns) {
+			if (nextRow) {
+				filters.push({
+					column: column(column_name),
+					operator: '>=',
+					value: currRow[column_name] as string,
+				})
+				filters.push({
+					column: column(column_name),
+					operator: '<',
+					value: nextRow[column_name] as string,
+				})
+			} else {
+				filters.push({
+					column: column(column_name),
+					operator: '>=',
+					value: currRow[column_name] as string,
+				})
+			}
+		}
+
+		const drill_down_query = useQuery('new-query' + getUniqueId())
+		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
+
+		const reversedOperations = query.doc.operations.slice().reverse()
+		// remove last summarize operation
+		const lastSummarizeIdx = reversedOperations.findIndex((op) => op.type === 'summarize')
+		if (lastSummarizeIdx > -1) {
+			reversedOperations.splice(lastSummarizeIdx, 1)
+		}
+		// remove last order by operation
+		const lastOrderByIdx = reversedOperations.findIndex((op) => op.type === 'order_by')
+		if (lastOrderByIdx > -1) {
+			reversedOperations.splice(lastOrderByIdx, 1)
+		}
+		// remove last limit operation
+		const lastLimitIdx = reversedOperations.findIndex((op) => op.type === 'limit')
+		if (lastLimitIdx > -1) {
+			reversedOperations.splice(lastLimitIdx, 1)
+		}
+
+		drill_down_query.setOperations(reversedOperations.reverse())
+
+		drill_down_query.addFilterGroup({
+			logical_operator: 'And',
+			filters: filters,
+		})
+
+		return drill_down_query
+	}
+
+	function validateDrillDown(col: QueryResultColumn, row: QueryResultRow) {
+		if (!query.doc.operations.find((op) => op.type === 'summarize')) {
+			return 'Drill down is only supported on summarized data'
+		}
+
+		if (!result.value.columns?.length) {
+			return 'No columns found in the result'
+		}
+
+		if (!col) {
+			return 'Column not found'
+		}
+
+		if (!FIELDTYPES.NUMBER.includes(col.type)) {
+			return 'Drill down is only supported for numeric columns'
+		}
+
+		if (!row) {
+			return 'Row not found'
+		}
+
+		if (!result.value.rows?.length) {
+			return 'No rows found in the result'
+		}
+
+		if (!result.value.formattedRows.find((r) => r === row)) {
+			return 'Row not found in the result'
+		}
+	}
+
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
@@ -617,6 +738,8 @@ export function makeQuery(name: string) {
 		measures,
 		getDimension,
 		getMeasure,
+
+		getDrillDownQuery,
 
 		history,
 		canUndo() {
