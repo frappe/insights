@@ -13,11 +13,7 @@ import {
 	SeriesLine,
 	XAxis,
 } from '../types/chart.types'
-import {
-	QueryResult,
-	QueryResultColumn,
-	QueryResultRow
-} from '../types/query.types'
+import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
 
 // eslint-disable-next-line no-unused-vars
@@ -217,7 +213,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 					fontSize: 11,
 				},
 				labelLayout: { hideOverlap: true },
-				barMaxWidth: 60,
+				barWidth: '95%',
 				yAxisIndex: is_right_axis ? 1 : 0,
 				itemStyle: { color: color },
 			}
@@ -263,10 +259,11 @@ function getXAxis(x_axis: XAxis) {
 		type: xAxisIsDate ? 'time' : 'category',
 		z: 2,
 		scale: true,
-		boundaryGap: ['1%', '2%'],
+		alignTicks: true,
+		boundaryGap: ['1%', '1%'],
 		splitLine: { show: false },
-		axisLine: { show: true },
-		axisTick: { show: false },
+		axisLine: { show: true, onZero: true },
+		axisTick: { show: true },
 		axisLabel: {
 			show: true,
 			rotate: rotation,
@@ -287,12 +284,12 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 		alignTicks: true,
 		boundaryGap: ['0%', '1%'],
 		splitLine: { show: true },
-		axisTick: { show: false },
-		axisLine: { show: false, onZero: false },
+		axisTick: { show: true },
+		axisLine: { show: true, onZero: true },
 		axisLabel: {
 			show: true,
 			hideOverlap: true,
-			margin: 4,
+			margin: 8,
 			formatter: (value: number) => getShortNumber(value, 1),
 		},
 		min: options.normalized ? 0 : undefined,
