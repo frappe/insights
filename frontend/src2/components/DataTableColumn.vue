@@ -39,7 +39,7 @@ const sortOptions = [
 		<ContentEditable
 			v-model="_label"
 			placeholder="Column"
-			class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-sm focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
+			class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-sm first:ml-2 focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
 			:disabled="!props.onRename"
 			@returned="props.onRename?.(_label)"
 			@blur="props.onRename?.(_label)"

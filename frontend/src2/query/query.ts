@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
-import { getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { copy, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
@@ -578,24 +578,16 @@ export function makeQuery(name: string) {
 		const drill_down_query = useQuery('new-query' + getUniqueId())
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
 
-		const reversedOperations = query.doc.operations.slice().reverse()
-		// remove last summarize operation
+		const operations = copy(query.doc.operations)
+		const reversedOperations = operations.slice().reverse()
 		const lastSummarizeIdx = reversedOperations.findIndex((op) => op.type === 'summarize')
-		if (lastSummarizeIdx > -1) {
-			reversedOperations.splice(lastSummarizeIdx, 1)
-		}
-		// remove last order by operation
-		const lastOrderByIdx = reversedOperations.findIndex((op) => op.type === 'order_by')
-		if (lastOrderByIdx > -1) {
-			reversedOperations.splice(lastOrderByIdx, 1)
-		}
-		// remove last limit operation
-		const lastLimitIdx = reversedOperations.findIndex((op) => op.type === 'limit')
-		if (lastLimitIdx > -1) {
-			reversedOperations.splice(lastLimitIdx, 1)
+		if (lastSummarizeIdx === -1) {
+			console.error('No summarize operation found')
+			return
 		}
 
-		drill_down_query.setOperations(reversedOperations.reverse())
+		const actualSummarizeIdx = reversedOperations.length - lastSummarizeIdx - 1
+		drill_down_query.setOperations(operations.slice(0, actualSummarizeIdx))
 
 		drill_down_query.addFilterGroup({
 			logical_operator: 'And',
