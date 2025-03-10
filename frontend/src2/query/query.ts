@@ -606,14 +606,6 @@ export function makeQuery(name: string) {
 			return 'No columns found in the result'
 		}
 
-		if (!col) {
-			return 'Column not found'
-		}
-
-		if (!FIELDTYPES.NUMBER.includes(col.type)) {
-			return 'Drill down is only supported for numeric columns'
-		}
-
 		if (!row) {
 			return 'Row not found'
 		}
