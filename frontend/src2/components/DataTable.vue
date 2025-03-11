@@ -27,6 +27,7 @@ const headers = computed(() => {
 	return createHeaders(props.columns)
 })
 
+const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
 const isNumberColumn = (col: QueryResultColumn): boolean => FIELDTYPES.NUMBER.includes(col.type)
 
 const filterPerColumn = ref<Record<string, string>>({})
@@ -295,7 +296,17 @@ const colorByValues = computed(() => {
 							height="30px"
 							@dblclick="isNumberColumn(col) && props.onDrilldown?.(col, row)"
 						>
-							{{ isNumberColumn(col) ? formatNumber(row[col.name]) : row[col.name] }}
+							<template v-if="isNumberColumn(col)">
+								{{ formatNumber(row[col.name]) }}
+							</template>
+							<template v-else-if="isUrl(row[col.name])">
+								<a :href="row[col.name]" target="_blank" class="underline">
+									{{ row[col.name] }}
+								</a>
+							</template>
+							<template v-else>
+								{{ row[col.name] }}
+							</template>
 						</td>
 
 						<td
