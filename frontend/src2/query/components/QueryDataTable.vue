@@ -113,5 +113,11 @@ function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 		</template>
 	</DataTable>
 
-	<DrillDown v-if="drillDownQuery" v-model="showDrillDown" :query="drillDownQuery"> </DrillDown>
+	<DrillDown
+		v-if="drillDownQuery"
+		v-model="showDrillDown"
+		@update:model-value="!$event ? (drillDownQuery = undefined) : undefined"
+		:query="drillDownQuery"
+	>
+	</DrillDown>
 </template>

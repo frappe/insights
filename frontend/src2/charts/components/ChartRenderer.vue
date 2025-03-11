@@ -94,5 +94,11 @@ function onChartElementClick(params: any) {
 		</div>
 	</div>
 
-	<DrillDown v-if="drillDownQuery" v-model="showDrillDown" :query="drillDownQuery"> </DrillDown>
+	<DrillDown
+		v-if="drillDownQuery"
+		v-model="showDrillDown"
+		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
+		:query="drillDownQuery"
+	>
+	</DrillDown>
 </template>
