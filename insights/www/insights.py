@@ -68,9 +68,11 @@ def get_context(context):
 def continue_to_v3(context):
     csrf_token = frappe.sessions.get_csrf_token()
     frappe.db.commit()
-    context.csrf_token = csrf_token
-    context.site_name = frappe.local.site
-    context.is_fc_site = is_fc_site()
+    context.boot = {
+        "csrf_token": csrf_token,
+        "site_name": frappe.local.site,
+        "is_fc_site": is_fc_site(),
+    }
     track_active_site(is_v3=True)
 
 
