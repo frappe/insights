@@ -109,6 +109,7 @@ def is_shared_query(name: str):
 
 
 @frappe.whitelist(allow_guest=True)
+@validate_type
 def get_dashboard_name(dashboard_name: str):
     name = dashboard_name
     if not frappe.db.exists("Insights Dashboard v3", name):
@@ -119,6 +120,7 @@ def get_dashboard_name(dashboard_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
+@validate_type
 def get_chart_name(chart_name: str):
     name = chart_name
     if not frappe.db.exists("Insights Chart v3", name):
