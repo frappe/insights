@@ -19,22 +19,25 @@
 				</template>
 			</div>
 		</div>
-		<SidebarLink
-			:label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
-			:isCollapsed="isSidebarCollapsed.value"
-			@click="isSidebarCollapsed = !isSidebarCollapsed"
-			class="m-2"
-		>
-			<template #icon>
-				<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
-					<PanelRightOpen
-						class="h-4.5 w-4.5 text-gray-700 duration-300 ease-in-out"
-						:class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
-						stroke-width="1.5"
-					/>
-				</span>
-			</template>
-		</SidebarLink>
+		<div>
+			<TrialBanner v-if="is_fc_site" />
+			<SidebarLink
+				:label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
+				:isCollapsed="isSidebarCollapsed.value"
+				@click="isSidebarCollapsed = !isSidebarCollapsed"
+				class="m-2"
+			>
+				<template #icon>
+					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
+						<PanelRightOpen
+							class="h-4.5 w-4.5 text-gray-700 duration-300 ease-in-out"
+							:class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
+							stroke-width="1.5"
+						/>
+					</span>
+				</template>
+			</SidebarLink>
+		</div>
 	</div>
 
 	<Settings v-model="showSettingsDialog" />
@@ -55,11 +58,13 @@ import useSettings from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import UserDropdown from './UserDropdown.vue'
+import { TrialBanner } from 'frappe-ui'
 
 const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
 const showSettingsDialog = ref(false)
 
 const settings = useSettings()
+const is_fc_site = window.is_fc_site
 
 const links = ref([
 	{
