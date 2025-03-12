@@ -131,7 +131,7 @@ def execute():
                     should_update = True
                 else:
                     print(
-                        f"Query {ref_query} not found in workbook {query.name} for '{op.type}' operation"
+                        f"Query {ref_query} not found in workbook {workbook.name} for '{op.type}' operation"
                     )
 
             if should_update:
