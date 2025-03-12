@@ -89,7 +89,7 @@ class InsightsWorkbook(Document):
         last_viewed_recently = frappe.db.get_value(
             view_log,
             filters=(
-                (view_log.creation < (Now() - Interval(minutes=5)))
+                (view_log.creation > (Now() - Interval(minutes=5)))
                 & (view_log.reference_doctype == self.doctype)
                 & (view_log.reference_name == self.name)
                 & (view_log.viewed_by == frappe.session.user)
