@@ -10,12 +10,6 @@ import ibis
 from frappe.model.document import Document
 from ibis import BaseBackend
 
-from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import (
-    get_bigquery_connection,
-)
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-    WAREHOUSE_DB_NAME,
-)
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -23,6 +17,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 
+from .connectors.bigquery import get_bigquery_connection
 from .connectors.duckdb import get_duckdb_connection
 from .connectors.frappe_db import (
     get_frappedb_connection_string,
@@ -31,8 +26,10 @@ from .connectors.frappe_db import (
     is_frappe_db,
 )
 from .connectors.mariadb import get_mariadb_connection_string
+from .connectors.mssql import get_mssql_connection
 from .connectors.postgresql import get_postgres_connection_string
 from .connectors.sqlite import get_sqlite_connection_string
+from .data_warehouse import WAREHOUSE_DB_NAME
 
 
 class DataSourceConnectionError(frappe.ValidationError):
@@ -162,8 +159,9 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         connection_string: DF.Text | None
         database_name: DF.Data | None
         database_type: DF.Literal[
-            "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery"
+            "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "MSSQL"
         ]
+        enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check
@@ -209,6 +207,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_bigquery_connection(self)
         if self.database_type == "DuckDB":
             return get_duckdb_connection(self)
+        if self.database_type == "MSSQL":
+            return get_mssql_connection(self)
 
         connection_string = self._get_connection_string()
         return ibis.connect(connection_string)

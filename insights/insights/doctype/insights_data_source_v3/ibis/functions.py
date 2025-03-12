@@ -561,7 +561,7 @@ def week_of_year(column: ir.DateValue):
     """
     def week_of_year(column)
 
-    Extract the week of the year from a date column.
+    Extract the week of the year (1-53) from a date column.
 
     Examples:
     - week_of_year(order_date)
@@ -573,7 +573,7 @@ def day_of_year(column: ir.DateValue):
     """
     def day_of_year(column)
 
-    Extract the day of the year from a date column.
+    Extract the day of the year (1-366) from a date column.
 
     Examples:
     - day_of_year(order_date)
@@ -585,12 +585,24 @@ def day_of_week(column: ir.DateValue):
     """
     def day_of_week(column)
 
-    Extract the day of the week from a date column.
+    Extract the day of the week (0-6) from a date column.
 
     Examples:
     - day_of_week(order_date)
     """
-    return column.day_of_week()
+    return column.day_of_week.index()
+
+
+def day_name(column: ir.DateValue):
+    """
+    def day_name(column)
+
+    Extract the name of the day (Monday-Sunday) from a date column.
+
+    Examples:
+    - day_name(order_date)
+    """
+    return column.day_of_week.full_name()
 
 
 def day(column: ir.DateValue):

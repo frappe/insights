@@ -69,35 +69,56 @@
 				/>
 			</template>
 		</Dialog>
+
+		<Dialog
+			v-model="showLoginToFCDialog"
+			:options="{
+				title: 'Login to Frappe Cloud?',
+				message: 'Are you sure you want to login to your Frappe Cloud dashboard?',
+				actions: [
+					{
+						label: 'Confirm',
+						variant: 'solid',
+						loading: loggingInToFC,
+						onClick() {
+							loginToFC()
+							showLoginToFCDialog.value = false
+						},
+					},
+				],
+			}"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { Dropdown } from 'frappe-ui'
-import { ChevronDown } from 'lucide-vue-next'
-import { ref } from 'vue'
-import { waitUntil } from '../helpers'
+import { call, Dropdown } from 'frappe-ui'
+import { ChevronDown, HelpCircle, LogOut, MessageCircle, ToggleRight } from 'lucide-vue-next'
+import { h, ref } from 'vue'
+import { showErrorToast, waitUntil } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
+import FrappeCloudIcon from './Icons/FrappeCloudIcon.vue'
 
-const props = defineProps<{ isCollapsed: boolean }>()
+const props = defineProps<{ isCollapsed?: boolean }>()
 
 const showSwitchToV2Dialog = ref(false)
+const showLoginToFCDialog = ref(false)
 
 const userDropdownOptions = ref([
 	{
 		label: 'Documentation',
-		icon: 'help-circle',
+		icon: h(HelpCircle),
 		onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
 	},
 	{
 		label: 'Join Telegram Group',
-		icon: 'message-circle',
+		icon: h(MessageCircle),
 		onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
 	},
 	{
-		icon: 'log-out',
 		label: 'Log out',
+		icon: h(LogOut),
 		onClick: () =>
 			confirmDialog({
 				title: 'Log out',
@@ -109,25 +130,49 @@ const userDropdownOptions = ref([
 
 waitUntil(() => session.initialized).then(() => {
 	if (session.user.is_v2_instance) {
-		userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
+		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
 			label: 'Switch to Insights v2',
-			icon: 'toggle-right',
+			icon: h(ToggleRight),
 			onClick: () => (showSwitchToV2Dialog.value = true),
 		})
 	}
 
 	if (session.user.is_admin) {
-		userDropdownOptions.value.splice(2, 0, {
+		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
 			label: 'Switch to Desk',
-			icon: 'toggle-right',
+			icon: h(ToggleRight),
 			onClick: () => window.open('/app', '_blank'),
 		})
 	}
 })
 
+if (window.is_fc_site) {
+	userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
+		icon: h(FrappeCloudIcon),
+		label: 'Login to Frappe Cloud',
+		onClick: () => (showLoginToFCDialog.value = true),
+	})
+}
+
 function openInsightsV2() {
 	session.updateDefaultVersion(session.user.default_version).then(() => {
 		window.location.href = '/insights_v2'
 	})
+}
+
+const loggingInToFC = ref(false)
+function loginToFC() {
+	loggingInToFC.value = true
+	call('frappe.integrations.frappe_providers.frappecloud_billing.current_site_info')
+		.then((data: any) => {
+			if (!data.base_url || !data.site_name) {
+				throw new Error('Invalid response')
+			}
+			window.open(`${data.base_url}/dashboard/sites/${data.site_name}`, '_blank')
+		})
+		.catch(showErrorToast)
+		.finally(() => {
+			loggingInToFC.value = false
+		})
 }
 </script>
