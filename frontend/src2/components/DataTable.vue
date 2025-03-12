@@ -279,7 +279,7 @@ const colorByValues = computed(() => {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							class="tnum z-1 sticky left-0 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
