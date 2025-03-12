@@ -1,10 +1,14 @@
 import frappe
+from frappe.utils.data import add_to_date
 
 from insights.utils import deep_convert_dict_to_dict
 
 
 def execute():
-    if not frappe.db.count("Insights Workbook"):
+    should_run_patch = frappe.db.exists(
+        "DocType", "Insights Workbook"
+    ) and frappe.db.count("Insights Workbook")
+    if not should_run_patch:
         return
 
     frappe.reload_doc("insights", "doctype", "insights_query_v3")
@@ -23,20 +27,20 @@ def execute():
         query_name_to_doc = {}
         chart_name_to_doc = {}
 
-        for query in queries:
+        for i, query in enumerate(queries):
             new_doc = frappe.new_doc("Insights Query v3")
             new_doc.update(query)
             new_doc.workbook = workbook.name
             new_doc.old_name = query["name"]
-            new_doc.modified = workbook.modified
-            new_doc.creation = workbook.creation
+            new_doc.modified = add_to_date(workbook.modified, seconds=i)
+            new_doc.creation = add_to_date(workbook.creation, seconds=i)
             new_doc.modified_by = workbook.modified_by
             new_doc.owner = workbook.owner
             new_doc.before_save()
             new_doc.db_insert()
             query_name_to_doc[query["name"]] = new_doc
 
-        for chart in charts:
+        for i, chart in enumerate(charts):
             chart = deep_convert_dict_to_dict(chart)
 
             new_doc = frappe.new_doc("Insights Chart v3")
@@ -58,15 +62,15 @@ def execute():
 
             new_doc.operations = frappe.as_json(chart.operations)
             new_doc.old_name = chart["name"]
-            new_doc.modified = workbook.modified
-            new_doc.creation = workbook.creation
+            new_doc.modified = add_to_date(workbook.modified, seconds=i)
+            new_doc.creation = add_to_date(workbook.creation, seconds=i)
             new_doc.modified_by = workbook.modified_by
             new_doc.owner = workbook.owner
             new_doc.before_save()
             new_doc.db_insert()
             chart_name_to_doc[chart["name"]] = new_doc
 
-        for dashboard in dashboards:
+        for i, dashboard in enumerate(dashboards):
             dashboard = deep_convert_dict_to_dict(dashboard)
             new_doc = frappe.new_doc("Insights Dashboard v3")
             new_doc.workbook = workbook.name
@@ -105,8 +109,8 @@ def execute():
 
             new_doc.items = frappe.as_json(dashboard["items"])
             new_doc.old_name = dashboard["name"]
-            new_doc.modified = workbook.modified
-            new_doc.creation = workbook.creation
+            new_doc.modified = add_to_date(workbook.modified, seconds=i)
+            new_doc.creation = add_to_date(workbook.creation, seconds=i)
             new_doc.modified_by = workbook.modified_by
             new_doc.owner = workbook.owner
             new_doc.before_save()
