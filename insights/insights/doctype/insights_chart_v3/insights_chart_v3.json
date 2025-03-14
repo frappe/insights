@@ -83,7 +83,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-08 15:57:40.170181",
+ "modified": "2025-03-14 16:25:02.809832",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",
@@ -119,5 +119,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }

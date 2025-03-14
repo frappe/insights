@@ -31,7 +31,7 @@
    "link_fieldname": "workbook"
   }
  ],
- "modified": "2025-03-07 15:55:56.441486",
+ "modified": "2025-03-14 16:24:47.279867",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
@@ -68,5 +68,6 @@
  "sort_order": "DESC",
  "states": [],
  "title_field": "title",
+ "track_changes": 1,
  "track_views": 1
 }

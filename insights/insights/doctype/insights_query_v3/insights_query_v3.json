@@ -94,7 +94,7 @@
    "link_fieldname": "data_query"
   }
  ],
- "modified": "2025-03-07 15:51:51.087336",
+ "modified": "2025-03-14 16:24:56.189526",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",
@@ -129,5 +129,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }
