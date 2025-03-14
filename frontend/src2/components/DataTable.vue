@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import { createHeaders, formatNumber } from '../helpers'
@@ -27,8 +28,35 @@ const headers = computed(() => {
 	return createHeaders(props.columns)
 })
 
+const columnsMeta = computed(() => {
+	if (!props.columns || !props.rows) return new Map()
+
+	const meta = new Map()
+	props.columns.forEach((col) => {
+		const name = col.name
+		const metadata = {
+			isNumber: FIELDTYPES.NUMBER.includes(col.type),
+			isStarRating: false,
+		}
+
+		const values = props.rows!.map((row) => row[name])
+
+		// Check if it's a star rating column
+		if (
+			metadata.isNumber &&
+			(col.name.toLowerCase().includes('rating') || col.name.toLowerCase().includes('stars'))
+		) {
+			metadata.isStarRating = values.every((val) => val >= 0 && val <= 1)
+		}
+
+		meta.set(name, metadata)
+	})
+	return meta
+})
+
+const isNumberColumn = (col: string) => columnsMeta.value.get(col)?.isNumber
+const isStarRating = (col: string) => columnsMeta.value.get(col)?.isStarRating
 const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
-const isNumberColumn = (col: QueryResultColumn): boolean => FIELDTYPES.NUMBER.includes(col.type)
 
 const filterPerColumn = ref<Record<string, string>>({})
 const visibleRows = computed(() => {
@@ -40,7 +68,7 @@ const visibleRows = computed(() => {
 	return rows.filter((row) => {
 		return Object.entries(filters).every(([col, filter]) => {
 			if (!filter) return true
-			const isNumber = isNumberColumn(columns.find((c) => c.name === col)!)
+			const isNumber = isNumberColumn(col)
 			const value = row[col]
 			return applyFilter(value, isNumber, filter)
 		})
@@ -78,7 +106,7 @@ const totalPerColumn = computed(() => {
 
 	const totals: Record<string, number> = {}
 	columns.forEach((col) => {
-		if (isNumberColumn(col)) {
+		if (isNumberColumn(col.name)) {
 			totals[col.name] = rows.reduce((acc, row) => acc + (row[col.name] as number), 0)
 		}
 	})
@@ -93,7 +121,7 @@ const totalPerRow = computed(() => {
 	const totals: Record<number, number> = {}
 	rows.forEach((row, idx) => {
 		totals[idx] = columns.reduce((acc, col) => {
-			if (isNumberColumn(col)) {
+			if (isNumberColumn(col.name)) {
 				return acc + (row[col.name] as number)
 			}
 			return acc
@@ -150,7 +178,7 @@ const colorByValues = computed(() => {
 
 	let uniqueValues = [] as number[]
 	columns.forEach((col) => {
-		if (isNumberColumn(col)) {
+		if (isNumberColumn(col.name)) {
 			rows.forEach((row) => {
 				const value = Number(row[col.name])
 				if (!uniqueValues.includes(value)) {
@@ -196,7 +224,7 @@ const colorByValues = computed(() => {
 							:key="idx"
 							class="h-7 border-b border-r"
 							:class="[
-								header.isLast && isNumberColumn(header.column)
+								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
 									: 'text-left',
 							]"
@@ -286,17 +314,20 @@ const colorByValues = computed(() => {
 
 						<td
 							v-for="col in props.columns"
-							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
+							class="h-8 max-w-[24rem] truncate border-b border-r px-3 text-gray-800"
 							:class="[
-								isNumberColumn(col) ? 'tnum text-right' : 'text-left',
-								props.enableColorScale && isNumberColumn(col)
+								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
+								props.enableColorScale && isNumberColumn(col.name)
 									? colorByValues[row[col.name]]
 									: '',
 							]"
 							height="30px"
 							@dblclick="isNumberColumn(col) && props.onDrilldown?.(col, row)"
 						>
-							<template v-if="isNumberColumn(col)">
+							<template v-if="isStarRating(col.name)">
+								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
+							</template>
+							<template v-else-if="isNumberColumn(col.name)">
 								{{ formatNumber(row[col.name]) }}
 							</template>
 							<template v-else-if="isUrl(row[col.name])">
@@ -304,6 +335,7 @@ const colorByValues = computed(() => {
 									{{ row[col.name] }}
 								</a>
 							</template>
+
 							<template v-else>
 								{{ row[col.name] }}
 							</template>
@@ -325,10 +357,14 @@ const colorByValues = computed(() => {
 						<td class="whitespace-nowrap border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
-							class="truncate border-r border-t py-2 px-3 font-bold text-gray-800"
-							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
+							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
+							:class="isNumberColumn(col.name) ? 'tnum text-right' : 'text-left'"
 						>
-							{{ isNumberColumn(col) ? formatNumber(totalPerColumn[col.name]) : '' }}
+							{{
+								isNumberColumn(col.name)
+									? formatNumber(totalPerColumn[col.name])
+									: ''
+							}}
 						</td>
 
 						<td
