@@ -37,7 +37,7 @@ wheneverChanges(query, (value: string) => {
 			@update:modelValue="query = $event?.value"
 		>
 			<template #prefix>
-				<Table2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<Table2 class="mr-1.5 h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
 		</Autocomplete>
 	</InlineFormControlLabel>
