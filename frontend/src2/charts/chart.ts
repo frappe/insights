@@ -220,7 +220,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		let rows = config.rows.filter((r) => r.column_name)
 		let columns = config.columns.filter((c) => c.column_name)
 		let values = config.values.filter((v) => v.measure_name)
-		values = values.length ? values : [count()]
+		values = values.length ? values : []
 
 		if (!rows.length) {
 			console.warn('Rows are required')
