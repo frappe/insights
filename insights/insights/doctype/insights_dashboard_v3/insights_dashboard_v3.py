@@ -127,6 +127,7 @@ class InsightsDashboardv3(Document):
                 DocShare.user,
                 User.full_name,
                 User.user_image,
+                User.email,
             )
             .where(DocShare.share_doctype == "Insights Dashboard v3")
             .where(DocShare.share_name == self.name)
