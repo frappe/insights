@@ -1,6 +1,6 @@
 import { reactive, toRefs } from 'vue'
 import useChart from '../charts/chart'
-import { getUniqueId, safeJSONParse, store, waitUntil, wheneverChanges } from '../helpers'
+import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil, wheneverChanges } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
@@ -216,6 +216,14 @@ function makeDashboard(name: string) {
 				dashboard.doc.share_link ||
 				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
 			)
+		},
+
+		getSharedWith() {
+			return dashboard.call('get_shared_with').catch(showErrorToast)
+		},
+
+		updateSharedWith(shared_with: string[]) {
+			return dashboard.call('update_shared_with', { users: shared_with }).catch(showErrorToast)
 		},
 
 		getMaxY() {

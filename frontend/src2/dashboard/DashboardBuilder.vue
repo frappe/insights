@@ -155,5 +155,5 @@ wheneverChanges(
 
 	<DashboardChartSelectorDialog v-model="showChartSelectorDialog" :chartOptions="props.charts" />
 
-	<DashboardShareDialog v-model="showShareDialog" />
+	<DashboardShareDialog v-if="showShareDialog" v-model="showShareDialog" />
 </template>

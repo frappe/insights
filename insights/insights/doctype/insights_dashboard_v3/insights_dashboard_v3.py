@@ -114,6 +114,64 @@ class InsightsDashboardv3(Document):
             self.db_set("preview_image", file_url)
             return file_url
 
+    @frappe.whitelist()
+    def get_shared_with(self):
+        DocShare = frappe.qb.DocType("DocShare")
+        User = frappe.qb.DocType("User")
+
+        shared_with = (
+            frappe.qb.from_(DocShare)
+            .left_join(User)
+            .on(DocShare.user == User.name)
+            .select(
+                DocShare.user,
+                User.full_name,
+                User.user_image,
+            )
+            .where(DocShare.share_doctype == "Insights Dashboard v3")
+            .where(DocShare.share_name == self.name)
+            .where(DocShare.read == 1)
+            .run(as_dict=True)
+        )
+        return shared_with
+
+    @frappe.whitelist()
+    def update_shared_with(self, users):
+        if not frappe.has_permission(
+            "Insights Dashboard v3", ptype="share", doc=self.name
+        ):
+            frappe.throw("You do not have permission to share this dashboard")
+
+        existing_shares = frappe.get_all(
+            "DocShare",
+            filters={
+                "share_doctype": "Insights Dashboard v3",
+                "share_name": self.name,
+                "read": 1,
+                "user": ["in", users],
+            },
+            fields=["name", "user"],
+        )
+
+        # remove all existing shares that are not in the new list
+        for share in existing_shares:
+            if share.user not in users:
+                frappe.delete_doc("DocShare", share.name)
+
+        # add new shares
+        for user in users:
+            if user not in [share.user for share in existing_shares]:
+                frappe.get_doc(
+                    {
+                        "doctype": "DocShare",
+                        "share_doctype": "Insights Dashboard v3",
+                        "share_name": self.name,
+                        "user": user,
+                        "read": 1,
+                        "notify_by_email": 0,
+                    }
+                ).insert()
+
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
     PREVIEW_GENERATOR_URL = (
