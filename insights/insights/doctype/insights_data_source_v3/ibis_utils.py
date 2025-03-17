@@ -403,11 +403,14 @@ class IbisQueryBuilder:
                 )
 
             names_from = [col.get_name() for col in columns]
+            max_names = pivot_args.get("max_column_values", 10)
+            max_names = int(max_names)
+            max_names = max(1, min(max_names, 100))
             names = (
                 self.query.select(names_from)
                 .order_by(names_from)
                 .distinct()
-                .limit(10)
+                .limit(max_names)
                 .execute()
             )
             names = names.fillna("null").values
@@ -569,6 +572,10 @@ def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=360
         result: pd.DataFrame = query.execute()
     except Exception as e:
         if "max_statement_time" in str(e):
+            frappe.log_error(
+                title="Query execution time exceeded the limit.",
+                message=f"Query: {sql}",
+            )
             frappe.throw(
                 title="Query Timeout",
                 msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
@@ -684,9 +691,6 @@ def sanitize_name(name):
 
 
 def get_code_results(code: str, digest: str):
-    if has_cached_results(digest):
-        return get_cached_results(digest)
-
     pandas = frappe._dict()
     pandas.DataFrame = pd.DataFrame
     pandas.read_csv = pd.read_csv
@@ -718,7 +722,5 @@ def get_code_results(code: str, digest: str):
 
     if not isinstance(results, pd.DataFrame):
         results = pd.DataFrame(results)
-
-    cache_results(digest, results)
 
     return results

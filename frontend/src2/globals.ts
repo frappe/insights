@@ -1,8 +1,5 @@
-import Autocomplete from './components/Autocomplete.vue'
-import Checkbox from './components/Checkbox.vue'
-import Popover from './components/Popover.vue'
-import Switch from './components/Switch.vue'
 import {
+	Autocomplete,
 	Avatar,
 	Badge,
 	Button,
@@ -10,11 +7,14 @@ import {
 	Dropdown,
 	ErrorMessage,
 	FeatherIcon,
+	FormControl,
 	Input,
 	LoadingIndicator,
+	Popover,
 	Tooltip,
-	FormControl
 } from 'frappe-ui'
+import Checkbox from './components/Checkbox.vue'
+import Switch from './components/Switch.vue'
 
 import { App } from 'vue'
 import dayjs from './helpers/dayjs.ts'

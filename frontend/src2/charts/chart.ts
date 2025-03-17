@@ -220,6 +220,7 @@ function makeChart(workbookChart: WorkbookChart) {
 		let rows = config.rows.filter((r) => r.column_name)
 		let columns = config.columns.filter((c) => c.column_name)
 		let values = config.values.filter((v) => v.measure_name)
+		values = values.length ? values : []
 
 		if (!rows.length) {
 			console.warn('Rows are required')
@@ -237,7 +238,8 @@ function makeChart(workbookChart: WorkbookChart) {
 			chart.dataQuery.addPivotWider({
 				rows: rows,
 				columns: columns,
-				values: values || [count()],
+				values: values,
+				max_column_values: config.max_column_values || 10,
 			})
 		}
 

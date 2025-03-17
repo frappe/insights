@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { TableChartConfig } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
@@ -56,23 +57,34 @@ watchEffect(() => {
 	</CollapsibleSection>
 
 	<CollapsibleSection title="Columns">
-		<div>
-			<DraggableList v-model:items="config.columns" group="columns">
-				<template #item="{ item, index }">
-					<DimensionPicker
-						:options="props.dimensions"
-						:model-value="item"
-						@update:model-value="Object.assign(item, $event || {})"
-						@remove="config.columns.splice(index, 1)"
-					/>
-				</template>
-			</DraggableList>
-			<button
-				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-				@click="config.columns.push({} as any)"
-			>
-				+ Add column
-			</button>
+		<div class="flex flex-col gap-3">
+			<div>
+				<DraggableList v-model:items="config.columns" group="columns">
+					<template #item="{ item, index }">
+						<DimensionPicker
+							:options="props.dimensions"
+							:model-value="item"
+							@update:model-value="Object.assign(item, $event || {})"
+							@remove="config.columns.splice(index, 1)"
+						/>
+					</template>
+				</DraggableList>
+				<button
+					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+					@click="config.columns.push({} as any)"
+				>
+					+ Add column
+				</button>
+			</div>
+
+			<InlineFormControlLabel class="!w-1/2" label="Max Column Values">
+				<FormControl
+					type="number"
+					autocomplete="off"
+					:modelValue="config.max_column_values || 10"
+					@update:modelValue="config.max_column_values = $event"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 

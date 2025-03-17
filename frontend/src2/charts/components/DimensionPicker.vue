@@ -98,6 +98,8 @@ function selectDimension(option?: DimensionOption) {
 						/>
 					</InlineFormControlLabel>
 
+					<slot name="config-fields" />
+
 					<div class="flex gap-1">
 						<Button class="w-full" @click="emit('remove')" theme="red">
 							<template #prefix>

@@ -63,6 +63,7 @@ const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn }>()
 			}"
 			:row="drillOn.row"
 			:column="drillOn.column"
+			@close="drillOn = undefined"
 		/>
 	</div>
 </template>

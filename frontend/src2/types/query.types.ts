@@ -137,6 +137,7 @@ export type PivotWiderArgs = {
 	rows: Dimension[]
 	columns: Dimension[]
 	values: Measure[]
+	max_column_values?: number
 }
 export type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 
