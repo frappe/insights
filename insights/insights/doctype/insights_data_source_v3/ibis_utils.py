@@ -15,6 +15,7 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     DataSourceConnectionError,
 )
@@ -463,7 +464,13 @@ class IbisQueryBuilder:
         code = code_args.code
         digest = make_digest(code)
         results = get_code_results(code, digest)
-        return ibis.memtable(results, name=digest)
+
+        return Warehouse().db.create_table(
+            digest,
+            results,
+            temp=True,
+            overwrite=True,
+        )
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
