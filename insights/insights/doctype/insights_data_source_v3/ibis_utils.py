@@ -15,7 +15,6 @@ from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     DataSourceConnectionError,
 )
@@ -464,13 +463,7 @@ class IbisQueryBuilder:
         code = code_args.code
         digest = make_digest(code)
         results = get_code_results(code, digest)
-
-        return Warehouse().db.create_table(
-            digest,
-            results,
-            temp=True,
-            overwrite=True,
-        )
+        return ibis.memtable(results, name=digest)
 
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
@@ -570,6 +563,10 @@ def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=360
         result: pd.DataFrame = query.execute()
     except Exception as e:
         if "max_statement_time" in str(e):
+            frappe.log_error(
+                title="Query execution time exceeded the limit.",
+                message=f"Query: {sql}",
+            )
             frappe.throw(
                 title="Query Timeout",
                 msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
