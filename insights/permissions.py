@@ -321,7 +321,7 @@ class InsightsPermissions:
         return False
 
     def _has_access_to_any(self, doctype, names, access_type):
-        names = [names] if isinstance(names, str) else names
+        names = [names] if not isinstance(names, list) else names
         if not names:
             return False
 
