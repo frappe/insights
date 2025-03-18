@@ -250,13 +250,18 @@ class InsightsPermissions:
             return self._has_access_to_any(doc.doctype, doc.name, access_type)
 
         if doc.doctype == "Insights Dashboard v3":
-            if is_owner:
+            if is_new:
+                if doc.workbook:
+                    return self._has_access_to_any(
+                        "Insights Workbook", doc.workbook, access_type
+                    )
+
+                # allow creating new dashboards without workbook
+                # permissions will be checked for the queries of the charts
                 return True
 
-            if is_new:
-                return self._has_access_to_any(
-                    "Insights Workbook", doc.workbook, access_type
-                )
+            if is_owner:
+                return True
 
             return (
                 self._has_access_to_any(doc.doctype, doc.name, access_type)
@@ -267,13 +272,18 @@ class InsightsPermissions:
             )
 
         if doc.doctype == "Insights Chart v3":
-            if is_owner:
+            if is_new:
+                if doc.workbook:
+                    return self._has_access_to_any(
+                        "Insights Workbook", doc.workbook, access_type
+                    )
+
+                # allow creating new charts without workbook
+                # permissions will be checked for the selected queries
                 return True
 
-            if is_new:
-                return self._has_access_to_any(
-                    "Insights Workbook", doc.workbook, access_type
-                )
+            if is_owner:
+                return True
 
             dashboards = lambda: frappe.get_all(
                 "Insights Dashboard v3",
@@ -292,13 +302,18 @@ class InsightsPermissions:
             )
 
         if doc.doctype == "Insights Query v3":
-            if is_owner:
+            if is_new:
+                if doc.workbook:
+                    return self._has_access_to_any(
+                        "Insights Workbook", doc.workbook, access_type
+                    )
+
+                # allow creating new queries without workbook
+                # permissions will be checked for the selected sources
                 return True
 
-            if is_new:
-                return self._has_access_to_any(
-                    "Insights Workbook", doc.workbook, access_type
-                )
+            if is_owner:
+                return True
 
             charts = lambda: frappe.get_all(
                 "Insights Chart v3",

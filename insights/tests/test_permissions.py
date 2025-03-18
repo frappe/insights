@@ -95,6 +95,11 @@ class TestInsightsPermissions(unittest.TestCase):
         # create a dashboard and add a chart
         # share the dashboard
         # check if another insights user can access the dashboard chart query & data_query
+
+        # drilldown cases
+        # if a non-insights user creates a query, it should fail, because role permissions will not allow it
+        # if an insights user creates a query against a workbook, then it should check workbook permissions
+        # if an insights user creates a query without a workbook, then it should check permissions of the sources
         pass
 
 
