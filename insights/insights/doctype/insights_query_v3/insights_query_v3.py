@@ -84,8 +84,12 @@ class InsightsQueryv3(Document):
             ):
                 operations.append(adhoc_filters)
 
-        use_live_connection = use_live_connection or self.use_live_connection
-        ibis_query = IbisQueryBuilder().build(self)
+        use_live_connection = (
+            use_live_connection
+            if use_live_connection is not None
+            else self.use_live_connection
+        )
+        ibis_query = IbisQueryBuilder().build(self, operations, use_live_connection)
 
         if ibis_query is None:
             frappe.throw("Failed to build query")

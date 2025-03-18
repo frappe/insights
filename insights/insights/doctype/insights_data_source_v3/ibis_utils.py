@@ -29,11 +29,14 @@ from .ibis.utils import get_functions
 
 
 class IbisQueryBuilder:
-    def build(self, insights_query) -> IbisQuery:
+    def build(self, insights_query, operations, use_live_connection=True) -> IbisQuery:
         self.query = None
-        self.use_live_connection = insights_query.use_live_connection
+        self.use_live_connection = (
+            use_live_connection
+            if use_live_connection is not None
+            else insights_query.use_live_connection
+        )
         query_title = insights_query.title or insights_query.name
-        operations = frappe.parse_json(insights_query.operations)
         for idx, operation in enumerate(operations):
             try:
                 operation = _dict(operation)
