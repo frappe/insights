@@ -26,7 +26,10 @@ const props = defineProps<{ chart: Chart }>()
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
 const result = computed(() => props.chart.dataQuery.result || { ...EMPTY_RESULT })
-const loading = computed(() => props.chart.loading || props.chart.dataQuery.executing)
+const loading = computed(
+	() =>
+		!props.chart.isloaded || !props.chart.dataQuery.isloaded || props.chart.dataQuery.executing
+)
 
 const eChartOptions = computed(() => {
 	if (!result.value.columns?.length) return
