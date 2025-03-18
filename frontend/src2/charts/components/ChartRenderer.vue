@@ -52,8 +52,11 @@ const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
 function onChartElementClick(params: any) {
 	if (params.componentType === 'series') {
-		const seriesIndex = params.seriesIndex
-		const dataIndex = params.dataIndex
+		let seriesIndex = params.seriesIndex
+		let dataIndex = params.dataIndex
+		if (chart_type.value === 'Row') {
+			dataIndex = result.value.formattedRows.length - 1 - dataIndex
+		}
 		const row = result.value.formattedRows[dataIndex]
 		const column = result.value.columns.find((c) => c.name === params.seriesName)!
 		drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
