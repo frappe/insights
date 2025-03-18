@@ -48,10 +48,10 @@ class InsightsDashboardv3(Document):
                 linked_charts.append(item["chart"])
         self.linked_charts = linked_charts
 
-    @frappe.whitelist(allow_guest=True)
+    @frappe.whitelist()
     def get_distinct_column_values(self, query, column_name, search_term=None):
         is_guest = frappe.session.user == "Guest"
-        if not is_guest and not self.is_public:
+        if is_guest and not self.is_public:
             raise frappe.PermissionError
 
         self.check_linked_filters(query, column_name)

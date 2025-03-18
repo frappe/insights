@@ -92,7 +92,7 @@ class InsightsQueryv3(Document):
 
         return ibis_query
 
-    @frappe.whitelist(allow_guest=True)
+    @frappe.whitelist()
     def execute(self, active_operation_idx=None, adhoc_filters=None):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
