@@ -2,40 +2,55 @@ import frappe
 
 from insights.decorators import validate_type
 
+public_doctypes = [
+    "Insights Dashboard v3",
+    "Insights Chart v3",
+    "Insights Query v3",
+]
 
-def is_shared(doctype: str, name: str):
+
+def check_public_access(doctype, name):
+    if frappe.session.user != "Guest":
+        return
+    if doctype not in public_doctypes or not is_public(doctype, name):
+        raise frappe.PermissionError(
+            "You don't have permission to access this document"
+        )
+
+
+def is_public(doctype: str, name: str):
     if has_valid_preview_key():
         return True
     if doctype == "Insights Workbook":
-        return is_shared_workbook(name)
+        return is_public_workbook(name)
     if doctype == "Insights Dashboard v3":
-        return is_shared_dashboard(name)
+        return is_public_dashboard(name)
     if doctype == "Insights Chart v3":
-        return is_shared_chart(name)
+        return is_public_chart(name)
     if doctype == "Insights Query v3":
-        return is_shared_query(name)
+        return is_public_query(name)
 
     return False
 
 
 @validate_type
-def is_shared_workbook(name: str):
-    shared_dashboard_exists = frappe.db.exists(
+def is_public_workbook(name: str):
+    public_dashboard_exists = frappe.db.exists(
         "Insights Dashboard v3",
         {
             "workbook": name,
             "is_public": 1,
         },
     )
-    if shared_dashboard_exists:
+    if public_dashboard_exists:
         return True
 
-    shared_charts = get_shared_charts()
+    public_charts = get_public_charts()
     return frappe.db.exists(
         "Insights Chart v3",
         {
             "workbook": name,
-            "name": ["in", shared_charts],
+            "name": ["in", public_charts],
         },
     )
 
@@ -47,7 +62,7 @@ def has_valid_preview_key():
 
 
 @validate_type
-def is_shared_dashboard(name: str):
+def is_public_dashboard(name: str):
     return frappe.db.exists(
         "Insights Dashboard v3",
         {
@@ -57,7 +72,7 @@ def is_shared_dashboard(name: str):
     )
 
 
-def get_shared_charts():
+def get_public_charts():
     charts = frappe.get_all(
         "Insights Chart v3",
         filters={"is_public": 1},
@@ -76,7 +91,7 @@ def get_shared_charts():
 
 
 @validate_type
-def is_shared_chart(name: str):
+def is_public_chart(name: str):
     is_public = frappe.db.exists(
         "Insights Chart v3",
         {
@@ -87,12 +102,12 @@ def is_shared_chart(name: str):
     if is_public:
         return True
 
-    return name in get_shared_charts()
+    return name in get_public_charts()
 
 
 @validate_type
-def is_shared_query(name: str):
-    # find a shared chart that is linked with this query
+def is_public_query(name: str):
+    # find a public chart that is linked with this query
     linked_charts = frappe.get_all(
         "Insights Chart v3",
         or_filters=[
@@ -101,8 +116,8 @@ def is_shared_query(name: str):
         ],
         pluck="name",
     )
-    shared_charts = get_shared_charts()
-    if any(chart in shared_charts for chart in linked_charts):
+    public_charts = get_public_charts()
+    if any(chart in public_charts for chart in linked_charts):
         return True
 
     return False

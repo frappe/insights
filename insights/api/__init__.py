@@ -9,7 +9,7 @@ from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
 from frappe.rate_limiter import rate_limit
 
-from insights.api.shared import is_shared
+from insights.api.shared import check_public_access
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     get_duckdb_connection,
@@ -174,7 +174,7 @@ def get_doc(doctype: str, name: str | int):
     if frappe.session.user != "Guest":
         return _get_doc(doctype, name)
 
-    check_guest_access(doctype, name)
+    check_public_access(doctype, name)
 
     return frappe.get_doc(doctype, name).as_dict()
 
@@ -194,7 +194,7 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
         raise frappe.ValidationError("Invalid document")
 
     doc = frappe.get_doc(doctype, name)
-    check_guest_access(doctype, name)
+    check_public_access(doctype, name)
 
     args = args or {}
 
@@ -212,19 +212,3 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     frappe.response["message"] = response
 
     add_data_to_monitor(methodname=method)
-
-
-shared_doctypes = [
-    "Insights Dashboard v3",
-    "Insights Chart v3",
-    "Insights Query v3",
-]
-
-
-def check_guest_access(doctype, name):
-    if frappe.session.user != "Guest":
-        return
-    if doctype not in shared_doctypes or not is_shared(doctype, name):
-        raise frappe.PermissionError(
-            "You don't have permission to access this document"
-        )
