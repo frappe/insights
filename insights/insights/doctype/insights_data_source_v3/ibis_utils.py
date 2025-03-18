@@ -14,11 +14,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+from insights import create_toast
 from insights.cache_utils import make_digest
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
-from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
-    DataSourceConnectionError,
-)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -31,20 +29,23 @@ from .ibis.utils import get_functions
 
 
 class IbisQueryBuilder:
-    def build(self, operations: list, use_live_connection=True) -> IbisQuery:
+    def build(self, insights_query) -> IbisQuery:
         self.query = None
-        self.use_live_connection = use_live_connection
+        self.use_live_connection = insights_query.use_live_connection
+        query_title = insights_query.title or insights_query.name
+        operations = frappe.parse_json(insights_query.operations)
         for idx, operation in enumerate(operations):
             try:
                 operation = _dict(operation)
                 self.query = self.perform_operation(operation)
-            except (DataSourceConnectionError, frappe.ValidationError) as e:
-                raise e
             except BaseException as e:
                 operation_type_title = frappe.bold(operation.type.title())
-                frappe.throw(
-                    f"Invalid {operation_type_title} Operation at position {idx + 1}: {e!s}"
+                create_toast(
+                    title=f"Failed to Build {query_title} Query",
+                    message=f"Please check the {operation_type_title} operation at position {idx + 1}",
+                    type="error",
                 )
+                raise e
         return self.query
 
     def perform_operation(self, operation):
