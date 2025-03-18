@@ -349,7 +349,7 @@ function makeChart(name: string) {
 		}),
 		{
 			deep: true,
-			max: 100,
+			capacity: 100,
 			debounce: 500,
 		}
 	)
