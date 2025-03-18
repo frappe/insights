@@ -55,8 +55,11 @@ const eChartOptions = computed(() => {
 const drillOn = ref<{ row: QueryResultRow; column: QueryResultColumn } | null>(null)
 function onClick(params: any) {
 	if (params.componentType === 'series') {
-		const seriesIndex = params.seriesIndex
-		const dataIndex = params.dataIndex
+		let seriesIndex = params.seriesIndex
+		let dataIndex = params.dataIndex
+		if (props.chart_type === 'Row') {
+			dataIndex = props.result.formattedRows.length - 1 - dataIndex
+		}
 		const row = props.result.formattedRows[dataIndex]
 		const column = props.result.columns.find((c) => c.name === params.seriesName)!
 		if (!row || !column) {
