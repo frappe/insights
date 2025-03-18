@@ -213,16 +213,16 @@ const colorByValues = computed(() => {
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead class="sticky top-0 z-10 bg-white">
+				<thead class="sticky top-0 z-10 bg-gray-50">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3"
+							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(header, idx) in headerRow"
 							:key="idx"
-							class="h-7 border-b border-r"
+							class="h-8 border-b border-r"
 							:class="[
 								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
@@ -262,7 +262,7 @@ const colorByValues = computed(() => {
 
 						<td
 							v-if="props.showRowTotals"
-							class="border-b border-r px-3 text-right"
+							class="h-8 border-b border-r px-3 text-right"
 							width="1px"
 						>
 							<div class="truncate pl-3 pr-20"></div>
@@ -271,13 +271,13 @@ const colorByValues = computed(() => {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3"
+							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-white px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
-							class="border-b border-r p-1"
+							class="h-8 border-b border-r p-1"
 						>
 							<FormControl
 								type="text"
@@ -305,7 +305,7 @@ const colorByValues = computed(() => {
 						:key="idx"
 					>
 						<td
-							class="tnum z-1 sticky left-0 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							class="tnum z-1 sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -343,8 +343,7 @@ const colorByValues = computed(() => {
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="tnum border-b border-r px-3 text-right font-bold"
-							height="30px"
+							class="tnum h-8 border-b border-r px-3 text-right font-bold"
 						>
 							{{ formatNumber(totalPerRow[idx]) }}
 						</td>
@@ -354,7 +353,7 @@ const colorByValues = computed(() => {
 						v-if="props.showColumnTotals && totalPerColumn"
 						class="sticky bottom-0 z-10 border-b bg-white"
 					>
-						<td class="whitespace-nowrap border-r border-t px-3"></td>
+						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
 							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
@@ -369,7 +368,7 @@ const colorByValues = computed(() => {
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 border-r border-t px-3 text-right font-bold"
 						>
 							{{ formatNumber(totalColumnTotal) }}
 						</td>
