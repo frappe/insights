@@ -197,6 +197,9 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const data = getSeriesData(c.name)
 			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
+			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
+			const isLast = idx === number_columns.length - 1
+
 			return {
 				type,
 				stack,
@@ -216,7 +219,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 				yAxisIndex: is_right_axis ? 1 : 0,
 				itemStyle: {
 					color: color,
-					borderRadius: idx === number_columns.length - 1 ? [2, 2, 0, 0] : 0,
+					borderRadius: stack ? (isLast ? roundedCorners : 0) : roundedCorners,
 				},
 			}
 		}),
