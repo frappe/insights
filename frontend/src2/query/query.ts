@@ -25,6 +25,7 @@ import {
 	SelectArgs,
 	SourceArgs,
 	SQLArgs,
+	Summarize,
 	SummarizeArgs,
 	UnionArgs,
 } from '../types/query.types'
@@ -533,51 +534,6 @@ export function makeQuery(name: string) {
 			return
 		}
 
-		const textColumns = result.value.columns
-			.filter((c) => FIELDTYPES.TEXT.includes(c.type))
-			.map((c) => c.name)
-
-		const dateColumns = result.value.columns
-			.filter((c) => FIELDTYPES.DATE.includes(c.type))
-			.map((c) => c.name)
-
-		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
-		const currRow = result.value.rows[rowIndex]
-		const nextRow = result.value.rows[rowIndex + 1]
-
-		const filters: FilterRule[] = []
-		for (const column_name of textColumns) {
-			filters.push({
-				column: column(column_name),
-				operator: '=',
-				value: currRow[column_name] as string,
-			})
-		}
-
-		for (const column_name of dateColumns) {
-			if (nextRow) {
-				filters.push({
-					column: column(column_name),
-					operator: '>=',
-					value: currRow[column_name] as string,
-				})
-				filters.push({
-					column: column(column_name),
-					operator: '<',
-					value: nextRow[column_name] as string,
-				})
-			} else {
-				filters.push({
-					column: column(column_name),
-					operator: '>=',
-					value: currRow[column_name] as string,
-				})
-			}
-		}
-
-		const drill_down_query = useQuery('new-query' + getUniqueId())
-		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
-
 		const operations = copy(query.doc.operations)
 		const reversedOperations = operations.slice().reverse()
 		const lastSummarizeIdx = reversedOperations.findIndex((op) => op.type === 'summarize')
@@ -587,6 +543,48 @@ export function makeQuery(name: string) {
 		}
 
 		const actualSummarizeIdx = reversedOperations.length - lastSummarizeIdx - 1
+		const summarizeOperation = operations[actualSummarizeIdx] as Summarize
+
+		const groupByColumns = summarizeOperation.dimensions
+		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
+		const currRow = result.value.rows[rowIndex]
+		const nextRow = result.value.rows[rowIndex + 1]
+
+		const filters: FilterRule[] = []
+		for (const c of groupByColumns) {
+			if (FIELDTYPES.TEXT.includes(c.data_type)) {
+				filters.push({
+					column: column(c.column_name),
+					operator: '=',
+					value: currRow[c.dimension_name] as string,
+				})
+			}
+
+			if (FIELDTYPES.DATE.includes(c.data_type)) {
+				if (nextRow) {
+					filters.push({
+						column: column(c.column_name),
+						operator: '>=',
+						value: currRow[c.dimension_name] as string,
+					})
+					filters.push({
+						column: column(c.column_name),
+						operator: '<',
+						value: nextRow[c.dimension_name] as string,
+					})
+				} else {
+					filters.push({
+						column: column(c.column_name),
+						operator: '>=',
+						value: currRow[c.dimension_name] as string,
+					})
+				}
+			}
+
+		}
+
+		const drill_down_query = useQuery('new-query' + getUniqueId())
+		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
 		drill_down_query.setOperations(operations.slice(0, actualSummarizeIdx))
 
 		drill_down_query.addFilterGroup({
