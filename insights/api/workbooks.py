@@ -139,7 +139,7 @@ def update_share_permissions(
         doc.read = permission["read"]
         doc.write = permission["write"]
         doc.notify_by_email = 0
-        doc.save()
+        doc.save(ignore_permissions=True)
 
     public_docshare = DocShare.get_or_create_doc(
         share_doctype="Insights Workbook",
@@ -150,6 +150,6 @@ def update_share_permissions(
         public_docshare.read = 1
         public_docshare.write = organization_access == "edit"
         public_docshare.notify_by_email = 0
-        public_docshare.save()
+        public_docshare.save(ignore_permissions=True)
     elif public_docshare.name:
-        public_docshare.delete()
+        public_docshare.delete(ignore_permissions=True)
