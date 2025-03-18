@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import { FIELDTYPES } from '../../helpers/constants'
 import { TableChartConfig } from '../../types/chart.types'
-import { ColumnOption, DimensionOption } from '../../types/query.types'
+import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -32,6 +33,20 @@ watchEffect(() => {
 		config.value.values = [{} as any]
 	}
 })
+
+const measuresAsDimensions = computed<DimensionOption[]>(() =>
+	props.columnOptions
+		.filter((o) => FIELDTYPES.NUMBER.includes(o.data_type))
+		.map((o) => ({
+			column_name: o.value,
+			data_type: o.data_type as DimensionDataType,
+			dimension_name: o.label,
+			label: o.label,
+			value: o.value,
+		}))
+)
+
+const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
 </script>
 
 <template>
@@ -40,7 +55,7 @@ watchEffect(() => {
 			<DraggableList v-model:items="config.rows" group="rows">
 				<template #item="{ item, index }">
 					<DimensionPicker
-						:options="props.dimensions"
+						:options="dimensions"
 						:model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
 						@remove="config.rows.splice(index, 1)"
