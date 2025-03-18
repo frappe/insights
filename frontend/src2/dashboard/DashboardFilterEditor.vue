@@ -135,11 +135,11 @@ function saveEdit() {
 						:key="link.name"
 						class="flex h-8 w-full items-center gap-2"
 					>
-						<Checkbox
+						<Toggle
 							size="sm"
 							:modelValue="enabledLinks.includes(link.name)"
 							@update:modelValue="toggleLink(link.name)"
-						></Checkbox>
+						></Toggle>
 						<p class="flex-1 truncate text-base">{{ link.title }}</p>
 						<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
 							<Autocomplete

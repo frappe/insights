@@ -55,7 +55,7 @@ function saveChanges() {
 								Anyone with the link can view this chart
 							</div>
 						</div>
-						<Checkbox v-model="isPublic" />
+						<Toggle v-model="isPublic" />
 					</div>
 					<div v-if="shareLink" class="flex overflow-hidden rounded bg-gray-100">
 						<div

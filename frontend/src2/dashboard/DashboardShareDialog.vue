@@ -80,7 +80,7 @@ function addSharedUser() {
 								Anyone with the link can view this dashboard
 							</div>
 						</div>
-						<Checkbox v-model="isPublic" />
+						<Toggle v-model="isPublic" />
 					</div>
 
 					<hr class="my-2 border-t border-gray-200" />

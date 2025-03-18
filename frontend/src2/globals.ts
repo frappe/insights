@@ -30,7 +30,7 @@ export function registerGlobalComponents(app: App) {
 	app.component('Switch', Switch)
 	app.component('Popover', Popover)
 	app.component('Tooltip', Tooltip)
-	app.component('Checkbox', Checkbox)
+	app.component('Toggle', Checkbox)
 	app.component('Dropdown', Dropdown)
 	app.component('FormControl', FormControl)
 	app.component('LoadingIndicator', LoadingIndicator)

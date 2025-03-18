@@ -74,7 +74,7 @@ const updateColor = debounce((color: string, idx: number) => {
 											placement="left-start"
 										/>
 									</InlineFormControlLabel>
-									<Checkbox
+									<Toggle
 										label="Show Data Labels"
 										v-model="item.show_data_labels"
 									/>
@@ -95,8 +95,8 @@ const updateColor = debounce((color: string, idx: number) => {
 
 			<slot name="y-axis-settings" :y_axis="y_axis" />
 
-			<Checkbox label="Show Data Labels" v-model="y_axis.show_data_labels" />
-			<Checkbox label="Show Axis Label" v-model="y_axis.show_axis_label" />
+			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
+			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
 			<FormControl
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"
