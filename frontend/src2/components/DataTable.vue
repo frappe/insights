@@ -271,7 +271,7 @@ const colorByValues = computed(() => {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-white px-3"
+							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							width="1px"
 						></td>
 						<td
