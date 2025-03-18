@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { provide } from 'vue'
 import { wheneverChanges } from '../../helpers'
+import QueryBuilderToolbar from '../../query/components/QueryBuilderToolbar.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import QueryOperations from '../../query/components/QueryOperations.vue'
-import QueryBuilderToolbar from '../../query/components/QueryBuilderToolbar.vue'
 import { Query } from '../../query/query'
 
 const props = defineProps<{ query: Query }>()
 
 const show = defineModel()
-wheneverChanges(show, () => show.value && props.query.execute(), { immediate: true })
+wheneverChanges(
+	show,
+	() => {
+		if (show.value && !props.query.result.executedSQL && !props.query.executing) {
+			props.query.execute()
+		}
+	},
+	{ immediate: true }
+)
 
 provide('query', props.query)
-props.query.autoExecute = true
 </script>
 
 <template>

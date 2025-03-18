@@ -583,7 +583,10 @@ export function makeQuery(name: string) {
 
 		}
 
-		const drill_down_query = useQuery('new-query' + getUniqueId())
+		const drill_down_query = useQuery('new-query-' + getUniqueId())
+		drill_down_query.doc.title = 'Drill Down'
+		drill_down_query.autoExecute = true
+		drill_down_query.doc.workbook = query.doc.workbook
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
 		drill_down_query.setOperations(operations.slice(0, actualSummarizeIdx))
 
