@@ -29,7 +29,12 @@ def execute():
 
         for i, query in enumerate(queries):
             new_doc = frappe.new_doc("Insights Query v3")
-            new_doc.update(query)
+            new_doc.title = query.get("title")
+            new_doc.is_builder_query = query.get("is_builder_query")
+            new_doc.is_native_query = query.get("is_native_query")
+            new_doc.is_script_query = query.get("is_script_query")
+            new_doc.use_live_connection = query.get("use_live_connection")
+            new_doc.operations = query.get("operations")
             new_doc.workbook = workbook.name
             new_doc.old_name = query["name"]
             new_doc.modified = add_to_date(workbook.modified, seconds=i)
@@ -139,5 +144,21 @@ def execute():
                     )
 
             if should_update:
-                query.operations = frappe.as_json(operations)
-                query.save()
+                query.db_set(
+                    "operations",
+                    frappe.as_json(operations),
+                    update_modified=False,
+                )
+
+        frappe.reload_doc("insights", "doctype", "insights_workbook")
+        workbook.db_set(
+            "data_backup",
+            frappe.as_json(
+                {
+                    "queries": queries,
+                    "charts": charts,
+                    "dashboards": dashboards,
+                }
+            ),
+            update_modified=False,
+        )

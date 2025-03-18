@@ -18,6 +18,7 @@ class InsightsWorkbook(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        data_backup: DF.JSON | None
         name: DF.Int | None
         title: DF.Data
     # end: auto-generated types

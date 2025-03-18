@@ -5,7 +5,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "title"
+  "title",
+  "data_backup"
  ],
  "fields": [
   {
@@ -14,6 +15,13 @@
    "in_list_view": 1,
    "label": "Title",
    "reqd": 1
+  },
+  {
+   "fieldname": "data_backup",
+   "fieldtype": "JSON",
+   "hidden": 1,
+   "label": "Data Backup",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -31,7 +39,7 @@
    "link_fieldname": "workbook"
   }
  ],
- "modified": "2025-03-14 16:24:47.279867",
+ "modified": "2025-03-18 13:14:41.713081",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
