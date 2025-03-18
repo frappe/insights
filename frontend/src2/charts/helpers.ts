@@ -213,9 +213,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 					fontSize: 11,
 				},
 				labelLayout: { hideOverlap: true },
-				barWidth: '95%',
 				yAxisIndex: is_right_axis ? 1 : 0,
-				itemStyle: { color: color },
+				itemStyle: {
+					color: color,
+					borderRadius: idx === number_columns.length - 1 ? [2, 2, 0, 0] : 0,
+				},
 			}
 		}),
 		tooltip: getTooltip({
