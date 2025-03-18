@@ -19,7 +19,7 @@ import Switch from './components/Switch.vue'
 import { App } from 'vue'
 import dayjs from './helpers/dayjs.ts'
 import { createToast } from './helpers/toasts'
-import { initSocket } from './socket.ts'
+import { getSocket } from './socket.ts'
 
 export function registerGlobalComponents(app: App) {
 	app.component('Input', Input)
@@ -42,5 +42,5 @@ export function registerGlobalComponents(app: App) {
 export function registerControllers(app: App) {
 	app.provide('$dayjs', dayjs)
 	app.provide('$notify', createToast)
-	app.provide('$socket', initSocket())
+	app.provide('$socket', getSocket())
 }

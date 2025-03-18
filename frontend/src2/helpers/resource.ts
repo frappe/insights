@@ -3,6 +3,8 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { areDeeplyEqual, copy, showErrorToast, waitUntil } from './index'
+import { onDocUpdate } from 'frappe-ui/src/resources/realtime'
+import { getSocket } from '../socket'
 
 type Document = {
 	doctype: string
@@ -121,7 +123,7 @@ export default function useDocumentResource<T extends Document>(
 
 	async function loadDoc() {
 		if (isLocal.value) return
-		isLoaded.value = false
+
 		isLoading.value = true
 
 		const _doc = await call(methods.get, {
@@ -222,8 +224,18 @@ export default function useDocumentResource<T extends Document>(
 		)
 	}
 
+	const setupRealtimeUpdates = () => {
+		const socket = getSocket()
+		onDocUpdate(socket, doctype, (name: string) => {
+			if (String(name) === String(docname.value)) {
+				loadDoc()
+			}
+		})
+	}
+
 	loadDoc().then(setupLocalStorage)
 	setupAutoSave()
+	// setupRealtimeUpdates()
 
 	return reactive({
 		doctype,
@@ -280,3 +292,36 @@ function removeMetaFields(doc: any) {
 	metaFields.forEach((field) => delete newDoc[field])
 	return newDoc
 }
+
+
+function testConsecutiveCalls() {
+	// create a document resource for a new todo
+	// set some description
+	// save
+	// change some values
+	// save
+	// change some values
+	// save
+	type Todo = {
+		doctype: 'ToDo'
+		name: string
+		description: string
+		owner: string
+	}
+	const todo = useDocumentResource<Todo>('ToDo', 'o3q8c83f82', {
+		initialDoc: {
+			doctype: 'ToDo',
+			name: 'o3q8c83f82',
+			description: 'My first todo',
+			owner: 'Administrator',
+		},
+	})
+
+	window.todo = todo
+
+	todo.doc.description = 'My first todo'
+	todo.save()
+}
+
+
+// testConsecutiveCalls()

@@ -168,7 +168,7 @@ def import_csv_data(filename: str):
 
 @frappe.whitelist(allow_guest=True)
 @validate_type
-def get_doc(doctype: str, name: str):
+def get_doc(doctype: str, name: str | int):
     from frappe.client import get as _get_doc
 
     if frappe.session.user != "Guest":
