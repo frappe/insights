@@ -14,6 +14,7 @@ const database = ref<PostgreSQLDataSource>({
 	host: 'localhost',
 	port: 5432,
 	database_name: '',
+	schema: '',
 	username: '',
 	password: '',
 	use_ssl: false,
@@ -50,6 +51,13 @@ const fields = [
 		type: 'text',
 		placeholder: 'DB_1267891',
 		required: true,
+	},
+	{
+		label: 'Schema',
+		name: 'schema',
+		type: 'text',
+		placeholder: 'eg. schema1,schema2',
+		required: false,
 	},
 	{
 		label: 'Username',

@@ -3,22 +3,21 @@
 
 
 import frappe
-import ibis
 from frappe import _dict
 from ibis import _
 
-from .mariadb import get_mariadb_connection_string
-from .postgresql import get_postgres_connection_string
+from .mariadb import get_mariadb_connection
+from .postgresql import get_postgres_connection
 
 
-def get_frappedb_connection_string(data_source):
+def get_frappedb_connection(data_source):
     if data_source.database_type == "PostgreSQL":
-        return get_postgres_connection_string(data_source)
+        return get_postgres_connection(data_source)
     else:
-        return get_mariadb_connection_string(data_source)
+        return get_mariadb_connection(data_source)
 
 
-def get_sitedb_connection_string():
+def get_sitedb_connection():
     data_source = frappe.new_doc("Insights Data Source v3")
     data_source.database_type = (
         "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
@@ -29,13 +28,12 @@ def get_sitedb_connection_string():
     data_source.username = frappe.conf.db_name
     data_source.password = frappe.conf.db_password
     data_source.use_ssl = False
-    return get_frappedb_connection_string(data_source)
+    return get_frappedb_connection(data_source)
 
 
 def is_frappe_db(data_source):
-    connection_string = get_frappedb_connection_string(data_source)
     try:
-        db = ibis.connect(connection_string)
+        db = get_frappedb_connection(data_source)
         db.raw_sql("SET SESSION time_zone='+00:00'")
         db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
         res = db.raw_sql("SELECT name FROM tabDocType LIMIT 1").fetchall()
