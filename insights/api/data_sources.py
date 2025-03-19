@@ -334,8 +334,7 @@ def get_data_source_tables(data_source=None, search_term=None, limit=100):
 def get_data_source_table(data_source: str, table_name: str):
     check_table_permission(data_source, table_name)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
-    db = ds._get_ibis_backend()
-    q = db.table(table_name).head(100)
+    q = ds.get_ibis_table(table_name).head(100)
     data, time_taken = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
 
     return {
@@ -351,8 +350,7 @@ def get_data_source_table(data_source: str, table_name: str):
 def get_data_source_table_row_count(data_source: str, table_name: str):
     check_table_permission(data_source, table_name)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
-    db = ds._get_ibis_backend()
-    table = db.table(table_name)
+    table = ds.get_ibis_table(table_name)
     result = table.count().execute()
     return int(result)
 
@@ -363,8 +361,7 @@ def get_data_source_table_row_count(data_source: str, table_name: str):
 def get_data_source_table_columns(data_source: str, table_name: str):
     check_table_permission(data_source, table_name)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
-    db = ds._get_ibis_backend()
-    table = db.table(table_name)
+    table = ds.get_ibis_table(table_name)
     return [
         frappe._dict(
             column=column,
@@ -456,7 +453,6 @@ def get_data_sources_of_tables(table_names: list[str]):
 def get_schema(data_source: str):
     check_data_source_permission(data_source)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
-    db = ds._get_ibis_backend()
 
     tables = get_data_source_tables(data_source)
     schema = {}
@@ -469,7 +465,7 @@ def get_schema(data_source: str):
             "data_source": data_source,
             "columns": [],
         }
-        _table = db.table(table_name)
+        _table = ds.get_ibis_table(table_name)
         for column, datatype in _table.schema().items():
             schema[table_name]["columns"].append(
                 frappe._dict(
