@@ -16,6 +16,7 @@
   "enable_stored_procedure_execution",
   "column_break_pfsa",
   "database_name",
+  "schema",
   "username",
   "password",
   "bigquery_project_id",
@@ -42,7 +43,7 @@
    "fieldname": "database_type",
    "fieldtype": "Select",
    "label": "Database Type",
-   "options": "MariaDB\nPostgreSQL\nSQLite\nDuckDB\nBigQuery\nMSSQL"
+   "options": "MariaDB\nPostgreSQL\nSQLite\nDuckDB\nBigQuery"
   },
   {
    "fieldname": "host",
@@ -123,11 +124,16 @@
    "fieldname": "enable_stored_procedure_execution",
    "fieldtype": "Check",
    "label": "Enable Stored Procedure Execution"
+  },
+  {
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "label": "Schema"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-18 14:19:27.774432",
+ "modified": "2025-03-19 12:49:00.328056",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

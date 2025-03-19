@@ -7,29 +7,13 @@ import { defineConfig } from 'vite'
 export default defineConfig({
 	plugins: [
 		frappeui({
-			source: '^/(app|login|api|assets|files|private)',
+			frappeProxy: true,
+			lucideIcons: true,
+			jinjaBootData: true,
+			buildConfig: false,
 		}),
 		vue(),
 		vueJsx(),
-		{
-			name: 'transform-index.html',
-			transformIndexHtml(html, context) {
-				if (!context.server) {
-					return html.replace(
-						/<\/body>/,
-						`
-            <script>
-                {% for key in boot %}
-                window["{{ key }}"] = {{ boot[key] | tojson }};
-                {% endfor %}
-            </script>
-            </body>
-            `
-					)
-				}
-				return html
-			},
-		},
 	],
 	esbuild: { loader: 'tsx' },
 	resolve: {

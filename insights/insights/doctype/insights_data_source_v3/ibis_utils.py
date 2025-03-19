@@ -572,6 +572,10 @@ def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=360
         result: pd.DataFrame = query.execute()
     except Exception as e:
         if "max_statement_time" in str(e):
+            frappe.log_error(
+                title="Query execution time exceeded the limit.",
+                message=f"Query: {sql}",
+            )
             frappe.throw(
                 title="Query Timeout",
                 msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
