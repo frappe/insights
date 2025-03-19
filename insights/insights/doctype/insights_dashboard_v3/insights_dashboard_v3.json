@@ -68,8 +68,9 @@
   },
   {
    "fieldname": "linked_charts",
-   "fieldtype": "JSON",
+   "fieldtype": "Table MultiSelect",
    "label": "Linked Charts",
+   "options": "Insights Dashboard Chart v3",
    "read_only": 1
   },
   {
@@ -81,7 +82,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-14 16:25:07.973781",
+ "modified": "2025-03-19 14:51:58.451701",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard v3",

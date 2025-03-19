@@ -20,9 +20,13 @@ class InsightsDashboardv3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import (
+            InsightsDashboardChartv3,
+        )
+
         is_public: DF.Check
         items: DF.JSON | None
-        linked_charts: DF.JSON | None
+        linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
         old_name: DF.Data | None
         preview_image: DF.Data | None
         share_link: DF.Data | None
@@ -33,8 +37,6 @@ class InsightsDashboardv3(Document):
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.items, list):
             self.items = frappe.as_json(self.items)
-        if isinstance(self.linked_charts, list):
-            self.linked_charts = frappe.as_json(self.linked_charts)
         return super().get_valid_dict(*args, **kwargs)
 
     def before_save(self):
@@ -42,11 +44,10 @@ class InsightsDashboardv3(Document):
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
-        linked_charts = []
+        self.linked_charts = []
         for item in frappe.parse_json(self.items):
             if item["type"] == "chart":
-                linked_charts.append(item["chart"])
-        self.linked_charts = linked_charts
+                self.append("linked_charts", {"chart": item["chart"]})
 
     @frappe.whitelist()
     def get_distinct_column_values(self, query, column_name, search_term=None):
