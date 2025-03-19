@@ -1,12 +1,6 @@
 import { FilterType } from '../helpers/constants'
 import { ChartConfig, ChartType } from './chart.types'
-import {
-	FilterGroupArgs,
-	FilterOperator,
-	FilterValue,
-	Operation,
-	OrderByArgs
-} from './query.types'
+import { FilterGroupArgs, FilterOperator, FilterValue, Operation, OrderByArgs } from './query.types'
 
 export type WorkbookListItem = {
 	title: string
@@ -92,8 +86,14 @@ export type InsightsDashboardv3 = {
 	workbook: string
 	items: WorkbookDashboardItem[]
 	preview_image?: string
-	is_public?: boolean
 	share_link?: string
+	is_public: boolean
+	is_shared_with_organization: boolean
+	people_with_access: {
+		email: string
+		full_name: string
+		user_image: string
+	}[]
 }
 
 export type WorkbookDashboardItem =

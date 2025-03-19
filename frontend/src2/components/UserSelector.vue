@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
-import useUserStore, { User } from '../users/users'
+import useUserStore from '../users/users'
 
 const props = defineProps<{
 	placeholder?: string
@@ -54,7 +55,11 @@ const filteredUsers = computed(() => {
 				v-model="searchTxt"
 				@update:modelValue="open"
 				@focus="open"
-			/>
+			>
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
+				</template>
+			</FormControl>
 		</template>
 
 		<template #item-prefix="{ option }">

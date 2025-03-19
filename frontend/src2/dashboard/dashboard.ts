@@ -1,6 +1,13 @@
 import { reactive, toRefs } from 'vue'
 import useChart from '../charts/chart'
-import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil, wheneverChanges } from '../helpers'
+import {
+	getUniqueId,
+	safeJSONParse,
+	showErrorToast,
+	store,
+	waitUntil,
+	wheneverChanges,
+} from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
@@ -218,12 +225,15 @@ function makeDashboard(name: string) {
 			)
 		},
 
-		getSharedWith() {
-			return dashboard.call('get_shared_with').catch(showErrorToast)
-		},
-
-		updateSharedWith(shared_with: string[]) {
-			return dashboard.call('update_shared_with', { users: shared_with }).catch(showErrorToast)
+		updateAccess(data: {
+			is_public: boolean
+			is_shared_with_organization: boolean
+			people_with_access: string[]
+		}) {
+			return dashboard
+				.call('update_access', { data })
+				.catch(showErrorToast)
+				.then(() => dashboard.load())
 		},
 
 		getMaxY() {
@@ -278,6 +288,9 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	title: '',
 	workbook: '',
 	items: [],
+	is_public: false,
+	is_shared_with_organization: false,
+	people_with_access: [],
 }
 
 function getDashboardResource(name: string) {

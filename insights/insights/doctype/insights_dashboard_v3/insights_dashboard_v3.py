@@ -8,7 +8,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 
-from insights.utils import File
+from insights.utils import DocShare, File
 
 
 class InsightsDashboardv3(Document):
@@ -38,6 +38,15 @@ class InsightsDashboardv3(Document):
         if isinstance(self.items, list):
             self.items = frappe.as_json(self.items)
         return super().get_valid_dict(*args, **kwargs)
+
+    def as_dict(self, *args, **kwargs):
+        d = super().as_dict(*args, **kwargs)
+
+        access = self.get_acess_data()
+        d["people_with_access"] = access[0]
+        d["is_shared_with_organization"] = access[1]
+
+        return d
 
     def before_save(self):
         self.set_linked_charts()
@@ -115,8 +124,7 @@ class InsightsDashboardv3(Document):
             self.db_set("preview_image", file_url)
             return file_url
 
-    @frappe.whitelist()
-    def get_shared_with(self):
+    def get_acess_data(self):
         DocShare = frappe.qb.DocType("DocShare")
         User = frappe.qb.DocType("User")
 
@@ -126,23 +134,44 @@ class InsightsDashboardv3(Document):
             .on(DocShare.user == User.name)
             .select(
                 DocShare.user,
+                DocShare.everyone,
                 User.full_name,
                 User.user_image,
                 User.email,
             )
             .where(DocShare.share_doctype == "Insights Dashboard v3")
             .where(DocShare.share_name == self.name)
-            .where(DocShare.read == 1)
+            .where((DocShare.read == 1) | (DocShare.write == 1))
             .run(as_dict=True)
         )
-        return shared_with
+
+        org_access = False
+        people_with_access = []
+        for share in shared_with:
+            if not share.everyone:
+                people_with_access.append(
+                    {
+                        "full_name": share.full_name,
+                        "user_image": share.user_image,
+                        "email": share.email,
+                    }
+                )
+            else:
+                org_access = True
+
+        return people_with_access, org_access
 
     @frappe.whitelist()
-    def update_shared_with(self, users):
+    def update_access(self, data):
         if not frappe.has_permission(
             "Insights Dashboard v3", ptype="share", doc=self.name
         ):
             frappe.throw("You do not have permission to share this dashboard")
+
+        data = frappe.parse_json(data)
+        is_public = data.get("is_public")
+        is_shared_with_organization = data.get("is_shared_with_organization")
+        people_with_access = data.get("people_with_access") or []
 
         existing_shares = frappe.get_all(
             "DocShare",
@@ -150,29 +179,39 @@ class InsightsDashboardv3(Document):
                 "share_doctype": "Insights Dashboard v3",
                 "share_name": self.name,
                 "read": 1,
-                "user": ["in", users],
+                "user": ["in", people_with_access],
             },
             fields=["name", "user"],
         )
 
         # remove all existing shares that are not in the new list
         for share in existing_shares:
-            if share.user not in users:
+            if share.user not in people_with_access:
                 frappe.delete_doc("DocShare", share.name)
 
         # add new shares
-        for user in users:
+        for user in people_with_access:
             if user not in [share.user for share in existing_shares]:
-                frappe.get_doc(
-                    {
-                        "doctype": "DocShare",
-                        "share_doctype": "Insights Dashboard v3",
-                        "share_name": self.name,
-                        "user": user,
-                        "read": 1,
-                        "notify_by_email": 0,
-                    }
-                ).insert()
+                doc = DocShare.get_or_create_doc(
+                    share_doctype="Insights Dashboard v3",
+                    share_name=self.name,
+                    user=user,
+                )
+                doc.read = 1
+                doc.notify_by_email = 0
+                doc.save(ignore_permissions=True)
+
+        if is_shared_with_organization:
+            doc = DocShare.get_or_create_doc(
+                share_doctype="Insights Dashboard v3",
+                share_name=self.name,
+                everyone=1,
+            )
+            doc.read = 1
+            doc.notify_by_email = 0
+            doc.save(ignore_permissions=True)
+
+        self.db_set("is_public", is_public)
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
