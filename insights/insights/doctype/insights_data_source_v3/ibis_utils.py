@@ -646,28 +646,35 @@ def has_cached_results(cache_key):
 
 
 def exec_with_return(
-    code: str,
+    script: str,
     _globals: dict | None = None,
     _locals: dict | None = None,
 ):
-    a = ast.parse(code)
+    tree = ast.parse(script)
 
-    last_expression = None
-    if a.body:
-        if isinstance(a_last := a.body[-1], ast.Expr):
-            last_expression = ast.unparse(a.body.pop())
-        elif isinstance(a_last, ast.Assign):
-            last_expression = ast.unparse(a_last.targets[0])
-        elif isinstance(a_last, ast.AnnAssign | ast.AugAssign):
-            last_expression = ast.unparse(a_last.target)
+    if not tree.body:
+        raise ValueError("Empty code")
+
+    output_expression = script
+
+    last_node = tree.body[-1]
+    if isinstance(last_node, ast.Expr):
+        output_expression = ast.unparse(last_node)
+    elif isinstance(last_node, ast.Assign):
+        output_expression = ast.unparse(last_node.targets[0])
+    elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
+        output_expression = ast.unparse(last_node.target)
 
     _globals = _globals or {}
     _locals = _locals or {}
-    if last_expression:
-        safe_exec(ast.unparse(a), _globals, _locals, restrict_commit_rollback=True)
-        return safe_eval(last_expression, _globals, _locals)
+
+    tree.body.pop()  # remove the last expression
+    _script = ast.unparse(tree)
+    if _script.strip():
+        safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
+        return safe_eval(output_expression, _globals, _locals)
     else:
-        return safe_eval(code, _globals, _locals)
+        return safe_eval(output_expression, _globals, _locals)
 
 
 def get_ibis_table_name(table: IbisQuery):
