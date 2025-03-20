@@ -70,7 +70,6 @@ declare module 'vue' {
     TimespanPicker: typeof import('./src/components/Controls/TimespanPicker.vue')['default']
     TimespanPickerFlat: typeof import('./src/components/Controls/TimespanPickerFlat.vue')['default']
     Toast: typeof import('./src/components/Toast.vue')['default']
-    Tooltip: typeof import('./src/components/Tooltip.vue')['default']
     Topbar: typeof import('./src/components/Topbar.vue')['default']
     UsePopover: typeof import('./src/components/UsePopover.vue')['default']
     UseTooltip: typeof import('./src/components/UseTooltip.vue')['default']

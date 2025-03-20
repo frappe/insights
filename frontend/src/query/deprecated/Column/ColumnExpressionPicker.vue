@@ -119,7 +119,6 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
 import ExpressionHelpDialog from '@/query/ExpressionHelpDialog.vue'
-import Tooltip from '@/components/Tooltip.vue'
 import { debounce } from 'frappe-ui'
 import ExpressionHelp from '@/components/ExpressionHelp.vue'
 import { dateFormats } from '@/utils/format'
