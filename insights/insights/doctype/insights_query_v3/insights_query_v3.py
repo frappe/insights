@@ -62,34 +62,13 @@ class InsightsQueryv3(Document):
         self.linked_queries = linked_queries
 
     def build(self, active_operation_idx=None, use_live_connection=None):
-        operations = frappe.parse_json(self.operations)
-
-        if (
-            active_operation_idx is not None
-            and active_operation_idx >= 0
-            and active_operation_idx < len(operations)
-        ):
-            operations = operations[: active_operation_idx + 1]
-
-        if (
-            hasattr(frappe.local, "insights_adhoc_filters")
-            and self.name in frappe.local.insights_adhoc_filters
-        ):
-            adhoc_filters = frappe.local.insights_adhoc_filters[self.name]
-            if (
-                adhoc_filters
-                and isinstance(adhoc_filters, dict)
-                and adhoc_filters.get("type") == "filter_group"
-                and adhoc_filters.get("filters")
-            ):
-                operations.append(adhoc_filters)
-
-        use_live_connection = (
+        builder = IbisQueryBuilder(self, active_operation_idx)
+        builder.use_live_connection = (
             use_live_connection
             if use_live_connection is not None
             else self.use_live_connection
         )
-        ibis_query = IbisQueryBuilder().build(self, operations, use_live_connection)
+        ibis_query = builder.build()
 
         if ibis_query is None:
             frappe.throw("Failed to build query")
@@ -159,6 +138,15 @@ class InsightsQueryv3(Document):
         ibis_query = self.build(active_operation_idx)
         columns = get_columns_from_schema(ibis_query.schema())
         return columns
+
+    def evaluate_alert_expression(self, expression):
+        builder = IbisQueryBuilder(self)
+        ibis_query = builder.build()
+        filter_expression = builder.evaluate_expression(expression)
+        ibis_query = ibis_query.filter(filter_expression)
+        ibis_query = ibis_query.limit(1)
+        results, _ = execute_ibis_query(ibis_query, cache=False)
+        return bool(len(results))
 
 
 @contextmanager

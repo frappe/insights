@@ -30,14 +30,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Query",
-   "options": "Insights Query",
-   "reqd": 1
-  },
-  {
-   "fieldname": "condition",
-   "fieldtype": "Code",
-   "in_list_view": 1,
-   "label": "Condition",
+   "options": "Insights Query v3",
    "reqd": 1
   },
   {
@@ -118,11 +111,18 @@
    "fieldname": "message",
    "fieldtype": "Markdown Editor",
    "label": "Message"
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Condition",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-12 12:42:52.680651",
+ "modified": "2025-03-21 13:40:41.329864",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",
