@@ -8,7 +8,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AlertDialog: typeof import('./src/components/AlertDialog.vue')['default']
     AppShell: typeof import('./src/components/AppShell.vue')['default']
     Attachment: typeof import('./src/components/Controls/Attachment.vue')['default']
     Autocomplete: typeof import('./src/components/Controls/Autocomplete.vue')['default']
