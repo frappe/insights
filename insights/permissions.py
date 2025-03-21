@@ -70,6 +70,7 @@ class InsightsPermissions:
             "Insights Dashboard v3",
             "Insights Chart v3",
             "Insights Query v3",
+            "Insights Alert",
         ]:
             docs = self._get_ptype_access_docs_query(doctype, "read")
             return f"(`tab{doctype}`.name in ({docs}))"
@@ -159,6 +160,8 @@ class InsightsPermissions:
             query = self._get_ptype_access_charts_query(ptype)
         if doctype == "Insights Query v3":
             query = self._get_ptype_access_queries_query(ptype)
+        if doctype == "Insights Alert":
+            query = self._get_ptype_access_alerts_query(ptype)
         return query
 
     def _get_ptype_access_workbooks_query(self, ptype):
@@ -352,6 +355,36 @@ class InsightsPermissions:
                 OwnedQueries.name.isnotnull()
                 | LinkedWithWorkbookWithWriteAccess.name.isnotnull()
                 | LinkedWithChartWithWriteAccess.name.isnotnull()
+            )
+        )
+
+    def _get_ptype_access_alerts_query(self, ptype):
+        Alert = frappe.qb.DocType("Insights Alert")
+
+        OwnedAlerts = (
+            frappe.qb.from_(Alert).select(Alert.name).where(Alert.owner == self.user)
+        )
+
+        QueryWithWriteAccess = self._get_ptype_access_queries_query(ptype)
+
+        LinkedWithQueryWithWriteAccess = (
+            frappe.qb.from_(Alert)
+            .select(Alert.name)
+            .left_join(QueryWithWriteAccess)
+            .on(Alert.query == QueryWithWriteAccess.name)
+            .where(QueryWithWriteAccess.name.isnotnull())
+        )
+
+        return (
+            frappe.qb.from_(Alert)
+            .select(Alert.name)
+            .left_join(OwnedAlerts)
+            .on(Alert.name == OwnedAlerts.name)
+            .left_join(LinkedWithQueryWithWriteAccess)
+            .on(Alert.name == LinkedWithQueryWithWriteAccess.name)
+            .where(
+                OwnedAlerts.name.isnotnull()
+                | LinkedWithQueryWithWriteAccess.name.isnotnull()
             )
         )
 

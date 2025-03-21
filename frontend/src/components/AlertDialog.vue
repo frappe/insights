@@ -2,7 +2,6 @@
 import Code from '@/components/Controls/Code.vue'
 import useQuery from '@/query/resources/useQuery'
 import { createResource } from 'frappe-ui'
-import { TextEditor } from 'frappe-ui'
 import { computed, reactive, inject } from 'vue'
 
 const emit = defineEmits(['update:show'])
@@ -201,7 +200,7 @@ function testSendAlert() {
 						type="textarea"
 						class="mt-1 h-40"
 						v-model="alert.message"
-						:placeholder="`e.g. 
+						:placeholder="`e.g.
 Hey,
 We have **low inventory** for **{{ title }}**.
 Please order more.

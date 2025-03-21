@@ -43,6 +43,14 @@ class InsightsQueryv3(Document):
             self.linked_queries = frappe.as_json(self.linked_queries)
         return super().get_valid_dict(*args, **kwargs)
 
+    def on_trash(self):
+        for alert in frappe.get_all(
+            "Insights Alert", filters={"query": self.name}, pluck="name"
+        ):
+            frappe.delete_doc(
+                "Insights Alert", alert, force=True, ignore_permissions=True
+            )
+
     def before_save(self):
         self.set_linked_queries()
 

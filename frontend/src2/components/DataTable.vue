@@ -414,7 +414,7 @@ const colorByValues = computed(() => {
 								</Button>
 							</div>
 						</div>
-
+						<slot name="footer-right-actions"></slot>
 						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
 							<template #icon>
 								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />

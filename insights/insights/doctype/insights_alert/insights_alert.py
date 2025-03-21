@@ -9,6 +9,8 @@ from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
+from insights.utils import deep_convert_dict_to_dict
+
 
 class InsightsAlert(Document):
     # begin: auto-generated types
@@ -22,6 +24,7 @@ class InsightsAlert(Document):
         channel: DF.Literal["Email", "Telegram"]
         condition: DF.Code
         cron_format: DF.Data | None
+        custom_condition: DF.Check
         disabled: DF.Check
         frequency: DF.Literal["Hourly", "Daily", "Weekly", "Monthly", "Cron"]
         last_execution: DF.Datetime | None
@@ -29,7 +32,6 @@ class InsightsAlert(Document):
         next_execution: DF.Datetime | None
         query: DF.Link
         recipients: DF.SmallText | None
-        repeat: DF.Check
         telegram_chat_id: DF.Data | None
         title: DF.Data
     # end: auto-generated types
@@ -41,9 +43,9 @@ class InsightsAlert(Document):
             frappe.throw(f"Invalid condition: {e}")
 
     @frappe.whitelist()
-    def send_alert(self):
+    def send_alert(self, force=False):
         results = self.evaluate_condition()
-        if not results:
+        if not results and not force:
             return
 
         message = self.evaluate_message()
@@ -88,12 +90,18 @@ class InsightsAlert(Document):
         data = doc.execute()
         rows = data["rows"]
 
-        return {
-            "rows": rows,
-            "count": len(rows),
-            "query": doc.as_dict(),
-            "alert": self.as_dict(),
-        }
+        return deep_convert_dict_to_dict(
+            {
+                "rows": rows,
+                "count": len(rows),
+                "query": {
+                    "title": doc.title,
+                },
+                "alert": {
+                    "title": self.title,
+                },
+            }
+        )
 
     def get_recipients(self):
         recipients = self.recipients.split(",")
@@ -125,6 +133,10 @@ class InsightsAlert(Document):
 
         next_execution = self.get_next_execution()
         return next_execution <= now_datetime()
+
+    @frappe.whitelist()
+    def test_alert(self):
+        self.send_alert(force=True)
 
 
 def send_alerts():

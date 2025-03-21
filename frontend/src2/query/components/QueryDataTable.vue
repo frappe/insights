@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { LoadingIndicator } from 'frappe-ui'
-import { RefreshCw } from 'lucide-vue-next'
+import { Bell, RefreshCw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
 import { column } from '../helpers'
 import { Query } from '../query'
+import QueryAlertsDialog from './QueryAlertsDialog.vue'
+import AlertSetupDialog from './AlertSetupDialog.vue'
 
 const props = defineProps<{
 	query: Query
@@ -71,6 +73,9 @@ function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 		showDrillDown.value = true
 	}
 }
+
+const showAlertsDialog = ref(false)
+const currentAlertName = ref('')
 </script>
 
 <template>
@@ -111,6 +116,14 @@ function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 				rows
 			</div>
 		</template>
+
+		<template #footer-right-actions>
+			<Button variant="ghost" @click="showAlertsDialog = true">
+				<template #icon>
+					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				</template>
+			</Button>
+		</template>
 	</DataTable>
 
 	<DrillDown
@@ -120,4 +133,20 @@ function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 		:query="drillDownQuery"
 	>
 	</DrillDown>
+
+	<QueryAlertsDialog
+		v-if="showAlertsDialog"
+		v-model="showAlertsDialog"
+		:query="props.query"
+		@set-current-alert-name="currentAlertName = $event"
+	>
+	</QueryAlertsDialog>
+
+	<AlertSetupDialog
+		v-if="currentAlertName"
+		:modelValue="Boolean(currentAlertName)"
+		@update:model-value="!$event ? (currentAlertName = '') : undefined"
+		:query="props.query"
+		:alert_name="currentAlertName"
+	/>
 </template>
