@@ -1,32 +1,26 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { inject, ref } from 'vue'
 import Query from '../query/Query.vue'
-import { Workbook, workbookKey } from './workbook'
-import WorkbookQueryEmptyState from './WorkbookQueryEmptyState.vue'
+import { workbookKey } from './workbook'
+import { useRouter } from 'vue-router'
 
-const props = defineProps<{ name?: string; index: number | string }>()
+const props = defineProps<{ workbook_name?: string; query_name: string }>()
 
-const workbook = inject<Workbook>(workbookKey)
-const activeQuery = computed(() => workbook?.doc.queries[Number(props.index)])
+const router = useRouter()
+const workbook = inject(workbookKey)!
 
-const typeIsSet = computed(() => {
-	return (
-		activeQuery.value?.is_native_query ||
-		activeQuery.value?.is_script_query ||
-		activeQuery.value?.is_builder_query ||
-		activeQuery.value?.operations.find((op) => op.type === 'source')
-	)
-})
-
-function setQueryType(interfaceType: 'query-builder' | 'sql-editor' | 'script-editor') {
-	if (!activeQuery.value) return
-	activeQuery.value.is_native_query = interfaceType === 'sql-editor'
-	activeQuery.value.is_script_query = interfaceType === 'script-editor'
-	activeQuery.value.is_builder_query = interfaceType === 'query-builder'
+let query_name = ref(props.query_name)
+const index = Number(props.query_name)
+if (
+	index >= 0 &&
+	workbook.doc.queries[index] &&
+	!workbook.doc.queries.find((q) => q.name === props.query_name)
+) {
+	query_name.value = workbook.doc.queries[index].name
+	router.replace(`/workbook/${workbook.doc.name}/query/${query_name.value}`)
 }
 </script>
 
 <template>
-	<WorkbookQueryEmptyState v-if="activeQuery && !typeIsSet" @select="setQueryType" />
-	<Query v-if="activeQuery && typeIsSet" :key="activeQuery.name" :query="activeQuery" />
+	<Query :query_name="query_name" />
 </template>

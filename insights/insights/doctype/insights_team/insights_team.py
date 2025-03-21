@@ -257,7 +257,7 @@ def get_permission_filter(resource_type, user=None):
 
 def check_data_source_permission(source_name, user=None, raise_error=True):
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
-        return {}
+        return True
 
     user = user or frappe.session.user
     if is_admin(user):
@@ -279,7 +279,7 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
 def check_table_permission(data_source, table, user=None, raise_error=True):
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
-        return {}
+        return True
 
     user = user or frappe.session.user
     if is_admin(user):

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
+import useQuery, { Query } from '../../query/query'
 import {
 	BarChartConfig,
 	DonutChartConfig,
@@ -8,7 +9,7 @@ import {
 	NumberChartConfig,
 	TableChartConfig,
 } from '../../types/chart.types'
-import { DimensionOption, MeasureOption } from '../../types/query.types'
+import { DimensionOption } from '../../types/query.types'
 import { Chart } from '../chart'
 import BarChartConfigForm from './BarChartConfigForm.vue'
 import DonutChartConfigForm from './DonutChartConfigForm.vue'
@@ -19,17 +20,21 @@ import TableChartConfigForm from './TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
 
+const chartQuery = computed(() => {
+	if (!props.chart.doc.query) return {} as Query
+	return useQuery(props.chart.doc.query)
+})
+
 const dimensions = computed<DimensionOption[]>(() => {
-	return props.chart.baseQuery.dimensions.map((dimension) => ({
+	if (!chartQuery.value.dimensions) return []
+	return chartQuery.value.dimensions.map((dimension) => ({
 		...dimension,
 		label: dimension.column_name,
 		value: dimension.column_name,
 	}))
 })
 
-const columnOptions = computed(() => {
-	return props.chart.baseQuery.result.columnOptions
-})
+const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
 </script>
 
 <template>

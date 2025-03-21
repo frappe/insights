@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
 import { LoadingIndicator } from 'frappe-ui'
-import { Play, RefreshCw, Wand2 } from 'lucide-vue-next'
-import { computed, inject, ref, watchEffect } from 'vue'
+import { Play, Wand2 } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
-import DataTable from '../../components/DataTable.vue'
 import { Query } from '../query'
 import ContentEditable from '../../components/ContentEditable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import { wheneverChanges } from '../../helpers'
 import useDataSourceStore from '../../data_source/data_source'
-import { column } from '../../query/helpers'
+import QueryDataTable from './QueryDataTable.vue'
 
 const query = inject<Query>('query')!
-const sortOrder = ref<Record<string, 'asc' | 'desc'>>({});
-
 query.autoExecute = false
+query.execute()
 
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')
@@ -26,13 +24,6 @@ function execute() {
 		data_source: data_source.value,
 	})
 }
-
-const columns = computed(() => query.result.columns)
-const rows = computed(() => query.result.formattedRows)
-const previewRowCount = computed(() => query.result.rows.length.toLocaleString())
-const totalRowCount = computed(() =>
-	query.result.totalRowCount ? query.result.totalRowCount.toLocaleString() : ''
-)
 
 const dataSourceSchema = ref<Record<string, any>>({})
 const dataSourceStore = useDataSourceStore()
@@ -74,20 +65,6 @@ const completions = computed(() => {
 		tables,
 	}
 })
-
-function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
-
-	sortOrder.value = newSortOrder;
-	
-	Object.entries(newSortOrder).forEach(([columnName, direction]) => {
-		query.addOrderBy({
-			column: column(columnName), 
-			direction,
-		});
-	});
-
-	query.execute();
-}
 </script>
 
 <template>
@@ -135,40 +112,7 @@ function onSort(newSortOrder: Record<string, 'asc' | 'desc'>) {
 			</div>
 		</div>
 		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
-			<div
-				v-if="query.executing"
-				class="absolute top-10 z-10 flex w-full items-center justify-center rounded bg-gray-50/30 backdrop-blur-sm"
-			>
-				<LoadingIndicator class="h-8 w-8 text-gray-700" />
-			</div>
-
-			<DataTable 
-				:columns="columns" 
-				:rows="rows" 
-				:enable-pagination="true" 
-				:on-export="query.downloadResults"
-				:sort-order="sortOrder"
-				@sort="onSort"
-			>
-				<template #footer-left>
-					<div class="tnum flex items-center gap-2 text-sm text-gray-600">
-						<span> Showing {{ previewRowCount }} of </span>
-						<span v-if="!totalRowCount" class="inline-block">
-							<Tooltip text="Load Count">
-								<RefreshCw
-									v-if="!query.fetchingCount"
-									class="h-3.5 w-3.5 cursor-pointer transition-all hover:text-gray-800"
-									stroke-width="1.5"
-									@click="query.fetchResultCount"
-								/>
-								<LoadingIndicator v-else class="h-3.5 w-3.5 text-gray-600" />
-							</Tooltip>
-						</span>
-						<span v-else> {{ totalRowCount }} </span>
-						rows
-					</div>
-				</template>
-			</DataTable>
+			<QueryDataTable :query="query" />
 		</div>
 	</div>
 </template>

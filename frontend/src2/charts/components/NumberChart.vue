@@ -22,7 +22,7 @@ const dateValues = computed(() => {
 })
 const numberValuesPerColumn = computed(() => {
 	if (!config.value.number_columns?.length) return {}
-	if (!props.result?.rows?.length) return {}
+	if (!props.result?.columns.length) return {}
 
 	return numberColumns.value.reduce((acc: any, measure_name: string) => {
 		acc[measure_name] = props.result.rows.map((row: any) => row[measure_name])
@@ -32,13 +32,13 @@ const numberValuesPerColumn = computed(() => {
 
 const cards = computed(() => {
 	if (!config.value.number_columns?.length) return []
-	if (!props.result?.rows) return []
+	if (!props.result?.columns.length) return []
 	if (!Object.keys(numberValuesPerColumn.value).length) return []
 
 	return numberColumns.value.map((measure_name: string, idx: number) => {
 		const numberValues = numberValuesPerColumn.value[measure_name]
-		const currentValue = numberValues[numberValues.length - 1]
-		const previousValue = numberValues[numberValues.length - 2]
+		const currentValue = numberValues[numberValues.length - 1] || 0
+		const previousValue = numberValues[numberValues.length - 2] || 0
 		const delta = config.value.negative_is_better
 			? previousValue - currentValue
 			: currentValue - previousValue
@@ -71,7 +71,7 @@ const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: bo
 }
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {
-	const numberOption = config.value.number_column_options[index]?.[option] as any
+	const numberOption = config.value.number_column_options?.[index]?.[option] as any
 	return numberOption === undefined ? config.value[option] : numberOption
 }
 </script>

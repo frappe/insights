@@ -8,7 +8,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AlertDialog: typeof import('./src/components/AlertDialog.vue')['default']
     AppShell: typeof import('./src/components/AppShell.vue')['default']
     Attachment: typeof import('./src/components/Controls/Attachment.vue')['default']
     Autocomplete: typeof import('./src/components/Controls/Autocomplete.vue')['default']
@@ -70,7 +69,6 @@ declare module 'vue' {
     TimespanPicker: typeof import('./src/components/Controls/TimespanPicker.vue')['default']
     TimespanPickerFlat: typeof import('./src/components/Controls/TimespanPickerFlat.vue')['default']
     Toast: typeof import('./src/components/Toast.vue')['default']
-    Tooltip: typeof import('./src/components/Tooltip.vue')['default']
     Topbar: typeof import('./src/components/Topbar.vue')['default']
     UsePopover: typeof import('./src/components/UsePopover.vue')['default']
     UseTooltip: typeof import('./src/components/UseTooltip.vue')['default']

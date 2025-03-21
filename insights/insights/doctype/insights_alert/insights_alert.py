@@ -8,35 +8,62 @@ from croniter import croniter
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
-from pandas import DataFrame
+
+from insights.utils import deep_convert_dict_to_dict
 
 
 class InsightsAlert(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        channel: DF.Literal["Email", "Telegram"]
+        condition: DF.Code
+        cron_format: DF.Data | None
+        custom_condition: DF.Check
+        disabled: DF.Check
+        frequency: DF.Literal["Hourly", "Daily", "Weekly", "Monthly", "Cron"]
+        last_execution: DF.Datetime | None
+        message: DF.MarkdownEditor | None
+        next_execution: DF.Datetime | None
+        query: DF.Link
+        recipients: DF.SmallText | None
+        telegram_chat_id: DF.Data | None
+        title: DF.Data
+    # end: auto-generated types
+
     def validate(self):
         try:
-            self.evaluate_condition(for_validate=True)
+            self.evaluate_condition()
         except Exception as e:
             frappe.throw(f"Invalid condition: {e}")
 
     @frappe.whitelist()
-    def send_alert(self):
-        if not self.evaluate_condition():
+    def send_alert(self, force=False):
+        results = self.evaluate_condition()
+        if not results and not force:
             return
+
+        message = self.evaluate_message()
+
         if self.channel == "Email":
-            self.send_email_alert()
+            self.send_email_alert(message)
         if self.channel == "Telegram":
-            self.send_telegram_alert()
+            self.send_telegram_alert(message)
+
         self.db_set("last_execution", now_datetime(), update_modified=False)
 
-    def send_telegram_alert(self):
-        message = self.evaluate_message()
-        tg = Telegram(self.telegram_chat_id)
+    def send_telegram_alert(self, message):
+        tg = TelegramAlert(self.telegram_chat_id)
         tg.send(message)
 
-    def send_email_alert(self):
+    def send_email_alert(self, message):
         subject = f"Insights Alert: {self.title}"
         recievers = self.get_recipients()
-        message = self.evaluate_message()
         frappe.sendmail(
             recipients=recievers,
             subject=subject,
@@ -44,30 +71,36 @@ class InsightsAlert(Document):
             now=True,
         )
 
-    def evaluate_condition(self, for_validate=False):
-        query = frappe.get_doc("Insights Query", self.query)
-        results = query.retrieve_results(fetch_if_not_cached=not for_validate)
-
-        if (hasattr(results, "empty") and results.empty) or not results:
-            return False
-
-        column_names = [d.get("label") for d in results[0]]
-        results = DataFrame(results[1:], columns=column_names)
-
-        return frappe.safe_eval(
-            self.condition, eval_locals=frappe._dict(results=results, any=any)
-        )
+    def evaluate_condition(self):
+        doc = frappe.get_doc("Insights Query v3", self.query)
+        return doc.evaluate_alert_expression(self.condition)
 
     def evaluate_message(self):
-        query = frappe.get_doc("Insights Query", self.query)
-        query_dict = query.as_dict()
-        query_dict.results = query.retrieve_results(fetch_if_not_cached=True)
-        message = frappe.render_template(self.message, context=query_dict)
+        context = self.get_message_context()
+        message = frappe.render_template(self.message, context=context)
         if self.channel == "Telegram":
             return message
 
         return frappe.render_template(
             "insights/templates/alert.html", context=frappe._dict(message=message)
+        )
+
+    def get_message_context(self):
+        doc = frappe.get_doc("Insights Query v3", self.query)
+        data = doc.execute()
+        rows = data["rows"]
+
+        return deep_convert_dict_to_dict(
+            {
+                "rows": rows,
+                "count": len(rows),
+                "query": {
+                    "title": doc.title,
+                },
+                "alert": {
+                    "title": self.title,
+                },
+            }
         )
 
     def get_recipients(self):
@@ -101,6 +134,10 @@ class InsightsAlert(Document):
         next_execution = self.get_next_execution()
         return next_execution <= now_datetime()
 
+    @frappe.whitelist()
+    def test_alert(self):
+        self.send_alert(force=True)
+
 
 def send_alerts():
     alerts = frappe.get_all("Insights Alert", filters={"disabled": 0})
@@ -111,16 +148,15 @@ def send_alerts():
             frappe.db.commit()
 
 
-class Telegram:
-    def __init__(self, chat_id: str = None):
+class TelegramAlert:
+    def __init__(self, chat_id):
         self.token = frappe.get_single("Insights Settings").get_password(
             "telegram_api_token"
         )
         if not self.token:
             frappe.throw("Telegram Bot Token not set in Insights Settings")
 
-        if chat_id:
-            self.chat_id = chat_id
+        self.chat_id = chat_id
 
     def send(self, message):
         try:

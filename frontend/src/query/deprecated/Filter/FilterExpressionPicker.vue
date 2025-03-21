@@ -55,7 +55,6 @@
 <script setup>
 import Code from '@/components/Controls/Code.vue'
 import ExpressionHelp from '@/components/ExpressionHelp.vue'
-import Tooltip from '@/components/Tooltip.vue'
 import { parse } from '@/utils/expressions'
 import { FUNCTIONS } from '@/utils/query'
 import { debounce } from 'frappe-ui'

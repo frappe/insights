@@ -1,8 +1,7 @@
 import { graphic } from 'echarts/core'
-import { copy, ellipsis, formatNumber, getShortNumber, getUniqueId } from '../helpers'
-import { FIELDTYPES, GranularityType } from '../helpers/constants'
-import { column, getFormattedDate } from '../query/helpers'
-import useQuery from '../query/query'
+import { ellipsis, formatNumber, getShortNumber } from '../helpers'
+import { FIELDTYPES } from '../helpers/constants'
+import { getFormattedDate } from '../query/helpers'
 import {
 	AxisChartConfig,
 	BarChartConfig,
@@ -14,13 +13,7 @@ import {
 	SeriesLine,
 	XAxis,
 } from '../types/chart.types'
-import {
-	FilterRule,
-	Operation,
-	QueryResult,
-	QueryResultColumn,
-	QueryResultRow
-} from '../types/query.types'
+import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
 
 // eslint-disable-next-line no-unused-vars
@@ -204,6 +197,9 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const data = getSeriesData(c.name)
 			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
+			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
+			const isLast = idx === number_columns.length - 1
+
 			return {
 				type,
 				stack,
@@ -220,9 +216,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 					fontSize: 11,
 				},
 				labelLayout: { hideOverlap: true },
-				barMaxWidth: 60,
 				yAxisIndex: is_right_axis ? 1 : 0,
-				itemStyle: { color: color },
+				itemStyle: {
+					color: color,
+					borderRadius: stack ? (isLast ? roundedCorners : 0) : roundedCorners,
+				},
 			}
 		}),
 		tooltip: getTooltip({
@@ -266,10 +264,11 @@ function getXAxis(x_axis: XAxis) {
 		type: xAxisIsDate ? 'time' : 'category',
 		z: 2,
 		scale: true,
-		boundaryGap: ['1%', '2%'],
+		alignTicks: true,
+		boundaryGap: ['1%', '1%'],
 		splitLine: { show: false },
-		axisLine: { show: true },
-		axisTick: { show: false },
+		axisLine: { show: true, onZero: true },
+		axisTick: { show: true },
 		axisLabel: {
 			show: true,
 			rotate: rotation,
@@ -290,12 +289,12 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 		alignTicks: true,
 		boundaryGap: ['0%', '1%'],
 		splitLine: { show: true },
-		axisTick: { show: false },
-		axisLine: { show: false, onZero: false },
+		axisTick: { show: true },
+		axisLine: { show: true, onZero: true },
 		axisLabel: {
 			show: true,
 			hideOverlap: true,
-			margin: 4,
+			margin: 8,
 			formatter: (value: number) => getShortNumber(value, 1),
 		},
 		min: options.normalized ? 0 : undefined,
@@ -626,77 +625,6 @@ function getLegend(show_legend = true) {
 		pageFormatter: '{current}',
 		pageButtonItemGap: 2,
 	}
-}
-
-export function getDrillDownQuery(
-	operations: Operation[],
-	result: QueryResult,
-	row: QueryResultRow,
-	col: QueryResultColumn,
-	use_live_connection = true
-) {
-	if (!result.columns?.length || !row || !col) return
-
-	if (!FIELDTYPES.NUMBER.includes(col.type)) {
-		return
-	}
-
-	const textColumns = result.columns
-		.filter((column) => FIELDTYPES.TEXT.includes(column.type))
-		.map((column) => column.name)
-
-	const dateColumns = result.columns
-		.filter((column) => FIELDTYPES.DATE.includes(column.type))
-		.map((column) => column.name)
-
-	const rowIndex = result.formattedRows.findIndex((r) => r === row)
-	const currRow = result.rows[rowIndex]
-	const nextRow = result.rows[rowIndex + 1]
-
-	const filters: FilterRule[] = []
-	for (const column_name of textColumns) {
-		filters.push({
-			column: column(column_name),
-			operator: '=',
-			value: currRow[column_name] as string,
-		})
-	}
-
-	for (const column_name of dateColumns) {
-		if (nextRow) {
-			filters.push({
-				column: column(column_name),
-				operator: '>=',
-				value: currRow[column_name] as string,
-			})
-			filters.push({
-				column: column(column_name),
-				operator: '<',
-				value: nextRow[column_name] as string,
-			})
-		} else {
-			filters.push({
-				column: column(column_name),
-				operator: '>=',
-				value: currRow[column_name] as string,
-			})
-		}
-	}
-
-	const query = useQuery({ name: getUniqueId(), operations: [] })
-	query.autoExecute = false
-	query.doc.use_live_connection = use_live_connection
-
-	query.setOperations(copy(operations))
-	const summarizeIndex = query.doc.operations.findIndex((op) => op.type === 'summarize')
-	query.doc.operations.splice(summarizeIndex)
-
-	query.addFilterGroup({
-		logical_operator: 'And',
-		filters: filters,
-	})
-
-	return query
 }
 
 export function handleOldXAxisConfig(old_x_axis: any): AxisChartConfig['x_axis'] {
