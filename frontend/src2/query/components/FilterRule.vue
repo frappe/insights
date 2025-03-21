@@ -9,7 +9,7 @@ import {
 	GroupedColumnOption,
 } from '../../types/query.types'
 import { column } from '../helpers'
-import { getCachedQuery } from '../query'
+import useQuery from '../query'
 import DatePickerControl from './DatePickerControl.vue'
 import { getFilterType, getOperatorOptions, getValueSelectorType } from './filter_utils'
 import RelativeDatePickerControl from './RelativeDatePickerControl.vue'
@@ -77,8 +77,8 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 	const column_name = match ? match[2] : filter.value.column.column_name
 
 	fetchingValues.value = true
-	return getCachedQuery(option.query)
-		?.getDistinctColumnValues(column_name, searchTxt)
+	return useQuery(option.query)
+		.getDistinctColumnValues(column_name, searchTxt)
 		.then((values: string[]) => (distinctColumnValues.value = values))
 		.finally(() => (fetchingValues.value = false))
 }, 300)

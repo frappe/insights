@@ -14,11 +14,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+from insights import create_toast
 from insights.cache_utils import make_digest
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
-from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
-    DataSourceConnectionError,
-)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -31,20 +29,53 @@ from .ibis.utils import get_functions
 
 
 class IbisQueryBuilder:
-    def build(self, operations: list, use_live_connection=True) -> IbisQuery:
+    def __init__(self, doc, active_operation_idx=None):
+        self.doc = doc
         self.query = None
-        self.use_live_connection = use_live_connection
-        for idx, operation in enumerate(operations):
+        self.title = self.doc.title or self.doc.name
+        self.active_operation_idx = active_operation_idx
+        self.use_live_connection = doc.use_live_connection
+        self.operations = doc.operations
+        self.set_operations()
+
+    def set_operations(self):
+        operations = frappe.parse_json(self.operations)
+
+        if (
+            self.active_operation_idx is not None
+            and self.active_operation_idx >= 0
+            and self.active_operation_idx < len(operations)
+        ):
+            operations = operations[: self.active_operation_idx + 1]
+
+        if (
+            hasattr(frappe.local, "insights_adhoc_filters")
+            and self.doc.name in frappe.local.insights_adhoc_filters
+        ):
+            adhoc_filters = frappe.local.insights_adhoc_filters[self.doc.name]
+            if (
+                adhoc_filters
+                and isinstance(adhoc_filters, dict)
+                and adhoc_filters.get("type") == "filter_group"
+                and adhoc_filters.get("filters")
+            ):
+                operations.append(adhoc_filters)
+
+        self.operations = operations
+
+    def build(self) -> IbisQuery:
+        for idx, operation in enumerate(self.operations):
             try:
                 operation = _dict(operation)
                 self.query = self.perform_operation(operation)
-            except (DataSourceConnectionError, frappe.ValidationError) as e:
-                raise e
             except BaseException as e:
                 operation_type_title = frappe.bold(operation.type.title())
-                frappe.throw(
-                    f"Invalid {operation_type_title} Operation at position {idx + 1}: {e!s}"
+                create_toast(
+                    title=f"Failed to Build {self.query_title} Query",
+                    message=f"Please check the {operation_type_title} operation at position {idx + 1}",
+                    type="error",
                 )
+                raise e
         return self.query
 
     def perform_operation(self, operation):
@@ -94,13 +125,11 @@ class IbisQueryBuilder:
                 use_live_connection=self.use_live_connection,
             )
         if table_args.type == "query":
-            _table = IbisQueryBuilder().build(
-                table_args.operations,
-                use_live_connection=self.use_live_connection,
-            )
+            q = frappe.get_doc("Insights Query v3", table_args.query_name)
+            _table = q.build(use_live_connection=self.use_live_connection)
 
         if _table is None:
-            frappe.throw("Invalid join table")
+            frappe.throw("Table or Query not found")
 
         return _table
 
@@ -553,23 +582,33 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
-def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=3600):
+def execute_ibis_query(
+    query: IbisQuery,
+    limit=100,
+    cache=True,
+    cache_expiry=3600,
+    reference_doctype=None,
+    reference_name=None,
+):
     sql = ibis.to_sql(query)
-    backends, _ = query._find_backends()
-    backend_id = backends[0].db_identity if backends else None
-    cache_key = make_digest(sql, backend_id)
 
-    if cache and has_cached_results(cache_key):
-        return get_cached_results(cache_key), -1
+    if cache:
+        backends, _ = query._find_backends()
+        backend_id = backends[0].db_identity if backends else None
+        cache_key = make_digest(sql, backend_id)
 
-    limit = int(limit or 100)
-    limit = min(max(limit, 1), 10_00_000)
-    query = query.head(limit) if limit else query
+        if has_cached_results(cache_key):
+            return get_cached_results(cache_key), -1
+
+    if hasattr(query, "limit") and limit:
+        limit = int(limit or 100)
+        limit = min(max(limit, 1), 10_00_000)
+        query = query.limit(limit)
 
     start = time.monotonic()
 
     try:
-        result: pd.DataFrame = query.execute()
+        result = query.execute()
     except Exception as e:
         if "max_statement_time" in str(e):
             frappe.log_error(
@@ -583,12 +622,12 @@ def execute_ibis_query(query: IbisQuery, limit=100, cache=True, cache_expiry=360
         raise e
 
     time_taken = flt(time.monotonic() - start, 3)
-    create_execution_log(sql, time_taken)
+    create_execution_log(sql, time_taken, reference_name)
 
-    result = result.replace({pd.NaT: None, np.nan: None})
-
-    if cache:
-        cache_results(cache_key, result, cache_expiry)
+    if isinstance(result, pd.DataFrame):
+        result = result.replace({pd.NaT: None, np.nan: None})
+        if cache:
+            cache_results(cache_key, result, cache_expiry)
 
     return result, time_taken
 

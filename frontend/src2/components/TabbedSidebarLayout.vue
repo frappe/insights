@@ -35,7 +35,7 @@ const activeTab = defineModel<Tab>('activeTab', {
 			<h1 v-if="props.title" class="px-2 pt-2 text-lg font-semibold">
 				{{ props.title }}
 			</h1>
-			<div v-for="group in tabGroups" class="flex flex-col overflow-hidden">
+			<div v-for="group in tabGroups" class="flex min-h-[6rem] flex-col overflow-hidden">
 				<div
 					v-if="group.groupLabel"
 					class="mb-2 mt-4 flex flex-shrink-0 px-2 text-sm font-medium text-gray-600"

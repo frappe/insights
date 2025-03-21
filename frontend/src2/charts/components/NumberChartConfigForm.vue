@@ -109,7 +109,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 										/>
 									</InlineFormControlLabel>
 
-									<Checkbox
+									<Toggle
 										label="Show short numbers"
 										:modelValue="getNumberOption(index, 'shorten_numbers')"
 										@update:modelValue="
@@ -146,15 +146,15 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 				<FormControl v-model="config.decimal" type="number" autocomplete="off" />
 			</InlineFormControlLabel>
 
-			<Checkbox label="Show short numbers" v-model="config.shorten_numbers" />
+			<Toggle label="Show short numbers" v-model="config.shorten_numbers" />
 
-			<Checkbox label="Show comparison" v-model="config.comparison" />
-			<Checkbox
+			<Toggle label="Show comparison" v-model="config.comparison" />
+			<Toggle
 				v-if="config.comparison"
 				label="Negative is better"
 				v-model="config.negative_is_better"
 			/>
-			<Checkbox v-if="config.date_column" label="Show sparkline" v-model="config.sparkline" />
+			<Toggle v-if="config.date_column" label="Show sparkline" v-model="config.sparkline" />
 
 			<InlineFormControlLabel v-if="config.sparkline" label="Color">
 				<ColorInput

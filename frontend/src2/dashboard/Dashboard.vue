@@ -3,30 +3,25 @@ import { Breadcrumbs } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
 import { provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { downloadImage, waitUntil } from '../helpers'
-import useWorkbook from '../workbook/workbook'
+import { downloadImage } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
-import useDashboardStore from './dashboards'
 import VueGridLayout from './VueGridLayout.vue'
+import { call } from 'frappe-ui'
 
 const props = defineProps<{ name: string }>()
 
-const store = useDashboardStore()
-const workbookName = await store.fetchWorkbookName(props.name)
+const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
+	dashboard_name: props.name,
+})
 
-const workbook = useWorkbook(workbookName)
-await waitUntil(() => workbook.doc.dashboards.length > 0)
-
-const dashboard = useDashboard(
-	workbook.doc.dashboards.find((dashboard) => dashboard.name === props.name)!
-)
+const dashboard = useDashboard(dashboard_name)
 provide('dashboard', dashboard)
 dashboard.refresh()
 
 const router = useRouter()
 function openWorkbook() {
-	router.push(`/workbook/${workbook.doc.name}`)
+	router.push(`/workbook/${dashboard.doc.workbook}`)
 }
 
 const dashboardContainer = ref<HTMLElement | null>(null)

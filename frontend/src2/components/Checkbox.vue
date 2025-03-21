@@ -5,7 +5,8 @@
 				{{ $props.label }}
 			</SwitchLabel>
 			<Switch
-				v-model="enabled"
+				:modelValue="Boolean(enabled)"
+				@update:modelValue="enabled = Boolean($event)"
 				class="relative inline-flex items-center rounded-full transition-colors"
 				:class="[
 					enabled ? 'bg-gray-900' : 'bg-gray-300',
@@ -29,9 +30,13 @@
 	</SwitchGroup>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 
-const props = defineProps(['label', 'size', 'disabled'])
-const enabled = defineModel({ type: Boolean })
+const enabled = defineModel<Boolean | Number>()
+const props = defineProps<{
+	label?: string
+	size?: 'sm' | 'md'
+	disabled?: boolean
+}>()
 </script>

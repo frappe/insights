@@ -2,11 +2,14 @@
 # For license information, please see license.txt
 
 import frappe
+import frappe.client
 import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.integrations.utils import make_post_request
+from frappe.monitor import add_data_to_monitor
 from frappe.rate_limiter import rate_limit
 
+from insights.api.shared import check_public_access
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     get_duckdb_connection,
@@ -161,3 +164,51 @@ def import_csv_data(filename: str):
         db.disconnect()
 
     InsightsTablev3.bulk_create(ds.name, [table_name])
+
+
+@frappe.whitelist(allow_guest=True)
+@validate_type
+def get_doc(doctype: str, name: str | int):
+    from frappe.client import get as _get_doc
+
+    if frappe.session.user != "Guest":
+        return _get_doc(doctype, name)
+
+    check_public_access(doctype, name)
+
+    return frappe.get_doc(doctype, name).as_dict()
+
+
+@frappe.whitelist(allow_guest=True)
+def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
+    from frappe.handler import run_doc_method as _run_doc_method
+
+    if frappe.session.user != "Guest":
+        return _run_doc_method(method, docs=docs, args=args)
+
+    doc = frappe.parse_json(docs)
+    doctype = doc.get("doctype")
+    name = doc.get("name")
+
+    if not doctype or not name:
+        raise frappe.ValidationError("Invalid document")
+
+    doc = frappe.get_doc(doctype, name)
+    check_public_access(doctype, name)
+
+    args = args or {}
+
+    response = None
+    if doctype == "Insights Query v3" and method == "execute":
+        response = doc.execute(**args)
+    elif doctype == "Insights Dashboard v3" and method == "get_distinct_column_values":
+        response = doc.get_distinct_column_values(**args)
+    else:
+        raise frappe.PermissionError(
+            "You don't have permission to access this document"
+        )
+
+    frappe.response.docs.append(doc)
+    frappe.response["message"] = response
+
+    add_data_to_monitor(methodname=method)
