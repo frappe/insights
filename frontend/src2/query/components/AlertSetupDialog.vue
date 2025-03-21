@@ -124,7 +124,7 @@ function testSendAlert() {
 								{ value: 'Daily', label: 'Check once a day' },
 								{ value: 'Weekly', label: 'Check once a week' },
 								{ value: 'Monthly', label: 'Check once a month' },
-								{ value: 'Custom', label: 'Custom' },
+								{ value: 'Cron', label: 'Cron' },
 							]"
 						/>
 						<FormControl
