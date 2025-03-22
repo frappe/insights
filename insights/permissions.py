@@ -122,6 +122,7 @@ class InsightsPermissions:
             "Insights Dashboard v3",
             "Insights Chart v3",
             "Insights Query v3",
+            "Insights Alert",
         ]:
             if is_new and hasattr(doc, "workbook") and doc.workbook:
                 # when creating a new query/chart/dashboard
