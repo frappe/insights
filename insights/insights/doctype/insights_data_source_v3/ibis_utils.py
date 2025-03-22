@@ -31,7 +31,6 @@ from .ibis.utils import get_functions
 class IbisQueryBuilder:
     def __init__(self, doc, active_operation_idx=None):
         self.doc = doc
-        self.query = None
         self.title = self.doc.title or self.doc.name
         self.active_operation_idx = active_operation_idx
         self.use_live_connection = doc.use_live_connection
@@ -64,6 +63,7 @@ class IbisQueryBuilder:
         self.operations = operations
 
     def build(self) -> IbisQuery:
+        self.query = None
         for idx, operation in enumerate(self.operations):
             try:
                 operation = _dict(operation)
@@ -71,7 +71,7 @@ class IbisQueryBuilder:
             except BaseException as e:
                 operation_type_title = frappe.bold(operation.type.title())
                 create_toast(
-                    title=f"Failed to Build {self.query_title} Query",
+                    title=f"Failed to Build {self.title} Query",
                     message=f"Please check the {operation_type_title} operation at position {idx + 1}",
                     type="error",
                 )
