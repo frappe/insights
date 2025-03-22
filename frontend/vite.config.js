@@ -15,6 +15,9 @@ export default defineConfig({
 		vue(),
 		vueJsx(),
 	],
+	server: {
+		allowedHosts: ['test-insights'],
+	},
 	esbuild: { loader: 'tsx' },
 	resolve: {
 		alias: {

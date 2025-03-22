@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { debounce } from 'frappe-ui'
+import { Combine } from 'lucide-vue-next'
 import { provide } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import QueryBuilderToolbar from '../../query/components/QueryBuilderToolbar.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import QueryOperations from '../../query/components/QueryOperations.vue'
+import { count, makeDimension } from '../../query/helpers'
 import { Query } from '../../query/query'
+import { QueryResultColumn } from '../../types/query.types'
 
 const props = defineProps<{ query: Query }>()
 
@@ -20,6 +24,15 @@ wheneverChanges(
 )
 
 provide('query', props.query)
+
+function _groupBy(column: QueryResultColumn) {
+	props.query.addSummarize({
+		dimensions: [makeDimension(column)],
+		measures: [count()],
+	})
+}
+// FIX: debug why groupBy is called twice
+const groupBy = debounce(_groupBy, 50)
 </script>
 
 <template>
@@ -39,7 +52,24 @@ provide('query', props.query)
 							:enable-sort="true"
 							:enable-drill-down="true"
 							:query="props.query"
-						/>
+						>
+							<template #header-prefix="{ column }">
+								<Tooltip text="Group By" :hover-delay="0.2">
+									<Button
+										variant="ghost"
+										class="rounded-none"
+										@click="() => groupBy(column)"
+									>
+										<template #icon>
+											<Combine
+												class="h-4 w-4 text-gray-700"
+												stroke-width="1.5"
+											/>
+										</template>
+									</Button>
+								</Tooltip>
+							</template>
+						</QueryDataTable>
 					</div>
 				</div>
 				<div
