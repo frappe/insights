@@ -77,6 +77,10 @@ const listOptions = ref({
 			button: {
 				label: 'New Alert',
 				variant: 'solid',
+				onClick: () => {
+					emit('set-current-alert-name', 'new-alert-' + getUniqueId())
+					show.value = false
+				},
 			},
 		},
 	},

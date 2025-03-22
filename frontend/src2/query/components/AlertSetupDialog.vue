@@ -51,6 +51,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.custom_condition && !filterCondition.left) return false
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
 	if (!alert.doc.custom_condition && !filterCondition.right) return false
+	if (!alert.doc.message) return false
 	return true
 })
 
@@ -59,6 +60,9 @@ function updateAlert() {
 	if (!isValidAlert.value) return
 
 	const isNew = unref(alert.islocal)
+	if (isNew) {
+		alert.doc.query = props.query.doc.name
+	}
 	return alert.save().then(() => {
 		createToast({
 			title: isNew ? 'Alert Created' : 'Alert Updated',
@@ -71,6 +75,9 @@ function updateAlert() {
 
 function testSendAlert() {
 	if (!isValidAlert.value) return
+	if (alert.islocal) {
+		alert.doc.query = props.query.doc.name
+	}
 	return alert.call('test_alert').then(() => {
 		createToast({
 			title: 'Alert Sent',
