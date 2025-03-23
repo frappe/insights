@@ -63,6 +63,7 @@ function updateAlert() {
 	if (isNew) {
 		alert.doc.query = props.query.doc.name
 	}
+	alert.doc.disabled = 0
 	return alert.save().then(() => {
 		createToast({
 			title: isNew ? 'Alert Created' : 'Alert Updated',
@@ -86,6 +87,19 @@ function testSendAlert() {
 		})
 	})
 }
+
+function toggleAlert() {
+	alert.doc.disabled = alert.doc.disabled ? 0 : 1
+	return alert.save().then(() => {
+		createToast({
+			title: alert.doc.disabled ? 'Alert Disabled' : 'Alert Enabled',
+			message: `Alert "${alert.doc.title}" has been ${
+				alert.doc.disabled ? 'disabled' : 'enabled'
+			}.`,
+			variant: 'success',
+		})
+	})
+}
 </script>
 
 <template>
@@ -101,6 +115,12 @@ function testSendAlert() {
 					disabled: !isValidAlert || alert.loading || alert.saving,
 					loading: alert.loading,
 					onClick: testSendAlert,
+				},
+				{
+					label: alert.doc.disabled ? 'Enable Alert' : 'Disable Alert',
+					disabled: alert.loading || alert.saving,
+					loading: alert.loading,
+					onClick: toggleAlert,
 				},
 				{
 					label: alert.islocal ? 'Create Alert' : 'Update Alert',
