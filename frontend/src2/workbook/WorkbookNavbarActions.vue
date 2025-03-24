@@ -21,7 +21,7 @@ const showShareDialog = ref(false)
 			</template>
 			Share
 		</Button>
-		<Button
+		<!-- <Button
 			v-show="!workbook.islocal && workbook.isdirty"
 			variant="outline"
 			@click="workbook.discard()"
@@ -41,7 +41,7 @@ const showShareDialog = ref(false)
 				<Check class="h-4 w-4 text-gray-100" stroke-width="1.5" />
 			</template>
 			Save
-		</Button>
+		</Button> -->
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[

@@ -27,14 +27,6 @@ const workbook = inject(workbookKey)!
 						v-model="workbook.doc.title"
 						placeholder="Untitled Workbook"
 					></ContentEditable>
-					<Badge
-						v-if="workbook.islocal || workbook.isdirty"
-						class="absolute -right-[4.5rem]"
-						size="sm"
-						theme="orange"
-					>
-						Unsaved
-					</Badge>
 				</div>
 			</div>
 			<div class="absolute right-0">
