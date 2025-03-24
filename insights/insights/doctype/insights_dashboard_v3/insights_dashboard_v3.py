@@ -53,10 +53,14 @@ class InsightsDashboardv3(Document):
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
-        self.linked_charts = []
-        for item in frappe.parse_json(self.items):
-            if item["type"] == "chart":
-                self.append("linked_charts", {"chart": item["chart"]})
+        self.set(
+            "linked_charts",
+            [
+                {"chart": item["chart"]}
+                for item in frappe.parse_json(self.items)
+                if item["type"] == "chart"
+            ],
+        )
 
     @frappe.whitelist()
     def get_distinct_column_values(self, query, column_name, search_term=None):
@@ -88,7 +92,7 @@ class InsightsDashboardv3(Document):
         raise frappe.PermissionError
 
     def enqueue_update_dashboard_preview(self):
-        if self.is_new() or not self.get_doc_before_save():
+        if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:
             return
 
         prev_doc = self.get_doc_before_save()

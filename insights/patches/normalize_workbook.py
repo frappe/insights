@@ -113,14 +113,16 @@ def execute():
 
                     item.links = new_links
 
-            new_doc.items = frappe.as_json(dashboard["items"])
             new_doc.old_name = dashboard["name"]
             new_doc.modified = add_to_date(workbook.modified, seconds=i)
             new_doc.creation = add_to_date(workbook.creation, seconds=i)
             new_doc.modified_by = workbook.modified_by
             new_doc.owner = workbook.owner
-            new_doc.before_save()
             new_doc.db_insert()
+
+            # save to insert linked charts
+            new_doc.items = frappe.as_json(dashboard["items"])
+            new_doc.save()
 
         for query in query_name_to_doc.values():
             operations = deep_convert_dict_to_dict(frappe.parse_json(query.operations))
