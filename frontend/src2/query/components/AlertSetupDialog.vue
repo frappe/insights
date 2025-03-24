@@ -51,6 +51,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.custom_condition && !filterCondition.left) return false
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
 	if (!alert.doc.custom_condition && !filterCondition.right) return false
+	if (!alert.doc.message) return false
 	return true
 })
 
@@ -59,6 +60,10 @@ function updateAlert() {
 	if (!isValidAlert.value) return
 
 	const isNew = unref(alert.islocal)
+	if (isNew) {
+		alert.doc.query = props.query.doc.name
+	}
+	alert.doc.disabled = 0
 	return alert.save().then(() => {
 		createToast({
 			title: isNew ? 'Alert Created' : 'Alert Updated',
@@ -71,10 +76,26 @@ function updateAlert() {
 
 function testSendAlert() {
 	if (!isValidAlert.value) return
+	if (alert.islocal) {
+		alert.doc.query = props.query.doc.name
+	}
 	return alert.call('test_alert').then(() => {
 		createToast({
 			title: 'Alert Sent',
 			message: `Alert "${alert.doc.title}" has been sent.`,
+			variant: 'success',
+		})
+	})
+}
+
+function toggleAlert() {
+	alert.doc.disabled = alert.doc.disabled ? 0 : 1
+	return alert.save().then(() => {
+		createToast({
+			title: alert.doc.disabled ? 'Alert Disabled' : 'Alert Enabled',
+			message: `Alert "${alert.doc.title}" has been ${
+				alert.doc.disabled ? 'disabled' : 'enabled'
+			}.`,
 			variant: 'success',
 		})
 	})
@@ -94,6 +115,12 @@ function testSendAlert() {
 					disabled: !isValidAlert || alert.loading || alert.saving,
 					loading: alert.loading,
 					onClick: testSendAlert,
+				},
+				{
+					label: alert.doc.disabled ? 'Enable Alert' : 'Disable Alert',
+					disabled: alert.loading || alert.saving,
+					loading: alert.loading,
+					onClick: toggleAlert,
 				},
 				{
 					label: alert.islocal ? 'Create Alert' : 'Update Alert',
@@ -124,7 +151,7 @@ function testSendAlert() {
 								{ value: 'Daily', label: 'Check once a day' },
 								{ value: 'Weekly', label: 'Check once a week' },
 								{ value: 'Monthly', label: 'Check once a month' },
-								{ value: 'Custom', label: 'Custom' },
+								{ value: 'Cron', label: 'Cron' },
 							]"
 						/>
 						<FormControl

@@ -1,4 +1,3 @@
-import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
@@ -227,32 +226,12 @@ function makeWorkbook(name: string) {
 		})
 	}
 
-	let stopAutoSaveWatcher: any
-	const _pauseAutoSave = ref(false)
-	wheneverChanges(
-		() => workbook.doc.enable_auto_save,
-		() => {
-			if (!workbook.doc.enable_auto_save && stopAutoSaveWatcher) {
-				stopAutoSaveWatcher()
-				stopAutoSaveWatcher = null
-			}
-			if (workbook.doc.enable_auto_save && !stopAutoSaveWatcher) {
-				stopAutoSaveWatcher = watchDebounced(
-					() => workbook.isdirty && !_pauseAutoSave.value,
-					(shouldSave) => shouldSave && workbook.save(),
-					{ immediate: true, debounce: 2000 }
-				)
-			}
-		}
-	)
-
 	return reactive({
 		...toRefs(workbook),
 		canShare,
 		isOwner,
 
 		showSidebar: true,
-		_pauseAutoSave,
 
 		isActiveTab,
 

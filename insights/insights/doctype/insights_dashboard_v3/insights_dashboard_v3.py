@@ -53,10 +53,14 @@ class InsightsDashboardv3(Document):
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
-        self.linked_charts = []
-        for item in frappe.parse_json(self.items):
-            if item["type"] == "chart":
-                self.append("linked_charts", {"chart": item["chart"]})
+        self.set(
+            "linked_charts",
+            [
+                {"chart": item["chart"]}
+                for item in frappe.parse_json(self.items)
+                if item["type"] == "chart"
+            ],
+        )
 
     @frappe.whitelist()
     def get_distinct_column_values(self, query, column_name, search_term=None):
@@ -88,7 +92,7 @@ class InsightsDashboardv3(Document):
         raise frappe.PermissionError
 
     def enqueue_update_dashboard_preview(self):
-        if self.is_new() or not self.get_doc_before_save():
+        if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:
             return
 
         prev_doc = self.get_doc_before_save()
@@ -179,19 +183,19 @@ class InsightsDashboardv3(Document):
                 "share_doctype": "Insights Dashboard v3",
                 "share_name": self.name,
                 "read": 1,
-                "user": ["in", people_with_access],
             },
-            fields=["name", "user"],
+            fields=["name", "user", "everyone"],
         )
 
         # remove all existing shares that are not in the new list
         for share in existing_shares:
-            if share.user not in people_with_access:
-                frappe.delete_doc("DocShare", share.name)
+            if share.user and share.user not in people_with_access:
+                frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
         # add new shares
+        existing_share_users = [share.user for share in existing_shares if share.user]
         for user in people_with_access:
-            if user not in [share.user for share in existing_shares]:
+            if user not in existing_share_users:
                 doc = DocShare.get_or_create_doc(
                     share_doctype="Insights Dashboard v3",
                     share_name=self.name,
@@ -201,7 +205,8 @@ class InsightsDashboardv3(Document):
                 doc.notify_by_email = 0
                 doc.save(ignore_permissions=True)
 
-        if is_shared_with_organization:
+        org_shares = [share for share in existing_shares if share.everyone]
+        if is_shared_with_organization and not org_shares:
             doc = DocShare.get_or_create_doc(
                 share_doctype="Insights Dashboard v3",
                 share_name=self.name,
@@ -210,6 +215,9 @@ class InsightsDashboardv3(Document):
             doc.read = 1
             doc.notify_by_email = 0
             doc.save(ignore_permissions=True)
+        elif org_shares and not is_shared_with_organization:
+            for share in org_shares:
+                frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
         self.db_set("is_public", is_public)
 

@@ -50,7 +50,7 @@ wheneverChanges(
 	() => dashboard.editing,
 	() => {
 		if (!workbook) return
-		workbook._pauseAutoSave = dashboard.editing
+		workbook.autoSave = !dashboard.editing
 	}
 )
 </script>

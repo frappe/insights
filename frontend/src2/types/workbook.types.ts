@@ -43,7 +43,6 @@ export type InsightsWorkbook = {
 	queries: WorkbookQuery[]
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
-	enable_auto_save?: boolean
 }
 
 export type InsightsQueryv3 = {

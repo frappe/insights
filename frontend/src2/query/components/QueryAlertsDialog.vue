@@ -5,7 +5,6 @@ import { Plus, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import IndicatorIcon from '../../components/Icons/IndicatorIcon.vue'
 import { getUniqueId } from '../../helpers'
-import session from '../../session'
 import useAlertStore from '../alert'
 import { Query } from '../query'
 
@@ -75,12 +74,14 @@ const listOptions = ref({
 		emptyState: {
 			title: 'No alerts',
 			description: 'Set up alerts to get notified when a condition is met',
-			button: session.user.is_admin
-				? {
-						label: 'New Alert',
-						variant: 'solid',
-				  }
-				: undefined,
+			button: {
+				label: 'New Alert',
+				variant: 'solid',
+				onClick: () => {
+					emit('set-current-alert-name', 'new-alert-' + getUniqueId())
+					show.value = false
+				},
+			},
 		},
 	},
 })
@@ -103,7 +104,6 @@ const listOptions = ref({
 						</template>
 					</FormControl>
 					<Button
-						v-if="session.user.is_admin"
 						label="New Alert"
 						variant="outline"
 						@click="

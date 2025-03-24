@@ -47,7 +47,7 @@ const EMPTY_ALERT: InsightsAlert = {
 	name: '',
 	disabled: 0,
 	title: '',
-	channel: 'Telegram',
+	channel: 'Email',
 	query: '',
 	frequency: 'Hourly',
 	cron_format: '',

@@ -247,11 +247,11 @@ const colorByValues = computed(() => {
 										: undefined
 								"
 							>
-								<template #suffix>
-									<slot name="header-suffix" :column="header.column" />
-								</template>
 								<template #prefix>
 									<slot name="header-prefix" :column="header.column" />
+								</template>
+								<template #suffix>
+									<slot name="header-suffix" :column="header.column" />
 								</template>
 							</DataTableColumn>
 
@@ -320,9 +320,12 @@ const colorByValues = computed(() => {
 								props.enableColorScale && isNumberColumn(col.name)
 									? colorByValues[row[col.name]]
 									: '',
+								isNumberColumn(col.name) && props.onDrilldown
+									? 'cursor-pointer hover:bg-gray-50'
+									: '',
 							]"
 							height="30px"
-							@dblclick="isNumberColumn(col) && props.onDrilldown?.(col, row)"
+							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
 							<template v-if="isStarRating(col.name)">
 								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
