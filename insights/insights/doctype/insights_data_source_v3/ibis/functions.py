@@ -691,6 +691,12 @@ def date_diff(
     - date_diff(order_date, delivery_date, 'day')
     - date_diff(order_date, delivery_date, 'week')
     """
+
+    if not column.type().is_date():
+        column = column.cast("date")
+    if not other.type().is_date():
+        other = other.cast("date")
+
     return column.delta(other, unit)
 
 
