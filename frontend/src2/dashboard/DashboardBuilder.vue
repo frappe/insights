@@ -76,7 +76,7 @@ wheneverChanges(
 						</template>
 					</Button>
 					<Button
-						v-if="!dashboard.editing"
+						v-if="!dashboard.editing && !dashboard.doc.read_only"
 						variant="outline"
 						@click="showShareDialog = true"
 						label="Share"

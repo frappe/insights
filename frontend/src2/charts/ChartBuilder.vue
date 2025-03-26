@@ -117,7 +117,7 @@ const showShareDialog = ref(false)
 
 			<CollapsibleSection title="Actions" class="!border-b">
 				<div class="flex flex-col gap-2">
-					<Button @click="chart.resetConfig" class="w-full">
+					<Button v-if="!chart.doc.read_only" @click="chart.resetConfig" class="w-full">
 						<template #prefix>
 							<XIcon class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
@@ -138,7 +138,11 @@ const showShareDialog = ref(false)
 						Export as PNG
 					</Button>
 
-					<Button class="w-full" @click="showShareDialog = true">
+					<Button
+						v-if="!chart.doc.read_only"
+						class="w-full"
+						@click="showShareDialog = true"
+					>
 						<template #prefix>
 							<Share2 class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>

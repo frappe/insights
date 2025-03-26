@@ -43,6 +43,11 @@ class InsightsQueryv3(Document):
             self.linked_queries = frappe.as_json(self.linked_queries)
         return super().get_valid_dict(*args, **kwargs)
 
+    def as_dict(self, *args, **kwargs):
+        d = super().as_dict(*args, **kwargs)
+        d.read_only = not self.has_permission("write")
+        return d
+
     def on_trash(self):
         for alert in frappe.get_all(
             "Insights Alert", filters={"query": self.name}, pluck="name"

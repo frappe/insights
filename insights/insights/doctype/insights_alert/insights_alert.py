@@ -1,14 +1,19 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
+import re
 from datetime import datetime
 
 import frappe
+import pandas as pd
 import telegram
 from croniter import croniter
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+    db_connections,
+)
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -37,6 +42,9 @@ class InsightsAlert(Document):
     # end: auto-generated types
 
     def validate(self):
+        if self.disabled:
+            return
+
         try:
             self.evaluate_condition()
         except Exception as e:
@@ -73,23 +81,31 @@ class InsightsAlert(Document):
 
     def evaluate_condition(self):
         doc = frappe.get_doc("Insights Query v3", self.query)
-        return doc.evaluate_alert_expression(self.condition)
+        with db_connections():
+            return doc.evaluate_alert_expression(self.condition)
 
     def evaluate_message(self):
-        context = self.get_message_context()
-        message = frappe.render_template(self.message, context=context)
-        if self.channel == "Telegram":
-            return message
+        rows_pattern = r"{{\s*rows\s*}}"
+        message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
+        context = self.get_message_context()
+        message_md = frappe.render_template(message_md, context=context)
+        if self.channel == "Telegram":
+            return message_md
+
+        message_html = frappe.utils.md_to_html(message_md)
         return frappe.render_template(
-            "insights/templates/alert.html", context=frappe._dict(message=message)
+            "insights/templates/alert.html", context=frappe._dict(message=message_html)
         )
 
     def get_message_context(self):
         doc = frappe.get_doc("Insights Query v3", self.query)
-        data = doc.execute()
-        rows = data["rows"]
+        with db_connections():
+            data = doc.execute()
 
+        rows = data["rows"]
+        datatable = pd.DataFrame(rows).to_html(index=False)
+        datatable = f"<div class='datatable-container'>{datatable}</div>"
         return deep_convert_dict_to_dict(
             {
                 "rows": rows,
@@ -100,6 +116,7 @@ class InsightsAlert(Document):
                 "alert": {
                     "title": self.title,
                 },
+                "datatable": datatable,
             }
         )
 

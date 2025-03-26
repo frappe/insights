@@ -267,6 +267,7 @@ export function getWorkbookResource(name: string) {
 			queries: [],
 			charts: [],
 			dashboards: [],
+			read_only: false,
 		},
 		enableAutoSave: true,
 		disableLocalStorage: true,
@@ -279,6 +280,11 @@ export function getWorkbookResource(name: string) {
 	})
 
 	workbook.onAfterLoad(() => workbook.call('track_view').catch(() => {}))
+	wheneverChanges(() => workbook.doc.read_only, () => {
+		if (workbook.doc.read_only) {
+			workbook.autoSave = false
+		}
+	})
 	return workbook
 }
 

@@ -691,6 +691,35 @@ def date_diff(
     - date_diff(order_date, delivery_date, 'day')
     - date_diff(order_date, delivery_date, 'week')
     """
+
+    if not column.type().is_date():
+        column = column.cast("date")
+    if not other.type().is_date():
+        other = other.cast("date")
+
+    return column.delta(other, unit)
+
+
+def time_diff(
+    column: ir.TimeValue,
+    other: ir.TimeValue,
+    unit: str,
+):
+    """
+    def time_diff(column, other, unit)
+
+    Calculate the difference between two time columns. The unit can be hour, minute, second, millisecond, microsecond, nanosecond
+
+    Examples:
+    - time_diff(start_time, end_time, 'hour')
+    - time_diff(start_time, end_time, 'minute')
+    """
+
+    if not column.type().is_time():
+        column = column.cast("time")
+    if not other.type().is_time():
+        other = other.cast("time")
+
     return column.delta(other, unit)
 
 

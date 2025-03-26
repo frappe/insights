@@ -15,7 +15,7 @@ const alert = useAlertStore().getAlert(props.alert_name)
 
 const filterCondition = reactive({
 	left: '',
-	operator: '=',
+	operator: '==',
 	right: '',
 })
 
@@ -169,7 +169,7 @@ function toggleAlert() {
 							v-model="alert.doc.channel"
 							:options="[
 								{ label: 'Email', value: 'Email' },
-								{ label: 'Telegram', value: 'Telegram' },
+								// { label: 'Telegram', value: 'Telegram' },
 							]"
 						/>
 						<FormControl
@@ -203,7 +203,7 @@ function toggleAlert() {
 							type="select"
 							class="flex-1"
 							v-model="filterCondition.operator"
-							:options="['=', '!=', '>', '>=', '<', '<=']"
+							:options="['==', '!=', '>', '>=', '<', '<=']"
 						/>
 						<FormControl
 							type="text"

@@ -43,6 +43,7 @@ export type InsightsWorkbook = {
 	queries: WorkbookQuery[]
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
+	read_only: boolean
 }
 
 export type InsightsQueryv3 = {
@@ -56,6 +57,7 @@ export type InsightsQueryv3 = {
 	is_native_query?: boolean
 	is_script_query?: boolean
 	is_builder_query?: boolean
+	read_only: boolean
 }
 
 export type InsightsChartv3 = {
@@ -75,6 +77,7 @@ export type InsightsChartv3 = {
 		filters?: FilterGroupArgs
 		limit?: number
 	}
+	read_only: boolean
 }
 
 export type InsightsDashboardv3 = {
@@ -93,6 +96,7 @@ export type InsightsDashboardv3 = {
 		full_name: string
 		user_image: string
 	}[]
+	read_only: boolean
 }
 
 export type WorkbookDashboardItem =

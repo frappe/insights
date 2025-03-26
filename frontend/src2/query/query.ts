@@ -580,7 +580,6 @@ export function makeQuery(name: string) {
 					})
 				}
 			}
-
 		}
 
 		const drill_down_query = useQuery('new-query-' + getUniqueId())
@@ -761,6 +760,7 @@ const INITIAL_DOC: InsightsQueryv3 = {
 	title: '',
 	workbook: '',
 	operations: [],
+	read_only: false,
 }
 
 function getQueryResource(name: string) {
@@ -770,6 +770,11 @@ function getQueryResource(name: string) {
 		enableAutoSave: true,
 		disableLocalStorage: true,
 		transform: transformQueryDoc,
+	})
+	wheneverChanges(() => query.doc.read_only, () => {
+		if (query.doc.read_only) {
+			query.autoSave = false
+		}
 	})
 	return query
 }

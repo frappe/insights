@@ -30,7 +30,7 @@
 		"feather-icons": "^4.28.0",
 		"frappe-ui": "^0.1.118",
 		"grid-layout-plus": "^1.0.2",
-		"lucide-vue-next": "^0.358.0",
+		"lucide-vue-next": "^0.484.0",
 		"pinia": "^2.0.30",
 		"thememirror": "^2.0.1",
 		"vue": "^3.5.13",
