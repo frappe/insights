@@ -291,6 +291,7 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	is_public: false,
 	is_shared_with_organization: false,
 	people_with_access: [],
+	read_only: false,
 }
 
 function getDashboardResource(name: string) {
@@ -303,6 +304,11 @@ function getDashboardResource(name: string) {
 			doc.items = safeJSONParse(doc.items) || []
 			return doc
 		},
+	})
+	wheneverChanges(() => dashboard.doc.read_only, () => {
+		if (dashboard.doc.read_only) {
+			dashboard.autoSave = false
+		}
 	})
 	return dashboard
 }

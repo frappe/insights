@@ -29,6 +29,11 @@ class InsightsChartv3(Document):
             self.config = frappe.as_json(self.config)
         return super().get_valid_dict(*args, **kwargs)
 
+    def as_dict(self, *args, **kwargs):
+        d = super().as_dict(*args, **kwargs)
+        d.read_only = not self.has_permission("write")
+        return d
+
     def before_save(self):
         self.set_data_query()
 

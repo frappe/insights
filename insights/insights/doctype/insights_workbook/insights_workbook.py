@@ -82,6 +82,7 @@ class InsightsWorkbook(Document):
         d.queries = frappe.as_json(d.queries)
         d.charts = frappe.as_json(d.charts)
         d.dashboards = frappe.as_json(d.dashboards)
+        d.read_only = not self.has_permission("write")
         return d
 
     @frappe.whitelist()

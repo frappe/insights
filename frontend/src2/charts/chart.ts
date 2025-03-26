@@ -403,6 +403,7 @@ const INITIAL_DOC: InsightsChartv3 = {
 	is_public: false,
 	config: {} as InsightsChartv3['config'],
 	operations: [],
+	read_only: false,
 }
 
 function getChartResource(name: string) {
@@ -412,6 +413,11 @@ function getChartResource(name: string) {
 		enableAutoSave: true,
 		disableLocalStorage: true,
 		transform: transformChartDoc,
+	})
+	wheneverChanges(() => chart.doc.read_only, () => {
+		if (chart.doc.read_only) {
+			chart.autoSave = false
+		}
 	})
 	return chart
 }

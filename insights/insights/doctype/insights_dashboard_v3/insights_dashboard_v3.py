@@ -42,9 +42,11 @@ class InsightsDashboardv3(Document):
     def as_dict(self, *args, **kwargs):
         d = super().as_dict(*args, **kwargs)
 
-        access = self.get_acess_data()
-        d["people_with_access"] = access[0]
-        d["is_shared_with_organization"] = access[1]
+        d.read_only = not self.has_permission("write")
+        if not d.read_only:
+            access = self.get_acess_data()
+            d.people_with_access = access[0]
+            d.is_shared_with_organization = access[1]
 
         return d
 
