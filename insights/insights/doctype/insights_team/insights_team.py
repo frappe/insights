@@ -141,11 +141,6 @@ class InsightsTeam(Document):
 
 def update_admin_team(user, method=None):
     try:
-        if not frappe.db.get_single_value(
-            "Insights Settings", "enable_permissions", cache=True
-        ):
-            return
-
         if not user.has_value_changed("roles"):
             return
 
@@ -207,11 +202,7 @@ def admin_team_members():
 
 
 def is_admin(user):
-    return (
-        user == "Administrator"
-        or user in admin_team_members()
-        or frappe.flags.ignore_insights_permissions
-    )
+    return user == "Administrator" or user in admin_team_members()
 
 
 def get_allowed_resources_for_user(resource_type, user=None):
