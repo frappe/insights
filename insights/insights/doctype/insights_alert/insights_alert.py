@@ -42,6 +42,9 @@ class InsightsAlert(Document):
     # end: auto-generated types
 
     def validate(self):
+        if self.disabled:
+            return
+
         try:
             self.evaluate_condition()
         except Exception as e:
