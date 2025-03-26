@@ -100,7 +100,11 @@ class InsightsQueryv3(Document):
                 break
 
         results, time_taken = execute_ibis_query(
-            ibis_query, limit, cache_expiry=60 * 10
+            ibis_query,
+            limit,
+            cache_expiry=60 * 10,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
         )
         results = results.to_dict(orient="records")
 
@@ -116,7 +120,12 @@ class InsightsQueryv3(Document):
     def get_count(self, active_operation_idx=None):
         ibis_query = self.build(active_operation_idx)
         count_query = ibis_query.aggregate(count=_.count())
-        count_results, time_taken = execute_ibis_query(count_query, cache_expiry=60 * 5)
+        count_results, time_taken = execute_ibis_query(
+            count_query,
+            cache_expiry=60 * 5,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
         total_count = count_results.values[0][0]
         return int(total_count)
 
@@ -124,7 +133,11 @@ class InsightsQueryv3(Document):
     def download_results(self, active_operation_idx=None):
         ibis_query = self.build(active_operation_idx)
         results, time_taken = execute_ibis_query(
-            ibis_query, cache=False, limit=10_00_000
+            ibis_query,
+            cache=False,
+            limit=10_00_000,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
         )
         return results.to_csv(index=False)
 
@@ -143,7 +156,12 @@ class InsightsQueryv3(Document):
             .distinct()
             .head(limit)
         )
-        result, time_taken = execute_ibis_query(values_query, cache_expiry=24 * 60 * 60)
+        result, time_taken = execute_ibis_query(
+            values_query,
+            cache_expiry=24 * 60 * 60,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
         return result[column_name].tolist()
 
     @insights_whitelist()
@@ -158,7 +176,12 @@ class InsightsQueryv3(Document):
         filter_expression = builder.evaluate_expression(expression)
         ibis_query = ibis_query.filter(filter_expression)
         ibis_query = ibis_query.limit(1)
-        results, _ = execute_ibis_query(ibis_query, cache=False)
+        results, _ = execute_ibis_query(
+            ibis_query,
+            cache=False,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
         return bool(len(results))
 
 
