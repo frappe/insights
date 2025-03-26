@@ -6,7 +6,7 @@ import frappe
 import telegram
 from croniter import croniter
 from frappe.model.document import Document
-from frappe.utils import validate_email_address
+from frappe.utils import markdown, validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
@@ -85,8 +85,9 @@ class InsightsAlert(Document):
         if self.channel == "Telegram":
             return message
 
+        message_html = markdown(message)
         return frappe.render_template(
-            "insights/templates/alert.html", context=frappe._dict(message=message)
+            "insights/templates/alert.html", context=frappe._dict(message=message_html)
         )
 
     def get_message_context(self):
