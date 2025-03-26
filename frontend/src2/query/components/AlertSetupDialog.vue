@@ -169,7 +169,7 @@ function toggleAlert() {
 							v-model="alert.doc.channel"
 							:options="[
 								{ label: 'Email', value: 'Email' },
-								{ label: 'Telegram', value: 'Telegram' },
+								// { label: 'Telegram', value: 'Telegram' },
 							]"
 						/>
 						<FormControl
