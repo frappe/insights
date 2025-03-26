@@ -321,7 +321,7 @@ const colorByValues = computed(() => {
 									? colorByValues[row[col.name]]
 									: '',
 								isNumberColumn(col.name) && props.onDrilldown
-									? 'cursor-pointer hover:bg-gray-50'
+									? 'cursor-pointer'
 									: '',
 							]"
 							height="30px"
