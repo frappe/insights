@@ -9,6 +9,9 @@ from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+    db_connections,
+)
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -73,7 +76,8 @@ class InsightsAlert(Document):
 
     def evaluate_condition(self):
         doc = frappe.get_doc("Insights Query v3", self.query)
-        return doc.evaluate_alert_expression(self.condition)
+        with db_connections():
+            return doc.evaluate_alert_expression(self.condition)
 
     def evaluate_message(self):
         context = self.get_message_context()
@@ -87,7 +91,8 @@ class InsightsAlert(Document):
 
     def get_message_context(self):
         doc = frappe.get_doc("Insights Query v3", self.query)
-        data = doc.execute()
+        with db_connections():
+            data = doc.execute()
         rows = data["rows"]
 
         return deep_convert_dict_to_dict(
