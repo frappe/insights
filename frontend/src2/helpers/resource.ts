@@ -1,10 +1,12 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
+import { onDocUpdate } from 'frappe-ui/src/resources/realtime'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { areDeeplyEqual, copy, showErrorToast, waitUntil } from './index'
-import { onDocUpdate } from 'frappe-ui/src/resources/realtime'
 import { getSocket } from '../socket'
+import { copy, showErrorToast, waitUntil, watchToggle } from './index'
+import { isEqual } from 'es-toolkit'
+// import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
 
 type Document = {
 	doctype: string
@@ -44,7 +46,7 @@ export default function useDocumentResource<T extends Document>(
 	const isLoaded = ref(false)
 	const isSaving = ref(false)
 	const isDeleting = ref(false)
-	const autoSave = ref(options.enableAutoSave)
+	const autoSave = ref(options.enableAutoSave ?? false)
 
 	const methods = { ...DEFAULT_API, ...options.apiMethods }
 
@@ -58,7 +60,7 @@ export default function useDocumentResource<T extends Document>(
 
 	const transformFn = options.transform || ((doc: T) => doc)
 
-	const isDirty = computed(() => !areDeeplyEqual(doc.value, originalDoc.value))
+	const isDirty = computed(() => !isEqual(doc.value, originalDoc.value))
 
 	async function insertDoc() {
 		if (!isLocal.value) return
@@ -82,13 +84,11 @@ export default function useDocumentResource<T extends Document>(
 
 	async function saveDoc() {
 		if (isSaving.value) {
-			console.log('Already saving')
 			await waitUntil(() => !isSaving.value)
 			return doc.value
 		}
 
 		if (!isDirty.value && !isLocal.value) {
-			console.log('No changes to save')
 			return doc.value
 		}
 
@@ -177,23 +177,11 @@ export default function useDocumentResource<T extends Document>(
 	}
 
 	const setupAutoSave = () => {
-		let stopAutoSaveWatcher: any
-		watchDebounced(
-			autoSave,
-			() => {
-				if (!autoSave.value && stopAutoSaveWatcher) {
-					stopAutoSaveWatcher()
-					stopAutoSaveWatcher = null
-				}
-				if (autoSave.value && !isLocal.value && !stopAutoSaveWatcher) {
-					stopAutoSaveWatcher = watchDebounced(isDirty, (shouldSave) => shouldSave && saveDoc(), {
-						immediate: true,
-						debounce: 2000,
-					})
-				}
-			},
-			{ immediate: true }
-		)
+		watchToggle(isDirty, saveDoc, {
+			toggleCondition: () => autoSave.value && !isLocal.value,
+			immediate: true,
+			debounce: 2000,
+		})
 	}
 
 	const setupLocalStorage = () => {
@@ -218,9 +206,17 @@ export default function useDocumentResource<T extends Document>(
 		watchDebounced(
 			isDirty,
 			() => {
-				storage.value = isDirty.value ? { doc: doc.value, originalDoc: originalDoc.value } : null
+				storage.value = isDirty.value
+					? {
+							doc: doc.value,
+							originalDoc: originalDoc.value,
+					  }
+					: null
 			},
-			{ debounce: 500, immediate: true }
+			{
+				immediate: true,
+				deep: true,
+			}
 		)
 	}
 
@@ -292,36 +288,3 @@ function removeMetaFields(doc: any) {
 	metaFields.forEach((field) => delete newDoc[field])
 	return newDoc
 }
-
-
-function testConsecutiveCalls() {
-	// create a document resource for a new todo
-	// set some description
-	// save
-	// change some values
-	// save
-	// change some values
-	// save
-	type Todo = {
-		doctype: 'ToDo'
-		name: string
-		description: string
-		owner: string
-	}
-	const todo = useDocumentResource<Todo>('ToDo', 'o3q8c83f82', {
-		initialDoc: {
-			doctype: 'ToDo',
-			name: 'o3q8c83f82',
-			description: 'My first todo',
-			owner: 'Administrator',
-		},
-	})
-
-	window.todo = todo
-
-	todo.doc.description = 'My first todo'
-	todo.save()
-}
-
-
-// testConsecutiveCalls()
