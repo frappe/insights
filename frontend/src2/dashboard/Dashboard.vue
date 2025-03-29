@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Breadcrumbs } from 'frappe-ui'
+import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
 import { provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -7,7 +7,6 @@ import { downloadImage } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
-import { call } from 'frappe-ui'
 
 const props = defineProps<{ name: string }>()
 

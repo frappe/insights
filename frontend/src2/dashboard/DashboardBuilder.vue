@@ -19,7 +19,6 @@ const props = defineProps<{
 
 const dashboard = useDashboard(props.dashboard_name)
 provide('dashboard', dashboard)
-dashboard.refresh()
 
 await waitUntil(() => dashboard.isloaded)
 
