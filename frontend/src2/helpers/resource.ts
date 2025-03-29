@@ -229,8 +229,7 @@ export default function useDocumentResource<T extends Document>(
 		})
 	}
 
-	loadDoc().then(setupLocalStorage)
-	setupAutoSave()
+	loadDoc().then(setupLocalStorage).then(setupAutoSave)
 	// setupRealtimeUpdates()
 
 	return reactive({
