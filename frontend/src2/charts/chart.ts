@@ -67,6 +67,7 @@ function makeChart(name: string) {
 		const shouldExecute =
 			args.force ||
 			!dataQuery.value.result.executedSQL ||
+			args.adhocFilters ||
 			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations)
 
 		if (!shouldExecute) {

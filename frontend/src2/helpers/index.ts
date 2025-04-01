@@ -43,10 +43,12 @@ export function copy<T>(obj: T) {
 }
 
 export function wheneverChanges(source: WatchSource, callback: WatchCallback, options: any = {}) {
+	let preVal: any
 	return watchDebounced(
 		source,
-		(val, preVal, onCleanup) => {
+		(val, _, onCleanup) => {
 			if (isEqual(val, preVal)) return
+			preVal = copy(val)
 			callback(val, preVal, onCleanup)
 		},
 		options
@@ -92,9 +94,11 @@ export function watchToggle(source: WatchSource, callback: WatchCallback, option
 
 function _watch(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
 	let _callback: WatchCallback
+	let prevVal: any
 
-	_callback = (val, prevVal, cleanup) => {
+	_callback = (val, _, cleanup) => {
 		if (!isEqual(val, prevVal)) {
+			prevVal = copy(val)
 			callback(val, prevVal, cleanup)
 		}
 	}
