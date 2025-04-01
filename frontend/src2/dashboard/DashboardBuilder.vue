@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { inject, provide, ref } from 'vue'
+import { inject, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
@@ -44,14 +44,13 @@ function onDrop(event: DragEvent) {
 
 const showShareDialog = ref(false)
 
-const workbook = inject(workbookKey, null)
-wheneverChanges(
-	() => dashboard.editing,
-	() => {
-		if (!workbook) return
-		workbook.autoSave = !dashboard.editing
+watchEffect(() => {
+	if (dashboard.editing) {
+		dashboard.autoSave = false
+	} else {
+		dashboard.autoSave = true
 	}
-)
+})
 </script>
 
 <template>
