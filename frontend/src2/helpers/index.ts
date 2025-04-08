@@ -93,15 +93,7 @@ export function watchToggle(source: WatchSource, callback: WatchCallback, option
 }
 
 function _watch(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
-	let _callback: WatchCallback
-	let prevVal: any
-
-	_callback = (val, _, cleanup) => {
-		if (!isEqual(val, prevVal)) {
-			prevVal = copy(val)
-			callback(val, prevVal, cleanup)
-		}
-	}
+	let _callback = callback
 
 	if (options.debounce) {
 		_callback = debounce(_callback, options.debounce)
