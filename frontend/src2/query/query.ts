@@ -430,6 +430,15 @@ export function makeQuery(name: string) {
 					active_operation_idx: activeOperationIdx.value,
 				})
 				.then((csv_data: string) => {
+					if (!csv_data) {
+						createToast({
+							title: 'Download Failed',
+							message: 'No data found to download.',
+							variant: 'warning',
+						})
+						return
+					}
+
 					const blob = new Blob([csv_data], { type: 'text/csv' })
 					const url = window.URL.createObjectURL(blob)
 					const a = document.createElement('a')
