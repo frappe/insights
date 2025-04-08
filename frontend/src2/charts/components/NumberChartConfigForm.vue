@@ -2,7 +2,6 @@
 import ColorInput from '@/components/Controls/ColorInput.vue'
 import { debounce } from 'frappe-ui'
 import { computed, watchEffect } from 'vue'
-import Checkbox from '../../components/Checkbox.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -148,13 +147,17 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 
 			<Toggle label="Show short numbers" v-model="config.shorten_numbers" />
 
-			<Toggle label="Show comparison" v-model="config.comparison" />
+			<Toggle
+				v-if="config.date_column?.column_name"
+				label="Show comparison"
+				v-model="config.comparison"
+			/>
 			<Toggle
 				v-if="config.comparison"
 				label="Negative is better"
 				v-model="config.negative_is_better"
 			/>
-			<Toggle v-if="config.date_column" label="Show sparkline" v-model="config.sparkline" />
+			<Toggle v-if="config.comparison" label="Show sparkline" v-model="config.sparkline" />
 
 			<InlineFormControlLabel v-if="config.sparkline" label="Color">
 				<ColorInput
