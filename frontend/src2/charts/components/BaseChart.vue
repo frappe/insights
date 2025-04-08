@@ -1,8 +1,8 @@
 <script setup>
 import * as echarts from 'echarts'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { wheneverChanges } from '../../helpers'
 import ChartTitle from './ChartTitle.vue'
-import { isEqual } from 'es-toolkit'
 
 const props = defineProps({
 	title: { type: String, required: false },
@@ -15,7 +15,7 @@ let eChart = null
 const chartRef = ref(null)
 onMounted(() => {
 	eChart = echarts.init(chartRef.value, 'light', { renderer: 'svg' })
-	Object.keys(props.options).length && eChart.setOption(props.options)
+	Object.keys(props.options).length && eChart.setOption({ ...props.options })
 	props.onClick && eChart.on('click', props.onClick)
 
 	const resizeObserver = new ResizeObserver(() => eChart.resize())
@@ -23,14 +23,9 @@ onMounted(() => {
 	onBeforeUnmount(() => chartRef.value && resizeObserver.unobserve(chartRef.value))
 })
 
-watch(
+wheneverChanges(
 	() => props.options,
-	(newOptions, oldOptions) => {
-		if (!eChart) return
-		if (isEqual(newOptions, oldOptions)) return
-		eChart.clear()
-		eChart.setOption(props.options)
-	},
+	() => eChart.setOption({ ...props.options }),
 	{ deep: true }
 )
 
