@@ -112,7 +112,7 @@ const completions = computed(() => {
 			</div>
 		</div>
 		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
-			<QueryDataTable :query="query" />
+			<QueryDataTable :query="query" :enable-alerts="true" />
 		</div>
 	</div>
 </template>

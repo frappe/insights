@@ -61,6 +61,7 @@ function getDateGranularityOptions(column_name: string) {
 	>
 		<QueryDataTable
 			:query="chart.dataQuery"
+			:enable-alerts="true"
 			:enable-sort="true"
 			:enable-drill-down="true"
 			:on-sort-change="onSortChange"
