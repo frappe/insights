@@ -58,7 +58,7 @@ function onFilter(
 
 <template>
 	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded shadow">
-		<QueryDataTable :query="query" :enable-column-rename="true">
+		<QueryDataTable :query="query" :enable-column-rename="true" :enable-alerts="true">
 			<template #header-prefix="{ column }">
 				<ColumnTypeChange :column="column" @typeChange="onTypeChange(column, $event)" />
 			</template>

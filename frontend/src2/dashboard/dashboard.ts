@@ -126,7 +126,7 @@ function makeDashboard(name: string) {
 			)
 
 			if (!filtersApplied.length) {
-				chart.refresh({ force: true })
+				chart.refresh()
 				return
 			}
 
@@ -161,7 +161,6 @@ function makeDashboard(name: string) {
 			})
 
 			chart.refresh({
-				force: true,
 				adhocFilters: filtersByQuery,
 			})
 		},

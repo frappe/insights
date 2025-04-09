@@ -1,10 +1,18 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
-import { copy, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import {
+	copy,
+	getUniqueId,
+	safeJSONParse,
+	waitUntil,
+	watchToggle,
+	wheneverChanges,
+} from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
+import session from '../session'
 import {
 	AdhocFilters,
 	CodeArgs,
@@ -53,7 +61,6 @@ import {
 	summarize,
 	union,
 } from './helpers'
-import session from '../session'
 
 const queries = new Map<string, Query>()
 
@@ -423,6 +430,15 @@ export function makeQuery(name: string) {
 					active_operation_idx: activeOperationIdx.value,
 				})
 				.then((csv_data: string) => {
+					if (!csv_data) {
+						createToast({
+							title: 'Download Failed',
+							message: 'No data found to download.',
+							variant: 'warning',
+						})
+						return
+					}
+
 					const blob = new Blob([csv_data], { type: 'text/csv' })
 					const url = window.URL.createObjectURL(blob)
 					const a = document.createElement('a')
@@ -643,21 +659,11 @@ export function makeQuery(name: string) {
 	)
 
 	const autoExecute = ref(false)
-	let stopAutoExecute: Function
-	wheneverChanges(
-		autoExecute,
-		() => {
-			if (autoExecute.value && !stopAutoExecute) {
-				stopAutoExecute = wheneverChanges(currentOperations, () => autoExecute.value && execute(), {
-					immediate: true,
-					deep: true,
-				})
-			} else {
-				stopAutoExecute?.()
-			}
-		},
-		{ immediate: true }
-	)
+	watchToggle(currentOperations, () => autoExecute.value && execute(), {
+		immediate: true,
+		deep: true,
+		toggleCondition: () => autoExecute.value,
+	})
 
 	waitUntil(() => query.isloaded).then(() => {
 		wheneverChanges(
@@ -771,11 +777,14 @@ function getQueryResource(name: string) {
 		disableLocalStorage: true,
 		transform: transformQueryDoc,
 	})
-	wheneverChanges(() => query.doc.read_only, () => {
-		if (query.doc.read_only) {
-			query.autoSave = false
+	wheneverChanges(
+		() => query.doc.read_only,
+		() => {
+			if (query.doc.read_only) {
+				query.autoSave = false
+			}
 		}
-	})
+	)
 	return query
 }
 

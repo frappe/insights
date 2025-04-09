@@ -12,6 +12,7 @@ import AlertSetupDialog from './AlertSetupDialog.vue'
 
 const props = defineProps<{
 	query: Query
+	enableAlerts?: boolean
 	enableColumnRename?: boolean
 	enableSort?: boolean
 	enableDrillDown?: boolean
@@ -118,7 +119,7 @@ const currentAlertName = ref('')
 		</template>
 
 		<template #footer-right-actions>
-			<Button variant="ghost" @click="showAlertsDialog = true">
+			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
 				<template #icon>
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
