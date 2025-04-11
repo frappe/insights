@@ -19,6 +19,7 @@ import {
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
+import session from '../session'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -304,7 +305,9 @@ function getDashboardResource(name: string) {
 			return doc
 		},
 	})
-	dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
+	if (session.isLoggedIn) {
+		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
+	}
 	wheneverChanges(() => dashboard.doc.read_only, () => {
 		if (dashboard.doc.read_only) {
 			dashboard.autoSave = false
