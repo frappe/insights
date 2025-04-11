@@ -202,7 +202,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 			return {
 				type,
-				stack,
+				stack: config.y_axis.overlap ? undefined : stack,
 				name,
 				data: swapAxes ? data.reverse() : data,
 				color: color,
@@ -215,6 +215,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 					},
 					fontSize: 11,
 				},
+				barGap: config.y_axis.overlap ? '-100%' : undefined,
 				labelLayout: { hideOverlap: true },
 				yAxisIndex: is_right_axis ? 1 : 0,
 				itemStyle: {
