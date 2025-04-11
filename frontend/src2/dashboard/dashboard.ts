@@ -304,6 +304,7 @@ function getDashboardResource(name: string) {
 			return doc
 		},
 	})
+	dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
 	wheneverChanges(() => dashboard.doc.read_only, () => {
 		if (dashboard.doc.read_only) {
 			dashboard.autoSave = false

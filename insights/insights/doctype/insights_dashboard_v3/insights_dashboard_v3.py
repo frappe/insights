@@ -7,6 +7,8 @@ from contextlib import contextmanager
 import frappe
 import requests
 from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
 
 from insights.utils import DocShare, File
 
@@ -33,6 +35,22 @@ class InsightsDashboardv3(Document):
         title: DF.Data | None
         workbook: DF.Link
     # end: auto-generated types
+
+    @frappe.whitelist()
+    def track_view(self):
+        view_log = frappe.qb.DocType("View Log")
+        last_viewed_recently = frappe.db.get_value(
+            view_log,
+            filters=(
+                (view_log.creation > (Now() - Interval(minutes=5)))
+                & (view_log.reference_doctype == self.doctype)
+                & (view_log.reference_name == self.name)
+                & (view_log.viewed_by == frappe.session.user)
+            ),
+            pluck="name",
+        )
+        if not last_viewed_recently:
+            self.add_viewed(force=True)
 
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.items, list):
