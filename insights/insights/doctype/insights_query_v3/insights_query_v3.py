@@ -140,7 +140,7 @@ class InsightsQueryv3(Document):
             reference_name=self.name,
         )
         csv_data = results.to_csv(index=False)
-        return csv_data
+        return {"csv_data": csv_data}
 
     @insights_whitelist()
     def get_distinct_column_values(
