@@ -87,6 +87,12 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const color = serie.color?.[0] || colors[idx]
 			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
+
+			let labelPosition = 'top'
+			if (type === 'bar') {
+				labelPosition = 'inside'
+			}
+
 			return {
 				type,
 				name,
@@ -99,7 +105,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 				label: {
 					fontSize: 11,
 					show: show_data_labels,
-					position: 'top',
+					position: labelPosition,
 					formatter: (params: any) => {
 						return getShortNumber(params.value?.[1], 1)
 					},
@@ -200,6 +206,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
 			const isLast = idx === number_columns.length - 1
 
+			let labelPosition = 'inside'
+			if (type == 'line') {
+				labelPosition = 'top'
+			}
+
 			return {
 				type,
 				stack: config.y_axis.overlap ? undefined : stack,
@@ -208,7 +219,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 				color: color,
 				label: {
 					show: show_data_labels,
-					position: idx === number_columns.length - 1 ? (swapAxes ? 'right' : 'top') : 'inside',
+					position: labelPosition,
 					formatter: (params: any) => {
 						const _val = swapAxes ? params.value?.[0] : params.value?.[1]
 						return getShortNumber(_val, 1)
