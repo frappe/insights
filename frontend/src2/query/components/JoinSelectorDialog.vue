@@ -285,7 +285,7 @@ function reset() {
 								</div>
 							</template>
 							<template v-else-if="'join_expression' in join.join_condition">
-								<div>
+								<div class="flex-1">
 									<label class="mb-1 block text-xs text-gray-600"
 										>Custom Join Condition
 									</label>
@@ -296,16 +296,11 @@ function reset() {
 								</div>
 							</template>
 							<div class="flex flex-shrink-0 items-start">
-								<Tooltip text="Custom Join Condition" :hover-delay="0.5">
-									<Button @click="toggleJoinConditionEditor">
-										<template #icon>
-											<Braces
-												class="h-4 w-4 text-gray-700"
-												stroke-width="1.5"
-											/>
-										</template>
-									</Button>
-								</Tooltip>
+								<Button @click="toggleJoinConditionEditor">
+									<template #icon>
+										<Braces class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+									</template>
+								</Button>
 							</div>
 						</div>
 					</div>
