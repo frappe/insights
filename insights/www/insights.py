@@ -6,7 +6,6 @@ import re
 
 import frappe
 from frappe.defaults import get_user_default
-from frappe.integrations.frappe_providers.frappecloud_billing import is_fc_site
 
 from insights.api.telemetry import track_active_site
 
@@ -68,6 +67,13 @@ def get_context(context):
 
 
 def continue_to_v3(context):
+    try:
+        from frappe.integrations.frappe_providers.frappecloud_billing import is_fc_site
+    except ImportError:
+
+        def is_fc_site():
+            return False
+
     csrf_token = frappe.sessions.get_csrf_token()
     frappe.db.commit()
     context.boot = {
