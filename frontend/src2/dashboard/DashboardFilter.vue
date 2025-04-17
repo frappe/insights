@@ -66,7 +66,7 @@ const label = computed(() => {
 			<template #target="{ togglePopover }">
 				<Button
 					variant="outline"
-					class="flex h-full w-full !justify-start shadow-sm"
+					class="flex h-full w-full !justify-start overflow-hidden text-sm shadow-sm [&>span]:truncate"
 					@click="togglePopover"
 				>
 					<template #prefix>
@@ -77,9 +77,7 @@ const label = computed(() => {
 							stroke-width="1.5"
 						/>
 					</template>
-					<p class="flex-1 truncate text-sm">
-						{{ label || 'Filter' }}
-					</p>
+					{{ label || 'Filter' }}
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">
