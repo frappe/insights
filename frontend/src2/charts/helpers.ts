@@ -231,7 +231,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 				yAxisIndex: is_right_axis ? 1 : 0,
 				itemStyle: {
 					color: color,
-					borderRadius: stack ? (isLast ? roundedCorners : 0) : roundedCorners,
+					borderRadius: roundedCorners,
 				},
 			}
 		}),
