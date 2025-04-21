@@ -697,14 +697,19 @@ def sanitize_name(name):
     )
 
 
+class SafePandasDataFrame(pd.DataFrame):
+    def to_csv(self, *args, **kwargs):
+        raise NotImplementedError("to_csv is not supported in this context")
+
+    def to_json(self, *args, **kwargs):
+        raise NotImplementedError("to_json is not supported in this context")
+
+
 def get_code_results(code: str, digest: str):
     pandas = frappe._dict()
-    pandas.DataFrame = pd.DataFrame
+    pandas.DataFrame = SafePandasDataFrame
     pandas.read_csv = pd.read_csv
     pandas.json_normalize = pd.json_normalize
-    # prevent users from writing to disk
-    pandas.DataFrame.to_csv = lambda *args, **kwargs: None
-    pandas.DataFrame.to_json = lambda *args, **kwargs: None
 
     results = []
     frappe.debug_log = []
