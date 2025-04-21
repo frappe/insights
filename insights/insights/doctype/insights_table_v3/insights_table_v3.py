@@ -2,14 +2,24 @@
 # For license information, please see license.txt
 
 
+import os
+from datetime import datetime
 from hashlib import md5
 
 import frappe
+import ibis
+import pandas as pd
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
+from frappe.query_builder.functions import IfNull
+from frappe.utils.safe_exec import safe_exec
 
 from insights import create_toast
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+    Warehouse,
+    get_warehouse_folder_path,
+    get_warehouse_table_name,
+)
 from insights.utils import InsightsDataSourcev3
 
 
@@ -22,11 +32,14 @@ class InsightsTablev3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        data_script: DF.Code | None
         data_source: DF.Link
         label: DF.Data
         last_synced_on: DF.Datetime | None
         stored: DF.Check
+        sync_context: DF.Code | None
         table: DF.Data
+        warehouse_sync_enabled: DF.Check
     # end: auto-generated types
 
     def autoname(self):
@@ -71,6 +84,21 @@ class InsightsTablev3(Document):
 
         check_table_permission(data_source, table_name)
 
+        if frappe.db.get_value(
+            "Insights Table v3",
+            get_table_name(data_source, table_name),
+            "warehouse_sync_enabled",
+        ):
+            warehouse = Warehouse()
+            return warehouse.db.read_parquet(
+                os.path.join(
+                    get_warehouse_folder_path(),
+                    data_source,
+                    table_name,
+                ),
+                table_name=get_warehouse_table_name(data_source, table_name),
+            )
+
         if not use_live_connection:
             wt = Warehouse().get_table(data_source, table_name)
             t = wt.get_ibis_table(import_if_not_exists=True)
@@ -85,8 +113,158 @@ class InsightsTablev3(Document):
     @frappe.whitelist()
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
-        wt = Warehouse().get_table(self.data_source, self.table)
-        wt.enqueue_import()
+
+        if not self.warehouse_sync_enabled:
+            frappe.throw("Warehouse sync is not enabled for this table")
+
+        if self.import_in_progress():
+            create_toast(
+                f"Import for {frappe.bold(self.table)} is in progress."
+                "You may not see the results till the import is completed.",
+                title="Import In Progress",
+                type="info",
+                duration=7,
+            )
+            return
+
+        self.calculate_batch_size()
+        self.create_import_log()
+
+        n = 0
+
+        while True:
+            data = self.run_data_script()
+            if len(data) == 0:
+                break
+
+            self.create_parquet_file(data)
+
+            primary_key = self.get_sync_context("primary_key")
+            last_value = data[primary_key].max()
+            self.update_sync_context("last_value", last_value)
+
+            n += 1
+
+            create_toast(
+                f"Importing {frappe.bold(self.table)} to the data store. "
+                f"{n} files created so far.",
+                title="Import In Progress",
+                type="info",
+            )
+
+        self.log.db_set(
+            {
+                "ended_at": frappe.utils.now(),
+                "status": "Completed",
+            },
+        )
+        create_toast(
+            f"Import for {frappe.bold(self.table)} completed successfully. {n} files created.",
+            title="Import Completed",
+            duration=7,
+        )
+
+    def import_in_progress(self):
+        log = frappe.qb.DocType("Insights Table Import Log")
+        return frappe.db.exists(
+            log,
+            (
+                (log.data_source == self.data_source)
+                & (log.table_name == self.table)
+                & (log.status == "In Progress")
+                & (IfNull(log.ended_at, "") == "")
+            ),
+        )
+
+    def create_import_log(self):
+        self.log = frappe.new_doc("Insights Table Import Log")
+        self.log.db_insert()
+        self.log.db_set(
+            {
+                "data_source": self.data_source,
+                "table_name": self.table,
+                "started_at": frappe.utils.now(),
+                "status": "In Progress",
+            },
+        )
+
+        create_toast(
+            f"Importing {frappe.bold(self.table)} to the data store. "
+            "You may not see the results till the import is completed.",
+            title="Import Started",
+            duration=7,
+        )
+
+    def calculate_batch_size(self):
+        if self.get_sync_context("batch_size"):
+            return
+
+        memory_limit = 512
+        sample_size = 10
+        sample_data = self.run_data_script({"batch_size": sample_size})
+        total_size = sum(
+            sample_data[column].memory_usage(deep=True)
+            for column in sample_data.columns
+        )
+        row_size = total_size / sample_size / (1024 * 1024)
+        batch_size = int(memory_limit / row_size)
+        self.update_sync_context("batch_size", batch_size)
+
+    def run_data_script(self, context=None):
+        if not self.data_script:
+            frappe.throw("Data script is not defined for this table")
+
+        data = []
+        context = context or frappe.parse_json(self.sync_context)
+        context = frappe._dict(context)
+        try:
+            _, _locals = safe_exec(
+                self.data_script,
+                _globals={
+                    "context": context,
+                    "pandas": frappe._dict({"DataFrame": pd.DataFrame}),
+                },
+                _locals={"data": data},
+                restrict_commit_rollback=True,
+            )
+            data = _locals["data"]
+        except Exception as e:
+            frappe.log_error(f"Error in data script for {self.table}: {e}")
+            raise e
+
+        if data is None:
+            frappe.throw(
+                "Data script returned None. Please ensure it returns a DataFrame"
+            )
+
+        if not isinstance(data, pd.DataFrame):
+            frappe.throw("Data script must return a pandas DataFrame")
+
+        return data
+
+    def create_parquet_file(self, data):
+        warehouse_folder = get_warehouse_folder_path()
+        parquet_folder = os.path.join(warehouse_folder, self.data_source, self.table)
+        if not os.path.exists(parquet_folder):
+            os.makedirs(parquet_folder)
+
+        random_hash = frappe.generate_hash(length=5)
+        date_plus_hash = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{random_hash}"
+        file_name = f"{date_plus_hash}.parquet"
+
+        path = os.path.join(parquet_folder, file_name)
+
+        table = ibis.memtable(data)
+        table.to_parquet(path, compression="snappy")
+
+    def update_sync_context(self, key, value):
+        context = frappe.parse_json(self.sync_context) or {}
+        context[key] = value
+        self.db_set("sync_context", frappe.as_json(context), commit=True)
+
+    def get_sync_context(self, key):
+        context = frappe.parse_json(self.sync_context) or {}
+        return context.get(key)
 
 
 def get_table_name(data_source, table):
