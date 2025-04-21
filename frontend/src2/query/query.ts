@@ -438,8 +438,8 @@ export function makeQuery(name: string) {
 				.call('download_results', {
 					active_operation_idx: activeOperationIdx.value,
 				})
-				.then((res: any) => {
-					if (!res || !res.csv_data) {
+				.then((csv_data: string) => {
+					if (!csv_data) {
 						createToast({
 							title: 'Download Failed',
 							message: 'No data found to download.',
@@ -448,7 +448,7 @@ export function makeQuery(name: string) {
 						return
 					}
 
-					const blob = new Blob([res.csv_data], { type: 'text/csv' })
+					const blob = new Blob([csv_data], { type: 'text/csv' })
 					const url = window.URL.createObjectURL(blob)
 					const a = document.createElement('a')
 					a.setAttribute('hidden', '')
