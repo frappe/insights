@@ -4,7 +4,7 @@
 		:class="isSidebarCollapsed ? 'w-12' : 'w-56'"
 	>
 		<div class="flex flex-col overflow-hidden">
-			<UserDropdown class="p-2" :isCollapsed="isSidebarCollapsed.value" />
+			<UserDropdown class="p-2" :isCollapsed="isSidebarCollapsed" />
 			<div class="flex flex-col overflow-y-auto">
 				<template v-for="link in links">
 					<SidebarLink
@@ -13,7 +13,7 @@
 						:icon="link.icon"
 						:label="link.label"
 						:to="link.to"
-						:isCollapsed="isSidebarCollapsed.value"
+						:isCollapsed="isSidebarCollapsed"
 						@click="link.onClick"
 					/>
 				</template>
@@ -23,7 +23,7 @@
 			<TrialBanner v-if="is_fc_site" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
-				:isCollapsed="isSidebarCollapsed.value"
+				:isCollapsed="isSidebarCollapsed"
 				@click="isSidebarCollapsed = !isSidebarCollapsed"
 				class="m-2"
 			>
