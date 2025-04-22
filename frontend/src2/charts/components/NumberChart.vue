@@ -42,7 +42,7 @@ const cards = computed(() => {
 		const delta = config.value.negative_is_better
 			? previousValue - currentValue
 			: currentValue - previousValue
-		const percentDelta = (delta / previousValue) * 100
+		const percentDelta = (delta / Math.abs(previousValue)) * 100
 
 		const prefix = getNumberOption(idx, 'prefix')
 		const suffix = getNumberOption(idx, 'suffix')
