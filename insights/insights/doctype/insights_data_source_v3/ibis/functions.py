@@ -989,7 +989,7 @@ def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1):
     - percentage_change(amount, date, 2)
     """
     prev_value = previous_period_value(column, date_column, offset)
-    return ((column - prev_value) * 100) / prev_value
+    return ((column - prev_value) * 100) / abs(prev_value)
 
 
 def is_first_row(group_by=None, order_by=None, sort_order="asc"):
