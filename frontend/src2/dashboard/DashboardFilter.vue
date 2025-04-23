@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, reactive } from 'vue'
+import { computed, inject, reactive, watchEffect } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
@@ -14,6 +14,7 @@ const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
 
 const filter = reactive(copy(props.item))
+watchEffect(() => Object.assign(filter, copy(props.item)))
 if (!filter.links) {
 	filter.links = {}
 }
