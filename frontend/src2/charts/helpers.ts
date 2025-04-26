@@ -46,7 +46,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis()
+	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max })
 	const rightYAxis = getYAxis()
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
@@ -86,7 +86,6 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
 			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
-
 
 			let labelPosition = 'top'
 			if (type === 'bar') {
@@ -146,7 +145,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis({ normalized: config.y_axis.normalize })
+	const leftYAxis = getYAxis({
+		normalized: config.y_axis.normalize,
+		min: config.y_axis.min,
+		max: config.y_axis.max,
+	})
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
@@ -291,6 +294,8 @@ function getXAxis(x_axis: XAxis) {
 type YAxisCustomizeOptions = {
 	is_secondary?: boolean
 	normalized?: boolean
+	min?: number
+	max?: number
 }
 function getYAxis(options: YAxisCustomizeOptions = {}) {
 	return {
@@ -309,8 +314,8 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 			margin: 8,
 			formatter: (value: number) => getShortNumber(value, 1),
 		},
-		min: options.normalized ? 0 : undefined,
-		max: options.normalized ? 100 : undefined,
+		min: options.normalized ? 0 : options.min || undefined,
+		max: options.normalized ? 100 : options.max || undefined,
 	}
 }
 
