@@ -494,7 +494,13 @@ class IbisQueryBuilder:
     def apply_code(self, code_args):
         code = code_args.code
         digest = make_digest(code)
-        results = get_code_results(code, digest)
+
+        cached_results = get_cached_results(digest)
+        if cached_results is not None:
+            results = cached_results
+        else:
+            results = get_code_results(code)
+            cache_results(digest, results, cache_expiry=60 * 10)
 
         return Warehouse().db.create_table(
             digest,
@@ -744,7 +750,7 @@ class SafePandasDataFrame(pd.DataFrame):
         raise NotImplementedError("to_json is not supported in this context")
 
 
-def get_code_results(code: str, digest: str):
+def get_code_results(code: str):
     pandas = frappe._dict()
     pandas.DataFrame = SafePandasDataFrame
     pandas.read_csv = pd.read_csv
