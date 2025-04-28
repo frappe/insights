@@ -2,17 +2,17 @@
 import { Braces, LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import ChartIcon from '../charts/components/ChartIcon.vue'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
 import { workbookKey } from './workbook'
+import ChartIcon from '../charts/components/ChartIcon.vue'
 
 const workbook = inject(workbookKey)!
 const route = useRoute()
 
 const activeQueryName = computed(() => {
 	if (route.name === 'WorkbookQuery') {
-		const index = parseInt(route.params.index as string)
-		return workbook?.doc.queries[index].name
+		const query_name = route.params.query_name as string
+		return workbook.doc.queries.find((query) => query.name === query_name)?.name
 	}
 })
 </script>
@@ -28,10 +28,10 @@ const activeQueryName = computed(() => {
 				emptyMessage: 'No queries',
 				items: workbook.doc.queries,
 				itemKey: 'name',
-				isActive: (idx: number) => workbook.isActiveTab('query', idx),
 				add: workbook.addQuery,
 				remove: (query) => workbook.removeQuery(query.name),
-				route: (idx: number) => `/workbook/${workbook.name}/query/${idx}`,
+				isActive: (query) => workbook.isActiveTab('query', query.name),
+				route: (query) => `/workbook/${workbook.name}/query/${query.name}`,
 			}"
 		>
 			<template #item-icon="{ item }">
@@ -55,10 +55,10 @@ const activeQueryName = computed(() => {
 				emptyMessage: 'No charts',
 				items: workbook.doc.charts,
 				itemKey: 'name',
-				isActive: (idx: number) => workbook.isActiveTab('chart', idx),
 				add: () => workbook.addChart(activeQueryName),
 				remove: (chart) => workbook.removeChart(chart.name),
-				route: (idx: number) => `/workbook/${workbook.name}/chart/${idx}`,
+				isActive: (chart) => workbook.isActiveTab('chart', chart.name),
+				route: (chart) => `/workbook/${workbook.name}/chart/${chart.name}`,
 			}"
 		>
 			<template #item-icon="{ item }">
@@ -72,10 +72,10 @@ const activeQueryName = computed(() => {
 				emptyMessage: 'No dashboards',
 				items: workbook.doc.dashboards,
 				itemKey: 'name',
-				isActive: (idx: number) => workbook.isActiveTab('dashboard', idx),
 				add: workbook.addDashboard,
 				remove: (dashboard) => workbook.removeDashboard(dashboard.name),
-				route: (idx: number) => `/workbook/${workbook.name}/dashboard/${idx}`,
+				isActive: (dashboard) => workbook.isActiveTab('dashboard', dashboard.name),
+				route: (dashboard) => `/workbook/${workbook.name}/dashboard/${dashboard.name}`,
 			}"
 		>
 			<template #item-icon>

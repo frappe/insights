@@ -51,7 +51,7 @@ function createDataSource(data_source: DataSource) {
 }
 
 export function getDataSourceList() {
-	if (!sources.value.length) {
+	if (!sources.value.length && !loading.value) {
 		fetchSources()
 	}
 	return sources
@@ -71,7 +71,7 @@ function getSchema(data_source: string) {
 }
 
 export default function useDataSourceStore() {
-	if (!sources.value.length) {
+	if (!sources.value.length && !loading.value) {
 		fetchSources()
 	}
 

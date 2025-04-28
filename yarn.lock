@@ -2749,6 +2749,11 @@ es-set-tostringtag@^2.1.0:
     has-tostringtag "^1.0.2"
     hasown "^2.0.2"
 
+es-toolkit@^1.34.1:
+  version "1.34.1"
+  resolved "https://registry.yarnpkg.com/es-toolkit/-/es-toolkit-1.34.1.tgz#5e0d47494f8606f763b6ad1519cb8bb7b83619e6"
+  integrity sha512-OA6cd94fJV9bm8dWhIySkWq4xV+rAQnBZUr2dnpXam0QJ8c+hurLbKA8/QooL9Mx4WCAxvIDsiEkid5KPQ5xgQ==
+
 esbuild@^0.18.10:
   version "0.18.20"
   resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.18.20.tgz#4709f5a34801b43b799ab7d6d82f7284a9b7a7a6"
@@ -3840,10 +3845,10 @@ lucide-static@^0.479.0:
   resolved "https://registry.yarnpkg.com/lucide-static/-/lucide-static-0.479.0.tgz#820318a03ab207a6242520aaf2156ff3384fd3e2"
   integrity sha512-E+w3/8lKFpey3lZNKZfzHQGX+t/CH/afpPDdQxjBgStZ2bXY+CxI5KFX9TW818gYndLjV43fZJ7FqAO9kTCK4A==
 
-lucide-vue-next@^0.358.0:
-  version "0.358.0"
-  resolved "https://registry.yarnpkg.com/lucide-vue-next/-/lucide-vue-next-0.358.0.tgz#3c3f65a117b6aa3e498895199d6ce2fcce9283be"
-  integrity sha512-XLC5kLwpcSSv16xrJ1WA6rxt5eyDRGw0EYBUjUBbrynSdspmiGL2z8az79pvli4pto/trcAF/KlxptlF03M2nw==
+lucide-vue-next@^0.484.0:
+  version "0.484.0"
+  resolved "https://registry.yarnpkg.com/lucide-vue-next/-/lucide-vue-next-0.484.0.tgz#1c585fb8a2fc09cf2e5f7d5da37af0b33ecd8a98"
+  integrity sha512-QvMgOpsXtZZ0gSNS/cs8NLcQkDsowQI1zbMLmDtIbxN8l/Qd9J7jImC0LpmdjGegLPDTRd1OXJOICzXtAKEQ8Q==
 
 magic-string@^0.30.11, magic-string@^0.30.12, magic-string@^0.30.17:
   version "0.30.17"

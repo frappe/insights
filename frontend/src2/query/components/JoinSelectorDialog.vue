@@ -7,7 +7,7 @@ import { joinTypes } from '../../helpers/constants'
 import { JoinArgs } from '../../types/query.types'
 import { workbookKey } from '../../workbook/workbook'
 import { column, expression, query_table, table } from '../helpers'
-import { getCachedQuery, Query } from '../query'
+import useQuery, { Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
 import { handleOldProps, useTableColumnOptions, useTableOptions } from './join_utils'
 
@@ -60,13 +60,7 @@ const selectedTable = computed({
 })
 
 const query = inject('query') as Query
-const data_source = computed(() => {
-	// allow only one data source joins for now
-	// TODO: support multiple data source joins if live connection is disabled
-	// if (!query.doc.use_live_connection) return undefined
-
-	return query.source
-})
+const data_source = computed(() => query.dataSource)
 
 wheneverChanges(selectedTable, () => {
 	if (!selectedTable.value) return
@@ -108,8 +102,7 @@ watch(
 
 const tableStore = useTableStore()
 async function autoMatchColumns() {
-	const selected_tables = query
-		.getOperationsForExecution()
+	const selected_tables = query.currentOperations
 		.filter((op) => op.type === 'source' || op.type === 'join')
 		.map((op) => {
 			if (op.type === 'source' && op.table.type === 'table') {
@@ -170,8 +163,7 @@ const groupedTableOptions = computed(() => {
 
 const queryTableColumnOptions = computed(() => {
 	if (join.table.type !== 'query') return []
-	const query = getCachedQuery(join.table.query_name)
-	if (!query) return []
+	const query = useQuery(join.table.query_name)
 	return query.result.columnOptions
 })
 

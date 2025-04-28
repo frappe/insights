@@ -60,7 +60,7 @@ const discrete_dimensions = computed(() =>
 				]"
 			/>
 			<FormControl v-model="config.max_slices" label="Max Slices" type="number" min="1" />
-			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
+			<Toggle v-model="config.show_inline_labels" label="Inline Labels" />
 		</div>
 	</CollapsibleSection>
 </template>

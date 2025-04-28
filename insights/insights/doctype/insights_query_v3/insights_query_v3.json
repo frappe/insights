@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "creation": "2025-01-17 16:09:42.376694",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "workbook",
+  "column_break_gamr",
+  "use_live_connection",
+  "is_script_query",
+  "is_builder_query",
+  "is_native_query",
+  "section_break_cuka",
+  "operations",
+  "section_break_oujt",
+  "linked_queries",
+  "old_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "operations",
+   "fieldtype": "JSON",
+   "label": "Operations"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_live_connection",
+   "fieldtype": "Check",
+   "label": "Use Live Connection"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_script_query",
+   "fieldtype": "Check",
+   "label": "Is Script Query"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_builder_query",
+   "fieldtype": "Check",
+   "label": "Is Builder Query"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_native_query",
+   "fieldtype": "Check",
+   "label": "Is Native Query"
+  },
+  {
+   "fieldname": "workbook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Workbook",
+   "options": "Insights Workbook",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_gamr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_cuka",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_oujt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "linked_queries",
+   "fieldtype": "JSON",
+   "label": "Linked Queries",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_name",
+   "fieldtype": "Data",
+   "label": "Old Name",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Insights Chart v3",
+   "link_fieldname": "data_query"
+  }
+ ],
+ "modified": "2025-03-14 16:24:56.189526",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Query v3",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}
