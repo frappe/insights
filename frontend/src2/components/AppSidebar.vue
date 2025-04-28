@@ -20,7 +20,7 @@
 			</div>
 		</div>
 		<div>
-			<TrialBanner v-if="is_fc_site" />
+			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
 				:isCollapsed="isSidebarCollapsed"
