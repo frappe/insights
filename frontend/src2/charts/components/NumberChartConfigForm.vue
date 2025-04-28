@@ -152,11 +152,13 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 				label="Show comparison"
 				v-model="config.comparison"
 			/>
+
 			<Toggle
 				v-if="config.comparison"
 				label="Negative is better"
 				v-model="config.negative_is_better"
 			/>
+
 			<Toggle v-if="config.comparison" label="Show sparkline" v-model="config.sparkline" />
 
 			<InlineFormControlLabel v-if="config.sparkline" label="Color">
