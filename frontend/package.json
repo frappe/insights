@@ -19,6 +19,7 @@
 		"@formkit/auto-animate": "^0.8.1",
 		"@headlessui/vue": "^1.7.17",
 		"@tanstack/vue-table": "^8.10.7",
+		"@tiptap/suggestion": "^2.0.3",
 		"@tiptap/vue-3": "^2.1.16",
 		"@types/vue-router": "^2.0.0",
 		"@vue-flow/core": "^1.23.0",
