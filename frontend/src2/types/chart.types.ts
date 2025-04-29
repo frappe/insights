@@ -15,6 +15,7 @@ export type AxisChartConfig = {
 export type XAxis = {
 	dimension: Dimension
 	label_rotation?: number
+	max_column_values?: number
 }
 
 export type YAxis = {

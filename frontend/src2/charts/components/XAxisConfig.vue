@@ -46,6 +46,14 @@ watchEffect(() => {
 					{ label: '90°', value: 90 },
 				]"
 			/>
+			<InlineFormControlLabel class="!w-1/2" label="Max Column Values">
+				<FormControl
+					type="number"
+					autocomplete="off"
+					:modelValue="x_axis.max_column_values || 10"
+					@update:modelValue="x_axis.max_column_values = $event"
+				/>
+			</InlineFormControlLabel>
 			<Toggle label="Show Axis Title" />
 			<InlineFormControlLabel v-if="false" label="Axis Title Text">
 				<FormControl />

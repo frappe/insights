@@ -198,6 +198,7 @@ function makeChart(name: string) {
 				rows: [config.x_axis.dimension],
 				columns: [config.split_by],
 				values: values,
+				max_column_values: config.x_axis.max_column_values || 10,
 			})
 			return
 		}
