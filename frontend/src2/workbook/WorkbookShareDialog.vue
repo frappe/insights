@@ -132,7 +132,9 @@ function updatePermissions() {
 						<UserSelector
 							v-model="selectedUserEmail"
 							placeholder="Search by name or email"
-							:hide-users="userPermissions.map((u) => u.email)"
+							:hide-users="
+								userPermissions.filter((u) => u.access).map((u) => u.email)
+							"
 						/>
 					</div>
 					<Button

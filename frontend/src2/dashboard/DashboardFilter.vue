@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, reactive, watchEffect } from 'vue'
+import { computed, inject, reactive, watch, watchEffect } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
@@ -13,6 +13,7 @@ const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
 
 const filter = reactive(copy(props.item))
+watchEffect(() => Object.assign(filter, copy(props.item)))
 if (!filter.links) {
 	filter.links = {}
 }
@@ -66,7 +67,7 @@ const label = computed(() => {
 			<template #target="{ togglePopover }">
 				<Button
 					variant="outline"
-					class="flex h-full w-full !justify-start shadow-sm"
+					class="flex h-full w-full !justify-start overflow-hidden text-sm shadow-sm [&>span]:truncate"
 					@click="togglePopover"
 				>
 					<template #prefix>
@@ -77,9 +78,7 @@ const label = computed(() => {
 							stroke-width="1.5"
 						/>
 					</template>
-					<p class="flex-1 truncate text-sm">
-						{{ label || 'Filter' }}
-					</p>
+					{{ label || 'Filter' }}
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">

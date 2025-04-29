@@ -1,4 +1,5 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import {
 	copy,
@@ -112,7 +113,11 @@ export function makeQuery(name: string) {
 
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
-	let lastExecutionId = ''
+	let lastExecutionArgs: {
+		operations: Operation[]
+		adhoc_filters?: AdhocFilters
+	}
+
 	async function execute(adhocFilters?: AdhocFilters, force: boolean = false) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
@@ -123,12 +128,14 @@ export function makeQuery(name: string) {
 			return
 		}
 
-		const executionId = JSON.stringify({
-			operations: currentOperations.value,
-			adhoc_filters: adhocFilters,
-		})
-
-		if (!force && lastExecutionId === executionId) {
+		if (
+			!force &&
+			lastExecutionArgs &&
+			isEqual(lastExecutionArgs, {
+				operations: currentOperations.value,
+				adhoc_filters: adhocFilters,
+			})
+		) {
 			return Promise.resolve()
 		}
 
@@ -139,8 +146,6 @@ export function makeQuery(name: string) {
 				adhoc_filters: adhocFilters,
 			})
 			.then((response: any) => {
-				lastExecutionId = executionId
-
 				if (!response) return
 
 				result.value.executedSQL = response.sql
@@ -163,6 +168,10 @@ export function makeQuery(name: string) {
 			})
 			.finally(() => {
 				executing.value = false
+				lastExecutionArgs = {
+					operations: currentOperations.value,
+					adhoc_filters: adhocFilters,
+				}
 			})
 	}
 
@@ -313,7 +322,7 @@ export function makeQuery(name: string) {
 			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
 		)
 		if (existingOrderByIndex > -1) {
-			currentOperations.value[existingOrderByIndex] = order_by(args)
+			query.doc.operations[existingOrderByIndex] = order_by(args)
 		} else {
 			addOperation(order_by(args))
 		}

@@ -99,6 +99,13 @@ def get_dashboards(search_term=None, limit=50):
         items = frappe.parse_json(dashboard["items"])
         charts = [item for item in items if item["type"] == "chart"]
         dashboard["charts"] = len(charts)
+        dashboard["views"] = frappe.db.count(
+            "View Log",
+            filters={
+                "reference_doctype": "Insights Dashboard v3",
+                "reference_name": dashboard.name,
+            },
+        )
         del dashboard["items"]
 
     return dashboards

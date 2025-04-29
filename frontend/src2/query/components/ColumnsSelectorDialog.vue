@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown, SearchIcon } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { ColumnOption, QueryResultColumn, SelectArgs } from '../../types/query.types'
 import { Query } from '../query'
@@ -13,7 +13,10 @@ const emit = defineEmits({
 const showDialog = defineModel()
 
 const query = inject('query') as Query
-const selectedColumns = ref<QueryResultColumn[]>([...query.result.columns])
+const selectedColumns = ref<QueryResultColumn[]>([])
+watchEffect(() => {
+	selectedColumns.value = [...query.result.columns]
+})
 
 const columnOptions = ref<ColumnOption[]>([])
 query.getColumnsForSelection().then((cols) => (columnOptions.value = cols))

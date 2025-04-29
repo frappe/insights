@@ -46,7 +46,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis()
+	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max })
 	const rightYAxis = getYAxis()
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
@@ -87,6 +87,11 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const color = serie.color?.[0] || colors[idx]
 			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
 
+			let labelPosition = 'top'
+			if (type === 'bar') {
+				labelPosition = 'inside'
+			}
+
 			return {
 				type,
 				name,
@@ -99,7 +104,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 				label: {
 					fontSize: 11,
 					show: show_data_labels,
-					position: 'top',
+					position: labelPosition,
 					formatter: (params: any) => {
 						return getShortNumber(params.value?.[1], 1)
 					},
@@ -140,7 +145,11 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis({ normalized: config.y_axis.normalize })
+	const leftYAxis = getYAxis({
+		normalized: config.y_axis.normalize,
+		min: config.y_axis.min,
+		max: config.y_axis.max,
+	})
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
@@ -200,26 +209,32 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
 			const isLast = idx === number_columns.length - 1
 
+			let labelPosition = 'inside'
+			if (type == 'line') {
+				labelPosition = 'top'
+			}
+
 			return {
 				type,
-				stack,
+				stack: config.y_axis.overlap ? undefined : stack,
 				name,
 				data: swapAxes ? data.reverse() : data,
 				color: color,
 				label: {
 					show: show_data_labels,
-					position: idx === number_columns.length - 1 ? (swapAxes ? 'right' : 'top') : 'inside',
+					position: labelPosition,
 					formatter: (params: any) => {
 						const _val = swapAxes ? params.value?.[0] : params.value?.[1]
 						return getShortNumber(_val, 1)
 					},
 					fontSize: 11,
 				},
+				barGap: config.y_axis.overlap ? '-100%' : undefined,
 				labelLayout: { hideOverlap: true },
 				yAxisIndex: is_right_axis ? 1 : 0,
 				itemStyle: {
 					color: color,
-					borderRadius: stack ? (isLast ? roundedCorners : 0) : roundedCorners,
+					borderRadius: roundedCorners,
 				},
 			}
 		}),
@@ -279,6 +294,8 @@ function getXAxis(x_axis: XAxis) {
 type YAxisCustomizeOptions = {
 	is_secondary?: boolean
 	normalized?: boolean
+	min?: number
+	max?: number
 }
 function getYAxis(options: YAxisCustomizeOptions = {}) {
 	return {
@@ -297,8 +314,8 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 			margin: 8,
 			formatter: (value: number) => getShortNumber(value, 1),
 		},
-		min: options.normalized ? 0 : undefined,
-		max: options.normalized ? 100 : undefined,
+		min: options.normalized ? 0 : options.min || undefined,
+		max: options.normalized ? 100 : options.max || undefined,
 	}
 }
 

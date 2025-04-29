@@ -989,7 +989,7 @@ def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1):
     - percentage_change(amount, date, 2)
     """
     prev_value = previous_period_value(column, date_column, offset)
-    return ((column - prev_value) * 100) / prev_value
+    return ((column - prev_value) * 100) / abs(prev_value)
 
 
 def is_first_row(group_by=None, order_by=None, sort_order="asc"):
@@ -1151,6 +1151,29 @@ def year_start(column: ir.DateValue):
 
     year_start = column.strftime("%Y-01-01").cast("date")
     return year_start
+
+
+def fiscal_year_start(column: ir.DateValue):
+    """
+    def fiscal_year_start(column)
+
+    Get the start date of the fiscal year for a given date.
+
+    Examples:
+    - fiscal_year_start(order_date)
+    """
+
+    fiscal_year_start_month = 4
+    fiscal_year_start_day = 1
+
+    year = column.year()
+    month = column.month()
+
+    return if_else(
+        month < fiscal_year_start_month,
+        ibis.date(year - 1, fiscal_year_start_month, fiscal_year_start_day),
+        ibis.date(year, fiscal_year_start_month, fiscal_year_start_day),
+    ).cast("date")
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):

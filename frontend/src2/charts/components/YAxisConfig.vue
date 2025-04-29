@@ -102,6 +102,13 @@ const updateColor = debounce((color: string, idx: number) => {
 				v-model="y_axis.axis_label"
 				label="Axis Label"
 			/>
+
+			<InlineFormControlLabel label="Y-Min" class="w-1/2">
+				<FormControl type="number" v-model="y_axis.min" placeholder="Min" />
+			</InlineFormControlLabel>
+			<InlineFormControlLabel label="Y-Max" class="w-1/2">
+				<FormControl type="number" v-model="y_axis.max" placeholder="Max" />
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 </template>

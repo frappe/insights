@@ -99,4 +99,4 @@ class InsightsWorkbook(Document):
             pluck="name",
         )
         if not last_viewed_recently:
-            self.add_viewed()
+            self.add_viewed(force=True)

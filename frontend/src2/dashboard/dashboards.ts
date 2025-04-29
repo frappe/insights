@@ -14,6 +14,7 @@ export type DashboardListItem = {
 	created_from_now: string
 	modified_from_now: string
 	preview_image: string
+	views: number
 }
 
 const dashboards = ref<DashboardListItem[]>([])

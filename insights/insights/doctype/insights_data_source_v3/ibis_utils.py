@@ -494,7 +494,13 @@ class IbisQueryBuilder:
     def apply_code(self, code_args):
         code = code_args.code
         digest = make_digest(code)
-        results = get_code_results(code, digest)
+
+        cached_results = get_cached_results(digest)
+        if cached_results is not None:
+            results = cached_results
+        else:
+            results = get_code_results(code)
+            cache_results(digest, results, cache_expiry=60 * 10)
 
         return Warehouse().db.create_table(
             digest,
@@ -736,14 +742,19 @@ def sanitize_name(name):
     )
 
 
-def get_code_results(code: str, digest: str):
+class SafePandasDataFrame(pd.DataFrame):
+    def to_csv(self, *args, **kwargs):
+        raise NotImplementedError("to_csv is not supported in this context")
+
+    def to_json(self, *args, **kwargs):
+        raise NotImplementedError("to_json is not supported in this context")
+
+
+def get_code_results(code: str):
     pandas = frappe._dict()
-    pandas.DataFrame = pd.DataFrame
+    pandas.DataFrame = SafePandasDataFrame
     pandas.read_csv = pd.read_csv
     pandas.json_normalize = pd.json_normalize
-    # prevent users from writing to disk
-    pandas.DataFrame.to_csv = lambda *args, **kwargs: None
-    pandas.DataFrame.to_json = lambda *args, **kwargs: None
 
     results = []
     frappe.debug_log = []
