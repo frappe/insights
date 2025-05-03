@@ -1,29 +1,26 @@
 <script setup lang="ts">
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { computed, inject, provide, ref } from 'vue'
+import { inject, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse, wheneverChanges } from '../helpers'
-import { WorkbookChart, WorkbookDashboard, WorkbookQuery } from '../types/workbook.types'
-import ChartSelectorDialog from './ChartSelectorDialog.vue'
+import { safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
+import { workbookKey } from '../workbook/workbook'
 import useDashboard from './dashboard'
+import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
-import { workbookKey } from '../workbook/workbook'
 
 const props = defineProps<{
-	dashboard: WorkbookDashboard
+	dashboard_name: string
 	charts: WorkbookChart[]
 	queries: WorkbookQuery[]
 }>()
 
-const dashboard = useDashboard(props.dashboard)
+const dashboard = useDashboard(props.dashboard_name)
 provide('dashboard', dashboard)
-dashboard.refresh()
 
-const selectedCharts = computed(() => {
-	return dashboard.doc.items.filter((item) => item.type == 'chart')
-})
+await waitUntil(() => dashboard.isloaded)
 
 const showChartSelectorDialog = ref(false)
 
@@ -47,14 +44,13 @@ function onDrop(event: DragEvent) {
 
 const showShareDialog = ref(false)
 
-const workbook = inject(workbookKey, null)
-wheneverChanges(
-	() => dashboard.editing,
-	() => {
-		if (!workbook) return
-		workbook._pauseAutoSave = dashboard.editing
+watchEffect(() => {
+	if (dashboard.editing) {
+		dashboard.autoSave = false
+	} else {
+		dashboard.autoSave = true
 	}
-)
+})
 </script>
 
 <template>
@@ -78,7 +74,7 @@ wheneverChanges(
 						</template>
 					</Button>
 					<Button
-						v-if="!dashboard.editing"
+						v-if="!dashboard.editing && !dashboard.doc.read_only"
 						variant="outline"
 						@click="showShareDialog = true"
 						label="Share"
@@ -155,16 +151,7 @@ wheneverChanges(
 		</div>
 	</div>
 
-	<ChartSelectorDialog
-		v-model="showChartSelectorDialog"
-		:chartOptions="props.charts"
-		:selected-charts="
-			selectedCharts.map(
-				(c) => props.charts.find((chart) => chart.name === c.chart) as WorkbookChart,
-			)
-		"
-		@select="dashboard.addChart($event)"
-	/>
+	<DashboardChartSelectorDialog v-model="showChartSelectorDialog" :chartOptions="props.charts" />
 
-	<DashboardShareDialog v-model="showShareDialog" />
+	<DashboardShareDialog v-if="showShareDialog" v-model="showShareDialog" />
 </template>

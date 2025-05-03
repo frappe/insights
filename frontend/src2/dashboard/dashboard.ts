@@ -1,36 +1,48 @@
-import { reactive } from 'vue'
-import { getCachedChart } from '../charts/chart'
-import { getUniqueId, store } from '../helpers'
-import { isFilterValid } from '../query/components/filter_utils'
-import { column } from '../query/helpers'
-import { getCachedQuery } from '../query/query'
-import { FilterArgs, FilterOperator, FilterRule, FilterValue } from '../types/query.types'
+import { reactive, toRefs } from 'vue'
+import useChart from '../charts/chart'
 import {
+	getUniqueId,
+	safeJSONParse,
+	showErrorToast,
+	store,
+	waitUntil,
+	wheneverChanges,
+} from '../helpers'
+import useDocumentResource from '../helpers/resource'
+import { isFilterValid } from '../query/components/filter_utils'
+import { column, filter_group } from '../query/helpers'
+import { FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
+import {
+	InsightsDashboardv3,
 	WorkbookChart,
-	WorkbookDashboard,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
+import useWorkbook from '../workbook/workbook'
+import session from '../session'
 
 const dashboards = new Map<string, Dashboard>()
 
-export default function useDashboard(workbookDashboard: WorkbookDashboard) {
-	const existingDashboard = dashboards.get(workbookDashboard.name)
+export default function useDashboard(name: string) {
+	const key = String(name)
+	const existingDashboard = dashboards.get(key)
 	if (existingDashboard) return existingDashboard
 
-	const dashboard = makeDashboard(workbookDashboard)
-	dashboards.set(workbookDashboard.name, dashboard)
+	const dashboard = makeDashboard(name)
+	dashboards.set(key, dashboard)
 	return dashboard
 }
 
-type FilterState = {
+export type FilterState = {
 	operator: FilterOperator
 	value: FilterValue
 }
 
-function makeDashboard(workbookDashboard: WorkbookDashboard) {
+function makeDashboard(name: string) {
+	const resource = getDashboardResource(name)
+
 	const dashboard = reactive({
-		doc: workbookDashboard,
+		...toRefs(resource),
 
 		editing: false,
 		editingItemIndex: null as number | null,
@@ -107,27 +119,34 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 		},
 
 		refreshChart(chart_name: string) {
-			const chart = getCachedChart(chart_name)
-			if (!chart || !chart.doc.query) return
+			const chart = useChart(chart_name)
+			if (!chart.doc.query) return
 
 			const filtersApplied = dashboard.doc.items.filter(
 				(item) => item.type === 'filter' && 'links' in item && item.links[chart_name]
 			)
 
 			if (!filtersApplied.length) {
-				chart.refresh(undefined, true)
+				chart.refresh()
 				return
 			}
 
-			const filtersByQuery = new Map<string, FilterRule[]>()
+			const filtersByQuery = {} as Record<string, FilterGroup>
+
+			function addFilterToQuery(query_name: string, filter: FilterArgs) {
+				if (!filtersByQuery[query_name]) {
+					filtersByQuery[query_name] = filter_group({
+						logical_operator: 'And',
+						filters: [],
+					})
+				}
+				filtersByQuery[query_name].filters.push(filter)
+			}
 
 			filtersApplied.forEach((item) => {
 				const filterItem = item as WorkbookDashboardFilter
 				const linkedColumn = dashboard.getColumnFromFilterLink(filterItem.links[chart_name])
 				if (!linkedColumn) return
-
-				const query = getCachedQuery(linkedColumn.query)
-				if (!query) return
 
 				const filterState = dashboard.filterStates[filterItem.filter_name] || {}
 
@@ -138,21 +157,13 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 				}
 
 				if (isFilterValid(filter, filterItem.filter_type)) {
-					const filters = filtersByQuery.get(linkedColumn.query) || []
-					filters.push(filter)
-					filtersByQuery.set(linkedColumn.query, filters)
+					addFilterToQuery(linkedColumn.query, filter)
 				}
 			})
 
-			filtersByQuery.forEach((filters, query_name) => {
-				const query = getCachedQuery(query_name)!
-				query.dashboardFilters = {
-					logical_operator: 'And',
-					filters,
-				}
+			chart.refresh({
+				adhocFilters: filtersByQuery,
 			})
-
-			chart.refresh(undefined, true)
 		},
 
 		updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
@@ -180,7 +191,9 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			if (!item) return
 
 			const filterItem = item as WorkbookDashboardFilter
-			const filteredCharts = Object.keys(filterItem.links)
+			const filteredCharts = Object.keys(filterItem.links).filter(
+				(chart_name) => filterItem.links[chart_name]
+			)
 			filteredCharts.forEach((chart_name) => dashboard.refreshChart(chart_name))
 		},
 
@@ -189,7 +202,7 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			// `query`.`column`
 			const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
 			const match = linkedColumn.match(pattern)
-			if (!match) return
+			if (!match || match.length < 3) return null
 
 			return {
 				query: match[1],
@@ -197,11 +210,30 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 			}
 		},
 
+		getDistinctColumnValues(query: string, column: string, search_term?: string) {
+			return dashboard.call('get_distinct_column_values', {
+				query: query,
+				column_name: column,
+				search_term,
+			})
+		},
+
 		getShareLink() {
 			return (
 				dashboard.doc.share_link ||
 				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
 			)
+		},
+
+		updateAccess(data: {
+			is_public: boolean
+			is_shared_with_organization: boolean
+			people_with_access: string[]
+		}) {
+			return dashboard
+				.call('update_access', { data })
+				.catch(showErrorToast)
+				.then(() => dashboard.load())
 		},
 
 		getMaxY() {
@@ -224,10 +256,66 @@ function makeDashboard(workbookDashboard: WorkbookDashboard) {
 
 	Object.assign(dashboard.filterStates, defaultFilters)
 
-	const key2 = `insights:dashboard-filter-states-${workbookDashboard.name}`
-	dashboard.filterStates = store(key2, () => dashboard.filterStates)
+	const key = `insights:dashboard-filter-states-${name}`
+	dashboard.filterStates = store(key, () => dashboard.filterStates)
+
+	waitUntil(() => dashboard.isloaded).then(() => {
+		wheneverChanges(
+			() => dashboard.doc.title,
+			() => {
+				if (!dashboard.doc.workbook) return
+				const workbook = useWorkbook(dashboard.doc.workbook)
+				for (const d of workbook.doc.dashboards) {
+					if (d.name === dashboard.doc.name) {
+						d.title = dashboard.doc.title
+						break
+					}
+				}
+			},
+			{ debounce: 500 }
+		)
+	})
 
 	return dashboard
 }
 
 export type Dashboard = ReturnType<typeof makeDashboard>
+
+const INITIAL_DOC: InsightsDashboardv3 = {
+	doctype: 'Insights Dashboard v3',
+	name: '',
+	owner: '',
+	title: '',
+	workbook: '',
+	items: [],
+	is_public: false,
+	is_shared_with_organization: false,
+	people_with_access: [],
+	read_only: false,
+}
+
+function getDashboardResource(name: string) {
+	const doctype = 'Insights Dashboard v3'
+	const dashboard = useDocumentResource<InsightsDashboardv3>(doctype, name, {
+		initialDoc: { ...INITIAL_DOC, name },
+		enableAutoSave: true,
+		disableLocalStorage: true,
+		transform(doc: any) {
+			doc.items = safeJSONParse(doc.items) || []
+			return doc
+		},
+	})
+	if (session.isLoggedIn) {
+		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
+	}
+	wheneverChanges(() => dashboard.doc.read_only, () => {
+		if (dashboard.doc.read_only) {
+			dashboard.autoSave = false
+		}
+	})
+	return dashboard
+}
+
+export function newDashboard() {
+	return getDashboardResource('new-dashboard-' + getUniqueId())
+}

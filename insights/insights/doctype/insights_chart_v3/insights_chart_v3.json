@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "creation": "2025-02-15 19:26:42.921771",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "workbook",
+  "query",
+  "data_query",
+  "column_break_mgwd",
+  "chart_type",
+  "is_public",
+  "section_break_vmvi",
+  "config",
+  "old_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Query",
+   "options": "Insights Query v3"
+  },
+  {
+   "fieldname": "column_break_mgwd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "chart_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Chart Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Public"
+  },
+  {
+   "fieldname": "section_break_vmvi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "JSON",
+   "label": "Config"
+  },
+  {
+   "fieldname": "workbook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Workbook",
+   "options": "Insights Workbook",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "data_query",
+   "fieldtype": "Link",
+   "label": "Data Query",
+   "options": "Insights Query v3",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "old_name",
+   "fieldtype": "Data",
+   "label": "Old Name",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-14 16:25:02.809832",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Chart v3",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "workbook, query",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

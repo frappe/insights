@@ -120,14 +120,25 @@ fixtures = [
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-    "Insights Data Source v3": "insights.permissions.get_data_source_query_conditions",
-    "Insights Table v3": "insights.permissions.get_table_query_conditions",
-    "Insights Team": "insights.permissions.get_team_query_conditions",
+    "Insights Data Source v3": "insights.permissions.get_permission_query_conditions",
+    "Insights Table v3": "insights.permissions.get_permission_query_conditions",
+    "Insights Team": "insights.permissions.get_permission_query_conditions",
+    "Insights Workbook": "insights.permissions.get_permission_query_conditions",
+    "Insights Query v3": "insights.permissions.get_permission_query_conditions",
+    "Insights Chart v3": "insights.permissions.get_permission_query_conditions",
+    "Insights Dashboard v3": "insights.permissions.get_permission_query_conditions",
+    "Insights Alert": "insights.permissions.get_permission_query_conditions",
 }
 
 has_permission = {
     "Insights Data Source v3": "insights.permissions.has_doc_permission",
     "Insights Table v3": "insights.permissions.has_doc_permission",
+    "Insights Team": "insights.permissions.has_doc_permission",
+    "Insights Workbook": "insights.permissions.has_doc_permission",
+    "Insights Query v3": "insights.permissions.has_doc_permission",
+    "Insights Chart v3": "insights.permissions.has_doc_permission",
+    "Insights Dashboard v3": "insights.permissions.has_doc_permission",
+    "Insights Alert": "insights.permissions.has_doc_permission",
 }
 
 # DocType Class

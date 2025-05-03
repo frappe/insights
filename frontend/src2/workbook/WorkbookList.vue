@@ -1,14 +1,13 @@
 <script setup lang="tsx">
-import { Avatar, Breadcrumbs, ListView, Badge } from 'frappe-ui'
+import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
 import { Building2, Eye, Lock, PlusIcon, SearchIcon, Shield } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
+import { wheneverChanges } from '../helpers'
 import { WorkbookListItem } from '../types/workbook.types'
 import useUserStore from '../users/users'
-import { newWorkbookName } from './workbook'
+import useWorkbook, { newWorkbookName } from './workbook'
 import useWorkbooks from './workbooks'
-import { wheneverChanges } from '../helpers'
-import AvatarGroup from './AvatarGroup.vue'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
@@ -19,6 +18,20 @@ wheneverChanges(searchQuery, () => workbookStore.getWorkbooks(searchQuery.value)
 	debounce: 300,
 	immediate: true,
 })
+
+const creatingWorkbook = ref(false)
+function openNewWorkbook() {
+	creatingWorkbook.value = true
+	const workbook = useWorkbook(newWorkbookName())
+	workbook
+		.insert()
+		.then((doc) => {
+			router.push(`/workbook/${doc.name}`)
+		})
+		.finally(() => {
+			creatingWorkbook.value = false
+		})
+}
 
 const userStore = useUserStore()
 const listOptions = ref({
@@ -101,15 +114,11 @@ const listOptions = ref({
 				label: 'New Workbook',
 				variant: 'solid',
 				onClick: openNewWorkbook,
+				loading: creatingWorkbook,
 			},
 		},
 	},
 })
-
-function openNewWorkbook() {
-	const newName = newWorkbookName()
-	router.push(`/workbook/${newName}`)
-}
 
 watchEffect(() => {
 	document.title = 'Workbooks | Insights'
@@ -120,7 +129,12 @@ watchEffect(() => {
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: 'Workbooks', route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
-			<Button label="New Workbook" variant="solid" @click="openNewWorkbook">
+			<Button
+				label="New Workbook"
+				variant="solid"
+				@click="openNewWorkbook"
+				:loading="creatingWorkbook"
+			>
 				<template #prefix>
 					<PlusIcon class="w-4" />
 				</template>

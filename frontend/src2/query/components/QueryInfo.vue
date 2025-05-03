@@ -40,7 +40,7 @@ function toggleLiveConnection(enable: boolean) {
 				label="Enable Data Store"
 				class="!w-1/2"
 			>
-				<Checkbox
+				<Toggle
 					class="mt-1"
 					:modelValue="!query.doc.use_live_connection"
 					@update:modelValue="toggleLiveConnection"

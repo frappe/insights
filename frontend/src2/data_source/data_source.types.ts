@@ -35,6 +35,7 @@ export type PostgreSQLDataSource = BaseDataSource & {
 	host: string
 	port: number
 	database_name: string
+	schema: string
 	username: string
 	password: string
 	use_ssl: boolean

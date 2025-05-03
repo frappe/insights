@@ -7,22 +7,31 @@ import { defineConfig } from 'vite'
 export default defineConfig({
 	plugins: [
 		frappeui({
-			source: '^/(app|login|api|assets|files|private)',
+			frappeProxy: true,
+			lucideIcons: true,
+			jinjaBootData: true,
+			buildConfig: false,
 		}),
 		vue(),
 		vueJsx(),
 	],
+	server: {
+		allowedHosts: true,
+	},
 	esbuild: { loader: 'tsx' },
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, 'src'),
+			'tailwind.config.js': path.resolve(__dirname, 'tailwind.config.js'),
 		},
 	},
 	build: {
 		outDir: `../insights/public/frontend`,
 		emptyOutDir: true,
-		target: 'es2015',
 		sourcemap: true,
+		commonjsOptions: {
+			include: [/tailwind.config.js/, /node_modules/],
+		},
 		rollupOptions: {
 			input: {
 				main: path.resolve(__dirname, 'index.html'),
@@ -36,7 +45,7 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ['feather-icons', 'showdown', 'engine.io-client'],
+		include: ['feather-icons', 'showdown', 'tailwind.config.js'],
 	},
 	define: {
 		// enable hydration mismatch details in production build

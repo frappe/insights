@@ -1,6 +1,6 @@
 <script setup lang="tsx">
-import { Plus, XIcon } from 'lucide-vue-next'
-import { computed, inject, ref, watch } from 'vue'
+import { XIcon } from 'lucide-vue-next'
+import { computed, inject } from 'vue'
 import {
 	Cast,
 	CustomOperation,
@@ -8,7 +8,6 @@ import {
 	Join,
 	Limit,
 	Mutate,
-	Operation,
 	OrderBy,
 	Remove,
 	Rename,
@@ -17,10 +16,11 @@ import {
 	Summarize,
 	Union,
 } from '../../types/query.types'
+import { workbookKey } from '../../workbook/workbook'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
 import AddOperationPopover from './AddOperationPopover.vue'
-import { workbookKey } from '../../workbook/workbook'
+import useQuery from '../query.ts'
 
 const query = inject('query') as Query
 const operations = computed(() => {
@@ -34,16 +34,15 @@ const operations = computed(() => {
 
 const Element = (_: any, { slots }: any) => {
 	return (
-		<div class="w-fit truncate rounded border border-orange-200 bg-orange-50 py-0.5 px-1 font-mono text-xs text-orange-800 opacity-90">
+		<div class="w-fit truncate rounded border border-orange-200 bg-orange-50 px-1 py-0.5 font-mono text-xs text-orange-800 opacity-90">
 			{slots.default?.()}
 		</div>
 	)
 }
 
-const workbook = inject(workbookKey)!
 const getQueryTitle = (query_name: string) => {
-	const q = workbook.doc.queries.find((q) => q.name === query_name)
-	return q ? q.title : query_name
+	const q = useQuery(query_name)
+	return q ? q.doc.title : query_name
 }
 
 const SourceInfo = (props: any) => {
@@ -241,7 +240,7 @@ const CustomOperationInfo = (props: any) => {
 </script>
 
 <template>
-	<div v-if="query.doc.operations.length" class="flex flex-col px-3.5 py-3">
+	<div v-if="query.doc.operations.length" class="flex w-full flex-col px-3.5 py-3">
 		<div class="mb-2 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm font-medium">Operations</div>
@@ -257,7 +256,7 @@ const CustomOperationInfo = (props: any) => {
 					@dblclick="query.setActiveEditIndex(idx)"
 				>
 					<div
-						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-gray-300 bg-white p-1"
+						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-gray-400 bg-white p-1"
 					>
 						<component
 							:is="op.meta.icon"

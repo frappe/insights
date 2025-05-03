@@ -13,6 +13,10 @@ no_cache = 1
 
 
 def get_context(context):
+    if not frappe.db.get_single_value("System Settings", "setup_complete"):
+        frappe.local.flags.redirect_location = "/app/setup-wizard"
+        raise frappe.Redirect
+
     is_v2_site = frappe.db.count("Insights Query", cache=True) > 0
     if not is_v2_site:
         continue_to_v3(context)
@@ -29,11 +33,13 @@ def get_context(context):
         redirect_to_v2()
         return
 
-    guest_v3_routes = [
+    v3_routes = [
+        "/insights/dashboards",
+        "/insights/workbook",
         "/insights/shared/chart",
         "/insights/shared/dashboard",
     ]
-    if any(route in frappe.request.path for route in guest_v3_routes):
+    if any(route in frappe.request.path for route in v3_routes):
         continue_to_v3(context)
         return
 
@@ -61,10 +67,20 @@ def get_context(context):
 
 
 def continue_to_v3(context):
+    try:
+        from frappe.integrations.frappe_providers.frappecloud_billing import is_fc_site
+    except ImportError:
+
+        def is_fc_site():
+            return False
+
     csrf_token = frappe.sessions.get_csrf_token()
     frappe.db.commit()
-    context.csrf_token = csrf_token
-    context.site_name = frappe.local.site
+    context.boot = {
+        "csrf_token": csrf_token,
+        "site_name": frappe.local.site,
+        "is_fc_site": is_fc_site(),
+    }
     track_active_site(is_v3=True)
 
 

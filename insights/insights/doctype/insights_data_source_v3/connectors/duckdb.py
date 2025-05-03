@@ -21,4 +21,10 @@ def get_duckdb_connection(data_source, read_only=True):
     else:
         path = os.path.realpath(get_files_path(is_private=1))
         path = os.path.join(path, f"{db_name}.duckdb")
+
+        if not os.path.exists(path):
+            # create the database file if it doesn't exist
+            db = ibis.duckdb.connect(path)
+            db.disconnect()
+
         return ibis.duckdb.connect(path, read_only=read_only)
