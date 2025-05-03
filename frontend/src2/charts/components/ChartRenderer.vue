@@ -83,16 +83,12 @@ function handleDrillDown(data: { row: any; column: any }) {
 			:options="eChartOptions"
 			:onClick="onChartElementClick"
 		/>
-<NumberChart
-	v-else-if="!loading && chart_type == 'Number'"
-	:config="(config as NumberChartConfig)"
-	:result="result"
-	@drill-down="handleDrillDown"
-/>
-<TableChart
-	v-else-if="!loading && chart_type == 'Table'"
-	:chart="props.chart"
-/>
+		<NumberChart
+			v-else-if="!loading && chart_type == 'Number'"
+			:config="(config as NumberChartConfig)"
+			:result="result"
+			@drill-down="handleDrillDown"
+		/>
 
 		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />
 
