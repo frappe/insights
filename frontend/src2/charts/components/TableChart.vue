@@ -42,6 +42,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
 			:enable-color-scale="tableConfig.enable_color_scale"
+			:conditional-formatting="tableConfig.conditional_formatting"
 			:enable-alerts="true"
 			:enable-sort="true"
 			:enable-drill-down="true"

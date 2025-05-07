@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { createHeaders, formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
+import { applyRule, cell_rules, FormatGroupArgs, FormattingMode, garByPercentage, ragByPercentage } from '../query/components/formatting_utils'
+import { useFormatStore } from '../stores/formatStore'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -16,6 +18,7 @@ const props = defineProps<{
 	enablePagination?: boolean
 	enableColorScale?: boolean
 	loading?: boolean
+  formatGroup?: FormatGroupArgs;
 	onExport?: Function
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
@@ -204,6 +207,158 @@ const colorByValues = computed(() => {
 
 	return _colorByValues
 })
+
+
+const formatStore = useFormatStore();
+
+watch(
+  () => props.formatGroup,
+  (newFormatGroup) => {
+    if (newFormatGroup) {
+      formatStore.setFormatting(newFormatGroup);
+    }
+  },
+  { immediate: true },
+);
+
+const formattingRulesByColumn = computed(() => {
+  const formatGroup = formatStore.conditionalFormatting;
+  const result: Record<string, FormattingMode[]> = {};
+
+  if (formatGroup?.formats?.length) {
+    formatGroup.formats.forEach((format) => {
+      if ("column" in format && format.column?.column_name) {
+        const columnName = format.column.column_name;
+        if (!result[columnName]) {
+          result[columnName] = [];
+        }
+        result[columnName].push(format);
+      }
+    });
+  }
+
+  return result;
+});
+
+// get tailwind class bg
+function getColorClass(colorName: string): string {
+  if (!colorName) return "bg-gray-500";
+
+  switch (colorName.toLowerCase()) {
+    case "red":
+      return "bg-[#FC7474] text-black";
+    case "green":
+      return "bg-[#58C08E] text-white";
+    case "amber":
+      return "bg-[#F8D16E] text-black";
+    default:
+      return colorName.startsWith("bg-") ? colorName : "bg-gray-500";
+  }
+}
+
+function getCellStyleClass(colName: string, val: any): string {
+  // first check if we should apply default color scale
+
+  if (props.enableColorScale && isNumberColumn(colName)) {
+    const numVal = Number(val);
+
+    if (!isNaN(numVal)) {
+      const colorByValue = colorByValues.value;
+
+      if (colorByValue && colorByValue[numVal]) {
+        return colorByValue[numVal];
+      }
+    }
+  }
+
+  // get formatting rules for the given column
+
+  const rules = formattingRulesByColumn.value[colName];
+
+  if (!rules?.length) return "";
+
+  for (const format of rules) {
+
+    if (
+      format.mode === "cell_rules" &&
+      format.operator &&
+      format.value !== undefined
+    ) {
+      // check if the rule applies to this cell
+
+      const rule = {
+        column: colName,
+
+        operator: format.operator,
+
+        value: format.value,
+
+        color: format.color,
+
+        mode: "cell_rules",
+      } as unknown as cell_rules;
+
+      //highlight cells based on rule
+      if (applyRule(val, rule)) {
+        const colorClass = getColorClass(format.color as string);
+
+        return `${colorClass}  `;
+      }
+    }
+  }
+
+  for (const format of rules) {
+    if (format.mode === "color_scale") {
+      const numVal = Number(val);
+      if (isNaN(numVal)) {
+        continue;
+      }
+      const allValues =
+        props.rows
+
+          ?.map((row) => Number(row[colName]))
+
+          ?.filter((v) => !isNaN(v)) || [];
+      if (!allValues.length) {
+        continue;
+      }
+      const max = Math.max(...allValues);
+      const percentage = Math.round((numVal / max) * 100);
+
+      let colorScale;
+
+      if (format.colorScale) {
+        format.colorScale == "RAG"
+          ? (colorScale = garByPercentage)
+          : (colorScale = ragByPercentage);
+      } else {
+        colorScale = ragByPercentage;
+      }
+      const thresholds = Object.keys(colorScale)
+        .map(Number)
+        .sort((a, b) => a - b);
+        
+        //apply color based on threshold
+      let selectedThreshold = thresholds[0];
+      for (const threshold of thresholds) {
+        if (percentage >= threshold) {
+          selectedThreshold = threshold;
+        } else {
+          break;
+        }
+      }
+      const thresholdKey = String(selectedThreshold);
+
+      const bgClass = colorScale[thresholdKey]?.trim() || "bg-gray-300";
+
+      return `${bgClass}  `;
+    }
+  }
+
+  return "";
+}
+
+
 </script>
 
 <template>
@@ -323,6 +478,7 @@ const colorByValues = computed(() => {
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
+                  getCellStyleClass(col.name, row[col.name]),
 							]"
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"

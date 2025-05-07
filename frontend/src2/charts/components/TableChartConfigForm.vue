@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -8,11 +8,18 @@ import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/qu
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
-
+import { useFormatStore } from '../../stores/formatStore'
+import ConditonalFormattingDialog from '../../query/components/ConditonalFormattingDialog.vue'
+import { FormatGroupArgs } from '../../query/components/formatting_utils'
+import { Plus } from 'lucide-vue-next'
 const props = defineProps<{
+	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
 }>()
+
+const emit = defineEmits({ select: (args: FormatGroupArgs) => true })
+
 
 const config = defineModel<TableChartConfig>({
 	required: true,
@@ -20,8 +27,18 @@ const config = defineModel<TableChartConfig>({
 		rows: [],
 		columns: [],
 		values: [],
+		enable_color_scale: false,
+		conditional_formatting: {
+			formats: [],
+			columns: [],
+		}
 	}),
 })
+
+const showFormatSelectorDialog = ref(false)
+
+const formatStore = useFormatStore()
+
 watchEffect(() => {
 	if (!config.value.rows?.length) {
 		config.value.rows = [{} as any]
@@ -31,6 +48,11 @@ watchEffect(() => {
 	}
 	if (!config.value.values?.length) {
 		config.value.values = [{} as any]
+	}
+
+	// init format
+	if (config.value.conditional_formatting) {
+		formatStore.setFormatting(config.value.conditional_formatting)
 	}
 })
 
@@ -47,6 +69,8 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 )
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
+
+
 </script>
 
 <template>
@@ -54,18 +78,12 @@ const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.
 		<div>
 			<DraggableList v-model:items="config.rows" group="rows">
 				<template #item="{ item, index }">
-					<DimensionPicker
-						:options="dimensions"
-						:model-value="item"
+					<DimensionPicker :options="dimensions" :model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
-						@remove="config.rows.splice(index, 1)"
-					/>
+						@remove="config.rows.splice(index, 1)" />
 				</template>
 			</DraggableList>
-			<button
-				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-				@click="config.rows.push({} as any)"
-			>
+			<button class="mt-1.5 text-left text-xs text-gray-600 hover:underline" @click="config.rows.push({} as any)">
 				+ Add column
 			</button>
 		</div>
@@ -76,33 +94,20 @@ const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.
 			<div>
 				<DraggableList v-model:items="config.columns" group="columns">
 					<template #item="{ item, index }">
-						<DimensionPicker
-							:options="props.dimensions"
-							:model-value="item"
+						<DimensionPicker :options="props.dimensions" :model-value="item"
 							@update:model-value="Object.assign(item, $event || {})"
-							@remove="config.columns.splice(index, 1)"
-						/>
+							@remove="config.columns.splice(index, 1)" />
 					</template>
 				</DraggableList>
-				<button
-					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-					@click="config.columns.push({} as any)"
-				>
+				<button class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+					@click="config.columns.push({} as any)">
 					+ Add column
 				</button>
 			</div>
 
-			<InlineFormControlLabel
-				v-if="config.columns.length"
-				class="!w-1/2"
-				label="Max Column Values"
-			>
-				<FormControl
-					type="number"
-					autocomplete="off"
-					:modelValue="config.max_column_values"
-					@update:modelValue="config.max_column_values = $event"
-				/>
+			<InlineFormControlLabel v-if="config.columns.length" class="!w-1/2" label="Max Column Values">
+				<FormControl type="number" autocomplete="off" :modelValue="config.max_column_values"
+					@update:modelValue="config.max_column_values = $event" />
 			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
@@ -112,29 +117,40 @@ const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.
 			<div>
 				<DraggableList v-model:items="config.values" group="values">
 					<template #item="{ item, index }">
-						<MeasurePicker
-							:model-value="item"
-							:column-options="props.columnOptions"
+						<MeasurePicker :model-value="item" :column-options="props.columnOptions"
 							@update:model-value="Object.assign(item, $event || {})"
-							@remove="config.values.splice(index, 1)"
-						/>
+							@remove="config.values.splice(index, 1)" />
 					</template>
 				</DraggableList>
-				<button
-					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-					@click="config.values.push({} as any)"
-				>
+				<button class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+					@click="config.values.push({} as any)">
 					+ Add column
 				</button>
 			</div>
 			<Toggle label="Show Filters" v-model="config.show_filter_row" />
 			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
 			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
-			<Toggle
-				v-if="config.values.length === 1"
-				label="Show Color Scale"
-				v-model="config.enable_color_scale"
-			/>
+			<Toggle v-if="config.values.length === 1" label="Show Color Scale" v-model="config.enable_color_scale" />
 		</div>
 	</CollapsibleSection>
+	<CollapsibleSection title="Conditional Formatting" collapsed>
+		<template #title-suffix v-if="config.conditional_formatting?.formats.length">
+			<Badge size="sm" theme="orange" type="info" class="mt-0.5">
+				<span class="tnum"> {{ config.conditional_formatting.formats.length }}</span>
+			</Badge>
+		</template>
+		<Button class="w-full" @click="showFormatSelectorDialog = true">
+			<template #prefix>
+				<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			</template>
+			Add Format
+		</Button>
+
+	</CollapsibleSection>
+	<ConditonalFormattingDialog v-if="showFormatSelectorDialog" v-model="showFormatSelectorDialog"
+		:format-group="formatStore.conditionalFormatting" :column-options="columnOptions" 
+		@select="(formatGroup) => {
+			formatStore.setFormatting(formatGroup);
+			config.conditional_formatting = formatGroup;
+		}" />
 </template>
