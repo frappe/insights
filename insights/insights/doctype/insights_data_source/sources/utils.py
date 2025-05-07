@@ -2,7 +2,8 @@
 # For license information, please see license.txt
 
 import time
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 from urllib import parse
 
 import frappe
@@ -129,7 +130,7 @@ def parse_sql_tables(sql: str):
 
 
 def get_stored_query_sql(
-    sql: str, data_source: Optional[str] = None, dialect: Optional["Dialect"] = None
+    sql: str, data_source: str | None = None, dialect: Optional["Dialect"] = None
 ):
     """
     Takes a native sql query and returns a map of table name to the query along with the subqueries
@@ -210,7 +211,7 @@ def get_stored_query_sql(
 
 
 def make_wrap_table_fn(
-    dialect: Optional["Dialect"] = None, data_source: Optional[str] = None
+    dialect: Optional["Dialect"] = None, data_source: str | None = None
 ) -> Callable[[str], str]:
     if dialect:
         return dialect.identifier_preparer.quote_identifier
@@ -327,10 +328,14 @@ def handle_query_execution_error(e):
 
 def cache_results(sql, data_source, results):
     key = make_digest(sql, data_source)
+    query_result_expiry = frappe.db.get_single_value(
+        "Insights Settings", "query_result_expiry"
+    )
+    query_result_expiry_in_seconds = query_result_expiry * 60
     frappe.cache().set_value(
         f"insights_query_result:{data_source}:{key}",
         frappe.as_json(results),
-        expires_in_sec=60 * 15,
+        expires_in_sec=query_result_expiry_in_seconds,
     )
 
 

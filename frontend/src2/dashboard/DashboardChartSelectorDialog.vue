@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { CheckSquare, SearchIcon, SquareIcon } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 import { copy } from '../helpers'
 import { WorkbookChart } from '../types/workbook.types'
+import { Dashboard } from './dashboard'
 
 const showDialog = defineModel()
-const props = defineProps<{
-	selectedCharts: WorkbookChart[]
-	chartOptions: WorkbookChart[]
-}>()
-const emit = defineEmits({
-	select: (charts: WorkbookChart[]) => true,
-})
+const props = defineProps<{ chartOptions: WorkbookChart[] }>()
+
+const dashboard = inject('dashboard') as Dashboard
 
 const searchQuery = ref('')
 const filteredCharts = computed(() => {
@@ -23,7 +20,13 @@ const filteredCharts = computed(() => {
 	})
 })
 
-const selectedCharts = ref<WorkbookChart[]>(copy(props.selectedCharts))
+const selectedCharts = ref<WorkbookChart[]>(
+	copy(
+		props.chartOptions.filter((chart) =>
+			dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
+		)
+	)
+)
 function isSelected(chart: WorkbookChart) {
 	return selectedCharts.value.find((c) => c && c.name === chart.name)
 }
@@ -45,7 +48,7 @@ function toggleSelectAll() {
 const areAllSelected = computed(() => selectedCharts.value.length === props.chartOptions.length)
 const areNoneSelected = computed(() => selectedCharts.value.length === 0)
 function confirmSelection() {
-	emit('select', selectedCharts.value)
+	dashboard.addChart(selectedCharts.value)
 	selectedCharts.value = []
 	showDialog.value = false
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, PanelRightClose, PanelRightOpen, Pause, Play, Share2, Undo2 } from 'lucide-vue-next'
+import { Check, Share2, Undo2 } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Workbook, workbookKey } from './workbook'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
@@ -21,7 +21,7 @@ const showShareDialog = ref(false)
 			</template>
 			Share
 		</Button>
-		<Button
+		<!-- <Button
 			v-show="!workbook.islocal && workbook.isdirty"
 			variant="outline"
 			@click="workbook.discard()"
@@ -41,15 +41,10 @@ const showShareDialog = ref(false)
 				<Check class="h-4 w-4 text-gray-100" stroke-width="1.5" />
 			</template>
 			Save
-		</Button>
+		</Button> -->
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
-				{
-					label: workbook.doc.enable_auto_save ? 'Disable Auto Save' : 'Enable Auto Save',
-					icon: workbook.doc.enable_auto_save ? Pause : Play,
-					onClick: () => (workbook.doc.enable_auto_save = !workbook.doc.enable_auto_save),
-				},
 				!workbook.islocal
 					? {
 							label: 'Delete',

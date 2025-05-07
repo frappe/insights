@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import { FIELDTYPES } from '../../helpers/constants'
 import { TableChartConfig } from '../../types/chart.types'
-import { ColumnOption, DimensionOption } from '../../types/query.types'
+import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -31,6 +33,20 @@ watchEffect(() => {
 		config.value.values = [{} as any]
 	}
 })
+
+const measuresAsDimensions = computed<DimensionOption[]>(() =>
+	props.columnOptions
+		.filter((o) => FIELDTYPES.NUMBER.includes(o.data_type))
+		.map((o) => ({
+			column_name: o.value,
+			data_type: o.data_type as DimensionDataType,
+			dimension_name: o.label,
+			label: o.label,
+			value: o.value,
+		}))
+)
+
+const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
 </script>
 
 <template>
@@ -39,7 +55,7 @@ watchEffect(() => {
 			<DraggableList v-model:items="config.rows" group="rows">
 				<template #item="{ item, index }">
 					<DimensionPicker
-						:options="props.dimensions"
+						:options="dimensions"
 						:model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
 						@remove="config.rows.splice(index, 1)"
@@ -56,23 +72,38 @@ watchEffect(() => {
 	</CollapsibleSection>
 
 	<CollapsibleSection title="Columns">
-		<div>
-			<DraggableList v-model:items="config.columns" group="columns">
-				<template #item="{ item, index }">
-					<DimensionPicker
-						:options="props.dimensions"
-						:model-value="item"
-						@update:model-value="Object.assign(item, $event || {})"
-						@remove="config.columns.splice(index, 1)"
-					/>
-				</template>
-			</DraggableList>
-			<button
-				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-				@click="config.columns.push({} as any)"
+		<div class="flex flex-col gap-3">
+			<div>
+				<DraggableList v-model:items="config.columns" group="columns">
+					<template #item="{ item, index }">
+						<DimensionPicker
+							:options="props.dimensions"
+							:model-value="item"
+							@update:model-value="Object.assign(item, $event || {})"
+							@remove="config.columns.splice(index, 1)"
+						/>
+					</template>
+				</DraggableList>
+				<button
+					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+					@click="config.columns.push({} as any)"
+				>
+					+ Add column
+				</button>
+			</div>
+
+			<InlineFormControlLabel
+				v-if="config.columns.length"
+				class="!w-1/2"
+				label="Max Column Values"
 			>
-				+ Add column
-			</button>
+				<FormControl
+					type="number"
+					autocomplete="off"
+					:modelValue="config.max_column_values"
+					@update:modelValue="config.max_column_values = $event"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 
@@ -96,10 +127,10 @@ watchEffect(() => {
 					+ Add column
 				</button>
 			</div>
-			<Checkbox label="Show Filters" v-model="config.show_filter_row" />
-			<Checkbox label="Show Row Totals" v-model="config.show_row_totals" />
-			<Checkbox label="Show Column Totals" v-model="config.show_column_totals" />
-			<Checkbox
+			<Toggle label="Show Filters" v-model="config.show_filter_row" />
+			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
+			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
+			<Toggle
 				v-if="config.values.length === 1"
 				label="Show Color Scale"
 				v-model="config.enable_color_scale"

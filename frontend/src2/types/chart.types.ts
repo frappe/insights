@@ -49,6 +49,7 @@ export type YAxisBar = Series & {
 	series: SeriesBar[]
 	stack?: boolean
 	normalize?: boolean
+	overlap?: boolean
 }
 export type SeriesBar = Series & {
 	type: 'bar'
@@ -88,6 +89,7 @@ export type DonutChartConfig = {
 	label_column: Dimension
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
+	max_slices?: number
 	show_inline_labels?: boolean
 }
 export type FunnelChartConfig = {
@@ -100,6 +102,7 @@ export type TableChartConfig = {
 	rows: Dimension[]
 	columns: Dimension[]
 	values: Measure[]
+	max_column_values?: number
 	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean

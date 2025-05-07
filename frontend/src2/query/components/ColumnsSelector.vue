@@ -26,12 +26,7 @@ const query = inject('query') as Query
 			<div class="flex flex-col p-2">
 				<!-- select all -->
 				<div class="mb-2 flex items-center gap-1">
-					<Checkbox
-						class="flex-1"
-						:label="'Select all'"
-						:modelValue="true"
-						:size="'sm'"
-					/>
+					<Toggle class="flex-1" :label="'Select all'" :modelValue="true" :size="'sm'" />
 				</div>
 
 				<DraggableList
@@ -41,7 +36,7 @@ const query = inject('query') as Query
 					@update:items="() => {}"
 				>
 					<template #item="{ item: column }">
-						<Checkbox :label="column.name" :modelValue="true" :size="'sm'" />
+						<Toggle :label="column.name" :modelValue="true" :size="'sm'" />
 					</template>
 				</DraggableList>
 			</div>

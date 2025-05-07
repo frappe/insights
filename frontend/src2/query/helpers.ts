@@ -157,32 +157,32 @@ export function getMeasures(columns: QueryResultColumn[]): Measure[] {
 	const count_measure = count()
 	return [
 		count_measure,
-		...columns
-			.filter((column) => FIELDTYPES.MEASURE.includes(column.type))
-			.map((column) => {
-				return {
-					aggregation: 'sum',
-					column_name: column.name,
-					measure_name: `sum_of_${column.name}`,
-					data_type: column.type as MeasureDataType,
-				}
-			}),
+		...columns.filter((column) => FIELDTYPES.MEASURE.includes(column.type)).map(makeMeasure),
 	]
+}
+
+export function makeMeasure(column: QueryResultColumn): Measure {
+	return {
+		aggregation: 'sum',
+		column_name: column.name,
+		measure_name: `sum_of_${column.name}`,
+		data_type: column.type as MeasureDataType,
+	}
 }
 
 export function getDimensions(columns: QueryResultColumn[]): Dimension[] {
 	if (!columns?.length) return []
-	return columns
-		.filter((column) => FIELDTYPES.DIMENSION.includes(column.type))
-		.map((column) => {
-			const isDate = FIELDTYPES.DATE.includes(column.type)
-			return {
-				column_name: column.name,
-				data_type: column.type as DimensionDataType,
-				granularity: isDate ? 'month' : undefined,
-				dimension_name: column.name,
-			}
-		})
+	return columns.filter((column) => FIELDTYPES.DIMENSION.includes(column.type)).map(makeDimension)
+}
+
+export function makeDimension(column: QueryResultColumn): Dimension {
+	const isDate = FIELDTYPES.DATE.includes(column.type)
+	return {
+		column_name: column.name,
+		data_type: column.type as DimensionDataType,
+		granularity: isDate ? 'month' : undefined,
+		dimension_name: column.name,
+	}
 }
 
 export const query_operation_types = {
@@ -373,7 +373,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
-			return 'SQL'
+			return "SQL"
 		},
 	},
 	code: {
@@ -384,7 +384,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
-			return 'Code'
+			return "Code"
 		},
 	},
 }

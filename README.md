@@ -138,7 +138,16 @@ You need Docker, docker-compose and git setup on your machine. Refer [Docker doc
 3. The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
    - Username: Administrator
    - Password: admin
+  
+4. If you need to stop the containers after use and persist the data
+   ````
+   docker compose stop
+   ````
 
+5. If you need to stop the containers cleanup entire setup after trying it out
+   ````
+   docker compose down
+   ````
 ### Local
 
 To setup the repository locally follow the steps mentioned below:

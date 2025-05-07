@@ -1,5 +1,9 @@
 <template>
-	<grid-layout v-model:layout="layouts" v-bind="options">
+	<grid-layout
+		v-model:layout="layouts"
+		v-bind="options"
+		@layout-ready="() => (layoutReady = true)"
+	>
 		<template #default="{ gridItemProps }">
 			<grid-item
 				v-for="(layout, index) in layouts"
@@ -12,6 +16,7 @@
 				:h="layout.h"
 			>
 				<slot
+					v-if="layoutReady"
 					name="item"
 					:index="index"
 					:i="layout.i"
@@ -31,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 type Layout = {
 	i: string
@@ -41,6 +46,7 @@ type Layout = {
 	h: number
 }
 const layouts = defineModel<Layout[]>()
+const layoutReady = ref(false)
 const props = defineProps<{
 	cols?: number
 	disabled?: Boolean
