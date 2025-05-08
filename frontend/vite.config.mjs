@@ -1,8 +1,13 @@
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import frappeui from 'frappe-ui/vite'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 export default defineConfig({
 	plugins: [
@@ -48,7 +53,6 @@ export default defineConfig({
 		include: ['feather-icons', 'showdown', 'tailwind.config.js'],
 	},
 	define: {
-		// enable hydration mismatch details in production build
 		__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'true',
 	},
 })
