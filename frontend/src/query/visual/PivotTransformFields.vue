@@ -51,30 +51,30 @@ const errors = computed(() => {
 	<div class="space-y-1">
 		<span class="text-sm font-medium text-gray-700">Column</span>
 		<Autocomplete
-			v-model="options.column"
-			:return-value="true"
 			placeholder="Column"
 			:options="allOptions"
+			:modelValue="options.column"
+			@update:modelValue="options.column = $event?.value"
 		/>
 		<span v-if="errors.column" class="text-xs text-red-500"> {{ errors.column }} </span>
 	</div>
 	<div class="space-y-1">
 		<span class="text-sm font-medium text-gray-700">Row</span>
 		<Autocomplete
-			v-model="options.index"
-			:return-value="true"
 			placeholder="Row"
 			:options="allOptions"
+			:modelValue="options.index"
+			@update:modelValue="options.index = $event?.value"
 		/>
 		<span v-if="errors.index" class="text-xs text-red-500"> {{ errors.index }} </span>
 	</div>
 	<div class="space-y-1">
 		<span class="text-sm font-medium text-gray-700">Value</span>
 		<Autocomplete
-			v-model="options.value"
-			:return-value="true"
 			placeholder="Value"
 			:options="valueOptions"
+			:modelValue="options.value"
+			@update:modelValue="options.value = $event?.value"
 		/>
 		<span v-if="errors.value" class="text-xs text-red-500"> {{ errors.value }} </span>
 	</div>

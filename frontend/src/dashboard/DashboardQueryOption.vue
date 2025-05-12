@@ -47,12 +47,12 @@ async function selectQuery() {
 		<span class="mb-2 block text-sm leading-4 text-gray-700">Query</span>
 		<div class="relative">
 			<Autocomplete
-				v-model="queryName"
-				:returnValue="true"
 				placeholder="Select a query"
-				:allowCreate="true"
 				:options="queryOptions"
+				:allowCreate="true"
 				@createOption="createQuery"
+				:modelValue="queryName"
+				@update:modelValue="queryName = $event?.value"
 			/>
 			<div
 				v-if="queryName"

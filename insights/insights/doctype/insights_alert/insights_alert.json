@@ -16,11 +16,11 @@
   "cron_format",
   "last_execution",
   "next_execution",
-  "repeat",
   "column_break_ktop",
   "telegram_chat_id",
   "recipients",
   "condition",
+  "custom_condition",
   "section_break_ikjw",
   "message"
  ],
@@ -30,21 +30,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Query",
-   "options": "Insights Query",
+   "options": "Insights Query v3",
    "reqd": 1
-  },
-  {
-   "fieldname": "condition",
-   "fieldtype": "Code",
-   "in_list_view": 1,
-   "label": "Condition",
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "repeat",
-   "fieldtype": "Check",
-   "label": "Repeat"
   },
   {
    "default": "Hourly",
@@ -118,11 +105,24 @@
    "fieldname": "message",
    "fieldtype": "Markdown Editor",
    "label": "Message"
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Condition",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "custom_condition",
+   "fieldtype": "Check",
+   "label": "Custom Condition"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-12 12:42:52.680651",
+ "modified": "2025-03-21 15:42:02.011577",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",
@@ -136,7 +136,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Insights Admin",
    "share": 1,
    "write": 1
   },

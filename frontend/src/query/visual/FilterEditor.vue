@@ -10,7 +10,6 @@ const emit = defineEmits(['save', 'discard', 'remove'])
 const props = defineProps({ filter: Object })
 
 const assistedQuery = inject('assistedQuery')
-const query = inject('query')
 
 const activeTab = ref('Simple')
 const filter = reactive({
@@ -27,14 +26,14 @@ if (filter.operator?.value == 'is' && filter.value?.value?.toLowerCase().include
 	filter.operator.value = filter.value.value === 'Set' ? 'is_set' : 'is_not_set'
 }
 
-const filterColumnOptions = computed(() =>
-	assistedQuery.groupedColumnOptions.map((group) => {
+const filterColumnOptions = computed(() => {
+	return assistedQuery.groupedColumnOptions.map((group) => {
 		return {
 			group: group.group,
 			items: group.items.filter((c) => c.column !== 'count'),
 		}
 	})
-)
+})
 
 const isValidFilter = computed(() => {
 	if (filter.expression?.raw && filter.expression?.ast) return true

@@ -1,19 +1,10 @@
 import frappe
 
-from insights.api.telemetry import track
-from insights.decorators import check_role
-from insights.insights.doctype.insights_team.insights_team import (
-    get_allowed_resources_for_user,
-)
+from insights.decorators import insights_whitelist
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def get_queries():
-    allowed_queries = get_allowed_resources_for_user("Insights Query")
-    if not allowed_queries:
-        return []
-
     Query = frappe.qb.DocType("Insights Query")
     QueryChart = frappe.qb.DocType("Insights Chart")
     DataSource = frappe.qb.DocType("Insights Data Source")
@@ -41,7 +32,6 @@ def get_queries():
             QueryChart.chart_type,
             DataSource.title.as_("data_source_title"),
         )
-        .where(Query.name.isin(allowed_queries))
         .groupby(
             Query.name,
             User.full_name.as_("owner_name"),
@@ -53,10 +43,8 @@ def get_queries():
     ).run(as_dict=True)
 
 
-@frappe.whitelist()
-@check_role("Insights User")
+@insights_whitelist()
 def create_query(**query):
-    track("create_query")
     doc = frappe.new_doc("Insights Query")
     doc.title = query.get("title")
     doc.data_source = query.get("data_source")
@@ -78,7 +66,7 @@ def create_query(**query):
     return doc.as_dict()
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def create_chart():
     chart = frappe.new_doc("Insights Chart")
     chart.save()
@@ -110,7 +98,13 @@ def pivot(
             df[value_column] = df[value_column].apply(lambda x: 1)
 
     pivot = pd.pivot_table(
-        df, index=indexes, columns=columns, values=values, sort=False, fill_value=0, aggfunc="sum"
+        df,
+        index=indexes,
+        columns=columns,
+        values=values,
+        sort=False,
+        fill_value=0,
+        aggfunc="sum",
     )
     pivot = pivot.reset_index()
     pivot = pivot.to_dict("records")

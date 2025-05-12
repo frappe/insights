@@ -2,18 +2,41 @@
 # License: GNU General Public License v3. See license.txt
 
 
+import os
+
 import frappe
 from frappe import _
+
+from insights.setup.demo import DemoDataFactory
 
 
 def get_setup_stages(args=None):
     return [
         {
+            "status": _("Setting up demo data"),
+            "fail_msg": _("Failed to setup demo data"),
+            "tasks": [
+                {
+                    "fn": setup_demo_data,
+                    "args": args,
+                    "fail_msg": _("Failed to setup demo data"),
+                }
+            ],
+        },
+        {
             "status": _("Wrapping up"),
             "fail_msg": _("Failed to login"),
             "tasks": [{"fn": wrap_up, "args": args, "fail_msg": _("Failed to login")}],
-        }
+        },
     ]
+
+
+def setup_demo_data(args):
+    if frappe.flags.in_test or os.environ.get("CI"):
+        return
+    factory = DemoDataFactory()
+    factory.run()
+    frappe.db.commit()
 
 
 def wrap_up(args):

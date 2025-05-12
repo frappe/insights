@@ -1,0 +1,54 @@
+@import 'frappe-ui/src/fonts/Inter/inter.css';
+@import 'frappe-ui/src/style.css';
+@import './styles/codemirror.css';
+
+body {
+	@apply text-base;
+}
+
+.tnum {
+	font-feature-settings: 'tnum';
+}
+
+@layer components {
+	/* Works on Firefox */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: #c0c6cc #ebeef0;
+	}
+
+	html {
+		scrollbar-width: auto;
+	}
+
+	/* Works on Chrome, Edge, and Safari */
+	*::-webkit-scrollbar-thumb {
+		background: #e2e8f0;
+		border-radius: 6px;
+	}
+
+	*::-webkit-scrollbar-track,
+	*::-webkit-scrollbar-corner {
+		background: #f8fafc;
+	}
+
+	*::-webkit-scrollbar {
+		width: 0px;
+		height: 6px;
+	}
+
+	body::-webkit-scrollbar {
+		width: 0px;
+		height: 12px;
+	}
+}
+
+.fade-enter-active,
+.fade-leave-active {
+	transition: opacity 0.1s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+	opacity: 0;
+}

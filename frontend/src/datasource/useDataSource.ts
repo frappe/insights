@@ -32,6 +32,7 @@ function useDataSource(name: string) {
 	}
 
 	function makeDropdownOptions() {
+		if (!tableList.value?.length) return []
 		return (
 			tableList.value
 				.filter((t) => !t.hidden)
@@ -56,6 +57,7 @@ function useDataSource(name: string) {
 	}
 
 	function makeGroupedTableOptions() {
+		if (!tableList.value?.length) return []
 		const tablesByGroup: Record<string, DataSourceTableOption[]> = {
 			Tables: [],
 			Queries: [],

@@ -1,17 +1,20 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
+import inspect
 import threading
 from functools import wraps
 
 import frappe
+
+from insights.insights.doctype.insights_team.insights_team import is_admin
 
 
 def check_role(role):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            if frappe.session.user == "Administrator":
+            if is_admin(frappe.session.user):
                 return function(*args, **kwargs)
 
             perm_disabled = not frappe.db.get_single_value(
@@ -113,6 +116,55 @@ def debounce(wait):
             finally:
                 # reset the event after `wait` seconds
                 threading.Timer(wait, function.last_call.clear).start()
+
+        return wrapper
+
+    return decorator
+
+
+def validate_type(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        sig = inspect.signature(func)
+        annotated_types = {
+            k: v.annotation
+            for k, v in sig.parameters.items()
+            if v.annotation != inspect._empty
+        }
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        for arg_name, arg_value in bound_args.arguments.items():
+            if (
+                arg_name in annotated_types
+                and arg_value is not None
+                and not isinstance(arg_value, annotated_types[arg_name])
+            ):
+                raise TypeError(
+                    f"{func.__name__}: Argument {arg_name} must be of type {annotated_types[arg_name]}"
+                )
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def insights_whitelist(*args, **kwargs):
+    # usage:
+    # @insights_whitelist()
+    # def my_function():
+    #     pass
+    #
+    # what it does:
+    # @frappe.whitelist()
+    # @check_role("Insights User")
+    # def my_function():
+    #     pass
+
+    def decorator(function):
+        @wraps(function)
+        @frappe.whitelist(*args, **kwargs)
+        @check_role("Insights User")
+        def wrapper(*args, **kwargs):
+            return function(*args, **kwargs)
 
         return wrapper
 

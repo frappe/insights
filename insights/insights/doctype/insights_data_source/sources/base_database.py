@@ -100,7 +100,9 @@ class BaseDatabase(Database):
     def build_query(self, query):
         """Used to update the sql in insights query"""
         query_str = self.query_builder.build(query)
-        query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
+        query_str = (
+            self.process_subquery(query_str) if not query.is_native_query else query_str
+        )
         return query_str
 
     def run_query(self, query):
@@ -112,7 +114,7 @@ class BaseDatabase(Database):
         sql,  # can be a string or a sqlalchemy query object or text object
         pluck=False,
         return_columns=False,
-        cached=False,
+        cached=True,
         query_name=None,
         log_errors=True,
     ):
@@ -150,9 +152,13 @@ class BaseDatabase(Database):
         return query
 
     def process_subquery(self, sql):
-        allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
+        allow_subquery = frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        )
         if allow_subquery:
-            sql = replace_query_tables_with_cte(sql, self.data_source, self.engine.dialect)
+            sql = replace_query_tables_with_cte(
+                sql, self.data_source, self.engine.dialect
+            )
         return sql
 
     def escape_special_characters(self, sql):
@@ -188,7 +194,9 @@ class BaseDatabase(Database):
         # set a hard max limit to prevent long running queries
         # there's no use case to view more than 500 rows in the UI
         # TODO: while exporting as csv, we can remove this limit
-        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
+        max_rows = (
+            frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
+        )
         return add_limit_to_sql(sql, max_rows)
 
     def validate_native_sql(self, query):

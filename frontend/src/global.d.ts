@@ -1,11 +1,12 @@
 declare module 'frappe-ui'
 declare module '@/utils/dayjs'
+declare module 'dom-to-image'
 
 declare type HashString = `#${string}`
 declare type RGBString = `rgb(${number}, ${number}, ${number})`
 
-interface User {
-	user_id: string
+interface SessionUser {
+	email: string
 	first_name: string
 	last_name: string
 	full_name: string
@@ -14,11 +15,13 @@ interface User {
 	is_user: boolean
 	country: string
 	locale: string
+	is_v2_user: boolean
+	default_version: 'v3' | 'v2' | ''
 }
 
 interface Session {
 	initialized: boolean
-	user: User
+	user: SessionUser
 }
 
 type ListResourceParams = {
@@ -90,6 +93,9 @@ type DropdownOption = {
 	label: string
 	value: string
 	description: string
+}
+type ColumnOption = DropdownOption & {
+	data_type: ColumnDataType
 }
 
 interface DataSourceTableOption extends DropdownOption {

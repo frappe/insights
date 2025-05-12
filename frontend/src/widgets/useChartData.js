@@ -188,8 +188,8 @@ export function convertResultToObjects(results) {
 	// return list of plain objects with first row's labels as keys
 	// return [{ label1: value1, label2: value2 }, ...}]
 	return results.slice(1).map((row) => {
-		return results[0].reduce((obj, { label }, index) => {
-			obj[label] = row[index]
+		return results[0].reduce((obj, { label, name }, index) => {
+			obj[label || name] = row[index]
 			return obj
 		}, {})
 	})

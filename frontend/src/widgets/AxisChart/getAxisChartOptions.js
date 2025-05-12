@@ -1,4 +1,4 @@
-import { formatNumber, getShortNumber } from '@/utils'
+import { formatNumber, getShortNumber, ellipsis } from '@/utils'
 import { getColors as getDefaultColors } from '@/utils/colors'
 import { graphic } from 'echarts/core'
 
@@ -144,7 +144,7 @@ function makeOptions(chartType, labels, datasets, options) {
 			},
 			axisLabel: {
 				rotate: options.rotateLabels,
-				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : value),
+				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : ellipsis(value, 20)),
 			},
 		},
 		yAxis: datasets.map((dataset) => ({
@@ -157,8 +157,10 @@ function makeOptions(chartType, labels, datasets, options) {
 				lineStyle: { type: 'dashed' },
 			},
 			axisLabel: {
-				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : value),
+				formatter: (value, _) => (!isNaN(value) ? getShortNumber(value, 1) : ellipsis(value, 20)),
 			},
+			min: options.yAxisMin,
+			max: options.yAxisMax,
 		})),
 		series: datasets.map((dataset, index) => ({
 			name: dataset.label,
@@ -175,12 +177,12 @@ function makeOptions(chartType, labels, datasets, options) {
 			areaStyle:
 				dataset.series_options.showArea || options.showArea
 					? {
-							color: new graphic.LinearGradient(0, 0, 0, 1, [
-								{ offset: 0, color: dataset.series_options.color || colors[index] },
-								{ offset: 1, color: '#fff' },
-							]),
-							opacity: 0.2,
-					  }
+						color: new graphic.LinearGradient(0, 0, 0, 1, [
+							{ offset: 0, color: dataset.series_options.color || colors[index] },
+							{ offset: 1, color: '#fff' },
+						]),
+						opacity: 0.2,
+					}
 					: undefined,
 			// bar styles
 			itemStyle: {
@@ -192,6 +194,17 @@ function makeOptions(chartType, labels, datasets, options) {
 			barMaxWidth: 50,
 			stack: options.stack ? 'stack' : null,
 		})),
+
+		label: {
+			show: options.show_data_labels,
+			position: 'inside',
+			formatter: (params) => {
+				const value = params.value;
+				return !isNaN(value) ? getShortNumber(value, 1) : value;
+			},
+			fontSize: 12,
+			color: '#333',
+		},
 		legend: {
 			icon: 'circle',
 			type: 'scroll',
@@ -206,22 +219,32 @@ function makeOptions(chartType, labels, datasets, options) {
 			trigger: 'axis',
 			confine: true,
 			appendToBody: false,
-			valueFormatter: (value) => (isNaN(value) ? value : formatNumber(value)),
+			formatter: (params) => {
+				const filteredParams = params
+					.filter((p) => p.value !== 0 && p.value !== null) 
+					.sort((a, b) => b.value - a.value);
+		
+				if (!filteredParams.length) return ''; 
+				return filteredParams
+					.map((p) => `${p.marker} ${p.seriesName}: ${formatNumber(p.value)}`)
+					.join('<br/>');
+			},
 		},
+		
 	}
 }
 
 function getMarkLineOption(options) {
 	return options.referenceLine
 		? {
-				data: [
-					{
-						name: options.referenceLine,
-						type: options.referenceLine.toLowerCase(),
-						label: { position: 'middle', formatter: '{b}: {c}' },
-					},
-				],
-		  }
+			data: [
+				{
+					name: options.referenceLine,
+					type: options.referenceLine.toLowerCase(),
+					label: { position: 'middle', formatter: '{b}: {c}' },
+				},
+			],
+		}
 		: {}
 }
 

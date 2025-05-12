@@ -5,19 +5,30 @@
 __version__ = "2.2.9"
 
 
-def notify(*args, **kwargs):
+def create_toast(
+    message: str | None = None,
+    title: str | None = None,
+    type: str = "info",
+    duration: int = 5,
+):
     import frappe
 
-    if len(args) == 1:
-        kwargs["message"] = args[0]
+    if not title:
+        title = type.capitalize()
 
     frappe.publish_realtime(
         event="insights_notification",
         user=frappe.session.user,
         message={
-            "message": kwargs.get("message"),
-            "title": kwargs.get("title"),
-            "type": kwargs.get("type", "success"),
+            "message": message,
+            "title": title,
+            "type": type,
             "user": frappe.session.user,
+            "duration": duration,
         },
     )
+
+
+# for backward compatibility
+def notify(*args, **kwargs):
+    create_toast(*args, **kwargs)

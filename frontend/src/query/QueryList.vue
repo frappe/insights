@@ -89,9 +89,9 @@ const queryBuilderTypes = ref([
 	},
 ])
 
-const user_id = sessionStore().user.user_id
+const email = sessionStore().user.email
 const filters = useStorage('insights:query-list-filters', {
-	owner: ['=', user_id],
+	owner: ['=', email],
 })
 const queries = computed(() => {
 	if (isEmptyObj(filters.value)) {
@@ -211,7 +211,7 @@ const queryListColumns = [
 		</div>
 		<ListView
 			:columns="queryListColumns"
-			:rows="queries"
+			:rows="queries.slice(0, 100)"
 			:row-key="'name'"
 			:options="{
 				showTooltip: false,

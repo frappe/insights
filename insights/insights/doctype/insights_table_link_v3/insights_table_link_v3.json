@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2024-08-29 13:24:33.428173",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "data_source",
+  "left_table",
+  "right_table",
+  "column_break_nqax",
+  "left_column",
+  "right_column"
+ ],
+ "fields": [
+  {
+   "fieldname": "left_table",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Left Table",
+   "reqd": 1
+  },
+  {
+   "fieldname": "right_table",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Right Table",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_nqax",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "left_column",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Left Column",
+   "reqd": 1
+  },
+  {
+   "fieldname": "right_column",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Right Column",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "left_table.data_source",
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "label": "Data Source",
+   "options": "Insights Data Source v3",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-18 19:33:10.480353",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Table Link v3",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

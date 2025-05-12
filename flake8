@@ -61,5 +61,7 @@ ignore =
     W391,
     W503,
     W504,
+    E731,
+    C420
 
 max-line-length = 88

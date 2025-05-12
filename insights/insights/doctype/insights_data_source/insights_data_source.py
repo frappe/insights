@@ -9,7 +9,6 @@ from frappe.model.document import Document
 from frappe.utils.caching import redis_cache, site_cache
 
 from insights import notify
-from insights.api.telemetry import track
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_team.insights_team import (
     check_table_permission,
@@ -26,7 +25,9 @@ from .sources.sqlite import SQLiteDB
 
 class InsightsDataSourceDocument:
     def before_insert(self):
-        if self.is_site_db and frappe.db.exists("Insights Data Source", {"is_site_db": 1}):
+        if self.is_site_db and frappe.db.exists(
+            "Insights Data Source", {"is_site_db": 1}
+        ):
             frappe.throw("Only one site database can be configured")
 
     def before_save(self: "InsightsDataSource"):
@@ -40,10 +41,10 @@ class InsightsDataSourceDocument:
 
         linked_doctypes = ["Insights Table"]
         for doctype in linked_doctypes:
-            for name in frappe.db.get_all(doctype, {"data_source": self.name}, pluck="name"):
+            for name in frappe.db.get_all(
+                doctype, {"data_source": self.name}, pluck="name"
+            ):
                 frappe.delete_doc(doctype, name)
-
-        track("delete_data_source")
 
     def validate(self):
         if self.is_site_db or self.name == "Query Store":
@@ -193,7 +194,9 @@ class InsightsDataSourceClient:
                 break
 
 
-class InsightsDataSource(InsightsDataSourceDocument, InsightsDataSourceClient, Document):
+class InsightsDataSource(
+    InsightsDataSourceDocument, InsightsDataSourceClient, Document
+):
     @cached_property
     def _db(self) -> BaseDatabase:
         if self.is_site_db:

@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "creation": "2024-10-28 13:05:53.961297",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "data_source",
+  "table_name",
+  "parquet_file",
+  "started_at",
+  "ended_at",
+  "time_taken",
+  "column_break_ydhp",
+  "row_limit",
+  "memory_limit",
+  "row_size",
+  "batch_size",
+  "rows_imported",
+  "section_break_vxpp",
+  "query",
+  "output"
+ ],
+ "fields": [
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Data Source",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "table_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Table Name",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "query",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Query",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Long Text",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ydhp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "parquet_file",
+   "fieldtype": "Text",
+   "label": "Parquet File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_vxpp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rows_imported",
+   "fieldtype": "Int",
+   "label": "Rows Imported",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_size",
+   "fieldtype": "Float",
+   "label": "Row Size (KB)",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "memory_limit",
+   "fieldtype": "Int",
+   "label": "Memory Limit (MB)",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch_size",
+   "fieldtype": "Int",
+   "label": "Batch Size",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_limit",
+   "fieldtype": "Int",
+   "label": "Row Limit",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "time_taken",
+   "fieldtype": "Int",
+   "label": "Time Taken (Seconds)",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "In Progress\nCompleted\nFailed",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-11-26 22:36:30.872683",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Table Import Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1
+  }
+ ],
+ "search_fields": "data_source, table_name",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "table_name"
+}

@@ -56,10 +56,14 @@ class PostgresTableFactory:
 
     def get_db_tables(self, table_names=None):
         inspector = inspect(self.db_conn)
-        tables = set(inspector.get_table_names()) | set(inspector.get_foreign_table_names())
+        tables = set(inspector.get_table_names()) | set(
+            inspector.get_foreign_table_names()
+        )
         if table_names:
             tables = [table for table in tables if table in table_names]
-        return [self.get_table(table) for table in tables if not self.should_ignore(table)]
+        return [
+            self.get_table(table) for table in tables if not self.should_ignore(table)
+        ]
 
     def should_ignore(self, table_name):
         return any(re.match(pattern, table_name) for pattern in IGNORED_TABLES)
@@ -122,15 +126,21 @@ class PostgresDatabase(BaseDatabase):
                 connect_args=connect_args,
             )
         self.query_builder: PostgresQueryBuilder = PostgresQueryBuilder(self.engine)
-        self.table_factory: PostgresTableFactory = PostgresTableFactory(self.data_source)
+        self.table_factory: PostgresTableFactory = PostgresTableFactory(
+            self.data_source
+        )
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(f"""select * from "{table}" limit {limit}""", cached=True)
-        length = self.execute_query(f'''select count(*) from "{table}"''', cached=True)[0][0]
+        data = self.execute_query(
+            f"""select * from "{table}" limit {limit}""", cached=True
+        )
+        length = self.execute_query(f'''select count(*) from "{table}"''', cached=True)[
+            0
+        ][0]
         return {
             "data": data or [],
             "length": length or 0,

@@ -118,7 +118,9 @@ class InsightsLegacyQueryClient:
                 if expression:
                     # check if expression is an object
                     row.expression = (
-                        dumps(expression, indent=2) if isinstance(expression, dict) else expression
+                        dumps(expression, indent=2)
+                        if isinstance(expression, dict)
+                        else expression
                     )
                 break
 
@@ -162,7 +164,9 @@ class InsightsLegacyQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
-        with_query_tables = frappe.db.get_single_value("Insights Settings", "allow_subquery")
+        with_query_tables = frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        )
         return get_tables(self.data_source, with_query_tables)
 
     @frappe.whitelist()
@@ -345,12 +349,17 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
             return results
 
         columns = [
-            col for col in self.doc.columns if col.aggregation and "Cumulative" in col.aggregation
+            col
+            for col in self.doc.columns
+            if col.aggregation and "Cumulative" in col.aggregation
         ]
         return apply_cumulative_sum(columns, results)
 
     def has_cumulative_columns(self):
-        return any(col.aggregation and "Cumulative" in col.aggregation for col in self.doc.columns)
+        return any(
+            col.aggregation and "Cumulative" in col.aggregation
+            for col in self.doc.columns
+        )
 
     def fetch_results(self, additional_filters=None):
         query = self.doc
@@ -380,7 +389,9 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
             # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
             if new_simple_filter := convert_into_simple_filter(new_filter):
                 for index, exisiting_filter in enumerate(filters.conditions):
-                    existing_simple_filter = convert_into_simple_filter(exisiting_filter)
+                    existing_simple_filter = convert_into_simple_filter(
+                        exisiting_filter
+                    )
                     if not existing_simple_filter:
                         continue
                     if existing_simple_filter["column"] == new_simple_filter["column"]:
@@ -462,4 +473,6 @@ class LegacyQueryImporter(BaseNestedQueryImporter):
 
     def _rename_subquery_in_filters(self, old_name, new_name):
         # do a hacky string replace for now
-        self.data.query["filters"] = self.data.query["filters"].replace(old_name, new_name)
+        self.data.query["filters"] = self.data.query["filters"].replace(
+            old_name, new_name
+        )

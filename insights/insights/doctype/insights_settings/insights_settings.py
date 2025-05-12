@@ -9,6 +9,34 @@ from frappe.model.document import Document
 
 
 class InsightsSettings(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        allow_subquery: DF.Check
+        allowed_origins: DF.Data | None
+        apply_user_permissions: DF.Check
+        auto_execute_query: DF.Check
+        enable_data_store: DF.Check
+        enable_permissions: DF.Check
+        fiscal_year_start: DF.Date | None
+        max_execution_time: DF.Int
+        max_memory_usage: DF.Int
+        max_records_to_sync: DF.Int
+        onboarding_complete: DF.Check
+        query_result_expiry: DF.Int
+        query_result_limit: DF.Int
+        setup_complete: DF.Check
+        telegram_api_token: DF.Password | None
+        week_starts_on: DF.Literal[
+            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+        ]
+    # end: auto-generated types
+
     def before_save(self):
         if self.setup_complete and not self.get_doc_before_save().setup_complete:
             sync_site_tables()

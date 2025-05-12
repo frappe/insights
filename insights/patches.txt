@@ -6,6 +6,7 @@ execute:frappe.delete_doc('DocType', 'Query Field', ignore_missing=True)
 execute:frappe.delete_doc('DocType', 'Query Chart', ignore_missing=True)
 insights.patches.add_roles
 insights.insights.doctype.insights_query.patches.make_query_variable_value_password_field
+insights.patches.normalize_workbook #6
 
 [post_model_sync]
 insights.patches.add_position_key_to_filter
@@ -45,3 +46,6 @@ insights.insights.doctype.insights_table.patches.sync_table_links
 insights.insights.doctype.insights_notebook_page.patches.replace_query_builder_with_editor
 insights.insights.doctype.insights_query.patches.set_chart_name
 insights.insights.doctype.insights_chart.patches.convert_bar_to_row_chart
+insights.insights.doctype.insights_data_source_v3.patches.copy_data_sources #v4
+insights.insights.doctype.insights_table_v3.patches.force_sync_tables #5
+insights.patches.enable_data_store

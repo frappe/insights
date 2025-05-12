@@ -51,7 +51,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-18 18:13:29.212361",
+ "modified": "2024-09-18 19:34:15.738058",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Execution Log",
@@ -63,7 +63,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Insights Admin",
    "share": 1
   },
   {

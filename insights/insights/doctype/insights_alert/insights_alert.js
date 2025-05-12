@@ -3,7 +3,6 @@
 
 frappe.ui.form.on("Insights Alert", {
 	refresh: function (frm) {
-		if (frm.doc.disabled) return;
 		frm.add_custom_button(__("Send Alert"), function () {
 			frappe.dom.freeze(__("Sending Alert..."));
 			frm.call("send_alert")

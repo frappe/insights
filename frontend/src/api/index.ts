@@ -1,13 +1,16 @@
 import { call, createDocumentResource, createListResource, createResource } from 'frappe-ui'
 import getWhitelistedMethods from './whitelistedMethods'
 
-export const login = (email: string, password: string): Promise<User> => {
+export const login = (email: string, password: string): Promise<SessionUser> => {
 	return call('login', { usr: email, pwd: password })
 }
 export const logout = (): Promise<any> => call('logout')
 
 export const fetchUserInfo = (): Promise<any> => call('insights.api.get_user_info')
 export const trackActiveSite = (): Promise<any> => call('insights.api.telemetry.track_active_site')
+export const updateDefaultVersion = (version: 'v3' | 'v2' | ''): Promise<any> => {
+	return call('insights.api.update_default_version', { version })
+}
 
 export const createLastViewedLog = (recordType: string, recordName: string) => {
 	return call('insights.api.home.create_last_viewed_log', {
@@ -27,11 +30,7 @@ export const testDataSourceConnection: Resource = createResource({
 
 export const createQuery: Resource = createResource({ url: 'insights.api.queries.create_query' })
 
-export const getDocumentResource = (
-	doctype: string,
-	docname?: string,
-	options?: object
-) => {
+export const getDocumentResource = (doctype: string, docname?: string, options?: object) => {
 	const resource = createDocumentResource({
 		doctype: doctype,
 		name: docname || doctype,
