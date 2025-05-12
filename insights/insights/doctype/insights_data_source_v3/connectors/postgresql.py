@@ -12,9 +12,10 @@ def get_postgres_connection(data_source):
         return ibis.connect(conn_string)
     else:
         password = data_source.get_password(raise_exception=False)
+        data_source.port = int(data_source.port or 5432)
         return ibis.postgres.connect(
             host=data_source.host,
-            port=int(data_source.port) or 5432,
+            port=data_source.port,
             user=data_source.username,
             password=password,
             database=data_source.database_name,

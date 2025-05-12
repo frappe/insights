@@ -14,10 +14,11 @@ def get_mssql_connection(data_source):
         )
 
     password = data_source.get_password(raise_exception=False)
+    data_source.port = int(data_source.port or 1433)
 
     return ibis.mssql.connect(
         host=data_source.host,
-        port=int(data_source.port) or 1433,
+        port=data_source.port,
         user=data_source.username,
         password=password,
         database=data_source.database_name,
