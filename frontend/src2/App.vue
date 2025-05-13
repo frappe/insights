@@ -10,7 +10,7 @@
 			</Suspense>
 		</div>
 
-		<template v-if="!isGuestView">
+		<template>
 			<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 		</template>
 
