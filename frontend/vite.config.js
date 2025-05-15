@@ -29,13 +29,15 @@ export default defineConfig({
 		outDir: `../insights/public/frontend`,
 		emptyOutDir: true,
 		sourcemap: true,
-		commonjsOptions: {
-			include: [/tailwind.config.js/, /node_modules/],
-		},
 		rollupOptions: {
 			input: {
 				main: path.resolve(__dirname, 'index.html'),
 				insights_v2: path.resolve(__dirname, 'index_v2.html'),
+			},
+			output: {
+				manualChunks: {
+					'frappe-ui': ['frappe-ui'],
+				},
 			},
 		},
 	},

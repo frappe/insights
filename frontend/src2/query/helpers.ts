@@ -373,7 +373,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
-			return 'SQL'
+			return "SQL"
 		},
 	},
 	code: {
@@ -384,7 +384,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
-			return 'Code'
+			return "Code"
 		},
 	},
 }

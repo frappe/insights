@@ -322,7 +322,7 @@ export function makeQuery(name: string) {
 			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
 		)
 		if (existingOrderByIndex > -1) {
-			currentOperations.value[existingOrderByIndex] = order_by(args)
+			query.doc.operations[existingOrderByIndex] = order_by(args)
 		} else {
 			addOperation(order_by(args))
 		}
