@@ -32,6 +32,7 @@ watchEffect(() => {
 				:options="props.dimensions"
 				:modelValue="x_axis.dimension"
 				@update:modelValue="x_axis.dimension = $event || {}"
+				@remove="x_axis.dimension = {} as Dimension"
 			/>
 			<FormControl
 				label="Rotate Values"
@@ -46,10 +47,10 @@ watchEffect(() => {
 					{ label: '90°', value: 90 },
 				]"
 			/>
-			<Toggle label="Show Axis Title" />
+			<!-- <Toggle label="Show Axis Title" />
 			<InlineFormControlLabel v-if="false" label="Axis Title Text">
 				<FormControl />
-			</InlineFormControlLabel>
+			</InlineFormControlLabel> -->
 		</div>
 	</CollapsibleSection>
 </template>
