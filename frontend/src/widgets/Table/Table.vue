@@ -56,10 +56,13 @@ const tanstackColumns = computed(() => {
 				if (!isNumberColumn) return ''
 				const filteredRows = props.table.getFilteredRowModel().rows
 				const values = filteredRows.map((row) => row.getValue(column.column))
-				return formatNumber(
-					values.reduce((acc, curr) => acc + curr, 0),
-					2
-				)
+				const total = values.reduce((acc, curr) => acc + curr, 0)
+				if (values.length === 0) return ''
+				if (column.column_options?.total_type === 'Average') {
+					return formatNumber(total / values.length, 2)
+				} else {
+					return formatNumber(total, 2)
+				}
 			},
 		}
 	})
