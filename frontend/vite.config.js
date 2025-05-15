@@ -29,9 +29,6 @@ export default defineConfig({
 		outDir: `../insights/public/frontend`,
 		emptyOutDir: true,
 		sourcemap: true,
-		commonjsOptions: {
-			include: [/tailwind.config.js/, /node_modules/],
-		},
 		rollupOptions: {
 			input: {
 				main: path.resolve(__dirname, 'index.html'),

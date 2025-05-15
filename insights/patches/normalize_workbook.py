@@ -86,8 +86,8 @@ def execute():
 
             for item in dashboard["items"]:
                 if item.type == "chart":
-                    chart = chart_name_to_doc[item.chart]
-                    item.chart = chart.name
+                    chart = chart_name_to_doc.get(item.chart)
+                    item.chart = chart.name if chart else None
 
                 if item.type == "filter":
                     new_links = {}

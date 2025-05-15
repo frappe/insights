@@ -474,10 +474,6 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 
 	const labels = rows.map((r) => r[labelColumn])
 	const values = rows.map((r) => r[valueColumn])
-	const total = values.reduce((a, b) => a + b, 0)
-
-	labels.unshift('Total')
-	values.unshift(total)
 
 	let colors = getGradientColors('blue')
 
@@ -510,7 +506,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 					padding: [0, 5, 0, 0],
 					formatter: (params: any) => {
 						const index = labels.indexOf(params.name)
-						const percentage = Number((values[index] / total) * 100).toFixed(0)
+						const percentage = Number((values[index] / values[0]) * 100).toFixed(0)
 						const value = getShortNumber(values[index], 2)
 						return `${params.name}\n${value} (${percentage}%)`
 					},

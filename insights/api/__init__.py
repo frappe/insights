@@ -199,7 +199,7 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     args = args or {}
 
     response = None
-    if doctype == "Insights Query v3" and method == "execute":
+    if doctype == "Insights Query v3" and method in ("execute", "download_results"):
         response = doc.execute(**args)
     elif doctype == "Insights Dashboard v3" and method == "get_distinct_column_values":
         response = doc.get_distinct_column_values(**args)
