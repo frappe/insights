@@ -9,13 +9,17 @@ export type ChartType = (typeof CHARTS)[number]
 export type AxisChartConfig = {
 	x_axis: XAxis
 	y_axis: YAxis
-	split_by?: Dimension
+	split_by?: SplitBy
 }
 
 export type XAxis = {
 	dimension: Dimension
 	label_rotation?: number
-	max_column_values?: number
+}
+
+export type SplitBy = {
+	dimension: Dimension
+	max_split_values?: number
 }
 
 export type YAxis = {
