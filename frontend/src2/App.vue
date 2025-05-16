@@ -6,7 +6,7 @@
 
 		<div class="flex h-full flex-1 flex-col overflow-auto">
 			<Suspense>
-				<RouterView />
+				<RouterView :key="route.fullPath" />
 			</Suspense>
 		</div>
 
@@ -33,6 +33,7 @@ import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
 import { createToast } from './helpers/toasts.ts'
 import session from './session'
 import telemetry from './telemetry.ts'
+import router from '@/router.ts'
 
 const route = useRoute()
 const hideSidebar = ref(true)

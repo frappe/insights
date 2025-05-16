@@ -34,6 +34,7 @@ const routes = [
 		props: true,
 		name: 'Workbook',
 		path: '/workbook/:workbook_name',
+		redirect: (to: RouteLocation) => `/workbook/${to.params.workbook_name}/query/0`,
 		component: () => import('./workbook/Workbook.vue'),
 		meta: { hideSidebar: true },
 		children: [

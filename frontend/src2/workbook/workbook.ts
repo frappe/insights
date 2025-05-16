@@ -1,5 +1,5 @@
 import { call } from 'frappe-ui'
-import { computed, InjectionKey, reactive, ref, toRefs } from 'vue'
+import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import {
@@ -12,6 +12,7 @@ import {
 } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
+import { createToast } from '../helpers/toasts'
 import useQuery, { newQuery } from '../query/query'
 import router from '../router'
 import session from '../session'
@@ -213,6 +214,25 @@ function makeWorkbook(name: string) {
 		}).catch(showErrorToast)
 	}
 
+	function duplicate() {
+		confirmDialog({
+			title: 'Duplicate Workbook',
+			message: 'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?',
+			onSuccess: () => {
+				workbook.call('duplicate')
+				.then((name: any) => {
+					createToast({
+						message: 'Workbook duplicated successfully',
+						variant: 'success',
+					})
+					// FIX: debug why new workbook is not loaded
+					router.push(`/workbook/${name}`)
+				})
+				.catch(showErrorToast)
+			},
+		})
+	}
+
 	function deleteWorkbook() {
 		confirmDialog({
 			title: 'Delete Workbook',
@@ -234,6 +254,8 @@ function makeWorkbook(name: string) {
 		showSidebar: true,
 
 		isActiveTab,
+
+		duplicate,
 
 		addQuery,
 		removeQuery,

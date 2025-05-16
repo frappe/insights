@@ -97,7 +97,7 @@ class InsightsWorkbook(Document):
         if not last_viewed_recently:
             self.add_viewed(force=True)
 
-    def copy(self):
+    def export(self):
         workbook = {
             "version": "1.0",
             "timestamp": frappe.utils.now(),
@@ -117,7 +117,16 @@ class InsightsWorkbook(Document):
         queries = frappe.get_all(
             "Insights Query v3",
             filters={"workbook": self.name},
-            fields=["*"],
+            fields=[
+                "name",
+                "title",
+                "workbook",
+                "use_live_connection",
+                "is_script_query",
+                "is_builder_query",
+                "is_native_query",
+                "operations",
+            ],
         )
         for q in queries:
             workbook["dependencies"]["queries"][q.name] = q
@@ -125,7 +134,16 @@ class InsightsWorkbook(Document):
         charts = frappe.get_all(
             "Insights Chart v3",
             filters={"workbook": self.name},
-            fields=["*"],
+            fields=[
+                "name",
+                "title",
+                "workbook",
+                "query",
+                "data_query",
+                "chart_type",
+                "is_public",
+                "config",
+            ],
         )
         for c in charts:
             workbook["dependencies"]["charts"][c.name] = c
@@ -133,16 +151,28 @@ class InsightsWorkbook(Document):
         dashboards = frappe.get_all(
             "Insights Dashboard v3",
             filters={"workbook": self.name},
-            fields=["*"],
+            fields=[
+                "name",
+                "title",
+                "workbook",
+                "items",
+            ],
         )
         for d in dashboards:
             workbook["dependencies"]["dashboards"][d.name] = d
 
-        return frappe.as_json(workbook)
+        return workbook
+
+    @frappe.whitelist()
+    def duplicate(self):
+        workbook = self.export()
+        workbook["doc"]["title"] = None
+        return import_workbook(workbook)
 
 
-def paste_workbook(workbook):
-    workbook = deep_convert_dict_to_dict(frappe.parse_json(workbook))
+def import_workbook(workbook):
+    workbook = frappe.parse_json(workbook)
+    workbook = deep_convert_dict_to_dict(workbook)
 
     # Create a new Insights Workbook
     new_workbook = frappe.new_doc("Insights Workbook")

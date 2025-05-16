@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Share2, Undo2 } from 'lucide-vue-next'
+import { Share2 } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Workbook, workbookKey } from './workbook'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
@@ -45,6 +45,13 @@ const showShareDialog = ref(false)
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
+				!workbook.doc.read_only
+					? {
+							label: 'Duplicate',
+							icon: 'copy',
+							onClick: () => workbook.duplicate(),
+					  }
+					: null,
 				!workbook.islocal
 					? {
 							label: 'Delete',
