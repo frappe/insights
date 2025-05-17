@@ -60,15 +60,9 @@ const discrete_dimensions = computed(() =>
 				]"
 				:value="config.legend_position || 'bottom'"
 			/>
-			<Checkbox v-model="config.show_inline_labels" label="Inline Labels" />
-			<Checkbox v-model="config.show_total_in_center" label="Show Total in Center" />
-			<FormControl
-				v-model="config.max_slices"
-				label="Max Slices"
-				type="number"
-				:placeholder="'Enter max slices (default: 10)'"
-			/>
-
+			<FormControl v-model="config.max_slices" label="Max Slices" type="number" min="1" />
+			<Toggle v-model="config.show_inline_labels" label="Inline Labels" />
+      <Checkbox v-model="config.show_total_in_center" label="Show Total in Center" />
 		</div>
 	</CollapsibleSection>
 </template>

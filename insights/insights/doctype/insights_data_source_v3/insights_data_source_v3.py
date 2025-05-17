@@ -6,16 +6,9 @@ import re
 from contextlib import contextmanager
 
 import frappe
-import ibis
 from frappe.model.document import Document
 from ibis import BaseBackend
 
-from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import (
-    get_bigquery_connection,
-)
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-    WAREHOUSE_DB_NAME,
-)
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -23,16 +16,19 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 
+from .connectors.bigquery import get_bigquery_connection
 from .connectors.duckdb import get_duckdb_connection
 from .connectors.frappe_db import (
-    get_frappedb_connection_string,
+    get_frappedb_connection,
     get_frappedb_table_links,
-    get_sitedb_connection_string,
+    get_sitedb_connection,
     is_frappe_db,
 )
-from .connectors.mariadb import get_mariadb_connection_string
-from .connectors.postgresql import get_postgres_connection_string
-from .connectors.sqlite import get_sqlite_connection_string
+from .connectors.mariadb import get_mariadb_connection
+from .connectors.mssql import get_mssql_connection
+from .connectors.postgresql import get_postgres_connection
+from .connectors.sqlite import get_sqlite_connection
+from .data_warehouse import WAREHOUSE_DB_NAME
 
 
 class DataSourceConnectionError(frappe.ValidationError):
@@ -92,6 +88,7 @@ class InsightsDataSourceDocument:
         elif self.database_type in ["MariaDB", "PostgreSQL"]:
             return (
                 self.database_name != doc_before.database_name
+                or self.schema != doc_before.schema
                 or self.password != doc_before.password
                 or self.username != doc_before.username
                 or self.host != doc_before.host
@@ -164,11 +161,13 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         database_type: DF.Literal[
             "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery"
         ]
+        enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None
         port: DF.Int
+        schema: DF.Data | None
         status: DF.Literal["Inactive", "Active"]
         title: DF.Data
         use_ssl: DF.Check
@@ -205,25 +204,22 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return db
 
     def _get_db_connection(self) -> BaseBackend:
-        if self.database_type == "BigQuery":
-            return get_bigquery_connection(self)
+        if self.is_site_db:
+            return get_sitedb_connection()
+        if self.is_frappe_db:
+            return get_frappedb_connection(self)
+        if self.database_type == "MariaDB":
+            return get_mariadb_connection(self)
+        if self.database_type == "PostgreSQL":
+            return get_postgres_connection(self)
         if self.database_type == "DuckDB":
             return get_duckdb_connection(self)
-
-        connection_string = self._get_connection_string()
-        return ibis.connect(connection_string)
-
-    def _get_connection_string(self):
-        if self.is_site_db:
-            return get_sitedb_connection_string()
         if self.database_type == "SQLite":
-            return get_sqlite_connection_string(self)
-        if self.is_frappe_db:
-            return get_frappedb_connection_string(self)
-        if self.database_type == "MariaDB":
-            return get_mariadb_connection_string(self)
-        if self.database_type == "PostgreSQL":
-            return get_postgres_connection_string(self)
+            return get_sqlite_connection(self)
+        if self.database_type == "BigQuery":
+            return get_bigquery_connection(self)
+        if self.database_type == "MSSQL":
+            return get_mssql_connection(self)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
@@ -234,14 +230,25 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.is_site_db:
             database_name = frappe.conf.db_name
 
-        contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)
-
         if (
-            self.database_type == "DuckDB"
+            not database_name
+            or self.database_type == "DuckDB"
             or self.database_type == "SQLite"
-            or not contains_special_chars
-            or not database_name
         ):
+            return db.list_tables()
+
+        if self.database_type == "PostgreSQL":
+            schema = self.schema or "public"
+            schemas = schema.split(",")
+            tables = []
+            for schema in schemas:
+                schema_tables = db.list_tables(database=(database_name, schema))
+                schema_tables = [f"{schema}.{table}" for table in schema_tables]
+                tables.extend(schema_tables)
+            return tables
+
+        contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)
+        if not contains_special_chars:
             return db.list_tables()
 
         quoted_db_name = (
@@ -310,6 +317,9 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
     def get_ibis_table(self, table_name):
         remote_db = self._get_ibis_backend()
+        if self.database_type == "PostgreSQL" and "." in table_name:
+            schema, table = table_name.split(".")
+            return remote_db.table(table, database=schema)
         return remote_db.table(table_name)
 
 
@@ -319,8 +329,16 @@ def before_request():
 
 
 def after_request():
-    for db in getattr(frappe.local, "insights_db_connections", {}).values():
-        catch_error(db.disconnect)
+    closed = {}
+    for name, db in getattr(frappe.local, "insights_db_connections", {}).items():
+        try:
+            db.disconnect()
+            closed[name] = True
+        except Exception:
+            frappe.log_error(title=f"Failed to disconnect db connection for {name}")
+
+    for name in closed:
+        del frappe.local.insights_db_connections[name]
 
 
 @contextmanager
@@ -330,11 +348,3 @@ def db_connections():
         yield
     finally:
         after_request()
-
-
-def catch_error(fn):
-    try:
-        return fn(), None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None, e

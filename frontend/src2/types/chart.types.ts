@@ -9,12 +9,17 @@ export type ChartType = (typeof CHARTS)[number]
 export type AxisChartConfig = {
 	x_axis: XAxis
 	y_axis: YAxis
-	split_by?: Dimension
+	split_by?: SplitBy
 }
 
 export type XAxis = {
 	dimension: Dimension
 	label_rotation?: number
+}
+
+export type SplitBy = {
+	dimension: Dimension
+	max_split_values?: number
 }
 
 export type YAxis = {
@@ -49,6 +54,7 @@ export type YAxisBar = Series & {
 	series: SeriesBar[]
 	stack?: boolean
 	normalize?: boolean
+	overlap?: boolean
 }
 export type SeriesBar = Series & {
 	type: 'bar'
@@ -87,10 +93,10 @@ export type NumberColumnOptions = {
 export type DonutChartConfig = {
 	label_column: Dimension
 	value_column: Measure
-	legend_position: 'top' | 'bottom' | 'left' | 'right'
+	legend_position?: 'top' | 'bottom' | 'left' | 'right'
+	max_slices?: number
 	show_inline_labels?: boolean
 	show_total_in_center?: boolean
-	max_slices?: number
 }
 export type FunnelChartConfig = {
 	label_column: Dimension
@@ -102,6 +108,7 @@ export type TableChartConfig = {
 	rows: Dimension[]
 	columns: Dimension[]
 	values: Measure[]
+	max_column_values?: number
 	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean

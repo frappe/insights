@@ -11,7 +11,7 @@ const editedText = ref(unref(props.item.text))
 </script>
 
 <template>
-	<div v-html="props.item.text" class="prose text-gray-700"></div>
+	<div v-html="props.item.text" class="prose w-full text-gray-700"></div>
 
 	<Dialog
 		v-if="dashboard.isEditingItem(props.item)"
@@ -44,7 +44,7 @@ const editedText = ref(unref(props.item.text))
 					ref="textEditor"
 					:editable="true"
 					:content="editedText"
-					editor-class="h-[8rem] prose-sm cursor-text bg-gray-100 rounded p-2"
+					editor-class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
 					@change="editedText = $event"
 				/>
 				<p class="text-xs text-gray-500">Markdown supported</p>

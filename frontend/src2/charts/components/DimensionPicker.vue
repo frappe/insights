@@ -90,6 +90,19 @@ function selectDimension(option?: DimensionOption) {
 						/>
 					</InlineFormControlLabel>
 
+					<InlineFormControlLabel label="Type">
+						<FormControl
+							type="select"
+							v-model="dimension.data_type"
+							:options="[
+								{ label: 'String', value: 'String' },
+								{ label: 'Date', value: 'Date' },
+								{ label: 'Datetime', value: 'Datetime' },
+								{ label: 'Time', value: 'Time' },
+							]"
+						/>
+					</InlineFormControlLabel>
+
 					<InlineFormControlLabel v-if="isDate(dimension.data_type)" label="Granularity">
 						<FormControl
 							type="select"
@@ -97,6 +110,8 @@ function selectDimension(option?: DimensionOption) {
 							:options="granularityOptions"
 						/>
 					</InlineFormControlLabel>
+
+					<slot name="config-fields" />
 
 					<div class="flex gap-1">
 						<Button class="w-full" @click="emit('remove')" theme="red">

@@ -1,19 +1,33 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { inject, ref } from 'vue'
 import ChartBuilder from '../charts/ChartBuilder.vue'
-import { Workbook, workbookKey } from './workbook'
+import { workbookKey } from './workbook'
+import { useRouter } from 'vue-router'
 
-const props = defineProps<{ name?: string; index: number | string }>()
+const props = defineProps<{ workbook_name?: string; chart_name: string }>()
 
-const workbook = inject(workbookKey) as Workbook
-const activeChart = computed(() => workbook.doc.charts[Number(props.index)])
+const router = useRouter()
+const workbook = inject(workbookKey)!
+
+let chart_name = ref(props.chart_name)
+const index = Number(props.chart_name)
+if (
+	index >= 0 &&
+	workbook.doc.charts[index] &&
+	!workbook.doc.charts.find((q) => q.name === props.chart_name)
+) {
+	chart_name.value = workbook.doc.charts[index].name
+	router.replace(`/workbook/${workbook.doc.name}/chart/${chart_name.value}`)
+}
 </script>
 
 <template>
 	<ChartBuilder
-		v-if="activeChart"
-		:key="activeChart.name"
-		:chart="activeChart"
-		:queries="workbook.doc.queries"
+		:chart_name="chart_name"
+		:queries="
+			workbook.doc.queries.map((q) => {
+				return { label: q.title, value: q.name }
+			})
+		"
 	/>
 </template>

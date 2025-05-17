@@ -561,7 +561,7 @@ def week_of_year(column: ir.DateValue):
     """
     def week_of_year(column)
 
-    Extract the week of the year from a date column.
+    Extract the week of the year (1-53) from a date column.
 
     Examples:
     - week_of_year(order_date)
@@ -573,7 +573,7 @@ def day_of_year(column: ir.DateValue):
     """
     def day_of_year(column)
 
-    Extract the day of the year from a date column.
+    Extract the day of the year (1-366) from a date column.
 
     Examples:
     - day_of_year(order_date)
@@ -585,12 +585,24 @@ def day_of_week(column: ir.DateValue):
     """
     def day_of_week(column)
 
-    Extract the day of the week from a date column.
+    Extract the day of the week (0-6) from a date column.
 
     Examples:
     - day_of_week(order_date)
     """
-    return column.day_of_week()
+    return column.day_of_week.index()
+
+
+def day_name(column: ir.DateValue):
+    """
+    def day_name(column)
+
+    Extract the name of the day (Monday-Sunday) from a date column.
+
+    Examples:
+    - day_name(order_date)
+    """
+    return column.day_of_week.full_name()
 
 
 def day(column: ir.DateValue):
@@ -679,6 +691,35 @@ def date_diff(
     - date_diff(order_date, delivery_date, 'day')
     - date_diff(order_date, delivery_date, 'week')
     """
+
+    if not column.type().is_date():
+        column = column.cast("date")
+    if not other.type().is_date():
+        other = other.cast("date")
+
+    return column.delta(other, unit)
+
+
+def time_diff(
+    column: ir.TimeValue,
+    other: ir.TimeValue,
+    unit: str,
+):
+    """
+    def time_diff(column, other, unit)
+
+    Calculate the difference between two time columns. The unit can be hour, minute, second, millisecond, microsecond, nanosecond
+
+    Examples:
+    - time_diff(start_time, end_time, 'hour')
+    - time_diff(start_time, end_time, 'minute')
+    """
+
+    if not column.type().is_time():
+        column = column.cast("time")
+    if not other.type().is_time():
+        other = other.cast("time")
+
     return column.delta(other, unit)
 
 
@@ -948,7 +989,7 @@ def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1):
     - percentage_change(amount, date, 2)
     """
     prev_value = previous_period_value(column, date_column, offset)
-    return ((column - prev_value) * 100) / prev_value
+    return ((column - prev_value) * 100) / abs(prev_value)
 
 
 def is_first_row(group_by=None, order_by=None, sort_order="asc"):
@@ -1110,6 +1151,29 @@ def year_start(column: ir.DateValue):
 
     year_start = column.strftime("%Y-01-01").cast("date")
     return year_start
+
+
+def fiscal_year_start(column: ir.DateValue):
+    """
+    def fiscal_year_start(column)
+
+    Get the start date of the fiscal year for a given date.
+
+    Examples:
+    - fiscal_year_start(order_date)
+    """
+
+    fiscal_year_start_month = 4
+    fiscal_year_start_day = 1
+
+    year = column.year()
+    month = column.month()
+
+    return if_else(
+        month < fiscal_year_start_month,
+        ibis.date(year - 1, fiscal_year_start_month, fiscal_year_start_day),
+        ibis.date(year, fiscal_year_start_month, fiscal_year_start_day),
+    ).cast("date")
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):

@@ -22,7 +22,7 @@ const dateValues = computed(() => {
 })
 const numberValuesPerColumn = computed(() => {
 	if (!config.value.number_columns?.length) return {}
-	if (!props.result?.rows?.length) return {}
+	if (!props.result?.columns.length) return {}
 
 	return numberColumns.value.reduce((acc: any, measure_name: string) => {
 		acc[measure_name] = props.result.rows.map((row: any) => row[measure_name])
@@ -32,17 +32,17 @@ const numberValuesPerColumn = computed(() => {
 
 const cards = computed(() => {
 	if (!config.value.number_columns?.length) return []
-	if (!props.result?.rows) return []
+	if (!props.result?.columns.length) return []
 	if (!Object.keys(numberValuesPerColumn.value).length) return []
 
 	return numberColumns.value.map((measure_name: string, idx: number) => {
 		const numberValues = numberValuesPerColumn.value[measure_name]
-		const currentValue = numberValues[numberValues.length - 1]
-		const previousValue = numberValues[numberValues.length - 2]
+		const currentValue = numberValues[numberValues.length - 1] || 0
+		const previousValue = numberValues[numberValues.length - 2] || 0
 		const delta = config.value.negative_is_better
 			? previousValue - currentValue
 			: currentValue - previousValue
-		const percentDelta = (delta / previousValue) * 100
+		const percentDelta = (delta / Math.abs(previousValue)) * 100
 
 		const prefix = getNumberOption(idx, 'prefix')
 		const suffix = getNumberOption(idx, 'suffix')
@@ -71,14 +71,16 @@ const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: bo
 }
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {
-	const numberOption = config.value.number_column_options[index]?.[option] as any
+	const numberOption = config.value.number_column_options?.[index]?.[option] as any
 	return numberOption === undefined ? config.value[option] : numberOption
 }
 </script>
 
 <template>
-	<div class="h-full w-full @container">
-		<div class="grid w-full grid-cols-[repeat(auto-fill,214px)] gap-4">
+	<div class="h-full w-full overflow-hidden p-[2px] @container">
+		<div
+			class="grid h-full w-full grid-cols-1 gap-4 @xs:grid-cols-2 @sm:grid-cols-2 @md:grid-cols-2 @lg:grid-cols-2 @xl:grid-cols-3 @3xl:grid-cols-4 @4xl:grid-cols-5"
+		>
 			<div
 				v-for="{
 					measure_name,
@@ -90,14 +92,14 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 					suffix,
 				} in cards"
 				:key="measure_name"
-				class="flex h-fit max-h-[140px] items-center gap-2 overflow-y-auto rounded bg-white px-6 pt-5 shadow"
+				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
 			>
 				<div class="flex w-full flex-col">
 					<span class="truncate text-sm font-medium">
 						{{ measure_name }}
 					</span>
-					<div class="flex-1 flex-shrink-0 text-[24px] font-semibold leading-10">
+					<div class="flex-1 flex-shrink-0 truncate text-[24px] font-semibold leading-10">
 						{{ prefix }}{{ currentValue }}{{ suffix }}
 					</div>
 					<div

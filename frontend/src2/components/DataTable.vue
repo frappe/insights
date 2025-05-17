@@ -1,15 +1,12 @@
 <script setup lang="ts">
+import { Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import { createHeaders, formatNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { QueryResultColumn, QueryResultRow } from '../types/query.types'
+import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 
-const emit = defineEmits({
-	sort: (sort_order: Record<string, 'asc' | 'desc'>) => true,
-	'cell-dbl-click': (row: QueryResultRow, column: QueryResultColumn) => true,
-})
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
 	rows: QueryResultRow[] | undefined
@@ -20,7 +17,10 @@ const props = defineProps<{
 	enableColorScale?: boolean
 	loading?: boolean
 	onExport?: Function
-	sortOrder?: Record<string, 'asc' | 'desc'>
+	sortOrder?: SortOrder
+	onSortChange?: (column_name: string, direction: SortDirection) => void
+	onColumnRename?: (column_name: string, new_name: string) => void
+	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
 }>()
 
 const headers = computed(() => {
@@ -28,7 +28,35 @@ const headers = computed(() => {
 	return createHeaders(props.columns)
 })
 
-const isNumberColumn = (col: QueryResultColumn): boolean => FIELDTYPES.NUMBER.includes(col.type)
+const columnsMeta = computed(() => {
+	if (!props.columns || !props.rows) return new Map()
+
+	const meta = new Map()
+	props.columns.forEach((col) => {
+		const name = col.name
+		const metadata = {
+			isNumber: FIELDTYPES.NUMBER.includes(col.type),
+			isStarRating: false,
+		}
+
+		const values = props.rows!.map((row) => row[name])
+
+		// Check if it's a star rating column
+		if (
+			metadata.isNumber &&
+			(col.name.toLowerCase().includes('rating') || col.name.toLowerCase().includes('stars'))
+		) {
+			metadata.isStarRating = values.every((val) => val >= 0 && val <= 1)
+		}
+
+		meta.set(name, metadata)
+	})
+	return meta
+})
+
+const isNumberColumn = (col: string) => columnsMeta.value.get(col)?.isNumber
+const isStarRating = (col: string) => columnsMeta.value.get(col)?.isStarRating
+const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
 
 const filterPerColumn = ref<Record<string, string>>({})
 const visibleRows = computed(() => {
@@ -40,7 +68,7 @@ const visibleRows = computed(() => {
 	return rows.filter((row) => {
 		return Object.entries(filters).every(([col, filter]) => {
 			if (!filter) return true
-			const isNumber = isNumberColumn(columns.find((c) => c.name === col)!)
+			const isNumber = isNumberColumn(col)
 			const value = row[col]
 			return applyFilter(value, isNumber, filter)
 		})
@@ -78,7 +106,7 @@ const totalPerColumn = computed(() => {
 
 	const totals: Record<string, number> = {}
 	columns.forEach((col) => {
-		if (isNumberColumn(col)) {
+		if (isNumberColumn(col.name)) {
 			totals[col.name] = rows.reduce((acc, row) => acc + (row[col.name] as number), 0)
 		}
 	})
@@ -93,7 +121,7 @@ const totalPerRow = computed(() => {
 	const totals: Record<number, number> = {}
 	rows.forEach((row, idx) => {
 		totals[idx] = columns.reduce((acc, col) => {
-			if (isNumberColumn(col)) {
+			if (isNumberColumn(col.name)) {
 				return acc + (row[col.name] as number)
 			}
 			return acc
@@ -106,19 +134,6 @@ const totalColumnTotal = computed(() => {
 	if (!props.showColumnTotals || !totalPerColumn.value) return
 	return Object.values(totalPerColumn.value).reduce((acc, val) => acc + val, 0)
 })
-
-const sortOrder = ref<Record<string, 'asc' | 'desc'>>({ ...props.sortOrder })
-function getSortOrder(column: QueryResultColumn) {
-	return sortOrder.value[column.name]
-}
-function sortBy(column: QueryResultColumn, direction: 'asc' | 'desc' | '') {
-	if (!direction) {
-		delete sortOrder.value[column.name]
-	} else {
-		sortOrder.value[column.name] = direction
-	}
-	emit('sort', sortOrder.value)
-}
 
 const page = reactive({
 	current: 1,
@@ -163,7 +178,7 @@ const colorByValues = computed(() => {
 
 	let uniqueValues = [] as number[]
 	columns.forEach((col) => {
-		if (isNumberColumn(col)) {
+		if (isNumberColumn(col.name)) {
 			rows.forEach((row) => {
 				const value = Number(row[col.name])
 				if (!uniqueValues.includes(value)) {
@@ -198,45 +213,56 @@ const colorByValues = computed(() => {
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead class="sticky top-0 z-10 bg-white">
+				<thead class="sticky top-0 z-10 bg-gray-50">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3"
+							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(header, idx) in headerRow"
 							:key="idx"
-							class="border-b border-r"
+							class="h-8 border-b border-r"
 							:class="[
-								header.isLast && isNumberColumn(header.column)
+								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
 									: 'text-left',
 							]"
 							:colspan="header.colspan"
 						>
-							<slot
+							<DataTableColumn
 								v-if="header.isLast"
-								name="column-header"
-								:column="header.column"
 								:label="header.label"
+								:on-rename="
+									props.onColumnRename
+										? (newName) =>
+												props.onColumnRename?.(header.column.name, newName)
+										: undefined
+								"
+								:sort-order="props.sortOrder?.[header.column.name]"
+								:on-sort-change="
+									props.onSortChange
+										? (direction) =>
+												props.onSortChange?.(header.column.name, direction)
+										: undefined
+								"
 							>
-								<DataTableColumn
-									:column="header.column"
-									:label="header.label"
-									:sort-order="getSortOrder(header.column)"
-									@sort-change="sortBy(header.column, $event)"
-								/>
-							</slot>
+								<template #prefix>
+									<slot name="header-prefix" :column="header.column" />
+								</template>
+								<template #suffix>
+									<slot name="header-suffix" :column="header.column" />
+								</template>
+							</DataTableColumn>
 
-							<div v-else class="flex h-7 items-center truncate px-3">
+							<div v-else class="flex items-center truncate px-2">
 								{{ header.label }}
 							</div>
 						</td>
 
 						<td
 							v-if="props.showRowTotals"
-							class="border-b border-r px-3 text-right"
+							class="h-8 border-b border-r px-3 text-right"
 							width="1px"
 						>
 							<div class="truncate pl-3 pr-20"></div>
@@ -245,13 +271,13 @@ const colorByValues = computed(() => {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3"
+							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
-							class="border-b border-r p-1"
+							class="h-8 border-b border-r p-1"
 						>
 							<FormControl
 								type="text"
@@ -279,7 +305,7 @@ const colorByValues = computed(() => {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 z-10 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							class="tnum z-1 sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -288,23 +314,39 @@ const colorByValues = computed(() => {
 
 						<td
 							v-for="col in props.columns"
-							class="max-w-[24rem] truncate border-b border-r py-2 px-3 text-gray-800"
+							class="h-8 max-w-[24rem] truncate border-b border-r px-3 text-gray-800"
 							:class="[
-								isNumberColumn(col) ? 'tnum text-right' : 'text-left',
-								props.enableColorScale && isNumberColumn(col)
+								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
+								props.enableColorScale && isNumberColumn(col.name)
 									? colorByValues[row[col.name]]
+									: '',
+								isNumberColumn(col.name) && props.onDrilldown
+									? 'cursor-pointer'
 									: '',
 							]"
 							height="30px"
-							@dblclick="emit('cell-dbl-click', row, col)"
+							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
-							{{ isNumberColumn(col) ? formatNumber(row[col.name]) : row[col.name] }}
+							<template v-if="isStarRating(col.name)">
+								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
+							</template>
+							<template v-else-if="isNumberColumn(col.name)">
+								{{ formatNumber(row[col.name]) }}
+							</template>
+							<template v-else-if="isUrl(row[col.name])">
+								<a :href="row[col.name]" target="_blank" class="underline">
+									{{ row[col.name] }}
+								</a>
+							</template>
+
+							<template v-else>
+								{{ row[col.name] }}
+							</template>
 						</td>
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="tnum border-b border-r px-3 text-right font-bold"
-							height="30px"
+							class="tnum h-8 border-b border-r px-3 text-right font-bold"
 						>
 							{{ formatNumber(totalPerRow[idx]) }}
 						</td>
@@ -314,18 +356,22 @@ const colorByValues = computed(() => {
 						v-if="props.showColumnTotals && totalPerColumn"
 						class="sticky bottom-0 z-10 border-b bg-white"
 					>
-						<td class="whitespace-nowrap border-r border-t px-3"></td>
+						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
-							class="truncate border-r border-t py-2 px-3 font-bold text-gray-800"
-							:class="isNumberColumn(col) ? 'tnum text-right' : 'text-left'"
+							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
+							:class="isNumberColumn(col.name) ? 'tnum text-right' : 'text-left'"
 						>
-							{{ isNumberColumn(col) ? formatNumber(totalPerColumn[col.name]) : '' }}
+							{{
+								isNumberColumn(col.name)
+									? formatNumber(totalPerColumn[col.name])
+									: ''
+							}}
 						</td>
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 border-r border-t px-3 text-right font-bold"
 						>
 							{{ formatNumber(totalColumnTotal) }}
 						</td>
@@ -371,7 +417,7 @@ const colorByValues = computed(() => {
 								</Button>
 							</div>
 						</div>
-
+						<slot name="footer-right-actions"></slot>
 						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
 							<template #icon>
 								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />

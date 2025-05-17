@@ -69,7 +69,7 @@ const checkboxLabel = computed(() => {
 			/>
 		</div>
 		<div v-if="false" class="flex items-center gap-2">
-			<Checkbox size="sm" />
+			<Toggle size="sm" />
 			<span class="text-p-sm text-gray-600">{{ checkboxLabel }}</span>
 		</div>
 	</div>

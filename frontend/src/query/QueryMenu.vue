@@ -27,11 +27,6 @@
 							onClick: () => (show_share_dialog = true),
 					  }
 					: null,
-				{
-					label: 'Set Alert',
-					icon: 'bell',
-					onClick: () => (show_alert_dialog = true),
-				},
 				!query.doc.is_native_query
 					? {
 							label: 'View SQL',
@@ -144,16 +139,9 @@
 		:resource-type="query.doc.doctype"
 		:resource-name="query.doc.name"
 	/>
-
-	<AlertDialog
-		v-if="query.doc.name"
-		v-model:show="show_alert_dialog"
-		:queryName="query.doc.name"
-	/>
 </template>
 
 <script setup>
-import AlertDialog from '@/components/AlertDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
 import useQueryStore from '@/stores/queryStore'
 import settingsStore from '@/stores/settingsStore'
@@ -172,7 +160,6 @@ const query = props.query || inject('query')
 const show_delete_dialog = ref(false)
 const show_sql_dialog = ref(false)
 const show_share_dialog = ref(false)
-const show_alert_dialog = ref(false)
 const show_switch_dialog = ref(false)
 
 const keys = useMagicKeys()

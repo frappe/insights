@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "creation": "2025-02-15 19:29:10.071168",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "preview_image",
+  "share_link",
+  "column_break_owsx",
+  "workbook",
+  "is_public",
+  "section_break_lgpd",
+  "items",
+  "section_break_aocd",
+  "linked_charts",
+  "old_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "preview_image",
+   "fieldtype": "Data",
+   "label": "Preview Image"
+  },
+  {
+   "fieldname": "section_break_lgpd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "JSON",
+   "label": "Items"
+  },
+  {
+   "fieldname": "column_break_owsx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "workbook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Workbook",
+   "options": "Insights Workbook",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "share_link",
+   "fieldtype": "Data",
+   "label": "Share Link"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Public"
+  },
+  {
+   "fieldname": "section_break_aocd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "linked_charts",
+   "fieldtype": "Table MultiSelect",
+   "label": "Linked Charts",
+   "options": "Insights Dashboard Chart v3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "old_name",
+   "fieldtype": "Data",
+   "label": "Old Name",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-04-11 17:23:03.687968",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Dashboard v3",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Insights Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

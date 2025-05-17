@@ -68,7 +68,7 @@ export function getCellComponent(cell, column) {
 	if (columnType == 'Link') {
 		return h(TableLinkCell, {
 			label: value,
-			url: column.column_options.link_url.replace('{{value}}', value),
+			url: column.column_options.link_url?.replace('{{value}}', value).replace('{{ value }}', value),
 		})
 	}
 

@@ -1,21 +1,24 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-
 from urllib.parse import quote_plus
 
+import ibis
 
-def get_postgres_connection_string(data_source):
+
+def get_postgres_connection(data_source):
     if data_source.connection_string:
         conn_string = quote_plus(data_source.connection_string)
-        return conn_string
+        return ibis.connect(conn_string)
     else:
         password = data_source.get_password(raise_exception=False)
-        password = quote_plus(password) if password else ""
-        connection_string = (
-            f"postgresql://{data_source.username}:{password}"
-            f"@{data_source.host}:{data_source.port}/{data_source.database_name}"
+        data_source.port = int(data_source.port or 5432)
+        return ibis.postgres.connect(
+            host=data_source.host,
+            port=data_source.port,
+            user=data_source.username,
+            password=password,
+            database=data_source.database_name,
+            schema=data_source.schema,
+            sslmode="require" if data_source.use_ssl else None,
         )
-        if data_source.use_ssl:
-            connection_string += "?sslmode=require"
-        return connection_string

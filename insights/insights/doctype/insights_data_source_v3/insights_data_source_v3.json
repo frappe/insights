@@ -13,8 +13,10 @@
   "use_ssl",
   "is_site_db",
   "is_frappe_db",
+  "enable_stored_procedure_execution",
   "column_break_pfsa",
   "database_name",
+  "schema",
   "username",
   "password",
   "bigquery_project_id",
@@ -116,11 +118,22 @@
    "fieldname": "bigquery_service_account_key",
    "fieldtype": "JSON",
    "label": "BigQuery Service Account Key (JSON)"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_stored_procedure_execution",
+   "fieldtype": "Check",
+   "label": "Enable Stored Procedure Execution"
+  },
+  {
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "label": "Schema"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-03 17:10:59.295243",
+ "modified": "2025-03-19 12:49:00.328056",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

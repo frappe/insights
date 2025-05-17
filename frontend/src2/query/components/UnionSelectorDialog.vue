@@ -46,15 +46,7 @@ const selectedTableOption = computed({
 })
 
 const query = inject('query') as Query
-const data_source = computed(() => {
-	// allow only one data source joins for now
-	// TODO: support multiple data source joins if live connection is disabled
-	// if (!query.doc.use_live_connection) return undefined
-
-	const operations = query.getOperationsForExecution()
-	const source = operations.find((op) => op.type === 'source')
-	return source && source.table.type === 'table' ? source.table.data_source : ''
-})
+const data_source = computed(() => query.dataSource)
 
 const rightTable = computed(() => {
 	return union.table.type === 'table' ? union.table.table_name : ''
