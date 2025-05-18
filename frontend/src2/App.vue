@@ -6,7 +6,7 @@
 
 		<div class="flex h-full flex-1 flex-col overflow-auto">
 			<Suspense>
-				<RouterView :key="route.fullPath" />
+				<RouterView />
 			</Suspense>
 		</div>
 
