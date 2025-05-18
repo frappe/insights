@@ -347,11 +347,6 @@ function makeChart(name: string) {
 	function copyChart() {
 		chart.call('export').then(data => {
 			copyToClipboard(JSON.stringify(data, null, 2))
-			createToast({
-				title: 'Chart copied',
-				message: 'Chart copied to clipboard',
-				variant: 'success',
-			})
 		})
 	}
 

@@ -1,33 +1,24 @@
 <script setup lang="ts">
-import { Copy, PlayIcon, Scroll } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { useTimeAgo } from '@vueuse/core'
+import { Copy, MoreHorizontal, PlayIcon, Scroll } from 'lucide-vue-next'
+import { h, inject, ref } from 'vue'
 import { Query } from '../query'
 import ViewSQLDialog from './ViewSQLDialog.vue'
-import { useTimeAgo } from '@vueuse/core'
 
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
 
-const actions = [
-	// {
-	// 	label: 'Manage Columns',
-	// 	icon: Columns,
-	// },
-	{
-		label: 'Copy',
-		icon: Copy,
-		onClick: () => query.copy(),
-	},
+const moreActions = [
 	{
 		label: 'View SQL',
-		icon: Scroll,
+		icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => (showViewSQLDialog.value = true),
 	},
 	{
-		label: 'Execute',
-		icon: PlayIcon,
-		onClick: () => query.execute(),
+		label: 'Copy JSON',
+		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => query.copy(),
 	},
 ]
 </script>
@@ -48,22 +39,23 @@ const actions = [
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<template v-for="(action, idx) in actions" :key="idx">
-				<Button
-					:variant="'ghost'"
-					:label="action.label"
-					@click="action.onClick"
-					class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
-				>
-					<template #prefix>
-						<component
-							:is="action.icon"
-							class="h-3 w-3 text-gray-700"
-							stroke-width="1.5"
-						/>
+			<Button
+				variant="ghost"
+				label="Execute"
+				@click="() => query.execute()"
+				class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
+			>
+				<template #prefix>
+					<PlayIcon class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+				</template>
+			</Button>
+			<Dropdown placement="right" :options="moreActions">
+				<Button variant="ghost" class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow">
+					<template #icon>
+						<MoreHorizontal class="h-3 w-3 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
-			</template>
+			</Dropdown>
 		</div>
 	</div>
 
