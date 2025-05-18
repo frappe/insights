@@ -84,7 +84,7 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx=None, adhoc_filters=None):
+    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -97,6 +97,7 @@ class InsightsQueryv3(Document):
         results, time_taken = execute_ibis_query(
             ibis_query,
             limit,
+            force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
             reference_name=self.name,

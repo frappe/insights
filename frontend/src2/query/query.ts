@@ -145,6 +145,7 @@ export function makeQuery(name: string) {
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters,
+				force,
 			})
 			.then((response: any) => {
 				if (!response) return

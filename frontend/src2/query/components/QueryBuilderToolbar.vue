@@ -20,6 +20,11 @@ const moreActions = [
 		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => query.copy(),
 	},
+	{
+		label: 'Force Execute',
+		icon: h(PlayIcon, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => query.execute(undefined, true),
+	},
 ]
 </script>
 
