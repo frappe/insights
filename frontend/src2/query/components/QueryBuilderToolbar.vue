@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlayIcon, Scroll } from 'lucide-vue-next'
+import { Copy, PlayIcon, Scroll } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Query } from '../query'
 import ViewSQLDialog from './ViewSQLDialog.vue'
@@ -14,6 +14,11 @@ const actions = [
 	// 	label: 'Manage Columns',
 	// 	icon: Columns,
 	// },
+	{
+		label: 'Copy',
+		icon: Copy,
+		onClick: () => query.copy(),
+	},
 	{
 		label: 'View SQL',
 		icon: Scroll,

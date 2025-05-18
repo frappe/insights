@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { ImageDown, RefreshCcw, Share2, XIcon } from 'lucide-vue-next'
+import { Copy, ImageDown, RefreshCcw, Share2, XIcon } from 'lucide-vue-next'
 import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import { downloadImage, waitUntil } from '../helpers'
@@ -33,7 +33,7 @@ watchDebounced(
 	{
 		deep: true,
 		debounce: 500,
-	}
+	},
 )
 
 const keys = useMagicKeys()
@@ -147,6 +147,12 @@ const showShareDialog = ref(false)
 							<Share2 class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
 						Share Chart
+					</Button>
+					<Button class="w-full" @click="chart.copy">
+						<template #prefix>
+							<Copy class="h-4 text-gray-700" stroke-width="1.5" />
+						</template>
+						Copy JSON
 					</Button>
 				</div>
 			</CollapsibleSection>
