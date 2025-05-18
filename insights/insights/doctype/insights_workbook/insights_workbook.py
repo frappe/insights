@@ -116,7 +116,13 @@ class InsightsWorkbook(Document):
 
         queries = frappe.get_all(
             "Insights Query v3",
-            filters={"workbook": self.name},
+            filters={
+                "workbook": self.name,
+                "name": [
+                    "not in",
+                    frappe.get_all("Insights Chart v3", {"workbook": self.name}, pluck="data_query"),
+                ],
+            },
             fields=[
                 "name",
                 "title",
@@ -127,6 +133,7 @@ class InsightsWorkbook(Document):
                 "is_native_query",
                 "operations",
             ],
+            order_by="creation asc",
         )
         for q in queries:
             workbook["dependencies"]["queries"][q.name] = q
@@ -141,9 +148,9 @@ class InsightsWorkbook(Document):
                 "query",
                 "data_query",
                 "chart_type",
-                "is_public",
                 "config",
             ],
+            order_by="creation asc",
         )
         for c in charts:
             workbook["dependencies"]["charts"][c.name] = c
@@ -157,6 +164,7 @@ class InsightsWorkbook(Document):
                 "workbook",
                 "items",
             ],
+            order_by="creation asc",
         )
         for d in dashboards:
             workbook["dependencies"]["dashboards"][d.name] = d
@@ -229,8 +237,6 @@ def import_workbook(workbook):
         new_chart.workbook = new_workbook.name
         if chart.query in id_map:
             new_chart.query = id_map[chart.query]
-        if chart.data_query in id_map:
-            new_chart.data_query = id_map[chart.data_query]
         new_chart.insert()
         id_map[name] = new_chart.name
 
