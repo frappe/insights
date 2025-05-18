@@ -42,8 +42,10 @@ whenever(cmdV, () => {
 	navigator.clipboard.readText().then((text) => {
 		try {
 			const json = JSON.parse(text)
-			if (json && json.type === 'Query') {
+			if (json.type === 'Query') {
 				workbook.importQuery(json)
+			} else if (json.type === 'Chart') {
+				workbook.importChart(json)
 			}
 		} catch (e) {}
 	})

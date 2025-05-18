@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
-import { copy, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { copy, copyToClipboard, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { column, count, query_table } from '../query/helpers'
@@ -17,6 +17,7 @@ import { AdhocFilters } from '../types/query.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
 import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
+import { createToast } from '../helpers/toasts'
 
 const charts = new Map<string, Chart>()
 
@@ -343,6 +344,17 @@ function makeChart(name: string) {
 		}
 	)
 
+	function copyChart() {
+		chart.call('export').then(data => {
+			copyToClipboard(JSON.stringify(data, null, 2))
+			createToast({
+				title: 'Chart copied',
+				message: 'Chart copied to clipboard',
+				variant: 'success',
+			})
+		})
+	}
+
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
@@ -386,6 +398,8 @@ function makeChart(name: string) {
 
 		getDependentQueries,
 		getDependentQueryColumns,
+
+		copy: copyChart,
 
 		history,
 	})

@@ -183,6 +183,12 @@ class InsightsWorkbook(Document):
 
         return import_query(query, self.name)
 
+    @frappe.whitelist()
+    def import_chart(self, chart):
+        from insights.insights.doctype.insights_chart_v3.insights_chart_v3 import import_chart
+
+        return import_chart(chart, self.name)
+
 
 def import_workbook(workbook):
     workbook = frappe.parse_json(workbook)

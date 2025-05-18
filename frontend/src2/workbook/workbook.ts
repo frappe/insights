@@ -251,6 +251,24 @@ function makeWorkbook(name: string) {
 		})
 	}
 
+	function importChart(chart: any) {
+		confirmDialog({
+			title: 'Import Chart',
+			message: 'Are you sure you want to import this chart?',
+			onSuccess: () => {
+				workbook.call('import_chart', { chart }).then((name) => {
+					workbook.load().then(() => {
+						createToast({
+							message: 'Chart imported successfully',
+							variant: 'success',
+						})
+						setActiveTab('chart', name)
+					})
+				})
+			},
+		})
+	}
+
 	function deleteWorkbook() {
 		confirmDialog({
 			title: 'Delete Workbook',
@@ -275,6 +293,8 @@ function makeWorkbook(name: string) {
 
 		duplicate,
 		importQuery,
+		importChart,
+
 
 		addQuery,
 		removeQuery,
