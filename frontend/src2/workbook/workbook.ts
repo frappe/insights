@@ -233,6 +233,24 @@ function makeWorkbook(name: string) {
 		})
 	}
 
+	function importQuery(query: any) {
+		confirmDialog({
+			title: 'Import Query',
+			message: 'Are you sure you want to import this query?',
+			onSuccess: () => {
+				workbook.call('import_query', { query }).then((name) => {
+					workbook.load().then(() => {
+						createToast({
+							message: 'Query imported successfully',
+							variant: 'success',
+						})
+						setActiveTab('query', name)
+					})
+				})
+			},
+		})
+	}
+
 	function deleteWorkbook() {
 		confirmDialog({
 			title: 'Delete Workbook',
@@ -256,6 +274,7 @@ function makeWorkbook(name: string) {
 		isActiveTab,
 
 		duplicate,
+		importQuery,
 
 		addQuery,
 		removeQuery,

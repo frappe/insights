@@ -169,6 +169,12 @@ class InsightsWorkbook(Document):
         workbook["doc"]["title"] = None
         return import_workbook(workbook)
 
+    @frappe.whitelist()
+    def import_query(self, query):
+        from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+
+        return import_query(query, self.name)
+
 
 def import_workbook(workbook):
     workbook = frappe.parse_json(workbook)
@@ -197,7 +203,11 @@ def import_workbook(workbook):
 
         should_update = False
         for op in operations:
-            if not op.table or not op.table.type or not op.table.query_name:
+            if (
+                not op.get("table")
+                or not op.get("table").get("type")
+                or not op.get("table").get("query_name")
+            ):
                 continue
 
             ref_query = op.table.query_name

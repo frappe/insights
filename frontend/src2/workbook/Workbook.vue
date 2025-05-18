@@ -3,11 +3,11 @@ import { useMagicKeys, whenever } from '@vueuse/core'
 import { AlertOctagon } from 'lucide-vue-next'
 import { provide, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { waitUntil } from '../helpers'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
-import LoadingOverlay from '../components/LoadingOverlay.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -33,6 +33,21 @@ if (route.name === 'Workbook' && workbook.doc.queries.length) {
 const keys = useMagicKeys()
 const cmdS = keys['Meta+S']
 whenever(cmdS, () => workbook.save())
+
+const cmdV = keys['Meta+V']
+whenever(cmdV, () => {
+	if (!navigator.clipboard) {
+		return
+	}
+	navigator.clipboard.readText().then((text) => {
+		try {
+			const json = JSON.parse(text)
+			if (json && json.type === 'Query') {
+				workbook.importQuery(json)
+			}
+		} catch (e) {}
+	})
+})
 
 watchEffect(() => {
 	document.title = `${workbook.doc.title} | Workbook`

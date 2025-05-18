@@ -14,6 +14,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     execute_ibis_query,
     get_columns_from_schema,
 )
+from insights.utils import deep_convert_dict_to_dict
 
 
 class InsightsQueryv3(Document):
@@ -49,12 +50,8 @@ class InsightsQueryv3(Document):
         return d
 
     def on_trash(self):
-        for alert in frappe.get_all(
-            "Insights Alert", filters={"query": self.name}, pluck="name"
-        ):
-            frappe.delete_doc(
-                "Insights Alert", alert, force=True, ignore_permissions=True
-            )
+        for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
+            frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
 
     def before_save(self):
         self.set_linked_queries()
@@ -77,9 +74,7 @@ class InsightsQueryv3(Document):
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
-            use_live_connection
-            if use_live_connection is not None
-            else self.use_live_connection
+            use_live_connection if use_live_connection is not None else self.use_live_connection
         )
         ibis_query = builder.build()
 
@@ -142,9 +137,7 @@ class InsightsQueryv3(Document):
         return results.to_csv(index=False)
 
     @insights_whitelist()
-    def get_distinct_column_values(
-        self, column_name, active_operation_idx=None, search_term=None, limit=20
-    ):
+    def get_distinct_column_values(self, column_name, active_operation_idx=None, search_term=None, limit=20):
         ibis_query = self.build(active_operation_idx)
         values_query = (
             ibis_query.select(column_name)
@@ -183,6 +176,79 @@ class InsightsQueryv3(Document):
             reference_name=self.name,
         )
         return bool(len(results))
+
+    @insights_whitelist()
+    def export(self):
+        query = {
+            "version": "1.0",
+            "timestamp": frappe.utils.now(),
+            "type": "Query",
+            "name": self.name,
+            "doc": {
+                "name": self.name,
+                "title": self.title,
+                "workbook": self.workbook,
+                "use_live_connection": self.use_live_connection,
+                "is_script_query": self.is_script_query,
+                "is_builder_query": self.is_builder_query,
+                "is_native_query": self.is_native_query,
+                "operations": self.operations,
+            },
+            "dependencies": {
+                "queries": {},
+            },
+        }
+
+        linked_queries = frappe.parse_json(self.linked_queries)
+        for q in linked_queries:
+            exported_query = frappe.get_doc("Insights Query v3", q).export()
+            query["dependencies"]["queries"][q] = exported_query
+
+        return query
+
+
+def import_query(query, workbook):
+    query = frappe.parse_json(query)
+    query = deep_convert_dict_to_dict(query)
+
+    new_query = frappe.new_doc("Insights Query v3")
+    new_query.update(query.doc)
+    new_query.workbook = workbook
+    new_query.insert()
+
+    if workbook == query.doc.workbook or not query.dependencies.queries:
+        return new_query.name
+
+    # if query is copied to a new workbook, all the dependencies will be copied as well
+    # so we create a new query in the workbook for each dependency
+    # and replace the old query names with the new query names
+
+    id_map = {}
+    for q, exported_query in query.dependencies.queries.items():
+        id_map[q] = import_query(exported_query, workbook=new_query.workbook)
+
+    # replace the old query names with the new query names
+    operations = frappe.parse_json(new_query.operations)
+    operations = deep_convert_dict_to_dict(operations)
+
+    should_update = False
+    for op in operations:
+        if not op.get("table") or not op.get("table").get("type") or not op.get("table").get("query_name"):
+            continue
+
+        ref_query = op.table.query_name
+        if ref_query in id_map:
+            op.table.query_name = id_map[ref_query]
+            should_update = True
+
+    if should_update:
+        new_query.db_set(
+            "operations",
+            frappe.as_json(operations),
+            update_modified=False,
+        )
+
+    return new_query.name
 
 
 @contextmanager

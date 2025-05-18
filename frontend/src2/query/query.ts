@@ -3,6 +3,7 @@ import { isEqual } from 'es-toolkit'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import {
 	copy,
+	copyToClipboard,
 	getUniqueId,
 	safeJSONParse,
 	waitUntil,
@@ -644,6 +645,17 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	function copyQuery() {
+		query.call('export').then(data => {
+			copyToClipboard(JSON.stringify(data, null, 2))
+			createToast({
+				title: 'Query copied',
+				message: 'Query copied to clipboard',
+				variant: 'success',
+			})
+		})
+	}
+
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
@@ -744,6 +756,7 @@ export function makeQuery(name: string) {
 		getMeasure,
 
 		getDrillDownQuery,
+		copy: copyQuery,
 
 		history,
 		canUndo() {
