@@ -83,6 +83,7 @@ function resetFile() {
 		<template #body-content>
 			<FileUploader
 				v-if="!fileUploaded"
+				:uploadArgs="{ private: true }"
 				:file-types="['.csv']"
 				@success="uploadFileAndFetchData"
 			>
