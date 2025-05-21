@@ -1,6 +1,9 @@
+import router from '@/router'
 import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
+import { confirmDialog } from '../helpers/confirm_dialog'
+import { createToast } from '../helpers/toasts'
 import { WorkbookListItem } from '../types/workbook.types'
 
 const workbooks = ref<WorkbookListItem[]>([])
@@ -21,6 +24,24 @@ async function getWorkbooks(search_term?: string, limit: number = 100) {
 	return workbooks.value
 }
 
+function importWorkbook(workbook: any) {
+	confirmDialog({
+		title: 'Import Workbook',
+		message: 'Are you sure you want to import this workbook?',
+		onSuccess: () => {
+			call('insights.api.workbooks.import_workbook', { workbook }).then((name: string) => {
+				getWorkbooks().then(() => {
+					createToast({
+						message: 'Workbook imported successfully',
+						variant: 'success',
+					})
+				})
+				router.push(`/workbook/${name}`)
+			})
+		},
+	})
+}
+
 export default function useWorkbookListItemStore() {
 	if (!workbooks.value.length) {
 		getWorkbooks()
@@ -30,5 +51,6 @@ export default function useWorkbookListItemStore() {
 		workbooks,
 		loading,
 		getWorkbooks,
+		importWorkbook
 	})
 }

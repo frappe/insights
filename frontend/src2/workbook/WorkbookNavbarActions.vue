@@ -52,6 +52,11 @@ const showShareDialog = ref(false)
 							onClick: () => workbook.duplicate(),
 					  }
 					: null,
+				{
+					label: 'Copy JSON',
+					icon: 'copy',
+					onClick: () => workbook.copy(),
+				},
 				!workbook.islocal
 					? {
 							label: 'Delete',

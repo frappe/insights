@@ -97,6 +97,7 @@ class InsightsWorkbook(Document):
         if not last_viewed_recently:
             self.add_viewed(force=True)
 
+    @frappe.whitelist()
     def export(self):
         workbook = {
             "version": "1.0",
@@ -146,7 +147,6 @@ class InsightsWorkbook(Document):
                 "title",
                 "workbook",
                 "query",
-                "data_query",
                 "chart_type",
                 "config",
             ],

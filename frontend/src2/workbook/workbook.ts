@@ -4,6 +4,7 @@ import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import {
 	copy,
+	copyToClipboard,
 	getUniqueId,
 	safeJSONParse,
 	showErrorToast,
@@ -269,6 +270,12 @@ function makeWorkbook(name: string) {
 		})
 	}
 
+	function copyJSON() {
+		workbook.call('export').then(data => {
+			copyToClipboard(JSON.stringify(data, null, 2))
+		})
+	}
+
 	function deleteWorkbook() {
 		confirmDialog({
 			title: 'Delete Workbook',
@@ -309,6 +316,8 @@ function makeWorkbook(name: string) {
 		updateSharePermissions,
 
 		getLinkedQueries,
+
+		copy: copyJSON,
 
 		delete: deleteWorkbook,
 	})
