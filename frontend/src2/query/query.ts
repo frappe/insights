@@ -21,6 +21,7 @@ import {
 	ColumnDataType,
 	ColumnOption,
 	CustomOperationArgs,
+	Dimension,
 	FilterGroupArgs,
 	FilterRule,
 	JoinArgs,
@@ -63,6 +64,7 @@ import {
 	summarize,
 	union,
 } from './helpers'
+import { dayjs } from 'frappe-ui'
 
 const queries = new Map<string, Query>()
 
@@ -563,59 +565,31 @@ export function makeQuery(name: string) {
 
 		const operations = copy(query.doc.operations)
 		const reversedOperations = operations.slice().reverse()
-		const lastSummarizeIdx = reversedOperations.findIndex((op) => op.type === 'summarize')
-		if (lastSummarizeIdx === -1) {
-			console.error('No summarize operation found')
-			return
-		}
-
-		const actualSummarizeIdx = reversedOperations.length - lastSummarizeIdx - 1
-		const summarizeOperation = operations[actualSummarizeIdx] as Summarize
-
-		const groupByColumns = summarizeOperation.dimensions
-		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
-		const currRow = result.value.rows[rowIndex]
-		const nextRow = result.value.rows[rowIndex + 1]
-
-		const filters: FilterRule[] = []
-		for (const c of groupByColumns) {
-			if (FIELDTYPES.TEXT.includes(c.data_type)) {
-				filters.push({
-					column: column(c.column_name),
-					operator: '=',
-					value: currRow[c.dimension_name] as string,
-				})
-			}
-
-			if (FIELDTYPES.DATE.includes(c.data_type)) {
-				if (nextRow) {
-					filters.push({
-						column: column(c.column_name),
-						operator: '>=',
-						value: currRow[c.dimension_name] as string,
-					})
-					filters.push({
-						column: column(c.column_name),
-						operator: '<',
-						value: nextRow[c.dimension_name] as string,
-					})
-				} else {
-					filters.push({
-						column: column(c.column_name),
-						operator: '>=',
-						value: currRow[c.dimension_name] as string,
-					})
-				}
-			}
-		}
 
 		const drill_down_query = useQuery('new-query-' + getUniqueId())
 		drill_down_query.doc.title = 'Drill Down'
 		drill_down_query.autoExecute = true
 		drill_down_query.doc.workbook = query.doc.workbook
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
-		drill_down_query.setOperations(operations.slice(0, actualSummarizeIdx))
 
+		let filters: FilterRule[] = []
+		let sliceIdx = -1
+		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
+		const currRow = result.value.rows[rowIndex]
+
+		const lastPivotIdx = reversedOperations.findIndex((op: Operation) => op.type === 'pivot_wider')
+		if (lastPivotIdx !== -1) {
+			sliceIdx = reversedOperations.length - lastPivotIdx - 1
+			filters = getDrillDownQueryForPivot(operations, sliceIdx, col, currRow)
+		}
+
+		const lastSummarizeIdx = reversedOperations.findIndex((op: Operation) => op.type === 'summarize')
+		if (lastSummarizeIdx !== -1) {
+			sliceIdx = reversedOperations.length - lastSummarizeIdx - 1
+			filters = getDrillDownQueryForSummarize(operations, sliceIdx, col, currRow)
+		}
+
+		drill_down_query.setOperations(operations.slice(0, sliceIdx))
 		drill_down_query.addFilterGroup({
 			logical_operator: 'And',
 			filters: filters,
@@ -624,8 +598,91 @@ export function makeQuery(name: string) {
 		return drill_down_query
 	}
 
+
+	function getFiltersForDimension(dim: Dimension, value: string) {
+		const filters: FilterRule[] = []
+
+		if (!FIELDTYPES.DATE.includes(dim.data_type)) {
+			filters.push({
+				column: column(dim.column_name),
+				operator: '=',
+				value: value,
+			})
+		}
+
+		if (FIELDTYPES.DATE.includes(dim.data_type)) {
+			const start = dayjs(value);
+
+			filters.push({
+				column: column(dim.column_name),
+				operator: '>=',
+				value: start.format('YYYY-MM-DD HH:mm:ss'),
+			});
+
+			if (dim.granularity) {
+				const end = start.clone().add(1, dim.granularity);
+				filters.push({
+					column: column(dim.column_name),
+					operator: '<',
+					value: end.format('YYYY-MM-DD HH:mm:ss'),
+				});
+			}
+		}
+
+		return filters
+	}
+
+	function getDrillDownQueryForSummarize(
+		operations: Operation[],
+		summarizeIdx: number,
+		col: QueryResultColumn,
+		row: QueryResultRow
+	) {
+
+		const filters: FilterRule[] = []
+		const summarizeOperation = operations[summarizeIdx] as Summarize
+		summarizeOperation.dimensions.forEach((c) => {
+			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
+		})
+
+		return filters
+	}
+
+	function getDrillDownQueryForPivot(
+		operations: Operation[],
+		pivotIdx: number,
+		col: QueryResultColumn,
+		row: QueryResultRow
+	) {
+		const drill_down_query = useQuery('new-query-' + getUniqueId())
+		drill_down_query.doc.title = 'Drill Down'
+		drill_down_query.autoExecute = true
+		drill_down_query.doc.workbook = query.doc.workbook
+		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
+		drill_down_query.setOperations(operations.slice(0, pivotIdx))
+
+		const pivotOperation = operations[pivotIdx] as PivotWiderArgs
+
+		const filters: FilterRule[] = []
+		pivotOperation.rows.forEach((c) => {
+			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
+		})
+
+		const pivotColumnValues = col.name.split('___')
+		// each value in the pivot column values corresponds to a column in the pivot operation "columns"
+		// for eg. if the pivot column values are ["A", "B", "C"], then these values correspond to
+		// pivotOperation.columns[0], pivotOperation.columns[1], pivotOperation.columns[2]
+		pivotOperation.columns.forEach((c, idx) => {
+			if (pivotColumnValues[idx]) {
+				filters.push(...getFiltersForDimension(c, pivotColumnValues[idx]))
+			}
+		})
+
+		return filters
+	}
+
 	function validateDrillDown(col: QueryResultColumn, row: QueryResultRow) {
-		if (!query.doc.operations.find((op) => op.type === 'summarize')) {
+		if (!query.doc.operations.find((op) => op.type === 'summarize' || op.type === 'pivot_wider')) {
 			return 'Drill down is only supported on summarized data'
 		}
 
