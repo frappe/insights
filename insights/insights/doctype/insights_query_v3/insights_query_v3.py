@@ -217,7 +217,7 @@ def import_query(query, workbook):
     new_query.workbook = workbook
     new_query.insert()
 
-    if workbook == query.doc.workbook or not query.dependencies.queries:
+    if str(workbook) == str(query.doc.workbook) or not query.dependencies.queries:
         return new_query.name
 
     # if query is copied to a new workbook, all the dependencies will be copied as well
