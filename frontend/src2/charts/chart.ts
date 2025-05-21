@@ -17,7 +17,6 @@ import { AdhocFilters } from '../types/query.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
 import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
-import { createToast } from '../helpers/toasts'
 
 const charts = new Map<string, Chart>()
 
@@ -324,9 +323,12 @@ function makeChart(name: string) {
 	}
 
 	function resetConfig() {
-		chart.doc.config = {} as InsightsChartv3['config']
-		chart.doc.config.order_by = []
-		chart.doc.config.limit = 100
+		// @ts-ignore
+		chart.doc.config = {
+			order_by: [],
+			filters: chart.doc.config.filters,
+			limit: chart.doc.config.limit,
+		}
 	}
 
 	// when chart type changes from axis to non-axis or vice versa reset the config
