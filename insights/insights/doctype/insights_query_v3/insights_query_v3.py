@@ -193,7 +193,7 @@ class InsightsQueryv3(Document):
                 "is_script_query": self.is_script_query,
                 "is_builder_query": self.is_builder_query,
                 "is_native_query": self.is_native_query,
-                "operations": self.operations,
+                "operations": frappe.parse_json(self.operations),
             },
             "dependencies": {
                 "queries": {},

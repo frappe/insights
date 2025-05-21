@@ -68,7 +68,7 @@ class InsightsChartv3(Document):
                 "workbook": self.workbook,
                 "query": self.query,
                 "chart_type": self.chart_type,
-                "config": self.config,
+                "config": frappe.parse_json(self.config),
             },
             "dependencies": {
                 "queries": {},

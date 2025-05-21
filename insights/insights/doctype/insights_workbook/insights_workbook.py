@@ -137,6 +137,7 @@ class InsightsWorkbook(Document):
             order_by="creation asc",
         )
         for q in queries:
+            q.operations = frappe.parse_json(q.operations)
             workbook["dependencies"]["queries"][q.name] = q
 
         charts = frappe.get_all(
@@ -153,6 +154,7 @@ class InsightsWorkbook(Document):
             order_by="creation asc",
         )
         for c in charts:
+            c.config = frappe.parse_json(c.config)
             workbook["dependencies"]["charts"][c.name] = c
 
         dashboards = frappe.get_all(
@@ -167,6 +169,7 @@ class InsightsWorkbook(Document):
             order_by="creation asc",
         )
         for d in dashboards:
+            d["items"] = frappe.parse_json(d["items"])
             workbook["dependencies"]["dashboards"][d.name] = d
 
         return workbook
