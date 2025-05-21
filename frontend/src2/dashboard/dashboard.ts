@@ -1,4 +1,4 @@
-import { reactive, toRefs } from 'vue'
+import { reactive, ref, toRefs } from 'vue'
 import useChart from '../charts/chart'
 import {
 	getUniqueId,
@@ -11,6 +11,7 @@ import {
 import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
+import session from '../session'
 import { FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
 import {
 	InsightsDashboardv3,
@@ -19,7 +20,6 @@ import {
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
-import session from '../session'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -39,207 +39,206 @@ export type FilterState = {
 }
 
 function makeDashboard(name: string) {
-	const resource = getDashboardResource(name)
+	const dashboard = getDashboardResource(name)
 
-	const dashboard = reactive({
-		...toRefs(resource),
+	const editing = ref(false)
+	const editingItemIndex = ref<number>()
 
-		editing: false,
-		editingItemIndex: null as number | null,
-		filters: {} as Record<string, FilterArgs[]>,
-		filterStates: {} as Record<string, FilterState>,
+	function isEditingItem(item: WorkbookDashboardItem) {
+		return editing.value && editingItemIndex.value === dashboard.doc.items.indexOf(item)
+	}
 
-		isEditingItem(item: WorkbookDashboardItem) {
-			return dashboard.editing && dashboard.editingItemIndex === dashboard.doc.items.indexOf(item)
-		},
 
-		addChart(charts: WorkbookChart[]) {
-			const maxY = dashboard.getMaxY()
-			charts.forEach((chart) => {
-				if (
-					!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
-				) {
-					dashboard.doc.items.push({
-						type: 'chart',
-						chart: chart.name,
-						layout: {
-							i: getUniqueId(),
-							x: 0,
-							y: maxY,
-							w: chart.chart_type === 'Number' ? 20 : 10,
-							h: chart.chart_type === 'Number' ? 3 : 8,
-						},
-					})
-				}
-			})
-		},
+	const filters = ref<Record<string, FilterArgs[]>>({})
+	const filterStates = ref<Record<string, FilterState>>({})
 
-		addText() {
-			const maxY = dashboard.getMaxY()
-			dashboard.doc.items.push({
-				type: 'text',
-				text: 'Enter text here',
-				layout: {
-					i: getUniqueId(),
-					x: 0,
-					y: maxY,
-					w: 10,
-					h: 1,
-				},
-			})
-			dashboard.editingItemIndex = dashboard.doc.items.length - 1
-		},
 
-		addFilter() {
-			const maxY = dashboard.getMaxY()
-			dashboard.doc.items.push({
-				type: 'filter',
-				filter_name: 'Filter',
-				filter_type: 'String',
-				links: {},
-				layout: {
-					i: getUniqueId(),
-					x: 0,
-					y: maxY,
-					w: 4,
-					h: 1,
-				},
-			})
-			dashboard.editingItemIndex = dashboard.doc.items.length - 1
-		},
-
-		removeItem(index: number) {
-			dashboard.doc.items.splice(index, 1)
-		},
-
-		refresh() {
-			dashboard.doc.items
-				.filter((item) => item.type === 'chart')
-				.forEach((item) => dashboard.refreshChart(item.chart))
-		},
-
-		refreshChart(chart_name: string) {
-			const chart = useChart(chart_name)
-			if (!chart.doc.query) return
-
-			const filtersApplied = dashboard.doc.items.filter(
-				(item) => item.type === 'filter' && 'links' in item && item.links[chart_name]
-			)
-
-			if (!filtersApplied.length) {
-				chart.refresh()
-				return
+	function addChart(charts: WorkbookChart[]) {
+		const maxY = getMaxY()
+		charts.forEach((chart) => {
+			if (
+				!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
+			) {
+				dashboard.doc.items.push({
+					type: 'chart',
+					chart: chart.name,
+					layout: {
+						i: getUniqueId(),
+						x: 0,
+						y: maxY,
+						w: chart.chart_type === 'Number' ? 20 : 10,
+						h: chart.chart_type === 'Number' ? 3 : 8,
+					},
+				})
 			}
+		})
+	}
 
-			const filtersByQuery = {} as Record<string, FilterGroup>
+	function getMaxY() {
+		return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
+	}
 
-			function addFilterToQuery(query_name: string, filter: FilterArgs) {
-				if (!filtersByQuery[query_name]) {
-					filtersByQuery[query_name] = filter_group({
-						logical_operator: 'And',
-						filters: [],
-					})
-				}
-				filtersByQuery[query_name].filters.push(filter)
+	function addText() {
+		const maxY = getMaxY()
+		dashboard.doc.items.push({
+			type: 'text',
+			text: 'Enter text here',
+			layout: {
+				i: getUniqueId(),
+				x: 0,
+				y: maxY,
+				w: 10,
+				h: 1,
+			},
+		})
+		editingItemIndex.value = dashboard.doc.items.length - 1
+	}
+
+	function addFilter() {
+		const maxY = getMaxY()
+		dashboard.doc.items.push({
+			type: 'filter',
+			filter_name: 'Filter',
+			filter_type: 'String',
+			links: {},
+			layout: {
+				i: getUniqueId(),
+				x: 0,
+				y: maxY,
+				w: 4,
+				h: 1,
+			},
+		})
+		editingItemIndex.value = dashboard.doc.items.length - 1
+	}
+
+	function removeItem(index: number) {
+		dashboard.doc.items.splice(index, 1)
+	}
+
+	function refresh() {
+		dashboard.doc.items
+			.filter((item) => item.type === 'chart')
+			.forEach((item) => refreshChart(item.chart))
+	}
+
+	function refreshChart(chart_name: string) {
+		const chart = useChart(chart_name)
+		chart.refresh({
+			adhocFilters: getAdhocFilters(chart_name),
+		})
+	}
+
+	function getAdhocFilters(chart_name: string) {
+		const filtersApplied = dashboard.doc.items.filter(
+			(item) => item.type === 'filter' && 'links' in item && item.links[chart_name]
+		)
+
+		if (filtersApplied.length === 0) return
+
+		const filtersByQuery = {} as Record<string, FilterGroup>
+
+		function addFilterToQuery(query_name: string, filter: FilterArgs) {
+			if (!filtersByQuery[query_name]) {
+				filtersByQuery[query_name] = filter_group({
+					logical_operator: 'And',
+					filters: [],
+				})
 			}
+			filtersByQuery[query_name].filters.push(filter)
+		}
 
-			filtersApplied.forEach((item) => {
-				const filterItem = item as WorkbookDashboardFilter
-				const linkedColumn = dashboard.getColumnFromFilterLink(filterItem.links[chart_name])
-				if (!linkedColumn) return
-
-				const filterState = dashboard.filterStates[filterItem.filter_name] || {}
-
-				const filter = {
-					column: column(linkedColumn.column),
-					operator: filterState.operator,
-					value: filterState.value,
-				}
-
-				if (isFilterValid(filter, filterItem.filter_type)) {
-					addFilterToQuery(linkedColumn.query, filter)
-				}
-			})
-
-			chart.refresh({
-				adhocFilters: filtersByQuery,
-			})
-		},
-
-		updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
-			const filter = dashboard.doc.items.find(
-				(item) => item.type === 'filter' && item.filter_name === filter_name
-			)
-			if (!filter) return
-
-			if (!operator) {
-				delete dashboard.filterStates[filter_name]
-			} else {
-				dashboard.filterStates[filter_name] = {
-					operator,
-					value,
-				}
-			}
-
-			dashboard.applyFilter(filter_name)
-		},
-
-		applyFilter(filter_name: string) {
-			const item = dashboard.doc.items.find(
-				(item) => item.type === 'filter' && item.filter_name === filter_name
-			)
-			if (!item) return
-
+		filtersApplied.forEach((item) => {
 			const filterItem = item as WorkbookDashboardFilter
-			const filteredCharts = Object.keys(filterItem.links).filter(
-				(chart_name) => filterItem.links[chart_name]
-			)
-			filteredCharts.forEach((chart_name) => dashboard.refreshChart(chart_name))
-		},
+			const linkedColumn = getColumnFromFilterLink(filterItem.links[chart_name])
+			if (!linkedColumn) return
 
-		getColumnFromFilterLink(linkedColumn: string) {
-			const sep = '`'
-			// `query`.`column`
-			const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
-			const match = linkedColumn.match(pattern)
-			if (!match || match.length < 3) return null
+			const filterState = filterStates.value[filterItem.filter_name] || {}
 
-			return {
-				query: match[1],
-				column: match[2],
+			const filter = {
+				column: column(linkedColumn.column),
+				operator: filterState.operator,
+				value: filterState.value,
 			}
-		},
 
-		getDistinctColumnValues(query: string, column: string, search_term?: string) {
-			return dashboard.call('get_distinct_column_values', {
-				query: query,
-				column_name: column,
-				search_term,
-			})
-		},
+			if (isFilterValid(filter, filterItem.filter_type)) {
+				addFilterToQuery(linkedColumn.query, filter)
+			}
+		})
 
-		getShareLink() {
-			return (
-				dashboard.doc.share_link ||
-				`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
-			)
-		},
+		return filtersByQuery
+	}
 
-		updateAccess(data: {
-			is_public: boolean
-			is_shared_with_organization: boolean
-			people_with_access: string[]
-		}) {
-			return dashboard
-				.call('update_access', { data })
-				.catch(showErrorToast)
-				.then(() => dashboard.load())
-		},
+	function updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
+		const filter = dashboard.doc.items.find(
+			(item) => item.type === 'filter' && item.filter_name === filter_name
+		)
+		if (!filter) return
 
-		getMaxY() {
-			return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
-		},
-	})
+		if (!operator) {
+			delete filterStates.value[filter_name]
+		} else {
+			filterStates.value[filter_name] = {
+				operator,
+				value,
+			}
+		}
+
+		applyFilter(filter_name)
+	}
+
+	function applyFilter(filter_name: string) {
+		const item = dashboard.doc.items.find(
+			(item) => item.type === 'filter' && item.filter_name === filter_name
+		)
+		if (!item) return
+
+		const filterItem = item as WorkbookDashboardFilter
+		const filteredCharts = Object.keys(filterItem.links).filter(
+			(chart_name) => filterItem.links[chart_name]
+		)
+		filteredCharts.forEach((chart_name) => refreshChart(chart_name))
+	}
+
+	function getColumnFromFilterLink(linkedColumn: string) {
+		const sep = '`'
+		// `query`.`column`
+		const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
+		const match = linkedColumn.match(pattern)
+		if (!match || match.length < 3) return null
+
+		return {
+			query: match[1],
+			column: match[2],
+		}
+	}
+
+	function getDistinctColumnValues(query: string, column: string, search_term?: string) {
+		return dashboard.call('get_distinct_column_values', {
+			query: query,
+			column_name: column,
+			search_term,
+		})
+	}
+
+	function getShareLink() {
+		return (
+			dashboard.doc.share_link ||
+			`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
+		)
+	}
+
+	function updateAccess(data: {
+		is_public: boolean
+		is_shared_with_organization: boolean
+		people_with_access: string[]
+	}) {
+		return dashboard
+			.call('update_access', { data })
+			.catch(showErrorToast)
+			.then(() => dashboard.load())
+	}
+
 
 	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
 		if (item.type != 'filter') return acc
@@ -252,12 +251,12 @@ function makeDashboard(name: string) {
 			}
 		}
 		return acc
-	}, {} as typeof dashboard.filterStates)
+	}, {} as typeof filterStates.value)
 
-	Object.assign(dashboard.filterStates, defaultFilters)
+	Object.assign(filterStates.value, defaultFilters)
 
 	const key = `insights:dashboard-filter-states-${name}`
-	dashboard.filterStates = store(key, () => dashboard.filterStates)
+	filterStates.value = store(key, () => filterStates.value)
 
 	waitUntil(() => dashboard.isloaded).then(() => {
 		wheneverChanges(
@@ -276,7 +275,33 @@ function makeDashboard(name: string) {
 		)
 	})
 
-	return dashboard
+	return reactive({
+		...toRefs(dashboard),
+
+		editing,
+		editingItemIndex,
+		isEditingItem,
+
+		filters,
+		filterStates,
+
+		addChart,
+		addText,
+		addFilter,
+		removeItem,
+
+		refresh,
+		refreshChart,
+
+		updateFilterState,
+		applyFilter,
+		getColumnFromFilterLink,
+
+		getDistinctColumnValues,
+		updateAccess,
+
+		getShareLink,
+	})
 }
 
 export type Dashboard = ReturnType<typeof makeDashboard>
@@ -306,7 +331,7 @@ function getDashboardResource(name: string) {
 		},
 	})
 	if (session.isLoggedIn) {
-		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
+		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => { }))
 	}
 	wheneverChanges(() => dashboard.doc.read_only, () => {
 		if (dashboard.doc.read_only) {
