@@ -304,6 +304,17 @@ class IbisQueryBuilder:
         if filter_operator in ["contains", "not_contains"]:
             filter_value = filter_value.replace("%", "")
 
+        if filter_operator == "between":
+            start = filter_value[0]
+            end = filter_value[1]
+
+            contains_time = ":" in start or ":" in end
+            if not contains_time:
+                start = f"{start} 00:00:00"
+                end = f"{end} 23:59:59"
+
+            filter_value = [start, end]
+
         right_value = right_column or filter_value
         return operator_fn(left, right_value)
 
