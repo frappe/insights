@@ -78,6 +78,14 @@ const columnTypeOptions = computed(() => {
 			v-model="options.decimals"
 			placeholder="Enter a number..."
 		/>
+		<FormControl
+			v-if="options.column_type === 'Number'"
+			type="select"
+			label="Total Type"
+			placeholder="Select a total type..."
+			:options="['Sum', 'Average']"
+			v-model="options.total_type"
+		/>
 		<Checkbox
 			v-if="options.column_type === 'Number'"
 			v-model="options.show_inline_bar_chart"

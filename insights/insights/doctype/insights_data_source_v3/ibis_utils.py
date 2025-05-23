@@ -203,12 +203,7 @@ class IbisQueryBuilder:
 
     def translate_join_condition(self, join_args, right_table):
         def left_eq_right_condition(left_column, right_column):
-            if (
-                left_column
-                and right_column
-                and left_column.column_name
-                and right_column.column_name
-            ):
+            if left_column and right_column and left_column.column_name and right_column.column_name:
                 rt = right_table
                 lc = getattr(self.query, left_column.column_name)
                 rc = getattr(rt, right_column.column_name)
@@ -258,9 +253,7 @@ class IbisQueryBuilder:
 
             return f"{new_name}_{n}"
 
-        return right_table.rename(
-            **{get_new_name(col): col for col in duplicate_columns}
-        )
+        return right_table.rename(**{get_new_name(col): col for col in duplicate_columns})
 
     def apply_union(self, union_args):
         other_table = self.get_table_or_query(union_args.table)
@@ -305,13 +298,22 @@ class IbisQueryBuilder:
             frappe.throw(f"Operator {filter_operator} is not supported")
 
         right_column = (
-            self.get_column(filter_value.column_name)
-            if hasattr(filter_value, "column_name")
-            else None
+            self.get_column(filter_value.column_name) if hasattr(filter_value, "column_name") else None
         )
 
         if filter_operator in ["contains", "not_contains"]:
             filter_value = filter_value.replace("%", "")
+
+        if filter_operator == "between":
+            start = filter_value[0]
+            end = filter_value[1]
+
+            contains_time = ":" in start or ":" in end
+            if not contains_time:
+                start = f"{start} 00:00:00"
+                end = f"{end} 23:59:59"
+
+            filter_value = [start, end]
 
         right_value = right_column or filter_value
         return operator_fn(left, right_value)
@@ -389,14 +391,9 @@ class IbisQueryBuilder:
         return self.query.mutate(**{new_name: new_column})
 
     def apply_summary(self, summarize_args):
-        aggregates = [
-            self.translate_measure(measure) for measure in summarize_args.measures
-        ]
+        aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
         aggregates = {agg.get_name(): agg for agg in aggregates}
-        group_bys = [
-            self.translate_dimension(dimension)
-            for dimension in summarize_args.dimensions
-        ]
+        group_bys = [self.translate_dimension(dimension) for dimension in summarize_args.dimensions]
         return self.query.aggregate(**aggregates, by=group_bys)
 
     def apply_order_by(self, order_by_args):
@@ -411,9 +408,7 @@ class IbisQueryBuilder:
 
     def apply_pivot(self, pivot_args, pivot_type):
         rows = [self.translate_dimension(dimension) for dimension in pivot_args["rows"]]
-        columns = [
-            self.translate_dimension(dimension) for dimension in pivot_args["columns"]
-        ]
+        columns = [self.translate_dimension(dimension) for dimension in pivot_args["columns"]]
         values = [self.translate_measure(measure) for measure in pivot_args["values"]]
 
         if pivot_type == "wider":
@@ -427,21 +422,13 @@ class IbisQueryBuilder:
                 if self.is_date_type(dim.data_type)
             ]
             if date_dimensions:
-                self.query = self.query.cast(
-                    {dimension: "string" for dimension in date_dimensions}
-                )
+                self.query = self.query.cast({dimension: "string" for dimension in date_dimensions})
 
             names_from = [col.get_name() for col in columns]
             max_names = pivot_args.get("max_column_values", 10)
             max_names = int(max_names)
             max_names = max(1, min(max_names, 100))
-            names = (
-                self.query.select(names_from)
-                .order_by(names_from)
-                .distinct()
-                .limit(max_names)
-                .execute()
-            )
+            names = self.query.select(names_from).order_by(names_from).distinct().limit(max_names).execute()
             names = names.fillna("null").values
 
             return self.query.pivot_wider(
@@ -465,9 +452,7 @@ class IbisQueryBuilder:
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
 
-        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith(
-            "exec"
-        ):
+        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -591,6 +576,7 @@ class IbisQueryBuilder:
 def execute_ibis_query(
     query: IbisQuery,
     limit=100,
+    force=False,
     cache=True,
     cache_expiry=3600,
     reference_doctype=None,
@@ -603,7 +589,7 @@ def execute_ibis_query(
         backend_id = backends[0].db_identity if backends else None
         cache_key = make_digest(sql, backend_id)
 
-        if has_cached_results(cache_key):
+        if has_cached_results(cache_key) and not force:
             return get_cached_results(cache_key), -1
 
     if hasattr(query, "limit") and limit:

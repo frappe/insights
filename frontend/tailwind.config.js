@@ -1,6 +1,5 @@
-import frappeUIPreset from 'frappe-ui/src/tailwind/preset'
 import containerQueries from '@tailwindcss/container-queries'
-import plugin from 'tailwindcss/plugin'
+import frappeUIPreset from 'frappe-ui/src/tailwind/preset.js'
 
 export default {
 	presets: [frappeUIPreset],
@@ -33,23 +32,5 @@ export default {
 			},
 		},
 	},
-	plugins: [
-		containerQueries,
-		plugin(function ({ addUtilities }) {
-			addUtilities({
-				'.scrollbar-hide': {
-					/* IE and Edge */
-					'-ms-overflow-style': 'none',
-
-					/* Firefox */
-					'scrollbar-width': 'none',
-
-					/* Safari and Chrome */
-					'&::-webkit-scrollbar': {
-						display: 'none',
-					},
-				},
-			})
-		}),
-	],
+	plugins: [containerQueries],
 }

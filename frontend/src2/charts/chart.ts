@@ -1,6 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
-import { copy, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { copy, copyToClipboard, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { column, count, query_table } from '../query/helpers'
@@ -109,7 +109,7 @@ function makeChart(name: string) {
 					message: 'X-axis is required',
 				})
 			}
-			if (config.x_axis.dimension.column_name === config.split_by?.column_name) {
+			if (config.x_axis.dimension.column_name === config.split_by?.dimension.column_name) {
 				messages.push({
 					variant: 'error',
 					message: 'X-axis and Split by cannot be the same',
@@ -193,11 +193,12 @@ function makeChart(name: string) {
 		let values = config.y_axis?.series.map((s) => s.measure).filter((m) => m.measure_name)
 		values = values?.length ? values : [count()]
 
-		if (config.split_by?.column_name) {
+		if (config.split_by?.dimension?.column_name) {
 			query.addPivotWider({
 				rows: [config.x_axis.dimension],
-				columns: [config.split_by],
+				columns: [config.split_by.dimension],
 				values: values,
+				max_column_values: config.split_by.max_split_values || 10,
 			})
 			return
 		}
@@ -322,9 +323,12 @@ function makeChart(name: string) {
 	}
 
 	function resetConfig() {
-		chart.doc.config = {} as InsightsChartv3['config']
-		chart.doc.config.order_by = []
-		chart.doc.config.limit = 100
+		// @ts-ignore
+		chart.doc.config = {
+			order_by: [],
+			filters: chart.doc.config.filters,
+			limit: chart.doc.config.limit,
+		}
 	}
 
 	// when chart type changes from axis to non-axis or vice versa reset the config
@@ -341,6 +345,12 @@ function makeChart(name: string) {
 			}
 		}
 	)
+
+	function copyChart() {
+		chart.call('export').then(data => {
+			copyToClipboard(JSON.stringify(data, null, 2))
+		})
+	}
 
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
@@ -385,6 +395,8 @@ function makeChart(name: string) {
 
 		getDependentQueries,
 		getDependentQueryColumns,
+
+		copy: copyChart,
 
 		history,
 	})
@@ -443,6 +455,10 @@ function transformChartDoc(doc: any) {
 	if ('y_axis' in doc.config && Array.isArray(doc.config.y_axis)) {
 		// @ts-ignore
 		doc.config.y_axis = handleOldYAxisConfig(doc.config.y_axis)
+	}
+	if ('split_by' in doc.config && doc.config.split_by) {
+		// @ts-ignore
+		doc.config.split_by = handleOldXAxisConfig(doc.config.split_by)
 	}
 	if (doc.chart_type === 'Funnel') {
 		// @ts-ignore

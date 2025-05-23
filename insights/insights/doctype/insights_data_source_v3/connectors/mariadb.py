@@ -20,9 +20,10 @@ def get_mariadb_connection_string(data_source):
 
 def get_mariadb_connection(data_source):
     password = data_source.get_password(raise_exception=False)
+    data_source.port = int(data_source.port or 3306)
     return ibis.mysql.connect(
         host=data_source.host,
-        port=int(data_source.port) or 3306,
+        port=data_source.port,
         user=data_source.username,
         password=password,
         database=data_source.database_name,

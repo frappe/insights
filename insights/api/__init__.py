@@ -49,9 +49,7 @@ def get_user_info():
         },
     )
 
-    user = frappe.db.get_value(
-        "User", frappe.session.user, ["first_name", "last_name"], as_dict=1
-    )
+    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
 
     return {
         "email": frappe.session.user,
@@ -63,9 +61,7 @@ def get_user_info():
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": frappe.db.get_single_value("System Settings", "language"),
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
-        "default_version": get_user_default(
-            "insights_default_version", frappe.session.user
-        ),
+        "default_version": get_user_default("insights_default_version", frappe.session.user),
     }
 
 
@@ -152,7 +148,9 @@ def import_csv_data(filename: str):
         uploads.title = "Uploads"
         uploads.database_type = "DuckDB"
         uploads.database_name = "insights_file_uploads"
-        uploads.save(ignore_permissions=True)
+        uploads.owner = "Administrator"
+        uploads.status = "Active"
+        uploads.db_insert()
 
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
     db = get_duckdb_connection(ds, read_only=False)
@@ -199,14 +197,12 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     args = args or {}
 
     response = None
-    if doctype == "Insights Query v3" and method == "execute":
+    if doctype == "Insights Query v3" and method in ("execute", "download_results"):
         response = doc.execute(**args)
     elif doctype == "Insights Dashboard v3" and method == "get_distinct_column_values":
         response = doc.get_distinct_column_values(**args)
     else:
-        raise frappe.PermissionError(
-            "You don't have permission to access this document"
-        )
+        raise frappe.PermissionError("You don't have permission to access this document")
 
     frappe.response.docs.append(doc)
     frappe.response["message"] = response

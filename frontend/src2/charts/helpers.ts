@@ -85,7 +85,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			const show_area = serie.show_area ?? config.y_axis.show_area
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 			const color = serie.color?.[0] || colors[idx]
-			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
+			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
 
 			let labelPosition = 'top'
 			if (type === 'bar') {
@@ -204,7 +204,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 
 			const data = getSeriesData(c.name)
-			const name = config.split_by?.column_name ? c.name : serie.measure.measure_name || c.name
+			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
 
 			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
 			const isLast = idx === number_columns.length - 1
@@ -249,7 +249,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 function getSerie(config: AxisChartConfig, number_column: string): Series {
 	let serie
-	if (!config.split_by?.column_name) {
+	if (!config.split_by?.dimension?.column_name) {
 		serie = config.y_axis.series.find((s) => s.measure.measure_name === number_column)
 	} else {
 		let seriesCount = config.y_axis.series.filter((s) => s.measure.measure_name).length
@@ -474,10 +474,6 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 
 	const labels = rows.map((r) => r[labelColumn])
 	const values = rows.map((r) => r[valueColumn])
-	const total = values.reduce((a, b) => a + b, 0)
-
-	labels.unshift('Total')
-	values.unshift(total)
 
 	let colors = getGradientColors('blue')
 
@@ -510,7 +506,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 					padding: [0, 5, 0, 0],
 					formatter: (params: any) => {
 						const index = labels.indexOf(params.name)
-						const percentage = Number((values[index] / total) * 100).toFixed(0)
+						const percentage = Number((values[index] / values[0]) * 100).toFixed(0)
 						const value = getShortNumber(values[index], 2)
 						return `${params.name}\n${value} (${percentage}%)`
 					},
@@ -678,8 +674,8 @@ export function setDimensionNames(config: any) {
 	if (config.x_axis?.dimension) {
 		config.x_axis.dimension = setDimensionName(config.x_axis.dimension)
 	}
-	if (config.split_by) {
-		config.split_by = setDimensionName(config.split_by)
+	if (config.split_by?.dimension) {
+		config.split_by.dimension = setDimensionName(config.split_by.dimension)
 	}
 	if (config.date_column) {
 		config.date_column = setDimensionName(config.date_column)
@@ -701,8 +697,8 @@ export function getGranularity(dimension_name: string, config: ChartConfig) {
 		return config.x_axis.dimension.granularity
 	}
 
-	if ('split_by' in config && config.split_by?.dimension_name === dimension_name) {
-		return config.split_by.granularity
+	if ('split_by' in config && config.split_by?.dimension?.dimension_name === dimension_name) {
+		return config.split_by.dimension.granularity
 	}
 
 	if ('date_column' in config && config.date_column?.dimension_name === dimension_name) {

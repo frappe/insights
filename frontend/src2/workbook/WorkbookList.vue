@@ -8,6 +8,7 @@ import { WorkbookListItem } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
 import useWorkbooks from './workbooks'
+import { useMagicKeys, whenever } from '@vueuse/core'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
@@ -118,6 +119,22 @@ const listOptions = ref({
 			},
 		},
 	},
+})
+
+const keys = useMagicKeys()
+const cmdV = keys['Meta+V']
+whenever(cmdV, () => {
+	if (!navigator.clipboard) {
+		return
+	}
+	navigator.clipboard.readText().then((text) => {
+		try {
+			const json = JSON.parse(text)
+			if (json.type === 'Workbook') {
+				workbookStore.importWorkbook(json)
+			}
+		} catch (e) {}
+	})
 })
 
 watchEffect(() => {

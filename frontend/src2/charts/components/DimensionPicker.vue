@@ -2,7 +2,7 @@
 import { ChevronDown, Settings, XIcon } from 'lucide-vue-next'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { isDate } from '../../helpers'
-import { granularityOptions } from '../../helpers/constants'
+import { COLUMN_TYPES, granularityOptions } from '../../helpers/constants'
 import { Dimension, DimensionOption } from '../../types/query.types'
 
 const emit = defineEmits({ remove: () => true })
@@ -94,12 +94,7 @@ function selectDimension(option?: DimensionOption) {
 						<FormControl
 							type="select"
 							v-model="dimension.data_type"
-							:options="[
-								{ label: 'String', value: 'String' },
-								{ label: 'Date', value: 'Date' },
-								{ label: 'Datetime', value: 'Datetime' },
-								{ label: 'Time', value: 'Time' },
-							]"
+							:options="COLUMN_TYPES"
 						/>
 					</InlineFormControlLabel>
 

@@ -10,7 +10,7 @@
 			</Suspense>
 		</div>
 
-		<template v-if="!isGuestView">
+		<template>
 			<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 		</template>
 
@@ -33,6 +33,7 @@ import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
 import { createToast } from './helpers/toasts.ts'
 import session from './session'
 import telemetry from './telemetry.ts'
+import router from '@/router.ts'
 
 const route = useRoute()
 const hideSidebar = ref(true)

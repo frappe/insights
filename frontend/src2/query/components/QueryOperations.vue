@@ -82,7 +82,9 @@ const JoinInfo = (props: any) => {
 const UnionInfo = (props: any) => {
 	const union = props.union as Union
 	const union_name =
-		union.table.type === 'table' ? union.table.table_name : union.table.query_name
+		union.table.type === 'table'
+			? union.table.table_name
+			: getQueryTitle(union.table.query_name)
 
 	return (
 		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
@@ -150,7 +152,7 @@ const CastInfo = (props: any) => {
 const FilterInfo = (props: any) => {
 	const group = props.filter as FilterGroup
 	const custom_expressions = group.filters.filter(
-		(f) => 'expression' in f && f.expression.expression
+		(f) => 'expression' in f && f.expression.expression,
 	)
 	const filtered_columns = group.filters
 		.filter((f) => 'column' in f)

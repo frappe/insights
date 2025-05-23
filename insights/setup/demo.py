@@ -3,6 +3,7 @@
 
 import os
 import shutil
+from contextlib import contextmanager
 
 import frappe
 
@@ -13,6 +14,7 @@ from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 i
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
+from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
 
 
 def update_progress(message, progress):
@@ -73,14 +75,10 @@ class DemoDataFactory:
         tables = get_data_source_tables(self.data_source.name)
         tables_exists = len(tables) == 8
 
-        links_count = frappe.db.count(
-            "Insights Table Link v3", {"data_source": self.data_source.name}
-        )
+        links_count = frappe.db.count("Insights Table Link v3", {"data_source": self.data_source.name})
         links_exists = links_count == 8
 
-        sample_workbook_exists = frappe.db.exists(
-            "Insights Workbook", {"title": "Order Analysis"}
-        )
+        sample_workbook_exists = frappe.db.exists("Insights Workbook", {"title": "Order Analysis"})
 
         return tables_exists and links_exists and sample_workbook_exists
 
@@ -97,9 +95,7 @@ class DemoDataFactory:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
         except Exception as e:
-            frappe.log_error(
-                "Error downloading demo data. Please check your Internet connection."
-            )
+            frappe.log_error("Error downloading demo data. Please check your Internet connection.")
             update_progress("Error...", -1)
             raise e
 
@@ -159,9 +155,7 @@ class DemoDataFactory:
                 "right_column": "seller_id",
             },
         ]
-        frappe.db.delete(
-            "Insights Table Link v3", {"data_source": self.data_source.name}
-        )
+        frappe.db.delete("Insights Table Link v3", {"data_source": self.data_source.name})
         for link in table_links:
             InsightsTableLinkv3.create(
                 self.data_source.name,
@@ -179,6 +173,15 @@ class DemoDataFactory:
         with open(fixture_path + "/sample_workbook.json") as f:
             sample_workbook = f.read()
 
-        w = frappe.new_doc("Insights Workbook")
-        w.update(frappe.parse_json(sample_workbook))
-        w.save(ignore_permissions=True)
+        with admin_session():
+            import_workbook(frappe.parse_json(sample_workbook))
+
+
+@contextmanager
+def admin_session():
+    current_user = frappe.session.user
+    frappe.set_user("Administrator")
+    try:
+        yield
+    finally:
+        frappe.set_user(current_user)
