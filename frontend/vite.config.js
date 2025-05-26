@@ -21,6 +21,7 @@ export default defineConfig({
 	esbuild: { loader: 'tsx' },
 	resolve: {
 		alias: {
+			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
 			vue: 'vue/dist/vue.esm-bundler.js',
 			'@': path.resolve(__dirname, 'src'),
 			'tailwind.config.js': path.resolve(__dirname, 'tailwind.config.js'),
