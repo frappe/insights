@@ -105,10 +105,18 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 					<div
 						v-if="config.comparison"
 						class="flex items-center gap-1 text-xs font-medium"
-						:class="delta >= 0 ? 'text-green-500' : 'text-red-500'"
+						:class="[
+							config.negative_is_better
+								? delta >= 0
+									? 'text-red-500'
+									: 'text-green-500'
+								: delta >= 0
+								  ? 'text-green-500'
+								  : 'text-red-500',
+						]"
 					>
 						<span class="">
-							{{ delta >= 0 && !config.negative_is_better ? '↑' : '↓' }}
+							{{ delta >= 0 ? '↑' : '↓' }}
 						</span>
 						<span> {{ percentDelta }}% </span>
 					</div>
