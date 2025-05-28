@@ -6,7 +6,10 @@ import frappe
 
 
 def after_migrate():
-    create_admin_team()
+    try:
+        create_admin_team()
+    except Exception:
+        frappe.log_error(title="Error creating Admin Team")
 
 
 def create_admin_team():
