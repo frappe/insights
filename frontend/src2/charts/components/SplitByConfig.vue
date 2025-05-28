@@ -33,7 +33,10 @@ watchEffect(() => {
 const dimension = computed({
 	get: () => split_by.value.dimension,
 	set: (value) => {
-		split_by.value.dimension = value || ({} as DimensionOption)
+		split_by.value = {
+			...split_by.value,
+			dimension: value || ({} as DimensionOption),
+		}
 	},
 })
 </script>
@@ -44,11 +47,13 @@ const dimension = computed({
 			<DimensionPicker
 				label="Split By"
 				:options="props.dimensions"
-				v-model="dimension"
-				@remove="dimension = {} as DimensionOption"
+				:modelValue="dimension"
+				@update:modelValue="dimension = $event || {}"
+				@remove="dimension = {}"
 			/>
+
 			<FormControl
-				v-if="split_by.dimension?.column_name"
+				v-if="dimension?.column_name"
 				type="number"
 				label="Max Split Values"
 				placeholder="10"
