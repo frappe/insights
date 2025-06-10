@@ -1,5 +1,6 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
+import { dayjs } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import {
 	copy,
@@ -22,9 +23,11 @@ import {
 	ColumnOption,
 	CustomOperationArgs,
 	Dimension,
+	FilterArgs,
 	FilterGroupArgs,
 	FilterRule,
 	JoinArgs,
+	Measure,
 	MutateArgs,
 	Operation,
 	OrderByArgs,
@@ -47,6 +50,7 @@ import {
 	code,
 	column,
 	custom_operation,
+	expression,
 	filter_group,
 	getDimensions,
 	getFormattedRows,
@@ -64,7 +68,6 @@ import {
 	summarize,
 	union,
 } from './helpers'
-import { dayjs } from 'frappe-ui'
 
 const queries = new Map<string, Query>()
 
@@ -572,7 +575,7 @@ export function makeQuery(name: string) {
 		drill_down_query.doc.workbook = query.doc.workbook
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
 
-		let filters: FilterRule[] = []
+		let filters: FilterArgs[] = []
 		let sliceIdx = -1
 		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
 		const currRow = result.value.rows[rowIndex]
@@ -632,6 +635,37 @@ export function makeQuery(name: string) {
 		return filters
 	}
 
+	function getFiltersForMeasure(measure: Measure, columnName: string) {
+		if (measure.measure_name !== columnName || 'expression' in measure === false || !measure.expression) {
+			return []
+		}
+
+		// patterns to match to extract the condition
+		// 1. count_if(order_status == 'delivered')
+		// 2. count_if(order_status == 'delivered', order_id)
+		// 3. sum_if(order_status == 'delivered', order_id)
+		// 4. distinct_count_if(order_status == 'delivered', order_id)
+		const exp = measure.expression.expression
+		const patterns = [
+			/^count_if\(([^,]+),\s*([^)]+)\)$/,
+			/^count_if\(([^,]+)\)$/,
+			/^sum_if\(([^,]+),\s*([^)]+)\)$/,
+			/^distinct_count_if\(([^,]+),\s*([^)]+)\)$/,
+		]
+		const pattern = patterns.find((p) => exp.match(p))
+		if (pattern) {
+			const match = exp.match(pattern)
+			if (match) {
+				const condition = match[1].trim()
+				return [{
+					expression: expression(condition),
+				}]
+			}
+		}
+
+		return []
+	}
+
 	function getDrillDownQueryForSummarize(
 		operations: Operation[],
 		summarizeIdx: number,
@@ -639,10 +673,14 @@ export function makeQuery(name: string) {
 		row: QueryResultRow
 	) {
 
-		const filters: FilterRule[] = []
+		const filters: FilterArgs[] = []
 		const summarizeOperation = operations[summarizeIdx] as Summarize
 		summarizeOperation.dimensions.forEach((c) => {
 			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
+		})
+
+		summarizeOperation.measures.forEach((m) => {
+			filters.push(...getFiltersForMeasure(m, col.name))
 		})
 
 		return filters
@@ -663,12 +701,12 @@ export function makeQuery(name: string) {
 
 		const pivotOperation = operations[pivotIdx] as PivotWiderArgs
 
-		const filters: FilterRule[] = []
+		const filters: FilterArgs[] = []
 		pivotOperation.rows.forEach((c) => {
 			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
 		})
 
-		const pivotColumnValues = col.name.split('___')
+		const pivotColumnValues = col.name.split('___').reverse()
 		// each value in the pivot column values corresponds to a column in the pivot operation "columns"
 		// for eg. if the pivot column values are ["A", "B", "C"], then these values correspond to
 		// pivotOperation.columns[0], pivotOperation.columns[1], pivotOperation.columns[2]
@@ -676,6 +714,13 @@ export function makeQuery(name: string) {
 			if (pivotColumnValues[idx]) {
 				filters.push(...getFiltersForDimension(c, pivotColumnValues[idx]))
 			}
+		})
+
+		// if there are more than one value then there are two headers in the pivot table
+		// the last one displays the measure name, so we get the current measure name from pivotColumnValues
+		const selectedValueColumn = pivotOperation.values.length == 1 ? pivotOperation.values[0].measure_name : pivotColumnValues.at(-1) as string
+		pivotOperation.values.forEach((m) => {
+			return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
 		})
 
 		return filters
