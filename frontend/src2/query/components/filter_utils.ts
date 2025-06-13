@@ -26,6 +26,8 @@ export function getOperatorOptions(filterType: FilterType) {
 		options.push({ label: 'less than', value: '<' })
 		options.push({ label: 'less than or equals', value: '<=' })
 		options.push({ label: 'between', value: 'between' })
+		options.push({ label: 'is set', value: 'is_set' })
+		options.push({ label: 'is not set', value: 'is_not_set' })
 	}
 	if (filterType === 'Date') {
 		options.push({ label: 'equals', value: '=' })
@@ -36,6 +38,8 @@ export function getOperatorOptions(filterType: FilterType) {
 		options.push({ label: 'less than or equals', value: '<=' })
 		options.push({ label: 'between', value: 'between' })
 		options.push({ label: 'within', value: 'within' })
+		options.push({ label: 'is set', value: 'is_set' })
+		options.push({ label: 'is not set', value: 'is_not_set' })
 	}
 	return options
 }

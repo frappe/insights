@@ -319,6 +319,12 @@ class IbisQueryBuilder:
         return operator_fn(left, right_value)
 
     def get_operator(self, operator):
+        def null_check(is_null, x):
+            rt = x.isnull() if is_null else x.notnull()
+            if x.type().is_string():
+                rt = rt & (x != "")
+            return rt
+
         return {
             ">": lambda x, y: x > y,
             "<": lambda x, y: x < y,
@@ -328,8 +334,8 @@ class IbisQueryBuilder:
             "<=": lambda x, y: x <= y,
             "in": lambda x, y: x.isin(y),
             "not_in": lambda x, y: ~x.isin(y),
-            "is_set": lambda x, y: (x.notnull()) & (x != ""),
-            "is_not_set": lambda x, y: (x.isnull()) | (x == ""),
+            "is_set": lambda x, y: null_check(False, x),
+            "is_not_set": lambda x, y: null_check(True, x),
             "contains": lambda x, y: x.like(f"%{y}%"),
             "not_contains": lambda x, y: ~x.like(f"%{y}%"),
             "starts_with": lambda x, y: x.like(f"{y}%"),
