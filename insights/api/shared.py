@@ -1,4 +1,5 @@
 import frappe
+from frappe.query_builder import DocType
 
 from insights.decorators import validate_type
 
@@ -13,9 +14,7 @@ def check_public_access(doctype, name):
     if frappe.session.user != "Guest":
         return
     if doctype not in public_doctypes or not is_public(doctype, name):
-        raise frappe.PermissionError(
-            "You don't have permission to access this document"
-        )
+        raise frappe.PermissionError("You don't have permission to access this document")
 
 
 def is_public(doctype: str, name: str):
@@ -73,19 +72,27 @@ def is_public_dashboard(name: str):
 
 
 def get_public_charts():
-    charts = frappe.get_all(
-        "Insights Chart v3",
-        filters={"is_public": 1},
-        pluck="name",
-    )
+    Chart = DocType("Insights Chart v3")
+    Dashboard = DocType("Insights Dashboard v3")
+    DashboardChart = DocType("Insights Dashboard Chart v3")
 
-    linked_public_charts = frappe.get_all(
-        "Insights Dashboard v3",
-        filters={"is_public": 1},
-        pluck="linked_charts",
+    public_dashboards = frappe.qb.from_(Dashboard).select(Dashboard.name).where(Dashboard.is_public == 1)
+
+    charts = (
+        frappe.qb.from_(Chart)
+        .select(Chart.name)
+        .where(
+            (Chart.is_public == 1)
+            | (
+                Chart.name.isin(
+                    frappe.qb.from_(DashboardChart)
+                    .select(DashboardChart.chart)
+                    .where(DashboardChart.parent.isin(public_dashboards))
+                )
+            )
+        )
+        .run(pluck=True)
     )
-    for linked_charts in linked_public_charts:
-        charts.extend(frappe.parse_json(linked_charts))
 
     return list(set(charts))
 
