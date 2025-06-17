@@ -308,10 +308,11 @@ class IbisQueryBuilder:
             start = filter_value[0]
             end = filter_value[1]
 
-            contains_time = ":" in start or ":" in end
-            if not contains_time:
-                start = f"{start} 00:00:00"
-                end = f"{end} 23:59:59"
+            if isinstance(start, str) and isinstance(end, str):
+                contains_time = ":" in start or ":" in end
+                if not contains_time:
+                    start = f"{start} 00:00:00"
+                    end = f"{end} 23:59:59"
 
             filter_value = [start, end]
 
