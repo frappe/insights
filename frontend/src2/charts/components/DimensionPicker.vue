@@ -4,7 +4,7 @@ import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { isDate } from '../../helpers'
 import { COLUMN_TYPES, granularityOptions } from '../../helpers/constants'
 import { Dimension, DimensionOption } from '../../types/query.types'
-import TextInputOnblur from '../../components/TextInputOnblur.vue'
+import LazyTextInput from '../../components/LazyTextInput.vue'
 
 const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
@@ -84,9 +84,9 @@ function selectDimension(option?: DimensionOption) {
 			<template #body-main>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
 					<InlineFormControlLabel label="Label">
-						<TextInputOnblur
-						placeholder="Label"
-						v-model="dimension.dimension_name"
+						<LazyTextInput
+							placeholder="Label"
+							v-model="dimension.dimension_name"
 						/>
 					</InlineFormControlLabel>
 

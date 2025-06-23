@@ -4,7 +4,7 @@ import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { confirmDialog } from '../../helpers/confirm_dialog'
 import { Query } from '../query'
 import useSettings from '../../settings/settings'
-import TextInputOnBlur from '../../components/TextInputOnblur.vue'
+import LazyTextInput from '../../components/LazyTextInput.vue'
 
 const query = inject('query') as Query
 const settings = useSettings()
@@ -34,10 +34,10 @@ function toggleLiveConnection(enable: boolean) {
 		</div>
 		<div class="flex flex-shrink-0 flex-col gap-2.5 border-b px-0.5 pb-3">
 			<InlineFormControlLabel label="Query Title">
-				<TextInputOnBlur
-						type="text"
-						placeholder="Title"
-						v-model="query.doc.title"
+				<LazyTextInput
+					type="text"
+					placeholder="Title"
+					v-model="query.doc.title"
 				/>
 			</InlineFormControlLabel>
 			<InlineFormControlLabel
