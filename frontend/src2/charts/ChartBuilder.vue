@@ -16,7 +16,7 @@ import ChartShareDialog from './components/ChartShareDialog.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
-import TextInputOnBlur from '../components/TextInputOnBlur.vue'
+import TextInputOnBlur from '../components/TextInputOnblur.vue'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
@@ -84,9 +84,9 @@ const showShareDialog = ref(false)
 					<ChartTypeSelector v-model="chart.doc.chart_type" />
 					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 					<InlineFormControlLabel label="Title">
-						<TextInputOnblur
+						<TextInputOnBlur
 							type="text"
-							placeholder="Chart Title"
+							placeholder="Title"
 							v-model="chart.doc.title"
 						/>
 					</InlineFormControlLabel>
