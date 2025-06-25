@@ -287,6 +287,9 @@ function getXAxis(x_axis: XAxis) {
 		axisLabel: {
 			show: true,
 			rotate: rotation,
+			width: 100,
+      		overflow: 'truncate',
+      		ellipsis: '...',
 		},
 	}
 }
