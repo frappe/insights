@@ -194,6 +194,18 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		grid: getGrid({ show_legend }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
+		dataZoom: [
+				{
+					type: 'slider',
+					yAxisIndex: 0,
+					zoomLock: false,
+					width: 15,
+					right: 10,
+					start:100,
+					end: 60,
+					handleSize: 20,
+				},
+			],
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -213,6 +225,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			if (type == 'line') {
 				labelPosition = 'top'
 			}
+			
 
 			return {
 				type,
