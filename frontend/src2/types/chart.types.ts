@@ -55,6 +55,7 @@ export type YAxisBar = Series & {
 	stack?: boolean
 	normalize?: boolean
 	overlap?: boolean
+	show_scrollbar?:boolean 
 }
 export type SeriesBar = Series & {
 	type: 'bar'
