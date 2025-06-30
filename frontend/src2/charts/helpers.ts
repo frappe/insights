@@ -187,6 +187,19 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const colors = getColors()
 
+	const scrollbar = {
+		show: config.y_axis.show_scrollbar,
+		orient: swapAxes ? 'vertical' : 'horizontal',
+		type: 'slider',
+		zoomLock: false,
+		bottom: swapAxes ? "13%" : "4%",
+		height: swapAxes ? null : 10,
+		width: swapAxes ? 15 : "88%",
+		left: swapAxes ? null : "8%",
+		right: swapAxes ? 10 : null,
+		handleSize: 25,
+	}
+
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -194,18 +207,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		grid: getGrid({ show_legend }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
-		dataZoom: [
-				{
-					type: 'slider',
-					yAxisIndex: 0,
-					zoomLock: false,
-					width: 15,
-					right: 10,
-					start:100,
-					end: 60,
-					handleSize: 20,
-				},
-			],
+		dataZoom: scrollbar ,
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -214,7 +216,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const type = serie.type?.toLowerCase() || 'bar'
 			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-
 			const data = getSeriesData(c.name)
 			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
 
@@ -225,7 +226,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			if (type == 'line') {
 				labelPosition = 'top'
 			}
-			
 
 			return {
 				type,
