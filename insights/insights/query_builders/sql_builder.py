@@ -1,8 +1,7 @@
 import frappe
 from frappe import _dict
-from sqlalchemy import TextClause
+from sqlalchemy import TextClause, select, table
 from sqlalchemy import column as sa_column
-from sqlalchemy import select, table
 from sqlalchemy.sql import and_
 
 from insights.insights.doctype.insights_query.utils import Column as AssistedQueryColumn
@@ -82,12 +81,8 @@ class SQLQueryBuilder:
                     left=self.make_table(join.left_table.table),
                     right=self.make_table(join.right_table.table),
                     type=join.join_type.value,
-                    left_key=self.make_column(
-                        join.left_column.column, join.left_table.table
-                    ),
-                    right_key=self.make_column(
-                        join.right_column.column, join.right_table.table
-                    ),
+                    left_key=self.make_column(join.left_column.column, join.left_table.table),
+                    right_key=self.make_column(join.right_column.column, join.right_table.table),
                 )
             )
 
@@ -131,9 +126,7 @@ class SQLQueryBuilder:
             elif "set" in operator:  # is set, is not set
                 _filter = call_function(operator, _column)
             elif operator == "is":
-                operator_fn = (
-                    "is_set" if filter_value.lower() == "set" else "is_not_set"
-                )
+                operator_fn = "is_set" if filter_value.lower() == "set" else "is_not_set"
                 _filter = call_function(operator_fn, _column)
             elif operator == "between":
                 from_to = filter_value.split(",")
@@ -161,9 +154,7 @@ class SQLQueryBuilder:
                 self._dimensions.append(self.process_column(column))
             if column.order:
                 _column = self.process_column(column)
-                self._order_by_columns.append(
-                    _column.asc() if column.order == "asc" else _column.desc()
-                )
+                self._order_by_columns.append(_column.asc() if column.order == "asc" else _column.desc())
 
     def quote_identifier(self, identifier):
         return self.engine.dialect.identifier_preparer.quote_identifier(identifier)
@@ -203,8 +194,10 @@ class SQLQueryBuilder:
 
     def make_table(self, name):
         if name not in self._tables:
-            if self.data_source == "Site DB" and frappe.db.get_single_value(
-                "Insights Settings", "apply_user_permissions", cache=True
+            if (
+                name
+                and self.data_source == "Site DB"
+                and frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True)
             ):
                 t = table(name)
                 star = sa_column("*", is_literal=True, _selectable=t)
@@ -216,9 +209,7 @@ class SQLQueryBuilder:
                 elif allowed_names == "*":
                     self._tables[name] = t.alias(name)
                 else:
-                    self._tables[name] = (
-                        select(star).where(t_name.in_(allowed_names)).cte(name)
-                    )
+                    self._tables[name] = select(star).where(t_name.in_(allowed_names)).cte(name)
             else:
                 self._tables[name] = table(name).alias(name)
         return self._tables[name]
@@ -232,9 +223,7 @@ class SQLQueryBuilder:
         try:
             raw = process_raw_expression(raw_expression)
             eval_globals = get_eval_globals()
-            eval_globals["column"] = lambda table, column: self.make_column(
-                column, table
-            )
+            eval_globals["column"] = lambda table, column: self.make_column(column, table)
             return frappe.safe_eval(raw, eval_globals=eval_globals)
         except Exception as e:
             raise Exception(f"Invalid expression {raw} - {e}")
