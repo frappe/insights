@@ -13,7 +13,7 @@ no_cache = 1
 
 
 def get_context(context):
-    if not frappe.db.get_single_value("System Settings", "setup_complete"):
+    if not frappe.is_setup_complete():
         frappe.local.flags.redirect_location = "/app/setup-wizard"
         raise frappe.Redirect
 
