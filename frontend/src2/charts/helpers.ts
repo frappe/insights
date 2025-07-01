@@ -188,7 +188,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const colors = getColors()
 
 	const scrollbar = {
-		show: config.y_axis.show_scrollbar,
+		show: config.y_axis.show_scrollbar || false,
 		orient: swapAxes ? 'vertical' : 'horizontal',
 		type: 'slider',
 		zoomLock: false,
@@ -204,7 +204,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		animation: true,
 		animationDuration: 700,
 		color: colors,
-		grid: getGrid({ show_legend }),
+		grid: getGrid({ show_legend , show_scrollbar: config.y_axis.show_scrollbar,axes: swapAxes }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: scrollbar ,
@@ -578,11 +578,20 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 }
 
 function getGrid(options: any = {}) {
+	let bottomBar:number = 22;
+	
+	 if(options.show_legend ) {
+		bottomBar = 36
+	} 
+	else if (options.show_scrollbar && !options.axes) {
+		bottomBar = 46
+	}
+
 	return {
 		top: 18,
 		left: 30,
 		right: 30,
-		bottom: options.show_legend ? 36 : 22,
+		bottom: bottomBar,
 		containLabel: true,
 	}
 }
