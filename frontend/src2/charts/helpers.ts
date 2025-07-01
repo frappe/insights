@@ -71,7 +71,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	return {
 		animation: true,
 		animationDuration: 700,
-		grid: getGrid({ show_legend }),
+		grid: getGrid({ show_legend, show_scrollbar: config.y_axis.show_scrollbar }),
 		color: colors,
 		xAxis,
 		yAxis,
@@ -578,13 +578,11 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 }
 
 function getGrid(options: any = {}) {
-	let bottomBar:number = 22;
-	
-	 if(options.show_legend ) {
-		bottomBar = 36
-	} 
-	else if (options.show_scrollbar && !options.axes) {
-		bottomBar = 46
+	let bottomBar: number = 22;
+	if (options.show_legend) {
+		bottomBar = 36;
+	} else if (options.show_scrollbar && !options.axes) {
+		bottomBar = 46;
 	}
 
 	return {
