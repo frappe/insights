@@ -8,7 +8,7 @@ frappe.setup.on("before_load", function () {
 	// if setup wizard is already completed for ERPNext, skip the setup wizard
     if (
         frappe.boot.setup_wizard_completed_apps?.length &&
-        frappe.boot.setup_wizard_completed_apps.includes("erpnext")
+        frappe.boot.setup_wizard_completed_apps.includes("frappe")
     ) {
         complete_setup_wizard();
         return;
