@@ -56,3 +56,14 @@ def set_user_as_insights_admin(args):
 def login_as_first_user(args):
     if args.get("email") and hasattr(frappe.local, "login_manager"):
         frappe.local.login_manager.login_as(args.get("email"))
+
+
+@frappe.whitelist()
+def enable_setup_wizard_complete():
+    frappe.db.set_value(
+        "Installed Application",
+        {"app_name": "insights"},
+        "is_setup_complete",
+        1,
+    )
+    frappe.clear_cache()
