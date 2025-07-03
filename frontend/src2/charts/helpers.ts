@@ -67,10 +67,19 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		})
 
 	const colors = getColors()
-
+	const scrollbar = {
+		show: config.y_axis.show_scrollbar || false,
+		orient: 'horizontal',
+		type: 'slider',
+		zoomLock: false,
+		bottom: "4%",
+		height: 15,
+		width: "90%",	
+	}
 	return {
 		animation: true,
 		animationDuration: 700,
+		dataZoom: scrollbar ,
 		grid: getGrid({ show_legend, show_scrollbar: config.y_axis.show_scrollbar }),
 		color: colors,
 		xAxis,
@@ -118,7 +127,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			xAxisIsDate,
 			granularity,
 		}),
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend, config.y_axis.show_scrollbar || false,),
 	}
 }
 
@@ -192,10 +201,10 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		orient: swapAxes ? 'vertical' : 'horizontal',
 		type: 'slider',
 		zoomLock: false,
-		bottom: swapAxes ? "13%" : "4%",
-		height: swapAxes ? null : 10,
-		width: swapAxes ? 15 : "88%",
-		left: swapAxes ? null : "8%",
+		bottom: swapAxes ? "20%" : "4%",
+		height: swapAxes ? "80%" : 15,
+		width: swapAxes ? 15 : "90%",
+		left: swapAxes ? null : "5%",
 		right: swapAxes ? 10 : null,
 		handleSize: 25,
 	}
@@ -256,7 +265,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			granularity,
 			xySwapped: swapAxes,
 		}),
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend,config.y_axis.show_scrollbar || false,swapAxes),
 	}
 }
 
@@ -581,8 +590,12 @@ function getGrid(options: any = {}) {
 	let bottomBar: number = 22;
 	if (options.show_legend) {
 		bottomBar = 36;
-	} else if (options.show_scrollbar && !options.axes) {
-		bottomBar = 46;
+		if (options.show_scrollbar && !options.axes) {
+			bottomBar += 22
+		}
+	}
+	else if (options.show_scrollbar && !options.axes) {
+		bottomBar = 36;
 	}
 
 	return {
@@ -645,13 +658,13 @@ function getTooltip(options: any = {}) {
 	}
 }
 
-function getLegend(show_legend = true) {
+function getLegend(show_legend = true,show_scrollbar:boolean = false,swapaxes:boolean=false) {
 	return {
 		show: show_legend,
 		icon: 'circle',
 		type: 'scroll',
 		orient: 'horizontal',
-		bottom: 'bottom',
+		bottom: show_scrollbar && !swapaxes ? "8%":'bottom',
 		itemGap: 16,
 		padding: [10, 30],
 		textStyle: { padding: [0, 0, 0, -4] },

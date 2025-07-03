@@ -29,6 +29,7 @@ export type YAxis = {
 	axis_label?: string
 	show_axis_label?: boolean
 	show_data_labels?: boolean
+	show_scrollbar?:boolean
 }
 export type Series = {
 	name?: string
