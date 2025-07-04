@@ -55,7 +55,6 @@ watchEffect(() => {
 				:disabled="hasAxisSplit"
 			/>
 			<Toggle label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
-			<Toggle label="Show Scrollbar" v-model="(y_axis as YAxisBar).show_scrollbar"/>
 		</template>
 	</YAxisConfig>
 
