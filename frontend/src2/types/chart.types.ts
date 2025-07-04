@@ -29,7 +29,7 @@ export type YAxis = {
 	axis_label?: string
 	show_axis_label?: boolean
 	show_data_labels?: boolean
-	show_scrollbar?:boolean
+	show_scrollbar?: boolean
 }
 export type Series = {
 	name?: string
@@ -44,7 +44,6 @@ export type YAxisLine = Series & {
 	smooth?: boolean
 	show_data_points?: boolean
 	show_area?: boolean
-	show_scrollbar?: boolean
 
 }
 export type SeriesLine = Series & {
@@ -58,7 +57,6 @@ export type YAxisBar = Series & {
 	stack?: boolean
 	normalize?: boolean
 	overlap?: boolean
-	show_scrollbar?:boolean 
 }
 export type SeriesBar = Series & {
 	type: 'bar'

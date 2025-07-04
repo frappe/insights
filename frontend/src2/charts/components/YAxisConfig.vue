@@ -96,7 +96,7 @@ const updateColor = debounce((color: string, idx: number) => {
 			<slot name="y-axis-settings" :y_axis="y_axis" />
 			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
 			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
-			<Toggle label="Show Scrllbar" v-model="y_axis.show_scrollbar" />
+			<Toggle label="Show Scrollbar" v-model="y_axis.show_scrollbar" />
 			<FormControl
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"

@@ -39,6 +39,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
+	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
@@ -67,20 +68,12 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		})
 
 	const colors = getColors()
-	const scrollbar = {
-		show: config.y_axis.show_scrollbar || false,
-		orient: 'horizontal',
-		type: 'slider',
-		zoomLock: false,
-		bottom: "4%",
-		height: 15,
-		width: "90%",	
-	}
+
 	return {
 		animation: true,
 		animationDuration: 700,
-		dataZoom: scrollbar ,
-		grid: getGrid({ show_legend, show_scrollbar: config.y_axis.show_scrollbar }),
+		dataZoom: getDataZoom(show_scrollbar),
+		grid: getGrid({ show_legend, show_scrollbar }),
 		color: colors,
 		xAxis,
 		yAxis,
@@ -127,7 +120,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			xAxisIsDate,
 			granularity,
 		}),
-		legend: getLegend(show_legend, config.y_axis.show_scrollbar || false,),
+		legend: getLegend(show_legend, show_scrollbar),
 	}
 }
 
@@ -141,12 +134,28 @@ function getAreaStyle(color: string) {
 	}
 }
 
+function getDataZoom(show: boolean, swapAxes = false) {
+	return {
+		show,
+		orient: swapAxes ? 'vertical' : 'horizontal',
+		type: 'slider',
+		zoomLock: false,
+		bottom: swapAxes ? "20%" : "4%",
+		height: swapAxes ? "80%" : 15,
+		width: swapAxes ? 15 : "90%",
+		left: swapAxes ? null : "5%",
+		right: swapAxes ? 10 : null,
+		handleSize: 25,
+	}
+}
+
 export function getBarChartOptions(config: BarChartConfig, result: QueryResult, swapAxes = false) {
 	const _columns = result.columns
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
+	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
@@ -196,27 +205,14 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const colors = getColors()
 
-	const scrollbar = {
-		show: config.y_axis.show_scrollbar || false,
-		orient: swapAxes ? 'vertical' : 'horizontal',
-		type: 'slider',
-		zoomLock: false,
-		bottom: swapAxes ? "20%" : "4%",
-		height: swapAxes ? "80%" : 15,
-		width: swapAxes ? 15 : "90%",
-		left: swapAxes ? null : "5%",
-		right: swapAxes ? 10 : null,
-		handleSize: 25,
-	}
-
 	return {
 		animation: true,
 		animationDuration: 700,
 		color: colors,
-		grid: getGrid({ show_legend , show_scrollbar: config.y_axis.show_scrollbar,axes: swapAxes }),
+		grid: getGrid({ show_legend, show_scrollbar, swapAxes }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
-		dataZoom: scrollbar ,
+		dataZoom: getDataZoom(show_scrollbar, swapAxes),
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -265,7 +261,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			granularity,
 			xySwapped: swapAxes,
 		}),
-		legend: getLegend(show_legend,config.y_axis.show_scrollbar || false,swapAxes),
+		legend: getLegend(show_legend, show_scrollbar, swapAxes),
 	}
 }
 
@@ -310,8 +306,8 @@ function getXAxis(x_axis: XAxis) {
 			show: true,
 			rotate: rotation,
 			width: 100,
-      		overflow: 'truncate',
-      		ellipsis: '...',
+			overflow: 'truncate',
+			ellipsis: '...',
 		},
 	}
 }
@@ -587,22 +583,16 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 }
 
 function getGrid(options: any = {}) {
-	let bottomBar: number = 22;
-	if (options.show_legend) {
-		bottomBar = 36;
-		if (options.show_scrollbar && !options.axes) {
-			bottomBar += 22
-		}
-	}
-	else if (options.show_scrollbar && !options.axes) {
-		bottomBar = 36;
+	let bottom = options.show_legend ? 36 : 22;
+	if (options.show_scrollbar && !options.swapAxes) {
+		bottom += 30;
 	}
 
 	return {
 		top: 18,
 		left: 30,
 		right: 30,
-		bottom: bottomBar,
+		bottom: bottom,
 		containLabel: true,
 	}
 }
@@ -658,13 +648,18 @@ function getTooltip(options: any = {}) {
 	}
 }
 
-function getLegend(show_legend = true,show_scrollbar:boolean = false,swapaxes:boolean=false) {
+function getLegend(show_legend = true, show_scrollbar = false, swap_axes = false) {
+	let bottom: string | number = 'bottom';
+	if (show_scrollbar && !swap_axes) {
+		bottom = 32;
+	}
+
 	return {
 		show: show_legend,
 		icon: 'circle',
 		type: 'scroll',
 		orient: 'horizontal',
-		bottom: show_scrollbar && !swapaxes ? "8%":'bottom',
+		bottom,
 		itemGap: 16,
 		padding: [10, 30],
 		textStyle: { padding: [0, 0, 0, -4] },
