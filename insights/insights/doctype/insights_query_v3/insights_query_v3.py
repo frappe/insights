@@ -25,6 +25,7 @@ class InsightsQueryv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import InsightsQueryVariable
 
         is_builder_query: DF.Check
         is_native_query: DF.Check
@@ -34,6 +35,7 @@ class InsightsQueryv3(Document):
         operations: DF.JSON | None
         title: DF.Data | None
         use_live_connection: DF.Check
+        variables: DF.Table[InsightsQueryVariable]
         workbook: DF.Link
     # end: auto-generated types
 

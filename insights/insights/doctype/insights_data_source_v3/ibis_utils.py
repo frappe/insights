@@ -491,7 +491,10 @@ class IbisQueryBuilder:
         if cached_results is not None:
             results = cached_results
         else:
-            results = get_code_results(code)
+            variables = None
+            if hasattr(self.doc, 'variables') and self.doc.variables:
+                variables = self.doc.variables
+            results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 10)
 
         return Warehouse().db.create_table(
@@ -743,7 +746,7 @@ class SafePandasDataFrame(pd.DataFrame):
         raise NotImplementedError("to_json is not supported in this context")
 
 
-def get_code_results(code: str):
+def get_code_results(code: str, variables=None):
     pandas = frappe._dict()
     pandas.DataFrame = SafePandasDataFrame
     pandas.read_csv = pd.read_csv
@@ -751,10 +754,23 @@ def get_code_results(code: str):
 
     results = []
     frappe.debug_log = []
+
+    variable_context = {}
+    if variables:
+        from frappe.utils.password import get_decrypted_password
+        for var in variables:
+            if hasattr(var, 'variable_name') and hasattr(var, 'variable_value'):
+                variable_context[var.variable_name] = get_decrypted_password(
+                    var.doctype, var.name, "variable_value"
+                )
+            elif isinstance(var, dict):
+                variable_context[var.get('variable_name')] = var.get('variable_value')
+
+    _locals = {"results": results, **variable_context}
     _, _locals = safe_exec(
         code,
         _globals={"pandas": pandas},
-        _locals={"results": results},
+        _locals=_locals,
         restrict_commit_rollback=True,
     )
     results = _locals["results"]
