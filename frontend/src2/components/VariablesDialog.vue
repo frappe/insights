@@ -59,8 +59,8 @@ function saveVariables() {
 				
 				<p class="mb-5 text-base text-gray-600">
 					Variables are used to store sensitive information such as API keys and credentials.
-					They can be referenced in your script just like any other variable. For example:
-					<code class="rounded bg-gray-100 px-1 py-0.5 text-sm text-gray-800">print(api_key)</code>
+					They can be referenced and combined in your script just like any other variable. For example:
+					<code class="rounded bg-gray-100 px-1 py-0.5 text-sm text-gray-800">formatted_api_key = f'token {api_key}:{api_secret}'</code>
 				</p>
 				
 				<div class="flex flex-col overflow-hidden">
