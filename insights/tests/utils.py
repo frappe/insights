@@ -4,6 +4,7 @@
 import frappe
 
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
+from insights.www.insights import check_setup_complete
 
 
 def before_tests():
@@ -17,8 +18,8 @@ def before_tests():
 def complete_setup_wizard():
     frappe.clear_cache()
     from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
-
-    if not frappe.is_setup_complete():
+    setup_complete = check_setup_complete()
+    if not setup_complete:
         setup_complete(
             {
                 "language": "English",
