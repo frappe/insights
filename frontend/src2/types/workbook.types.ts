@@ -2,6 +2,11 @@ import { FilterType } from '../helpers/constants'
 import { ChartConfig, ChartType } from './chart.types'
 import { FilterGroupArgs, FilterOperator, FilterValue, Operation, OrderByArgs } from './query.types'
 
+export interface QueryVariable {
+	variable_name: string
+	variable_value: string
+}
+
 export type WorkbookListItem = {
 	title: string
 	name: string
@@ -53,6 +58,7 @@ export type InsightsQueryv3 = {
 	title: string
 	workbook: string
 	operations: Operation[]
+	variables?: QueryVariable[]
 	use_live_connection?: boolean
 	is_native_query?: boolean
 	is_script_query?: boolean
