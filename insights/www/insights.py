@@ -12,14 +12,8 @@ from insights.api.telemetry import track_active_site
 no_cache = 1
 
 def get_context(context):
-    try:
-        setup_complete = frappe.is_setup_complete()
-    except AttributeError:
-         setup_complete = frappe.db.get_single_value("System Settings", "setup_complete")
     
-    if not setup_complete:
-        frappe.local.flags.redirect_location = "/app/setup-wizard"
-        raise frappe.Redirect
+    check_setup_complete()
 
     is_v2_site = frappe.db.count("Insights Query", cache=True) > 0
     if not is_v2_site:
@@ -95,3 +89,13 @@ def redirect_to_v2():
         path = "/insights_v2"
     frappe.local.flags.redirect_location = path
     raise frappe.Redirect
+
+def check_setup_complete():
+    try:
+        setup_complete = frappe.is_setup_complete()
+    except AttributeError:
+        setup_complete = frappe.db.get_single_value("System Settings", "setup_complete")
+    
+    if not setup_complete:
+        frappe.local.flags.redirect_location = "/app/setup-wizard"
+        raise frappe.Redirect
