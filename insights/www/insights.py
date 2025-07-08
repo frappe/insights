@@ -11,9 +11,13 @@ from insights.api.telemetry import track_active_site
 
 no_cache = 1
 
-
 def get_context(context):
-    if not frappe.is_setup_complete():
+    try:
+        setup_complete = frappe.is_setup_complete()
+    except AttributeError:
+         setup_complete = frappe.db.get_single_value("System Settings", "setup_complete")
+    
+    if not setup_complete:
         frappe.local.flags.redirect_location = "/app/setup-wizard"
         raise frappe.Redirect
 

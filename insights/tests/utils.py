@@ -17,8 +17,12 @@ def before_tests():
 def complete_setup_wizard():
     frappe.clear_cache()
     from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
-
-    if not frappe.is_setup_complete():
+    try:
+        setup_complete = frappe.is_setup_complete()
+    except AttributeError:
+         setup_complete = frappe.db.get_single_value("System Settings", "setup_complete")
+    
+    if not setup_complete:
         setup_complete(
             {
                 "language": "English",
