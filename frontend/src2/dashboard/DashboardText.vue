@@ -46,6 +46,7 @@ const editedText = ref(unref(props.item.text))
 					:content="editedText"
 					editor-class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
 					@change="editedText = $event"
+					placeholder="Enter your text content here..."
 				/>
 				<p class="text-xs text-gray-500">Markdown supported</p>
 			</div>

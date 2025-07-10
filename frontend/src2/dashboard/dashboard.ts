@@ -82,7 +82,7 @@ function makeDashboard(name: string) {
 		const maxY = getMaxY()
 		dashboard.doc.items.push({
 			type: 'text',
-			text: 'Enter text here',
+			text: '',
 			layout: {
 				i: getUniqueId(),
 				x: 0,

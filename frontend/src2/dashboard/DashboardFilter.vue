@@ -78,7 +78,7 @@ const label = computed(() => {
 							stroke-width="1.5"
 						/>
 					</template>
-					{{ label || 'Filter' }}
+					{{ label  }}
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">
