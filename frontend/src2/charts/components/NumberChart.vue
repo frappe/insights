@@ -2,12 +2,16 @@
 import { computed } from 'vue'
 import { formatNumber, getShortNumber } from '../../helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
-import { QueryResult } from '../../types/query.types'
+import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
 const props = defineProps<{
 	config: NumberChartConfig
 	result: QueryResult
+}>()
+
+const emit = defineEmits<{
+	drillDown: [column: QueryResultColumn, row: QueryResultRow]
 }>()
 
 const config = computed(() => props.config)
@@ -74,6 +78,17 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 	const numberOption = config.value.number_column_options?.[index]?.[option] as any
 	return numberOption === undefined ? config.value[option] : numberOption
 }
+
+function onCardDoubleClick(measure_name: string) {
+	const column = props.result.columns.find(c => c.name === measure_name)
+	const rowIndex = props.result.rows.findIndex(row => row[measure_name] !== undefined && row[measure_name] !== null)
+	if (column && rowIndex !== -1) {
+		const row = props.result.formattedRows[rowIndex]
+		if (row) {
+			emit('drillDown', column, row)
+		}
+	}
+}
 </script>
 
 <template>
@@ -92,8 +107,9 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 					suffix,
 				} in cards"
 				:key="measure_name"
-				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow"
+				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
+				@dblclick="onCardDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
 					<span class="truncate text-sm font-medium">
