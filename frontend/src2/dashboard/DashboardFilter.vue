@@ -36,7 +36,7 @@ function stringValuesProvider(search: string) {
 	return dashboard.getDistinctColumnValues(
 		sourceColumn.value.query,
 		sourceColumn.value.column,
-		search
+		search,
 	)
 }
 
@@ -46,7 +46,7 @@ wheneverChanges(
 	() => {
 		dashboard.updateFilterState(filter.filter_name, filterState.operator, filterState.value)
 	},
-	{ deep: true }
+	{ deep: true },
 )
 
 const label = computed(() => {
@@ -73,12 +73,12 @@ const label = computed(() => {
 					<template #prefix>
 						<DataTypeIcon
 							v-if="filter.filter_type"
-							:column-type="(FILTER_TYPES[filter.filter_type][0] as ColumnDataType)"
+							:column-type="FILTER_TYPES[filter.filter_type][0] as ColumnDataType"
 							class="h-4 w-4 flex-shrink-0"
 							stroke-width="1.5"
 						/>
 					</template>
-					{{ label  }}
+					{{ label }}
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">

@@ -98,7 +98,7 @@ function makeDashboard(name: string) {
 		const maxY = getMaxY()
 		dashboard.doc.items.push({
 			type: 'filter',
-			filter_name: 'Filter',
+			filter_name: '',
 			filter_type: 'String',
 			links: {},
 			layout: {
