@@ -114,6 +114,7 @@ export type TableChartConfig = {
 	show_row_totals?: boolean
 	show_column_totals?: boolean
 	enable_color_scale?: boolean
+	sticky_columns?: string[]
 }
 
 export type ChartConfig =

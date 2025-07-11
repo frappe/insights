@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Rating } from 'frappe-ui'
+import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import { createHeaders, formatNumber } from '../helpers'
@@ -21,6 +21,7 @@ const props = defineProps<{
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
 	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
+	stickyColumns?: string[] // List of column names to make sticky
 }>()
 
 const headers = computed(() => {
@@ -57,6 +58,47 @@ const columnsMeta = computed(() => {
 const isNumberColumn = (col: string) => columnsMeta.value.get(col)?.isNumber
 const isStarRating = (col: string) => columnsMeta.value.get(col)?.isStarRating
 const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
+
+const $header = ref<HTMLElement>()
+function getColumnWidth(column: string) {
+	const cell = $header.value?.querySelector(`td[data-column-name="${column}"]`)
+	if (cell && 'offsetWidth' in cell) {
+		console.log(`Width of column ${column}:`, cell.offsetWidth)
+		return cell.offsetWidth as number
+	}
+	return 200
+}
+
+const stickyColumnPositions = computed(() => {
+	const columns = props.columns || []
+	const stickyColumns = props.stickyColumns || []
+	const positions: Record<string, string> = {}
+
+	const indexColumnWidth = getColumnWidth('__index')
+
+	let cumulativeWidth = indexColumnWidth
+
+	const orderedStickyColumns = columns.filter((col) => stickyColumns.includes(col.name))
+
+	orderedStickyColumns.forEach((col, index) => {
+		positions[col.name] = `${cumulativeWidth}px`
+		const headerWidth = getColumnWidth(col.name)
+		cumulativeWidth += headerWidth
+	})
+
+	return positions
+})
+
+const isStickyColumn = (column: string) => {
+	return props.stickyColumns?.includes(column)
+}
+
+const getStickyColumnStyle = (column: string) => {
+	if (!isStickyColumn(column)) return {}
+	return {
+		left: stickyColumnPositions.value[column] || '48px',
+	}
+}
 
 const filterPerColumn = ref<Record<string, string>>({})
 const visibleRows = computed(() => {
@@ -213,10 +255,11 @@ const colorByValues = computed(() => {
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead class="sticky top-0 z-10 bg-gray-50">
+				<thead ref="$header" class="sticky top-0 z-10 bg-gray-50">
 					<tr v-for="headerRow in headers">
 						<td
 							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							data-column-name="__index"
 							width="1px"
 						></td>
 						<td
@@ -227,8 +270,11 @@ const colorByValues = computed(() => {
 								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
 									: 'text-left',
+								isStickyColumn(header.column.name) ? 'sticky z-10 bg-gray-50' : '',
 							]"
+							:style="getStickyColumnStyle(header.column.name)"
 							:colspan="header.colspan"
+							:data-column-name="header.column.name"
 						>
 							<DataTableColumn
 								v-if="header.isLast"
@@ -278,6 +324,8 @@ const colorByValues = computed(() => {
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="h-8 border-b border-r p-1"
+							:class="isStickyColumn(column.name) ? 'sticky z-10 bg-gray-50' : ''"
+							:style="getStickyColumnStyle(column.name)"
 						>
 							<FormControl
 								type="text"
@@ -323,7 +371,9 @@ const colorByValues = computed(() => {
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
+								isStickyColumn(col.name) ? 'sticky z-1 bg-white' : '',
 							]"
+							:style="getStickyColumnStyle(col.name)"
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
@@ -360,7 +410,11 @@ const colorByValues = computed(() => {
 						<td
 							v-for="col in props.columns"
 							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
-							:class="isNumberColumn(col.name) ? 'tnum text-right' : 'text-left'"
+							:class="[
+								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
+								isStickyColumn(col.name) ? 'sticky z-10 bg-white' : '',
+							]"
+							:style="getStickyColumnStyle(col.name)"
 						>
 							{{
 								isNumberColumn(col.name)
