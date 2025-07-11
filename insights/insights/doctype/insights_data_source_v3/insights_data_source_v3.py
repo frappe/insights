@@ -50,12 +50,17 @@ class InsightsDataSourceDocument:
         ):
             frappe.throw("Only one site database can be configured")
 
-    def on_update(self: "InsightsDataSourcev3"):
+    def on_update(self):
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
             self.db_set("status", "Active")
+
+            if frappe.conf.db_type == "postgres":
+                self.db_set("database_type", "PostgreSQL")
+
             with db_connections():
                 self.update_table_list()
+
             return
 
         credentials_changed = self.has_credentials_changed()
@@ -191,7 +196,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             ## Todo: Permanent fix for this
             try:
                 db.raw_sql(f"SET MAX_STATEMENT_TIME={MAX_STATEMENT_TIMEOUT}")
-            except Exception as e:
+            except Exception:
                 pass
 
         frappe.local.insights_db_connections[self.name] = db
