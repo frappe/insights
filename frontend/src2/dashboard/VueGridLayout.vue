@@ -58,7 +58,7 @@ const options = reactive({
 	isDraggable: computed(() => !props.disabled),
 	isResizable: computed(() => !props.disabled),
 	responsive: true,
-	verticalCompact: true,
+	verticalCompact: false,
 	preventCollision: false,
 	useCssTransforms: true,
 	cols: {
