@@ -76,8 +76,8 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 						<template #config-fields>
 							<Toggle
 								label="Pin Column"
-								:modelValue="config.sticky_columns?.includes(item.column_name)"
-								@update:modelValue="toggleStickyColumn(item.column_name, $event)"
+								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
+								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
 							/>
 						</template>
 					</DimensionPicker>
