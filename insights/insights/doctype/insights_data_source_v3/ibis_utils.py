@@ -177,10 +177,11 @@ class IbisQueryBuilder:
                     "t2": right_table,
                 },
             )
-            right_table_columns = self.get_columns_from_expression(
-                expression, table=join_args.table.table_name
-            )
-            select_columns.update(right_table_columns)
+            columns_from_exp = self.get_columns_from_expression(expression)
+            if columns_from_exp:
+                # filter columns to only include those that exist in right_table
+                columns_from_exp = [col for col in columns_from_exp if col in right_table.columns]
+                select_columns.update(columns_from_exp)
 
         return right_table.select(select_columns)
 
@@ -492,7 +493,7 @@ class IbisQueryBuilder:
             results = cached_results
         else:
             variables = None
-            if hasattr(self.doc, 'variables') and self.doc.variables:
+            if hasattr(self.doc, "variables") and self.doc.variables:
                 variables = self.doc.variables
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 10)
@@ -758,13 +759,14 @@ def get_code_results(code: str, variables=None):
     variable_context = {}
     if variables:
         from frappe.utils.password import get_decrypted_password
+
         for var in variables:
-            if hasattr(var, 'variable_name') and hasattr(var, 'variable_value'):
+            if hasattr(var, "variable_name") and hasattr(var, "variable_value"):
                 variable_context[var.variable_name] = get_decrypted_password(
                     var.doctype, var.name, "variable_value"
                 )
             elif isinstance(var, dict):
-                variable_context[var.get('variable_name')] = var.get('variable_value')
+                variable_context[var.get("variable_name")] = var.get("variable_value")
 
     _locals = {"results": results, **variable_context}
     _, _locals = safe_exec(
