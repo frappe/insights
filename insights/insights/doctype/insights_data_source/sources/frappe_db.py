@@ -277,14 +277,29 @@ class FrappeDB(MariaDB):
 class SiteDB(FrappeDB):
     def __init__(self, data_source):
         self.data_source = data_source
+
+        username = frappe.conf.db_name
+        password = frappe.conf.db_password
+        database = frappe.conf.db_name
+        host = frappe.conf.db_host or "127.0.0.1"
+        port = frappe.conf.db_port or "3306"
+
+        if frappe.conf.read_from_replica:
+            if frappe.conf.different_credentials_for_replica:
+                username = frappe.conf.replica_db_user or frappe.conf.replica_db_name or username
+                password = frappe.conf.replica_db_password or password
+            database = frappe.conf.replica_db_name or database
+            host = frappe.conf.replica_host or host
+            port = frappe.conf.replica_db_port or port
+
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
             driver="pymysql",
-            username=frappe.conf.db_name,
-            password=frappe.conf.db_password,
-            database=frappe.conf.db_name,
-            host=frappe.conf.db_host or "127.0.0.1",
-            port=frappe.conf.db_port or "3306",
+            username=username,
+            password=password,
+            database=database,
+            host=host,
+            port=port,
             ssl=False,
             ssl_verify_cert=bool(not frappe.conf.developer_mode),
             charset="utf8mb4",

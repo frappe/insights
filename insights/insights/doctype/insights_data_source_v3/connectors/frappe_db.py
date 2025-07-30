@@ -28,6 +28,17 @@ def get_sitedb_connection():
     data_source.username = frappe.conf.db_name
     data_source.password = frappe.conf.db_password
     data_source.use_ssl = False
+
+    if frappe.conf.read_from_replica:
+        if frappe.conf.different_credentials_for_replica:
+            data_source.username = (
+                frappe.conf.replica_db_user or frappe.conf.replica_db_name or data_source.username
+            )
+            data_source.password = frappe.conf.replica_db_password or data_source.password
+        data_source.database_name = frappe.conf.replica_db_name or data_source.database_name
+        data_source.host = frappe.conf.replica_host or data_source.host
+        data_source.port = frappe.conf.replica_db_port or data_source.port
+
     return get_frappedb_connection(data_source)
 
 
