@@ -68,6 +68,13 @@ function onChartElementClick(params: any) {
 		showDrillDown.value = true
 	}
 }
+
+function onNumberChartDrillDown(column: any, row: any) {
+	drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
+	if (drillDownQuery.value) {
+		showDrillDown.value = true
+	}
+}
 </script>
 
 <template>
@@ -83,6 +90,7 @@ function onChartElementClick(params: any) {
 			v-else-if="!loading && chart_type == 'Number'"
 			:config="(config as NumberChartConfig)"
 			:result="result"
+			@drill-down="onNumberChartDrillDown"
 		/>
 		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />
 

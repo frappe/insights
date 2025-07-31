@@ -43,7 +43,7 @@ import {
 	SummarizeArgs,
 	UnionArgs,
 } from '../types/query.types'
-import { InsightsQueryv3 } from '../types/workbook.types'
+import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
 import {
 	cast,
@@ -551,6 +551,28 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	function updateVariables(variables: QueryVariable[]) {
+		if (!query.doc.is_script_query) return Promise.resolve()
+
+		query.doc.variables = variables
+		return query.save()
+			.then(() => {
+				createToast({
+					title: 'Variables Updated',
+					message: 'Script variables have been saved securely.',
+					variant: 'success',
+				})
+			})
+			.catch((error) => {
+				createToast({
+					title: 'Failed to Update Variables',
+					message: error.message || 'An error occurred while saving variables.',
+					variant: 'error',
+				})
+				throw error
+			})
+	}
+
 	function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
 		if (!session.isLoggedIn) {
 			return
@@ -847,6 +869,7 @@ export function makeQuery(name: string) {
 
 		getCodeOperation,
 		setCode,
+		updateVariables,
 
 		dimensions,
 		measures,

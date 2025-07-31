@@ -13,14 +13,14 @@ const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
 function onSortChange(column_name: string, sort_order: SortDirection) {
 	const existingOrder = props.chart.doc.config.order_by.find(
-		(order) => order.column.column_name === column_name
+		(order) => order.column.column_name === column_name,
 	)
 	if (existingOrder) {
 		if (sort_order) {
 			existingOrder.direction = sort_order
 		} else {
 			props.chart.doc.config.order_by = props.chart.doc.config.order_by.filter(
-				(order) => order.column.column_name !== column_name
+				(order) => order.column.column_name !== column_name,
 			)
 		}
 	} else {
@@ -45,6 +45,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:enable-sort="true"
 			:enable-drill-down="true"
 			:on-sort-change="onSortChange"
+			:sticky-columns="tableConfig.sticky_columns"
 		></QueryDataTable>
 	</div>
 </template>

@@ -43,10 +43,23 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 			dimension_name: o.label,
 			label: o.label,
 			value: o.value,
-		}))
+		})),
 )
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
+
+function toggleStickyColumn(column_name: string, is_sticky: boolean) {
+	if (is_sticky) {
+		if (!config.value.sticky_columns) {
+			config.value.sticky_columns = []
+		}
+		if (!config.value.sticky_columns.includes(column_name)) {
+			config.value.sticky_columns.push(column_name)
+		}
+	} else {
+		config.value.sticky_columns = config.value.sticky_columns?.filter((c) => c !== column_name)
+	}
+}
 </script>
 
 <template>
@@ -59,7 +72,15 @@ const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.
 						:model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
 						@remove="config.rows.splice(index, 1)"
-					/>
+					>
+						<template #config-fields>
+							<Toggle
+								label="Pin Column"
+								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
+								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
+							/>
+						</template>
+					</DimensionPicker>
 				</template>
 			</DraggableList>
 			<button
