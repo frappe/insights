@@ -52,7 +52,6 @@ function makeDashboard(name: string) {
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
-
 	function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
@@ -164,7 +163,6 @@ function makeDashboard(name: string) {
 				addFilterToQuery(linkedColumn.query, filter)
 			}
 		})
-
 		return filtersByQuery
 	}
 
@@ -291,6 +289,8 @@ function makeDashboard(name: string) {
 
 		refresh,
 		refreshChart,
+
+		getAdhocFilters,
 
 		updateFilterState,
 		applyFilter,
