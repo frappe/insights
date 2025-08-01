@@ -88,7 +88,7 @@ function onNumberChartDrillDown(column: any, row: any) {
 		/>
 		<NumberChart
 			v-else-if="!loading && chart_type == 'Number'"
-			:config="config as NumberChartConfig"
+			:config="(config as NumberChartConfig)"
 			:result="result"
 			@drill-down="onNumberChartDrillDown"
 		/>
