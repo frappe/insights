@@ -41,7 +41,7 @@ import {
 	SQLArgs,
 	Summarize,
 	SummarizeArgs,
-	UnionArgs,
+	UnionArgs
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
@@ -198,6 +198,7 @@ export function makeQuery(name: string) {
 		return query
 			.call('get_count', {
 				active_operation_idx: activeOperationIdx.value,
+				adhoc_filters: adhocFilters.value,
 			})
 			.then((count: number) => {
 				result.value.totalRowCount = count || 0
@@ -445,6 +446,7 @@ export function makeQuery(name: string) {
 			return query
 				.call('download_results', {
 					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
 				})
 				.then((csv_data: string) => {
 					if (!csv_data) {
@@ -485,6 +487,7 @@ export function makeQuery(name: string) {
 
 		return query.call('get_distinct_column_values', {
 			active_operation_idx: _activeOperationIdx,
+			adhoc_filters: adhocFilters.value,
 			column_name: column,
 			search_term,
 			limit,
