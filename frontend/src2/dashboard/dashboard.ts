@@ -124,9 +124,8 @@ function makeDashboard(name: string) {
 
 	function refreshChart(chart_name: string) {
 		const chart = useChart(chart_name)
-		chart.refresh({
-			adhocFilters: getAdhocFilters(chart_name),
-		})
+		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.refresh()
 	}
 
 	function getAdhocFilters(chart_name: string) {

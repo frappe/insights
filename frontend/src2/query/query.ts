@@ -124,7 +124,8 @@ export function makeQuery(name: string) {
 		adhoc_filters?: AdhocFilters
 	}
 
-	async function execute(adhocFilters?: AdhocFilters, force: boolean = false) {
+	const adhocFilters = ref<AdhocFilters>()
+	async function execute(force: boolean = false) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
@@ -139,7 +140,7 @@ export function makeQuery(name: string) {
 			lastExecutionArgs &&
 			isEqual(lastExecutionArgs, {
 				operations: currentOperations.value,
-				adhoc_filters: adhocFilters,
+				adhoc_filters: adhocFilters.value
 			})
 		) {
 			return Promise.resolve()
@@ -149,7 +150,7 @@ export function makeQuery(name: string) {
 		return query
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
-				adhoc_filters: adhocFilters,
+				adhoc_filters: adhocFilters.value,
 				force,
 			})
 			.then((response: any) => {
@@ -177,7 +178,7 @@ export function makeQuery(name: string) {
 				executing.value = false
 				lastExecutionArgs = {
 					operations: currentOperations.value,
-					adhoc_filters: adhocFilters,
+					adhoc_filters: adhocFilters.value,
 				}
 			})
 	}
@@ -831,6 +832,7 @@ export function makeQuery(name: string) {
 		dataSource,
 		currentOperations,
 		activeEditOperation,
+		adhocFilters,
 
 		autoExecute,
 		executing,
