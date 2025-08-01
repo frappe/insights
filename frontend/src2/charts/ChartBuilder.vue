@@ -84,11 +84,7 @@ const showShareDialog = ref(false)
 					<ChartTypeSelector v-model="chart.doc.chart_type" />
 					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 					<InlineFormControlLabel label="Title">
-						<LazyTextInput
-							type="text"
-							placeholder="Title"
-							v-model="chart.doc.title"
-						/>
+						<LazyTextInput type="text" placeholder="Title" v-model="chart.doc.title" />
 					</InlineFormControlLabel>
 				</div>
 			</CollapsibleSection>
@@ -129,7 +125,7 @@ const showShareDialog = ref(false)
 						Reset Options
 					</Button>
 
-					<Button @click="chart.refresh({ force: true })" class="w-full">
+					<Button @click="chart.refresh(true)" class="w-full">
 						<template #prefix>
 							<RefreshCcw class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
