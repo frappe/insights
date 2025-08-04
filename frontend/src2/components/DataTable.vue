@@ -249,6 +249,7 @@ const colorByValues = computed(() => {
 })
 
 function _formatNumber(value: any) {
+	if (value === null || value === undefined) return 'null'
 	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
 }
 </script>
