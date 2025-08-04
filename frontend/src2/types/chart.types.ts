@@ -113,6 +113,7 @@ export type TableChartConfig = {
 	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean
+	compact_numbers?: boolean
 	enable_color_scale?: boolean
 	sticky_columns?: string[]
 }
