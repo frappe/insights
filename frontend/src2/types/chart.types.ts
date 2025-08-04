@@ -1,3 +1,4 @@
+import { FormatGroupArgs } from '../query/components/formatting_utils'
 import { Dimension, Measure } from './query.types'
 
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
@@ -115,6 +116,7 @@ export type TableChartConfig = {
 	show_column_totals?: boolean
 	enable_color_scale?: boolean
 	sticky_columns?: string[]
+	conditional_formatting?: FormatGroupArgs
 }
 
 export type ChartConfig =
