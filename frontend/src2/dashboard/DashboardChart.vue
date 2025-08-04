@@ -18,6 +18,8 @@ const chart = computed(() => {
 })
 
 if (props.item.chart) {
+	provide('chartName', props.item.chart)
+
 	waitUntil(() => Boolean(chart.value?.isloaded)).then(() => {
 		if (!chart.value?.dataQuery.result.executedSQL) {
 			dashboard.refreshChart(props.item.chart)
@@ -29,7 +31,7 @@ if (props.item.chart) {
 			{
 				deep: true,
 				debounce: 500,
-			}
+			},
 		)
 	})
 }
@@ -45,7 +47,7 @@ wheneverChanges(
 		if (editing) {
 			router.push(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
 		}
-	}
+	},
 )
 </script>
 

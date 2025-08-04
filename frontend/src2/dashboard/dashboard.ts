@@ -52,7 +52,6 @@ function makeDashboard(name: string) {
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
-
 	function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
@@ -124,9 +123,8 @@ function makeDashboard(name: string) {
 
 	function refreshChart(chart_name: string) {
 		const chart = useChart(chart_name)
-		chart.refresh({
-			adhocFilters: getAdhocFilters(chart_name),
-		})
+		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.refresh()
 	}
 
 	function getAdhocFilters(chart_name: string) {
@@ -165,7 +163,6 @@ function makeDashboard(name: string) {
 				addFilterToQuery(linkedColumn.query, filter)
 			}
 		})
-
 		return filtersByQuery
 	}
 
@@ -292,6 +289,8 @@ function makeDashboard(name: string) {
 
 		refresh,
 		refreshChart,
+
+		getAdhocFilters,
 
 		updateFilterState,
 		applyFilter,
