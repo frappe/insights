@@ -17,29 +17,49 @@ def get_frappedb_connection(data_source):
         return get_mariadb_connection(data_source)
 
 
-def get_sitedb_connection():
+def get_primary_data_source():
     data_source = frappe.new_doc("Insights Data Source v3")
-    data_source.database_type = (
-        "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
-    )
+    data_source.database_type = "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
     data_source.host = frappe.conf.db_host
     data_source.port = frappe.conf.db_port
     data_source.database_name = frappe.conf.db_name
     data_source.username = frappe.conf.db_name
     data_source.password = frappe.conf.db_password
     data_source.use_ssl = False
+    return data_source
 
+
+def get_replica_data_source():
+    data_source = get_primary_data_source()
+
+    if frappe.conf.replica_host:
+        data_source.host = frappe.conf.replica_host
+    if frappe.conf.replica_db_port:
+        data_source.port = frappe.conf.replica_db_port
+    if frappe.conf.replica_db_name:
+        data_source.database_name = frappe.conf.replica_db_name
+
+    if frappe.conf.different_credentials_for_replica:
+        data_source.username = (
+            frappe.conf.replica_db_user or frappe.conf.replica_db_name or frappe.conf.db_name
+        )
+        data_source.password = frappe.conf.replica_db_password or frappe.conf.db_password
+
+    return data_source
+
+
+def get_sitedb_connection():
+    # If replica is configured, try replica connection first
     if frappe.conf.read_from_replica:
-        if frappe.conf.different_credentials_for_replica:
-            data_source.username = (
-                frappe.conf.replica_db_user or frappe.conf.replica_db_name or data_source.username
-            )
-            data_source.password = frappe.conf.replica_db_password or data_source.password
-        data_source.database_name = frappe.conf.replica_db_name or data_source.database_name
-        data_source.host = frappe.conf.replica_host or data_source.host
-        data_source.port = frappe.conf.replica_db_port or data_source.port
+        try:
+            replica = get_replica_data_source()
+            return get_frappedb_connection(replica)
+        except Exception:
+            # If replica fails, fall back to primary
+            pass
 
-    return get_frappedb_connection(data_source)
+    primary = get_primary_data_source()
+    return get_frappedb_connection(primary)
 
 
 def is_frappe_db(data_source):
