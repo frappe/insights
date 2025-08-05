@@ -39,23 +39,15 @@ const formatGroup = reactive<FormatGroupArgs>(
 // Initialize the first format only if no formatGroup was provided
 onMounted(() => {
   if (!props.formatGroup && formatGroup.formats.length === 0) {
+    // TODO: Check cache first and fill the formatGroup with the cached data
     formatGroup.formats.push({
       mode: "cell_rules",
       column: column(""), // Start with empty column to show placeholder
       operator: "=",
       color: "red",
-      value: 0,
+      value: 0, 
     });
   }
-});
-
-
-
-
-
-const areFormatsUpdated = computed(() => {
-  if (!props.formatGroup) return true;
-  return JSON.stringify(formatGroup) !== JSON.stringify(props.formatGroup);
 });
 
 watch(selectedFormatMode, (newMode) => {
@@ -108,7 +100,7 @@ watch(selectedFormatMode, (newMode) => {
       :formatMode="selectedFormatMode"
       @update:modelValue="formatGroup.formats[0] = $event"
     />
-    <div class="mt-6 flex items-center justify-start gap-2">
+    <div class="mt-6 flex items-center justify-end gap-2">
       <Button
         label="Cancel"
         variant="outline"
