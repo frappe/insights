@@ -18,7 +18,7 @@ query.execute()
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')
 const sql = ref(operation ? operation.raw_sql : '')
-function execute() {
+function execute(force: boolean = false) {
 	if (!data_source.value) {
 		createToast({
 			title: 'Please select a data source first',
@@ -26,10 +26,13 @@ function execute() {
 		})
 		return
 	}
-	query.setSQL({
-		raw_sql: sql.value,
-		data_source: data_source.value,
-	})
+	query.setSQL(
+		{
+			raw_sql: sql.value,
+			data_source: data_source.value,
+		},
+		force,
+	)
 }
 
 const dataSourceSchema = ref<Record<string, any>>({})
@@ -95,7 +98,12 @@ const completions = computed(() => {
 				/>
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="execute" label="Execute">
+				<Button @click="execute(false)" label="Execute">
+					<template #prefix>
+						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+				<Button @click="execute(true)" label="Force Execute">
 					<template #prefix>
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
