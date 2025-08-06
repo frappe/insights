@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { AlertOctagon } from 'lucide-vue-next'
-import { provide, watchEffect } from 'vue'
+import { provide, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { waitUntil } from '../helpers'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
+import useChart from '../charts/chart'
+import useDashboard from '../dashboard/dashboard'
 
 defineOptions({ inheritAttrs: false })
 
@@ -29,6 +31,14 @@ if (route.name === 'Workbook' && workbook.doc.queries.length) {
 	const query = workbook.doc.queries[0]
 	router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
 }
+
+watch(() => route.name, (name) => {
+	if (name === 'WorkbookChart') {
+		useChart(route.params.chart_name as string).refresh(true)
+	} else if (name === 'WorkbookDashboard') {
+		useDashboard(route.params.dashboard_name as string).refresh()
+	}
+})
 
 const keys = useMagicKeys()
 const cmdS = keys['Meta+S']
