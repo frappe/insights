@@ -530,12 +530,12 @@ export function makeQuery(name: string) {
 		return query.doc.operations.find((op) => op.type === 'sql')
 	}
 
-	function setSQL(args: SQLArgs) {
+	function setSQL(args: SQLArgs, force: boolean = false) {
 		query.doc.operations = []
 		if (args.raw_sql.trim().length) {
 			query.doc.operations.push(sql(args))
 			activeOperationIdx.value = 0
-			execute()
+			execute(force)
 		} else {
 			activeOperationIdx.value = -1
 		}
