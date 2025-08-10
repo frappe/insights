@@ -272,6 +272,6 @@ def import_query(query, workbook):
 
 @contextmanager
 def set_adhoc_filters(filters):
-    frappe.local.insights_adhoc_filters = filters or {}
+    frappe.local.insights_adhoc_filters = filters or getattr(frappe.local, "insights_adhoc_filters", {})
     yield
     frappe.local.insights_adhoc_filters = None
