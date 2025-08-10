@@ -115,16 +115,16 @@ function makeDashboard(name: string) {
 		dashboard.doc.items.splice(index, 1)
 	}
 
-	function refresh() {
+	function refresh(force = false) {
 		dashboard.doc.items
 			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart))
+			.forEach((item) => refreshChart(item.chart, force))
 	}
 
-	function refreshChart(chart_name: string) {
+	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
 		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
-		chart.refresh()
+		chart.refresh(force)
 	}
 
 	function getAdhocFilters(chart_name: string) {
