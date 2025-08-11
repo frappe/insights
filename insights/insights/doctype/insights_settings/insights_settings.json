@@ -10,6 +10,7 @@
   "enable_permissions",
   "enable_data_store",
   "apply_user_permissions",
+  "enable_alerts",
   "allowed_origins",
   "max_records_to_sync",
   "max_memory_usage",
@@ -140,12 +141,18 @@
    "fieldname": "max_execution_time",
    "fieldtype": "Int",
    "label": "Max Execution Time (Seconds)"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_alerts",
+   "fieldtype": "Check",
+   "label": "Enable Alerts"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-14 13:17:25.798141",
+ "modified": "2025-08-11 12:37:56.008628",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

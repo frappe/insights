@@ -157,6 +157,9 @@ class InsightsAlert(Document):
 
 
 def send_alerts():
+    if not frappe.get_single_value("Insights Settings", "enable_alerts"):
+        return
+
     alerts = frappe.get_all("Insights Alert", filters={"disabled": 0})
     for alert in alerts:
         alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
@@ -167,9 +170,7 @@ def send_alerts():
 
 class TelegramAlert:
     def __init__(self, chat_id):
-        self.token = frappe.get_single("Insights Settings").get_password(
-            "telegram_api_token"
-        )
+        self.token = frappe.get_single("Insights Settings").get_password("telegram_api_token")
         if not self.token:
             frappe.throw("Telegram Bot Token not set in Insights Settings")
 

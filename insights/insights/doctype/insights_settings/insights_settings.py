@@ -21,6 +21,7 @@ class InsightsSettings(Document):
         allowed_origins: DF.Data | None
         apply_user_permissions: DF.Check
         auto_execute_query: DF.Check
+        enable_alerts: DF.Check
         enable_data_store: DF.Check
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None
@@ -76,9 +77,7 @@ def sync_site_tables():
 
 
 def create_site_db_data_source():
-    data_source_fixture_path = frappe.get_app_path(
-        "insights", "fixtures", "insights_data_source.json"
-    )
-    with open(data_source_fixture_path, "r") as f:
+    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source.json")
+    with open(data_source_fixture_path) as f:
         site_db = json.load(f)[0]
         frappe.get_doc(site_db).insert()
