@@ -154,3 +154,15 @@ def update_share_permissions(workbook_name, user_permissions, organization_acces
         public_docshare.save(ignore_permissions=True)
     elif public_docshare.name:
         public_docshare.delete(ignore_permissions=True)
+
+
+@insights_whitelist()
+def reorder_items(workbook_name, updates, doctype):
+    """Update sort_order for <dt> doctype in a workbook"""
+    if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook_name):
+        frappe.throw(_("You do not have permission to edit this workbook"))
+
+    for update in updates:
+        frappe.db.set_value(doctype, update["name"], "sort_order", update["sort_order"])
+
+    frappe.db.commit()

@@ -52,6 +52,7 @@ class InsightsWorkbook(Document):
             fields=[
                 "name",
                 "title",
+                "sort_order",
                 "is_native_query",
                 "is_builder_query",
                 "is_script_query",
@@ -65,15 +66,16 @@ class InsightsWorkbook(Document):
                 "name",
                 "title",
                 "chart_type",
+                "sort_order",
                 "query",
             ],
-            order_by="creation asc",
+            order_by="sort_order asc",
         )
         d.dashboards = frappe.get_all(
             "Insights Dashboard v3",
             filters={"workbook": self.name},
-            fields=["name", "title"],
-            order_by="creation asc",
+            fields=["name", "title", "sort_order"],
+            order_by="sort_order asc",
         )
         d.queries = frappe.as_json(d.queries)
         d.charts = frappe.as_json(d.charts)
