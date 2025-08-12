@@ -301,9 +301,9 @@ function getColorClass(colorName: string): string {
 
   switch (colorName.toLowerCase()) {
     case "red":
-      return "bg-[#FC7474] text-black";
+      return "bg-[#CE5050] text-white";
     case "green":
-      return "bg-[#58C08E] text-white";
+      return "bg-[#6DB678] text-white";
     case "amber":
       return "bg-[#F8D16E] text-black";
     default:
@@ -398,7 +398,7 @@ function getCellStyleClass(colName: string, val: any): string {
       let colorScale: Record<string, string>;
 
       if (format.colorScale) {
-        format.colorScale == "RAG"
+        format.colorScale == "Red-Green"
           ? (colorScale = ragByPercentage)  
           : (colorScale = garByPercentage); 
       } else {
@@ -439,7 +439,6 @@ function getCellStyleClass(colName: string, val: any): string {
 						<td
 							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							data-column-name="__index"
-							
 							width="1px"
 						></td>
 						<td

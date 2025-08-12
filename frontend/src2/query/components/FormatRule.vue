@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { debounce } from "frappe-ui";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, inject, onMounted, Ref, ref, watch } from "vue";
 import { flattenOptions } from "../../helpers";
 import { ColumnOption, GroupedColumnOption } from "../../types/query.types";
 import { column } from "../helpers";
@@ -16,6 +16,7 @@ import {
   text_rules,
   date_rules,
   rank_rules,
+  FormatGroupArgs,
 } from "./formatting_utils";
 import Autocomplete from "../../components/Autocomplete.vue";
 import FormControl from "../../components/FormControl.vue";
@@ -28,11 +29,12 @@ const props = defineProps<{
   formatMode: "cell_rules" | "color_scale";
 }>();
 
-// todo: use cached format options
 onMounted(() => {
-  if (valueSelectorType.value === "select") {
-    fetchColumnValues();
+  if (format.value.column?.column_name) {
+    return;
   }
+  const ruleType = getRuleTypeForColumn("");
+  createNewFormat(ruleType, "");
 });
 
 watch(
@@ -115,6 +117,48 @@ function createNewFormat(ruleType: string, columnName: string) {
   }
 }
 
+function useCachedFormatOptions(formatGroup: FormattingMode){
+  const ruleType = formatGroup.mode
+         switch (ruleType) {
+    case "text_rules":
+      const textFormat: text_rules = {
+        mode: "text_rules",
+        column: column(formatGroup.column.column_name),
+        operator: formatGroup.operator,
+        color: formatGroup.color,
+        value: formatGroup.value,
+      };
+      format.value = textFormat;
+      break;
+    case "date_rules":
+      const dateFormat: date_rules = {
+        mode: "date_rules",
+        column: column(formatGroup.column.column_name),
+        operator: formatGroup.operator,
+        color: formatGroup.color,
+        value: formatGroup.value,
+      };
+      format.value = dateFormat;
+      break;
+    case "rank_rules":
+      const rankFormat: rank_rules = {
+        mode: "rank_rules",
+        column: column(formatGroup.column.column_name),
+        operator: formatGroup.operator,
+        color: formatGroup.color,
+        value: formatGroup.value,
+      };
+      format.value = rankFormat;
+      break;
+    default:
+      const cellFormat: cell_rules = {
+        mode: "cell_rules",
+        column: column(formatGroup.column.column_name),
+        value: formatGroup.value,
+      };
+      format.value = cellFormat;
+  }
+}
 function onColumnChange(column_name: string) {
   if (props.formatMode === "cell_rules") {
     const ruleType = getRuleTypeForColumn(column_name);
@@ -214,12 +258,12 @@ const rankOperatorOptions = [
 
 const colorScaleOptions = [
   {
-    label: "Red-Amber-Green",
-    value: "RAG",
+    label: "Red-Green",
+    value: "Red-Green",
   },
   {
-    label: "Green-Amber-Red",
-    value: "GAR",
+    label: "Green-Red",
+    value: "Green-Red",
   },
 ];
 
@@ -342,17 +386,14 @@ const fetchColumnValues = debounce((searchTxt: string) => {
     .finally(() => (fetchingValues.value = false));
 }, 300);
 
-
-function onDateChange(date:any) {
-	format.value.value = date;
-}
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 gap-2 flex-nowrap">
-    <h3 class="text-sm text-gray-600 pt-3">Column</h3>
-    <div id="column_name" class="flex-1 w-1/2">
+  <div class="flex flex-col flex-1 gap-2 flex-nowrap  ">
+    <div id="column_name" class="flex-1 pt-3 w-full ">
+
       <Autocomplete
+        :label="'Column'"
         placeholder="Column"
         :modelValue="format.column?.column_name"
         :options="availableColumns"
@@ -362,7 +403,7 @@ function onDateChange(date:any) {
     </div>
 
     <template v-if="format.column?.column_name">
-      <div v-if="props.formatMode === 'color_scale'" class="flex flex-2 w-1/2">
+      <div v-if="props.formatMode === 'color_scale'" class="flex flex-2 w-full">
         <div class="w-full">
           <h3 class="text-sm text-gray-600 mb-3">Color</h3>
           <RadioGroup 
@@ -370,22 +411,24 @@ function onDateChange(date:any) {
             :modelValue="(format as color_scale).colorScale"
             @update:modelValue="onColorScaleChange($event)"
           >
-            <RadioGroupItem value="RAG" class="mb-2">
-              <div class="flex items-center gap-2">
-                <span class="text-sm">Red Amber Green</span>
-                <div class="flex h-3 w-20 ">
+            <RadioGroupItem value="Red-Green" class="[&_label]:w-full">
+              <div class="flex items-center justify-between gap-2 w-full">
+                <span class="text-sm">Red to Green</span>
+                <div class="flex h-2 w-32 ">
                   <div class="w-1/2 bg-red-400"></div>
-                  <div class="w-1/2 bg-amber-400"></div>
+                  <div class="w-1/2 bg-red-300"></div>
+                  <div class="w-1/2 bg-green-300"></div>
                   <div class="w-1/2 bg-green-500"></div>
                 </div>
               </div>
             </RadioGroupItem>
-            <RadioGroupItem value="GAR">
-              <div class="flex items-center gap-2">
-                <span class="text-sm">Green Amber Red</span>
-                <div class="flex h-3 w-20">
+              <RadioGroupItem value="Green-Red" class="[&_label]:w-full">
+              <div class="flex items-center justify-between gap-2 w-full">
+                <span class="text-sm">Green to Red</span>
+                <div class="flex h-2 w-32">
                   <div class="w-1/2 bg-green-500"></div>
-                  <div class="w-1/2 bg-amber-400"></div>
+                  <div class="w-1/2 bg-green-300"></div>
+                  <div class="w-1/2 bg-red-300"></div>
                   <div class="w-1/2 bg-red-400"></div>
                 </div>
               </div>
@@ -394,11 +437,11 @@ function onDateChange(date:any) {
         </div>
       </div>
 
-      <div v-else class="flex flex-1 flex-col gap-2 min-w-0 w-1/2">
+      <div v-else class="flex flex-1 flex-col gap-2 min-w-0 w-full">
         <template v-if="ruleTypeOptions.length > 1">
-          <h3 class="text-sm text-gray-600">Rule Type</h3>
           <FormControl
             type="select"
+            :label = "'Rule Type'"
             placeholder="Rule Type"
             :modelValue="format.mode"
             :options="ruleTypeOptions"
@@ -407,19 +450,19 @@ function onDateChange(date:any) {
           />
         </template>
 
-        <h3 class="text-sm text-gray-600">Condition</h3>
         <template v-if="isValueRule">
           <FormControl
             type="select"
+            :label = "'Condition'"
             placeholder="Operator"
             :modelValue="(format as cell_rules).operator"
             :options="operatorOptions"
             @update:modelValue="onOperatorChange($event)"
             class="w-full"
           />
-          <h3 class="text-sm text-gray-600">Compare to</h3>
           <FormControl
             type="number"
+            :label= "'Compare to'"
             :modelValue="(format as cell_rules).value"
             placeholder="Value"
             @update:modelValue="format.value = Number($event)"
@@ -430,16 +473,16 @@ function onDateChange(date:any) {
         <template v-if="isTextRule">
           <FormControl
             type="select"
-            placeholder="Text Condition"
+            label="Condition"
             :modelValue="(format as text_rules).operator"
             :options="textOperatorOptions"
             @update:modelValue="onOperatorChange($event)"
             class="w-full"
           />
           <template v-if="isTextValueRule">
-            <h3 class="text-sm text-gray-600">Text Value</h3>
             <FormControl
               type="text"
+              :label= "'Text Value'"
               :modelValue="(format as text_rules).value"
               placeholder="Enter text"
               @update:modelValue="format.value = $event"
@@ -451,7 +494,7 @@ function onDateChange(date:any) {
         <template v-if="isDateRule">
           <FormControl
             type="select"
-            placeholder="Date Condition"
+            label="Condition"
             :modelValue="(format as date_rules).operator"
             :options="dateOperatorOptions"
             @update:modelValue="onOperatorChange($event)"
@@ -481,14 +524,15 @@ function onDateChange(date:any) {
           <FormControl
             type="select"
             placeholder="Ranking Condition"
+            :label="'Rule'"
             :modelValue="(format as rank_rules).operator"
             :options="rankOperatorOptions"
             @update:modelValue="onOperatorChange($event)"
             class="w-full"
           />
           <template v-if="isRankValueRule">
-            <h3 class="text-sm text-gray-600">Value</h3>
             <FormControl
+              :label= "'value'"
               type="number"
               :modelValue="(format as rank_rules).value"
               :placeholder="(format as rank_rules).operator?.includes('percent') ? 'Percentage (1-100)' : 'Number of items'"
@@ -498,9 +542,9 @@ function onDateChange(date:any) {
           </template>
         </template>
 
-        <h3 class="text-sm text-gray-600">Color</h3>
         <FormControl
           type="select"
+          :label ="'Color'"
           placeholder="Color"
           :modelValue="currentColor"
           :options="highlightColorOptions"

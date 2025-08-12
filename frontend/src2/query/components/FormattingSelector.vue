@@ -1,76 +1,36 @@
 <script setup lang="ts">
-
-import { computed, reactive, ref, watch, onMounted } from "vue";
-import { copy, flattenOptions } from "../../helpers";
+import { reactive, ref } from "vue";
 import RadioGroupItem from "../../components/ui/RadioGroupItem.vue";
 import RadioGroup from "../../components/ui/Radio.vue";
-import {
-  ColumnOption,
-  GroupedColumnOption,
-} from "../../types/query.types";
+import { ColumnOption, GroupedColumnOption } from "../../types/query.types";
 import { column } from "../helpers";
 import { FormatGroupArgs, FormattingMode } from "./formatting_utils";
 import FormatRule from "./FormatRule.vue";
 
 const props = defineProps<{
-  formatMode?: FormattingMode;
-  formatGroup?: FormatGroupArgs;
+  initialRule?: FormattingMode | null;
   columnOptions: ColumnOption[] | GroupedColumnOption[];
 }>();
 
 const emit = defineEmits<{
-  close: []
-  select: [formatGroup: FormatGroupArgs]
+  close: [];
+  select: [formatGroup: FormatGroupArgs];
 }>();
 
+const current = reactive<FormattingMode>(
+  props.initialRule
+    ? ({ ...props.initialRule } as FormattingMode)
+    : ({ mode: "cell_rules", column: column(""), operator: "=", color: "red", value: 0 } as any)
+);
+
 const selectedFormatMode = ref<"cell_rules" | "color_scale">(
-  props.formatGroup?.formats[0]?.mode === "color_scale" ? "color_scale" : "cell_rules"
+  current.mode === "color_scale" ? "color_scale" : "cell_rules"
 );
 
-const formatGroup = reactive<FormatGroupArgs>(
-  props.formatGroup
-    ? copy(props.formatGroup)
-    : {
-        columns: [],
-        formats: [],
-      }
-);
-
-// Initialize the first format only if no formatGroup was provided
-onMounted(() => {
-  if (!props.formatGroup && formatGroup.formats.length === 0) {
-    // TODO: Check cache first and fill the formatGroup with the cached data
-    formatGroup.formats.push({
-      mode: "cell_rules",
-      column: column(""), // Start with empty column to show placeholder
-      operator: "=",
-      color: "red",
-      value: 0, 
-    });
-  }
-});
-
-watch(selectedFormatMode, (newMode) => {
-  if (formatGroup.formats.length > 0) {
-    const currentColumn = formatGroup.formats[0].column;
-    if (newMode === "color_scale") {
-      formatGroup.formats[0] = {
-        mode: "color_scale",
-        column: currentColumn,
-        colorScale: "RAG",
-        value: undefined,
-      };
-    } else {
-      formatGroup.formats[0] = {
-        mode: "cell_rules",
-        column: currentColumn,
-        operator: "=",
-        color: "red", 
-        value: 0,
-      };
-    }
-  }
-});
+function applyFormatting() {
+  const group: FormatGroupArgs = { formats: [current], columns: [] };
+  emit("select", group);
+}
 </script>
 
 <template>
@@ -93,12 +53,11 @@ watch(selectedFormatMode, (newMode) => {
         Color Scale
       </RadioGroupItem>
     </RadioGroup>
-        <FormatRule
-      v-if="formatGroup.formats.length > 0"
-      :modelValue="formatGroup.formats[0]"
+    <FormatRule
+      :modelValue="current"
       :columnOptions="props.columnOptions"
       :formatMode="selectedFormatMode"
-      @update:modelValue="formatGroup.formats[0] = $event"
+      @update:modelValue="(val:any) => Object.assign(current, val)"
     />
     <div class="mt-6 flex items-center justify-end gap-2">
       <Button
@@ -109,8 +68,8 @@ watch(selectedFormatMode, (newMode) => {
       <Button
         label="Apply Formatting"
         variant="solid"
-        :disabled="!formatGroup.formats[0]?.column?.column_name"
-        @click="() => emit('select', formatGroup)"
+        :disabled="!current?.column?.column_name"
+        @click="applyFormatting"
       />
     </div>
   </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
+import { computed, provide, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -10,7 +10,7 @@ import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import { useFormatStore } from '../../stores/formatStore'
 import ConditonalFormattingDialog from '../../query/components/ConditonalFormattingDialog.vue'
-import { FormatGroupArgs } from '../../query/components/formatting_utils'
+import { FormatGroupArgs, FormattingMode } from '../../query/components/formatting_utils'
 import { Plus, Edit, Trash2 } from 'lucide-vue-next'
 import { Badge, Button, FormControl } from 'frappe-ui'
 const props = defineProps<{
@@ -33,8 +33,7 @@ const config = defineModel<TableChartConfig>({
 
 const showFormatSelectorDialog = ref(false)
 const editingRuleIndex = ref<number | null>(null)
-//current rule being edited
-const editingRule = ref<any>(null) 
+const editingRule = ref<FormattingMode | null>(null)
 const formatStore = useFormatStore()
 
 watchEffect(() => {
@@ -47,7 +46,6 @@ watchEffect(() => {
 	if (!config.value.values?.length) {
 		config.value.values = [{} as any]
 	}
-
 	// init format
 	if (config.value.conditional_formatting) {
 		formatStore.setFormatting(config.value.conditional_formatting)
@@ -97,7 +95,7 @@ function getRuleBadgeTheme(mode: string): string {
 	switch (mode) {
 		case 'cell_rules': return 'blue'
 		case 'text_rules': return 'green'
-		case 'date_rules': return 'gray'
+		case 'date_rules': return 'green'
 		case 'rank_rules': return 'orange'
 		case 'color_scale': return 'red'
 		default: return 'gray'
@@ -147,17 +145,18 @@ function getRuleDescription(rule: any): string {
 }
 
 function editRule(index: number) {
-	const ruleToEdit = config.value.conditional_formatting?.formats[index]
-	if (ruleToEdit) {
-		editingRuleIndex.value = index
-		editingRule.value = JSON.parse(JSON.stringify(ruleToEdit))
-		showFormatSelectorDialog.value = true
+	const ruleToEditValue = config.value.conditional_formatting?.formats[index];
+	
+	if (ruleToEditValue) {
+    editingRule.value = ruleToEditValue as FormattingMode;
+    editingRuleIndex.value = index;
+    showFormatSelectorDialog.value = true;
 	}
 }
 
 function addNewRule() {
 	editingRuleIndex.value = null
-	editingRule.value = null
+  editingRule.value = null
 	showFormatSelectorDialog.value = true
 }
 
@@ -246,7 +245,7 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 							@remove="config.values.splice(index, 1)"
 						/>
 					</template>
-				</DraggableList>
+				  </DraggableList>
 				<button
 					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 					@click="config.values.push({} as any)"
@@ -263,7 +262,7 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 	<!-- todo: make items sortable -->
 	<CollapsibleSection title="Conditional Formatting" collapsed>
 		<template #title-suffix v-if="config.conditional_formatting?.formats.length">
-			<Badge size="sm" theme="orange" type="info" class="mt-0.5">
+			<Badge size="[sm]" theme="orange" class="mt-0.5">
 				<span class="tnum"> {{ config.conditional_formatting.formats.length }}</span>
 			</Badge>
 		</template>
@@ -271,24 +270,31 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			<div v-for="(rule, index) in config.conditional_formatting.formats" 
 				 :key="index" 
 				 class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
-				<div class="flex-1">
-					<div class="flex items-center gap-2">
-						<span class="text-sm font-medium">{{ rule.column?.column_name || 'Unknown Column' }}</span>
-						<Badge size="sm" :theme="getRuleBadgeTheme(rule.mode)">
-							{{ getRuleTypeLabel(rule.mode) }} 
-						</Badge>
-					</div>
-					<p class="text-xs text-gray-600 mt-1">{{ getRuleDescription(rule) }}</p>
+				<div class="flex flex-col gap-1 flex-1 justify-betweentruncate">
+					
+					  <div class="text-base font-medium truncate">
+						{{ rule.column?.column_name }}
 				</div>
-				<div class="flex items-center gap-2">
+
+					<div class="text-p-xs text-gray-600">{{ getRuleDescription(rule) }}</div>
+					<div>
+						<Badge
+							:label="getRuleTypeLabel(rule.mode)"
+							size="sm"
+							variant="outline"
+							:theme="getRuleBadgeTheme(rule.mode)"
+						/>
+					</div>
+				</div>
+				<div class="flex items-center gap-1">
 					<Button variant="ghost" size="sm" @click="editRule(index)">
 						<template #icon>
-							<Edit class="h-5 w-5 text-[#585858]" />
+							<Edit class="h-4 w-4 text-[#585858]" stroke-width="1.5" />
 						</template>
 					</Button>
 					<Button variant="ghost" size="sm" @click="removeRule(index)">
 						<template #icon>
-							<Trash2 class="h-5 w-5 text-[#FC7474]" />
+							<Trash2 class="h-4 w-4 text-[#FC7474]" stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>
@@ -303,8 +309,13 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 		</Button>
 
 	</CollapsibleSection>
+
 	<ConditonalFormattingDialog v-if="showFormatSelectorDialog" v-model="showFormatSelectorDialog"
-		:format-group="editingRuleIndex !== null && editingRule ? { formats: [editingRule], columns: config.conditional_formatting?.columns || [] } : formatStore.conditionalFormatting"
-		:column-options="selectedColumns"
-		@select="handleFormatSelect" />
+    	:column-options="selectedColumns"
+      :initial-rule="editingRule"
+      :selector-key="editingRuleIndex ?? 'new'"
+    	@select="handleFormatSelect" />
+
 </template>
+editing rule index should pass the cached values(if exists) of the formatGroup to
+the formatRule input

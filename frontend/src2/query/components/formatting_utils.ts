@@ -1,10 +1,10 @@
 import { Column } from "../../types/query.types";
 
-export type ConditionalColor = 'red' | 'amber' | 'green' 
+export type ConditionalColor = 'red' | 'amber' | 'green'
 
 export type FormatGroupArgs = {
     formats: FormattingMode[];
-	columns?: string[]
+    columns?: string[]
 }
 
 export type ConditionalOperator =
@@ -50,30 +50,22 @@ export type RankOperator =
     | 'above_average'
     | 'below_average'
 
-export type ColorByPercentage = {
-    0: string,
-    20:string,
-    40: string,
-    60: string,
-    80: string,
-    100: string,
-};
 
 export type color_scale = {
     mode: 'color_scale',
-    column: Column ,
+    column: Column,
     colorScale?: string,
-    value: number | any[] |undefined 
-   
+    value: number | any[] | undefined
+
 }
 
 // highlight cell rules
-export type cell_rules ={
+export type cell_rules = {
     mode: 'cell_rules',
-    column: Column ,
-    color: string,
-    operator: ConditionalOperator,
-    value: number | any[] |undefined
+    column: Column,
+    color?: string,
+    operator?: ConditionalOperator,
+    value: number | any[] | undefined
 }
 
 export type text_rules = {
@@ -97,37 +89,44 @@ export type rank_rules = {
     column: Column,
     color: string,
     operator: RankOperator,
-    value: number | undefined 
+    value: number | undefined
 }
 
 // rule and color scale based coloring of cell 
 export type FormattingMode = color_scale | cell_rules | text_rules | date_rules | rank_rules
 
-
 // color scale options Red-Amber-Green and Green-Amber-Red
-export const ragByPercentage = {    
-    0: "bg-[#E96C6C] text-white",     
-    20: "bg-[#EC9467] text-white",    
-    40: "bg-[#EDC060] text-black",    
-    60: "bg-[#C3D174] text-black",    
-    80: "bg-[#9BCB7A] text-black",    
-    100: "bg-[#77BE7B] text-black",   
+export const ragByPercentage = {
+    10: "bg-[#CE5050] text-white",
+    20: "bg-[#D97777] text-black",
+    30: "bg-[#E49E9F] text-black",
+    40: "bg-[#EFC5C5] text-black",
+    50: "bg-[#FBECEC] text-black",
+    60: "bg-[#EEF7EF] text-black",
+    70: "bg-[#CEE7D3] text-black",
+    80: "bg-[#AED6B4] text-black",
+    90: "bg-[#8DC696] text-black",
+    100: "bg-[#6DB678] text-white",
 };
 
 export const garByPercentage = {
-    0: "bg-[#77BE7B] text-black",    
-    20: "bg-[#9BCB7A] text-black",   
-    40: "bg-[#C3D174] text-black",   
-    60: "bg-[#EDC060] text-black",   
-    80: "bg-[#EC9467] text-white",   
-    100: "bg-[#E96C6C] text-white",  
+    10: "bg-[#6DB678] text-white",
+    20: "bg-[#8DC696] text-black",
+    30: "bg-[#AED6B4] text-black",
+    40: "bg-[#CEE7D3] text-black",
+    50: "bg-[#EEF7EF] text-black",
+    60: "bg-[#FBECEC] text-black",
+    70: "bg-[#EFC5C5] text-black",
+    80: "bg-[#E49E9F] text-black",
+    90: "bg-[#D97777] text-black",
+    100: "bg-[#CE5050] text-white",
 };
 
 // helper functions for date comparison
 function isSameDay(date1: Date, date2: Date): boolean {
     return date1.getDate() === date2.getDate() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getFullYear() === date2.getFullYear();
+        date1.getMonth() === date2.getMonth() &&
+        date1.getFullYear() === date2.getFullYear();
 }
 
 function isSameWeek(date1: Date, date2: Date): boolean {
@@ -146,15 +145,15 @@ function getWeekNumber(date: Date): { week: number, year: number } {
 }
 
 //convert the given input to number
-export function useNumber(num:any) {
+export function useNumber(num: any) {
     const valueStr = String(num);
     const cleanVal = valueStr.replace(/,|\s/g, '');
     const result = parseFloat(cleanVal);
     if (isNaN(result)) {
-      return null;
+        return null;
     }
     return result;
-  }
+}
 
 export function applyRule(
     value: any,
@@ -162,7 +161,7 @@ export function applyRule(
 ) {
 
     const numberVal = useNumber(value)
-    if(numberVal === null) return;
+    if (numberVal === null) return;
     switch (rule.operator) {
         case '<':
             return numberVal < (rule.value as number)
@@ -177,7 +176,7 @@ export function applyRule(
         case '!=':
             return numberVal !== (rule.value)
     }
-  
+
 }
 
 export function applyTextRule(
@@ -284,7 +283,7 @@ export function applyRankRule(
     const numericValues = allValues
         .map(v => useNumber(v))
         .filter(v => v !== null)
-        .sort((a, b) => b! - a!); 
+        .sort((a, b) => b! - a!);
 
     if (numericValues.length === 0) return false;
 

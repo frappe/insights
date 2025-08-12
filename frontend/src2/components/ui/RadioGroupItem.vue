@@ -19,7 +19,7 @@
       :class="{ 'cursor-not-allowed opacity-70': isDisabled }"
     >
       <span 
-        class="flex h-4 w-4 items-center justify-center rounded-full border transition-colors duration-200 ease-in-out"
+      class="flex h-4 w-4 aspect-square items-center justify-center rounded-full border transition-colors duration-200 ease-in-out"
         :class="[
           isChecked 
             ? 'border-black bg-black' 

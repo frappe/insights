@@ -2,12 +2,14 @@
 import { ref } from 'vue'
 import { Dialog } from 'frappe-ui'
 import { ColumnOption, GroupedColumnOption } from '../../types/query.types'
-import { FormatGroupArgs } from './formatting_utils';
+import { FormatGroupArgs, FormattingMode } from './formatting_utils';
 import FormattingSelector from './FormattingSelector.vue';
 
 const props = defineProps<{
-	formatGroup?: FormatGroupArgs,
-	columnOptions: ColumnOption[] | GroupedColumnOption[]
+  formatGroup?: FormatGroupArgs,
+  columnOptions: ColumnOption[] | GroupedColumnOption[],
+  initialRule?: FormattingMode | null,
+  selectorKey?: string | number
 }>()
 
 const emit = defineEmits({ select: (args: FormatGroupArgs) => true })
@@ -25,7 +27,8 @@ function onSelectFormat(updatedFormatGroup: FormatGroupArgs) {
 	<Dialog v-model="showDialog" :options="{ size: 'md' }">
 		<template #body>
 			<FormattingSelector
-				v-model="formatGroup"
+				:key="props.selectorKey ?? 'new'"
+				:initial-rule="props.initialRule ?? null"
 				:column-options="props.columnOptions"
 				@select="onSelectFormat"
 				@close="showDialog = false"
