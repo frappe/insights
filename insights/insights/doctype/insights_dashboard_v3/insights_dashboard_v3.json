@@ -10,6 +10,7 @@
   "column_break_owsx",
   "workbook",
   "is_public",
+  "sort_order",
   "section_break_lgpd",
   "items",
   "section_break_aocd",
@@ -78,11 +79,17 @@
    "fieldtype": "Data",
    "label": "Old Name",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-11 17:23:03.687968",
+ "modified": "2025-08-12 09:58:43.484236",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard v3",

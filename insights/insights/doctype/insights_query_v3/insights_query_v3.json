@@ -6,6 +6,7 @@
  "field_order": [
   "title",
   "workbook",
+  "sort_order",
   "column_break_gamr",
   "use_live_connection",
   "is_script_query",
@@ -94,6 +95,12 @@
    "label": "Variables",
    "no_copy": 1,
    "options": "Insights Query Variable"
+  },
+  {
+   "default": "0",
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -103,7 +110,7 @@
    "link_fieldname": "data_query"
   }
  ],
- "modified": "2025-07-05 12:33:14.467946",
+ "modified": "2025-08-12 09:58:52.866353",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",

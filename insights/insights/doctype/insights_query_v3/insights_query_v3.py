@@ -25,10 +25,7 @@ class InsightsQueryv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
-
-        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
-            InsightsQueryVariable,
-        )
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import InsightsQueryVariable
 
         is_builder_query: DF.Check
         is_native_query: DF.Check
@@ -36,6 +33,7 @@ class InsightsQueryv3(Document):
         linked_queries: DF.JSON | None
         old_name: DF.Data | None
         operations: DF.JSON | None
+        sort_order: DF.Int
         title: DF.Data | None
         use_live_connection: DF.Check
         variables: DF.Table[InsightsQueryVariable]
