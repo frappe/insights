@@ -311,6 +311,7 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	owner: '',
 	title: '',
 	workbook: '',
+	sort_order: 0,
 	items: [],
 	is_public: false,
 	is_shared_with_organization: false,

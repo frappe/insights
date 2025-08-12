@@ -23,6 +23,7 @@ export type WorkbookListItem = {
 export type WorkbookQuery = {
 	name: string
 	title: string
+	sort_order: number
 	is_native_query?: boolean
 	is_script_query?: boolean
 	is_builder_query?: boolean
@@ -31,6 +32,7 @@ export type WorkbookQuery = {
 export type WorkbookChart = {
 	name: string
 	title: string
+	sort_order: number
 	query: string
 	chart_type: ChartType
 }
@@ -38,6 +40,7 @@ export type WorkbookChart = {
 export type WorkbookDashboard = {
 	name: string
 	title: string
+	sort_order: number
 }
 
 export type InsightsWorkbook = {
@@ -57,6 +60,7 @@ export type InsightsQueryv3 = {
 	owner: string
 	title: string
 	workbook: string
+	sort_order: number
 	operations: Operation[]
 	variables?: QueryVariable[]
 	use_live_connection?: boolean
@@ -72,6 +76,7 @@ export type InsightsChartv3 = {
 	owner: string
 	title: string
 	workbook: string
+	sort_order: number
 	query: string
 	data_query: string
 	chart_type: ChartType
@@ -92,6 +97,7 @@ export type InsightsDashboardv3 = {
 	owner: string
 	title: string
 	workbook: string
+	sort_order: number
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string

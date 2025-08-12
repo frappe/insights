@@ -913,6 +913,7 @@ const INITIAL_DOC: InsightsQueryv3 = {
 	owner: '',
 	title: '',
 	workbook: '',
+	sort_order: 0,
 	operations: [],
 	read_only: false,
 }

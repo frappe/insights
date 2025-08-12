@@ -405,6 +405,7 @@ const INITIAL_DOC: InsightsChartv3 = {
 	owner: '',
 	title: '',
 	workbook: '',
+	sort_order: 0,
 	query: '',
 	data_query: '',
 	chart_type: '',

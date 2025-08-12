@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
+import DraggableList from '../components/DraggableList.vue'
 const section = defineProps<{
 	title: string
 	emptyMessage: string
@@ -9,7 +10,14 @@ const section = defineProps<{
 	add: () => void
 	remove: (item: any) => void
 	route: (item: any) => string
+	reorder?: (oldIndex: number, newIndex: number) => void
 }>()
+
+function handleSort(oldIndex: number, newIndex: number) {
+	if (section.reorder) {
+		section.reorder(oldIndex, newIndex)
+	}
+}
 
 function setDraggedItem(event: DragEvent, row: any) {
 	if (!event.dataTransfer) return
@@ -37,30 +45,37 @@ function setDraggedItem(event: DragEvent, row: any) {
 			<div class="text-xs text-gray-500">{{ section.emptyMessage }}</div>
 		</div>
 		<div v-else class="flex flex-col border-b pb-3">
-			<div
-				v-for="(row, idx) in section.items"
-				:key="row[section.itemKey]"
-				class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100"
-				:class="section.isActive(row) ? ' bg-gray-100' : ' hover:border-gray-300'"
-				draggable="true"
-				@dragstart="setDraggedItem($event, row)"
+			<DraggableList
+				v-model:items="section.items"
+				:group="section.title.toLowerCase()"
+				:item-key="section.itemKey"
+				:show-handle="true"
+				:show-empty-state="false"
+				@sort="handleSort"
 			>
-				<router-link
-					:to="route(row)"
-					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
-				>
-					<div class="flex gap-1.5 overflow-hidden">
-						<slot name="item-icon" :item="row" />
-						<p class="truncate">{{ row.title }}</p>
-					</div>
-					<button
-						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
-						@click.prevent.stop="section.remove(row)"
+				<template #item="{ item: row, index: idx }">
+					<div
+						class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100 mb-1.5 last:mb-0"
+						:class="section.isActive(row) ? ' bg-gray-100' : ' hover:border-gray-300'"
 					>
-						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-					</button>
-				</router-link>
-			</div>
+						<router-link
+							:to="route(row)"
+							class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+						>
+							<div class="flex gap-1.5 overflow-hidden">
+								<slot name="item-icon" :item="row" />
+								<p class="truncate">{{ row.title }}</p>
+							</div>
+							<button
+								class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
+								@click.prevent.stop="section.remove(row)"
+							>
+								<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							</button>
+						</router-link>
+					</div>
+				</template>
+			</DraggableList>
 		</div>
 	</div>
 </template>

@@ -32,6 +32,7 @@ const activeQueryName = computed(() => {
 				remove: (query) => workbook.removeQuery(query.name),
 				isActive: (query) => workbook.isActiveTab('query', query.name),
 				route: (query) => `/workbook/${workbook.name}/query/${query.name}`,
+				reorder: workbook.reorderQueries,
 			}"
 		>
 			<template #item-icon="{ item }">
@@ -59,6 +60,7 @@ const activeQueryName = computed(() => {
 				remove: (chart) => workbook.removeChart(chart.name),
 				isActive: (chart) => workbook.isActiveTab('chart', chart.name),
 				route: (chart) => `/workbook/${workbook.name}/chart/${chart.name}`,
+				reorder: workbook.reorderCharts,
 			}"
 		>
 			<template #item-icon="{ item }">
@@ -76,6 +78,7 @@ const activeQueryName = computed(() => {
 				remove: (dashboard) => workbook.removeDashboard(dashboard.name),
 				isActive: (dashboard) => workbook.isActiveTab('dashboard', dashboard.name),
 				route: (dashboard) => `/workbook/${workbook.name}/dashboard/${dashboard.name}`,
+				reorder: workbook.reorderDashboards,
 			}"
 		>
 			<template #item-icon>

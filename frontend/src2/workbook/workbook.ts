@@ -62,6 +62,7 @@ function makeWorkbook(name: string) {
 			workbook.doc.queries.push({
 				name: query.doc.name,
 				title: query.doc.title,
+				sort_order: workbook.doc.queries.length + 1
 			})
 			setActiveTab('query', query.doc.name)
 		})
@@ -96,6 +97,7 @@ function makeWorkbook(name: string) {
 			workbook.doc.charts.push({
 				name: chart.doc.name,
 				title: chart.doc.title,
+				sort_order: workbook.doc.charts.length + 1,
 				query: chart.doc.query,
 				chart_type: 'Bar',
 			})
@@ -130,6 +132,7 @@ function makeWorkbook(name: string) {
 			workbook.doc.dashboards.push({
 				name: dashboard.doc.name,
 				title: dashboard.doc.title,
+				sort_order: workbook.doc.dashboards.length + 1
 			})
 			setActiveTab('dashboard', dashboard.doc.name)
 		})
@@ -289,6 +292,75 @@ function makeWorkbook(name: string) {
 		})
 	}
 
+	// Generic reorder function
+	async function reorderItems<T extends { name: string }>(
+		items: T[],
+		oldIndex: number,
+		newIndex: number,
+		doctype: string,
+		arrayKey: keyof typeof workbook.doc
+	) {
+		const itemsCopy = [...items]
+		const [movedItem] = itemsCopy.splice(oldIndex, 1)
+		itemsCopy.splice(newIndex, 0, movedItem)
+
+		// Update sort_order for all items
+		const updates = itemsCopy.map((item, index) => ({
+			name: item.name,
+			sort_order: index
+		}))
+
+		// Temporarily disable auto-save to prevent race condition
+		const originalAutoSave = workbook.autoSave
+		workbook.autoSave = false
+
+		try {
+			await call('insights.api.workbooks.reorder_items', {
+				workbook_name: workbook.name,
+				doctype,
+				updates
+			})
+			// Update local state
+			;(workbook.doc as any)[arrayKey] = itemsCopy
+		} catch (error) {
+			showErrorToast(error)
+		} finally {
+			// Re-enable auto-save
+			workbook.autoSave = originalAutoSave
+		}
+	}
+
+	async function reorderQueries(oldIndex: number, newIndex: number) {
+		return reorderItems(
+			workbook.doc.queries,
+			oldIndex,
+			newIndex,
+			'Insights Query v3',
+			'queries'
+		)
+	}
+
+	async function reorderCharts(oldIndex: number, newIndex: number) {
+		return reorderItems(
+			workbook.doc.charts,
+			oldIndex,
+			newIndex,
+			'Insights Chart v3',
+			'charts'
+		)
+	}
+
+	async function reorderDashboards(oldIndex: number, newIndex: number) {
+		return reorderItems(
+			workbook.doc.dashboards,
+			oldIndex,
+			newIndex,
+			'Insights Dashboard v3',
+			'dashboards'
+		)
+	}
+
+
 	return reactive({
 		...toRefs(workbook),
 		canShare,
@@ -305,12 +377,15 @@ function makeWorkbook(name: string) {
 
 		addQuery,
 		removeQuery,
+		reorderQueries,
 
 		addChart,
 		removeChart,
+		reorderCharts,
 
 		addDashboard,
 		removeDashboard,
+		reorderDashboards,
 
 		getSharePermissions,
 		updateSharePermissions,
