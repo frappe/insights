@@ -486,7 +486,9 @@ class IbisQueryBuilder:
 
     def apply_code(self, code_args):
         code = code_args.code
-        digest = make_digest(code)
+
+        adhoc_filters = frappe.as_json(getattr(frappe.local, "insights_adhoc_filters", {}))
+        digest = make_digest(code + adhoc_filters)
 
         cached_results = get_cached_results(digest)
         if cached_results is not None:
@@ -496,7 +498,7 @@ class IbisQueryBuilder:
             if hasattr(self.doc, "variables") and self.doc.variables:
                 variables = self.doc.variables
             results = get_code_results(code, variables=variables)
-            cache_results(digest, results, cache_expiry=60 * 10)
+            cache_results(digest, results, cache_expiry=60 * 5)
 
         return Warehouse().db.create_table(
             digest,

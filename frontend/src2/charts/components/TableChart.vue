@@ -41,11 +41,13 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:show-filter-row="tableConfig.show_filter_row"
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
+			:compact-numbers="tableConfig.compact_numbers"
 			:enable-color-scale="tableConfig.enable_color_scale"
 			:enable-sort="true"
 			:enable-drill-down="true"
 			:on-sort-change="onSortChange"
 			:sticky-columns="tableConfig.sticky_columns"
+			:replace-nulls-with-zeros="true"
 		></QueryDataTable>
 	</div>
 </template>

@@ -41,7 +41,7 @@ import {
 	SQLArgs,
 	Summarize,
 	SummarizeArgs,
-	UnionArgs,
+	UnionArgs
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
@@ -124,7 +124,8 @@ export function makeQuery(name: string) {
 		adhoc_filters?: AdhocFilters
 	}
 
-	async function execute(adhocFilters?: AdhocFilters, force: boolean = false) {
+	const adhocFilters = ref<AdhocFilters>()
+	async function execute(force: boolean = false) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
@@ -139,7 +140,7 @@ export function makeQuery(name: string) {
 			lastExecutionArgs &&
 			isEqual(lastExecutionArgs, {
 				operations: currentOperations.value,
-				adhoc_filters: adhocFilters,
+				adhoc_filters: adhocFilters.value
 			})
 		) {
 			return Promise.resolve()
@@ -149,7 +150,7 @@ export function makeQuery(name: string) {
 		return query
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
-				adhoc_filters: adhocFilters,
+				adhoc_filters: adhocFilters.value,
 				force,
 			})
 			.then((response: any) => {
@@ -177,7 +178,7 @@ export function makeQuery(name: string) {
 				executing.value = false
 				lastExecutionArgs = {
 					operations: currentOperations.value,
-					adhoc_filters: adhocFilters,
+					adhoc_filters: adhocFilters.value,
 				}
 			})
 	}
@@ -197,6 +198,7 @@ export function makeQuery(name: string) {
 		return query
 			.call('get_count', {
 				active_operation_idx: activeOperationIdx.value,
+				adhoc_filters: adhocFilters.value,
 			})
 			.then((count: number) => {
 				result.value.totalRowCount = count || 0
@@ -444,6 +446,7 @@ export function makeQuery(name: string) {
 			return query
 				.call('download_results', {
 					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
 				})
 				.then((csv_data: string) => {
 					if (!csv_data) {
@@ -484,6 +487,7 @@ export function makeQuery(name: string) {
 
 		return query.call('get_distinct_column_values', {
 			active_operation_idx: _activeOperationIdx,
+			adhoc_filters: adhocFilters.value,
 			column_name: column,
 			search_term,
 			limit,
@@ -526,12 +530,12 @@ export function makeQuery(name: string) {
 		return query.doc.operations.find((op) => op.type === 'sql')
 	}
 
-	function setSQL(args: SQLArgs) {
+	function setSQL(args: SQLArgs, force: boolean = false) {
 		query.doc.operations = []
 		if (args.raw_sql.trim().length) {
 			query.doc.operations.push(sql(args))
 			activeOperationIdx.value = 0
-			execute()
+			execute(force)
 		} else {
 			activeOperationIdx.value = -1
 		}
@@ -593,9 +597,8 @@ export function makeQuery(name: string) {
 
 		const drill_down_query = useQuery('new-query-' + getUniqueId())
 		drill_down_query.doc.title = 'Drill Down'
-		drill_down_query.autoExecute = true
-		drill_down_query.doc.workbook = query.doc.workbook
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
+		drill_down_query.autoExecute = true
 
 		let filters: FilterArgs[] = []
 		let sliceIdx = -1
@@ -831,6 +834,7 @@ export function makeQuery(name: string) {
 		dataSource,
 		currentOperations,
 		activeEditOperation,
+		adhocFilters,
 
 		autoExecute,
 		executing,

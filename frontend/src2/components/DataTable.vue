@@ -2,7 +2,7 @@
 import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
-import { createHeaders, formatNumber } from '../helpers'
+import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
@@ -15,6 +15,8 @@ const props = defineProps<{
 	showFilterRow?: boolean
 	enablePagination?: boolean
 	enableColorScale?: boolean
+	replaceNullsWithZeros?: boolean
+	compactNumbers?: boolean
 	loading?: boolean
 	onExport?: Function
 	sortOrder?: SortOrder
@@ -246,6 +248,14 @@ const colorByValues = computed(() => {
 
 	return _colorByValues
 })
+
+function _formatNumber(value: any) {
+	const isNull = value === null || value === undefined
+	if (isNull) {
+		return props.replaceNullsWithZeros ? 0 : 'null'
+	}
+	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
+}
 </script>
 
 <template>
@@ -381,7 +391,7 @@ const colorByValues = computed(() => {
 								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
 							</template>
 							<template v-else-if="isNumberColumn(col.name)">
-								{{ formatNumber(row[col.name]) }}
+								{{ _formatNumber(row[col.name]) }}
 							</template>
 							<template v-else-if="isUrl(row[col.name])">
 								<a :href="row[col.name]" target="_blank" class="underline">
@@ -398,7 +408,7 @@ const colorByValues = computed(() => {
 							v-if="props.showRowTotals && totalPerRow"
 							class="tnum h-8 border-b border-r px-3 text-right font-bold"
 						>
-							{{ formatNumber(totalPerRow[idx]) }}
+							{{ _formatNumber(totalPerRow[idx]) }}
 						</td>
 					</tr>
 
@@ -418,7 +428,7 @@ const colorByValues = computed(() => {
 						>
 							{{
 								isNumberColumn(col.name)
-									? formatNumber(totalPerColumn[col.name])
+									? _formatNumber(totalPerColumn[col.name])
 									: ''
 							}}
 						</td>
@@ -427,7 +437,7 @@ const colorByValues = computed(() => {
 							v-if="props.showRowTotals && totalColumnTotal"
 							class="tnum h-8 border-r border-t px-3 text-right font-bold"
 						>
-							{{ formatNumber(totalColumnTotal) }}
+							{{ _formatNumber(totalColumnTotal) }}
 						</td>
 					</tr>
 

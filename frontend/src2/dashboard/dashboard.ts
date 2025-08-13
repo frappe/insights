@@ -52,7 +52,6 @@ function makeDashboard(name: string) {
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
-
 	function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
@@ -116,17 +115,16 @@ function makeDashboard(name: string) {
 		dashboard.doc.items.splice(index, 1)
 	}
 
-	function refresh() {
+	function refresh(force = false) {
 		dashboard.doc.items
 			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart))
+			.forEach((item) => refreshChart(item.chart, force))
 	}
 
-	function refreshChart(chart_name: string) {
+	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
-		chart.refresh({
-			adhocFilters: getAdhocFilters(chart_name),
-		})
+		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.refresh(force)
 	}
 
 	function getAdhocFilters(chart_name: string) {
@@ -165,7 +163,6 @@ function makeDashboard(name: string) {
 				addFilterToQuery(linkedColumn.query, filter)
 			}
 		})
-
 		return filtersByQuery
 	}
 
@@ -292,6 +289,8 @@ function makeDashboard(name: string) {
 
 		refresh,
 		refreshChart,
+
+		getAdhocFilters,
 
 		updateFilterState,
 		applyFilter,
