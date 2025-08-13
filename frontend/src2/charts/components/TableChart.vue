@@ -47,6 +47,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:enable-drill-down="true"
 			:on-sort-change="onSortChange"
 			:sticky-columns="tableConfig.sticky_columns"
+			:replace-nulls-with-zeros="true"
 		></QueryDataTable>
 	</div>
 </template>

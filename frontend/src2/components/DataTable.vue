@@ -15,6 +15,7 @@ const props = defineProps<{
 	showFilterRow?: boolean
 	enablePagination?: boolean
 	enableColorScale?: boolean
+	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
 	onExport?: Function
@@ -249,7 +250,10 @@ const colorByValues = computed(() => {
 })
 
 function _formatNumber(value: any) {
-	if (value === null || value === undefined) return 'null'
+	const isNull = value === null || value === undefined
+	if (isNull) {
+		return props.replaceNullsWithZeros ? 0 : 'null'
+	}
 	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
 }
 </script>
