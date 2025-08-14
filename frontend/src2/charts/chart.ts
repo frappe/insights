@@ -40,16 +40,11 @@ function makeChart(name: string) {
 		() => chart.isloaded && refresh()
 	)
 
-	type ChartRefreshArgs = {
-		force?: boolean
-		adhocFilters?: AdhocFilters
-	}
-
 	const dataQuery = computed(() => {
 		if (!chart.isloaded) return {} as Query
 		return useQuery(chart.doc.data_query)
 	})
-	async function refresh(args: ChartRefreshArgs = {}) {
+	async function refresh(force?: boolean) {
 		await waitUntil(
 			() => chart.isloaded && dataQuery.value.isloaded && useQuery(chart.doc.query).isloaded
 		)
@@ -65,9 +60,9 @@ function makeChart(name: string) {
 		addLimitOperation(query)
 
 		const shouldExecute =
-			args.force ||
+			force ||
 			!dataQuery.value.result.executedSQL ||
-			args.adhocFilters ||
+			dataQuery.value.adhocFilters ||
 			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations)
 
 		if (!shouldExecute) {
@@ -76,7 +71,7 @@ function makeChart(name: string) {
 
 		dataQuery.value.setOperations(copy(query.doc.operations))
 		dataQuery.value.doc.use_live_connection = query.doc.use_live_connection
-		return dataQuery.value.execute(args.adhocFilters, args.force)
+		return dataQuery.value.execute(force)
 	}
 
 	function validateConfig() {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
+import { Edit3, MoreHorizontal, Play, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { safeJSONParse, waitUntil } from '../helpers'
@@ -128,6 +128,16 @@ const showShareDialog = ref(false)
 					>
 						Done
 					</Button>
+					<Dropdown
+						:button="{ icon: MoreHorizontal, variant: 'outline' }"
+						:options="[
+							{
+								label: 'Force Refresh',
+								icon: RefreshCcw,
+								onClick: () => dashboard.refresh(true),
+							},
+						]"
+					/>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">

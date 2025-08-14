@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { LoadingIndicator } from 'frappe-ui'
-import { Bug, Play, Braces } from 'lucide-vue-next'
+import { Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
@@ -38,11 +37,12 @@ function openVariablesDialog() {
 }
 
 function handleSaveVariables(variables: any[]) {
-	query.updateVariables(variables).then(() => {
-		showVariablesDialog.value = false
-	}).catch((error) => {
-
-	})
+	query
+		.updateVariables(variables)
+		.then(() => {
+			showVariablesDialog.value = false
+		})
+		.catch((error) => {})
 }
 </script>
 
@@ -91,16 +91,26 @@ function handleSaveVariables(variables: any[]) {
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
-				<Button @click="openVariablesDialog" label="Variables">
-					<template #prefix>
-						<Braces class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
-				<Button @click="showLogs = !showLogs" label="Logs">
-					<template #prefix>
-						<Bug class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
+				<Dropdown
+					:button="{ icon: MoreHorizontal }"
+					:options="[
+						{
+							label: 'Force Run',
+							icon: Play,
+							onClick: () => query.execute(true),
+						},
+						{
+							label: 'Variables',
+							icon: Braces,
+							onClick: openVariablesDialog,
+						},
+						{
+							label: 'Logs',
+							icon: Bug,
+							onClick: () => (showLogs = !showLogs),
+						},
+					]"
+				/>
 			</div>
 		</div>
 

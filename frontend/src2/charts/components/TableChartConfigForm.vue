@@ -67,49 +67,61 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
 
 const selectedColumns = computed(() => {
-  const columns = new Set<string>();
-  config.value.rows?.forEach(row => {
-    if (row.column_name) {
-      columns.add(row.column_name);
-    }
-  });
-  
-  config.value.columns?.forEach(col => {
-    if (col.column_name) {
-      columns.add(col.column_name);
-    }
-  });
-  
-  // add columns from values
-  config.value.values?.forEach(val => {
-    if ('column_name' in val) {
-      columns.add(val.column_name);
-    }
-  });
+	const columns = new Set<string>()
+	config.value.rows?.forEach((row) => {
+		if (row.column_name) {
+			columns.add(row.column_name)
+		}
+	})
 
-  // filter columnOptions to only include selected columns
-  return props.columnOptions.filter(option => columns.has(option.value));
-});
+	config.value.columns?.forEach((col) => {
+		if (col.column_name) {
+			columns.add(col.column_name)
+		}
+	})
+
+	// add columns from values
+	config.value.values?.forEach((val) => {
+		if ('column_name' in val) {
+			columns.add(val.column_name)
+		}
+	})
+
+	// filter columnOptions to only include selected columns
+	return props.columnOptions.filter((option) => columns.has(option.value))
+})
 
 function getRuleBadgeTheme(mode: string): string {
 	switch (mode) {
-		case 'cell_rules': return 'blue'
-		case 'text_rules': return 'green'
-		case 'date_rules': return 'green'
-		case 'rank_rules': return 'orange'
-		case 'color_scale': return 'red'
-		default: return 'gray'
+		case 'cell_rules':
+			return 'blue'
+		case 'text_rules':
+			return 'green'
+		case 'date_rules':
+			return 'green'
+		case 'rank_rules':
+			return 'orange'
+		case 'color_scale':
+			return 'red'
+		default:
+			return 'gray'
 	}
 }
 
 function getRuleTypeLabel(mode: string): string {
 	switch (mode) {
-		case 'cell_rules': return 'Value'
-		case 'text_rules': return 'Text'
-		case 'date_rules': return 'Date'
-		case 'rank_rules': return 'Rank'
-		case 'color_scale': return 'Color Scale'
-		default: return mode
+		case 'cell_rules':
+			return 'Value'
+		case 'text_rules':
+			return 'Text'
+		case 'date_rules':
+			return 'Date'
+		case 'rank_rules':
+			return 'Rank'
+		case 'color_scale':
+			return 'Color Scale'
+		default:
+			return mode
 	}
 }
 
@@ -124,9 +136,12 @@ function getRuleDescription(rule: any): string {
 	const value = rule.value
 
 	const formatDate = (d: any) => {
-		const date = new Date(d);
-		if (isNaN(date.getTime())) return '';
-		return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+		const date = new Date(d)
+		if (isNaN(date.getTime())) return ''
+		return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(
+			2,
+			'0',
+		)}/${date.getFullYear()}`
 	}
 
 	if (rule.mode === 'text_rules') {
@@ -145,18 +160,18 @@ function getRuleDescription(rule: any): string {
 }
 
 function editRule(index: number) {
-	const ruleToEditValue = config.value.conditional_formatting?.formats[index];
-	
+	const ruleToEditValue = config.value.conditional_formatting?.formats[index]
+
 	if (ruleToEditValue) {
-    editingRule.value = ruleToEditValue as FormattingMode;
-    editingRuleIndex.value = index;
-    showFormatSelectorDialog.value = true;
+		editingRule.value = ruleToEditValue as FormattingMode
+		editingRuleIndex.value = index
+		showFormatSelectorDialog.value = true
 	}
 }
 
 function addNewRule() {
 	editingRuleIndex.value = null
-  editingRule.value = null
+	editingRule.value = null
 	showFormatSelectorDialog.value = true
 }
 
@@ -168,21 +183,21 @@ function removeRule(index: number) {
 }
 
 function handleFormatSelect(formatGroup: FormatGroupArgs) {
-	const newRule = formatGroup.formats[0];
+	const newRule = formatGroup.formats[0]
 	if (newRule && newRule.column?.column_name) {
 		if (!config.value.conditional_formatting) {
-			config.value.conditional_formatting = { formats: [], columns: [] };
+			config.value.conditional_formatting = { formats: [], columns: [] }
 		}
-		const editIndex = editingRuleIndex.value;
+		const editIndex = editingRuleIndex.value
 		if (editIndex !== null) {
-			config.value.conditional_formatting.formats[editIndex] = newRule;
+			config.value.conditional_formatting.formats[editIndex] = newRule
 		} else {
 			//add new rule
-			config.value.conditional_formatting.formats.push(newRule);
+			config.value.conditional_formatting.formats.push(newRule)
 		}
-		formatStore.setFormatting(config.value.conditional_formatting);
-		editingRuleIndex.value = null; 
-		editingRule.value = null;
+		formatStore.setFormatting(config.value.conditional_formatting)
+		editingRuleIndex.value = null
+		editingRule.value = null
 	}
 }
 </script>
@@ -192,12 +207,18 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 		<div>
 			<DraggableList v-model:items="config.rows" group="rows">
 				<template #item="{ item, index }">
-					<DimensionPicker :options="dimensions" :model-value="item"
+					<DimensionPicker
+						:options="dimensions"
+						:model-value="item"
 						@update:model-value="Object.assign(item, $event || {})"
-						@remove="config.rows.splice(index, 1)" />
+						@remove="config.rows.splice(index, 1)"
+					/>
 				</template>
 			</DraggableList>
-			<button class="mt-1.5 text-left text-xs text-gray-600 hover:underline" @click="config.rows.push({} as any)">
+			<button
+				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+				@click="config.rows.push({} as any)"
+			>
 				+ Add column
 			</button>
 		</div>
@@ -208,13 +229,18 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			<div>
 				<DraggableList v-model:items="config.columns" group="columns">
 					<template #item="{ item, index }">
-						<DimensionPicker :options="props.dimensions" :model-value="item"
+						<DimensionPicker
+							:options="props.dimensions"
+							:model-value="item"
 							@update:model-value="Object.assign(item, $event || {})"
-							@remove="config.columns.splice(index, 1)" />
+							@remove="config.columns.splice(index, 1)"
+						/>
 					</template>
 				</DraggableList>
-				<button class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-					@click="config.columns.push({} as any)">
+				<button
+					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+					@click="config.columns.push({} as any)"
+				>
 					+ Add column
 				</button>
 			</div>
@@ -240,12 +266,13 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 				<DraggableList v-model:items="config.values" group="values">
 					<template #item="{ item, index }">
 						<MeasurePicker
-							:model-value="item":column-options="props.columnOptions"
+							:model-value="item"
+							:column-options="props.columnOptions"
 							@update:model-value="Object.assign(item, $event || {})"
 							@remove="config.values.splice(index, 1)"
 						/>
 					</template>
-				  </DraggableList>
+				</DraggableList>
 				<button
 					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 					@click="config.values.push({} as any)"
@@ -256,7 +283,12 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			<Toggle label="Show Filters" v-model="config.show_filter_row" />
 			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
 			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
-			<Toggle v-if="config.values.length === 1" label="Show Color Scale" v-model="config.enable_color_scale" />
+			<Toggle label="Compact Number Format" v-model="config.compact_numbers" />
+			<Toggle
+				v-if="config.values.length === 1"
+				label="Show Color Scale"
+				v-model="config.enable_color_scale"
+			/>
 		</div>
 	</CollapsibleSection>
 	<!-- todo: make items sortable -->
@@ -267,14 +299,15 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			</Badge>
 		</template>
 		<div v-if="config.conditional_formatting?.formats.length" class="mb-4 space-y-2">
-			<div v-for="(rule, index) in config.conditional_formatting.formats" 
-				 :key="index" 
-				 class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
+			<div
+				v-for="(rule, index) in config.conditional_formatting.formats"
+				:key="index"
+				class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border"
+			>
 				<div class="flex flex-col gap-1 flex-1 justify-betweentruncate">
-					
-					  <div class="text-base font-medium truncate">
+					<div class="text-base font-medium truncate">
 						{{ rule.column?.column_name }}
-				</div>
+					</div>
 
 					<div class="text-p-xs text-gray-600">{{ getRuleDescription(rule) }}</div>
 					<div>
@@ -307,15 +340,16 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			</template>
 			Add Format
 		</Button>
-
 	</CollapsibleSection>
 
-	<ConditonalFormattingDialog v-if="showFormatSelectorDialog" v-model="showFormatSelectorDialog"
-    	:column-options="selectedColumns"
-      :initial-rule="editingRule"
-      :selector-key="editingRuleIndex ?? 'new'"
-    	@select="handleFormatSelect" />
-
+	<ConditonalFormattingDialog
+		v-if="showFormatSelectorDialog"
+		v-model="showFormatSelectorDialog"
+		:column-options="selectedColumns"
+		:initial-rule="editingRule"
+		:selector-key="editingRuleIndex ?? 'new'"
+		@select="handleFormatSelect"
+	/>
 </template>
-editing rule index should pass the cached values(if exists) of the formatGroup to
-the formatRule input
+editing rule index should pass the cached values(if exists) of the formatGroup to the formatRule
+input

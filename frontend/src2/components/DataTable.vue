@@ -2,23 +2,23 @@
 import { Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, reactive, ref, watch } from 'vue'
-import { createHeaders, formatNumber } from '../helpers'
+import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
-import { 
-  applyRule, 
-  applyTextRule, 
-  applyDateRule, 
-  applyRankRule,
-  cell_rules, 
-  text_rules,
-  date_rules,
-  rank_rules,
-  FormatGroupArgs, 
-  FormattingMode, 
-  garByPercentage, 
-  ragByPercentage 
+import {
+	applyRule,
+	applyTextRule,
+	applyDateRule,
+	applyRankRule,
+	cell_rules,
+	text_rules,
+	date_rules,
+	rank_rules,
+	FormatGroupArgs,
+	FormattingMode,
+	garByPercentage,
+	ragByPercentage,
 } from '../query/components/formatting_utils'
 import { useFormatStore } from '../stores/formatStore'
 
@@ -30,15 +30,16 @@ const props = defineProps<{
 	showFilterRow?: boolean
 	enablePagination?: boolean
 	enableColorScale?: boolean
+	replaceNullsWithZeros?: boolean
+	compactNumbers?: boolean
 	loading?: boolean
-    formatGroup?: FormatGroupArgs;
+	formatGroup?: FormatGroupArgs
 	onExport?: Function
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
 	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
 	stickyColumns?: string[] // List of column names to make sticky
-
 }>()
 
 const headers = computed(() => {
@@ -264,167 +265,169 @@ const colorByValues = computed(() => {
 	return _colorByValues
 })
 
-const formatStore = useFormatStore();
+const formatStore = useFormatStore()
 
 watch(
-  () => props.formatGroup,
-  (newFormatGroup) => {
-    if (newFormatGroup) {
-      formatStore.setFormatting(newFormatGroup);
-    }
-  },
-  { immediate: true },
-);
+	() => props.formatGroup,
+	(newFormatGroup) => {
+		if (newFormatGroup) {
+			formatStore.setFormatting(newFormatGroup)
+		}
+	},
+	{ immediate: true },
+)
 
 const formattingRulesByColumn = computed(() => {
-  const formatGroup = formatStore.conditionalFormatting;
-  const result: Record<string, FormattingMode[]> = {};
+	const formatGroup = formatStore.conditionalFormatting
+	const result: Record<string, FormattingMode[]> = {}
 
-  if (formatGroup?.formats?.length) {
-    formatGroup.formats.forEach((format) => {
-      if ("column" in format && format.column?.column_name) {
-        const columnName = format.column.column_name;
-        if (!result[columnName]) {
-          result[columnName] = [];
-        }
-        result[columnName].push(format);
-      }
-    });
-  }
+	if (formatGroup?.formats?.length) {
+		formatGroup.formats.forEach((format) => {
+			if ('column' in format && format.column?.column_name) {
+				const columnName = format.column.column_name
+				if (!result[columnName]) {
+					result[columnName] = []
+				}
+				result[columnName].push(format)
+			}
+		})
+	}
 
-  return result;
-});
+	return result
+})
 
 // get tailwind class bg
 function getColorClass(colorName: string): string {
-  if (!colorName) return "bg-gray-500";
+	if (!colorName) return 'bg-gray-500'
 
-  switch (colorName.toLowerCase()) {
-    case "red":
-      return "bg-[#CE5050] text-white";
-    case "green":
-      return "bg-[#6DB678] text-white";
-    case "amber":
-      return "bg-[#F8D16E] text-black";
-    default:
-      return colorName.startsWith("bg-") ? colorName : "bg-gray-500";
-  }
+	switch (colorName.toLowerCase()) {
+		case 'red':
+			return 'bg-[#CE5050] text-white'
+		case 'green':
+			return 'bg-[#6DB678] text-white'
+		case 'amber':
+			return 'bg-[#F8D16E] text-black'
+		default:
+			return colorName.startsWith('bg-') ? colorName : 'bg-gray-500'
+	}
 }
 
 function getCellStyleClass(colName: string, val: any): string {
-  // first check if we should apply default color scale
-  if (props.enableColorScale && isNumberColumn(colName)) {
-    const numVal = Number(val);
+	// first check if we should apply default color scale
+	if (props.enableColorScale && isNumberColumn(colName)) {
+		const numVal = Number(val)
 
-    if (!isNaN(numVal)) {
-      const colorByValue = colorByValues.value;
+		if (!isNaN(numVal)) {
+			const colorByValue = colorByValues.value
 
-      if (colorByValue && colorByValue[numVal]) {
-        return colorByValue[numVal];
-      }
-    }
-  }
+			if (colorByValue && colorByValue[numVal]) {
+				return colorByValue[numVal]
+			}
+		}
+	}
 
-  // get formatting rules for the given column
-  const rules = formattingRulesByColumn.value[colName];
+	// get formatting rules for the given column
+	const rules = formattingRulesByColumn.value[colName]
 
-  if (!rules?.length) return "";
-  for (const format of rules) {
-    let isHighlighted = false;
-    let colorClass = "";
+	if (!rules?.length) return ''
+	for (const format of rules) {
+		let isHighlighted = false
+		let colorClass = ''
 
-    if (format.mode === "cell_rules" && format.operator && format.value !== undefined) {
-      const rule = {
-        column: colName,
-        operator: format.operator,
-        value: format.value,
-        color: format.color,
-        mode: "cell_rules",
-      } as unknown as cell_rules;
+		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
+			const rule = {
+				column: colName,
+				operator: format.operator,
+				value: format.value,
+				color: format.color,
+				mode: 'cell_rules',
+			} as unknown as cell_rules
 
-      if (applyRule(val, rule)) {
-        isHighlighted = true;
-        colorClass = getColorClass(format.color as string);
-      }
-    }
+			if (applyRule(val, rule)) {
+				isHighlighted = true
+				colorClass = getColorClass(format.color as string)
+			}
+		} else if (format.mode === 'text_rules') {
+			const textRule = format as text_rules
+			if (applyTextRule(val, textRule)) {
+				isHighlighted = true
+				colorClass = getColorClass(textRule.color)
+			}
+		} else if (format.mode === 'date_rules') {
+			const dateRule = format as date_rules
+			if (applyDateRule(val, dateRule)) {
+				isHighlighted = true
+				colorClass = getColorClass(dateRule.color)
+			}
+		} else if (format.mode === 'rank_rules') {
+			const rankRule = format as rank_rules
+			const allColumnValues = props.rows?.map((row) => row[colName]) || []
+			if (applyRankRule(val, rankRule, allColumnValues)) {
+				isHighlighted = true
+				colorClass = getColorClass(rankRule.color)
+			}
+		}
 
-    else if (format.mode === "text_rules") {
-      const textRule = format as text_rules;
-      if (applyTextRule(val, textRule)) {
-        isHighlighted = true;
-        colorClass = getColorClass(textRule.color);
-      }
-    }
+		if (isHighlighted && colorClass) {
+			return colorClass
+		}
+	}
 
-    else if (format.mode === "date_rules") {
-      const dateRule = format as date_rules;
-      if (applyDateRule(val, dateRule)) {
-        isHighlighted = true;
-        colorClass = getColorClass(dateRule.color);
-      }
-    }
+	for (const format of rules) {
+		if (format.mode === 'color_scale') {
+			const numVal = Number(val)
+			if (isNaN(numVal)) {
+				continue
+			}
+			const allValues =
+				props.rows?.map((row) => Number(row[colName]))?.filter((v) => !isNaN(v)) || []
 
-    else if (format.mode === "rank_rules") {
-      const rankRule = format as rank_rules;
-      const allColumnValues = props.rows?.map(row => row[colName]) || [];
-      if (applyRankRule(val, rankRule, allColumnValues)) {
-        isHighlighted = true;
-        colorClass = getColorClass(rankRule.color);
-      }
-    }
+			if (!allValues.length) {
+				continue
+			}
+			const sortedValues = [...allValues].sort((a, b) => b - a)
+			const rank = sortedValues.findIndex((v) => v <= numVal) + 1
+			const percentile = Math.round(
+				((sortedValues.length - rank + 1) / sortedValues.length) * 100,
+			)
 
-    if (isHighlighted && colorClass) {
-      return colorClass;
-    }
-  }
+			let colorScale: Record<string, string>
 
-  for (const format of rules) {
-    if (format.mode === "color_scale") {
-      const numVal = Number(val);
-      if (isNaN(numVal)) {
-        continue;
-      }
-      const allValues = props.rows
-        ?.map((row) => Number(row[colName]))
-        ?.filter((v) => !isNaN(v)) || [];
+			if (format.colorScale) {
+				format.colorScale == 'Red-Green'
+					? (colorScale = ragByPercentage)
+					: (colorScale = garByPercentage)
+			} else {
+				colorScale = ragByPercentage
+			}
 
-      if (!allValues.length) {
-        continue;
-      }
-      const sortedValues = [...allValues].sort((a, b) => b - a); 
-      const rank = sortedValues.findIndex(v => v <= numVal) + 1; 
-      const percentile = Math.round(((sortedValues.length - rank + 1) / sortedValues.length) * 100);
+			const thresholds = Object.keys(colorScale)
+				.map(Number)
+				.sort((a, b) => a - b)
 
-      let colorScale: Record<string, string>;
+			let selectedThreshold = thresholds[0]
+			for (const threshold of thresholds) {
+				if (percentile >= threshold) {
+					selectedThreshold = threshold
+				}
+			}
+			const thresholdKey = String(selectedThreshold)
+			const bgClass = colorScale[thresholdKey]?.trim() || 'bg-gray-300'
 
-      if (format.colorScale) {
-        format.colorScale == "Red-Green"
-          ? (colorScale = ragByPercentage)  
-          : (colorScale = garByPercentage); 
-      } else {
-        colorScale = ragByPercentage;
-      }
+			return `${bgClass}`
+		}
+	}
 
-      const thresholds = Object.keys(colorScale)
-        .map(Number)
-        .sort((a, b) => a - b);
-
-      let selectedThreshold = thresholds[0];
-      for (const threshold of thresholds) {
-        if (percentile >= threshold) {
-          selectedThreshold = threshold;
-        }
-      }
-      const thresholdKey = String(selectedThreshold);
-      const bgClass = colorScale[thresholdKey]?.trim() || "bg-gray-300";
-
-      return `${bgClass}`;
-    }
-  }
-
-  return "";
+	return ''
 }
 
+function _formatNumber(value: any) {
+	const isNull = value === null || value === undefined
+	if (isNull) {
+		return props.replaceNullsWithZeros ? 0 : 'null'
+	}
+	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
+}
 </script>
 
 <template>
@@ -550,12 +553,10 @@ function getCellStyleClass(colName: string, val: any): string {
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
-                  getCellStyleClass(col.name, row[col.name]),
+								getCellStyleClass(col.name, row[col.name]),
 								isStickyColumn(col.name) ? 'sticky z-1 bg-white' : '',
-
 							]"
 							:style="getStickyColumnStyle(col.name)"
-
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
@@ -563,7 +564,7 @@ function getCellStyleClass(colName: string, val: any): string {
 								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
 							</template>
 							<template v-else-if="isNumberColumn(col.name)">
-								{{ formatNumber(row[col.name]) }}
+								{{ _formatNumber(row[col.name]) }}
 							</template>
 							<template v-else-if="isUrl(row[col.name])">
 								<a :href="row[col.name]" target="_blank" class="underline">
@@ -580,7 +581,7 @@ function getCellStyleClass(colName: string, val: any): string {
 							v-if="props.showRowTotals && totalPerRow"
 							class="tnum h-8 border-b border-r px-3 text-right font-bold"
 						>
-							{{ formatNumber(totalPerRow[idx]) }}
+							{{ _formatNumber(totalPerRow[idx]) }}
 						</td>
 					</tr>
 
@@ -600,7 +601,7 @@ function getCellStyleClass(colName: string, val: any): string {
 						>
 							{{
 								isNumberColumn(col.name)
-									? formatNumber(totalPerColumn[col.name])
+									? _formatNumber(totalPerColumn[col.name])
 									: ''
 							}}
 						</td>
@@ -609,7 +610,7 @@ function getCellStyleClass(colName: string, val: any): string {
 							v-if="props.showRowTotals && totalColumnTotal"
 							class="tnum h-8 border-r border-t px-3 text-right font-bold"
 						>
-							{{ formatNumber(totalColumnTotal) }}
+							{{ _formatNumber(totalColumnTotal) }}
 						</td>
 					</tr>
 
