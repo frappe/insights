@@ -39,6 +39,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
+	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
@@ -71,7 +72,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	return {
 		animation: true,
 		animationDuration: 700,
-		grid: getGrid({ show_legend }),
+		dataZoom: getDataZoom(show_scrollbar),
+		grid: getGrid({ show_legend, show_scrollbar }),
 		color: colors,
 		xAxis,
 		yAxis,
@@ -118,7 +120,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			xAxisIsDate,
 			granularity,
 		}),
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend, show_scrollbar),
 	}
 }
 
@@ -132,12 +134,28 @@ function getAreaStyle(color: string) {
 	}
 }
 
+function getDataZoom(show: boolean, swapAxes = false) {
+	return {
+		show,
+		orient: swapAxes ? 'vertical' : 'horizontal',
+		type: 'slider',
+		zoomLock: false,
+		bottom: swapAxes ? "20%" : "4%",
+		height: swapAxes ? "80%" : 15,
+		width: swapAxes ? 15 : "90%",
+		left: swapAxes ? null : "5%",
+		right: swapAxes ? 10 : null,
+		handleSize: 25,
+	}
+}
+
 export function getBarChartOptions(config: BarChartConfig, result: QueryResult, swapAxes = false) {
 	const _columns = result.columns
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
+	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
@@ -191,9 +209,10 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		animation: true,
 		animationDuration: 700,
 		color: colors,
-		grid: getGrid({ show_legend }),
+		grid: getGrid({ show_legend, show_scrollbar, swapAxes }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
+		dataZoom: getDataZoom(show_scrollbar, swapAxes),
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -202,7 +221,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const type = serie.type?.toLowerCase() || 'bar'
 			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-
 			const data = getSeriesData(c.name)
 			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
 
@@ -243,7 +261,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			granularity,
 			xySwapped: swapAxes,
 		}),
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend, show_scrollbar, swapAxes),
 	}
 }
 
@@ -287,6 +305,9 @@ function getXAxis(x_axis: XAxis) {
 		axisLabel: {
 			show: true,
 			rotate: rotation,
+			width: 100,
+			overflow: 'truncate',
+			ellipsis: '...',
 		},
 	}
 }
@@ -566,11 +587,16 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 }
 
 function getGrid(options: any = {}) {
+	let bottom = options.show_legend ? 36 : 22;
+	if (options.show_scrollbar && !options.swapAxes) {
+		bottom += 30;
+	}
+
 	return {
 		top: 18,
 		left: 30,
 		right: 30,
-		bottom: options.show_legend ? 36 : 22,
+		bottom: bottom,
 		containLabel: true,
 	}
 }
@@ -626,13 +652,18 @@ function getTooltip(options: any = {}) {
 	}
 }
 
-function getLegend(show_legend = true) {
+function getLegend(show_legend = true, show_scrollbar = false, swap_axes = false) {
+	let bottom: string | number = 'bottom';
+	if (show_scrollbar && !swap_axes) {
+		bottom = 32;
+	}
+
 	return {
 		show: show_legend,
 		icon: 'circle',
 		type: 'scroll',
 		orient: 'horizontal',
-		bottom: 'bottom',
+		bottom,
 		itemGap: 16,
 		padding: [10, 30],
 		textStyle: { padding: [0, 0, 0, -4] },

@@ -4,6 +4,9 @@
 import frappe
 from frappe.model.document import Document
 
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+from insights.utils import deep_convert_dict_to_dict
+
 
 class InsightsChartv3(Document):
     # begin: auto-generated types
@@ -38,9 +41,7 @@ class InsightsChartv3(Document):
         self.set_data_query()
 
     def on_trash(self):
-        frappe.delete_doc(
-            "Insights Query v3", self.data_query, force=True, ignore_permissions=True
-        )
+        frappe.delete_doc("Insights Query v3", self.data_query, force=True, ignore_permissions=True)
 
     def set_data_query(self):
         if self.data_query:
@@ -53,3 +54,47 @@ class InsightsChartv3(Document):
         )
         doc.db_insert()
         self.data_query = doc.name
+
+    @frappe.whitelist()
+    def export(self):
+        chart = {
+            "version": "1.0",
+            "timestamp": frappe.utils.now(),
+            "type": "Chart",
+            "name": self.name,
+            "doc": {
+                "name": self.name,
+                "title": self.title,
+                "workbook": self.workbook,
+                "query": self.query,
+                "chart_type": self.chart_type,
+                "config": frappe.parse_json(self.config),
+            },
+            "dependencies": {
+                "queries": {},
+            },
+        }
+
+        exported_query = frappe.get_doc("Insights Query v3", self.query).export()
+        chart["dependencies"]["queries"][self.query] = exported_query
+
+        return chart
+
+
+def import_chart(chart, workbook):
+    chart = frappe.parse_json(chart)
+    chart = deep_convert_dict_to_dict(chart)
+
+    new_chart = frappe.new_doc("Insights Chart v3")
+    new_chart.update(chart.doc)
+    new_chart.workbook = workbook
+    new_chart.insert()
+
+    if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:
+        return new_chart.name
+
+    for _, exported_query in chart.dependencies.queries.items():
+        name = import_query(exported_query, workbook=new_chart.workbook)
+        new_chart.db_set("query", name, update_modified=False)
+
+    return new_chart.name

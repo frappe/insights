@@ -54,7 +54,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
-						class="invisible cursor-pointer rounded p-1 transition-all hover:bg-gray-100 group-hover:visible"
+						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
 						@click.prevent.stop="section.remove(row)"
 					>
 						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />

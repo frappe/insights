@@ -34,11 +34,7 @@ def get_workbooks(search_term=None, limit=100):
         fields=["reference_name", "name"],
     )
     for workbook in workbooks:
-        views = [
-            view
-            for view in workbook_views
-            if str(view["reference_name"]) == str(workbook["name"])
-        ]
+        views = [view for view in workbook_views if str(view["reference_name"]) == str(workbook["name"])]
         workbook["views"] = len(views)
 
     for workbook in workbooks:
@@ -68,6 +64,13 @@ def get_workbooks(search_term=None, limit=100):
         workbook["shared_with"] = shared_with
 
     return workbooks
+
+
+@insights_whitelist()
+def import_workbook(workbook):
+    from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
+
+    return import_workbook(workbook)
 
 
 @insights_whitelist()
@@ -124,9 +127,7 @@ def get_share_permissions(workbook_name):
 
 
 @insights_whitelist()
-def update_share_permissions(
-    workbook_name, user_permissions, organization_access: str | None = None
-):
+def update_share_permissions(workbook_name, user_permissions, organization_access: str | None = None):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
         frappe.throw(_("You do not have permission to share this workbook"))
 

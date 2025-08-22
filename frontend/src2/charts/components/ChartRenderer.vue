@@ -28,7 +28,7 @@ const config = computed(() => props.chart.doc.config)
 const result = computed(() => props.chart.dataQuery.result || { ...EMPTY_RESULT })
 const loading = computed(
 	() =>
-		!props.chart.isloaded || !props.chart.dataQuery.isloaded || props.chart.dataQuery.executing
+		!props.chart.isloaded || !props.chart.dataQuery.isloaded || props.chart.dataQuery.executing,
 )
 
 const eChartOptions = computed(() => {
@@ -37,7 +37,7 @@ const eChartOptions = computed(() => {
 		return getBarChartOptions(
 			config.value as BarChartConfig,
 			result.value,
-			chart_type.value === 'Row'
+			chart_type.value === 'Row',
 		)
 	}
 	if (chart_type.value === 'Line') {
@@ -68,6 +68,13 @@ function onChartElementClick(params: any) {
 		showDrillDown.value = true
 	}
 }
+
+function onNumberChartDrillDown(column: any, row: any) {
+	drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
+	if (drillDownQuery.value) {
+		showDrillDown.value = true
+	}
+}
 </script>
 
 <template>
@@ -83,6 +90,7 @@ function onChartElementClick(params: any) {
 			v-else-if="!loading && chart_type == 'Number'"
 			:config="(config as NumberChartConfig)"
 			:result="result"
+			@drill-down="onNumberChartDrillDown"
 		/>
 		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />
 
@@ -99,7 +107,6 @@ function onChartElementClick(params: any) {
 			</template>
 		</div>
 	</div>
-
 	<DrillDown
 		v-if="drillDownQuery"
 		v-model="showDrillDown"

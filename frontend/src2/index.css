@@ -52,3 +52,7 @@ body {
 .fade-leave-to {
 	opacity: 0;
 }
+
+.lucide {
+	stroke-width: 1.5;
+}

@@ -2,12 +2,16 @@
 import { computed } from 'vue'
 import { formatNumber, getShortNumber } from '../../helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
-import { QueryResult } from '../../types/query.types'
+import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
 const props = defineProps<{
 	config: NumberChartConfig
 	result: QueryResult
+}>()
+
+const emit = defineEmits<{
+	drillDown: [column: QueryResultColumn, row: QueryResultRow]
 }>()
 
 const config = computed(() => props.config)
@@ -74,6 +78,14 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 	const numberOption = config.value.number_column_options?.[index]?.[option] as any
 	return numberOption === undefined ? config.value[option] : numberOption
 }
+
+function onDoubleClick(measure_name: string) {
+	const column = props.result.columns.find((c) => c.name === measure_name)
+	const row = props.result.formattedRows.at(-1)
+	if (column && row) {
+		emit('drillDown', column, row)
+	}
+}
 </script>
 
 <template>
@@ -92,8 +104,9 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 					suffix,
 				} in cards"
 				:key="measure_name"
-				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow"
+				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
+				@dblclick="onDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
 					<span class="truncate text-sm font-medium">
@@ -105,10 +118,18 @@ function getNumberOption(index: number, option: keyof NumberColumnOptions) {
 					<div
 						v-if="config.comparison"
 						class="flex items-center gap-1 text-xs font-medium"
-						:class="delta >= 0 ? 'text-green-500' : 'text-red-500'"
+						:class="[
+							config.negative_is_better
+								? delta >= 0
+									? 'text-red-500'
+									: 'text-green-500'
+								: delta >= 0
+								  ? 'text-green-500'
+								  : 'text-red-500',
+						]"
 					>
 						<span class="">
-							{{ delta >= 0 && !config.negative_is_better ? '↑' : '↓' }}
+							{{ delta >= 0 ? '↑' : '↓' }}
 						</span>
 						<span> {{ percentDelta }}% </span>
 					</div>

@@ -39,9 +39,7 @@ def count(
     return column.count(where=where)
 
 
-def count_if(
-    condition: ir.BooleanValue, column: ir.Column = None, group_by=None, order_by=None
-):
+def count_if(condition: ir.BooleanValue, column: ir.Column = None, group_by=None, order_by=None):
     """
     def count_if(condition)
 
@@ -175,9 +173,7 @@ def group_concat(column: ir.Column, sep: str = ",", where: ir.BooleanValue = Non
     return column.group_concat(sep=sep, where=where)
 
 
-def distinct_count(
-    column: ir.Column, where: ir.BooleanValue = None, group_by=None, order_by=None
-):
+def distinct_count(column: ir.Column, where: ir.BooleanValue = None, group_by=None, order_by=None):
     """
     def distinct_count(column, where=None)
 
@@ -309,9 +305,7 @@ def if_else(condition: ir.BooleanValue, true_value: ir.Value, false_value: ir.Va
     return ibis.case().when(condition, true_value).else_(false_value).end()
 
 
-def case(
-    condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanValue, ir.Value]
-):
+def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanValue, ir.Value]):
     """
     def case(condition, value, *args)
 
@@ -677,11 +671,7 @@ def format_date(column: ir.DateValue, format_str: str):
     return column.strftime(format_str)
 
 
-def date_diff(
-    column: ir.DateValue,
-    other: ir.DateValue,
-    unit: str,
-):
+def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
     """
     def date_diff(column, other, unit)
 
@@ -703,7 +693,7 @@ def date_diff(
 def time_diff(
     column: ir.TimeValue,
     other: ir.TimeValue,
-    unit: str,
+    unit: str = "second",
 ):
     """
     def time_diff(column, other, unit)
@@ -950,9 +940,7 @@ def previous_period_value(column: ir.Column, date_column: ir.DateColumn, offset=
     - previous_period_value(amount, date)
     - previous_period_value(amount, date, 2)
     """
-    date_column_name = (
-        date_column.get_name() if hasattr(date_column, "get_name") else date_column
-    )
+    date_column_name = date_column.get_name() if hasattr(date_column, "get_name") else date_column
     return column.lag(offset).over(
         group_by=(~s.numeric() & ~s.matches(date_column_name)),
         order_by=ibis.asc(date_column_name),
@@ -969,9 +957,7 @@ def next_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1):
     - next_period_value(amount, date)
     - next_period_value(amount, date, 2)
     """
-    date_column_name = (
-        date_column.get_name() if hasattr(date_column, "get_name") else date_column
-    )
+    date_column_name = date_column.get_name() if hasattr(date_column, "get_name") else date_column
     return column.lead(offset).over(
         group_by=(~s.numeric() & ~s.matches(date_column_name)),
         order_by=ibis.asc(date_column_name),
@@ -1089,9 +1075,7 @@ def week_start(column: ir.DateValue):
     - week_start(order_date)
     """
 
-    week_start_day = (
-        frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
-    )
+    week_start_day = frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
     days = [
         "Monday",
         "Tuesday",
@@ -1210,22 +1194,16 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
         "year": lambda column: column.strftime("%Y-01-01").cast("date"),
     }[unit]
 
-    query = query.mutate(
-        cohort_start=unit_start(date_column).min().over(group_by=id_column)
-    )
+    query = query.mutate(cohort_start=unit_start(date_column).min().over(group_by=id_column))
 
-    query = query.mutate(
-        cohort_size=id_column.nunique().over(group_by=query.cohort_start)
-    )
+    query = query.mutate(cohort_size=id_column.nunique().over(group_by=query.cohort_start))
 
     query = query.mutate(offset=date_column.delta(query.cohort_start, unit))
 
     zero_padded_offset = (query.offset < 10).ifelse(
         literal("0").concat(query.offset.cast("string")), query.offset.cast("string")
     )
-    query = query.mutate(
-        offset_label=ibis.literal(f"{unit}_").concat(zero_padded_offset)
-    )
+    query = query.mutate(offset_label=ibis.literal(f"{unit}_").concat(zero_padded_offset))
 
     query = query.group_by(["cohort_start", "cohort_size", "offset_label"]).aggregate(
         unique_ids=id_column.nunique()

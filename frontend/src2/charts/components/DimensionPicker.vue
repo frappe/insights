@@ -2,8 +2,9 @@
 import { ChevronDown, Settings, XIcon } from 'lucide-vue-next'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { isDate } from '../../helpers'
-import { granularityOptions } from '../../helpers/constants'
+import { COLUMN_TYPES, granularityOptions } from '../../helpers/constants'
 import { Dimension, DimensionOption } from '../../types/query.types'
+import LazyTextInput from '../../components/LazyTextInput.vue'
 
 const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
@@ -83,10 +84,9 @@ function selectDimension(option?: DimensionOption) {
 			<template #body-main>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
 					<InlineFormControlLabel label="Label">
-						<FormControl
+						<LazyTextInput
+							placeholder="Label"
 							v-model="dimension.dimension_name"
-							autocomplete="off"
-							:debounce="500"
 						/>
 					</InlineFormControlLabel>
 
@@ -94,12 +94,7 @@ function selectDimension(option?: DimensionOption) {
 						<FormControl
 							type="select"
 							v-model="dimension.data_type"
-							:options="[
-								{ label: 'String', value: 'String' },
-								{ label: 'Date', value: 'Date' },
-								{ label: 'Datetime', value: 'Datetime' },
-								{ label: 'Time', value: 'Time' },
-							]"
+							:options="COLUMN_TYPES"
 						/>
 					</InlineFormControlLabel>
 

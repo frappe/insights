@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { ImageDown, RefreshCcw, Share2, XIcon } from 'lucide-vue-next'
+import { Copy, ImageDown, RefreshCcw, Share2, XIcon } from 'lucide-vue-next'
 import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import { downloadImage, waitUntil } from '../helpers'
@@ -16,6 +16,7 @@ import ChartShareDialog from './components/ChartShareDialog.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
+import LazyTextInput from '../components/LazyTextInput.vue'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
@@ -33,7 +34,7 @@ watchDebounced(
 	{
 		deep: true,
 		debounce: 500,
-	}
+	},
 )
 
 const keys = useMagicKeys()
@@ -83,7 +84,7 @@ const showShareDialog = ref(false)
 					<ChartTypeSelector v-model="chart.doc.chart_type" />
 					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 					<InlineFormControlLabel label="Title">
-						<FormControl v-model="chart.doc.title" />
+						<LazyTextInput type="text" placeholder="Title" v-model="chart.doc.title" />
 					</InlineFormControlLabel>
 				</div>
 			</CollapsibleSection>
@@ -124,7 +125,7 @@ const showShareDialog = ref(false)
 						Reset Options
 					</Button>
 
-					<Button @click="chart.refresh({ force: true })" class="w-full">
+					<Button @click="chart.refresh(true)" class="w-full">
 						<template #prefix>
 							<RefreshCcw class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
@@ -147,6 +148,12 @@ const showShareDialog = ref(false)
 							<Share2 class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
 						Share Chart
+					</Button>
+					<Button class="w-full" @click="chart.copy">
+						<template #prefix>
+							<Copy class="h-4 text-gray-700" stroke-width="1.5" />
+						</template>
+						Copy JSON
 					</Button>
 				</div>
 			</CollapsibleSection>

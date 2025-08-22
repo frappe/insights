@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { inject, provide, ref, watchEffect } from 'vue'
+import { useWindowSize } from '@vueuse/core'
+import { Edit3, MoreHorizontal, Play, RefreshCcw, Share2 } from 'lucide-vue-next'
+import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { safeJSONParse, waitUntil } from '../helpers'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
-import { workbookKey } from '../workbook/workbook'
 import useDashboard from './dashboard'
 import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardItem from './DashboardItem.vue'
@@ -19,6 +19,17 @@ const props = defineProps<{
 
 const dashboard = useDashboard(props.dashboard_name)
 provide('dashboard', dashboard)
+
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value < 1058)
+
+watchEffect(() => {
+	if (dashboard.editing || isMobile.value) {
+		dashboard.autoSave = false
+	} else {
+		dashboard.autoSave = true
+	}
+})
 
 await waitUntil(() => dashboard.isloaded)
 
@@ -43,14 +54,6 @@ function onDrop(event: DragEvent) {
 }
 
 const showShareDialog = ref(false)
-
-watchEffect(() => {
-	if (dashboard.editing) {
-		dashboard.autoSave = false
-	} else {
-		dashboard.autoSave = true
-	}
-})
 </script>
 
 <template>
@@ -125,6 +128,16 @@ watchEffect(() => {
 					>
 						Done
 					</Button>
+					<Dropdown
+						:button="{ icon: MoreHorizontal, variant: 'outline' }"
+						:options="[
+							{
+								label: 'Force Refresh',
+								icon: RefreshCcw,
+								onClick: () => dashboard.refresh(true),
+							},
+						]"
+					/>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">
@@ -137,9 +150,11 @@ watchEffect(() => {
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {
+							if (!newLayout) return
 							dashboard.doc.items.forEach((item, idx) => {
 								item.layout = newLayout[idx]
 							})
+							dashboard.normalizeLayout()
 						}
 					"
 				>

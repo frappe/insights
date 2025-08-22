@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { LoadingIndicator } from 'frappe-ui'
-import { Bug, Play } from 'lucide-vue-next'
+import { Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
+import VariablesDialog from '../../components/VariablesDialog.vue'
 import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { Query } from '../query'
@@ -27,6 +27,23 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 		scriptLogs.value = data.logs
 	}
 })
+
+const showVariablesDialog = ref(false)
+const localVariables = ref<any[]>([])
+
+function openVariablesDialog() {
+	localVariables.value = [...(query.doc.variables || [])]
+	showVariablesDialog.value = true
+}
+
+function handleSaveVariables(variables: any[]) {
+	query
+		.updateVariables(variables)
+		.then(() => {
+			showVariablesDialog.value = false
+		})
+		.catch((error) => {})
+}
 </script>
 
 <template>
@@ -74,11 +91,26 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
-				<Button @click="showLogs = !showLogs" label="Logs">
-					<template #prefix>
-						<Bug class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
+				<Dropdown
+					:button="{ icon: MoreHorizontal }"
+					:options="[
+						{
+							label: 'Force Run',
+							icon: Play,
+							onClick: () => query.execute(true),
+						},
+						{
+							label: 'Variables',
+							icon: Braces,
+							onClick: openVariablesDialog,
+						},
+						{
+							label: 'Logs',
+							icon: Bug,
+							onClick: () => (showLogs = !showLogs),
+						},
+					]"
+				/>
 			</div>
 		</div>
 
@@ -98,4 +130,9 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 			<QueryDataTable :query="query" :enable-alerts="true" />
 		</div>
 	</div>
+	<VariablesDialog
+		v-model:show="showVariablesDialog"
+		v-model:variables="localVariables"
+		@save="handleSaveVariables"
+	/>
 </template>

@@ -83,14 +83,11 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # ------------
 
 # before_install = "insights.install.before_install"
+after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 
-before_request = [
-    "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.before_request"
-]
-after_request = [
-    "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"
-]
+before_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.before_request"]
+after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
 fixtures = [
     {
