@@ -7,8 +7,8 @@ import DataTable from '../../components/DataTable.vue'
 import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
 import { column } from '../helpers'
 import { Query } from '../query'
-import QueryAlertsDialog from './QueryAlertsDialog.vue'
 import AlertSetupDialog from './AlertSetupDialog.vue'
+import QueryAlertsDialog from './QueryAlertsDialog.vue'
 
 const props = defineProps<{
 	query: Query
@@ -16,6 +16,7 @@ const props = defineProps<{
 	enableColumnRename?: boolean
 	enableSort?: boolean
 	enableDrillDown?: boolean
+	enableNewColumn?: boolean
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
 }>()
 
@@ -90,6 +91,7 @@ const currentAlertName = ref('')
 		:on-sort-change="props.enableSort ? onSortChange : undefined"
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"
 		:on-drilldown="props.enableDrillDown ? onDrillDown : undefined"
+		:enable-new-column="props.enableNewColumn"
 		v-bind="$attrs"
 	>
 		<!-- pagination -->
@@ -124,6 +126,10 @@ const currentAlertName = ref('')
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
+		</template>
+
+		<template v-if="props.enableNewColumn" #new-column-editor="slotArgs">
+			<slot name="new-column-editor" v-bind="slotArgs" />
 		</template>
 	</DataTable>
 

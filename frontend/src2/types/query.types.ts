@@ -41,6 +41,9 @@ export type ColumnDataType =
 	| 'Datetime'
 	| 'Time'
 	| 'Text'
+	| 'JSON'
+	| 'Array'
+	| 'Auto'
 export type MeasureDataType = 'String' | 'Integer' | 'Decimal'
 export type DimensionDataType = 'String' | 'Date' | 'Datetime' | 'Time'
 export const aggregations = ['sum', 'count', 'avg', 'min', 'max', 'count_distinct']

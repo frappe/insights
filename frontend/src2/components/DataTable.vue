@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, reactive, ref } from 'vue'
+import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
@@ -15,6 +15,7 @@ const props = defineProps<{
 	showFilterRow?: boolean
 	enablePagination?: boolean
 	enableColorScale?: boolean
+	enableNewColumn?: boolean
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
@@ -256,6 +257,20 @@ function _formatNumber(value: any) {
 	}
 	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
 }
+
+const showNewColumn = ref(false)
+function toggleNewColumn() {
+	showNewColumn.value = !showNewColumn.value
+	// scroll towards the far right of the datatable
+	nextTick(() => {
+		if ($header.value) {
+			const lastColumn = $header.value.querySelector('tr:last-child')
+			if (lastColumn) {
+				lastColumn.scrollIntoView({ behavior: 'smooth', inline: 'end' })
+			}
+		}
+	})
+}
 </script>
 
 <template>
@@ -314,6 +329,24 @@ function _formatNumber(value: any) {
 							<div v-else class="flex items-center truncate px-2">
 								{{ header.label }}
 							</div>
+						</td>
+
+						<td v-if="props.enableNewColumn" class="h-8 border-b border-r">
+							<Button
+								v-if="!showNewColumn"
+								variant="ghost"
+								class="!min-w-10 !w-full"
+								@click="toggleNewColumn"
+							>
+								<template #icon>
+									<Plus class="size-4 text-gray-700" :stroke-width="1.5" />
+								</template>
+							</Button>
+							<slot
+								v-if="showNewColumn"
+								name="new-column-editor"
+								:toggle="toggleNewColumn"
+							/>
 						</td>
 
 						<td
@@ -403,6 +436,8 @@ function _formatNumber(value: any) {
 								{{ row[col.name] }}
 							</template>
 						</td>
+
+						<td v-if="props.enableNewColumn" class="h-8 border-b border-r px-3"></td>
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
