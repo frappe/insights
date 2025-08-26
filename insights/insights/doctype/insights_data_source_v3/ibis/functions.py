@@ -4,6 +4,7 @@ import frappe
 import ibis
 import ibis.expr.types as ir
 import ibis.selectors as s
+from frappe.utils import now_datetime
 from ibis import _
 
 from insights.insights.query_builders.sql_functions import handle_timespan
@@ -758,12 +759,12 @@ def now():
     """
     def now()
 
-    Get the current timestamp.
+    Get the current timestamp based on site's system timezone
 
     Examples:
     - now()
     """
-    return ibis.now()
+    return ibis.literal(now_datetime())
 
 
 def today():
