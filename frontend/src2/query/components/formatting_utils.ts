@@ -97,29 +97,29 @@ export type FormattingMode = color_scale | cell_rules | text_rules | date_rules 
 
 // color scale options Red-Amber-Green and Green-Amber-Red
 export const ragByPercentage = {
-    10: "bg-[#CE5050] text-white",
-    20: "bg-[#D97777] text-black",
-    30: "bg-[#E49E9F] text-black",
+    10: "bg-[#d87373] text-white",
+    20: "bg-[#e29696] text-black",
+    30: "bg-[#ebb9b9] text-black",
     40: "bg-[#EFC5C5] text-black",
     50: "bg-[#FBECEC] text-black",
     60: "bg-[#EEF7EF] text-black",
     70: "bg-[#CEE7D3] text-black",
-    80: "bg-[#AED6B4] text-black",
-    90: "bg-[#8DC696] text-black",
-    100: "bg-[#6DB678] text-white",
+    80: "bg-[#c5e2c9] text-black",
+    90: "bg-[#a7d3ae] text-black",
+    100: "bg-[#8ac593] text-white",
 };
 
 export const garByPercentage = {
-    10: "bg-[#6DB678] text-white",
-    20: "bg-[#8DC696] text-black",
-    30: "bg-[#AED6B4] text-black",
+    10: "bg-[#8AC593] text-white",
+    20: "bg-[#A7D3AE] text-black",
+    30: "bg-[#C5E2C9] text-black",
     40: "bg-[#CEE7D3] text-black",
-    50: "bg-[#EEF7EF] text-black",
+    50: "bg-[#EFC5C5] text-black",
     60: "bg-[#FBECEC] text-black",
     70: "bg-[#EFC5C5] text-black",
-    80: "bg-[#E49E9F] text-black",
-    90: "bg-[#D97777] text-black",
-    100: "bg-[#CE5050] text-white",
+    80: "bg-[#EBB9B9] text-black",
+    90: "bg-[#E29696] text-black",
+    100: "bg-[#D87373] text-white",
 };
 
 // helper functions for date comparison
