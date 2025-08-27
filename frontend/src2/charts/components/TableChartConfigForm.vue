@@ -4,7 +4,7 @@ import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import { TableChartConfig } from '../../types/chart.types'
-import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
+import { ColumnDataType, ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -87,8 +87,31 @@ const selectedColumns = computed(() => {
 		}
 	})
 
-	// filter columnOptions to only include selected columns
-	return props.columnOptions.filter((option) => columns.has(option.value))
+	// filter columnOptions to only include selected columns and add data type to description
+	return props.columnOptions
+		.filter((option) => columns.has(option.value))
+		.map((option) => ({
+			...option,
+			description: option.data_type 
+		}))
+})
+
+const availableColumnsForFormatting = computed(() => {
+	const dataTypeMap = { Integer: 'Number', Decimal: 'Decimal', String: 'String' }
+	const measureColumns = config.value.values
+		?.filter((measure) => measure.measure_name)
+		.map((measure) => {
+			const mappedDataType = dataTypeMap[measure.data_type] || 'String'
+			return {
+				label: measure.measure_name,
+				value: measure.measure_name,
+				data_type: mappedDataType as ColumnDataType,
+				description: mappedDataType,
+				query: '',
+			}
+		}) || []
+
+	return [...selectedColumns.value, ...measureColumns]
 })
 
 function getRuleBadgeTheme(mode: string): string {
@@ -292,9 +315,9 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 		</div>
 	</CollapsibleSection>
 	<!-- todo: make items sortable -->
-	<CollapsibleSection title="Conditional Formatting" collapsed>
+	<CollapsibleSection title="Formatting" collapsed>
 		<template #title-suffix v-if="config.conditional_formatting?.formats.length">
-			<Badge size="[sm]" theme="orange" class="mt-0.5">
+			<Badge theme="orange" >
 				<span class="tnum"> {{ config.conditional_formatting.formats.length }}</span>
 			</Badge>
 		</template>
@@ -345,7 +368,7 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 	<ConditonalFormattingDialog
 		v-if="showFormatSelectorDialog"
 		v-model="showFormatSelectorDialog"
-		:column-options="selectedColumns"
+		:column-options="availableColumnsForFormatting"
 		:initial-rule="editingRule"
 		:selector-key="editingRuleIndex ?? 'new'"
 		@select="handleFormatSelect"
