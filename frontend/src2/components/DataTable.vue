@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
+import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
@@ -271,6 +271,30 @@ function toggleNewColumn() {
 		}
 	})
 }
+
+const showExportDialog = ref(false)
+const exportFormat = ref('csv')
+const exportFilename = ref('data')
+
+function openExportDialog() {
+	if (!props.onExport) return
+
+	const now = new Date()
+	const timestamp = `${now.getDate()}_${now.getMonth()}_${now.getFullYear()}`
+	exportFilename.value = `export_${timestamp}`
+	showExportDialog.value = true
+}
+
+function handleExport() {
+	if (!props.onExport) return
+
+	showExportDialog.value = false
+	if (exportFormat.value === 'csv') {
+		props.onExport('csv', exportFilename.value)
+	} else if (exportFormat.value === 'excel') {
+		props.onExport('excel', exportFilename.value)
+	}
+}
 </script>
 
 <template>
@@ -517,7 +541,7 @@ function toggleNewColumn() {
 							</div>
 						</div>
 						<slot name="footer-right-actions"></slot>
-						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
+						<Button v-if="props.onExport" variant="ghost" @click="openExportDialog">
 							<template #icon>
 								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 							</template>
@@ -541,4 +565,57 @@ function toggleNewColumn() {
 	>
 		<LoadingIndicator class="h-8 w-8 text-gray-700" />
 	</div>
+	<Dialog v-model="showExportDialog" :options="{ title: 'Export Data', size: 'sm' }">
+		<template #body-content>
+			<div class="space-y-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
+					<div class="space-y-2">
+						<label class="flex cursor-pointer items-center ">
+							<input
+								type="radio"
+								v-model="exportFormat"
+								value="csv"
+								class="mr-2 cursor-pointer rounded-md text-black focus:ring-0 focus:ring-offset-0 "
+							/>
+							<span class="text-sm">CSV</span>
+						</label>
+						<label class="flex items-center">
+							<input
+								type="radio"
+								v-model="exportFormat"
+								value="excel"
+								class="mr-2 cursor-pointer rounded-md text-black ring-0 focus:ring-0 focus:ring-offset-0"
+							/>
+							<span class="text-sm">Excel</span>
+						</label>
+					</div>
+				</div>
+	
+				<div class="flex items-center gap-2">
+					<FormControl
+						id="filename"
+						type="text"
+						v-model="exportFilename"
+						placeholder="Enter filename"
+						class="w-44"
+					/>
+					<p class="text-md mt-1 text-gray-700">
+						{{ exportFormat === 'csv' ? '.csv' : '.xlsx' }} 
+					</p>
+				</div>
+			</div>
+		</template>
+
+		<template #actions>
+			<div class="flex justify-end gap-2">
+				<Button variant="ghost" @click="showExportDialog = false">
+					Cancel
+				</Button>
+				<Button variant="solid" @click="handleExport">
+					Export
+				</Button>
+			</div>
+		</template>
+	</Dialog>
 </template>

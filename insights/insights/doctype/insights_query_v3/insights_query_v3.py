@@ -1,10 +1,13 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import base64
 from contextlib import contextmanager
+from io import BytesIO, StringIO
 
 import frappe
 import ibis
+import pandas as pd
 from frappe.model.document import Document
 from ibis import _
 
@@ -144,7 +147,41 @@ class InsightsQueryv3(Document):
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
+        try:
+            if isinstance(results, pd.DataFrame):
+                columns_order = [c["name"] for c in get_columns_from_schema(ibis_query.schema())]
+                existing_cols = [c for c in columns_order if c in results.columns]
+                results = results[existing_cols]
+        except Exception:
+            pass
         return results.to_csv(index=False)
+
+    @insights_whitelist()
+    def download_results_excel(self, active_operation_idx=None, adhoc_filters=None):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
+        results, _ = execute_ibis_query(
+            ibis_query,
+            limit=10_00_000,
+            cache=False,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
+
+        # get csv from ibis results and then read into pandas to write excel
+        csv_text = results.to_csv(index=False)
+        data = pd.read_csv(StringIO(csv_text))
+        try:
+            column_order = [col["name"] for col in get_columns_from_schema(ibis_query.schema())]
+            ordered_cols = [c for c in column_order if c in data.columns]
+            data = data[ordered_cols]
+        except Exception:
+            pass
+        buf = BytesIO()
+        data.to_excel(buf, index=False)
+        excel_bytes = buf.getvalue()
+        return base64.b64encode(excel_bytes).decode()
 
     @insights_whitelist()
     def get_distinct_column_values(

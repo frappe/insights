@@ -472,7 +472,7 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-	function downloadResults() {
+	function downloadResults(format?: string, filename?: string) {
 		const _downloadResults = () => {
 			return query
 				.call('download_results', {
@@ -494,13 +494,16 @@ export function makeQuery(name: string) {
 					const a = document.createElement('a')
 					a.setAttribute('hidden', '')
 					a.setAttribute('href', url)
-					a.setAttribute('download', `${query.doc.title || 'data'}.csv`)
+					a.setAttribute('download', `${filename || query.doc.title || 'data'}.csv`)
 					document.body.appendChild(a)
 					a.click()
 					document.body.removeChild(a)
 				})
 		}
-
+		if (format && filename) {
+			_downloadResults()
+			return
+		}
 		confirmDialog({
 			title: 'Download Results',
 			message:
@@ -508,6 +511,63 @@ export function makeQuery(name: string) {
 			primaryActionLabel: 'Yes',
 			onSuccess: _downloadResults,
 		})
+	}
+
+	function downloadResultsExcel(format?: string, filename?: string) {
+		const _downloadResultsExcel = () => {
+			return query
+				.call('download_results_excel', {
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+				})
+				.then((base64Excel: string) => {
+					if (!base64Excel) {
+						createToast({
+							title: 'Download Failed',
+							message: 'No data found to download.',
+							variant: 'warning',
+						})
+						return
+					}
+					const binaryStr = atob(base64Excel)
+					const len = binaryStr.length
+					const bytes = new Uint8Array(len)
+					for (let i = 0; i < len; i++) {
+						bytes[i] = binaryStr.charCodeAt(i)
+					}
+					const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+					const url = window.URL.createObjectURL(blob)
+					const a = document.createElement('a')
+					a.setAttribute('hidden', '')
+					a.setAttribute('href', url)
+					a.setAttribute('download', `${filename || query.doc.title || 'data'}.xlsx`)
+					document.body.appendChild(a)
+					a.click()
+					document.body.removeChild(a)
+					window.URL.revokeObjectURL(url)
+				})
+		}
+
+		if (format && filename) {
+			_downloadResultsExcel()
+			return
+		}
+
+		confirmDialog({
+			title: 'Download Results',
+			message:
+				'This action will download the datatable results as an Excel file. Do you want to proceed?',
+			primaryActionLabel: 'Yes',
+			onSuccess: _downloadResultsExcel,
+		})
+	}
+
+	function exportResults(format: string, filename: string) {
+		if (format === 'csv') {
+			downloadResults(format, filename)
+		} else if (format === 'excel') {
+			downloadResultsExcel(format, filename)
+		}
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '', limit: number = 20) {
@@ -898,6 +958,8 @@ export function makeQuery(name: string) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 		downloadResults,
+		downloadResultsExcel,
+		exportResults,
 
 		getSQLOperation,
 		setSQL,
