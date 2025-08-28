@@ -47,7 +47,9 @@ whenever(cmdV, () => {
 			} else if (json.type === 'Chart') {
 				workbook.importChart(json)
 			}
-		} catch (e) {}
+		} catch (e) {
+			console.error(e)
+		}
 	})
 })
 
