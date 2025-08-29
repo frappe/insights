@@ -28,6 +28,7 @@ import {
 	FilterRule,
 	JoinArgs,
 	Measure,
+	Mutate,
 	MutateArgs,
 	Operation,
 	OrderByArgs,
@@ -366,6 +367,21 @@ export function makeQuery(name: string) {
 	}
 
 	function renameColumn(oldName: string, newName: string) {
+		// Check if there's a mutate operation with the old name
+		const existingMutateIdx = currentOperations.value.findIndex(
+			(op) => op.type === 'mutate' && op.new_name === oldName
+		)
+
+		if (existingMutateIdx !== -1) {
+			// Update the new_name property of the existing mutate operation
+			const mutateOp = query.doc.operations[existingMutateIdx] as Mutate
+			query.doc.operations[existingMutateIdx] = {
+				...mutateOp,
+				new_name: newName
+			}
+			return
+		}
+
 		const existingRenameIdx = currentOperations.value.findIndex(
 			(op) => op.type === 'rename' && op.new_name === oldName
 		)
@@ -417,6 +433,21 @@ export function makeQuery(name: string) {
 	}
 
 	function changeColumnType(column_name: string, newType: ColumnDataType) {
+		// Check if there's a mutate operation with the old name
+		const existingMutateIdx = currentOperations.value.findIndex(
+			(op) => op.type === 'mutate' && op.new_name === column_name
+		)
+
+		if (existingMutateIdx !== -1) {
+			// Update the new_name property of the existing mutate operation
+			const mutateOp = query.doc.operations[existingMutateIdx] as Mutate
+			query.doc.operations[existingMutateIdx] = {
+				...mutateOp,
+				data_type: newType
+			}
+			return
+		}
+
 		addOperation(
 			cast({
 				column: column(column_name),

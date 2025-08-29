@@ -389,13 +389,17 @@ class IbisQueryBuilder:
             "Datetime": "timestamp",
             "Time": "time",
             "Text": "string",
+            "JSON": "json",
+            "Array": "array<json>",
+            "Auto": "",
         }[data_type]
 
     def apply_mutate(self, mutate_args):
         new_name = sanitize_name(mutate_args.new_name)
-        dtype = self.get_ibis_dtype(mutate_args.data_type)
         new_column = self.evaluate_expression(mutate_args.expression.expression)
-        new_column = new_column.cast(dtype)
+        dtype = self.get_ibis_dtype(mutate_args.data_type)
+        if dtype:
+            new_column = new_column.cast(dtype)
         return self.query.mutate(**{new_name: new_column})
 
     def apply_summary(self, summarize_args):
@@ -595,7 +599,11 @@ def execute_ibis_query(
     reference_doctype=None,
     reference_name=None,
 ):
-    sql = ibis.to_sql(query)
+    try:
+        sql = ibis.to_sql(query)
+    except ibis.common.exceptions.OperationNotDefinedError:
+        # TODO: throw better error message
+        raise
 
     if cache:
         backends, _ = query._find_backends()
@@ -662,6 +670,10 @@ def to_insights_type(dtype: DataType):
         return "Date"
     if dtype.is_time():
         return "Time"
+    if dtype.is_json():
+        return "JSON"
+    if dtype.is_array():
+        return "Array"
     return "String"
 
 

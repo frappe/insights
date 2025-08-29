@@ -150,9 +150,11 @@ const showShareDialog = ref(false)
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {
+							if (!newLayout) return
 							dashboard.doc.items.forEach((item, idx) => {
 								item.layout = newLayout[idx]
 							})
+							dashboard.normalizeLayout()
 						}
 					"
 				>
