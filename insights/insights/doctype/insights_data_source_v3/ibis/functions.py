@@ -1089,7 +1089,7 @@ def week_start(column: ir.DateValue):
     week_starts_on = days.index(week_start_day)
     day_of_week = column.day_of_week.index().cast("int32")
     adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
-    week_start = column - adjusted_week_start.as_interval(unit="D")
+    week_start = column - adjusted_week_start.as_interval("D")
     return week_start
 
 
