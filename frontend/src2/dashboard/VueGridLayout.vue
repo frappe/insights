@@ -50,6 +50,7 @@ const layoutReady = ref(false)
 const props = defineProps<{
 	cols?: number
 	disabled?: Boolean
+	verticalCompact?: boolean
 }>()
 const options = reactive({
 	colNum: props.cols || 12,
@@ -58,7 +59,7 @@ const options = reactive({
 	isDraggable: computed(() => !props.disabled),
 	isResizable: computed(() => !props.disabled),
 	responsive: true,
-	verticalCompact: false,
+	verticalCompact: computed(() => props.verticalCompact ?? true),
 	preventCollision: false,
 	useCssTransforms: true,
 	cols: {

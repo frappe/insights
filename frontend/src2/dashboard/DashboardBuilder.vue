@@ -120,11 +120,22 @@ const showShareDialog = ref(false)
 					>
 						Text
 					</Button>
+					<div v-if="dashboard.editing" class="flex items-center gap-2 px-3 py-1 border rounded-md bg-gray-50">
+						<Toggle
+							size="sm"
+							:modelValue="dashboard.doc.vertical_compact ?? true"
+							@update:modelValue="dashboard.doc.vertical_compact = $event"
+						/>
+						<span class="text-sm text-gray-600">Compact Layout</span>
+					</div>
 					<Button
 						v-if="dashboard.editing"
 						variant="solid"
 						icon-left="check"
-						@click="dashboard.editing = false"
+						@click="() => {
+							dashboard.save()
+							dashboard.editing = false
+						}"
 					>
 						Done
 					</Button>
@@ -137,6 +148,7 @@ const showShareDialog = ref(false)
 					:class="[dashboard.editing ? 'mb-[20rem] !select-none' : '']"
 					:cols="20"
 					:disabled="!dashboard.editing"
+					:verticalCompact="dashboard.doc.vertical_compact"
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {

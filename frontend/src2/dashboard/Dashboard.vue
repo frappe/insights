@@ -72,6 +72,7 @@ async function downloadDashboardImage() {
 				class="h-fit w-full"
 				:cols="20"
 				:disabled="true"
+				:verticalCompact="dashboard.doc.vertical_compact"
 				:modelValue="dashboard.doc.items.map((item) => item.layout)"
 			>
 				<template #item="{ index }">

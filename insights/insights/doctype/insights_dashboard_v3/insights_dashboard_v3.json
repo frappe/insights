@@ -10,6 +10,7 @@
   "column_break_owsx",
   "workbook",
   "is_public",
+  "vertical_compact_layout",
   "section_break_lgpd",
   "items",
   "section_break_aocd",
@@ -78,11 +79,18 @@
    "fieldtype": "Data",
    "label": "Old Name",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Automatically arrange cards vertically to fill empty spaces",
+   "fieldname": "vertical_compact_layout",
+   "fieldtype": "Check",
+   "label": "Vertical Compact Layout"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-11 17:23:03.687968",
+ "modified": "2025-09-01 16:28:11.944860",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard v3",
