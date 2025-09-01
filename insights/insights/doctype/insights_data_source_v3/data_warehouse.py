@@ -71,9 +71,7 @@ class WarehouseTable:
                 )
 
         if os.path.exists(self.parquet_filepath):
-            return self.warehouse.db.read_parquet(
-                self.parquet_filepath, table_name=self.warehouse_table_name
-            )
+            return self.warehouse.db.read_parquet(self.parquet_filepath, table_name=self.warehouse_table_name)
 
         return self.warehouse.db.table(self.warehouse_table_name)
 
@@ -175,8 +173,7 @@ class WarehouseTableImporter:
 
     def prepare_settings(self) -> dict:
         self.settings.row_limit = (
-            frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
-            or 10_00_000
+            frappe.db.get_single_value("Insights Settings", "max_records_to_sync") or 10_00_000
         )
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
@@ -193,18 +190,19 @@ class WarehouseTableImporter:
         self.remote_table = self.table.get_remote_table()
 
         if hasattr(self.remote_table, "creation"):
+            self.primary_key = "creation"
             self.remote_table = self.remote_table.order_by(ibis.desc("creation"))
+        elif hasattr(self.remote_table, "timestamp"):
+            self.primary_key = "timestamp"
+            self.remote_table = self.remote_table.order_by(ibis.desc("timestamp"))
+        else:
+            self.primary_key = "__row_number"
+            self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
-        if not hasattr(self.remote_table, "creation"):
-            self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
-
     def start_batch_import(self):
-        self.primary_key = (
-            "creation" if hasattr(self.remote_table, "creation") else "__row_number"
-        )
         self.warehouse_table_name = self.table.warehouse_table_name
         self.warehouse_folder = get_warehouse_folder_path()
         self.imported_batch_paths = []
@@ -225,10 +223,7 @@ class WarehouseTableImporter:
     def calculate_batch_size(self) -> int:
         sample_size = 10
         sample_rows = self.remote_table.head(sample_size).execute()
-        total_size = sum(
-            sample_rows[column].memory_usage(deep=True)
-            for column in sample_rows.columns
-        )
+        total_size = sum(sample_rows[column].memory_usage(deep=True) for column in sample_rows.columns)
         row_size = total_size / sample_size / (1024 * 1024)
         batch_size = int(self.settings.memory_limit / row_size)
         self.log.db_set(
@@ -254,9 +249,7 @@ class WarehouseTableImporter:
             if metadata["count"] < batch_size:
                 break
 
-            remote_table = remote_table.filter(
-                _[self.primary_key] > metadata["max_primary_key"]
-            )
+            remote_table = remote_table.filter(_[self.primary_key] > metadata["max_primary_key"])
             batch_number += 1
 
     def create_parquet_file(self, batch: Expr, batch_number: int) -> str:
@@ -286,12 +279,8 @@ class WarehouseTableImporter:
 
     def merge_batches(self):
         ddb = ibis.duckdb.connect(":memory:")
-        merged = ddb.read_parquet(
-            self.imported_batch_paths, table_name=self.warehouse_table_name
-        )
-        path = os.path.join(
-            self.warehouse_folder, f"{self.warehouse_table_name}.parquet"
-        )
+        merged = ddb.read_parquet(self.imported_batch_paths, table_name=self.warehouse_table_name)
+        path = os.path.join(self.warehouse_folder, f"{self.warehouse_table_name}.parquet")
         if hasattr(merged, "__row_number"):
             merged = merged.drop("__row_number")
         merged.to_parquet(path, compression="snappy")
@@ -300,8 +289,7 @@ class WarehouseTableImporter:
         self.log.parquet_file = path
         self.log.rows_imported = total_rows
         self.log.log_output(
-            f"Total Batches: {len(self.imported_batch_paths)}\n"
-            f"Total Rows: {total_rows}",
+            f"Total Batches: {len(self.imported_batch_paths)}\n" f"Total Rows: {total_rows}",
             commit=True,
         )
         ddb.disconnect()
@@ -310,9 +298,7 @@ class WarehouseTableImporter:
         self.log.db_set(
             {
                 "ended_at": frappe.utils.now(),
-                "time_taken": frappe.utils.time_diff_in_seconds(
-                    self.log.ended_at, self.log.started_at
-                ),
+                "time_taken": frappe.utils.time_diff_in_seconds(self.log.ended_at, self.log.started_at),
             },
             commit=True,
         )
