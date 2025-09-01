@@ -128,6 +128,10 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 				const granularity = getGranularity(column.name) as GranularityType
 				formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
 			}
+
+			if (FIELDTYPES.TEXT.includes(column.type) && typeof row[column.name] === 'string' && row[column.name].includes('<')) {
+				formattedRow[column.name] = row[column.name].replace(/(<!--.*?-->|<[^>]*>)/g, '').replace(/\s+/g, ' ').trim()
+			}
 		})
 		return formattedRow
 	})

@@ -42,6 +42,10 @@ export function getFormattedResult(data) {
 					cell = applyColumnFormatOption(safeJSONParse(formatOption), cell)
 				}
 			}
+			
+			if (FIELDTYPES.TEXT.includes(columnType) && typeof cell === 'string' && cell.includes('<')) {
+				cell = cell.replace(/(<!--.*?-->|<[^>]*>)/g, '').replace(/\s+/g, ' ').trim()
+			}
 			return cell
 		})
 	})
