@@ -688,7 +688,7 @@ def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
     if not other.type().is_date():
         other = other.cast("date")
 
-    return column.delta(other, unit)
+    return column.delta(other, unit=unit)
 
 
 def time_diff(
@@ -711,7 +711,7 @@ def time_diff(
     if not other.type().is_time():
         other = other.cast("time")
 
-    return column.delta(other, unit)
+    return column.delta(other, unit=unit)
 
 
 def date_add(column: ir.DateValue, value: int, unit: str):
@@ -1199,7 +1199,7 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
 
     query = query.mutate(cohort_size=id_column.nunique().over(group_by=query.cohort_start))
 
-    query = query.mutate(offset=date_column.delta(query.cohort_start, unit))
+    query = query.mutate(offset=date_column.delta(query.cohort_start, unit=unit))
 
     zero_padded_offset = (query.offset < 10).ifelse(
         literal("0").concat(query.offset.cast("string")), query.offset.cast("string")
