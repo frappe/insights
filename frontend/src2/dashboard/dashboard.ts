@@ -52,7 +52,6 @@ function makeDashboard(name: string) {
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
-
 	function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
@@ -94,8 +93,11 @@ function makeDashboard(name: string) {
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
+	const grid_cols = 20 // for 5 columns
+	const filter_w = 4
+	const filter_h = 1
+
 	function addFilter() {
-		const maxY = getMaxY()
 		dashboard.doc.items.push({
 			type: 'filter',
 			filter_name: '',
@@ -104,29 +106,60 @@ function makeDashboard(name: string) {
 			layout: {
 				i: getUniqueId(),
 				x: 0,
-				y: maxY,
-				w: 4,
-				h: 1,
+				y: 0,
+				w: filter_w,
+				h: filter_h,
 			},
 		})
+		normalizeLayout()
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	function removeItem(index: number) {
 		dashboard.doc.items.splice(index, 1)
+		normalizeLayout()
 	}
 
-	function refresh() {
+	function normalizeLayout() {
+		const items = dashboard.doc.items
+		const filters = items.filter((item) => item.type === 'filter')
+		if (filters.length === 0) return
+
+		const perRow = Math.max(1, Math.floor(grid_cols / filter_w))
+
+		filters.forEach((item, idx) => {
+			const row = Math.floor(idx / perRow)
+			const colIndex = idx % perRow
+			item.layout.x = colIndex * filter_w
+			item.layout.y = row * filter_h
+			item.layout.w = filter_w
+			item.layout.h = filter_h
+		})
+
+		const filterRows = Math.ceil(filters.length / perRow)
+		const topRow = filterRows * filter_h
+
+		const otherItems = items.filter((item) => item.type !== 'filter')
+		if (otherItems.length === 0) return
+		const minY = Math.min(...otherItems.map((item) => item.layout.y))
+		const topRowHeight = topRow - minY
+
+		if (topRowHeight === 0) return
+		otherItems.forEach((item) => {
+			item.layout.y = Math.max(0, item.layout.y + topRowHeight)
+		})
+	}
+
+	function refresh(force = false) {
 		dashboard.doc.items
 			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart))
+			.forEach((item) => refreshChart(item.chart, force))
 	}
 
-	function refreshChart(chart_name: string) {
+	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
-		chart.refresh({
-			adhocFilters: getAdhocFilters(chart_name),
-		})
+		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.refresh(force)
 	}
 
 	function getAdhocFilters(chart_name: string) {
@@ -165,7 +198,6 @@ function makeDashboard(name: string) {
 				addFilterToQuery(linkedColumn.query, filter)
 			}
 		})
-
 		return filtersByQuery
 	}
 
@@ -289,9 +321,12 @@ function makeDashboard(name: string) {
 		addText,
 		addFilter,
 		removeItem,
+		normalizeLayout,
 
 		refresh,
 		refreshChart,
+
+		getAdhocFilters,
 
 		updateFilterState,
 		applyFilter,

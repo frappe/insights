@@ -2,14 +2,13 @@
 # For license information, please see license.txt
 
 import frappe
-import frappe.client
 import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
 from frappe.rate_limiter import rate_limit
 
-from insights.api.shared import check_public_access
+from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     get_duckdb_connection,
@@ -119,7 +118,7 @@ def get_csv_data(filename: str):
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
     table = ibis.read_csv(file_path, table_name=file_name)
-    count = table.count().execute().item()
+    count = table.count().execute()
 
     columns = get_columns_from_schema(table.schema())
     rows = table.head(50).execute().fillna("").to_dict(orient="records")
@@ -167,23 +166,18 @@ def import_csv_data(filename: str):
 @frappe.whitelist(allow_guest=True)
 @validate_type
 def get_doc(doctype: str, name: str | int):
-    from frappe.client import get as _get_doc
+    try:
+        from frappe.client import get as _get_doc
 
-    if frappe.session.user != "Guest":
         return _get_doc(doctype, name)
-
-    check_public_access(doctype, name)
-
-    return frappe.get_doc(doctype, name).as_dict()
+    except frappe.PermissionError:
+        if not is_public(doctype, name):
+            raise
+        return frappe.get_doc(doctype, name).as_dict()
 
 
 @frappe.whitelist(allow_guest=True)
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
-    from frappe.handler import run_doc_method as _run_doc_method
-
-    if frappe.session.user != "Guest":
-        return _run_doc_method(method, docs=docs, args=args)
-
     doc = frappe.parse_json(docs)
     doctype = doc.get("doctype")
     name = doc.get("name")
@@ -191,20 +185,35 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     if not doctype or not name:
         raise frappe.ValidationError("Invalid document")
 
-    doc = frappe.get_doc(doctype, name)
-    check_public_access(doctype, name)
+    try:
+        from frappe.handler import run_doc_method as _run_doc_method
 
-    args = args or {}
+        _run_doc_method(method, docs=doc, args=args)
+    except frappe.PermissionError:
+        if not is_public(doctype, name):
+            raise frappe.PermissionError("You don't have permission to access this document")
+        if not is_public_method(doctype, method):
+            raise frappe.PermissionError("You don't have permission to access this method")
 
-    response = None
-    if doctype == "Insights Query v3" and method in ("execute", "download_results"):
-        response = doc.execute(**args)
-    elif doctype == "Insights Dashboard v3" and method == "get_distinct_column_values":
-        response = doc.get_distinct_column_values(**args)
-    else:
-        raise frappe.PermissionError("You don't have permission to access this document")
+        doc = frappe.get_doc(doctype, name)
+        fn = getattr(doc, method, None)
+        if not fn:
+            raise frappe.ValidationError(f"Invalid method: {method} for doctype: {doctype}")
 
-    frappe.response.docs.append(doc)
-    frappe.response["message"] = response
+        args = args or {}
+        response = fn(**args)
+        frappe.response.docs.append(doc)
+        frappe.response["message"] = response
+        add_data_to_monitor(methodname=method)
 
-    add_data_to_monitor(methodname=method)
+
+def is_public_method(doctype: str, method: str):
+    public_methods = {
+        "Insights Query v3": ["execute", "download_results"],
+        "Insights Dashboard v3": ["get_distinct_column_values"],
+    }
+
+    if doctype in public_methods and method in public_methods[doctype]:
+        return True
+
+    return False

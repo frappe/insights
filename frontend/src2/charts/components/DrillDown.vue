@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
 import { Combine } from 'lucide-vue-next'
-import { provide } from 'vue'
+import { inject, provide } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import QueryBuilderToolbar from '../../query/components/QueryBuilderToolbar.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
@@ -9,8 +9,20 @@ import QueryOperations from '../../query/components/QueryOperations.vue'
 import { count, makeDimension } from '../../query/helpers'
 import { Query } from '../../query/query'
 import { QueryResultColumn } from '../../types/query.types'
+import { Dashboard } from '../../dashboard/dashboard'
 
 const props = defineProps<{ query: Query }>()
+
+const dashboard = inject<Dashboard>('dashboard')!
+const chartName = inject<string>('chartName', '')
+if (dashboard && chartName) {
+	const _adhocFilters = dashboard.getAdhocFilters(chartName)
+	if (_adhocFilters) {
+		props.query.adhocFilters = _adhocFilters
+		// FIX: the query is executed twice; when operations are added and when adhoc filters are set
+		props.query.execute()
+	}
+}
 
 const show = defineModel()
 wheneverChanges(
@@ -20,7 +32,7 @@ wheneverChanges(
 			props.query.execute()
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
 
 provide('query', props.query)

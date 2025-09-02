@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { COLUMN_TYPES } from '../../helpers/constants'
+import { ColumnDataType } from '../../types/query.types'
 import DataTypeIcon from './DataTypeIcon.vue'
-import { ColumnDataType, QueryResultColumn } from '../../types/query.types'
 
-const emit = defineEmits({
-	typeChange: (newType: ColumnDataType) => true,
+const modelValue = defineModel<ColumnDataType>({
+	required: true,
 })
-const props = defineProps<{ column: QueryResultColumn }>()
 function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
-	emit('typeChange', newType)
+	modelValue.value = newType
 	togglePopover()
 }
 </script>
@@ -23,7 +22,7 @@ function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 				:class="isOpen ? '!bg-gray-100' : ''"
 			>
 				<template #icon>
-					<DataTypeIcon :columnType="column.type" />
+					<DataTypeIcon :columnType="modelValue" />
 				</template>
 			</Button>
 		</template>
@@ -37,7 +36,7 @@ function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 					@click="onTypeChange(type.value as ColumnDataType, togglePopover)"
 				>
 					<template #prefix>
-						<DataTypeIcon :columnType="(type.value as ColumnDataType)" />
+						<DataTypeIcon :columnType="type.value as ColumnDataType" />
 					</template>
 					<span class="truncate">{{ type.label }}</span>
 				</Button>

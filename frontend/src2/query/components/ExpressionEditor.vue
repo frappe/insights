@@ -5,7 +5,12 @@ import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
 import { DropdownOption } from '../../types/query.types'
 
-const props = defineProps<{ columnOptions: DropdownOption[]; placeholder?: string }>()
+const props = defineProps<{
+	columnOptions: DropdownOption[]
+	placeholder?: string
+	hideLineNumbers?: boolean
+	multiLine?: boolean
+}>()
 const expression = defineModel<string>({
 	required: true,
 })
@@ -14,7 +19,7 @@ const functionList = ref<string[]>([])
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
 		functionList.value = res
-	}
+	},
 )
 
 function getCompletions(context: any, syntaxTree: any) {
@@ -97,7 +102,7 @@ const fetchCompletions = debounce(() => {
 		'insights.insights.doctype.insights_data_source_v3.ibis.utils.get_code_completions',
 		{
 			code,
-		}
+		},
 	)
 		.then((res: any) => {
 			currentFunctionSignature.value = res.current_function
@@ -154,7 +159,10 @@ function setSignatureElementPosition() {
 </script>
 
 <template>
-	<div ref="codeContainer" class="relative flex h-[14rem] w-full rounded border text-base">
+	<div
+		ref="codeContainer"
+		class="relative flex h-[14rem] w-full rounded border text-base items-center bg-white"
+	>
 		<Code
 			ref="codeEditor"
 			language="python"
@@ -162,6 +170,8 @@ function setSignatureElementPosition() {
 			v-model="expression"
 			:placeholder="placeholder"
 			:completions="getCompletions"
+			:hide-line-numbers="props.hideLineNumbers"
+			:multi-line="props.multiLine"
 			@view-update="() => (fetchCompletions(), setSignatureElementPosition())"
 		></Code>
 

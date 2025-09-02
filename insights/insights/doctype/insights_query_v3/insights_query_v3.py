@@ -25,7 +25,10 @@ class InsightsQueryv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
-        from insights.insights.doctype.insights_query_variable.insights_query_variable import InsightsQueryVariable
+
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
+            InsightsQueryVariable,
+        )
 
         is_builder_query: DF.Check
         is_native_query: DF.Check
@@ -115,8 +118,10 @@ class InsightsQueryv3(Document):
         }
 
     @insights_whitelist()
-    def get_count(self, active_operation_idx=None):
-        ibis_query = self.build(active_operation_idx)
+    def get_count(self, active_operation_idx=None, adhoc_filters=None):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
         count_query = ibis_query.aggregate(count=_.count())
         count_results, time_taken = execute_ibis_query(
             count_query,
@@ -128,8 +133,10 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, active_operation_idx=None):
-        ibis_query = self.build(active_operation_idx)
+    def download_results(self, active_operation_idx=None, adhoc_filters=None):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
         results, time_taken = execute_ibis_query(
             ibis_query,
             cache=False,
@@ -140,8 +147,17 @@ class InsightsQueryv3(Document):
         return results.to_csv(index=False)
 
     @insights_whitelist()
-    def get_distinct_column_values(self, column_name, active_operation_idx=None, search_term=None, limit=20):
-        ibis_query = self.build(active_operation_idx)
+    def get_distinct_column_values(
+        self,
+        column_name,
+        active_operation_idx=None,
+        search_term=None,
+        limit=20,
+        adhoc_filters=None,
+    ):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
         values_query = (
             ibis_query.select(column_name)
             .filter(
@@ -256,6 +272,6 @@ def import_query(query, workbook):
 
 @contextmanager
 def set_adhoc_filters(filters):
-    frappe.local.insights_adhoc_filters = filters or {}
+    frappe.local.insights_adhoc_filters = filters or getattr(frappe.local, "insights_adhoc_filters", {})
     yield
     frappe.local.insights_adhoc_filters = None

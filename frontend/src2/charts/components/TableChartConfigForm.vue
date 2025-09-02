@@ -76,8 +76,8 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 						<template #config-fields>
 							<Toggle
 								label="Pin Column"
-								:modelValue="config.sticky_columns?.includes(item.column_name)"
-								@update:modelValue="toggleStickyColumn(item.column_name, $event)"
+								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
+								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
 							/>
 						</template>
 					</DimensionPicker>
@@ -151,6 +151,7 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 			<Toggle label="Show Filters" v-model="config.show_filter_row" />
 			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
 			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
+			<Toggle label="Compact Number Format" v-model="config.compact_numbers" />
 			<Toggle
 				v-if="config.values.length === 1"
 				label="Show Color Scale"

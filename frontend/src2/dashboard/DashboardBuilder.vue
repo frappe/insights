@@ -136,22 +136,31 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						Done
 					</Button>
 					<Dropdown
-						v-if="dashboard.editing"
 						:button="{ icon: 'more-horizontal', variant: 'outline' }"
 						:options="[
 							{
-								label: 'Compact Layout',
-								icon: verticalCompact ? 'check-square' : 'square',
-								onClick: () => (verticalCompact = !verticalCompact),
+								label: 'Force Refresh',
+								icon: RefreshCcw,
+								onClick: () => dashboard.refresh(true),
 							},
-							{
-								label: 'Reset Layout',
-								icon: 'refresh-ccw',
-								onClick: () => (dashboard.discard(), (dashboard.editing = false)),
-							},
+							dashboard.editing
+								? {
+										label: 'Compact Layout',
+										icon: verticalCompact ? 'check-square' : 'square',
+										onClick: () => (verticalCompact = !verticalCompact),
+								  }
+								: null,
+							dashboard.editing
+								? {
+										label: 'Reset Layout',
+										icon: 'refresh-ccw',
+										onClick: () => (
+											dashboard.discard(), (dashboard.editing = false)
+										),
+								  }
+								: null,
 						]"
-					>
-					</Dropdown>
+					/>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">
@@ -165,9 +174,11 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {
+							if (!newLayout) return
 							dashboard.doc.items.forEach((item, idx) => {
 								item.layout = newLayout[idx]
 							})
+							dashboard.normalizeLayout()
 						}
 					"
 				>

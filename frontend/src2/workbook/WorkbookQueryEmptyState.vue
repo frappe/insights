@@ -9,7 +9,7 @@ const emit = defineEmits({
 <template>
 	<div class="flex h-full w-full items-center justify-center bg-gray-50">
 		<div class="flex flex-col space-y-4">
-			<div class="text-center text-gray-500">Select an inteface to start</div>
+			<div class="text-center text-gray-500">Select an interface to start</div>
 			<div
 				class="flex w-full cursor-pointer items-center gap-4 rounded border border-transparent bg-white p-2 shadow-sm transition-all hover:border-gray-300"
 				@click="emit('select', 'query-builder')"

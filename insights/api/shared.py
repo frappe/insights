@@ -11,13 +11,13 @@ public_doctypes = [
 
 
 def check_public_access(doctype, name):
-    if frappe.session.user != "Guest":
-        return
-    if doctype not in public_doctypes or not is_public(doctype, name):
+    if not is_public(doctype, name):
         raise frappe.PermissionError("You don't have permission to access this document")
 
 
 def is_public(doctype: str, name: str):
+    if doctype not in public_doctypes:
+        return False
     if has_valid_preview_key():
         return True
     if doctype == "Insights Workbook":
