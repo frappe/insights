@@ -125,7 +125,7 @@ def get_csv_file(filename: str):
         else:
             ext = ""
 
-    if not ext or ext not in ["csv", "xlsx", "xls"]:
+    if not ext or ext not in ["csv", "xlsx"]:
         frappe.throw(
             f"Only CSV, XLSX, and XLS files are supported. Detected extension: '{ext}' from filename: '{file_name}'"
         )
@@ -134,47 +134,23 @@ def get_csv_file(filename: str):
 
 @insights_whitelist()
 @validate_type
-def get_csv_data(filename: str):
+def get_file_data(filename: str):
     check_data_source_permission("uploads")
 
     file = get_csv_file(filename)
     file_path = file.get_full_path()
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
-    # support for excel formats
     ext = file.file_name.split(".")[-1].lower()
-    if ext in ["xlsx", "xls"]:
-        try:
-            df = pd.read_excel(file_path, sheet_name=0)
-            count = len(df.index)
-
-            # map data types to insights data types
-            def map_dtype(dtype):
-                if pd.api.types.is_string_dtype(dtype) or dtype == object:
-                    return "String"
-                if pd.api.types.is_integer_dtype(dtype):
-                    return "Int"
-                if pd.api.types.is_float_dtype(dtype):
-                    return "Float"
-                if pd.api.types.is_bool_dtype(dtype):
-                    return "Boolean"
-                if pd.api.types.is_datetime64_any_dtype(dtype):
-                    return "Datetime"
-                return "String"
-
-            columns = [{"name": str(col), "type": map_dtype(df[col].dtype)} for col in df.columns]
-            rows = df.head(50).fillna("").to_dict(orient="records")
-        except Exception as e:
-            frappe.log_error(e)
-            frappe.throw("Failed to read Excel data from uploaded file")
+    con = ibis.duckdb.connect()
+    if ext in ["xlsx"]:
+        table = con.read_xlsx(file_path)
+        count = table.count().execute()
+        columns = get_columns_from_schema(table.schema())
+        rows = table.head(50).execute().fillna("").to_dict(orient="records")
     else:
-        try:
-            table = ibis.read_csv(file_path, table_name=file_name)
-            count = table.count().execute().item()
-        except Exception as e:
-            frappe.log_error(e)
-            frappe.throw("Failed to read CSV data from uploaded file")
-
+        table = con.read_csv(file_path, table_name=file_name)
+        count = table.count().execute()
         columns = get_columns_from_schema(table.schema())
         rows = table.head(50).execute().fillna("").to_dict(orient="records")
 
@@ -211,15 +187,10 @@ def import_csv_data(filename: str):
 
     try:
         ext = file.file_name.split(".")[-1].lower()
-        if ext in ["xlsx", "xls"]:
+        if ext in ["xlsx"]:
             try:
-                df = pd.read_excel(file_path, sheet_name=0)
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp_csv:
-                    csv_path = tmp_csv.name
-                    df.to_csv(csv_path, index=False)
-                table = db.read_csv(csv_path, table_name=table_name)
+                table = db.read_xlsx(file_path)
                 db.create_table(table_name, table, overwrite=True)
-                os.remove(csv_path)
             except Exception as e:
                 frappe.log_error(e)
                 frappe.throw(
