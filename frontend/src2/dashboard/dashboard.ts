@@ -352,6 +352,7 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	is_shared_with_organization: false,
 	people_with_access: [],
 	read_only: false,
+	vertical_compact: true,
 }
 
 function getDashboardResource(name: string) {
