@@ -7,6 +7,7 @@ import { downloadImage } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { useStorage } from '@vueuse/core'
 
 const props = defineProps<{ name: string }>()
 
@@ -28,6 +29,8 @@ async function downloadDashboardImage() {
 	if (!dashboardContainer.value) return
 	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
 }
+
+const verticalCompact = useStorage('dashboard_vertical_compact', true)
 </script>
 
 <template>
@@ -72,7 +75,7 @@ async function downloadDashboardImage() {
 				class="h-fit w-full"
 				:cols="20"
 				:disabled="true"
-				:verticalCompact="dashboard.doc.vertical_compact"
+				:verticalCompact="verticalCompact"
 				:modelValue="dashboard.doc.items.map((item) => item.layout)"
 			>
 				<template #item="{ index }">

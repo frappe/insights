@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
+import { useStorage, useWindowSize } from '@vueuse/core'
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
@@ -54,6 +54,8 @@ function onDrop(event: DragEvent) {
 }
 
 const showShareDialog = ref(false)
+
+const verticalCompact = useStorage('dashboard_vertical_compact', true)
 </script>
 
 <template>
@@ -120,25 +122,36 @@ const showShareDialog = ref(false)
 					>
 						Text
 					</Button>
-					<div v-if="dashboard.editing" class="flex items-center gap-2 px-3 py-1 border rounded-md bg-gray-50">
-						<Toggle
-							size="sm"
-							:modelValue="dashboard.doc.vertical_compact ?? true"
-							@update:modelValue="dashboard.doc.vertical_compact = $event"
-						/>
-						<span class="text-sm text-gray-600">Compact Layout</span>
-					</div>
 					<Button
 						v-if="dashboard.editing"
 						variant="solid"
 						icon-left="check"
-						@click="() => {
-							dashboard.save()
-							dashboard.editing = false
-						}"
+						@click="
+							() => {
+								dashboard.save()
+								dashboard.editing = false
+							}
+						"
 					>
 						Done
 					</Button>
+					<Dropdown
+						v-if="dashboard.editing"
+						:button="{ icon: 'more-horizontal', variant: 'outline' }"
+						:options="[
+							{
+								label: 'Compact Layout',
+								icon: verticalCompact ? 'check-square' : 'square',
+								onClick: () => (verticalCompact = !verticalCompact),
+							},
+							{
+								label: 'Reset Layout',
+								icon: 'refresh-ccw',
+								onClick: () => (dashboard.discard(), (dashboard.editing = false)),
+							},
+						]"
+					>
+					</Dropdown>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">
@@ -148,7 +161,7 @@ const showShareDialog = ref(false)
 					:class="[dashboard.editing ? 'mb-[20rem] !select-none' : '']"
 					:cols="20"
 					:disabled="!dashboard.editing"
-					:verticalCompact="dashboard.doc.vertical_compact"
+					:verticalCompact="verticalCompact"
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {
