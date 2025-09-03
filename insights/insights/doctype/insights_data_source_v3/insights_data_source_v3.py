@@ -166,6 +166,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
         http_headers: DF.JSON | None
+        is_ducklake: DF.Check
         is_frappe_db: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None

@@ -14,6 +14,7 @@
   "is_site_db",
   "is_frappe_db",
   "enable_stored_procedure_execution",
+  "is_ducklake",
   "column_break_pfsa",
   "database_name",
   "schema",
@@ -141,11 +142,18 @@
    "fieldname": "http_headers",
    "fieldtype": "JSON",
    "label": "HTTP Headers"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.database_type == 'DuckDB'",
+   "fieldname": "is_ducklake",
+   "fieldtype": "Check",
+   "label": "Is DuckLake"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-03 11:49:10.146381",
+ "modified": "2025-09-03 12:46:09.235531",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

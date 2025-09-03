@@ -17,7 +17,8 @@ def get_duckdb_connection(data_source, read_only=True):
         db = ibis.duckdb.connect()
         sql = get_http_secret(data_source, name, db_name)
         sql and db.raw_sql(sql)
-        db.attach(db_name, name, read_only=True)
+        attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
+        db.attach(attach_url, name, read_only=True)
         db.raw_sql(f"USE {name}")
         return db
 
