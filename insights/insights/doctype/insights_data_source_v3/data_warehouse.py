@@ -217,6 +217,7 @@ class WarehouseTableImporter:
         except Exception as e:
             self.log.status = "Failed"
             self.log.log_output(f"Error: \n{e}", commit=True)
+            raise e
         finally:
             self._cleanup()
 

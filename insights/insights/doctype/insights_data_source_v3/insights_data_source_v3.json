@@ -22,6 +22,7 @@
   "bigquery_project_id",
   "bigquery_dataset_id",
   "bigquery_service_account_key",
+  "http_headers",
   "section_break_ajvs",
   "connection_string"
  ],
@@ -100,21 +101,25 @@
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval:doc.database_type == 'PostgreSQL'",
    "fieldname": "connection_string",
    "fieldtype": "Text",
    "label": "Connection String"
   },
   {
+   "depends_on": "eval:doc.database_type == 'BigQuery'",
    "fieldname": "bigquery_project_id",
    "fieldtype": "Data",
    "label": "BigQuery Project ID"
   },
   {
+   "depends_on": "eval:doc.database_type == 'BigQuery'",
    "fieldname": "bigquery_dataset_id",
    "fieldtype": "Data",
    "label": "BigQuery Dataset ID"
   },
   {
+   "depends_on": "eval:doc.database_type == 'BigQuery'",
    "fieldname": "bigquery_service_account_key",
    "fieldtype": "JSON",
    "label": "BigQuery Service Account Key (JSON)"
@@ -126,14 +131,21 @@
    "label": "Enable Stored Procedure Execution"
   },
   {
+   "depends_on": "eval:doc.database_type == 'PostgreSQL'",
    "fieldname": "schema",
    "fieldtype": "Data",
    "label": "Schema"
+  },
+  {
+   "depends_on": "eval: doc.database_type == 'DuckDB'",
+   "fieldname": "http_headers",
+   "fieldtype": "JSON",
+   "label": "HTTP Headers"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-01 19:20:16.332176",
+ "modified": "2025-09-03 11:49:10.146381",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

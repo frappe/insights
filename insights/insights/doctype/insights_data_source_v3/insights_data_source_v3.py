@@ -79,7 +79,10 @@ class InsightsDataSourceDocument:
         if not doc_before:
             return True
         if self.database_type in ["SQLite", "DuckDB"]:
-            return self.database_name != doc_before.database_name
+            changed = self.database_name != doc_before.database_name
+            if self.database_type == "DuckDB":
+                changed = changed or self.http_headers != doc_before.http_headers
+            return changed
         elif self.database_type == "BigQuery":
             return (
                 self.bigquery_project_id != doc_before.bigquery_project_id
@@ -162,6 +165,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "ClickHouse"]
         enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
+        http_headers: DF.JSON | None
         is_frappe_db: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None
