@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { AlertOctagon } from 'lucide-vue-next'
-import { provide, watchEffect } from 'vue'
+import { provide, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { waitUntil } from '../helpers'
 import useWorkbook, { workbookKey } from './workbook'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
+import useChart from '../charts/chart'
+import useDashboard from '../dashboard/dashboard'
 
 defineOptions({ inheritAttrs: false })
 
@@ -29,6 +31,19 @@ if (route.name === 'Workbook' && workbook.doc.queries.length) {
 	const query = workbook.doc.queries[0]
 	router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
 }
+
+// when we navigate from query to chart of the same query, refresh the chart
+watch(
+	() => ({ name: route.name, params: route.params }),
+	(newRoute, oldRoute) => {
+		if (newRoute.name === 'WorkbookChart' && oldRoute.name === 'WorkbookQuery') {
+			const chart = useChart(newRoute.params.chart_name as string)
+			if (chart.doc.query === oldRoute.params.query_name) {
+				chart.refresh(true)
+			}
+		}
+	},
+)
 
 const keys = useMagicKeys()
 const cmdS = keys['Meta+S']
