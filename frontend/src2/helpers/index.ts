@@ -191,7 +191,28 @@ export function guessPrecision(number: number) {
 	if (decimalIndex === -1) return 0
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
-
+export function getShortNumberWithRange(number: number, precision = 1.0, rangePercentage = 10) {
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
+	
+	const formatter = new Intl.NumberFormat(locale || 'en-US', {
+		notation: 'compact',
+		maximumFractionDigits: precision,
+	})
+	
+	const rangeAmount = number * (rangePercentage / 100)
+	const lowerBound = number - rangeAmount
+	const upperBound = number + rangeAmount
+	
+	let formattedLower = formatter.format(lowerBound)
+	let formattedUpper = formatter.format(upperBound)
+	
+	if (locale == 'en-IN') {
+		formattedLower = formattedLower.replace('T', 'K')
+		formattedUpper = formattedUpper.replace('T', 'K')
+	}
+	
+	return `${formattedLower}-${formattedUpper}`
+}
 export function getShortNumber(number: number, precision = 0) {
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale || 'en-US', {
