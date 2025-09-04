@@ -103,6 +103,7 @@ export type InsightsDashboardv3 = {
 		user_image: string
 	}[]
 	read_only: boolean
+	vertical_compact: boolean
 }
 
 export type WorkbookDashboardItem =

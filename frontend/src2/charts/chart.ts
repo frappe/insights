@@ -459,6 +459,9 @@ function transformChartDoc(doc: any) {
 		// @ts-ignore
 		doc.config.label_position = doc.config.label_position || 'left'
 	}
+	if (doc.chart_type === 'Donut') {
+		doc.config.legend_position = doc.config.legend_position || 'bottom'
+	}
 
 	doc.config = setDimensionNames(doc.config)
 

@@ -17,6 +17,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 )
 
 from .connectors.bigquery import get_bigquery_connection
+from .connectors.clickhouse import get_clickhouse_connection
 from .connectors.duckdb import get_duckdb_connection
 from .connectors.frappe_db import (
     get_frappedb_connection,
@@ -78,14 +79,17 @@ class InsightsDataSourceDocument:
         if not doc_before:
             return True
         if self.database_type in ["SQLite", "DuckDB"]:
-            return self.database_name != doc_before.database_name
+            changed = self.database_name != doc_before.database_name
+            if self.database_type == "DuckDB":
+                changed = changed or self.http_headers != doc_before.http_headers
+            return changed
         elif self.database_type == "BigQuery":
             return (
                 self.bigquery_project_id != doc_before.bigquery_project_id
                 or self.bigquery_dataset_id != doc_before.bigquery_dataset_id
                 or self.bigquery_service_account_key != doc_before.bigquery_service_account_key
             )
-        elif self.database_type in ["MariaDB", "PostgreSQL"]:
+        elif self.database_type in ["MariaDB", "PostgreSQL", "ClickHouse", "MSSQL"]:
             return (
                 self.database_name != doc_before.database_name
                 or self.schema != doc_before.schema
@@ -158,9 +162,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         bigquery_service_account_key: DF.JSON | None
         connection_string: DF.Text | None
         database_name: DF.Data | None
-        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery"]
+        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "ClickHouse"]
         enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
+        http_headers: DF.JSON | None
+        is_ducklake: DF.Check
         is_frappe_db: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None
@@ -219,6 +225,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_bigquery_connection(self)
         if self.database_type == "MSSQL":
             return get_mssql_connection(self)
+        if self.database_type == "ClickHouse":
+            return get_clickhouse_connection(self)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 

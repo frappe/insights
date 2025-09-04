@@ -42,6 +42,14 @@ export function getFormattedResult(data) {
 					cell = applyColumnFormatOption(safeJSONParse(formatOption), cell)
 				}
 			}
+
+			if (FIELDTYPES.TEXT.includes(columnType) && typeof cell === 'string' && cell) {
+				const htmlTagRegex = /<[^>]*>/g
+				if (htmlTagRegex.test(cell)) {
+					htmlTagRegex.lastIndex = 0
+					cell = cell.replace(htmlTagRegex, '').replace(/\s+/g, ' ').trim()
+				}
+			}
 			return cell
 		})
 	})
