@@ -33,7 +33,7 @@ const config = defineModel<MapChartConfig>({
 			dimension_name: '',
 		},
 		map_type: 'world',
-	})
+	}),
 })
 
 const initializeConfig = () => {
@@ -56,7 +56,7 @@ const initializeConfig = () => {
 				dimension_name: '',
 			},
 			map_type: 'world',
-			india_region: 'states'
+			india_region: 'states',
 		}
 	} else {
 		if (!config.value.location_column) {
@@ -94,21 +94,23 @@ onMounted(() => {
 	initializeConfig()
 })
 
-watch(() => config.value?.map_type, (newMapType) => {
-	if (newMapType === 'india' && !config.value.india_region) {
-		config.value.india_region = 'states'
-	}
-})
+watch(
+	() => config.value?.map_type,
+	(newMapType) => {
+		if (newMapType === 'india' && !config.value.india_region) {
+			config.value.india_region = 'states'
+		}
+	},
+)
 
-const discrete_dimensions = computed(() => props.dimensions.filter((d) =>
-FIELDTYPES.DISCRETE.includes(d.data_type))
+const discrete_dimensions = computed(() =>
+	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type)),
 )
 
 const map_options = computed(() => [
 	{ label: 'World Map', value: 'world' },
-	{ label: 'India', value: 'india' }
+	{ label: 'India', value: 'india' },
 ])
-
 </script>
 
 <template>
@@ -140,7 +142,6 @@ const map_options = computed(() => [
 					label="City Column"
 				/>
 			</template>
-
 		</div>
 	</CollapsibleSection>
 </template>

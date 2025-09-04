@@ -7,6 +7,7 @@ import {
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
+	MapChartConfig,
 	NumberChartConfig,
 } from '../../types/chart.types'
 import { Chart } from '../chart'
@@ -15,6 +16,7 @@ import {
 	getDonutChartOptions,
 	getFunnelChartOptions,
 	getLineChartOptions,
+	getMapChartOptions,
 } from '../helpers'
 import BaseChart from './BaseChart.vue'
 import DrillDown from './DrillDown.vue'
@@ -49,11 +51,46 @@ const eChartOptions = computed(() => {
 	if (chart_type.value === 'Funnel') {
 		return getFunnelChartOptions(config.value as FunnelChartConfig, result.value)
 	}
+	if (chart_type.value === 'Map') {
+		return getMapChartOptions(config.value as MapChartConfig, result.value, selectedState.value)
+	}
+})
+
+const filteredCitiesGeoJSON = computed(() => {
+	if (chart_type.value === 'Map' && eChartOptions.value?.filteredCitiesGeoJSON) {
+		return eChartOptions.value.filteredCitiesGeoJSON
+	}
+	return null
 })
 
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
+const selectedState = ref<string | undefined>(undefined)
+
 function onChartElementClick(params: any) {
+	if (chart_type.value === 'Map' && params.componentType === 'series') {
+		const config = props.chart.doc.config as MapChartConfig
+
+		if (!params.name || typeof params.name !== 'string') {
+			console.warn('Invalid click parameters:', params)
+			return
+		}
+
+		if (config.map_type === 'india' && config.india_region === 'states' && !selectedState.value) {
+			if (config.city_column?.column_name) {
+				const newState = params.name.trim()
+				if (newState && newState !== selectedState.value) {
+					selectedState.value = newState
+					console.log(selectedState)
+				}
+				return
+			} 
+		} else if (selectedState.value) {
+			selectedState.value = undefined
+			return
+		}
+	}
+
 	if (params.componentType === 'series') {
 		let seriesIndex = params.seriesIndex
 		let dataIndex = params.dataIndex
@@ -84,6 +121,7 @@ function onNumberChartDrillDown(column: any, row: any) {
 			class="rounded bg-white py-1 shadow"
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
+			:filteredCitiesGeoJSON="filteredCitiesGeoJSON"
 			:onClick="onChartElementClick"
 		/>
 		<NumberChart
