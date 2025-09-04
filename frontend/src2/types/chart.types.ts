@@ -3,7 +3,7 @@ import { Dimension, Measure } from './query.types'
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table']
+export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Map']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -118,6 +118,15 @@ export type TableChartConfig = {
 	sticky_columns?: string[]
 }
 
+export type MapChartConfig = {
+	location_column: Dimension
+	value_column: Measure
+	city_column: Dimension
+	geojson_url?: string
+	map_type?: 'world' | 'india'
+	india_region?: 'states' | 'cities'
+}
+
 export type ChartConfig =
 	| LineChartConfig
 	| BarChartConfig
@@ -125,3 +134,4 @@ export type ChartConfig =
 	| DonutChartConfig
 	| TableChartConfig
 	| FunnelChartConfig
+	| MapChartConfig
