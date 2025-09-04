@@ -1,5 +1,5 @@
 import { graphic } from 'echarts/core'
-import { ellipsis, formatNumber, getShortNumber } from '../helpers'
+import { ellipsis, formatNumber, getShortNumber, getShortNumberWithRange } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import {
@@ -9,12 +9,29 @@ import {
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
+	MapChartConfig,
 	Series,
 	SeriesLine,
 	XAxis,
 } from '../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
+import citiesGeoJSON from '../assets/maps_json/INDIA_DISTRICTS.json'
+
+interface GeoJSONFeature {
+	type: string
+	id?: string
+	properties?: {
+		NAME_2?: string
+		[key: string]: any
+	}
+	geometry: any
+}
+
+interface GeoJSONData {
+	type: string
+	features: GeoJSONFeature[]
+}
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -468,7 +485,6 @@ function getDonutChartData(
 	if (!labelColumn) {
 		throw new Error('No label column found')
 	}
-
 	const valueByLabel = rows.reduce((acc, row) => {
 		const label = row[labelColumn.name]
 		const value = row[measureColumn.name]
@@ -486,7 +502,6 @@ function getDonutChartData(
 	if (othersTotal) {
 		topData.push(['Others', othersTotal])
 	}
-
 	return topData
 }
 
@@ -584,6 +599,228 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 			},
 		],
 	}
+}
+
+// fixes case mismatch issue
+function toTitleCase(str: string): string {
+	if (!str) return str
+
+	return str
+		.replace(/&/g, 'and')
+		.toLowerCase()
+		.split(' ')
+		.map(word => {
+			if (word === 'and') return 'and'
+			return word.charAt(0).toUpperCase() + word.slice(1)
+		})
+		.join(' ')
+		.trim()
+
+}
+
+function normalizeCityName(cityName: string): string {
+	if (!cityName) return cityName
+	let normalized = toTitleCase(cityName)
+	return normalized.trim()
+}
+
+function getMapChartData(
+	columns: QueryResultColumn[],
+	rows: QueryResultRow[],
+	config?: MapChartConfig,
+	selectedState?: string
+) {
+	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
+	if (!measureColumn) {
+		throw new Error('No measure column found')
+	}
+
+	const locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!locationColumn) {
+		throw new Error('No location column found')
+	}
+
+	let aggregationColumn = locationColumn
+
+	if (selectedState && config?.city_column?.column_name) {
+		const cityColumn = columns.find((c) => c.name === config.city_column.column_name)
+		if (cityColumn) {
+			aggregationColumn = cityColumn
+		} 
+	} 
+
+	const valueByLocation = rows.reduce((queryResult, row) => {
+		// for breakout by state filter only the selected state
+		if (selectedState && config?.location_column?.column_name) {
+			const rowState = toTitleCase(row[config.location_column.column_name])
+			const normalizedSelectedState = toTitleCase(selectedState)
+			if (rowState !== normalizedSelectedState) {
+				return queryResult
+			}
+		}
+
+		const rawLocation = row[aggregationColumn.name]
+		const normalizedLocation = selectedState ? normalizeCityName(rawLocation) : toTitleCase(rawLocation)
+		const value = row[measureColumn.name]
+
+		if (!queryResult[normalizedLocation]) queryResult[normalizedLocation] = 0
+		queryResult[normalizedLocation] = queryResult[normalizedLocation] + value
+		return queryResult
+	}, {} as Record<string, number>)
+
+	const sortedLocations = Object.keys(valueByLocation).sort((a, b) => valueByLocation[b] - valueByLocation[a])
+	const data = sortedLocations.map((location) => [location, valueByLocation[location]])
+	return data
+}
+
+export function getMapChartOptions(config: MapChartConfig, result: QueryResult, selectedState?: string) {
+	const columns = result.columns
+	const rows = result.rows
+
+	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
+	if (!measureColumn) {
+		return
+	}
+
+	let jsonUrl = config.geojson_url
+	let isCitiesView = false
+	let useFilteredCities = false
+
+	if (!jsonUrl) {
+		if (config.map_type === 'world') {
+			jsonUrl = 'countries'
+		} else if (config.map_type === 'india') {
+			// show filtered cities if city column is selected
+			if (config.india_region === 'cities' || selectedState) {
+				jsonUrl = selectedState ? 'filtered_cities' : 'cities'
+				isCitiesView = true
+				useFilteredCities = !!selectedState
+			} else {
+				jsonUrl = 'india' 
+			}
+		} else {
+			jsonUrl = 'india'
+		}
+	}
+	let locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!locationColumn) {
+		return
+	}
+
+	// if city column is selected then breakout by city
+	if (selectedState && config.city_column) {
+		const cityColumn = columns.find((c) => c.name === config.city_column?.column_name)
+		if (cityColumn) {
+			locationColumn = cityColumn
+		}
+	}
+	let filteredRows = rows
+	let filteredCitiesGeoJSON = citiesGeoJSON as GeoJSONData
+
+	if (selectedState && isCitiesView) {
+		const geoJSONData = citiesGeoJSON as GeoJSONData
+		if (geoJSONData && geoJSONData.features) {
+			try {
+				filteredCitiesGeoJSON = {
+					...geoJSONData,
+					features: geoJSONData.features.filter((feature: GeoJSONFeature, index: number) => {
+						const properties = feature.properties
+						if (!properties) {
+							return false
+						}
+
+						const stateName = properties.stname
+						const isInState = stateName?.toLowerCase() === selectedState?.toLowerCase()
+						return isInState
+					}).map((feature: GeoJSONFeature) => {
+						if (feature.properties) {
+							const normalizedDistrictName = normalizeCityName(feature.properties.dtname)
+							return {
+								...feature,
+								properties: {
+									...feature.properties,
+									dtname_normalized: normalizedDistrictName,
+									name: normalizedDistrictName
+								}
+							}
+						}
+						return feature
+					})
+				}
+			} catch (e) {
+				console.error('error', e)
+				filteredCitiesGeoJSON = geoJSONData
+			}
+		} 
+	}
+
+	const data = getMapChartData(columns, filteredRows, config, selectedState)
+	const values = data.map((d) => d[1])
+	const min = values.length ? Math.min(...values) : 0
+	const max = values.length ? Math.max(...values) : 0
+
+	const options: any = {
+		aspectScale: Math.cos(2.3 * Math.PI / 180),
+		height: '100%',
+		animation: true,
+		animationDuration: 300,
+		geo: {
+			map: jsonUrl,
+			roam: true,
+			itemStyle: {
+				areaColor: '#fff',
+				borderColor: '#fff',
+				borderWidth: 0.1,
+			},
+			geoIndex: 0,
+		},
+		tooltip: {
+			trigger: 'item',
+			formatter: (params: any) => {
+				const name = params.name
+				const value = params.value ?? 0
+				const measureName = measureColumn?.name ?? 'Value'
+
+				return `${name}<br/>${measureName}: ${value}`
+			}
+		},
+		visualMap: {
+			type: 'piecewise',
+			min: min,
+			max: max,
+			itemSymbol: 'circle',
+			formatter: (value: number) => {
+				return getShortNumberWithRange(value, 1,20)
+			},
+			inRange: {
+				color: ['#c9e6ff', '#4aabff']
+			},
+		},
+		series: [{
+			name: measureColumn.name,
+			type: 'map',
+			encode: {
+				tooltip: 2,
+				label: 2
+			},
+			itemStyle: {
+				color: '#fffff',
+				borderWidth: 0.5,
+				borderColor: '#6e6e6e'
+			},
+			map: jsonUrl,
+			coordinateSystem: "geo",
+			data: data.map((d) => ({
+				name: d[0],
+				value: d[1]
+			}))
+		}],
+	}
+
+	if (useFilteredCities) {
+		(options as any).filteredCitiesGeoJSON = filteredCitiesGeoJSON
+	}
+	return options
 }
 
 function getGrid(options: any = {}) {
