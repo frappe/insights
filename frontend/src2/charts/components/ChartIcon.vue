@@ -8,6 +8,7 @@ import {
 	Hash,
 	LifeBuoy,
 	LineChart,
+	Map,
 	ScatterChart,
 	Table2,
 } from 'lucide-vue-next'
@@ -35,6 +36,8 @@ const icon = computed(() => {
 			return Table2
 		case 'Number':
 			return Hash
+		case 'Map':
+			return Map
 		default:
 			return BarChart3
 	}
