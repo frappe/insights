@@ -32,13 +32,18 @@ if (route.name === 'Workbook' && workbook.doc.queries.length) {
 	router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
 }
 
-watch(() => route.name, (name) => {
-	if (name === 'WorkbookChart') {
-		useChart(route.params.chart_name as string).refresh(true)
-	} else if (name === 'WorkbookDashboard') {
-		useDashboard(route.params.dashboard_name as string).refresh()
-	}
-})
+// when we navigate from query to chart of the same query, refresh the chart
+watch(
+	() => ({ name: route.name, params: route.params }),
+	(newRoute, oldRoute) => {
+		if (newRoute.name === 'WorkbookChart' && oldRoute.name === 'WorkbookQuery') {
+			const chart = useChart(newRoute.params.chart_name as string)
+			if (chart.doc.query === oldRoute.params.query_name) {
+				chart.refresh(true)
+			}
+		}
+	},
+)
 
 const keys = useMagicKeys()
 const cmdS = keys['Meta+S']
