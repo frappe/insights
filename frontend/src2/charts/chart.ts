@@ -10,10 +10,11 @@ import {
 	AxisChartConfig,
 	CHARTS,
 	DonutChartConfig,
+	MapChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { AdhocFilters } from '../types/query.types'
+import { AdhocFilters, Dimension, Measure } from '../types/query.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
 import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
@@ -148,6 +149,26 @@ function makeChart(name: string) {
 			}
 		}
 
+		if (chart.doc.chart_type === 'Map') {
+			const config = chart.doc.config as MapChartConfig
+			const hasLocation = config.location_column
+			const hasValue = config.value_column
+
+			if (!hasLocation) {
+				messages.push({
+					variant: 'error',
+					message: 'Location column is required',
+				})
+			}
+
+			if (!hasValue) {
+				messages.push({
+					variant: 'error',
+					message: 'Value column is required',
+				})
+			}
+		}
+
 		return !messages.length
 	}
 
@@ -179,6 +200,10 @@ function makeChart(name: string) {
 
 		if (chart.doc.chart_type === 'Table') {
 			addTableChartOperation(query)
+		}
+
+		if (chart.doc.chart_type === 'Map') {
+			addMapChartOperation(query)
 		}
 	}
 
@@ -247,6 +272,20 @@ function makeChart(name: string) {
 		query.addSummarize({
 			measures: values,
 			dimensions: rows,
+		})
+	}
+
+	function addMapChartOperation(query: Query) {
+		const config = chart.doc.config as MapChartConfig
+		let dimensions = [config.location_column]
+
+		if (config.map_type === 'india' && config.city_column?.column_name) {
+			dimensions.push(config.city_column)
+		}
+
+		query.addSummarize({
+			measures: [config.value_column],
+			dimensions: dimensions
 		})
 	}
 
@@ -437,9 +476,9 @@ function transformChartDoc(doc: any) {
 	doc.config.filters = doc.config.filters?.filters?.length
 		? doc.config.filters
 		: {
-				filters: [],
-				logical_operator: 'And',
-		  }
+			filters: [],
+			logical_operator: 'And',
+		}
 	doc.config.order_by = doc.config.order_by || []
 	doc.config.limit = doc.config.limit || 100
 
