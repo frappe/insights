@@ -6,6 +6,7 @@ import {
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
+	MapChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
 } from '../../types/chart.types'
@@ -15,6 +16,7 @@ import BarChartConfigForm from './BarChartConfigForm.vue'
 import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
 import LineChartConfigForm from './LineChartConfigForm.vue'
+import MapChartConfigForm from './MapChartConfigForm.vue'
 import NumberChartConfigForm from './NumberChartConfigForm.vue'
 import TableChartConfigForm from './TableChartConfigForm.vue'
 
@@ -71,6 +73,12 @@ const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [
 	<LineChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Line'"
 		v-model="(props.chart.doc.config as LineChartConfig)"
+		:dimensions="dimensions"
+		:column-options="columnOptions"
+	/>
+	<MapChartConfigForm
+		v-if="props.chart.doc.chart_type == 'Map'"
+		v-model="(props.chart.doc.config as MapChartConfig)"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
