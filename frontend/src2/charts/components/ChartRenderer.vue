@@ -76,7 +76,11 @@ function onChartElementClick(params: any) {
 			return
 		}
 
-		if (config.map_type === 'india' && config.india_region === 'states' && !selectedState.value) {
+		if (
+			config.map_type === 'india' &&
+			config.india_region === 'states' &&
+			!selectedState.value
+		) {
 			if (config.city_column?.column_name) {
 				const newState = params.name.trim()
 				if (newState && newState !== selectedState.value) {
@@ -84,7 +88,7 @@ function onChartElementClick(params: any) {
 					console.log(selectedState)
 				}
 				return
-			} 
+			}
 		} else if (selectedState.value) {
 			selectedState.value = undefined
 			return
@@ -119,6 +123,7 @@ function onNumberChartDrillDown(column: any, row: any) {
 		<BaseChart
 			v-if="!loading && eChartOptions"
 			class="rounded bg-white py-1 shadow"
+			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
 			:filteredCitiesGeoJSON="filteredCitiesGeoJSON"
@@ -126,7 +131,7 @@ function onNumberChartDrillDown(column: any, row: any) {
 		/>
 		<NumberChart
 			v-else-if="!loading && chart_type == 'Number'"
-			:config="(config as NumberChartConfig)"
+			:config="config as NumberChartConfig"
 			:result="result"
 			@drill-down="onNumberChartDrillDown"
 		/>
