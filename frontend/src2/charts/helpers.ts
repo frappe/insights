@@ -760,7 +760,6 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 	const max = values.length ? Math.max(...values) : 0
 
 	const options: any = {
-		aspectScale: Math.cos(2.3 * Math.PI / 180),
 		height: '100%',
 		animation: true,
 		animationDuration: 300,
@@ -779,7 +778,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 			max: max,
 			itemSymbol: 'circle',
 			formatter: (value: number) => {
-				return getShortNumberWithRange(value, 1,20)
+				return getShortNumber(value, 1)
 			},
 			inRange: {
 				color: ['#c9e6ff', '#4aabff']
@@ -788,21 +787,31 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 		series: [{
 			name: measureColumn.name,
 			type: 'map',
-			encode: {
-				tooltip: 2,
-				label: 2
-			},
-			itemStyle: {
-				color: '#fffff',
-				borderWidth: 0.5,
-				borderColor: '#6e6e6e'
-			},
 			map: jsonUrl,
-			coordinateSystem: "geo",
+			projection: {
+					project: (point: [number, number]) => [point[0] / 180 * Math.PI, -Math.log(Math.tan((Math.PI / 2 + point[1] / 180 * Math.PI) / 2))],
+					unproject: (point: [number, number]) => [point[0] * 180 / Math.PI, 2 * 180 / Math.PI * Math.atan(Math.exp(point[1])) - 90]
+			},
 			data: data.map((d) => ({
 				name: d[0],
 				value: d[1]
-			}))
+			})),
+			itemStyle: {
+				color: 'rgb(68, 68, 68)',
+				areaColor: 'rgb(243, 243, 243)',
+				borderWidth: 0.5,
+				borderColor: 'rgb(124, 124, 124)',
+			},
+			emphasis: {
+				itemStyle: {
+					color: 'rgb(68, 68, 68)',
+					borderWidth: 0.5,
+					borderColor: 'rgb(124, 124, 124)',
+				},
+				label: {
+					show: true,
+				}
+			},
 		}],
 	}
 
