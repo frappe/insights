@@ -25,7 +25,7 @@ const config = defineModel<MapChartConfig>({
 			column_name: '',
 			data_type: 'Integer',
 			measure_name: '',
-			aggregation: 'sum',
+			aggregation: '',
 		},
 		city_column: {
 			column_name: '',
@@ -48,7 +48,7 @@ const initializeConfig = () => {
 				column_name: '',
 				data_type: 'Integer',
 				measure_name: '',
-				aggregation: 'sum',
+				aggregation: '',
 			},
 			city_column: {
 				column_name: '',
