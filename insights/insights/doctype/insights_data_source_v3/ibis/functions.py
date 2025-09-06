@@ -4,6 +4,7 @@ import frappe
 import ibis
 import ibis.expr.types as ir
 import ibis.selectors as s
+from frappe.utils import now_datetime
 from ibis import _
 
 from insights.insights.query_builders.sql_functions import handle_timespan
@@ -687,7 +688,7 @@ def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
     if not other.type().is_date():
         other = other.cast("date")
 
-    return column.delta(other, unit)
+    return column.delta(other, unit=unit)
 
 
 def time_diff(
@@ -710,7 +711,7 @@ def time_diff(
     if not other.type().is_time():
         other = other.cast("time")
 
-    return column.delta(other, unit)
+    return column.delta(other, unit=unit)
 
 
 def date_add(column: ir.DateValue, value: int, unit: str):
@@ -758,12 +759,12 @@ def now():
     """
     def now()
 
-    Get the current timestamp.
+    Get the current timestamp based on site's system timezone
 
     Examples:
     - now()
     """
-    return ibis.now()
+    return ibis.literal(now_datetime())
 
 
 def today():
@@ -1088,7 +1089,7 @@ def week_start(column: ir.DateValue):
     week_starts_on = days.index(week_start_day)
     day_of_week = column.day_of_week.index().cast("int32")
     adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
-    week_start = column - adjusted_week_start.as_interval(unit="D")
+    week_start = column - adjusted_week_start.as_interval("D")
     return week_start
 
 
@@ -1198,7 +1199,7 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
 
     query = query.mutate(cohort_size=id_column.nunique().over(group_by=query.cohort_start))
 
-    query = query.mutate(offset=date_column.delta(query.cohort_start, unit))
+    query = query.mutate(offset=date_column.delta(query.cohort_start, unit=unit))
 
     zero_padded_offset = (query.offset < 10).ifelse(
         literal("0").concat(query.offset.cast("string")), query.offset.cast("string")

@@ -118,7 +118,7 @@ def get_csv_data(filename: str):
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
     table = ibis.read_csv(file_path, table_name=file_name)
-    count = table.count().execute().item()
+    count = table.count().execute()
 
     columns = get_columns_from_schema(table.schema())
     rows = table.head(50).execute().fillna("").to_dict(orient="records")

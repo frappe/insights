@@ -388,8 +388,10 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 		top = 'middle'
 		padding = [30, 0, 30, 0]
 	}
+
 	if (show_inline_labels) {
 		center = ['50%', '50%']
+		radius = ['45%', '75%']
 	}
 
 	return {
@@ -437,7 +439,9 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
 					},
 			  }
-			: null,
+			: {
+					show: false,
+			  },
 		tooltip: {
 			trigger: 'item',
 			confine: true,

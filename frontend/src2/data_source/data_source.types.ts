@@ -1,5 +1,5 @@
 
-export type DatabaseType = 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB'
+export type DatabaseType = 'MariaDB' | 'PostgreSQL' | 'SQLite' | 'DuckDB' | 'ClickHouse'
 export type DataSourceListItem = {
 	title: string
 	name: string
@@ -41,9 +41,19 @@ export type PostgreSQLDataSource = BaseDataSource & {
 	use_ssl: boolean
 }
 
+export type ClickHouseDataSource = BaseDataSource & {
+	database_type: 'ClickHouse'
+	host: string
+	port: number
+	database_name: string
+	username: string
+	password: string
+	use_ssl: boolean
+}
+
 export type DuckDBDataSource = BaseDataSource & {
 	database_type: 'DuckDB'
 	database_name: string
 }
 
-export type DataSource = MariaDBDataSource | PostgreSQLDataSource | DuckDBDataSource
+export type DataSource = MariaDBDataSource | PostgreSQLDataSource | DuckDBDataSource | ClickHouseDataSource
