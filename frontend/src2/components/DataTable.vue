@@ -1,8 +1,7 @@
 <script setup lang="ts">
-
 import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Download, Table2Icon } from 'lucide-vue-next'
-import { computed,reactive, ref } from 'vue'
+import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
@@ -55,7 +54,9 @@ const columnsMeta = computed(() => {
 	const meta = new Map()
 	props.columns.forEach((col) => {
 		const name = col.name
-		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(rule => rule.mode === 'color_scale')
+		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(
+			(rule) => rule.mode === 'color_scale',
+		)
 		const metadata = {
 			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
 			isStarRating: false,
@@ -305,7 +306,7 @@ const measureColorScales = computed(() => {
 			if (measureColumns.length > 0) {
 				// get all values from columns for this specific measure
 				let allValues: number[] = []
-				measureColumns.forEach(colName => {
+				measureColumns.forEach((colName) => {
 					if (isNumberColumn(colName)) {
 						props.rows!.forEach((row) => {
 							const value = Number(row[colName])
@@ -324,7 +325,7 @@ const measureColorScales = computed(() => {
 					scales[measureName] = {
 						min,
 						max,
-						columns: measureColumns
+						columns: measureColumns,
 					}
 				}
 			}
@@ -350,14 +351,15 @@ const formattingRulesByColumn = computed(() => {
 
 				if (props.columns) {
 					props.columns
-						.filter((col) =>
-							col.name.toLowerCase().includes(columnName.toLowerCase()) &&
-							FIELDTYPES.NUMBER.includes(col.type) &&
-							col.name !== columnName
+						.filter(
+							(col) =>
+								col.name.toLowerCase().includes(columnName.toLowerCase()) &&
+								FIELDTYPES.NUMBER.includes(col.type) &&
+								col.name !== columnName,
 						)
 						.forEach((col) => {
 							if (!result[col.name]) result[col.name] = []
-							if (!result[col.name].some(f => f === format)) {
+							if (!result[col.name].some((f) => f === format)) {
 								result[col.name].push(format)
 							}
 						})
@@ -471,12 +473,12 @@ function getCellStyleClass(colName: string, val: any): string {
 				continue
 			}
 
-			
 			let percentile: number
 			if (columnScale.max === columnScale.min) {
 				percentile = 50
 			} else {
-				const normalizedValue = (numVal - columnScale.min) / (columnScale.max - columnScale.min)
+				const normalizedValue =
+					(numVal - columnScale.min) / (columnScale.max - columnScale.min)
 				percentile = Math.round(normalizedValue * 100)
 				percentile = Math.max(0, Math.min(100, percentile))
 			}

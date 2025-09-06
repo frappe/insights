@@ -56,7 +56,6 @@ export type color_scale = {
     column: Column,
     colorScale?: string,
     value: number | any[] | undefined
-
 }
 
 // highlight cell rules
@@ -92,7 +91,7 @@ export type rank_rules = {
     value: number | undefined
 }
 
-// rule and color scale based coloring of cell 
+// rule and color scale based coloring of cell
 export type FormattingMode = color_scale | cell_rules | text_rules | date_rules | rank_rules
 
 // color scale options Red-Amber-Green and Green-Amber-Red
@@ -279,7 +278,7 @@ export function applyRankRule(
 ): boolean {
     const numVal = useNumber(value);
     if (numVal === null) return false;
-    // sort descending 
+    // sort descending
     const numericValues = allValues
         .map(v => useNumber(v))
         .filter(v => v !== null)

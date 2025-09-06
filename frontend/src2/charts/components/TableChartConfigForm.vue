@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { computed, provide, ref, watchEffect } from 'vue'
+import { Badge, Button, FormControl } from 'frappe-ui'
+import { Plus, X } from 'lucide-vue-next'
+import { computed, inject, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
+import ConditonalFormattingDialog from '../../query/components/ConditonalFormattingDialog.vue'
+import DataTypeIcon from '../../query/components/DataTypeIcon.vue'
+import { FormatGroupArgs, FormattingMode } from '../../query/components/formatting_utils'
+import { useFormatStore } from '../../stores/formatStore'
 import { TableChartConfig } from '../../types/chart.types'
-import { ColumnDataType, ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
+import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
+import { Chart } from '../chart'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import { useFormatStore } from '../../stores/formatStore'
-import ConditonalFormattingDialog from '../../query/components/ConditonalFormattingDialog.vue'
-import { FormatGroupArgs, FormattingMode } from '../../query/components/formatting_utils'
-import { Plus, Edit, Trash2 } from 'lucide-vue-next'
-import { Badge, Button, FormControl } from 'frappe-ui'
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
@@ -66,121 +68,8 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
 
-const selectedColumns = computed(() => {
-	const columns = new Set<string>()
-	config.value.rows?.forEach((row) => {
-		if (row.column_name) {
-			columns.add(row.column_name)
-		}
-	})
-
-	config.value.columns?.forEach((col) => {
-		if (col.column_name) {
-			columns.add(col.column_name)
-		}
-	})
-
-	// add columns from values
-	config.value.values?.forEach((val) => {
-		if ('column_name' in val) {
-			columns.add(val.column_name)
-		}
-	})
-
-	// filter columnOptions to only include selected columns and add data type to description
-	return props.columnOptions
-		.filter((option) => columns.has(option.value))
-		.map((option) => ({
-			...option,
-			description: option.data_type 
-		}))
-})
-
-const availableColumnsForFormatting = computed(() => {
-	const dataTypeMap = { Integer: 'Number', Decimal: 'Decimal', String: 'String' }
-	const measureColumns = config.value.values
-		?.filter((measure) => measure.measure_name)
-		.map((measure) => {
-			const mappedDataType = dataTypeMap[measure.data_type] || 'String'
-			return {
-				label: measure.measure_name,
-				value: measure.measure_name,
-				data_type: mappedDataType as ColumnDataType,
-				description: mappedDataType,
-				query: '',
-			}
-		}) || []
-
-	return [...selectedColumns.value, ...measureColumns]
-})
-
-function getRuleBadgeTheme(mode: string): string {
-	switch (mode) {
-		case 'cell_rules':
-			return 'blue'
-		case 'text_rules':
-			return 'green'
-		case 'date_rules':
-			return 'green'
-		case 'rank_rules':
-			return 'orange'
-		case 'color_scale':
-			return 'red'
-		default:
-			return 'gray'
-	}
-}
-
-function getRuleTypeLabel(mode: string): string {
-	switch (mode) {
-		case 'cell_rules':
-			return 'Value'
-		case 'text_rules':
-			return 'Text'
-		case 'date_rules':
-			return 'Date'
-		case 'rank_rules':
-			return 'Rank'
-		case 'color_scale':
-			return 'Color Scale'
-		default:
-			return mode
-	}
-}
-
-// description of list item
-function getRuleDescription(rule: any): string {
-	if (rule.mode === 'color_scale') {
-		return `${rule.colorScale} color scale`
-	}
-
-	const operator = rule.operator || ''
-	const color = rule.color || ''
-	const value = rule.value
-
-	const formatDate = (d: any) => {
-		const date = new Date(d)
-		if (isNaN(date.getTime())) return ''
-		return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(
-			2,
-			'0',
-		)}/${date.getFullYear()}`
-	}
-
-	if (rule.mode === 'text_rules') {
-		return `Text ${operator} "${value ?? ''}" → ${color}`
-	}
-	if (rule.mode === 'date_rules') {
-		let formatted = ''
-		if (Array.isArray(value)) {
-			formatted = value.map(formatDate).join(' - ')
-		} else if (value) {
-			formatted = formatDate(value)
-		}
-		return `Date ${operator} ${formatted} → ${color}`
-	}
-	return `${operator} ${value ?? ''} → ${color}`
-}
+const chart = inject<Chart>('chart')
+const resultColumnOptions = computed(() => chart?.dataQuery.result?.columnOptions || [])
 
 function editRule(index: number) {
 	const ruleToEditValue = config.value.conditional_formatting?.formats[index]
@@ -222,6 +111,14 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 		editingRuleIndex.value = null
 		editingRule.value = null
 	}
+}
+
+function getColumnType(column_name: string) {
+	const column = resultColumnOptions.value.find((column) => column.value === column_name)
+	if (!column) {
+		return 'String'
+	}
+	return column.data_type
 }
 </script>
 
@@ -314,65 +211,58 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			/>
 		</div>
 	</CollapsibleSection>
-	<!-- todo: make items sortable -->
-	<CollapsibleSection title="Formatting" collapsed>
+	<CollapsibleSection title="Formatting Rules" collapsed>
 		<template #title-suffix v-if="config.conditional_formatting?.formats.length">
-			<Badge theme="orange" >
+			<Badge theme="orange">
 				<span class="tnum"> {{ config.conditional_formatting.formats.length }}</span>
 			</Badge>
 		</template>
-		<div v-if="config.conditional_formatting?.formats.length" class="mb-4 space-y-2">
-			<div
-				v-for="(rule, index) in config.conditional_formatting.formats"
-				:key="index"
-				class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border"
-			>
-				<div class="flex flex-col gap-1 flex-1 justify-betweentruncate">
-					<div class="text-base font-medium truncate">
-						{{ rule.column?.column_name }}
+		<div class="flex flex-col gap-2">
+			<div v-if="config.conditional_formatting?.formats.length" class="flex flex-col gap-1">
+				<div
+					v-for="(rule, idx) in config.conditional_formatting?.formats"
+					:key="idx"
+					class="flex rounded"
+				>
+					<div class="flex-1 overflow-hidden">
+						<Button
+							class="w-full !justify-start rounded-r-none [&>span]:truncate"
+							@click="editRule(idx)"
+						>
+							<template #prefix>
+								<DataTypeIcon
+									:column-type="getColumnType(rule.column?.column_name)"
+								/>
+							</template>
+							{{ rule.column?.column_name }}
+						</Button>
 					</div>
-
-					<div class="text-p-xs text-gray-600">{{ getRuleDescription(rule) }}</div>
-					<div>
-						<Badge
-							:label="getRuleTypeLabel(rule.mode)"
-							size="sm"
-							variant="outline"
-							:theme="getRuleBadgeTheme(rule.mode)"
-						/>
-					</div>
-				</div>
-				<div class="flex items-center gap-1">
-					<Button variant="ghost" size="sm" @click="editRule(index)">
+					<Button
+						class="flex-shrink-0 rounded-l-none border-l"
+						@click="config.conditional_formatting.formats.splice(idx, 1)"
+					>
 						<template #icon>
-							<Edit class="h-4 w-4 text-[#585858]" stroke-width="1.5" />
-						</template>
-					</Button>
-					<Button variant="ghost" size="sm" @click="removeRule(index)">
-						<template #icon>
-							<Trash2 class="h-4 w-4 text-[#FC7474]" stroke-width="1.5" />
+							<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>
 			</div>
-		</div>
 
-		<Button class="w-full" @click="addNewRule">
-			<template #prefix>
-				<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-			</template>
-			Add Format
-		</Button>
+			<Button class="w-full" @click="addNewRule">
+				<template #prefix>
+					<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				</template>
+				Add Rule
+			</Button>
+		</div>
 	</CollapsibleSection>
 
 	<ConditonalFormattingDialog
 		v-if="showFormatSelectorDialog"
 		v-model="showFormatSelectorDialog"
-		:column-options="availableColumnsForFormatting"
+		:column-options="resultColumnOptions"
 		:initial-rule="editingRule"
 		:selector-key="editingRuleIndex ?? 'new'"
 		@select="handleFormatSelect"
 	/>
 </template>
-editing rule index should pass the cached values(if exists) of the formatGroup to the formatRule
-input
