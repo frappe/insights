@@ -766,10 +766,12 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 		tooltip: {
 			trigger: 'item',
 			formatter: (params: any) => {
-				const name = params.name
-				const value = params.value ?? 0
-				const measureName = measureColumn?.name ?? 'Value'
-				return `${name}<br/>${measureName}: ${value}`
+				// eg. Maharashtra: 1,23,456
+				const value = params.value ? getShortNumber(params.value, 2) : '0'
+				return `<div class="flex items-center justify-between gap-5">
+					<div>${params.name}</div>
+					<div class="font-bold">${value}</div>
+				</div>`
 			}
 		},
 		visualMap: {
@@ -809,7 +811,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 					borderColor: 'rgb(124, 124, 124)',
 				},
 				label: {
-					show: true,
+					show: false,
 				}
 			},
 		}],
