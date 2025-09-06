@@ -1,4 +1,5 @@
 import { graphic } from 'echarts/core'
+import citiesGeoJSON from '../assets/maps_json/INDIA_DISTRICTS.json'
 import { ellipsis, formatNumber, getShortNumber, getShortNumberWithRange } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
@@ -16,7 +17,6 @@ import {
 } from '../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
-import citiesGeoJSON from '../assets/maps_json/INDIA_DISTRICTS.json'
 
 interface GeoJSONFeature {
 	type: string
@@ -646,8 +646,8 @@ function getMapChartData(
 		const cityColumn = columns.find((c) => c.name === config.city_column.column_name)
 		if (cityColumn) {
 			aggregationColumn = cityColumn
-		} 
-	} 
+		}
+	}
 
 	const valueByLocation = rows.reduce((queryResult, row) => {
 		// for breakout by state filter only the selected state
@@ -696,7 +696,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 				isCitiesView = true
 				useFilteredCities = !!selectedState
 			} else {
-				jsonUrl = 'india' 
+				jsonUrl = 'india'
 			}
 		} else {
 			jsonUrl = 'india'
@@ -751,7 +751,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 				console.error('error', e)
 				filteredCitiesGeoJSON = geoJSONData
 			}
-		} 
+		}
 	}
 
 	const data = getMapChartData(columns, filteredRows, config, selectedState)
@@ -764,23 +764,12 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 		height: '100%',
 		animation: true,
 		animationDuration: 300,
-		geo: {
-			map: jsonUrl,
-			roam: true,
-			itemStyle: {
-				areaColor: '#fff',
-				borderColor: '#fff',
-				borderWidth: 0.1,
-			},
-			geoIndex: 0,
-		},
 		tooltip: {
 			trigger: 'item',
 			formatter: (params: any) => {
 				const name = params.name
 				const value = params.value ?? 0
 				const measureName = measureColumn?.name ?? 'Value'
-
 				return `${name}<br/>${measureName}: ${value}`
 			}
 		},
