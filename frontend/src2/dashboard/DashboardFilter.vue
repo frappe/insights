@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, reactive, watch, watchEffect } from 'vue'
+import * as LucideIcons from 'lucide-vue-next'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
@@ -49,6 +50,15 @@ wheneverChanges(
 	{ deep: true },
 )
 
+const filterIcon = computed(() => {
+	if (filter.icon) {
+		const IconComponent = (LucideIcons as any)[filter.icon]
+		return IconComponent || LucideIcons.ShieldQuestion
+	}
+	// Fallback to data type icon if no custom icon is set
+	return DataTypeIcon
+})
+
 const label = computed(() => {
 	let _label = filter.filter_name
 	if (filterState.operator && filterState.value) {
@@ -71,8 +81,14 @@ const label = computed(() => {
 					@click="togglePopover"
 				>
 					<template #prefix>
+						<component
+							v-if="filter.icon"
+							:is="filterIcon"
+							class="h-4 w-4 flex-shrink-0"
+							stroke-width="1.5"
+						/>
 						<DataTypeIcon
-							v-if="filter.filter_type"
+							v-else-if="filter.filter_type"
 							:column-type="FILTER_TYPES[filter.filter_type][0] as ColumnDataType"
 							class="h-4 w-4 flex-shrink-0"
 							stroke-width="1.5"
