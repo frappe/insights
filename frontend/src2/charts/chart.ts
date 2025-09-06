@@ -151,8 +151,8 @@ function makeChart(name: string) {
 
 		if (chart.doc.chart_type === 'Map') {
 			const config = chart.doc.config as MapChartConfig
-			const hasLocation = config.location_column
-			const hasValue = config.value_column
+			const hasLocation = config.location_column.column_name
+			const hasValue = config.value_column.measure_name
 
 			if (!hasLocation) {
 				messages.push({
