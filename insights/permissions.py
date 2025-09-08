@@ -29,12 +29,17 @@ TEAM_BASED_PERMISSION_DOCTYPES = [
     "Insights Data Source v3",
     "Insights Table v3",
     "Insights Team",
+    "Insights Dashboard v3",
+    "Insights Chart v3",
 ]
 
 
 class InsightsPermissions:
     def __init__(self, user=None):
         self.user = user or frappe.session.user
+        self.user_teams = []
+        if self.team_permissions_enabled:
+            self.user_teams = get_teams(self.user)
 
     @cached_property
     def is_admin(self):
@@ -48,51 +53,28 @@ class InsightsPermissions:
         if doctype not in PERMISSION_DOCTYPES:
             return ""
 
-        if (
-            doctype in TEAM_BASED_PERMISSION_DOCTYPES
-            and not self.team_permissions_enabled
-        ):
-            return ""
-
         if self.is_admin:
             return ""
 
-        if doctype == "Insights Data Source v3" or doctype == "Insights Table v3":
-            allowed_docs = get_allowed_resources_for_user(doctype, self.user)
-            return self._build_name_in_condition(doctype, allowed_docs)
-
         if doctype == "Insights Team":
-            user_teams = get_teams(self.user)
-            return self._build_name_in_condition(doctype, user_teams)
+            if not self.user_teams:
+                return "(`tabInsights Team`.name is NULL)"
 
-        if doctype in [
-            "Insights Workbook",
-            "Insights Dashboard v3",
-            "Insights Chart v3",
-            "Insights Query v3",
-            "Insights Alert",
-        ]:
-            docs = self._get_ptype_access_docs_query(doctype, "read")
-            return f"(`tab{doctype}`.name in ({docs}))"
+            item_list = [frappe.db.escape(item) for item in self.user_teams]
+            items_sql = ", ".join(item_list)
+            return f"(`tabInsights Team`.name in ({items_sql}))"
 
-        return ""
+        docs = self._build_permission_query(doctype, "read")
+        if not docs:
+            return ""
 
-    def _build_name_in_condition(self, doctype: str, items: list) -> str:
-        if not items:
-            return f"(`tab{doctype}`.name is NULL)"
-
-        item_list = [frappe.db.escape(item) for item in items]
-        items_sql = ", ".join(item_list)
-        return f"(`tab{doctype}`.name in ({items_sql}))"
+        return f"(`tab{doctype}`.name in ({docs}))"
 
     def has_doc_permission(self, doc, ptype):
         if doc.doctype not in PERMISSION_DOCTYPES:
             return True
 
-        if (
-            doc.doctype in TEAM_BASED_PERMISSION_DOCTYPES
-            and not self.team_permissions_enabled
-        ):
+        if doc.doctype in TEAM_BASED_PERMISSION_DOCTYPES and not self.team_permissions_enabled:
             return True
 
         if self.is_admin:
@@ -102,10 +84,7 @@ class InsightsPermissions:
             # for new_doc, let further permission checks handle it
             return True
 
-        if (
-            doc.doctype == "Insights Data Source v3"
-            or doc.doctype == "Insights Table v3"
-        ):
+        if doc.doctype == "Insights Data Source v3" or doc.doctype == "Insights Table v3":
             allowed_docs = get_allowed_resources_for_user(doc.doctype, self.user)
             return doc.name in allowed_docs
 
@@ -127,13 +106,9 @@ class InsightsPermissions:
             if is_new and hasattr(doc, "workbook") and doc.workbook:
                 # when creating a new query/chart/dashboard
                 # if it is linked to a workbook, check if user has access to the workbook
-                docs = self._get_ptype_access_docs_query(
-                    "Insights Workbook", access_type
-                )
+                docs = self._build_permission_query("Insights Workbook", access_type)
                 return (
-                    docs.where(
-                        frappe.qb.DocType("Insights Workbook").name == doc.workbook
-                    )
+                    docs.where(frappe.qb.DocType("Insights Workbook").name == doc.workbook)
                     .limit(1)
                     .run(pluck="name")
                 )
@@ -141,39 +116,83 @@ class InsightsPermissions:
             if is_new or is_owner:
                 return True
 
-            docs = self._get_ptype_access_docs_query(doc.doctype, access_type)
-            return (
-                docs.where(frappe.qb.DocType(doc.doctype).name == doc.name)
-                .limit(1)
-                .run(pluck="name")
-            )
+            docs = self._build_permission_query(doc.doctype, access_type)
+            return docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name")
 
         return False
 
-    def _get_ptype_access_docs_query(self, doctype, ptype):
+    def _build_permission_query(self, doctype, ptype):
         """Returns a query to get docs with `ptype`  permission"""
         query = None
+        if doctype == "Insights Data Source v3":
+            query = self._build_source_permission_query(ptype)
+        if doctype == "Insights Table v3":
+            query = self._build_table_permission_query(ptype)
         if doctype == "Insights Workbook":
-            query = self._get_ptype_access_workbooks_query(ptype)
+            query = self._build_workbook_permission_query(ptype)
         if doctype == "Insights Dashboard v3":
-            query = self._get_ptype_access_dashboards_query(ptype)
+            query = self._build_dashboard_permission_query(ptype)
         if doctype == "Insights Chart v3":
-            query = self._get_ptype_access_charts_query(ptype)
+            query = self._build_chart_permission_query(ptype)
         if doctype == "Insights Query v3":
-            query = self._get_ptype_access_queries_query(ptype)
+            query = self._build_query_permission_query(ptype)
         if doctype == "Insights Alert":
-            query = self._get_ptype_access_alerts_query(ptype)
+            query = self._build_alert_permission_query(ptype)
         return query
 
-    def _get_ptype_access_workbooks_query(self, ptype):
+    def _build_source_permission_query(self, ptype):
+        # if team permissions are not enabled, all data sources are accessible
+        if not self.team_permissions_enabled:
+            return
+
+        # if team permissions are enabled, allow data sources of allowed tables
+        Table = frappe.qb.DocType("Insights Table v3")
+        AllowedTables = self._build_table_permission_query(ptype)
+
+        return (
+            frappe.qb.from_(Table)
+            .select(Table.data_source)
+            .left_join(AllowedTables)
+            .on(Table.name == AllowedTables.name)
+            .where(AllowedTables.name.isnotnull())
+            .distinct()
+        )
+
+    def _build_table_permission_query(self, ptype):
+        # if team permissions are not enabled, all tables are accessible
+        if not self.team_permissions_enabled:
+            return
+
+        # if team permissions are enabled,
+        # tables linked to user's teams are accessible
+        # & all tables of data sources linked to user's teams
+        AllowedTables = self._build_resource_query("Insights Table v3")
+
+        Table = frappe.qb.DocType("Insights Table v3")
+        AllowedSources = self._build_resource_query("Insights Data Source v3")
+        TablesOfAllowedSources = (
+            frappe.qb.from_(Table)
+            .select(Table.name.as_("name"))
+            .left_join(AllowedSources)
+            .on(Table.data_source == AllowedSources.name)
+            .where(AllowedSources.name.isnotnull())
+        )
+
+        return (
+            frappe.qb.from_(Table)
+            .select(Table.name)
+            .left_join(AllowedTables)
+            .on(Table.name == AllowedTables.name)
+            .left_join(TablesOfAllowedSources)
+            .on(Table.name == TablesOfAllowedSources.name)
+            .where(AllowedTables.name.isnotnull() | TablesOfAllowedSources.name.isnotnull())
+        )
+
+    def _build_workbook_permission_query(self, ptype):
         DocShare = frappe.qb.DocType("DocShare")
         Workbook = frappe.qb.DocType("Insights Workbook")
 
-        OwnedWorkbooks = (
-            frappe.qb.from_(Workbook)
-            .select(Workbook.name)
-            .where(Workbook.owner == self.user)
-        )
+        OwnedWorkbooks = frappe.qb.from_(Workbook).select(Workbook.name).where(Workbook.owner == self.user)
 
         SharedWorkbooks = (
             frappe.qb.from_(DocShare)
@@ -192,21 +211,15 @@ class InsightsPermissions:
             .on(Workbook.name == OwnedWorkbooks.name)
             .left_join(SharedWorkbooks)
             .on(Workbook.name == SharedWorkbooks.share_name)
-            .where(
-                OwnedWorkbooks.name.isnotnull() | SharedWorkbooks.share_name.isnotnull()
-            )
+            .where(OwnedWorkbooks.name.isnotnull() | SharedWorkbooks.share_name.isnotnull())
         )
 
-    def _get_ptype_access_dashboards_query(self, ptype):
+    def _build_dashboard_permission_query(self, ptype):
         DocShare = frappe.qb.DocType("DocShare")
         Dashboard = frappe.qb.DocType("Insights Dashboard v3")
 
-        WorkbookWithWriteAccess = self._get_ptype_access_workbooks_query(ptype)
-
         OwnedDashboards = (
-            frappe.qb.from_(Dashboard)
-            .select(Dashboard.name)
-            .where(Dashboard.owner == self.user)
+            frappe.qb.from_(Dashboard).select(Dashboard.name).where(Dashboard.owner == self.user)
         )
 
         SharedDashboards = (
@@ -219,13 +232,17 @@ class InsightsPermissions:
             )
         )
 
-        LinkedWithWorkbookWithWriteAccess = (
+        AllowedWorkbooks = self._build_workbook_permission_query(ptype)
+
+        LinkedWithAllowedWorkbooks = (
             frappe.qb.from_(Dashboard)
             .select(Dashboard.name)
-            .left_join(WorkbookWithWriteAccess)
-            .on(Dashboard.workbook == WorkbookWithWriteAccess.name)
-            .where(WorkbookWithWriteAccess.name.isnotnull())
+            .left_join(AllowedWorkbooks)
+            .on(Dashboard.workbook == AllowedWorkbooks.name)
+            .where(AllowedWorkbooks.name.isnotnull())
         )
+
+        AllowedDashboards = self._build_resource_query("Insights Dashboard v3")
 
         return (
             frappe.qb.from_(Dashboard)
@@ -234,23 +251,24 @@ class InsightsPermissions:
             .on(Dashboard.name == OwnedDashboards.name)
             .left_join(SharedDashboards)
             .on(Dashboard.name == SharedDashboards.share_name)
-            .left_join(LinkedWithWorkbookWithWriteAccess)
-            .on(Dashboard.name == LinkedWithWorkbookWithWriteAccess.name)
+            .left_join(LinkedWithAllowedWorkbooks)
+            .on(Dashboard.name == LinkedWithAllowedWorkbooks.name)
+            .left_join(AllowedDashboards)
+            .on(Dashboard.name == AllowedDashboards.name)
             .where(
                 OwnedDashboards.name.isnotnull()
                 | SharedDashboards.share_name.isnotnull()
-                | LinkedWithWorkbookWithWriteAccess.name.isnotnull()
+                | LinkedWithAllowedWorkbooks.name.isnotnull()
+                | AllowedDashboards.name.isnotnull()
             )
         )
 
-    def _get_ptype_access_charts_query(self, ptype):
+    def _build_chart_permission_query(self, ptype):
         DocShare = frappe.qb.DocType("DocShare")
         Chart = frappe.qb.DocType("Insights Chart v3")
         DashboardChart = frappe.qb.DocType("Insights Dashboard Chart v3")
 
-        OwnedCharts = (
-            frappe.qb.from_(Chart).select(Chart.name).where(Chart.owner == self.user)
-        )
+        OwnedCharts = frappe.qb.from_(Chart).select(Chart.name).where(Chart.owner == self.user)
 
         SharedCharts = (
             frappe.qb.from_(DocShare)
@@ -262,33 +280,29 @@ class InsightsPermissions:
             )
         )
 
-        WorkbookWithWriteAccess = self._get_ptype_access_workbooks_query(ptype)
+        AllowedWorkbooks = self._build_workbook_permission_query(ptype)
 
-        LinkedWithWorkbookWithWriteAccess = (
+        LinkedWithAllowedWorkbooks = (
             frappe.qb.from_(Chart)
             .select(Chart.name)
-            .left_join(WorkbookWithWriteAccess)
-            .on(Chart.workbook == WorkbookWithWriteAccess.name)
-            .where(WorkbookWithWriteAccess.name.isnotnull())
+            .left_join(AllowedWorkbooks)
+            .on(Chart.workbook == AllowedWorkbooks.name)
+            .where(AllowedWorkbooks.name.isnotnull())
         )
 
-        DashboardWithWriteAccess = self._get_ptype_access_dashboards_query(ptype)
+        AllowedDashboards = self._build_dashboard_permission_query(ptype)
 
-        DashboardChartsLinkedWithDashboardWithWriteAccess = (
-            frappe.qb.from_(DashboardChart)
-            .select(DashboardChart.chart)
-            .left_join(DashboardWithWriteAccess)
-            .on(DashboardChart.parent == DashboardWithWriteAccess.name)
-            .where(DashboardWithWriteAccess.name.isnotnull())
-        )
-
-        LinkedWithDashboardWithWriteAccess = (
+        LinkedWithAllowedDashboards = (
             frappe.qb.from_(Chart)
             .select(Chart.name)
-            .left_join(DashboardChartsLinkedWithDashboardWithWriteAccess)
-            .on(Chart.name == DashboardChartsLinkedWithDashboardWithWriteAccess.chart)
-            .where(DashboardChartsLinkedWithDashboardWithWriteAccess.chart.isnotnull())
+            .left_join(DashboardChart)
+            .on(Chart.name == DashboardChart.chart)
+            .left_join(AllowedDashboards)
+            .on(DashboardChart.parent == AllowedDashboards.name)
+            .where(AllowedDashboards.name.isnotnull())
         )
+
+        AllowedCharts = self._build_resource_query("Insights Chart v3")
 
         return (
             frappe.qb.from_(Chart)
@@ -297,50 +311,46 @@ class InsightsPermissions:
             .on(Chart.name == OwnedCharts.name)
             .left_join(SharedCharts)
             .on(Chart.name == SharedCharts.share_name)
-            .left_join(LinkedWithWorkbookWithWriteAccess)
-            .on(Chart.name == LinkedWithWorkbookWithWriteAccess.name)
-            .left_join(LinkedWithDashboardWithWriteAccess)
-            .on(Chart.name == LinkedWithDashboardWithWriteAccess.name)
+            .left_join(LinkedWithAllowedWorkbooks)
+            .on(Chart.name == LinkedWithAllowedWorkbooks.name)
+            .left_join(LinkedWithAllowedDashboards)
+            .on(Chart.name == LinkedWithAllowedDashboards.name)
+            .left_join(AllowedCharts)
+            .on(Chart.name == AllowedCharts.name)
             .where(
                 OwnedCharts.name.isnotnull()
                 | SharedCharts.share_name.isnotnull()
-                | LinkedWithWorkbookWithWriteAccess.name.isnotnull()
-                | LinkedWithDashboardWithWriteAccess.name.isnotnull()
+                | LinkedWithAllowedWorkbooks.name.isnotnull()
+                | LinkedWithAllowedDashboards.name.isnotnull()
+                | AllowedCharts.name.isnotnull()
             )
         )
 
-    def _get_ptype_access_queries_query(self, ptype):
+    def _build_query_permission_query(self, ptype):
         Query = frappe.qb.DocType("Insights Query v3")
 
-        OwnedQueries = (
-            frappe.qb.from_(Query).select(Query.name).where(Query.owner == self.user)
-        )
+        OwnedQueries = frappe.qb.from_(Query).select(Query.name).where(Query.owner == self.user)
 
-        WorkbookWithWriteAccess = self._get_ptype_access_workbooks_query(ptype)
+        AllowedWorkbooks = self._build_workbook_permission_query(ptype)
 
-        LinkedWithWorkbookWithWriteAccess = (
+        LinkedWithAllowedWorkbooks = (
             frappe.qb.from_(Query)
             .select(Query.name)
-            .left_join(WorkbookWithWriteAccess)
-            .on(Query.workbook == WorkbookWithWriteAccess.name)
-            .where(WorkbookWithWriteAccess.name.isnotnull())
+            .left_join(AllowedWorkbooks)
+            .on(Query.workbook == AllowedWorkbooks.name)
+            .where(AllowedWorkbooks.name.isnotnull())
         )
 
         Chart = frappe.qb.DocType("Insights Chart v3")
-        ChartWithWriteAccess = self._get_ptype_access_charts_query(ptype)
-        ChartWithWriteAccess = ChartWithWriteAccess.select(
-            Chart.data_query, Chart.query
-        )
+        AllowedCharts = self._build_chart_permission_query(ptype)
+        AllowedCharts = AllowedCharts.select(Chart.data_query, Chart.query)
 
-        LinkedWithChartWithWriteAccess = (
+        LinkedWithAllowedCharts = (
             frappe.qb.from_(Query)
             .select(Query.name)
-            .left_join(ChartWithWriteAccess)
-            .on(
-                (Query.name == ChartWithWriteAccess.data_query)
-                | (Query.name == ChartWithWriteAccess.query)
-            )
-            .where(ChartWithWriteAccess.name.isnotnull())
+            .left_join(AllowedCharts)
+            .on((Query.name == AllowedCharts.data_query) | (Query.name == AllowedCharts.query))
+            .where(AllowedCharts.name.isnotnull())
         )
 
         return (
@@ -348,25 +358,23 @@ class InsightsPermissions:
             .select(Query.name)
             .left_join(OwnedQueries)
             .on(Query.name == OwnedQueries.name)
-            .left_join(LinkedWithWorkbookWithWriteAccess)
-            .on(Query.name == LinkedWithWorkbookWithWriteAccess.name)
-            .left_join(LinkedWithChartWithWriteAccess)
-            .on(Query.name == LinkedWithChartWithWriteAccess.name)
+            .left_join(LinkedWithAllowedWorkbooks)
+            .on(Query.name == LinkedWithAllowedWorkbooks.name)
+            .left_join(LinkedWithAllowedCharts)
+            .on(Query.name == LinkedWithAllowedCharts.name)
             .where(
                 OwnedQueries.name.isnotnull()
-                | LinkedWithWorkbookWithWriteAccess.name.isnotnull()
-                | LinkedWithChartWithWriteAccess.name.isnotnull()
+                | LinkedWithAllowedWorkbooks.name.isnotnull()
+                | LinkedWithAllowedCharts.name.isnotnull()
             )
         )
 
-    def _get_ptype_access_alerts_query(self, ptype):
+    def _build_alert_permission_query(self, ptype):
         Alert = frappe.qb.DocType("Insights Alert")
 
-        OwnedAlerts = (
-            frappe.qb.from_(Alert).select(Alert.name).where(Alert.owner == self.user)
-        )
+        OwnedAlerts = frappe.qb.from_(Alert).select(Alert.name).where(Alert.owner == self.user)
 
-        QueryWithWriteAccess = self._get_ptype_access_queries_query(ptype)
+        QueryWithWriteAccess = self._build_query_permission_query(ptype)
 
         LinkedWithQueryWithWriteAccess = (
             frappe.qb.from_(Alert)
@@ -383,9 +391,18 @@ class InsightsPermissions:
             .on(Alert.name == OwnedAlerts.name)
             .left_join(LinkedWithQueryWithWriteAccess)
             .on(Alert.name == LinkedWithQueryWithWriteAccess.name)
+            .where(OwnedAlerts.name.isnotnull() | LinkedWithQueryWithWriteAccess.name.isnotnull())
+        )
+
+    def _build_resource_query(self, doctype):
+        Resource = frappe.qb.DocType("Insights Resource Permission")
+        return (
+            frappe.qb.from_(Resource)
+            .select(Resource.resource_name.as_("name"))
             .where(
-                OwnedAlerts.name.isnotnull()
-                | LinkedWithQueryWithWriteAccess.name.isnotnull()
+                (Resource.parent.isin(self.user_teams))
+                & (Resource.resource_type == doctype)
+                & (Resource.resource_name.isnotnull())
             )
         )
 
